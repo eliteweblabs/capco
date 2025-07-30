@@ -1,5 +1,5 @@
-# Use Node.js 20.11.0 specifically
-FROM node:20.11.0-alpine
+# Use Node.js 20.16.0 for PDF.js compatibility
+FROM node:20.16.0-alpine
 
 # Set working directory
 WORKDIR /app
