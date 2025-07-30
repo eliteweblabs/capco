@@ -1,0 +1,69 @@
+---
+import SectionContainer from "./SectionContainer.astro";
+import Hero from "./index/Hero.astro";
+import SocialMedia from "./index/SocialMedia.astro";
+import ProjectsNav from "./ProjectsNav.astro";
+import Base from "../layout/Base.astro";
+import AuthForm from "./AuthForm.astro";
+import ProjcetsHold from "./ProjcetsHold.astro";
+import AdminProjectsStatusNav from "./AdminProjectsStatusNav.astro";
+// Para cambiar idioma de textos
+import { getI18N } from "@/i18n";
+const { currentLocale } = Astro;
+const i18n = getI18N({ currentLocale });
+
+// Check authentication
+import { checkAuth } from "../lib/auth";
+const { isAuth, session, user, role } = await checkAuth(Astro.cookies);
+---
+
+<Base title={i18n.SEO_TITLE} description={i18n.SEO_DESCRIPTION}>
+  
+
+    {isAuth ? (
+      <!-- Authenticated content -->
+      <div id="authenticated-container">
+        <!-- Hero section for authenticated users -->
+        <SectionContainer id="hero" class="flex flex-col gap-y-6">
+          <Hero title={'Dashboard - ' + user.email} description={role || 'No role'}/>
+        </SectionContainer>
+
+        <!-- Client content -->
+        {role === "Admin" ? (
+          <SectionContainer class="flex flex-col gap-y-6">
+            <AdminProjectsStatusNav />
+          </SectionContainer>
+        ) : role === "Client" ? (
+          <SectionContainer class="flex flex-col gap-y-6">
+            <ProjectsNav />
+          </SectionContainer>
+        ) : (
+          <SectionContainer class="flex flex-col gap-y-6">
+            <ProjectsNav />
+          </SectionContainer>
+        )}
+
+        <!-- Projects display section -->
+        
+        {/* <SectionContainer id="project" class="flex flex-col gap-y-6">
+          <ProjcetsHold />
+        </SectionContainer>
+         */}
+      </div>
+
+    ) : (
+      <!-- Non-authenticated content -->
+      <AuthForm />
+      // <div class="text-center py-12">
+      //   <h2 class="text-2xl font-bold mb-4">Please sign in to continue</h2>
+      //   <a href="/signin" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">
+      //     Sign In
+      //   </a>
+      // </div>
+    )}
+
+    <SectionContainer class="fixed bottom-0 flex flex-col gap-y-6">
+      <SocialMedia />
+    </SectionContainer>
+
+  </Base>

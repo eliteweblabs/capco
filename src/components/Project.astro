@@ -1,0 +1,186 @@
+---
+import Acrobat from "../components/Acrobat.astro";
+import { cardsData } from "../data/submittals.js";
+import NoDataCard from "../components/NoDataCard.astro";
+import { getI18N } from "@/i18n";
+
+// const cardsData: any[] = [];
+//Para cambiar idioma de textos
+const { currentLocale } = Astro;
+const i18n = getI18N({ currentLocale });
+
+import { getDocument } from "pdfjs-dist";
+---
+
+<div data-accordion="collapse">
+  {
+    cardsData.length > 0 ? (
+      cardsData.map((card, index) => (
+        <Acrobat
+          i={index}
+          url={card.url}
+          href={card.href}
+          title={card.title}
+          isLate={card.isLate}
+          isNew={card.isNew}
+          isViewed={card.isViewed}
+          subtitle={card.subtitle}
+          imageSrc={card.imageSrc}
+          icon={card.icon}
+          imageAlt={card.imageAlt}
+          isFirst={index === 0 ? true : false}
+          isLast={index === cardsData.length - 1 ? true : false}
+        />
+      ))
+    ) : (
+      <NoDataCard
+        message={i18n.SUBMITTALS.empty.message}
+        subtitle={i18n.SUBMITTALS.empty.message2}
+        imageSrc="/img/notion/white/my-notion-face-transparent_9.png"
+      />
+    )
+  }
+
+  <slot />
+</div>
+
+<script src="../js/pdf.min.js" defer is:inline></script>
+<script type="module" is:inline>
+  window.addEventListener("DOMContentLoaded", () => {
+    function waitForPDFJS() {
+      return new Promise((resolve) => {
+        function check() {
+          if (window["pdfjsLib"]) resolve();
+          else setTimeout(check, 50);
+        }
+        check();
+      });
+    }
+
+    waitForPDFJS().then(() => {
+      const pdfjsLib = window["pdfjsLib"];
+      pdfjsLib.GlobalWorkerOptions.workerSrc = "../js/pdf.worker.min.js";
+
+      document.querySelectorAll("[data-pdf-holder]").forEach((container) => {
+        const PDF_URL = container.getAttribute("data-pdf-holder");
+        if (!PDF_URL) return;
+
+        // Find controls relative to this container
+        const parent = container.parentElement;
+        const controls = parent.querySelector(".controls");
+        const prevBtn = controls.querySelector(".pdf-prev-page");
+        const nextBtn = controls.querySelector(".pdf-next-page");
+        const pageInfo = controls.querySelector(".pdf-page-info");
+        const downloadBtn = controls.querySelector(".pdf-download");
+        const printBtn = controls.querySelector(".pdf-print");
+
+        let pdfDoc = null;
+        let currentPage = 1;
+        let totalPages = 1;
+        let pageRendering = false;
+        let pageNumPending = null;
+        let canvas = null;
+
+        function loadPDF(url) {
+          pdfjsLib.getDocument(url).promise.then(function (pdf) {
+            pdfDoc = pdf;
+            totalPages = pdf.numPages;
+            currentPage = 1;
+            renderPage(currentPage);
+          });
+        }
+
+        function renderPage(num) {
+          pageRendering = true;
+          pdfDoc.getPage(num).then(function (page) {
+            // Responsive scaling
+
+            const containerWidth =
+              container.parentElement.parentElement.parentElement.offsetWidth -
+                30 || 300;
+            const viewport = page.getViewport({ scale: 1 });
+            const scale = containerWidth / viewport.width;
+            const scaledViewport = page.getViewport({ scale });
+            if (!canvas) {
+              canvas = document.createElement("canvas");
+              container.innerHTML = "";
+              container.appendChild(canvas);
+            }
+            const context = canvas.getContext("2d");
+            canvas.height = scaledViewport.height;
+            canvas.width = scaledViewport.width;
+            const renderContext = {
+              canvasContext: context,
+              viewport: scaledViewport,
+            };
+            const renderTask = page.render(renderContext);
+            renderTask.promise.then(function () {
+              pageRendering = false;
+              pageInfo.textContent = `${currentPage} / ${totalPages}`;
+              prevBtn.disabled = currentPage === 1;
+              nextBtn.disabled = currentPage === totalPages;
+              if (pageNumPending !== null) {
+                renderPage(pageNumPending);
+                pageNumPending = null;
+              }
+            });
+          });
+        }
+
+        prevBtn.addEventListener("click", function () {
+          if (currentPage <= 1) return;
+          if (pageRendering) {
+            pageNumPending = currentPage - 1;
+          } else {
+            currentPage--;
+            renderPage(currentPage);
+          }
+        });
+
+        nextBtn.addEventListener("click", function () {
+          if (currentPage >= totalPages) return;
+          if (pageRendering) {
+            pageNumPending = currentPage + 1;
+          } else {
+            currentPage++;
+            renderPage(currentPage);
+          }
+        });
+
+        downloadBtn.addEventListener("click", function () {
+          const link = document.createElement("a");
+          link.href = PDF_URL;
+          link.download = PDF_URL.split("/").pop() || "document.pdf";
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+        });
+
+        printBtn.addEventListener("click", function () {
+          if (!canvas) return;
+          // Create a new window for printing
+          const printWindow = window.open("", "_blank");
+          printWindow.document.write(
+            '<html><head><title>Print PDF</title></head><body style="margin:0;">'
+          );
+          // Convert canvas to image and add to print window
+          printWindow.document.write(
+            '<img src="' +
+              canvas.toDataURL("image/png") +
+              '" style="width:100%;"/>'
+          );
+          printWindow.document.write("</body></html>");
+          printWindow.document.close();
+          printWindow.focus();
+          // Wait for image to load, then print
+          printWindow.onload = function () {
+            printWindow.print();
+            printWindow.close();
+          };
+        });
+
+        loadPDF(PDF_URL);
+      });
+    });
+  });
+</script>

@@ -1,0 +1,141 @@
+---
+import { getI18N } from "@/i18n";
+import ArrowRight from "../icons/ArrowRight.astro";
+import ArrowLeft from "../icons/ArrowLeft.astro";
+import NewBadge from "./NewBadge.astro";
+import { Accordion } from "flowbite";
+
+//Para cambiar idioma de textos
+const { currentLocale } = Astro;
+const i18n = getI18N({ currentLocale });
+
+const {
+  i = "",
+  url = "",
+  href = "#",
+  title = "Título predeterminado",
+  subtitle = "Subtítulo predeterminado",
+  imageSrc = "",
+  imageAlt = "Ícono predeterminado",
+  isNew = false,
+  isViewed = false,
+  isLate = false,
+  isFirst = false,
+  isLast = false,
+  icon = "",
+
+  // Nueva prop para controlar el badge
+} = Astro.props;
+
+// const aid='accordion-collapse-heading-' + id;
+// const bid='accordion-collapse-body-' + id;
+import { getDocument } from "pdfjs-dist";
+---
+
+<div id={"accordion-collapse-heading-" + i}>
+  <button
+    class={`relative flex items-center justify-between w-full p-5 font-medium rtl:text-right text-gray-500 border ${isLast ? "" : "border-b-0"} ${isFirst ? "rounded-t-xl" : ""} border-gray-200 focus:ring-1 focus:ring-gray-200 dark:focus:ring-gray-800 dark:border-gray-700 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 gap-3`}
+    data-accordion-target={"#accordion-collapse-body-" + i}
+    aria-expanded="false"
+    aria-controls={"accordion-collapse-body-" + i}
+  >
+    <div
+      class="rounded-lg border size-9 flex items-center justify-center border-hub-border dark:border-hub-border-dark dark:bg-hub-background overflow-hidden text-white dark:text-black bg-gray-800"
+    >
+      <i class={icon}></i>
+    </div>
+
+    <div class="pl-4 flex flex-col justify-start">
+      <h2 class="font-medium text-base text-hub-title dark:text-hub-title-dark">
+        {title}
+      </h2>
+      <small class="text-hub-subtitle dark:text-hub-subtitle-dark text-xs">
+        Added: <em>{subtitle}</em>
+      </small>
+    </div>
+
+    <svg
+      data-accordion-icon
+      class="w-3 h-3 rotate-180 shrink-0"
+      aria-hidden="true"
+      xmlns="http://www.w3.org/2000/svg"
+      fill="none"
+      viewBox="0 0 10 6"
+    >
+      <path
+        stroke="currentColor"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        stroke-width="2"
+        d="M9 5 5 1 1 5"></path>
+    </svg>
+
+    {
+      isNew && !isLate && (
+        <div
+          class=" animate-pulse absolute top-0 right-2 transform translate-x-1/2 -translate-y-1/2 bg-sky-500
+     text-white 
+     text-xs 
+     font-semibold px-2 py-0.5 rounded-full shadow-md z-10"
+        >
+          {i18n.SUBMITTALS.BADGE.NEW}
+        </div>
+      )
+    }
+    {
+      isLate && (
+        <div
+          class=" animate-pulse absolute top-0 right-2 transform translate-x-1/2 -translate-y-1/2 bg-red-500
+     text-white 
+     text-xs 
+     font-semibold px-2 py-0.5 rounded-full shadow-md z-10"
+        >
+          {i18n.SUBMITTALS.BADGE.LATE}
+        </div>
+      )
+    }
+  </button>
+</div>
+
+<div
+  id={"accordion-collapse-body-" + i}
+  class="hidden"
+  aria-labelledby={"accordion-collapse-heading-" + i}
+>
+  <div
+    class={`p-5 border ${isLast ? "rounded-b-xl border-t-0" : "border-b-0"} border-gray-200 dark:border-gray-700 dark:bg-gray-900`}
+  >
+    <div
+      data-pdf-holder="https://mozilla.github.io/pdf.js/web/compressed.tracemonkey-pldi-09.pdf"
+      class="flex flex-col items-center gap-2"
+    >
+    </div>
+    <div class="controls flex gap-2 mt-2 justify-between">
+      <div class="flex items-center gap-2">
+        <button class="pdf-prev-page">
+          <ArrowLeft
+            class="size-6 text-hub-subtitle dark:text-hub-subtitle-dark duration-300 ease-in-out hover:-translate-x-1"
+          /></button
+        >
+        <span
+          class="pdf-page-info font-medium text-base text-hub-title dark:text-hub-title-dark"
+        ></span>
+        <button class="pdf-next-page">
+          <ArrowRight
+            class="size-6 text-hub-subtitle dark:text-hub-subtitle-dark duration-300 ease-in-out hover:translate-x-1"
+          /></button
+        >
+      </div>
+      <div>
+        <button
+          class="pdf-download px-4 py-2 text-sm w-auto rounded-full hover:text-hub-title bg-hub-background drop-shadow-md text-hub-title font-bold dark:text-hub-title-light dark:bg-hub-background-dark"
+          ><i class="bx bx-download bx-sm"></i></button
+        >
+        <button
+          class="pdf-print px-4 py-2 text-sm w-auto rounded-full hover:text-hub-title bg-hub-background drop-shadow-md text-hub-title font-bold dark:text-hub-title-light dark:bg-hub-background-light"
+          ><i class="bx bx-printer bx-sm"></i></button
+        >
+      </div>
+    </div>
+  </div>
+</div>

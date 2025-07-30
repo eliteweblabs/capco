@@ -1,0 +1,111 @@
+---
+import Delivery from "./Delivery.astro";
+import Project from "./Project.astro";
+import Invoice from "./Invoice.astro";
+import NavButton from "./index/NavButton.astro";
+import SectionContainer from "./SectionContainer.astro";
+import EducationHub from "./EducationHub.astro";
+import FunHobbies from "./FunHobbies.astro";
+import ShopNow from "./ShopNow.astro";
+import { getI18N } from "@/i18n";
+
+//Para cambiar idioma de textos
+const { currentLocale } = Astro;
+const i18n = getI18N({ currentLocale });
+---
+
+<div class="flex flex-col">
+  <nav
+    class="scrollbar-hide flex gap-1 overflow-x-auto whitespace-nowrap rounded-full border-[1px] border-hub-border bg-hub-background-nav p-[2px] text-hub-inactive dark:border-hub-border-dark dark:bg-hub-background-nav"
+  >
+    <NavButton
+      class="tab-btn"
+      aria-label="btn-submittals"
+      data-target="submittals">{i18n.NAVBAR.SUBMITTALS}</NavButton
+    >
+    <NavButton class="tab-btn" aria-label="btn-invoices" data-target="invoice"
+      >{i18n.NAVBAR.INVOICE}</NavButton
+    >
+    <NavButton class="tab-btn" aria-label="btn-delivery" data-target="delivery"
+      >{i18n.NAVBAR.DELIVERY}</NavButton
+    >
+  </nav>
+
+  <main class="mt-6">
+    <SectionContainer id="submittals" class="tab-content mb-0 mt-0">
+      <Project />
+    </SectionContainer>
+    <SectionContainer id="invoices" class="tab-content mb-0 mt-0 hidden">
+      <Invoice />
+    </SectionContainer>
+    <SectionContainer id="delivery" class="tab-content mb-0 mt-0 hidden">
+      <Delivery />
+    </SectionContainer>
+  </main>
+</div>
+
+<script>
+  const buttons = document.querySelectorAll(".tab-btn");
+  const contents = document.querySelectorAll(".tab-content");
+
+  // Establece el botón activo por defecto
+  const defaultActive = document.querySelector('[data-target="submittals"]');
+  if (defaultActive) {
+    defaultActive.classList.add(
+      "bg-hub-background",
+      "drop-shadow-md",
+      "text-hub-title",
+      "font-bold",
+      "dark:text-hub-title-dark",
+      "dark:bg-hub-background-dark"
+    );
+    const projectsSection = document.getElementById("submittals");
+    if (projectsSection) {
+      projectsSection.classList.remove("hidden");
+    }
+  }
+
+  buttons.forEach((button) => {
+    button.addEventListener("click", () => {
+      const target = button.getAttribute("data-target");
+
+      // Actualiza el estado de los botones
+      buttons.forEach((btn) =>
+        btn.classList.remove(
+          "bg-hub-background",
+          "drop-shadow-md",
+          "text-hub-title",
+          "font-bold",
+          "dark:text-hub-title-dark",
+          "dark:bg-hub-background-dark"
+        )
+      );
+      button.classList.add(
+        "bg-hub-background",
+        "drop-shadow-md",
+        "text-hub-title",
+        "font-bold",
+        "dark:text-hub-title-dark",
+        "dark:bg-hub-background-dark"
+      );
+
+      // Oculta todas las secciones
+      contents.forEach((content) => content.classList.add("hidden"));
+
+      // Muestra la sección seleccionada
+      if (target) {
+        const targetElement = document.getElementById(target);
+        if (targetElement) {
+          targetElement.classList.remove("hidden");
+        }
+      }
+
+      // Desliza el botón al centro del nav
+      button.scrollIntoView({
+        behavior: "smooth", // Deslizamiento suave
+        block: "nearest", // Mantiene la posición vertical
+        inline: "center", // Centra horizontalmente
+      });
+    });
+  });
+</script>
