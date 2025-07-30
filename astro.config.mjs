@@ -32,10 +32,18 @@ export default defineConfig({
       prefixDefaultLocale: false,
     },
   },
-  // Remove development-specific server config for production
+  // Server configuration
   ...(process.env.NODE_ENV === "development" && {
     server: {
       allowedHosts: ["d7ddd3920a86.ngrok-free.app", ".ngrok-free.app"],
     },
   }),
+  // Ensure proper CI building
+  vite: {
+    define: {
+      "process.env.NODE_ENV": JSON.stringify(
+        process.env.NODE_ENV || "production",
+      ),
+    },
+  },
 });
