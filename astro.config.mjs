@@ -13,7 +13,7 @@
 //   integrations: [tailwind(), solidJs()],
 // });
 
-// // @ts-check
+// @ts-check
 import { defineConfig } from "astro/config";
 import node from "@astrojs/node";
 import tailwind from "@astrojs/tailwind";
@@ -25,7 +25,6 @@ export default defineConfig({
     mode: "standalone",
   }),
   integrations: [tailwind()],
-  // Temporarily disable i18n to test middleware
   i18n: {
     defaultLocale: "en",
     locales: ["en", "es"],
@@ -33,7 +32,10 @@ export default defineConfig({
       prefixDefaultLocale: false,
     },
   },
-  server: {
-    allowedHosts: ["d7ddd3920a86.ngrok-free.app", ".ngrok-free.app"],
-  },
+  // Remove development-specific server config for production
+  ...(process.env.NODE_ENV === "development" && {
+    server: {
+      allowedHosts: ["d7ddd3920a86.ngrok-free.app", ".ngrok-free.app"],
+    },
+  }),
 });
