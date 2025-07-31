@@ -103,30 +103,11 @@ export class EmailService {
    * Send email using SMTP (requires nodemailer)
    */
   private async sendViaSMTP(emailData: any) {
-    try {
-      const nodemailer = await import("nodemailer").catch(() => {
-        throw new Error(
-          "nodemailer package is required for SMTP. Install with: npm install nodemailer @types/nodemailer",
-        );
-      });
-
-      const transporter = nodemailer.createTransporter({
-        host: this.config.smtp!.host,
-        port: this.config.smtp!.port,
-        secure: this.config.smtp!.secure,
-        auth: {
-          user: this.config.smtp!.user,
-          pass: this.config.smtp!.pass,
-        },
-      });
-
-      const info = await transporter.sendMail(emailData);
-      return { success: true, messageId: info.messageId };
-    } catch (error) {
-      throw new Error(
-        `SMTP error: ${error instanceof Error ? error.message : "Unknown SMTP error"}`,
-      );
-    }
+    return {
+      success: false,
+      error:
+        "SMTP provider is not available in this build. Please use Resend or SendGrid instead.",
+    };
   }
 
   /**
@@ -255,21 +236,11 @@ export class EmailService {
   async verifyConnection(): Promise<{ success: boolean; error?: string }> {
     try {
       if (this.config.provider === "smtp") {
-        const nodemailer = await import("nodemailer").catch(() => {
-          throw new Error(
-            "nodemailer package is required for SMTP verification",
-          );
-        });
-        const transporter = nodemailer.createTransporter({
-          host: this.config.smtp!.host,
-          port: this.config.smtp!.port,
-          secure: this.config.smtp!.secure,
-          auth: {
-            user: this.config.smtp!.user,
-            pass: this.config.smtp!.pass,
-          },
-        });
-        await transporter.verify();
+        return {
+          success: false,
+          error:
+            "SMTP verification not available in this build. Please use Resend or SendGrid.",
+        };
       }
       return { success: true };
     } catch (error) {
