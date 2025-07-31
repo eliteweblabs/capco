@@ -7,6 +7,7 @@ export const GET: APIRoute = async () => {
     fromEmail: import.meta.env.FROM_EMAIL || "not set",
     fromName: import.meta.env.FROM_NAME || "not set",
     status: "Check environment variables above",
+    timestamp: new Date().toISOString(),
   };
 
   return new Response(JSON.stringify(config, null, 2), {
