@@ -25,21 +25,18 @@ const { isAuth, session, user, role } = await checkAuth(Astro.cookies);
       <div id="authenticated-container">
         <!-- Hero section for authenticated users -->
         <SectionContainer id="hero" class="flex flex-col gap-y-6">
-          <Hero title={'Dashboard - ' + user.email} description={role || 'No role'}/>
+          <Hero title={'' + user.user_metadata.name} description={role || 'No role'}/>
         </SectionContainer>
 
         <!-- Client content -->
-        {role === "Admin" ? (
+        {role ? (
           <SectionContainer class="flex flex-col gap-y-6">
-            <AdminProjectsStatusNav />
-          </SectionContainer>
-        ) : role === "Client" ? (
-          <SectionContainer class="flex flex-col gap-y-6">
-            <ProjectsNav />
+            <ProjectsNav role={role}/>
           </SectionContainer>
         ) : (
+
           <SectionContainer class="flex flex-col gap-y-6">
-            <ProjectsNav />
+            <h2>No role</h2>
           </SectionContainer>
         )}
 
@@ -53,7 +50,10 @@ const { isAuth, session, user, role } = await checkAuth(Astro.cookies);
 
     ) : (
       <!-- Non-authenticated content -->
+      <SectionContainer id="auth" class="flex flex-col gap-y-6 mx-6">
+
       <AuthForm />
+      </SectionContainer>
       // <div class="text-center py-12">
       //   <h2 class="text-2xl font-bold mb-4">Please sign in to continue</h2>
       //   <a href="/signin" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">
