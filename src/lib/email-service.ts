@@ -37,17 +37,17 @@ export class EmailService {
 
   constructor(config?: Partial<EmailConfig>) {
     this.config = {
-      provider: (import.meta.env.EMAIL_PROVIDER as any) || "smtp",
-      apiKey: import.meta.env.EMAIL_API_KEY,
+      provider: (process.env.EMAIL_PROVIDER as any) || "smtp",
+      apiKey: process.env.EMAIL_API_KEY,
       smtp: {
-        host: import.meta.env.SMTP_HOST || "localhost",
-        port: parseInt(import.meta.env.SMTP_PORT || "587"),
-        secure: import.meta.env.SMTP_SECURE === "true",
-        user: import.meta.env.SMTP_USER || "",
-        pass: import.meta.env.SMTP_PASS || "",
+        host: process.env.SMTP_HOST || "localhost",
+        port: parseInt(process.env.SMTP_PORT || "587"),
+        secure: process.env.SMTP_SECURE === "true",
+        user: process.env.SMTP_USER || "",
+        pass: process.env.SMTP_PASS || "",
       },
-      fromEmail: import.meta.env.FROM_EMAIL || "noreply@example.com",
-      fromName: import.meta.env.FROM_NAME || "CAPCo",
+      fromEmail: process.env.FROM_EMAIL || "noreply@example.com",
+      fromName: process.env.FROM_NAME || "CAPCo",
       ...config,
     };
   }
