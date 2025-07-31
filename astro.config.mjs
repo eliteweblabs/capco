@@ -33,11 +33,13 @@ export default defineConfig({
     },
   },
   // Server configuration
-  ...(process.env.NODE_ENV === "development" && {
-    server: {
+  server: {
+    host: process.env.NODE_ENV === "production" ? "0.0.0.0" : "localhost",
+    port: process.env.PORT ? parseInt(process.env.PORT) : 4321,
+    ...(process.env.NODE_ENV === "development" && {
       allowedHosts: ["d7ddd3920a86.ngrok-free.app", ".ngrok-free.app"],
-    },
-  }),
+    }),
+  },
   // Ensure proper CI building
   vite: {
     define: {
