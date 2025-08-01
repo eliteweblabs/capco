@@ -5,8 +5,6 @@ import SocialMedia from "./index/SocialMedia.astro";
 import ProjectsNav from "./ProjectsNav.astro";
 import Base from "../layout/Base.astro";
 import AuthForm from "./AuthForm.astro";
-import ProjcetsHold from "./ProjcetsHold.astro";
-import AdminProjectsStatusNav from "./AdminProjectsStatusNav.astro";
 // Para cambiar idioma de textos
 import { getI18N } from "@/i18n";
 const { currentLocale } = Astro;
@@ -21,16 +19,14 @@ const { isAuth, session, user, role } = await checkAuth(Astro.cookies);
   
 
     {isAuth ? (
-      <!-- Authenticated content -->
-      <div id="authenticated-container">
-        <!-- Hero section for authenticated users -->
+
         <SectionContainer id="hero" class="flex flex-col gap-y-6">
           <Hero title={'' + user.user_metadata.name} description={role || 'No role'}/>
         </SectionContainer>
 
         <!-- Client content -->
         {role ? (
-          <SectionContainer class="flex flex-col gap-y-6">
+          <SectionContainer id="sub-nav" class="flex flex-col gap-y-6">
             <ProjectsNav role={role}/>
           </SectionContainer>
         ) : (
@@ -40,26 +36,13 @@ const { isAuth, session, user, role } = await checkAuth(Astro.cookies);
           </SectionContainer>
         )}
 
-        <!-- Projects display section -->
-        
-        {/* <SectionContainer id="project" class="flex flex-col gap-y-6">
-          <ProjcetsHold />
-        </SectionContainer>
-         */}
-      </div>
-
+      
     ) : (
       <!-- Non-authenticated content -->
       <SectionContainer id="auth" class="flex flex-col gap-y-6 mx-6">
-
-      <AuthForm />
+        <AuthForm />
       </SectionContainer>
-      // <div class="text-center py-12">
-      //   <h2 class="text-2xl font-bold mb-4">Please sign in to continue</h2>
-      //   <a href="/signin" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">
-      //     Sign In
-      //   </a>
-      // </div>
+    
     )}
 
     <SectionContainer class="fixed bottom-0 flex flex-col gap-y-6">

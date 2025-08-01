@@ -5,8 +5,7 @@ import Invoice from "./Invoice.astro";
 import NavButton from "./index/NavButton.astro";
 import SectionContainer from "./SectionContainer.astro";
 import ProjectsNew from "../components/ProjectNew.astro";
-import ProjectsHold from "../components/ProjcetsHold.astro";  
-
+import GlobalServicesExample from "./GlobalServicesExample.astro";
 import { getI18N } from "@/i18n";
 
 const { role } = Astro.props;
@@ -56,6 +55,13 @@ let clientHoldCount = 14;
         >Client Hold
       </NavButton>
       <NavButton
+        class="tab-btn relative"
+        aria-label="btn-services-test"
+        data-target="services-test"
+        data-count={clientHoldCount}
+        >Services Test
+      </NavButton>
+      <NavButton
         class="tab-btn"
         aria-label="btn-pdf-editor"
         data-target="pdf-editor">PDF Editor</NavButton
@@ -84,38 +90,24 @@ let clientHoldCount = 14;
 
   {role === "Admin" ? (
 
-
- 
-  // <div id="client-hold" class="tab-content mb-0 mt-0 hidden">
-  //   <ProjectsHold />
-  // </div>
-  // <div id="admin-hold" class="tab-content mb-0 mt-0 hidden">
-  //   <Delivery />
-  // </div>
-  // <div id="pdf-editor" class="tab-content mb-0 mt-0 hidden">
-  //   <Project />
-  // </div>
-  // <div id="archive" class="tab-content mb-0 mt-0 hidden">
-  //   <Delivery />
-  // </div>
-
     <SectionContainer id="create" class="tab-content mb-0 mt-0 mx-6">
       <ProjectsNew />
     </SectionContainer>
     <SectionContainer id="client-hold" class="tab-content mb-0 mt-0 hidden mx-6">
       <Invoice />
     </SectionContainer>
-
-<SectionContainer id="admin-hold" class="tab-content mb-0 mt-0 hidden mx-6">
+    <SectionContainer id="services-test" class="tab-content mb-0 mt-0 hidden mx-6">
+      <GlobalServicesExample />
+    </SectionContainer>
+    <SectionContainer id="admin-hold" class="tab-content mb-0 mt-0 hidden mx-6">
       <Invoice />
     </SectionContainer>
     <SectionContainer id="pdf-editor" class="tab-content mb-0 mt-0 hidden mx-6">
       <Project />
     </SectionContainer>
-        <SectionContainer id="archives" class="tab-content mb-0 mt-0 hidden mx-6">
+    <SectionContainer id="archives" class="tab-content mb-0 mt-0 hidden mx-6">
       <Invoice />
     </SectionContainer>
-
 
   ) : (
 
@@ -128,6 +120,7 @@ let clientHoldCount = 14;
     <SectionContainer id="delivery" class="tab-content mb-0 mt-0 hidden mx-6">
       <Delivery />
     </SectionContainer>
+    
   )}
  
 
@@ -155,7 +148,6 @@ let clientHoldCount = 14;
   buttons.forEach((button) => {
     button.addEventListener("click", () => {
       const target = button.getAttribute("data-target");
-
       // Actualiza el estado de los botones
       buttons.forEach((btn) =>
         btn.classList.remove(
@@ -196,74 +188,6 @@ let clientHoldCount = 14;
     });
   });
 </script>
-
-
-
-{/* <script>
-  const buttons = document.querySelectorAll(".tab-btn");
-  const contents = document.querySelectorAll(".tab-content");
-
-  // Establece el botón activo por defecto
-  const defaultActive = document.querySelector('[data-target="submittals"]');
-  if (defaultActive) {
-    defaultActive.classList.add(
-      "bg-hub-background",
-      "drop-shadow-md",
-      "text-hub-title",
-      "font-bold",
-      "dark:text-hub-title-dark",
-      "dark:bg-hub-background-dark"
-    );
-    const projectsSection = document.getElementById("submittals");
-    if (projectsSection) {
-      projectsSection.classList.remove("hidden");
-    }
-  }
-
-  buttons.forEach((button) => {
-    button.addEventListener("click", () => {
-      const target = button.getAttribute("data-target");
-
-      // Actualiza el estado de los botones
-      buttons.forEach((btn) =>
-        btn.classList.remove(
-          "bg-hub-background",
-          "drop-shadow-md",
-          "text-hub-title",
-          "font-bold",
-          "dark:text-hub-title-dark",
-          "dark:bg-hub-background-dark"
-        )
-      );
-      button.classList.add(
-        "bg-hub-background",
-        "drop-shadow-md",
-        "text-hub-title",
-        "font-bold",
-        "dark:text-hub-title-dark",
-        "dark:bg-hub-background-dark"
-      );
-
-      // Oculta todas las secciones
-      contents.forEach((content) => content.classList.add("hidden"));
-
-      // Muestra la sección seleccionada
-      if (target) {
-        const targetElement = document.getElementById(target);
-        if (targetElement) {
-          targetElement.classList.remove("hidden");
-        }
-      }
-
-      // Desliza el botón al centro del nav
-      button.scrollIntoView({
-        behavior: "smooth", // Deslizamiento suave
-        block: "nearest", // Mantiene la posición vertical
-        inline: "center", // Centra horizontalmente
-      });
-    });
-  });
-</script> */}
 
 
 
