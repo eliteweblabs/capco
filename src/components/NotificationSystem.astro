@@ -1,0 +1,181 @@
+---
+// Notification System Component
+---
+
+<div id="notification-container" class="fixed top-4 right-4 z-50 space-y-2">
+</div>
+
+<script>
+  import { globalServices } from "../lib/global-services";
+
+  interface Notification {
+    id: string;
+    type: "success" | "error" | "warning" | "info";
+    title: string;
+    message: string;
+    duration?: number;
+    actions?: Array<{ label: string; action: () => void }>;
+  }
+
+  class NotificationManager {
+    private container: HTMLElement;
+    private notifications: Map<string, Notification> = new Map();
+
+    constructor() {
+      this.container = document.getElementById("notification-container")!;
+      this.setupEventListeners();
+    }
+
+    setupEventListeners() {
+      // Listen for global notification events
+      globalServices.on("notification:show", (data) => {
+        this.show(data);
+      });
+
+      globalServices.on("notification:hide", (data) => {
+        this.hide(data.id);
+      });
+    }
+
+    show(notification: Omit<Notification, "id">) {
+      const id = crypto.randomUUID();
+      const fullNotification: Notification = { ...notification, id };
+
+      this.notifications.set(id, fullNotification);
+      this.render(fullNotification);
+
+      // Auto-hide after duration
+      const duration = notification.duration || 5000;
+      if (duration > 0) {
+        setTimeout(() => this.hide(id), duration);
+      }
+
+      return id;
+    }
+
+    hide(id?: string) {
+      if (id) {
+        this.notifications.delete(id);
+        const element = document.getElementById(`notification-${id}`);
+        if (element) {
+          element.classList.add("animate-fade-out");
+          setTimeout(() => element.remove(), 300);
+        }
+      } else {
+        // Hide all notifications
+        this.notifications.clear();
+        this.container.innerHTML = "";
+      }
+    }
+
+    private render(notification: Notification) {
+      const typeStyles = {
+        success:
+          "bg-green-50 border-green-200 text-green-900 dark:bg-green-900/20 dark:border-green-800 dark:text-green-100",
+        error:
+          "bg-red-50 border-red-200 text-red-900 dark:bg-red-900/20 dark:border-red-800 dark:text-red-100",
+        warning:
+          "bg-yellow-50 border-yellow-200 text-yellow-900 dark:bg-yellow-900/20 dark:border-yellow-800 dark:text-yellow-100",
+        info: "bg-blue-50 border-blue-200 text-blue-900 dark:bg-blue-900/20 dark:border-blue-800 dark:text-blue-100",
+      };
+
+      const typeIcons = {
+        success: "bx-check-circle",
+        error: "bx-error-circle",
+        warning: "bx-error",
+        info: "bx-info-circle",
+      };
+
+      const element = document.createElement("div");
+      element.id = `notification-${notification.id}`;
+      element.className = `
+        notification-item max-w-sm w-full bg-white dark:bg-gray-800 shadow-lg rounded-lg pointer-events-auto ring-1 ring-black ring-opacity-5 overflow-hidden
+        transform transition-all duration-300 ease-in-out animate-slide-in
+        ${typeStyles[notification.type]}
+      `;
+
+      element.innerHTML = `
+        <div class="p-4">
+          <div class="flex items-start">
+            <div class="flex-shrink-0">
+              <i class="bx ${typeIcons[notification.type]} text-xl"></i>
+            </div>
+            <div class="ml-3 w-0 flex-1 pt-0.5">
+              <p class="text-sm font-medium">${notification.title}</p>
+              <p class="mt-1 text-sm opacity-90">${notification.message}</p>
+              ${notification.actions ? this.renderActions(notification.actions) : ""}
+            </div>
+            <div class="ml-4 flex-shrink-0 flex">
+              <button 
+                class="inline-flex text-gray-400 hover:text-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                onclick="notificationManager.hide('${notification.id}')"
+              >
+                <i class="bx bx-x text-lg"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+      `;
+
+      this.container.appendChild(element);
+    }
+
+    private renderActions(
+      actions: Array<{ label: string; action: () => void }>
+    ) {
+      return `
+        <div class="mt-3 flex space-x-2">
+          ${actions
+            .map(
+              (action, index) => `
+            <button 
+              class="text-sm bg-white dark:bg-gray-700 px-3 py-1 rounded border border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
+              onclick="notificationActions['${crypto.randomUUID()}']?.()"
+            >
+              ${action.label}
+            </button>
+          `
+            )
+            .join("")}
+        </div>
+      `;
+    }
+  }
+
+  // Global notification manager
+  const notificationManager = new NotificationManager();
+
+  // Make it globally accessible
+  (window as any).notificationManager = notificationManager;
+  (window as any).notificationActions = {};
+</script>
+
+<style>
+  @keyframes slide-in {
+    from {
+      transform: translateX(100%);
+      opacity: 0;
+    }
+    to {
+      transform: translateX(0);
+      opacity: 1;
+    }
+  }
+
+  @keyframes fade-out {
+    from {
+      opacity: 1;
+    }
+    to {
+      opacity: 0;
+    }
+  }
+
+  .animate-slide-in {
+    animation: slide-in 0.3s ease-out;
+  }
+
+  .animate-fade-out {
+    animation: fade-out 0.3s ease-out;
+  }
+</style>

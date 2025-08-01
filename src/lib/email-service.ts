@@ -37,7 +37,7 @@ export class EmailService {
 
   constructor(config?: Partial<EmailConfig>) {
     this.config = {
-      provider: (process.env.EMAIL_PROVIDER as any) || "smtp",
+      provider: (process.env.EMAIL_PROVIDER as any) || "resend",
       apiKey: process.env.EMAIL_API_KEY,
       smtp: {
         host: process.env.SMTP_HOST || "localhost",

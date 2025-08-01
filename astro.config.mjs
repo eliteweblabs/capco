@@ -18,6 +18,10 @@ import { defineConfig } from "astro/config";
 import node from "@astrojs/node";
 import tailwind from "@astrojs/tailwind";
 
+// Load environment variables
+import { loadEnv } from "vite";
+const env = loadEnv(process.env.NODE_ENV || "development", process.cwd(), "");
+
 // https://astro.build/config
 export default defineConfig({
   output: "server",
@@ -46,6 +50,11 @@ export default defineConfig({
       "process.env.NODE_ENV": JSON.stringify(
         process.env.NODE_ENV || "production",
       ),
+      // Ensure environment variables are available in server context
+      "process.env.EMAIL_PROVIDER": JSON.stringify(env.EMAIL_PROVIDER),
+      "process.env.EMAIL_API_KEY": JSON.stringify(env.EMAIL_API_KEY),
+      "process.env.FROM_EMAIL": JSON.stringify(env.FROM_EMAIL),
+      "process.env.FROM_NAME": JSON.stringify(env.FROM_NAME),
     },
   },
 });
