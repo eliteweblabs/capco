@@ -1,0 +1,298 @@
+---
+// Project Filter Component - filters projects by status
+---
+
+<div class="project-filter-container mt-6 hidden" id="project-filter-container">
+  <div class="mb-4">
+    <!-- <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-3">
+      Filter Projects
+    </h3> -->
+
+    <!-- Filter Buttons Container -->
+    <div class="flex flex-wrap gap-2 mb-4" id="status-filter-buttons">
+      <!-- All Projects Button (default active) -->
+      <button
+        data-status="all"
+        class="filter-btn selected px-3 py-2 text-xs font-medium rounded-md border transition-colors
+               bg-blue-500 text-white border-blue-500"
+      >
+        All Projects
+      </button>
+    </div>
+  </div>
+</div>
+
+<script>
+  import {
+    PROJECT_STATUS,
+    PROJECT_STATUS_LABELS,
+    type ProjectStatusCode,
+  } from "../lib/global-services";
+
+  // Type definitions
+  declare global {
+    interface Window {
+      projectFilter: ProjectFilter;
+    }
+  }
+
+  class ProjectFilter {
+    private container: HTMLElement | null;
+    private buttonsContainer: HTMLElement | null;
+    private currentFilter: string;
+
+    constructor() {
+      this.container = document.getElementById("project-filter-container");
+      this.buttonsContainer = document.getElementById("status-filter-buttons");
+      this.currentFilter = "all";
+
+      this.setupFilterButtons();
+      this.setupEventListeners();
+    }
+
+    setupFilterButtons() {
+      if (!this.buttonsContainer) return;
+
+      // Generate filter buttons for each status
+      const statusButtons = Object.entries(PROJECT_STATUS_LABELS)
+        .map(
+          ([statusCode, label]) => `
+          <button 
+            data-status="${statusCode}"
+            data-count="0"
+            class="filter-btn px-3 py-2 text-xs font-medium rounded-md border transition-colors relative
+                   bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 
+                   border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600"
+          >
+            ${label}
+          </button>
+        `
+        )
+        .join("");
+
+      // Insert status buttons after the "All Projects" button
+      this.buttonsContainer.innerHTML = `
+        <button 
+          data-status="all"
+          data-count="0"
+          class="filter-btn selected px-3 py-2 text-xs font-medium rounded-md border transition-colors relative
+                 bg-blue-500 text-white border-blue-500"
+        >
+          All Projects
+        </button>
+        ${statusButtons}
+      `;
+    }
+
+    setupEventListeners() {
+      if (!this.buttonsContainer) return;
+
+      this.buttonsContainer.addEventListener("click", (event: Event) => {
+        const button = (event.target as HTMLElement).closest(
+          ".filter-btn"
+        ) as HTMLButtonElement;
+        if (!button) return;
+
+        const status = button.dataset.status;
+        if (status) {
+          this.setActiveFilter(status);
+          this.filterProjects(status);
+        }
+      });
+    }
+
+    setActiveFilter(status: string) {
+      // Update visual state of buttons
+      const buttons = this.buttonsContainer?.querySelectorAll(".filter-btn");
+
+      buttons?.forEach((btn) => {
+        const htmlBtn = btn as HTMLButtonElement;
+
+        if (htmlBtn.dataset.status === status) {
+          // Selected state
+          htmlBtn.classList.remove(
+            "bg-white",
+            "dark:bg-gray-700",
+            "text-gray-700",
+            "dark:text-gray-300",
+            "border-gray-300",
+            "dark:border-gray-600",
+            "hover:bg-gray-50",
+            "dark:hover:bg-gray-600"
+          );
+          htmlBtn.classList.add(
+            "selected",
+            "bg-blue-500",
+            "text-white",
+            "border-blue-500"
+          );
+        } else {
+          // Unselected state
+          htmlBtn.classList.remove(
+            "selected",
+            "bg-blue-500",
+            "text-white",
+            "border-blue-500"
+          );
+          htmlBtn.classList.add(
+            "bg-white",
+            "dark:bg-gray-700",
+            "text-gray-700",
+            "dark:text-gray-300",
+            "border-gray-300",
+            "dark:border-gray-600",
+            "hover:bg-gray-50",
+            "dark:hover:bg-gray-600"
+          );
+        }
+      });
+
+      this.currentFilter = status;
+    }
+
+    filterProjects(status: string) {
+      const projectsList = document.getElementById("projects-list");
+      if (!projectsList) return;
+
+      const projectItems = projectsList.querySelectorAll(
+        "[data-project-status]"
+      );
+
+      projectItems.forEach((item) => {
+        const htmlItem = item as HTMLElement;
+        const projectStatus = htmlItem.dataset.projectStatus;
+
+        if (status === "all" || projectStatus === status) {
+          htmlItem.style.display = "block";
+        } else {
+          htmlItem.style.display = "none";
+        }
+      });
+
+      // Update visible count
+      this.updateProjectCount();
+    }
+
+    updateProjectCount() {
+      const projectsList = document.getElementById("projects-list");
+      if (!projectsList) return;
+
+      const visibleItems = projectsList.querySelectorAll(
+        '[data-project-status]:not([style*="display: none"])'
+      );
+      const totalItems = projectsList.querySelectorAll("[data-project-status]");
+
+      // Update count bubbles for each status
+      this.updateCountBubbles();
+
+      // Create or update count display
+      let countDisplay = document.getElementById("filter-count");
+      if (!countDisplay) {
+        countDisplay = document.createElement("p");
+        countDisplay.id = "filter-count";
+        countDisplay.className =
+          "text-sm text-gray-600 dark:text-gray-400 mt-2";
+        this.container?.appendChild(countDisplay);
+      }
+
+      const filterText =
+        this.currentFilter === "all"
+          ? "All"
+          : PROJECT_STATUS_LABELS[
+              this.currentFilter as unknown as ProjectStatusCode
+            ] || "Unknown";
+      countDisplay.textContent = `Showing ${visibleItems.length} of ${totalItems.length} projects (${filterText})`;
+    }
+
+    updateCountBubbles() {
+      const projectsList = document.getElementById("projects-list");
+      if (!projectsList || !this.buttonsContainer) return;
+
+      const allProjects = projectsList.querySelectorAll(
+        "[data-project-status]"
+      );
+      const statusCounts: Record<string, number> = {};
+
+      // Count projects by status
+      allProjects.forEach((project) => {
+        const htmlProject = project as HTMLElement;
+        const status = htmlProject.dataset.projectStatus || "10";
+        statusCounts[status] = (statusCounts[status] || 0) + 1;
+      });
+
+      // Update each filter button's data-count attribute
+      const filterButtons =
+        this.buttonsContainer.querySelectorAll(".filter-btn");
+      filterButtons.forEach((button) => {
+        const htmlButton = button as HTMLButtonElement;
+        const status = htmlButton.dataset.status;
+
+        if (status) {
+          let count = 0;
+
+          if (status === "all") {
+            // Count all projects for "All Projects" button
+            count = allProjects.length;
+          } else {
+            // Count projects with specific status
+            count = statusCounts[status] || 0;
+          }
+
+          // Update data-count attribute (CSS will handle showing/hiding)
+          htmlButton.dataset.count = count.toString();
+        }
+      });
+    }
+
+    show() {
+      if (this.container) {
+        this.container.classList.remove("hidden");
+      }
+    }
+
+    hide() {
+      if (this.container) {
+        this.container.classList.add("hidden");
+      }
+    }
+
+    reset() {
+      this.setActiveFilter("all");
+      this.filterProjects("all");
+    }
+  }
+
+  // Global instance
+  const projectFilter = new ProjectFilter();
+
+  // Make it globally accessible
+  window.projectFilter = projectFilter;
+</script>
+
+<style>
+  .filter-btn {
+    transition: all 0.2s ease-in-out;
+  }
+
+  .filter-btn:hover {
+    transform: translateY(-1px);
+  }
+
+  .filter-btn.selected {
+    box-shadow: 0 2px 4px rgba(59, 130, 246, 0.3);
+  }
+
+  /* Use shared data-count bubble styles from global.css with custom colors */
+  .filter-btn {
+    --count-bubble-bg: #6b7280; /* bg-gray-500 for default */
+  }
+
+  .filter-btn.selected {
+    --count-bubble-bg: #60a5fa; /* bg-blue-400 for selected */
+  }
+
+  /* Hover effect */
+  .filter-btn:hover::after {
+    transform: translateX(50%) translateY(-50%) scale(1.1);
+  }
+</style>

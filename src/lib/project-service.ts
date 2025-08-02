@@ -2,30 +2,53 @@
 import { supabase } from "./supabase";
 import { globalServices } from "./global-services";
 
+import type { ProjectStatusCode } from "./global-services";
+
 export interface Project {
-  id: string;
-  name: string;
+  id: number;
+  author_id?: string;
+  author_email?: string;
+  title?: string;
   description?: string;
-  status: "draft" | "in-progress" | "review" | "completed" | "archived";
-  metadata?: Record<string, any>;
-  created_at: string;
-  updated_at: string;
-  created_by?: string;
-  updated_by?: string;
+  address?: string;
+  created?: string;
+  updated_at?: string;
+  sq_ft?: number;
+  new_construction?: boolean;
+  status?: ProjectStatusCode;
+  building?: any; // JSONB
+  project?: any; // JSONB
+  service?: any; // JSONB
+  requested_docs?: any; // JSONB
+  assigned_to_id?: string;
 }
 
 export interface CreateProjectData {
-  name: string;
+  title: string;
   description?: string;
-  status?: Project["status"];
-  metadata?: Record<string, any>;
+  address?: string;
+  sq_ft?: number;
+  new_construction?: boolean;
+  status?: ProjectStatusCode;
+  building?: any;
+  project?: any;
+  service?: any;
+  requested_docs?: any;
+  assigned_to_id?: string;
 }
 
 export interface UpdateProjectData {
-  name?: string;
+  title?: string;
   description?: string;
-  status?: Project["status"];
-  metadata?: Record<string, any>;
+  address?: string;
+  sq_ft?: number;
+  new_construction?: boolean;
+  status?: ProjectStatusCode;
+  building?: any;
+  project?: any;
+  service?: any;
+  requested_docs?: any;
+  assigned_to_id?: string;
 }
 
 export class ProjectService {
@@ -37,9 +60,8 @@ export class ProjectService {
     const user = await globalServices.getCurrentUser();
     const projectData = {
       ...data,
-      status: data.status || "draft",
-      created_by: user?.id,
-      updated_by: user?.id,
+      status: data.status || 10, // default to SPECS_RECEIVED
+      author_id: user?.id,
     };
 
     const { data: project, error } = await supabase
@@ -56,6 +78,29 @@ export class ProjectService {
     return project;
   }
 
+  async getUserProjects(): Promise<Project[]> {
+    if (!supabase) {
+      throw new Error("Database not configured");
+    }
+
+    const user = await globalServices.getCurrentUser();
+    if (!user) {
+      throw new Error("User not authenticated");
+    }
+
+    const { data: projects, error } = await supabase
+      .from("projects")
+      .select("*")
+      .eq("author_id", user.id)
+      .order("created", { ascending: false });
+
+    if (error) {
+      throw new Error(`Failed to fetch user projects: ${error.message}`);
+    }
+
+    return projects || [];
+  }
+
   async updateProject(id: string, data: UpdateProjectData): Promise<Project> {
     if (!supabase) {
       throw new Error("Database not configured");
@@ -64,8 +109,6 @@ export class ProjectService {
     const user = await globalServices.getCurrentUser();
     const updateData = {
       ...data,
-      updated_at: new Date().toISOString(),
-      updated_by: user?.id,
     };
 
     const { data: project, error } = await supabase

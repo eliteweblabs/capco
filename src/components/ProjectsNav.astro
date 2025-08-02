@@ -9,7 +9,7 @@ import GlobalServicesExample from "./GlobalServicesExample.astro";
 import { getI18N } from "@/i18n";
 
 const { role } = Astro.props;
-let activeTab = role === "Admin" ? "create" : "submittals";
+let activeTab = role === "Admin" ? "dashboard" : "submittals";
 // const { activeTab } = Astro.props;
 
 //Para cambiar idioma de textos
@@ -29,8 +29,8 @@ let clientHoldCount = 14;
     >
 
     {role === "Admin" ? (
-      <NavButton class="tab-btn" aria-label="btn-create" data-target="create" data-default="true"
-        >Create</NavButton
+      <NavButton class="tab-btn relative" aria-label="btn-dashboard" data-target="dashboard" data-default="true"
+        >Dashboard / New</NavButton
       >
 
       <NavButton
@@ -90,9 +90,11 @@ let clientHoldCount = 14;
 
   {role === "Admin" ? (
 
-    <SectionContainer id="create" class="tab-content mb-0 mt-0 mx-6">
+    <SectionContainer id="dashboard" class="tab-content mb-0 mt-0 mx-6">
       <ProjectsNew />
     </SectionContainer>
+
+    
     <SectionContainer id="client-hold" class="tab-content mb-0 mt-0 hidden mx-6">
       <Invoice />
     </SectionContainer>
@@ -139,7 +141,7 @@ let clientHoldCount = 14;
       "dark:text-hub-title-dark",
       "dark:bg-hub-background-dark"
     );
-    const projectsSection = document.getElementById("create");
+    const projectsSection = document.getElementById("dashboard");
     if (projectsSection) {
       projectsSection.classList.remove("hidden");
     }
@@ -193,26 +195,14 @@ let clientHoldCount = 14;
 
 
 <style>
-  /* Notification bubble pseudo-elements */
-  .tab-btn[data-count]:not([data-count=""]):not([data-count="0"])::after {
-    content: attr(data-count);
-    position: absolute;
-    top: 0;
-    right: 8px; /* equivalent to right-2 */
-    transform: translateX(50%) translateY(-50%);
-    background-color: #0ea5e9; /* bg-sky-500 */
-    color: white;
-    font-size: 0.75rem; /* text-xs */
-    font-weight: 600; /* font-semibold */
-    padding: 2px 8px; /* px-2 py-0.5 */
-    border-radius: 9999px; /* rounded-full */
-    box-shadow:
-      0 4px 6px -1px rgb(0 0 0 / 0.1),
-      0 2px 4px -2px rgb(0 0 0 / 0.1); /* shadow-md */
-    z-index: 10;
-    line-height: 1;
-    min-width: 20px;
-    text-align: center;
+  /* Use shared data-count bubble styles from global.css */
+  .tab-btn {
+    --count-bubble-bg: #0ea5e9; /* bg-sky-500 */
+  }
+
+  /* Hover effect for consistency */
+  .tab-btn:hover::after {
+    transform: translateX(50%) translateY(-50%) scale(1.1);
   }
 </style>
 

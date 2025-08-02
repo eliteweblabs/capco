@@ -1,5 +1,7 @@
 ---
 // Example component showing how to use global services
+import { formatTimeSinceUpdate } from "../lib/global-services";
+import ProjectFilter from "./ProjectFilter.astro";
 ---
 
 <div class="p-6 bg-white dark:bg-gray-800 rounded-lg shadow">
@@ -44,6 +46,19 @@
       </div>
     </div>
 
+    <!-- Project Management -->
+    <div class="border-b pb-4">
+      <h4 class="font-medium mb-2">Project Management</h4>
+      <div class="flex gap-2 flex-wrap mb-2">
+        <button
+          id="get-user-projects-btn"
+          class="px-3 py-2 bg-indigo-500 text-white rounded hover:bg-indigo-600"
+        >
+          Get My Projects
+        </button>
+      </div>
+    </div>
+
     <!-- Project Status Actions -->
     <div class="border-b pb-4">
       <h4 class="font-medium mb-2">Project Status Functions</h4>
@@ -64,25 +79,49 @@
       </div>
       <div class="flex gap-2 flex-wrap">
         <button
-          id="update-to-progress"
-          class="px-3 py-2 bg-yellow-500 text-white rounded hover:bg-yellow-600 disabled:opacity-50 disabled:cursor-not-allowed"
+          class="status-btn px-3 py-2 bg-yellow-500 text-white rounded hover:bg-yellow-600 disabled:opacity-50 disabled:cursor-not-allowed"
+          data-new-status="20"
+          data-label="Generate Proposal"
+          data-action="proposal_generation"
           disabled
         >
-          Set In Progress
+          Generate Proposal
         </button>
         <button
-          id="update-to-completed"
-          class="px-3 py-2 bg-green-500 text-white rounded hover:bg-green-600 disabled:opacity-50 disabled:cursor-not-allowed"
+          class="status-btn px-3 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
+          data-new-status="30"
+          data-label="Ship Proposal"
+          data-action="proposal_shipped"
           disabled
         >
-          Mark Completed
+          Ship Proposal
         </button>
         <button
-          id="update-metadata"
-          class="px-3 py-2 bg-indigo-500 text-white rounded hover:bg-indigo-600 disabled:opacity-50 disabled:cursor-not-allowed"
+          class="status-btn px-3 py-2 bg-purple-500 text-white rounded hover:bg-purple-600 disabled:opacity-50 disabled:cursor-not-allowed"
+          data-new-status="50"
+          data-label="Proposal Approved"
+          data-action="proposal_approved"
           disabled
         >
-          Update Metadata
+          Proposal Approved
+        </button>
+        <button
+          class="status-btn px-3 py-2 bg-orange-500 text-white rounded hover:bg-orange-600 disabled:opacity-50 disabled:cursor-not-allowed"
+          data-new-status="60"
+          data-label="Generate Deposit Invoice"
+          data-action="deposit_invoice_generation"
+          disabled
+        >
+          Generate Deposit Invoice
+        </button>
+        <button
+          class="status-btn px-3 py-2 bg-green-500 text-white rounded hover:bg-green-600 disabled:opacity-50 disabled:cursor-not-allowed"
+          data-new-status="220"
+          data-label="Mark Complete"
+          data-action="project_complete"
+          disabled
+        >
+          Mark Complete
         </button>
       </div>
     </div>
@@ -158,16 +197,21 @@
 <script>
   import {
     globalServices,
+    PROJECT_STATUS,
+    PROJECT_STATUS_LABELS,
     sendEmail,
     updateProjectStatus,
     showNotification,
     uploadFiles,
     createTestProject,
     useGlobalEvents,
+    formatTimeSinceUpdate,
+    type ProjectStatusCode,
   } from "../lib/global-services";
 
-  // Current project ID - will be set when creating or selecting a project
+  // Current project ID and status - will be set when creating or selecting a project
   let currentProjectId: string | null = null;
+  let currentProjectStatus: number | null = null;
 
   // Set up event logging
   const eventLog = document.getElementById("event-log")!;
@@ -279,27 +323,28 @@
     });
 
   // Helper function to enable/disable project buttons
-  function updateProjectButtons(projectId: string | null) {
-    currentProjectId = projectId;
+  function updateProjectButtons(projectId: string | null = currentProjectId) {
     const projectIdSpan = document.getElementById("current-project-id");
-    const buttons = [
-      "update-to-progress",
-      "update-to-completed",
-      "update-metadata",
-    ];
+    const statusButtons = document.querySelectorAll(
+      ".status-btn"
+    ) as NodeListOf<HTMLButtonElement>;
 
     if (projectId && projectIdSpan) {
       projectIdSpan.textContent = projectId;
-      buttons.forEach((buttonId) => {
-        const button = document.getElementById(buttonId) as HTMLButtonElement;
-        if (button) button.disabled = false;
-      });
+      statusButtons.forEach((btn) => (btn.disabled = false));
     } else if (projectIdSpan) {
       projectIdSpan.textContent = "None";
-      buttons.forEach((buttonId) => {
-        const button = document.getElementById(buttonId) as HTMLButtonElement;
-        if (button) button.disabled = true;
-      });
+      statusButtons.forEach((btn) => (btn.disabled = true));
+    }
+
+    // Update current status display
+    const statusSpan = document.getElementById("current-project-status");
+    if (statusSpan && currentProjectStatus !== null) {
+      statusSpan.textContent = globalServices.getStatusLabel(
+        currentProjectStatus as any
+      );
+    } else if (statusSpan) {
+      statusSpan.textContent = "-";
     }
   }
 
@@ -309,7 +354,9 @@
     ?.addEventListener("click", async () => {
       try {
         const project = await createTestProject();
-        updateProjectButtons(project.id);
+        currentProjectId = project.id.toString();
+        currentProjectStatus = project.status || PROJECT_STATUS.SPECS_RECEIVED;
+        updateProjectButtons();
         logEvent("project:created", { projectId: project.id });
       } catch (error) {
         console.error("Failed to create test project:", error);
@@ -317,84 +364,224 @@
     });
 
   // Project status functions
-  document
-    .getElementById("update-to-progress")
-    ?.addEventListener("click", async () => {
-      if (!currentProjectId) {
-        showNotification({
-          type: "warning",
-          title: "No Project Selected",
-          message: "Please create a test project first.",
-          duration: 3000,
-        });
-        return;
-      }
+  // Unified status change handler
+  async function handleStatusChange(
+    newStatus: number,
+    action: string,
+    label: string
+  ) {
+    if (!currentProjectId) {
+      showNotification({
+        type: "warning",
+        title: "No Project Selected",
+        message: "Please create a test project first.",
+        duration: 3000,
+      });
+      return;
+    }
 
-      try {
-        await updateProjectStatus({
-          projectId: currentProjectId,
-          status: "in-progress",
-          metadata: { startedAt: new Date().toISOString() },
-        });
-      } catch (error) {
-        console.error("Failed to update project status:", error);
-      }
-    });
+    try {
+      // Base update data
+      const updateData: any = {
+        projectId: currentProjectId,
+        status: newStatus,
+        project: {
+          updatedAt: new Date().toISOString(),
+          action: action,
+          previousStatus: currentProjectStatus,
+        },
+      };
 
-  document
-    .getElementById("update-to-completed")
-    ?.addEventListener("click", async () => {
-      if (!currentProjectId) {
-        showNotification({
-          type: "warning",
-          title: "No Project Selected",
-          message: "Please create a test project first.",
-          duration: 3000,
-        });
-        return;
-      }
+      // Add action-specific data and trigger related processes
+      switch (action) {
+        case "proposal_generation":
+          updateData.project = {
+            ...updateData.project,
+            startedAt: new Date().toISOString(),
+          };
+          // Trigger proposal generation process
+          logEvent(
+            `Starting proposal generation for project ${currentProjectId}`,
+            { action, newStatus }
+          );
+          break;
 
-      try {
-        await updateProjectStatus({
-          projectId: currentProjectId,
-          status: "completed",
-          metadata: {
+        case "proposal_shipped":
+          updateData.project = {
+            ...updateData.project,
+            shippedAt: new Date().toISOString(),
+            shippedBy: "admin@example.com",
+          };
+          // Send email to client about proposal
+          await sendClientNotificationEmail(
+            currentProjectId,
+            "proposal_shipped"
+          );
+          logEvent(`Proposal shipped for project ${currentProjectId}`, {
+            action,
+            newStatus,
+          });
+          break;
+
+        case "proposal_approved":
+          updateData.project = {
+            ...updateData.project,
+            approvedAt: new Date().toISOString(),
+          };
+          // Send confirmation email
+          await sendClientNotificationEmail(
+            currentProjectId,
+            "proposal_approved"
+          );
+          logEvent(`Proposal approved for project ${currentProjectId}`, {
+            action,
+            newStatus,
+          });
+          break;
+
+        case "deposit_invoice_generation":
+          updateData.project = {
+            ...updateData.project,
+            invoiceGenerationStarted: new Date().toISOString(),
+          };
+          // Generate deposit invoice
+          await generateInvoice(currentProjectId, "deposit");
+          logEvent(
+            `Generating deposit invoice for project ${currentProjectId}`,
+            { action, newStatus }
+          );
+          break;
+
+        case "project_complete":
+          updateData.project = {
+            ...updateData.project,
             completedAt: new Date().toISOString(),
             finalNotes: "Project completed successfully",
-          },
-        });
-      } catch (error) {
-        console.error("Failed to update project status:", error);
-      }
-    });
+          };
+          // Send completion emails to both client and admin
+          await sendClientNotificationEmail(
+            currentProjectId,
+            "project_complete"
+          );
+          await sendAdminNotificationEmail(
+            currentProjectId,
+            "project_complete"
+          );
+          logEvent(`Project ${currentProjectId} marked as complete`, {
+            action,
+            newStatus,
+          });
+          break;
 
-  document
-    .getElementById("update-metadata")
-    ?.addEventListener("click", async () => {
-      if (!currentProjectId) {
-        showNotification({
-          type: "warning",
-          title: "No Project Selected",
-          message: "Please create a test project first.",
-          duration: 3000,
-        });
-        return;
+        default:
+          logEvent(`Status updated for project ${currentProjectId}`, {
+            action,
+            newStatus,
+          });
       }
 
-      try {
-        await globalServices.updateProjectStatus({
-          projectId: currentProjectId,
-          status: "review",
-          metadata: {
-            reviewedBy: "admin@example.com",
-            reviewNotes: "Ready for final review",
-            priority: "high",
-          },
+      // Update the project status
+      await updateProjectStatus(updateData);
+
+      // Update current status for UI
+      currentProjectStatus = newStatus;
+      updateProjectButtons();
+
+      showNotification({
+        type: "success",
+        title: "Status Updated",
+        message: `${label} completed successfully`,
+        duration: 3000,
+      });
+    } catch (error: unknown) {
+      console.error(`Failed to ${action}:`, error);
+      showNotification({
+        type: "error",
+        title: "Status Update Failed",
+        message:
+          (error as Error)?.message || `Failed to ${label.toLowerCase()}`,
+        duration: 5000,
+      });
+    }
+  }
+
+  // Helper functions for different actions
+  async function sendClientNotificationEmail(
+    projectId: string,
+    eventType: string
+  ) {
+    try {
+      const emailTypes: Record<string, string> = {
+        proposal_shipped: "notification",
+        proposal_approved: "notification",
+        project_complete: "notification",
+      };
+
+      if (emailTypes[eventType]) {
+        await sendEmail({
+          type: emailTypes[eventType] as any,
+          to: "client@example.com", // Replace with actual client email
+          subject: `Project ${projectId} Update: ${eventType.replace("_", " ")}`,
+          variables: { projectId, eventType },
         });
-      } catch (error) {
-        console.error("Failed to update project metadata:", error);
+        logEvent(`Client notification email sent`, { projectId, eventType });
       }
-    });
+    } catch (error: unknown) {
+      console.error("Failed to send client email:", error);
+    }
+  }
+
+  async function sendAdminNotificationEmail(
+    projectId: string,
+    eventType: string
+  ) {
+    try {
+      await sendEmail({
+        type: "notification",
+        to: "admin@example.com",
+        subject: `Admin Notification: Project ${projectId} - ${eventType.replace("_", " ")}`,
+        variables: { projectId, eventType, isAdminNotification: "true" },
+      });
+      logEvent(`Admin notification email sent`, { projectId, eventType });
+    } catch (error) {
+      console.error("Failed to send admin email:", error);
+    }
+  }
+
+  async function generateInvoice(projectId: string, invoiceType: string) {
+    try {
+      // Mock invoice generation - replace with actual invoice API
+      const invoiceData = {
+        projectId,
+        type: invoiceType,
+        generatedAt: new Date().toISOString(),
+        amount: invoiceType === "deposit" ? 1500 : 3500,
+      };
+
+      logEvent(`${invoiceType} invoice generated`, invoiceData);
+
+      showNotification({
+        type: "info",
+        title: "Invoice Generated",
+        message: `${invoiceType} invoice has been generated for project ${projectId}`,
+        duration: 4000,
+      });
+    } catch (error: unknown) {
+      console.error("Failed to generate invoice:", error);
+    }
+  }
+
+  // Add event listeners to all status buttons
+  document.addEventListener("click", (event) => {
+    const target = event.target as HTMLElement;
+    if (target.classList.contains("status-btn")) {
+      const newStatus = parseInt(target.dataset.newStatus || "0");
+      const action = target.dataset.action || "";
+      const label = target.dataset.label || "";
+
+      handleStatusChange(newStatus, action, label);
+    }
+  });
 
   // Notification functions
   document.getElementById("show-success")?.addEventListener("click", () => {
@@ -445,31 +632,175 @@
   });
 
   // File upload functions
-  document
-    .getElementById("upload-files")
-    ?.addEventListener("click", async () => {
-      const fileInput = document.getElementById(
-        "file-upload"
-      ) as HTMLInputElement;
-      const files = fileInput.files;
+  // document
+  //   .getElementById("upload-files")
+  //   ?.addEventListener("click", async () => {
+  //     const fileInput = document.getElementById(
+  //       "file-upload"
+  //     ) as HTMLInputElement;
+  //     const files = fileInput.files;
 
-      if (!files || files.length === 0) {
+  //     if (!files || files.length === 0) {
+  //       showNotification({
+  //         type: "warning",
+  //         title: "No Files Selected",
+  //         message: "Please select files to upload.",
+  //         duration: 3000,
+  //       });
+  //       return;
+  //     }
+
+  //     try {
+  //       await uploadFiles(files, currentProjectId || undefined);
+  //       fileInput.value = ""; // Clear the input
+  //     } catch (error) {
+  //       console.error("Failed to upload files:", error);
+  //     }
+  //   });
+
+  // Get user projects function
+  document.addEventListener("DOMContentLoaded", async () => {
+    try {
+      const projects = await globalServices.getUserProjects();
+      displayUserProjects(projects);
+      logEvent("projects:fetched", { count: projects.length });
+
+      showNotification({
+        type: "success",
+        title: "Projects Loaded",
+        message: `Found ${projects.length} project(s)`,
+        duration: 3000,
+      });
+    } catch (error: unknown) {
+      console.error("Failed to fetch user projects:", error);
+      showNotification({
+        type: "error",
+        title: "Failed to Load Projects",
+        message: (error as Error)?.message || "Could not fetch your projects",
+        duration: 0, // Errors stay until manually dismissed
+      });
+    }
+  });
+
+  // Get user projects function
+  document
+    .getElementById("get-user-projects-btn")
+    ?.addEventListener("click", async () => {
+      try {
+        const projects = await globalServices.getUserProjects();
+        displayUserProjects(projects);
+        logEvent("projects:fetched", { count: projects.length });
+
         showNotification({
-          type: "warning",
-          title: "No Files Selected",
-          message: "Please select files to upload.",
+          type: "success",
+          title: "Projects Loaded",
+          message: `Found ${projects.length} project(s)`,
           duration: 3000,
         });
-        return;
-      }
-
-      try {
-        await uploadFiles(files, currentProjectId || undefined);
-        fileInput.value = ""; // Clear the input
-      } catch (error) {
-        console.error("Failed to upload files:", error);
+      } catch (error: unknown) {
+        console.error("Failed to fetch user projects:", error);
+        showNotification({
+          type: "error",
+          title: "Failed to Load Projects",
+          message: (error as Error)?.message || "Could not fetch your projects",
+          duration: 0, // Errors stay until manually dismissed
+        });
       }
     });
+
+  // Function to display user projects in the projects list
+  function displayUserProjects(projects: any[]) {
+    const projectsList = document.getElementById("projects-list");
+    if (!projectsList) return;
+
+    if (projects.length === 0) {
+      projectsList.innerHTML = `
+        <div class="p-4 text-center text-gray-500 dark:text-gray-400">
+          <p>No projects found</p>
+          <p class="text-sm mt-1">Create a test project to see it listed here</p>
+        </div>
+      `;
+      return;
+    }
+
+    projectsList.innerHTML = projects
+      .map((project) => {
+        // Calculate time since last update
+        const timeSinceUpdate = formatTimeSinceUpdate(
+          project.updated_at || project.created
+        );
+
+        return `
+          <div class="p-4 mb-4 bg-gray-800 dark:bg-gray-700 rounded-xl border border-gray-700" data-project-status="${project.status || 10}">
+            <div class="flex justify-between items-start">
+              <div class="flex-1">
+                <h3 class="text-lg font-semibold text-white mb-2">
+                  ${project.address || project.title || `Project ${project.id}`}
+                </h3>
+                <p class="text-gray-400 text-sm mb-3">
+                  ${project.description || "Project created from PDF upload"}
+                </p>
+                <div class="flex items-center gap-3 flex-wrap">
+                  <!-- Time since last update with clock icon -->
+                  <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-blue-600 text-white">
+                    <i class="bx bx-time-five mr-1"></i>
+                    ${timeSinceUpdate}
+                  </span>
+                  <!-- Status badge -->
+                  <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-cyan-600 text-white">
+                    ${PROJECT_STATUS_LABELS[(project.status || 10) as unknown as ProjectStatusCode] || "Unknown"}
+                  </span>
+                  <!-- Email/contact if available -->
+                  ${
+                    project.author_email &&
+                    project.author_email !== "Unknown" &&
+                    project.author_email !== "Unassigned"
+                      ? `<span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-blue-600 text-white">
+                    ${project.author_email}
+                  </span>`
+                      : project.author_email === "Unassigned"
+                        ? `<span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-gray-500 text-white">
+                    Unassigned
+                  </span>`
+                        : ""
+                  }
+                </div>
+              </div>
+              <button 
+                class="ml-4 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors"
+                onclick="loadProject('${project.id}', ${project.status || 10})"
+              >
+                Load
+              </button>
+            </div>
+          </div>
+        `;
+      })
+      .join("");
+
+    // Show the project filter after projects are loaded
+    if ((window as any).projectFilter) {
+      (window as any).projectFilter.show();
+      (window as any).projectFilter.updateCountBubbles();
+      (window as any).projectFilter.updateProjectCount();
+    }
+  }
+
+  // Function to load a project from the list
+  (window as any).loadProject = function (projectId: string, status: number) {
+    currentProjectId = projectId;
+    currentProjectStatus = status;
+    updateProjectButtons();
+
+    showNotification({
+      type: "info",
+      title: "Project Loaded",
+      message: `Project ${projectId} is now active`,
+      duration: 3000,
+    });
+
+    logEvent("project:loaded", { projectId, status });
+  };
 
   // Clear log function
   document.getElementById("clear-log")?.addEventListener("click", () => {

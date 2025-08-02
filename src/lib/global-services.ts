@@ -2,11 +2,122 @@
 import { emailService } from "./email-service";
 import { supabase } from "./supabase";
 
+// Project Status Codes
+export const PROJECT_STATUS = {
+  SPECS_RECEIVED: 10,
+  GENERATING_PROPOSAL: 20,
+  PROPOSAL_SHIPPED: 30,
+  PROPOSAL_VIEWED: 40,
+  PROPOSAL_SIGNED_OFF: 50,
+  GENERATING_DEPOSIT_INVOICE: 60,
+  DEPOSIT_INVOICE_SHIPPED: 70,
+  DEPOSIT_INVOICE_VIEWED: 80,
+  DEPOSIT_INVOICE_PAID: 90,
+  GENERATING_SUBMITTALS: 100,
+  SUBMITTALS_SHIPPED: 110,
+  SUBMITTALS_VIEWED: 120,
+  SUBMITTALS_SIGNED_OFF: 130,
+  GENERATING_FINAL_INVOICE: 140,
+  FINAL_INVOICE_SHIPPED: 150,
+  FINAL_INVOICE_VIEWED: 160,
+  FINAL_INVOICE_PAID: 170,
+  GENERATING_FINAL_DELIVERABLES: 180,
+  STAMPING_FINAL_DELIVERABLES: 190,
+  FINAL_DELIVERABLES_SHIPPED: 200,
+  FINAL_DELIVERABLES_VIEWED: 210,
+  PROJECT_COMPLETE: 220,
+} as const;
+
+export type ProjectStatusCode =
+  (typeof PROJECT_STATUS)[keyof typeof PROJECT_STATUS];
+
+// Status descriptions for UI display
+export const PROJECT_STATUS_LABELS: Record<ProjectStatusCode, string> = {
+  [PROJECT_STATUS.SPECS_RECEIVED]: "Specs Received",
+  [PROJECT_STATUS.GENERATING_PROPOSAL]: "Generating Proposal",
+  [PROJECT_STATUS.PROPOSAL_SHIPPED]: "Proposal Shipped",
+  [PROJECT_STATUS.PROPOSAL_VIEWED]: "Proposal Viewed",
+  [PROJECT_STATUS.PROPOSAL_SIGNED_OFF]: "Proposal Signed Off",
+  [PROJECT_STATUS.GENERATING_DEPOSIT_INVOICE]: "Generating Deposit Invoice",
+  [PROJECT_STATUS.DEPOSIT_INVOICE_SHIPPED]: "Deposit Invoice Shipped",
+  [PROJECT_STATUS.DEPOSIT_INVOICE_VIEWED]: "Deposit Invoice Viewed",
+  [PROJECT_STATUS.DEPOSIT_INVOICE_PAID]: "Deposit Invoice Paid",
+  [PROJECT_STATUS.GENERATING_SUBMITTALS]: "Generating Submittals",
+  [PROJECT_STATUS.SUBMITTALS_SHIPPED]: "Submittals Shipped",
+  [PROJECT_STATUS.SUBMITTALS_VIEWED]: "Submittals Viewed",
+  [PROJECT_STATUS.SUBMITTALS_SIGNED_OFF]: "Submittals Signed Off",
+  [PROJECT_STATUS.GENERATING_FINAL_INVOICE]: "Generating Final Invoice",
+  [PROJECT_STATUS.FINAL_INVOICE_SHIPPED]: "Final Invoice Shipped",
+  [PROJECT_STATUS.FINAL_INVOICE_VIEWED]: "Final Invoice Viewed",
+  [PROJECT_STATUS.FINAL_INVOICE_PAID]: "Final Invoice Paid",
+  [PROJECT_STATUS.GENERATING_FINAL_DELIVERABLES]:
+    "Generating Final Deliverables",
+  [PROJECT_STATUS.STAMPING_FINAL_DELIVERABLES]: "Stamping Final Deliverables",
+  [PROJECT_STATUS.FINAL_DELIVERABLES_SHIPPED]: "Final Deliverables Shipped",
+  [PROJECT_STATUS.FINAL_DELIVERABLES_VIEWED]: "Final Deliverables Viewed",
+  [PROJECT_STATUS.PROJECT_COMPLETE]: "Project Complete",
+};
+
+// Timing information for status stages
+export const PROJECT_STATUS_TIMING: Record<
+  ProjectStatusCode,
+  { default?: string; expedited?: string }
+> = {
+  [PROJECT_STATUS.SPECS_RECEIVED]: {},
+  [PROJECT_STATUS.GENERATING_PROPOSAL]: {
+    default: "24hrs",
+    expedited: "12hrs",
+  },
+  [PROJECT_STATUS.PROPOSAL_SHIPPED]: {},
+  [PROJECT_STATUS.PROPOSAL_VIEWED]: {},
+  [PROJECT_STATUS.PROPOSAL_SIGNED_OFF]: {},
+  [PROJECT_STATUS.GENERATING_DEPOSIT_INVOICE]: {
+    default: "2hrs",
+    expedited: "1hrs",
+  },
+  [PROJECT_STATUS.DEPOSIT_INVOICE_SHIPPED]: {},
+  [PROJECT_STATUS.DEPOSIT_INVOICE_VIEWED]: {},
+  [PROJECT_STATUS.DEPOSIT_INVOICE_PAID]: {},
+  [PROJECT_STATUS.GENERATING_SUBMITTALS]: {
+    default: "24hrs",
+    expedited: "12hrs",
+  },
+  [PROJECT_STATUS.SUBMITTALS_SHIPPED]: {},
+  [PROJECT_STATUS.SUBMITTALS_VIEWED]: {},
+  [PROJECT_STATUS.SUBMITTALS_SIGNED_OFF]: {},
+  [PROJECT_STATUS.GENERATING_FINAL_INVOICE]: {
+    default: "2hrs",
+    expedited: "1hrs",
+  },
+  [PROJECT_STATUS.FINAL_INVOICE_SHIPPED]: {},
+  [PROJECT_STATUS.FINAL_INVOICE_VIEWED]: {},
+  [PROJECT_STATUS.FINAL_INVOICE_PAID]: {},
+  [PROJECT_STATUS.GENERATING_FINAL_DELIVERABLES]: {
+    default: "24hrs",
+    expedited: "12hrs",
+  },
+  [PROJECT_STATUS.STAMPING_FINAL_DELIVERABLES]: {
+    default: "12hrs",
+    expedited: "6hrs",
+  },
+  [PROJECT_STATUS.FINAL_DELIVERABLES_SHIPPED]: {},
+  [PROJECT_STATUS.FINAL_DELIVERABLES_VIEWED]: {},
+  [PROJECT_STATUS.PROJECT_COMPLETE]: {},
+};
+
 export interface ProjectStatusUpdate {
   projectId: string;
-  status: "draft" | "in-progress" | "review" | "completed" | "archived";
-  metadata?: Record<string, any>;
-  updatedBy?: string;
+  status?: ProjectStatusCode;
+  title?: string;
+  description?: string;
+  address?: string;
+  sq_ft?: number;
+  new_construction?: boolean;
+  building?: any; // JSONB
+  project?: any; // JSONB
+  service?: any; // JSONB
+  requested_docs?: any; // JSONB
+  assigned_to_id?: string;
 }
 
 export interface NotificationOptions {
@@ -39,6 +150,26 @@ export class GlobalServices {
       GlobalServices.instance = new GlobalServices();
     }
     return GlobalServices.instance;
+  }
+
+  // Utility functions for status management
+  getStatusLabel(status: ProjectStatusCode): string {
+    return PROJECT_STATUS_LABELS[status] || `Status ${status}`;
+  }
+
+  getStatusTiming(status: ProjectStatusCode): {
+    default?: string;
+    expedited?: string;
+  } {
+    return PROJECT_STATUS_TIMING[status] || {};
+  }
+
+  getNextStatus(currentStatus: ProjectStatusCode): ProjectStatusCode | null {
+    const statusSequence = Object.values(PROJECT_STATUS).sort((a, b) => a - b);
+    const currentIndex = statusSequence.indexOf(currentStatus);
+    return currentIndex >= 0 && currentIndex < statusSequence.length - 1
+      ? statusSequence[currentIndex + 1]
+      : null;
   }
 
   // Event Management
@@ -104,11 +235,12 @@ export class GlobalServices {
 
       return result;
     } catch (error) {
-      this.emit("email:error", { ...options, error: error.message });
+      this.emit("email:error", { ...options, error: (error as Error).message });
       this.showNotification({
         type: "error",
         title: "Email Failed",
-        message: error.message || "Failed to send email",
+        message: (error as Error).message || "Failed to send email",
+        duration: 0, // Errors stay until manually dismissed
       });
       throw error;
     }
@@ -128,17 +260,20 @@ export class GlobalServices {
       this.showNotification({
         type: "success",
         title: "Project Updated",
-        message:
-          response.message || `Project status changed to ${update.status}`,
+        message: response.message || "Project updated successfully",
       });
 
       return response;
     } catch (error) {
-      this.emit("project:status-error", { ...update, error: error.message });
+      this.emit("project:status-error", {
+        ...update,
+        error: (error as Error).message,
+      });
       this.showNotification({
         type: "error",
         title: "Update Failed",
-        message: error.message || "Failed to update project status",
+        message: (error as Error).message || "Failed to update project status",
+        duration: 0, // Errors stay until manually dismissed
       });
       throw error;
     }
@@ -166,7 +301,8 @@ export class GlobalServices {
       this.showNotification({
         type: "error",
         title: "Failed to Create Project",
-        message: error.message || "Failed to create test project",
+        message: (error as Error).message || "Failed to create test project",
+        duration: 0, // Errors stay until manually dismissed
       });
       throw error;
     }
@@ -187,7 +323,33 @@ export class GlobalServices {
       if (error) throw error;
       return data;
     } catch (error) {
-      this.emit("project:status-error", { projectId, error: error.message });
+      this.emit("project:status-error", {
+        projectId,
+        error: (error as Error).message,
+      });
+      throw error;
+    }
+  }
+
+  // Project Management Functions
+  async getUserProjects() {
+    try {
+      const response = await this.makeApiCall("/api/get-user-projects", {
+        method: "GET",
+      });
+
+      // Extract the projects array from the response
+      const projects = response.projects || [];
+      this.emit("projects:fetched", { projects });
+      return projects;
+    } catch (error) {
+      this.emit("projects:fetch-error", { error: (error as Error).message });
+      this.showNotification({
+        type: "error",
+        title: "Failed to Load Projects",
+        message: (error as Error).message,
+        duration: 0, // Errors stay until manually dismissed
+      });
       throw error;
     }
   }
@@ -232,13 +394,14 @@ export class GlobalServices {
     } catch (error) {
       this.emit("files:error", {
         files: Array.from(files),
-        error: error.message,
+        error: (error as Error).message,
         projectId,
       });
       this.showNotification({
         type: "error",
         title: "Upload Failed",
-        message: error.message || "Failed to upload files",
+        message: (error as Error).message || "Failed to upload files",
+        duration: 0, // Errors stay until manually dismissed
       });
       throw error;
     }
@@ -282,10 +445,10 @@ export class GlobalServices {
     } catch (error) {
       console.error("API call error:", {
         endpoint,
-        error: error.message,
+        error: (error as Error).message,
         options,
       });
-      this.emit("api:error", { endpoint, error: error.message });
+      this.emit("api:error", { endpoint, error: (error as Error).message });
       throw error;
     }
   }
@@ -349,3 +512,59 @@ export type GlobalEventType =
   | "notification:hide"
   | "auth:signout"
   | "api:error";
+
+// Utility function to format time difference since last update
+export function formatTimeSinceUpdate(
+  updatedAt: string | null | undefined,
+): string {
+  if (!updatedAt) return "Unknown";
+
+  const now = new Date();
+  const updated = new Date(updatedAt);
+  const diffMs = now.getTime() - updated.getTime();
+
+  // Convert to different time units
+  const diffMinutes = Math.floor(diffMs / (1000 * 60));
+  const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+  const diffWeeks = Math.floor(diffMs / (1000 * 60 * 60 * 24 * 7));
+  const diffMonths = Math.floor(diffMs / (1000 * 60 * 60 * 24 * 30));
+  const diffYears = Math.floor(diffMs / (1000 * 60 * 60 * 24 * 365));
+
+  // Return formatted string based on time difference
+  if (diffMinutes < 1) {
+    return "Just now";
+  } else if (diffMinutes < 60) {
+    return `${diffMinutes}m`;
+  } else if (diffHours < 24) {
+    const remainingMinutes = diffMinutes % 60;
+    if (remainingMinutes === 0) {
+      return `${diffHours}h`;
+    }
+    return `${diffHours}h, ${remainingMinutes}m`;
+  } else if (diffDays < 7) {
+    const remainingHours = diffHours % 24;
+    if (remainingHours === 0) {
+      return `${diffDays}d`;
+    }
+    return `${diffDays}d, ${remainingHours}h`;
+  } else if (diffWeeks < 4) {
+    const remainingDays = diffDays % 7;
+    if (remainingDays === 0) {
+      return `${diffWeeks}w`;
+    }
+    return `${diffWeeks}w, ${remainingDays}d`;
+  } else if (diffMonths < 12) {
+    const remainingWeeks = Math.floor((diffDays % 30) / 7);
+    if (remainingWeeks === 0) {
+      return `${diffMonths}mo`;
+    }
+    return `${diffMonths}mo, ${remainingWeeks}w`;
+  } else {
+    const remainingMonths = diffMonths % 12;
+    if (remainingMonths === 0) {
+      return `${diffYears}y`;
+    }
+    return `${diffYears}y, ${remainingMonths}mo`;
+  }
+}

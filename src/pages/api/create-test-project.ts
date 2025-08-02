@@ -7,16 +7,17 @@ export const POST: APIRoute = async ({ request }) => {
       // For demo purposes, create a mock project when database is not configured
       const mockProject = {
         id: Math.floor(Math.random() * 10000),
+        title: "Demo Project",
         description: `Demo Project - ${new Date().toLocaleString()}`,
         address: "123 Demo Street, Demo City",
         author_id: "demo-user",
-        metadata: {
-          status: "draft",
-          createdBy: "demo-user",
-          type: "demo",
-          createdAt: new Date().toISOString(),
-          isDemoProject: true,
-        },
+        status: 10, // SPECS_RECEIVED
+        sq_ft: 1500,
+        new_construction: false,
+        building: { type: "commercial", floors: 2 },
+        project: { isDemoProject: true, createdAt: new Date().toISOString() },
+        service: { type: "fire_protection" },
+        requested_docs: ["plans", "specifications"],
       };
 
       return new Response(
@@ -41,16 +42,17 @@ export const POST: APIRoute = async ({ request }) => {
       // For demo purposes, create a mock project when not authenticated
       const mockProject = {
         id: Math.floor(Math.random() * 10000),
+        title: "Demo Project",
         description: `Demo Project - ${new Date().toLocaleString()}`,
         address: "123 Demo Street, Demo City",
         author_id: "demo-user",
-        metadata: {
-          status: "draft",
-          createdBy: "demo-user",
-          type: "demo",
-          createdAt: new Date().toISOString(),
-          isDemoProject: true,
-        },
+        status: 10, // SPECS_RECEIVED
+        sq_ft: 1500,
+        new_construction: false,
+        building: { type: "commercial", floors: 2 },
+        project: { isDemoProject: true, createdAt: new Date().toISOString() },
+        service: { type: "fire_protection" },
+        requested_docs: ["plans", "specifications"],
       };
 
       return new Response(
@@ -69,14 +71,20 @@ export const POST: APIRoute = async ({ request }) => {
     // Create a test project
     const projectData = {
       author_id: user.id,
+      title: "Test Project",
       description: `Test Project - ${new Date().toLocaleString()}`,
       address: "123 Test Street, Test City",
-      metadata: {
-        status: "draft",
+      status: 0, // assuming 0 = draft
+      sq_ft: 2000,
+      new_construction: true,
+      building: { type: "office", floors: 3 },
+      project: {
         createdBy: user.id,
         type: "test",
         createdAt: new Date().toISOString(),
       },
+      service: { type: "fire_protection", scope: "full_system" },
+      requested_docs: ["architectural_plans", "mep_drawings"],
     };
 
     const { data, error } = await supabase
