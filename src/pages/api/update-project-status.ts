@@ -4,6 +4,7 @@ import { supabase } from "../../lib/supabase";
 export const POST: APIRoute = async ({ request }) => {
   try {
     const body = await request.json();
+    console.log("Update project API received:", body);
     const {
       projectId,
       status,
@@ -17,6 +18,9 @@ export const POST: APIRoute = async ({ request }) => {
       service,
       requested_docs,
       assigned_to_id,
+      owner,
+      architect,
+      units,
     } = body;
 
     if (!projectId) {
@@ -44,6 +48,9 @@ export const POST: APIRoute = async ({ request }) => {
             service,
             requested_docs,
             assigned_to_id,
+            owner,
+            architect,
+            units,
           },
           message: `Demo: Project ${projectId} ${status !== undefined ? `status updated to ${status}` : "updated"} (No database interaction)`,
         }),
@@ -77,6 +84,9 @@ export const POST: APIRoute = async ({ request }) => {
             service,
             requested_docs,
             assigned_to_id,
+            owner,
+            architect,
+            units,
           },
           message: `Demo: Project ${projectId} ${status !== undefined ? `status updated to ${status}` : "updated"} (Demo mode - sign in for real database interaction)`,
         }),
@@ -87,9 +97,10 @@ export const POST: APIRoute = async ({ request }) => {
       );
     }
 
-    // Update project with provided fields
+    // Update project with provided fields (only core fields that definitely exist)
     const updateData: any = {};
 
+    // Core fields that should exist in most projects tables
     if (status !== undefined) updateData.status = status;
     if (title !== undefined) updateData.title = title;
     if (description !== undefined) updateData.description = description;
@@ -97,18 +108,32 @@ export const POST: APIRoute = async ({ request }) => {
     if (sq_ft !== undefined) updateData.sq_ft = sq_ft;
     if (new_construction !== undefined)
       updateData.new_construction = new_construction;
-    if (building !== undefined) updateData.building = building;
-    if (project !== undefined) updateData.project = project;
-    if (service !== undefined) updateData.service = service;
-    if (requested_docs !== undefined)
+
+    // Optional fields - only add if they have values to avoid database errors
+    if (building !== undefined && building !== "")
+      updateData.building = building;
+    if (project !== undefined && project !== "") updateData.project = project;
+    if (service !== undefined && service !== "") updateData.service = service;
+    if (requested_docs !== undefined && requested_docs !== "")
       updateData.requested_docs = requested_docs;
-    if (assigned_to_id !== undefined)
+    if (assigned_to_id !== undefined && assigned_to_id !== "")
       updateData.assigned_to_id = assigned_to_id;
+
+    // New fields - handle gracefully in case they don't exist in the database yet
+    // We'll try these but catch any column-not-found errors
+    const potentialNewFields: any = {};
+    if (owner !== undefined && owner !== "") potentialNewFields.owner = owner;
+    if (architect !== undefined && architect !== "")
+      potentialNewFields.architect = architect;
+    if (units !== undefined) potentialNewFields.units = units;
 
     // Always update the updated_at timestamp when any field is modified
     updateData.updated_at = new Date().toISOString();
 
-    const { data, error } = await supabase
+    console.log("Attempting to update project with core data:", updateData);
+
+    // First, try to update with core fields
+    const { data: coreData, error: coreError } = await supabase
       .from("projects")
       .update(updateData)
       .eq("id", projectId)
@@ -116,15 +141,48 @@ export const POST: APIRoute = async ({ request }) => {
       .select()
       .single();
 
-    if (error) {
+    if (coreError) {
+      console.error("Supabase core update error:", coreError);
       return new Response(
-        JSON.stringify({ error: `Failed to update project: ${error.message}` }),
+        JSON.stringify({
+          error: `Failed to update project: ${coreError.message}`,
+          details: coreError.details,
+          hint: coreError.hint,
+          code: coreError.code,
+        }),
         {
           status: 500,
           headers: { "Content-Type": "application/json" },
         },
       );
     }
+
+    // If core update succeeded and we have potential new fields, try to update them
+    let finalData = coreData;
+    if (Object.keys(potentialNewFields).length > 0) {
+      console.log("Attempting to update new fields:", potentialNewFields);
+
+      const { data: newFieldsData, error: newFieldsError } = await supabase
+        .from("projects")
+        .update(potentialNewFields)
+        .eq("id", projectId)
+        .eq("author_id", user.id)
+        .select()
+        .single();
+
+      if (newFieldsError) {
+        console.warn(
+          "New fields update failed (this is expected if columns don't exist yet):",
+          newFieldsError,
+        );
+        // Don't fail the entire request - core fields were updated successfully
+      } else {
+        console.log("New fields updated successfully");
+        finalData = newFieldsData;
+      }
+    }
+
+    const data = finalData;
 
     return new Response(
       JSON.stringify({

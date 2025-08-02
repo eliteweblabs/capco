@@ -2952,89 +2952,89 @@ import ProjectFilter from "./ProjectFilter.astro";
         window.currentPDFScraper = null; // Clear any existing scraper reference
 
         // Optional: Add a "Load Previous Project" button for users who want to continue existing work
-        const loadPreviousBtn = document.createElement("div");
-        loadPreviousBtn.className = "mt-4 text-center";
-        loadPreviousBtn.innerHTML = `
-          <button 
-            id="load-previous-project" 
-            class="text-sm text-blue-600 dark:text-blue-400 hover:underline"
-          >
-            Load Previous Project
-          </button>
-        `;
-        container.appendChild(loadPreviousBtn);
+        // const loadPreviousBtn = document.createElement("div");
+        // loadPreviousBtn.className = "mt-4 text-center";
+        // loadPreviousBtn.innerHTML = `
+        //   <button
+        //     id="load-previous-project"
+        //     class="text-sm text-blue-600 dark:text-blue-400 hover:underline"
+        //   >
+        //     Load Previous Project
+        //   </button>
+        // `;
+        // container.appendChild(loadPreviousBtn);
 
         // Add click handler for loading previous project
-        const loadBtn = loadPreviousBtn.querySelector("#load-previous-project");
-        loadBtn?.addEventListener("click", async () => {
-          console.log("Loading previous project...");
-          loadBtn.textContent = "Loading...";
+        // const loadBtn = loadPreviousBtn.querySelector("#load-previous-project");
+        // loadBtn?.addEventListener("click", async () => {
+        //   console.log("Loading previous project...");
+        //   loadBtn.textContent = "Loading...";
 
-          try {
-            // Query for the most recent project
-            const { data: files, error: filesError } = await supabase
-              .from("files")
-              .select(
-                "id, author_id, project_id, file_type, status, file_path, name"
-              )
-              .eq("author_id", user.id)
-              .eq("file_type", "application/pdf")
-              .eq("status", "active")
-              .order("uploaded_at", { ascending: false })
-              .limit(1);
+        //   try {
+        //     // Query for the most recent project
+        //     const { data: files, error: filesError } = await supabase
+        //       .from("files")
+        //       .select(
+        //         "id, author_id, project_id, file_type, status, file_path, name"
+        //       )
+        //       .eq("author_id", user.id)
+        //       .eq("file_type", "application/pdf")
+        //       .eq("status", "active")
+        //       .order("uploaded_at", { ascending: false })
+        //       .limit(1);
 
-            if (files && files.length > 0 && !filesError) {
-              const file = files[0];
+        //     if (files && files.length > 0 && !filesError) {
+        //       const file = files[0];
 
-              if (!file.project_id) {
-                throw new Error("No valid project found");
-              }
+        //       if (!file.project_id) {
+        //         throw new Error("No valid project found");
+        //       }
 
-              // Get the project data
-              const { data: project, error: projectError } = await supabase
-                .from("projects")
-                .select("*")
-                .eq("id", file.project_id)
-                .single();
+        //       // Get the project data
+        //       const { data: project, error: projectError } = await supabase
+        //         .from("projects")
+        //         .select("*")
+        //         .eq("id", file.project_id)
+        //         .single();
 
-              if (project && !projectError) {
-                // Get the public URL for the file
-                const {
-                  data: { publicUrl },
-                } = supabase.storage
-                  .from("project-documents")
-                  .getPublicUrl(file.file_path);
+        //       if (project && !projectError) {
+        //         // Get the public URL for the file
+        //         const {
+        //           data: { publicUrl },
+        //         } = supabase.storage
+        //           .from("project-documents")
+        //           .getPublicUrl(file.file_path);
 
-                console.log("Loading existing PDF:", publicUrl);
+        //         console.log("Loading existing PDF:", publicUrl);
 
-                // Clear container and load existing project
-                container.innerHTML = "";
+        //         // Clear container and load existing project
+        //         container.innerHTML = "";
 
-                // Create PDF viewer with existing file
-                new PDFViewer(container, null, publicUrl, project.id);
-                const scraper = new PDFScraper(container);
+        //         // Create PDF viewer with existing file
+        //         new PDFViewer(container, null, publicUrl, project.id);
+        //         const scraper = new PDFScraper(container);
 
-                // Set the project ID so saving works correctly
-                scraper.projectId = project.id;
+        //         // Set the project ID so saving works correctly
+        //         scraper.projectId = project.id;
 
-                // Populate form with existing project data
-                scraper.populateFormFromProject(project);
+        //         // Populate form with existing project data
+        //         scraper.populateFormFromProject(project);
 
-                window.currentPDFScraper = scraper;
-              } else {
-                throw new Error("Error loading project data");
-              }
-            } else {
-              throw new Error("No previous projects found");
-            }
-          } catch (error) {
-            console.error("Error loading previous project:", error);
-            loadBtn.textContent = "No previous project found";
-            setTimeout(() => {
-              loadPreviousBtn.remove();
-            }, 2000);
-          }
-        });
+        //         window.currentPDFScraper = scraper;
+        //       } else {
+        //         throw new Error("Error loading project data");
+        //       }
+        //     } else {
+        //       throw new Error("No previous projects found");
+        //     }
+        //   } catch (error) {
+        //     console.error("Error loading previous project:", error);
+        //     loadBtn.textContent = "No previous project found";
+        //     setTimeout(() => {
+        //       loadPreviousBtn.remove();
+        //     }, 2000);
+        //   }
+        // });
       } else {
         // No user or error, show uploader
         console.log("User error:", userError);
