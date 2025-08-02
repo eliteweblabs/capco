@@ -1,0 +1,302 @@
+---
+// Push Notification Demo Component
+---
+
+<div class="p-6 bg-white dark:bg-gray-800 rounded-lg shadow">
+  <h3 class="text-lg font-semibold mb-4">🔔 Push Notification Demo</h3>
+
+  <div class="space-y-4">
+    <!-- Notification Permission Status -->
+    <div
+      id="permission-status"
+      class="p-3 rounded-lg bg-gray-100 dark:bg-gray-700"
+    >
+      <p class="text-sm text-gray-600 dark:text-gray-400">
+        Checking notification permissions...
+      </p>
+    </div>
+
+    <!-- Controls -->
+    <div class="flex flex-wrap gap-3">
+      <button
+        id="request-permission-btn"
+        class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50"
+        disabled
+      >
+        Request Permission
+      </button>
+
+      <button
+        id="test-local-push-btn"
+        class="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 disabled:opacity-50"
+        disabled
+      >
+        Test Local Push
+      </button>
+
+      <button
+        id="test-project-update-btn"
+        class="px-4 py-2 bg-purple-500 text-white rounded hover:bg-purple-600 disabled:opacity-50"
+        disabled
+      >
+        Demo: Project Update
+      </button>
+
+      <button
+        id="test-deadline-reminder-btn"
+        class="px-4 py-2 bg-orange-500 text-white rounded hover:bg-orange-600 disabled:opacity-50"
+        disabled
+      >
+        Demo: Deadline Reminder
+      </button>
+    </div>
+
+    <!-- Installation Instructions for iOS -->
+    <div
+      id="ios-instructions"
+      class="hidden p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800"
+    >
+      <h4 class="font-semibold text-blue-800 dark:text-blue-200 mb-2">
+        📱 iOS Users:
+      </h4>
+      <p class="text-sm text-blue-700 dark:text-blue-300 mb-2">
+        To enable push notifications on iOS:
+      </p>
+      <ol
+        class="text-sm text-blue-700 dark:text-blue-300 list-decimal list-inside space-y-1"
+      >
+        <li>Tap the Share button (square with arrow) in Safari</li>
+        <li>Select "Add to Home Screen"</li>
+        <li>Tap "Add"</li>
+        <li>Open the app from your home screen</li>
+        <li>Then try the buttons above</li>
+      </ol>
+    </div>
+
+    <!-- Debug Info -->
+    <details class="text-sm">
+      <summary class="cursor-pointer text-gray-600 dark:text-gray-400"
+        >🛠️ Debug Info</summary
+      >
+      <div
+        id="debug-info"
+        class="mt-2 p-3 bg-gray-50 dark:bg-gray-900 rounded font-mono text-xs"
+      >
+        Loading...
+      </div>
+    </details>
+  </div>
+</div>
+
+<script>
+  // Check if push notifications are supported
+  function isPushSupported() {
+    return (
+      "serviceWorker" in navigator &&
+      "Notification" in window &&
+      "PushManager" in window
+    );
+  }
+
+  // Check if running on iOS
+  function isIOS() {
+    return /iPad|iPhone|iPod/.test(navigator.userAgent);
+  }
+
+  // Check if running as standalone app (PWA)
+  function isStandalone() {
+    return (
+      window.matchMedia("(display-mode: standalone)").matches ||
+      (window.navigator as any).standalone === true
+    );
+  }
+
+  // Update permission status display
+  function updatePermissionStatus() {
+    const statusDiv = document.getElementById("permission-status");
+    const permissionState = Notification.permission;
+    const isSupported = isPushSupported();
+    const ios = isIOS();
+    const standalone = isStandalone();
+
+    let statusHTML = `
+      <p><strong>Browser:</strong> ${navigator.userAgent.includes("Chrome") ? "Chrome" : navigator.userAgent.includes("Firefox") ? "Firefox" : navigator.userAgent.includes("Safari") ? "Safari" : "Other"}</p>
+      <p><strong>Platform:</strong> ${ios ? "iOS" : "Desktop/Android"}</p>
+      <p><strong>Push Support:</strong> ${isSupported ? "✅ Yes" : "❌ No"}</p>
+      <p><strong>Permission:</strong> ${permissionState}</p>
+    `;
+
+    if (ios) {
+      statusHTML += `<p><strong>Standalone:</strong> ${standalone ? "✅ Yes (PWA)" : "❌ No (Safari Tab)"}</p>`;
+      if (!standalone) {
+        document.getElementById("ios-instructions")?.classList.remove("hidden");
+      }
+    }
+
+    if (statusDiv) statusDiv.innerHTML = statusHTML;
+
+    // Enable/disable buttons based on status
+    const canRequest =
+      isSupported && permissionState === "default" && (!ios || standalone);
+    const canSend =
+      isSupported && permissionState === "granted" && (!ios || standalone);
+
+    (document.getElementById(
+      "request-permission-btn"
+    ) as HTMLButtonElement)!.disabled = !canRequest;
+    (document.getElementById(
+      "test-local-push-btn"
+    ) as HTMLButtonElement)!.disabled = !canSend;
+    (document.getElementById(
+      "test-project-update-btn"
+    ) as HTMLButtonElement)!.disabled = !canSend;
+    (document.getElementById(
+      "test-deadline-reminder-btn"
+    ) as HTMLButtonElement)!.disabled = !canSend;
+  }
+
+  // Update debug info
+  function updateDebugInfo() {
+    const debugDiv = document.getElementById("debug-info");
+    const info = {
+      userAgent: navigator.userAgent,
+      platform: navigator.platform,
+      cookieEnabled: navigator.cookieEnabled,
+      onLine: navigator.onLine,
+      language: navigator.language,
+      standalone: isStandalone(),
+      displayMode: window.matchMedia("(display-mode: standalone)").matches
+        ? "standalone"
+        : "browser",
+      notificationPermission: Notification.permission,
+      pushSupported: isPushSupported(),
+      serviceWorkerSupported: "serviceWorker" in navigator,
+      location: window.location.href,
+      timestamp: new Date().toISOString(),
+    };
+
+    if (debugDiv) {
+      debugDiv.innerHTML = JSON.stringify(info, null, 2);
+    }
+  }
+
+  // Send a test notification
+  async function sendTestNotification(type: string) {
+    if (!isPushSupported() || Notification.permission !== "granted") {
+      alert("Push notifications not available or not permitted");
+      return;
+    }
+
+    try {
+      // Register service worker if not already registered
+      let registration = await navigator.serviceWorker.getRegistration();
+      if (!registration) {
+        registration = await navigator.serviceWorker.register("/sw.js");
+        await new Promise((resolve) => setTimeout(resolve, 1000)); // Wait for registration
+      }
+
+      let options: NotificationOptions;
+
+      switch (type) {
+        case "local":
+          options = {
+            body: "This is a test notification from your fire protection app!",
+            icon: "/favicon.svg",
+            badge: "/favicon.svg",
+            tag: "test-notification",
+            data: { type: "test", timestamp: Date.now() },
+          };
+          break;
+
+        case "project-update":
+          options = {
+            body: "Your fire protection proposal for 6235 Green St has been approved",
+            icon: "/favicon.svg",
+            badge: "/favicon.svg",
+            tag: "project-update",
+            data: { type: "project", projectId: 123, action: "view" },
+          };
+          break;
+
+        case "deadline":
+          options = {
+            body: "Review deadline for Goodtown project is tomorrow",
+            icon: "/favicon.svg",
+            badge: "/favicon.svg",
+            tag: "deadline-reminder",
+            data: { type: "deadline", projectId: 456, daysLeft: 1 },
+          };
+          break;
+
+        default:
+          return;
+      }
+
+      await registration.showNotification("🔥 Fire Protection App", options);
+
+      // Show success message
+      const statusDiv = document.getElementById("permission-status");
+      if (statusDiv) {
+        statusDiv.innerHTML = `<p class="text-green-600">✅ Notification sent successfully!</p>`;
+        setTimeout(updatePermissionStatus, 3000);
+      }
+    } catch (error) {
+      console.error("Error sending notification:", error);
+      alert("Error sending notification: " + error);
+    }
+  }
+
+  // Request notification permission
+  async function requestPermission() {
+    try {
+      const permission = await Notification.requestPermission();
+      console.log("Permission result:", permission);
+      updatePermissionStatus();
+
+      if (permission === "granted") {
+        // Also register for push if we want remote notifications later
+        const registration = await navigator.serviceWorker.getRegistration();
+        if (registration && registration.pushManager) {
+          try {
+            const subscription = await registration.pushManager.subscribe({
+              userVisibleOnly: true,
+              applicationServerKey: null, // We'll add VAPID keys later for remote push
+            });
+            console.log("Push subscription:", subscription);
+          } catch (pushError) {
+            console.log(
+              "Push subscription failed (this is OK for local notifications):",
+              pushError
+            );
+          }
+        }
+      }
+    } catch (error) {
+      console.error("Error requesting permission:", error);
+      alert("Error requesting permission: " + error);
+    }
+  }
+
+  // Initialize on page load
+  document.addEventListener("DOMContentLoaded", () => {
+    updatePermissionStatus();
+    updateDebugInfo();
+
+    // Set up event listeners
+    document
+      .getElementById("request-permission-btn")
+      ?.addEventListener("click", requestPermission);
+    document
+      .getElementById("test-local-push-btn")
+      ?.addEventListener("click", () => sendTestNotification("local"));
+    document
+      .getElementById("test-project-update-btn")
+      ?.addEventListener("click", () => sendTestNotification("project-update"));
+    document
+      .getElementById("test-deadline-reminder-btn")
+      ?.addEventListener("click", () => sendTestNotification("deadline"));
+
+    // Update status every few seconds to catch changes
+    setInterval(updatePermissionStatus, 5000);
+  });
+</script>
