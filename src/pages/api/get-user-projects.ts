@@ -13,6 +13,7 @@ export const GET: APIRoute = async ({ request }) => {
           address: "123 Business Blvd, Demo City",
           author_id: "demo-user",
           author_email: "demo@example.com",
+          assigned_to_name: "John Smith",
           status: 20, // GENERATING_PROPOSAL
           sq_ft: 2500,
           new_construction: true,
@@ -30,6 +31,7 @@ export const GET: APIRoute = async ({ request }) => {
           address: "456 Commerce St, Demo City",
           author_id: "demo-user",
           author_email: "demo@example.com",
+          assigned_to_name: "Sarah Johnson",
           status: 50, // PROPOSAL_SIGNED_OFF
           sq_ft: 5000,
           new_construction: false,
@@ -71,6 +73,7 @@ export const GET: APIRoute = async ({ request }) => {
           address: "789 Industrial Pkwy, Demo City",
           author_id: "guest-user",
           author_email: "demo@example.com",
+          assigned_to_name: "Mike Davis",
           status: 10, // SPECS_RECEIVED
           sq_ft: 8000,
           new_construction: false,
@@ -105,8 +108,13 @@ export const GET: APIRoute = async ({ request }) => {
 
     const userRole = profile?.role;
 
-    // Fetch projects based on user role
-    let query = supabase.from("projects").select("*");
+    // Fetch projects based on user role with assigned user profile data
+    let query = supabase
+      .from("projects")
+      .select(`
+        *,
+        assigned_to:profiles!projects_assigned_to_id_fkey(name)
+      `);
 
     // Admin gets all projects, clients get only their own
     if (userRole !== "admin") {
@@ -125,6 +133,16 @@ export const GET: APIRoute = async ({ request }) => {
           headers: { "Content-Type": "application/json" },
         },
       );
+    }
+
+    // Process assigned user data
+    if (projects && projects.length > 0) {
+      projects.forEach((project) => {
+        // Extract assigned user name from the joined data
+        project.assigned_to_name = project.assigned_to?.name || null;
+        // Clean up the nested object for cleaner response
+        delete project.assigned_to;
+      });
     }
 
     // Fetch user emails for all unique author_ids
