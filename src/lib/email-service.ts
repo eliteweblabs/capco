@@ -1,3 +1,5 @@
+import * as React from "react";
+
 export interface EmailConfig {
   provider: "smtp" | "sendgrid" | "resend";
   apiKey?: string;
@@ -16,6 +18,12 @@ export interface EmailTemplate {
   subject: string;
   html: string;
   text?: string;
+}
+
+export interface ReactEmailTemplate {
+  subject: string;
+  component: React.ComponentType<any>;
+  props?: Record<string, any>;
 }
 
 export interface SendEmailOptions {
@@ -231,6 +239,53 @@ export class EmailService {
   }
 
   /**
+   * Send a React Email template
+   */
+  async sendReactEmail(to: string | string[], template: ReactEmailTemplate) {
+    try {
+      // Dynamic import to avoid issues in server environments
+      const { render } = await import("@react-email/render");
+      const React = await import("react");
+
+      // Create element with props
+      const emailElement = React.createElement(
+        template.component,
+        template.props || {},
+      );
+
+      // Render to HTML
+      const html = render(emailElement);
+
+      // Replace variables in subject if needed
+      let subject = template.subject;
+      if (template.props) {
+        Object.entries(template.props).forEach(([key, value]) => {
+          const placeholder = `{{${key}}}`;
+          subject = subject.replace(
+            new RegExp(placeholder, "g"),
+            String(value),
+          );
+        });
+      }
+
+      return this.sendEmail({
+        to,
+        subject,
+        html,
+      });
+    } catch (error) {
+      console.error("React Email rendering failed:", error);
+      return {
+        success: false,
+        error:
+          error instanceof Error
+            ? error.message
+            : "React Email rendering failed",
+      };
+    }
+  }
+
+  /**
    * Verify email configuration
    */
   async verifyConnection(): Promise<{ success: boolean; error?: string }> {
@@ -258,7 +313,7 @@ export class EmailService {
 // Default instance for global use
 export const emailService = new EmailService();
 
-// Email templates
+// Legacy HTML Email templates (still supported)
 export const EMAIL_TEMPLATES = {
   welcome: {
     subject: "Welcome to {{appName}}!",
@@ -292,5 +347,20 @@ export const EMAIL_TEMPLATES = {
       <p>Best regards,<br>The {{appName}} Team</p>
     `,
     text: `{{title}}: {{message}}`,
+  },
+} as const;
+
+// React Email Templates (recommended)
+export const REACT_EMAIL_TEMPLATES = {
+  welcome: {
+    subject: "Welcome to {{appName}}!",
+    component: null, // Will be set when importing
+    props: {},
+  },
+
+  projectNotification: {
+    subject: "Project Update: {{projectTitle}}",
+    component: null, // Will be set when importing
+    props: {},
   },
 } as const;

@@ -19,6 +19,7 @@ This app is designed to facilitate the process of submitting (by clients) and re
 - Tailwind
 - Flowbite
 - SupaBase
+- NO REACT
 
 ## Database Schema
 
