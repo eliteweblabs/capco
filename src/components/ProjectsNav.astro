@@ -20,57 +20,26 @@ let adminHoldCount = 5;
 let clientHoldCount = 14;
 ---
 
-<div class="mt-4">
   <nav
     class="pl-6 relative overflow-x-auto scrollbar-hide flex gap-1 whitespace-nowrap text-hub-inactive dark:border-hub-border-dark"
   >
-    <div
-      class="flex gap-1 whitespace-nowrap rounded-full bg-hub-background-nav p-[2px] mt-6 dark:bg-hub-background-nav border-[1px] border-hub-border"
-    >
+   
 
     {role === "Admin" ? (
-      <NavButton class="tab-btn relative" aria-label="btn-dashboard" data-target="dashboard" data-default="true"
-        >Dashboard / New</NavButton
-      >
 
-      <NavButton
-        class="tab-btn relative"
-        aria-label="btn-pdf-review"
-        data-target="pdf-review"
-        data-count={adminHoldCount}
-        >PDF Review
-      </NavButton>
-      <NavButton
-        class="tab-btn relative"
-        aria-label="btn-admin-hold"
-        data-target="admin-hold"
-        data-count={adminHoldCount}
-        >Admin Hold
-      </NavButton>
-      <NavButton
-        class="tab-btn relative"
-        aria-label="btn-client-hold"
-        data-target="client-hold"
-        data-count={clientHoldCount}
-        >Client Hold
-      </NavButton>
-      <NavButton
-        class="tab-btn relative"
-        aria-label="btn-services-test"
-        data-target="services-test"
-        data-count={clientHoldCount}
-        >Services Test
-      </NavButton>
-      <NavButton
-        class="tab-btn"
-        aria-label="btn-pdf-editor"
-        data-target="pdf-editor">PDF Editor</NavButton
-      ><NavButton class="tab-btn" aria-label="btn-archive" data-target="archive"
-        >Archive</NavButton
-      >
+
+
+
+    <div
+      class="flex gap-1 whitespace-nowrap rounded-full bg-hub-background-nav p-[2px] mt-6 dark:bg-hub-background-nav border-[1px] border-hub-border"
+      id="status-filter-buttons">
+      
+      </div>
 
       ) : (
-
+      <div
+      class="flex gap-1 whitespace-nowrap rounded-full bg-hub-background-nav p-[2px] mt-6 dark:bg-hub-background-nav border-[1px] border-hub-border"
+    >
       <NavButton
       class="tab-btn"
       aria-label="btn-submittals"
@@ -83,10 +52,11 @@ let clientHoldCount = 14;
     <NavButton class="tab-btn" aria-label="btn-delivery" data-target="delivery"
       >{i18n.NAVBAR.DELIVERY}</NavButton
     >
-      )}
     </div>
+      )}
+    
   </nav>
-</div>
+
 
   {role === "Admin" ? (
 
@@ -126,7 +96,7 @@ let clientHoldCount = 14;
   )}
  
 
-<script define:vars={{ activeTab }}>
+{/* <script define:vars={{ activeTab }}>
   const buttons = document.querySelectorAll(".tab-btn");
   const contents = document.querySelectorAll(".tab-content");
 
@@ -189,6 +159,262 @@ let clientHoldCount = 14;
       });
     });
   });
+</script> */}
+
+
+
+
+<script>
+  import {
+    PROJECT_STATUS,
+    PROJECT_STATUS_LABELS,
+    type ProjectStatusCode,
+  } from "../lib/global-services";
+
+  // Type definitions
+  declare global {
+    interface Window {
+      projectFilter: ProjectFilter;
+    }
+  }
+
+  class ProjectFilter {
+    private container: HTMLElement | null;
+    private buttonsContainer: HTMLElement | null;
+    private currentFilter: string;
+
+    constructor() {
+      this.container = document.getElementById("project-filter-container");
+      this.buttonsContainer = document.getElementById("status-filter-buttons");
+      this.currentFilter = "all";
+
+      this.setupFilterButtons();
+      this.setupEventListeners();
+    }
+
+    setupFilterButtons() {
+      if (!this.buttonsContainer) return;
+
+      // Generate filter buttons for each status
+      const statusButtons = Object.entries(PROJECT_STATUS_LABELS)
+        .map(
+          ([statusCode, label]) => `
+          <button 
+            data-status="${statusCode}"
+            data-count="0"
+            class="filter-btn px-3 py-2 text-xs font-medium rounded-full border transition-colors relative
+                   bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 
+                   border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600"
+          >
+            ${label}
+          </button>
+        `
+        )
+        .join("");
+
+      // Insert status buttons after the "All Projects" button
+      this.buttonsContainer.innerHTML = `
+        <button 
+          data-status="all"
+          data-count="0"
+          class="filter-btn selected px-3 py-2 text-xs font-medium rounded-full border transition-colors relative
+                 bg-blue-500 text-white border-blue-500"
+        >
+          All Projects
+        </button>
+        ${statusButtons}
+      `;
+    }
+
+    setupEventListeners() {
+      if (!this.buttonsContainer) return;
+
+      this.buttonsContainer.addEventListener("click", (event: Event) => {
+        const button = (event.target as HTMLElement).closest(
+          ".filter-btn"
+        ) as HTMLButtonElement;
+        if (!button) return;
+
+        const status = button.dataset.status;
+        if (status) {
+          this.setActiveFilter(status);
+          this.filterProjects(status);
+        }
+           button.scrollIntoView({
+        behavior: "smooth", // Deslizamiento suave
+        block: "nearest", // Mantiene la posición vertical
+        inline: "center", // Centra horizontalmente
+      });
+      });
+    }
+
+    setActiveFilter(status: string) {
+      // Update visual state of buttons
+      const buttons = this.buttonsContainer?.querySelectorAll(".filter-btn");
+
+      buttons?.forEach((btn) => {
+        const htmlBtn = btn as HTMLButtonElement;
+
+        if (htmlBtn.dataset.status === status) {
+          // Selected state
+          htmlBtn.classList.remove(
+            "bg-white",
+            "dark:bg-gray-700",
+            "text-gray-700",
+            "dark:text-gray-300",
+            "border-gray-300",
+            "dark:border-gray-600",
+            "hover:bg-gray-50",
+            "dark:hover:bg-gray-600"
+          );
+          htmlBtn.classList.add(
+            "selected",
+            "bg-blue-500",
+            "text-white",
+            "border-blue-500"
+          );
+        } else {
+          // Unselected state
+          htmlBtn.classList.remove(
+            "selected",
+            "bg-blue-500",
+            "text-white",
+            "border-blue-500"
+          );
+          htmlBtn.classList.add(
+            "bg-white",
+            "dark:bg-gray-700",
+            "text-gray-700",
+            "dark:text-gray-300",
+            "border-gray-300",
+            "dark:border-gray-600",
+            "hover:bg-gray-50",
+            "dark:hover:bg-gray-600"
+          );
+        }
+      });
+
+      this.currentFilter = status;
+    }
+
+    filterProjects(status: string) {
+      const projectsList = document.getElementById("projects-list");
+      if (!projectsList) return;
+
+      debugger;
+      const projectItems = projectsList.querySelectorAll(
+        "[data-project-status]"
+      );
+
+      projectItems.forEach((item) => {
+        const htmlItem = item as HTMLElement;
+        const projectStatus = htmlItem.dataset.projectStatus;
+
+        if (status === "all" || projectStatus === status) {
+          htmlItem.style.display = "block";
+        } else {
+          htmlItem.style.display = "none";
+        }
+      });
+
+      // Update visible count
+      this.updateProjectCount();
+    }
+
+    updateProjectCount() {
+      const projectsList = document.getElementById("projects-list");
+      if (!projectsList) return;
+
+      const visibleItems = projectsList.querySelectorAll(
+        '[data-project-status]:not([style*="display: none"])'
+      );
+      const totalItems = projectsList.querySelectorAll("[data-project-status]");
+
+      // Update count bubbles for each status
+      this.updateCountBubbles();
+
+      // Create or update count display
+      let countDisplay = document.getElementById("filter-count");
+      if (!countDisplay) {
+        countDisplay = document.createElement("p");
+        countDisplay.id = "filter-count";
+        countDisplay.className =
+          "text-sm text-gray-600 dark:text-gray-400 mt-2";
+        this.container?.appendChild(countDisplay);
+      }
+
+      const filterText =
+        this.currentFilter === "all"
+          ? "All"
+          : PROJECT_STATUS_LABELS[
+              this.currentFilter as unknown as ProjectStatusCode
+            ] || "Unknown";
+      countDisplay.textContent = `Showing ${visibleItems.length} of ${totalItems.length} projects (${filterText})`;
+    }
+
+    updateCountBubbles() {
+      const projectsList = document.getElementById("projects-list");
+      if (!projectsList || !this.buttonsContainer) return;
+
+      const allProjects = projectsList.querySelectorAll(
+        "[data-project-status]"
+      );
+      const statusCounts: Record<string, number> = {};
+
+      // Count projects by status
+      allProjects.forEach((project) => {
+        const htmlProject = project as HTMLElement;
+        const status = htmlProject.dataset.projectStatus || "10";
+        statusCounts[status] = (statusCounts[status] || 0) + 1;
+      });
+
+      // Update each filter button's data-count attribute
+      const filterButtons =
+        this.buttonsContainer.querySelectorAll(".filter-btn");
+      filterButtons.forEach((button) => {
+        const htmlButton = button as HTMLButtonElement;
+        const status = htmlButton.dataset.status;
+
+        if (status) {
+          let count = 0;
+
+          if (status === "all") {
+            // Count all projects for "All Projects" button
+            count = allProjects.length;
+          } else {
+            // Count projects with specific status
+            count = statusCounts[status] || 0;
+          }
+
+          // Update data-count attribute (CSS will handle showing/hiding)
+          htmlButton.dataset.count = count.toString();
+        }
+      });
+    }
+
+    show() {
+      if (this.container) {
+        this.container.classList.remove("hidden");
+      }
+    }
+
+    hide() {
+      if (this.container) {
+        this.container.classList.add("hidden");
+      }
+    }
+
+    reset() {
+      this.setActiveFilter("all");
+      this.filterProjects("all");
+    }
+  }
+
+  // Global instance
+  const projectFilter = new ProjectFilter();
+
+  // Make it globally accessible
+  window.projectFilter = projectFilter;
 </script>
 
 
@@ -205,4 +431,5 @@ let clientHoldCount = 14;
     transform: translateX(50%) translateY(-50%) scale(1.1);
   }
 </style>
+
 

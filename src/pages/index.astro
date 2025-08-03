@@ -1,5 +1,45 @@
 ---
 import App from "../components/App.astro";
+import SectionContainer from "../components/SectionContainer.astro";
+import Hero from "../components/index/Hero.astro";
+import ProjectsNav from "../components/ProjectsNav.astro";
+import AuthForm from "../components/AuthForm.astro";
+// Check authentication
+import { checkAuth } from "../lib/auth";
+const { isAuth, session, user, role } = await checkAuth(Astro.cookies);
+
+
 ---
 
-<App />
+<App>
+    
+    {isAuth ? (
+
+        <SectionContainer id="hero" class="flex flex-col gap-y-6">
+          <Hero title={'' + user.user_metadata.name} description={role || 'No role'}/>
+        </SectionContainer>
+
+        <!-- Client content -->
+        {role ? (
+          <SectionContainer id="sub-nav" class="flex flex-col gap-y-6">
+            <ProjectsNav role={role}/>
+          </SectionContainer>
+        ) : (
+
+          <SectionContainer class="flex flex-col gap-y-6">
+            <h2>No role</h2>
+          </SectionContainer>
+        )}
+
+        <slot />
+
+      
+    ) : (
+      <!-- Non-authenticated content -->
+      <SectionContainer id="auth" class="flex flex-col gap-y-6 mx-6">
+        <AuthForm />
+      </SectionContainer>
+    
+    )}
+  </App>
+  

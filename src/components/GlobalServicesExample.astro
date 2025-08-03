@@ -1,8 +1,9 @@
 ---
 // Example component showing how to use global services
 import { formatTimeSinceUpdate } from "../lib/global-services";
-import ProjectFilter from "./ProjectFilter.astro";
+// import ProjectFilter from "./ProjectFilter.astro";
 import PushNotificationDemo from "./PushNotificationDemo.astro";
+import PDFGenerator from "./PDFGenerator.astro";
 import {
   generateCompleteFormHTML,
   BUTTON_GROUPS,
@@ -197,6 +198,31 @@ import {
       </button>
     </div>
   </div>
+</div>
+
+<!-- Projects Display Section -->
+<div class="mt-6 p-6 bg-white dark:bg-gray-800 rounded-lg shadow">
+  <h3 class="text-lg font-semibold mb-4">My Projects</h3>
+
+  <!-- Text Filter Input -->
+  <div class="mb-4">
+    <input
+      type="text"
+      id="project-search-input"
+      placeholder="Filter projects... (type at least 2 characters)"
+      class="w-full px-4 py-2 text-sm border border-gray-300 rounded-lg bg-white dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+    />
+  </div>
+
+  <!-- Projects List Container -->
+  <div id="projects-list" class="mt-4">
+    <!-- Projects will be populated here dynamically -->
+  </div>
+</div>
+
+<!-- PDF Generator Container -->
+<div class="mt-6">
+  <!-- PDF generation will be handled by buttons in project cards -->
 </div>
 
 <!-- Push Notification Demo -->
@@ -753,7 +779,7 @@ import {
               <!-- Accordion Item ${index} -->
               <div data-project-status="${project.status || 10}">
                 <!-- Accordion Header -->
-                <div id="accordion-collapse-heading-${index}">
+                <div id="accordion-collapse-heading-${index}" class="accordion-header">
                   <button
                     class="relative flex items-center justify-between w-full p-5 font-medium rtl:text-right text-gray-500 border ${isLast ? "" : "border-b-0"} ${isFirst ? "rounded-t-xl" : ""} border-gray-200 focus:ring-1 focus:ring-gray-200 dark:focus:ring-gray-800 dark:border-gray-700 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 gap-3"
                     data-accordion-target="#accordion-collapse-body-${index}"
@@ -768,7 +794,7 @@ import {
 
                     <!-- Project Info -->
                     <div class="pl-4 flex flex-col justify-start flex-1 text-left">
-                      <h2 class="font-medium text-base text-gray-800 dark:text-gray-200">
+                      <h2 class="font-medium text-base text-gray-800 dark:text-gray-200" data-search-text>
                         ${projectTitle}
                       </h2>
                   
@@ -780,7 +806,7 @@ import {
 
 
                         <!-- Status badge -->
-                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-cyan-600 text-white">
+                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-cyan-600 text-white"  data-search-text>
                           ${PROJECT_STATUS_LABELS[(project.status || 10) as unknown as ProjectStatusCode] || "Unknown"}
                         </span>
                         <!-- Email/contact if available -->
@@ -788,7 +814,7 @@ import {
                           project.author_email &&
                           project.author_email !== "Unknown" &&
                           project.author_email !== "Unassigned"
-                            ? `<span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-600 text-white">
+                            ? `<span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-600 text-white"  data-search-text>
                           ${project.author_email}
                         </span>`
                             : project.author_email === "Unassigned"
@@ -870,7 +896,7 @@ import {
                       </div>
 
                       <!-- Action Buttons -->
-                      <div class="flex gap-2 pt-4 border-t border-gray-200 dark:border-gray-600">
+                      <div class="flex flex-wrap gap-2 pt-4 border-t border-gray-200 dark:border-gray-600">
                         <button 
                           type="submit"
                           class="px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 transition-colors"
@@ -886,6 +912,29 @@ import {
                         >
                           <i class="bx bx-refresh mr-1"></i>
                           Reset
+                        </button>
+                        
+                        <button 
+                          type="button"
+                          class="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors pdf-generate-btn"
+                          data-project-id="${project.id}"
+                          data-template-type="project-agreement"
+                          data-project-data='${JSON.stringify({
+                            title: project.title || project.address,
+                            address: project.address,
+                            owner: project.owner,
+                            architect: project.architect,
+                            description: project.description,
+                            sq_ft: project.sq_ft,
+                            status:
+                              PROJECT_STATUS_LABELS[
+                                (project.status ||
+                                  10) as unknown as ProjectStatusCode
+                              ] || "Unknown",
+                          }).replace(/'/g, "&#39;")}'
+                        >
+                          <i class="bx bx-file-pdf mr-1"></i>
+                          Generate PDF
                         </button>
                       </div>
                     </form>
@@ -911,6 +960,9 @@ import {
       (window as any).projectFilter.updateCountBubbles();
       (window as any).projectFilter.updateProjectCount();
     }
+
+    // Initialize text filter functionality
+    initializeTextFilter(accordionId);
   }
 
   // Function to load a project from the list
@@ -966,6 +1018,17 @@ import {
           // Close this accordion
           targetElement.classList.add("hidden");
           this.setAttribute("aria-expanded", "false");
+          // Remove sticky class from header
+          const header = this.closest(".accordion-header");
+          if (header) {
+            header.classList.remove(
+              "sticky",
+              "top-16",
+              "z-20",
+              "bg-white",
+              "dark:bg-gray-800"
+            );
+          }
           if (icon) {
             icon.classList.add("rotate-180");
           }
@@ -989,6 +1052,17 @@ import {
                   "aria-expanded",
                   "false"
                 );
+                // Remove sticky class from other headers
+                const otherHeader = otherButton.closest(".accordion-header");
+                if (otherHeader) {
+                  otherHeader.classList.remove(
+                    "sticky",
+                    "top-16",
+                    "z-20",
+                    "bg-white",
+                    "dark:bg-gray-800"
+                  );
+                }
                 if (otherIcon) {
                   otherIcon.classList.add("rotate-180");
                 }
@@ -999,6 +1073,17 @@ import {
           // Open this accordion
           targetElement.classList.remove("hidden");
           this.setAttribute("aria-expanded", "true");
+          // Add sticky class to header when opened
+          const header = this.closest(".accordion-header");
+          if (header) {
+            header.classList.add(
+              "sticky",
+              "top-16",
+              "z-20",
+              "bg-white",
+              "dark:bg-gray-800"
+            );
+          }
           if (icon) {
             icon.classList.remove("rotate-180");
           }
@@ -1096,6 +1181,84 @@ import {
     });
 
     console.log("Initialized button groups for accordion");
+  }
+
+  // Function to initialize text filter functionality
+  function initializeTextFilter(accordionId: string) {
+    const searchInput = document.getElementById(
+      "project-search-input"
+    ) as HTMLInputElement;
+    const accordionElement = document.getElementById(accordionId);
+
+    if (!searchInput || !accordionElement) return;
+
+    let debounceTimer: ReturnType<typeof setTimeout>;
+
+    searchInput.addEventListener("input", (e) => {
+      clearTimeout(debounceTimer);
+
+      debounceTimer = setTimeout(() => {
+        const searchTerm = (e.target as HTMLInputElement).value
+          .trim()
+          .toLowerCase();
+
+        // Only filter if search term has 2 or more characters, or if it's empty (show all)
+        if (searchTerm.length === 0 || searchTerm.length >= 0) {
+          filterAccordionItems(accordionId, searchTerm);
+        }
+      }, 300); // Small debounce delay for better performance
+    });
+
+    console.log("Initialized text filter for accordion");
+  }
+
+  // Function to filter accordion items based on search term
+  function filterAccordionItems(accordionId: string, searchTerm: string) {
+    const accordionElement = document.getElementById(accordionId);
+    if (!accordionElement) return;
+
+    const accordionItems = accordionElement.querySelectorAll(
+      "[data-project-status]"
+    );
+    let visibleCount = 0;
+
+    accordionItems.forEach((item) => {
+      const htmlItem = item as HTMLElement;
+
+      if (searchTerm === "") {
+        // Show all items when search is empty
+        htmlItem.style.display = "block";
+        visibleCount++;
+      } else {
+        // Get all text content from the accordion item
+        const textContent =
+          htmlItem
+            .querySelector("[data-search-text]")
+            ?.textContent?.toLowerCase() || "";
+
+        // Check if the search term is found in the text content
+        if (textContent.includes(searchTerm)) {
+          htmlItem.style.display = "block";
+          visibleCount++;
+        } else {
+          htmlItem.style.display = "none";
+        }
+      }
+    });
+
+    // Update the search input placeholder with results count
+    const searchInput = document.getElementById(
+      "project-search-input"
+    ) as HTMLInputElement;
+    if (searchInput && searchTerm !== "") {
+      searchInput.placeholder = `Showing ${visibleCount} of ${accordionItems.length} projects`;
+    } else if (searchInput) {
+      searchInput.placeholder = "Filter projects...";
+    }
+
+    console.log(
+      `Text filter applied: "${searchTerm}" - ${visibleCount}/${accordionItems.length} items visible`
+    );
   }
 
   // Helper function to convert units value to slider position
@@ -1496,8 +1659,84 @@ import {
     }
   }
 
+  // PDF Generation Handler
+  function handlePDFGeneration(
+    projectId: string,
+    templateType: string,
+    projectData: any
+  ) {
+    const templateUrl = buildTemplateUrl(templateType, projectId, projectData);
+
+    // Open template page for signature collection and PDF generation
+    const signatureWindow = window.open(
+      templateUrl,
+      "pdf-signature",
+      "width=1200,height=800,scrollbars=yes,resizable=yes"
+    );
+
+    if (!signatureWindow) {
+      if ((window as any).globalServices) {
+        (window as any).globalServices.showNotification({
+          type: "error",
+          title: "Popup Blocked",
+          message: "Please allow popups to generate PDF documents.",
+          duration: 0,
+        });
+      }
+      return;
+    }
+
+    if ((window as any).globalServices) {
+      (window as any).globalServices.showNotification({
+        type: "info",
+        title: "PDF Generation",
+        message:
+          "Please complete signatures in the new window to generate PDF.",
+        duration: 5000,
+      });
+    }
+  }
+
+  function buildTemplateUrl(
+    templateType: string,
+    projectId: string,
+    projectData: any
+  ) {
+    const baseUrl = new URL(`/pdf/${templateType}`, window.location.origin);
+
+    if (projectId) {
+      baseUrl.searchParams.set("projectId", projectId);
+    }
+
+    // Add project data as URL parameters
+    Object.entries(projectData).forEach(([key, value]) => {
+      if (value !== undefined && value !== null) {
+        baseUrl.searchParams.set(key, String(value));
+      }
+    });
+
+    return baseUrl.toString();
+  }
+
   // Initialize configuration check
   document.addEventListener("DOMContentLoaded", () => {
     checkEmailConfiguration();
+
+    // Set up PDF generation event listener
+    document.addEventListener("click", (event) => {
+      const btn = (event.target as HTMLElement)?.closest(
+        ".pdf-generate-btn"
+      ) as HTMLElement;
+      if (btn) {
+        event.preventDefault();
+        const projectId = btn.dataset.projectId || "";
+        const templateType = btn.dataset.templateType || "project-agreement";
+        const projectData = JSON.parse(btn.dataset.projectData || "{}");
+
+        if (projectId) {
+          handlePDFGeneration(projectId, templateType, projectData);
+        }
+      }
+    });
   });
 </script>

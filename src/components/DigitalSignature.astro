@@ -1,0 +1,376 @@
+---
+interface Props {
+  id?: string;
+  width?: number;
+  height?: number;
+  placeholder?: string;
+  required?: boolean;
+}
+
+const {
+  id = "signature-canvas",
+  width = 400,
+  height = 200,
+  placeholder = "Sign here...",
+  required = false,
+} = Astro.props;
+---
+
+<div class="digital-signature-container">
+  <label
+    class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+  >
+    Digital Signature {required && <span class="text-red-500">*</span>}
+  </label>
+
+  <div
+    class="relative border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800"
+  >
+    <!-- Canvas for signature -->
+    <canvas
+      id={id}
+      width={width}
+      height={height}
+      class="signature-canvas block w-full h-full cursor-crosshair"
+      style={`width: ${width}px; height: ${height}px;`}></canvas>
+
+    <!-- Placeholder text (shows when empty) -->
+    <div
+      class="signature-placeholder absolute inset-0 flex items-center justify-center pointer-events-none"
+    >
+      <span class="text-gray-400 dark:text-gray-500 text-sm font-medium">
+        {placeholder}
+      </span>
+    </div>
+
+    <!-- Signature controls -->
+    <div class="absolute bottom-2 right-2 flex gap-2">
+      <button
+        type="button"
+        class="signature-clear px-3 py-1 text-xs bg-red-500 hover:bg-red-600 text-white rounded transition-colors"
+        data-signature-id={id}
+      >
+        <i class="bx bx-trash mr-1"></i>
+        Clear
+      </button>
+      <button
+        type="button"
+        class="signature-save px-3 py-1 text-xs bg-green-500 hover:bg-green-600 text-white rounded transition-colors"
+        data-signature-id={id}
+      >
+        <i class="bx bx-save mr-1"></i>
+        Save
+      </button>
+    </div>
+  </div>
+
+  <!-- Hidden input to store signature data -->
+  <input
+    type="hidden"
+    id={`${id}-data`}
+    name={`${id}-data`}
+    class="signature-data"
+  />
+
+  <!-- Signature status -->
+  <div class="signature-status mt-2 text-sm">
+    <span class="signature-empty text-gray-500">No signature captured</span>
+    <span class="signature-saved text-green-600 hidden">✓ Signature saved</span>
+  </div>
+</div>
+
+<script>
+  import SignaturePad from "signature_pad";
+
+  class DigitalSignatureManager {
+    private signaturePads: Map<string, any> = new Map();
+
+    constructor() {
+      this.initializeSignatures();
+    }
+
+    initializeSignatures() {
+      const canvases = document.querySelectorAll(".signature-canvas");
+
+      canvases.forEach((canvas) => {
+        this.setupSignaturePad(canvas as HTMLCanvasElement);
+      });
+    }
+
+    setupSignaturePad(canvas: HTMLCanvasElement) {
+      const signaturePad = new SignaturePad(canvas, {
+        backgroundColor: "rgba(255, 255, 255, 0)",
+        penColor: "rgb(0, 0, 0)",
+        velocityFilterWeight: 0.7,
+        minWidth: 0.5,
+        maxWidth: 2.5,
+        throttle: 16,
+        minDistance: 5,
+      });
+
+      const canvasId = canvas.id;
+      this.signaturePads.set(canvasId, signaturePad);
+
+      // Get related elements
+      const container = canvas.closest(".digital-signature-container");
+      const placeholder = container?.querySelector(
+        ".signature-placeholder"
+      ) as HTMLElement | null;
+      const hiddenInput = container?.querySelector(
+        ".signature-data"
+      ) as HTMLInputElement | null;
+      const clearBtn = container?.querySelector(
+        ".signature-clear"
+      ) as HTMLElement | null;
+      const saveBtn = container?.querySelector(
+        ".signature-save"
+      ) as HTMLElement | null;
+      const statusEmpty = container?.querySelector(
+        ".signature-empty"
+      ) as HTMLElement | null;
+      const statusSaved = container?.querySelector(
+        ".signature-saved"
+      ) as HTMLElement | null;
+
+      // Handle signature events
+      signaturePad.addEventListener("beginStroke", () => {
+        this.hideSignatureStatus(statusEmpty, statusSaved);
+        if (placeholder) placeholder.style.display = "none";
+      });
+
+      signaturePad.addEventListener("endStroke", () => {
+        this.updateSignatureData(
+          signaturePad,
+          hiddenInput,
+          statusEmpty,
+          statusSaved
+        );
+      });
+
+      // Handle clear button
+      clearBtn?.addEventListener("click", () => {
+        this.clearSignature(
+          signaturePad,
+          hiddenInput,
+          placeholder,
+          statusEmpty,
+          statusSaved
+        );
+      });
+
+      // Handle save button
+      saveBtn?.addEventListener("click", () => {
+        this.saveSignature(signaturePad, hiddenInput, statusEmpty, statusSaved);
+      });
+
+      // Handle canvas resize
+      window.addEventListener("resize", () => {
+        this.resizeCanvas(canvas, signaturePad);
+      });
+
+      // Initial resize
+      this.resizeCanvas(canvas, signaturePad);
+    }
+
+    updateSignatureData(
+      signaturePad: any,
+      hiddenInput: HTMLInputElement | null,
+      statusEmpty: HTMLElement | null,
+      statusSaved: HTMLElement | null
+    ) {
+      if (!signaturePad.isEmpty()) {
+        const signatureData = signaturePad.toDataURL("image/png");
+        if (hiddenInput) {
+          hiddenInput.value = signatureData;
+        }
+        this.showSignatureStatus(statusSaved, statusEmpty);
+
+        // Emit custom event for form validation
+        const event = new CustomEvent("signatureUpdated", {
+          detail: { data: signatureData, isEmpty: false },
+        });
+        document.dispatchEvent(event);
+      } else {
+        if (hiddenInput) {
+          hiddenInput.value = "";
+        }
+        this.showSignatureStatus(statusEmpty, statusSaved);
+
+        // Emit custom event for form validation
+        const event = new CustomEvent("signatureUpdated", {
+          detail: { data: null, isEmpty: true },
+        });
+        document.dispatchEvent(event);
+      }
+    }
+
+    clearSignature(
+      signaturePad: any,
+      hiddenInput: HTMLInputElement | null,
+      placeholder: HTMLElement | null,
+      statusEmpty: HTMLElement | null,
+      statusSaved: HTMLElement | null
+    ) {
+      signaturePad.clear();
+      if (hiddenInput) {
+        hiddenInput.value = "";
+      }
+      if (placeholder) {
+        placeholder.style.display = "flex";
+      }
+      this.showSignatureStatus(statusEmpty, statusSaved);
+
+      // Emit custom event
+      const event = new CustomEvent("signatureCleared");
+      document.dispatchEvent(event);
+    }
+
+    saveSignature(
+      signaturePad: any,
+      hiddenInput: HTMLInputElement | null,
+      statusEmpty: HTMLElement | null,
+      statusSaved: HTMLElement | null
+    ) {
+      if (!signaturePad.isEmpty()) {
+        const signatureData = signaturePad.toDataURL("image/png");
+        if (hiddenInput) {
+          hiddenInput.value = signatureData;
+        }
+        this.showSignatureStatus(statusSaved, statusEmpty);
+
+        // Emit custom event
+        const event = new CustomEvent("signatureSaved", {
+          detail: { data: signatureData },
+        });
+        document.dispatchEvent(event);
+
+        // Show success notification
+        if ((window as any).globalServices) {
+          (window as any).globalServices.showNotification({
+            type: "success",
+            title: "Signature Saved",
+            message: "Digital signature has been captured successfully.",
+            duration: 3000,
+          });
+        }
+      } else {
+        // Show error notification
+        if ((window as any).globalServices) {
+          (window as any).globalServices.showNotification({
+            type: "error",
+            title: "No Signature",
+            message: "Please provide a signature before saving.",
+            duration: 0,
+          });
+        }
+      }
+    }
+
+    resizeCanvas(canvas: HTMLCanvasElement, signaturePad: any) {
+      const container = canvas.parentElement;
+      if (!container) return;
+
+      const containerWidth = container.clientWidth;
+      const ratio = Math.max(window.devicePixelRatio || 1, 1);
+
+      // Get the original dimensions
+      const originalWidth = parseInt(canvas.getAttribute("width") || "400");
+      const originalHeight = parseInt(canvas.getAttribute("height") || "200");
+
+      // Scale to fit container while maintaining aspect ratio
+      const scale = Math.min(containerWidth / originalWidth, 1);
+      const scaledWidth = originalWidth * scale;
+      const scaledHeight = originalHeight * scale;
+
+      canvas.width = scaledWidth * ratio;
+      canvas.height = scaledHeight * ratio;
+      canvas.style.width = scaledWidth + "px";
+      canvas.style.height = scaledHeight + "px";
+
+      const context = canvas.getContext("2d");
+      if (context) {
+        context.scale(ratio, ratio);
+      }
+
+      signaturePad.clear();
+    }
+
+    showSignatureStatus(show: HTMLElement | null, hide: HTMLElement | null) {
+      if (show) show.classList.remove("hidden");
+      if (hide) hide.classList.add("hidden");
+    }
+
+    hideSignatureStatus(
+      statusEmpty: HTMLElement | null,
+      statusSaved: HTMLElement | null
+    ) {
+      if (statusEmpty) statusEmpty.classList.add("hidden");
+      if (statusSaved) statusSaved.classList.add("hidden");
+    }
+
+    // Public methods for external access
+    getSignatureData(canvasId: string) {
+      const signaturePad = this.signaturePads.get(canvasId);
+      return signaturePad && !signaturePad.isEmpty()
+        ? signaturePad.toDataURL("image/png")
+        : null;
+    }
+
+    isSignatureEmpty(canvasId: string) {
+      const signaturePad = this.signaturePads.get(canvasId);
+      return !signaturePad || signaturePad.isEmpty();
+    }
+
+    clearSignatureById(canvasId: string) {
+      const signaturePad = this.signaturePads.get(canvasId);
+      if (signaturePad) {
+        signaturePad.clear();
+      }
+    }
+
+    getAllSignatures() {
+      const signatures: { [key: string]: string | null } = {};
+      this.signaturePads.forEach((pad, canvasId) => {
+        signatures[canvasId] = pad.isEmpty()
+          ? null
+          : pad.toDataURL("image/png");
+      });
+      return signatures;
+    }
+  }
+
+  // Initialize when DOM is ready
+  document.addEventListener("DOMContentLoaded", () => {
+    if (!window.digitalSignatureManager) {
+      window.digitalSignatureManager = new DigitalSignatureManager();
+    }
+  });
+
+  // Make manager globally accessible
+  declare global {
+    interface Window {
+      digitalSignatureManager: DigitalSignatureManager;
+    }
+  }
+</script>
+
+<style>
+  .signature-canvas {
+    touch-action: none;
+  }
+
+  .signature-placeholder {
+    transition: opacity 0.2s ease;
+  }
+
+  .digital-signature-container:hover .signature-placeholder {
+    opacity: 0.7;
+  }
+
+  @media (max-width: 640px) {
+    .signature-canvas {
+      width: 100% !important;
+      height: 150px !important;
+    }
+  }
+</style>
