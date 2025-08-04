@@ -47,7 +47,7 @@ export const POST: APIRoute = async ({ request }) => {
     });
 
     // Wait for any dynamic content to load
-    await page.waitForDelay(2000);
+    await new Promise((resolve) => setTimeout(resolve, 2000));
 
     // Inject signatures if provided
     if (signatures && Object.keys(signatures).length > 0) {
@@ -71,7 +71,7 @@ export const POST: APIRoute = async ({ request }) => {
       }, signatures);
 
       // Wait for signatures to render
-      await page.waitForDelay(1000);
+      await new Promise((resolve) => setTimeout(resolve, 1000));
     }
 
     // PDF generation options
