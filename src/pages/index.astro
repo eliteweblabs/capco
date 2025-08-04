@@ -5,44 +5,53 @@ import Hero from "../components/index/Hero.astro";
 import ProjectsNav from "../components/ProjectsNav.astro";
 import AuthForm from "../components/AuthForm.astro";
 import ProjectList from "../components/ProjectList.astro";
+import ProjectNew from "../components/ProjectNew.astro";
 // Check authentication
 import { checkAuth } from "../lib/auth";
 const { isAuth, session, user, role } = await checkAuth(Astro.cookies);
-
-
 ---
 
 <App>
-    
-    {isAuth ? (
-
-        <SectionContainer id="hero" class="flex flex-col gap-y-6">
-          <Hero title={'' + user.user_metadata.name} description={role || 'No role'}/>
-        </SectionContainer>
-
-        <!-- Client content -->
-        {role ? (
-          <SectionContainer id="sub-nav" class="flex flex-col gap-y-6">
-            <ProjectsNav role={role}/>
-          </SectionContainer>
-        ) : (
-
-          <SectionContainer class="flex flex-col gap-y-6">
-            <h2>No role</h2>
-          </SectionContainer>
-        )}
-
-        <SectionContainer class="flex flex-col gap-y-6">
-          <ProjectList />
-        </SectionContainer>
-
-      
-    ) : (
-      <!-- Non-authenticated content -->
-      <SectionContainer id="auth" class="flex flex-col gap-y-6 mx-6">
-        <AuthForm />
+  {isAuth ? (
+    <>
+      <!-- Header Section (good) -->
+      <SectionContainer id="hero" class="flex flex-col gap-y-6">
+        <Hero title={user.user_metadata.name || 'User'} description={role || 'No role'} />
       </SectionContainer>
-    
-    )}
-  </App>
-  
+
+      {role ? (
+        <>
+          <!-- ProjectsNav.astro - pass property of 'role' to determine projects to show -->
+          <SectionContainer class="flex flex-col gap-y-6">
+            <ProjectsNav role={role} />
+          </SectionContainer>
+
+          <!-- Main Content: Two-column layout -->
+          <SectionContainer class="flex flex-col lg:flex-row gap-6">
+            <!-- Left Column: ProjectList.astro - pass property of 'role' to determine projects to show -->
+            <div class="flex-1 lg:w-2/3">
+              <ProjectList role={role} />
+            </div>
+
+            <!-- Right Column: ProjectNew.astro - PDF Uploader for admin role only -->
+            {role === 'Admin' && (
+              <div class="flex-1 lg:w-1/3">
+                <ProjectNew />
+              </div>
+            )}
+          </SectionContainer>
+        </>
+      ) : (
+        <SectionContainer class="flex flex-col gap-y-6">
+          <h2 class="text-xl font-semibold text-gray-900 dark:text-white">No role assigned</h2>
+          <p class="text-gray-600 dark:text-gray-400">Please contact an administrator to assign your role.</p>
+        </SectionContainer>
+      )}
+    </>
+  ) : (
+    <!-- Non-authenticated content -->
+    <SectionContainer id="auth" class="flex flex-col gap-y-6 mx-6">
+      <AuthForm />
+    </SectionContainer>
+  )}
+</App>
