@@ -53,7 +53,7 @@ export const POST: APIRoute = async ({ request }) => {
     if (signatures && Object.keys(signatures).length > 0) {
       await page.evaluate((sigs: Record<string, string>) => {
         Object.entries(sigs).forEach(([canvasId, signatureData]) => {
-          if (signatureData && typeof signatureData === "string") {
+          if (signatureData && typeof signatureData === 'string') {
             const canvas = document.getElementById(
               canvasId,
             ) as HTMLCanvasElement;
