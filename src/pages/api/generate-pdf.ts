@@ -47,13 +47,13 @@ export const POST: APIRoute = async ({ request }) => {
     });
 
     // Wait for any dynamic content to load
-    await page.waitForTimeout(2000);
+    await new Promise((resolve) => setTimeout(resolve, 2000));
 
     // Inject signatures if provided
     if (signatures && Object.keys(signatures).length > 0) {
-      await page.evaluate((sigs) => {
+      await page.evaluate((sigs: Record<string, string>) => {
         Object.entries(sigs).forEach(([canvasId, signatureData]) => {
-          if (signatureData) {
+          if (signatureData && typeof signatureData === 'string') {
             const canvas = document.getElementById(
               canvasId,
             ) as HTMLCanvasElement;
@@ -71,7 +71,7 @@ export const POST: APIRoute = async ({ request }) => {
       }, signatures);
 
       // Wait for signatures to render
-      await page.waitForTimeout(1000);
+      await new Promise((resolve) => setTimeout(resolve, 1000));
     }
 
     // PDF generation options
