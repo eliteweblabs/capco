@@ -26,13 +26,20 @@ import {
   </div>
 
   <!-- Text Filter Input -->
-  <div class="mb-4">
+  <div class="mb-4 relative">
     <input
       type="text"
       id="project-search-input"
       placeholder="Filter projects..."
-      class="w-full px-4 py-2 text-sm border border-gray-300 rounded-lg bg-white dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+      class="w-full pr-10 px-4 py-2 text-sm border border-gray-300 rounded-lg bg-white dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
     />
+    <button
+      id="clear-search-btn"
+      class="absolute right-2 top-1/2 transform -translate-y-1/2 p-1 text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300 transition-colors hidden"
+      title="Clear search"
+    >
+      <i class="bx bx-x text-lg"></i>
+    </button>
   </div>
 
   <!-- Projects List Container -->
@@ -320,7 +327,7 @@ import {
 
               return `
                 <!-- Accordion Item ${index} -->
-                <div data-project-status="${project.status || 10}">
+                <div data-project-status="${project.status || 10}" data-project-id="${project.id}">
                   <!-- Accordion Header -->
                   <div id="accordion-collapse-heading-${index}" class="accordion-header">
                     <button
@@ -445,6 +452,15 @@ import {
 
                         <!-- Action Buttons -->
                         <div class="flex flex-wrap gap-2 pt-4 border-t border-gray-200 dark:border-gray-600">
+                          <button 
+                            type="button"
+                            class="px-4 py-2 bg-red-600 text-white text-sm font-medium rounded-lg hover:bg-red-700 transition-colors"
+                            onclick="window.projectsList.deleteProject('${project.id}')"
+                          >
+                            <i class="bx bx-trash mr-1"></i>
+                            Delete Project
+                          </button>
+                         
                           <button 
                             type="submit"
                             class="px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 transition-colors"
@@ -655,10 +671,34 @@ import {
         "project-search-input"
       ) as HTMLInputElement;
       const accordionElement = document.getElementById(accordionId);
+      const clearButton = document.getElementById(
+        "clear-search-btn"
+      ) as HTMLButtonElement;
 
       if (!searchInput || !accordionElement) return;
 
       let debounceTimer: ReturnType<typeof setTimeout>;
+
+      // Show/hide clear button based on input value
+      const updateClearButton = () => {
+        if (clearButton) {
+          if (searchInput.value.trim() !== "") {
+            clearButton.classList.remove("hidden");
+          } else {
+            clearButton.classList.add("hidden");
+          }
+        }
+      };
+
+      // Clear button click handler
+      if (clearButton) {
+        clearButton.addEventListener("click", () => {
+          searchInput.value = "";
+          this.filterAccordionItems(accordionId, "");
+          updateClearButton();
+          searchInput.focus();
+        });
+      }
 
       searchInput.addEventListener("input", (e) => {
         clearTimeout(debounceTimer);
@@ -670,8 +710,12 @@ import {
 
           // Filter immediately on any input
           this.filterAccordionItems(accordionId, searchTerm);
+          updateClearButton();
         }, 300); // Small debounce delay for better performance
       });
+
+      // Initial state
+      updateClearButton();
 
       console.log("Initialized text filter for accordion");
     }
@@ -690,23 +734,35 @@ import {
         const htmlItem = item as HTMLElement;
 
         if (searchTerm === "") {
-          // Show all items when search is empty
-          htmlItem.style.display = "block";
-          visibleCount++;
-        } else {
-          // Get all text content from the accordion item with data-search-text attribute
-          const textElements = htmlItem.querySelectorAll("[data-search-text]");
-          let textContent = "";
-          textElements.forEach((el) => {
-            textContent += " " + (el.textContent || "").toLowerCase();
-          });
-
-          // Check if the search term is found in the text content
-          if (textContent.includes(searchTerm)) {
-            htmlItem.style.display = "block";
+          // When search is empty, restore visibility based on current status filter
+          this.applyStatusFilter(htmlItem);
+          if (htmlItem.style.display !== "none") {
             visibleCount++;
-          } else {
+          }
+        } else {
+          // First check if item should be visible based on status filter
+          const shouldBeVisibleByStatus =
+            this.isVisibleByStatusFilter(htmlItem);
+
+          if (!shouldBeVisibleByStatus) {
+            // If hidden by status filter, keep it hidden regardless of search
             htmlItem.style.display = "none";
+          } else {
+            // Only search within items that pass the status filter
+            const textElements =
+              htmlItem.querySelectorAll("[data-search-text]");
+            let textContent = "";
+            textElements.forEach((el) => {
+              textContent += " " + (el.textContent || "").toLowerCase();
+            });
+
+            // Check if the search term is found in the text content
+            if (textContent.includes(searchTerm)) {
+              htmlItem.style.display = "block";
+              visibleCount++;
+            } else {
+              htmlItem.style.display = "none";
+            }
           }
         }
       });
@@ -1070,6 +1126,107 @@ import {
       });
     }
 
+    // Helper method to check if item should be visible based on current status filter
+    isVisibleByStatusFilter(htmlItem: HTMLElement): boolean {
+      // Get current status filter from global projectFilter instance
+      const currentFilter =
+        (window as any).projectFilter?.currentFilter || "all";
+      const projectStatus = htmlItem.dataset.projectStatus;
+
+      return currentFilter === "all" || projectStatus === currentFilter;
+    }
+
+    // Helper method to apply status filter to an item
+    applyStatusFilter(htmlItem: HTMLElement): void {
+      if (this.isVisibleByStatusFilter(htmlItem)) {
+        htmlItem.style.display = "block";
+      } else {
+        htmlItem.style.display = "none";
+      }
+    }
+
+    // Delete project method
+    async deleteProject(projectId: string) {
+      if (
+        !confirm(
+          "Are you sure you want to delete this project? This action cannot be undone."
+        )
+      ) {
+        return;
+      }
+
+      try {
+        // Show loading state
+        const deleteButton = document.querySelector(
+          `button[onclick*="deleteProject('${projectId}')"]`
+        ) as HTMLButtonElement;
+        if (deleteButton) {
+          deleteButton.disabled = true;
+          deleteButton.innerHTML =
+            '<i class="bx bx-loader-alt bx-spin mr-1"></i>Deleting...';
+        }
+
+        // Call the delete project API
+        const response = await fetch(`/api/delete-project`, {
+          method: "DELETE",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ projectId }),
+        });
+
+        if (!response.ok) {
+          throw new Error(`Failed to delete project: ${response.statusText}`);
+        }
+
+        // Remove the project from the UI
+        const projectElement = document.querySelector(
+          `[data-project-id="${projectId}"]`
+        );
+        if (projectElement) {
+          projectElement.remove();
+        }
+
+        // Show success notification
+        if ((window as any).globalServices) {
+          (window as any).globalServices.showNotification({
+            type: "success",
+            title: "Project Deleted",
+            message: "Project has been successfully deleted.",
+            duration: 3000,
+          });
+        }
+
+        // Refresh the projects list by reloading from server
+        await this.loadProjects();
+      } catch (error: unknown) {
+        console.error("Error deleting project:", error);
+
+        // Show error notification
+        if ((window as any).globalServices) {
+          (window as any).globalServices.showNotification({
+            type: "error",
+            title: "Delete Failed",
+            message:
+              error instanceof Error
+                ? error.message
+                : "Failed to delete project. Please try again.",
+            duration: 5000,
+          });
+        }
+
+        // Reset button state
+        const deleteButton = document.querySelector(
+          `button[onclick*="deleteProject('${projectId}')"]`
+        ) as HTMLButtonElement;
+        if (deleteButton) {
+          deleteButton.disabled = false;
+          deleteButton.innerHTML =
+            '<i class="bx bx-trash mr-1"></i>Delete Project';
+        }
+      }
+    }
+
     // Expose methods globally for external access
     private exposeGlobalMethods() {
       // Create global instance
@@ -1081,6 +1238,7 @@ import {
       (window as any).viewProjectDetails = this.viewProjectDetails.bind(this);
       (window as any).resetProjectForm = this.resetProjectForm.bind(this);
       (window as any).refreshStaffUsers = this.refreshStaffUsers.bind(this);
+      (window as any).deleteProject = this.deleteProject.bind(this);
     }
   }
 

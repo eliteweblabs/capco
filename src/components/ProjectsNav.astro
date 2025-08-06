@@ -167,7 +167,7 @@ let clientHoldCount = 14;
   class ProjectFilter {
     private container: HTMLElement | null;
     private buttonsContainer: HTMLElement | null;
-    private currentFilter: string;
+    public currentFilter: string;
 
     constructor() {
       this.container = document.getElementById("project-filter-container");
@@ -304,6 +304,9 @@ let clientHoldCount = 14;
 
       // Update visible count
       this.updateProjectCount();
+      
+      // Re-apply any active search filter to respect the new status filter
+      this.reapplySearchFilter();
     }
 
     updateProjectCount() {
@@ -393,16 +396,28 @@ let clientHoldCount = 14;
       this.setActiveFilter("all");
       this.filterProjects("all");
     }
+
+    // Re-apply any active search filter when status filter changes
+    reapplySearchFilter() {
+      const searchInput = document.getElementById("project-search-input") as HTMLInputElement;
+      if (searchInput && searchInput.value.trim() !== "") {
+        // There's an active search, re-apply it with the new status filter
+        const searchTerm = searchInput.value.trim().toLowerCase();
+        (window as any).projectSearchFilter?.filterProjects(searchTerm, "projects-list");
+      }
+    }
   }
 
   // Search Filter Class for Text-based Filtering
   class ProjectSearchFilter {
     private searchInputAdmin: HTMLInputElement | null;
     private searchInputClient: HTMLInputElement | null;
+    private searchInputNew: HTMLInputElement | null;
 
     constructor() {
       this.searchInputAdmin = document.getElementById("project-search-input") as HTMLInputElement;
       this.searchInputClient = document.getElementById("project-search-input-client") as HTMLInputElement;
+      this.searchInputNew = document.getElementById("project-search-input") as HTMLInputElement; // ProjectNew.astro uses same ID
       this.setupEventListeners();
     }
 
@@ -413,10 +428,43 @@ let clientHoldCount = 14;
       if (this.searchInputClient) {
         this.setupSearchInput(this.searchInputClient, "client-projects-container");
       }
+      // Note: ProjectNew.astro search is handled by the global ProjectSearchFilter
+      // and will be set up when the component loads
     }
 
     setupSearchInput(searchInput: HTMLInputElement, containerId: string) {
       let debounceTimer: ReturnType<typeof setTimeout>;
+      let clearButtonId: string;
+      
+      // Determine clear button ID based on container and search input ID
+      if (containerId === "projects-list") {
+        clearButtonId = searchInput.id === "project-search-input" ? "clear-search-btn" : "clear-search-btn-new";
+      } else {
+        clearButtonId = "clear-search-btn-client";
+      }
+      
+      const clearButton = document.getElementById(clearButtonId) as HTMLButtonElement;
+
+      // Show/hide clear button based on input value
+      const updateClearButton = () => {
+        if (clearButton) {
+          if (searchInput.value.trim() !== "") {
+            clearButton.classList.remove("hidden");
+          } else {
+            clearButton.classList.add("hidden");
+          }
+        }
+      };
+
+      // Clear button click handler
+      if (clearButton) {
+        clearButton.addEventListener("click", () => {
+          searchInput.value = "";
+          this.filterProjects("", containerId);
+          updateClearButton();
+          searchInput.focus();
+        });
+      }
 
       searchInput.addEventListener("input", (e) => {
         clearTimeout(debounceTimer);
@@ -427,8 +475,12 @@ let clientHoldCount = 14;
             .toLowerCase();
 
           this.filterProjects(searchTerm, containerId);
+          updateClearButton();
         }, 300);
       });
+
+      // Initial state
+      updateClearButton();
     }
 
     filterProjects(searchTerm: string, containerId: string) {
@@ -454,28 +506,39 @@ let clientHoldCount = 14;
         const htmlItem = item as HTMLElement;
 
         if (searchTerm === "") {
-          htmlItem.style.display = "block";
-          visibleCount++;
-        } else {
-          // Get searchable text content
-          let textContent = "";
-          
-          // Try data-search-text elements first
-          const searchTextElements = htmlItem.querySelectorAll("[data-search-text]");
-          if (searchTextElements.length > 0) {
-            searchTextElements.forEach((el) => {
-              textContent += " " + (el.textContent || "").toLowerCase();
-            });
-          } else {
-            // Fallback to all text content
-            textContent = (htmlItem.textContent || "").toLowerCase();
-          }
-
-          if (textContent.includes(searchTerm)) {
-            htmlItem.style.display = "block";
+          // When search is empty, restore visibility based on current status filter
+          this.applyStatusFilter(htmlItem);
+          if (htmlItem.style.display !== "none") {
             visibleCount++;
-          } else {
+          }
+        } else {
+          // First check if item should be visible based on status filter
+          const shouldBeVisibleByStatus = this.isVisibleByStatusFilter(htmlItem);
+          
+          if (!shouldBeVisibleByStatus) {
+            // If hidden by status filter, keep it hidden regardless of search
             htmlItem.style.display = "none";
+          } else {
+            // Only search within items that pass the status filter
+            let textContent = "";
+            
+            // Try data-search-text elements first
+            const searchTextElements = htmlItem.querySelectorAll("[data-search-text]");
+            if (searchTextElements.length > 0) {
+              searchTextElements.forEach((el) => {
+                textContent += " " + (el.textContent || "").toLowerCase();
+              });
+            } else {
+              // Fallback to all text content
+              textContent = (htmlItem.textContent || "").toLowerCase();
+            }
+
+            if (textContent.includes(searchTerm)) {
+              htmlItem.style.display = "block";
+              visibleCount++;
+            } else {
+              htmlItem.style.display = "none";
+            }
           }
         }
       });
@@ -499,6 +562,24 @@ let clientHoldCount = 14;
       if (this.searchInputClient) {
         this.searchInputClient.value = "";
         this.filterProjects("", "client-projects-container");
+      }
+    }
+
+    // Helper method to check if item should be visible based on current status filter
+    isVisibleByStatusFilter(htmlItem: HTMLElement): boolean {
+      // Get current status filter from global projectFilter instance
+      const currentFilter = window.projectFilter?.currentFilter || "all";
+      const projectStatus = htmlItem.dataset.projectStatus;
+      
+      return currentFilter === "all" || projectStatus === currentFilter;
+    }
+
+    // Helper method to apply status filter to an item
+    applyStatusFilter(htmlItem: HTMLElement): void {
+      if (this.isVisibleByStatusFilter(htmlItem)) {
+        htmlItem.style.display = "block";
+      } else {
+        htmlItem.style.display = "none";
       }
     }
   }
