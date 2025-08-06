@@ -301,7 +301,6 @@ let clientHoldCount = 14;
       const projectsList = document.getElementById("projects-list");
       if (!projectsList) return;
 
-      debugger;
       const projectItems = projectsList.querySelectorAll(
         "[data-project-status]"
       );
@@ -410,11 +409,121 @@ let clientHoldCount = 14;
     }
   }
 
-  // Global instance
-  const projectFilter = new ProjectFilter();
+  // Search Filter Class for Text-based Filtering
+  class ProjectSearchFilter {
+    private searchInputAdmin: HTMLInputElement | null;
+    private searchInputClient: HTMLInputElement | null;
 
-  // Make it globally accessible
+    constructor() {
+      this.searchInputAdmin = document.getElementById("project-search-input") as HTMLInputElement;
+      this.searchInputClient = document.getElementById("project-search-input-client") as HTMLInputElement;
+      this.setupEventListeners();
+    }
+
+    setupEventListeners() {
+      if (this.searchInputAdmin) {
+        this.setupSearchInput(this.searchInputAdmin, "projects-list");
+      }
+      if (this.searchInputClient) {
+        this.setupSearchInput(this.searchInputClient, "client-projects-container");
+      }
+    }
+
+    setupSearchInput(searchInput: HTMLInputElement, containerId: string) {
+      let debounceTimer: ReturnType<typeof setTimeout>;
+
+      searchInput.addEventListener("input", (e) => {
+        clearTimeout(debounceTimer);
+
+        debounceTimer = setTimeout(() => {
+          const searchTerm = (e.target as HTMLInputElement).value
+            .trim()
+            .toLowerCase();
+
+          this.filterProjects(searchTerm, containerId);
+        }, 300);
+      });
+    }
+
+    filterProjects(searchTerm: string, containerId: string) {
+      const container = document.getElementById(containerId);
+      if (!container) return;
+
+      // Look for projects in various possible containers
+      let projectItems = container.querySelectorAll("[data-project-status]");
+      
+      // If no projects found, try looking in nested accordions or lists
+      if (projectItems.length === 0) {
+        const hasSearchText = container.querySelectorAll("[data-search-text]").length > 0;
+        if (hasSearchText) {
+          projectItems = Array.from(container.querySelectorAll("*")).filter(el => el.closest("[data-search-text]"));
+        } else {
+          projectItems = container.querySelectorAll(".project-item, .accordion-item, [class*='project']");
+        }
+      }
+
+      let visibleCount = 0;
+
+      projectItems.forEach((item) => {
+        const htmlItem = item as HTMLElement;
+
+        if (searchTerm === "") {
+          htmlItem.style.display = "block";
+          visibleCount++;
+        } else {
+          // Get searchable text content
+          let textContent = "";
+          
+          // Try data-search-text elements first
+          const searchTextElements = htmlItem.querySelectorAll("[data-search-text]");
+          if (searchTextElements.length > 0) {
+            searchTextElements.forEach((el) => {
+              textContent += " " + (el.textContent || "").toLowerCase();
+            });
+          } else {
+            // Fallback to all text content
+            textContent = (htmlItem.textContent || "").toLowerCase();
+          }
+
+          if (textContent.includes(searchTerm)) {
+            htmlItem.style.display = "block";
+            visibleCount++;
+          } else {
+            htmlItem.style.display = "none";
+          }
+        }
+      });
+
+      // Update placeholder with results count
+      const searchInput = containerId === "projects-list" ? this.searchInputAdmin : this.searchInputClient;
+      if (searchInput && searchTerm !== "") {
+        searchInput.placeholder = `Showing ${visibleCount} of ${projectItems.length} projects`;
+      } else if (searchInput) {
+        searchInput.placeholder = "Filter projects...";
+      }
+
+      console.log(`Search filter applied in ${containerId}: "${searchTerm}" - ${visibleCount}/${projectItems.length} items visible`);
+    }
+
+    reset() {
+      if (this.searchInputAdmin) {
+        this.searchInputAdmin.value = "";
+        this.filterProjects("", "projects-list");
+      }
+      if (this.searchInputClient) {
+        this.searchInputClient.value = "";
+        this.filterProjects("", "client-projects-container");
+      }
+    }
+  }
+
+  // Global instances
+  const projectFilter = new ProjectFilter();
+  const projectSearchFilter = new ProjectSearchFilter();
+
+  // Make them globally accessible
   window.projectFilter = projectFilter;
+  (window as any).projectSearchFilter = projectSearchFilter;
 </script>
 
 

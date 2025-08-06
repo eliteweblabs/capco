@@ -11,7 +11,18 @@ import {
 
 <!-- Projects Display Section -->
 <div class="mt-6 p-6 bg-white dark:bg-gray-800 rounded-lg shadow">
-  <h3 class="text-lg font-semibold mb-4">My Projects</h3>
+  <div class="flex justify-between items-center mb-4">
+    <h3 class="text-lg font-semibold">My Projects</h3>
+    <button
+      id="refresh-staff-btn"
+      type="button"
+      class="px-3 py-1 text-xs bg-gray-500 text-white rounded hover:bg-gray-600 transition-colors"
+      title="Refresh staff list for assignments"
+    >
+      <i class="bx bx-refresh mr-1"></i>
+      Refresh Staff
+    </button>
+  </div>
 
   <!-- Text Filter Input -->
   <div class="mb-4">
@@ -42,10 +53,179 @@ import {
   class ProjectsList {
     private currentProjectId: string | null = null;
     private currentProjectStatus: number | null = null;
+    private staffUsers: any[] = [];
 
     constructor() {
       this.setupFormHandlers();
+      this.setupAssignmentHandlers();
+      this.setupRefreshButton();
+      this.loadStaffUsers();
       this.exposeGlobalMethods();
+    }
+
+    // Function to load staff users from API
+    async loadStaffUsers() {
+      try {
+        const response = await fetch("/api/get-staff-users");
+        const result = await response.json();
+
+        if (result.success) {
+          this.staffUsers = result.staffUsers || [];
+          console.log(`Loaded ${this.staffUsers.length} staff users`);
+        } else {
+          console.error("Failed to load staff users:", result.error);
+          this.staffUsers = [];
+        }
+      } catch (error) {
+        console.error("Error loading staff users:", error);
+        this.staffUsers = [];
+      }
+    }
+
+    // Function to setup refresh button event listener
+    private setupRefreshButton() {
+      // Use event delegation since the button might not exist yet
+      document.addEventListener("click", async (e) => {
+        const target = e.target as HTMLElement;
+        if (
+          target.id === "refresh-staff-btn" ||
+          target.closest("#refresh-staff-btn")
+        ) {
+          e.preventDefault();
+          await this.refreshStaffUsers();
+        }
+      });
+    }
+
+    // Function to refresh staff users and update all dropdowns
+    async refreshStaffUsers() {
+      console.log("Refreshing staff users...");
+      await this.loadStaffUsers();
+
+      // Re-populate all staff assignment dropdowns with updated data
+      const staffSelects = document.querySelectorAll(
+        ".staff-assignment-select"
+      );
+      staffSelects.forEach((select) => {
+        const selectElement = select as HTMLSelectElement;
+        const projectId = selectElement.dataset.projectId;
+        const currentValue = selectElement.value;
+
+        // Clear and repopulate options
+        selectElement.innerHTML = '<option value="">Unassigned</option>';
+
+        this.staffUsers.forEach((staff) => {
+          const option = document.createElement("option");
+          option.value = staff.id;
+          option.textContent = staff.name;
+
+          // Restore previous selection if it still exists
+          if (staff.id === currentValue) {
+            option.selected = true;
+          }
+
+          selectElement.appendChild(option);
+        });
+      });
+
+      showNotification({
+        type: "success",
+        title: "Staff List Updated",
+        message: `Refreshed staff list - found ${this.staffUsers.length} staff members`,
+        duration: 3000,
+      });
+    }
+
+    // Function to populate staff assignment dropdowns
+    private populateStaffAssignments(projects: any[]) {
+      projects.forEach((project) => {
+        const selectElement = document.getElementById(
+          `staff-assignment-${project.id}`
+        ) as HTMLSelectElement;
+        if (!selectElement) return;
+
+        // Clear existing options except "Unassigned"
+        selectElement.innerHTML = '<option value="">Unassigned</option>';
+
+        // Add staff users as options
+        this.staffUsers.forEach((staff) => {
+          const option = document.createElement("option");
+          option.value = staff.id;
+          option.textContent = staff.name;
+
+          // Select current assignment if it matches
+          if (project.assigned_to_id === staff.id) {
+            option.selected = true;
+          }
+
+          selectElement.appendChild(option);
+        });
+      });
+    }
+
+    // Function to handle staff assignment changes
+    private setupAssignmentHandlers() {
+      document.addEventListener("change", async (e) => {
+        const target = e.target as HTMLSelectElement;
+        if (!target.classList.contains("staff-assignment-select")) return;
+
+        const projectId = target.dataset.projectId;
+        const assignedToId = target.value || null;
+
+        if (!projectId) return;
+
+        try {
+          const response = await fetch("/api/assign-project", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              projectId,
+              assignedToId,
+            }),
+          });
+
+          const result = await response.json();
+
+          if (result.success) {
+            const assignedName = assignedToId
+              ? this.staffUsers.find((s) => s.id === assignedToId)?.name ||
+                "Unknown"
+              : "Unassigned";
+
+            showNotification({
+              type: "success",
+              title: "Assignment Updated",
+              message: `Project ${projectId} assigned to ${assignedName}`,
+              duration: 3000,
+            });
+
+            console.log("Assignment updated:", result);
+          } else {
+            showNotification({
+              type: "error",
+              title: "Assignment Failed",
+              message: result.error || "Could not update assignment",
+              duration: 5000,
+            });
+
+            // Reset dropdown to previous value on error
+            target.selectedIndex = 0;
+          }
+        } catch (error) {
+          console.error("Error updating assignment:", error);
+          showNotification({
+            type: "error",
+            title: "Assignment Error",
+            message: "Could not connect to server",
+            duration: 5000,
+          });
+
+          // Reset dropdown to previous value on error
+          target.selectedIndex = 0;
+        }
+      });
     }
 
     // Function to display user projects in the projects list
@@ -53,8 +233,17 @@ import {
       const projectsList = document.getElementById("projects-list");
       if (!projectsList) return;
 
+      // Preserve the search input if it exists
+      const existingSearchInput = projectsList.querySelector(
+        "#project-search-input"
+      );
+      const searchInputHTML = existingSearchInput
+        ? existingSearchInput.outerHTML
+        : "";
+
       if (projects.length === 0) {
         projectsList.innerHTML = `
+          ${searchInputHTML}
           <div class="p-4 text-center text-gray-500 dark:text-gray-400">
             <p>No projects found</p>
             <p class="text-sm mt-1">Create a test project to see it listed here</p>
@@ -63,11 +252,19 @@ import {
         return;
       }
 
+      // Sort projects by update time (most recent first)
+      const sortedProjects = [...projects].sort((a, b) => {
+        const timeA = new Date(a.updated_at || a.created).getTime();
+        const timeB = new Date(b.updated_at || b.created).getTime();
+        return timeB - timeA; // Descending order (newest first)
+      });
+
       // Generate accordion HTML for projects
       const accordionId = "projects-accordion";
       projectsList.innerHTML = `
+        ${searchInputHTML}
         <div id="${accordionId}" data-accordion="collapse">
-          ${projects
+          ${sortedProjects
             .map((project, index) => {
               // Calculate time since last update
               const timeSinceUpdate = formatTimeSinceUpdate(
@@ -75,7 +272,7 @@ import {
               );
 
               const isFirst = index === 0;
-              const isLast = index === projects.length - 1;
+              const isLast = index === sortedProjects.length - 1;
               const projectTitle =
                 project.address || project.title || `Project ${project.id}`;
               const projectDescription =
@@ -190,8 +387,15 @@ import {
                             <div class="text-sm text-gray-800 dark:text-gray-200">${timeSinceUpdate}</div>
                           </div>
                           <div>
-                            <span class="text-xs text-gray-500 dark:text-gray-400">Author:</span>
-                            <div class="text-sm text-gray-800 dark:text-gray-200">${project.author_email || "Unassigned"}</div>
+                            <span class="text-xs text-gray-500 dark:text-gray-400">Assigned to:</span>
+                            <select
+                              id="staff-assignment-${project.id}"
+                              data-project-id="${project.id}"
+                              class="text-sm bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 border border-gray-300 dark:border-gray-600 rounded px-2 py-1 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 staff-assignment-select"
+                            >
+                              <option value="">Unassigned</option>
+                              <!-- Staff options will be populated dynamically -->
+                            </select>
                           </div>
                           <div>
                             <span class="text-xs text-gray-500 dark:text-gray-400">Created:</span>
@@ -240,6 +444,29 @@ import {
                             <i class="bx bx-file-pdf mr-1"></i>
                             Generate PDF
                           </button>
+
+                          <button 
+                            type="button"
+                            class="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors pdf-generate-btn"
+                            data-project-id="${project.id}"
+                            data-template-type="affidavit"
+                            data-project-data='${JSON.stringify({
+                              title: project.title || project.address,
+                              address: project.address,
+                              owner: project.owner,
+                              architect: project.architect,
+                              description: project.description,
+                              sq_ft: project.sq_ft,
+                              status:
+                                PROJECT_STATUS_LABELS[
+                                  (project.status ||
+                                    10) as unknown as ProjectStatusCode
+                                ] || "Unknown",
+                            }).replace(/'/g, "&#39;")}'
+                          >
+                            <i class="bx bx-file-pdf mr-1"></i>
+                            Generate Affidavit
+                          </button>
                         </div>
                       </form>
                     </div>
@@ -254,7 +481,12 @@ import {
       // Initialize accordion functionality
       setTimeout(() => {
         this.initializeAccordion(accordionId);
-        this.populateFormContainers(projects);
+        this.populateFormContainers(sortedProjects);
+        this.populateStaffAssignments(sortedProjects);
+
+        // Initialize button groups AFTER form containers are populated
+        console.log("Initializing button groups after form population");
+        this.initializeButtonGroups(accordionId);
       }, 100);
 
       // Show the project filter after projects are loaded
@@ -266,6 +498,14 @@ import {
 
       // Initialize text filter functionality
       this.initializeTextFilter(accordionId);
+
+      // Re-initialize search filter in ProjectsNav if it exists
+      if ((window as any).projectSearchFilter) {
+        // Add a small delay to ensure DOM is updated
+        setTimeout(() => {
+          (window as any).projectSearchFilter.setupEventListeners();
+        }, 200);
+      }
     }
 
     // Function to initialize accordion functionality
@@ -684,6 +924,112 @@ import {
       });
     }
 
+    // Function to initialize button group functionality
+    private initializeButtonGroups(accordionId: string) {
+      const accordionElement = document.getElementById(accordionId);
+      if (!accordionElement) {
+        console.error("Accordion element not found:", accordionId);
+        return;
+      }
+
+      // Check how many buttons we found
+      const allButtons = accordionElement.querySelectorAll(
+        ".building-type-radio, .consulting-service-btn, .fire-service-radio, .fire-safety-service-btn"
+      );
+      console.log(`Found ${allButtons.length} form buttons in accordion`);
+
+      // Handle button group clicks
+      accordionElement.addEventListener("click", (e) => {
+        const button = (e.target as HTMLElement).closest(
+          ".building-type-radio, .consulting-service-btn, .fire-service-radio, .fire-safety-service-btn"
+        );
+        if (!button) return;
+
+        e.preventDefault();
+
+        const value = (button as HTMLElement).dataset.value;
+        const group = (button as HTMLElement).dataset.group;
+        const type = (button as HTMLElement).dataset.type;
+
+        if (!value || !group || !type) return;
+
+        if (type === "radio") {
+          // Single select - clear all other buttons in this group
+          const groupButtons = accordionElement.querySelectorAll(
+            `[data-group="${group}"]`
+          );
+          groupButtons.forEach((btn) => {
+            btn.classList.remove(
+              "bg-blue-500",
+              "text-white",
+              "border-blue-500"
+            );
+            btn.classList.add(
+              "bg-white",
+              "dark:bg-gray-700",
+              "text-gray-700",
+              "dark:text-gray-300",
+              "border-gray-300",
+              "dark:border-gray-600"
+            );
+          });
+
+          // Set this button as selected
+          button.classList.add("bg-blue-500", "text-white", "border-blue-500");
+          button.classList.remove(
+            "bg-white",
+            "dark:bg-gray-700",
+            "text-gray-700",
+            "dark:text-gray-300",
+            "border-gray-300",
+            "dark:border-gray-600"
+          );
+
+          // Store the value for form submission
+          (button as any)._selectedValue = value;
+        } else if (type === "multi-select") {
+          // Multi-select - toggle this button's selection
+          if (button.classList.contains("bg-blue-500")) {
+            // Deselect
+            button.classList.remove(
+              "bg-blue-500",
+              "text-white",
+              "border-blue-500"
+            );
+            button.classList.add(
+              "bg-white",
+              "dark:bg-gray-700",
+              "text-gray-700",
+              "dark:text-gray-300",
+              "border-gray-300",
+              "dark:border-gray-600"
+            );
+          } else {
+            // Select
+            button.classList.add(
+              "bg-blue-500",
+              "text-white",
+              "border-blue-500"
+            );
+            button.classList.remove(
+              "bg-white",
+              "dark:bg-gray-700",
+              "text-gray-700",
+              "dark:text-gray-300",
+              "border-gray-300",
+              "dark:border-gray-600"
+            );
+          }
+        }
+
+        console.log(`Button ${type} selection changed:`, {
+          group,
+          value,
+          selected: button.classList.contains("bg-blue-500"),
+        });
+      });
+    }
+
     // Expose methods globally for external access
     private exposeGlobalMethods() {
       // Create global instance
@@ -694,6 +1040,7 @@ import {
       (window as any).loadProject = this.loadProject.bind(this);
       (window as any).viewProjectDetails = this.viewProjectDetails.bind(this);
       (window as any).resetProjectForm = this.resetProjectForm.bind(this);
+      (window as any).refreshStaffUsers = this.refreshStaffUsers.bind(this);
     }
   }
 

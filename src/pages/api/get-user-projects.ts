@@ -108,8 +108,8 @@ export const GET: APIRoute = async ({ request }) => {
     // Fetch projects based on user role
     let query = supabase.from("projects").select("*");
 
-    // Admin gets all projects, clients get only their own
-    if (userRole !== "admin") {
+    // Admin and Staff get all projects, clients get only their own
+    if (userRole !== "Admin" && userRole !== "Staff") {
       query = query.eq("author_id", user.id);
     }
 
