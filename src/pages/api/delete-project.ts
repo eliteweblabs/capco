@@ -1,6 +1,5 @@
 import type { APIRoute } from "astro";
 import { supabase } from "../../lib/supabase";
-import { createClient } from "@supabase/supabase-js";
 
 export const DELETE: APIRoute = async ({ request, cookies }) => {
   try {
@@ -18,71 +17,40 @@ export const DELETE: APIRoute = async ({ request, cookies }) => {
       );
     }
 
-    // Get environment variables for admin client
-    const supabaseUrl = import.meta.env.SUPABASE_URL;
-    const supabaseServiceKey = import.meta.env.SUPABASE_SERVICE_ROLE_KEY;
+    // Get current user from cookies for authentication
+    const accessToken = cookies.get("sb-access-token")?.value;
+    const refreshToken = cookies.get("sb-refresh-token")?.value;
 
-    console.log("Supabase URL:", supabaseUrl ? "Set" : "Not set");
-    console.log("Service Key:", supabaseServiceKey ? "Set" : "Not set");
+    console.log("Access token:", accessToken ? "Present" : "Missing");
+    console.log("Refresh token:", refreshToken ? "Present" : "Missing");
 
-    if (!supabaseUrl || !supabaseServiceKey) {
-      console.error("Database not configured - missing environment variables");
-      console.error("SUPABASE_URL:", supabaseUrl ? "Set" : "Missing");
-      console.error(
-        "SUPABASE_SERVICE_ROLE_KEY:",
-        supabaseServiceKey ? "Set" : "Missing",
-      );
-      return new Response(
-        JSON.stringify({
-          error: "Database not configured",
-          details:
-            "Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY environment variables. Please check your .env file or environment configuration.",
-        }),
-        {
-          status: 500,
-          headers: { "Content-Type": "application/json" },
-        },
-      );
+    if (!accessToken || !refreshToken) {
+      console.error("Not authenticated - missing tokens");
+      return new Response(JSON.stringify({ error: "Not authenticated" }), {
+        status: 401,
+        headers: { "Content-Type": "application/json" },
+      });
     }
 
-    const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
-    console.log("Supabase admin client created");
+    // Set up session with regular supabase client
+    console.log("Setting up session...");
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.setSession({
+      access_token: accessToken,
+      refresh_token: refreshToken,
+    });
 
-    // Test the connection
-    try {
-      const { data, error } = await supabaseAdmin
-        .from("projects")
-        .select("count")
-        .limit(1);
-      if (error) {
-        console.error("Database connection test failed:", error);
-        return new Response(
-          JSON.stringify({
-            error: "Database connection failed",
-            details:
-              "Unable to connect to Supabase database. Please check your configuration.",
-          }),
-          {
-            status: 500,
-            headers: { "Content-Type": "application/json" },
-          },
-        );
-      }
-      console.log("Database connection test successful");
-    } catch (error) {
-      console.error("Database connection test error:", error);
-      return new Response(
-        JSON.stringify({
-          error: "Database connection failed",
-          details:
-            "Unable to connect to Supabase database. Please check your configuration.",
-        }),
-        {
-          status: 500,
-          headers: { "Content-Type": "application/json" },
-        },
-      );
+    if (authError || !user) {
+      console.error("Authentication failed:", authError);
+      return new Response(JSON.stringify({ error: "Authentication failed" }), {
+        status: 401,
+        headers: { "Content-Type": "application/json" },
+      });
     }
+
+    console.log("User authenticated:", user.id);
 
     // Get the request body
     const requestBody = await request.json();
@@ -112,44 +80,9 @@ export const DELETE: APIRoute = async ({ request, cookies }) => {
 
     console.log("Project ID:", projectIdNum);
 
-    // Get current user from cookies for authentication
-    const accessToken = cookies.get("sb-access-token")?.value;
-    const refreshToken = cookies.get("sb-refresh-token")?.value;
-
-    console.log("Access token:", accessToken ? "Present" : "Missing");
-    console.log("Refresh token:", refreshToken ? "Present" : "Missing");
-
-    if (!accessToken || !refreshToken) {
-      console.error("Not authenticated - missing tokens");
-      return new Response(JSON.stringify({ error: "Not authenticated" }), {
-        status: 401,
-        headers: { "Content-Type": "application/json" },
-      });
-    }
-
-    // Set up session with admin client to get user info
-    console.log("Setting up session...");
-    const {
-      data: { user },
-      error: authError,
-    } = await supabaseAdmin.auth.setSession({
-      access_token: accessToken,
-      refresh_token: refreshToken,
-    });
-
-    if (authError || !user) {
-      console.error("Authentication failed:", authError);
-      return new Response(JSON.stringify({ error: "Authentication failed" }), {
-        status: 401,
-        headers: { "Content-Type": "application/json" },
-      });
-    }
-
-    console.log("User authenticated:", user.id);
-
     // Check if project exists and user has permission to delete it
     console.log("Looking up project:", projectIdNum);
-    const { data: project, error: projectError } = await supabaseAdmin
+    const { data: project, error: projectError } = await supabase
       .from("projects")
       .select("id, author_id")
       .eq("id", projectIdNum)
@@ -165,9 +98,9 @@ export const DELETE: APIRoute = async ({ request, cookies }) => {
 
     console.log("Project found:", project);
 
-    // Check if user is the author or an admin
+    // Check user's role and permissions
     console.log("Looking up user profile:", user.id);
-    const { data: profile, error: profileError } = await supabaseAdmin
+    const { data: profile, error: profileError } = await supabase
       .from("profiles")
       .select("role")
       .eq("id", user.id)
@@ -197,9 +130,9 @@ export const DELETE: APIRoute = async ({ request, cookies }) => {
       );
     }
 
-    // Delete associated files first
+    // Delete associated files first (cascade delete)
     console.log("Deleting associated files...");
-    const { error: filesError } = await supabaseAdmin
+    const { error: filesError } = await supabase
       .from("files")
       .delete()
       .eq("project_id", projectIdNum);
@@ -212,7 +145,7 @@ export const DELETE: APIRoute = async ({ request, cookies }) => {
 
     // Delete the project
     console.log("Deleting project...");
-    const { error: deleteError } = await supabaseAdmin
+    const { error: deleteError } = await supabase
       .from("projects")
       .delete()
       .eq("id", projectIdNum);
@@ -244,9 +177,12 @@ export const DELETE: APIRoute = async ({ request, cookies }) => {
     );
   } catch (error) {
     console.error("Error in delete-project API:", error);
-    return new Response(JSON.stringify({ error: "Internal server error" }), {
-      status: 500,
-      headers: { "Content-Type": "application/json" },
-    });
+    return new Response(
+      JSON.stringify({ error: "Internal server error" }),
+      {
+        status: 500,
+        headers: { "Content-Type": "application/json" },
+      },
+    );
   }
 };
