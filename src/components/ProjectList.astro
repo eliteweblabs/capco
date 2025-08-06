@@ -36,8 +36,9 @@ import {
   </div>
 
   <!-- Projects List Container -->
-
-  <SectionContainer id="dashboard" class="tab-content mb-0 mt-0 mx-6" />
+  <div id="projects-list" class="mt-4">
+    <!-- Projects will be populated here dynamically -->
+  </div>
 </div>
 
 <script>
@@ -61,6 +62,45 @@ import {
       this.setupRefreshButton();
       this.loadStaffUsers();
       this.exposeGlobalMethods();
+      // Automatically load projects when component initializes
+      this.loadProjects();
+    }
+
+    // Function to automatically load projects
+    async loadProjects() {
+      try {
+        const response = await fetch("/api/get-user-projects");
+        const result = await response.json();
+
+        if (result.success && result.projects) {
+          this.displayUserProjects(result.projects);
+
+          showNotification({
+            type: "success",
+            title: "Projects Loaded",
+            message: `Found ${result.projects.length} project(s)`,
+            duration: 3000,
+          });
+
+          console.log(`Loaded ${result.projects.length} projects`);
+        } else {
+          console.error("Failed to load projects:", result.error);
+          showNotification({
+            type: "error",
+            title: "Failed to Load Projects",
+            message: result.error || "Could not fetch your projects",
+            duration: 5000,
+          });
+        }
+      } catch (error) {
+        console.error("Error loading projects:", error);
+        showNotification({
+          type: "error",
+          title: "Failed to Load Projects",
+          message: "Could not connect to server",
+          duration: 5000,
+        });
+      }
     }
 
     // Function to load staff users from API
@@ -1044,12 +1084,7 @@ import {
     }
   }
 
-  // Initialize the projects list when DOM is loaded
-  document.addEventListener("DOMContentLoaded", () => {
-    new ProjectsList();
-  });
-
-  // Also initialize immediately if DOM is already loaded
+  // Initialize the projects list when DOM is loaded (single instance)
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", () => {
       new ProjectsList();
