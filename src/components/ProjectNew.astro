@@ -1765,33 +1765,86 @@ import SectionContainer from "./SectionContainer.astro";
         }
       }
 
-      const formData = new FormData();
-      formData.append("file", blob, "selection.png");
-      formData.append("language", "eng");
-      formData.append("isOverlayRequired", "false");
-      formData.append("OCREngine", "2");
+      // Try multiple OCR services in sequence
+      this.tryOCRService(blob, inputId, imageId, 0);
+    }
 
-      fetch("https://api.ocr.space/parse/image", {
-        method: "POST",
-        headers: {
-          apikey: "K81932338788957", // Replace with your own key for production
+    tryOCRService(blob, inputId, imageId, serviceIndex) {
+      const services = [
+        {
+          name: "OCR.space",
+          url: "https://api.ocr.space/parse/image",
+          headers: { apikey: "K81932338788957" },
+          body: (formData) => {
+            formData.append("file", blob, "selection.png");
+            formData.append("language", "eng");
+            formData.append("isOverlayRequired", "false");
+            formData.append("OCREngine", "2");
+          }
         },
+        {
+          name: "OCR.space (backup)",
+          url: "https://api.ocr.space/parse/image",
+          headers: { apikey: "helloworld" }, // Free tier key
+          body: (formData) => {
+            formData.append("file", blob, "selection.png");
+            formData.append("language", "eng");
+            formData.append("isOverlayRequired", "false");
+            formData.append("OCREngine", "1");
+          }
+        }
+      ];
+
+      if (serviceIndex >= services.length) {
+        console.error("All OCR services failed");
+        const errorMsg = "All OCR services failed. Please try again.";
+        if (inputId) {
+          const targetInput = this.container.querySelector(`#${inputId}`);
+          if (targetInput) targetInput.value = errorMsg;
+        }
+        this.resetSelectionState();
+        return;
+      }
+
+      const service = services[serviceIndex];
+      console.log(`Trying OCR service: ${service.name}`);
+      
+      const formData = new FormData();
+      service.body(formData);
+      
+      // Add timeout to prevent hanging
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 second timeout per service
+      
+      fetch(service.url, {
+        method: "POST",
+        headers: service.headers,
         body: formData,
+        signal: controller.signal,
       })
-        .then((response) => response.json())
+        .then((response) => {
+          clearTimeout(timeoutId);
+          console.log(`${service.name} response status:`, response.status);
+          if (!response.ok) {
+            throw new Error(`${service.name} API error: ${response.status} ${response.statusText}`);
+          }
+          return response.json();
+        })
         .then((data) => {
+          console.log(`${service.name} response data:`, data);
+          
           if (data.IsErroredOnProcessing) {
-            const errorMsg =
-              "OCR error: " + (data.ErrorMessage || "Unknown error");
-            if (inputId) {
-              const targetInput = this.container.querySelector(`#${inputId}`);
-              if (targetInput) targetInput.value = errorMsg;
-            }
+            const errorMsg = `${service.name} error: ${data.ErrorMessage || "Unknown error"}`;
+            console.error(errorMsg);
+            // Try next service
+            this.tryOCRService(blob, inputId, imageId, serviceIndex + 1);
             return;
           }
+          
           if (data.ParsedResults && data.ParsedResults[0].ParsedText) {
             // Get raw OCR text
             let rawText = data.ParsedResults[0].ParsedText.trim();
+            console.log(`OCR text from ${service.name}:`, rawText);
 
             if (inputId) {
               const targetInput = this.container.querySelector(`#${inputId}`);
@@ -1828,29 +1881,26 @@ import SectionContainer from "./SectionContainer.astro";
                 );
               }
             }
+            
+            // Reset selection state after successful OCR
+            this.resetSelectionState();
           } else {
             const noTextMsg = "No text found.";
             if (inputId) {
               const targetInput = this.container.querySelector(`#${inputId}`);
               if (targetInput) targetInput.value = noTextMsg;
             }
+            this.resetSelectionState();
           }
-
-          // Reset selection state after successful OCR
-          this.resetSelectionState();
         })
         .catch((err) => {
-          const errorMsg = "OCR failed.";
-          if (inputId) {
-            const targetInput = this.container.querySelector(`#${inputId}`);
-            if (targetInput) targetInput.value = errorMsg;
-          }
-          console.error("OCR error:", err);
-
-          // Reset selection state even after error
-          this.resetSelectionState();
+          clearTimeout(timeoutId);
+          console.error(`${service.name} error:`, err);
+          
+          // Try next service
+          this.tryOCRService(blob, inputId, imageId, serviceIndex + 1);
         });
-    }
+
 
     setupInputFieldListeners() {
       // Add event listeners for input fields (both form inputs and image title inputs)
