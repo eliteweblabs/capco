@@ -1,19 +1,14 @@
 import type { APIRoute } from "astro";
+import { supabase } from "../../lib/supabase";
 import { createClient } from "@supabase/supabase-js";
 
 export const DELETE: APIRoute = async ({ request, cookies }) => {
   try {
     console.log("Delete project API called");
 
-    // Get Supabase client with service role key for admin operations
-    const supabaseUrl = import.meta.env.SUPABASE_URL;
-    const supabaseServiceKey = import.meta.env.SUPABASE_SERVICE_ROLE_KEY;
-
-    console.log("Supabase URL:", supabaseUrl ? "Set" : "Not set");
-    console.log("Service Key:", supabaseServiceKey ? "Set" : "Not set");
-
-    if (!supabaseUrl || !supabaseServiceKey) {
-      console.error("Database not configured - missing environment variables");
+    // Check if Supabase is configured
+    if (!supabase) {
+      console.error("Database not configured - supabase client not available");
       return new Response(
         JSON.stringify({ error: "Database not configured" }),
         {
@@ -23,8 +18,71 @@ export const DELETE: APIRoute = async ({ request, cookies }) => {
       );
     }
 
+    // Get environment variables for admin client
+    const supabaseUrl = import.meta.env.SUPABASE_URL;
+    const supabaseServiceKey = import.meta.env.SUPABASE_SERVICE_ROLE_KEY;
+
+    console.log("Supabase URL:", supabaseUrl ? "Set" : "Not set");
+    console.log("Service Key:", supabaseServiceKey ? "Set" : "Not set");
+
+    if (!supabaseUrl || !supabaseServiceKey) {
+      console.error("Database not configured - missing environment variables");
+      console.error("SUPABASE_URL:", supabaseUrl ? "Set" : "Missing");
+      console.error(
+        "SUPABASE_SERVICE_ROLE_KEY:",
+        supabaseServiceKey ? "Set" : "Missing",
+      );
+      return new Response(
+        JSON.stringify({
+          error: "Database not configured",
+          details:
+            "Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY environment variables. Please check your .env file or environment configuration.",
+        }),
+        {
+          status: 500,
+          headers: { "Content-Type": "application/json" },
+        },
+      );
+    }
+
     const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
     console.log("Supabase admin client created");
+
+    // Test the connection
+    try {
+      const { data, error } = await supabaseAdmin
+        .from("projects")
+        .select("count")
+        .limit(1);
+      if (error) {
+        console.error("Database connection test failed:", error);
+        return new Response(
+          JSON.stringify({
+            error: "Database connection failed",
+            details:
+              "Unable to connect to Supabase database. Please check your configuration.",
+          }),
+          {
+            status: 500,
+            headers: { "Content-Type": "application/json" },
+          },
+        );
+      }
+      console.log("Database connection test successful");
+    } catch (error) {
+      console.error("Database connection test error:", error);
+      return new Response(
+        JSON.stringify({
+          error: "Database connection failed",
+          details:
+            "Unable to connect to Supabase database. Please check your configuration.",
+        }),
+        {
+          status: 500,
+          headers: { "Content-Type": "application/json" },
+        },
+      );
+    }
 
     // Get the request body
     const requestBody = await request.json();
