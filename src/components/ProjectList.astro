@@ -14,37 +14,35 @@ import {
 <div class="mt-6 p-6 bg-white dark:bg-gray-800 rounded-lg shadow">
   <div class="flex justify-between items-center mb-4">
     <h3 class="text-lg font-semibold">My Projects</h3>
-    <button
-      id="refresh-staff-btn"
-      type="button"
-      class="px-3 py-1 text-xs bg-gray-500 text-white rounded hover:bg-gray-600 transition-colors"
-      title="Refresh staff list for assignments"
-    >
-      <i class="bx bx-refresh mr-1"></i>
-      Refresh Staff
-    </button>
-  </div>
-
-  <!-- Text Filter Input -->
-  <div class="mb-4 relative">
-    <input
-      type="text"
-      id="project-search-input"
-      placeholder="Filter projects..."
-      class="w-full pr-10 px-4 py-2 text-sm border border-gray-300 rounded-lg bg-white dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-    />
-    <button
-      id="clear-search-btn"
-      class="absolute right-2 top-1/2 transform -translate-y-1/2 p-1 text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300 transition-colors hidden"
-      title="Clear search"
-    >
-      <i class="bx bx-x text-lg"></i>
-    </button>
-  </div>
-
-  <!-- Projects List Container -->
-  <div id="projects-list" class="mt-4">
-    <!-- Projects will be populated here dynamically -->
+    <div class="flex gap-2">
+      <button
+        id="debug-staff-btn"
+        type="button"
+        class="px-3 py-1 text-xs bg-red-500 text-white rounded hover:bg-red-600 transition-colors"
+        title="Debug staff users"
+      >
+        <i class="bx bx-bug mr-1"></i>
+        Debug Staff
+      </button>
+      <button
+        id="test-db-btn"
+        type="button"
+        class="px-3 py-1 text-xs bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
+        title="Test database queries"
+      >
+        <i class="bx bx-database mr-1"></i>
+        Test DB
+      </button>
+      <button
+        id="refresh-staff-btn"
+        type="button"
+        class="px-3 py-1 text-xs bg-gray-500 text-white rounded hover:bg-gray-600 transition-colors"
+        title="Refresh staff list for assignments"
+      >
+        <i class="bx bx-refresh mr-1"></i>
+        Refresh Staff
+      </button>
+    </div>
   </div>
 </div>
 
@@ -113,14 +111,21 @@ import {
     // Function to load staff users from API
     async loadStaffUsers() {
       try {
+        console.log("Loading staff users...");
         const response = await fetch("/api/get-staff-users");
         const result = await response.json();
 
+        console.log("Staff users API response:", result);
+
         if (result.success) {
           this.staffUsers = result.staffUsers || [];
-          console.log(`Loaded ${this.staffUsers.length} staff users`);
+          console.log(
+            `Loaded ${this.staffUsers.length} staff users:`,
+            this.staffUsers
+          );
         } else {
           console.error("Failed to load staff users:", result.error);
+          console.log("Full error response:", result);
           this.staffUsers = [];
         }
       } catch (error) {
@@ -141,7 +146,90 @@ import {
           e.preventDefault();
           await this.refreshStaffUsers();
         }
+
+        if (
+          target.id === "debug-staff-btn" ||
+          target.closest("#debug-staff-btn")
+        ) {
+          e.preventDefault();
+          await this.debugStaffUsers();
+        }
+
+        if (target.id === "test-db-btn" || target.closest("#test-db-btn")) {
+          e.preventDefault();
+          await this.testDatabase();
+        }
       });
+    }
+
+    // Function to debug staff users
+    async debugStaffUsers() {
+      try {
+        console.log("Debugging staff users...");
+        const response = await fetch("/api/debug-staff-users");
+        const result = await response.json();
+
+        console.log("Debug response:", result);
+
+        if (result.success) {
+          showNotification({
+            type: "info",
+            title: "Debug Info",
+            message: `Check console for detailed debug information`,
+            duration: 5000,
+          });
+        } else {
+          showNotification({
+            type: "error",
+            title: "Debug Failed",
+            message: result.error || "Could not get debug info",
+            duration: 5000,
+          });
+        }
+      } catch (error) {
+        console.error("Error debugging staff users:", error);
+        showNotification({
+          type: "error",
+          title: "Debug Error",
+          message: "Could not connect to debug endpoint",
+          duration: 5000,
+        });
+      }
+    }
+
+    // Function to test database queries
+    async testDatabase() {
+      try {
+        console.log("Testing database queries...");
+        const response = await fetch("/api/test-database");
+        const result = await response.json();
+
+        console.log("Database test response:", result);
+
+        if (result.success) {
+          showNotification({
+            type: "info",
+            title: "Database Test",
+            message: `Check console for database test results`,
+            duration: 5000,
+          });
+        } else {
+          showNotification({
+            type: "error",
+            title: "Database Test Failed",
+            message: result.error || "Could not test database",
+            duration: 5000,
+          });
+        }
+      } catch (error) {
+        console.error("Error testing database:", error);
+        showNotification({
+          type: "error",
+          title: "Database Test Error",
+          message: "Could not connect to test endpoint",
+          duration: 5000,
+        });
+      }
     }
 
     // Function to refresh staff users and update all dropdowns

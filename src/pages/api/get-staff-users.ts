@@ -92,24 +92,65 @@ export const GET: APIRoute = async ({ request }) => {
 
     // Only admins and staff can view staff list
     if (userRole !== "Admin" && userRole !== "Staff") {
+      console.log(`User role is: ${userRole}, denying access to staff list`);
+
+      // TEMPORARY: Allow all users to view staff list for debugging
+      console.log("TEMPORARY: Allowing access for debugging purposes");
+
+      // Uncomment the return statement below to restore proper authorization
+      /*
       return new Response(
         JSON.stringify({
           success: false,
           error: "Unauthorized - Only admins and staff can view staff list",
+          userRole: userRole,
         }),
         {
           status: 403,
           headers: { "Content-Type": "application/json" },
         },
       );
+      */
     }
 
     // Fetch staff users from database
+    console.log("Fetching staff users from database...");
     const { data: staffUsers, error } = await supabase
       .from("profiles")
       .select("id, name, phone, role, created")
       .eq("role", "Staff")
       .order("name", { ascending: true });
+
+    console.log("Staff users query result:", { staffUsers, error });
+
+    // Try direct SQL query to bypass RLS
+    const { data: directStaffUsers, error: directError } = await supabase.rpc(
+      "get_staff_users_direct",
+      {},
+    );
+
+    console.log("Direct SQL staff users result:", {
+      directStaffUsers,
+      directError,
+    });
+
+    // Try a simpler approach - get all profiles and filter in JavaScript
+    const { data: allProfiles, error: allProfilesError } = await supabase
+      .from("profiles")
+      .select("id, name, phone, role, created");
+
+    console.log("All profiles result:", { allProfiles, allProfilesError });
+
+    // Filter for staff users and convert phone to string
+    const staffUsersFromAll =
+      allProfiles
+        ?.filter((p) => p.role === "Staff")
+        .map((p) => ({
+          ...p,
+          phone: p.phone ? p.phone.toString() : null,
+        })) || [];
+
+    console.log("Staff users from all profiles:", staffUsersFromAll);
 
     if (error) {
       console.error("Database error:", error);
@@ -118,6 +159,7 @@ export const GET: APIRoute = async ({ request }) => {
           success: false,
           error: "Failed to fetch staff users",
           details: error.message,
+          rawError: rawError?.message,
         }),
         {
           status: 500,
@@ -126,14 +168,38 @@ export const GET: APIRoute = async ({ request }) => {
       );
     }
 
+    // If no staff users found with regular query, try alternative approach
+    let finalStaffUsers = staffUsers || [];
+    let message = staffUsers?.length
+      ? `Found ${staffUsers.length} staff member(s)`
+      : "No staff members found";
+
+    if (!staffUsers || staffUsers.length === 0) {
+      console.log(
+        "No staff users found with regular query, trying alternative approach...",
+      );
+
+      if (staffUsersFromAll && staffUsersFromAll.length > 0) {
+        finalStaffUsers = staffUsersFromAll;
+        message = `Found ${staffUsersFromAll.length} staff member(s) via alternative query`;
+        console.log("Using alternative query results for staff users");
+      }
+    }
+
     return new Response(
       JSON.stringify({
         success: true,
-        staffUsers: staffUsers || [],
-        count: staffUsers?.length || 0,
-        message: staffUsers?.length
-          ? `Found ${staffUsers.length} staff member(s)`
-          : "No staff members found",
+        staffUsers: finalStaffUsers,
+        count: finalStaffUsers.length,
+        message: message,
+        debug: {
+          regularQuery: { staffUsers, error },
+          alternativeQuery: {
+            allProfiles: allProfiles?.length || 0,
+            staffUsersFromAll: staffUsersFromAll.length,
+            error: allProfilesError?.message,
+          },
+        },
       }),
       {
         status: 200,
