@@ -2,7 +2,7 @@
 import { emailService } from "./email-service";
 import { supabase } from "./supabase";
 
-// Project Status Codes
+// Project Status Codes (for backward compatibility)
 export const PROJECT_STATUS = {
   SPECS_RECEIVED: 10,
   GENERATING_PROPOSAL: 20,
@@ -31,32 +31,99 @@ export const PROJECT_STATUS = {
 export type ProjectStatusCode =
   (typeof PROJECT_STATUS)[keyof typeof PROJECT_STATUS];
 
-// Status descriptions for UI display
-export const PROJECT_STATUS_LABELS: Record<ProjectStatusCode, string> = {
-  [PROJECT_STATUS.SPECS_RECEIVED]: "Specs Received",
-  [PROJECT_STATUS.GENERATING_PROPOSAL]: "Generating Proposal",
-  [PROJECT_STATUS.PROPOSAL_SHIPPED]: "Proposal Shipped",
-  [PROJECT_STATUS.PROPOSAL_VIEWED]: "Proposal Viewed",
-  [PROJECT_STATUS.PROPOSAL_SIGNED_OFF]: "Proposal Signed Off",
-  [PROJECT_STATUS.GENERATING_DEPOSIT_INVOICE]: "Generating Deposit Invoice",
-  [PROJECT_STATUS.DEPOSIT_INVOICE_SHIPPED]: "Deposit Invoice Shipped",
-  [PROJECT_STATUS.DEPOSIT_INVOICE_VIEWED]: "Deposit Invoice Viewed",
-  [PROJECT_STATUS.DEPOSIT_INVOICE_PAID]: "Deposit Invoice Paid",
-  [PROJECT_STATUS.GENERATING_SUBMITTALS]: "Generating Submittals",
-  [PROJECT_STATUS.SUBMITTALS_SHIPPED]: "Submittals Shipped",
-  [PROJECT_STATUS.SUBMITTALS_VIEWED]: "Submittals Viewed",
-  [PROJECT_STATUS.SUBMITTALS_SIGNED_OFF]: "Submittals Signed Off",
-  [PROJECT_STATUS.GENERATING_FINAL_INVOICE]: "Generating Final Invoice",
-  [PROJECT_STATUS.FINAL_INVOICE_SHIPPED]: "Final Invoice Shipped",
-  [PROJECT_STATUS.FINAL_INVOICE_VIEWED]: "Final Invoice Viewed",
-  [PROJECT_STATUS.FINAL_INVOICE_PAID]: "Final Invoice Paid",
-  [PROJECT_STATUS.GENERATING_FINAL_DELIVERABLES]:
-    "Generating Final Deliverables",
-  [PROJECT_STATUS.STAMPING_FINAL_DELIVERABLES]: "Stamping Final Deliverables",
-  [PROJECT_STATUS.FINAL_DELIVERABLES_SHIPPED]: "Final Deliverables Shipped",
-  [PROJECT_STATUS.FINAL_DELIVERABLES_VIEWED]: "Final Deliverables Viewed",
-  [PROJECT_STATUS.PROJECT_COMPLETE]: "Project Complete",
-};
+// Dynamic status labels from database
+let PROJECT_STATUS_LABELS: Record<number, string> = {};
+let PROJECT_STATUS_DATA: Record<
+  number,
+  {
+    status_name: string;
+    email_content: string;
+    est_time: string;
+    email_client: boolean;
+    email_staff: boolean;
+  }
+> = {};
+
+// Function to load status data from database
+export async function loadProjectStatuses() {
+  try {
+    const response = await fetch("/api/get-project-statuses");
+    const result = await response.json();
+
+    if (result.success && result.statuses) {
+      PROJECT_STATUS_DATA = result.statuses;
+
+      // Update labels
+      PROJECT_STATUS_LABELS = Object.entries(result.statuses).reduce(
+        (acc, [code, data]) => {
+          acc[parseInt(code)] = (data as any).status_name;
+          return acc;
+        },
+        {} as Record<number, string>,
+      );
+
+      return result.statuses;
+    }
+  } catch (error) {
+    console.error("Failed to load project statuses:", error);
+  }
+
+  // Fallback to static labels if database fails
+  PROJECT_STATUS_LABELS = {
+    10: "Specs Received",
+    20: "Generating Proposal",
+    30: "Proposal Shipped",
+    40: "Proposal Viewed",
+    50: "Proposal Signed Off",
+    60: "Generating Deposit Invoice",
+    70: "Deposit Invoice Shipped",
+    80: "Deposit Invoice Viewed",
+    90: "Deposit Invoice Paid",
+    100: "Generating Submittals",
+    110: "Submittals Shipped",
+    120: "Submittals Viewed",
+    130: "Submittals Signed Off",
+    140: "Generating Final Invoice",
+    150: "Final Invoice Shipped",
+    160: "Final Invoice Viewed",
+    170: "Final Invoice Paid",
+    180: "Generating Final Deliverables",
+    190: "Stamping Final Deliverables",
+    200: "Final Deliverables Shipped",
+    210: "Final Deliverables Viewed",
+    220: "Project Complete",
+  };
+
+  return PROJECT_STATUS_LABELS;
+}
+
+// Export the dynamic labels
+export { PROJECT_STATUS_LABELS, PROJECT_STATUS_DATA };
+
+// Function to get status data for a specific status code
+export function getStatusData(statusCode: number) {
+  return (
+    PROJECT_STATUS_DATA[statusCode] || {
+      status_name: PROJECT_STATUS_LABELS[statusCode] || "Unknown Status",
+      email_content: "Your project status has been updated.",
+      est_time: "TBD",
+      email_client: false,
+      email_staff: false,
+    }
+  );
+}
+
+// Function to check if a status should trigger client emails
+export function shouldEmailClient(statusCode: number): boolean {
+  const statusData = getStatusData(statusCode);
+  return statusData.email_client;
+}
+
+// Function to check if a status should trigger staff emails
+export function shouldEmailStaff(statusCode: number): boolean {
+  const statusData = getStatusData(statusCode);
+  return statusData.email_staff;
+}
 
 // Timing information for status stages
 export const PROJECT_STATUS_TIMING: Record<

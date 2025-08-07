@@ -11,9 +11,10 @@ export const GET: APIRoute = async ({ request }) => {
           title: "Demo Office Building",
           description: "Fire protection system for 3-story office building",
           address: "123 Business Blvd, Demo City",
-          author_id: "demo-user",
-          author_email: "demo@example.com",
+          author_id: "bb38790d-c3f9-4d97-8cd6-64f6c1a1c328", // Use real user ID
+          author_email: "tom@tomsens.com", // Use real email
           assigned_to_name: "John Smith",
+          assigned_to_email: "john.smith@example.com",
           status: 20, // GENERATING_PROPOSAL
           sq_ft: 2500,
           new_construction: true,
@@ -29,9 +30,10 @@ export const GET: APIRoute = async ({ request }) => {
           title: "Retail Complex",
           description: "Sprinkler system for shopping center",
           address: "456 Commerce St, Demo City",
-          author_id: "demo-user",
-          author_email: "demo@example.com",
+          author_id: "bb38790d-c3f9-4d97-8cd6-64f6c1a1c328", // Use real user ID
+          author_email: "tom@tomsens.com", // Use real email
           assigned_to_name: "Sarah Johnson",
+          assigned_to_email: "sarah.johnson@example.com",
           status: 50, // PROPOSAL_SIGNED_OFF
           sq_ft: 5000,
           new_construction: false,
@@ -71,9 +73,10 @@ export const GET: APIRoute = async ({ request }) => {
           title: "Demo Warehouse",
           description: "Fire suppression for industrial facility",
           address: "789 Industrial Pkwy, Demo City",
-          author_id: "guest-user",
-          author_email: "demo@example.com",
+          author_id: "bb38790d-c3f9-4d97-8cd6-64f6c1a1c328", // Use real user ID
+          author_email: "tom@tomsens.com", // Use real email
           assigned_to_name: "Mike Davis",
+          assigned_to_email: "mike.davis@example.com",
           status: 10, // SPECS_RECEIVED
           sq_ft: 8000,
           new_construction: false,
@@ -109,11 +112,9 @@ export const GET: APIRoute = async ({ request }) => {
     const userRole = profile?.role;
 
     // Fetch projects based on user role with assigned user profile data
-    let query = supabase
-      .from("projects")
-      .select(`
+    let query = supabase.from("projects").select(`
         *,
-        assigned_to:profiles!projects_assigned_to_id_fkey(name)
+        assigned_to:profiles!projects_assigned_to_id_fkey(name, id)
       `);
 
     // Admin and Staff get all projects, clients get only their own
@@ -140,83 +141,135 @@ export const GET: APIRoute = async ({ request }) => {
       projects.forEach((project) => {
         // Extract assigned user name from the joined data
         project.assigned_to_name = project.assigned_to?.name || null;
+        project.assigned_to_id = project.assigned_to?.id || null;
         // Clean up the nested object for cleaner response
         delete project.assigned_to;
       });
     }
 
-    // Fetch user emails for all unique author_ids
+    // Fetch user data (emails and names) for all unique author_ids
     if (projects && projects.length > 0) {
       try {
-        // First approach: Try RPC function
-        const uniqueAuthorIds = [...new Set(projects.map((p) => p.author_id))];
+        // Get unique user IDs
+        const uniqueUserIds = [
+          ...new Set([
+            ...projects.map((p) => p.author_id),
+            ...projects.map((p) => p.assigned_to_id).filter(Boolean),
+          ]),
+        ];
+
         console.log(
-          "Attempting to fetch emails for user IDs:",
-          uniqueAuthorIds,
+          "Attempting to fetch user data for user IDs:",
+          uniqueUserIds,
         );
 
-        const { data: emailData, error: emailError } = await supabase.rpc(
-          "get_user_emails",
-          { user_ids: uniqueAuthorIds },
-        );
+        // Fetch user profiles for names
+        const { data: profiles, error: profilesError } = await supabase
+          .from("profiles")
+          .select("id, name")
+          .in("id", uniqueUserIds);
 
-        if (!emailError && emailData && emailData.length > 0) {
-          console.log("Successfully fetched emails via RPC:", emailData);
-          // Create a map of user_id -> email
-          const emailMap = new Map();
-          emailData.forEach((item: any) => {
-            emailMap.set(item.id, item.email);
-          });
+        if (profilesError) {
+          console.log("Profiles fetch error:", profilesError);
+        }
 
-          // Add email to each project
-          projects.forEach((project) => {
-            project.author_email = emailMap.get(project.author_id) || "Unknown";
+        // Create maps for user data
+        const nameMap = new Map();
+        if (profiles) {
+          console.log("Found profiles:", profiles);
+          profiles.forEach((profile) => {
+            nameMap.set(profile.id, profile.name);
           });
         } else {
-          console.log(
-            "RPC failed, trying alternative approach. Error:",
-            emailError,
-          );
+          console.log("No profiles found for user IDs:", uniqueUserIds);
+        }
 
-          // Alternative approach: Try using service role admin methods
-          try {
-            const { data: authUsers, error: authError } =
-              await supabase.auth.admin.listUsers();
+        // Use admin API to get user emails and avatar URLs
+        const { data: authUsers, error: authError } =
+          await supabase.auth.admin.listUsers();
 
-            if (!authError && authUsers?.users) {
-              console.log("Successfully fetched users via admin API");
-              const emailMap = new Map();
-              authUsers.users.forEach((user) => {
-                emailMap.set(user.id, user.email);
-              });
+        if (!authError && authUsers?.users) {
+          console.log("Successfully fetched users via admin API");
+          // Create maps for user data
+          const emailMap = new Map();
+          const avatarMap = new Map();
 
-              projects.forEach((project) => {
-                project.author_email =
-                  emailMap.get(project.author_id) || "Unknown";
-              });
-            } else {
-              console.log(
-                "Admin API failed, using fallback. Error:",
-                authError,
-              );
-              // Final fallback: show friendly message for unassigned projects
-              projects.forEach((project) => {
-                project.author_email = "Unassigned";
-              });
+          authUsers.users.forEach((authUser) => {
+            if (uniqueUserIds.includes(authUser.id)) {
+              emailMap.set(authUser.id, authUser.email);
+              // Get avatar URL from user metadata
+              const avatarUrl = authUser.user_metadata?.avatar_url || null;
+              avatarMap.set(authUser.id, avatarUrl);
             }
-          } catch (adminError) {
-            console.log("Admin API error:", adminError);
-            // Final fallback: show friendly message for unassigned projects
-            projects.forEach((project) => {
-              project.author_email = "Unassigned";
+          });
+
+          // Add user data to each project
+          projects.forEach((project) => {
+            project.author_email = emailMap.get(project.author_id) || null;
+            project.author_name = nameMap.get(project.author_id) || null;
+            project.author_avatar = avatarMap.get(project.author_id) || null;
+
+            console.log(`Project ${project.id} author data:`, {
+              author_id: project.author_id,
+              author_email: project.author_email,
+              author_name_before_fallback: project.author_name,
             });
-          }
+
+            // Fallback: if no name from profiles, use email or user ID
+            if (!project.author_name && project.author_email) {
+              // Convert email to a nice display name
+              const emailName = project.author_email.split("@")[0];
+              // Capitalize first letter and replace dots/underscores with spaces
+              project.author_name = emailName
+                .replace(/[._]/g, " ")
+                .replace(/\b\w/g, (l) => l.toUpperCase());
+            } else if (!project.author_name && project.author_id) {
+              project.author_name = `User ${project.author_id.slice(0, 8)}`; // Use first 8 chars of ID
+            }
+
+            // Also fetch assigned user data if they have an assigned_to_id
+            if (project.assigned_to_id) {
+              project.assigned_to_email =
+                emailMap.get(project.assigned_to_id) || null;
+              project.assigned_to_name =
+                nameMap.get(project.assigned_to_id) || project.assigned_to_name;
+              project.assigned_to_avatar =
+                avatarMap.get(project.assigned_to_id) || null;
+            } else {
+              project.assigned_to_email = null;
+              project.assigned_to_avatar = null;
+            }
+          });
+        } else {
+          console.log("Admin API failed, using fallback. Error:", authError);
+          // Fallback: set emails to null, but keep names from profiles
+          projects.forEach((project) => {
+            project.author_email = null;
+            project.author_name = nameMap.get(project.author_id) || null;
+            project.author_avatar = null;
+            project.assigned_to_email = null;
+            project.assigned_to_avatar = null;
+
+            // Fallback: if no name from profiles, use user ID
+            if (!project.author_name && project.author_id) {
+              project.author_name = `User ${project.author_id.slice(0, 8)}`;
+            }
+          });
         }
       } catch (error) {
-        console.log("Email fetch error:", error);
-        // Final fallback: show friendly message for unassigned projects
+        console.log("User data fetch error:", error);
+        // Fallback: set emails to null, but keep names from profiles
         projects.forEach((project) => {
-          project.author_email = "Unassigned";
+          project.author_email = null;
+          project.author_name = nameMap.get(project.author_id) || null;
+          project.author_avatar = null;
+          project.assigned_to_email = null;
+          project.assigned_to_avatar = null;
+
+          // Fallback: if no name from profiles, use user ID
+          if (!project.author_name && project.author_id) {
+            project.author_name = `User ${project.author_id.slice(0, 8)}`;
+          }
         });
       }
     }

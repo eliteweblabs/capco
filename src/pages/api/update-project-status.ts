@@ -109,7 +109,7 @@ export const POST: APIRoute = async ({ request }) => {
     if (new_construction !== undefined)
       updateData.new_construction = new_construction;
 
-    // Optional fields - only add if they have values to avoid database errors
+    // Core fields - only add if they have values to avoid database errors
     if (building !== undefined && building !== "")
       updateData.building = building;
     if (project !== undefined && project !== "") updateData.project = project;
@@ -119,7 +119,7 @@ export const POST: APIRoute = async ({ request }) => {
     if (assigned_to_id !== undefined && assigned_to_id !== "")
       updateData.assigned_to_id = assigned_to_id;
 
-    // New fields - handle gracefully in case they don't exist in the database yet
+    // Additional fields - handle gracefully in case they don't exist in the database yet
     // We'll try these but catch any column-not-found errors
     const potentialNewFields: any = {};
     if (owner !== undefined && owner !== "") potentialNewFields.owner = owner;

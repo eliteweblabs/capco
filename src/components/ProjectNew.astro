@@ -307,7 +307,7 @@ import SectionContainer from "./SectionContainer.astro";
         this.publicUrl,
         this.projectId
       );
-      new PDFScraper(this.container);
+      new PDFScraper(this.container, this.projectId);
 
       // Toggle layout: hide projects list, make PDF viewer full width
       if (window.toggleLayoutForPDF) {
@@ -931,8 +931,9 @@ import SectionContainer from "./SectionContainer.astro";
   }
 
   class PDFScraper {
-    constructor(container) {
+    constructor(container, projectId) {
       this.container = container;
+      this.projectId = projectId;
       this.canvas = null;
       this.overlay = null;
       this.isSelecting = false;
@@ -999,15 +1000,80 @@ import SectionContainer from "./SectionContainer.astro";
               >
             </div>
             
-            <div class="relative scrape-input-container">
-              <input
-                type="text"
-                id="owner-input"
-                data-field="owner"
-                class="scrape-input w-full py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:focus:ring-blue-400 dark:focus:border-blue-400"
-                placeholder="Owner *"
-                required
-              >
+            <!-- Owner Assignment Section -->
+            <div class="space-y-3">
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                Project Owner
+              </label>
+              
+              <!-- Owner Type Toggle -->
+              <div class="flex items-center gap-3 mb-3">
+                <span class="text-sm font-medium text-gray-700 dark:text-gray-300">New User</span>
+                <label class="inline-flex items-center cursor-pointer">
+                  <input type="checkbox" id="owner-type-toggle" class="sr-only peer">
+                  <div class="relative w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600 dark:peer-checked:bg-blue-600"></div>
+                </label>
+                <span class="ms-3 text-sm font-medium text-gray-700 dark:text-gray-300">Existing User</span>
+              </div>
+
+              <!-- New User Input -->
+              <div id="new-user-inputs" class="space-y-3">
+                <div class="relative scrape-input-container">
+                  <input
+                    type="text"
+                    id="owner-name-input"
+                    data-field="owner_name"
+                    class="scrape-input w-full py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:focus:ring-blue-400 dark:focus:border-blue-400"
+                    placeholder="Owner Name *"
+                    required
+                  >
+                </div>
+                <div class="relative scrape-input-container">
+                  <input
+                    type="email"
+                    id="owner-email-input"
+                    data-field="owner_email"
+                    class="scrape-input w-full py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:focus:ring-blue-400 dark:focus:border-blue-400"
+                    placeholder="Owner Email *"
+                    required
+                  >
+                </div>
+                <div class="relative scrape-input-container">
+                  <input
+                    type="tel"
+                    id="owner-phone-input"
+                    data-field="owner_phone"
+                    class="scrape-input w-full py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:focus:ring-blue-400 dark:focus:border-blue-400"
+                    placeholder="Owner Phone"
+                  >
+                </div>
+              </div>
+
+              <!-- Existing User Input -->
+              <div id="existing-user-inputs" class="space-y-3 hidden">
+                <div class="relative scrape-input-container">
+                  <input
+                    type="text"
+                    id="existing-user-search"
+                    data-field="existing_user_search"
+                    class="scrape-input w-full py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:focus:ring-blue-400 dark:focus:border-blue-400"
+                    placeholder="Search users..."
+                    required
+                  >
+                  <button id="clear-user-search-btn" class="absolute right-2 top-1/2 transform -translate-y-1/2 p-1 text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300 transition-colors hidden" title="Clear search">
+                    <i class="bx bx-x text-lg"></i>
+                  </button>
+                </div>
+                <!-- User Results List -->
+                <div id="user-results-list" class="max-h-48 overflow-y-auto border border-gray-200 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 hidden">
+                  <!-- User results will be populated here -->
+                </div>
+                <!-- Hidden input to store selected user -->
+                <input type="hidden" id="existing-user-id" data-field="existing_user_id" value="">
+              </div>
+
+              <!-- Legacy owner input (hidden, for backward compatibility) -->
+              <input type="text" id="owner-input" data-field="owner" class="hidden" placeholder="Owner *" required>
             </div>
             
             <div class="relative scrape-input-container">
@@ -1517,6 +1583,201 @@ import SectionContainer from "./SectionContainer.astro";
 
       // Setup ESC key handler for exiting scrape mode
       this.setupEscapeKeyHandler();
+
+      // Setup owner toggle functionality
+      this.setupOwnerToggle();
+    }
+
+    setupOwnerToggle() {
+      const ownerTypeToggle =
+        this.container.querySelector("#owner-type-toggle");
+      const newUserInputs = this.container.querySelector("#new-user-inputs");
+      const existingUserInputs = this.container.querySelector(
+        "#existing-user-inputs"
+      );
+
+      if (ownerTypeToggle) {
+        // Set initial state (unchecked = new user, checked = existing user)
+        this.updateOwnerInputs(ownerTypeToggle.checked);
+
+        ownerTypeToggle.addEventListener("change", () => {
+          this.updateOwnerInputs(ownerTypeToggle.checked);
+        });
+      }
+    }
+
+    updateOwnerInputs(isExistingUser) {
+      const newUserInputs = this.container.querySelector("#new-user-inputs");
+      const existingUserInputs = this.container.querySelector(
+        "#existing-user-inputs"
+      );
+
+      if (isExistingUser) {
+        // Show existing user inputs, hide new user inputs
+        existingUserInputs.classList.remove("hidden");
+        newUserInputs.classList.add("hidden");
+        this.loadExistingUsers(); // Load users for dropdown
+      } else {
+        // Show new user inputs, hide existing user inputs
+        newUserInputs.classList.remove("hidden");
+        existingUserInputs.classList.add("hidden");
+      }
+    }
+
+    async loadExistingUsers() {
+      try {
+        const response = await fetch("/api/get-staff-users");
+        const result = await response.json();
+
+        if (result.success && result.staffUsers) {
+          // Store users for search functionality
+          this.availableUsers = result.staffUsers;
+
+          // Setup search input event listeners
+          this.setupUserSearch();
+        }
+      } catch (error) {
+        console.error("Error loading existing users:", error);
+      }
+    }
+
+    setupUserSearch() {
+      const searchInput = this.container.querySelector("#existing-user-search");
+      const clearBtn = this.container.querySelector("#clear-user-search-btn");
+      const resultsList = this.container.querySelector("#user-results-list");
+
+      if (searchInput) {
+        // Debounced search
+        let searchTimeout;
+        searchInput.addEventListener("input", (e) => {
+          clearTimeout(searchTimeout);
+          searchTimeout = setTimeout(() => {
+            this.performUserSearch(e.target.value);
+          }, 300);
+        });
+
+        // Clear search functionality
+        if (clearBtn) {
+          clearBtn.addEventListener("click", () => {
+            searchInput.value = "";
+            this.clearUserSearch();
+          });
+        }
+
+        // Show/hide clear button based on input
+        searchInput.addEventListener("input", () => {
+          if (searchInput.value.length > 0) {
+            clearBtn.classList.remove("hidden");
+          } else {
+            clearBtn.classList.add("hidden");
+          }
+        });
+      }
+    }
+
+    performUserSearch(searchTerm) {
+      const resultsList = this.container.querySelector("#user-results-list");
+      const searchInput = this.container.querySelector("#existing-user-search");
+
+      if (!this.availableUsers || !resultsList) return;
+
+      const filteredUsers = this.availableUsers.filter((user) => {
+        const searchLower = searchTerm.toLowerCase();
+        return (
+          user.name.toLowerCase().includes(searchLower) ||
+          (user.email && user.email.toLowerCase().includes(searchLower))
+        );
+      });
+
+      // Display results
+      if (searchTerm.length > 0 && filteredUsers.length > 0) {
+        resultsList.innerHTML = filteredUsers
+          .map(
+            (user) => `
+            <div class="user-result-item p-3 hover:bg-gray-100 dark:hover:bg-gray-600 cursor-pointer border-b border-gray-200 dark:border-gray-600 last:border-b-0" data-user-id="${user.id}" data-user-name="${user.name}">
+              <div class="font-medium text-gray-900 dark:text-white">${user.name}</div>
+              <div class="text-sm text-gray-500 dark:text-gray-400">${user.email || "No email"}</div>
+            </div>
+          `
+          )
+          .join("");
+
+        resultsList.classList.remove("hidden");
+
+        // Add click handlers to results
+        resultsList.querySelectorAll(".user-result-item").forEach((item) => {
+          item.addEventListener("click", () => {
+            const userId = item.getAttribute("data-user-id");
+            const userName = item.getAttribute("data-user-name");
+            this.selectUser(userId, userName);
+          });
+        });
+      } else if (searchTerm.length > 0) {
+        resultsList.innerHTML = `
+          <div class="p-3 text-gray-500 dark:text-gray-400 text-center">
+            No users found matching "${searchTerm}"
+          </div>
+        `;
+        resultsList.classList.remove("hidden");
+      } else {
+        resultsList.classList.add("hidden");
+      }
+    }
+
+    selectUser(userId, userName) {
+      const searchInput = this.container.querySelector("#existing-user-search");
+      const hiddenInput = this.container.querySelector("#existing-user-id");
+      const resultsList = this.container.querySelector("#user-results-list");
+
+      if (searchInput && hiddenInput) {
+        searchInput.value = userName;
+        hiddenInput.value = userId;
+        resultsList.classList.add("hidden");
+      }
+    }
+
+    clearUserSearch() {
+      const searchInput = this.container.querySelector("#existing-user-search");
+      const hiddenInput = this.container.querySelector("#existing-user-id");
+      const resultsList = this.container.querySelector("#user-results-list");
+      const clearBtn = this.container.querySelector("#clear-user-search-btn");
+
+      if (searchInput && hiddenInput) {
+        searchInput.value = "";
+        hiddenInput.value = "";
+        resultsList.classList.add("hidden");
+        clearBtn.classList.add("hidden");
+      }
+    }
+
+    showSaveSuccessToast() {
+      // Create a temporary toast message
+      const toast = document.createElement("div");
+      toast.className = `fixed top-4 right-4 z-50 px-6 py-3 rounded-md text-sm font-medium transition-all duration-300 transform translate-x-full opacity-0 bg-green-500 text-white shadow-lg`;
+      toast.innerHTML = `
+        <div class="flex items-center gap-2">
+          <i class="bx bx-check-circle text-lg"></i>
+          <span>Project saved successfully!</span>
+        </div>
+      `;
+      document.body.appendChild(toast);
+
+      // Animate in
+      setTimeout(() => {
+        toast.style.transform = "translateX(0)";
+        toast.style.opacity = "1";
+      }, 10);
+
+      // Animate out and remove
+      setTimeout(() => {
+        toast.style.transform = "translateX(full)";
+        toast.style.opacity = "0";
+        setTimeout(() => {
+          if (toast.parentNode) {
+            toast.parentNode.removeChild(toast);
+          }
+        }, 300);
+      }, 3000);
     }
 
     setupImageGallery() {
@@ -1780,7 +2041,7 @@ import SectionContainer from "./SectionContainer.astro";
             formData.append("language", "eng");
             formData.append("isOverlayRequired", "false");
             formData.append("OCREngine", "2");
-          }
+          },
         },
         {
           name: "OCR.space (backup)",
@@ -1791,8 +2052,8 @@ import SectionContainer from "./SectionContainer.astro";
             formData.append("language", "eng");
             formData.append("isOverlayRequired", "false");
             formData.append("OCREngine", "1");
-          }
-        }
+          },
+        },
       ];
 
       if (serviceIndex >= services.length) {
@@ -1808,14 +2069,14 @@ import SectionContainer from "./SectionContainer.astro";
 
       const service = services[serviceIndex];
       console.log(`Trying OCR service: ${service.name}`);
-      
+
       const formData = new FormData();
       service.body(formData);
-      
+
       // Add timeout to prevent hanging
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 second timeout per service
-      
+
       fetch(service.url, {
         method: "POST",
         headers: service.headers,
@@ -1826,13 +2087,15 @@ import SectionContainer from "./SectionContainer.astro";
           clearTimeout(timeoutId);
           console.log(`${service.name} response status:`, response.status);
           if (!response.ok) {
-            throw new Error(`${service.name} API error: ${response.status} ${response.statusText}`);
+            throw new Error(
+              `${service.name} API error: ${response.status} ${response.statusText}`
+            );
           }
           return response.json();
         })
         .then((data) => {
           console.log(`${service.name} response data:`, data);
-          
+
           if (data.IsErroredOnProcessing) {
             const errorMsg = `${service.name} error: ${data.ErrorMessage || "Unknown error"}`;
             console.error(errorMsg);
@@ -1840,7 +2103,7 @@ import SectionContainer from "./SectionContainer.astro";
             this.tryOCRService(blob, inputId, imageId, serviceIndex + 1);
             return;
           }
-          
+
           if (data.ParsedResults && data.ParsedResults[0].ParsedText) {
             // Get raw OCR text
             let rawText = data.ParsedResults[0].ParsedText.trim();
@@ -1881,7 +2144,7 @@ import SectionContainer from "./SectionContainer.astro";
                 );
               }
             }
-            
+
             // Reset selection state after successful OCR
             this.resetSelectionState();
           } else {
@@ -1896,7 +2159,7 @@ import SectionContainer from "./SectionContainer.astro";
         .catch((err) => {
           clearTimeout(timeoutId);
           console.error(`${service.name} error:`, err);
-          
+
           // Try next service
           this.tryOCRService(blob, inputId, imageId, serviceIndex + 1);
         });
@@ -2485,13 +2748,59 @@ import SectionContainer from "./SectionContainer.astro";
       const selectedConsultingServices = Array.from(
         this.container.querySelectorAll(".consulting-service-btn.selected")
       ).map((btn) => btn.getAttribute("data-value"));
+
+      console.log("Consulting services selection:", {
+        buttonsFound: this.container.querySelectorAll(
+          ".consulting-service-btn.selected"
+        ).length,
+        selectedValues: selectedConsultingServices,
+        allConsultingButtons: Array.from(
+          this.container.querySelectorAll(".consulting-service-btn")
+        ).map((btn) => ({
+          text: btn.textContent?.trim(),
+          hasSelected: btn.classList.contains("selected"),
+          hasBgBlue: btn.classList.contains("bg-blue-500"),
+          dataValue: btn.getAttribute("data-value"),
+        })),
+      });
       const selectedFireSafetyServices = Array.from(
         this.container.querySelectorAll(".fire-safety-service-btn.selected")
       ).map((btn) => btn.getAttribute("data-value"));
 
+      // Get owner data based on toggle selection
+      const isExistingUser =
+        this.container.querySelector("#owner-type-toggle")?.checked || false;
+      let ownerData = {};
+
+      if (!isExistingUser) {
+        // New user data
+        ownerData = {
+          owner_type: "new",
+          owner_name:
+            this.container.querySelector("#owner-name-input")?.value || "",
+          owner_email:
+            this.container.querySelector("#owner-email-input")?.value || "",
+          owner_phone:
+            this.container.querySelector("#owner-phone-input")?.value || "",
+          owner: this.container.querySelector("#owner-name-input")?.value || "", // Legacy compatibility
+        };
+      } else {
+        // Existing user data
+        const selectedUserId =
+          this.container.querySelector("#existing-user-id")?.value || "";
+        const selectedUserName =
+          this.container.querySelector("#existing-user-search")?.value || "";
+
+        ownerData = {
+          owner_type: "existing",
+          existing_user_id: selectedUserId,
+          owner: selectedUserName, // Legacy compatibility
+        };
+      }
+
       const formData = {
         address: this.container.querySelector("#address-input")?.value || "",
-        owner: this.container.querySelector("#owner-input")?.value || "",
+        ...ownerData,
         architect:
           this.container.querySelector("#architect-input")?.value || "",
         squareFootage:
@@ -2535,17 +2844,11 @@ import SectionContainer from "./SectionContainer.astro";
           const cleanedTitle = this.cleanAddressForTitle(formData.address);
           console.log("Cleaned title:", cleanedTitle);
 
-          // Prepare metadata to store as JSON
+          // Prepare metadata to store as JSON (use formData directly)
           const projectMetadata = {
-            owner: formData.owner || "",
-            architect: formData.architect || "",
-            units: formData.units || "1",
-            buildingType: formData.buildingType || "",
-            fireServiceType: formData.fireServiceType || "",
-            consultingServices: formData.consultingServices || [],
-            fireSafetyServices: formData.fireSafetyServices || [],
-            sprinkler: formData.sprinkler || false,
-            alarm: formData.alarm || false,
+            ...formData,
+            // Remove images from metadata since they're handled separately
+            images: undefined,
           };
 
           console.log("Project metadata:", projectMetadata);
@@ -2590,8 +2893,25 @@ import SectionContainer from "./SectionContainer.astro";
             description: metadataString,
             sq_ft: squareFootage,
             new_construction: formData.buildingType === "New Construction",
+            // Add button group fields with correct database column names
+            building: formData.buildingType || null,
+            project: formData.consultingServices
+              ? JSON.stringify(formData.consultingServices)
+              : null,
+            service: formData.fireServiceType || null,
+            requested_docs: formData.fireSafetyServices
+              ? JSON.stringify(formData.fireSafetyServices)
+              : null,
             status: 0,
           };
+
+          console.log("Button group data being saved:", {
+            buildingType: formData.buildingType,
+            consultingServices: formData.consultingServices,
+            fireServiceType: formData.fireServiceType,
+            fireSafetyServices: formData.fireSafetyServices,
+            projectField: formData.consultingServices?.join(", ") || null,
+          });
 
           console.log("Update data:", updateData);
 
@@ -2618,12 +2938,26 @@ import SectionContainer from "./SectionContainer.astro";
 
           console.log("Project updated successfully:", updatedProject);
 
+          // Update save button to show success
           saveBtn.textContent = "Saved!";
+          saveBtn.disabled = false;
+          saveBtn.className = saveBtn.className
+            .replace("bg-green-500", "bg-green-600")
+            .replace("hover:bg-green-600", "hover:bg-green-700");
+          console.log("Save button updated to 'Saved!'");
 
-          // Clear everything and reset for new project after successful save
+          // Show a toast notification
+          this.showSaveSuccessToast();
+
+          // Refresh project list
+          if (window.projectsList && window.projectsList.loadProjects) {
+            window.projectsList.loadProjects();
+          }
+
+          // Exit "new project" mode by showing success message and resetting
           setTimeout(() => {
             this.resetForNewProject();
-          }, 1500);
+          }, 1000);
         } catch (error) {
           console.error("Error saving project data:", error);
           console.error("Error details:", {
@@ -2706,44 +3040,168 @@ import SectionContainer from "./SectionContainer.astro";
         if (project.description) {
           try {
             metadata = JSON.parse(project.description);
+            console.log("Successfully parsed metadata:", metadata);
           } catch (e) {
             console.warn("Could not parse project metadata:", e);
+            console.log("Raw description:", project.description);
             metadata = {};
           }
+        } else {
+          console.log("No description field found in project");
         }
 
         // Populate basic form fields
         if (project.address) {
           const addressInput = this.container.querySelector("#address-input");
-          if (addressInput) addressInput.value = project.address;
+          if (addressInput) {
+            addressInput.value = project.address;
+            console.log("Set address to:", project.address);
+          } else {
+            console.warn("Address input not found");
+          }
         }
 
+        // Populate owner fields based on type
+        console.log("Owner type from metadata:", metadata.owner_type);
+        if (metadata.owner_type === "existing" && metadata.existing_user_id) {
+          console.log("Setting up existing user mode");
+          // Set existing user toggle
+          const ownerTypeToggle =
+            this.container.querySelector("#owner-type-toggle");
+          if (ownerTypeToggle) {
+            ownerTypeToggle.checked = true;
+            this.updateOwnerInputs(true); // Show existing user inputs
+            console.log("Set owner type toggle to existing user");
+          } else {
+            console.warn("Owner type toggle not found");
+          }
+
+          // Set the selected user in search input
+          const existingUserSearch = this.container.querySelector(
+            "#existing-user-search"
+          );
+          const existingUserId =
+            this.container.querySelector("#existing-user-id");
+
+          if (existingUserSearch && existingUserId) {
+            // We need to find the user name by ID
+            if (this.availableUsers) {
+              const user = this.availableUsers.find(
+                (u) => u.id === metadata.existing_user_id
+              );
+              if (user) {
+                existingUserSearch.value = user.name;
+                existingUserId.value = user.id;
+              }
+            }
+          }
+        } else {
+          console.log("Setting up new user mode");
+          // Set new user toggle (default state)
+          const ownerTypeToggle =
+            this.container.querySelector("#owner-type-toggle");
+          if (ownerTypeToggle) {
+            ownerTypeToggle.checked = false;
+            this.updateOwnerInputs(false); // Show new user inputs
+            console.log("Set owner type toggle to new user");
+          } else {
+            console.warn("Owner type toggle not found");
+          }
+
+          // Populate new user fields
+          if (metadata.owner_name) {
+            const ownerNameInput =
+              this.container.querySelector("#owner-name-input");
+            if (ownerNameInput) {
+              ownerNameInput.value = metadata.owner_name;
+              console.log("Set owner name to:", metadata.owner_name);
+            } else {
+              console.warn("Owner name input not found");
+            }
+          }
+
+          if (metadata.owner_email) {
+            const ownerEmailInput =
+              this.container.querySelector("#owner-email-input");
+            if (ownerEmailInput) {
+              ownerEmailInput.value = metadata.owner_email;
+              console.log("Set owner email to:", metadata.owner_email);
+            } else {
+              console.warn("Owner email input not found");
+            }
+          }
+
+          if (metadata.owner_phone) {
+            const ownerPhoneInput =
+              this.container.querySelector("#owner-phone-input");
+            if (ownerPhoneInput) {
+              ownerPhoneInput.value = metadata.owner_phone;
+              console.log("Set owner phone to:", metadata.owner_phone);
+            } else {
+              console.warn("Owner phone input not found");
+            }
+          }
+        }
+
+        // Legacy compatibility - populate hidden owner input
         if (metadata.owner) {
           const ownerInput = this.container.querySelector("#owner-input");
           if (ownerInput) ownerInput.value = metadata.owner;
         }
 
+        // Also populate the visible owner input field for backward compatibility
+        if (metadata.owner_name) {
+          const ownerInput = this.container.querySelector("#owner-input");
+          if (ownerInput) ownerInput.value = metadata.owner_name;
+        }
+
         if (metadata.architect) {
           const architectInput =
             this.container.querySelector("#architect-input");
-          if (architectInput) architectInput.value = metadata.architect;
+          if (architectInput) {
+            architectInput.value = metadata.architect;
+            console.log("Set architect to:", metadata.architect);
+          } else {
+            console.warn("Architect input not found");
+          }
         }
 
-        if (project.sq_ft) {
+        if (metadata.squareFootage) {
           const sqFtInput = this.container.querySelector("#square-foot-input");
-          if (sqFtInput) sqFtInput.value = project.sq_ft.toString();
+          if (sqFtInput) {
+            sqFtInput.value = metadata.squareFootage;
+            console.log("Set square footage to:", metadata.squareFootage);
+          } else {
+            console.warn("Square footage input not found");
+          }
+        } else if (project.sq_ft) {
+          const sqFtInput = this.container.querySelector("#square-foot-input");
+          if (sqFtInput) {
+            sqFtInput.value = project.sq_ft.toString();
+            console.log("Set square footage to:", project.sq_ft);
+          } else {
+            console.warn("Square footage input not found");
+          }
         }
 
         // Populate units slider
         if (metadata.units) {
           const unitsSlider = this.container.querySelector("#units-slider");
           const unitsValue = this.container.querySelector("#units-value");
+          console.log("Populating units slider with:", metadata.units);
           if (unitsSlider) {
-            unitsSlider.value = (parseInt(metadata.units) - 1).toString();
+            const unitsIndex = parseInt(metadata.units) - 1;
+            unitsSlider.value = unitsIndex.toString();
             unitsSlider.setAttribute("data-current-value", metadata.units);
+            console.log("Set units slider value to:", unitsIndex);
+          } else {
+            console.warn("Units slider not found");
           }
           if (unitsValue) {
             unitsValue.textContent = metadata.units;
+            console.log("Set units value text to:", metadata.units);
+          } else {
+            console.warn("Units value display not found");
           }
         }
 

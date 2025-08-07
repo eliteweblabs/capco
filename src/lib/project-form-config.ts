@@ -182,8 +182,25 @@ export function generateFormFieldHTML(
   index: number = 0,
   projectData: any = {},
 ): string {
-  const fieldId = field.id + (index > 0 ? `-${index}` : "");
-  const value = projectData[field.name] || "";
+  // Use project ID for unique field IDs instead of array index
+  const projectId = projectData.id || `project-${index}`;
+  const fieldId = `${field.id}-${projectId}`;
+
+  // Robust value parsing for different data types
+  let value: any = projectData[field.name];
+
+  if (value === undefined || value === null) {
+    value = "";
+  } else if (typeof value === "string") {
+    // Handle string values that might be JSON or other formats
+    try {
+      const parsed = JSON.parse(value);
+      value = parsed;
+    } catch {
+      // Keep as string if JSON parsing fails
+      value = value;
+    }
+  }
 
   switch (field.type) {
     case "text":
@@ -203,6 +220,7 @@ export function generateFormFieldHTML(
             ${field.max !== undefined ? `max="${field.max}"` : ""}
             ${field.step !== undefined ? `step="${field.step}"` : ""}
             ${field.dataField ? `data-field="${field.dataField}"` : ""}
+            data-project-id="${projectId}"
           >
         </div>
       `;
@@ -217,11 +235,15 @@ export function generateFormFieldHTML(
             rows="3"
             class="w-full py-2 px-3 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:focus:ring-blue-400 dark:focus:border-blue-400"
             placeholder="${field.placeholder || ""}"
+            data-project-id="${projectId}"
           >${value}</textarea>
         </div>
       `;
 
     case "checkbox":
+      // Handle boolean values for checkboxes (new_construction)
+      const isChecked =
+        value === true || value === "true" || value === 1 || value === "1";
       return `
         <div>
           <label class="inline-flex items-center cursor-pointer">
@@ -229,8 +251,9 @@ export function generateFormFieldHTML(
               type="checkbox" 
               id="${fieldId}" 
               name="${field.name}"
-              ${value ? "checked" : ""}
+              ${isChecked ? "checked" : ""}
               class="sr-only peer"
+              data-project-id="${projectId}"
             >
             <div class="relative w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600 dark:peer-checked:bg-blue-600"></div>
             <span class="ms-3 text-sm font-medium text-gray-900 dark:text-gray-300">${field.label}</span>
@@ -239,14 +262,25 @@ export function generateFormFieldHTML(
       `;
 
     case "slider":
+      // Handle numeric values for sliders (units)
+      let unitsValue = 1;
+      if (typeof value === "number") {
+        unitsValue = value;
+      } else if (typeof value === "string") {
+        const parsed = parseInt(value);
+        if (!isNaN(parsed)) {
+          unitsValue = parsed;
+        }
+      }
+
       const sliderValue = getSliderValueFromUnits(
-        value || 1,
+        unitsValue,
         field.options as string[],
       );
       return `
         <div>
           <label for="${fieldId}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-            ${field.label}: <span id="units-value${index > 0 ? `-${index}` : ""}" class="font-semibold text-blue-600 dark:text-blue-400">${value || 1}</span>
+            ${field.label}: <span id="units-value-${projectId}" class="font-semibold text-blue-600 dark:text-blue-400">${unitsValue}</span>
           </label>
           <div class="relative">
             <input
@@ -258,7 +292,7 @@ export function generateFormFieldHTML(
               value="${sliderValue}"
               class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700 units-range-slider relative z-10"
               data-values="${field.options?.join(",")}"
-              data-project-index="${index}"
+              data-project-id="${projectId}"
               aria-label="Select number of units"
             >
             <div class="flex justify-between text-xs text-gray-500 dark:text-gray-400 mt-1">
@@ -282,11 +316,34 @@ export function generateButtonGroupHTML(
   group: ButtonGroupConfig,
   projectData: any = {},
 ): string {
-  const selectedValues = projectData[group.name]
-    ? Array.isArray(projectData[group.name])
-      ? projectData[group.name]
-      : [projectData[group.name]]
-    : [];
+  // Use project ID for unique button IDs
+  const projectId = projectData.id || "project-unknown";
+  let selectedValues: string[] = [];
+
+  if (projectData[group.name]) {
+    if (Array.isArray(projectData[group.name])) {
+      // Already an array
+      selectedValues = projectData[group.name];
+    } else if (typeof projectData[group.name] === "string") {
+      // Could be a JSON string or comma-separated string
+      try {
+        // Try to parse as JSON first
+        const parsed = JSON.parse(projectData[group.name]);
+        selectedValues = Array.isArray(parsed)
+          ? parsed
+          : [projectData[group.name]];
+      } catch {
+        // If JSON parsing fails, treat as comma-separated string
+        selectedValues = projectData[group.name]
+          .split(",")
+          .map((s: string) => s.trim())
+          .filter((s: string) => s);
+      }
+    } else {
+      // Single value
+      selectedValues = [projectData[group.name]];
+    }
+  }
 
   return `
     <div class="space-y-3">
@@ -303,6 +360,7 @@ export function generateButtonGroupHTML(
             data-value="${option.value}"
             data-group="${group.name}"
             data-type="${group.type}"
+            data-project-id="${projectId}"
           >
             ${option.label}
           </button>
@@ -326,6 +384,49 @@ export function generateCompleteFormHTML(
   projectData: any = {},
 ): string {
   const coreFields = PROJECT_FORM_FIELDS.slice(0, 4); // Address, Owner, Architect, Sq Ft
+  const description = PROJECT_FORM_FIELDS.find((f) => f.name === "description");
+  const newConstruction = PROJECT_FORM_FIELDS.find(
+    (f) => f.name === "new_construction",
+  );
+  const units = PROJECT_FORM_FIELDS.find((f) => f.name === "units");
+
+  return `
+    <!-- Core Fields Grid -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      ${coreFields.map((field) => generateFormFieldHTML(field, index, projectData)).join("")}
+    </div>
+
+    <!-- Description -->
+    ${description ? generateFormFieldHTML(description, index, projectData) : ""}
+
+    <!-- Construction Type & Units Row -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <!-- Construction Type -->
+      <div>
+        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Construction Type</label>
+        <div class="flex gap-4">
+          ${newConstruction ? generateFormFieldHTML(newConstruction, index, projectData) : ""}
+        </div>
+      </div>
+
+      <!-- Units Slider -->
+      ${units ? generateFormFieldHTML(units, index, projectData) : ""}
+    </div>
+
+    <!-- Button Groups -->
+    ${BUTTON_GROUPS.map((group) => generateButtonGroupHTML(group, projectData)).join("")}
+  `;
+}
+
+// Function to generate edit form HTML (without owner field)
+export function generateEditFormHTML(
+  index: number = 0,
+  projectData: any = {},
+): string {
+  // Exclude owner field for edit forms
+  const coreFields = PROJECT_FORM_FIELDS.filter(
+    (field) => field.name !== "owner",
+  ).slice(0, 3); // Address, Architect, Sq Ft
   const description = PROJECT_FORM_FIELDS.find((f) => f.name === "description");
   const newConstruction = PROJECT_FORM_FIELDS.find(
     (f) => f.name === "new_construction",
