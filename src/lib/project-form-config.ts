@@ -1,5 +1,5 @@
 // Shared project form configuration
-// This defines all form fields and button groups used in both ProjectNew.astro and project edit forms
+// This defines all form fields and button groups used in both Dashboard.astro and project edit forms
 
 export interface FormFieldConfig {
   id: string;
