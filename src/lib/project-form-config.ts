@@ -154,7 +154,7 @@ export const BUTTON_GROUPS: ButtonGroupConfig[] = [
     cssClass: "fire-service-radio",
     options: [
       { value: "Pump & Tank", label: "Pump & Tank" },
-      { value: "2' copper", label: "2' Copper" },
+      { value: "2' Copper", label: "2' Copper" },
       { value: "4' Ductile", label: "4' Ductile" },
       { value: "6' Ductile", label: "6' Ductile" },
       { value: "Unknown", label: "Unknown" },
@@ -167,6 +167,7 @@ export const BUTTON_GROUPS: ButtonGroupConfig[] = [
     type: "multi-select",
     cssClass: "fire-safety-service-btn",
     options: [
+      { value: "Narrative", label: "Narrative" },
       { value: "Sprinkler", label: "Sprinkler" },
       { value: "Alarm", label: "Alarm" },
       { value: "NFPA 241", label: "NFPA 241" },
@@ -391,9 +392,18 @@ export function generateCompleteFormHTML(
   const units = PROJECT_FORM_FIELDS.find((f) => f.name === "units");
 
   return `
-    <!-- Core Fields Grid -->
+    <!-- Address Field (Full Width) -->
+    ${coreFields
+      .filter((field) => field.name === "address")
+      .map((field) => generateFormFieldHTML(field, index, projectData))
+      .join("")}
+    
+    <!-- Other Core Fields Grid -->
     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-      ${coreFields.map((field) => generateFormFieldHTML(field, index, projectData)).join("")}
+      ${coreFields
+        .filter((field) => field.name !== "address")
+        .map((field) => generateFormFieldHTML(field, index, projectData))
+        .join("")}
     </div>
 
     <!-- Description -->
@@ -434,9 +444,18 @@ export function generateEditFormHTML(
   const units = PROJECT_FORM_FIELDS.find((f) => f.name === "units");
 
   return `
-    <!-- Core Fields Grid -->
+    <!-- Address Field (Full Width) -->
+    ${coreFields
+      .filter((field) => field.name === "address")
+      .map((field) => generateFormFieldHTML(field, index, projectData))
+      .join("")}
+    
+    <!-- Other Core Fields Grid -->
     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-      ${coreFields.map((field) => generateFormFieldHTML(field, index, projectData)).join("")}
+      ${coreFields
+        .filter((field) => field.name !== "address")
+        .map((field) => generateFormFieldHTML(field, index, projectData))
+        .join("")}
     </div>
 
     <!-- Description -->

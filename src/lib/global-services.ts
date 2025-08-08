@@ -39,8 +39,7 @@ let PROJECT_STATUS_DATA: Record<
     status_name: string;
     email_content: string;
     est_time: string;
-    email_client: boolean;
-    email_staff: boolean;
+    notify: string[];
   }
 > = {};
 
@@ -107,8 +106,7 @@ export function getStatusData(statusCode: number) {
       status_name: PROJECT_STATUS_LABELS[statusCode] || "Unknown Status",
       email_content: "Your project status has been updated.",
       est_time: "TBD",
-      email_client: false,
-      email_staff: false,
+      notify: ["admin"],
     }
   );
 }
@@ -116,13 +114,13 @@ export function getStatusData(statusCode: number) {
 // Function to check if a status should trigger client emails
 export function shouldEmailClient(statusCode: number): boolean {
   const statusData = getStatusData(statusCode);
-  return statusData.email_client;
+  return statusData.notify.includes("client");
 }
 
 // Function to check if a status should trigger staff emails
 export function shouldEmailStaff(statusCode: number): boolean {
   const statusData = getStatusData(statusCode);
-  return statusData.email_staff;
+  return statusData.notify.includes("staff");
 }
 
 // Timing information for status stages

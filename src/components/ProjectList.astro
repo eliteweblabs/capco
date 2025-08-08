@@ -12,7 +12,7 @@ import {
 
 <!-- Projects Display Section -->
 <div
-  class="mt-6 p-6 bg-white dark:bg-gray-800 rounded-lg shadow"
+  class="hidden mt-6 p-6 bg-white dark:bg-gray-800 rounded-lg shadow"
   data-project-list-container
 >
   <div class="flex justify-between items-center mb-4">
@@ -64,6 +64,7 @@ import {
   // Import form generation function
   import { generateEditFormHTML } from "../lib/project-form-config";
   import Tooltip from "./Tooltip.astro";
+  import { StatusQuerySystem } from "../lib/status-query-system";
 
   // Projects List Management Class
   class ProjectsList {
@@ -504,7 +505,7 @@ import {
 
               return `
                 <!-- Accordion Item ${index} -->
-                <div data-project-status="${project.status || 10}" data-project-id="${project.id}">
+                <div class="status-${project.status || 10}" data-project-status="${project.status || 10}" data-project-id="${project.id}">
                   <!-- Accordion Header -->
                   <div id="accordion-collapse-heading-${index}" class="accordion-header">
                     <button
@@ -538,7 +539,7 @@ import {
                              
 
                           <!-- Status badge -->
-                          <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-cyan-600 text-white"  data-search-text>
+                          <span id="project-status-label-${project.id}" class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-cyan-600 text-white"  data-search-text>
                             ${PROJECT_STATUS_LABELS[(project.status || 10) as unknown as ProjectStatusCode] || "Unknown"}
                           </span>
                           <!-- Assigned user name -->
@@ -597,6 +598,28 @@ import {
                           <div>
                             <span class="text-xs text-gray-500 dark:text-gray-400">Project ID:</span>
                             <div class="text-sm text-gray-800 dark:text-gray-200">${project.id}</div>
+                          </div>
+                          <div>
+                            <span class="text-xs text-gray-500 dark:text-gray-400">Project Status:</span>
+                            <div id="project-status-${project.id}" class="text-sm text-gray-800 dark:text-gray-200">${project.status || 10}</div>
+                          </div>
+                          <!-- Change Status -->
+                          <div>
+                            <span class="text-xs text-gray-500 dark:text-gray-400">Change Status:</span>
+                            <select
+                              class="text-sm bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 border border-gray-300 dark:border-gray-600 rounded px-2 py-1 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 project-status-select"
+                              data-project-id="${project.id}"
+                            >
+                              ${Object.entries(PROJECT_STATUS_LABELS)
+                                .map(
+                                  ([code, label]) => `
+                                  <option value="${code}" ${String(project.status || 10) === String(code) ? "selected" : ""}>
+                                    ${code} - ${label}
+                                  </option>
+                                `
+                                )
+                                .join("")}
+                            </select>
                           </div>
                           <div>
                             <span class="text-xs text-gray-500 dark:text-gray-400">Last Updated:</span>
@@ -677,9 +700,10 @@ import {
                             </div>
                           </div>
                         </div>
-
-                        <!-- Action Buttons -->
-                        <div class="flex flex-wrap gap-2 pt-4 border-t border-gray-200 dark:border-gray-600">
+                      </form>
+                      
+                      <!-- Action Buttons (Outside Form) -->
+                      <div class="flex flex-wrap gap-2 pt-4 border-t border-gray-200 dark:border-gray-600">
                           <button 
                             type="button"
                             class="px-4 py-2 bg-red-600 text-white text-sm font-medium rounded-lg hover:bg-red-700 transition-colors"
@@ -696,9 +720,11 @@ import {
 
                           <button 
                             type="button"
-                            class="px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors pdf-generate-btn"
+                            class="px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors estimate-btn"
                             data-project-id="${project.id}"
-                            data-template-type="affidavit"
+                            data-template-type="estimate"
+                            data-status-show="0"
+                            data-status-hide="20"
                             data-project-data='${JSON.stringify({
                               title: project.title || project.address,
                               address: project.address,
@@ -719,7 +745,39 @@ import {
 
                           <button 
                             type="button"
-                            class="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors pdf-generate-btn"
+                            class="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors edit-estimate-btn"
+                            data-project-id="${project.id}"
+                            data-template-type="edit-estimate"
+                            data-status-show="25"
+                            data-status-hide="90"
+                            data-project-data='${JSON.stringify({
+                              title: project.title || project.address,
+                              address: project.address,
+                              owner: project.owner,
+                              architect: project.architect,
+                              description: project.description,
+                              sq_ft: project.sq_ft,
+                              status:
+                                PROJECT_STATUS_LABELS[
+                                  (project.status ||
+                                    10) as unknown as ProjectStatusCode
+                                ] || "Unknown",
+                            }).replace(/'/g, "&#39;")}'
+                          >
+                            <i class="bx bx-edit mr-1"></i>
+                            Edit Estimate
+                          </button>
+
+          
+
+                          <!-- Invoice Link Placeholder -->
+                          <div id="invoice-link-${project.id}" class="hidden">
+                            <!-- Invoice link will be populated here -->
+                          </div>
+
+                          <button 
+                            type="button"
+                            class="hidden px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors pdf-generate-btn"
                             data-project-id="${project.id}"
                             data-template-type="project-agreement"
                             data-project-data='${JSON.stringify({
@@ -742,7 +800,7 @@ import {
 
                           <button 
                             type="button"
-                            class="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors pdf-generate-btn"
+                            class="hidden px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors pdf-generate-btn"
                             data-project-id="${project.id}"
                             data-template-type="affidavit"
                             data-project-data='${JSON.stringify({
@@ -765,7 +823,7 @@ import {
 
                           <button 
                             type="button"
-                            class="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors pdf-generate-btn"
+                            class="hidden px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors pdf-generate-btn"
                             data-project-id="${project.id}"
                             data-template-type="project-agreement"
                             data-project-data='${JSON.stringify({
@@ -851,10 +909,11 @@ import {
 
         this.initializeButtonGroups(accordionId);
 
-        // Load media files for each project
+        // Load media files and invoice links for each project
         sortedProjects.forEach((project) => {
           setTimeout(() => {
             this.loadProjectFiles(project.id.toString());
+            this.loadProjectInvoices(project.id.toString());
           }, 200); // Small delay to ensure DOM is ready
         });
       }, 100);
@@ -1217,6 +1276,130 @@ import {
       }
     }
 
+    // Function to handle estimate button clicks
+    private async handleEstimateClick(
+      projectId: string,
+      projectData: any,
+      isEditMode: boolean = false
+    ) {
+      try {
+        // Check if an invoice already exists for this project
+        const invoicesResponse = await fetch("/api/list-invoices");
+        const invoicesData = await invoicesResponse.json();
+        const existingInvoice = invoicesData.invoices?.find(
+          (invoice: any) =>
+            invoice.project_id.toString() === projectId.toString()
+        );
+
+        if (isEditMode || existingInvoice) {
+          // Edit mode or invoice exists - go to edit
+          if (existingInvoice) {
+            console.log("Editing existing invoice:", existingInvoice.id);
+
+            showNotification({
+              type: "success",
+              title: "Opening Invoice",
+              message: `Opening invoice ${existingInvoice.invoice_number} for editing`,
+              duration: 3000,
+            });
+
+            // Redirect to edit existing invoice
+            setTimeout(() => {
+              window.location.href = `/invoice/${existingInvoice.id}`;
+            }, 500);
+            return;
+          } else {
+            // Edit mode but no invoice exists - show error
+            showNotification({
+              type: "error",
+              title: "No Invoice Found",
+              message:
+                "No invoice exists for this project yet. Use 'Build Estimate' first.",
+              duration: 5000,
+            });
+            return;
+          }
+        }
+
+        // Create mode - create new invoice
+        console.log("Creating new invoice for project:", projectId);
+
+        const response = await fetch("/api/create-invoice", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            projectId,
+            projectData,
+          }),
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+          // Update project status to 20 (Estimate Created)
+          try {
+            const statusResponse = await fetch("/api/update-project-status", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                projectId,
+                status: 20,
+              }),
+            });
+
+            if (!statusResponse.ok) {
+              console.warn(
+                "Failed to update project status:",
+                await statusResponse.text()
+              );
+            } else {
+              console.log("Project status updated to 20");
+              // Update the status query system
+              StatusQuerySystem.getInstance().updateProjectStatus(
+                projectId,
+                20
+              );
+            }
+          } catch (statusError) {
+            console.warn("Error updating project status:", statusError);
+          }
+
+          // Refresh invoice links for this project
+          setTimeout(() => {
+            this.loadProjectInvoices(projectId);
+          }, 500);
+
+          showNotification({
+            type: "success",
+            title: "Invoice Created",
+            message: `Invoice ${result.invoice.invoice_number} created successfully. Click the invoice link to view it.`,
+            duration: 5000,
+          });
+
+          // Redirect to invoice page after a short delay to prevent page refresh interference
+          setTimeout(() => {
+            window.location.href = `/invoice/${result.invoice.id}`;
+          }, 1000);
+        } else {
+          throw new Error(result.error || "Failed to create invoice");
+        }
+      } catch (error) {
+        console.error("Error creating invoice:", error);
+        const errorMessage =
+          error instanceof Error ? error.message : "Failed to create invoice";
+        showNotification({
+          type: "error",
+          title: "Invoice Creation Failed",
+          message: errorMessage,
+          duration: 5000,
+        });
+      }
+    }
+
     // Function to handle client email notifications
     private async clientEmailHandler(projectId: string, authorEmail: string) {
       console.log(
@@ -1529,6 +1712,125 @@ import {
           }
         }
       });
+
+      // Handle estimate button clicks (both create and edit)
+      document.addEventListener("click", (e) => {
+        console.log("Click event detected:", e.target);
+        const buildTarget = (e.target as HTMLElement).closest(
+          ".estimate-btn, [data-template-type='estimate']"
+        );
+        const editTarget = (e.target as HTMLElement).closest(
+          ".edit-estimate-btn, [data-template-type='edit-estimate']"
+        );
+
+        const target = buildTarget || editTarget;
+        console.log("Estimate button target:", target);
+
+        if (target) {
+          console.log("Estimate button found, preventing default");
+          e.preventDefault();
+          e.stopPropagation();
+          const projectId = (target as HTMLElement).dataset.projectId;
+          const projectData = JSON.parse(
+            (target as HTMLElement).dataset.projectData || "{}"
+          );
+          const isEditMode =
+            target.classList.contains("edit-estimate-btn") ||
+            (target as HTMLElement).dataset.templateType === "edit-estimate";
+
+          console.log(
+            "Project ID:",
+            projectId,
+            "Project Data:",
+            projectData,
+            "Edit Mode:",
+            isEditMode
+          );
+
+          if (projectId) {
+            console.log("Calling handleEstimateClick");
+            this.handleEstimateClick(projectId, projectData, isEditMode);
+          }
+        }
+      });
+
+      // Handle project status change
+      document.addEventListener("change", async (e) => {
+        const target = e.target as HTMLSelectElement;
+        if (!target.classList.contains("project-status-select")) return;
+
+        const projectId = target.dataset.projectId;
+        const newStatus = parseInt(target.value, 10);
+        if (!projectId || Number.isNaN(newStatus)) return;
+
+        try {
+          const res = await fetch("/api/update-project-status", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ projectId, status: newStatus }),
+          });
+
+          if (!res.ok) {
+            console.error("Failed to update project status", await res.text());
+            showNotification({
+              type: "error",
+              title: "Update Failed",
+              message: "Could not update project status.",
+              duration: 2500,
+            });
+            return;
+          }
+
+          // Update numeric and label displays
+          const numEl = document.getElementById(`project-status-${projectId}`);
+          if (numEl) numEl.textContent = String(newStatus);
+          const labelEl = document.getElementById(
+            `project-status-label-${projectId}`
+          );
+          if (labelEl) {
+            const label =
+              PROJECT_STATUS_LABELS[
+                newStatus as unknown as ProjectStatusCode
+              ] || "Unknown";
+            labelEl.textContent = label;
+          }
+
+          // Update visibility rules
+          StatusQuerySystem.getInstance().updateProjectStatus(
+            projectId,
+            newStatus
+          );
+
+          showNotification({
+            type: "success",
+            title: "Status Updated",
+            message: `Project moved to ${newStatus}`,
+            duration: 2000,
+          });
+        } catch (err) {
+          console.error("Status change error", err);
+        }
+      });
+
+      // Handle status refresh button clicks
+      document.addEventListener("click", (e) => {
+        const target = (e.target as HTMLElement).closest(".status-refresh-btn");
+        if (target) {
+          e.preventDefault();
+          const projectId = target.dataset.projectId;
+          const newStatus = parseInt(target.dataset.status || "20");
+          StatusQuerySystem.getInstance().updateProjectStatus(
+            projectId,
+            newStatus
+          );
+          showNotification({
+            type: "success",
+            title: "Status Updated",
+            message: `Project status updated to ${newStatus}`,
+            duration: 2000,
+          });
+        }
+      });
     }
 
     // Function to initialize button group functionality
@@ -1543,19 +1845,19 @@ import {
       const allButtons = accordionElement.querySelectorAll(
         ".building-type-radio, .consulting-service-btn, .fire-service-radio, .fire-safety-service-btn"
       );
-      console.log(`Found ${allButtons.length} form buttons in accordion`);
+      // console.log(`Found ${allButtons.length} form buttons in accordion`);
 
-      // Log details about each button found
-      allButtons.forEach((button, index) => {
-        const htmlButton = button as HTMLElement;
-        console.log(`Button ${index}:`, {
-          value: htmlButton.dataset.value,
-          group: htmlButton.dataset.group,
-          type: htmlButton.dataset.type,
-          classes: htmlButton.className,
-          text: htmlButton.textContent?.trim(),
-        });
-      });
+      // Log details about each button found (debug)
+      // allButtons.forEach((button, index) => {
+      //   const htmlButton = button as HTMLElement;
+      //   console.log(`Button ${index}:`, {
+      //     value: htmlButton.dataset.value,
+      //     group: htmlButton.dataset.group,
+      //     type: htmlButton.dataset.type,
+      //     classes: htmlButton.className,
+      //     text: htmlButton.textContent?.trim(),
+      //   });
+      // });
 
       // Handle button group clicks
       accordionElement.addEventListener("click", (e) => {
@@ -1902,6 +2204,88 @@ import {
       return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
     }
 
+    // Load project invoices method
+    async loadProjectInvoices(projectId: string) {
+      try {
+        const invoiceContainer = document.getElementById(
+          `invoice-link-${projectId}`
+        );
+        if (!invoiceContainer) {
+          console.error(`Invoice container not found for project ${projectId}`);
+          return;
+        }
+
+        // Call the API to get all invoices and filter by project
+        const response = await fetch("/api/list-invoices");
+        if (!response.ok) {
+          throw new Error(`Failed to fetch invoices: ${response.statusText}`);
+        }
+
+        const data = await response.json();
+        const allInvoices = data.invoices || [];
+
+        // Filter invoices for this project
+        const projectInvoices = allInvoices.filter(
+          (invoice: any) =>
+            invoice.project_id.toString() === projectId.toString()
+        );
+
+        if (projectInvoices.length === 0) {
+          invoiceContainer.classList.add("hidden");
+          return;
+        }
+
+        // Generate HTML for invoice links
+        const invoiceLinksHTML = projectInvoices
+          .map((invoice: any) => {
+            const statusColor =
+              invoice.status === "paid"
+                ? "bg-green-500"
+                : invoice.status === "sent"
+                  ? "bg-blue-500"
+                  : "bg-gray-500";
+
+            return `
+              <a 
+                href="/invoice/${invoice.id}" 
+                target="_blank"
+                class="inline-flex items-center px-3 py-1 text-xs font-medium text-white ${statusColor} rounded-lg hover:opacity-80 transition-opacity mr-2 mb-2"
+                title="Invoice ${invoice.invoice_number} - ${invoice.status}"
+              >
+                <i class="bx bx-receipt mr-1"></i>
+                ${invoice.invoice_number}
+              </a>
+            `;
+          })
+          .join("");
+
+        invoiceContainer.innerHTML = invoiceLinksHTML;
+        invoiceContainer.classList.remove("hidden");
+
+        // Link the Edit Estimate button directly to the latest invoice
+        const editBtn = document.querySelector(
+          `.edit-estimate-btn[data-project-id="${projectId}"]`
+        ) as HTMLElement | null;
+        if (editBtn) {
+          // sort invoices by created_at descending if present, else use array order
+          const latest = projectInvoices[0];
+          if (latest?.id) {
+            editBtn.addEventListener(
+              "click",
+              (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                window.location.href = `/invoice/${latest.id}`;
+              },
+              { once: true }
+            );
+          }
+        }
+      } catch (error) {
+        console.error("Error loading project invoices:", error);
+      }
+    }
+
     // Media upload methods
     async handleMediaDrop(event: DragEvent, projectId: string) {
       event.preventDefault();
@@ -2173,6 +2557,7 @@ import {
       (window as any).deleteProject = this.deleteProject.bind(this);
       (window as any).clientEmailHandler = this.clientEmailHandler.bind(this);
       (window as any).loadProjectFiles = this.loadProjectFiles.bind(this);
+      (window as any).loadProjectInvoices = this.loadProjectInvoices.bind(this);
 
       // Expose media upload methods
       (window as any).handleMediaDrop = this.handleMediaDrop.bind(this);

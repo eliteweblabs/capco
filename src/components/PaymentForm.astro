@@ -1,0 +1,379 @@
+---
+interface Props {
+  invoiceId: number;
+  amount: number;
+  currency?: string;
+}
+
+const { invoiceId, amount, currency = "usd" } = Astro.props;
+---
+
+<div class="payment-form-container">
+  <div class="payment-methods">
+    <h3 class="text-lg font-semibold mb-4">Payment Methods</h3>
+
+    <!-- Apple Pay Button -->
+    <div id="apple-pay-container" class="mb-4">
+      <button
+        id="apple-pay-button"
+        class="apple-pay-button hidden"
+        style="width: 100%; height: 50px; border-radius: 8px; background: #000; color: #fff; border: none; font-size: 16px; font-weight: 600;"
+      >
+        <span class="apple-pay-text">Pay with Apple Pay</span>
+      </button>
+    </div>
+
+    <!-- Google Pay Button -->
+    <div id="google-pay-container" class="mb-4">
+      <button
+        id="google-pay-button"
+        class="google-pay-button hidden"
+        style="width: 100%; height: 50px; border-radius: 8px; background: #000; color: #fff; border: none; font-size: 16px; font-weight: 600;"
+      >
+        <span class="google-pay-text">Pay with Google Pay</span>
+      </button>
+    </div>
+
+    <!-- Link Pay (Venmo-like) Button -->
+    <div id="link-pay-container" class="mb-4">
+      <button
+        id="link-pay-button"
+        class="link-pay-button hidden"
+        style="width: 100%; height: 50px; border-radius: 8px; background: #000; color: #fff; border: none; font-size: 16px; font-weight: 600;"
+      >
+        <span class="link-pay-text">Pay with Link</span>
+      </button>
+    </div>
+
+    <!-- Credit Card Form -->
+    <div id="card-element-container" class="mb-4">
+      <div class="form-group">
+        <label
+          for="card-element"
+          class="block text-sm font-medium text-gray-700 mb-2"
+        >
+          Credit or debit card
+        </label>
+        <div id="card-element" class="p-3 border border-gray-300 rounded-md">
+        </div>
+        <div id="card-errors" class="text-red-600 text-sm mt-2" role="alert">
+        </div>
+      </div>
+    </div>
+
+    <!-- Payment Button -->
+    <button
+      id="submit-payment"
+      class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-md transition duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+      disabled
+    >
+      <span id="button-text">Pay ${(amount / 100).toFixed(2)}</span>
+      <div id="spinner" class="hidden">
+        <div
+          class="animate-spin rounded-full h-4 w-4 border-b-2 border-white mx-auto"
+        >
+        </div>
+      </div>
+    </button>
+  </div>
+
+  <!-- Payment Status -->
+  <div id="payment-status" class="mt-4 hidden">
+    <div
+      id="payment-success"
+      class="hidden p-4 bg-green-100 border border-green-400 text-green-700 rounded"
+    >
+      <p class="font-semibold">Payment Successful!</p>
+      <p>Your invoice has been paid and updated.</p>
+    </div>
+    <div
+      id="payment-error"
+      class="hidden p-4 bg-red-100 border border-red-400 text-red-700 rounded"
+    >
+      <p class="font-semibold">Payment Failed</p>
+      <p id="error-message"></p>
+    </div>
+  </div>
+</div>
+
+<script define:vars={{ invoiceId, amount, currency }}>
+  import { loadStripe } from "@stripe/stripe-js";
+
+  (async () => {
+    // Initialize Stripe
+    const stripe = await loadStripe(
+      import.meta.env.PUBLIC_STRIPE_PUBLISHABLE_KEY || ""
+    );
+    if (!stripe) {
+      console.error("Failed to load Stripe");
+      return;
+    }
+
+    const elements = stripe.elements();
+
+    // Create card element
+    const cardElement = elements.create("card", {
+      style: {
+        base: {
+          fontSize: "16px",
+          color: "#424770",
+          "::placeholder": {
+            color: "#aab7c4",
+          },
+        },
+        invalid: {
+          color: "#9e2146",
+        },
+      },
+    });
+
+    cardElement.mount("#card-element");
+
+    // Handle card errors
+    cardElement.on("change", ({ error }) => {
+      const displayError = document.getElementById("card-errors");
+      if (displayError) {
+        if (error) {
+          displayError.textContent = error.message;
+        } else {
+          displayError.textContent = "";
+        }
+      }
+    });
+
+    // Payment form handling
+    const submitButton = document.getElementById("submit-payment");
+    const buttonText = document.getElementById("button-text");
+    const spinner = document.getElementById("spinner");
+    const paymentStatus = document.getElementById("payment-status");
+    const paymentSuccess = document.getElementById("payment-success");
+    const paymentError = document.getElementById("payment-error");
+    const errorMessage = document.getElementById("error-message");
+
+    let clientSecret = null;
+    let paymentIntentId = null;
+
+    // Create payment intent when form loads
+    async function createPaymentIntent(paymentMethod = null) {
+      try {
+        const response = await fetch("/api/create-payment-intent", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            invoiceId: invoiceId,
+            paymentMethod: paymentMethod,
+          }),
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          clientSecret = data.clientSecret;
+          paymentIntentId = data.paymentIntentId;
+          if (submitButton) {
+            submitButton.disabled = false;
+          }
+          return data;
+        } else {
+          throw new Error(data.error);
+        }
+      } catch (error) {
+        console.error("Error creating payment intent:", error);
+        showError("Failed to initialize payment. Please try again.");
+      }
+    }
+
+    // Handle payment submission
+    async function handlePayment(paymentMethod = null) {
+      if (!clientSecret) {
+        await createPaymentIntent(paymentMethod);
+      }
+
+      setLoading(true);
+
+      try {
+        let result;
+
+        if (paymentMethod) {
+          // For Apple Pay, Google Pay, Link
+          result = await stripe.confirmPayment({
+            clientSecret,
+            confirmParams: {
+              payment_method: paymentMethod,
+              return_url: window.location.href,
+            },
+          });
+        } else {
+          // For card payments
+          result = await stripe.confirmCardPayment(clientSecret, {
+            payment_method: {
+              card: cardElement,
+            },
+          });
+        }
+
+        if (result.error) {
+          showError(result.error.message);
+        } else if (
+          result.paymentIntent &&
+          result.paymentIntent.status === "succeeded"
+        ) {
+          await confirmPayment();
+        }
+      } catch (error) {
+        console.error("Payment error:", error);
+        showError("Payment failed. Please try again.");
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    // Confirm payment with backend
+    async function confirmPayment() {
+      try {
+        const response = await fetch("/api/confirm-payment", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            paymentIntentId,
+            invoiceId,
+          }),
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          showSuccess();
+        } else {
+          showError(data.error || "Failed to confirm payment");
+        }
+      } catch (error) {
+        console.error("Error confirming payment:", error);
+        showError("Failed to confirm payment");
+      }
+    }
+
+    // UI helpers
+    function setLoading(loading) {
+      if (submitButton) {
+        // submitButton is the payment button element
+        submitButton.toggleAttribute("disabled", !!loading);
+      }
+      if (loading) {
+        buttonText?.classList.add("hidden");
+        spinner?.classList.remove("hidden");
+      } else {
+        buttonText?.classList.remove("hidden");
+        spinner?.classList.add("hidden");
+      }
+    }
+
+    function showSuccess() {
+      paymentStatus?.classList.remove("hidden");
+      paymentSuccess?.classList.remove("hidden");
+      paymentError?.classList.add("hidden");
+      submitButton?.classList.add("hidden");
+    }
+
+    function showError(message) {
+      paymentStatus?.classList.remove("hidden");
+      paymentError?.classList.remove("hidden");
+      paymentSuccess?.classList.add("hidden");
+      if (errorMessage) {
+        errorMessage.textContent = message;
+      }
+    }
+
+    // Initialize payment intent
+    createPaymentIntent();
+
+    // Handle form submission
+    submitButton?.addEventListener("click", (e) => {
+      e.preventDefault();
+      handlePayment();
+    });
+
+    // Apple Pay setup
+    if (window.ApplePaySession && window.ApplePaySession.canMakePayments()) {
+      const applePayButton = document.getElementById("apple-pay-button");
+      if (applePayButton) {
+        applePayButton.classList.remove("hidden");
+
+        applePayButton.addEventListener("click", async () => {
+          const paymentRequest = {
+            countryCode: "US",
+            currencyCode: "USD",
+            supportedNetworks: ["visa", "masterCard", "amex"],
+            merchantCapabilities: ["supports3DS"],
+            total: {
+              label: "CAPCo Fire Protection",
+              amount: (amount / 100).toFixed(2),
+            },
+          };
+
+          const session = new window.ApplePaySession(3, paymentRequest);
+
+          session.onvalidatemerchant = async (event) => {
+            // You'll need to implement merchant validation
+            session.completeMerchantValidation({});
+          };
+
+          session.onpaymentauthorized = async (event) => {
+            await handlePayment(event.payment.token);
+            session.completePayment(window.ApplePaySession.STATUS_SUCCESS);
+          };
+
+          session.oncancel = () => {
+            console.log("Apple Pay cancelled");
+          };
+
+          session.begin();
+        });
+      }
+    }
+
+    // Google Pay setup
+    if (window.google && window.google.payments) {
+      const googlePayButton = document.getElementById("google-pay-button");
+      if (googlePayButton) {
+        googlePayButton.classList.remove("hidden");
+
+        googlePayButton.addEventListener("click", async () => {
+          // Google Pay implementation
+          // This would require additional Google Pay setup
+          console.log("Google Pay clicked");
+        });
+      }
+    }
+
+    // Link Pay setup (Venmo-like)
+    const linkPayButton = document.getElementById("link-pay-button");
+    if (linkPayButton) {
+      linkPayButton.classList.remove("hidden");
+
+      linkPayButton.addEventListener("click", async () => {
+        await handlePayment("link");
+      });
+    }
+  })();
+</script>
+
+<style>
+  .apple-pay-button {
+    -webkit-appearance: -apple-pay-button;
+    -apple-pay-button-type: plain;
+    -apple-pay-button-style: black;
+  }
+
+  .google-pay-button {
+    background: #000 !important;
+  }
+
+  .link-pay-button {
+    background: #000 !important;
+  }
+</style>

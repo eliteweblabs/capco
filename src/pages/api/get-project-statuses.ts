@@ -5,36 +5,34 @@ export const GET: APIRoute = async ({ request }) => {
   try {
     if (!supabase) {
       // Return mock data when database is not configured
-      const mockStatuses = {
+      const         mockStatuses = {
         10: {
           status_name: "Specs Received",
           email_content:
             "Your project specifications have been received and are being reviewed by our team.",
           est_time: "1-2 business days",
-          email_client: true,
-          email_staff: false,
+          notify: ["admin"],
         },
         20: {
           status_name: "Generating Proposal",
           email_content:
             "We are currently generating your detailed proposal based on the specifications provided.",
           est_time: "3-5 business days",
+          notify: ["admin", "client"],
         },
         30: {
           status_name: "Proposal Shipped",
           email_content:
             "Your proposal has been completed and sent to you for review.",
           est_time: "1 business day",
-          email_client: true,
-          email_staff: true,
+          notify: ["admin", "client", "staff"],
         },
         40: {
           status_name: "Proposal Viewed",
           email_content:
             "We can see you have viewed the proposal. Please let us know if you have any questions.",
           est_time: "1-2 business days",
-          email_client: false,
-          email_staff: true,
+          notify: ["admin"],
         },
         50: {
           status_name: "Proposal Signed Off",
@@ -163,7 +161,7 @@ export const GET: APIRoute = async ({ request }) => {
     const { data: statuses, error } = await supabase
       .from("project_statuses")
       .select(
-        "status_code, status_name, email_content, est_time, email_client, email_staff",
+        "status_code, status_name, email_content, est_time, notify",
       )
       .order("status_code");
 
@@ -188,8 +186,7 @@ export const GET: APIRoute = async ({ request }) => {
           status_name: status.status_name,
           email_content: status.email_content,
           est_time: status.est_time,
-          email_client: status.email_client,
-          email_staff: status.email_staff,
+          notify: status.notify || ["admin"],
         };
         return acc;
       },
@@ -199,8 +196,7 @@ export const GET: APIRoute = async ({ request }) => {
           status_name: string;
           email_content: string;
           est_time: string;
-          email_client: boolean;
-          email_staff: boolean;
+          notify: string[];
         }
       >,
     );
