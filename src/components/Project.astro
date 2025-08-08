@@ -3,6 +3,7 @@ import Acrobat from "../components/Acrobat.astro";
 import { cardsData } from "../data/submittals.js";
 import NoDataCard from "../components/NoDataCard.astro";
 import { getI18N } from "@/i18n";
+import { checkAuth } from "../lib/auth";
 
 // const cardsData: any[] = [];
 //Para cambiar idioma de textos
@@ -10,8 +11,12 @@ const { currentLocale } = Astro;
 const i18n = getI18N({ currentLocale });
 
 import { getDocument } from "pdfjs-dist";
+const { isAuth, session, user, role } = await checkAuth(Astro.cookies);
+
 ---
 
+<h6>Project.astro</h6>
+{isAuth && role === "Client" ? (
 <!-- Search Filter for Projects -->
 <div class="mb-4 relative">
   <input
@@ -28,6 +33,11 @@ import { getDocument } from "pdfjs-dist";
     <i class="bx bx-x text-lg"></i>
   </button>
 </div>
+) : (
+  <div>
+    <h1>You are not authorized to view this search</h1>
+  </div>
+)}
 
 <div data-accordion="collapse" id="client-projects-container">
   {
