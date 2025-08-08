@@ -1814,15 +1814,17 @@ import {
 
       // Handle status refresh button clicks
       document.addEventListener("click", (e) => {
-        const target = (e.target as HTMLElement).closest(".status-refresh-btn");
+        const target = (e.target as HTMLElement).closest(".status-refresh-btn") as HTMLElement;
         if (target) {
           e.preventDefault();
           const projectId = target.dataset.projectId;
           const newStatus = parseInt(target.dataset.status || "20");
-          StatusQuerySystem.getInstance().updateProjectStatus(
-            projectId,
-            newStatus
-          );
+          if (projectId) {
+            StatusQuerySystem.getInstance().updateProjectStatus(
+              projectId,
+              newStatus
+            );
+          }
           showNotification({
             type: "success",
             title: "Status Updated",
@@ -2459,8 +2461,9 @@ import {
           "bg-emerald-500",
         ];
 
-        const colorIndex =
-          parseInt(userId.replace(/[^0-9]/g, "")) % colors.length;
+        const colorIndex = userId
+          ? parseInt(userId.replace(/[^0-9]/g, "")) % colors.length
+          : userName.length % colors.length;
         const bgColor = colors[colorIndex];
 
         return `
@@ -2507,39 +2510,48 @@ import {
           <i class="bx bx-user bx-sm" style="display:none;"></i>
         `;
       } else {
-        // Fallback to initials with color
-        const initials = userName
-          .split(" ")
-          .map((word) => word.charAt(0).toUpperCase())
-          .join("")
-          .slice(0, 2);
+        // Fallback to initials with color or user icon
+        if (userName) {
+          const initials = (userName || "")
+            .split(" ")
+            .map((word) => word.charAt(0).toUpperCase())
+            .join("")
+            .slice(0, 2);
 
-        const colors = [
-          "bg-blue-500",
-          "bg-green-500",
-          "bg-purple-500",
-          "bg-pink-500",
-          "bg-indigo-500",
-          "bg-yellow-500",
-          "bg-red-500",
-          "bg-teal-500",
-          "bg-orange-500",
-          "bg-cyan-500",
-          "bg-lime-500",
-          "bg-emerald-500",
-        ];
+          const colors = [
+            "bg-blue-500",
+            "bg-green-500",
+            "bg-purple-500",
+            "bg-pink-500",
+            "bg-indigo-500",
+            "bg-yellow-500",
+            "bg-red-500",
+            "bg-teal-500",
+            "bg-orange-500",
+            "bg-cyan-500",
+            "bg-lime-500",
+            "bg-emerald-500",
+          ];
 
-        const colorIndex = userId
-          ? parseInt(userId.replace(/[^0-9]/g, "")) % colors.length
-          : userName.length % colors.length;
+          const colorIndex = userId
+            ? parseInt((userId || "").replace(/[^0-9]/g, "") || "0") % colors.length
+            : (userName?.length || 1) % colors.length;
 
-        const bgColor = colors[colorIndex];
+          const bgColor = colors[colorIndex];
 
-        return `
-          <div class="w-full h-full flex items-center justify-center ${bgColor} text-white font-semibold text-sm">
-            ${initials}
-          </div>
-        `;
+          return `
+            <div class="w-full h-full flex items-center justify-center ${bgColor} text-white font-semibold text-sm">
+              ${initials}
+            </div>
+          `;
+        } else {
+          // No userName, fallback to user icon
+          return `
+            <div class="w-full h-full flex items-center justify-center bg-gray-500 text-white">
+              <i class="bx bx-user bx-sm"></i>
+            </div>
+          `;
+        }
       }
     }
 
