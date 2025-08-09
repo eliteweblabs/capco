@@ -51,9 +51,10 @@ const { isAuth, session, user, role } = await checkAuth(Astro.cookies);
   
 
 
-<script define:vars={{ role }}>
-  // Pass role to global scope for use in the main script
+<script define:vars={{ role, isAuth }}>
+  // Pass auth state and role to global scope for use in the main script
   window.USER_ROLE = role || "Client";
+  window.IS_AUTH = !!isAuth;
 </script>
 
 <script>
@@ -102,6 +103,10 @@ const { isAuth, session, user, role } = await checkAuth(Astro.cookies);
 
     // Initialize data in the correct order
     async initializeData() {
+      if (!(window as any).IS_AUTH) {
+        console.log("Skipping project/staff loading because user is not authenticated (initializeData)");
+        return;
+      }
       await this.loadStaffUsers();
       await this.loadProjects();
     }
@@ -132,6 +137,10 @@ const { isAuth, session, user, role } = await checkAuth(Astro.cookies);
     // Function to automatically load projects
     async loadProjects() {
       try {
+        if (!(window as any).IS_AUTH) {
+          console.log("Skipping projects loading because user is not authenticated (loadProjects)");
+          return;
+        }
         const response = await fetch("/api/get-user-projects");
         const result = await response.json();
 
@@ -172,6 +181,12 @@ const { isAuth, session, user, role } = await checkAuth(Astro.cookies);
     // Function to load staff users from API
     async loadStaffUsers() {
       try {
+        // Skip data loading when not authenticated to avoid flashing auth form and content together
+        if (!(window as any).IS_AUTH) {
+          console.log("Skipping project/staff loading because user is not authenticated");
+          return;
+        }
+
         console.log("Loading staff users...");
         const response = await fetch("/api/get-staff-users");
         const result = await response.json();
