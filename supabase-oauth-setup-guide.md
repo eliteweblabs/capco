@@ -12,7 +12,7 @@ In your **Supabase Dashboard** → **Authentication** → **Providers** → **Go
 ✅ **Set Authorized Client ID and Client Secret**
 ✅ **Configure Redirect URLs:**
 
-- Development: `http://localhost:4322/api/auth/callback`
+- Development: `http://localhost:4321/api/auth/callback`
 - Production: `https://de.capcofire.com/api/auth/callback`
 
 ### 2. Enable User Auto-Creation
@@ -31,13 +31,13 @@ The trigger in `fix-database-setup.sql` should automatically create profiles, bu
 
 ### Step 1: Test Current Config
 
-1. Visit `http://localhost:4322/debug`
+1. Visit `http://localhost:4321/debug`
 2. Click "Debug Current Auth State"
 3. Check if Supabase is properly configured
 
 ### Step 2: Test Google OAuth
 
-1. Clear auth state: `http://localhost:4322/api/reset-auth`
+1. Clear auth state: `http://localhost:4321/api/reset-auth`
 2. Try Google OAuth sign-in from main page
 3. Check browser developer console for errors
 4. Check terminal for server logs
@@ -58,7 +58,7 @@ If OAuth works but no profile is created:
 
 ### Issue: Wrong callback URL
 
-**Solution:** Update Google OAuth config to use port 4322 (not 4321)
+**Solution:** Update Google OAuth config to use port 4321 (default Astro port)
 
 ### Issue: Database trigger not working
 
@@ -83,13 +83,13 @@ If OAuth works but no profile is created:
 1. **Use a fresh Google account** for testing to avoid cached OAuth states
 2. **Check both browser console AND terminal** for complete error info
 3. **Test in incognito mode** to avoid browser caching issues
-4. **Verify the callback URL port** matches your dev server (4322 not 4321)
+4. **Verify the callback URL port** matches your dev server (4321)
 
 ## 🔧 Quick Fix Summary
 
 The main changes made:
 
-1. ✅ Fixed callback URL port (4321 → 4322)
+1. ✅ Fixed callback URL port (4322 → 4321)
 2. ✅ Added Google OAuth query params for better consent flow
 3. ✅ Created debug tools for troubleshooting
 4. ✅ Provided manual profile creation fallback
