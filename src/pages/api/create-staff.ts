@@ -188,7 +188,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       );
     }
 
-    // Create profile in profiles table
+    // Create profile in profiles table (use admin client to bypass RLS)
     const profileData = {
       id: authData.user.id,
       name: name.trim(),
@@ -198,7 +198,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       updated_at: new Date().toISOString()
     };
 
-    const { error: profileError } = await supabase
+    const { error: profileError } = await supabaseAdmin
       .from('profiles')
       .insert([profileData]);
 
@@ -215,7 +215,9 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       return new Response(
         JSON.stringify({ 
           success: false, 
-          error: "Failed to create user profile. Please try again." 
+          error: "Failed to create user profile. Please try again.",
+          details: profileError.message,
+          code: profileError.code
         }),
         { 
           status: 500,
