@@ -1,0 +1,75 @@
+---
+import Base from "../layout/Base.astro";
+---
+
+<Base title="Debug Profile Creation">
+  <main class="min-h-screen bg-gray-50 dark:bg-gray-900 py-12">
+    <div class="max-w-2xl mx-auto px-4">
+      <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
+        <h1 class="text-2xl font-bold text-gray-900 dark:text-white mb-6">
+          Debug Profile Creation
+        </h1>
+        
+        <div class="space-y-4">
+          <button 
+            id="debug-profile-btn"
+            class="w-full bg-blue-500 hover:bg-blue-600 text-white font-medium py-3 px-4 rounded-lg transition-colors"
+          >
+            Check/Create Profile for Current User
+          </button>
+          
+          <div id="debug-result" class="hidden">
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">Result:</h3>
+            <pre id="debug-output" class="bg-gray-100 dark:bg-gray-700 p-4 rounded text-sm overflow-auto max-h-96"></pre>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+</Base>
+
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    const debugBtn = document.getElementById('debug-profile-btn') as HTMLButtonElement;
+    const debugResult = document.getElementById('debug-result') as HTMLElement;
+    const debugOutput = document.getElementById('debug-output') as HTMLPreElement;
+
+    debugBtn.addEventListener('click', async () => {
+      debugBtn.disabled = true;
+      debugBtn.textContent = 'Checking...';
+      
+      try {
+        const response = await fetch('/api/debug-profile-creation', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+
+        const result = await response.json();
+        
+        debugResult.classList.remove('hidden');
+        debugOutput.textContent = JSON.stringify(result, null, 2);
+        
+        if (result.success) {
+          debugBtn.textContent = 'Success! Profile Ready';
+          debugBtn.classList.remove('bg-blue-500', 'hover:bg-blue-600');
+          debugBtn.classList.add('bg-green-500', 'hover:bg-green-600');
+        } else {
+          debugBtn.textContent = 'Error - Check Result Below';
+          debugBtn.classList.remove('bg-blue-500', 'hover:bg-blue-600');
+          debugBtn.classList.add('bg-red-500', 'hover:bg-red-600');
+        }
+        
+      } catch (error) {
+        debugResult.classList.remove('hidden');
+        debugOutput.textContent = `Error: ${error instanceof Error ? error.message : 'Unknown error'}`;
+        debugBtn.textContent = 'Error - Check Result Below';
+        debugBtn.classList.remove('bg-blue-500', 'hover:bg-blue-600');
+        debugBtn.classList.add('bg-red-500', 'hover:bg-red-600');
+      }
+      
+      debugBtn.disabled = false;
+    });
+  });
+</script>
