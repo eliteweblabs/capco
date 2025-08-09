@@ -4,6 +4,20 @@ import { checkAuth } from "../../lib/auth";
 
 export const POST: APIRoute = async ({ request, cookies }) => {
   try {
+    // Check if Supabase is configured
+    if (!supabase) {
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          error: "Supabase is not configured" 
+        }),
+        { 
+          status: 500,
+          headers: { "Content-Type": "application/json" }
+        }
+      );
+    }
+
     // Check authentication and ensure user is Admin
     const { isAuth, role } = await checkAuth(cookies);
     
@@ -172,10 +186,14 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
   } catch (error) {
     console.error('Create staff error:', error);
+    console.error('Error stack:', error instanceof Error ? error.stack : 'No stack trace');
+    console.error('Error message:', error instanceof Error ? error.message : error);
+    
     return new Response(
       JSON.stringify({ 
         success: false, 
-        error: "Internal server error. Please try again." 
+        error: "Internal server error. Please try again.",
+        details: error instanceof Error ? error.message : "Unknown error occurred"
       }),
       { 
         status: 500,

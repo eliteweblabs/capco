@@ -3,10 +3,15 @@ import Base from "../layout/Base.astro";
 import SectionContainer from "../components/SectionContainer.astro";
 import { checkAuth } from "../lib/auth";
 
-// Check authentication and ensure user is Admin
-const { isAuth, session, user, role } = await checkAuth(Astro.cookies);
+try {
+  // Check authentication and ensure user is Admin
+  const { isAuth, session, user, role } = await checkAuth(Astro.cookies);
 
-if (!isAuth || role !== "Admin") {
+  if (!isAuth || role !== "Admin") {
+    return Astro.redirect("/");
+  }
+} catch (error) {
+  console.error("Error in create-staff page:", error);
   return Astro.redirect("/");
 }
 ---
