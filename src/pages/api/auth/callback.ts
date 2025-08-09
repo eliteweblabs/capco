@@ -16,7 +16,8 @@ export const GET: APIRoute = async ({ url, cookies, redirect }) => {
   console.log("Auth code received:", authCode ? "present" : "missing");
 
   if (!authCode) {
-    return new Response("No authorization code provided", { status: 400 });
+    console.log("No auth code provided, redirecting to home");
+    return redirect("/");
   }
 
   try {
