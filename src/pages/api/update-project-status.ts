@@ -97,6 +97,20 @@ export const POST: APIRoute = async ({ request }) => {
       );
     }
 
+    // Fetch profile to determine role (Admin/Staff can update any project)
+    let isAdminOrStaff = false;
+    try {
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("role")
+        .eq("id", user.id)
+        .single();
+      isAdminOrStaff = profile?.role === "Admin" || profile?.role === "Staff";
+    } catch (_) {
+      // Default to non-admin if role lookup fails
+      isAdminOrStaff = false;
+    }
+
     // Update project with provided fields (only core fields that definitely exist)
     const updateData: any = {};
 
@@ -133,16 +147,37 @@ export const POST: APIRoute = async ({ request }) => {
     console.log("Attempting to update project with core data:", updateData);
 
     // First, try to update with core fields
-    const { data: coreData, error: coreError } = await supabase
+    let coreUpdateQuery = supabase
       .from("projects")
       .update(updateData)
-      .eq("id", projectId)
-      .eq("author_id", user.id) // Ensure user owns the project
+      .eq("id", projectId);
+    if (!isAdminOrStaff) {
+      coreUpdateQuery = coreUpdateQuery.eq("author_id", user.id);
+    }
+    const { data: coreData, error: coreError } = await coreUpdateQuery
       .select()
       .single();
 
     if (coreError) {
       console.error("Supabase core update error:", coreError);
+      // If no rows were affected, return a friendlier message
+      if (
+        coreError.code === "PGRST116" ||
+        /multiple \(or no\) rows returned|0 rows/i.test(coreError.message || "")
+      ) {
+        return new Response(
+          JSON.stringify({
+            error:
+              "No matching project found to update (check permissions or project ID)",
+            details: coreError.message,
+            code: coreError.code,
+          }),
+          {
+            status: 404,
+            headers: { "Content-Type": "application/json" },
+          },
+        );
+      }
       return new Response(
         JSON.stringify({
           error: `Failed to update project: ${coreError.message}`,
@@ -162,11 +197,14 @@ export const POST: APIRoute = async ({ request }) => {
     if (Object.keys(potentialNewFields).length > 0) {
       console.log("Attempting to update new fields:", potentialNewFields);
 
-      const { data: newFieldsData, error: newFieldsError } = await supabase
+      let newFieldsQuery = supabase
         .from("projects")
         .update(potentialNewFields)
-        .eq("id", projectId)
-        .eq("author_id", user.id)
+        .eq("id", projectId);
+      if (!isAdminOrStaff) {
+        newFieldsQuery = newFieldsQuery.eq("author_id", user.id);
+      }
+      const { data: newFieldsData, error: newFieldsError } = await newFieldsQuery
         .select()
         .single();
 
