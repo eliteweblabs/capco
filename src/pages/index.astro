@@ -1500,48 +1500,6 @@ const { isAuth, session, user, role } = await checkAuth(Astro.cookies);
 
     // Function to handle auto-save functionality
     private setupAutoSave() {
-      // Toast notification system
-      const showToast = (
-        message: string,
-        type: "success" | "error" = "success"
-      ) => {
-        // Remove existing toast if present
-        const existingToast = document.querySelector(".toast-notification");
-        if (existingToast) {
-          existingToast.remove();
-        }
-
-        // Create toast element
-        const toast = document.createElement("div");
-        toast.className = `toast-notification fixed top-4 right-4 z-50 px-4 py-3 rounded-lg shadow-lg transform transition-all duration-300 translate-x-full`;
-
-        const icon = type === "success" ? "bx-check-circle" : "bx-error-circle";
-        const bgColor = type === "success" ? "bg-green-500" : "bg-red-500";
-
-        toast.innerHTML = `
-          <div class="flex items-center ${bgColor} text-white px-4 py-3 rounded-lg">
-            <i class="bx ${icon} mr-2"></i>
-            <span>${message}</span>
-          </div>
-        `;
-
-        document.body.appendChild(toast);
-
-        // Animate in
-        setTimeout(() => {
-          toast.classList.remove("translate-x-full");
-        }, 100);
-
-        // Auto remove after 3 seconds
-        setTimeout(() => {
-          toast.classList.add("translate-x-full");
-          setTimeout(() => {
-            if (toast.parentNode) {
-              toast.remove();
-            }
-          }, 300);
-        }, 3000);
-      };
 
       // Debounce function to prevent too many API calls
       const debounce = (func: Function, wait: number) => {
@@ -1664,7 +1622,12 @@ const { isAuth, session, user, role } = await checkAuth(Astro.cookies);
 
             // Show success toast after 500ms delay
             saveToastTimeout = setTimeout(() => {
-              showToast("Changes saved", "success");
+              showNotification({
+                type: "success",
+                title: "Changes Saved",
+                message: "Your project changes have been saved automatically",
+                duration: 3000,
+              });
             }, 500);
 
             // Log event if available
@@ -1678,7 +1641,12 @@ const { isAuth, session, user, role } = await checkAuth(Astro.cookies);
             console.error("Auto-save error:", error);
 
             // Show error toast immediately
-            showToast("Save failed", "error");
+            showNotification({
+              type: "error",
+              title: "Save Failed",
+              message: "Could not save changes. Please try again.",
+              duration: 5000,
+            });
           }
         },
         1000
