@@ -1,7 +1,6 @@
 import type { APIRoute } from "astro";
 import { supabase } from "../../../lib/supabase";
 import { setAuthCookies } from "../../../lib/auth-cookies";
-import { ensureUserProfile } from "../../../lib/auth-utils";
 import type { Provider } from "@supabase/supabase-js";
 
 export const POST: APIRoute = async ({ request, cookies, redirect }) => {
@@ -20,7 +19,7 @@ export const POST: APIRoute = async ({ request, cookies, redirect }) => {
       provider: provider as Provider,
       options: {
         redirectTo: import.meta.env.DEV
-          ? "http://localhost:4322/api/auth/callback"
+          ? "http://localhost:4321/api/auth/callback"
           : "https://de.capcofire.com/api/auth/callback",
         queryParams: {
           access_type: "offline",
@@ -49,16 +48,10 @@ export const POST: APIRoute = async ({ request, cookies, redirect }) => {
     return new Response(error.message, { status: 500 });
   }
 
-  // Check if user has a profile, create one if not
-  if (data.user) {
-    console.log("Checking/creating profile for user:", data.user.id);
-    await ensureUserProfile(data.user);
-  }
-
   const { access_token, refresh_token } = data.session;
 
   // Use shared utility for consistent cookie handling
   setAuthCookies(cookies, access_token, refresh_token);
 
-  return redirect("/");
+  return redirect("/dashboard");
 };
