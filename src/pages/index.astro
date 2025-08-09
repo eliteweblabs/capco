@@ -1821,6 +1821,16 @@ const { isAuth, session, user, role } = await checkAuth(Astro.cookies);
         const newStatus = parseInt(target.value, 10);
         if (!projectId || Number.isNaN(newStatus)) return;
 
+        // Debugger: break right before the status change API call (dev only)
+        if (import.meta.env.DEV) {
+          console.log("[DEBUG] About to change project status", {
+            projectId,
+            newStatus,
+            selectEl: target,
+          });
+          debugger;
+        }
+
         try {
           const res = await fetch("/api/update-project-status", {
             method: "POST",
@@ -1885,6 +1895,14 @@ const { isAuth, session, user, role } = await checkAuth(Astro.cookies);
           e.preventDefault();
           const projectId = target.dataset.projectId;
           const newStatus = parseInt(target.dataset.status || "20");
+          if (import.meta.env.DEV) {
+            console.log("[DEBUG] Status refresh button clicked", {
+              projectId,
+              newStatus,
+              button: target,
+            });
+            debugger;
+          }
           if (projectId) {
             StatusQuerySystem.getInstance().updateProjectStatus(
               projectId,
