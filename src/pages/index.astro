@@ -73,6 +73,7 @@ const { isAuth, session, user, role } = await checkAuth(Astro.cookies);
     private currentProjectId: string | null = null;
     private currentProjectStatus: number | null = null;
     private staffUsers: any[] = [];
+    private projects: any[] = [];
 
     constructor() {
       this.setupAutoSave();
@@ -424,6 +425,8 @@ const { isAuth, session, user, role } = await checkAuth(Astro.cookies);
 
     // Function to display user projects in the projects list
     displayUserProjects(projects: any[]) {
+    // Store projects data for use in other methods
+    this.projects = projects;
       // Find or create the projects list container
       let projectsList = document.getElementById("projects-list");
 
@@ -440,7 +443,7 @@ const { isAuth, session, user, role } = await checkAuth(Astro.cookies);
                 <input
                   type="text"
                   id="project-search-input"
-                  placeholder="Filter projects..."
+                  placeholder="Search your projects..."
                   class="w-full pr-10 px-4 py-2 text-sm border border-gray-300 rounded-lg bg-white dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
                 />
                 <button
@@ -682,7 +685,7 @@ const { isAuth, session, user, role } = await checkAuth(Astro.cookies);
                               id="media-file-input-${project.id}" 
                               class="hidden" 
                               multiple 
-                              accept="image/*,video/*,audio/*,.pdf,.doc,.docx,.xls,.xlsx,.txt"
+                              accept="image/*,video/*,audio/*,.pdf,.doc,.docx,.xls,.xlsx,.txt,.dwg"
                               onchange="window.projectsList.handleMediaFileSelect(event, '${project.id}')"
                             />
                             <div class="flex flex-col items-center space-y-2">
@@ -691,7 +694,7 @@ const { isAuth, session, user, role } = await checkAuth(Astro.cookies);
                                 <span class="font-medium text-blue-600 dark:text-blue-400">Click to upload</span> or drag and drop
                               </div>
                               <div class="text-xs text-gray-500 dark:text-gray-400">
-                                Images, videos, documents (max 10MB each)
+                                Images, videos, documents, DWG files (max 10MB each)
                               </div>
                             </div>
                           </div>
@@ -1149,7 +1152,7 @@ const { isAuth, session, user, role } = await checkAuth(Astro.cookies);
       if (searchInput && searchTerm !== "") {
         searchInput.placeholder = `Showing ${visibleCount} of ${accordionItems.length} projects`;
       } else if (searchInput) {
-        searchInput.placeholder = "Filter projects...";
+        searchInput.placeholder = "Search your projects...";
       }
 
       console.log(
@@ -1809,6 +1812,12 @@ const { isAuth, session, user, role } = await checkAuth(Astro.cookies);
             message: `Project moved to ${newStatus}`,
             duration: 2000,
           });
+
+          // Check notification settings and send emails
+          const projectsList = (window as any).projectsList;
+          if (projectsList && projectsList.handleStatusChangeNotifications) {
+            await projectsList.handleStatusChangeNotifications(projectId, newStatus);
+          }
         } catch (err) {
           console.error("Status change error", err);
         }
@@ -2584,15 +2593,131 @@ const { isAuth, session, user, role } = await checkAuth(Astro.cookies);
       (window as any).handleMediaFileSelect =
         this.handleMediaFileSelect.bind(this);
     }
+
+    // Handle status change notifications
+    async handleStatusChangeNotifications(projectId: string, newStatus: number) {
+      try {
+        console.log(`Checking notifications for project ${projectId}, status ${newStatus}`);
+        
+        // Check who should be notified for this status
+        const notificationResponse = await fetch("/api/check-notifications", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ projectId }),
+        });
+
+        if (!notificationResponse.ok) {
+          console.error("Failed to check notifications");
+          return;
+        }
+
+        const notificationData = await notificationResponse.json();
+        console.log("Notification data:", notificationData);
+
+        if (!notificationData.success || !notificationData.notify || notificationData.notify.length === 0) {
+          console.log("No notifications configured for this status");
+          return;
+        }
+
+        // Get project details for email content
+        const project = this.projects.find((p: any) => p.id.toString() === projectId);
+        if (!project) {
+          console.error("Project not found");
+          return;
+        }
+
+        // Get status information
+        const statusLabel = PROJECT_STATUS_LABELS[newStatus as ProjectStatusCode] || `Status ${newStatus}`;
+        const statusData = (window as any).PROJECT_STATUS_DATA?.[newStatus];
+        
+        // Send notifications to each target type
+        for (const target of notificationData.notify) {
+          await this.sendStatusNotification(project, newStatus, statusLabel, statusData, target);
+        }
+
+      } catch (error) {
+        console.error("Error handling status change notifications:", error);
+      }
+    }
+
+    // Send notification to specific target (admin, client, staff)
+    async sendStatusNotification(project: any, newStatus: number, statusLabel: string, statusData: any, target: string) {
+      try {
+        let recipients: string[] = [];
+        let recipientType = target;
+
+        // Determine recipients based on target type
+        if (target === "client") {
+          // Send to project owner/author
+          // Check multiple possible email fields
+          const clientEmail = project.author_email || project.owner_email || project.email;
+          if (clientEmail) {
+            recipients = [clientEmail];
+          } else {
+            console.log("No client email found for project:", {
+              author_email: project.author_email,
+              owner_email: project.owner_email,
+              email: project.email,
+              owner: project.owner,
+              project: project
+            });
+            return;
+          }
+        } else if (target === "admin") {
+          // Send to all admin users
+          const adminUsers = this.staffUsers.filter(user => user.role === "Admin");
+          recipients = adminUsers.map(user => user.email).filter(email => email);
+        } else if (target === "staff") {
+          // Send to assigned staff member
+          if (project.assigned_to_id) {
+            const assignedStaff = this.staffUsers.find(s => s.id === project.assigned_to_id);
+            if (assignedStaff && assignedStaff.email) {
+              recipients = [assignedStaff.email];
+            }
+          }
+        }
+
+        if (recipients.length === 0) {
+          console.log(`No recipients found for target type: ${target}`);
+          return;
+        }
+
+        // Use the new sendReactEmail function for styled notifications
+        await (window as any).globalServices.sendReactEmail({
+          to: recipients,
+          type: "project-notification",
+          recipientName: target === "client" ? (project.owner || "Client") : "Team Member",
+          projectTitle: project.title || project.address || `Project ${project.id}`,
+          projectId: project.id.toString(),
+          statusMessage: statusData?.email_content || `Your project status has been updated to "${statusLabel}".`,
+          actionRequired: false,
+          actionUrl: `${window.location.origin}/project/${project.id}/view`,
+          actionText: "View Project",
+        });
+
+        console.log(`Status notification sent to ${recipients.join(", ")} for ${target}`);
+
+      } catch (error) {
+        console.error(`Error sending ${target} notification:`, error);
+        
+        // Show error toast
+        showNotification({
+          type: "error",
+          title: "Notification Failed",
+          message: `Failed to send ${target} notification`,
+          duration: 5000,
+        });
+      }
+    }
   }
 
   // Initialize the projects list when DOM is loaded (single instance)
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", () => {
-      new ProjectsList();
+      (window as any).projectsList = new ProjectsList();
     });
   } else {
-    new ProjectsList();
+    (window as any).projectsList = new ProjectsList();
   }
 </script>
 
@@ -2653,6 +2778,7 @@ const { isAuth, session, user, role } = await checkAuth(Astro.cookies);
                    bg-blue-500 text-white border-blue-500"
           >
             All Projects
+            <span class="ml-1 text-xs opacity-60">all</span>
           </button>
           <div class="px-3 py-2 text-xs text-gray-500">
             Loading status filters...
@@ -2673,6 +2799,7 @@ const { isAuth, session, user, role } = await checkAuth(Astro.cookies);
                    border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600"
           >
             ${label}
+            <span class="ml-1 text-xs opacity-60">${statusCode}</span>
           </button>
         `
         )
@@ -2687,6 +2814,7 @@ const { isAuth, session, user, role } = await checkAuth(Astro.cookies);
                  bg-blue-500 text-white border-blue-500"
         >
           All Projects
+          <span class="ml-1 text-xs opacity-60">all</span>
         </button>
         ${statusButtons}
       `;
@@ -2897,7 +3025,7 @@ const { isAuth, session, user, role } = await checkAuth(Astro.cookies);
     constructor() {
       this.searchInputAdmin = document.getElementById("project-search-input") as HTMLInputElement;
       this.searchInputClient = document.getElementById("project-search-input-client") as HTMLInputElement;
-              this.searchInputNew = document.getElementById("project-search-input") as HTMLInputElement; // Dashboard.astro uses same ID
+              this.searchInputNew = document.getElementById("project-search") as HTMLInputElement; // Dashboard.astro search input
       this.setupEventListeners();
     }
 
@@ -3028,7 +3156,7 @@ const { isAuth, session, user, role } = await checkAuth(Astro.cookies);
       if (searchInput && searchTerm !== "") {
         searchInput.placeholder = `Showing ${visibleCount} of ${projectItems.length} projects`;
       } else if (searchInput) {
-        searchInput.placeholder = "Filter projects...";
+        searchInput.placeholder = "Search your projects...";
       }
 
       console.log(`Search filter applied in ${containerId}: "${searchTerm}" - ${visibleCount}/${projectItems.length} items visible`);

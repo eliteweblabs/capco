@@ -100,10 +100,10 @@ const { role } = Astro.props;
           <div class="space-y-4">
             <i class="bx bx-upload bx-lg text-gray-400 dark:text-gray-500"></i>
             <div>
-              <p class="hidden md:block text-lg font-medium text-gray-900 dark:text-white">Drop PDF or click to browse</p>
-              <p class="hidden text-sm text-gray-500 dark:text-gray-400">Supports PDF files up to 10MB</p>
+              <p class="hidden md:block text-lg font-medium text-gray-900 dark:text-white">Drop PDF/DWG or click to browse</p>
+              <p class="hidden text-sm text-gray-500 dark:text-gray-400">Supports PDF and DWG files up to 10MB</p>
             </div>
-            <input type="file" id="file-input" accept=".pdf" multiple class="hidden" />
+            <input type="file" id="file-input" accept=".pdf,.dwg" multiple class="hidden" />
             <button id="browse-btn" class="rounded-md bg-sky-500 px-4 py-2 text-sm font-medium text-white hover:bg-sky-600 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:ring-offset-2">Browse Files</button>
           </div>
         </div>
@@ -156,13 +156,14 @@ const { role } = Astro.props;
 
     async handleFiles(files) {
       console.log("Handling files:", files);
-      const pdfFiles = Array.from(files).filter(
+      const validFiles = Array.from(files).filter(
         (file) =>
-          file.type === "application/pdf" && file.size <= 10 * 1024 * 1024
+          (file.type === "application/pdf" || file.type === "application/acad" || file.name.toLowerCase().endsWith('.dwg')) && 
+          file.size <= 10 * 1024 * 1024
       );
 
-      if (pdfFiles.length === 0) {
-        alert("Please select valid PDF files under 10MB");
+      if (validFiles.length === 0) {
+        alert("Please select valid PDF or DWG files under 10MB");
         return;
       }
 
@@ -172,7 +173,7 @@ const { role } = Astro.props;
       uploadProgress.classList.remove("hidden");
       progressList.innerHTML = "";
 
-      for (const file of pdfFiles) {
+      for (const file of validFiles) {
         const progressItem = this.createProgressItem(file.name);
         progressList.appendChild(progressItem);
 
@@ -1638,7 +1639,9 @@ const { role } = Astro.props;
           this.availableUsers = result.staffUsers || [];
 
           // Update placeholder text based on availability
-          const searchInput = this.container.querySelector("#existing-user-search");
+          const searchInput = this.container.querySelector(
+            "#existing-user-search"
+          );
           if (searchInput) {
             if (this.availableUsers.length === 0) {
               searchInput.placeholder = "No clients available";
@@ -1654,7 +1657,9 @@ const { role } = Astro.props;
         } else {
           console.error("Failed to load users:", result.error);
           // Handle error case
-          const searchInput = this.container.querySelector("#existing-user-search");
+          const searchInput = this.container.querySelector(
+            "#existing-user-search"
+          );
           if (searchInput) {
             searchInput.placeholder = "Error loading clients";
             searchInput.disabled = true;
@@ -1663,7 +1668,9 @@ const { role } = Astro.props;
       } catch (error) {
         console.error("Error loading existing users:", error);
         // Handle network/other errors
-        const searchInput = this.container.querySelector("#existing-user-search");
+        const searchInput = this.container.querySelector(
+          "#existing-user-search"
+        );
         if (searchInput) {
           searchInput.placeholder = "Error loading clients";
           searchInput.disabled = true;

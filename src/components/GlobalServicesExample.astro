@@ -3,7 +3,6 @@
 import { formatTimeSinceUpdate } from "../lib/global-services";
 // import ProjectFilter from "./ProjectFilter.astro";
 import PushNotificationDemo from "./PushNotificationDemo.astro";
-import ProjectList from "./ProjectList.astro";
 import PDFGenerator from "./PDFGenerator.astro";
 import {
   generateCompleteFormHTML,
@@ -31,7 +30,7 @@ import {
     <!-- Email Actions -->
     <div class="border-b pb-4">
       <h4 class="font-medium mb-2">Email Functions</h4>
-      <div class="flex gap-2 flex-wrap">
+      <div class="flex gap-2 flex-wrap mb-3">
         <button
           id="send-welcome-email"
           class="px-3 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
@@ -49,6 +48,26 @@ import {
           class="px-3 py-2 bg-purple-500 text-white rounded hover:bg-purple-600"
         >
           Send Custom Email
+        </button>
+      </div>
+      <div class="flex gap-2 flex-wrap">
+        <button
+          id="send-react-welcome"
+          class="px-3 py-2 bg-pink-500 text-white rounded hover:bg-pink-600 text-xs"
+        >
+          🎨 React Welcome
+        </button>
+        <button
+          id="send-react-notification"
+          class="px-3 py-2 bg-indigo-500 text-white rounded hover:bg-indigo-600 text-xs"
+        >
+          🎨 React Project Alert
+        </button>
+        <button
+          id="send-react-test"
+          class="px-3 py-2 bg-cyan-500 text-white rounded hover:bg-cyan-600 text-xs"
+        >
+          🎨 React Test
         </button>
       </div>
     </div>
@@ -171,7 +190,7 @@ import {
         type="file"
         id="file-upload"
         multiple
-        accept=".pdf"
+        accept=".pdf,.dwg"
         class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
       />
       <button
@@ -217,6 +236,7 @@ import {
     PROJECT_STATUS,
     PROJECT_STATUS_LABELS,
     sendEmail,
+    sendReactEmail,
     updateProjectStatus,
     showNotification,
     uploadFiles,
@@ -329,6 +349,76 @@ import {
       } catch (error) {
         console.error("Failed to send custom email:", error);
 
+        showNotification({
+          type: "error",
+          title: "Email Configuration Required",
+          message:
+            "Please configure your email provider in environment variables.",
+          duration: 8000,
+        });
+      }
+    });
+
+  // React Email functions
+  document
+    .getElementById("send-react-welcome")
+    ?.addEventListener("click", async () => {
+      try {
+        await sendReactEmail({
+          to: "user@example.com",
+          type: "welcome",
+          name: "John Doe",
+          appName: "CAPCo Demo",
+        });
+      } catch (error) {
+        console.error("Failed to send React welcome email:", error);
+        showNotification({
+          type: "error",
+          title: "Email Configuration Required",
+          message:
+            "Please configure EMAIL_PROVIDER and EMAIL_API_KEY environment variables.",
+          duration: 8000,
+        });
+      }
+    });
+
+  document
+    .getElementById("send-react-notification")
+    ?.addEventListener("click", async () => {
+      try {
+        await sendReactEmail({
+          to: "client@example.com",
+          type: "project-notification",
+          recipientName: "Jane Smith",
+          projectTitle: "Fire Protection System - Building A",
+          projectId: "PROJ-2024-001",
+          statusMessage:
+            "Your project status has been updated to 'In Review'. Please check the latest changes and provide feedback.",
+          actionRequired: true,
+          actionUrl: "https://yourapp.com/projects/123",
+          actionText: "Review Project",
+        });
+      } catch (error) {
+        console.error("Failed to send React project notification:", error);
+        showNotification({
+          type: "error",
+          title: "Email Configuration Required",
+          message: "Please set up Resend or SendGrid API credentials.",
+          duration: 8000,
+        });
+      }
+    });
+
+  document
+    .getElementById("send-react-test")
+    ?.addEventListener("click", async () => {
+      try {
+        await sendReactEmail({
+          to: "test@example.com",
+          type: "test",
+        });
+      } catch (error) {
+        console.error("Failed to send React test email:", error);
         showNotification({
           type: "error",
           title: "Email Configuration Required",
