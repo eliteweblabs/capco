@@ -354,28 +354,30 @@ const { isAuth, session, user, role } = await checkAuth(Astro.cookies);
           selectElement.appendChild(option);
         });
 
-        // Update the assigned user span
-        const assignedUserSpan = document.getElementById(
-          `assigned-user-${project.id}`
-        );
-        if (assignedUserSpan) {
-          if (project.assigned_to_id) {
-            const assignedStaff = this.staffUsers.find(
-              (s) => s.id === project.assigned_to_id
-            );
-            if (assignedStaff) {
-              assignedUserSpan.textContent = assignedStaff.name;
-              assignedUserSpan.className =
-                "inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-600 text-white";
+        // Update the assigned user span (only for non-Client users)
+        if (this.currentUserRole !== "Client") {
+          const assignedUserSpan = document.getElementById(
+            `assigned-user-${project.id}`
+          );
+          if (assignedUserSpan) {
+            if (project.assigned_to_id) {
+              const assignedStaff = this.staffUsers.find(
+                (s) => s.id === project.assigned_to_id
+              );
+              if (assignedStaff) {
+                assignedUserSpan.textContent = assignedStaff.name;
+                assignedUserSpan.className =
+                  "inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-600 text-white";
+              } else {
+                assignedUserSpan.textContent = "Loading...";
+                assignedUserSpan.className =
+                  "inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-500 text-white";
+              }
             } else {
-              assignedUserSpan.textContent = "Loading...";
+              assignedUserSpan.textContent = "Unassigned";
               assignedUserSpan.className =
                 "inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-500 text-white";
             }
-          } else {
-            assignedUserSpan.textContent = "Unassigned";
-            assignedUserSpan.className =
-              "inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-500 text-white";
           }
         }
       });
@@ -412,18 +414,20 @@ const { isAuth, session, user, role } = await checkAuth(Astro.cookies);
                 "Unknown"
               : "Unassigned";
 
-            // Update the assigned user span
-            const assignedUserSpan = document.getElementById(
-              `assigned-user-${projectId}`
-            );
-            if (assignedUserSpan) {
-              assignedUserSpan.textContent = assignedName;
-              if (assignedToId) {
-                assignedUserSpan.className =
-                  "inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-600 text-white";
-              } else {
-                assignedUserSpan.className =
-                  "inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-500 text-white";
+            // Update the assigned user span (only for non-Client users)
+            if (this.currentUserRole !== "Client") {
+              const assignedUserSpan = document.getElementById(
+                `assigned-user-${projectId}`
+              );
+              if (assignedUserSpan) {
+                assignedUserSpan.textContent = assignedName;
+                if (assignedToId) {
+                  assignedUserSpan.className =
+                    "inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-600 text-white";
+                } else {
+                  assignedUserSpan.className =
+                    "inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-500 text-white";
+                }
               }
             }
 
@@ -585,19 +589,21 @@ const { isAuth, session, user, role } = await checkAuth(Astro.cookies);
                           <span id="project-status-label-${project.id}" class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-cyan-600 text-white"  data-search-text>
                             ${PROJECT_STATUS_LABELS[(project.status || 10) as unknown as ProjectStatusCode] || "Unknown"}
                           </span>
-                          <!-- Assigned user name -->
+                          <!-- Assigned user name (hidden for Client users) -->
                           ${
-                            project.assigned_to_id && project.assigned_to_name
-                              ? `<span id="assigned-user-${project.id}" class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-600 text-white" data-search-text>
-                            ${project.assigned_to_name}
-                          </span>`
-                              : project.assigned_to_id
-                                ? `<span id="assigned-user-${project.id}" class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-500 text-white">
-                            Loading...
-                          </span>`
-                                : `<span id="assigned-user-${project.id}" class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-500 text-white">
-                            Unassigned
-                          </span>`
+                            this.currentUserRole !== "Client" ? (
+                              project.assigned_to_id && project.assigned_to_name
+                                ? `<span id="assigned-user-${project.id}" class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-600 text-white" data-search-text>
+                              ${project.assigned_to_name}
+                            </span>`
+                                : project.assigned_to_id
+                                  ? `<span id="assigned-user-${project.id}" class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-500 text-white">
+                              Loading...
+                            </span>`
+                                  : `<span id="assigned-user-${project.id}" class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-500 text-white">
+                              Unassigned
+                            </span>`
+                            ) : ""
                           }
                                 <i class="bx bx-time"></i>${timeSinceUpdate}
 
