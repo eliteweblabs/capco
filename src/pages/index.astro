@@ -135,15 +135,18 @@ const { isAuth, session, user, role } = await checkAuth(Astro.cookies);
         const response = await fetch("/api/get-user-projects");
         const result = await response.json();
 
-        if (result.success && result.projects) {
+          if (result.success && result.projects) {
           this.displayUserProjects(result.projects);
 
-          showNotification({
-            type: "success",
-            title: "Projects Loaded",
-            message: `Found ${result.projects.length} project(s)`,
-            duration: 3000,
-          });
+          // Only show success toast for authenticated users
+          if (result.authenticated && !result.demo) {
+            showNotification({
+              type: "success",
+              title: "Projects Loaded",
+              message: `Found ${result.projects.length} project(s)`,
+              duration: 3000,
+            });
+          }
 
           console.log(`Loaded ${result.projects.length} projects`);
         } else {
