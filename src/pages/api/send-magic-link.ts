@@ -22,7 +22,7 @@ export const POST: APIRoute = async ({ request }) => {
     const { data, error } = await supabase.auth.signInWithOtp({
       email: authorEmail,
       options: {
-        emailRedirectTo: `${process.env.SITE_URL || "http://localhost:4321"}/project/${projectId}/view?token=magic`,
+        emailRedirectTo: `${process.env.SITE_URL || "http://localhost:4322"}/project/${projectId}/view?token=magic`,
         data: {
           projectId: projectId,
           action: "view_project",
@@ -36,6 +36,8 @@ export const POST: APIRoute = async ({ request }) => {
         JSON.stringify({
           success: false,
           error: error.message,
+          to: authorEmail,
+          projectId: projectId,
         }),
         {
           status: 400,
@@ -47,7 +49,9 @@ export const POST: APIRoute = async ({ request }) => {
     return new Response(
       JSON.stringify({
         success: true,
-        message: "Magic link sent successfully",
+        message: `Magic link sent successfully to ${authorEmail}`,
+        to: authorEmail,
+        projectId: projectId,
         data: data,
       }),
       {
@@ -61,6 +65,8 @@ export const POST: APIRoute = async ({ request }) => {
       JSON.stringify({
         success: false,
         error: "Failed to send magic link",
+        to: authorEmail || "unknown",
+        projectId: projectId || "unknown",
       }),
       {
         status: 500,
