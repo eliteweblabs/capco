@@ -52,6 +52,11 @@ const { isAuth, session, user, role } = await checkAuth(Astro.cookies);
 
 
 <script define:vars={{ role }}>
+  // Pass role to global scope for use in the main script
+  window.USER_ROLE = role || "Client";
+</script>
+
+<script>
   // Import necessary functions and types
   import {
     PROJECT_STATUS_LABELS,
@@ -68,13 +73,20 @@ const { isAuth, session, user, role } = await checkAuth(Astro.cookies);
   // import Tooltip from "./Tooltip.astro";
   import { StatusQuerySystem } from "../lib/status-query-system";
 
+  // Extend window interface for USER_ROLE
+  declare global {
+    interface Window {
+      USER_ROLE: string;
+    }
+  }
+
   // Projects List Management Class
   class ProjectsList {
     private currentProjectId: string | null = null;
     private currentProjectStatus: number | null = null;
     private staffUsers: any[] = [];
     private projects: any[] = [];
-    private currentUserRole: string = role || "Client"; // Add user role
+    private currentUserRole: string = window.USER_ROLE || "Client"; // Add user role
 
     constructor() {
       this.setupAutoSave();
