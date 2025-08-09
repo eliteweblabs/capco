@@ -51,6 +51,8 @@ export const GET: APIRoute = async ({ request }) => {
           success: true,
           projects: mockProjects,
           message: "Demo projects (no database interaction)",
+          demo: true,
+          authenticated: false,
         }),
         {
           status: 200,
@@ -94,6 +96,8 @@ export const GET: APIRoute = async ({ request }) => {
           success: true,
           projects: mockProjects,
           message: "Demo projects (demo mode - sign in for real projects)",
+          demo: true,
+          authenticated: false,
         }),
         {
           status: 200,
@@ -314,6 +318,8 @@ export const GET: APIRoute = async ({ request }) => {
         success: true,
         projects: projects || [],
         message: `Found ${projects?.length || 0} projects for user`,
+        demo: false,
+        authenticated: true,
       }),
       {
         status: 200,
