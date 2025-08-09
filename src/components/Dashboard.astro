@@ -2842,10 +2842,17 @@ const { role } = Astro.props;
           try {
             var targetEl = e && e.target ? e.target : null;
             var value = targetEl && targetEl.value ? targetEl.value : "";
-            var cleaned = (window.currentPDFScraper && window.currentPDFScraper.cleanAddressForTitle)
-              ? window.currentPDFScraper.cleanAddressForTitle(value)
-              : value;
-            var titleEl = document.getElementById('project-title-' + (window.currentPDFScraper ? window.currentPDFScraper.projectId : ''));
+            var cleaned =
+              window.currentPDFScraper &&
+              window.currentPDFScraper.cleanAddressForTitle
+                ? window.currentPDFScraper.cleanAddressForTitle(value)
+                : value;
+            var titleEl = document.getElementById(
+              "project-title-" +
+                (window.currentPDFScraper
+                  ? window.currentPDFScraper.projectId
+                  : "")
+            );
             if (titleEl) {
               titleEl.textContent = cleaned || value || "Project";
             }
@@ -2856,6 +2863,22 @@ const { role } = Astro.props;
             );
           }
         });
+
+      // Live update accordion title for address field
+      if (input && input.getAttribute && input.getAttribute("id") === "address-input") {
+        input.addEventListener("input", () => {
+          try {
+            var value = input.value || "";
+            var cleaned = (this.cleanAddressForTitle ? this.cleanAddressForTitle(value) : value);
+            var titleEl = document.getElementById('project-title-' + this.projectId);
+            if (titleEl) {
+              titleEl.textContent = cleaned || value || "Project";
+            }
+          } catch (err) {
+            console.warn("Failed to update accordion title from address input", err);
+          }
+        });
+      }
       }
     }
 
