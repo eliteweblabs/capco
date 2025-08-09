@@ -21,6 +21,19 @@ This app is designed to facilitate the process of submitting (by clients) and re
 - SupaBase
 - NO REACT
 
+### Architecture Principles
+
+**Server-Side Rendering First:**
+- Minimize client-side HTML generation via JavaScript
+- Astro components should build proper page structure server-side for each session
+- Prefer static HTML with progressive enhancement over dynamic DOM manipulation
+- Use client-side JS only for:
+  - Interactive behaviors (form submissions, search filtering)
+  - Real-time updates (live data fetching)
+  - User input handling (dropzone, file uploads)
+- Avoid rebuilding entire sections of the page with innerHTML when possible
+- Structure should be determined at build/render time, not runtime
+
 ## Database Schema
 
 ### Tables Structure
