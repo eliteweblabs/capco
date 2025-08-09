@@ -103,34 +103,8 @@ const description = role === 'Client' && user?.user_metadata?.email
       await this.loadProjects();
     }
 
-    // Apply role-based UI changes
-    applyRoleBasedChanges() {
-      const isClient = this.currentUserRole === "Client";
-
-      // Ensure avatars are visible by default, then hide for Client only
-      setTimeout(() => {
-        const avatarsAll = document.querySelectorAll('.project-owner-avatar');
-        avatarsAll.forEach(a => { (a as HTMLElement).style.display = ''; });
-      }, 0);
-
-      if (isClient) {
-        console.log("Applying client-specific UI changes");
-        
-        // Hide project owner avatars for client users (redundant since they only see their own projects)
-        setTimeout(() => {
-          const avatars = document.querySelectorAll('.project-owner-avatar');
-          avatars.forEach(avatar => {
-            (avatar as HTMLElement).style.display = 'none';
-          });
-          
-          // Also adjust spacing since avatar is hidden
-          const projectInfoDivs = document.querySelectorAll('.project-owner-avatar + div');
-          projectInfoDivs.forEach(div => {
-            (div as HTMLElement).style.paddingLeft = '0';
-          });
-        }, 100); // Small delay to ensure DOM is updated
-      }
-    }
+    // Apply role-based UI changes (kept for future use; avatar visibility handled inline in markup)
+    applyRoleBasedChanges() {}
 
     // Function to automatically load projects
     async loadProjects() {
@@ -599,6 +573,7 @@ const description = role === 'Client' && user?.user_metadata?.email
                     >
                       <!-- Project Owner Avatar with Tooltip (hidden for Client users) -->
                       <div class="project-owner-avatar rounded-lg border size-9 flex items-center justify-center border-gray-600 dark:border-gray-500 dark:bg-gray-800 overflow-hidden text-white dark:text-gray-300 bg-gray-700" 
+                           ${this.currentUserRole === "Client" ? 'style="display:none"' : ''}
                            title="${project.author_name || "Unknown Owner"}${project.author_email ? ` - ${project.author_email}` : ""}${project.owner ? ` (${project.owner})` : ""}">
                         ${
                           project.author_id
