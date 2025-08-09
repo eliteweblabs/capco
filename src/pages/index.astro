@@ -12,28 +12,23 @@ import AuthForm from "../components/AuthForm.astro";
 import { checkAuth } from "../lib/auth";
 const { isAuth, session, user, role } = await checkAuth(Astro.cookies);
 
-
+const description = role === 'Client' ? user.user_metadata.email : role;
 ---
 
 <App>
     
     {isAuth ? (
 
-        
-        <Hero title={'' + user.user_metadata.name} description={role || 'No role'}/>
-
+        <Hero title={'' + user.user_metadata.name} description={description}/>
 
         <SectionContainer id="sub-nav" class="flex flex-col gap-y-6">
           <ProjectsNav role={role}/>
         </SectionContainer>
 
-<SectionContainer id="dashboard" class="tab-content mb-0 mt-0 mx-6">
-  <Dashboard role={role} />
-</SectionContainer>
+        <SectionContainer id="dashboard" class="tab-content mb-0 mt-0 mx-6">
+          <Dashboard role={role} />
+        </SectionContainer>
 
-
-
-      
     ) : (
       <!-- Non-authenticated content -->
       <SectionContainer id="auth" class="flex flex-col gap-y-6 mx-6">
@@ -42,18 +37,13 @@ const { isAuth, session, user, role } = await checkAuth(Astro.cookies);
     
     )}
 
-
-
-
-
-
   </App>
   
 
-
 <script define:vars={{ role, isAuth }}>
   // Pass auth state and role to global scope for use in the main script
-  window.USER_ROLE = role || "Client";
+  // this isbt user any more?
+  // window.USER_ROLE = role || "Client";
   window.IS_AUTH = !!isAuth;
 </script>
 
@@ -613,7 +603,7 @@ const { isAuth, session, user, role } = await checkAuth(Astro.cookies);
 
                       <!-- Project Info -->
                       <div class="pl-4 flex flex-col justify-start flex-1 text-left">
-                        <h2 class="font-medium text-base text-gray-800 dark:text-gray-200" data-search-text>
+                        <h2 id="project-title-${project.id}" class="font-medium text-base text-gray-800 dark:text-gray-200" data-search-text>
                           ${projectTitle}
                         </h2>
                     
