@@ -12,7 +12,9 @@ import AuthForm from "../components/AuthForm.astro";
 import { checkAuth } from "../lib/auth";
 const { isAuth, session, user, role } = await checkAuth(Astro.cookies);
 
-const description = role === 'Client' ? user.user_metadata.email : role;
+const description = role === 'Client' && user?.user_metadata?.email
+  ? `${user.user_metadata.email} - ${role}`
+  : (role || '');
 ---
 
 <App>
@@ -104,7 +106,13 @@ const description = role === 'Client' ? user.user_metadata.email : role;
     // Apply role-based UI changes
     applyRoleBasedChanges() {
       const isClient = this.currentUserRole === "Client";
-      
+
+      // Ensure avatars are visible by default, then hide for Client only
+      setTimeout(() => {
+        const avatarsAll = document.querySelectorAll('.project-owner-avatar');
+        avatarsAll.forEach(a => { (a as HTMLElement).style.display = ''; });
+      }, 0);
+
       if (isClient) {
         console.log("Applying client-specific UI changes");
         
