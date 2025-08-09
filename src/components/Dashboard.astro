@@ -2835,6 +2835,28 @@ const { role } = Astro.props;
           this.blurTimeout = null;
         }, 200);
       });
+
+      // Update accordion title when address field changes
+      if (input.getAttribute("id") === "address-input") {
+        input.addEventListener("input", function (e) {
+          try {
+            var targetEl = e && e.target ? e.target : null;
+            var value = targetEl && targetEl.value ? targetEl.value : "";
+            var cleaned = (window.currentPDFScraper && window.currentPDFScraper.cleanAddressForTitle)
+              ? window.currentPDFScraper.cleanAddressForTitle(value)
+              : value;
+            var titleEl = document.getElementById('project-title-' + (window.currentPDFScraper ? window.currentPDFScraper.projectId : ''));
+            if (titleEl) {
+              titleEl.textContent = cleaned || value || "Project";
+            }
+          } catch (err) {
+            console.warn(
+              "Failed to update accordion title from address input",
+              err
+            );
+          }
+        });
+      }
     }
 
     // updateScrapeButton removed - now handled by CSS pseudo-elements
