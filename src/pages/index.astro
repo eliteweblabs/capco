@@ -90,7 +90,6 @@ const description = role === 'Client' && user?.user_metadata?.email
       // Load staff users first, then projects
       this.initializeData();
       // Apply role-based UI changes
-      this.applyRoleBasedChanges();
     }
 
     // Initialize data in the correct order
@@ -104,7 +103,6 @@ const description = role === 'Client' && user?.user_metadata?.email
     }
 
     // Apply role-based UI changes (kept for future use; avatar visibility handled inline in markup)
-    applyRoleBasedChanges() {}
 
     // Function to automatically load projects
     async loadProjects() {
@@ -950,9 +948,6 @@ const description = role === 'Client' && user?.user_metadata?.email
         this.populateFormContainers(sortedProjects);
         this.populateStaffAssignments(sortedProjects);
         
-        // Apply role-based UI changes after projects are rendered
-        this.applyRoleBasedChanges();
-
         // Re-initialize search filter functionality after projects are loaded
         this.initializeTextFilter(accordionId);
 
@@ -2846,12 +2841,10 @@ const description = role === 'Client' && user?.user_metadata?.email
   }
 
   class ProjectFilter {
-    private container: HTMLElement | null;
     private buttonsContainer: HTMLElement | null;
     public currentFilter: string;
 
     constructor() {
-      this.container = document.getElementById("project-filter-container");
       this.buttonsContainer = document.getElementById("status-filter-buttons");
       this.currentFilter = "all";
 
@@ -3034,14 +3027,18 @@ const description = role === 'Client' && user?.user_metadata?.email
       // Update count bubbles for each status
       this.updateCountBubbles();
 
-      // Create or update count display
+      // Create or update count display just after the buttons
       let countDisplay = document.getElementById("filter-count");
       if (!countDisplay) {
         countDisplay = document.createElement("p");
         countDisplay.id = "filter-count";
-        countDisplay.className =
-          "text-sm text-gray-600 dark:text-gray-400 mt-2";
-        this.container?.appendChild(countDisplay);
+        countDisplay.className = "text-sm text-gray-600 dark:text-gray-400 mt-2";
+        if (this.buttonsContainer && this.buttonsContainer.parentElement) {
+          this.buttonsContainer.parentElement.insertBefore(
+            countDisplay,
+            this.buttonsContainer.nextSibling
+          );
+        }
       }
 
       const filterText =
@@ -3093,17 +3090,8 @@ const description = role === 'Client' && user?.user_metadata?.email
       });
     }
 
-    show() {
-      if (this.container) {
-        this.container.classList.remove("hidden");
-      }
-    }
-
-    hide() {
-      if (this.container) {
-        this.container.classList.add("hidden");
-      }
-    }
+    show() {}
+    hide() {}
 
     reset() {
       this.setActiveFilter("all");
