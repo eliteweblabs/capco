@@ -2762,11 +2762,11 @@ const { isAuth, session, user, role } = await checkAuth(Astro.cookies);
           const adminUsers = this.staffUsers.filter(user => user.role === "Admin");
           recipients = adminUsers.map(user => user.email).filter(email => email);
         } else if (target === "staff") {
-          // Send to assigned staff member
-          if (project.assigned_to_id) {
-            const assignedStaff = this.staffUsers.find(s => s.id === project.assigned_to_id);
-            if (assignedStaff && assignedStaff.email) {
-              recipients = [assignedStaff.email];
+          // Send to project author (creator)
+          if (project.author_id) {
+            const authorStaff = this.staffUsers.find(s => s.id === project.author_id);
+            if (authorStaff && authorStaff.email) {
+              recipients = [authorStaff.email];
             }
           }
         }
