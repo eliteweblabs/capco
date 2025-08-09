@@ -21,6 +21,43 @@ FOR UPDATE USING (auth.uid() = author_id);
 CREATE POLICY "Users can delete their own projects" ON projects
 FOR DELETE USING (auth.uid() = author_id);
 
+-- Admin/Staff overrides for projects
+-- Allow Admins to view all projects
+CREATE POLICY "Admins can view all projects" ON projects
+FOR SELECT USING (
+  EXISTS (
+    SELECT 1 FROM profiles 
+    WHERE id = auth.uid() AND role IN ('Admin', 'Staff')
+  )
+);
+
+-- Allow Admins to insert projects for any user
+CREATE POLICY "Admins can insert any projects" ON projects
+FOR INSERT WITH CHECK (
+  EXISTS (
+    SELECT 1 FROM profiles 
+    WHERE id = auth.uid() AND role IN ('Admin', 'Staff')
+  )
+);
+
+-- Allow Admins to update any projects
+CREATE POLICY "Admins can update any projects" ON projects
+FOR UPDATE USING (
+  EXISTS (
+    SELECT 1 FROM profiles 
+    WHERE id = auth.uid() AND role IN ('Admin', 'Staff')
+  )
+);
+
+-- Allow Admins to delete any projects
+CREATE POLICY "Admins can delete any projects" ON projects
+FOR DELETE USING (
+  EXISTS (
+    SELECT 1 FROM profiles 
+    WHERE id = auth.uid() AND role IN ('Admin', 'Staff')
+  )
+);
+
 -- Files table policies
 -- Allow users to insert files for their own projects
 CREATE POLICY "Users can insert files for their own projects" ON files
@@ -59,6 +96,16 @@ FOR DELETE USING (
   EXISTS (
     SELECT 1 FROM projects 
     WHERE id = files.project_id AND author_id = auth.uid()
+  )
+);
+
+-- Admin/Staff overrides for files
+-- Allow Admins to manage all files
+CREATE POLICY "Admins can manage all files" ON files
+FOR ALL USING (
+  EXISTS (
+    SELECT 1 FROM profiles 
+    WHERE id = auth.uid() AND role IN ('Admin', 'Staff')
   )
 );
 
