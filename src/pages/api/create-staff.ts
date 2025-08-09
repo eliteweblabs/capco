@@ -1,5 +1,6 @@
 import type { APIRoute } from "astro";
 import { supabase } from "../../lib/supabase";
+import { supabaseAdmin } from "../../lib/supabase-admin";
 import { checkAuth } from "../../lib/auth";
 
 export const GET: APIRoute = async ({ cookies }) => {
@@ -51,6 +52,22 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         { 
           status: 500,
           headers: { "Content-Type": "application/json" }
+        }
+      );
+    }
+
+    // Ensure admin client is configured for user creation
+    console.log('2b. Checking Supabase admin configuration:', !!supabaseAdmin);
+    if (!supabaseAdmin) {
+      console.log('ERROR: Supabase admin client not configured');
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: "Supabase admin client is not configured. Ensure SUPABASE_SERVICE_ROLE_KEY is set.",
+        }),
+        {
+          status: 500,
+          headers: { "Content-Type": "application/json" },
         }
       );
     }
@@ -128,8 +145,8 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     // Generate a temporary password
     const tempPassword = generateTempPassword();
 
-    // Create user in Supabase Auth
-    const { data: authData, error: authError } = await supabase.auth.admin.createUser({
+    // Create user in Supabase Auth (requires service role key)
+    const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
       email: email.trim().toLowerCase(),
       password: tempPassword,
       email_confirm: true, // Auto-confirm email
@@ -161,7 +178,8 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       return new Response(
         JSON.stringify({ 
           success: false, 
-          error: "Failed to create user account. Please try again." 
+          error: "Failed to create user account. Please try again.",
+          details: authError.message
         }),
         { 
           status: 500,
@@ -189,7 +207,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       
       // Try to delete the auth user if profile creation fails
       try {
-        await supabase.auth.admin.deleteUser(authData.user.id);
+        await supabaseAdmin.auth.admin.deleteUser(authData.user.id);
       } catch (deleteError) {
         console.error('Failed to cleanup auth user:', deleteError);
       }
