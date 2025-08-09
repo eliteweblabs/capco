@@ -61,6 +61,8 @@ export const POST: APIRoute = async ({ request }) => {
         "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         "text/plain",
         "application/acad", // .dwg files (AutoCAD drawings)
+        "application/x-autocad", // Alternative DWG MIME type
+        "application/autocad", // Another alternative DWG MIME type
       ];
     } else {
       // Default to PDF only for backward compatibility
@@ -68,10 +70,17 @@ export const POST: APIRoute = async ({ request }) => {
     }
 
     for (const file of files) {
-      if (!allowedTypes.includes(file.type)) {
+      // Special handling for DWG files - check by extension if MIME type doesn't match expected types
+      const isDwgFile = file.name.toLowerCase().endsWith('.dwg');
+      const isAllowedType = allowedTypes.includes(file.type) || 
+        (fileType === "media" && isDwgFile && (file.type === "application/octet-stream" || file.type === ""));
+
+      console.log(`File validation: ${file.name}, type: "${file.type}", isDwg: ${isDwgFile}, allowed: ${isAllowedType}`);
+
+      if (!isAllowedType) {
         return new Response(
           JSON.stringify({
-            error: `File type ${file.type} not allowed for ${fileType} uploads`,
+            error: `File type "${file.type}" not allowed for ${fileType} uploads. File: ${file.name}`,
           }),
           {
             status: 400,
