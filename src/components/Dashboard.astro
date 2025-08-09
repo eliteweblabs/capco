@@ -957,6 +957,7 @@ const { role } = Astro.props;
       this.ocrText = "";
       this.imageBlob = null;
       this.selectedImages = []; // Array to store multiple images with titles
+      this.currentUserProfile = null; // Store current user's profile data
 
       // Initialize Supabase client (same logic as PDFUploader)
       this.supabaseUrl = window.SUPABASE_URL;
@@ -971,6 +972,7 @@ const { role } = Astro.props;
       this.attachToViewer();
       this.setupEventListeners();
       this.setupSession(); // Set up session if tokens are available
+      this.getCurrentUserProfile(); // Load current user's profile
     }
 
     async setupSession() {
@@ -985,6 +987,139 @@ const { role } = Astro.props;
           console.error("PDFScraper: Error setting up session:", error);
         }
       }
+    }
+
+    async getCurrentUserProfile() {
+      try {
+        // Get current user
+        const { data: { user }, error: userError } = await this.supabase.auth.getUser();
+        
+        if (userError || !user) {
+          console.log("No authenticated user found");
+          return;
+        }
+
+        // Get user's profile data
+        const { data: profile, error: profileError } = await this.supabase
+          .from("profiles")
+          .select("*")
+          .eq("id", user.id)
+          .single();
+
+        if (profileError) {
+          console.error("Error fetching user profile:", profileError);
+          return;
+        }
+
+        this.currentUserProfile = {
+          ...profile,
+          email: user.email, // Use email from auth user
+          user_metadata: user.user_metadata // Include OAuth metadata
+        };
+
+        console.log("Current user profile loaded:", this.currentUserProfile);
+        
+        // Apply UI changes based on role
+        this.setupFormForUserRole();
+        
+      } catch (error) {
+        console.error("Error getting current user profile:", error);
+      }
+    }
+
+    setupFormForUserRole() {
+      if (!this.currentUserProfile) return;
+
+      const isClient = this.currentUserProfile.role === "Client";
+      
+      if (isClient) {
+        // Hide the client type toggle section for client users
+        const clientTypeToggle = this.container.querySelector("#owner-type-toggle");
+        if (clientTypeToggle) {
+          const clientTypeSection = clientTypeToggle.closest(".space-y-3");
+          if (clientTypeSection) {
+            console.log("Hiding client type toggle for client user");
+            clientTypeSection.style.display = "none";
+          }
+        }
+
+        // Show new user inputs by default and prepopulate them
+        const newUserInputs = this.container.querySelector("#new-user-inputs");
+        const existingUserInputs = this.container.querySelector("#existing-user-inputs");
+        
+        if (newUserInputs) {
+          newUserInputs.classList.remove("hidden");
+          this.prepopulateClientFields();
+        }
+        
+        if (existingUserInputs) {
+          existingUserInputs.classList.add("hidden");
+        }
+      }
+    }
+
+    prepopulateClientFields() {
+      if (!this.currentUserProfile) return;
+
+      const profile = this.currentUserProfile;
+      
+      // Prepopulate company/client name
+      const companyInput = this.container.querySelector("#owner-name-input");
+      if (companyInput && profile.name) {
+        companyInput.value = profile.name;
+        companyInput.readOnly = true;
+        companyInput.style.backgroundColor = "#f3f4f6"; // Gray background to indicate readonly
+        companyInput.style.cursor = "not-allowed";
+      }
+
+      // Try to extract first and last name from OAuth metadata or profile name
+      let firstName = "";
+      let lastName = "";
+
+      if (profile.user_metadata?.name) {
+        const nameParts = profile.user_metadata.name.split(" ");
+        firstName = nameParts[0] || "";
+        lastName = nameParts.slice(1).join(" ") || "";
+      } else if (profile.name) {
+        const nameParts = profile.name.split(" ");
+        firstName = nameParts[0] || "";
+        lastName = nameParts.slice(1).join(" ") || "";
+      }
+
+      // Prepopulate first name
+      const firstNameInput = this.container.querySelector("#owner-first-name-input");
+      if (firstNameInput) {
+        firstNameInput.value = firstName;
+      }
+
+      // Prepopulate last name  
+      const lastNameInput = this.container.querySelector("#owner-last-name-input");
+      if (lastNameInput) {
+        lastNameInput.value = lastName;
+      }
+
+      // Prepopulate email and make it readonly
+      const emailInput = this.container.querySelector("#owner-email-input");
+      if (emailInput && profile.email) {
+        emailInput.value = profile.email;
+        emailInput.readOnly = true;
+        emailInput.style.backgroundColor = "#f3f4f6"; // Gray background to indicate readonly
+        emailInput.style.cursor = "not-allowed";
+      }
+
+      // Prepopulate phone if available
+      const phoneInput = this.container.querySelector("#owner-phone-input");
+      if (phoneInput && profile.phone) {
+        phoneInput.value = profile.phone;
+      }
+
+      console.log("Prepopulated client fields:", {
+        company: profile.name,
+        firstName,
+        lastName,
+        email: profile.email,
+        phone: profile.phone
+      });
     }
 
     attachToViewer() {
@@ -1033,6 +1168,28 @@ const { role } = Astro.props;
                     placeholder="Company / Client Name *"
                     required
                   >
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                  <div class="relative scrape-input-container">
+                    <input
+                      type="text"
+                      id="owner-first-name-input"
+                      data-field="owner_first_name"
+                      class="scrape-input w-full py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:focus:ring-blue-400 dark:focus:border-blue-400"
+                      placeholder="First Name *"
+                      required
+                    >
+                  </div>
+                  <div class="relative scrape-input-container">
+                    <input
+                      type="text"
+                      id="owner-last-name-input"
+                      data-field="owner_last_name"
+                      class="scrape-input w-full py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:focus:ring-blue-400 dark:focus:border-blue-400"
+                      placeholder="Last Name *"
+                      required
+                    >
+                  </div>
                 </div>
                 <div class="relative scrape-input-container">
                   <input
@@ -2809,25 +2966,34 @@ const { role } = Astro.props;
         this.container.querySelectorAll(".fire-safety-service-btn.selected")
       ).map((btn) => btn.getAttribute("data-value"));
 
-      // Get owner data based on toggle selection
-      const isExistingUser =
-        this.container.querySelector("#owner-type-toggle")?.checked || false;
+      // Get owner data based on toggle selection and user role
+      const isClient = this.currentUserProfile?.role === "Client";
+      const isExistingUser = isClient ? false : (this.container.querySelector("#owner-type-toggle")?.checked || false);
       let ownerData = {};
 
       if (!isExistingUser) {
-        // New user data
+        // New user data (or client user)
         ownerData = {
-          owner_type: "new",
+          owner_type: isClient ? "current_user" : "new",
           owner_name:
             this.container.querySelector("#owner-name-input")?.value || "",
+          owner_first_name:
+            this.container.querySelector("#owner-first-name-input")?.value || "",
+          owner_last_name:
+            this.container.querySelector("#owner-last-name-input")?.value || "",
           owner_email:
             this.container.querySelector("#owner-email-input")?.value || "",
           owner_phone:
             this.container.querySelector("#owner-phone-input")?.value || "",
           owner: this.container.querySelector("#owner-name-input")?.value || "", // Legacy compatibility
         };
+
+        // For client users, also include the user ID for direct association
+        if (isClient && this.currentUserProfile) {
+          ownerData.owner_user_id = this.currentUserProfile.id;
+        }
       } else {
-        // Existing user data
+        // Existing user data (only for non-client users)
         const selectedUserId =
           this.container.querySelector("#existing-user-id")?.value || "";
         const selectedUserName =
