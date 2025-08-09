@@ -150,28 +150,41 @@ try {
 
 <script>
   class StaffCreator {
-    private form: HTMLFormElement;
-    private submitBtn: HTMLButtonElement;
-    private submitText: HTMLElement;
-    private submitSpinner: HTMLElement;
-    private messageContainer: HTMLElement;
-    private successMessage: HTMLElement;
-    private errorMessage: HTMLElement;
-    private successText: HTMLElement;
-    private errorText: HTMLElement;
+    private form!: HTMLFormElement;
+    private submitBtn!: HTMLButtonElement;
+    private submitText!: HTMLElement;
+    private submitSpinner!: HTMLElement;
+    private messageContainer!: HTMLElement;
+    private successMessage!: HTMLElement;
+    private errorMessage!: HTMLElement;
+    private successText!: HTMLElement;
+    private errorText!: HTMLElement;
 
     constructor() {
-      this.form = document.getElementById('create-staff-form') as HTMLFormElement;
-      this.submitBtn = document.getElementById('submit-btn') as HTMLButtonElement;
-      this.submitText = document.getElementById('submit-text') as HTMLElement;
-      this.submitSpinner = document.getElementById('submit-spinner') as HTMLElement;
-      this.messageContainer = document.getElementById('message-container') as HTMLElement;
-      this.successMessage = document.getElementById('success-message') as HTMLElement;
-      this.errorMessage = document.getElementById('error-message') as HTMLElement;
-      this.successText = document.getElementById('success-text') as HTMLElement;
-      this.errorText = document.getElementById('error-text') as HTMLElement;
+      try {
+        this.form = document.getElementById('create-staff-form') as HTMLFormElement;
+        this.submitBtn = document.getElementById('submit-btn') as HTMLButtonElement;
+        this.submitText = document.getElementById('submit-text') as HTMLElement;
+        this.submitSpinner = document.getElementById('submit-spinner') as HTMLElement;
+        this.messageContainer = document.getElementById('message-container') as HTMLElement;
+        this.successMessage = document.getElementById('success-message') as HTMLElement;
+        this.errorMessage = document.getElementById('error-message') as HTMLElement;
+        this.successText = document.getElementById('success-text') as HTMLElement;
+        this.errorText = document.getElementById('error-text') as HTMLElement;
 
-      this.init();
+        // Validate all elements exist
+        if (!this.form || !this.submitBtn || !this.submitText || !this.submitSpinner) {
+          console.error('Required form elements not found');
+          return;
+        }
+
+        // Ensure button is in correct initial state
+        this.setLoading(false);
+
+        this.init();
+      } catch (error) {
+        console.error('Error initializing StaffCreator:', error);
+      }
     }
 
     init() {
@@ -238,6 +251,11 @@ try {
     }
 
     setLoading(loading: boolean) {
+      if (!this.submitBtn || !this.submitText || !this.submitSpinner) {
+        console.error('Button elements not found for setLoading');
+        return;
+      }
+      
       this.submitBtn.disabled = loading;
       if (loading) {
         this.submitText.textContent = 'Creating...';
@@ -249,6 +267,10 @@ try {
     }
 
     showSuccess(message: string) {
+      if (!this.successText || !this.messageContainer || !this.successMessage || !this.errorMessage) {
+        console.error('Message elements not found for showSuccess');
+        return;
+      }
       this.successText.textContent = message;
       this.messageContainer.classList.remove('hidden');
       this.successMessage.classList.remove('hidden');
@@ -256,6 +278,10 @@ try {
     }
 
     showError(message: string) {
+      if (!this.errorText || !this.messageContainer || !this.errorMessage || !this.successMessage) {
+        console.error('Message elements not found for showError');
+        return;
+      }
       this.errorText.textContent = message;
       this.messageContainer.classList.remove('hidden');
       this.errorMessage.classList.remove('hidden');
@@ -263,6 +289,10 @@ try {
     }
 
     hideMessages() {
+      if (!this.messageContainer || !this.successMessage || !this.errorMessage) {
+        console.error('Message elements not found for hideMessages');
+        return;
+      }
       this.messageContainer.classList.add('hidden');
       this.successMessage.classList.add('hidden');
       this.errorMessage.classList.add('hidden');
@@ -270,11 +300,23 @@ try {
   }
 
   // Initialize when DOM is ready
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', () => {
+  function initializeStaffCreator() {
+    try {
+      console.log('Initializing StaffCreator...');
+      console.log('Document ready state:', document.readyState);
+      console.log('Form element exists:', !!document.getElementById('create-staff-form'));
+      console.log('Submit button exists:', !!document.getElementById('submit-btn'));
+      
       new StaffCreator();
-    });
+      console.log('StaffCreator initialized successfully');
+    } catch (error) {
+      console.error('Failed to initialize StaffCreator:', error);
+    }
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initializeStaffCreator);
   } else {
-    new StaffCreator();
+    initializeStaffCreator();
   }
 </script>
