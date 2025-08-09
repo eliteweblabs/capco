@@ -2,10 +2,47 @@ import type { APIRoute } from "astro";
 import { supabase } from "../../lib/supabase";
 import { checkAuth } from "../../lib/auth";
 
-export const POST: APIRoute = async ({ request, cookies }) => {
+export const GET: APIRoute = async ({ cookies }) => {
+  console.log('=== CREATE STAFF GET TEST ===');
   try {
+    const { isAuth, role } = await checkAuth(cookies);
+    return new Response(
+      JSON.stringify({ 
+        success: true,
+        message: "Create staff endpoint is accessible",
+        auth: { isAuth, role },
+        supabaseConfigured: !!supabase
+      }),
+      { 
+        status: 200,
+        headers: { "Content-Type": "application/json" }
+      }
+    );
+  } catch (error) {
+    console.error('GET test error:', error);
+    return new Response(
+      JSON.stringify({ 
+        success: false, 
+        error: "GET test failed",
+        details: error instanceof Error ? error.message : "Unknown error"
+      }),
+      { 
+        status: 500,
+        headers: { "Content-Type": "application/json" }
+      }
+    );
+  }
+};
+
+export const POST: APIRoute = async ({ request, cookies }) => {
+  console.log('=== CREATE STAFF API CALLED ===');
+  try {
+    console.log('1. Starting create-staff endpoint');
+    
     // Check if Supabase is configured
+    console.log('2. Checking Supabase configuration:', !!supabase);
     if (!supabase) {
+      console.log('ERROR: Supabase not configured');
       return new Response(
         JSON.stringify({ 
           success: false, 
@@ -18,10 +55,13 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       );
     }
 
+    console.log('3. Checking authentication...');
     // Check authentication and ensure user is Admin
     const { isAuth, role } = await checkAuth(cookies);
+    console.log('4. Auth result:', { isAuth, role });
     
     if (!isAuth || role !== "Admin") {
+      console.log('5. AUTH FAILED - User not authorized:', { isAuth, role });
       return new Response(
         JSON.stringify({ 
           success: false, 
@@ -34,11 +74,16 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       );
     }
 
+    console.log('5. Auth successful, parsing request body...');
     const body = await request.json();
+    console.log('6. Request body:', body);
     const { name, email, phone, role: staffRole } = body;
+    console.log('7. Extracted data:', { name, email, phone, staffRole });
 
     // Validate required fields
+    console.log('8. Validating required fields...');
     if (!name?.trim() || !email?.trim() || !staffRole?.trim()) {
+      console.log('ERROR: Missing required fields:', { name: !!name?.trim(), email: !!email?.trim(), role: !!staffRole?.trim() });
       return new Response(
         JSON.stringify({ 
           success: false, 
