@@ -23,7 +23,10 @@ export const GET: APIRoute = async ({ url, cookies, redirect }) => {
 
   try {
     console.log("Attempting to exchange code for session...");
-    console.log("Full URL params:", Object.fromEntries(url.searchParams.entries()));
+    console.log(
+      "Full URL params:",
+      Object.fromEntries(url.searchParams.entries()),
+    );
 
     // Exchange the code for a session
     const { data, error } =
@@ -36,13 +39,13 @@ export const GET: APIRoute = async ({ url, cookies, redirect }) => {
         status: error.status,
         statusCode: error.statusCode,
       });
-      
+
       // If it's a PKCE error, redirect to home with error message
       if (error.message.includes("code verifier")) {
         console.log("PKCE error detected, redirecting to home");
         return redirect("/?error=oauth_failed");
       }
-      
+
       return new Response(`Authentication error: ${error.message}`, {
         status: 500,
       });

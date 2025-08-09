@@ -129,28 +129,31 @@ export const GET: APIRoute = async ({ request }) => {
     // If the foreign key relationship fails, try without it
     if (error && error.message.includes("relationship")) {
       console.log("Foreign key relationship not found, querying without joins");
-      
+
       let simpleQuery = supabase.from("projects").select("*");
-      
+
       // Admin and Staff get all projects, clients get only their own
       if (userRole !== "Admin" && userRole !== "Staff") {
         simpleQuery = simpleQuery.eq("author_id", user.id);
       }
 
-      const result = await simpleQuery.order("updated_at", { ascending: false });
+      const result = await simpleQuery.order("updated_at", {
+        ascending: false,
+      });
       projects = result.data;
       error = result.error;
     }
 
     if (error) {
       console.error("Projects fetch error:", error);
-      
+
       // Return empty projects array instead of error when database is empty
-      if (error.code === '42P01' || error.message.includes('does not exist')) {
+      if (error.code === "42P01" || error.message.includes("does not exist")) {
         return new Response(
-          JSON.stringify({ 
-            projects: [], 
-            message: "No projects found. Database may be empty or not yet configured." 
+          JSON.stringify({
+            projects: [],
+            message:
+              "No projects found. Database may be empty or not yet configured.",
           }),
           {
             status: 200,
@@ -158,7 +161,7 @@ export const GET: APIRoute = async ({ request }) => {
           },
         );
       }
-      
+
       return new Response(
         JSON.stringify({ error: `Failed to fetch projects: ${error.message}` }),
         {

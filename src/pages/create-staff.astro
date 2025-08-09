@@ -1,0 +1,274 @@
+---
+import Base from "../layout/Base.astro";
+import SectionContainer from "../components/SectionContainer.astro";
+import { checkAuth } from "../lib/auth";
+
+// Check authentication and ensure user is Admin
+const { isAuth, session, user, role } = await checkAuth(Astro.cookies);
+
+if (!isAuth || role !== "Admin") {
+  return Astro.redirect("/");
+}
+---
+
+<Base title="Create Staff - CAPCo Fire Protection" description="Create new staff user">
+  <SectionContainer class="max-w-2xl mx-auto">
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+      <!-- Header -->
+      <div class="mb-6">
+        <h1 class="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+          Create New Staff Member
+        </h1>
+        <p class="text-gray-600 dark:text-gray-400">
+          Add a new staff member to the CAPCo Fire Protection system
+        </p>
+      </div>
+
+      <!-- Success/Error Messages -->
+      <div id="message-container" class="mb-6 hidden">
+        <div id="success-message" class="hidden bg-green-50 border border-green-200 text-green-800 px-4 py-3 rounded-md dark:bg-green-900/20 dark:border-green-800 dark:text-green-400">
+          <div class="flex items-center">
+            <i class="bx bx-check-circle text-lg mr-2"></i>
+            <span id="success-text"></span>
+          </div>
+        </div>
+        <div id="error-message" class="hidden bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-md dark:bg-red-900/20 dark:border-red-800 dark:text-red-400">
+          <div class="flex items-center">
+            <i class="bx bx-error-circle text-lg mr-2"></i>
+            <span id="error-text"></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Create Staff Form -->
+      <form id="create-staff-form" class="space-y-6">
+        <!-- Full Name -->
+        <div>
+          <label for="staff-name" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            Full Name *
+          </label>
+          <input
+            type="text"
+            id="staff-name"
+            name="name"
+            required
+            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:placeholder-gray-400 dark:focus:ring-blue-400 dark:focus:border-blue-400"
+            placeholder="Enter full name"
+          />
+        </div>
+
+        <!-- Email -->
+        <div>
+          <label for="staff-email" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            Email Address *
+          </label>
+          <input
+            type="email"
+            id="staff-email"
+            name="email"
+            required
+            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:placeholder-gray-400 dark:focus:ring-blue-400 dark:focus:border-blue-400"
+            placeholder="Enter email address"
+          />
+        </div>
+
+        <!-- Phone (Optional) -->
+        <div>
+          <label for="staff-phone" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            Phone Number
+          </label>
+          <input
+            type="tel"
+            id="staff-phone"
+            name="phone"
+            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:placeholder-gray-400 dark:focus:ring-blue-400 dark:focus:border-blue-400"
+            placeholder="Enter phone number (optional)"
+          />
+        </div>
+
+        <!-- Role Selection -->
+        <div>
+          <label for="staff-role" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            Role *
+          </label>
+          <select
+            id="staff-role"
+            name="role"
+            required
+            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:focus:ring-blue-400 dark:focus:border-blue-400"
+          >
+            <option value="">Select a role</option>
+            <option value="Admin">Admin</option>
+            <option value="Staff">Staff</option>
+          </select>
+        </div>
+
+        <!-- Temporary Password Info -->
+        <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 dark:bg-blue-900/20 dark:border-blue-800">
+          <div class="flex items-start">
+            <i class="bx bx-info-circle text-blue-600 text-lg mr-2 mt-0.5 dark:text-blue-400"></i>
+            <div class="text-sm text-blue-800 dark:text-blue-400">
+              <p class="font-medium mb-1">Account Setup Process:</p>
+              <ol class="list-decimal list-inside space-y-1 text-xs">
+                <li>A temporary password will be generated automatically</li>
+                <li>An invitation email will be sent to the staff member</li>
+                <li>They must sign in and change their password on first login</li>
+                <li>They can then set up Google OAuth if desired</li>
+              </ol>
+            </div>
+          </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="flex gap-4 pt-4">
+          <button
+            type="submit"
+            id="submit-btn"
+            class="flex-1 bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <span id="submit-text">Create Staff Member</span>
+            <i id="submit-spinner" class="bx bx-loader-alt bx-spin ml-2 hidden"></i>
+          </button>
+          
+          <a
+            href="/"
+            class="px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition-colors dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
+          >
+            Cancel
+          </a>
+        </div>
+      </form>
+    </div>
+  </SectionContainer>
+</Base>
+
+<script>
+  class StaffCreator {
+    private form: HTMLFormElement;
+    private submitBtn: HTMLButtonElement;
+    private submitText: HTMLElement;
+    private submitSpinner: HTMLElement;
+    private messageContainer: HTMLElement;
+    private successMessage: HTMLElement;
+    private errorMessage: HTMLElement;
+    private successText: HTMLElement;
+    private errorText: HTMLElement;
+
+    constructor() {
+      this.form = document.getElementById('create-staff-form') as HTMLFormElement;
+      this.submitBtn = document.getElementById('submit-btn') as HTMLButtonElement;
+      this.submitText = document.getElementById('submit-text') as HTMLElement;
+      this.submitSpinner = document.getElementById('submit-spinner') as HTMLElement;
+      this.messageContainer = document.getElementById('message-container') as HTMLElement;
+      this.successMessage = document.getElementById('success-message') as HTMLElement;
+      this.errorMessage = document.getElementById('error-message') as HTMLElement;
+      this.successText = document.getElementById('success-text') as HTMLElement;
+      this.errorText = document.getElementById('error-text') as HTMLElement;
+
+      this.init();
+    }
+
+    init() {
+      if (this.form) {
+        this.form.addEventListener('submit', this.handleSubmit.bind(this));
+      }
+    }
+
+    async handleSubmit(e: Event) {
+      e.preventDefault();
+      
+      const formData = new FormData(this.form);
+      const staffData = {
+        name: formData.get('name') as string,
+        email: formData.get('email') as string,
+        phone: formData.get('phone') as string,
+        role: formData.get('role') as string,
+      };
+
+      // Validate required fields
+      if (!staffData.name.trim() || !staffData.email.trim() || !staffData.role) {
+        this.showError('Please fill in all required fields.');
+        return;
+      }
+
+      // Validate email format
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(staffData.email)) {
+        this.showError('Please enter a valid email address.');
+        return;
+      }
+
+      this.setLoading(true);
+      this.hideMessages();
+
+      try {
+        const response = await fetch('/api/create-staff', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(staffData),
+        });
+
+        const result = await response.json();
+
+        if (response.ok && result.success) {
+          this.showSuccess(`Staff member "${staffData.name}" created successfully! Invitation email sent to ${staffData.email}.`);
+          this.form.reset();
+          
+          // Redirect after 3 seconds
+          setTimeout(() => {
+            window.location.href = '/';
+          }, 3000);
+        } else {
+          this.showError(result.error || 'Failed to create staff member. Please try again.');
+        }
+      } catch (error) {
+        console.error('Error creating staff:', error);
+        this.showError('Network error. Please check your connection and try again.');
+      } finally {
+        this.setLoading(false);
+      }
+    }
+
+    setLoading(loading: boolean) {
+      this.submitBtn.disabled = loading;
+      if (loading) {
+        this.submitText.textContent = 'Creating...';
+        this.submitSpinner.classList.remove('hidden');
+      } else {
+        this.submitText.textContent = 'Create Staff Member';
+        this.submitSpinner.classList.add('hidden');
+      }
+    }
+
+    showSuccess(message: string) {
+      this.successText.textContent = message;
+      this.messageContainer.classList.remove('hidden');
+      this.successMessage.classList.remove('hidden');
+      this.errorMessage.classList.add('hidden');
+    }
+
+    showError(message: string) {
+      this.errorText.textContent = message;
+      this.messageContainer.classList.remove('hidden');
+      this.errorMessage.classList.remove('hidden');
+      this.successMessage.classList.add('hidden');
+    }
+
+    hideMessages() {
+      this.messageContainer.classList.add('hidden');
+      this.successMessage.classList.add('hidden');
+      this.errorMessage.classList.add('hidden');
+    }
+  }
+
+  // Initialize when DOM is ready
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => {
+      new StaffCreator();
+    });
+  } else {
+    new StaffCreator();
+  }
+</script>
