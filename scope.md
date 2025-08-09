@@ -24,6 +24,7 @@ This app is designed to facilitate the process of submitting (by clients) and re
 ### Architecture Principles
 
 **Server-Side Rendering First:**
+
 - Minimize client-side HTML generation via JavaScript
 - Astro components should build proper page structure server-side for each session
 - Prefer static HTML with progressive enhancement over dynamic DOM manipulation

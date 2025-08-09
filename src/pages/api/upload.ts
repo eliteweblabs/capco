@@ -71,11 +71,16 @@ export const POST: APIRoute = async ({ request }) => {
 
     for (const file of files) {
       // Special handling for DWG files - check by extension if MIME type doesn't match expected types
-      const isDwgFile = file.name.toLowerCase().endsWith('.dwg');
-      const isAllowedType = allowedTypes.includes(file.type) || 
-        (fileType === "media" && isDwgFile && (file.type === "application/octet-stream" || file.type === ""));
+      const isDwgFile = file.name.toLowerCase().endsWith(".dwg");
+      const isAllowedType =
+        allowedTypes.includes(file.type) ||
+        (fileType === "media" &&
+          isDwgFile &&
+          (file.type === "application/octet-stream" || file.type === ""));
 
-      console.log(`File validation: ${file.name}, type: "${file.type}", isDwg: ${isDwgFile}, allowed: ${isAllowedType}`);
+      console.log(
+        `File validation: ${file.name}, type: "${file.type}", isDwg: ${isDwgFile}, allowed: ${isAllowedType}`,
+      );
 
       if (!isAllowedType) {
         return new Response(

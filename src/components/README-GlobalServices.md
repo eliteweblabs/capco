@@ -16,7 +16,7 @@ For cross-component communication without tight coupling.
 
 Server-side operations via `/api` endpoints.
 
-### 4. **Notification System** (`src/components/NotificationSystem.astro`)
+### 4. **Toast Alerts** (`src/components/ToastAlerts.astro`)
 
 Global notification management with visual feedback.
 
@@ -25,9 +25,9 @@ Global notification management with visual feedback.
 ### Sending Emails
 
 ```javascript
-import { sendEmail } from "../lib/global-services";
+import { sendEmail, sendReactEmail } from "../lib/global-services";
 
-// Welcome email
+// Welcome email (basic template)
 await sendEmail({
   to: "user@example.com",
   type: "welcome",
@@ -41,6 +41,27 @@ await sendEmail({
   subject: "Custom Subject",
   html: "<h1>Hello!</h1>",
   text: "Hello!",
+});
+
+// React Email (styled templates)
+await sendReactEmail({
+  to: "user@example.com",
+  type: "welcome",
+  name: "John Doe",
+  appName: "CAPCo",
+});
+
+// Project notification email
+await sendReactEmail({
+  to: "client@example.com",
+  type: "project-notification",
+  recipientName: "John Doe",
+  projectTitle: "Fire Protection System",
+  projectId: "PROJ-123",
+  statusMessage: "Your project has been updated.",
+  actionRequired: true,
+  actionUrl: "https://app.com/projects/123",
+  actionText: "View Project",
 });
 ```
 

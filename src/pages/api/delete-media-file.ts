@@ -133,7 +133,6 @@ export const DELETE: APIRoute = async ({ request }) => {
         headers: { "Content-Type": "application/json" },
       },
     );
-
   } catch (error) {
     console.error("Error in delete media file API:", error);
     return new Response(

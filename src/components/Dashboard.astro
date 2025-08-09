@@ -992,8 +992,11 @@ const { role } = Astro.props;
     async getCurrentUserProfile() {
       try {
         // Get current user
-        const { data: { user }, error: userError } = await this.supabase.auth.getUser();
-        
+        const {
+          data: { user },
+          error: userError,
+        } = await this.supabase.auth.getUser();
+
         if (userError || !user) {
           console.log("No authenticated user found");
           return;
@@ -1014,14 +1017,13 @@ const { role } = Astro.props;
         this.currentUserProfile = {
           ...profile,
           email: user.email, // Use email from auth user
-          user_metadata: user.user_metadata // Include OAuth metadata
+          user_metadata: user.user_metadata, // Include OAuth metadata
         };
 
         console.log("Current user profile loaded:", this.currentUserProfile);
-        
+
         // Apply UI changes based on role
         this.setupFormForUserRole();
-        
       } catch (error) {
         console.error("Error getting current user profile:", error);
       }
@@ -1031,10 +1033,11 @@ const { role } = Astro.props;
       if (!this.currentUserProfile) return;
 
       const isClient = this.currentUserProfile.role === "Client";
-      
+
       if (isClient) {
         // Hide the client type toggle section for client users
-        const clientTypeToggle = this.container.querySelector("#owner-type-toggle");
+        const clientTypeToggle =
+          this.container.querySelector("#owner-type-toggle");
         if (clientTypeToggle) {
           const clientTypeSection = clientTypeToggle.closest(".space-y-3");
           if (clientTypeSection) {
@@ -1045,13 +1048,15 @@ const { role } = Astro.props;
 
         // Show new user inputs by default and prepopulate them
         const newUserInputs = this.container.querySelector("#new-user-inputs");
-        const existingUserInputs = this.container.querySelector("#existing-user-inputs");
-        
+        const existingUserInputs = this.container.querySelector(
+          "#existing-user-inputs"
+        );
+
         if (newUserInputs) {
           newUserInputs.classList.remove("hidden");
           this.prepopulateClientFields();
         }
-        
+
         if (existingUserInputs) {
           existingUserInputs.classList.add("hidden");
         }
@@ -1062,7 +1067,7 @@ const { role } = Astro.props;
       if (!this.currentUserProfile) return;
 
       const profile = this.currentUserProfile;
-      
+
       // Prepopulate company/client name
       const companyInput = this.container.querySelector("#owner-name-input");
       if (companyInput && profile.name) {
@@ -1087,13 +1092,17 @@ const { role } = Astro.props;
       }
 
       // Prepopulate first name
-      const firstNameInput = this.container.querySelector("#owner-first-name-input");
+      const firstNameInput = this.container.querySelector(
+        "#owner-first-name-input"
+      );
       if (firstNameInput) {
         firstNameInput.value = firstName;
       }
 
-      // Prepopulate last name  
-      const lastNameInput = this.container.querySelector("#owner-last-name-input");
+      // Prepopulate last name
+      const lastNameInput = this.container.querySelector(
+        "#owner-last-name-input"
+      );
       if (lastNameInput) {
         lastNameInput.value = lastName;
       }
@@ -1118,7 +1127,7 @@ const { role } = Astro.props;
         firstName,
         lastName,
         email: profile.email,
-        phone: profile.phone
+        phone: profile.phone,
       });
     }
 
@@ -2968,7 +2977,9 @@ const { role } = Astro.props;
 
       // Get owner data based on toggle selection and user role
       const isClient = this.currentUserProfile?.role === "Client";
-      const isExistingUser = isClient ? false : (this.container.querySelector("#owner-type-toggle")?.checked || false);
+      const isExistingUser = isClient
+        ? false
+        : this.container.querySelector("#owner-type-toggle")?.checked || false;
       let ownerData = {};
 
       if (!isExistingUser) {
@@ -2978,7 +2989,8 @@ const { role } = Astro.props;
           owner_name:
             this.container.querySelector("#owner-name-input")?.value || "",
           owner_first_name:
-            this.container.querySelector("#owner-first-name-input")?.value || "",
+            this.container.querySelector("#owner-first-name-input")?.value ||
+            "",
           owner_last_name:
             this.container.querySelector("#owner-last-name-input")?.value || "",
           owner_email:

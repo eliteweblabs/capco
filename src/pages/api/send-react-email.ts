@@ -64,8 +64,10 @@ export const POST: APIRoute = async ({ request }) => {
       return new Response(
         JSON.stringify({
           success: true,
-          message: "React Email sent successfully!",
+          message: `Email sent successfully to ${Array.isArray(to) ? to.join(", ") : to}`,
           messageId: result.messageId,
+          to: to,
+          type: type,
         }),
         {
           status: 200,
@@ -77,6 +79,8 @@ export const POST: APIRoute = async ({ request }) => {
         JSON.stringify({
           success: false,
           error: result.error || "Failed to send email",
+          to: to,
+          type: type,
         }),
         {
           status: 500,
