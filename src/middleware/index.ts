@@ -3,6 +3,7 @@
 import { defineMiddleware } from "astro:middleware";
 import { supabase } from "../lib/supabase";
 import { setAuthCookies, clearAuthCookies } from "../lib/auth-cookies";
+import { ensureUserProfile } from "../lib/auth-utils";
 import micromatch from "micromatch";
 
 const protectedRoutes = ["/dashboard(|/)"];
@@ -38,6 +39,11 @@ export const onRequest = defineMiddleware(
       if (error) {
         clearAuthCookies(cookies);
         return redirect("/");
+      }
+
+      // Ensure user has a profile
+      if (data.user) {
+        await ensureUserProfile(data.user);
       }
 
       locals.email = data.user?.email!;
