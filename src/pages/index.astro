@@ -51,7 +51,7 @@ const { isAuth, session, user, role } = await checkAuth(Astro.cookies);
   
 
 
-<script>
+<script define:vars={{ role }}>
   // Import necessary functions and types
   import {
     PROJECT_STATUS_LABELS,
@@ -74,6 +74,7 @@ const { isAuth, session, user, role } = await checkAuth(Astro.cookies);
     private currentProjectStatus: number | null = null;
     private staffUsers: any[] = [];
     private projects: any[] = [];
+    private currentUserRole: string = role || "Client"; // Add user role
 
     constructor() {
       this.setupAutoSave();
@@ -83,12 +84,37 @@ const { isAuth, session, user, role } = await checkAuth(Astro.cookies);
       this.initializeProjectStatuses().catch(console.error);
       // Load staff users first, then projects
       this.initializeData();
+      // Apply role-based UI changes
+      this.applyRoleBasedChanges();
     }
 
     // Initialize data in the correct order
     async initializeData() {
       await this.loadStaffUsers();
       await this.loadProjects();
+    }
+
+    // Apply role-based UI changes
+    applyRoleBasedChanges() {
+      const isClient = this.currentUserRole === "Client";
+      
+      if (isClient) {
+        console.log("Applying client-specific UI changes");
+        
+        // Hide project owner avatars for client users (redundant since they only see their own projects)
+        setTimeout(() => {
+          const avatars = document.querySelectorAll('.project-owner-avatar');
+          avatars.forEach(avatar => {
+            (avatar as HTMLElement).style.display = 'none';
+          });
+          
+          // Also adjust spacing since avatar is hidden
+          const projectInfoDivs = document.querySelectorAll('.project-owner-avatar + div');
+          projectInfoDivs.forEach(div => {
+            (div as HTMLElement).style.paddingLeft = '0';
+          });
+        }, 100); // Small delay to ensure DOM is updated
+      }
     }
 
     // Function to automatically load projects
@@ -520,8 +546,8 @@ const { isAuth, session, user, role } = await checkAuth(Astro.cookies);
                       aria-controls="accordion-collapse-body-${index}"
                       type="button"
                     >
-                      <!-- Project Owner Avatar with Tooltip -->
-                      <div class="rounded-lg border size-9 flex items-center justify-center border-gray-600 dark:border-gray-500 dark:bg-gray-800 overflow-hidden text-white dark:text-gray-300 bg-gray-700" 
+                      <!-- Project Owner Avatar with Tooltip (hidden for Client users) -->
+                      <div class="project-owner-avatar rounded-lg border size-9 flex items-center justify-center border-gray-600 dark:border-gray-500 dark:bg-gray-800 overflow-hidden text-white dark:text-gray-300 bg-gray-700" 
                            title="${project.author_name || "Unknown Owner"}${project.author_email ? ` - ${project.author_email}` : ""}${project.owner ? ` (${project.owner})` : ""}">
                         ${
                           project.author_id
@@ -895,6 +921,9 @@ const { isAuth, session, user, role } = await checkAuth(Astro.cookies);
         this.initializeAccordion(accordionId);
         this.populateFormContainers(sortedProjects);
         this.populateStaffAssignments(sortedProjects);
+        
+        // Apply role-based UI changes after projects are rendered
+        this.applyRoleBasedChanges();
 
         // Initialize button groups AFTER form containers are populated
         console.log("Initializing button groups after form population");
@@ -2529,18 +2558,31 @@ const { isAuth, session, user, role } = await checkAuth(Astro.cookies);
         return '<i class="bx bx-file-blank"></i>';
       }
 
+      // For client users, skip avatars entirely to prevent 429 errors
+      if (this.currentUserRole === "Client") {
+        return this.generateInitialsAvatar(userName, userId);
+      }
+
       if (avatarUrl) {
         return `
           <img 
             src="${avatarUrl}" 
             alt="${userName || "User"} avatar" 
             class="h-full w-full object-cover"
-            onerror="this.style.display='none'; this.nextElementSibling.style.display='block';"
+            loading="lazy"
+            onerror="this.handleAvatarError(this)"
           />
           <i class="bx bx-user bx-sm" style="display:none;"></i>
         `;
-      } else if (userName) {
-        // Fallback to initials with color
+      } else {
+        return this.generateInitialsAvatar(userName, userId);
+      }
+    }
+
+    // Generate initials-based avatar
+    private generateInitialsAvatar(userName: string | null, userId: string | null): string {
+      if (userName) {
+        // Generate initials from name
         const initials = userName
           .split(" ")
           .map((word) => word.charAt(0).toUpperCase())
@@ -2573,7 +2615,7 @@ const { isAuth, session, user, role } = await checkAuth(Astro.cookies);
           </div>
         `;
       } else {
-        // Fallback to user icon with color
+        // Fallback to user icon with color based on userId
         const colors = [
           "bg-blue-500",
           "bg-green-500",
@@ -2589,8 +2631,9 @@ const { isAuth, session, user, role } = await checkAuth(Astro.cookies);
           "bg-emerald-500",
         ];
 
-        const colorIndex =
-          parseInt(userId.replace(/[^0-9]/g, "")) % colors.length;
+        const colorIndex = userId
+          ? parseInt(userId.replace(/[^0-9]/g, "")) % colors.length
+          : 0;
         const bgColor = colors[colorIndex];
 
         return `
@@ -2599,62 +2642,19 @@ const { isAuth, session, user, role } = await checkAuth(Astro.cookies);
           </div>
         `;
       }
+    }
 
-      if (avatarUrl) {
-        return `
-          <img 
-            src="${avatarUrl}" 
-            alt="${userName} avatar" 
-            class="h-full w-full object-cover"
-            onerror="this.style.display='none'; this.nextElementSibling.style.display='block';"
-          />
-          <i class="bx bx-user bx-sm" style="display:none;"></i>
-        `;
-      } else {
-        // Fallback to initials with color or user icon
-        if (userName) {
-          const initials = (userName || "")
-            .split(" ")
-            .map((word) => word.charAt(0).toUpperCase())
-            .join("")
-            .slice(0, 2);
-
-          const colors = [
-            "bg-blue-500",
-            "bg-green-500",
-            "bg-purple-500",
-            "bg-pink-500",
-            "bg-indigo-500",
-            "bg-yellow-500",
-            "bg-red-500",
-            "bg-teal-500",
-            "bg-orange-500",
-            "bg-cyan-500",
-            "bg-lime-500",
-            "bg-emerald-500",
-          ];
-
-          const colorIndex = userId
-            ? parseInt((userId || "").replace(/[^0-9]/g, "") || "0") %
-              colors.length
-            : (userName?.length || 1) % colors.length;
-
-          const bgColor = colors[colorIndex];
-
-          return `
-            <div class="w-full h-full flex items-center justify-center ${bgColor} text-white font-semibold text-sm">
-              ${initials}
-            </div>
-          `;
-        } else {
-          // No userName, fallback to user icon
-          return `
-            <div class="w-full h-full flex items-center justify-center bg-gray-500 text-white">
-              <i class="bx bx-user bx-sm"></i>
-            </div>
-          `;
-        }
+    // Handle avatar loading errors (prevent 429 rate limiting)
+    handleAvatarError(imgElement: HTMLImageElement) {
+      console.log("Avatar failed to load, falling back to icon");
+      imgElement.style.display = 'none';
+      const fallbackIcon = imgElement.nextElementSibling as HTMLElement;
+      if (fallbackIcon) {
+        fallbackIcon.style.display = 'block';
       }
+      
+      // Add a class to prevent retrying this avatar
+      imgElement.classList.add('avatar-failed');
     }
 
     // Expose methods globally for external access
