@@ -349,6 +349,7 @@ const { isAuth, session, user, role } = await checkAuth(Astro.cookies);
 
     // Function to populate staff assignment dropdowns
     private populateStaffAssignments(projects: any[]) {
+      if (this.currentUserRole === "Client") return;
       projects.forEach((project) => {
         const selectElement = document.getElementById(
           `staff-assignment-${project.id}`
@@ -403,6 +404,7 @@ const { isAuth, session, user, role } = await checkAuth(Astro.cookies);
 
     // Function to handle staff assignment changes
     private setupAssignmentHandlers() {
+      if (this.currentUserRole === "Client") return;
       document.addEventListener("change", async (e) => {
         const target = e.target as HTMLSelectElement;
         if (!target.classList.contains("staff-assignment-select")) return;
@@ -709,7 +711,7 @@ const { isAuth, session, user, role } = await checkAuth(Astro.cookies);
                             <span class="text-xs text-gray-500 dark:text-gray-400">Last Updated:</span>
                             <div class="text-sm text-gray-800 dark:text-gray-200">${timeSinceUpdate}</div>
                           </div>
-                          <div>
+                          <div ${this.currentUserRole === "Client" ? 'style="display:none"' : ''}>
                             <span class="text-xs text-gray-500 dark:text-gray-400">Assigned to:</span>
                             <select
                               id="staff-assignment-${project.id}"
