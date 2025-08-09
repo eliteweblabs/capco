@@ -117,7 +117,7 @@ export const GET: APIRoute = async ({ request }) => {
     console.log("Fetching staff users from database...");
     const { data: staffUsers, error } = await supabase
       .from("profiles")
-      .select("id, name, phone, role, created")
+      .select("id, name, phone, role, created_at")
       .eq("role", "Staff")
       .order("name", { ascending: true });
 
@@ -137,7 +137,7 @@ export const GET: APIRoute = async ({ request }) => {
     // Try a simpler approach - get all profiles and filter in JavaScript
     const { data: allProfiles, error: allProfilesError } = await supabase
       .from("profiles")
-      .select("id, name, phone, role, created");
+      .select("id, name, phone, role, created_at");
 
     console.log("All profiles result:", { allProfiles, allProfilesError });
 
