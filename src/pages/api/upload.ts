@@ -60,6 +60,7 @@ export const POST: APIRoute = async ({ request }) => {
         "application/vnd.ms-excel",
         "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         "text/plain",
+        "application/acad", // .dwg files (AutoCAD drawings)
       ];
     } else {
       // Default to PDF only for backward compatibility
