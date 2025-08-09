@@ -53,11 +53,11 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     }
 
     // Validate role
-    if (!['Admin', 'Staff'].includes(staffRole)) {
+    if (!['Admin', 'Staff', 'Client'].includes(staffRole)) {
       return new Response(
         JSON.stringify({ 
           success: false, 
-          error: "Invalid role. Must be 'Admin' or 'Staff'." 
+          error: "Invalid role. Must be 'Admin', 'Staff', or 'Client'." 
         }),
         { 
           status: 400,
@@ -154,7 +154,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     return new Response(
       JSON.stringify({ 
         success: true, 
-        message: "Staff member created successfully",
+        message: "User created successfully",
         user: {
           id: authData.user.id,
           email: authData.user.email,
