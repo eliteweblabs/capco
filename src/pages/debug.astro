@@ -1,0 +1,168 @@
+---
+import App from "../components/App.astro";
+import SectionContainer from "../components/SectionContainer.astro";
+---
+
+<App>
+  <SectionContainer id="debug" class="flex flex-col gap-y-6 mx-6">
+    <div class="max-w-4xl mx-auto my-12 w-full">
+      <h2 class="text-2xl font-bold dark:text-zinc-100 text-zinc-900 mb-6">
+        Authentication Debug
+      </h2>
+
+      <div class="space-y-4">
+        <button
+          id="debug-auth"
+          class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+        >
+          Debug Current Auth State
+        </button>
+
+        <button
+          id="create-profile"
+          class="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700"
+        >
+          Create Profile Manually
+        </button>
+
+        <button
+          id="clear-auth"
+          class="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700"
+        >
+          Clear Auth State
+        </button>
+
+        <button
+          id="test-user-creation"
+          class="px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700"
+        >
+          Test User Creation (simulates OAuth)
+        </button>
+
+        <button
+          id="create-oauth-profile"
+          class="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700"
+        >
+          Create Profile for Current OAuth User
+        </button>
+      </div>
+
+      <div class="mt-6">
+        <h3 class="text-lg font-semibold mb-3">Debug Output:</h3>
+        <pre
+          id="debug-output"
+          class="bg-gray-100 dark:bg-gray-800 p-4 rounded-md overflow-auto text-sm max-h-96">Click a debug button to see output...</pre>
+      </div>
+
+      <div class="mt-6">
+        <h3 class="text-lg font-semibold mb-3">Instructions:</h3>
+        <ol class="list-decimal list-inside space-y-2 text-sm">
+          <li>First, try Google OAuth sign-in from the main page</li>
+          <li>
+            If it fails, come back here and click "Debug Current Auth State"
+          </li>
+          <li>
+            If authenticated but no profile, click "Create Profile Manually"
+          </li>
+          <li>Use "Clear Auth State" to reset and try again</li>
+        </ol>
+      </div>
+    </div>
+  </SectionContainer>
+</App>
+
+<script>
+  const debugOutput = document.getElementById("debug-output");
+
+  function displayResult(result: any) {
+    if (debugOutput) {
+      debugOutput.textContent = JSON.stringify(result, null, 2);
+    }
+  }
+
+  document.getElementById("debug-auth")?.addEventListener("click", async () => {
+    try {
+      const response = await fetch("/api/debug-auth");
+      const result = await response.json();
+      displayResult(result);
+    } catch (error) {
+      displayResult({ error: "Failed to debug auth", details: error.message });
+    }
+  });
+
+  document
+    .getElementById("create-profile")
+    ?.addEventListener("click", async () => {
+      try {
+        const response = await fetch("/api/create-profile", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({}),
+        });
+        const result = await response.json();
+        displayResult(result);
+      } catch (error) {
+        displayResult({
+          error: "Failed to create profile",
+          details: error.message,
+        });
+      }
+    });
+
+  document.getElementById("clear-auth")?.addEventListener("click", async () => {
+    try {
+      const response = await fetch("/api/reset-auth");
+      if (response.redirected || response.ok) {
+        window.location.href = "/";
+      } else {
+        displayResult({ error: "Failed to clear auth state" });
+      }
+    } catch (error) {
+      displayResult({ error: "Failed to clear auth", details: error.message });
+    }
+  });
+
+  document
+    .getElementById("test-user-creation")
+    ?.addEventListener("click", async () => {
+      try {
+        displayResult({ status: "Testing user creation..." });
+        const response = await fetch("/api/test-user-creation", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        });
+        const result = await response.json();
+        displayResult(result);
+      } catch (error) {
+        displayResult({
+          error: "Failed to test user creation",
+          details: error.message,
+        });
+      }
+    });
+
+  document
+    .getElementById("create-oauth-profile")
+    ?.addEventListener("click", async () => {
+      try {
+        displayResult({ status: "Creating profile for OAuth user..." });
+        const response = await fetch("/api/create-profile-oauth", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        });
+        const result = await response.json();
+        displayResult(result);
+      } catch (error) {
+        displayResult({
+          error: "Failed to create OAuth profile",
+          details: error.message,
+        });
+      }
+    });
+</script>
