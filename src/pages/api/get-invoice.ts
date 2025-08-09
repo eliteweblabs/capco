@@ -59,12 +59,35 @@ export const POST: APIRoute = async ({ request }) => {
 
     console.log("API: Line items query result:", { lineItems, lineItemsError });
 
+    // Lookup client profile for name/email
+    let client = null as null | { name: string | null; email: string | null };
+    if (invoice?.projects?.author_id) {
+      try {
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("name")
+          .eq("id", invoice.projects.author_id)
+          .single();
+        // Auth user email
+        const { data: userData } = await supabase.auth.admin.getUserById(
+          invoice.projects.author_id,
+        );
+        client = {
+          name: profile?.name || null,
+          email: userData?.user?.email || null,
+        };
+      } catch (_) {
+        client = null;
+      }
+    }
+
     return new Response(
       JSON.stringify({
         success: true,
         invoice,
         lineItems: lineItems || [],
         project: invoice.projects, // Extract project data for easier access
+        client,
       }),
       {
         status: 200,
