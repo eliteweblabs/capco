@@ -504,13 +504,30 @@ const { isAuth, session, user, role } = await checkAuth(Astro.cookies);
 
       if (!projectsList) return;
 
-      // Preserve the search input if it exists
+      // Preserve the search input if it exists, or create one
       const existingSearchInput = projectsList.querySelector(
         "#project-search-input"
-      );
+      ) || projectsList.querySelector("#project-search");
+      
       const searchInputHTML = existingSearchInput
         ? existingSearchInput.outerHTML
-        : "";
+        : `
+          <!-- Search Filter for Projects -->
+          <div class="mb-4 relative">
+            <input
+              type="text"
+              id="project-search-input"
+              placeholder="Search your projects..."
+              class="w-full pr-10 px-4 py-2 text-sm border border-gray-300 rounded-lg bg-white dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+            />
+            <button
+              id="clear-search-btn"
+              class="absolute right-2 top-1/2 transform -translate-y-1/2 p-1 text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300 transition-colors hidden"
+              title="Clear search"
+            >
+              <i class="bx bx-x text-lg"></i>
+            </button>
+          </div>`;
 
       if (projects.length === 0) {
         projectsList.innerHTML = `
@@ -942,6 +959,9 @@ const { isAuth, session, user, role } = await checkAuth(Astro.cookies);
         
         // Apply role-based UI changes after projects are rendered
         this.applyRoleBasedChanges();
+
+        // Re-initialize search filter functionality after projects are loaded
+        this.initializeTextFilter(accordionId);
 
         // Initialize button groups AFTER form containers are populated
         console.log("Initializing button groups after form population");
