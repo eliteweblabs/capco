@@ -1,6 +1,6 @@
 import type { APIRoute } from "astro";
 import { supabase } from "../../../lib/supabase";
-import { setAuthCookies } from "../../../lib/auth-cookies";
+import { setAuthCookies, clearAuthCookies } from "../../../lib/auth-cookies";
 import { ensureUserProfile } from "../../../lib/auth-utils";
 import type { Provider } from "@supabase/supabase-js";
 
@@ -14,6 +14,7 @@ export const POST: APIRoute = async ({ request, cookies, redirect }) => {
   const email = formData.get("email")?.toString();
   const password = formData.get("password")?.toString();
   const provider = formData.get("provider")?.toString();
+  const magicLink = formData.get("magicLink")?.toString() === "true";
 
   if (provider) {
     const { data, error } = await supabase.auth.signInWithOAuth({
@@ -36,6 +37,37 @@ export const POST: APIRoute = async ({ request, cookies, redirect }) => {
     return redirect(data.url);
   }
 
+  // Handle magic link sign in
+  if (magicLink && email) {
+    // Clear any existing auth cookies before sending magic link
+    clearAuthCookies(cookies);
+    
+    const { data, error } = await supabase.auth.signInWithOtp({
+      email,
+      options: {
+        emailRedirectTo: import.meta.env.DEV
+          ? "http://localhost:4321/api/auth/callback"
+          : "https://de.capcofire.com/api/auth/callback",
+      },
+    });
+
+    if (error) {
+      return new Response(error.message, { status: 500 });
+    }
+
+    return new Response(
+      JSON.stringify({
+        success: true,
+        message: "Magic link sent to your email",
+      }),
+      {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      }
+    );
+  }
+
+  // Handle password-based sign in
   if (!email || !password) {
     return new Response("Email and password are required", { status: 400 });
   }

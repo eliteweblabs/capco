@@ -6,9 +6,10 @@ export interface AuthResult {
   session: any;
   user: any;
   role: string | null;
+  magicLink?: boolean;
 }
 
-export async function checkAuth(cookies: any): Promise<AuthResult> {
+export async function checkAuth(cookies: any, url?: URL): Promise<AuthResult> {
   const accessToken = cookies.get("sb-access-token");
   const refreshToken = cookies.get("sb-refresh-token");
 
@@ -16,6 +17,13 @@ export async function checkAuth(cookies: any): Promise<AuthResult> {
   let session = null;
   let user = null;
   let role = null;
+  let magicLink = false;
+
+  // Check for magic link token in URL
+  if (url) {
+    const token = url.searchParams.get("token");
+    magicLink = token === "magic";
+  }
 
   if (accessToken && refreshToken && supabase) {
     try {
@@ -50,5 +58,5 @@ export async function checkAuth(cookies: any): Promise<AuthResult> {
     }
   }
 
-  return { isAuth, session, user, role };
+  return { isAuth, session, user, role, magicLink };
 }

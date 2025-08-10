@@ -1,0 +1,107 @@
+---
+import { supabase } from "../../../lib/supabase";
+import { checkAuth } from "../../../lib/auth";
+import { PROJECT_STATUS_LABELS } from "../../../lib/global-services";
+import App from "../../../components/App.astro";
+import Hero from "../../../components/index/Hero.astro";
+import ProjectForm from "../../../components/ProjectForm.astro";
+
+const { id } = Astro.params;
+
+// Get user session and check for magic link
+const { isAuth, session, user, role, magicLink } = await checkAuth(
+  Astro.cookies,
+  Astro.url
+);
+
+let projectData: any = null;
+let error: string | null = null;
+
+if (!id) {
+  error = "Project ID is required";
+} else if (magicLink) {
+  // Show lightweight message for magic link entries
+  projectData = { id, title: "Project View (Magic Link)" };
+} else if (isAuth && supabase) {
+  try {
+    const { data, error: projectError } = await supabase
+      .from("projects")
+      .select("*")
+      .eq("id", id)
+      .single();
+
+    if (projectError) throw projectError;
+    projectData = data;
+  } catch (err) {
+    error = "Project not found or access denied";
+  }
+} else if (!supabase) {
+  error = "Database not configured";
+} else {
+  error = "Authentication required";
+}
+
+// Helper: get status label from shared map (falls back to numeric)
+const getStatusLabel = (status?: number) => {
+  if (!status) return "Unknown";
+  return (
+    (PROJECT_STATUS_LABELS as Record<number, string>)[status] ||
+    `Status ${status}`
+  );
+};
+---
+
+<App>
+  {
+    error ? (
+      <div class="text-center bg-white dark:bg-gray-800 rounded-lg shadow p-8">
+        <div class="text-red-500 text-6xl mb-4">
+          <i class="bx bx-error-circle" />
+        </div>
+        <h1 class="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+          Access Denied
+        </h1>
+        <p class="text-gray-600 dark:text-gray-400 mb-6">{error}</p>
+        <a
+          href="/"
+          class="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+        >
+          <i class="bx bx-home mr-2" />
+          Go Home
+        </a>
+      </div>
+    ) : magicLink ? (
+      <div class="text-center bg-white dark:bg-gray-800 rounded-lg shadow p-8">
+        <div class="text-blue-500 text-6xl mb-4">
+          <i class="bx bx-envelope" />
+        </div>
+        <h1 class="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+          Check Your Email
+        </h1>
+        <p class="text-gray-600 dark:text-gray-400 mb-6">
+          We've sent you a magic link to view this project. Please check your
+          email and click the link to continue.
+        </p>
+        <div class="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg">
+          <p class="text-sm text-blue-800 dark:text-blue-200">
+            <i class="bx bx-info-circle mr-1" />
+            The magic link will automatically log you in and redirect you to
+            this project.
+          </p>
+        </div>
+      </div>
+    ) : projectData ? (
+      <>
+        <Hero
+          title={
+            projectData.address ||
+            projectData.title ||
+            `Project ${projectData.id}`
+          }
+          description="Project details"
+        />
+        <ProjectForm project={projectData} role={role || "Client"} />
+      </>
+    ) : null
+  }
+</App>

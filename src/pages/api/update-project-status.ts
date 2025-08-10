@@ -141,6 +141,37 @@ export const POST: APIRoute = async ({ request }) => {
       potentialNewFields.architect = architect;
     if (units !== undefined) potentialNewFields.units = units;
 
+    // Ensure units is persisted even if there is no dedicated column by
+    // merging it into the description JSON payload.
+    // If the client already sent a description, we prefer merging into it;
+    // otherwise we attempt to merge into the current DB description.
+    try {
+      const metadata: Record<string, any> = {};
+      if (typeof units !== "undefined" && units !== null && units !== "") {
+        metadata.units = units;
+      }
+      if (Object.keys(metadata).length > 0) {
+        let baseDescription: any = {};
+        if (typeof updateData.description === "string" && updateData.description.trim() !== "") {
+          try { baseDescription = JSON.parse(updateData.description); } catch { baseDescription = {}; }
+        } else {
+          // Load existing description to merge into, respecting role permissions
+          let descQuery = supabase.from("projects").select("description").eq("id", projectId);
+          if (!isAdminOrStaff) {
+            descQuery = descQuery.eq("author_id", user.id);
+          }
+          const { data: existing } = await descQuery.single();
+          if (existing?.description) {
+            try { baseDescription = JSON.parse(existing.description); } catch { baseDescription = {}; }
+          }
+        }
+        const merged = { ...(baseDescription || {}), ...metadata };
+        updateData.description = JSON.stringify(merged);
+      }
+    } catch (mergeErr) {
+      console.warn("Non-blocking: failed to merge units into description JSON", mergeErr);
+    }
+
     // Always update the updated_at timestamp when any field is modified
     updateData.updated_at = new Date().toISOString();
 
@@ -204,9 +235,8 @@ export const POST: APIRoute = async ({ request }) => {
       if (!isAdminOrStaff) {
         newFieldsQuery = newFieldsQuery.eq("author_id", user.id);
       }
-      const { data: newFieldsData, error: newFieldsError } = await newFieldsQuery
-        .select()
-        .single();
+      const { data: newFieldsData, error: newFieldsError } =
+        await newFieldsQuery.select().single();
 
       if (newFieldsError) {
         console.warn(

@@ -1,6 +1,6 @@
 import type { APIRoute } from "astro";
 import { supabase } from "../../../lib/supabase";
-import { setAuthCookies } from "../../../lib/auth-cookies";
+import { setAuthCookies, clearAuthCookies } from "../../../lib/auth-cookies";
 import { ensureUserProfile } from "../../../lib/auth-utils";
 
 export const GET: APIRoute = async ({ url, cookies, redirect }) => {
@@ -27,6 +27,10 @@ export const GET: APIRoute = async ({ url, cookies, redirect }) => {
       "Full URL params:",
       Object.fromEntries(url.searchParams.entries()),
     );
+
+    // Clear any existing auth cookies first
+    console.log("Clearing existing auth cookies...");
+    clearAuthCookies(cookies);
 
     // Exchange the code for a session
     const { data, error } =
@@ -70,7 +74,16 @@ export const GET: APIRoute = async ({ url, cookies, redirect }) => {
     setAuthCookies(cookies, access_token, refresh_token);
 
     console.log("Cookies set, redirecting to dashboard");
-    return redirect("/");
+
+    // Check if this is a magic link for a specific project
+    const projectId = url.searchParams.get("projectId");
+    if (projectId) {
+      console.log("Magic link for project:", projectId);
+      return redirect(`/project/${projectId}?token=magic`);
+    }
+
+    // For regular magic links, redirect with a refresh hint
+    return redirect("/?auth=success&refresh=true");
   } catch (error) {
     console.error("Unexpected error in auth callback:", error);
     return new Response(

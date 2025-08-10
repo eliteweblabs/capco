@@ -22,7 +22,7 @@ export const POST: APIRoute = async ({ request }) => {
     const { data, error } = await supabase.auth.signInWithOtp({
       email: authorEmail,
       options: {
-        emailRedirectTo: `${process.env.SITE_URL || "http://localhost:4321"}/project/${projectId}/view?token=magic`,
+        emailRedirectTo: `${process.env.SITE_URL || "http://localhost:4321"}/project/${projectId}?token=magic`,
         data: {
           projectId: projectId,
           action: "view_project",

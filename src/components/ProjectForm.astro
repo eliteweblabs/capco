@@ -1,0 +1,179 @@
+---
+import { generateEditFormHTML } from "../lib/project-form-config";
+import { PROJECT_STATUS_LABELS } from "../lib/global-services";
+
+interface Props {
+  project: any;
+  role?: string; // 'Admin' | 'Client'
+}
+
+const { project, role = "Client" } = Astro.props as Props;
+---
+
+<section
+  class="p-5 border rounded-b-xl border-t-0 border-gray-200 dark:border-gray-700 dark:bg-gray-900"
+  data-project-form
+  data-project-id={project.id}
+>
+  <form class="space-y-4" data-project-id={project.id}>
+    <div
+      id="project-form-container"
+      set:html={generateEditFormHTML(0, project)}
+    />
+
+    <div
+      class="grid grid-cols-2 gap-4 pt-2 border-t border-gray-200 dark:border-gray-600"
+    >
+      <div>
+        <span class="text-xs text-gray-500 dark:text-gray-400">Project ID:</span
+        >
+        <div class="text-sm text-gray-800 dark:text-gray-200">{project.id}</div>
+      </div>
+      <div>
+        <span class="text-xs text-gray-500 dark:text-gray-400"
+          >Project Status:</span
+        >
+        <div
+          id={`project-status-${project.id}`}
+          class="text-sm text-gray-800 dark:text-gray-200"
+        >
+          {project.status || 10}
+        </div>
+      </div>
+      <div>
+        <span class="text-xs text-gray-500 dark:text-gray-400"
+          >Change Status:</span
+        >
+        <select
+          id="project-status-select"
+          class="text-sm bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 border border-gray-300 dark:border-gray-600 rounded px-2 py-1 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+        >
+          <option value="">Select Status</option>
+        </select>
+      </div>
+      <div>
+        <span class="text-xs text-gray-500 dark:text-gray-400"
+          >Last Updated:</span
+        >
+        <div class="text-sm text-gray-800 dark:text-gray-200">
+          {new Date(project.updated_at || project.created).toLocaleString()}
+        </div>
+      </div>
+      {
+        role === "Admin" && (
+          <div>
+            <span class="text-xs text-gray-500 dark:text-gray-400">
+              Assigned to:
+            </span>
+            <select
+              id={`staff-assignment-${project.id}`}
+              class="text-sm bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 border border-gray-300 dark:border-gray-600 rounded px-2 py-1 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            >
+              <option value="">Unassigned</option>
+            </select>
+          </div>
+        )
+      }
+      <div>
+        <span class="text-xs text-gray-500 dark:text-gray-400">Created:</span>
+        <div class="text-sm text-gray-800 dark:text-gray-200">
+          {new Date(project.created || project.created_at).toLocaleDateString()}
+        </div>
+      </div>
+    </div>
+
+    <div class="pt-4 border-t border-gray-200 dark:border-gray-600">
+      <div class="flex items-center justify-between mb-2">
+        <span class="text-sm font-medium text-gray-700 dark:text-gray-300"
+          >Attached Media</span
+        >
+        <button
+          type="button"
+          id="refresh-media-btn"
+          class="text-xs text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 transition-colors"
+        >
+          <i class="bx bx-refresh mr-1"></i>Refresh
+        </button>
+      </div>
+      <div id={`media-links-${project.id}`} class="space-y-2">
+        <div class="text-xs text-gray-500 dark:text-gray-400 italic">
+          Loading media...
+        </div>
+      </div>
+    </div>
+
+    <div class="pt-4 border-t border-gray-200 dark:border-gray-600">
+      <div class="mb-2">
+        <span class="text-sm font-medium text-gray-700 dark:text-gray-300"
+          >Add Media Files</span>
+      </div>
+      <div
+        id={`media-dropzone-${project.id}`}
+        class="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-4 text-center cursor-pointer hover:border-blue-400 dark:hover:border-blue-500 transition-colors"
+      >
+        <input
+          type="file"
+          id={`media-file-input-${project.id}`}
+          class="hidden"
+          multiple
+          accept="image/*,video/*,audio/*,.pdf,.doc,.docx,.xls,.xlsx,.txt,.dwg"
+        />
+        <div class="flex flex-col items-center space-y-2">
+          <i class="bx bx-upload text-2xl text-gray-400 dark:text-gray-500"></i>
+          <div class="text-sm text-gray-600 dark:text-gray-400">
+            <span class="font-medium text-blue-600 dark:text-blue-400"
+              >Click to upload</span
+            > or drag and drop
+          </div>
+          <div class="text-xs text-gray-500 dark:text-gray-400">
+            Images, videos, documents, DWG files (max 10MB each)
+          </div>
+        </div>
+      </div>
+      <div id={`media-upload-progress-${project.id}`} class="mt-2 hidden">
+        <div class="text-xs text-gray-600 dark:text-gray-400 mb-1">
+          Uploading...
+        </div>
+        <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+          <div
+            id={`media-upload-bar-${project.id}`}
+            class="bg-blue-600 h-2 rounded-full transition-all duration-300"
+            style="width: 0%"
+          >
+          </div>
+        </div>
+      </div>
+    </div>
+  </form>
+
+  <div
+    class="flex flex-wrap gap-2 pt-4 border-t border-gray-200 dark:border-gray-600"
+  >
+    <button
+      type="button"
+      id="delete-project-btn"
+      class="px-4 py-2 bg-red-600 text-white text-sm font-medium rounded-lg hover:bg-red-700 transition-colors"
+      ><i class="bx bx-trash mr-1"></i></button
+    >
+    <button
+      type="button"
+      class="px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors estimate-btn"
+      data-project-id={project.id}
+      ><i class="bx bx-file-pdf mr-1"></i>Build Estimate</button
+    >
+    <button
+      type="button"
+      class="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors edit-estimate-btn"
+      data-project-id={project.id}
+      ><i class="bx bx-edit mr-1"></i>Edit Estimate</button
+    >
+    <div id={`invoice-link-${project.id}`} class="hidden"></div>
+  </div>
+</section>
+
+<script
+  id={`project-json-${project.id}`}
+  type="application/json"
+  set:html={JSON.stringify(project || {}, null, 0)}
+/>
+<script src="/js/ProjectForm.client.js" is:inline></script>

@@ -13,12 +13,27 @@ import NavLi from "./NavLi.astro";
 // Check authentication
 import { checkAuth } from "../../lib/auth";
 const { isAuth, session, user, role } = await checkAuth(Astro.cookies);
+
+// If we're on a project page, load minimal project info for header context
+import { supabase } from "../../lib/supabase";
+const pathname = Astro.url.pathname || "";
+const projectMatch = pathname.match(/^\/project\/([^\/?#]+)/);
+let currentProject: any = null;
+if (projectMatch && supabase) {
+  try {
+    const projectId = projectMatch[1];
+    const { data } = await supabase.from("projects").select("*").eq("id", projectId).single();
+    currentProject = data || null;
+  } catch (e) {
+    currentProject = null;
+  }
+}
 ---
 
 <header
   class="sticky top-0 z-30 bg-hub-background dark:bg-hub-background-dark pt-4 pb-2 mb-2"
 >
-  <div class="mx-6 flex justify-between">
+  <div class="mx-6 flex justify-between items-center gap-4">
     <a href="/">
       <!--?xml version="1.0" encoding="UTF-8"?-->
       <svg
@@ -76,9 +91,7 @@ const { isAuth, session, user, role } = await checkAuth(Astro.cookies);
     </a>
 
 
-    <nav
-    class="pl-6 relative overflow-x-auto scrollbar-hide flex gap-1 whitespace-nowrap text-hub-inactive dark:border-hub-border-dark"
-  >
+    <nav class="flex-1 pl-6 relative overflow-x-auto scrollbar-hide flex gap-1 whitespace-nowrap text-hub-inactive dark:border-hub-border-dark">
    
 
     {role === "Admin" ? (
@@ -129,21 +142,18 @@ const { isAuth, session, user, role } = await checkAuth(Astro.cookies);
   </nav>
 
 
-    <div class="flex flex-wrap gap-2">
-      <!-- <HeroButton class="size-8">
-    <IconShare2 class="size-5" />
-  </HeroButton> -->
-
+    <div class="flex flex-wrap items-center gap-3">
+    
       <!-- Add User Link (Admin Only) -->
       {role === "Admin" && (
-        <Tooltip tooltip="Add User">
+        // <Tooltip tooltip="Add User">
           <a href="/create-staff" 
              aria-label="btn-add-user"
              class="flex items-center justify-center size-8 bg-blue-600 hover:bg-blue-700 text-white rounded-full transition-colors"
           >
             <i class="bx bx-user-plus text-lg"></i>
           </a>
-        </Tooltip>
+        // </Tooltip>
       )}
 
       <HeroButton aria-label="btn-theme" id="toggle-theme" class="size-8">

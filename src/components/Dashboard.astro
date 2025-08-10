@@ -2864,21 +2864,32 @@ const { role } = Astro.props;
           }
         });
 
-      // Live update accordion title for address field
-      if (input && input.getAttribute && input.getAttribute("id") === "address-input") {
-        input.addEventListener("input", () => {
-          try {
-            var value = input.value || "";
-            var cleaned = (this.cleanAddressForTitle ? this.cleanAddressForTitle(value) : value);
-            var titleEl = document.getElementById('project-title-' + this.projectId);
-            if (titleEl) {
-              titleEl.textContent = cleaned || value || "Project";
+        // Live update accordion title for address field
+        if (
+          input &&
+          input.getAttribute &&
+          input.getAttribute("id") === "address-input"
+        ) {
+          input.addEventListener("input", () => {
+            try {
+              var value = input.value || "";
+              var cleaned = this.cleanAddressForTitle
+                ? this.cleanAddressForTitle(value)
+                : value;
+              var titleEl = document.getElementById(
+                "project-title-" + this.projectId
+              );
+              if (titleEl) {
+                titleEl.textContent = cleaned || value || "Project";
+              }
+            } catch (err) {
+              console.warn(
+                "Failed to update accordion title from address input",
+                err
+              );
             }
-          } catch (err) {
-            console.warn("Failed to update accordion title from address input", err);
-          }
-        });
-      }
+          });
+        }
       }
     }
 

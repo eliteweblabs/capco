@@ -2,12 +2,15 @@ import type { APIRoute } from "astro";
 import { supabase } from "../../lib/supabase";
 
 export const DELETE: APIRoute = async ({ request, cookies }) => {
+  console.log("🗑️ Delete project API called");
   try {
-    console.log("Delete project API called");
+    console.log("🗑️ Delete project API called");
 
     // Check if Supabase is configured
     if (!supabase) {
-      console.error("Database not configured - supabase client not available");
+      console.error(
+        "❌ Database not configured - supabase client not available",
+      );
       return new Response(
         JSON.stringify({ error: "Database not configured" }),
         {
@@ -21,11 +24,11 @@ export const DELETE: APIRoute = async ({ request, cookies }) => {
     const accessToken = cookies.get("sb-access-token")?.value;
     const refreshToken = cookies.get("sb-refresh-token")?.value;
 
-    console.log("Access token:", accessToken ? "Present" : "Missing");
-    console.log("Refresh token:", refreshToken ? "Present" : "Missing");
+    console.log("🔑 Access token:", accessToken ? "Present" : "Missing");
+    console.log("🔑 Refresh token:", refreshToken ? "Present" : "Missing");
 
     if (!accessToken || !refreshToken) {
-      console.error("Not authenticated - missing tokens");
+      console.error("❌ Not authenticated - missing tokens");
       return new Response(JSON.stringify({ error: "Not authenticated" }), {
         status: 401,
         headers: { "Content-Type": "application/json" },
@@ -33,7 +36,7 @@ export const DELETE: APIRoute = async ({ request, cookies }) => {
     }
 
     // Set up session with regular supabase client
-    console.log("Setting up session...");
+    console.log("🔐 Setting up session...");
     const {
       data: { user },
       error: authError,
@@ -43,23 +46,26 @@ export const DELETE: APIRoute = async ({ request, cookies }) => {
     });
 
     if (authError || !user) {
-      console.error("Authentication failed:", authError);
+      console.error("❌ Authentication failed:", authError);
       return new Response(JSON.stringify({ error: "Authentication failed" }), {
         status: 401,
         headers: { "Content-Type": "application/json" },
       });
     }
 
-    console.log("User authenticated:", user.id);
+    console.log("✅ User authenticated:", user.id);
 
     // Get the request body
+    console.log("📥 Reading request body...");
     const requestBody = await request.json();
-    console.log("Request body:", requestBody);
+    console.log("📥 Request body:", requestBody);
 
     const { projectId } = requestBody;
+    console.log("📥 Project ID from request:", projectId);
+    console.log("📥 Project ID type:", typeof projectId);
 
     if (!projectId) {
-      console.error("Project ID is required");
+      console.error("❌ Project ID is required");
       return new Response(JSON.stringify({ error: "Project ID is required" }), {
         status: 400,
         headers: { "Content-Type": "application/json" },
@@ -70,18 +76,21 @@ export const DELETE: APIRoute = async ({ request, cookies }) => {
     const projectIdNum =
       typeof projectId === "string" ? parseInt(projectId, 10) : projectId;
 
+    console.log("🔢 Project ID after conversion:", projectIdNum);
+    console.log("🔢 Project ID type after conversion:", typeof projectIdNum);
+
     if (isNaN(projectIdNum)) {
-      console.error("Invalid project ID:", projectId);
+      console.error("❌ Invalid project ID:", projectId);
       return new Response(JSON.stringify({ error: "Invalid project ID" }), {
         status: 400,
         headers: { "Content-Type": "application/json" },
       });
     }
 
-    console.log("Project ID:", projectIdNum);
+    console.log("✅ Project ID validated:", projectIdNum);
 
     // Check if project exists and user has permission to delete it
-    console.log("Looking up project:", projectIdNum);
+    console.log("🔍 Looking up project:", projectIdNum);
     const { data: project, error: projectError } = await supabase
       .from("projects")
       .select("id, author_id")
@@ -89,17 +98,17 @@ export const DELETE: APIRoute = async ({ request, cookies }) => {
       .single();
 
     if (projectError || !project) {
-      console.error("Project not found:", projectError);
+      console.error("❌ Project not found:", projectError);
       return new Response(JSON.stringify({ error: "Project not found" }), {
         status: 404,
         headers: { "Content-Type": "application/json" },
       });
     }
 
-    console.log("Project found:", project);
+    console.log("✅ Project found:", project);
 
     // Check user's role and permissions
-    console.log("Looking up user profile:", user.id);
+    console.log("👤 Looking up user profile:", user.id);
     const { data: profile, error: profileError } = await supabase
       .from("profiles")
       .select("role")
@@ -107,20 +116,20 @@ export const DELETE: APIRoute = async ({ request, cookies }) => {
       .single();
 
     if (profileError) {
-      console.error("Profile lookup error:", profileError);
+      console.error("❌ Profile lookup error:", profileError);
     }
 
     const isAdmin = profile?.role === "Admin";
     const isAuthor = project.author_id === user.id;
 
-    console.log("User role:", profile?.role);
-    console.log("Is admin:", isAdmin);
-    console.log("Is author:", isAuthor);
-    console.log("Project author:", project.author_id);
-    console.log("Current user:", user.id);
+    console.log("👤 User role:", profile?.role);
+    console.log("👤 Is admin:", isAdmin);
+    console.log("👤 Is author:", isAuthor);
+    console.log("👤 Project author:", project.author_id);
+    console.log("👤 Current user:", user.id);
 
     if (!isAdmin && !isAuthor) {
-      console.error("Unauthorized to delete this project");
+      console.error("❌ Unauthorized to delete this project");
       return new Response(
         JSON.stringify({ error: "Unauthorized to delete this project" }),
         {
@@ -131,27 +140,30 @@ export const DELETE: APIRoute = async ({ request, cookies }) => {
     }
 
     // Delete associated files first (cascade delete)
-    console.log("Deleting associated files...");
+    console.log("🗑️ Deleting associated files...");
     const { error: filesError } = await supabase
       .from("files")
       .delete()
       .eq("project_id", projectIdNum);
 
     if (filesError) {
-      console.error("Error deleting project files:", filesError);
+      console.error("❌ Error deleting project files:", filesError);
     } else {
-      console.log("Files deleted successfully");
+      console.log("✅ Files deleted successfully");
     }
 
     // Delete the project
-    console.log("Deleting project...");
+    console.log("🗑️ Deleting project...");
     const { error: deleteError } = await supabase
       .from("projects")
       .delete()
       .eq("id", projectIdNum);
 
     if (deleteError) {
-      console.error("Failed to delete project:", deleteError);
+      console.error("❌ Failed to delete project:", deleteError);
+      console.error("❌ Delete error message:", deleteError.message);
+      console.error("❌ Delete error details:", deleteError.details);
+      console.error("❌ Delete error hint:", deleteError.hint);
       return new Response(
         JSON.stringify({
           error: `Failed to delete project: ${deleteError.message}`,
@@ -163,7 +175,7 @@ export const DELETE: APIRoute = async ({ request, cookies }) => {
       );
     }
 
-    console.log("Project deleted successfully");
+    console.log("✅ Project deleted successfully");
 
     return new Response(
       JSON.stringify({
@@ -176,13 +188,18 @@ export const DELETE: APIRoute = async ({ request, cookies }) => {
       },
     );
   } catch (error) {
-    console.error("Error in delete-project API:", error);
-    return new Response(
-      JSON.stringify({ error: "Internal server error" }),
-      {
-        status: 500,
-        headers: { "Content-Type": "application/json" },
-      },
+    console.error("❌ Error in delete-project API:", error);
+    console.error(
+      "❌ Error message:",
+      error instanceof Error ? error.message : "Unknown error",
     );
+    console.error(
+      "❌ Error stack:",
+      error instanceof Error ? error.stack : "No stack trace",
+    );
+    return new Response(JSON.stringify({ error: "Internal server error" }), {
+      status: 500,
+      headers: { "Content-Type": "application/json" },
+    });
   }
 };

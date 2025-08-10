@@ -46,14 +46,37 @@ let PROJECT_STATUS_DATA: Record<
 // Function to load status data from database
 export async function loadProjectStatuses() {
   try {
-    const response = await fetch("/api/get-project-statuses");
-    const result = await response.json();
+    if (supabase) {
+      const { data, error } = await supabase
+        .from("project_statuses")
+        .select("status_code, status_name, email_content, est_time, notify")
+        .order("status_code");
 
-    if (result.success && result.statuses) {
-      PROJECT_STATUS_DATA = result.statuses;
+      if (error) throw error;
 
-      // Update labels
-      PROJECT_STATUS_LABELS = Object.entries(result.statuses).reduce(
+      const statuses = (data || []).reduce(
+        (acc, s: any) => {
+          acc[s.status_code] = {
+            status_name: s.status_name,
+            email_content: s.email_content,
+            est_time: s.est_time,
+            notify: s.notify || ["admin"],
+          } as any;
+          return acc;
+        },
+        {} as Record<
+          number,
+          {
+            status_name: string;
+            email_content: string;
+            est_time: string;
+            notify: string[];
+          }
+        >,
+      );
+
+      PROJECT_STATUS_DATA = statuses;
+      PROJECT_STATUS_LABELS = Object.entries(statuses).reduce(
         (acc, [code, data]) => {
           acc[parseInt(code)] = (data as any).status_name;
           return acc;
@@ -61,7 +84,7 @@ export async function loadProjectStatuses() {
         {} as Record<number, string>,
       );
 
-      return result.statuses;
+      return statuses;
     }
   } catch (error) {
     console.error("Failed to load project statuses:", error);
