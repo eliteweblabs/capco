@@ -1,0 +1,115 @@
+import type { APIRoute } from "astro";
+import { supabase } from "../../../lib/supabase";
+
+export const PUT: APIRoute = async ({ request, cookies, params }) => {
+  try {
+    const body = await request.json();
+    const projectId = params.id;
+
+    if (!projectId) {
+      return new Response(JSON.stringify({ error: "Project ID required" }), {
+        status: 400,
+      });
+    }
+
+    // Get user from session
+    const accessToken = cookies.get("sb-access-token")?.value;
+    const refreshToken = cookies.get("sb-refresh-token")?.value;
+
+    if (!accessToken || !refreshToken) {
+      return new Response(JSON.stringify({ error: "Not authenticated" }), {
+        status: 401,
+      });
+    }
+
+    // Set session
+    const { data: session, error: sessionError } =
+      await supabase!.auth.setSession({
+        access_token: accessToken,
+        refresh_token: refreshToken,
+      });
+
+    if (sessionError || !session.session?.user) {
+      return new Response(JSON.stringify({ error: "Invalid session" }), {
+        status: 401,
+      });
+    }
+
+    const userId = session.session.user.id;
+
+    // Get user profile to check role
+    const { data: profile, error: profileError } = await supabase!
+      .from("profiles")
+      .select("role")
+      .eq("id", userId)
+      .single();
+
+    if (profileError) {
+      console.error("Error fetching user profile:", profileError);
+      return new Response(
+        JSON.stringify({ error: "Failed to verify user permissions" }),
+        {
+          status: 500,
+        },
+      );
+    }
+
+    const userRole = profile?.role?.toLowerCase();
+
+    // Build update query
+    let updateQuery = supabase!
+      .from("projects")
+      .update({
+        address: body.address,
+        // Don't update owner for existing projects (field is hidden)
+        architect: body.architect,
+        sq_ft: body.sq_ft,
+        description: body.description,
+        new_construction:
+          body.new_construction === "on" || body.new_construction === true,
+        units: body.units,
+        building: body.building,
+        project: body.project,
+        service: body.service,
+        requested_docs: body.requested_docs,
+      })
+      .eq("id", projectId);
+
+    // Only apply author_id filter for non-admin users
+    if (userRole !== "admin") {
+      updateQuery = updateQuery.eq("author_id", userId);
+    }
+
+    const { data: projects, error } = await updateQuery.select();
+
+    if (error) {
+      console.error("Error updating project:", error);
+      return new Response(JSON.stringify({ error: error.message }), {
+        status: 500,
+      });
+    }
+
+    if (!projects || projects.length === 0) {
+      return new Response(
+        JSON.stringify({ error: "Project not found or access denied" }),
+        {
+          status: 404,
+        },
+      );
+    }
+
+    const project = projects[0]; // Get the first (and should be only) project
+
+    return new Response(JSON.stringify(project), {
+      status: 200,
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
+  } catch (error) {
+    console.error("Error in update-project:", error);
+    return new Response(JSON.stringify({ error: "Internal server error" }), {
+      status: 500,
+    });
+  }
+};

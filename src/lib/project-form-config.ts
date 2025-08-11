@@ -24,6 +24,7 @@ export interface FormFieldConfig {
   dataField?: string; // For OCR/scraping
   component?: string; // Component name to render (e.g., "UnitSlider")
   componentProps?: Record<string, any>; // Props to pass to the component
+  allow?: string[]; // Control field visibility based on user roles - array of allowed roles
 }
 
 export interface ButtonGroupConfig {
@@ -33,10 +34,124 @@ export interface ButtonGroupConfig {
   type: "radio" | "multi-select";
   cssClass: string;
   options: { value: string; label: string }[];
+  allow?: string[]; // Control button group visibility based on user roles - array of allowed roles
+}
+
+export interface FormActionConfig {
+  id: string;
+  type: "submit" | "button";
+  label: string;
+  icon?: string; // BoxIcons class name
+  cssClass: string;
+  action?: string; // Function name or action identifier
+  allow?: string[]; // Control button visibility based on user roles - array of allowed roles
+}
+
+// Helper function to check if a field or button group should be allowed based on user role
+export function isAllowed(
+  item: FormFieldConfig | ButtonGroupConfig | FormActionConfig,
+  userRole?: string | null,
+): boolean {
+  if (item.allow === undefined) {
+    return true; // Default to allowed if not specified
+  }
+
+  if (!userRole) {
+    return false; // No role provided, deny access
+  }
+
+  // Case-insensitive role matching
+  const normalizedUserRole = userRole.toLowerCase();
+  return item.allow.some(
+    (allowedRole) => allowedRole.toLowerCase() === normalizedUserRole,
+  );
+}
+
+// Function to get filtered form fields based on user role
+export function getFilteredFormFields(
+  userRole?: string | null,
+  isNewProject: boolean = false,
+): FormFieldConfig[] {
+  let fields = PROJECT_FORM_FIELDS.filter((field) =>
+    isAllowed(field, userRole),
+  );
+
+  // For existing projects, hide all client-related fields
+  if (!isNewProject) {
+    fields = fields.filter(
+      (field) =>
+        !["owner", "owner_email", "existing_client_id", "new_client"].includes(
+          field.name,
+        ),
+    );
+  } else {
+    // For new projects, hide owner and email fields initially (they'll be shown via JavaScript based on toggle)
+    fields = fields.filter(
+      (field) => !["owner", "owner_email"].includes(field.name),
+    );
+  }
+
+  return fields;
+}
+
+// Function to get filtered button groups based on user role
+export function getFilteredButtonGroups(
+  userRole?: string | null,
+  isNewProject: boolean = false,
+): ButtonGroupConfig[] {
+  let groups = BUTTON_GROUPS.filter((group) => isAllowed(group, userRole));
+
+  // For new projects, you could hide certain button groups if needed
+  if (isNewProject) {
+    // Currently all button groups are shown for new projects
+    // You can add logic here to hide specific groups for new projects
+  }
+
+  return groups;
+}
+
+// Function to get filtered form actions based on user role and project state
+export function getFilteredFormActions(
+  userRole?: string | null,
+  isNewProject: boolean = false,
+): FormActionConfig[] {
+  let actions = FORM_ACTIONS.filter((action) => isAllowed(action, userRole));
+
+  // For new projects, hide delete and estimate buttons
+  if (isNewProject) {
+    actions = actions.filter(
+      (action) =>
+        action.id !== "delete-project" &&
+        action.id !== "build-estimate" &&
+        action.id !== "edit-estimate",
+    );
+
+    // Change "Save Project" to "Create Project" for new projects
+    actions = actions.map((action) => {
+      if (action.id === "save-project") {
+        return {
+          ...action,
+          label: "Create Project",
+          icon: "bx-plus", // Change icon to plus for create
+        };
+      }
+      return action;
+    });
+  }
+
+  return actions;
 }
 
 // Core form fields
 export const PROJECT_FORM_FIELDS: FormFieldConfig[] = [
+  // New client toggle (only for new projects) - moved to top
+  {
+    id: "new-client-toggle",
+    name: "new_client",
+    type: "checkbox",
+    label: "New Client",
+    allow: ["admin", "staff"], // Only admin and staff can set client type
+  },
   {
     id: "address-input",
     name: "address",
@@ -45,7 +160,9 @@ export const PROJECT_FORM_FIELDS: FormFieldConfig[] = [
     placeholder: "Address / Title *",
     required: true,
     dataField: "address",
+    allow: ["admin", "staff", "client"], // All roles can see address
   },
+  // Owner field (only shown for new projects with new client toggle on)
   {
     id: "owner-input",
     name: "owner",
@@ -54,6 +171,29 @@ export const PROJECT_FORM_FIELDS: FormFieldConfig[] = [
     placeholder: "Owner *",
     required: true,
     dataField: "owner",
+    allow: ["admin", "staff", "client"], // All roles can see owner
+  },
+  // Owner email field (only shown for new projects with new client toggle on)
+  {
+    id: "owner-email-input",
+    name: "owner_email",
+    type: "text",
+    label: "Owner Email",
+    placeholder: "owner@example.com",
+    required: true,
+    dataField: "owner_email",
+    allow: ["admin", "staff"], // Only admin and staff can set email
+  },
+  // Existing client dropdown (only shown for new projects with new client toggle off)
+  {
+    id: "existing-client-select",
+    name: "existing_client_id",
+    type: "select",
+    label: "Select Existing Client",
+    placeholder: "Choose a client...",
+    required: true,
+    options: [], // Will be populated dynamically
+    allow: ["admin", "staff"], // Only admin and staff can select clients
   },
   {
     id: "architect-input",
@@ -62,6 +202,7 @@ export const PROJECT_FORM_FIELDS: FormFieldConfig[] = [
     label: "Architect",
     placeholder: "Architect",
     dataField: "architect",
+    allow: ["admin", "staff"], // Only admin and staff can see architect
   },
   {
     id: "square-foot-input",
@@ -74,6 +215,7 @@ export const PROJECT_FORM_FIELDS: FormFieldConfig[] = [
     max: 50000,
     step: 1,
     dataField: "square_foot",
+    allow: ["admin", "staff", "client"], // All roles can see square footage
   },
   {
     id: "description-input",
@@ -81,12 +223,14 @@ export const PROJECT_FORM_FIELDS: FormFieldConfig[] = [
     type: "textarea",
     label: "Description",
     placeholder: "Project description...",
+    allow: ["admin", "staff"], // Only admin and staff can see description
   },
   {
     id: "new-construction",
     name: "new_construction",
     type: "checkbox",
     label: "New Construction",
+    allow: ["admin", "staff", "client"], // All roles can see new construction
   },
   // Units slider is now handled by UnitSlider.astro component
   {
@@ -100,6 +244,50 @@ export const PROJECT_FORM_FIELDS: FormFieldConfig[] = [
       label: "Units",
       required: false,
     },
+    allow: ["admin", "staff"], // Only admin and staff can see units slider
+  },
+];
+
+// Form action button configurations
+export const FORM_ACTIONS: FormActionConfig[] = [
+  {
+    id: "save-project",
+    type: "submit",
+    label: "Save Project",
+    icon: "bx-save",
+    cssClass:
+      "px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors",
+    allow: ["admin", "staff", "client"], // All roles can save
+  },
+  {
+    id: "delete-project",
+    type: "button",
+    label: "Delete Project",
+    icon: "bx-trash",
+    cssClass:
+      "px-4 py-2 bg-red-600 text-white text-sm font-medium rounded-lg hover:bg-red-700 transition-colors",
+    action: "deleteProject",
+    allow: ["admin", "staff"], // Only admin and staff can delete
+  },
+  {
+    id: "build-estimate",
+    type: "button",
+    label: "Build Estimate",
+    icon: "bx-file-pdf",
+    cssClass:
+      "px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 transition-colors",
+    action: "buildEstimate",
+    allow: ["admin", "staff"], // Only admin and staff can build estimates
+  },
+  {
+    id: "edit-estimate",
+    type: "button",
+    label: "Edit Estimate",
+    icon: "bx-edit",
+    cssClass:
+      "px-4 py-2 bg-purple-600 text-white text-sm font-medium rounded-lg hover:bg-purple-700 transition-colors",
+    action: "editEstimate",
+    allow: ["admin", "staff"], // Only admin and staff can edit estimates
   },
 ];
 
@@ -111,6 +299,7 @@ export const BUTTON_GROUPS: ButtonGroupConfig[] = [
     label: "Building",
     type: "radio",
     cssClass: "building-type-radio",
+    allow: ["admin", "staff", "client"], // All roles can see building type
     options: [
       { value: "Residential", label: "Residential" },
       { value: "Mixed use", label: "Mixed use" },
@@ -127,6 +316,7 @@ export const BUTTON_GROUPS: ButtonGroupConfig[] = [
     label: "Project",
     type: "multi-select",
     cssClass: "consulting-service-btn",
+    allow: ["admin", "staff"], // Only admin and staff can see consulting services
     options: [
       { value: "Sprinkler", label: "Sprinkler" },
       { value: "Alarm", label: "Alarm" },
@@ -143,6 +333,7 @@ export const BUTTON_GROUPS: ButtonGroupConfig[] = [
     label: "Supply / Service",
     type: "radio",
     cssClass: "fire-service-radio",
+    allow: ["admin", "staff", "client"], // All roles can see fire service
     options: [
       { value: "Pump & Tank", label: "Pump & Tank" },
       { value: "2' Copper", label: "2' Copper" },
@@ -157,6 +348,7 @@ export const BUTTON_GROUPS: ButtonGroupConfig[] = [
     label: "Reports Required",
     type: "multi-select",
     cssClass: "fire-safety-service-btn",
+    allow: ["admin", "staff"], // Only admin and staff can see reports required
     options: [
       { value: "Narrative", label: "Narrative" },
       { value: "Sprinkler", label: "Sprinkler" },
@@ -335,59 +527,6 @@ export function generateCompleteFormHTML(
   projectData: any = {},
 ): string {
   const coreFields = PROJECT_FORM_FIELDS.slice(0, 4); // Address, Owner, Architect, Sq Ft
-  const description = PROJECT_FORM_FIELDS.find((f) => f.name === "description");
-  const newConstruction = PROJECT_FORM_FIELDS.find(
-    (f) => f.name === "new_construction",
-  );
-
-  return `
-    <!-- Address Field (Full Width) -->
-    ${coreFields
-      .filter((field) => field.name === "address")
-      .map((field) => generateFormFieldHTML(field, index, projectData))
-      .join("")}
-    
-    <!-- Other Core Fields Grid -->
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-      ${coreFields
-        .filter((field) => field.name !== "address")
-        .map((field) => generateFormFieldHTML(field, index, projectData))
-        .join("")}
-    </div>
-
-    <!-- Description -->
-    ${description ? generateFormFieldHTML(description, index, projectData) : ""}
-
-    <!-- Construction Type & Units Row -->
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-      <!-- Construction Type -->
-      <div>
-        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Construction Type</label>
-        <div class="flex gap-4">
-          ${newConstruction ? generateFormFieldHTML(newConstruction, index, projectData) : ""}
-        </div>
-      </div>
-
-      <!-- Units Slider - Use UnitSlider component instead -->
-      <div id="units-slider-container-${projectData.id || index}">
-        <!-- UnitSlider component will be rendered here -->
-      </div>
-    </div>
-
-    <!-- Button Groups -->
-    ${BUTTON_GROUPS.map((group) => generateButtonGroupHTML(group, projectData)).join("")}
-  `;
-}
-
-// Function to generate edit form HTML (without owner field)
-export function generateEditFormHTML(
-  index: number = 0,
-  projectData: any = {},
-): string {
-  // Exclude owner field for edit forms
-  const coreFields = PROJECT_FORM_FIELDS.filter(
-    (field) => field.name !== "owner",
-  ).slice(0, 3); // Address, Architect, Sq Ft
   const description = PROJECT_FORM_FIELDS.find((f) => f.name === "description");
   const newConstruction = PROJECT_FORM_FIELDS.find(
     (f) => f.name === "new_construction",

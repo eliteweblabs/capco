@@ -1,0 +1,219 @@
+---
+import App from "../components/App.astro";
+import SectionContainer from "../components/SectionContainer.astro";
+import ProjectForm from "../components/form/ProjectForm.astro";
+
+// Example user roles to test
+const userRoles = ["admin", "staff", "client"];
+---
+
+<App>
+  <SectionContainer class="flex flex-col gap-y-6 mx-6">
+    <div class="flex items-center justify-between">
+      <h1 class="text-2xl font-bold">Role-Based Form Access Demo</h1>
+      <a
+        href="/"
+        class="inline-flex items-center px-3 py-2 bg-gray-500 text-white text-sm font-medium rounded-lg hover:bg-gray-600 transition-colors"
+      >
+        <i class="bx bx-arrow-back mr-2"></i>
+        Back to Projects
+      </a>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <!-- Admin Role Demo -->
+      <div
+        class="p-6 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700"
+      >
+        <h2 class="text-lg font-semibold mb-4 text-blue-600">Admin Role</h2>
+        <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">
+          Can see all fields and button groups
+        </p>
+
+        <div class="text-xs space-y-1 mb-4 text-green-600">
+          <p>✅ Address</p>
+          <p>✅ Owner</p>
+          <p>✅ Architect</p>
+          <p>✅ Square Footage</p>
+          <p>✅ Description</p>
+          <p>✅ New Construction</p>
+          <p>✅ Units Slider</p>
+          <p>✅ Building Type</p>
+          <p>✅ Consulting Services</p>
+          <p>✅ Fire Service</p>
+          <p>✅ Reports Required</p>
+        </div>
+
+        <ProjectForm projectId="demo-admin" userRole="admin" />
+      </div>
+
+      <!-- Staff Role Demo -->
+      <div
+        class="p-6 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700"
+      >
+        <h2 class="text-lg font-semibold mb-4 text-green-600">Staff Role</h2>
+        <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">
+          Can see most fields but not client-specific ones
+        </p>
+
+        <div class="text-xs space-y-1 mb-4">
+          <p class="text-green-600">✅ Address</p>
+          <p class="text-green-600">✅ Owner</p>
+          <p class="text-green-600">✅ Architect</p>
+          <p class="text-green-600">✅ Square Footage</p>
+          <p class="text-green-600">✅ Description</p>
+          <p class="text-green-600">✅ New Construction</p>
+          <p class="text-green-600">✅ Units Slider</p>
+          <p class="text-green-600">✅ Building Type</p>
+          <p class="text-green-600">✅ Consulting Services</p>
+          <p class="text-green-600">✅ Fire Service</p>
+          <p class="text-green-600">✅ Reports Required</p>
+        </div>
+
+        <ProjectForm projectId="demo-staff" userRole="staff" />
+      </div>
+
+      <!-- Client Role Demo -->
+      <div
+        class="p-6 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700"
+      >
+        <h2 class="text-lg font-semibold mb-4 text-orange-600">Client Role</h2>
+        <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">
+          Limited access to basic fields only
+        </p>
+
+        <div class="text-xs space-y-1 mb-4">
+          <p class="text-green-600">✅ Address</p>
+          <p class="text-green-600">✅ Owner</p>
+          <p class="text-red-600">❌ Architect</p>
+          <p class="text-green-600">✅ Square Footage</p>
+          <p class="text-red-600">❌ Description</p>
+          <p class="text-green-600">✅ New Construction</p>
+          <p class="text-red-600">❌ Units Slider</p>
+          <p class="text-green-600">✅ Building Type</p>
+          <p class="text-red-600">❌ Consulting Services</p>
+          <p class="text-green-600">✅ Fire Service</p>
+          <p class="text-red-600">❌ Reports Required</p>
+        </div>
+
+        <ProjectForm projectId="demo-client" userRole="client" />
+      </div>
+    </div>
+
+    <!-- Configuration Examples -->
+    <div
+      class="p-6 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700"
+    >
+      <h2 class="text-lg font-semibold mb-4">Configuration Examples</h2>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <!-- All Roles Example -->
+        <div>
+          <h3 class="text-md font-medium mb-2">All Roles Access</h3>
+          <pre
+            class="text-xs bg-gray-100 dark:bg-gray-700 p-3 rounded overflow-x-auto">
+{`{
+  id: "address-input",
+  name: "address",
+  type: "text",
+  label: "Address / Title",
+  allow: ["admin", "staff", "client"], // All roles can see
+}`}
+          </pre>
+        </div>
+
+        <!-- Admin/Staff Only Example -->
+        <div>
+          <h3 class="text-md font-medium mb-2">Admin/Staff Only</h3>
+          <pre
+            class="text-xs bg-gray-100 dark:bg-gray-700 p-3 rounded overflow-x-auto">
+{`{
+  id: "architect-input",
+  name: "architect",
+  type: "text",
+  label: "Architect",
+  allow: ["admin", "staff"], // Only admin and staff
+}`}
+          </pre>
+        </div>
+
+        <!-- Admin Only Example -->
+        <div>
+          <h3 class="text-md font-medium mb-2">Admin Only</h3>
+          <pre
+            class="text-xs bg-gray-100 dark:bg-gray-700 p-3 rounded overflow-x-auto">
+{`{
+  id: "sensitive-field",
+  name: "sensitive_data",
+  type: "text",
+  label: "Sensitive Data",
+  allow: ["admin"], // Only admin can see
+}`}
+          </pre>
+        </div>
+
+        <!-- No Restriction Example -->
+        <div>
+          <h3 class="text-md font-medium mb-2">No Restriction (Default)</h3>
+          <pre
+            class="text-xs bg-gray-100 dark:bg-gray-700 p-3 rounded overflow-x-auto">
+{`{
+  id: "basic-field",
+  name: "basic_data",
+  type: "text",
+  label: "Basic Data",
+  // No allow parameter = all roles can see
+}`}
+          </pre>
+        </div>
+      </div>
+    </div>
+
+    <!-- Usage Instructions -->
+    <div
+      class="p-6 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700"
+    >
+      <h2 class="text-lg font-semibold mb-4">How to Use the Allow Parameter</h2>
+
+      <div class="text-sm space-y-3">
+        <div>
+          <h3 class="font-medium">1. Role-Based Access Control</h3>
+          <p class="text-gray-600 dark:text-gray-400">
+            Use <code class="bg-gray-100 dark:bg-gray-700 px-1 rounded"
+              >allow: ["admin", "staff"]</code
+            > to restrict field visibility to specific user roles.
+          </p>
+        </div>
+
+        <div>
+          <h3 class="font-medium">2. All Roles Access</h3>
+          <p class="text-gray-600 dark:text-gray-400">
+            Use <code class="bg-gray-100 dark:bg-gray-700 px-1 rounded"
+              >allow: ["admin", "staff", "client"]</code
+            > to allow all roles to see the field.
+          </p>
+        </div>
+
+        <div>
+          <h3 class="font-medium">3. No Restriction</h3>
+          <p class="text-gray-600 dark:text-gray-400">
+            Omit the <code class="bg-gray-100 dark:bg-gray-700 px-1 rounded"
+              >allow</code
+            > parameter to make the field visible to all roles by default.
+          </p>
+        </div>
+
+        <div>
+          <h3 class="font-medium">4. Component Integration</h3>
+          <p class="text-gray-600 dark:text-gray-400">
+            Pass the <code class="bg-gray-100 dark:bg-gray-700 px-1 rounded"
+              >userRole</code
+            > prop to <code class="bg-gray-100 dark:bg-gray-700 px-1 rounded"
+              >ProjectForm</code
+            > component to enable role-based filtering.
+          </p>
+        </div>
+      </div>
+    </div>
+  </SectionContainer>
+</App>

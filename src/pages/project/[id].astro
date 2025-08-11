@@ -8,6 +8,8 @@ const { id } = Astro.params;
 
 console.log("🌐 [PROJECT] Project ID:", id);
 import { supabase } from "../../lib/supabase";
+import { checkAuth } from "../../lib/auth";
+const { isAuth, session, user, role } = await checkAuth(Astro.cookies);
 
 // Fetch project data from API
 let project = null;
@@ -38,56 +40,17 @@ if (supabase) {
       </a>
     </div>
 
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <div class="grid grid-cols-1 lg:grid-cols-1 gap-6">
       <!-- Form Container -->
       <div
         class="p-6 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700"
       >
-        <h2 class="text-lg font-semibold mb-4">Project Form</h2>
-
-        <ProjectForm project={project} projectId={id} isEdit={true} />
-
-        <!-- Action Buttons (Outside Form) -->
-        <!-- <div
-          class="flex flex-wrap gap-2 pt-4 border-t border-gray-200 dark:border-gray-600"
-        >
-          <button
-            type="button"
-            class="px-4 py-2 bg-red-600 text-white text-sm font-medium rounded-lg hover:bg-red-700 transition-colors"
-            onclick={`deleteProject(${id})`}
-          >
-            <i class="bx bx-trash mr-1"></i>
-            Delete Project
-          </button>
-
-          <button
-            type="button"
-            class="px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 transition-colors"
-            onclick={`buildEstimate(${id})`}
-          >
-            <i class="bx bx-file-pdf mr-1"></i>
-            Build Estimate
-          </button>
-
-          <button
-            type="button"
-            class="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors"
-            onclick={`editEstimate(${id})`}
-          >
-            <i class="bx bx-edit mr-1"></i>
-            Edit Estimate
-          </button>
-        </div> -->
-      </div>
-
-      <!-- Form Data Display -->
-      <div
-        class="p-6 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700"
-      >
-        <h2 class="text-lg font-semibold mb-4">Form Data</h2>
-        <div id="form-data-display" class="space-y-2 text-sm">
-          <p>Form data will appear here when submitted...</p>
-        </div>
+        <ProjectForm
+          project={project}
+          projectId={id ?? ""}
+          isNewProject={false}
+          userRole={role}
+        />
       </div>
     </div>
   </SectionContainer>
@@ -110,10 +73,5 @@ if (supabase) {
   function editEstimate(projectId: string) {
     // Add edit estimate logic here
     console.log("Editing estimate for project:", projectId);
-  }
-
-  function resetForm() {
-    // Add reset form logic here
-    console.log("Resetting form");
   }
 </script>
