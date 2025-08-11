@@ -5,14 +5,16 @@ import IconSun from "../../icons/IconSun.astro";
 import HeroButton from "../HeroButton.astro";
 // import LanguagePicker from "../LanguagePicker.astro";
 import Tooltip from "../Tooltip.astro";
-import NavButton from "./NavButton.astro";
 import NavLi from "./NavLi.astro";
 // const { currentLocale } = Astro;s
 // const i18n = getI18N({ currentLocale });
 
+console.log("📋 [HEADER] Header component loading...");
+
 // Check authentication
 import { checkAuth } from "../../lib/auth";
 const { isAuth, session, user, role } = await checkAuth(Astro.cookies);
+
 ---
 
 <header
@@ -201,55 +203,85 @@ const { isAuth, session, user, role } = await checkAuth(Astro.cookies);
 </header>
 
 <script type="module" define:vars={{ session }}>
+  console.log("📋 [HEADER] Header script execution started");
+  console.log("📋 [HEADER] Session data:", session);
+  
   const profileBtn = document.getElementById("profile-btn");
   const userAvatar = document.getElementById("user-avatar");
   const fallbackIcon = userAvatar.nextElementSibling;
   const profileDropdown = document.getElementById("profile-dropdown");
   const logoutBtn = document.getElementById("logout-btn");
 
+  console.log("📋 [HEADER] DOM elements found:", {
+    profileBtn: !!profileBtn,
+    userAvatar: !!userAvatar,
+    fallbackIcon: !!fallbackIcon,
+    profileDropdown: !!profileDropdown,
+    logoutBtn: !!logoutBtn
+  });
+
   function updateProfileButton(session) {
+    console.log("📋 [HEADER] updateProfileButton called with session:", session);
+    
     if (session && session.data.user) {
       const avatarUrl = session.data.user.user_metadata?.avatar_url;
+      console.log("📋 [HEADER] Avatar URL:", avatarUrl);
+      
       if (avatarUrl) {
         userAvatar.src = avatarUrl;
         userAvatar.style.display = "block";
         fallbackIcon.style.display = "none";
+        console.log("📋 [HEADER] Using avatar image");
       } else {
         userAvatar.style.display = "none";
         fallbackIcon.style.display = "block";
+        console.log("📋 [HEADER] Using fallback icon");
       }
       profileBtn.classList.remove("hidden");
+      console.log("📋 [HEADER] Profile button shown");
     } else {
       profileBtn.classList.add("hidden");
       profileDropdown.classList.add("hidden");
+      console.log("📋 [HEADER] Profile button hidden - no session");
     }
   }
 
   // Check initial auth state
+  console.log("📋 [HEADER] Checking initial auth state...");
   updateProfileButton(session);
 
   // Toggle dropdown
   profileBtn.addEventListener("click", (e) => {
+    console.log("📋 [HEADER] Profile button clicked");
     e.stopPropagation();
     profileDropdown.classList.toggle("hidden");
+    console.log("📋 [HEADER] Dropdown toggled");
   });
 
   // Close dropdown when clicking outside
   document.addEventListener("click", () => {
+    console.log("📋 [HEADER] Document clicked, closing dropdown");
     profileDropdown.classList.add("hidden");
   });
 
   // Logout functionality
   logoutBtn.addEventListener("click", async () => {
+    console.log("📋 [HEADER] Logout button clicked");
     try {
+      console.log("📋 [HEADER] Sending logout request...");
       const response = await fetch("/api/auth/signout", {
         method: "POST",
       });
+      console.log("📋 [HEADER] Logout response status:", response.status);
+      
       if (response.ok) {
+        console.log("📋 [HEADER] Logout successful, redirecting...");
         window.location.href = "/";
+      } else {
+        console.error("📋 [HEADER] Logout failed with status:", response.status);
       }
     } catch (error) {
-      console.error("Logout error:", error);
+      console.error("📋 [HEADER] Logout error:", error);
     }
     profileDropdown.classList.add("hidden");
   });

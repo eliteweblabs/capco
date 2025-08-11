@@ -45,11 +45,25 @@ let PROJECT_STATUS_DATA: Record<
 
 // Function to load status data from database
 export async function loadProjectStatuses() {
+  console.log("🌐 [GLOBAL] Loading project statuses...");
+
   try {
+    console.log("🌐 [GLOBAL] Fetching project statuses from API...");
     const response = await fetch("/api/get-project-statuses");
+    console.log(
+      "🌐 [GLOBAL] Project statuses API response status:",
+      response.status,
+    );
+
     const result = await response.json();
+    console.log("🌐 [GLOBAL] Project statuses API result:", {
+      success: result.success,
+      hasStatuses: !!result.statuses,
+      statusCount: result.statuses ? Object.keys(result.statuses).length : 0,
+    });
 
     if (result.success && result.statuses) {
+      console.log("🌐 [GLOBAL] Setting project status data...");
       PROJECT_STATUS_DATA = result.statuses;
 
       // Update labels
@@ -61,10 +75,20 @@ export async function loadProjectStatuses() {
         {} as Record<number, string>,
       );
 
+      console.log("🌐 [GLOBAL] Project statuses loaded successfully:", {
+        statusCount: Object.keys(result.statuses).length,
+        labelCount: Object.keys(PROJECT_STATUS_LABELS).length,
+      });
+
       return result.statuses;
+    } else {
+      console.warn(
+        "🌐 [GLOBAL] Failed to load project statuses from API:",
+        result.error || "Unknown error",
+      );
     }
   } catch (error) {
-    console.error("Failed to load project statuses:", error);
+    console.error("🌐 [GLOBAL] Failed to load project statuses:", error);
   }
 
   // Fallback to static labels if database fails
@@ -207,12 +231,17 @@ export class GlobalServices {
   private eventTarget: EventTarget;
 
   constructor() {
+    console.log("🌐 [GLOBAL] GlobalServices constructor called");
     this.eventTarget = new EventTarget();
+    console.log("🌐 [GLOBAL] GlobalServices initialized");
   }
 
   static getInstance(): GlobalServices {
     if (!GlobalServices.instance) {
+      console.log("🌐 [GLOBAL] Creating new GlobalServices instance");
       GlobalServices.instance = new GlobalServices();
+    } else {
+      console.log("🌐 [GLOBAL] Returning existing GlobalServices instance");
     }
     return GlobalServices.instance;
   }
@@ -239,6 +268,7 @@ export class GlobalServices {
 
   // Event Management
   emit(type: string, data: any, source?: string) {
+    console.log("🌐 [GLOBAL] Emitting event:", { type, data, source });
     const event = new CustomEvent("global-service", {
       detail: { type, data, source } as GlobalServiceEvent,
     });
@@ -246,13 +276,19 @@ export class GlobalServices {
 
     // Also dispatch to window for cross-component access
     if (typeof window !== "undefined") {
+      console.log("🌐 [GLOBAL] Dispatching to window:", `global:${type}`);
       window.dispatchEvent(new CustomEvent(`global:${type}`, { detail: data }));
     }
   }
 
   on(type: string, callback: (data: any) => void) {
+    console.log("🌐 [GLOBAL] Registering event listener for:", type);
     const handler = (event: CustomEvent<GlobalServiceEvent>) => {
       if (event.detail.type === type) {
+        console.log("🌐 [GLOBAL] Event handler called:", {
+          type,
+          data: event.detail.data,
+        });
         callback(event.detail.data);
       }
     };
@@ -260,11 +296,13 @@ export class GlobalServices {
       "global-service",
       handler as EventListener,
     );
-    return () =>
+    return () => {
+      console.log("🌐 [GLOBAL] Removing event listener for:", type);
       this.eventTarget.removeEventListener(
         "global-service",
         handler as EventListener,
       );
+    };
   }
 
   // Email Functions

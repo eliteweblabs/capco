@@ -2,8 +2,16 @@ import type { APIRoute } from "astro";
 import { supabase } from "../../lib/supabase";
 
 export const GET: APIRoute = async ({ request }) => {
+  console.log("📡 [API] GET /api/get-staff-users called");
+
   try {
+    console.log("📡 [API] Checking Supabase configuration...");
+
     if (!supabase) {
+      console.log(
+        "📡 [API] Supabase not configured, returning demo staff users",
+      );
+
       // Return demo staff users when database is not configured
       const demoStaffUsers = [
         {
@@ -51,13 +59,25 @@ export const GET: APIRoute = async ({ request }) => {
       );
     }
 
+    console.log("📡 [API] Getting current user...");
+
     // Get current user to verify permissions
     const {
       data: { user },
       error: userError,
     } = await supabase.auth.getUser();
 
+    console.log("📡 [API] User auth result:", {
+      hasUser: !!user,
+      userId: user?.id || null,
+      userEmail: user?.email || null,
+      hasError: !!userError,
+      errorMessage: userError?.message || null,
+    });
+
     if (userError || !user) {
+      console.log("📡 [API] No authenticated user, returning demo staff users");
+
       // Return demo staff for unauthenticated users
       const demoStaffUsers = [
         {
@@ -81,6 +101,8 @@ export const GET: APIRoute = async ({ request }) => {
       );
     }
 
+    console.log("📡 [API] Getting user profile for role...");
+
     // Get user profile to check permissions
     const { data: profile } = await supabase
       .from("profiles")
@@ -89,13 +111,16 @@ export const GET: APIRoute = async ({ request }) => {
       .single();
 
     const userRole = profile?.role;
+    console.log("📡 [API] User role:", userRole);
 
     // Only admins and staff can view staff list
     if (userRole !== "Admin" && userRole !== "Staff") {
-      console.log(`User role is: ${userRole}, denying access to staff list`);
+      console.log(
+        `📡 [API] User role is: ${userRole}, denying access to staff list`,
+      );
 
       // TEMPORARY: Allow all users to view staff list for debugging
-      console.log("TEMPORARY: Allowing access for debugging purposes");
+      console.log("📡 [API] TEMPORARY: Allowing access for debugging purposes");
 
       // Uncomment the return statement below to restore proper authorization
       /*
@@ -114,14 +139,14 @@ export const GET: APIRoute = async ({ request }) => {
     }
 
     // Fetch staff users from database
-    console.log("Fetching staff users from database...");
+    console.log("📡 [API] Fetching staff users from database...");
     const { data: staffUsers, error } = await supabase
       .from("profiles")
       .select("id, name, phone, role, created_at")
       .eq("role", "Staff")
       .order("name", { ascending: true });
 
-    console.log("Staff users query result:", { staffUsers, error });
+    console.log("📡 [API] Staff users query result:", { staffUsers, error });
 
     // Try direct SQL query to bypass RLS
     const { data: directStaffUsers, error: directError } = await supabase.rpc(
@@ -129,7 +154,7 @@ export const GET: APIRoute = async ({ request }) => {
       {},
     );
 
-    console.log("Direct SQL staff users result:", {
+    console.log("📡 [API] Direct SQL staff users result:", {
       directStaffUsers,
       directError,
     });
@@ -139,7 +164,10 @@ export const GET: APIRoute = async ({ request }) => {
       .from("profiles")
       .select("id, name, phone, role, created_at");
 
-    console.log("All profiles result:", { allProfiles, allProfilesError });
+    console.log("�� [API] All profiles result:", {
+      allProfiles,
+      allProfilesError,
+    });
 
     // Filter for staff users and convert phone to string
     const staffUsersFromAll =
@@ -150,16 +178,16 @@ export const GET: APIRoute = async ({ request }) => {
           phone: p.phone ? p.phone.toString() : null,
         })) || [];
 
-    console.log("Staff users from all profiles:", staffUsersFromAll);
+    console.log("📡 [API] Staff users from all profiles:", staffUsersFromAll);
 
     if (error) {
-      console.error("Database error:", error);
+      console.error("📡 [API] Database error:", error);
       return new Response(
         JSON.stringify({
           success: false,
           error: "Failed to fetch staff users",
           details: error.message,
-          rawError: rawError?.message,
+          // rawError: rawError?.message,
         }),
         {
           status: 500,
@@ -176,13 +204,13 @@ export const GET: APIRoute = async ({ request }) => {
 
     if (!staffUsers || staffUsers.length === 0) {
       console.log(
-        "No staff users found with regular query, trying alternative approach...",
+        "📡 [API] No staff users found with regular query, trying alternative approach...",
       );
 
       if (staffUsersFromAll && staffUsersFromAll.length > 0) {
         finalStaffUsers = staffUsersFromAll;
         message = `Found ${staffUsersFromAll.length} staff member(s) via alternative query`;
-        console.log("Using alternative query results for staff users");
+        console.log("📡 [API] Using alternative query results for staff users");
       }
     }
 
@@ -207,7 +235,7 @@ export const GET: APIRoute = async ({ request }) => {
       },
     );
   } catch (error: unknown) {
-    console.error("Unexpected error in get-staff-users:", error);
+    console.error("📡 [API] Unexpected error in get-staff-users:", error);
     return new Response(
       JSON.stringify({
         success: false,

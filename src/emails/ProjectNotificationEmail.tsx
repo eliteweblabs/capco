@@ -45,8 +45,8 @@ export const ProjectNotificationEmail = ({
           <Text style={paragraph}>Hi {recipientName},</Text>
 
           <Section style={projectCard}>
-            <Text style={projectTitle}>📋 {projectTitle}</Text>
-            <Text style={projectId}>Project ID: {projectId}</Text>
+            <Text style={projectTitleStyle}>📋 {projectTitle}</Text>
+            <Text style={projectIdStyle}>Project ID: {projectId}</Text>
           </Section>
 
           <Text style={paragraph}>{statusMessage}</Text>

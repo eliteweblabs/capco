@@ -1,0 +1,72 @@
+---
+const { value, group, type, class: className } = Astro.props;
+---
+
+<button
+  type="button"
+  class={`px-3 py-2 text-sm rounded-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors ${className || ""}`}
+  data-value={value}
+  data-group={group}
+  data-type={type}
+>
+  <slot />
+</button>
+
+
+<script>
+
+    setupButtons() {
+      const buttons = this.container.querySelectorAll(".building-type-btn");
+
+      buttons.forEach((button) => {
+        button.addEventListener("click", () => {
+          const value = button.getAttribute("data-value");
+
+          // Toggle selection state
+          if (button.classList.contains("selected")) {
+            // Deselect
+            button.classList.remove(
+              "selected",
+              "bg-blue-500",
+              "text-white",
+              "border-blue-500"
+            );
+            button.classList.add(
+              "bg-white",
+              "dark:bg-gray-700",
+              "text-gray-700",
+              "dark:text-gray-300",
+              "border-gray-300",
+              "dark:border-gray-600",
+              "hover:bg-gray-50",
+              "dark:hover:bg-gray-600"
+            );
+          } else {
+            // Select
+            button.classList.add(
+              "selected",
+              "bg-blue-500",
+              "text-white",
+              "border-blue-500"
+            );
+            button.classList.remove(
+              "bg-white",
+              "dark:bg-gray-700",
+              "text-gray-700",
+              "dark:text-gray-300",
+              "border-gray-300",
+              "dark:border-gray-600",
+              "hover:bg-gray-50",
+              "dark:hover:bg-gray-600"
+            );
+          }
+
+          console.log(
+            "Building type toggled:",
+            value,
+            button.classList.contains("selected")
+          );
+        });
+      });
+    }
+</script>
