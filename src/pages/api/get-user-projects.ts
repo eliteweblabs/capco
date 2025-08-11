@@ -2,8 +2,14 @@ import type { APIRoute } from "astro";
 import { supabase } from "../../lib/supabase";
 
 export const GET: APIRoute = async ({ request }) => {
+  console.log("📡 [API] GET /api/get-user-projects called");
+
   try {
+    console.log("📡 [API] Checking Supabase configuration...");
+
     if (!supabase) {
+      console.log("📡 [API] Supabase not configured, returning demo projects");
+
       // For demo purposes, return mock projects when database is not configured
       const mockProjects = [
         {
@@ -61,13 +67,25 @@ export const GET: APIRoute = async ({ request }) => {
       );
     }
 
+    console.log("📡 [API] Getting current user...");
+
     // Get current user
     const {
       data: { user },
       error: userError,
     } = await supabase.auth.getUser();
 
+    console.log("📡 [API] User auth result:", {
+      hasUser: !!user,
+      userId: user?.id || null,
+      userEmail: user?.email || null,
+      hasError: !!userError,
+      errorMessage: userError?.message || null,
+    });
+
     if (userError || !user) {
+      console.log("📡 [API] No authenticated user, returning demo projects");
+
       // For demo purposes, return mock projects when not authenticated
       const mockProjects = [
         {
@@ -106,6 +124,8 @@ export const GET: APIRoute = async ({ request }) => {
       );
     }
 
+    console.log("📡 [API] Getting user profile for role...");
+
     // Get user profile to check role
     const { data: profile } = await supabase
       .from("profiles")
@@ -114,6 +134,9 @@ export const GET: APIRoute = async ({ request }) => {
       .single();
 
     const userRole = profile?.role;
+    console.log("📡 [API] User role:", userRole);
+
+    console.log("📡 [API] Building projects query...");
 
     // First try to fetch projects with the foreign key relationship
     let query = supabase.from("projects").select(`
@@ -123,16 +146,29 @@ export const GET: APIRoute = async ({ request }) => {
 
     // Admin and Staff get all projects, clients get only their own
     if (userRole !== "Admin" && userRole !== "Staff") {
+      console.log("📡 [API] Client user, filtering by author_id:", user.id);
       query = query.eq("author_id", user.id);
+    } else {
+      console.log("📡 [API] Admin/Staff user, getting all projects");
     }
 
+    console.log("📡 [API] Executing projects query...");
     let { data: projects, error } = await query.order("updated_at", {
       ascending: false,
     });
 
+    console.log("📡 [API] Initial query result:", {
+      hasProjects: !!projects,
+      projectCount: projects?.length || 0,
+      hasError: !!error,
+      errorMessage: error?.message || null,
+    });
+
     // If the foreign key relationship fails, try without it
     if (error && error.message.includes("relationship")) {
-      console.log("Foreign key relationship not found, querying without joins");
+      console.log(
+        "📡 [API] Foreign key relationship failed, trying simple query",
+      );
 
       let simpleQuery = supabase.from("projects").select("*");
 
@@ -146,13 +182,23 @@ export const GET: APIRoute = async ({ request }) => {
       });
       projects = result.data;
       error = result.error;
+
+      console.log("📡 [API] Simple query result:", {
+        hasProjects: !!projects,
+        projectCount: projects?.length || 0,
+        hasError: !!error,
+        errorMessage: error?.message || null,
+      });
     }
 
     if (error) {
-      console.error("Projects fetch error:", error);
+      console.error("📡 [API] Projects fetch error:", error);
 
       // Return empty projects array instead of error when database is empty
       if (error.code === "42P01" || error.message.includes("does not exist")) {
+        console.log(
+          "📡 [API] Database table does not exist, returning empty projects",
+        );
         return new Response(
           JSON.stringify({
             projects: [],
@@ -175,6 +221,8 @@ export const GET: APIRoute = async ({ request }) => {
       );
     }
 
+    console.log("📡 [API] Processing project data...");
+
     // Process assigned user data
     if (projects && projects.length > 0) {
       projects.forEach((project) => {
@@ -188,6 +236,8 @@ export const GET: APIRoute = async ({ request }) => {
 
     // Fetch user data (emails and names) for all unique author_ids
     if (projects && projects.length > 0) {
+      console.log("📡 [API] Fetching user data for projects...");
+
       try {
         // Get unique user IDs
         const uniqueUserIds = [
@@ -197,10 +247,7 @@ export const GET: APIRoute = async ({ request }) => {
           ]),
         ];
 
-        console.log(
-          "Attempting to fetch user data for user IDs:",
-          uniqueUserIds,
-        );
+        console.log("📡 [API] Unique user IDs to fetch:", uniqueUserIds);
 
         // Fetch user profiles for names
         const { data: profiles, error: profilesError } = await supabase
@@ -208,27 +255,46 @@ export const GET: APIRoute = async ({ request }) => {
           .select("id, name")
           .in("id", uniqueUserIds);
 
+        console.log("📡 [API] Profiles query result:", {
+          hasProfiles: !!profiles,
+          profileCount: profiles?.length || 0,
+          hasError: !!profilesError,
+          errorMessage: profilesError?.message || null,
+        });
+
         if (profilesError) {
-          console.log("Profiles fetch error:", profilesError);
+          console.log("📡 [API] Profiles fetch error:", profilesError);
         }
 
         // Create maps for user data
         const nameMap = new Map();
         if (profiles) {
-          console.log("Found profiles:", profiles);
+          console.log("📡 [API] Processing profiles:", profiles);
           profiles.forEach((profile) => {
             nameMap.set(profile.id, profile.name);
           });
         } else {
-          console.log("No profiles found for user IDs:", uniqueUserIds);
+          console.log(
+            "📡 [API] No profiles found for user IDs:",
+            uniqueUserIds,
+          );
         }
+
+        console.log("📡 [API] Fetching user data via admin API...");
 
         // Use admin API to get user emails and avatar URLs
         const { data: authUsers, error: authError } =
           await supabase.auth.admin.listUsers();
 
+        console.log("📡 [API] Admin API result:", {
+          hasUsers: !!authUsers?.users,
+          userCount: authUsers?.users?.length || 0,
+          hasError: !!authError,
+          errorMessage: authError?.message || null,
+        });
+
         if (!authError && authUsers?.users) {
-          console.log("Successfully fetched users via admin API");
+          console.log("📡 [API] Successfully fetched users via admin API");
           // Create maps for user data
           const emailMap = new Map();
           const avatarMap = new Map();
@@ -242,13 +308,15 @@ export const GET: APIRoute = async ({ request }) => {
             }
           });
 
+          console.log("📡 [API] Adding user data to projects...");
+
           // Add user data to each project
           projects.forEach((project) => {
             project.author_email = emailMap.get(project.author_id) || null;
             project.author_name = nameMap.get(project.author_id) || null;
             project.author_avatar = avatarMap.get(project.author_id) || null;
 
-            console.log(`Project ${project.id} author data:`, {
+            console.log(`📡 [API] Project ${project.id} author data:`, {
               author_id: project.author_id,
               author_email: project.author_email,
               author_name_before_fallback: project.author_name,
@@ -257,11 +325,11 @@ export const GET: APIRoute = async ({ request }) => {
             // Fallback: if no name from profiles, use email or user ID
             if (!project.author_name && project.author_email) {
               // Convert email to a nice display name
-              const emailName = project.author_email.split("@")[0];
+              const emailName = "No Name";
               // Capitalize first letter and replace dots/underscores with spaces
-              project.author_name = emailName
-                .replace(/[._]/g, " ")
-                .replace(/\b\w/g, (l) => l.toUpperCase());
+              // project.author_name = emailName
+              //   .replace(/[._]/g, " ")
+              //   .replace(/\b\w/g, (l) => l.toUpperCase());
             } else if (!project.author_name && project.author_id) {
               project.author_name = `User ${project.author_id.slice(0, 8)}`; // Use first 8 chars of ID
             }
@@ -280,38 +348,42 @@ export const GET: APIRoute = async ({ request }) => {
             }
           });
         } else {
-          console.log("Admin API failed, using fallback. Error:", authError);
+          console.log(
+            "📡 [API] Admin API failed, using fallback. Error:",
+            authError,
+          );
           // Fallback: set emails to null, but keep names from profiles
-          projects.forEach((project) => {
-            project.author_email = null;
-            project.author_name = nameMap.get(project.author_id) || null;
-            project.author_avatar = null;
-            project.assigned_to_email = null;
-            project.assigned_to_avatar = null;
+          // projects.forEach((project) => {
+          //   project.author_email = null;
+          //   project.author_name = nameMap.get(project.author_id) || null;
+          //   project.author_avatar = null;
+          //   project.assigned_to_email = null;
+          //   project.assigned_to_avatar = null;
 
-            // Fallback: if no name from profiles, use user ID
-            if (!project.author_name && project.author_id) {
-              project.author_name = `User ${project.author_id.slice(0, 8)}`;
-            }
-          });
+          //   // Fallback: if no name from profiles, use user ID
+          //   if (!project.author_name && project.author_id) {
+          //     project.author_name = `User ${project.author_id.slice(0, 8)}`;
+          //   }
+          // });
         }
       } catch (error) {
-        console.log("User data fetch error:", error);
-        // Fallback: set emails to null, but keep names from profiles
+        console.log("📡 [API] User data fetch error:", error);
+        // Fallback: set emails to null, use user ID for names
         projects.forEach((project) => {
           project.author_email = null;
-          project.author_name = nameMap.get(project.author_id) || null;
+          project.author_name = `User ${project.author_id.slice(0, 8)}`;
           project.author_avatar = null;
           project.assigned_to_email = null;
           project.assigned_to_avatar = null;
-
-          // Fallback: if no name from profiles, use user ID
-          if (!project.author_name && project.author_id) {
-            project.author_name = `User ${project.author_id.slice(0, 8)}`;
-          }
         });
       }
     }
+
+    console.log("📡 [API] Returning projects response:", {
+      projectCount: projects?.length || 0,
+      authenticated: true,
+      demo: false,
+    });
 
     return new Response(
       JSON.stringify({
@@ -327,7 +399,7 @@ export const GET: APIRoute = async ({ request }) => {
       },
     );
   } catch (error) {
-    console.error("Get user projects API error:", error);
+    console.error("📡 [API] Get user projects API error:", error);
     return new Response(
       JSON.stringify({
         error: error instanceof Error ? error.message : "Unknown error",

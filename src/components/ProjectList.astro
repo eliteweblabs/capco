@@ -1,0 +1,56 @@
+---
+import { supabase } from "../lib/supabase";
+import { checkAuth } from "../lib/auth";
+const { isAuth, session, user, role } = await checkAuth(Astro.cookies);
+
+import ProjectListItem from "./ProjectListItem.astro";
+import NoDataCard from "./NoDataCard.astro";
+import { getI18N } from "@/i18n";
+import SectionContainer from "./SectionContainer.astro";
+// get projects from supabase
+
+const { currentLocale } = Astro;
+const i18n = getI18N({ currentLocale });
+
+// Fetch project_statuses from API
+let projects: any[] = [];
+try {
+  const response = await (fetch as any)(`${Astro.url.origin}/api/get-project`, {
+    method: "GET",
+    headers: {
+      "Content-Type": "application/json",
+      user_id: user.id,
+      role: role,
+    },
+  });
+
+  if (response.ok) {
+    const result = await response.json();
+    if (result.success) {
+      console.log("🏗️ [PROJECT NAV] Projects:", result.projects);
+      projects = Object.values(result.projects || {});
+    } else {
+      console.error("API returned error:", result.error);
+    }
+  } else {
+    console.error("Failed to fetch projects:", response.status);
+  }
+} catch (error) {
+  console.error("Error fetching projects:", error);
+}
+---
+
+<!-- Project List-->
+<SectionContainer id="project-list"
+  >{
+    projects.length > 0 ? (
+      projects.map((project) => <ProjectListItem project={project} />)
+    ) : (
+      <NoDataCard
+        message={i18n.DELIVERY.empty.message}
+        subtitle={i18n.DELIVERY.empty.message2}
+        imageSrc=""
+      />
+    )
+  }
+</SectionContainer>

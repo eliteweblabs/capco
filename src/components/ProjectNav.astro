@@ -1,0 +1,172 @@
+---
+import ProjectNavButton from "./ProjectNavButton.astro";
+import { getI18N } from "@/i18n";
+import { checkAuth } from "../lib/auth";
+
+// Para cambiar idioma de textos
+const { currentLocale } = Astro;
+const i18n = getI18N({ currentLocale });
+
+// Get current user for authentication and role
+const { isAuth, user, role } = await checkAuth(Astro.cookies);
+
+// Fetch project_statuses from API
+let project_statuses: any[] = [];
+
+try {
+  const response = await fetch(`${Astro.url.origin}/api/get-project-statuses`, {
+    method: "GET",
+    headers: {
+      "Content-Type": "application/json",
+    },
+  });
+
+  if (response.ok) {
+    const result = await response.json();
+    if (result.success) {
+      // console.log("🏗️ [PROJECT NAV] Project statuses:", result.statuses);
+      project_statuses = Object.values(result.statuses || {});
+    } else {
+      console.error("API returned error:", result.error);
+    }
+  } else {
+    console.error("Failed to fetch project_statuses:", response.status);
+  }
+} catch (error) {
+  console.error("Error fetching project_statuses:", error);
+}
+---
+
+<nav
+  id="sub-nav"
+  class="pl-6 relative overflow-x-auto scrollbar-hide flex gap-1 whitespace-nowrap text-hub-inactive dark:border-hub-border-dark border-2 border-purple-500"
+>
+  <ProjectNavButton id="all-statuses" label="All Statuses" icon="bx bx-list-ul">
+    All Statuses
+  </ProjectNavButton>
+
+  {
+    project_statuses.length > 0
+      ? project_statuses.map((status: any) => (
+          <ProjectNavButton
+            label={status.status_name}
+            data-project-status-filter={status.status_code}
+          >
+            {status.status_name + " " + status.status_code}
+          </ProjectNavButton>
+        ))
+      : ""
+  }
+</nav>
+
+<script>
+  // Project status filtering functionality
+  document.addEventListener("DOMContentLoaded", function () {
+    const subNav = document.getElementById("sub-nav");
+    const projectList = document.getElementById("project-list");
+
+    if (!subNav || !projectList) return;
+
+    // Get all filter buttons
+    const filterButtons = subNav.querySelectorAll(
+      "[data-project-status-filter]"
+    );
+    const allStatusesButton = subNav.querySelector("#all-statuses");
+
+    // Get all project items
+    const projectItems = projectList.querySelectorAll("[data-project-status]");
+
+    // Add click event listeners to filter buttons
+    filterButtons.forEach((button) => {
+      button.addEventListener("click", function (this: HTMLButtonElement) {
+        const filterValue = this.getAttribute("data-project-status-filter");
+        filterProjects(filterValue);
+        updateActiveButton(this);
+      });
+    });
+
+    // Add click event listener to "All Statuses" button
+    if (allStatusesButton) {
+      allStatusesButton.addEventListener(
+        "click",
+        function (this: HTMLButtonElement) {
+          filterProjects("all");
+          updateActiveButton(this);
+        }
+      );
+    }
+
+    // Filter projects based on status
+    function filterProjects(statusFilter: string | null) {
+      projectItems.forEach((item) => {
+        const projectStatus = item.getAttribute("data-project-status");
+
+        if (statusFilter === "all" || statusFilter === projectStatus) {
+          // Show project
+          (item as HTMLElement).style.display = "block";
+          (item as HTMLElement).style.opacity = "1";
+        } else {
+          // Hide project
+          (item as HTMLElement).style.display = "none";
+          (item as HTMLElement).style.opacity = "0";
+        }
+      });
+
+      // Update URL hash for bookmarking
+      if (statusFilter && statusFilter !== "all") {
+        window.location.hash = `status=${statusFilter}`;
+      } else {
+        window.location.hash = "";
+      }
+    }
+
+    // Update active button styling
+    function updateActiveButton(activeButton: Element) {
+      if (!subNav) return;
+
+      // Remove active class from all buttons
+      const allButtons = subNav.querySelectorAll("button");
+      allButtons.forEach((btn) => {
+        btn.classList.remove("bg-blue-500", "text-white", "border-blue-500");
+        btn.classList.add("text-hub-inactive");
+      });
+
+      // Add active class to clicked button
+      activeButton.classList.remove("text-hub-inactive");
+      activeButton.classList.add(
+        "bg-blue-500",
+        "text-white",
+        "border-blue-500"
+      );
+    }
+
+    // Handle URL hash on page load
+    function handleInitialFilter() {
+      if (!subNav) return;
+
+      const hash = window.location.hash;
+      if (hash && hash.includes("status=")) {
+        const statusMatch = hash.match(/status=([^&]+)/);
+        if (statusMatch) {
+          const statusFilter = statusMatch[1];
+          const targetButton = subNav.querySelector(
+            `[data-project-status-filter="${statusFilter}"]`
+          );
+          if (targetButton) {
+            filterProjects(statusFilter);
+            updateActiveButton(targetButton);
+            return;
+          }
+        }
+      }
+
+      // Default to "All Statuses"
+      if (allStatusesButton) {
+        updateActiveButton(allStatusesButton);
+      }
+    }
+
+    // Initialize filter on page load
+    handleInitialFilter();
+  });
+</script>

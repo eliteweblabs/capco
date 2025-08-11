@@ -11,7 +11,8 @@ export interface FormFieldConfig {
     | "checkbox"
     | "slider"
     | "select"
-    | "button-group";
+    | "button-group"
+    | "component"; // New type for custom components
   label: string;
   placeholder?: string;
   required?: boolean;
@@ -21,6 +22,8 @@ export interface FormFieldConfig {
   options?: string[] | { value: string; label: string }[];
   groupType?: "radio" | "multi-select"; // For button groups
   dataField?: string; // For OCR/scraping
+  component?: string; // Component name to render (e.g., "UnitSlider")
+  componentProps?: Record<string, any>; // Props to pass to the component
 }
 
 export interface ButtonGroupConfig {
@@ -85,30 +88,18 @@ export const PROJECT_FORM_FIELDS: FormFieldConfig[] = [
     type: "checkbox",
     label: "New Construction",
   },
+  // Units slider is now handled by UnitSlider.astro component
   {
     id: "units-slider",
     name: "units",
-    type: "slider",
+    type: "component",
     label: "Units",
-    min: 0,
-    max: 14,
-    options: [
-      "1",
-      "2",
-      "3",
-      "4",
-      "5",
-      "6",
-      "7",
-      "8",
-      "9",
-      "10",
-      "15",
-      "20",
-      "30",
-      "40",
-      "50",
-    ],
+    component: "UnitSlider",
+    componentProps: {
+      name: "units",
+      label: "Units",
+      required: false,
+    },
   },
 ];
 
@@ -263,49 +254,8 @@ export function generateFormFieldHTML(
       `;
 
     case "slider":
-      // Handle numeric values for sliders (units)
-      let unitsValue = 1;
-      if (typeof value === "number") {
-        unitsValue = value;
-      } else if (typeof value === "string") {
-        const parsed = parseInt(value);
-        if (!isNaN(parsed)) {
-          unitsValue = parsed;
-        }
-      }
-
-      const sliderValue = getSliderValueFromUnits(
-        unitsValue,
-        field.options as string[],
-      );
-      return `
-        <div>
-          <label for="${fieldId}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-            ${field.label}: <span id="units-value-${projectId}" class="font-semibold text-blue-600 dark:text-blue-400">${unitsValue}</span>
-          </label>
-          <div class="relative">
-            <input
-              type="range"
-              id="${fieldId}"
-              name="${field.name}"
-              min="${field.min}"
-              max="${field.max}"
-              value="${sliderValue}"
-              class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700 units-range-slider relative z-10"
-              data-values="${field.options?.join(",")}"
-              data-project-id="${projectId}"
-              aria-label="Select number of units"
-            >
-            <div class="flex justify-between text-xs text-gray-500 dark:text-gray-400 mt-1">
-              <span>1</span>
-              <span>5</span>
-              <span>10</span>
-              <span>30</span>
-              <span>50</span>
-            </div>
-          </div>
-        </div>
-      `;
+      // Slider fields are now handled by dedicated components (e.g., UnitSlider.astro)
+      return "";
 
     default:
       return "";
@@ -373,11 +323,11 @@ export function generateButtonGroupHTML(
   `;
 }
 
-// Helper function to convert units to slider value
-function getSliderValueFromUnits(units: number, options: string[]): number {
-  const index = options.indexOf(units.toString());
-  return index >= 0 ? index : 0;
-}
+// Helper function to convert units to slider value (moved to UnitSlider component)
+// function getSliderValueFromUnits(units: number, options: string[]): number {
+//   const index = options.indexOf(units.toString());
+//   return index >= 0 ? index : 0;
+// }
 
 // Function to generate complete form HTML
 export function generateCompleteFormHTML(
@@ -389,7 +339,6 @@ export function generateCompleteFormHTML(
   const newConstruction = PROJECT_FORM_FIELDS.find(
     (f) => f.name === "new_construction",
   );
-  const units = PROJECT_FORM_FIELDS.find((f) => f.name === "units");
 
   return `
     <!-- Address Field (Full Width) -->
@@ -419,8 +368,10 @@ export function generateCompleteFormHTML(
         </div>
       </div>
 
-      <!-- Units Slider -->
-      ${units ? generateFormFieldHTML(units, index, projectData) : ""}
+      <!-- Units Slider - Use UnitSlider component instead -->
+      <div id="units-slider-container-${projectData.id || index}">
+        <!-- UnitSlider component will be rendered here -->
+      </div>
     </div>
 
     <!-- Button Groups -->
@@ -441,7 +392,6 @@ export function generateEditFormHTML(
   const newConstruction = PROJECT_FORM_FIELDS.find(
     (f) => f.name === "new_construction",
   );
-  const units = PROJECT_FORM_FIELDS.find((f) => f.name === "units");
 
   return `
     <!-- Address Field (Full Width) -->
@@ -471,8 +421,10 @@ export function generateEditFormHTML(
         </div>
       </div>
 
-      <!-- Units Slider -->
-      ${units ? generateFormFieldHTML(units, index, projectData) : ""}
+      <!-- Units Slider - Use UnitSlider component instead -->
+      <div id="units-slider-container-${projectData.id || index}">
+        <!-- UnitSlider component will be rendered here -->
+      </div>
     </div>
 
     <!-- Button Groups -->

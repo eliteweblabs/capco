@@ -1,0 +1,87 @@
+---
+import SectionContainer from "./SectionContainer.astro";
+const { class: className } = Astro.props;
+---
+
+<div class="relative">
+  <input
+    type="text"
+    id="project-search"
+    placeholder="Search active projects..."
+    class="w-full pr-10 px-4 py-2 text-sm border border-gray-300 rounded-lg bg-white dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+  />
+  <button
+    id="clear-project-search"
+    class="absolute right-2 top-1/2 transform -translate-y-1/2 p-1 text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300 transition-colors"
+    title="Clear search"
+  >
+    <i class="bx bx-x text-lg"></i>
+  </button>
+</div>
+<script is:inline>
+  // Project search functionality
+  function filterProjects(searchTerm) {
+    const projectList = document.getElementById("project-list");
+    const clearBtn = document.getElementById("clear-project-search");
+
+    if (!projectList) {
+      console.log("Project list not found");
+      return;
+    }
+
+    const projects = projectList.querySelectorAll("[data-project-id]");
+    let visibleCount = 0;
+
+    projects.forEach((project) => {
+      const textContent = project.textContent.toLowerCase();
+      const matches = textContent.includes(searchTerm.toLowerCase());
+
+      if (matches) {
+        project.classList.remove("hidden");
+        visibleCount++;
+      } else {
+        project.classList.add("hidden");
+      }
+    });
+
+    // Show/hide clear button
+    if (searchTerm.length > 0) {
+      clearBtn.classList.remove("hidden");
+    } else {
+      clearBtn.classList.add("hidden");
+    }
+
+    console.log(
+      `Filtered projects: ${visibleCount} visible out of ${projects.length} total`
+    );
+  }
+
+  // Clear search function
+  function clearProjectSearch() {
+    const searchInput = document.getElementById("project-search");
+    if (searchInput) {
+      searchInput.value = "";
+      filterProjects("");
+    }
+  }
+
+  // Event listeners
+  document.addEventListener("DOMContentLoaded", function () {
+    const searchInput = document.getElementById("project-search");
+    const clearBtn = document.getElementById("clear-project-search");
+
+    if (searchInput) {
+      searchInput.addEventListener("input", function () {
+        filterProjects(this.value);
+      });
+    }
+
+    if (clearBtn) {
+      clearBtn.addEventListener("click", clearProjectSearch);
+    }
+  });
+
+  // Make functions globally available for other components
+  window.filterProjects = filterProjects;
+  window.clearProjectSearch = clearProjectSearch;
+</script>

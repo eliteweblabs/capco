@@ -20,6 +20,7 @@ This app is designed to facilitate the process of submitting (by clients) and re
 - Flowbite
 - SupaBase
 - NO REACT
+- All Pages to Format with App Component
 
 ### Architecture Principles
 

@@ -1,24 +1,44 @@
 ---
+import { supabase } from "../lib/supabase";
+import { checkAuth } from "../lib/auth";
+const { isAuth, session, user, role } = await checkAuth(Astro.cookies);
+
+
+
 import SectionContainer from "./SectionContainer.astro";
-import Hero from "./index/Hero.astro";
 import SocialMedia from "./index/SocialMedia.astro";
-import ProjectsNav from "./ProjectsNav.astro";
 import Base from "../layout/Base.astro";
-import AuthForm from "./AuthForm.astro";
 // Para cambiar idioma de textos
 import { getI18N } from "@/i18n";
 const { currentLocale } = Astro;
 const i18n = getI18N({ currentLocale });
+import AuthForm from "../components/AuthForm.astro";
+import Hero from "./index/Hero.astro";
 
-// Check authentication
-import { checkAuth } from "../lib/auth";
-const { isAuth, session, user, role } = await checkAuth(Astro.cookies);
+console.log("🏗️ [APP] App component loading...");
+
+
 ---
 
 <Base title={i18n.SEO_TITLE} description={i18n.SEO_DESCRIPTION}>
-  <slot />
+  {isAuth ? (
 
+  <SectionContainer id="hero" class="my-6 mx-6">
+    <Hero title={'' + user.user_metadata.name} description={'' + role}/>
+  </SectionContainer>
+  <slot />
+    
   <SectionContainer class="fixed bottom-0 right-6 flex flex-col gap-y-6">
     <SocialMedia />
   </SectionContainer>
+) : (
+  
+  <!-- Non-authenticated content -->
+  <SectionContainer id="auth" class="flex flex-col gap-y-6 mx-6">
+    <AuthForm />
+  </SectionContainer>
+
+)}
+  
+
 </Base>

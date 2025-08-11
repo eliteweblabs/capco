@@ -1,0 +1,179 @@
+---
+export interface Props {
+  projectId?: string;
+  value?: number;
+  name?: string;
+  label?: string;
+  required?: boolean;
+}
+
+const {
+  projectId = "default",
+  value = 1,
+  name = "units",
+  label = "Units",
+  required = false,
+} = Astro.props;
+
+// Convert units value to slider position
+const unitsOptions = [
+  "1",
+  "2",
+  "3",
+  "4",
+  "5",
+  "6",
+  "7",
+  "8",
+  "9",
+  "10",
+  "15",
+  "20",
+  "30",
+  "40",
+  "50",
+];
+const sliderValue =
+  unitsOptions.indexOf(value.toString()) >= 0
+    ? unitsOptions.indexOf(value.toString())
+    : 0;
+
+const fieldId = `units-slider-${projectId}`;
+---
+
+<div>
+  <label
+    for={fieldId}
+    class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+  >
+    {label}: <span
+      id={`units-value-${projectId}`}
+      class="font-semibold text-blue-600 dark:text-blue-400">{value}</span
+    >
+  </label>
+  <div class="relative">
+    <input
+      type="range"
+      id={fieldId}
+      name={name}
+      min="0"
+      max="14"
+      value={sliderValue}
+      class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700 units-range-slider relative z-10"
+      data-values={unitsOptions.join(",")}
+      aria-label="Select number of units"
+      {required}
+    />
+    <div
+      class="flex justify-between text-xs text-gray-500 dark:text-gray-400 mt-1"
+    >
+      <span>1</span>
+      <span>5</span>
+      <span>10</span>
+      <span>30</span>
+      <span>50</span>
+    </div>
+  </div>
+</div>
+
+<style>
+  /* Units slider styling - Override Flowbite */
+  .units-range-slider {
+    -webkit-appearance: none;
+    appearance: none;
+    background: transparent;
+    cursor: pointer;
+  }
+
+  .units-range-slider::-webkit-slider-track {
+    background: #e5e7eb;
+    height: 8px;
+    border-radius: 8px;
+  }
+
+  .dark .units-range-slider::-webkit-slider-track {
+    background: #374151;
+  }
+
+  .units-range-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    background: #3b82f6;
+    height: 20px;
+    width: 20px;
+    border-radius: 50%;
+    border: 2px solid #ffffff;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  }
+
+  .units-range-slider::-moz-range-track {
+    background: #e5e7eb;
+    height: 8px;
+    border-radius: 8px;
+    border: none;
+  }
+
+  .dark .units-range-slider::-moz-range-track {
+    background: #374151;
+  }
+
+  .units-range-slider::-moz-range-thumb {
+    background: #3b82f6;
+    height: 20px;
+    width: 20px;
+    border-radius: 50%;
+    border: 2px solid #ffffff;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    cursor: pointer;
+  }
+
+  .dark .units-range-slider::-webkit-slider-thumb {
+    border-color: #1f2937;
+  }
+
+  .dark .units-range-slider::-moz-range-thumb {
+    border-color: #1f2937;
+  }
+
+  .units-range-slider:focus {
+    outline: none;
+  }
+
+  .units-range-slider:focus::-webkit-slider-thumb {
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3);
+  }
+
+  input[type="range"].units-range-slider {
+    background: transparent;
+    border: none;
+    outline: none;
+    padding: 0;
+    margin: 0;
+  }
+
+  input[type="range"].units-range-slider::-webkit-slider-runnable-track {
+    background: #e5e7eb;
+    height: 8px;
+    border-radius: 8px;
+    border: none;
+  }
+
+  .dark input[type="range"].units-range-slider::-webkit-slider-runnable-track {
+    background: #374151;
+  }
+</style>
+
+<script define:vars={{ projectId, unitsOptions }}>
+  // Update the units value display when slider changes
+  const slider = document.getElementById(`units-slider-${projectId}`);
+  const valueDisplay = document.getElementById(`units-value-${projectId}`);
+
+  if (slider && valueDisplay) {
+    slider.addEventListener("input", (e) => {
+      const target = e.target;
+      const index = parseInt(target.value);
+      const unitsValue = unitsOptions[index] || "1";
+      valueDisplay.textContent = unitsValue;
+    });
+  }
+</script>
