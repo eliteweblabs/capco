@@ -2,25 +2,179 @@
 import {
   BUTTON_GROUPS,
   PROJECT_FORM_FIELDS,
+  getFilteredFormFields,
+  getFilteredButtonGroups,
+  getFilteredFormActions,
 } from "../../lib/project-form-config";
 import ToggleButton from "./ToggleButton.astro";
 import UnitSlider from "../UnitSlider.astro";
 
 interface Props {
   project?: any;
-  projectId?: string;
-  isEdit?: boolean;
+  projectId?: string | null;
+  userRole?: string | null; // Add userRole prop to control field visibility
+  isNewProject?: boolean; // Add flag to indicate if this is a new project
 }
 
-const { project = {}, projectId = "", isEdit = false } = Astro.props;
+const {
+  project = {},
+  projectId = "",
+  userRole,
+  isNewProject = false,
+} = Astro.props;
 
-// Filter fields based on whether this is an edit form
-const formFields = isEdit
-  ? PROJECT_FORM_FIELDS.filter((field) => field.name !== "owner")
-  : PROJECT_FORM_FIELDS;
+// Generate a temporary ID for new projects
+const formId = isNewProject ? `new-project-${Date.now()}` : projectId || "";
+
+// Filter fields based on user role
+const formFields = getFilteredFormFields(userRole, isNewProject);
+
+// Get filtered button groups based on user role
+const buttonGroups = getFilteredButtonGroups(userRole, isNewProject);
+
+// Get filtered form actions based on user role
+const formActions = getFilteredFormActions(userRole, isNewProject);
+
+// Debug logging
+console.log("ProjectForm debug:", {
+  userRole,
+  isNewProject,
+  formFieldsCount: formFields.length,
+  buttonGroupsCount: buttonGroups.length,
+  formActionsCount: formActions.length,
+  formFields: formFields.map((f) => ({
+    id: f.id,
+    name: f.name,
+    allow: f.allow,
+  })),
+  buttonGroups: buttonGroups.map((g) => ({
+    id: g.id,
+    name: g.name,
+    allow: g.allow,
+  })),
+  formActions: formActions.map((a) => ({
+    id: a.id,
+    label: a.label,
+    allow: a.allow,
+  })),
+});
 ---
 
-<form class="space-y-4" data-project-id={projectId}>
+<form
+  class="space-y-4"
+  data-project-id={formId}
+  data-project-data={JSON.stringify(project)}
+  data-is-new-project={isNewProject}
+>
+  <!-- New Client Toggle (Top of Form) -->
+  {
+    formFields
+      .filter((field) => field.name === "new_client")
+      .map((field) => {
+        const isChecked =
+          project[field.name] === true ||
+          project[field.name] === "true" ||
+          project[field.name] === 1 ||
+          project[field.name] === "1";
+        return (
+          <div class="relative">
+            <label class="inline-flex items-center cursor-pointer">
+              <input
+                type="checkbox"
+                id={`${field.id}-${formId}`}
+                name={field.name}
+                checked={isChecked}
+                class="sr-only peer"
+                data-project-id={formId}
+                data-project-data={JSON.stringify(project)}
+              />
+              <div class="relative w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600 dark:peer-checked:bg-blue-600" />
+              <span class="ms-3 text-sm font-medium text-gray-900 dark:text-gray-300">
+                {field.label}
+              </span>
+            </label>
+          </div>
+        );
+      })
+  }
+
+  <!-- Client Fields (Owner/Email for new client, or Existing Client dropdown) -->
+  <div class="space-y-4">
+    <!-- Owner Fields (for new client) -->
+    {
+      formFields
+        .filter(
+          (field) => field.name === "owner" || field.name === "owner_email"
+        )
+        .map((field) => (
+          <div class="relative" style="display: none;">
+            <label
+              for={`${field.id}-${formId}`}
+              class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+            >
+              {field.label}
+              {field.required ? " *" : ""}
+            </label>
+            <input
+              type={field.name === "owner_email" ? "email" : "text"}
+              id={`${field.id}-${formId}`}
+              name={field.name}
+              value={project[field.name] || ""}
+              class="w-full py-2 px-3 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:focus:ring-blue-400 dark:focus:border-blue-400"
+              placeholder={field.placeholder || ""}
+              required={field.required}
+              data-field={field.dataField}
+              data-project-id={formId}
+              data-project-data={JSON.stringify(project)}
+            />
+          </div>
+        ))
+    }
+
+    <!-- Existing Client Dropdown -->
+    {
+      formFields
+        .filter(
+          (field) =>
+            field.type === "select" && field.name === "existing_client_id"
+        )
+        .map((field) => (
+          <div class="relative">
+            <label
+              for={`${field.id}-${formId}`}
+              class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+            >
+              {field.label}
+              {field.required ? " *" : ""}
+            </label>
+            <select
+              id={`${field.id}-${formId}`}
+              name={field.name}
+              class="w-full py-2 px-3 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:focus:ring-blue-400 dark:focus:border-blue-400"
+              required={field.required}
+              data-project-id={formId}
+              data-project-data={JSON.stringify(project)}
+            >
+              <option value="">
+                {field.placeholder || "Select an option..."}
+              </option>
+              {field.options?.map((option: any) => (
+                <option
+                  value={typeof option === "string" ? option : option.value}
+                  selected={
+                    project[field.name] ===
+                    (typeof option === "string" ? option : option.value)
+                  }
+                >
+                  {typeof option === "string" ? option : option.label}
+                </option>
+              ))}
+            </select>
+          </div>
+        ))
+    }
+  </div>
+
   <!-- Address Field (Full Width) -->
   {
     formFields
@@ -28,7 +182,7 @@ const formFields = isEdit
       .map((field) => (
         <div class="relative">
           <label
-            for={`${field.id}-${projectId}`}
+            for={`${field.id}-${formId}`}
             class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
           >
             {field.label}
@@ -36,7 +190,7 @@ const formFields = isEdit
           </label>
           <input
             type={field.type === "number" ? "number" : "text"}
-            id={`${field.id}-${projectId}`}
+            id={`${field.id}-${formId}`}
             name={field.name}
             value={project[field.name] || ""}
             class="w-full py-2 px-3 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:focus:ring-blue-400 dark:focus:border-blue-400"
@@ -46,6 +200,8 @@ const formFields = isEdit
             max={field.max}
             step={field.step}
             data-field={field.dataField}
+            data-project-id={formId}
+            data-project-data={JSON.stringify(project)}
           />
         </div>
       ))
@@ -63,7 +219,7 @@ const formFields = isEdit
         .map((field) => (
           <div class="relative">
             <label
-              for={`${field.id}-${projectId}`}
+              for={`${field.id}-${formId}`}
               class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
             >
               {field.label}
@@ -71,7 +227,7 @@ const formFields = isEdit
             </label>
             <input
               type={field.type === "number" ? "number" : "text"}
-              id={`${field.id}-${projectId}`}
+              id={`${field.id}-${formId}`}
               name={field.name}
               value={project[field.name] || ""}
               class="w-full py-2 px-3 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:focus:ring-blue-400 dark:focus:border-blue-400"
@@ -81,6 +237,8 @@ const formFields = isEdit
               max={field.max}
               step={field.step}
               data-field={field.dataField}
+              data-project-id={formId}
+              data-project-data={JSON.stringify(project)}
             />
           </div>
         ))
@@ -94,17 +252,19 @@ const formFields = isEdit
       .map((field) => (
         <div class="relative">
           <label
-            for={`${field.id}-${projectId}`}
+            for={`${field.id}-${formId}`}
             class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
           >
             {field.label}
           </label>
           <textarea
-            id={`${field.id}-${projectId}`}
+            id={`${field.id}-${formId}`}
             name={field.name}
             rows="3"
             class="w-full py-2 px-3 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:focus:ring-blue-400 dark:focus:border-blue-400"
             placeholder={field.placeholder || ""}
+            data-project-id={formId}
+            data-project-data={JSON.stringify(project)}
           >
             {project[field.name] || ""}
           </textarea>
@@ -123,7 +283,10 @@ const formFields = isEdit
       <div class="flex gap-4">
         {
           formFields
-            .filter((field) => field.type === "checkbox")
+            .filter(
+              (field) =>
+                field.type === "checkbox" && field.name !== "new_client"
+            )
             .map((field) => {
               const isChecked =
                 project[field.name] === true ||
@@ -134,10 +297,12 @@ const formFields = isEdit
                 <label class="inline-flex items-center cursor-pointer">
                   <input
                     type="checkbox"
-                    id={`${field.id}-${projectId}`}
+                    id={`${field.id}-${formId}`}
                     name={field.name}
                     checked={isChecked}
                     class="sr-only peer"
+                    data-project-id={formId}
+                    data-project-data={JSON.stringify(project)}
                   />
                   <div class="relative w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600 dark:peer-checked:bg-blue-600" />
                   <span class="ms-3 text-sm font-medium text-gray-900 dark:text-gray-300">
@@ -151,14 +316,12 @@ const formFields = isEdit
     </div>
 
     <!-- Units Slider -->
-    <div id={`units-slider-container-${projectId}`}>
-      <UnitSlider projectId={projectId} value={project.units || 1} />
-    </div>
+    <UnitSlider projectId={formId} value={project.units || 1} />
   </div>
 
   <!-- Button Groups -->
   {
-    BUTTON_GROUPS.map((group) => {
+    buttonGroups.map((group) => {
       // Parse selected values from project data
       let selectedValues: string[] = [];
       if (project[group.name]) {
@@ -182,7 +345,7 @@ const formFields = isEdit
       }
 
       return (
-        <div class="space-y-3">
+        <div class="space-y-3" data-project-data={JSON.stringify(project)}>
           <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
             {group.label}
           </label>
@@ -208,88 +371,482 @@ const formFields = isEdit
 
   <!-- Form Actions -->
   <div class="flex gap-2 pt-4 border-t border-gray-200 dark:border-gray-600">
-    <button
-      type="submit"
-      class="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors"
-    >
-      Save Project
-    </button>
-
-    <button
-      type="button"
-      class="px-4 py-2 bg-red-600 text-white text-sm font-medium rounded-lg hover:bg-red-700 transition-colors"
-      id="delete-project-btn"
-      data-project-id={projectId}
-    >
-      <i class="bx bx-trash mr-1"></i>
-      Delete Project
-    </button>
+    {
+      formActions.map((action) => (
+        <button
+          type={action.type}
+          class={action.cssClass}
+          id={action.id}
+          data-project-id={formId}
+          data-action={action.action}
+        >
+          {action.icon && <i class={`bx ${action.icon} mr-1`} />}
+          {action.label}
+        </button>
+      ))
+    }
   </div>
 </form>
 
 <script>
-  // Add event listener for delete button
+  // Extend Window interface for toast manager
+  declare global {
+    interface Window {
+      toastAlertManager?: any;
+      currentProjectData?: any;
+    }
+  }
+
+  // Make project data available globally
   document.addEventListener("DOMContentLoaded", function () {
-    const deleteBtn = document.getElementById("delete-project-btn");
-    if (deleteBtn) {
-      deleteBtn.addEventListener("click", function () {
-        const projectId = this.getAttribute("data-project-id");
-        if (projectId) {
-          deleteProject(projectId);
+    const form = document.querySelector("form[data-project-id]");
+    if (form) {
+      const projectId = form.getAttribute("data-project-id");
+      const projectDataAttr = form.getAttribute("data-project-data");
+      if (projectDataAttr) {
+        try {
+          const projectData = JSON.parse(projectDataAttr);
+          // Make project data available globally
+          (window as any).currentProjectData = projectData;
+          console.log("Project data loaded:", projectData);
+        } catch (error) {
+          console.error("Error parsing project data:", error);
         }
-      });
+      }
     }
   });
 
-  // Delete project function
-  function deleteProject(projectId: string) {
-    debugger;
-    if (
-      confirm(
-        "Are you sure you want to delete this project? This action cannot be undone."
-      )
-    ) {
-      // Show loading state
-      const deleteBtn = document.getElementById(
-        "delete-project-btn"
-      ) as HTMLButtonElement;
-      if (deleteBtn) {
-        deleteBtn.disabled = true;
-        deleteBtn.innerHTML =
-          '<i class="bx bx-loader-alt bx-spin mr-1"></i>Deleting...';
+  // Add event listeners for action buttons
+  document.addEventListener("DOMContentLoaded", function () {
+    const form = document.querySelector("form[data-project-id]");
+    if (form) {
+      const projectId = form.getAttribute("data-project-id");
+      const isNewProject = form.getAttribute("data-is-new-project") === "true";
+
+      // Add form submission handler
+      form.addEventListener("submit", handleFormSubmit);
+
+      // Handle delete button (only for existing projects)
+      if (!isNewProject) {
+        const deleteBtn = document.getElementById("delete-project-btn");
+        if (deleteBtn && projectId) {
+          deleteBtn.addEventListener("click", function () {
+            deleteProject(projectId);
+          });
+        }
       }
 
-      // Make API call to delete project
-      fetch(`/api/delete-project`, {
-        method: "DELETE",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ projectId }),
-      })
-        .then((response) => {
-          if (!response.ok) {
-            throw new Error("Failed to delete project");
-          }
-          return response.json();
-        })
-        .then((data) => {
-          // Show success message
-          alert("Project deleted successfully!");
-          // Redirect to projects list
-          window.location.href = "/";
-        })
-        .catch((error) => {
-          console.error("Error deleting project:", error);
-          alert("Failed to delete project. Please try again.");
+      // Handle other action buttons
+      const actionButtons = document.querySelectorAll("[data-action]");
+      actionButtons.forEach((button) => {
+        const action = button.getAttribute("data-action");
+        if (action && projectId) {
+          button.addEventListener("click", function () {
+            handleAction(action, projectId, isNewProject);
+          });
+        }
+      });
 
-          // Reset button state
-          if (deleteBtn) {
-            deleteBtn.disabled = false;
-            deleteBtn.innerHTML =
-              '<i class="bx bx-trash mr-1"></i>Delete Project';
-          }
-        });
+      // Setup new client toggle functionality (only for new projects)
+      if (isNewProject) {
+        setupNewClientToggle();
+      }
     }
+  });
+
+  // Setup new client toggle functionality
+  function setupNewClientToggle() {
+    const newClientToggle = document.getElementById(
+      "new-client-toggle"
+    ) as HTMLInputElement;
+    const existingClientSelect = document.getElementById(
+      "existing-client-select"
+    ) as HTMLSelectElement;
+    const ownerInput = document.getElementById(
+      "owner-input"
+    ) as HTMLInputElement;
+    const ownerEmailInput = document.getElementById(
+      "owner-email-input"
+    ) as HTMLInputElement;
+
+    if (!newClientToggle) return;
+
+    // Load existing clients for dropdown
+    loadExistingClients();
+
+    // Handle toggle change
+    newClientToggle.addEventListener("change", function () {
+      const isNewClient = this.checked;
+
+      if (isNewClient) {
+        // Show owner and email fields, hide existing client dropdown
+        if (ownerInput) ownerInput.closest("div")!.style.display = "block";
+        if (ownerEmailInput)
+          ownerEmailInput.closest("div")!.style.display = "block";
+        if (existingClientSelect)
+          existingClientSelect.closest("div")!.style.display = "none";
+      } else {
+        // Hide owner and email fields, show existing client dropdown
+        if (ownerInput) ownerInput.closest("div")!.style.display = "none";
+        if (ownerEmailInput)
+          ownerEmailInput.closest("div")!.style.display = "none";
+        if (existingClientSelect)
+          existingClientSelect.closest("div")!.style.display = "block";
+      }
+    });
+
+    // Set initial state
+    newClientToggle.dispatchEvent(new Event("change"));
+  }
+
+  // Load existing clients from API
+  async function loadExistingClients() {
+    try {
+      const response = await fetch("/api/get-clients");
+      if (!response.ok) {
+        throw new Error("Failed to fetch clients");
+      }
+
+      const clients = await response.json();
+      const existingClientSelect = document.getElementById(
+        "existing-client-select"
+      ) as HTMLSelectElement;
+
+      if (existingClientSelect && clients.length > 0) {
+        // Clear existing options
+        existingClientSelect.innerHTML =
+          '<option value="">Choose a client...</option>';
+
+        // Add client options
+        clients.forEach((client: any) => {
+          const option = document.createElement("option");
+          option.value = client.id;
+          option.textContent = client.name || client.email;
+          existingClientSelect.appendChild(option);
+        });
+      }
+    } catch (error) {
+      console.error("Error loading clients:", error);
+    }
+  }
+
+  // Delete project function
+  function deleteProject(projectId: string) {
+    // Show confirmation toast with action buttons
+    if ((window as any).toastAlertManager) {
+      (window as any).toastAlertManager.show({
+        type: "warning",
+        title: "Delete Project",
+        message:
+          "Are you sure you want to delete this project? This action cannot be undone.",
+        duration: 0, // Don't auto-dismiss
+        actions: [
+          {
+            label: "Cancel",
+            action: () => {
+              // Just close the toast, do nothing
+            },
+          },
+          {
+            label: "Delete",
+            action: () => {
+              // Show loading state
+              const deleteBtn = document.getElementById(
+                "delete-project-btn"
+              ) as HTMLButtonElement;
+              if (deleteBtn) {
+                deleteBtn.disabled = true;
+                deleteBtn.innerHTML =
+                  '<i class="bx bx-loader-alt bx-spin mr-1"></i>Deleting...';
+              }
+
+              // Make API call to delete project
+              fetch(`/api/delete-project`, {
+                method: "DELETE",
+                headers: {
+                  "Content-Type": "application/json",
+                },
+                body: JSON.stringify({ projectId }),
+              })
+                .then((response) => {
+                  if (!response.ok) {
+                    throw new Error("Failed to delete project");
+                  }
+                  return response.json();
+                })
+                .then((data) => {
+                  // Show success toast
+                  if ((window as any).toastAlertManager) {
+                    (window as any).toastAlertManager.show({
+                      type: "success",
+                      title: "Project Deleted!",
+                      message: "Project has been deleted successfully.",
+                      duration: 3000,
+                    });
+                  }
+
+                  // Redirect to projects list after a short delay
+                  setTimeout(() => {
+                    window.location.href = "/";
+                  }, 1500);
+                })
+                .catch((error) => {
+                  console.error("Error deleting project:", error);
+
+                  // Show error toast
+                  if ((window as any).toastAlertManager) {
+                    (window as any).toastAlertManager.show({
+                      type: "error",
+                      title: "Delete Failed",
+                      message: "Failed to delete project. Please try again.",
+                      duration: 5000,
+                    });
+                  }
+
+                  // Reset button state
+                  if (deleteBtn) {
+                    deleteBtn.disabled = false;
+                    deleteBtn.innerHTML =
+                      '<i class="bx bx-trash mr-1"></i>Delete Project';
+                  }
+                });
+            },
+          },
+        ],
+      });
+    }
+  }
+
+  // Show toast notification
+  function showToast(
+    type: "success" | "error" | "warning" | "info",
+    title: string,
+    message: string,
+    duration: number = 4000
+  ) {
+    if ((window as any).toastAlertManager) {
+      (window as any).toastAlertManager.show({
+        type,
+        title,
+        message,
+        duration,
+      });
+    }
+  }
+
+  // Handle different form actions
+  function handleAction(
+    action: string,
+    projectId: string,
+    isNewProject: boolean
+  ) {
+    switch (action) {
+      case "deleteProject":
+        if (!isNewProject) {
+          deleteProject(projectId);
+        }
+        break;
+      case "buildEstimate":
+        if (!isNewProject) {
+          buildEstimate(projectId);
+        } else {
+          showToast(
+            "warning",
+            "Save Required",
+            "Please save the project first before building an estimate."
+          );
+        }
+        break;
+      case "editEstimate":
+        if (!isNewProject) {
+          editEstimate(projectId);
+        } else {
+          showToast(
+            "warning",
+            "Save Required",
+            "Please save the project first before editing an estimate."
+          );
+        }
+        break;
+      default:
+        console.log(`Action ${action} not implemented`);
+    }
+  }
+
+  // Build estimate function
+  function buildEstimate(projectId: string) {
+    console.log("Building estimate for project:", projectId);
+    // Add build estimate logic here
+  }
+
+  // Edit estimate function
+  function editEstimate(projectId: string) {
+    console.log("Editing estimate for project:", projectId);
+    // Add edit estimate logic here
+  }
+
+  // Reset form function
+  function resetForm() {
+    if (
+      confirm(
+        "Are you sure you want to reset the form? All unsaved changes will be lost."
+      )
+    ) {
+      // Show info toast
+      if ((window as any).toastAlertManager) {
+        (window as any).toastAlertManager.show({
+          type: "info",
+          title: "Form Reset",
+          message: "Form has been reset to its original state.",
+          duration: 3000,
+        });
+      }
+
+      window.location.reload();
+    }
+  }
+
+  // Form submission handler
+  function handleFormSubmit(event: Event) {
+    event.preventDefault();
+    console.log("Form submission started");
+
+    const form = event.target as HTMLFormElement;
+    const formData = new FormData(form);
+    const projectId = form.getAttribute("data-project-id");
+    const isNewProject = form.getAttribute("data-is-new-project") === "true";
+
+    console.log("Form data:", { projectId, isNewProject });
+
+    // Collect form data
+    const formValues: any = {};
+    for (const [key, value] of formData.entries()) {
+      formValues[key] = value;
+    }
+
+    // Handle client data based on new client toggle
+    const isNewClient = formValues.new_client === "on";
+    if (isNewClient) {
+      // For new client, use owner and owner_email
+      formValues.client_type = "new";
+      formValues.client_name = formValues.owner;
+      formValues.client_email = formValues.owner_email;
+    } else {
+      // For existing client, use the selected client ID
+      formValues.client_type = "existing";
+      formValues.client_id = formValues.existing_client_id;
+    }
+
+    // Collect toggle button values
+    const toggleButtons = form.querySelectorAll(".toggle-button.bg-blue-500");
+    toggleButtons.forEach((button) => {
+      const group = button.getAttribute("data-group");
+      const value = button.getAttribute("data-value");
+      const type = button.getAttribute("data-type");
+
+      if (group && value) {
+        if (type === "multi-select") {
+          if (!formValues[group]) {
+            formValues[group] = [];
+          }
+          if (Array.isArray(formValues[group])) {
+            formValues[group].push(value);
+          } else {
+            formValues[group] = [formValues[group], value];
+          }
+        } else {
+          formValues[group] = value;
+        }
+      }
+    });
+
+    // Get units value from slider
+    const unitsSlider = form.querySelector(
+      'input[name="units"]'
+    ) as HTMLInputElement;
+    if (unitsSlider) {
+      const unitsOptions =
+        unitsSlider.getAttribute("data-values")?.split(",") || [];
+      const sliderValue = parseInt(unitsSlider.value);
+      formValues.units = unitsOptions[sliderValue] || "1";
+    }
+
+    console.log("Form data:", formValues);
+
+    // Determine API endpoint based on new/existing project
+    const endpoint = isNewProject
+      ? "/api/create-project"
+      : `/api/update-project/${projectId}`;
+    const method = isNewProject ? "POST" : "PUT";
+
+    // Show loading state
+    const submitBtn = form.querySelector(
+      'button[type="submit"]'
+    ) as HTMLButtonElement;
+
+    if (!submitBtn) {
+      console.error("Submit button not found");
+      return;
+    }
+
+    const originalText = submitBtn.innerHTML;
+    submitBtn.disabled = true;
+    submitBtn.innerHTML =
+      '<i class="bx bx-loader-alt bx-spin mr-1"></i>Saving...';
+
+    // Submit form data
+    fetch(endpoint, {
+      method: method,
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(formValues),
+    })
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error("Failed to save project");
+        }
+        return response.json();
+      })
+      .then((data) => {
+        console.log("Project saved successfully:", data);
+
+        // Show success toast
+        if ((window as any).toastAlertManager) {
+          (window as any).toastAlertManager.show({
+            type: "success",
+            title: isNewProject ? "Project Created!" : "Project Updated!",
+            message: isNewProject
+              ? "Your new project has been created successfully."
+              : "Your project has been updated successfully.",
+            duration: 4000,
+          });
+        }
+
+        // Redirect to project page if it's a new project
+        if (isNewProject && data.id) {
+          setTimeout(() => {
+            window.location.href = `/project/${data.id}`;
+          }, 1500); // Small delay to show the toast
+        }
+      })
+      .catch((error) => {
+        console.error("Error saving project:", error);
+
+        // Show error toast
+        if ((window as any).toastAlertManager) {
+          (window as any).toastAlertManager.show({
+            type: "error",
+            title: "Save Failed",
+            message: "Failed to save project. Please try again.",
+            duration: 5000,
+          });
+        }
+      })
+      .finally(() => {
+        // Reset button state
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = originalText;
+      });
   }
 </script>

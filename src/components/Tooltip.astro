@@ -1,28 +1,47 @@
 ---
-const { tooltip = "tooltip" } = Astro.props;
+interface Props {
+  content: string;
+  placement?: "top" | "bottom" | "left" | "right";
+  trigger?: "hover" | "click";
+  style?: "light" | "dark" | "auto";
+  animation?: "duration-300" | "duration-500" | "duration-700";
+  arrow?: boolean;
+  class?: string;
+}
+
+const {
+  content,
+  placement = "top",
+  trigger = "hover",
+  style = "light",
+  animation = "duration-300",
+  arrow = true,
+  class: className = "",
+} = Astro.props;
+
+// Generate unique ID for this tooltip
+const tooltipId = `tooltip-${Math.random().toString(36).substr(2, 9)}`;
 ---
 
-<div class="relative group flex justify-center">
-  <!-- <span class="uppercase">data</span> -->
-  <slot />
-  <!-- opacity-0 invisible -->
-  <div
-    class="absolute -top-full mt-1 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200"
+<div class={`relative inline-block ${className}`}>
+  <button
+    data-tooltip-target={tooltipId}
+    data-tooltip-placement={placement}
+    data-tooltip-trigger={trigger}
+    data-tooltip-style={style}
+    data-tooltip-animation={animation}
+    data-tooltip-arrow={arrow}
+    class="focus:outline-none"
   >
-    <span
-      class="text-center px-4 py-2 text-sm w-auto rounded-full
-      hover:text-hub-title
-      bg-hub-background
-      drop-shadow-md
-      text-hub-inactive
-      font-bold
-      dark:text-hub-inactive
-      dark:bg-hub-background-dark
-      border-[1px]
-      dark:border-hub-border-dark
-      hover:dark:bg-hub-background-nav-dark dark:hover:text-white"
-    >
-      {tooltip}
-    </span>
+    <slot />
+  </button>
+
+  <div
+    id={tooltipId}
+    role="tooltip"
+    class="invisible opacity-0 absolute z-10 px-3 py-2 text-sm font-medium text-white bg-gray-900 rounded-lg shadow-sm transition-opacity duration-300"
+  >
+    {content}
+    <div class="tooltip-arrow" data-popper-arrow></div>
   </div>
 </div>
