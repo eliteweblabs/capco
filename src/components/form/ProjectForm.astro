@@ -8,6 +8,7 @@ import {
 } from "../../lib/project-form-config";
 import ToggleButton from "./ToggleButton.astro";
 import UnitSlider from "../UnitSlider.astro";
+import ClientSelect from "./ClientSelect.astro";
 
 interface Props {
   project?: any;
@@ -58,6 +59,12 @@ console.log("ProjectForm debug:", {
     allow: a.allow,
   })),
 });
+
+// Debug owner fields specifically
+const ownerFieldsInForm = formFields.filter(
+  (field) => field.name === "owner" || field.name === "owner_email"
+);
+console.log("Owner fields found:", ownerFieldsInForm.length, ownerFieldsInForm);
 ---
 
 <form
@@ -100,79 +107,68 @@ console.log("ProjectForm debug:", {
 
   <!-- Client Fields (Owner/Email for new client, or Existing Client dropdown) -->
   <div class="space-y-4">
-    <!-- Owner Fields (for new client) -->
-    {
-      formFields
-        .filter(
-          (field) => field.name === "owner" || field.name === "owner_email"
-        )
-        .map((field) => (
-          <div class="relative" style="display: none;">
-            <label
-              for={`${field.id}-${formId}`}
-              class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-            >
-              {field.label}
-              {field.required ? " *" : ""}
-            </label>
-            <input
-              type={field.name === "owner_email" ? "email" : "text"}
-              id={`${field.id}-${formId}`}
-              name={field.name}
-              value={project[field.name] || ""}
-              class="w-full py-2 px-3 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:focus:ring-blue-400 dark:focus:border-blue-400"
-              placeholder={field.placeholder || ""}
-              required={field.required}
-              data-field={field.dataField}
-              data-project-id={formId}
-              data-project-data={JSON.stringify(project)}
-            />
-          </div>
-        ))
-    }
+    <!-- Owner Fields (for new client) - Always rendered for new projects -->
+    {isNewProject && (
+      <div class="space-y-4">
+        <!-- Owner Name Field -->
+        <div class="relative" style="display: none;">
+          <label
+            for={`owner-${formId}`}
+            class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+          >
+            Owner *
+          </label>
+          <input
+            type="text"
+            id={`owner-${formId}`}
+            name="owner"
+            value={project.owner || ""}
+            class="w-full py-2 px-3 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:focus:ring-blue-400 dark:focus:border-blue-400"
+            placeholder="Owner *"
+            required={false}
+            data-field="owner"
+            data-project-id={formId}
+            data-project-data={JSON.stringify(project)}
+          />
+        </div>
+
+        <!-- Owner Email Field -->
+        <div class="relative" style="display: none;">
+          <label
+            for={`owner-email-${formId}`}
+            class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+          >
+            Owner Email *
+          </label>
+          <input
+            type="email"
+            id={`owner-email-${formId}`}
+            name="owner_email"
+            value={project.owner_email || ""}
+            class="w-full py-2 px-3 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:focus:ring-blue-400 dark:focus:border-blue-400"
+            placeholder="owner@example.com"
+            required={false}
+            data-field="owner_email"
+            data-project-id={formId}
+            data-project-data={JSON.stringify(project)}
+          />
+        </div>
+      </div>
+    )}
 
     <!-- Existing Client Dropdown -->
-    {
-      formFields
-        .filter(
-          (field) =>
-            field.type === "select" && field.name === "existing_client_id"
-        )
-        .map((field) => (
-          <div class="relative">
-            <label
-              for={`${field.id}-${formId}`}
-              class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-            >
-              {field.label}
-              {field.required ? " *" : ""}
-            </label>
-            <select
-              id={`${field.id}-${formId}`}
-              name={field.name}
-              class="w-full py-2 px-3 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:focus:ring-blue-400 dark:focus:border-blue-400"
-              required={field.required}
-              data-project-id={formId}
-              data-project-data={JSON.stringify(project)}
-            >
-              <option value="">
-                {field.placeholder || "Select an option..."}
-              </option>
-              {field.options?.map((option: any) => (
-                <option
-                  value={typeof option === "string" ? option : option.value}
-                  selected={
-                    project[field.name] ===
-                    (typeof option === "string" ? option : option.value)
-                  }
-                >
-                  {typeof option === "string" ? option : option.label}
-                </option>
-              ))}
-            </select>
-          </div>
-        ))
-    }
+    <!-- Existing Client Selection using ClientSelect component -->
+    <div id="existing-client-container" class="relative">
+      <ClientSelect
+        selectedUserId={project.existing_client_id || ""}
+        name="existing_client_id"
+        id="existing-client-select"
+        label="Select Existing Client"
+        role="Client"
+        required={false}
+        class="w-full"
+      />
+    </div>
   </div>
 
   <!-- Address Field (Full Width) -->
@@ -214,6 +210,8 @@ console.log("ProjectForm debug:", {
         .filter(
           (field) =>
             field.name !== "address" &&
+            field.name !== "owner" &&
+            field.name !== "owner_email" &&
             (field.type === "text" || field.type === "number")
         )
         .map((field) => (
@@ -456,78 +454,109 @@ console.log("ProjectForm debug:", {
 
   // Setup new client toggle functionality
   function setupNewClientToggle() {
+    // Get the form to extract the formId
+    const form = document.querySelector(
+      "form[data-project-id]"
+    ) as HTMLFormElement;
+    if (!form) {
+      console.error("Project form not found");
+      return;
+    }
+
+    const formId = form.getAttribute("data-project-id");
+    if (!formId) {
+      console.error("Form ID not found");
+      return;
+    }
+
+    // Find the new client toggle using the correct ID
     const newClientToggle = document.getElementById(
-      "new-client-toggle"
+      `new-client-toggle-${formId}`
     ) as HTMLInputElement;
-    const existingClientSelect = document.getElementById(
-      "existing-client-select"
-    ) as HTMLSelectElement;
+    const existingClientContainer = document.getElementById(
+      "existing-client-container"
+    ) as HTMLElement;
     const ownerInput = document.getElementById(
-      "owner-input"
+      `owner-${formId}`
     ) as HTMLInputElement;
     const ownerEmailInput = document.getElementById(
-      "owner-email-input"
+      `owner-email-${formId}`
     ) as HTMLInputElement;
 
-    if (!newClientToggle) return;
+    console.log("🔍 Element lookup:", {
+      formId,
+      newClientToggleId: `new-client-toggle-${formId}`,
+      ownerInputId: `owner-${formId}`,
+      ownerEmailInputId: `owner-email-${formId}`,
+      newClientToggle: !!newClientToggle,
+      ownerInput: !!ownerInput,
+      ownerEmailInput: !!ownerEmailInput,
+      existingClientContainer: !!existingClientContainer,
+    });
 
-    // Load existing clients for dropdown
-    loadExistingClients();
+    if (!newClientToggle) {
+      console.error("❌ New client toggle not found!");
+      return;
+    }
 
     // Handle toggle change
     newClientToggle.addEventListener("change", function () {
       const isNewClient = this.checked;
+      console.log("🔄 Toggle changed:", {
+        isNewClient,
+        ownerInput: !!ownerInput,
+        ownerEmailInput: !!ownerEmailInput,
+        existingClientContainer: !!existingClientContainer,
+      });
 
       if (isNewClient) {
         // Show owner and email fields, hide existing client dropdown
-        if (ownerInput) ownerInput.closest("div")!.style.display = "block";
-        if (ownerEmailInput)
+        console.log("📝 Showing owner fields, hiding client dropdown");
+        if (ownerInput) {
+          ownerInput.closest("div")!.style.display = "block";
+          console.log("✅ Owner input shown");
+        } else {
+          console.log("❌ Owner input not found");
+        }
+        if (ownerEmailInput) {
           ownerEmailInput.closest("div")!.style.display = "block";
-        if (existingClientSelect)
-          existingClientSelect.closest("div")!.style.display = "none";
+          console.log("✅ Owner email shown");
+        } else {
+          console.log("❌ Owner email not found");
+        }
+        if (existingClientContainer) {
+          existingClientContainer.style.display = "none";
+          console.log("✅ Client dropdown hidden");
+        }
       } else {
         // Hide owner and email fields, show existing client dropdown
-        if (ownerInput) ownerInput.closest("div")!.style.display = "none";
-        if (ownerEmailInput)
+        console.log("🔽 Hiding owner fields, showing client dropdown");
+        if (ownerInput) {
+          ownerInput.closest("div")!.style.display = "none";
+          console.log("✅ Owner input hidden");
+        }
+        if (ownerEmailInput) {
           ownerEmailInput.closest("div")!.style.display = "none";
-        if (existingClientSelect)
-          existingClientSelect.closest("div")!.style.display = "block";
+          console.log("✅ Owner email hidden");
+        }
+        if (existingClientContainer) {
+          existingClientContainer.style.display = "block";
+          console.log("✅ Client dropdown shown");
+        }
       }
     });
 
     // Set initial state
     newClientToggle.dispatchEvent(new Event("change"));
-  }
 
-  // Load existing clients from API
-  async function loadExistingClients() {
-    try {
-      const response = await fetch("/api/get-clients");
-      if (!response.ok) {
-        throw new Error("Failed to fetch clients");
-      }
+    // Listen for client selection events from ClientSelect component
+    document.addEventListener("clientSelected", function (e) {
+      const customEvent = e as CustomEvent;
+      console.log("🔔 [ProjectForm] Client selected:", customEvent.detail);
 
-      const clients = await response.json();
-      const existingClientSelect = document.getElementById(
-        "existing-client-select"
-      ) as HTMLSelectElement;
-
-      if (existingClientSelect && clients.length > 0) {
-        // Clear existing options
-        existingClientSelect.innerHTML =
-          '<option value="">Choose a client...</option>';
-
-        // Add client options
-        clients.forEach((client: any) => {
-          const option = document.createElement("option");
-          option.value = client.id;
-          option.textContent = client.name || client.email;
-          existingClientSelect.appendChild(option);
-        });
-      }
-    } catch (error) {
-      console.error("Error loading clients:", error);
-    }
+      // The form will automatically pick up the value since the component uses the correct name attribute
+      // This is just for logging/debugging purposes
+    });
   }
 
   // Delete project function

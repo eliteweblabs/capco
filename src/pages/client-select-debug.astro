@@ -1,0 +1,311 @@
+---
+import { supabase } from "../lib/supabase";
+import ClientSelect from "../components/form/ClientSelect.astro";
+import Base from "../layout/Base.astro";
+
+// Get current user for context
+const session = (Astro.locals as any).session;
+const user = session?.user;
+
+// Test data for debugging
+const testProps = [
+  {
+    title: "Default ClientSelect (All Users)",
+    props: {}
+  },
+  {
+    title: "Clients Only",
+    props: {
+      role: "Client",
+      label: "Select Client",
+      name: "client_id",
+      id: "client-only-select"
+    }
+  },
+  {
+    title: "Admins Only",
+    props: {
+      role: "Admin",
+      label: "Select Admin",
+      name: "admin_id",
+      id: "admin-only-select"
+    }
+  },
+  {
+    title: "Staff Only",
+    props: {
+      role: "Staff",
+      label: "Select Staff Member",
+      name: "staff_id",
+      id: "staff-only-select"
+    }
+  },
+  {
+    title: "Pre-selected User with Role Filter",
+    props: {
+      selectedUserId: user?.id || "",
+      role: "Client",
+      label: "Current User (if Client)",
+      name: "current_client_id"
+    }
+  },
+  {
+    title: "Custom Styling with Role Filter",
+    props: {
+      role: "Admin",
+      label: "Admin Selection",
+      class: "border-2 border-green-500 bg-green-50 text-green-900",
+      name: "styled_admin"
+    }
+  }
+];
+
+// Get some stats for debugging
+let userStats = {
+  total: 0,
+  admins: 0,
+  clients: 0,
+  authUsers: 0,
+  error: null as string | null,
+  authError: null as string | null
+};
+
+if (supabase) {
+  try {
+    // Get profiles stats
+    const { data, error } = await supabase
+      .from("profiles")
+      .select("role");
+    
+    if (error) {
+      userStats.error = error.message;
+    } else {
+      userStats.total = data?.length || 0;
+      userStats.admins = data?.filter(u => u.role === 'Admin').length || 0;
+      userStats.clients = data?.filter(u => u.role === 'Client').length || 0;
+    }
+
+    // Get auth users count
+    const { data: authUsers, error: authError } = await supabase.auth.admin.listUsers();
+    if (authError) {
+      userStats.authError = authError.message;
+    } else {
+      userStats.authUsers = authUsers?.users?.length || 0;
+    }
+  } catch (err) {
+    userStats.error = err instanceof Error ? err.message : 'Unknown error';
+  }
+}
+---
+
+<Base title="ClientSelect Debug Panel" description="Debug panel for testing ClientSelect component functionality">
+  <div class="container mx-auto px-4 py-8 max-w-4xl">
+    <!-- Page Header -->
+    <div class="bg-gradient-to-r from-blue-600 to-purple-600 text-white p-6 rounded-lg mb-8">
+      <h1 class="text-3xl font-bold mb-2">🔍 ClientSelect Component Debug Panel</h1>
+      <p class="text-blue-100">Testing and debugging the ClientSelect.astro component</p>
+    </div>
+
+    <!-- Debug Information Panel -->
+    <div class="bg-gray-50 dark:bg-gray-800 p-6 rounded-lg mb-8 border">
+      <h2 class="text-xl font-semibold mb-4 text-gray-800 dark:text-gray-200">
+        📊 System Overview
+      </h2>
+      
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+        <div class="bg-white dark:bg-gray-700 p-4 rounded shadow">
+          <div class="text-2xl font-bold text-blue-600 dark:text-blue-400">
+            {userStats.total}
+          </div>
+          <div class="text-sm text-gray-600 dark:text-gray-300">Profiles</div>
+        </div>
+        
+        <div class="bg-white dark:bg-gray-700 p-4 rounded shadow">
+          <div class="text-2xl font-bold text-orange-600 dark:text-orange-400">
+            {userStats.authUsers}
+          </div>
+          <div class="text-sm text-gray-600 dark:text-gray-300">Auth Users</div>
+        </div>
+        
+        <div class="bg-white dark:bg-gray-700 p-4 rounded shadow">
+          <div class="text-2xl font-bold text-green-600 dark:text-green-400">
+            {userStats.admins}
+          </div>
+          <div class="text-sm text-gray-600 dark:text-gray-300">Admins</div>
+        </div>
+        
+        <div class="bg-white dark:bg-gray-700 p-4 rounded shadow">
+          <div class="text-2xl font-bold text-purple-600 dark:text-purple-400">
+            {userStats.clients}
+          </div>
+          <div class="text-sm text-gray-600 dark:text-gray-300">Clients</div>
+        </div>
+      </div>
+
+      {userStats.error && (
+        <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+          <strong>Profiles Error:</strong> {userStats.error}
+        </div>
+      )}
+
+      {userStats.authError && (
+        <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+          <strong>Auth Users Error:</strong> {userStats.authError}
+        </div>
+      )}
+
+      <div class="bg-blue-50 dark:bg-blue-900/20 p-4 rounded border border-blue-200 dark:border-blue-700 mb-4">
+        <h4 class="font-semibold text-blue-800 dark:text-blue-200 mb-2">📡 Data Architecture</h4>
+        <div class="text-sm text-blue-700 dark:text-blue-300 space-y-1">
+          <div>• <strong>Profiles Table:</strong> Stores user names and roles</div>
+          <div>• <strong>Auth.Users Table:</strong> Stores user emails and authentication data</div>
+          <div>• <strong>Component Logic:</strong> Combines both sources using admin API</div>
+        </div>
+      </div>
+
+      <div class="text-sm text-gray-600 dark:text-gray-400">
+        <strong>Current User:</strong> {user?.email || 'Not authenticated'} 
+        {user?.id && ` (ID: ${user.id})`}
+      </div>
+    </div>
+
+    <!-- Component Tests -->
+    <div class="space-y-8">
+      {testProps.map((test, index) => (
+        <div class="bg-white dark:bg-gray-800 p-6 rounded-lg border shadow-sm">
+          <h3 class="text-lg font-semibold mb-4 text-gray-800 dark:text-gray-200">
+            🧪 Test {index + 1}: {test.title}
+          </h3>
+          
+          <!-- Show the props being used -->
+          <details class="mb-4">
+            <summary class="cursor-pointer text-sm text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200">
+              📋 Props Configuration
+            </summary>
+            <pre class="mt-2 p-3 bg-gray-100 dark:bg-gray-700 rounded text-xs overflow-x-auto">
+{JSON.stringify(test.props, null, 2)}
+            </pre>
+          </details>
+
+          <!-- The actual component -->
+          <div class="border border-gray-200 dark:border-gray-600 p-4 rounded bg-gray-50 dark:bg-gray-700">
+            <ClientSelect {...test.props} />
+          </div>
+        </div>
+      ))}
+    </div>
+
+    <!-- Event Listener Demo -->
+    <div class="bg-yellow-50 dark:bg-yellow-900/20 p-6 rounded-lg border border-yellow-200 dark:border-yellow-700 mt-8">
+      <h3 class="text-lg font-semibold mb-4 text-yellow-800 dark:text-yellow-200">
+        🎯 Event Listener Demo
+      </h3>
+      <p class="text-sm text-yellow-700 dark:text-yellow-300 mb-4">
+        Select any client above to see the custom events being fired:
+      </p>
+      <div id="event-log" class="bg-white dark:bg-gray-800 p-3 rounded border min-h-24 max-h-48 overflow-y-auto">
+        <div class="text-gray-500 text-sm">Events will appear here...</div>
+      </div>
+    </div>
+
+    <!-- Performance Monitor -->
+    <div class="bg-blue-50 dark:bg-blue-900/20 p-6 rounded-lg border border-blue-200 dark:border-blue-700 mt-8">
+      <h3 class="text-lg font-semibold mb-4 text-blue-800 dark:text-blue-200">
+        ⚡ Performance Monitor
+      </h3>
+      <div id="performance-stats" class="text-sm text-blue-700 dark:text-blue-300">
+        <div>Page Load Time: <span id="load-time">Calculating...</span></div>
+        <div>DOM Ready Time: <span id="dom-time">Calculating...</span></div>
+        <div>Component Count: <span id="component-count">{testProps.length}</span></div>
+      </div>
+    </div>
+  </div>
+</Base>
+
+<script>
+  // Event listener for clientSelected events
+  document.addEventListener('clientSelected', function(e) {
+    const customEvent = e as CustomEvent;
+    console.log('🔔 Client selection event received:', customEvent.detail);
+    
+    const eventLog = document.getElementById('event-log');
+    if (eventLog) {
+      const timestamp = new Date().toLocaleTimeString();
+      const eventEntry = document.createElement('div');
+      eventEntry.className = 'mb-2 p-2 bg-green-100 dark:bg-green-900/30 rounded text-sm';
+      eventEntry.innerHTML = `
+        <div class="font-medium text-green-800 dark:text-green-200">${timestamp} - Client Selected</div>
+        <div class="text-green-700 dark:text-green-300">
+          ID: ${customEvent.detail.userId || 'None'}<br>
+          Name: ${customEvent.detail.userName || 'None'}<br>
+          Full: ${customEvent.detail.fullText || 'None'}
+        </div>
+      `;
+      
+      // Add to top of log
+      if (eventLog.children.length === 1 && eventLog.children[0]?.textContent?.includes('Events will appear here')) {
+        eventLog.innerHTML = '';
+      }
+      eventLog.insertBefore(eventEntry, eventLog.firstChild);
+      
+      // Limit to 10 entries
+      while (eventLog.children.length > 10) {
+        const lastChild = eventLog.lastChild;
+        if (lastChild) {
+          eventLog.removeChild(lastChild);
+        }
+      }
+    }
+  });
+
+  // Performance monitoring
+  document.addEventListener('DOMContentLoaded', function() {
+    const loadTime = performance.timing.loadEventEnd - performance.timing.navigationStart;
+    const domTime = performance.timing.domContentLoadedEventEnd - performance.timing.navigationStart;
+    
+    const loadTimeEl = document.getElementById('load-time');
+    const domTimeEl = document.getElementById('dom-time');
+    
+    if (loadTimeEl) loadTimeEl.textContent = loadTime + 'ms';
+    if (domTimeEl) domTimeEl.textContent = domTime + 'ms';
+  });
+
+  // Add console logging for all select changes
+  document.addEventListener('DOMContentLoaded', function() {
+    const selects = document.querySelectorAll('select[id*="select"]');
+    selects.forEach((select, index) => {
+      select.addEventListener('change', function(e) {
+        const target = e.target as HTMLSelectElement;
+        if (!target) return;
+        
+        console.log(`📋 Select ${index + 1} changed:`, {
+          id: target.id,
+          name: target.name,
+          value: target.value,
+          selectedText: target.options[target.selectedIndex]?.text
+        });
+      });
+    });
+  });
+</script>
+
+<style>
+  /* Add some custom styling for the debug page */
+  .container {
+    animation: fadeIn 0.5s ease-in;
+  }
+  
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  
+  details[open] summary {
+    margin-bottom: 0.5rem;
+  }
+  
+  pre {
+    white-space: pre-wrap;
+    word-wrap: break-word;
+  }
+</style>

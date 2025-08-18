@@ -85,10 +85,9 @@ export function getFilteredFormFields(
         ),
     );
   } else {
-    // For new projects, hide owner and email fields initially (they'll be shown via JavaScript based on toggle)
-    fields = fields.filter(
-      (field) => !["owner", "owner_email"].includes(field.name),
-    );
+    // For new projects, keep owner and email fields in DOM but they'll be hidden via CSS initially
+    // (they'll be shown via JavaScript based on toggle)
+    // Remove the filter so these fields are included in the form
   }
 
   return fields;
