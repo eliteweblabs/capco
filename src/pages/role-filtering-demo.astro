@@ -1,0 +1,265 @@
+---
+import ClientSelect from "../components/form/ClientSelect.astro";
+import Base from "../layout/Base.astro";
+
+// Get current user for context
+const session = (Astro.locals as any).session;
+const user = session?.user;
+---
+
+<Base
+  title="Role Filtering Demo"
+  description="Demonstration of ClientSelect component role filtering"
+>
+  <div class="container mx-auto px-4 py-8 max-w-4xl">
+    <!-- Page Header -->
+    <div
+      class="bg-gradient-to-r from-purple-600 to-indigo-600 text-white p-6 rounded-lg mb-8"
+    >
+      <h1 class="text-3xl font-bold mb-2">🎭 Role Filtering Demo</h1>
+      <p class="text-purple-100">
+        Testing ClientSelect component with different role filters
+      </p>
+    </div>
+
+    <!-- Info Panel -->
+    <div
+      class="bg-blue-50 dark:bg-blue-900/20 p-6 rounded-lg border border-blue-200 dark:border-blue-700 mb-8"
+    >
+      <h2 class="text-lg font-semibold text-blue-800 dark:text-blue-200 mb-3">
+        🧪 Role Filtering Test Cases
+      </h2>
+      <div class="text-sm text-blue-700 dark:text-blue-300 space-y-1">
+        <div>• <strong>All Users:</strong> No role filter (shows everyone)</div>
+        <div>
+          • <strong>Clients Only:</strong> role="Client" (shows only clients)
+        </div>
+        <div>
+          • <strong>Admins Only:</strong> role="Admin" (shows only admins)
+        </div>
+        <div>
+          • <strong>Staff Only:</strong> role="Staff" (shows only staff members)
+        </div>
+      </div>
+    </div>
+
+    <!-- Test Cases Grid -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <!-- All Users -->
+      <div class="bg-white dark:bg-gray-800 p-6 rounded-lg border shadow-sm">
+        <h3 class="text-lg font-semibold mb-4 text-gray-800 dark:text-gray-200">
+          👥 All Users (No Filter)
+        </h3>
+        <ClientSelect
+          label="Select Any User"
+          name="all_users"
+          id="all-users-select"
+          class="w-full"
+        />
+      </div>
+
+      <!-- Clients Only -->
+      <div class="bg-white dark:bg-gray-800 p-6 rounded-lg border shadow-sm">
+        <h3 class="text-lg font-semibold mb-4 text-gray-800 dark:text-gray-200">
+          👤 Clients Only
+        </h3>
+        <ClientSelect
+          role="Client"
+          label="Select Client"
+          name="client_users"
+          id="client-users-select"
+          class="w-full"
+        />
+      </div>
+
+      <!-- Admins Only -->
+      <div class="bg-white dark:bg-gray-800 p-6 rounded-lg border shadow-sm">
+        <h3 class="text-lg font-semibold mb-4 text-gray-800 dark:text-gray-200">
+          🛡️ Admins Only
+        </h3>
+        <ClientSelect
+          role="Admin"
+          label="Select Admin"
+          name="admin_users"
+          id="admin-users-select"
+          class="w-full"
+        />
+      </div>
+
+      <!-- Staff Only -->
+      <div class="bg-white dark:bg-gray-800 p-6 rounded-lg border shadow-sm">
+        <h3 class="text-lg font-semibold mb-4 text-gray-800 dark:text-gray-200">
+          👷 Staff Only
+        </h3>
+        <ClientSelect
+          role="Staff"
+          label="Select Staff Member"
+          name="staff_users"
+          id="staff-users-select"
+          class="w-full"
+        />
+      </div>
+    </div>
+
+    <!-- Current User Test -->
+    {
+      user && (
+        <div class="bg-yellow-50 dark:bg-yellow-900/20 p-6 rounded-lg border border-yellow-200 dark:border-yellow-700 mt-8">
+          <h3 class="text-lg font-semibold mb-4 text-yellow-800 dark:text-yellow-200">
+            🎯 Current User Pre-selection Test
+          </h3>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm font-medium mb-2 text-yellow-700 dark:text-yellow-300">
+                Pre-selected (All Roles)
+              </label>
+              <ClientSelect
+                selectedUserId={user.id}
+                label="Current User Selected"
+                name="current_user_all"
+                id="current-user-all-select"
+                class="w-full"
+              />
+            </div>
+            <div>
+              <label class="block text-sm font-medium mb-2 text-yellow-700 dark:text-yellow-300">
+                Pre-selected (Clients Only)
+              </label>
+              <ClientSelect
+                selectedUserId={user.id}
+                role="Client"
+                label="Current User if Client"
+                name="current_user_client"
+                id="current-user-client-select"
+                class="w-full"
+              />
+            </div>
+          </div>
+        </div>
+      )
+    }
+
+    <!-- Event Log -->
+    <div class="bg-gray-50 dark:bg-gray-800 p-6 rounded-lg border mt-8">
+      <h3 class="text-lg font-semibold mb-4 text-gray-800 dark:text-gray-200">
+        📝 Selection Events Log
+      </h3>
+      <div
+        id="role-event-log"
+        class="bg-white dark:bg-gray-900 p-3 rounded border min-h-24 max-h-48 overflow-y-auto"
+      >
+        <div class="text-gray-500 text-sm">
+          Role filtering events will appear here...
+        </div>
+      </div>
+    </div>
+
+    <!-- Usage Examples -->
+    <div class="bg-gray-50 dark:bg-gray-800 p-6 rounded-lg border mt-8">
+      <h3 class="text-lg font-semibold mb-4 text-gray-800 dark:text-gray-200">
+        📖 Usage Examples
+      </h3>
+      <div class="space-y-4 text-sm">
+        <div class="bg-white dark:bg-gray-700 p-4 rounded border">
+          <h4 class="font-semibold text-gray-800 dark:text-gray-200 mb-2">
+            Show All Users:
+          </h4>
+          <pre
+            class="text-xs bg-gray-100 dark:bg-gray-600 p-2 rounded overflow-x-auto"><code>&lt;ClientSelect label="Select User" name="user_id" /&gt;</code></pre>
+        </div>
+
+        <div class="bg-white dark:bg-gray-700 p-4 rounded border">
+          <h4 class="font-semibold text-gray-800 dark:text-gray-200 mb-2">
+            Show Only Clients:
+          </h4>
+          <pre
+            class="text-xs bg-gray-100 dark:bg-gray-600 p-2 rounded overflow-x-auto"><code>&lt;ClientSelect role="Client" label="Select Client" name="client_id" /&gt;</code></pre>
+        </div>
+
+        <div class="bg-white dark:bg-gray-700 p-4 rounded border">
+          <h4 class="font-semibold text-gray-800 dark:text-gray-200 mb-2">
+            Show Only Admins:
+          </h4>
+          <pre
+            class="text-xs bg-gray-100 dark:bg-gray-600 p-2 rounded overflow-x-auto"><code>&lt;ClientSelect role="Admin" label="Select Admin" name="admin_id" /&gt;</code></pre>
+        </div>
+
+        <div class="bg-white dark:bg-gray-700 p-4 rounded border">
+          <h4 class="font-semibold text-gray-800 dark:text-gray-200 mb-2">
+            Pre-selected with Role Filter:
+          </h4>
+          <pre
+            class="text-xs bg-gray-100 dark:bg-gray-600 p-2 rounded overflow-x-auto"><code>&lt;ClientSelect role="Staff" selectedUserId="user-123" label="Select Staff" name="staff_id" /&gt;</code></pre>
+        </div>
+      </div>
+    </div>
+  </div>
+</Base>
+
+<script>
+  // Event listener for clientSelected events
+  document.addEventListener("clientSelected", function (e) {
+    const customEvent = e as CustomEvent;
+    console.log("🎭 [RoleDemo] Client selection event:", customEvent.detail);
+
+    const eventLog = document.getElementById("role-event-log");
+    if (eventLog) {
+      const timestamp = new Date().toLocaleTimeString();
+      const selectElement = document.getElementById(
+        customEvent.target?.id || ""
+      );
+      const selectLabel =
+        selectElement?.closest("div")?.querySelector("label")?.textContent ||
+        "Unknown";
+
+      const eventEntry = document.createElement("div");
+      eventEntry.className =
+        "mb-2 p-2 bg-purple-100 dark:bg-purple-900/30 rounded text-sm";
+      eventEntry.innerHTML = `
+        <div class="font-medium text-purple-800 dark:text-purple-200">${timestamp} - ${selectLabel}</div>
+        <div class="text-purple-700 dark:text-purple-300">
+          Selected: ${customEvent.detail.userName || "None"} (${customEvent.detail.userId || "No ID"})
+        </div>
+      `;
+
+      // Add to top of log
+      if (
+        eventLog.children.length === 1 &&
+        eventLog.children[0]?.textContent?.includes("events will appear here")
+      ) {
+        eventLog.innerHTML = "";
+      }
+      eventLog.insertBefore(eventEntry, eventLog.firstChild);
+
+      // Limit to 10 entries
+      while (eventLog.children.length > 10) {
+        const lastChild = eventLog.lastChild;
+        if (lastChild) {
+          eventLog.removeChild(lastChild);
+        }
+      }
+    }
+  });
+</script>
+
+<style>
+  .container {
+    animation: fadeIn 0.5s ease-in;
+  }
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  pre {
+    white-space: pre-wrap;
+    word-wrap: break-word;
+  }
+</style>

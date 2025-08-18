@@ -5,15 +5,241 @@ import App from "../components/App.astro";
 import SectionContainer from "../components/SectionContainer.astro";
 import ProjectNav from "../components/ProjectNav.astro";
 import Dashboard from "../components/Dashboard.astro";
-// import Project from "../components/Project.astro";
-// import Invoice from "../components/Invoice.astro";
-// import Delivery from "../components/Delivery.astro";
+import ClientSelect from "../components/form/ClientSelect.astro";
+import { supabase } from "../lib/supabase";
+
 // Check authentication
 import { checkAuth } from "../lib/auth";
 const { isAuth, session, user, role } = await checkAuth(Astro.cookies);
+
+// Debug information
+console.log("🔍 [DEBUG] Auth check results:", {
+  isAuth,
+  hasUser: !!user,
+  userId: user?.id,
+  userEmail: user?.email,
+  role,
+  hasSession: !!session,
+});
+
+// Additional debugging - check cookies directly
+const accessToken = Astro.cookies.get("sb-access-token");
+const refreshToken = Astro.cookies.get("sb-refresh-token");
+
+console.log("🍪 [DEBUG] Cookie status:", {
+  hasAccessToken: !!accessToken,
+  hasRefreshToken: !!refreshToken,
+  accessTokenLength: accessToken?.value?.length || 0,
+  refreshTokenLength: refreshToken?.value?.length || 0,
+});
+
+// Test database access if authenticated
+let projectCount = 0;
+let profileData = null;
+let dbError = null;
+
+if (isAuth && user && supabase) {
+  try {
+    // Test profile access
+    const { data: profile, error: profileError } = await supabase
+      .from("profiles")
+      .select("*")
+      .eq("id", user.id)
+      .single();
+
+    profileData = profile;
+
+    if (profileError) {
+      console.error("🚨 [DEBUG] Profile query error:", profileError);
+      dbError = profileError.message;
+    }
+
+    // Test project access
+    const { data: projects, error: projectError } = await supabase
+      .from("projects")
+      .select("id, title, author_id")
+      .limit(5);
+
+    projectCount = projects?.length || 0;
+
+    if (projectError) {
+      console.error("🚨 [DEBUG] Project query error:", projectError);
+      dbError = projectError.message;
+    }
+
+    console.log("📊 [DEBUG] Database test results:", {
+      profileFound: !!profile,
+      profileRole: profile?.role,
+      projectsFound: projectCount,
+      dbError,
+    });
+  } catch (error) {
+    console.error("🚨 [DEBUG] Database test exception:", error);
+    dbError = error.message;
+  }
+}
+
+// Environment check
+const envStatus = {
+  hasSupabaseUrl: !!import.meta.env.PUBLIC_SUPABASE_URL,
+  hasSupabaseAnonKey: !!import.meta.env.PUBLIC_SUPABASE_ANON_KEY,
+  hasSupabaseServiceKey: !!import.meta.env.SUPABASE_SERVICE_ROLE_KEY,
+  supabaseClientCreated: !!supabase,
+};
+
+console.log("🔧 [DEBUG] Environment status:", envStatus);
 ---
 
 <App>
+  <!-- Debug Panel (remove this in production) -->
+  <SectionContainer class="mx-6 mb-6">
+    <div
+      class="bg-gray-100 dark:bg-gray-800 p-4 rounded-lg border-2 border-blue-500"
+    >
+      <h2 class="text-lg font-bold text-blue-600 dark:text-blue-400 mb-3">
+        🔍 Debug Information
+      </h2>
+
+      <!-- Authentication Status -->
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
+        <div class="bg-white dark:bg-gray-700 p-3 rounded">
+          <h3 class="font-semibold text-sm mb-2">🔐 Authentication</h3>
+          <div class="text-xs space-y-1">
+            <div>
+              Authenticated: <span
+                class={isAuth ? "text-green-600" : "text-red-600"}
+                >{isAuth ? "✅ Yes" : "❌ No"}</span>
+            </div>
+            <div>
+              User ID: <span class="font-mono">{user?.id || "None"}</span>
+            </div>
+            <div>
+              Email: <span class="font-mono">{user?.email || "None"}</span>
+            </div>
+            <div>
+              Role: <span class={role ? "text-blue-600" : "text-gray-500"}
+                >{role || "None"}</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="bg-white dark:bg-gray-700 p-3 rounded">
+          <h3 class="font-semibold text-sm mb-2">🍪 Cookies</h3>
+          <div class="text-xs space-y-1">
+            <div>
+              Access Token: <span
+                class={accessToken ? "text-green-600" : "text-red-600"}
+                >{
+                  accessToken
+                    ? `✅ ${accessToken.value.substring(0, 20)}...`
+                    : "❌ Missing"
+                }</span>
+            </div>
+            <div>
+              Refresh Token: <span
+                class={refreshToken ? "text-green-600" : "text-red-600"}
+                >{
+                  refreshToken
+                    ? `✅ ${refreshToken.value.substring(0, 20)}...`
+                    : "❌ Missing"
+                }</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="bg-white dark:bg-gray-700 p-3 rounded">
+          <h3 class="font-semibold text-sm mb-2">🔧 Environment</h3>
+          <div class="text-xs space-y-1">
+            <div>
+              Supabase URL: <span
+                class={envStatus.hasSupabaseUrl
+                  ? "text-green-600"
+                  : "text-red-600"}
+                >{envStatus.hasSupabaseUrl ? "✅ Set" : "❌ Missing"}</span>
+            </div>
+            <div>
+              Anon Key: <span
+                class={envStatus.hasSupabaseAnonKey
+                  ? "text-green-600"
+                  : "text-red-600"}
+                >{envStatus.hasSupabaseAnonKey ? "✅ Set" : "❌ Missing"}</span>
+            </div>
+            <div>
+              Client: <span
+                class={envStatus.supabaseClientCreated
+                  ? "text-green-600"
+                  : "text-red-600"}
+                >{
+                  envStatus.supabaseClientCreated ? "✅ Created" : "❌ Failed"
+                }</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Database Status -->
+      {
+        isAuth && (
+          <div class="bg-white dark:bg-gray-700 p-3 rounded mb-4">
+            <h3 class="font-semibold text-sm mb-2">📊 Database Access</h3>
+            <div class="text-xs space-y-1">
+              <div>
+                Profile Data:{" "}
+                <span class={profileData ? "text-green-600" : "text-red-600"}>
+                  {profileData
+                    ? `✅ Found (Role: ${profileData.role})`
+                    : "❌ Not Found"}
+                </span>
+              </div>
+              <div>
+                Projects Found:{" "}
+                <span
+                  class={
+                    projectCount > 0 ? "text-green-600" : "text-yellow-600"
+                  }
+                >
+                  {projectCount} projects
+                </span>
+              </div>
+              {dbError && (
+                <div class="text-red-600">❌ DB Error: {dbError}</div>
+              )}
+            </div>
+          </div>
+        )
+      }
+
+      <!-- Quick Actions -->
+      <div class="flex gap-2 text-xs">
+        <a
+          href="/api/reset-auth"
+          class="bg-red-500 text-white px-2 py-1 rounded hover:bg-red-600"
+          >🔄 Reset Auth</a
+        >
+        <a
+          href="/api/check-env"
+          class="bg-blue-500 text-white px-2 py-1 rounded hover:bg-blue-600"
+          target="_blank">🔧 Check Env</a
+        >
+        <a
+          href="/register"
+          class="bg-green-500 text-white px-2 py-1 rounded hover:bg-green-600"
+          >📝 Register</a
+        >
+        {
+          !isAuth && (
+            <button
+              onclick="window.location.reload()"
+              class="bg-gray-500 text-white px-2 py-1 rounded hover:bg-gray-600"
+            >
+              🔄 Reload
+            </button>
+          )
+        }
+      </div>
+    </div>
+  </SectionContainer>
+
   <SectionContainer class="flex flex-col gap-y-6 mx-6">
     <ProjectNav role={role} />
   </SectionContainer>

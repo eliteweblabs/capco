@@ -15,14 +15,36 @@ export const POST: APIRoute = async ({ request, redirect }) => {
     return new Response("Email and password are required", { status: 400 });
   }
 
-  const { error } = await supabase.auth.signUp({
+  // Validate email format
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(email)) {
+    return new Response("Invalid email format", { status: 400 });
+  }
+
+  // Validate password strength
+  if (password.length < 6) {
+    return new Response("Password must be at least 6 characters long", {
+      status: 400,
+    });
+  }
+
+  const { data, error } = await supabase.auth.signUp({
     email,
     password,
+    options: {
+      emailRedirectTo: import.meta.env.DEV
+        ? "http://localhost:4321/api/auth/verify"
+        : "https://de.capcofire.com/api/auth/verify",
+    },
   });
 
   if (error) {
+    console.error("Registration error:", error);
     return new Response(error.message, { status: 500 });
   }
 
-  return redirect("/");
+  console.log("User registration successful:", !!data.user);
+
+  // Redirect to home with success message
+  return redirect("/?message=registration_success");
 };

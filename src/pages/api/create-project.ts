@@ -4,6 +4,10 @@ import { supabase } from "../../lib/supabase";
 export const POST: APIRoute = async ({ request, cookies }) => {
   try {
     const body = await request.json();
+    console.log(
+      "📝 [CREATE-PROJECT] Received request body:",
+      JSON.stringify(body, null, 2),
+    );
 
     // Get user from session
     const accessToken = cookies.get("sb-access-token")?.value;
@@ -62,28 +66,34 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       }
     }
 
+    // Prepare project data
+    const projectData = {
+      author_id: userId,
+      address: body.address,
+      owner: owner,
+      client_id: client_id, // Store the client ID if it's an existing client
+      architect: body.architect,
+      sq_ft: body.sq_ft,
+      description: body.description,
+      new_construction:
+        body.new_construction === "on" || body.new_construction === true,
+      units: body.units,
+      building: body.building,
+      project: body.project,
+      service: body.service,
+      requested_docs: body.requested_docs,
+      status: 1, // Default status
+    };
+
+    console.log(
+      "📝 [CREATE-PROJECT] Inserting project data:",
+      JSON.stringify(projectData, null, 2),
+    );
+
     // Create project
     const { data: projects, error } = await supabase!
       .from("projects")
-      .insert([
-        {
-          author_id: userId,
-          address: body.address,
-          owner: owner,
-          client_id: client_id, // Store the client ID if it's an existing client
-          architect: body.architect,
-          sq_ft: body.sq_ft,
-          description: body.description,
-          new_construction:
-            body.new_construction === "on" || body.new_construction === true,
-          units: body.units,
-          building: body.building,
-          project: body.project,
-          service: body.service,
-          requested_docs: body.requested_docs,
-          status: 1, // Default status
-        },
-      ])
+      .insert([projectData])
       .select();
 
     if (error) {

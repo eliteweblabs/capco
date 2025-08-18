@@ -6,10 +6,16 @@ import { setAuthCookies, clearAuthCookies } from "../lib/auth-cookies";
 import { ensureUserProfile } from "../lib/auth-utils";
 import micromatch from "micromatch";
 
-const protectedRoutes = ["/dashboard(|/)"];
+const protectedRoutes = ["/dashboard(|/)", "/project/**"];
 const redirectRoutes = ["/signin(|/)", "/register(|/)"];
-const proptectedAPIRoutes = ["/api/guestbook(|/)"];
-const authCallbackRoutes = ["/api/auth/callback(|/)"];
+const protectedAPIRoutes = [
+  "/api/guestbook(|/)",
+  "/api/create-project",
+  "/api/update-project/**",
+  "/api/delete-project",
+  "/api/upload",
+];
+const authCallbackRoutes = ["/api/auth/callback(|/)", "/api/auth/verify"];
 
 export const onRequest = defineMiddleware(
   async ({ locals, url, cookies, redirect }, next) => {
@@ -44,9 +50,18 @@ export const onRequest = defineMiddleware(
       // Ensure user has a profile
       if (data.user) {
         await ensureUserProfile(data.user);
-      }
 
-      locals.email = data.user?.email!;
+        // Get user role from profile and set in locals
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("role")
+          .eq("id", data.user.id)
+          .single();
+
+        locals.user = data.user;
+        locals.email = data.user.email;
+        locals.role = profile?.role || "Client";
+      }
 
       // Use shared utility for consistent cookie handling
       setAuthCookies(
@@ -65,7 +80,7 @@ export const onRequest = defineMiddleware(
       }
     }
 
-    if (micromatch.isMatch(url.pathname, proptectedAPIRoutes)) {
+    if (micromatch.isMatch(url.pathname, protectedAPIRoutes)) {
       const accessToken = cookies.get("sb-access-token");
       const refreshToken = cookies.get("sb-refresh-token");
 

@@ -1,12 +1,65 @@
 ---
+// Handle URL parameters for error/success messages
+const url = Astro.url;
+const errorParam = url.searchParams.get("error");
+const messageParam = url.searchParams.get("message");
 
+let errorMessage = "";
+let successMessage = "";
+
+if (errorParam) {
+  switch (errorParam) {
+    case "oauth_failed":
+      errorMessage = "OAuth sign-in failed. Please try again.";
+      break;
+    case "verification_failed":
+      errorMessage = "Email verification failed. Please try again.";
+      break;
+    case "no_token":
+      errorMessage = "Invalid verification link.";
+      break;
+    case "no_user":
+      errorMessage = "User not found.";
+      break;
+    case "verification_error":
+      errorMessage = "An error occurred during verification.";
+      break;
+    default:
+      errorMessage = "An error occurred. Please try again.";
+  }
+}
+
+if (messageParam) {
+  switch (messageParam) {
+    case "registration_success":
+      successMessage =
+        "Registration successful! Please check your email to verify your account.";
+      break;
+    default:
+      successMessage = messageParam;
+  }
+}
 ---
 
-<div class="mx-6 max-w-lg mx-auto my-12 w-full border-2 border-red-500 relative">
-  <!-- Component Debug Label -->
-  <div class="absolute top-0 left-0 bg-red-500 text-white text-xs px-2 py-1 rounded-br-md font-mono z-10">
-    AuthForm
-  </div>
+<div class="max-w-lg mx-auto my-12 w-full px-6">
+  <!-- Error Message Display -->
+  {
+    errorMessage && (
+      <div class="mb-4 p-3 bg-red-50 border border-red-200 rounded-md">
+        <p class="text-red-700 text-sm">{errorMessage}</p>
+      </div>
+    )
+  }
+
+  <!-- Success Message Display -->
+  {
+    successMessage && (
+      <div class="mb-4 p-3 bg-green-50 border border-green-200 rounded-md">
+        <p class="text-green-700 text-sm">{successMessage}</p>
+      </div>
+    )
+  }
+
   <p class="text-zinc-500 dark:text-zinc-400 text-sm mb-8 w-full">
     New to CAPCo?
     <a
@@ -30,6 +83,7 @@
         id="email"
         type="email"
         name="email"
+        required
         class="rounded-md py-1 px-3 dark:bg-zinc-800 dark:text-zinc-300 border bg-zinc-50 border-zinc-300 dark:border-zinc-700 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-600 dark:focus:bg-zinc-900 focus:bg-white focus:ring-opacity-60"
       />
     </div>
@@ -42,6 +96,8 @@
       id="password"
       type="password"
       name="password"
+      required
+      minlength="6"
       class="rounded-md py-1 px-3 dark:bg-zinc-800 dark:text-zinc-300 border bg-zinc-50 border-zinc-300 dark:border-zinc-700 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-600 dark:focus:bg-zinc-900 focus:bg-white focus:ring-opacity-60"
     />
     <button
