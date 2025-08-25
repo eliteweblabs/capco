@@ -60,5 +60,5 @@ export const POST: APIRoute = async ({ request, cookies, redirect }) => {
   // Use shared utility for consistent cookie handling
   setAuthCookies(cookies, access_token, refresh_token);
 
-  return redirect("/");
+  return redirect("/dashboard");
 };

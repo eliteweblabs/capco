@@ -23,14 +23,10 @@ export const GET: APIRoute = async ({ url, cookies, redirect }) => {
 
   try {
     console.log("Attempting to exchange code for session...");
-    console.log(
-      "Full URL params:",
-      Object.fromEntries(url.searchParams.entries()),
-    );
+    console.log("Full URL params:", Object.fromEntries(url.searchParams.entries()));
 
     // Exchange the code for a session
-    const { data, error } =
-      await supabase.auth.exchangeCodeForSession(authCode);
+    const { data, error } = await supabase.auth.exchangeCodeForSession(authCode);
 
     if (error) {
       console.error("Auth callback error:", error);
@@ -70,12 +66,12 @@ export const GET: APIRoute = async ({ url, cookies, redirect }) => {
     setAuthCookies(cookies, access_token, refresh_token);
 
     console.log("Cookies set, redirecting to dashboard");
-    return redirect("/");
+    return redirect("/dashboard");
   } catch (error) {
     console.error("Unexpected error in auth callback:", error);
     return new Response(
       `Internal server error: ${error instanceof Error ? error.message : "Unknown error"}`,
-      { status: 500 },
+      { status: 500 }
     );
   }
 };

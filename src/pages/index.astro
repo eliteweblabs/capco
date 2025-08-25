@@ -1,250 +1,357 @@
 ---
-console.log("🏠 [INDEX] Page loading started...");
+console.log("🏠 [INDEX] Marketing page loading...");
 
-import App from "../components/App.astro";
+import Base from "../layout/Base.astro";
 import SectionContainer from "../components/SectionContainer.astro";
-import ProjectNav from "../components/ProjectNav.astro";
-import Dashboard from "../components/Dashboard.astro";
-import ClientSelect from "../components/form/ClientSelect.astro";
-import { supabase } from "../lib/supabase";
+import Hero from "../components/index/Hero.astro";
+import AuthForm from "../components/AuthForm.astro";
+import BoxIcon from "../components/BoxIcon.astro";
 
-// Check authentication
+// Para cambiar idioma de textos
+import { getI18N } from "../i18n";
+const { currentLocale } = Astro;
+const i18n = getI18N({ currentLocale });
+
+// Check authentication - if logged in, redirect to dashboard
 import { checkAuth } from "../lib/auth";
-const { isAuth, session, user, role } = await checkAuth(Astro.cookies);
+const { isAuth } = await checkAuth(Astro.cookies);
 
-// Debug information
-console.log("🔍 [DEBUG] Auth check results:", {
-  isAuth,
-  hasUser: !!user,
-  userId: user?.id,
-  userEmail: user?.email,
-  role,
-  hasSession: !!session,
-});
-
-// Additional debugging - check cookies directly
-const accessToken = Astro.cookies.get("sb-access-token");
-const refreshToken = Astro.cookies.get("sb-refresh-token");
-
-console.log("🍪 [DEBUG] Cookie status:", {
-  hasAccessToken: !!accessToken,
-  hasRefreshToken: !!refreshToken,
-  accessTokenLength: accessToken?.value?.length || 0,
-  refreshTokenLength: refreshToken?.value?.length || 0,
-});
-
-// Test database access if authenticated
-let projectCount = 0;
-let profileData = null;
-let dbError = null;
-
-if (isAuth && user && supabase) {
-  try {
-    // Test profile access
-    const { data: profile, error: profileError } = await supabase
-      .from("profiles")
-      .select("*")
-      .eq("id", user.id)
-      .single();
-
-    profileData = profile;
-
-    if (profileError) {
-      console.error("🚨 [DEBUG] Profile query error:", profileError);
-      dbError = profileError.message;
-    }
-
-    // Test project access
-    const { data: projects, error: projectError } = await supabase
-      .from("projects")
-      .select("id, title, author_id")
-      .limit(5);
-
-    projectCount = projects?.length || 0;
-
-    if (projectError) {
-      console.error("🚨 [DEBUG] Project query error:", projectError);
-      dbError = projectError.message;
-    }
-
-    console.log("📊 [DEBUG] Database test results:", {
-      profileFound: !!profile,
-      profileRole: profile?.role,
-      projectsFound: projectCount,
-      dbError,
-    });
-  } catch (error) {
-    console.error("🚨 [DEBUG] Database test exception:", error);
-    dbError = error.message;
-  }
+if (isAuth) {
+  return Astro.redirect("/dashboard");
 }
-
-// Environment check
-const envStatus = {
-  hasSupabaseUrl: !!import.meta.env.PUBLIC_SUPABASE_URL,
-  hasSupabaseAnonKey: !!import.meta.env.PUBLIC_SUPABASE_ANON_KEY,
-  hasSupabaseServiceKey: !!import.meta.env.SUPABASE_SERVICE_ROLE_KEY,
-  supabaseClientCreated: !!supabase,
-};
-
-console.log("🔧 [DEBUG] Environment status:", envStatus);
 ---
 
-<App>
-  <!-- Debug Panel (remove this in production) -->
-  <SectionContainer class="mx-6 mb-6">
-    <div
-      class="bg-gray-100 dark:bg-gray-800 p-4 rounded-lg border-2 border-blue-500"
-    >
-      <h2 class="text-lg font-bold text-blue-600 dark:text-blue-400 mb-3">
-        🔍 Debug Information
-      </h2>
-
-      <!-- Authentication Status -->
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
-        <div class="bg-white dark:bg-gray-700 p-3 rounded">
-          <h3 class="font-semibold text-sm mb-2">🔐 Authentication</h3>
-          <div class="text-xs space-y-1">
-            <div>
-              Authenticated: <span
-                class={isAuth ? "text-green-600" : "text-red-600"}
-                >{isAuth ? "✅ Yes" : "❌ No"}</span>
-            </div>
-            <div>
-              User ID: <span class="font-mono">{user?.id || "None"}</span>
-            </div>
-            <div>
-              Email: <span class="font-mono">{user?.email || "None"}</span>
-            </div>
-            <div>
-              Role: <span class={role ? "text-blue-600" : "text-gray-500"}
-                >{role || "None"}</span>
-            </div>
+<Base title={i18n.SEO_TITLE} description={i18n.SEO_DESCRIPTION}>
+  <!-- Hero Section -->
+  <SectionContainer id="hero" class="py-16 px-6">
+    <div class="max-w-6xl mx-auto">
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+        <!-- Hero Content -->
+        <div class="space-y-8">
+          <div class="space-y-4">
+            <h1 class="text-4xl md:text-5xl lg:text-6xl font-bold leading-tight">
+              <span class="text-gray-900 dark:text-white">Fire Protection</span>
+              <span class="block text-red-600 dark:text-red-400">Systems Made Simple</span>
+            </h1>
+            <p class="text-xl text-gray-600 dark:text-gray-300 leading-relaxed">
+              Streamline your fire protection projects with our comprehensive platform. From PDF
+              submissions to approval workflows, we've got you covered.
+            </p>
           </div>
-        </div>
 
-        <div class="bg-white dark:bg-gray-700 p-3 rounded">
-          <h3 class="font-semibold text-sm mb-2">🍪 Cookies</h3>
-          <div class="text-xs space-y-1">
-            <div>
-              Access Token: <span
-                class={accessToken ? "text-green-600" : "text-red-600"}
-                >{
-                  accessToken
-                    ? `✅ ${accessToken.value.substring(0, 20)}...`
-                    : "❌ Missing"
-                }</span>
-            </div>
-            <div>
-              Refresh Token: <span
-                class={refreshToken ? "text-green-600" : "text-red-600"}
-                >{
-                  refreshToken
-                    ? `✅ ${refreshToken.value.substring(0, 20)}...`
-                    : "❌ Missing"
-                }</span>
-            </div>
-          </div>
-        </div>
-
-        <div class="bg-white dark:bg-gray-700 p-3 rounded">
-          <h3 class="font-semibold text-sm mb-2">🔧 Environment</h3>
-          <div class="text-xs space-y-1">
-            <div>
-              Supabase URL: <span
-                class={envStatus.hasSupabaseUrl
-                  ? "text-green-600"
-                  : "text-red-600"}
-                >{envStatus.hasSupabaseUrl ? "✅ Set" : "❌ Missing"}</span>
-            </div>
-            <div>
-              Anon Key: <span
-                class={envStatus.hasSupabaseAnonKey
-                  ? "text-green-600"
-                  : "text-red-600"}
-                >{envStatus.hasSupabaseAnonKey ? "✅ Set" : "❌ Missing"}</span>
-            </div>
-            <div>
-              Client: <span
-                class={envStatus.supabaseClientCreated
-                  ? "text-green-600"
-                  : "text-red-600"}
-                >{
-                  envStatus.supabaseClientCreated ? "✅ Created" : "❌ Failed"
-                }</span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Database Status -->
-      {
-        isAuth && (
-          <div class="bg-white dark:bg-gray-700 p-3 rounded mb-4">
-            <h3 class="font-semibold text-sm mb-2">📊 Database Access</h3>
-            <div class="text-xs space-y-1">
-              <div>
-                Profile Data:{" "}
-                <span class={profileData ? "text-green-600" : "text-red-600"}>
-                  {profileData
-                    ? `✅ Found (Role: ${profileData.role})`
-                    : "❌ Not Found"}
-                </span>
+          <!-- Key Benefits -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div class="flex items-center space-x-3">
+              <div
+                class="w-8 h-8 bg-red-100 dark:bg-red-900/30 rounded-lg flex items-center justify-center"
+              >
+                <BoxIcon name="shield-check" class="w-5 h-5 text-red-600 dark:text-red-400" />
               </div>
-              <div>
-                Projects Found:{" "}
-                <span
-                  class={
-                    projectCount > 0 ? "text-green-600" : "text-yellow-600"
-                  }
-                >
-                  {projectCount} projects
-                </span>
+              <span class="text-gray-700 dark:text-gray-300 font-medium">Secure & Compliant</span>
+            </div>
+            <div class="flex items-center space-x-3">
+              <div
+                class="w-8 h-8 bg-blue-100 dark:bg-blue-900/30 rounded-lg flex items-center justify-center"
+              >
+                <BoxIcon name="time" class="w-5 h-5 text-blue-600 dark:text-blue-400" />
               </div>
-              {dbError && (
-                <div class="text-red-600">❌ DB Error: {dbError}</div>
-              )}
+              <span class="text-gray-700 dark:text-gray-300 font-medium">Fast Processing</span>
+            </div>
+            <div class="flex items-center space-x-3">
+              <div
+                class="w-8 h-8 bg-green-100 dark:bg-green-900/30 rounded-lg flex items-center justify-center"
+              >
+                <BoxIcon name="check-circle" class="w-5 h-5 text-green-600 dark:text-green-400" />
+              </div>
+              <span class="text-gray-700 dark:text-gray-300 font-medium">Easy Approval</span>
+            </div>
+            <div class="flex items-center space-x-3">
+              <div
+                class="w-8 h-8 bg-purple-100 dark:bg-purple-900/30 rounded-lg flex items-center justify-center"
+              >
+                <BoxIcon name="users" class="w-5 h-5 text-purple-600 dark:text-purple-400" />
+              </div>
+              <span class="text-gray-700 dark:text-gray-300 font-medium">Team Collaboration</span>
             </div>
           </div>
-        )
-      }
 
-      <!-- Quick Actions -->
-      <div class="flex gap-2 text-xs">
-        <a
-          href="/api/reset-auth"
-          class="bg-red-500 text-white px-2 py-1 rounded hover:bg-red-600"
-          >🔄 Reset Auth</a
-        >
-        <a
-          href="/api/check-env"
-          class="bg-blue-500 text-white px-2 py-1 rounded hover:bg-blue-600"
-          target="_blank">🔧 Check Env</a
-        >
-        <a
-          href="/register"
-          class="bg-green-500 text-white px-2 py-1 rounded hover:bg-green-600"
-          >📝 Register</a
-        >
-        {
-          !isAuth && (
-            <button
-              onclick="window.location.reload()"
-              class="bg-gray-500 text-white px-2 py-1 rounded hover:bg-gray-600"
+          <!-- CTA Buttons -->
+          <div class="flex flex-col sm:flex-row gap-4">
+            <a
+              href="/login"
+              class="inline-flex items-center justify-center px-8 py-4 bg-red-600 text-white font-semibold rounded-lg hover:bg-red-700 transition-colors shadow-lg hover:shadow-xl"
             >
-              🔄 Reload
-            </button>
-          )
-        }
+              <BoxIcon name="log-in" class="w-5 h-5 mr-2" />
+              Get Started
+            </a>
+            <a
+              href="/projects"
+              class="inline-flex items-center justify-center px-8 py-4 border-2 border-red-600 text-red-600 dark:text-red-400 font-semibold rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+            >
+              <BoxIcon name="building" class="w-5 h-5 mr-2" />
+              View Projects
+            </a>
+            <a
+              href="/register"
+              class="inline-flex items-center justify-center px-8 py-4 border-2 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 font-semibold rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+            >
+              <BoxIcon name="user-plus" class="w-5 h-5 mr-2" />
+              Create Account
+            </a>
+          </div>
+        </div>
+
+        <!-- Hero Image/Visual -->
+        <div class="relative">
+          <div
+            class="relative bg-gradient-to-br from-red-50 to-blue-50 dark:from-red-900/20 dark:to-blue-900/20 rounded-2xl p-8 shadow-2xl"
+          >
+            <div class="grid grid-cols-2 gap-4">
+              <div class="space-y-4">
+                <div class="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm">
+                  <div class="flex items-center space-x-2 mb-2">
+                    <BoxIcon name="file-pdf" class="w-5 h-5 text-red-600" />
+                    <span class="text-sm font-medium">Project Submittal</span>
+                  </div>
+                  <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                    <div class="bg-green-500 h-2 rounded-full w-3/4"></div>
+                  </div>
+                </div>
+                <div class="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm">
+                  <div class="flex items-center space-x-2 mb-2">
+                    <BoxIcon name="check-shield" class="w-5 h-5 text-green-600" />
+                    <span class="text-sm font-medium">Safety Review</span>
+                  </div>
+                  <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                    <div class="bg-blue-500 h-2 rounded-full w-1/2"></div>
+                  </div>
+                </div>
+              </div>
+              <div class="space-y-4">
+                <div class="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm">
+                  <div class="flex items-center space-x-2 mb-2">
+                    <BoxIcon name="user-check" class="w-5 h-5 text-blue-600" />
+                    <span class="text-sm font-medium">Client Approval</span>
+                  </div>
+                  <div class="flex items-center justify-center py-4">
+                    <BoxIcon name="check-circle" class="w-8 h-8 text-green-500" />
+                  </div>
+                </div>
+                <div class="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm">
+                  <div class="flex items-center space-x-2 mb-2">
+                    <BoxIcon name="download" class="w-5 h-5 text-purple-600" />
+                    <span class="text-sm font-medium">Final Delivery</span>
+                  </div>
+                  <div class="flex items-center justify-center py-4">
+                    <BoxIcon name="package" class="w-8 h-8 text-purple-500" />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   </SectionContainer>
 
-  <SectionContainer class="flex flex-col gap-y-6 mx-6">
-    <ProjectNav role={role} />
+  <!-- Features Section -->
+  <SectionContainer class="py-16 px-6 bg-gray-50 dark:bg-gray-900">
+    <div class="max-w-6xl mx-auto">
+      <div class="text-center mb-16">
+        <h2 class="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-4">
+          Everything You Need for Fire Protection Projects
+        </h2>
+        <p class="text-xl text-gray-600 dark:text-gray-300 max-w-3xl mx-auto">
+          Our platform streamlines the entire workflow from initial submission to final approval,
+          making fire protection system management efficient and reliable.
+        </p>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+        <!-- Feature 1 -->
+        <div
+          class="bg-white dark:bg-gray-800 p-8 rounded-xl shadow-lg hover:shadow-xl transition-shadow"
+        >
+          <div
+            class="w-12 h-12 bg-red-100 dark:bg-red-900/30 rounded-lg flex items-center justify-center mb-6"
+          >
+            <BoxIcon name="cloud-upload" class="w-6 h-6 text-red-600 dark:text-red-400" />
+          </div>
+          <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-4">PDF Submission</h3>
+          <p class="text-gray-600 dark:text-gray-300">
+            Easily upload and submit your fire protection system plans and documents. Secure cloud
+            storage with instant access for all stakeholders.
+          </p>
+        </div>
+
+        <!-- Feature 2 -->
+        <div
+          class="bg-white dark:bg-gray-800 p-8 rounded-xl shadow-lg hover:shadow-xl transition-shadow"
+        >
+          <div
+            class="w-12 h-12 bg-blue-100 dark:bg-blue-900/30 rounded-lg flex items-center justify-center mb-6"
+          >
+            <BoxIcon name="search-alt" class="w-6 h-6 text-blue-600 dark:text-blue-400" />
+          </div>
+          <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-4">Review Process</h3>
+          <p class="text-gray-600 dark:text-gray-300">
+            Streamlined review workflow with automated notifications and status tracking. Keep
+            everyone informed throughout the approval process.
+          </p>
+        </div>
+
+        <!-- Feature 3 -->
+        <div
+          class="bg-white dark:bg-gray-800 p-8 rounded-xl shadow-lg hover:shadow-xl transition-shadow"
+        >
+          <div
+            class="w-12 h-12 bg-green-100 dark:bg-green-900/30 rounded-lg flex items-center justify-center mb-6"
+          >
+            <BoxIcon name="shield-check" class="w-6 h-6 text-green-600 dark:text-green-400" />
+          </div>
+          <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-4">
+            Compliance Tracking
+          </h3>
+          <p class="text-gray-600 dark:text-gray-300">
+            Ensure all projects meet safety standards and regulatory requirements. Built-in
+            compliance checks and audit trails.
+          </p>
+        </div>
+
+        <!-- Feature 4 -->
+        <div
+          class="bg-white dark:bg-gray-800 p-8 rounded-xl shadow-lg hover:shadow-xl transition-shadow"
+        >
+          <div
+            class="w-12 h-12 bg-purple-100 dark:bg-purple-900/30 rounded-lg flex items-center justify-center mb-6"
+          >
+            <BoxIcon name="users" class="w-6 h-6 text-purple-600 dark:text-purple-400" />
+          </div>
+          <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-4">
+            Team Collaboration
+          </h3>
+          <p class="text-gray-600 dark:text-gray-300">
+            Work together seamlessly with role-based access and real-time updates. Admin and client
+            portals for different user types.
+          </p>
+        </div>
+
+        <!-- Feature 5 -->
+        <div
+          class="bg-white dark:bg-gray-800 p-8 rounded-xl shadow-lg hover:shadow-xl transition-shadow"
+        >
+          <div
+            class="w-12 h-12 bg-orange-100 dark:bg-orange-900/30 rounded-lg flex items-center justify-center mb-6"
+          >
+            <BoxIcon name="bell" class="w-6 h-6 text-orange-600 dark:text-orange-400" />
+          </div>
+          <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-4">
+            Smart Notifications
+          </h3>
+          <p class="text-gray-600 dark:text-gray-300">
+            Stay informed with intelligent alerts and email notifications. Never miss important
+            updates or deadlines.
+          </p>
+        </div>
+
+        <!-- Feature 6 -->
+        <div
+          class="bg-white dark:bg-gray-800 p-8 rounded-xl shadow-lg hover:shadow-xl transition-shadow"
+        >
+          <div
+            class="w-12 h-12 bg-teal-100 dark:bg-teal-900/30 rounded-lg flex items-center justify-center mb-6"
+          >
+            <BoxIcon name="download" class="w-6 h-6 text-teal-600 dark:text-teal-400" />
+          </div>
+          <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-4">Easy Downloads</h3>
+          <p class="text-gray-600 dark:text-gray-300">
+            Quick access to approved documents and final deliverables. Organized file management
+            with version control.
+          </p>
+        </div>
+      </div>
+    </div>
   </SectionContainer>
 
-  <SectionContainer id="dashboard" class="mb-0 mt-0 mx-6 flex">
-    <Dashboard role={role} />
+  <!-- Projects Showcase Section -->
+  <SectionContainer class="py-16 px-6">
+    <div class="max-w-6xl mx-auto text-center">
+      <h2 class="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-6">
+        Our <span class="text-red-600 dark:text-red-400">Completed Projects</span>
+      </h2>
+      <p class="text-xl text-gray-600 dark:text-gray-300 max-w-3xl mx-auto mb-12">
+        Explore our portfolio of successfully completed fire protection installations. Each project
+        showcases our commitment to safety, compliance, and excellence.
+      </p>
+
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
+        <div class="bg-white dark:bg-gray-800 p-8 rounded-xl shadow-lg">
+          <div
+            class="w-16 h-16 bg-red-100 dark:bg-red-900/30 rounded-lg flex items-center justify-center mx-auto mb-6"
+          >
+            <BoxIcon name="building" class="w-8 h-8 text-red-600 dark:text-red-400" />
+          </div>
+          <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-4">
+            Commercial Buildings
+          </h3>
+          <p class="text-gray-600 dark:text-gray-300">
+            Comprehensive fire protection systems for office buildings, retail spaces, and
+            commercial complexes.
+          </p>
+        </div>
+
+        <div class="bg-white dark:bg-gray-800 p-8 rounded-xl shadow-lg">
+          <div
+            class="w-16 h-16 bg-blue-100 dark:bg-blue-900/30 rounded-lg flex items-center justify-center mx-auto mb-6"
+          >
+            <BoxIcon name="home" class="w-8 h-8 text-blue-600 dark:text-blue-400" />
+          </div>
+          <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-4">
+            Residential Projects
+          </h3>
+          <p class="text-gray-600 dark:text-gray-300">
+            Multi-family housing and residential complexes with advanced fire safety systems and
+            compliance.
+          </p>
+        </div>
+
+        <div class="bg-white dark:bg-gray-800 p-8 rounded-xl shadow-lg">
+          <div
+            class="w-16 h-16 bg-green-100 dark:bg-green-900/30 rounded-lg flex items-center justify-center mx-auto mb-6"
+          >
+            <BoxIcon name="wrench" class="w-8 h-8 text-green-600 dark:text-green-400" />
+          </div>
+          <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-4">
+            Industrial Facilities
+          </h3>
+          <p class="text-gray-600 dark:text-gray-300">
+            Specialized fire protection solutions for manufacturing, warehousing, and industrial
+            applications.
+          </p>
+        </div>
+      </div>
+
+      <a
+        href="/projects"
+        class="inline-flex items-center justify-center px-8 py-4 bg-red-600 text-white font-semibold rounded-lg hover:bg-red-700 transition-colors shadow-lg hover:shadow-xl"
+      >
+        <BoxIcon name="building" class="w-5 h-5 mr-2" />
+        View All Projects
+      </a>
+    </div>
   </SectionContainer>
-</App>
+
+  <!-- Login Section -->
+  <SectionContainer class="py-16 px-6 bg-gray-50 dark:bg-gray-900">
+    <div class="max-w-md mx-auto">
+      <div class="text-center mb-8">
+        <h2 class="text-3xl font-bold text-gray-900 dark:text-white mb-4">Access Your Account</h2>
+        <p class="text-gray-600 dark:text-gray-300">
+          Sign in to manage your fire protection projects
+        </p>
+      </div>
+
+      <AuthForm />
+    </div>
+  </SectionContainer>
+</Base>

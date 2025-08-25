@@ -1,0 +1,283 @@
+---
+console.log("🏗️ [PROJECTS] Projects showcase page loading...");
+
+import Base from "../layout/Base.astro";
+import SectionContainer from "../components/SectionContainer.astro";
+import BoxIcon from "../components/BoxIcon.astro";
+
+// Para cambiar idioma de textos
+import { getI18N } from "../i18n";
+const { currentLocale } = Astro;
+const i18n = getI18N({ currentLocale });
+
+// Fetch featured projects from API
+let featuredProjects = [];
+let error = null;
+
+try {
+  const response = await fetch(`${Astro.url.origin}/api/get-featured-projects`);
+  const result = await response.json();
+  
+  if (result.success) {
+    featuredProjects = result.projects;
+    console.log(`🏗️ [PROJECTS] Loaded ${featuredProjects.length} featured projects`);
+  } else {
+    error = result.error;
+    console.error("🏗️ [PROJECTS] Failed to load projects:", error);
+  }
+} catch (fetchError) {
+  error = "Failed to connect to database";
+  console.error("🏗️ [PROJECTS] Fetch error:", fetchError);
+}
+
+// Helper function to format square footage
+function formatSquareFootage(sqFt: number | null | undefined): string {
+  if (!sqFt) return "N/A";
+  return new Intl.NumberFormat().format(sqFt) + " sq ft";
+}
+
+// Helper function to format date
+function formatDate(dateString: string | null | undefined): string {
+  if (!dateString) return "N/A";
+  return new Date(dateString).toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric'
+  });
+}
+---
+
+<Base title="Featured Projects - CAPCo Fire Protection" description="Explore our completed fire protection system projects showcasing innovative safety solutions and regulatory compliance.">
+  <!-- Header Section -->
+  <SectionContainer class="py-16 px-6 bg-gradient-to-r from-red-50 to-orange-50 dark:from-red-900/20 dark:to-orange-900/20">
+    <div class="max-w-6xl mx-auto text-center">
+      <h1 class="text-4xl md:text-5xl font-bold text-gray-900 dark:text-white mb-6">
+        Featured <span class="text-red-600 dark:text-red-400">Projects</span>
+      </h1>
+      <p class="text-xl text-gray-600 dark:text-gray-300 max-w-3xl mx-auto mb-8">
+        Discover our completed fire protection system installations. Each project represents our commitment 
+        to safety, innovation, and regulatory compliance.
+      </p>
+      
+      <!-- Navigation -->
+      <div class="flex justify-center gap-4">
+        <a 
+          href="/" 
+          class="inline-flex items-center px-6 py-3 border-2 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 font-medium rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+        >
+          <BoxIcon name="home" class="w-5 h-5 mr-2" />
+          Home
+        </a>
+        <a 
+          href="/dashboard" 
+          class="inline-flex items-center px-6 py-3 bg-red-600 text-white font-medium rounded-lg hover:bg-red-700 transition-colors"
+        >
+          <BoxIcon name="dashboard" class="w-5 h-5 mr-2" />
+          Dashboard
+        </a>
+      </div>
+    </div>
+  </SectionContainer>
+
+  <!-- Projects Grid -->
+  <SectionContainer class="py-16 px-6">
+    <div class="max-w-7xl mx-auto">
+      {error ? (
+        <!-- Error State -->
+        <div class="text-center py-16">
+          <div class="w-16 h-16 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center mx-auto mb-6">
+            <BoxIcon name="error-circle" class="w-8 h-8 text-red-600 dark:text-red-400" />
+          </div>
+          <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-4">
+            No Projects Found
+          </h2>
+          <p class="text-gray-600 dark:text-gray-300 mb-6">
+            {error}
+          </p>
+          <button 
+            onclick="window.location.reload()" 
+            class="inline-flex items-center px-6 py-3 bg-red-600 text-white font-medium rounded-lg hover:bg-red-700 transition-colors"
+          >
+            <BoxIcon name="refresh" class="w-5 h-5 mr-2" />
+            Try Again
+          </button>
+        </div>
+      ) : featuredProjects.length === 0 ? (
+        <!-- Empty State -->
+        <div class="text-center py-16">
+          <div class="w-16 h-16 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center mx-auto mb-6">
+            <BoxIcon name="building" class="w-8 h-8 text-blue-600 dark:text-blue-400" />
+          </div>
+          <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-4">
+            No Featured Projects Yet
+          </h2>
+          <p class="text-gray-600 dark:text-gray-300 mb-6">
+            We're working on exciting fire protection projects. Check back soon to see our latest completed work!
+          </p>
+          <a 
+            href="/" 
+            class="inline-flex items-center px-6 py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors"
+          >
+            <BoxIcon name="home" class="w-5 h-5 mr-2" />
+            Back to Home
+          </a>
+        </div>
+      ) : (
+        <!-- Projects Grid -->
+        <>
+          <div class="text-center mb-12">
+            <h2 class="text-3xl font-bold text-gray-900 dark:text-white mb-4">
+              Completed Projects
+            </h2>
+            <p class="text-gray-600 dark:text-gray-300">
+              {featuredProjects.length} featured project{featuredProjects.length !== 1 ? 's' : ''} showcasing our expertise
+            </p>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {featuredProjects.map((project: any) => (
+              <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden group">
+                <!-- Project Header -->
+                <div class="p-6 border-b border-gray-200 dark:border-gray-700">
+                  <div class="flex items-start justify-between mb-4">
+                    <div class="flex-1">
+                      <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-2 group-hover:text-red-600 dark:group-hover:text-red-400 transition-colors">
+                        {project.title}
+                      </h3>
+                      <p class="text-gray-600 dark:text-gray-300 font-medium">
+                        {project.owner}
+                      </p>
+                    </div>
+                    <div class="w-12 h-12 bg-red-100 dark:bg-red-900/30 rounded-lg flex items-center justify-center flex-shrink-0 ml-4">
+                      <BoxIcon name="building" class="w-6 h-6 text-red-600 dark:text-red-400" />
+                    </div>
+                  </div>
+                  
+                  {project.description && (
+                    <p class="text-sm text-gray-600 dark:text-gray-400 line-clamp-3">
+                      {project.description}
+                    </p>
+                  )}
+                </div>
+
+                <!-- Project Details -->
+                <div class="p-6 space-y-4">
+                  <!-- Size and Type -->
+                  <div class="grid grid-cols-2 gap-4">
+                    <div class="flex items-center space-x-2">
+                      <BoxIcon name="expand" class="w-4 h-4 text-gray-400" />
+                      <div>
+                        <p class="text-xs text-gray-500 dark:text-gray-400">Size</p>
+                        <p class="text-sm font-medium text-gray-900 dark:text-white">
+                          {formatSquareFootage(project.squareFootage)}
+                        </p>
+                      </div>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                      <BoxIcon name={project.isNewConstruction ? "plus-circle" : "edit"} class="w-4 h-4 text-gray-400" />
+                      <div>
+                        <p class="text-xs text-gray-500 dark:text-gray-400">Type</p>
+                        <p class="text-sm font-medium text-gray-900 dark:text-white">
+                          {project.isNewConstruction ? "New Construction" : "Renovation"}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Architect and Units -->
+                  {(project.architect || project.units) && (
+                    <div class="grid grid-cols-2 gap-4">
+                      {project.architect && (
+                        <div class="flex items-center space-x-2">
+                          <BoxIcon name="user" class="w-4 h-4 text-gray-400" />
+                          <div>
+                            <p class="text-xs text-gray-500 dark:text-gray-400">Architect</p>
+                            <p class="text-sm font-medium text-gray-900 dark:text-white truncate">
+                              {project.architect}
+                            </p>
+                          </div>
+                        </div>
+                      )}
+                      {project.units && (
+                        <div class="flex items-center space-x-2">
+                          <BoxIcon name="home" class="w-4 h-4 text-gray-400" />
+                          <div>
+                            <p class="text-xs text-gray-500 dark:text-gray-400">Units</p>
+                            <p class="text-sm font-medium text-gray-900 dark:text-white">
+                              {project.units}
+                            </p>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  <!-- Completion Date -->
+                  <div class="flex items-center space-x-2 pt-2 border-t border-gray-200 dark:border-gray-700">
+                    <BoxIcon name="calendar-check" class="w-4 h-4 text-green-500" />
+                    <div>
+                      <p class="text-xs text-gray-500 dark:text-gray-400">Completed</p>
+                      <p class="text-sm font-medium text-gray-900 dark:text-white">
+                        {formatDate(project.completedAt)}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Project Footer -->
+                <div class="px-6 py-4 bg-gray-50 dark:bg-gray-900/50">
+                  <div class="flex items-center justify-between">
+                    <div class="flex items-center space-x-2">
+                      <div class="w-2 h-2 bg-green-500 rounded-full"></div>
+                      <span class="text-sm font-medium text-green-600 dark:text-green-400">
+                        Project Complete
+                      </span>
+                    </div>
+                    <BoxIcon name="shield-check" class="w-5 h-5 text-green-500" />
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
+    </div>
+  </SectionContainer>
+
+  <!-- Call to Action -->
+  <SectionContainer class="py-16 px-6 bg-gray-50 dark:bg-gray-900">
+    <div class="max-w-4xl mx-auto text-center">
+      <h2 class="text-3xl font-bold text-gray-900 dark:text-white mb-6">
+        Ready to Start Your Fire Protection Project?
+      </h2>
+      <p class="text-xl text-gray-600 dark:text-gray-300 mb-8">
+        Join our satisfied clients and ensure your building meets all safety requirements with our expert fire protection services.
+      </p>
+      <div class="flex flex-col sm:flex-row gap-4 justify-center">
+                  <a 
+            href="/login" 
+            class="inline-flex items-center justify-center px-8 py-4 bg-red-600 text-white font-semibold rounded-lg hover:bg-red-700 transition-colors shadow-lg hover:shadow-xl"
+          >
+          <BoxIcon name="plus-circle" class="w-5 h-5 mr-2" />
+          Start New Project
+        </a>
+        <a 
+          href="/register" 
+          class="inline-flex items-center justify-center px-8 py-4 border-2 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 font-semibold rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+        >
+          <BoxIcon name="user-plus" class="w-5 h-5 mr-2" />
+          Create Account
+        </a>
+      </div>
+    </div>
+  </SectionContainer>
+</Base>
+
+<style>
+  .line-clamp-3 {
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+</style>
