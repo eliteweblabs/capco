@@ -272,10 +272,10 @@ const visibleAdminNav = getVisibleNavItems(adminNavigation, isAuth, role);
         <button
           id="mobile-menu-btn"
           aria-label="Open mobile menu"
-          class="flex size-8 items-center justify-center text-gray-700 transition-colors hover:text-red-600 dark:text-gray-300 dark:hover:text-red-400 md:hidden"
+          class="relative flex size-8 items-center justify-center text-gray-700 transition-colors hover:text-red-600 dark:text-gray-300 dark:hover:text-red-400 md:hidden"
         >
-          <i id="hamburger-icon" class="bx bx-menu text-xl"></i>
-          <i id="close-icon" class="bx bx-x hidden text-xl"></i>
+          <i id="hamburger-icon" class="bx bx-menu absolute text-xl transition-opacity duration-200"></i>
+          <i id="close-icon" class="bx bx-x absolute hidden text-xl transition-opacity duration-200"></i>
         </button>
       </div>
     </div>
@@ -352,7 +352,16 @@ const visibleAdminNav = getVisibleNavItems(adminNavigation, isAuth, role);
     logoutBtn: !!logoutBtn,
     mobileMenuBtn: !!mobileMenuBtn,
     mobileMenu: !!mobileMenu,
+    hamburgerIcon: !!hamburgerIcon,
+    closeIcon: !!closeIcon,
   });
+
+  // Initialize mobile menu icon states
+  if (hamburgerIcon && closeIcon) {
+    hamburgerIcon.classList.remove("hidden");
+    closeIcon.classList.add("hidden");
+    console.log("📋 [HEADER] Mobile menu icons initialized");
+  }
 
   function updateProfileButton(session) {
     console.log("📋 [HEADER] updateProfileButton called with session:", session);
@@ -406,6 +415,11 @@ const visibleAdminNav = getVisibleNavItems(adminNavigation, isAuth, role);
 
   // Mobile menu toggle functionality
   function toggleMobileMenu() {
+    if (!mobileMenu || !hamburgerIcon || !closeIcon) {
+      console.error("📋 [HEADER] Missing mobile menu elements");
+      return;
+    }
+
     const isOpen = !mobileMenu.classList.contains("hidden");
 
     if (isOpen) {
@@ -435,10 +449,12 @@ const visibleAdminNav = getVisibleNavItems(adminNavigation, isAuth, role);
   document.addEventListener("click", (e) => {
     if (mobileMenu && !mobileMenu.classList.contains("hidden")) {
       // Close if clicking outside the mobile menu
-      if (!mobileMenu.contains(e.target) && !mobileMenuBtn.contains(e.target)) {
+      if (!mobileMenu.contains(e.target) && !mobileMenuBtn?.contains(e.target)) {
         mobileMenu.classList.add("hidden");
-        hamburgerIcon.classList.remove("hidden");
-        closeIcon.classList.add("hidden");
+        if (hamburgerIcon && closeIcon) {
+          hamburgerIcon.classList.remove("hidden");
+          closeIcon.classList.add("hidden");
+        }
         console.log("📋 [HEADER] Mobile menu closed by outside click");
       }
     }
@@ -450,8 +466,10 @@ const visibleAdminNav = getVisibleNavItems(adminNavigation, isAuth, role);
     mobileNavLinks.forEach((link) => {
       link.addEventListener("click", () => {
         mobileMenu.classList.add("hidden");
-        hamburgerIcon.classList.remove("hidden");
-        closeIcon.classList.add("hidden");
+        if (hamburgerIcon && closeIcon) {
+          hamburgerIcon.classList.remove("hidden");
+          closeIcon.classList.add("hidden");
+        }
         console.log("📋 [HEADER] Mobile menu closed by navigation link click");
       });
     });
