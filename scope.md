@@ -9,8 +9,22 @@ This app is designed to facilitate the process of submitting (by clients) and re
 ## Authentication & Navigation
 
 - The entire app is password protected.
-- Upon authentication, clients are redirected to the index page.
-- The index page references the client's latest project and provides links to their past projects.
+- Upon authentication, clients are redirected to the dashboard page (`/dashboard`).
+- The index page (`/`) is now a marketing landing page for public visitors.
+- Authenticated users access the dashboard for project management.
+
+## Development Session Management
+
+**⚠️ IMPORTANT: Always check `PREVIOUS_SESSION_SUMMARY.md` at the start of each development session.**
+
+This file contains:
+- Current branch status and last working location
+- Recent changes and implementations
+- Todo items and next steps
+- Technical context and decisions made
+- Git commit history and file changes
+
+Update this file at the end of each significant development session to maintain context continuity.
 
 ### Use Packages
 
@@ -67,6 +81,10 @@ ORDER BY table_name, ordinal_position;
 - Use `id` not `project_id` in files table
 - `author_id` references user ID, not project ID
 - UUID vs text comparisons in RLS policies
+
+### Recent Schema Updates
+
+- **projects.feature** (boolean): Added for marketing page project showcase. Default: false. Set to true for projects to display on public `/projects` page.
 
 | table_name | column_name      | data_type                   | is_nullable | column_default                       |
 | ---------- | ---------------- | --------------------------- | ----------- | ------------------------------------ |
