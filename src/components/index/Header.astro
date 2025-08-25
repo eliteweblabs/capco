@@ -16,74 +16,67 @@ import { checkAuth } from "../../lib/auth";
 const { isAuth, session, user, role } = await checkAuth(Astro.cookies);
 
 // Navigation schema
+type UserRole = "any" | "client" | "admin" | "adminStaff";
+
 interface NavItem {
   label: string;
   href: string;
-  requiresAuth?: boolean;
-  hideWhenAuth?: boolean;
-  adminOnly?: boolean;
+  roles: UserRole[]; // Array of roles that can access this item
   primary?: boolean; // For styling primary CTA buttons
 }
 
-const primaryNavigation: NavItem[] = [
+const navigation: NavItem[] = [
   {
     label: "About",
     href: "/about",
+    roles: ["any"], // Public access
   },
   {
     label: "Projects",
-    href: "/projects",
-  },
-  {
-    label: "Login",
-    href: "/login",
-    hideWhenAuth: true,
-    primary: true,
+    href: "/projects", 
+    roles: ["any"], // Public access
   },
   {
     label: "Dashboard",
     href: "/dashboard",
-    requiresAuth: true,
+    roles: ["client", "admin", "adminStaff"], // Authenticated users only
     primary: true,
   },
-];
-
-const adminNavigation: NavItem[] = [
   {
     label: "PDF Review",
     href: "/pdf-review",
-    adminOnly: true,
+    roles: ["admin", "adminStaff"], // Admin access only
   },
   {
     label: "Services Test",
     href: "/services-test",
-    adminOnly: true,
+    roles: ["admin", "adminStaff"], // Admin access only
   },
   {
     label: "PDF Editor",
     href: "/pdf-editor",
-    adminOnly: true,
+    roles: ["admin", "adminStaff"], // Admin access only
   },
 ];
 
 // Filter navigation items based on auth state and role
-function getVisibleNavItems(navItems: NavItem[], isAuth: boolean, role?: string | null): NavItem[] {
+function getVisibleNavItems(navItems: NavItem[], isAuth: boolean, userRole?: string | null): NavItem[] {
   return navItems.filter((item) => {
-    // Hide if requires auth but user not authenticated
-    if (item.requiresAuth && !isAuth) return false;
+    // If item allows "any" role, show it to everyone
+    if (item.roles.includes("any")) return true;
 
-    // Hide if should be hidden when authenticated
-    if (item.hideWhenAuth && isAuth) return false;
+    // If user is not authenticated, only show "any" role items
+    if (!isAuth) return false;
 
-    // Hide if admin only but user is not admin
-    if (item.adminOnly && role !== "Admin") return false;
+    // Map database role to our role system
+    const mappedRole: UserRole = userRole === "Admin" ? "admin" : "client";
 
-    return true;
+    // Check if user's role is in the allowed roles for this item
+    return item.roles.includes(mappedRole);
   });
 }
 
-const visiblePrimaryNav = getVisibleNavItems(primaryNavigation, isAuth, role);
-const visibleAdminNav = getVisibleNavItems(adminNavigation, isAuth, role);
+const visibleNavigation = getVisibleNavItems(navigation, isAuth, role);
 ---
 
 <header class="sticky top-0 z-30 mb-2 bg-hub-background pb-2 pt-4 dark:bg-hub-background-dark">
@@ -142,10 +135,10 @@ const visibleAdminNav = getVisibleNavItems(adminNavigation, isAuth, role);
       </svg>
     </a>
 
-    <!-- Main Navigation (Desktop) -->
+    <!-- Navigation (Desktop) -->
     <nav class="hidden items-center space-x-8 md:flex">
       {
-        visiblePrimaryNav.map((item) =>
+        visibleNavigation.map((item) =>
           item.primary ? (
             <a
               href={item.href}
@@ -164,23 +157,6 @@ const visibleAdminNav = getVisibleNavItems(adminNavigation, isAuth, role);
         )
       }
     </nav>
-
-    <!-- Admin Navigation (when authenticated as admin) -->
-    {
-      visibleAdminNav.length > 0 && (
-        <nav class="ml-8 hidden items-center space-x-4 border-l border-gray-300 pl-8 dark:border-gray-600 lg:flex">
-          {visibleAdminNav.map((item) => (
-            <NavLi
-              href={item.href}
-              aria-label={`btn-${item.label.toLowerCase().replace(/\s+/g, "-")}`}
-              class="tab-btn relative text-sm"
-            >
-              {item.label}
-            </NavLi>
-          ))}
-        </nav>
-      )
-    }
 
     <div class="flex flex-wrap gap-2">
       <!-- Add User Link (Admin Only) -->
@@ -287,9 +263,9 @@ const visibleAdminNav = getVisibleNavItems(adminNavigation, isAuth, role);
     class="hidden border-b border-gray-200 bg-white shadow-lg dark:border-gray-700 dark:bg-gray-800 md:hidden"
   >
     <nav class="space-y-4 px-6 py-4">
-      {/* Primary Navigation */}
+      {/* Navigation Items */}
       {
-        visiblePrimaryNav.map((item) =>
+        visibleNavigation.map((item) =>
           item.primary ? (
             <a
               href={item.href}
@@ -305,23 +281,6 @@ const visibleAdminNav = getVisibleNavItems(adminNavigation, isAuth, role);
               {item.label}
             </a>
           )
-        )
-      }
-
-      {/* Admin Tools Section */}
-      {
-        visibleAdminNav.length > 0 && (
-          <div class="mt-4 border-t border-gray-200 pt-4 dark:border-gray-700">
-            <p class="mb-2 text-sm font-medium text-gray-500 dark:text-gray-400">Admin Tools</p>
-            {visibleAdminNav.map((item) => (
-              <a
-                href={item.href}
-                class="block py-2 text-gray-600 transition-colors hover:text-red-600 dark:text-gray-400 dark:hover:text-red-400"
-              >
-                {item.label}
-              </a>
-            ))}
-          </div>
         )
       }
     </nav>
