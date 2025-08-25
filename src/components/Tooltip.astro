@@ -7,6 +7,8 @@ interface Props {
   animation?: "duration-300" | "duration-500" | "duration-700";
   arrow?: boolean;
   class?: string;
+  variant?: "button" | "link";
+  href?: string;
 }
 
 const {
@@ -17,6 +19,8 @@ const {
   animation = "duration-300",
   arrow = true,
   class: className = "",
+  variant = "button",
+  href,
 } = Astro.props;
 
 // Generate unique ID for this tooltip
@@ -24,17 +28,34 @@ const tooltipId = `tooltip-${Math.random().toString(36).substr(2, 9)}`;
 ---
 
 <div class={`relative inline-block ${className}`}>
-  <button
-    data-tooltip-target={tooltipId}
-    data-tooltip-placement={placement}
-    data-tooltip-trigger={trigger}
-    data-tooltip-style={style}
-    data-tooltip-animation={animation}
-    data-tooltip-arrow={arrow}
-    class="focus:outline-none"
-  >
-    <slot />
-  </button>
+  {
+    variant === "link" ? (
+      <a
+        href={href}
+        data-tooltip-target={tooltipId}
+        data-tooltip-placement={placement}
+        data-tooltip-trigger={trigger}
+        data-tooltip-style={style}
+        data-tooltip-animation={animation}
+        data-tooltip-arrow={arrow}
+        class="focus:outline-none"
+      >
+        <slot />
+      </a>
+    ) : (
+      <button
+        data-tooltip-target={tooltipId}
+        data-tooltip-placement={placement}
+        data-tooltip-trigger={trigger}
+        data-tooltip-style={style}
+        data-tooltip-animation={animation}
+        data-tooltip-arrow={arrow}
+        class="focus:outline-none"
+      >
+        <slot />
+      </button>
+    )
+  }
 
   <div
     id={tooltipId}

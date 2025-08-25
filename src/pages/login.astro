@@ -1,0 +1,136 @@
+---
+console.log("🔐 [LOGIN] Login page loading...");
+
+import Base from "../layout/Base.astro";
+import SectionContainer from "../components/SectionContainer.astro";
+import AuthForm from "../components/AuthForm.astro";
+import BoxIcon from "../components/BoxIcon.astro";
+
+// Para cambiar idioma de textos
+import { getI18N } from "../i18n";
+const { currentLocale } = Astro;
+const i18n = getI18N({ currentLocale });
+
+// Check authentication - if logged in, redirect to dashboard
+import { checkAuth } from "../lib/auth";
+const { isAuth } = await checkAuth(Astro.cookies);
+
+if (isAuth) {
+  return Astro.redirect("/dashboard");
+}
+---
+
+<Base
+  title="Login - CAPCo Fire Protection"
+  description="Sign in to access your fire protection project management dashboard."
+>
+  <!-- Header Section -->
+  <SectionContainer
+    class="py-16 px-6 bg-gradient-to-r from-red-50 to-orange-50 dark:from-red-900/20 dark:to-orange-900/20"
+  >
+    <div class="max-w-md mx-auto text-center">
+      <div
+        class="w-16 h-16 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center mx-auto mb-6"
+      >
+        <BoxIcon name="shield-check" class="w-8 h-8 text-red-600 dark:text-red-400" />
+      </div>
+
+      <h1 class="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-4">
+        Welcome Back
+      </h1>
+      <p class="text-gray-600 dark:text-gray-300 mb-8">
+        Sign in to access your fire protection project dashboard
+      </p>
+
+      <!-- Navigation -->
+      <div class="flex justify-center gap-4 mb-8">
+        <a
+          href="/"
+          class="inline-flex items-center px-4 py-2 border-2 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 font-medium rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+        >
+          <BoxIcon name="home" class="w-4 h-4 mr-2" />
+          Home
+        </a>
+        <a
+          href="/projects"
+          class="inline-flex items-center px-4 py-2 border-2 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 font-medium rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+        >
+          <BoxIcon name="building" class="w-4 h-4 mr-2" />
+          Projects
+        </a>
+      </div>
+    </div>
+  </SectionContainer>
+
+  <!-- Login Form Section -->
+  <SectionContainer class="py-16 px-6">
+    <div class="max-w-md mx-auto">
+      <AuthForm />
+
+      <!-- Additional Links -->
+      <div class="mt-8 text-center space-y-4">
+        <div class="border-t border-gray-200 dark:border-gray-700 pt-6">
+          <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">Don't have an account?</p>
+          <a
+            href="/register"
+            class="inline-flex items-center justify-center w-full px-6 py-3 border-2 border-red-600 text-red-600 dark:text-red-400 font-medium rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+          >
+            <BoxIcon name="user-plus" class="w-5 h-5 mr-2" />
+            Create New Account
+          </a>
+        </div>
+
+        <div class="text-sm text-gray-500 dark:text-gray-400">
+          <p>Need help? Contact our support team</p>
+        </div>
+      </div>
+    </div>
+  </SectionContainer>
+
+  <!-- Features Reminder -->
+  <SectionContainer class="py-16 px-6 bg-gray-50 dark:bg-gray-900">
+    <div class="max-w-4xl mx-auto text-center">
+      <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-8">
+        Access Your Fire Protection Dashboard
+      </h2>
+
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm">
+          <div
+            class="w-12 h-12 bg-blue-100 dark:bg-blue-900/30 rounded-lg flex items-center justify-center mx-auto mb-4"
+          >
+            <BoxIcon name="cloud-upload" class="w-6 h-6 text-blue-600 dark:text-blue-400" />
+          </div>
+          <h3 class="font-semibold text-gray-900 dark:text-white mb-2">Upload Documents</h3>
+          <p class="text-sm text-gray-600 dark:text-gray-300">
+            Securely submit PDFs and project documentation
+          </p>
+        </div>
+
+        <div class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm">
+          <div
+            class="w-12 h-12 bg-green-100 dark:bg-green-900/30 rounded-lg flex items-center justify-center mx-auto mb-4"
+          >
+            <BoxIcon name="check-circle" class="w-6 h-6 text-green-600 dark:text-green-400" />
+          </div>
+          <h3 class="font-semibold text-gray-900 dark:text-white mb-2">Track Progress</h3>
+          <p class="text-sm text-gray-600 dark:text-gray-300">
+            Monitor project status and approval workflow
+          </p>
+        </div>
+
+        <div class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm">
+          <div
+            class="w-12 h-12 bg-purple-100 dark:bg-purple-900/30 rounded-lg flex items-center justify-center mx-auto mb-4"
+          >
+            <BoxIcon name="download" class="w-6 h-6 text-purple-600 dark:text-purple-400" />
+          </div>
+          <h3 class="font-semibold text-gray-900 dark:text-white mb-2">Download Results</h3>
+          <p class="text-sm text-gray-600 dark:text-gray-300">
+            Access approved documents and deliverables
+          </p>
+        </div>
+      </div>
+    </div>
+  </SectionContainer>
+</Base>

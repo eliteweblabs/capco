@@ -15,11 +15,78 @@ console.log("📋 [HEADER] Header component loading...");
 import { checkAuth } from "../../lib/auth";
 const { isAuth, session, user, role } = await checkAuth(Astro.cookies);
 
+// Navigation schema
+interface NavItem {
+  label: string;
+  href: string;
+  requiresAuth?: boolean;
+  hideWhenAuth?: boolean;
+  adminOnly?: boolean;
+  primary?: boolean; // For styling primary CTA buttons
+}
+
+const primaryNavigation: NavItem[] = [
+  {
+    label: "About",
+    href: "/about",
+  },
+  {
+    label: "Projects",
+    href: "/projects",
+  },
+  {
+    label: "Login",
+    href: "/login",
+    hideWhenAuth: true,
+    primary: true,
+  },
+  {
+    label: "Dashboard",
+    href: "/dashboard",
+    requiresAuth: true,
+    primary: true,
+  },
+];
+
+const adminNavigation: NavItem[] = [
+  {
+    label: "PDF Review",
+    href: "/pdf-review",
+    adminOnly: true,
+  },
+  {
+    label: "Services Test",
+    href: "/services-test",
+    adminOnly: true,
+  },
+  {
+    label: "PDF Editor",
+    href: "/pdf-editor",
+    adminOnly: true,
+  },
+];
+
+// Filter navigation items based on auth state and role
+function getVisibleNavItems(navItems: NavItem[], isAuth: boolean, role?: string | null): NavItem[] {
+  return navItems.filter((item) => {
+    // Hide if requires auth but user not authenticated
+    if (item.requiresAuth && !isAuth) return false;
+
+    // Hide if should be hidden when authenticated
+    if (item.hideWhenAuth && isAuth) return false;
+
+    // Hide if admin only but user is not admin
+    if (item.adminOnly && role !== "Admin") return false;
+
+    return true;
+  });
+}
+
+const visiblePrimaryNav = getVisibleNavItems(primaryNavigation, isAuth, role);
+const visibleAdminNav = getVisibleNavItems(adminNavigation, isAuth, role);
 ---
 
-<header
-  class="sticky top-0 z-30 bg-hub-background dark:bg-hub-background-dark pt-4 pb-2 mb-2"
->
+<header class="sticky top-0 z-30 mb-2 bg-hub-background pb-2 pt-4 dark:bg-hub-background-dark">
   <div class="mx-6 flex justify-between">
     <a href="/">
       <!--?xml version="1.0" encoding="UTF-8"?-->
@@ -55,9 +122,7 @@ const { isAuth, session, user, role } = await checkAuth(Astro.cookies);
             class="fill"
             d="M46.3,47.4c1.6,14-9.3,28.5-13.8,41.3-5.3,15.2-7.6,29.8,1.6,44.2-18.4-15.9-12.7-38.6-3.9-57.9,3.8-8.5,10.8-17.2,12.1-26.6.6-4.2-.2-8.3-.3-12.4,0-1.2-.8-3.3.8-3.4.7,4.8,3,10.1,3.5,14.8Z"
           ></path>
-          <path
-            class="fill"
-            d="M72.6,90.3c-8.6-4.5-3-15.6-2.5-22.9v-15.3c6.7,12.5.7,25.3,2.5,38.3Z"
+          <path class="fill" d="M72.6,90.3c-8.6-4.5-3-15.6-2.5-22.9v-15.3c6.7,12.5.7,25.3,2.5,38.3Z"
           ></path>
         </g>
         <g>
@@ -77,168 +142,233 @@ const { isAuth, session, user, role } = await checkAuth(Astro.cookies);
       </svg>
     </a>
 
-    <nav
-    class="pl-6 relative overflow-x-auto scrollbar-hide flex gap-1 whitespace-nowrap text-hub-inactive dark:border-hub-border-dark"
-  >
-   
+    <!-- Main Navigation (Desktop) -->
+    <nav class="hidden items-center space-x-8 md:flex">
+      {
+        visiblePrimaryNav.map((item) =>
+          item.primary ? (
+            <a
+              href={item.href}
+              class="inline-flex items-center rounded-lg bg-red-600 px-4 py-2 font-medium text-white transition-colors hover:bg-red-700"
+            >
+              {item.label}
+            </a>
+          ) : (
+            <a
+              href={item.href}
+              class="font-medium text-gray-700 transition-colors hover:text-red-600 dark:text-gray-300 dark:hover:text-red-400"
+            >
+              {item.label}
+            </a>
+          )
+        )
+      }
+    </nav>
 
-    {role === "Admin" ? (
-
-     
-
-      <NavLi href="/pdf-review"
-        aria-label="btn-pdf-review"
-        class="tab-btn relative"
-        >PDF Review
-      </NavLi>
-
-      <NavLi href="/admin-hold"
-        class="tab-btn relative"
-        aria-label="btn-admin-hold"
-        data-target="admin-hold"
-        >Admin Hold
-      </NavLi>
-      <NavLi href="/client-hold"
-        class="tab-btn relative"
-        aria-label="btn-client-hold"
-        data-target="client-hold"
-        >Client Hold
-      </NavLi>
-      <NavLi href="/services-test"
-        class="tab-btn relative"
-        aria-label="btn-services-test"
-        data-target="services-test"
-        >Services Test
-      </NavLi>
-      <NavLi
-        href="/pdf-editor"
-        class="tab-btn relative"
-        aria-label="btn-pdf-editor"
-        data-target="pdf-editor">PDF Editor</NavLi
-      ><NavLi class="tab-btn" aria-label="btn-archive" data-target="archive"
-        >Archive</NavLi
-      >
-
-
-
-      ) : (
-      
-    ''
-      
-      )}
-    
-  </nav>
-
+    <!-- Admin Navigation (when authenticated as admin) -->
+    {
+      visibleAdminNav.length > 0 && (
+        <nav class="ml-8 hidden items-center space-x-4 border-l border-gray-300 pl-8 dark:border-gray-600 lg:flex">
+          {visibleAdminNav.map((item) => (
+            <NavLi
+              href={item.href}
+              aria-label={`btn-${item.label.toLowerCase().replace(/\s+/g, "-")}`}
+              class="tab-btn relative text-sm"
+            >
+              {item.label}
+            </NavLi>
+          ))}
+        </nav>
+      )
+    }
 
     <div class="flex flex-wrap gap-2">
-      <!-- <HeroButton class="size-8">
-    <IconShare2 class="size-5" />
-  </HeroButton> -->
-
       <!-- Add User Link (Admin Only) -->
-      {role === "Admin" && (
-        <Tooltip content="Add User">
-          <a href="/create-staff" 
-             aria-label="btn-add-user"
-             class="flex items-center justify-center size-8 bg-blue-600 hover:bg-blue-700 text-white rounded-full transition-colors"
-          >
-            <i class="bx bx-user-plus text-lg"></i>
-          </a>
-        </Tooltip>
-      )}
+      {
+        role === "Admin" && (
+          <Tooltip content="Add User">
+            <a
+              href="/create-staff"
+              aria-label="btn-add-user"
+              class="flex size-8 items-center justify-center rounded-full bg-blue-600 text-white transition-colors hover:bg-blue-700"
+            >
+              <i class="bx bx-user-plus text-lg" />
+            </a>
+          </Tooltip>
+        )
+      }
 
       <HeroButton aria-label="btn-theme" id="toggle-theme" class="size-8">
         <IconSun class="size-5 dark:hidden" />
         <IconMoon class="hidden size-5 dark:inline" />
       </HeroButton>
 
-        {/* <LanguagePicker /> */}
+      {/* <LanguagePicker /> */}
 
-      <Tooltip content="Profile">
-          <HeroButton
-            aria-label="btn-profile"
-            id="profile-btn"
-            class="hidden size-8 overflow-hidden rounded-full"
-          >
-            <img
-              id="user-avatar"
-              src=""
-              alt="User avatar"
-              class="h-full w-full object-cover"
-              onerror="this.style.display='none'; this.nextElementSibling.style.display='block';"
-            />
-            <i class="bx bx-user bx-sm" style="display:none;"></i>
-          </HeroButton>
+      <div class="relative">
+        {
+          isAuth ? (
+            // Authenticated: Profile Button with Dropdown
+            <Tooltip content="Profile" variant="link" href="/profile">
+              <HeroButton
+                aria-label="btn-profile"
+                id="profile-btn"
+                class="size-8 overflow-hidden rounded-full"
+              >
+                <img
+                  id="user-avatar"
+                  src=""
+                  alt="User avatar"
+                  class="h-full w-full object-cover"
+                  onerror="this.style.display='none'; this.nextElementSibling.style.display='block';"
+                />
+                <i class="bx bx-user bx-sm" style="display:none;" />
+              </HeroButton>
 
-          <!-- Dropdown menu -->
-          <div
-            id="profile-dropdown"
-            class="absolute right-0 top-full mt-2 hidden w-48 rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 dark:bg-gray-800 dark:ring-gray-700"
-          >
-            <div class="py-1">
-              <a
-                href="/profile"
-                class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-700"
+              <!-- Dropdown menu -->
+              <div
+                id="profile-dropdown"
+                class="absolute right-0 top-full mt-2 hidden w-48 rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 dark:bg-gray-800 dark:ring-gray-700"
               >
-                <i class="bx bx-user bx-sm mr-2"></i>
-                Profile
-              </a>
-              <button
-                id="logout-btn"
-                class="flex w-full items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-700"
+                <div class="py-1">
+                  <a
+                    href="/profile"
+                    class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-700"
+                  >
+                    <i class="bx bx-user bx-sm mr-2" />
+                    Profile
+                  </a>
+                  <button
+                    id="logout-btn"
+                    class="flex w-full items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-700"
+                  >
+                    <i class="bx bx-log-out bx-sm mr-2" />
+                    Logout
+                  </button>
+                </div>
+              </div>
+            </Tooltip>
+          ) : (
+            // Not Authenticated: Login Button
+            <Tooltip content="Login" variant="link" href="/login">
+              <div
+                aria-label="btn-login"
+                class="flex size-8 cursor-pointer items-center justify-center rounded-full bg-gray-100 transition-colors hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700"
               >
-                <i class="bx bx-log-out bx-sm mr-2"></i>
-                Logout
-              </button>
-            </div>
-          </div>
-        
-      </Tooltip>
+                <i class="bx bx-log-in text-lg text-gray-700 dark:text-gray-300" />
+              </div>
+            </Tooltip>
+          )
+        }
+
+        {/* Mobile Menu Button (Hamburger) */}
+        <button
+          id="mobile-menu-btn"
+          aria-label="Open mobile menu"
+          class="flex size-8 items-center justify-center text-gray-700 transition-colors hover:text-red-600 dark:text-gray-300 dark:hover:text-red-400 md:hidden"
+        >
+          <i id="hamburger-icon" class="bx bx-menu text-xl"></i>
+          <i id="close-icon" class="bx bx-x hidden text-xl"></i>
+        </button>
+      </div>
     </div>
+  </div>
+
+  {/* Mobile Navigation Menu */}
+  <div
+    id="mobile-menu"
+    class="hidden border-b border-gray-200 bg-white shadow-lg dark:border-gray-700 dark:bg-gray-800 md:hidden"
+  >
+    <nav class="space-y-4 px-6 py-4">
+      {/* Primary Navigation */}
+      {
+        visiblePrimaryNav.map((item) =>
+          item.primary ? (
+            <a
+              href={item.href}
+              class="block w-full rounded-lg bg-red-600 px-4 py-3 text-center font-medium text-white transition-colors hover:bg-red-700"
+            >
+              {item.label}
+            </a>
+          ) : (
+            <a
+              href={item.href}
+              class="block py-2 font-medium text-gray-700 transition-colors hover:text-red-600 dark:text-gray-300 dark:hover:text-red-400"
+            >
+              {item.label}
+            </a>
+          )
+        )
+      }
+
+      {/* Admin Tools Section */}
+      {
+        visibleAdminNav.length > 0 && (
+          <div class="mt-4 border-t border-gray-200 pt-4 dark:border-gray-700">
+            <p class="mb-2 text-sm font-medium text-gray-500 dark:text-gray-400">Admin Tools</p>
+            {visibleAdminNav.map((item) => (
+              <a
+                href={item.href}
+                class="block py-2 text-gray-600 transition-colors hover:text-red-600 dark:text-gray-400 dark:hover:text-red-400"
+              >
+                {item.label}
+              </a>
+            ))}
+          </div>
+        )
+      }
+    </nav>
   </div>
 </header>
 
 <script type="module" define:vars={{ session }}>
   console.log("📋 [HEADER] Header script execution started");
   console.log("📋 [HEADER] Session data:", session);
-  
+
   const profileBtn = document.getElementById("profile-btn");
   const userAvatar = document.getElementById("user-avatar");
   const fallbackIcon = userAvatar.nextElementSibling;
   const profileDropdown = document.getElementById("profile-dropdown");
   const logoutBtn = document.getElementById("logout-btn");
 
+  // Mobile menu elements
+  const mobileMenuBtn = document.getElementById("mobile-menu-btn");
+  const mobileMenu = document.getElementById("mobile-menu");
+  const hamburgerIcon = document.getElementById("hamburger-icon");
+  const closeIcon = document.getElementById("close-icon");
+
   console.log("📋 [HEADER] DOM elements found:", {
     profileBtn: !!profileBtn,
     userAvatar: !!userAvatar,
     fallbackIcon: !!fallbackIcon,
     profileDropdown: !!profileDropdown,
-    logoutBtn: !!logoutBtn
+    logoutBtn: !!logoutBtn,
+    mobileMenuBtn: !!mobileMenuBtn,
+    mobileMenu: !!mobileMenu,
   });
 
   function updateProfileButton(session) {
     console.log("📋 [HEADER] updateProfileButton called with session:", session);
-    
+
     if (session && session.data.user) {
       const avatarUrl = session.data.user.user_metadata?.avatar_url;
       console.log("📋 [HEADER] Avatar URL:", avatarUrl);
-      
-      if (avatarUrl) {
-        userAvatar.src = avatarUrl;
-        userAvatar.style.display = "block";
-        fallbackIcon.style.display = "none";
-        console.log("📋 [HEADER] Using avatar image");
-      } else {
-        userAvatar.style.display = "none";
-        fallbackIcon.style.display = "block";
-        console.log("📋 [HEADER] Using fallback icon");
+
+      if (userAvatar && fallbackIcon) {
+        if (avatarUrl) {
+          userAvatar.src = avatarUrl;
+          userAvatar.style.display = "block";
+          fallbackIcon.style.display = "none";
+          console.log("📋 [HEADER] Using avatar image");
+        } else {
+          userAvatar.style.display = "none";
+          fallbackIcon.style.display = "block";
+          console.log("📋 [HEADER] Using fallback icon");
+        }
       }
-      profileBtn.classList.remove("hidden");
-      console.log("📋 [HEADER] Profile button shown");
+      console.log("📋 [HEADER] Profile button configured for authenticated user");
     } else {
-      profileBtn.classList.add("hidden");
-      profileDropdown.classList.add("hidden");
-      console.log("📋 [HEADER] Profile button hidden - no session");
+      console.log("📋 [HEADER] Profile button configured for unauthenticated user");
     }
   }
 
@@ -246,39 +376,102 @@ const { isAuth, session, user, role } = await checkAuth(Astro.cookies);
   console.log("📋 [HEADER] Checking initial auth state...");
   updateProfileButton(session);
 
-  // Toggle dropdown
-  profileBtn.addEventListener("click", (e) => {
-    console.log("📋 [HEADER] Profile button clicked");
-    e.stopPropagation();
-    profileDropdown.classList.toggle("hidden");
-    console.log("📋 [HEADER] Dropdown toggled");
-  });
+  // Toggle dropdown (only if profile button exists - when authenticated)
+  if (profileBtn) {
+    profileBtn.addEventListener("click", (e) => {
+      console.log("📋 [HEADER] Profile button clicked");
+      e.stopPropagation();
+      if (profileDropdown) {
+        profileDropdown.classList.toggle("hidden");
+        console.log("📋 [HEADER] Dropdown toggled");
+      }
+    });
+  }
 
   // Close dropdown when clicking outside
   document.addEventListener("click", () => {
-    console.log("📋 [HEADER] Document clicked, closing dropdown");
-    profileDropdown.classList.add("hidden");
+    if (profileDropdown) {
+      console.log("📋 [HEADER] Document clicked, closing dropdown");
+      profileDropdown.classList.add("hidden");
+    }
   });
 
-  // Logout functionality
-  logoutBtn.addEventListener("click", async () => {
-    console.log("📋 [HEADER] Logout button clicked");
-    try {
-      console.log("📋 [HEADER] Sending logout request...");
-      const response = await fetch("/api/auth/signout", {
-        method: "POST",
-      });
-      console.log("📋 [HEADER] Logout response status:", response.status);
-      
-      if (response.ok) {
-        console.log("📋 [HEADER] Logout successful, redirecting...");
-        window.location.href = "/";
-      } else {
-        console.error("📋 [HEADER] Logout failed with status:", response.status);
-      }
-    } catch (error) {
-      console.error("📋 [HEADER] Logout error:", error);
+  // Mobile menu toggle functionality
+  function toggleMobileMenu() {
+    const isOpen = !mobileMenu.classList.contains("hidden");
+
+    if (isOpen) {
+      // Close menu
+      mobileMenu.classList.add("hidden");
+      hamburgerIcon.classList.remove("hidden");
+      closeIcon.classList.add("hidden");
+      console.log("📋 [HEADER] Mobile menu closed");
+    } else {
+      // Open menu
+      mobileMenu.classList.remove("hidden");
+      hamburgerIcon.classList.add("hidden");
+      closeIcon.classList.remove("hidden");
+      console.log("📋 [HEADER] Mobile menu opened");
     }
-    profileDropdown.classList.add("hidden");
+  }
+
+  // Mobile menu button event listener
+  if (mobileMenuBtn) {
+    mobileMenuBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      toggleMobileMenu();
+    });
+  }
+
+  // Close mobile menu when clicking outside or on menu links
+  document.addEventListener("click", (e) => {
+    if (mobileMenu && !mobileMenu.classList.contains("hidden")) {
+      // Close if clicking outside the mobile menu
+      if (!mobileMenu.contains(e.target) && !mobileMenuBtn.contains(e.target)) {
+        mobileMenu.classList.add("hidden");
+        hamburgerIcon.classList.remove("hidden");
+        closeIcon.classList.add("hidden");
+        console.log("📋 [HEADER] Mobile menu closed by outside click");
+      }
+    }
   });
+
+  // Close mobile menu when clicking on navigation links
+  if (mobileMenu) {
+    const mobileNavLinks = mobileMenu.querySelectorAll("a");
+    mobileNavLinks.forEach((link) => {
+      link.addEventListener("click", () => {
+        mobileMenu.classList.add("hidden");
+        hamburgerIcon.classList.remove("hidden");
+        closeIcon.classList.add("hidden");
+        console.log("📋 [HEADER] Mobile menu closed by navigation link click");
+      });
+    });
+  }
+
+  // Logout functionality (only if logout button exists - when authenticated)
+  if (logoutBtn) {
+    logoutBtn.addEventListener("click", async () => {
+      console.log("📋 [HEADER] Logout button clicked");
+      try {
+        console.log("📋 [HEADER] Sending logout request...");
+        const response = await fetch("/api/auth/signout", {
+          method: "POST",
+        });
+        console.log("📋 [HEADER] Logout response status:", response.status);
+
+        if (response.ok) {
+          console.log("📋 [HEADER] Logout successful, redirecting...");
+          window.location.href = "/";
+        } else {
+          console.error("📋 [HEADER] Logout failed with status:", response.status);
+        }
+      } catch (error) {
+        console.error("📋 [HEADER] Logout error:", error);
+      }
+      if (profileDropdown) {
+        profileDropdown.classList.add("hidden");
+      }
+    });
+  }
 </script>
