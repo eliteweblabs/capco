@@ -250,13 +250,20 @@ const visibleAdminNav = getVisibleNavItems(adminNavigation, isAuth, role);
             </Tooltip>
           ) : (
             // Not Authenticated: Login Button
-            <Tooltip content="Login" variant="link" href="/login">
-              <div
+            <Tooltip content="Login" variant="link" href="/login" placement="bottom">
+              <HeroButton
+                aria-label="btn-profile"
+                id="profile-btn"
+                class="size-8 overflow-hidden rounded-full"
+              >
+                <i class="bx bx-log-in text-lg text-gray-700 dark:text-gray-300" />
+
+              </HeroButton>
+              {/* <div
                 aria-label="btn-login"
                 class="flex size-8 cursor-pointer items-center justify-center rounded-full bg-gray-100 transition-colors hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700"
               >
-                <i class="bx bx-log-in text-lg text-gray-700 dark:text-gray-300" />
-              </div>
+              </div> */}
             </Tooltip>
           )
         }
@@ -327,7 +334,7 @@ const visibleAdminNav = getVisibleNavItems(adminNavigation, isAuth, role);
 
   const profileBtn = document.getElementById("profile-btn");
   const userAvatar = document.getElementById("user-avatar");
-  const fallbackIcon = userAvatar.nextElementSibling;
+  const fallbackIcon = userAvatar?.nextElementSibling;
   const profileDropdown = document.getElementById("profile-dropdown");
   const logoutBtn = document.getElementById("logout-btn");
 
@@ -354,6 +361,7 @@ const visibleAdminNav = getVisibleNavItems(adminNavigation, isAuth, role);
       const avatarUrl = session.data.user.user_metadata?.avatar_url;
       console.log("📋 [HEADER] Avatar URL:", avatarUrl);
 
+      // Only update avatar if elements exist (user is authenticated)
       if (userAvatar && fallbackIcon) {
         if (avatarUrl) {
           userAvatar.src = avatarUrl;
@@ -368,7 +376,7 @@ const visibleAdminNav = getVisibleNavItems(adminNavigation, isAuth, role);
       }
       console.log("📋 [HEADER] Profile button configured for authenticated user");
     } else {
-      console.log("📋 [HEADER] Profile button configured for unauthenticated user");
+      console.log("📋 [HEADER] Profile button configured for unauthenticated user - avatar elements not present");
     }
   }
 
