@@ -50,7 +50,7 @@ export interface FormActionConfig {
 // Helper function to check if a field or button group should be allowed based on user role
 export function isAllowed(
   item: FormFieldConfig | ButtonGroupConfig | FormActionConfig,
-  userRole?: string | null,
+  userRole?: string | null
 ): boolean {
   if (item.allow === undefined) {
     return true; // Default to allowed if not specified
@@ -62,27 +62,20 @@ export function isAllowed(
 
   // Case-insensitive role matching
   const normalizedUserRole = userRole.toLowerCase();
-  return item.allow.some(
-    (allowedRole) => allowedRole.toLowerCase() === normalizedUserRole,
-  );
+  return item.allow.some((allowedRole) => allowedRole.toLowerCase() === normalizedUserRole);
 }
 
 // Function to get filtered form fields based on user role
 export function getFilteredFormFields(
   userRole?: string | null,
-  isNewProject: boolean = false,
+  isNewProject: boolean = false
 ): FormFieldConfig[] {
-  let fields = PROJECT_FORM_FIELDS.filter((field) =>
-    isAllowed(field, userRole),
-  );
+  let fields = PROJECT_FORM_FIELDS.filter((field) => isAllowed(field, userRole));
 
   // For existing projects, hide all client-related fields
   if (!isNewProject) {
     fields = fields.filter(
-      (field) =>
-        !["owner", "owner_email", "existing_client_id", "new_client"].includes(
-          field.name,
-        ),
+      (field) => !["owner", "owner_email", "existing_client_id", "new_client"].includes(field.name)
     );
   } else {
     // For new projects, keep owner and email fields in DOM but they'll be hidden via CSS initially
@@ -96,7 +89,7 @@ export function getFilteredFormFields(
 // Function to get filtered button groups based on user role
 export function getFilteredButtonGroups(
   userRole?: string | null,
-  isNewProject: boolean = false,
+  isNewProject: boolean = false
 ): ButtonGroupConfig[] {
   let groups = BUTTON_GROUPS.filter((group) => isAllowed(group, userRole));
 
@@ -112,7 +105,7 @@ export function getFilteredButtonGroups(
 // Function to get filtered form actions based on user role and project state
 export function getFilteredFormActions(
   userRole?: string | null,
-  isNewProject: boolean = false,
+  isNewProject: boolean = false
 ): FormActionConfig[] {
   let actions = FORM_ACTIONS.filter((action) => isAllowed(action, userRole));
 
@@ -122,7 +115,7 @@ export function getFilteredFormActions(
       (action) =>
         action.id !== "delete-project" &&
         action.id !== "build-estimate" &&
-        action.id !== "edit-estimate",
+        action.id !== "edit-estimate"
     );
 
     // Change "Save Project" to "Create Project" for new projects
@@ -363,7 +356,7 @@ export const BUTTON_GROUPS: ButtonGroupConfig[] = [
 export function generateFormFieldHTML(
   field: FormFieldConfig,
   index: number = 0,
-  projectData: any = {},
+  projectData: any = {}
 ): string {
   // Use project ID for unique field IDs instead of array index
   const projectId = projectData.id || `project-${index}`;
@@ -425,8 +418,7 @@ export function generateFormFieldHTML(
 
     case "checkbox":
       // Handle boolean values for checkboxes (new_construction)
-      const isChecked =
-        value === true || value === "true" || value === 1 || value === "1";
+      const isChecked = value === true || value === "true" || value === 1 || value === "1";
       return `
         <div>
           <label class="inline-flex items-center cursor-pointer">
@@ -454,10 +446,7 @@ export function generateFormFieldHTML(
 }
 
 // Function to generate button group HTML
-export function generateButtonGroupHTML(
-  group: ButtonGroupConfig,
-  projectData: any = {},
-): string {
+export function generateButtonGroupHTML(group: ButtonGroupConfig, projectData: any = {}): string {
   // Use project ID for unique button IDs
   const projectId = projectData.id || "project-unknown";
   let selectedValues: string[] = [];
@@ -471,9 +460,7 @@ export function generateButtonGroupHTML(
       try {
         // Try to parse as JSON first
         const parsed = JSON.parse(projectData[group.name]);
-        selectedValues = Array.isArray(parsed)
-          ? parsed
-          : [projectData[group.name]];
+        selectedValues = Array.isArray(parsed) ? parsed : [projectData[group.name]];
       } catch {
         // If JSON parsing fails, treat as comma-separated string
         selectedValues = projectData[group.name]
@@ -506,7 +493,7 @@ export function generateButtonGroupHTML(
           >
             ${option.label}
           </button>
-        `,
+        `
           )
           .join("")}
       </div>
@@ -521,15 +508,10 @@ export function generateButtonGroupHTML(
 // }
 
 // Function to generate complete form HTML
-export function generateCompleteFormHTML(
-  index: number = 0,
-  projectData: any = {},
-): string {
+export function generateCompleteFormHTML(index: number = 0, projectData: any = {}): string {
   const coreFields = PROJECT_FORM_FIELDS.slice(0, 4); // Address, Owner, Architect, Sq Ft
   const description = PROJECT_FORM_FIELDS.find((f) => f.name === "description");
-  const newConstruction = PROJECT_FORM_FIELDS.find(
-    (f) => f.name === "new_construction",
-  );
+  const newConstruction = PROJECT_FORM_FIELDS.find((f) => f.name === "new_construction");
 
   return `
     <!-- Address Field (Full Width) -->

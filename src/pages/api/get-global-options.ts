@@ -3,25 +3,20 @@ import { supabase } from "../../lib/supabase";
 
 export const GET: APIRoute = async () => {
   try {
-    const { data, error } = await supabase
-      .from("global_options")
-      .select("key, value, updated_at");
+    const { data, error } = await supabase.from("global_options").select("key, value, updated_at");
 
     if (error) {
-      return new Response(
-        JSON.stringify({ success: false, error: error.message }),
-        { status: 500, headers: { "Content-Type": "application/json" } },
-      );
+      return new Response(JSON.stringify({ success: false, error: error.message }), {
+        status: 500,
+        headers: { "Content-Type": "application/json" },
+      });
     }
 
     // Normalize to a simple key->value map (value may be text or JSON)
-    const rawOptions = (data || []).reduce(
-      (acc: Record<string, any>, row: any) => {
-        acc[row.key] = row.value;
-        return acc;
-      },
-      {},
-    );
+    const rawOptions = (data || []).reduce((acc: Record<string, any>, row: any) => {
+      acc[row.key] = row.value;
+      return acc;
+    }, {});
 
     // Build a consolidated branding object that works with either storage style:
     // 1) One row: key='branding', value is JSON/JSONB with fields
@@ -56,9 +51,9 @@ export const GET: APIRoute = async () => {
       headers: { "Content-Type": "application/json" },
     });
   } catch (e) {
-    return new Response(
-      JSON.stringify({ success: false, error: (e as Error).message }),
-      { status: 500, headers: { "Content-Type": "application/json" } },
-    );
+    return new Response(JSON.stringify({ success: false, error: (e as Error).message }), {
+      status: 500,
+      headers: { "Content-Type": "application/json" },
+    });
   }
 };

@@ -57,7 +57,7 @@ export const POST: APIRoute = async ({ request }) => {
         {
           status: 200,
           headers: { "Content-Type": "application/json" },
-        },
+        }
       );
     }
 
@@ -93,7 +93,7 @@ export const POST: APIRoute = async ({ request }) => {
         {
           status: 200,
           headers: { "Content-Type": "application/json" },
-        },
+        }
       );
     }
 
@@ -120,12 +120,10 @@ export const POST: APIRoute = async ({ request }) => {
     if (description !== undefined) updateData.description = description;
     if (address !== undefined) updateData.address = address;
     if (sq_ft !== undefined) updateData.sq_ft = sq_ft;
-    if (new_construction !== undefined)
-      updateData.new_construction = new_construction;
+    if (new_construction !== undefined) updateData.new_construction = new_construction;
 
     // Core fields - only add if they have values to avoid database errors
-    if (building !== undefined && building !== "")
-      updateData.building = building;
+    if (building !== undefined && building !== "") updateData.building = building;
     if (project !== undefined && project !== "") updateData.project = project;
     if (service !== undefined && service !== "") updateData.service = service;
     if (requested_docs !== undefined && requested_docs !== "")
@@ -137,8 +135,7 @@ export const POST: APIRoute = async ({ request }) => {
     // We'll try these but catch any column-not-found errors
     const potentialNewFields: any = {};
     if (owner !== undefined && owner !== "") potentialNewFields.owner = owner;
-    if (architect !== undefined && architect !== "")
-      potentialNewFields.architect = architect;
+    if (architect !== undefined && architect !== "") potentialNewFields.architect = architect;
     if (units !== undefined) potentialNewFields.units = units;
 
     // Always update the updated_at timestamp when any field is modified
@@ -147,16 +144,11 @@ export const POST: APIRoute = async ({ request }) => {
     console.log("Attempting to update project with core data:", updateData);
 
     // First, try to update with core fields
-    let coreUpdateQuery = supabase
-      .from("projects")
-      .update(updateData)
-      .eq("id", projectId);
+    let coreUpdateQuery = supabase.from("projects").update(updateData).eq("id", projectId);
     if (!isAdminOrStaff) {
       coreUpdateQuery = coreUpdateQuery.eq("author_id", user.id);
     }
-    const { data: coreData, error: coreError } = await coreUpdateQuery
-      .select()
-      .single();
+    const { data: coreData, error: coreError } = await coreUpdateQuery.select().single();
 
     if (coreError) {
       console.error("Supabase core update error:", coreError);
@@ -167,15 +159,14 @@ export const POST: APIRoute = async ({ request }) => {
       ) {
         return new Response(
           JSON.stringify({
-            error:
-              "No matching project found to update (check permissions or project ID)",
+            error: "No matching project found to update (check permissions or project ID)",
             details: coreError.message,
             code: coreError.code,
           }),
           {
             status: 404,
             headers: { "Content-Type": "application/json" },
-          },
+          }
         );
       }
       return new Response(
@@ -188,7 +179,7 @@ export const POST: APIRoute = async ({ request }) => {
         {
           status: 500,
           headers: { "Content-Type": "application/json" },
-        },
+        }
       );
     }
 
@@ -197,21 +188,16 @@ export const POST: APIRoute = async ({ request }) => {
     if (Object.keys(potentialNewFields).length > 0) {
       console.log("Attempting to update new fields:", potentialNewFields);
 
-      let newFieldsQuery = supabase
-        .from("projects")
-        .update(potentialNewFields)
-        .eq("id", projectId);
+      let newFieldsQuery = supabase.from("projects").update(potentialNewFields).eq("id", projectId);
       if (!isAdminOrStaff) {
         newFieldsQuery = newFieldsQuery.eq("author_id", user.id);
       }
-      const { data: newFieldsData, error: newFieldsError } = await newFieldsQuery
-        .select()
-        .single();
+      const { data: newFieldsData, error: newFieldsError } = await newFieldsQuery.select().single();
 
       if (newFieldsError) {
         console.warn(
           "New fields update failed (this is expected if columns don't exist yet):",
-          newFieldsError,
+          newFieldsError
         );
         // Don't fail the entire request - core fields were updated successfully
       } else {
@@ -231,7 +217,7 @@ export const POST: APIRoute = async ({ request }) => {
       {
         status: 200,
         headers: { "Content-Type": "application/json" },
-      },
+      }
     );
   } catch (error) {
     console.error("Project update API error:", error);
@@ -242,7 +228,7 @@ export const POST: APIRoute = async ({ request }) => {
       {
         status: 500,
         headers: { "Content-Type": "application/json" },
-      },
+      }
     );
   }
 };

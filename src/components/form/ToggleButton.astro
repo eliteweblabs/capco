@@ -25,15 +25,9 @@ const { value, group, type, class: className } = Astro.props;
 
         if (type === "radio") {
           // Radio behavior: deselect all others in the group, select this one
-          const groupButtons = document.querySelectorAll(
-            `[data-group="${group}"]`
-          );
+          const groupButtons = document.querySelectorAll(`[data-group="${group}"]`);
           groupButtons.forEach((btn) => {
-            btn.classList.remove(
-              "bg-blue-500",
-              "text-white",
-              "border-blue-500"
-            );
+            btn.classList.remove("bg-blue-500", "text-white", "border-blue-500");
             btn.classList.add(
               "bg-white",
               "dark:bg-gray-700",
@@ -69,11 +63,7 @@ const { value, group, type, class: className } = Astro.props;
 
           if (isSelected) {
             // Deselect
-            this.classList.remove(
-              "bg-blue-500",
-              "text-white",
-              "border-blue-500"
-            );
+            this.classList.remove("bg-blue-500", "text-white", "border-blue-500");
             this.classList.add(
               "bg-white",
               "dark:bg-gray-700",
@@ -119,20 +109,13 @@ const { value, group, type, class: className } = Astro.props;
   });
 
   // Helper function to update form data
-  function updateFormData(
-    group: string,
-    value: string,
-    type: string,
-    isSelected: boolean
-  ) {
+  function updateFormData(group: string, value: string, type: string, isSelected: boolean) {
     const form = document.querySelector("form[data-project-id]");
     if (!form) return;
 
     if (type === "radio") {
       // For radio, set a single value
-      let input = form.querySelector(
-        `input[name="${group}"]`
-      ) as HTMLInputElement;
+      let input = form.querySelector(`input[name="${group}"]`) as HTMLInputElement;
       if (!input) {
         input = document.createElement("input") as HTMLInputElement;
         input.type = "hidden";
@@ -142,9 +125,7 @@ const { value, group, type, class: className } = Astro.props;
       input.value = value;
     } else if (type === "multi-select") {
       // For multi-select, manage an array of values
-      let input = form.querySelector(
-        `input[name="${group}"]`
-      ) as HTMLInputElement;
+      let input = form.querySelector(`input[name="${group}"]`) as HTMLInputElement;
       if (!input) {
         input = document.createElement("input") as HTMLInputElement;
         input.type = "hidden";
@@ -157,9 +138,7 @@ const { value, group, type, class: className } = Astro.props;
       try {
         currentValues = input.value ? JSON.parse(input.value) : [];
       } catch {
-        currentValues = input.value
-          ? input.value.split(",").map((v: string) => v.trim())
-          : [];
+        currentValues = input.value ? input.value.split(",").map((v: string) => v.trim()) : [];
       }
 
       if (isSelected) {
@@ -192,10 +171,7 @@ const { value, group, type, class: className } = Astro.props;
   };
 
   // Global function to set selected values for a group
-  (window as any).setToggleButtonValues = function (
-    group: string,
-    values: string | string[]
-  ) {
+  (window as any).setToggleButtonValues = function (group: string, values: string | string[]) {
     const buttons = document.querySelectorAll(`[data-group="${group}"]`);
     const valueArray = Array.isArray(values) ? values : [values];
 
@@ -211,12 +187,7 @@ const { value, group, type, class: className } = Astro.props;
         button.classList.add("bg-blue-500", "text-white", "border-blue-500");
       } else {
         button.classList.remove("bg-blue-500", "text-white", "border-blue-500");
-        button.classList.add(
-          "bg-white",
-          "dark:bg-gray-700",
-          "text-gray-700",
-          "dark:text-gray-300"
-        );
+        button.classList.add("bg-white", "dark:bg-gray-700", "text-gray-700", "dark:text-gray-300");
       }
     });
   };

@@ -16,7 +16,7 @@ export const DELETE: APIRoute = async ({ request }) => {
       {
         status: 200,
         headers: { "Content-Type": "application/json" },
-      },
+      }
     );
   } catch (error) {
     console.error("Error in test-delete API:", error);

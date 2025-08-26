@@ -20,7 +20,7 @@ export const POST: APIRoute = async ({ request }) => {
         `
         *,
         projects!inner(id, title, address, author_id)
-      `,
+      `
       )
       .eq("id", invoiceId)
       .single();
@@ -67,7 +67,7 @@ export const POST: APIRoute = async ({ request }) => {
       {
         status: 200,
         headers: { "Content-Type": "application/json" },
-      },
+      }
     );
   } catch (error) {
     console.error("Create payment intent API error:", error);
@@ -78,7 +78,7 @@ export const POST: APIRoute = async ({ request }) => {
       {
         status: 500,
         headers: { "Content-Type": "application/json" },
-      },
+      }
     );
   }
 };

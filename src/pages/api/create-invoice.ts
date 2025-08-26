@@ -43,9 +43,7 @@ Tier I Fire Alarm Design
       status: "draft",
       tax_rate: 0.0,
       created_by: user.id,
-      due_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
-        .toISOString()
-        .split("T")[0],
+      due_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
     });
 
     const { data: invoice, error: invoiceError } = await supabase
@@ -55,9 +53,7 @@ Tier I Fire Alarm Design
         status: "draft",
         tax_rate: 0.0,
         created_by: user.id,
-        due_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
-          .toISOString()
-          .split("T")[0], // 30 days from now
+        due_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split("T")[0], // 30 days from now
       })
       .select()
       .single();
@@ -73,7 +69,7 @@ Tier I Fire Alarm Design
         {
           status: 500,
           headers: { "Content-Type": "application/json" },
-        },
+        }
       );
     }
 
@@ -87,16 +83,14 @@ Tier I Fire Alarm Design
       sort_order: 1,
     });
 
-    const { error: lineItemError } = await supabase
-      .from("invoice_line_items")
-      .insert({
-        invoice_id: invoice.id,
-        description: standardDescription,
-        quantity: 1.0,
-        unit_price: 500.0, // Default price for initial line item
-        total_price: 500.0,
-        sort_order: 1,
-      });
+    const { error: lineItemError } = await supabase.from("invoice_line_items").insert({
+      invoice_id: invoice.id,
+      description: standardDescription,
+      quantity: 1.0,
+      unit_price: 500.0, // Default price for initial line item
+      total_price: 500.0,
+      sort_order: 1,
+    });
 
     if (lineItemError) {
       console.error("Error creating line item:", lineItemError);
@@ -111,7 +105,7 @@ Tier I Fire Alarm Design
         {
           status: 500,
           headers: { "Content-Type": "application/json" },
-        },
+        }
       );
     }
 
@@ -128,7 +122,7 @@ Tier I Fire Alarm Design
       {
         status: 200,
         headers: { "Content-Type": "application/json" },
-      },
+      }
     );
   } catch (error) {
     console.error("Create invoice API error:", error);
@@ -139,7 +133,7 @@ Tier I Fire Alarm Design
       {
         status: 500,
         headers: { "Content-Type": "application/json" },
-      },
+      }
     );
   }
 };

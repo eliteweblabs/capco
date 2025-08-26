@@ -8,9 +8,7 @@ export const GET: APIRoute = async ({ request }) => {
     console.log("📡 [API] Checking Supabase configuration...");
 
     if (!supabase) {
-      console.log(
-        "📡 [API] Supabase not configured, returning demo staff users",
-      );
+      console.log("📡 [API] Supabase not configured, returning demo staff users");
 
       // Return demo staff users when database is not configured
       const demoStaffUsers = [
@@ -55,7 +53,7 @@ export const GET: APIRoute = async ({ request }) => {
         {
           status: 200,
           headers: { "Content-Type": "application/json" },
-        },
+        }
       );
     }
 
@@ -97,7 +95,7 @@ export const GET: APIRoute = async ({ request }) => {
         {
           status: 200,
           headers: { "Content-Type": "application/json" },
-        },
+        }
       );
     }
 
@@ -115,9 +113,7 @@ export const GET: APIRoute = async ({ request }) => {
 
     // Only admins and staff can view staff list
     if (userRole !== "Admin" && userRole !== "Staff") {
-      console.log(
-        `📡 [API] User role is: ${userRole}, denying access to staff list`,
-      );
+      console.log(`📡 [API] User role is: ${userRole}, denying access to staff list`);
 
       // TEMPORARY: Allow all users to view staff list for debugging
       console.log("📡 [API] TEMPORARY: Allowing access for debugging purposes");
@@ -151,7 +147,7 @@ export const GET: APIRoute = async ({ request }) => {
     // Try direct SQL query to bypass RLS
     const { data: directStaffUsers, error: directError } = await supabase.rpc(
       "get_staff_users_direct",
-      {},
+      {}
     );
 
     console.log("📡 [API] Direct SQL staff users result:", {
@@ -192,7 +188,7 @@ export const GET: APIRoute = async ({ request }) => {
         {
           status: 500,
           headers: { "Content-Type": "application/json" },
-        },
+        }
       );
     }
 
@@ -204,7 +200,7 @@ export const GET: APIRoute = async ({ request }) => {
 
     if (!staffUsers || staffUsers.length === 0) {
       console.log(
-        "📡 [API] No staff users found with regular query, trying alternative approach...",
+        "📡 [API] No staff users found with regular query, trying alternative approach..."
       );
 
       if (staffUsersFromAll && staffUsersFromAll.length > 0) {
@@ -232,7 +228,7 @@ export const GET: APIRoute = async ({ request }) => {
       {
         status: 200,
         headers: { "Content-Type": "application/json" },
-      },
+      }
     );
   } catch (error: unknown) {
     console.error("📡 [API] Unexpected error in get-staff-users:", error);
@@ -245,7 +241,7 @@ export const GET: APIRoute = async ({ request }) => {
       {
         status: 500,
         headers: { "Content-Type": "application/json" },
-      },
+      }
     );
   }
 };

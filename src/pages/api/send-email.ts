@@ -7,50 +7,39 @@ export const POST: APIRoute = async ({ request }) => {
     const { to, type, variables } = body;
 
     if (!to) {
-      return new Response(
-        JSON.stringify({ error: "Recipient email is required" }),
-        {
-          status: 400,
-          headers: { "Content-Type": "application/json" },
-        },
-      );
+      return new Response(JSON.stringify({ error: "Recipient email is required" }), {
+        status: 400,
+        headers: { "Content-Type": "application/json" },
+      });
     }
 
     let result;
 
     switch (type) {
       case "welcome":
-        result = await emailService.sendTemplatedEmail(
-          to,
-          EMAIL_TEMPLATES.welcome,
-          { appName: "CAPCo", name: variables?.name || "User", ...variables },
-        );
+        result = await emailService.sendTemplatedEmail(to, EMAIL_TEMPLATES.welcome, {
+          appName: "CAPCo",
+          name: variables?.name || "User",
+          ...variables,
+        });
         break;
 
       case "password-reset":
-        result = await emailService.sendTemplatedEmail(
-          to,
-          EMAIL_TEMPLATES.passwordReset,
-          {
-            appName: "CAPCo",
-            name: variables?.name || "User",
-            resetLink: variables?.resetLink || "#",
-            ...variables,
-          },
-        );
+        result = await emailService.sendTemplatedEmail(to, EMAIL_TEMPLATES.passwordReset, {
+          appName: "CAPCo",
+          name: variables?.name || "User",
+          resetLink: variables?.resetLink || "#",
+          ...variables,
+        });
         break;
 
       case "notification":
-        result = await emailService.sendTemplatedEmail(
-          to,
-          EMAIL_TEMPLATES.notification,
-          {
-            appName: "CAPCo",
-            title: variables?.title || "Notification",
-            message: variables?.message || "",
-            ...variables,
-          },
-        );
+        result = await emailService.sendTemplatedEmail(to, EMAIL_TEMPLATES.notification, {
+          appName: "CAPCo",
+          title: variables?.title || "Notification",
+          message: variables?.message || "",
+          ...variables,
+        });
         break;
 
       case "custom":
@@ -81,7 +70,7 @@ export const POST: APIRoute = async ({ request }) => {
         {
           status: 200,
           headers: { "Content-Type": "application/json" },
-        },
+        }
       );
     } else {
       return new Response(
@@ -94,7 +83,7 @@ export const POST: APIRoute = async ({ request }) => {
         {
           status: 500,
           headers: { "Content-Type": "application/json" },
-        },
+        }
       );
     }
   } catch (error) {
@@ -106,7 +95,7 @@ export const POST: APIRoute = async ({ request }) => {
       {
         status: 500,
         headers: { "Content-Type": "application/json" },
-      },
+      }
     );
   }
 };
@@ -123,6 +112,6 @@ export const GET: APIRoute = async () => {
     }),
     {
       headers: { "Content-Type": "application/json" },
-    },
+    }
   );
 };

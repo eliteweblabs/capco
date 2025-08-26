@@ -64,7 +64,7 @@ export class EmailService {
    * Send an email using the configured provider
    */
   async sendEmail(
-    options: SendEmailOptions,
+    options: SendEmailOptions
   ): Promise<{ success: boolean; messageId?: string; error?: string }> {
     try {
       const emailData = {
@@ -94,9 +94,7 @@ export class EmailService {
         case "resend":
           return await this.sendViaResend(emailData);
         default:
-          throw new Error(
-            `Unsupported email provider: ${this.config.provider}`,
-          );
+          throw new Error(`Unsupported email provider: ${this.config.provider}`);
       }
     } catch (error) {
       console.error("Email sending failed:", error);
@@ -113,8 +111,7 @@ export class EmailService {
   private async sendViaSMTP(emailData: any) {
     return {
       success: false,
-      error:
-        "SMTP provider is not available in this build. Please use Resend or SendGrid instead.",
+      error: "SMTP provider is not available in this build. Please use Resend or SendGrid instead.",
     };
   }
 
@@ -138,9 +135,7 @@ export class EmailService {
       from: { email: this.config.fromEmail, name: this.config.fromName },
       content: [
         { type: "text/html", value: emailData.html },
-        ...(emailData.text
-          ? [{ type: "text/plain", value: emailData.text }]
-          : []),
+        ...(emailData.text ? [{ type: "text/plain", value: emailData.text }] : []),
       ],
       ...(emailData.attachments && {
         attachments: emailData.attachments.map((att: any) => ({
@@ -214,7 +209,7 @@ export class EmailService {
   async sendTemplatedEmail(
     to: string | string[],
     template: EmailTemplate,
-    variables: Record<string, string> = {},
+    variables: Record<string, string> = {}
   ) {
     // Replace variables in template
     let subject = template.subject;
@@ -248,10 +243,7 @@ export class EmailService {
       const React = await import("react");
 
       // Create element with props
-      const emailElement = React.createElement(
-        template.component,
-        template.props || {},
-      );
+      const emailElement = React.createElement(template.component, template.props || {});
 
       // Render to HTML
       const html = render(emailElement);
@@ -261,10 +253,7 @@ export class EmailService {
       if (template.props) {
         Object.entries(template.props).forEach(([key, value]) => {
           const placeholder = `{{${key}}}`;
-          subject = subject.replace(
-            new RegExp(placeholder, "g"),
-            String(value),
-          );
+          subject = subject.replace(new RegExp(placeholder, "g"), String(value));
         });
       }
 
@@ -277,10 +266,7 @@ export class EmailService {
       console.error("React Email rendering failed:", error);
       return {
         success: false,
-        error:
-          error instanceof Error
-            ? error.message
-            : "React Email rendering failed",
+        error: error instanceof Error ? error.message : "React Email rendering failed",
       };
     }
   }
@@ -293,18 +279,14 @@ export class EmailService {
       if (this.config.provider === "smtp") {
         return {
           success: false,
-          error:
-            "SMTP verification not available in this build. Please use Resend or SendGrid.",
+          error: "SMTP verification not available in this build. Please use Resend or SendGrid.",
         };
       }
       return { success: true };
     } catch (error) {
       return {
         success: false,
-        error:
-          error instanceof Error
-            ? error.message
-            : "Connection verification failed",
+        error: error instanceof Error ? error.message : "Connection verification failed",
       };
     }
   }

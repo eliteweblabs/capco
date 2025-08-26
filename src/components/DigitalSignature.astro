@@ -17,9 +17,7 @@ const {
 ---
 
 <div class="digital-signature-container">
-  <label
-    class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
-  >
+  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
     Digital Signature {required && <span class="text-red-500">*</span>}
   </label>
 
@@ -65,12 +63,7 @@ const {
   </div>
 
   <!-- Hidden input to store signature data -->
-  <input
-    type="hidden"
-    id={`${id}-data`}
-    name={`${id}-data`}
-    class="signature-data"
-  />
+  <input type="hidden" id={`${id}-data`} name={`${id}-data`} class="signature-data" />
 
   <!-- Signature status -->
   <div class="signature-status mt-2 text-sm">
@@ -113,24 +106,12 @@ const {
 
       // Get related elements
       const container = canvas.closest(".digital-signature-container");
-      const placeholder = container?.querySelector(
-        ".signature-placeholder"
-      ) as HTMLElement | null;
-      const hiddenInput = container?.querySelector(
-        ".signature-data"
-      ) as HTMLInputElement | null;
-      const clearBtn = container?.querySelector(
-        ".signature-clear"
-      ) as HTMLElement | null;
-      const saveBtn = container?.querySelector(
-        ".signature-save"
-      ) as HTMLElement | null;
-      const statusEmpty = container?.querySelector(
-        ".signature-empty"
-      ) as HTMLElement | null;
-      const statusSaved = container?.querySelector(
-        ".signature-saved"
-      ) as HTMLElement | null;
+      const placeholder = container?.querySelector(".signature-placeholder") as HTMLElement | null;
+      const hiddenInput = container?.querySelector(".signature-data") as HTMLInputElement | null;
+      const clearBtn = container?.querySelector(".signature-clear") as HTMLElement | null;
+      const saveBtn = container?.querySelector(".signature-save") as HTMLElement | null;
+      const statusEmpty = container?.querySelector(".signature-empty") as HTMLElement | null;
+      const statusSaved = container?.querySelector(".signature-saved") as HTMLElement | null;
 
       // Handle signature events
       signaturePad.addEventListener("beginStroke", () => {
@@ -139,23 +120,12 @@ const {
       });
 
       signaturePad.addEventListener("endStroke", () => {
-        this.updateSignatureData(
-          signaturePad,
-          hiddenInput,
-          statusEmpty,
-          statusSaved
-        );
+        this.updateSignatureData(signaturePad, hiddenInput, statusEmpty, statusSaved);
       });
 
       // Handle clear button
       clearBtn?.addEventListener("click", () => {
-        this.clearSignature(
-          signaturePad,
-          hiddenInput,
-          placeholder,
-          statusEmpty,
-          statusSaved
-        );
+        this.clearSignature(signaturePad, hiddenInput, placeholder, statusEmpty, statusSaved);
       });
 
       // Handle save button
@@ -300,10 +270,7 @@ const {
       if (hide) hide.classList.add("hidden");
     }
 
-    hideSignatureStatus(
-      statusEmpty: HTMLElement | null,
-      statusSaved: HTMLElement | null
-    ) {
+    hideSignatureStatus(statusEmpty: HTMLElement | null, statusSaved: HTMLElement | null) {
       if (statusEmpty) statusEmpty.classList.add("hidden");
       if (statusSaved) statusSaved.classList.add("hidden");
     }
@@ -311,9 +278,7 @@ const {
     // Public methods for external access
     getSignatureData(canvasId: string) {
       const signaturePad = this.signaturePads.get(canvasId);
-      return signaturePad && !signaturePad.isEmpty()
-        ? signaturePad.toDataURL("image/png")
-        : null;
+      return signaturePad && !signaturePad.isEmpty() ? signaturePad.toDataURL("image/png") : null;
     }
 
     isSignatureEmpty(canvasId: string) {
@@ -331,9 +296,7 @@ const {
     getAllSignatures() {
       const signatures: { [key: string]: string | null } = {};
       this.signaturePads.forEach((pad, canvasId) => {
-        signatures[canvasId] = pad.isEmpty()
-          ? null
-          : pad.toDataURL("image/png");
+        signatures[canvasId] = pad.isEmpty() ? null : pad.toDataURL("image/png");
       });
       return signatures;
     }

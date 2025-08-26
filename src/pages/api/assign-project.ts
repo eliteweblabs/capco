@@ -14,7 +14,7 @@ export const POST: APIRoute = async ({ request }) => {
         {
           status: 400,
           headers: { "Content-Type": "application/json" },
-        },
+        }
       );
     }
 
@@ -30,7 +30,7 @@ export const POST: APIRoute = async ({ request }) => {
         {
           status: 200,
           headers: { "Content-Type": "application/json" },
-        },
+        }
       );
     }
 
@@ -49,7 +49,7 @@ export const POST: APIRoute = async ({ request }) => {
         {
           status: 401,
           headers: { "Content-Type": "application/json" },
-        },
+        }
       );
     }
 
@@ -72,7 +72,7 @@ export const POST: APIRoute = async ({ request }) => {
         {
           status: 403,
           headers: { "Content-Type": "application/json" },
-        },
+        }
       );
     }
 
@@ -94,7 +94,7 @@ export const POST: APIRoute = async ({ request }) => {
           {
             status: 400,
             headers: { "Content-Type": "application/json" },
-          },
+          }
         );
       }
     }
@@ -121,7 +121,7 @@ export const POST: APIRoute = async ({ request }) => {
         {
           status: 500,
           headers: { "Content-Type": "application/json" },
-        },
+        }
       );
     }
 
@@ -150,7 +150,7 @@ export const POST: APIRoute = async ({ request }) => {
       {
         status: 200,
         headers: { "Content-Type": "application/json" },
-      },
+      }
     );
   } catch (error: unknown) {
     console.error("Unexpected error in assign-project:", error);
@@ -163,7 +163,7 @@ export const POST: APIRoute = async ({ request }) => {
       {
         status: 500,
         headers: { "Content-Type": "application/json" },
-      },
+      }
     );
   }
 };

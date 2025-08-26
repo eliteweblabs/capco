@@ -2,10 +2,7 @@
 import flowbite from "flowbite/plugin";
 
 export default {
-  content: [
-    "./src/**/*.{astro,js,ts,jsx,tsx,vue,svelte}",
-    "./node_modules/flowbite/**/*.js",
-  ],
+  content: ["./src/**/*.{astro,js,ts,jsx,tsx,vue,svelte}", "./node_modules/flowbite/**/*.js"],
   darkMode: "class", // Esto permite usar 'dark:' en clases
   theme: {
     extend: {

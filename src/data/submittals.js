@@ -1,6 +1,3 @@
-
-
-
 export const cardsData = [
   {
     url: "valoraprime.vercel.app",
@@ -118,5 +115,4 @@ export const cardsData = [
   //   className: "custom-card-class-8",
   //   isNew: false
   // }
-
 ];

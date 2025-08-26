@@ -4,10 +4,7 @@ import { supabase } from "../../lib/supabase";
 export const POST: APIRoute = async ({ request, cookies }) => {
   try {
     const body = await request.json();
-    console.log(
-      "📝 [CREATE-PROJECT] Received request body:",
-      JSON.stringify(body, null, 2),
-    );
+    console.log("📝 [CREATE-PROJECT] Received request body:", JSON.stringify(body, null, 2));
 
     // Get user from session
     const accessToken = cookies.get("sb-access-token")?.value;
@@ -20,11 +17,10 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     }
 
     // Set session
-    const { data: session, error: sessionError } =
-      await supabase!.auth.setSession({
-        access_token: accessToken,
-        refresh_token: refreshToken,
-      });
+    const { data: session, error: sessionError } = await supabase!.auth.setSession({
+      access_token: accessToken,
+      refresh_token: refreshToken,
+    });
 
     if (sessionError || !session.session?.user) {
       return new Response(JSON.stringify({ error: "Invalid session" }), {
@@ -35,12 +31,9 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     const userId = session.session.user.id;
 
     if (!supabase) {
-      return new Response(
-        JSON.stringify({ error: "Database connection not available" }),
-        {
-          status: 500,
-        },
-      );
+      return new Response(JSON.stringify({ error: "Database connection not available" }), {
+        status: 500,
+      });
     }
 
     // Handle client data
@@ -75,8 +68,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       architect: body.architect,
       sq_ft: body.sq_ft,
       description: body.description,
-      new_construction:
-        body.new_construction === "on" || body.new_construction === true,
+      new_construction: body.new_construction === "on" || body.new_construction === true,
       units: body.units,
       building: body.building,
       project: body.project,
@@ -87,7 +79,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
     console.log(
       "📝 [CREATE-PROJECT] Inserting project data:",
-      JSON.stringify(projectData, null, 2),
+      JSON.stringify(projectData, null, 2)
     );
 
     // Create project
@@ -104,12 +96,9 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     }
 
     if (!projects || projects.length === 0) {
-      return new Response(
-        JSON.stringify({ error: "Failed to create project" }),
-        {
-          status: 500,
-        },
-      );
+      return new Response(JSON.stringify({ error: "Failed to create project" }), {
+        status: 500,
+      });
     }
 
     const project = projects[0]; // Get the first (and should be only) project

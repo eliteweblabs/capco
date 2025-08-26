@@ -8,7 +8,7 @@ export const GET: APIRoute = async () => {
       JSON.stringify({
         error: "Supabase is not configured",
       }),
-      { status: 500 },
+      { status: 500 }
     );
   }
 
@@ -22,7 +22,7 @@ export const GET: APIRoute = async () => {
       JSON.stringify({
         error: error.message,
       }),
-      { status: 500 },
+      { status: 500 }
     );
   }
 
@@ -36,22 +36,19 @@ export const POST: APIRoute = async ({ request }) => {
       JSON.stringify({
         error: "Supabase is not configured",
       }),
-      { status: 500 },
+      { status: 500 }
     );
   }
 
   const { name, message } = await request.json();
-  const { data, error } = await supabase
-    .from("guestbook")
-    .insert({ name, message })
-    .select();
+  const { data, error } = await supabase.from("guestbook").insert({ name, message }).select();
 
   if (error) {
     return new Response(
       JSON.stringify({
         error: error.message,
       }),
-      { status: 500 },
+      { status: 500 }
     );
   }
 

@@ -28,8 +28,7 @@ export const PROJECT_STATUS = {
   PROJECT_COMPLETE: 220,
 } as const;
 
-export type ProjectStatusCode =
-  (typeof PROJECT_STATUS)[keyof typeof PROJECT_STATUS];
+export type ProjectStatusCode = (typeof PROJECT_STATUS)[keyof typeof PROJECT_STATUS];
 
 // Dynamic status labels from database
 let PROJECT_STATUS_LABELS: Record<number, string> = {};
@@ -50,10 +49,7 @@ export async function loadProjectStatuses() {
   try {
     console.log("🌐 [GLOBAL] Fetching project statuses from API...");
     const response = await fetch("/api/get-project-statuses");
-    console.log(
-      "🌐 [GLOBAL] Project statuses API response status:",
-      response.status,
-    );
+    console.log("🌐 [GLOBAL] Project statuses API response status:", response.status);
 
     const result = await response.json();
     console.log("🌐 [GLOBAL] Project statuses API result:", {
@@ -72,7 +68,7 @@ export async function loadProjectStatuses() {
           acc[parseInt(code)] = (data as any).status_name;
           return acc;
         },
-        {} as Record<number, string>,
+        {} as Record<number, string>
       );
 
       console.log("🌐 [GLOBAL] Project statuses loaded successfully:", {
@@ -84,7 +80,7 @@ export async function loadProjectStatuses() {
     } else {
       console.warn(
         "🌐 [GLOBAL] Failed to load project statuses from API:",
-        result.error || "Unknown error",
+        result.error || "Unknown error"
       );
     }
   } catch (error) {
@@ -292,16 +288,10 @@ export class GlobalServices {
         callback(event.detail.data);
       }
     };
-    this.eventTarget.addEventListener(
-      "global-service",
-      handler as EventListener,
-    );
+    this.eventTarget.addEventListener("global-service", handler as EventListener);
     return () => {
       console.log("🌐 [GLOBAL] Removing event listener for:", type);
-      this.eventTarget.removeEventListener(
-        "global-service",
-        handler as EventListener,
-      );
+      this.eventTarget.removeEventListener("global-service", handler as EventListener);
     };
   }
 
@@ -624,14 +614,12 @@ export class GlobalServices {
 export const globalServices = GlobalServices.getInstance();
 
 // Export convenience functions
-export const sendEmail = (
-  options: Parameters<typeof globalServices.sendEmail>[0],
-) => globalServices.sendEmail(options);
+export const sendEmail = (options: Parameters<typeof globalServices.sendEmail>[0]) =>
+  globalServices.sendEmail(options);
 
 // React Email convenience function
-export const sendReactEmail = (
-  options: Parameters<typeof globalServices.sendReactEmail>[0],
-) => globalServices.sendReactEmail(options);
+export const sendReactEmail = (options: Parameters<typeof globalServices.sendReactEmail>[0]) =>
+  globalServices.sendReactEmail(options);
 
 export const updateProjectStatus = (update: ProjectStatusUpdate) =>
   globalServices.updateProjectStatus(update);
@@ -667,9 +655,7 @@ export type GlobalEventType =
   | "api:error";
 
 // Utility function to format time difference since last update
-export function formatTimeSinceUpdate(
-  updatedAt: string | null | undefined,
-): string {
+export function formatTimeSinceUpdate(updatedAt: string | null | undefined): string {
   if (!updatedAt) return "Unknown";
 
   const now = new Date();

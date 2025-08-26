@@ -31,17 +31,9 @@ export async function ensureUserProfile(user: User): Promise<void> {
 
     // Create profile
     const profileName =
-      user.user_metadata?.name ||
-      user.user_metadata?.full_name ||
-      user.email ||
-      "User";
+      user.user_metadata?.name || user.user_metadata?.full_name || user.email || "User";
 
-    console.log(
-      "Creating profile for user:",
-      user.id,
-      "with name:",
-      profileName,
-    );
+    console.log("Creating profile for user:", user.id, "with name:", profileName);
 
     const { data: newProfile, error: createError } = await supabase
       .from("profiles")

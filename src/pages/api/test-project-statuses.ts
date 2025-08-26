@@ -11,13 +11,10 @@ export const GET: APIRoute = async () => {
 
     if (error) {
       console.error("Error fetching project statuses:", error);
-      return new Response(
-        JSON.stringify({ error: "Failed to fetch project statuses" }),
-        {
-          status: 500,
-          headers: { "Content-Type": "application/json" },
-        }
-      );
+      return new Response(JSON.stringify({ error: "Failed to fetch project statuses" }), {
+        status: 500,
+        headers: { "Content-Type": "application/json" },
+      });
     }
 
     return new Response(
@@ -43,4 +40,4 @@ export const GET: APIRoute = async () => {
       }
     );
   }
-}; 
+};

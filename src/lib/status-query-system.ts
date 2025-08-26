@@ -27,9 +27,7 @@ export class StatusQuerySystem {
     const projectContainers = document.querySelectorAll('[class*="status-"]');
 
     projectContainers.forEach((container) => {
-      const statusClass = Array.from(container.classList).find((cls) =>
-        cls.startsWith("status-"),
-      );
+      const statusClass = Array.from(container.classList).find((cls) => cls.startsWith("status-"));
       if (statusClass) {
         const status = parseInt(statusClass.replace("status-", ""));
         const containerId = container.id || this.generateId(container);
@@ -39,12 +37,9 @@ export class StatusQuerySystem {
     });
 
     // Also find containers with data-project-id that might not have status classes yet
-    const projectContainersById =
-      document.querySelectorAll("[data-project-id]");
+    const projectContainersById = document.querySelectorAll("[data-project-id]");
     projectContainersById.forEach((container) => {
-      const statusClass = Array.from(container.classList).find((cls) =>
-        cls.startsWith("status-"),
-      );
+      const statusClass = Array.from(container.classList).find((cls) => cls.startsWith("status-"));
       if (statusClass) {
         const status = parseInt(statusClass.replace("status-", ""));
         const projectId = container.getAttribute("data-project-id");
@@ -58,9 +53,7 @@ export class StatusQuerySystem {
 
   private updateVisibilityForContainer(container: Element, status: number) {
     // Find all elements with status attributes
-    const statusElements = container.querySelectorAll(
-      "[data-status-show], [data-status-hide]",
-    );
+    const statusElements = container.querySelectorAll("[data-status-show], [data-status-hide]");
 
     // Process each element considering both show and hide attributes
     statusElements.forEach((element) => {
@@ -81,8 +74,7 @@ export class StatusQuerySystem {
         shouldBeVisible = status < requiredHideStatus;
       }
 
-      const wasVisible =
-        element.style.display !== "none" && element.style.display !== "";
+      const wasVisible = element.style.display !== "none" && element.style.display !== "";
 
       if (shouldBeVisible) {
         element.style.display = "block";
@@ -92,7 +84,7 @@ export class StatusQuerySystem {
 
       if (wasVisible !== shouldBeVisible) {
         console.log(
-          `Element "${element.textContent?.trim()}" visibility changed: ${wasVisible} -> ${shouldBeVisible} (status: ${status}, show: ${showStatus}, hide: ${hideStatus})`,
+          `Element "${element.textContent?.trim()}" visibility changed: ${wasVisible} -> ${shouldBeVisible} (status: ${status}, show: ${showStatus}, hide: ${hideStatus})`
         );
       }
     });
@@ -107,7 +99,7 @@ export class StatusQuerySystem {
             status,
             containerId: container.id || this.generateId(container),
           },
-        }),
+        })
       );
     });
   }
@@ -149,13 +141,11 @@ export class StatusQuerySystem {
 
   // Public method to update status for a specific project
   updateProjectStatus(projectId: string, newStatus: number) {
-    const container = document.querySelector(
-      `[data-project-id="${projectId}"]`,
-    );
+    const container = document.querySelector(`[data-project-id="${projectId}"]`);
     if (container) {
       // Update the status class
       const oldStatusClass = Array.from(container.classList).find((cls) =>
-        cls.startsWith("status-"),
+        cls.startsWith("status-")
       );
       if (oldStatusClass) {
         container.classList.remove(oldStatusClass);
@@ -176,7 +166,7 @@ export class StatusQuerySystem {
             newStatus,
             oldStatus: this.statusQueries.get(projectId),
           },
-        }),
+        })
       );
 
       console.log(`Updated project ${projectId} status to ${newStatus}`);
@@ -215,13 +205,9 @@ export class StatusQuerySystem {
 
   // Public method to refresh a specific project
   refreshProject(projectId: string) {
-    const container = document.querySelector(
-      `[data-project-id="${projectId}"]`,
-    );
+    const container = document.querySelector(`[data-project-id="${projectId}"]`);
     if (container) {
-      const statusClass = Array.from(container.classList).find((cls) =>
-        cls.startsWith("status-"),
-      );
+      const statusClass = Array.from(container.classList).find((cls) => cls.startsWith("status-"));
       if (statusClass) {
         const status = parseInt(statusClass.replace("status-", ""));
         this.updateVisibilityForContainer(container, status);

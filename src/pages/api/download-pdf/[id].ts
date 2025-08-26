@@ -12,7 +12,7 @@ export const GET: APIRoute = async ({ params, cookies }) => {
     // Initialize Supabase client
     const supabase = createClient(
       import.meta.env.SUPABASE_URL!,
-      import.meta.env.SUPABASE_ANON_KEY!,
+      import.meta.env.SUPABASE_ANON_KEY!
     );
 
     // Set up session from cookies
@@ -43,7 +43,7 @@ export const GET: APIRoute = async ({ params, cookies }) => {
         `
         *,
         projects!inner(id, author_id)
-      `,
+      `
       )
       .eq("id", id)
       .single();
@@ -53,10 +53,7 @@ export const GET: APIRoute = async ({ params, cookies }) => {
     }
 
     // Check if user has access to this PDF
-    if (
-      pdfDoc.projects.author_id !== user.id &&
-      pdfDoc.created_by !== user.id
-    ) {
+    if (pdfDoc.projects.author_id !== user.id && pdfDoc.created_by !== user.id) {
       return new Response("Access denied", { status: 403 });
     }
 

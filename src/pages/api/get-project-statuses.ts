@@ -12,7 +12,7 @@ export const GET: APIRoute = async ({ request }) => {
         {
           status: 500,
           headers: { "Content-Type": "application/json" },
-        },
+        }
       );
     }
 
@@ -32,7 +32,7 @@ export const GET: APIRoute = async ({ request }) => {
         {
           status: 500,
           headers: { "Content-Type": "application/json" },
-        },
+        }
       );
     }
 
@@ -57,7 +57,7 @@ export const GET: APIRoute = async ({ request }) => {
           est_time: string;
           notify: string[];
         }
-      >,
+      >
     );
 
     return new Response(
@@ -69,7 +69,7 @@ export const GET: APIRoute = async ({ request }) => {
       {
         status: 200,
         headers: { "Content-Type": "application/json" },
-      },
+      }
     );
   } catch (error) {
     console.error("Get project statuses error:", error);
@@ -81,7 +81,7 @@ export const GET: APIRoute = async ({ request }) => {
       {
         status: 500,
         headers: { "Content-Type": "application/json" },
-      },
+      }
     );
   }
 };

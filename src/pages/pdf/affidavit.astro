@@ -195,9 +195,9 @@ const isPdfMode = mode === "pdf";
       />
       <h1>Initial Construction Control Document</h1>
       <h2>
-        To be submitted with the building permit application by a Registered
-        Design Professional for work per the 10<sup>th</sup> edition of the Massachusetts
-        State Building Code, 780 CMR, Section 107.6.2
+        To be submitted with the building permit application by a Registered Design Professional for
+        work per the 10<sup>th</sup> edition of the Massachusetts State Building Code, 780 CMR, Section
+        107.6.2
       </h2>
     </div>
   </body>
@@ -243,35 +243,32 @@ const isPdfMode = mode === "pdf";
     <!-- <h3 class="section-title">Terms and Conditions</h3> -->
     <div class="terms">
       <p>
-        for the above-named project and that such plans, computations, and
-        specifications meet the applicable provisions of the Massachusetts State
-        Building Code, (780 CMR), and accepted engineering practices for the
-        proposed project. I understand and agree that I ( or my designee) shall
-        perform the necessary professional services and be present on the
+        for the above-named project and that such plans, computations, and specifications meet the
+        applicable provisions of the Massachusetts State Building Code, (780 CMR), and accepted
+        engineering practices for the proposed project. I understand and agree that I ( or my
+        designee) shall perform the necessary professional services and be present on the
         construction site on a regular and periodic basis to:
         <ol class="list-decimal list-inside ml-4 my-4">
           <li>
-            Review, for conformance to this code and the design concept, shop
-            drawings, samples, and other submittals by the contractor in
-            accordance with the requirements of the construction documents.
+            Review, for conformance to this code and the design concept, shop drawings, samples, and
+            other submittals by the contractor in accordance with the requirements of the
+            construction documents.
           </li>
           <li>
-            Perform the duties of registered design professionals in 780 CMR
-            Chapter 17, as applicable.
+            Perform the duties of registered design professionals in 780 CMR Chapter 17, as
+            applicable.
           </li>
           <li>
-            Be present at intervals appropriate to the stage of construction to
-            become generally familiar with the progress and quality of the work
-            and to determine if the work is being performed in a manner
-            consistent with the approved construction documents and this code.
+            Be present at intervals appropriate to the stage of construction to become generally
+            familiar with the progress and quality of the work and to determine if the work is being
+            performed in a manner consistent with the approved construction documents and this code.
           </li>
         </ol>
 
-        When required by the building official, I shall submit field/progress
-        reports (see item 3.) together with pertinent comments, in a form
-        acceptable to the building official. Upon completion of the work, I
-        shall submit to the building official a 'Final Construction Control
-        Document'.
+        When required by the building official, I shall submit field/progress reports (see item 3.)
+        together with pertinent comments, in a form acceptable to the building official. Upon
+        completion of the work, I shall submit to the building official a 'Final Construction
+        Control Document'.
       </p>
     </div>
   </div>
@@ -293,8 +290,9 @@ const isPdfMode = mode === "pdf";
   <!-- Document Footer -->
   <div class="footer">
     <p>
-      This document was generated on {new Date().toLocaleDateString()} | Project
-      ID: {projectId || "TBD"}
+      This document was generated on {new Date().toLocaleDateString()} | Project ID: {
+        projectId || "TBD"
+      }
     </p>
   </div>
 
@@ -325,12 +323,9 @@ const isPdfMode = mode === "pdf";
 
       generatePdfBtn?.addEventListener("click", async () => {
         // Validate signatures
-        const clientSigEmpty =
-          window.digitalSignatureManager?.isSignatureEmpty("client-signature");
+        const clientSigEmpty = window.digitalSignatureManager?.isSignatureEmpty("client-signature");
         const consultantSigEmpty =
-          window.digitalSignatureManager?.isSignatureEmpty(
-            "consultant-signature"
-          );
+          window.digitalSignatureManager?.isSignatureEmpty("consultant-signature");
 
         if (clientSigEmpty || consultantSigEmpty) {
           if (window.globalServices) {
@@ -346,8 +341,7 @@ const isPdfMode = mode === "pdf";
         }
 
         // Get signature data
-        const signatures =
-          window.digitalSignatureManager?.getAllSignatures() || {};
+        const signatures = window.digitalSignatureManager?.getAllSignatures() || {};
 
         // Generate PDF
         try {
@@ -367,13 +361,9 @@ const isPdfMode = mode === "pdf";
                 "mode=pdf",
               signatures: signatures,
               projectData: {
-                projectId: new URLSearchParams(window.location.search).get(
-                  "projectId"
-                ),
+                projectId: new URLSearchParams(window.location.search).get("projectId"),
                 title: new URLSearchParams(window.location.search).get("title"),
-                address: new URLSearchParams(window.location.search).get(
-                  "address"
-                ),
+                address: new URLSearchParams(window.location.search).get("address"),
               },
             }),
           });
@@ -393,8 +383,7 @@ const isPdfMode = mode === "pdf";
               window.globalServices.showNotification({
                 type: "success",
                 title: "PDF Generated",
-                message:
-                  "Project agreement PDF has been generated and downloaded.",
+                message: "Project agreement PDF has been generated and downloaded.",
                 duration: 5000,
               });
             }
@@ -407,26 +396,20 @@ const isPdfMode = mode === "pdf";
             window.globalServices.showNotification({
               type: "error",
               title: "PDF Generation Failed",
-              message:
-                "There was an error generating the PDF. Please try again.",
+              message: "There was an error generating the PDF. Please try again.",
               duration: 0,
             });
           }
         } finally {
           generatePdfBtn.disabled = false;
-          generatePdfBtn.innerHTML =
-            '<i class="bx bx-download mr-2"></i>Generate PDF Document';
+          generatePdfBtn.innerHTML = '<i class="bx bx-download mr-2"></i>Generate PDF Document';
         }
       });
 
       saveDraftBtn?.addEventListener("click", () => {
         // Save draft functionality
-        const signatures =
-          window.digitalSignatureManager?.getAllSignatures() || {};
-        localStorage.setItem(
-          "pdf-draft-signatures",
-          JSON.stringify(signatures)
-        );
+        const signatures = window.digitalSignatureManager?.getAllSignatures() || {};
+        localStorage.setItem("pdf-draft-signatures", JSON.stringify(signatures));
 
         if (window.globalServices) {
           window.globalServices.showNotification({

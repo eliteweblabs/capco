@@ -8,9 +8,7 @@ const getWelcomeEmailComponent = async () => {
 };
 
 const getProjectNotificationComponent = async () => {
-  const { ProjectNotificationEmail } = await import(
-    "../emails/ProjectNotificationEmail"
-  );
+  const { ProjectNotificationEmail } = await import("../emails/ProjectNotificationEmail");
   return ProjectNotificationEmail;
 };
 
@@ -22,7 +20,7 @@ export async function sendWelcomeEmail(
   props: {
     name?: string;
     appName?: string;
-  },
+  }
 ) {
   const component = await getWelcomeEmailComponent();
 
@@ -48,7 +46,7 @@ export async function sendProjectNotificationEmail(
     actionRequired?: boolean;
     actionUrl?: string;
     actionText?: string;
-  },
+  }
 ) {
   const component = await getProjectNotificationComponent();
 
@@ -70,7 +68,7 @@ export async function sendPasswordResetEmail(
     name?: string;
     resetLink?: string;
     appName?: string;
-  },
+  }
 ) {
   // For now, fall back to HTML template
   return emailService.sendTemplatedEmail(
@@ -96,7 +94,7 @@ export async function sendPasswordResetEmail(
       name: props.name || "User",
       resetLink: props.resetLink || "#",
       appName: props.appName || "CAPCo",
-    },
+    }
   );
 }
 

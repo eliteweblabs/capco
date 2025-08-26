@@ -55,8 +55,7 @@ export const ProjectNotificationEmail = ({
             <>
               <Section style={alertBox}>
                 <Text style={alertText}>
-                  ⚠️ Action Required: Please review and take necessary action on
-                  this project.
+                  ⚠️ Action Required: Please review and take necessary action on this project.
                 </Text>
               </Section>
 
@@ -79,8 +78,7 @@ export const ProjectNotificationEmail = ({
           <Hr style={hr} />
 
           <Text style={footer}>
-            This is an automated notification from CAPCo Project Management
-            System.
+            This is an automated notification from CAPCo Project Management System.
             <br />
             If you have questions, please contact our support team.
           </Text>

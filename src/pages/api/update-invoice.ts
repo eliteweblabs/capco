@@ -30,7 +30,7 @@ export const POST: APIRoute = async ({ request }) => {
         {
           status: 500,
           headers: { "Content-Type": "application/json" },
-        },
+        }
       );
     }
 
@@ -63,21 +63,19 @@ export const POST: APIRoute = async ({ request }) => {
               {
                 status: 500,
                 headers: { "Content-Type": "application/json" },
-              },
+              }
             );
           }
         } else {
           // Create new line item
-          const { error: createError } = await supabase
-            .from("invoice_line_items")
-            .insert({
-              invoice_id: invoiceId,
-              description: item.description,
-              quantity: item.quantity,
-              unit_price: item.unit_price,
-              total_price: totalPrice,
-              sort_order: i + 1,
-            });
+          const { error: createError } = await supabase.from("invoice_line_items").insert({
+            invoice_id: invoiceId,
+            description: item.description,
+            quantity: item.quantity,
+            unit_price: item.unit_price,
+            total_price: totalPrice,
+            sort_order: i + 1,
+          });
 
           if (createError) {
             console.error("Error creating line item:", createError);
@@ -89,7 +87,7 @@ export const POST: APIRoute = async ({ request }) => {
               {
                 status: 500,
                 headers: { "Content-Type": "application/json" },
-              },
+              }
             );
           }
         }
@@ -104,7 +102,7 @@ export const POST: APIRoute = async ({ request }) => {
       {
         status: 200,
         headers: { "Content-Type": "application/json" },
-      },
+      }
     );
   } catch (error) {
     console.error("Update invoice API error:", error);
@@ -115,7 +113,7 @@ export const POST: APIRoute = async ({ request }) => {
       {
         status: 500,
         headers: { "Content-Type": "application/json" },
-      },
+      }
     );
   }
 };

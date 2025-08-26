@@ -5,7 +5,8 @@ export const GET: APIRoute = async () => {
   try {
     const { data: invoices, error } = await supabase
       .from("invoices")
-      .select(`
+      .select(
+        `
         id,
         invoice_number,
         status,
@@ -16,18 +17,16 @@ export const GET: APIRoute = async () => {
           title,
           address
         )
-      `)
+      `
+      )
       .order("created_at", { ascending: false });
 
     if (error) {
       console.error("Error fetching invoices:", error);
-      return new Response(
-        JSON.stringify({ error: "Failed to fetch invoices" }),
-        {
-          status: 500,
-          headers: { "Content-Type": "application/json" },
-        }
-      );
+      return new Response(JSON.stringify({ error: "Failed to fetch invoices" }), {
+        status: 500,
+        headers: { "Content-Type": "application/json" },
+      });
     }
 
     return new Response(
@@ -52,4 +51,4 @@ export const GET: APIRoute = async () => {
       }
     );
   }
-}; 
+};

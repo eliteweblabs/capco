@@ -46,7 +46,7 @@ self.addEventListener("notificationclick", (event) => {
 
         return self.clients.openWindow(url);
       }
-    }),
+    })
   );
 });
 
@@ -66,10 +66,7 @@ self.addEventListener("push", (event) => {
     };
 
     event.waitUntil(
-      self.registration.showNotification(
-        data.title || "Fire Protection App",
-        options,
-      ),
+      self.registration.showNotification(data.title || "Fire Protection App", options)
     );
   }
 });

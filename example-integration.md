@@ -8,11 +8,7 @@ In your `ProjectNew.astro` component, replace the existing upload logic:
 
 ```javascript
 // Replace existing upload logic with global services
-import {
-  uploadFiles,
-  showNotification,
-  updateProjectStatus,
-} from "../lib/global-services";
+import { uploadFiles, showNotification, updateProjectStatus } from "../lib/global-services";
 
 class ProjectFileUploader {
   constructor(container) {

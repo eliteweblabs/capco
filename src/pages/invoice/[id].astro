@@ -49,16 +49,20 @@ const { invoice, lineItems, project, client } = data;
               Invoice #{invoice.invoice_number}
             </h1>
             <p class="text-gray-600 mt-2">
-              Status: <span class="font-semibold capitalize"
-                >{invoice.status}</span
-              >
+              Status: <span class="font-semibold capitalize">{invoice.status}</span>
             </p>
-            {client && (
-              <div class="mt-2 text-gray-700 text-sm">
-                <p><strong>Client:</strong> {client.name || "N/A"}</p>
-                <p><strong>Email:</strong> {client.email || "N/A"}</p>
-              </div>
-            )}
+            {
+              client && (
+                <div class="mt-2 text-gray-700 text-sm">
+                  <p>
+                    <strong>Client:</strong> {client.name || "N/A"}
+                  </p>
+                  <p>
+                    <strong>Email:</strong> {client.email || "N/A"}
+                  </p>
+                </div>
+              )
+            }
           </div>
           <div class="text-right">
             <p class="text-2xl font-bold text-gray-900">
@@ -131,10 +135,7 @@ const { invoice, lineItems, project, client } = data;
                 >
               </tr>
             </thead>
-            <tbody
-              class="bg-white divide-y divide-gray-200"
-              id="line-items-container"
-            >
+            <tbody class="bg-white divide-y divide-gray-200" id="line-items-container">
               {
                 lineItems.map((item: any, index: number) => (
                   <tr class="line-item-row" data-item-id={item.id}>
@@ -204,9 +205,7 @@ const { invoice, lineItems, project, client } = data;
         <div class="mt-6 text-right">
           <div class="text-sm text-gray-600" id="invoice-totals">
             <p>
-              Subtotal: $<span id="subtotal-display"
-                >{invoice.subtotal.toFixed(2)}</span
-              >
+              Subtotal: $<span id="subtotal-display">{invoice.subtotal.toFixed(2)}</span>
             </p>
             <p>
               Tax ({invoice.tax_rate}%): $<span id="tax-display"
@@ -214,9 +213,7 @@ const { invoice, lineItems, project, client } = data;
               >
             </p>
             <p class="text-lg font-semibold text-gray-900">
-              Total: $<span id="total-display"
-                >{invoice.total_amount.toFixed(2)}</span
-              >
+              Total: $<span id="total-display">{invoice.total_amount.toFixed(2)}</span>
             </p>
           </div>
         </div>
@@ -273,11 +270,7 @@ const { invoice, lineItems, project, client } = data;
           <div class="bg-green-50 border border-green-200 rounded-lg p-6">
             <div class="flex items-center">
               <div class="flex-shrink-0">
-                <svg
-                  class="h-5 w-5 text-green-400"
-                  viewBox="0 0 20 20"
-                  fill="currentColor"
-                >
+                <svg class="h-5 w-5 text-green-400" viewBox="0 0 20 20" fill="currentColor">
                   <path
                     fill-rule="evenodd"
                     d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
@@ -286,12 +279,9 @@ const { invoice, lineItems, project, client } = data;
                 </svg>
               </div>
               <div class="ml-3">
-                <h3 class="text-sm font-medium text-green-800">
-                  Payment Complete
-                </h3>
+                <h3 class="text-sm font-medium text-green-800">Payment Complete</h3>
                 <p class="text-sm text-green-700 mt-1">
-                  This invoice was paid on{" "}
-                  {new Date(invoice.paid_at).toLocaleDateString()}
+                  This invoice was paid on {new Date(invoice.paid_at).toLocaleDateString()}
                 </p>
               </div>
             </div>
@@ -306,10 +296,8 @@ const { invoice, lineItems, project, client } = data;
 
     // Calculate totals for a line item
     function calculateLineTotal(row) {
-      const quantity =
-        parseFloat(row.querySelector(".quantity-input").value) || 0;
-      const unitPrice =
-        parseFloat(row.querySelector(".unit-price-input").value) || 0;
+      const quantity = parseFloat(row.querySelector(".quantity-input").value) || 0;
+      const unitPrice = parseFloat(row.querySelector(".unit-price-input").value) || 0;
       const total = quantity * unitPrice;
 
       row.querySelector(".total-display").textContent = `$${total.toFixed(2)}`;
@@ -328,19 +316,16 @@ const { invoice, lineItems, project, client } = data;
       const taxAmount = subtotal * (taxRate / 100);
       const total = subtotal + taxAmount;
 
-      document.getElementById("subtotal-display").textContent =
-        subtotal.toFixed(2);
+      document.getElementById("subtotal-display").textContent = subtotal.toFixed(2);
       document.getElementById("tax-display").textContent = taxAmount.toFixed(2);
       document.getElementById("total-display").textContent = total.toFixed(2);
     }
 
     // Add event listeners to all quantity and unit price inputs
     function addInputListeners() {
-      document
-        .querySelectorAll(".quantity-input, .unit-price-input")
-        .forEach((input) => {
-          input.addEventListener("input", updateInvoiceTotals);
-        });
+      document.querySelectorAll(".quantity-input, .unit-price-input").forEach((input) => {
+        input.addEventListener("input", updateInvoiceTotals);
+      });
     }
 
     // Add new line item
@@ -429,10 +414,8 @@ const { invoice, lineItems, project, client } = data;
       document.querySelectorAll(".line-item-row").forEach((row) => {
         const itemId = row.dataset.itemId;
         const description = row.querySelector(".description-input").value;
-        const quantity =
-          parseFloat(row.querySelector(".quantity-input").value) || 0;
-        const unitPrice =
-          parseFloat(row.querySelector(".unit-price-input").value) || 0;
+        const quantity = parseFloat(row.querySelector(".quantity-input").value) || 0;
+        const unitPrice = parseFloat(row.querySelector(".unit-price-input").value) || 0;
         const totalPrice = quantity * unitPrice;
 
         lineItems.push({
@@ -496,15 +479,9 @@ const { invoice, lineItems, project, client } = data;
       addInputListeners();
       updateInvoiceTotals();
 
-      document
-        .getElementById("add-line-item-btn")
-        .addEventListener("click", addLineItem);
-      document
-        .getElementById("save-invoice-btn")
-        .addEventListener("click", saveInvoice);
-      document
-        .getElementById("send-invoice-btn")
-        .addEventListener("click", sendInvoice);
+      document.getElementById("add-line-item-btn").addEventListener("click", addLineItem);
+      document.getElementById("save-invoice-btn").addEventListener("click", saveInvoice);
+      document.getElementById("send-invoice-btn").addEventListener("click", sendInvoice);
 
       // Delete button listeners
       document.addEventListener("click", (e) => {

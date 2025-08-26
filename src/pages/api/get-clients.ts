@@ -14,11 +14,10 @@ export const GET: APIRoute = async ({ cookies }) => {
     }
 
     // Set session
-    const { data: session, error: sessionError } =
-      await supabase!.auth.setSession({
-        access_token: accessToken,
-        refresh_token: refreshToken,
-      });
+    const { data: session, error: sessionError } = await supabase!.auth.setSession({
+      access_token: accessToken,
+      refresh_token: refreshToken,
+    });
 
     if (sessionError || !session.session?.user) {
       return new Response(JSON.stringify({ error: "Invalid session" }), {
@@ -35,12 +34,9 @@ export const GET: APIRoute = async ({ cookies }) => {
 
     if (profileError) {
       console.error("Error fetching user profile:", profileError);
-      return new Response(
-        JSON.stringify({ error: "Failed to verify user permissions" }),
-        {
-          status: 500,
-        },
-      );
+      return new Response(JSON.stringify({ error: "Failed to verify user permissions" }), {
+        status: 500,
+      });
     }
 
     const userRole = profile?.role?.toLowerCase();
