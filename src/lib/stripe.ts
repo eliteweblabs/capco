@@ -18,11 +18,6 @@ export const stripeConfig = {
 };
 
 // Payment method types we support
-export const supportedPaymentMethods = [
-  "card",
-  "apple_pay",
-  "google_pay",
-  "link",
-] as const;
+export const supportedPaymentMethods = ["card", "apple_pay", "google_pay", "link"] as const;
 
 export type SupportedPaymentMethod = (typeof supportedPaymentMethods)[number];

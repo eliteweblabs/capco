@@ -21,13 +21,10 @@ export const POST: APIRoute = async ({ request }) => {
 
     if (projectError) {
       console.error("Error fetching project:", projectError);
-      return new Response(
-        JSON.stringify({ error: "Failed to fetch project" }),
-        {
-          status: 500,
-          headers: { "Content-Type": "application/json" },
-        },
-      );
+      return new Response(JSON.stringify({ error: "Failed to fetch project" }), {
+        status: 500,
+        headers: { "Content-Type": "application/json" },
+      });
     }
 
     // Get notification settings for the project's status
@@ -39,13 +36,10 @@ export const POST: APIRoute = async ({ request }) => {
 
     if (statusError) {
       console.error("Error fetching status notifications:", statusError);
-      return new Response(
-        JSON.stringify({ error: "Failed to fetch status notifications" }),
-        {
-          status: 500,
-          headers: { "Content-Type": "application/json" },
-        },
-      );
+      return new Response(JSON.stringify({ error: "Failed to fetch status notifications" }), {
+        status: 500,
+        headers: { "Content-Type": "application/json" },
+      });
     }
 
     // Get the notify array from JSONB (Supabase automatically converts JSONB to array)
@@ -64,7 +58,7 @@ export const POST: APIRoute = async ({ request }) => {
       {
         status: 200,
         headers: { "Content-Type": "application/json" },
-      },
+      }
     );
   } catch (error) {
     console.error("Check notifications API error:", error);
@@ -75,7 +69,7 @@ export const POST: APIRoute = async ({ request }) => {
       {
         status: 500,
         headers: { "Content-Type": "application/json" },
-      },
+      }
     );
   }
 };

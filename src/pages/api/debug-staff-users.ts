@@ -18,7 +18,7 @@ export const GET: APIRoute = async ({ request }) => {
         {
           status: 500,
           headers: { "Content-Type": "application/json" },
-        },
+        }
       );
     }
 
@@ -46,7 +46,7 @@ export const GET: APIRoute = async ({ request }) => {
         {
           status: 401,
           headers: { "Content-Type": "application/json" },
-        },
+        }
       );
     }
 
@@ -87,8 +87,7 @@ export const GET: APIRoute = async ({ request }) => {
     };
 
     // Try a direct query using RPC function to bypass RLS
-    const { data: rpcStaffProfiles, error: rpcStaffError } = await supabase
-      .rpc('get_staff_users');
+    const { data: rpcStaffProfiles, error: rpcStaffError } = await supabase.rpc("get_staff_users");
 
     debugInfo.rpcStaffProfiles = {
       count: rpcStaffProfiles?.length || 0,
@@ -97,8 +96,8 @@ export const GET: APIRoute = async ({ request }) => {
     };
 
     // Also try to get all profiles to see what's in the table
-    const { data: allProfilesRpc, error: allProfilesRpcError } = await supabase
-      .rpc('get_all_profiles');
+    const { data: allProfilesRpc, error: allProfilesRpcError } =
+      await supabase.rpc("get_all_profiles");
 
     debugInfo.allProfilesRpc = {
       count: allProfilesRpc?.length || 0,
@@ -126,7 +125,7 @@ export const GET: APIRoute = async ({ request }) => {
       {
         status: 200,
         headers: { "Content-Type": "application/json" },
-      },
+      }
     );
   } catch (error: unknown) {
     return new Response(
@@ -138,7 +137,7 @@ export const GET: APIRoute = async ({ request }) => {
       {
         status: 500,
         headers: { "Content-Type": "application/json" },
-      },
+      }
     );
   }
-}; 
+};

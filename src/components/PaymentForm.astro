@@ -48,16 +48,11 @@ const { invoiceId, amount, currency = "usd" } = Astro.props;
     <!-- Credit Card Form -->
     <div id="card-element-container" class="mb-4">
       <div class="form-group">
-        <label
-          for="card-element"
-          class="block text-sm font-medium text-gray-700 mb-2"
-        >
+        <label for="card-element" class="block text-sm font-medium text-gray-700 mb-2">
           Credit or debit card
         </label>
-        <div id="card-element" class="p-3 border border-gray-300 rounded-md">
-        </div>
-        <div id="card-errors" class="text-red-600 text-sm mt-2" role="alert">
-        </div>
+        <div id="card-element" class="p-3 border border-gray-300 rounded-md"></div>
+        <div id="card-errors" class="text-red-600 text-sm mt-2" role="alert"></div>
       </div>
     </div>
 
@@ -69,10 +64,7 @@ const { invoiceId, amount, currency = "usd" } = Astro.props;
     >
       <span id="button-text">Pay ${(amount / 100).toFixed(2)}</span>
       <div id="spinner" class="hidden">
-        <div
-          class="animate-spin rounded-full h-4 w-4 border-b-2 border-white mx-auto"
-        >
-        </div>
+        <div class="animate-spin rounded-full h-4 w-4 border-b-2 border-white mx-auto"></div>
       </div>
     </button>
   </div>
@@ -101,9 +93,7 @@ const { invoiceId, amount, currency = "usd" } = Astro.props;
 
   (async () => {
     // Initialize Stripe
-    const stripe = await loadStripe(
-      import.meta.env.PUBLIC_STRIPE_PUBLISHABLE_KEY || ""
-    );
+    const stripe = await loadStripe(import.meta.env.PUBLIC_STRIPE_PUBLISHABLE_KEY || "");
     if (!stripe) {
       console.error("Failed to load Stripe");
       return;
@@ -216,10 +206,7 @@ const { invoiceId, amount, currency = "usd" } = Astro.props;
 
         if (result.error) {
           showError(result.error.message);
-        } else if (
-          result.paymentIntent &&
-          result.paymentIntent.status === "succeeded"
-        ) {
+        } else if (result.paymentIntent && result.paymentIntent.status === "succeeded") {
           await confirmPayment();
         }
       } catch (error) {

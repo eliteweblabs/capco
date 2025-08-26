@@ -11,13 +11,10 @@ export const POST: APIRoute = async ({ request }) => {
     const { to, type, ...props } = body;
 
     if (!to) {
-      return new Response(
-        JSON.stringify({ error: "Recipient email is required" }),
-        {
-          status: 400,
-          headers: { "Content-Type": "application/json" },
-        },
-      );
+      return new Response(JSON.stringify({ error: "Recipient email is required" }), {
+        status: 400,
+        headers: { "Content-Type": "application/json" },
+      });
     }
 
     let result;
@@ -35,8 +32,7 @@ export const POST: APIRoute = async ({ request }) => {
           recipientName: props.recipientName || "User",
           projectTitle: props.projectTitle || "Your Project",
           projectId: props.projectId || "12345",
-          statusMessage:
-            props.statusMessage || "Your project has been updated.",
+          statusMessage: props.statusMessage || "Your project has been updated.",
           actionRequired: props.actionRequired || false,
           actionUrl: props.actionUrl || "https://yourapp.com/projects",
           actionText: props.actionText || "View Project",
@@ -50,13 +46,12 @@ export const POST: APIRoute = async ({ request }) => {
       default:
         return new Response(
           JSON.stringify({
-            error:
-              "Invalid email type. Use: welcome, project-notification, test",
+            error: "Invalid email type. Use: welcome, project-notification, test",
           }),
           {
             status: 400,
             headers: { "Content-Type": "application/json" },
-          },
+          }
         );
     }
 
@@ -72,7 +67,7 @@ export const POST: APIRoute = async ({ request }) => {
         {
           status: 200,
           headers: { "Content-Type": "application/json" },
-        },
+        }
       );
     } else {
       return new Response(
@@ -85,7 +80,7 @@ export const POST: APIRoute = async ({ request }) => {
         {
           status: 500,
           headers: { "Content-Type": "application/json" },
-        },
+        }
       );
     }
   } catch (error: unknown) {
@@ -99,7 +94,7 @@ export const POST: APIRoute = async ({ request }) => {
       {
         status: 500,
         headers: { "Content-Type": "application/json" },
-      },
+      }
     );
   }
 };
@@ -197,6 +192,6 @@ export const GET: APIRoute = async () => {
     `,
     {
       headers: { "Content-Type": "text/html" },
-    },
+    }
   );
 };

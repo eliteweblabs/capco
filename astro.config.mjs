@@ -47,9 +47,7 @@ export default defineConfig({
   // Ensure proper CI building
   vite: {
     define: {
-      "process.env.NODE_ENV": JSON.stringify(
-        process.env.NODE_ENV || "production",
-      ),
+      "process.env.NODE_ENV": JSON.stringify(process.env.NODE_ENV || "production"),
       // Ensure environment variables are available in server context
       "process.env.EMAIL_PROVIDER": JSON.stringify(env.EMAIL_PROVIDER),
       "process.env.EMAIL_API_KEY": JSON.stringify(env.EMAIL_API_KEY),

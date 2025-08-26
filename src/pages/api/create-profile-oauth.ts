@@ -10,7 +10,7 @@ export const POST: APIRoute = async ({ request }) => {
       {
         status: 500,
         headers: { "Content-Type": "application/json" },
-      },
+      }
     );
   }
 
@@ -27,7 +27,7 @@ export const POST: APIRoute = async ({ request }) => {
         {
           status: 401,
           headers: { "Content-Type": "application/json" },
-        },
+        }
       );
     }
 
@@ -51,7 +51,7 @@ export const POST: APIRoute = async ({ request }) => {
         {
           status: 200,
           headers: { "Content-Type": "application/json" },
-        },
+        }
       );
     }
 
@@ -87,7 +87,7 @@ export const POST: APIRoute = async ({ request }) => {
         {
           status: 500,
           headers: { "Content-Type": "application/json" },
-        },
+        }
       );
     }
 
@@ -102,7 +102,7 @@ export const POST: APIRoute = async ({ request }) => {
       {
         status: 201,
         headers: { "Content-Type": "application/json" },
-      },
+      }
     );
   } catch (error) {
     console.error("Unexpected error creating OAuth profile:", error);
@@ -114,7 +114,7 @@ export const POST: APIRoute = async ({ request }) => {
       {
         status: 500,
         headers: { "Content-Type": "application/json" },
-      },
+      }
     );
   }
 };

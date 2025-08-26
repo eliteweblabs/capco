@@ -131,11 +131,7 @@ export class ProjectService {
       throw new Error("Database not configured");
     }
 
-    const { data, error } = await supabase
-      .from("projects")
-      .select("*")
-      .eq("id", id)
-      .single();
+    const { data, error } = await supabase.from("projects").select("*").eq("id", id).single();
 
     if (error) {
       if (error.code === "PGRST116") {
@@ -172,10 +168,7 @@ export class ProjectService {
     }
 
     if (filters?.offset) {
-      query = query.range(
-        filters.offset,
-        filters.offset + (filters.limit || 10) - 1,
-      );
+      query = query.range(filters.offset, filters.offset + (filters.limit || 10) - 1);
     }
 
     query = query.order("updated_at", { ascending: false });
@@ -203,10 +196,7 @@ export class ProjectService {
     globalServices.emit("project:deleted", { id });
   }
 
-  async updateProjectMetadata(
-    id: string,
-    metadata: Record<string, any>,
-  ): Promise<Project> {
+  async updateProjectMetadata(id: string, metadata: Record<string, any>): Promise<Project> {
     if (!supabase) {
       throw new Error("Database not configured");
     }
@@ -239,7 +229,7 @@ export class ProjectService {
       url: string;
       size: number;
       type: string;
-    },
+    }
   ): Promise<any> {
     if (!supabase) {
       throw new Error("Database not configured");
@@ -289,16 +279,12 @@ export class ProjectService {
 export const projectService = new ProjectService();
 
 // Export convenience functions
-export const createProject = (data: CreateProjectData) =>
-  projectService.createProject(data);
+export const createProject = (data: CreateProjectData) => projectService.createProject(data);
 export const updateProject = (id: string, data: UpdateProjectData) =>
   projectService.updateProject(id, data);
 export const getProject = (id: string) => projectService.getProject(id);
-export const getProjects = (
-  filters?: Parameters<typeof projectService.getProjects>[0],
-) => projectService.getProjects(filters);
+export const getProjects = (filters?: Parameters<typeof projectService.getProjects>[0]) =>
+  projectService.getProjects(filters);
 export const deleteProject = (id: string) => projectService.deleteProject(id);
-export const updateProjectMetadata = (
-  id: string,
-  metadata: Record<string, any>,
-) => projectService.updateProjectMetadata(id, metadata);
+export const updateProjectMetadata = (id: string, metadata: Record<string, any>) =>
+  projectService.updateProjectMetadata(id, metadata);

@@ -7,7 +7,6 @@ export const cardsData = [
     subtitle: "Lorem ipsum dolor sit amet consectetur.",
     imageSrc: "/img/notion/white/my-notion-face-transparent_8.png",
     imageAlt: "Ícono del aplicativo",
-
   },
   {
     id: "card-2",
@@ -17,7 +16,6 @@ export const cardsData = [
     subtitle: "Lorem ipsum dolor sit amet consectetur.",
     imageSrc: "/img/notion/white/my-notion-face-transparent_8.png",
     imageAlt: "Imagen de portafolio",
-
   },
   {
     id: "card-3",
@@ -27,7 +25,6 @@ export const cardsData = [
     subtitle: "Lorem ipsum dolor sit amet consectetur.",
     imageSrc: "/img/notion/white/my-notion-face-transparent_8.png",
     imageAlt: "Ícono del proyecto de prueba",
-
   },
   {
     id: "card-4",
@@ -37,6 +34,5 @@ export const cardsData = [
     subtitle: "Lorem ipsum dolor sit amet consectetur.",
     imageSrc: "/img/notion/white/my-notion-face-transparent_8.png",
     imageAlt: "Logo de Vercel",
-
   },
 ];

@@ -23,11 +23,10 @@ export const PUT: APIRoute = async ({ request, cookies, params }) => {
     }
 
     // Set session
-    const { data: session, error: sessionError } =
-      await supabase!.auth.setSession({
-        access_token: accessToken,
-        refresh_token: refreshToken,
-      });
+    const { data: session, error: sessionError } = await supabase!.auth.setSession({
+      access_token: accessToken,
+      refresh_token: refreshToken,
+    });
 
     if (sessionError || !session.session?.user) {
       return new Response(JSON.stringify({ error: "Invalid session" }), {
@@ -46,12 +45,9 @@ export const PUT: APIRoute = async ({ request, cookies, params }) => {
 
     if (profileError) {
       console.error("Error fetching user profile:", profileError);
-      return new Response(
-        JSON.stringify({ error: "Failed to verify user permissions" }),
-        {
-          status: 500,
-        },
-      );
+      return new Response(JSON.stringify({ error: "Failed to verify user permissions" }), {
+        status: 500,
+      });
     }
 
     const userRole = profile?.role?.toLowerCase();
@@ -65,8 +61,7 @@ export const PUT: APIRoute = async ({ request, cookies, params }) => {
         architect: body.architect,
         sq_ft: body.sq_ft,
         description: body.description,
-        new_construction:
-          body.new_construction === "on" || body.new_construction === true,
+        new_construction: body.new_construction === "on" || body.new_construction === true,
         units: body.units,
         building: body.building,
         project: body.project,
@@ -90,12 +85,9 @@ export const PUT: APIRoute = async ({ request, cookies, params }) => {
     }
 
     if (!projects || projects.length === 0) {
-      return new Response(
-        JSON.stringify({ error: "Project not found or access denied" }),
-        {
-          status: 404,
-        },
-      );
+      return new Response(JSON.stringify({ error: "Project not found or access denied" }), {
+        status: 404,
+      });
     }
 
     const project = projects[0]; // Get the first (and should be only) project

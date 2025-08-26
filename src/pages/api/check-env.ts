@@ -18,7 +18,7 @@ export const GET: APIRoute = async () => {
       {
         status: 200,
         headers: { "Content-Type": "application/json" },
-      },
+      }
     );
   } catch (error) {
     console.error("Error in check-env API:", error);

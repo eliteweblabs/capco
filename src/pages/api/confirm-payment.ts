@@ -14,7 +14,7 @@ export const POST: APIRoute = async ({ request }) => {
         {
           status: 400,
           headers: { "Content-Type": "application/json" },
-        },
+        }
       );
     }
 
@@ -33,13 +33,10 @@ export const POST: APIRoute = async ({ request }) => {
 
       if (updateError) {
         console.error("Error updating invoice status:", updateError);
-        return new Response(
-          JSON.stringify({ error: "Failed to update invoice status" }),
-          {
-            status: 500,
-            headers: { "Content-Type": "application/json" },
-          },
-        );
+        return new Response(JSON.stringify({ error: "Failed to update invoice status" }), {
+          status: 500,
+          headers: { "Content-Type": "application/json" },
+        });
       }
 
       // Get project ID from invoice to potentially update project status
@@ -76,7 +73,7 @@ export const POST: APIRoute = async ({ request }) => {
         {
           status: 200,
           headers: { "Content-Type": "application/json" },
-        },
+        }
       );
     } else {
       return new Response(
@@ -87,7 +84,7 @@ export const POST: APIRoute = async ({ request }) => {
         {
           status: 400,
           headers: { "Content-Type": "application/json" },
-        },
+        }
       );
     }
   } catch (error) {
@@ -99,7 +96,7 @@ export const POST: APIRoute = async ({ request }) => {
       {
         status: 500,
         headers: { "Content-Type": "application/json" },
-      },
+      }
     );
   }
 };

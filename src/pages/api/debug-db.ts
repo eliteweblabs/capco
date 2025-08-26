@@ -18,7 +18,7 @@ export const GET: APIRoute = async ({ request, cookies }) => {
         {
           headers: { "Content-Type": "application/json" },
           status: 500,
-        },
+        }
       );
     }
 
@@ -36,11 +36,10 @@ export const GET: APIRoute = async ({ request, cookies }) => {
     let currentUser = null;
     if (accessToken && refreshToken) {
       try {
-        const { data: sessionData, error: sessionError } =
-          await supabase.auth.setSession({
-            access_token: accessToken.value,
-            refresh_token: refreshToken.value,
-          });
+        const { data: sessionData, error: sessionError } = await supabase.auth.setSession({
+          access_token: accessToken.value,
+          refresh_token: refreshToken.value,
+        });
 
         results.tests.session = {
           success: !sessionError,
@@ -79,9 +78,7 @@ export const GET: APIRoute = async ({ request, cookies }) => {
           tableCounts[table] = {
             count: count || 0,
             error: error?.message,
-            rlsEnabled:
-              error?.message?.includes("RLS") ||
-              error?.message?.includes("policy"),
+            rlsEnabled: error?.message?.includes("RLS") || error?.message?.includes("policy"),
           };
         } catch (err) {
           tableCounts[table] = {
@@ -95,8 +92,7 @@ export const GET: APIRoute = async ({ request, cookies }) => {
       results.tests.tables = tableCounts;
     } catch (err) {
       results.tests.tables = {
-        error:
-          err instanceof Error ? err.message : "Unknown table access error",
+        error: err instanceof Error ? err.message : "Unknown table access error",
       };
     }
 
@@ -140,8 +136,7 @@ export const GET: APIRoute = async ({ request, cookies }) => {
         };
       } catch (err) {
         results.tests.userQueries = {
-          error:
-            err instanceof Error ? err.message : "Unknown user query error",
+          error: err instanceof Error ? err.message : "Unknown user query error",
         };
       }
     }
@@ -158,7 +153,7 @@ export const GET: APIRoute = async ({ request, cookies }) => {
       {
         headers: { "Content-Type": "application/json" },
         status: 500,
-      },
+      }
     );
   }
 };

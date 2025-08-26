@@ -6,21 +6,15 @@ export const POST: APIRoute = async ({ request }) => {
     const { itemId } = await request.json();
 
     if (!itemId) {
-      return new Response(
-        JSON.stringify({ error: "Line item ID is required" }),
-        {
-          status: 400,
-          headers: { "Content-Type": "application/json" },
-        },
-      );
+      return new Response(JSON.stringify({ error: "Line item ID is required" }), {
+        status: 400,
+        headers: { "Content-Type": "application/json" },
+      });
     }
 
     console.log("Deleting line item:", itemId);
 
-    const { error } = await supabase
-      .from("invoice_line_items")
-      .delete()
-      .eq("id", itemId);
+    const { error } = await supabase.from("invoice_line_items").delete().eq("id", itemId);
 
     if (error) {
       console.error("Error deleting line item:", error);
@@ -32,7 +26,7 @@ export const POST: APIRoute = async ({ request }) => {
         {
           status: 500,
           headers: { "Content-Type": "application/json" },
-        },
+        }
       );
     }
 
@@ -44,7 +38,7 @@ export const POST: APIRoute = async ({ request }) => {
       {
         status: 200,
         headers: { "Content-Type": "application/json" },
-      },
+      }
     );
   } catch (error) {
     console.error("Delete line item API error:", error);
@@ -55,7 +49,7 @@ export const POST: APIRoute = async ({ request }) => {
       {
         status: 500,
         headers: { "Content-Type": "application/json" },
-      },
+      }
     );
   }
 };

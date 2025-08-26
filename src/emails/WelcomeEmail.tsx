@@ -17,10 +17,7 @@ interface WelcomeEmailProps {
   appName?: string;
 }
 
-export const WelcomeEmail = ({
-  name = "User",
-  appName = "CAPCo",
-}: WelcomeEmailProps) => (
+export const WelcomeEmail = ({ name = "User", appName = "CAPCo" }: WelcomeEmailProps) => (
   <Html>
     <Head />
     <Preview>Welcome to {appName} - Let's get started!</Preview>
@@ -34,9 +31,8 @@ export const WelcomeEmail = ({
           <Text style={heading}>Welcome to {appName}!</Text>
           <Text style={paragraph}>Hi {name},</Text>
           <Text style={paragraph}>
-            We're thrilled to have you join our platform! Your account has been
-            successfully created, and you're now ready to explore all the
-            features we have to offer.
+            We're thrilled to have you join our platform! Your account has been successfully
+            created, and you're now ready to explore all the features we have to offer.
           </Text>
 
           <Section style={btnContainer}>
@@ -46,8 +42,8 @@ export const WelcomeEmail = ({
           </Section>
 
           <Text style={paragraph}>
-            If you have any questions or need assistance, don't hesitate to
-            reach out to our support team.
+            If you have any questions or need assistance, don't hesitate to reach out to our support
+            team.
           </Text>
 
           <Hr style={hr} />

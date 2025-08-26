@@ -41,8 +41,7 @@ export const MagicLinkEmail = ({
           <Text style={paragraph}>Hi {recipientName},</Text>
 
           <Text style={paragraph}>
-            You've been granted access to view a project in the CAPCo Fire
-            Protection System.
+            You've been granted access to view a project in the CAPCo Fire Protection System.
           </Text>
 
           <Section style={projectCard}>
@@ -51,8 +50,8 @@ export const MagicLinkEmail = ({
           </Section>
 
           <Text style={paragraph}>
-            Click the button below to securely access your project. This link
-            will automatically log you in and take you directly to the project.
+            Click the button below to securely access your project. This link will automatically log
+            you in and take you directly to the project.
           </Text>
 
           <Section style={btnContainer}>
@@ -63,19 +62,17 @@ export const MagicLinkEmail = ({
 
           <Section style={alertBox}>
             <Text style={alertText}>
-              ⏰ This link expires in {expiresIn}. For security reasons, please
-              don't share this link with others.
+              ⏰ This link expires in {expiresIn}. For security reasons, please don't share this
+              link with others.
             </Text>
           </Section>
 
           <Hr style={hr} />
 
           <Text style={footer}>
-            This is an automated notification from CAPCo Project Management
-            System.
+            This is an automated notification from CAPCo Project Management System.
             <br />
-            If you didn't request this access or have questions, please contact
-            our support team.
+            If you didn't request this access or have questions, please contact our support team.
           </Text>
 
           {/* Magic Link at the bottom */}
@@ -86,8 +83,7 @@ export const MagicLinkEmail = ({
             </Text>
             <Text style={magicLinkUrl}>{magicLink}</Text>
             <Text style={magicLinkNote}>
-              If the button above doesn't work, copy and paste this link into
-              your browser.
+              If the button above doesn't work, copy and paste this link into your browser.
             </Text>
           </Section>
         </Section>

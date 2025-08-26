@@ -63,7 +63,7 @@ export const GET: APIRoute = async ({ request }) => {
         {
           status: 200,
           headers: { "Content-Type": "application/json" },
-        },
+        }
       );
     }
 
@@ -120,7 +120,7 @@ export const GET: APIRoute = async ({ request }) => {
         {
           status: 200,
           headers: { "Content-Type": "application/json" },
-        },
+        }
       );
     }
 
@@ -166,9 +166,7 @@ export const GET: APIRoute = async ({ request }) => {
 
     // If the foreign key relationship fails, try without it
     if (error && error.message.includes("relationship")) {
-      console.log(
-        "📡 [API] Foreign key relationship failed, trying simple query",
-      );
+      console.log("📡 [API] Foreign key relationship failed, trying simple query");
 
       let simpleQuery = supabase.from("projects").select("*");
 
@@ -196,29 +194,23 @@ export const GET: APIRoute = async ({ request }) => {
 
       // Return empty projects array instead of error when database is empty
       if (error.code === "42P01" || error.message.includes("does not exist")) {
-        console.log(
-          "📡 [API] Database table does not exist, returning empty projects",
-        );
+        console.log("📡 [API] Database table does not exist, returning empty projects");
         return new Response(
           JSON.stringify({
             projects: [],
-            message:
-              "No projects found. Database may be empty or not yet configured.",
+            message: "No projects found. Database may be empty or not yet configured.",
           }),
           {
             status: 200,
             headers: { "Content-Type": "application/json" },
-          },
+          }
         );
       }
 
-      return new Response(
-        JSON.stringify({ error: `Failed to fetch projects: ${error.message}` }),
-        {
-          status: 500,
-          headers: { "Content-Type": "application/json" },
-        },
-      );
+      return new Response(JSON.stringify({ error: `Failed to fetch projects: ${error.message}` }), {
+        status: 500,
+        headers: { "Content-Type": "application/json" },
+      });
     }
 
     console.log("📡 [API] Processing project data...");
@@ -274,17 +266,13 @@ export const GET: APIRoute = async ({ request }) => {
             nameMap.set(profile.id, profile.name);
           });
         } else {
-          console.log(
-            "📡 [API] No profiles found for user IDs:",
-            uniqueUserIds,
-          );
+          console.log("📡 [API] No profiles found for user IDs:", uniqueUserIds);
         }
 
         console.log("📡 [API] Fetching user data via admin API...");
 
         // Use admin API to get user emails and avatar URLs
-        const { data: authUsers, error: authError } =
-          await supabase.auth.admin.listUsers();
+        const { data: authUsers, error: authError } = await supabase.auth.admin.listUsers();
 
         console.log("📡 [API] Admin API result:", {
           hasUsers: !!authUsers?.users,
@@ -336,22 +324,17 @@ export const GET: APIRoute = async ({ request }) => {
 
             // Also fetch assigned user data if they have an assigned_to_id
             if (project.assigned_to_id) {
-              project.assigned_to_email =
-                emailMap.get(project.assigned_to_id) || null;
+              project.assigned_to_email = emailMap.get(project.assigned_to_id) || null;
               project.assigned_to_name =
                 nameMap.get(project.assigned_to_id) || project.assigned_to_name;
-              project.assigned_to_avatar =
-                avatarMap.get(project.assigned_to_id) || null;
+              project.assigned_to_avatar = avatarMap.get(project.assigned_to_id) || null;
             } else {
               project.assigned_to_email = null;
               project.assigned_to_avatar = null;
             }
           });
         } else {
-          console.log(
-            "📡 [API] Admin API failed, using fallback. Error:",
-            authError,
-          );
+          console.log("📡 [API] Admin API failed, using fallback. Error:", authError);
           // Fallback: set emails to null, but keep names from profiles
           // projects.forEach((project) => {
           //   project.author_email = null;
@@ -396,7 +379,7 @@ export const GET: APIRoute = async ({ request }) => {
       {
         status: 200,
         headers: { "Content-Type": "application/json" },
-      },
+      }
     );
   } catch (error) {
     console.error("📡 [API] Get user projects API error:", error);
@@ -407,7 +390,7 @@ export const GET: APIRoute = async ({ request }) => {
       {
         status: 500,
         headers: { "Content-Type": "application/json" },
-      },
+      }
     );
   }
 };

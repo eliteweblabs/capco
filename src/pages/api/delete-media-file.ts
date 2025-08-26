@@ -14,13 +14,10 @@ export const DELETE: APIRoute = async ({ request }) => {
     }
 
     if (!supabase) {
-      return new Response(
-        JSON.stringify({ error: "Database not configured" }),
-        {
-          status: 500,
-          headers: { "Content-Type": "application/json" },
-        },
-      );
+      return new Response(JSON.stringify({ error: "Database not configured" }), {
+        status: 500,
+        headers: { "Content-Type": "application/json" },
+      });
     }
 
     // Get current user
@@ -100,10 +97,7 @@ export const DELETE: APIRoute = async ({ request }) => {
     }
 
     // Delete from database
-    const { error: dbError } = await supabase
-      .from("files")
-      .delete()
-      .eq("id", fileId);
+    const { error: dbError } = await supabase.from("files").delete().eq("id", fileId);
 
     if (dbError) {
       console.error("Error deleting from database:", dbError);
@@ -115,7 +109,7 @@ export const DELETE: APIRoute = async ({ request }) => {
         {
           status: 500,
           headers: { "Content-Type": "application/json" },
-        },
+        }
       );
     }
 
@@ -131,7 +125,7 @@ export const DELETE: APIRoute = async ({ request }) => {
       {
         status: 200,
         headers: { "Content-Type": "application/json" },
-      },
+      }
     );
   } catch (error) {
     console.error("Error in delete media file API:", error);
@@ -143,7 +137,7 @@ export const DELETE: APIRoute = async ({ request }) => {
       {
         status: 500,
         headers: { "Content-Type": "application/json" },
-      },
+      }
     );
   }
 };

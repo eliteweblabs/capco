@@ -31,7 +31,7 @@ export const GET: APIRoute = async () => {
         {
           status: 200,
           headers: { "Content-Type": "application/json" },
-        },
+        }
       );
     }
 
@@ -44,7 +44,7 @@ export const GET: APIRoute = async () => {
       {
         status: 200,
         headers: { "Content-Type": "application/json" },
-      },
+      }
     );
   } catch (error) {
     console.error("Test table structure API error:", error);
@@ -55,7 +55,7 @@ export const GET: APIRoute = async () => {
       {
         status: 500,
         headers: { "Content-Type": "application/json" },
-      },
+      }
     );
   }
 };

@@ -12,7 +12,7 @@ export const GET: APIRoute = async ({ request }) => {
         {
           status: 500,
           headers: { "Content-Type": "application/json" },
-        },
+        }
       );
     }
 
@@ -42,7 +42,7 @@ export const GET: APIRoute = async ({ request }) => {
         {
           status: 401,
           headers: { "Content-Type": "application/json" },
-        },
+        }
       );
     }
 
@@ -126,7 +126,7 @@ export const GET: APIRoute = async ({ request }) => {
       {
         status: 200,
         headers: { "Content-Type": "application/json" },
-      },
+      }
     );
   } catch (error: unknown) {
     return new Response(
@@ -138,7 +138,7 @@ export const GET: APIRoute = async ({ request }) => {
       {
         status: 500,
         headers: { "Content-Type": "application/json" },
-      },
+      }
     );
   }
 };

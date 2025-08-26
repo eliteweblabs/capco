@@ -14,7 +14,7 @@ export const GET: APIRoute = async ({ request }) => {
         {
           status: 500,
           headers: { "Content-Type": "application/json" },
-        },
+        }
       );
     }
 
@@ -33,7 +33,7 @@ export const GET: APIRoute = async ({ request }) => {
         {
           status: 400,
           headers: { "Content-Type": "application/json" },
-        },
+        }
       );
     }
 
@@ -45,17 +45,11 @@ export const GET: APIRoute = async ({ request }) => {
       console.log("📡 [API] Admin role - fetching all projects");
     } else if (role === "Staff") {
       // Staff gets projects where assigned_to matches user_id
-      console.log(
-        "📡 [API] Staff role - fetching projects assigned to user:",
-        userId,
-      );
+      console.log("📡 [API] Staff role - fetching projects assigned to user:", userId);
       query = query.eq("assigned_to", userId);
     } else {
       // Client gets projects where author_id matches user_id
-      console.log(
-        "📡 [API] Client role - fetching projects authored by user:",
-        userId,
-      );
+      console.log("📡 [API] Client role - fetching projects authored by user:", userId);
       query = query.eq("author_id", userId);
     }
 
@@ -74,7 +68,7 @@ export const GET: APIRoute = async ({ request }) => {
         {
           status: 500,
           headers: { "Content-Type": "application/json" },
-        },
+        }
       );
     }
 
@@ -91,7 +85,7 @@ export const GET: APIRoute = async ({ request }) => {
       {
         status: 200,
         headers: { "Content-Type": "application/json" },
-      },
+      }
     );
   } catch (error) {
     console.error("Get projects error:", error);
@@ -103,7 +97,7 @@ export const GET: APIRoute = async ({ request }) => {
       {
         status: 500,
         headers: { "Content-Type": "application/json" },
-      },
+      }
     );
   }
 };

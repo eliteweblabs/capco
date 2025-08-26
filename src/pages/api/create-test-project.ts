@@ -29,7 +29,7 @@ export const POST: APIRoute = async ({ request }) => {
         {
           status: 200,
           headers: { "Content-Type": "application/json" },
-        },
+        }
       );
     }
 
@@ -64,7 +64,7 @@ export const POST: APIRoute = async ({ request }) => {
         {
           status: 200,
           headers: { "Content-Type": "application/json" },
-        },
+        }
       );
     }
 
@@ -87,20 +87,13 @@ export const POST: APIRoute = async ({ request }) => {
       requested_docs: ["architectural_plans", "mep_drawings"],
     };
 
-    const { data, error } = await supabase
-      .from("projects")
-      .insert([projectData])
-      .select()
-      .single();
+    const { data, error } = await supabase.from("projects").insert([projectData]).select().single();
 
     if (error) {
-      return new Response(
-        JSON.stringify({ error: `Failed to create project: ${error.message}` }),
-        {
-          status: 500,
-          headers: { "Content-Type": "application/json" },
-        },
-      );
+      return new Response(JSON.stringify({ error: `Failed to create project: ${error.message}` }), {
+        status: 500,
+        headers: { "Content-Type": "application/json" },
+      });
     }
 
     return new Response(
@@ -112,7 +105,7 @@ export const POST: APIRoute = async ({ request }) => {
       {
         status: 200,
         headers: { "Content-Type": "application/json" },
-      },
+      }
     );
   } catch (error) {
     console.error("Create project API error:", error);
@@ -123,7 +116,7 @@ export const POST: APIRoute = async ({ request }) => {
       {
         status: 500,
         headers: { "Content-Type": "application/json" },
-      },
+      }
     );
   }
 };

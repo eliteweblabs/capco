@@ -15,13 +15,10 @@ export const POST: APIRoute = async ({ request }) => {
     }
 
     if (!supabase) {
-      return new Response(
-        JSON.stringify({ error: "Database not configured" }),
-        {
-          status: 500,
-          headers: { "Content-Type": "application/json" },
-        },
-      );
+      return new Response(JSON.stringify({ error: "Database not configured" }), {
+        status: 500,
+        headers: { "Content-Type": "application/json" },
+      });
     }
 
     // Get current user
@@ -44,7 +41,7 @@ export const POST: APIRoute = async ({ request }) => {
         {
           status: 200,
           headers: { "Content-Type": "application/json" },
-        },
+        }
       );
     }
 
@@ -113,7 +110,7 @@ export const POST: APIRoute = async ({ request }) => {
         {
           status: 500,
           headers: { "Content-Type": "application/json" },
-        },
+        }
       );
     }
 
@@ -121,19 +118,14 @@ export const POST: APIRoute = async ({ request }) => {
     const filesWithUrls =
       files?.map((file) => {
         try {
-          const { data } = supabase.storage
-            .from("project-documents")
-            .getPublicUrl(file.file_path);
+          const { data } = supabase.storage.from("project-documents").getPublicUrl(file.file_path);
 
           return {
             ...file,
             public_url: data.publicUrl,
           };
         } catch (error) {
-          console.error(
-            `Error generating URL for file ${file.file_name}:`,
-            error,
-          );
+          console.error(`Error generating URL for file ${file.file_name}:`, error);
           return {
             ...file,
             public_url: null,
@@ -149,7 +141,7 @@ export const POST: APIRoute = async ({ request }) => {
       {
         status: 200,
         headers: { "Content-Type": "application/json" },
-      },
+      }
     );
   } catch (error) {
     console.error("Error in get-project-files API:", error);

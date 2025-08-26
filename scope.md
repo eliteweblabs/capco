@@ -18,6 +18,7 @@ This app is designed to facilitate the process of submitting (by clients) and re
 **⚠️ IMPORTANT: Always check `PREVIOUS_SESSION_SUMMARY.md` at the start of each development session.**
 
 This file contains:
+
 - Current branch status and last working location
 - Recent changes and implementations
 - Todo items and next steps

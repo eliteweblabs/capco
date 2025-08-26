@@ -79,7 +79,7 @@ export const POST: APIRoute = async ({ request }) => {
           (file.type === "application/octet-stream" || file.type === ""));
 
       console.log(
-        `File validation: ${file.name}, type: "${file.type}", isDwg: ${isDwgFile}, allowed: ${isAllowedType}`,
+        `File validation: ${file.name}, type: "${file.type}", isDwg: ${isDwgFile}, allowed: ${isAllowedType}`
       );
 
       if (!isAllowedType) {
@@ -90,7 +90,7 @@ export const POST: APIRoute = async ({ request }) => {
           {
             status: 400,
             headers: { "Content-Type": "application/json" },
-          },
+          }
         );
       }
 
@@ -102,7 +102,7 @@ export const POST: APIRoute = async ({ request }) => {
           {
             status: 400,
             headers: { "Content-Type": "application/json" },
-          },
+          }
         );
       }
     }
@@ -111,22 +111,17 @@ export const POST: APIRoute = async ({ request }) => {
     const { supabase } = await import("../../lib/supabase");
 
     if (!supabase) {
-      return new Response(
-        JSON.stringify({ error: "Supabase client not configured" }),
-        {
-          status: 500,
-          headers: { "Content-Type": "application/json" },
-        },
-      );
+      return new Response(JSON.stringify({ error: "Supabase client not configured" }), {
+        status: 500,
+        headers: { "Content-Type": "application/json" },
+      });
     }
 
     const uploadedFiles = [];
 
     for (const file of files) {
       try {
-        console.log(
-          `Processing file: ${file.name} (${file.type}, ${file.size} bytes)`,
-        );
+        console.log(`Processing file: ${file.name} (${file.type}, ${file.size} bytes)`);
 
         // Generate unique file path
         const timestamp = Date.now();
@@ -151,9 +146,7 @@ export const POST: APIRoute = async ({ request }) => {
             error: uploadError.error,
             details: uploadError.details,
           });
-          throw new Error(
-            `Failed to upload ${file.name}: ${uploadError.message}`,
-          );
+          throw new Error(`Failed to upload ${file.name}: ${uploadError.message}`);
         }
 
         // Log file in database
@@ -194,7 +187,7 @@ export const POST: APIRoute = async ({ request }) => {
       {
         status: 200,
         headers: { "Content-Type": "application/json" },
-      },
+      }
     );
   } catch (error) {
     console.error("Upload API error:", error);
@@ -205,7 +198,7 @@ export const POST: APIRoute = async ({ request }) => {
       {
         status: 500,
         headers: { "Content-Type": "application/json" },
-      },
+      }
     );
   }
 };

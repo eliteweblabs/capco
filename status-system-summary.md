@@ -48,9 +48,7 @@ const label = globalServices.getStatusLabel(PROJECT_STATUS.SPECS_RECEIVED);
 // Returns: "Specs Received"
 
 // Get timing information
-const timing = globalServices.getStatusTiming(
-  PROJECT_STATUS.GENERATING_PROPOSAL,
-);
+const timing = globalServices.getStatusTiming(PROJECT_STATUS.GENERATING_PROPOSAL);
 // Returns: { default: "24hrs", expedited: "12hrs" }
 
 // Get next status in workflow

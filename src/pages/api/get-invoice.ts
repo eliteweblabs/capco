@@ -29,7 +29,7 @@ export const POST: APIRoute = async ({ request }) => {
           status,
           author_id
         )
-      `,
+      `
       )
       .eq("id", id)
       .single();
@@ -46,7 +46,7 @@ export const POST: APIRoute = async ({ request }) => {
         {
           status: 404,
           headers: { "Content-Type": "application/json" },
-        },
+        }
       );
     }
 
@@ -70,7 +70,7 @@ export const POST: APIRoute = async ({ request }) => {
           .single();
         // Auth user email
         const { data: userData } = await supabase.auth.admin.getUserById(
-          invoice.projects.author_id,
+          invoice.projects.author_id
         );
         client = {
           name: profile?.name || null,
@@ -92,7 +92,7 @@ export const POST: APIRoute = async ({ request }) => {
       {
         status: 200,
         headers: { "Content-Type": "application/json" },
-      },
+      }
     );
   } catch (error) {
     console.error("Get invoice API error:", error);
@@ -103,7 +103,7 @@ export const POST: APIRoute = async ({ request }) => {
       {
         status: 500,
         headers: { "Content-Type": "application/json" },
-      },
+      }
     );
   }
 };

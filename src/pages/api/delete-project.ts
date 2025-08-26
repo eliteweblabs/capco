@@ -8,13 +8,10 @@ export const DELETE: APIRoute = async ({ request, cookies }) => {
     // Check if Supabase is configured
     if (!supabase) {
       console.error("Database not configured - supabase client not available");
-      return new Response(
-        JSON.stringify({ error: "Database not configured" }),
-        {
-          status: 500,
-          headers: { "Content-Type": "application/json" },
-        },
-      );
+      return new Response(JSON.stringify({ error: "Database not configured" }), {
+        status: 500,
+        headers: { "Content-Type": "application/json" },
+      });
     }
 
     // Get current user from cookies for authentication
@@ -67,8 +64,7 @@ export const DELETE: APIRoute = async ({ request, cookies }) => {
     }
 
     // Convert projectId to number if it's a string
-    const projectIdNum =
-      typeof projectId === "string" ? parseInt(projectId, 10) : projectId;
+    const projectIdNum = typeof projectId === "string" ? parseInt(projectId, 10) : projectId;
 
     if (isNaN(projectIdNum)) {
       console.error("Invalid project ID:", projectId);
@@ -121,13 +117,10 @@ export const DELETE: APIRoute = async ({ request, cookies }) => {
 
     if (!isAdmin && !isAuthor) {
       console.error("Unauthorized to delete this project");
-      return new Response(
-        JSON.stringify({ error: "Unauthorized to delete this project" }),
-        {
-          status: 403,
-          headers: { "Content-Type": "application/json" },
-        },
-      );
+      return new Response(JSON.stringify({ error: "Unauthorized to delete this project" }), {
+        status: 403,
+        headers: { "Content-Type": "application/json" },
+      });
     }
 
     // Delete associated files first (cascade delete)
@@ -145,10 +138,7 @@ export const DELETE: APIRoute = async ({ request, cookies }) => {
 
     // Delete the project
     console.log("Deleting project...");
-    const { error: deleteError } = await supabase
-      .from("projects")
-      .delete()
-      .eq("id", projectIdNum);
+    const { error: deleteError } = await supabase.from("projects").delete().eq("id", projectIdNum);
 
     if (deleteError) {
       console.error("Failed to delete project:", deleteError);
@@ -159,7 +149,7 @@ export const DELETE: APIRoute = async ({ request, cookies }) => {
         {
           status: 500,
           headers: { "Content-Type": "application/json" },
-        },
+        }
       );
     }
 
@@ -173,16 +163,13 @@ export const DELETE: APIRoute = async ({ request, cookies }) => {
       {
         status: 200,
         headers: { "Content-Type": "application/json" },
-      },
+      }
     );
   } catch (error) {
     console.error("Error in delete-project API:", error);
-    return new Response(
-      JSON.stringify({ error: "Internal server error" }),
-      {
-        status: 500,
-        headers: { "Content-Type": "application/json" },
-      },
-    );
+    return new Response(JSON.stringify({ error: "Internal server error" }), {
+      status: 500,
+      headers: { "Content-Type": "application/json" },
+    });
   }
 };

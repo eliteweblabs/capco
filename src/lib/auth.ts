@@ -73,10 +73,7 @@ export async function checkAuth(cookies: any): Promise<AuthResult> {
           }
         }
       } else {
-        console.error(
-          "🔐 [AUTH] Session error, clearing invalid tokens:",
-          session.error,
-        );
+        console.error("🔐 [AUTH] Session error, clearing invalid tokens:", session.error);
         // Clear invalid tokens
         clearAuthCookies(cookies);
       }

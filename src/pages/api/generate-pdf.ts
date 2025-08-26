@@ -4,21 +4,13 @@ import { createClient } from "@supabase/supabase-js";
 
 export const POST: APIRoute = async ({ request }) => {
   try {
-    const {
-      templateUrl,
-      signatures,
-      projectData,
-      options = {},
-    } = await request.json();
+    const { templateUrl, signatures, projectData, options = {} } = await request.json();
 
     if (!templateUrl) {
-      return new Response(
-        JSON.stringify({ error: "Template URL is required" }),
-        {
-          status: 400,
-          headers: { "Content-Type": "application/json" },
-        },
-      );
+      return new Response(JSON.stringify({ error: "Template URL is required" }), {
+        status: 400,
+        headers: { "Content-Type": "application/json" },
+      });
     }
 
     // Launch Puppeteer with appropriate options
@@ -53,10 +45,8 @@ export const POST: APIRoute = async ({ request }) => {
     if (signatures && Object.keys(signatures).length > 0) {
       await page.evaluate((sigs: Record<string, string>) => {
         Object.entries(sigs).forEach(([canvasId, signatureData]) => {
-          if (signatureData && typeof signatureData === 'string') {
-            const canvas = document.getElementById(
-              canvasId,
-            ) as HTMLCanvasElement;
+          if (signatureData && typeof signatureData === "string") {
+            const canvas = document.getElementById(canvasId) as HTMLCanvasElement;
             if (canvas) {
               const ctx = canvas.getContext("2d");
               const img = new Image();
@@ -98,7 +88,7 @@ export const POST: APIRoute = async ({ request }) => {
       try {
         const supabase = createClient(
           import.meta.env.SUPABASE_URL!,
-          import.meta.env.SUPABASE_ANON_KEY!,
+          import.meta.env.SUPABASE_ANON_KEY!
         );
 
         const fileName = `project-agreement-${projectData.projectId}-${Date.now()}.pdf`;
@@ -117,19 +107,17 @@ export const POST: APIRoute = async ({ request }) => {
           console.log("PDF uploaded to Supabase:", uploadData);
 
           // Log the PDF generation in the database
-          const { error: logError } = await supabase
-            .from("pdf_documents")
-            .insert({
-              project_id: projectData.projectId,
-              document_type: "project_agreement",
-              file_path: filePath,
-              file_name: fileName,
-              metadata: {
-                signatures: signatures ? Object.keys(signatures) : [],
-                generated_at: new Date().toISOString(),
-                project_data: projectData,
-              },
-            });
+          const { error: logError } = await supabase.from("pdf_documents").insert({
+            project_id: projectData.projectId,
+            document_type: "project_agreement",
+            file_path: filePath,
+            file_name: fileName,
+            metadata: {
+              signatures: signatures ? Object.keys(signatures) : [],
+              generated_at: new Date().toISOString(),
+              project_data: projectData,
+            },
+          });
 
           if (logError) {
             console.error("Error logging PDF generation:", logError);
@@ -161,7 +149,7 @@ export const POST: APIRoute = async ({ request }) => {
       {
         status: 500,
         headers: { "Content-Type": "application/json" },
-      },
+      }
     );
   }
 };
