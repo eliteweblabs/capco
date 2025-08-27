@@ -51,6 +51,7 @@ SUPABASE_URL=<supabase_project_url>
 ```
 
 **Required for local development:**
+
 - Copy these variables to your local `.env` file
 - Replace `<placeholders>` with actual values from Railway dashboard
 - Email service (Resend) is required for SMS contact form functionality
