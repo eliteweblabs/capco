@@ -13,8 +13,8 @@ interface Props {
 import Header from "../components/index/Header.astro";
 // import SectionContainer from "../components/SectionContainer.astro";
 import ToastAlerts from "../components/ToastAlerts.astro";
-import "../styles/global.css"; // Importa el CSS desde src/styles
-import "../styles/boxicons.css"; // Import Boxicons CSS
+import "../styles/boxicons.css"; // Import Boxicons CSS first
+import "../styles/global.css"; // Importa el CSS desde src/styles - Tailwind should come last
 
 import { getLangFromUrl } from "../i18n/utils";
 
@@ -45,6 +45,79 @@ const { title, description, user } = Astro.props;
     <meta name="twitter:image" content="/img/capco-logo.svg" />
 
     <title>{title}</title>
+
+    <!-- Theme management - early initialization to prevent flash -->
+    <script>
+      // Global theme manager
+      declare global {
+        interface Window {
+          ThemeManager: {
+            toggle: () => void;
+            applyTheme: (theme: string) => void;
+            getCurrentTheme: () => string;
+          };
+        }
+      }
+
+      window.ThemeManager = (function () {
+        const storageKey = "theme";
+        const htmlElement = document.documentElement;
+
+        console.log("🎨 [THEME] Theme manager initializing...");
+
+        function applyTheme(theme: string) {
+          if (theme === "dark") {
+            htmlElement.classList.remove("light");
+            htmlElement.classList.add("dark");
+            localStorage.setItem(storageKey, "dark");
+            console.log("🎨 [THEME] Applied dark theme");
+          } else {
+            htmlElement.classList.remove("dark");
+            htmlElement.classList.add("light");
+            localStorage.setItem(storageKey, "light");
+            console.log("🎨 [THEME] Applied light theme");
+          }
+        }
+
+        function getCurrentTheme() {
+          return htmlElement.classList.contains("dark") ? "dark" : "light";
+        }
+
+        function initializeTheme() {
+          const savedTheme = localStorage.getItem(storageKey);
+          let currentTheme;
+
+          if (savedTheme) {
+            currentTheme = savedTheme;
+            console.log("🎨 [THEME] Using saved theme:", currentTheme);
+          } else {
+            currentTheme = window.matchMedia("(prefers-color-scheme: dark)").matches
+              ? "dark"
+              : "light";
+            console.log("🎨 [THEME] Using system preference:", currentTheme);
+          }
+
+          applyTheme(currentTheme);
+          console.log("🎨 [THEME] Initial theme applied:", currentTheme);
+        }
+
+        function toggle() {
+          const newTheme = getCurrentTheme() === "dark" ? "light" : "dark";
+          applyTheme(newTheme);
+          console.log("🎨 [THEME] Theme toggled to:", newTheme);
+        }
+
+        // Initialize immediately
+        initializeTheme();
+
+        // Return public API
+        return {
+          toggle,
+          applyTheme,
+          getCurrentTheme,
+        };
+      })();
+    </script>
   </head>
   <body class="bg-hub-background dark:bg-hub-background-dark md:flex md:justify-center">
     <main class="w-full md:max-w-[2000px]">
@@ -74,42 +147,33 @@ const { title, description, user } = Astro.props;
 </html>
 
 <script>
-  const themeToggle = document.getElementById("toggle-theme");
-  const htmlElement = document.documentElement;
-  const storageKey = "theme"; // Clave para el almacenamiento local
+  // Theme toggle functionality using the global ThemeManager
+  document.addEventListener("DOMContentLoaded", function () {
+    const themeToggle = document.getElementById("toggle-theme");
 
-  // Función para aplicar el tema
-  function applyTheme(theme: string) {
-    if (theme === "dark") {
-      htmlElement.classList.add("dark");
-      localStorage.setItem(storageKey, "dark");
+    console.log("🎨 [THEME] Setting up theme toggle button");
+
+    // Theme toggle button click handler
+    if (themeToggle) {
+      themeToggle.addEventListener("click", () => {
+        window.ThemeManager.toggle();
+      });
+      console.log("🎨 [THEME] Theme toggle button connected");
     } else {
-      htmlElement.classList.remove("dark");
-      localStorage.setItem(storageKey, "light");
+      console.warn("🎨 [THEME] Theme toggle button not found");
     }
-  }
 
-  // Obtener el tema guardado o el preferido por el sistema
-  const savedTheme = localStorage.getItem(storageKey);
-  if (savedTheme) {
-    applyTheme(savedTheme);
-  } else {
-    const preferredTheme = window.matchMedia("(prefers-color-scheme: dark)").matches
-      ? "dark"
-      : "light";
-    applyTheme(preferredTheme);
-  }
-
-  // Escuchar cambios en el esquema de color del sistema
-  window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", (event) => {
-    applyTheme(event.matches ? "dark" : "light");
-  });
-
-  // Alternar el tema manualmente con el botón
-  if (themeToggle) {
-    themeToggle.addEventListener("click", () => {
-      const newTheme = htmlElement.classList.contains("dark") ? "light" : "dark";
-      applyTheme(newTheme);
+    // Listen for system color scheme changes
+    window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", (event) => {
+      const currentSavedTheme = localStorage.getItem("theme");
+      // Only apply system change if user hasn't set a manual preference
+      if (!currentSavedTheme) {
+        window.ThemeManager.applyTheme(event.matches ? "dark" : "light");
+        console.log(
+          "🎨 [THEME] Applied system preference change:",
+          event.matches ? "dark" : "light"
+        );
+      }
     });
-  }
+  });
 </script>
