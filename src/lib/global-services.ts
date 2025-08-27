@@ -389,7 +389,7 @@ export class GlobalServices {
     try {
       this.emit("project:status-updating", update);
 
-      const response = await this.makeApiCall("/api/update-project-status", {
+      const response = await this.makeApiCall("/api/update-project", {
         method: "POST",
         body: JSON.stringify(update),
       });
