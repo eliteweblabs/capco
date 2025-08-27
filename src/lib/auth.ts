@@ -1,5 +1,5 @@
-import { supabase } from "./supabase";
 import { clearAuthCookies } from "./auth-cookies";
+import { supabase } from "./supabase";
 
 export interface AuthResult {
   isAuth: boolean;
@@ -9,16 +9,16 @@ export interface AuthResult {
 }
 
 export async function checkAuth(cookies: any): Promise<AuthResult> {
-  console.log("🔐 [AUTH] Starting authentication check...");
+  // console.log("🔐 [AUTH] Starting authentication check...");
 
   const accessToken = cookies.get("sb-access-token");
   const refreshToken = cookies.get("sb-refresh-token");
 
-  console.log("🔐 [AUTH] Token check:", {
-    hasAccessToken: !!accessToken,
-    hasRefreshToken: !!refreshToken,
-    supabaseConfigured: !!supabase,
-  });
+  // console.log("🔐 [AUTH] Token check:", {
+  //   hasAccessToken: !!accessToken,
+  //   hasRefreshToken: !!refreshToken,
+  //   supabaseConfigured: !!supabase,
+  // });
 
   let isAuth = false;
   let session = null;
@@ -26,7 +26,7 @@ export async function checkAuth(cookies: any): Promise<AuthResult> {
   let role = null;
 
   if (accessToken && refreshToken && supabase) {
-    console.log("🔐 [AUTH] Tokens found, attempting to set session...");
+    // console.log("🔐 [AUTH] Tokens found, attempting to set session...");
 
     try {
       session = await supabase.auth.setSession({
@@ -34,20 +34,20 @@ export async function checkAuth(cookies: any): Promise<AuthResult> {
         access_token: accessToken.value,
       });
 
-      console.log("🔐 [AUTH] Session result:", {
-        hasSession: !!session,
-        hasError: !!session.error,
-        errorMessage: session.error?.message || null,
-      });
+      // console.log("🔐 [AUTH] Session result:", {
+      //   hasSession: !!session,
+      //   hasError: !!session.error,
+      //   errorMessage: session.error?.message || null,
+      // });
 
       if (!session.error) {
         isAuth = true;
         user = session.data.user;
-        console.log("🔐 [AUTH] User authenticated:", {
-          userId: user?.id,
-          userEmail: user?.email,
-          hasUser: !!user,
-        });
+        // console.log("🔐 [AUTH] User authenticated:", {
+        //   userId: user?.id,
+        //   userEmail: user?.email,
+        //   hasUser: !!user,
+        // });
 
         // Get user profile and role
         if (user && user.id) {
@@ -73,26 +73,26 @@ export async function checkAuth(cookies: any): Promise<AuthResult> {
           }
         }
       } else {
-        console.error("🔐 [AUTH] Session error, clearing invalid tokens:", session.error);
+        // console.error("🔐 [AUTH] Session error, clearing invalid tokens:", session.error);
         // Clear invalid tokens
         clearAuthCookies(cookies);
       }
     } catch (error) {
-      console.error("🔐 [AUTH] Exception during authentication:", error);
+      // console.error("🔐 [AUTH] Exception during authentication:", error);
       // Clear invalid tokens
       clearAuthCookies(cookies);
     }
   } else {
-    console.log("🔐 [AUTH] No tokens or Supabase not configured");
+    // console.log("🔐 [AUTH] No tokens or Supabase not configured");
   }
 
   const result = { isAuth, session, user, role };
-  console.log("🔐 [AUTH] Authentication check complete:", {
-    isAuth,
-    hasUser: !!user,
-    role,
-    userId: user?.id || null,
-  });
+  // console.log("🔐 [AUTH] Authentication check complete:", {
+  //   isAuth,
+  //   hasUser: !!user,
+  //   role,
+  //   userId: user?.id || null,
+  // });
 
   return result;
 }

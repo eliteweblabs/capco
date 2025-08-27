@@ -8,8 +8,6 @@ This app is designed to facilitate the process of submitting (by clients) and re
 
 ## Authentication & Navigation
 
-- The entire app is password protected.
-- Upon authentication, clients are redirected to the dashboard page (`/dashboard`).
 - The index page (`/`) is now a marketing landing page for public visitors.
 - Authenticated users access the dashboard for project management.
 
@@ -31,6 +29,8 @@ Update this file at the end of each significant development session to maintain 
 
 - Astro
 - BoxIcons
+- Toast Notifications
+- Resend
 - Tailwind
 - Flowbite
 - SupaBase

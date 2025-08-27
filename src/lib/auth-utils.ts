@@ -1,5 +1,5 @@
-import { supabase } from "./supabase";
 import type { User } from "@supabase/supabase-js";
+import { supabase } from "./supabase";
 
 /**
  * Ensures that a user has a profile record.
@@ -29,17 +29,29 @@ export async function ensureUserProfile(user: User): Promise<void> {
       return;
     }
 
-    // Create profile
-    const profileName =
-      user.user_metadata?.name || user.user_metadata?.full_name || user.email || "User";
+    // Create profile with enhanced data
+    const firstName = user.user_metadata?.first_name || "";
+    const lastName = user.user_metadata?.last_name || "";
+    const displayName = user.user_metadata?.display_name || "";
+    const fullName =
+      user.user_metadata?.full_name || (firstName && lastName ? `${firstName} ${lastName}` : "");
+    const profileName = displayName || fullName || user.user_metadata?.name || user.email || "User";
+    const phone = user.user_metadata?.phone || "";
 
-    console.log("Creating profile for user:", user.id, "with name:", profileName);
+    console.log("Creating profile for user:", user.id, "with enhanced data:", {
+      name: profileName,
+      firstName,
+      lastName,
+      displayName,
+      phone: phone ? "provided" : "not provided",
+    });
 
     const { data: newProfile, error: createError } = await supabase
       .from("profiles")
       .insert({
         id: user.id,
-        name: profileName,
+        name: profileName, // Use display_name as the main name field
+        phone: phone,
         role: "Client",
       })
       .select()

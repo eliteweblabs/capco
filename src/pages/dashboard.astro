@@ -2,10 +2,10 @@
 console.log("📊 [DASHBOARD] Page loading started...");
 
 import App from "../components/App.astro";
-import SectionContainer from "../components/SectionContainer.astro";
-import ProjectNav from "../components/ProjectNav.astro";
 import DashboardComponent from "../components/Dashboard.astro";
+import SectionContainer from "../components/SectionContainer.astro";
 import ToastAlerts from "../components/ToastAlerts.astro";
+import ProjectNav from "../components/project/ProjectNav.astro";
 import { supabase } from "../lib/supabase";
 
 // Check authentication
@@ -99,20 +99,20 @@ console.log("🍪 [DASHBOARD] Cookie status:", {
   <!-- Debug Panel (can be hidden in production) -->
   <SectionContainer class="mx-6 mb-6">
     <details
-      class="bg-gray-100 dark:bg-gray-800 rounded-lg border border-gray-300 dark:border-gray-600"
+      class="rounded-lg border border-gray-300 bg-gray-100 dark:border-gray-600 dark:bg-gray-800"
     >
       <summary
-        class="p-4 cursor-pointer font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg"
+        class="cursor-pointer rounded-lg p-4 font-medium text-gray-700 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-gray-700"
       >
         🔍 Debug Information (Click to expand)
       </summary>
 
       <div class="p-4 pt-0">
         <!-- Authentication Status -->
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
-          <div class="bg-white dark:bg-gray-700 p-3 rounded">
-            <h3 class="font-semibold text-sm mb-2">🔐 Authentication</h3>
-            <div class="text-xs space-y-1">
+        <div class="mb-4 grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+          <div class="rounded bg-white p-3 dark:bg-gray-700">
+            <h3 class="mb-2 text-sm font-semibold">🔐 Authentication</h3>
+            <div class="space-y-1 text-xs">
               <div>
                 Authenticated: <span class={isAuth ? "text-green-600" : "text-red-600"}
                   >{isAuth ? "✅ Yes" : "❌ No"}</span
@@ -130,9 +130,9 @@ console.log("🍪 [DASHBOARD] Cookie status:", {
             </div>
           </div>
 
-          <div class="bg-white dark:bg-gray-700 p-3 rounded">
-            <h3 class="font-semibold text-sm mb-2">🍪 Cookies</h3>
-            <div class="text-xs space-y-1">
+          <div class="rounded bg-white p-3 dark:bg-gray-700">
+            <h3 class="mb-2 text-sm font-semibold">🍪 Cookies</h3>
+            <div class="space-y-1 text-xs">
               <div>
                 Access Token: <span class={accessToken ? "text-green-600" : "text-red-600"}
                   >{
@@ -150,9 +150,9 @@ console.log("🍪 [DASHBOARD] Cookie status:", {
             </div>
           </div>
 
-          <div class="bg-white dark:bg-gray-700 p-3 rounded">
-            <h3 class="font-semibold text-sm mb-2">🔧 Environment</h3>
-            <div class="text-xs space-y-1">
+          <div class="rounded bg-white p-3 dark:bg-gray-700">
+            <h3 class="mb-2 text-sm font-semibold">🔧 Environment</h3>
+            <div class="space-y-1 text-xs">
               <div>
                 Supabase URL: <span
                   class={envStatus.hasSupabaseUrl ? "text-green-600" : "text-red-600"}
@@ -176,9 +176,9 @@ console.log("🍪 [DASHBOARD] Cookie status:", {
         </div>
 
         <!-- Database Status -->
-        <div class="bg-white dark:bg-gray-700 p-3 rounded mb-4">
-          <h3 class="font-semibold text-sm mb-2">📊 Database Access</h3>
-          <div class="text-xs space-y-1">
+        <div class="mb-4 rounded bg-white p-3 dark:bg-gray-700">
+          <h3 class="mb-2 text-sm font-semibold">📊 Database Access</h3>
+          <div class="space-y-1 text-xs">
             <div>
               Profile Data:{" "}
               <span class={profileData ? "text-green-600" : "text-red-600"}>
@@ -197,17 +197,17 @@ console.log("🍪 [DASHBOARD] Cookie status:", {
 
         <!-- Quick Actions -->
         <div class="flex gap-2 text-xs">
-          <a href="/api/reset-auth" class="bg-red-500 text-white px-2 py-1 rounded hover:bg-red-600"
+          <a href="/api/reset-auth" class="rounded bg-red-500 px-2 py-1 text-white hover:bg-red-600"
             >🔄 Reset Auth</a
           >
           <a
             href="/api/check-env"
-            class="bg-blue-500 text-white px-2 py-1 rounded hover:bg-blue-600"
+            class="rounded bg-blue-500 px-2 py-1 text-white hover:bg-blue-600"
             target="_blank">🔧 Check Env</a
           >
           <a
             href="/services-test"
-            class="bg-purple-500 text-white px-2 py-1 rounded hover:bg-purple-600"
+            class="rounded bg-purple-500 px-2 py-1 text-white hover:bg-purple-600"
             >🧪 Services Test</a
           >
         </div>
@@ -216,12 +216,12 @@ console.log("🍪 [DASHBOARD] Cookie status:", {
   </SectionContainer>
 
   <!-- Navigation -->
-  <SectionContainer class="flex flex-col gap-y-6 mx-6">
+  <SectionContainer class="mx-6 flex flex-col gap-y-6">
     <ProjectNav role={role} />
   </SectionContainer>
 
   <!-- Main Dashboard -->
-  <SectionContainer id="dashboard" class="mb-0 mt-0 mx-6 flex">
+  <SectionContainer id="dashboard" class="mx-6 mb-0 mt-0 flex">
     <DashboardComponent role={role} />
   </SectionContainer>
 

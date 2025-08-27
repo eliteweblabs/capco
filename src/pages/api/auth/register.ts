@@ -10,9 +10,15 @@ export const POST: APIRoute = async ({ request, redirect }) => {
   const formData = await request.formData();
   const email = formData.get("email")?.toString();
   const password = formData.get("password")?.toString();
+  const firstName = formData.get("first_name")?.toString();
+  const lastName = formData.get("last_name")?.toString();
+  const displayName = formData.get("display_name")?.toString();
+  const phone = formData.get("phone")?.toString();
 
-  if (!email || !password) {
-    return new Response("Email and password are required", { status: 400 });
+  if (!email || !password || !firstName || !lastName || !displayName) {
+    return new Response("Email, password, first name, last name, and display name are required", {
+      status: 400,
+    });
   }
 
   // Validate email format
@@ -35,6 +41,13 @@ export const POST: APIRoute = async ({ request, redirect }) => {
       emailRedirectTo: import.meta.env.DEV
         ? "http://localhost:4321/api/auth/verify"
         : "https://de.capcofire.com/api/auth/verify",
+      data: {
+        first_name: firstName,
+        last_name: lastName,
+        full_name: `${firstName} ${lastName}`,
+        display_name: displayName,
+        phone: phone || null,
+      },
     },
   });
 
