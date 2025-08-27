@@ -10,9 +10,10 @@ interface Props {
 
 // const ogImageURL = new URL("hero.png", Astro.site).href;
 // const canonicalURL = new URL(Astro.url).href;
-import Header from "../components/index/Header.astro";
+import Header from "../components/common/Header.astro";
 // import SectionContainer from "../components/SectionContainer.astro";
 import ToastAlerts from "../components/ToastAlerts.astro";
+import StickySMS from "../components/common/StickySMS.astro";
 import "../styles/boxicons.css"; // Import Boxicons CSS first
 import "../styles/global.css"; // Importa el CSS desde src/styles - Tailwind should come last
 
@@ -52,6 +53,7 @@ const { title, description, user } = Astro.props;
       <slot />
     </main>
     <ToastAlerts />
+    <StickySMS />
 
     <!-- Flowbite JavaScript -->
     <script src="/js/flowbite.min.js" crossorigin="anonymous"></script>
@@ -70,5 +72,152 @@ const { title, description, user } = Astro.props;
         if (refreshToken) window.SUPABASE_REFRESH_TOKEN = refreshToken;
       `}
     />
+
+    <!-- Global URL Parameter Toast Handler -->
+    <script>
+      import { globalServices } from "../lib/global-services";
+
+      // Handle URL parameters and show appropriate toast notifications globally
+      document.addEventListener("DOMContentLoaded", () => {
+        const currentUrl = new URL(window.location.href);
+        const errorParam = currentUrl.searchParams.get("error");
+        const messageParam = currentUrl.searchParams.get("message");
+
+        // Handle error messages
+        if (errorParam) {
+          let errorMessage = "";
+          let errorTitle = "Error";
+
+          switch (errorParam) {
+            case "oauth_failed":
+              errorMessage = "OAuth authentication failed. Please try again.";
+              errorTitle = "Authentication Failed";
+              break;
+            case "verification_failed":
+              errorMessage = "Email verification failed. Please try again.";
+              errorTitle = "Verification Failed";
+              break;
+            case "verification_expired":
+              errorMessage = "Verification link has expired. Please request a new one.";
+              errorTitle = "Link Expired";
+              break;
+            case "verification_invalid":
+              errorMessage = "Invalid verification link.";
+              errorTitle = "Invalid Link";
+              break;
+            case "verification_error":
+              errorMessage = "An error occurred during verification.";
+              errorTitle = "Verification Error";
+              break;
+            case "no_token":
+              errorMessage = "Invalid or missing verification token.";
+              errorTitle = "Invalid Token";
+              break;
+            case "no_user":
+              errorMessage = "User not found.";
+              errorTitle = "User Not Found";
+              break;
+            case "invalid_credentials":
+              errorMessage = "Invalid email or password.";
+              errorTitle = "Invalid Credentials";
+              break;
+            case "email_exists":
+              errorMessage = "An account with this email already exists.";
+              errorTitle = "Account Exists";
+              break;
+            case "weak_password":
+              errorMessage = "Password must be at least 6 characters long.";
+              errorTitle = "Weak Password";
+              break;
+            case "invalid_email":
+              errorMessage = "Please enter a valid email address.";
+              errorTitle = "Invalid Email";
+              break;
+            case "sms_missing_fields":
+              errorMessage = "Please fill in all required fields for SMS.";
+              errorTitle = "SMS Error";
+              break;
+            case "sms_invalid_phone":
+              errorMessage = "Please enter a valid 10-digit phone number.";
+              errorTitle = "Invalid Phone";
+              break;
+            case "sms_invalid_carrier":
+              errorMessage = "Please select a valid carrier.";
+              errorTitle = "Invalid Carrier";
+              break;
+            case "sms_send_failed":
+              errorMessage = "Failed to send SMS. Please try again.";
+              errorTitle = "SMS Failed";
+              break;
+            case "sms_email_error":
+              errorMessage = "Email service error. Please try again later.";
+              errorTitle = "Service Error";
+              break;
+            case "sms_unexpected_error":
+              errorMessage = "An unexpected error occurred while sending SMS.";
+              errorTitle = "SMS Error";
+              break;
+            default:
+              errorMessage = "An error occurred. Please try again.";
+              errorTitle = "Error";
+          }
+
+          globalServices.showNotification({
+            type: "error",
+            title: errorTitle,
+            message: errorMessage,
+            duration: 0, // Keep error messages until manually dismissed
+          });
+
+          // Clean up URL parameters
+          currentUrl.searchParams.delete("error");
+          window.history.replaceState({}, document.title, currentUrl.toString());
+        }
+
+        // Handle success messages
+        if (messageParam) {
+          let successMessage = "";
+          let successTitle = "Success!";
+
+          switch (messageParam) {
+            case "registration_success":
+              successMessage =
+                "Registration successful! Please check your email to verify your account.";
+              successTitle = "Account Created";
+              break;
+            case "verification_success":
+              successMessage = "Email verified successfully! You can now sign in.";
+              successTitle = "Email Verified";
+              break;
+            case "welcome":
+              successMessage = "Welcome! Your account has been verified and you're now signed in.";
+              successTitle = "Welcome!";
+              break;
+            case "logout_success":
+              successMessage = "You have been successfully signed out.";
+              successTitle = "Signed Out";
+              break;
+            case "sms_sent_success":
+              successMessage = "Your message has been sent to CAPCo successfully.";
+              successTitle = "Message Sent";
+              break;
+            default:
+              successMessage = messageParam;
+              successTitle = "Success!";
+          }
+
+          globalServices.showNotification({
+            type: "success",
+            title: successTitle,
+            message: successMessage,
+            duration: 6000,
+          });
+
+          // Clean up URL parameters
+          currentUrl.searchParams.delete("message");
+          window.history.replaceState({}, document.title, currentUrl.toString());
+        }
+      });
+    </script>
   </body>
 </html>

@@ -1,0 +1,259 @@
+---
+import BoxIcon from "../BoxIcon.astro";
+import SMSForm from "../form/SMSForm.astro";
+
+// Get current URL and determine page type (same logic as Header component)
+const currentUrl = Astro.url.pathname;
+const isBackendPage =
+  currentUrl.startsWith("/dashboard") ||
+  currentUrl.startsWith("/project/") || // Only match /project/123, not /projects
+  currentUrl.startsWith("/pdf-review") ||
+  currentUrl.startsWith("/pdf-editor") ||
+  currentUrl.startsWith("/admin") ||
+  currentUrl.startsWith("/register") ||
+  currentUrl.startsWith("/create-staff");
+
+// Don't show on backend pages or SMS demo page
+const shouldShow = !isBackendPage && !currentUrl.startsWith("/sms-demo");
+---
+
+{shouldShow && (
+  <div id="sticky-sms-container" class="fixed bottom-6 right-6 z-40">
+    <!-- SMS Button (collapsed state) -->
+    <button
+      id="sms-toggle-btn"
+      aria-label="Contact CAPCo"
+      class="flex h-14 w-14 items-center justify-center rounded-full bg-blue-600 text-white shadow-lg transition-all duration-300 hover:bg-blue-700 hover:shadow-xl focus:outline-none focus:ring-4 focus:ring-blue-300 dark:focus:ring-blue-800"
+    >
+      <BoxIcon name="message-rounded" class="text-xl" />
+    </button>
+
+    <!-- SMS Form Panel (expanded state) -->
+    <div
+      id="sms-form-panel"
+      class="absolute bottom-16 right-0 hidden w-80 max-w-[calc(100vw-3rem)] transform rounded-lg border border-gray-200 bg-white shadow-2xl transition-all duration-300 dark:border-gray-700 dark:bg-gray-800"
+    >
+      <!-- Panel Header -->
+      <div class="flex items-center justify-between border-b border-gray-200 p-4 dark:border-gray-700">
+        <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
+          💬 Contact CAPCo
+        </h3>
+        <button
+          id="sms-close-btn"
+          aria-label="Close SMS panel"
+          class="flex h-8 w-8 items-center justify-center rounded-full text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-700 dark:hover:text-gray-300"
+        >
+          <BoxIcon name="x" class="text-lg" />
+        </button>
+      </div>
+
+      <!-- Panel Content -->
+      <div class="p-4">
+        <SMSForm compact={true} />
+      </div>
+    </div>
+
+    <!-- Backdrop for mobile -->
+    <div
+      id="sms-backdrop"
+      class="fixed inset-0 z-[-1] hidden bg-black bg-opacity-50 md:hidden"
+    ></div>
+  </div>
+)}
+
+<script>
+  document.addEventListener("DOMContentLoaded", () => {
+    const container = document.getElementById("sticky-sms-container");
+    const toggleBtn = document.getElementById("sms-toggle-btn");
+    const formPanel = document.getElementById("sms-form-panel");
+    const closeBtn = document.getElementById("sms-close-btn");
+    const backdrop = document.getElementById("sms-backdrop");
+
+    if (!container || !toggleBtn || !formPanel || !closeBtn || !backdrop) {
+      return; // Component not rendered (backend page)
+    }
+
+    let isOpen = false;
+
+    function openPanel() {
+      isOpen = true;
+      if (formPanel) {
+        formPanel.classList.remove("hidden");
+      }
+      if (backdrop) {
+        backdrop.classList.remove("hidden");
+      }
+      
+      // Add animation classes
+      requestAnimationFrame(() => {
+        if (formPanel) {
+          formPanel.classList.add("animate-fade-in-up");
+        }
+        if (backdrop) {
+          backdrop.classList.add("animate-fade-in");
+        }
+      });
+
+      // Hide button on mobile for better UX
+      if (window.innerWidth < 768 && toggleBtn) {
+        toggleBtn.style.opacity = "0.3";
+      }
+
+      console.log("📱 [STICKY-SMS] Panel opened");
+    }
+
+    function closePanel() {
+      isOpen = false;
+      
+      // Add closing animation
+      if (formPanel) {
+        formPanel.classList.add("animate-fade-out-down");
+      }
+      if (backdrop) {
+        backdrop.classList.add("animate-fade-out");
+      }
+
+      setTimeout(() => {
+        if (formPanel) {
+          formPanel.classList.add("hidden");
+          formPanel.classList.remove("animate-fade-in-up", "animate-fade-out-down");
+        }
+        if (backdrop) {
+          backdrop.classList.add("hidden");
+          backdrop.classList.remove("animate-fade-in", "animate-fade-out");
+        }
+        if (toggleBtn) {
+          toggleBtn.style.opacity = "1";
+        }
+      }, 300);
+
+      console.log("📱 [STICKY-SMS] Panel closed");
+    }
+
+    function togglePanel() {
+      if (isOpen) {
+        closePanel();
+      } else {
+        openPanel();
+      }
+    }
+
+    // Event listeners
+    toggleBtn.addEventListener("click", togglePanel);
+    closeBtn.addEventListener("click", closePanel);
+    backdrop.addEventListener("click", closePanel);
+
+    // Close on escape key
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape" && isOpen) {
+        closePanel();
+      }
+    });
+
+    // Responsive behavior
+    window.addEventListener("resize", () => {
+      if (window.innerWidth >= 768 && isOpen && toggleBtn) {
+        toggleBtn.style.opacity = "1";
+      }
+    });
+
+    // Close panel when SMS form is submitted successfully
+    if (formPanel) {
+      const smsForm = formPanel.querySelector('form[action="/api/send-email-sms"]');
+      if (smsForm) {
+        smsForm.addEventListener("submit", () => {
+          // Close panel after form submission
+          setTimeout(() => {
+            closePanel();
+          }, 500);
+        });
+      }
+    }
+
+    console.log("📱 [STICKY-SMS] Component initialized");
+  });
+</script>
+
+<style>
+  /* Custom animations for smooth panel transitions */
+  @keyframes fade-in-up {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes fade-out-down {
+    from {
+      opacity: 1;
+      transform: translateY(0);
+    }
+    to {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+  }
+
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+
+  @keyframes fade-out {
+    from {
+      opacity: 1;
+    }
+    to {
+      opacity: 0;
+    }
+  }
+
+  .animate-fade-in-up {
+    animation: fade-in-up 0.3s ease-out forwards;
+  }
+
+  .animate-fade-out-down {
+    animation: fade-out-down 0.3s ease-out forwards;
+  }
+
+  .animate-fade-in {
+    animation: fade-in 0.3s ease-out forwards;
+  }
+
+  .animate-fade-out {
+    animation: fade-out 0.3s ease-out forwards;
+  }
+
+  /* Ensure the panel stays within viewport */
+  @media (max-width: 768px) {
+    #sms-form-panel {
+      position: fixed;
+      bottom: 6rem;
+      right: 1.5rem;
+      left: 1.5rem;
+      width: auto;
+      max-width: none;
+    }
+  }
+
+  /* Smooth button hover effect */
+  #sms-toggle-btn {
+    transition: all 0.3s ease;
+  }
+
+  #sms-toggle-btn:hover {
+    transform: scale(1.05);
+  }
+
+  #sms-toggle-btn:active {
+    transform: scale(0.95);
+  }
+</style>

@@ -26,6 +26,7 @@ const isBackendPage =
   currentUrl.startsWith("/pdf-review") ||
   currentUrl.startsWith("/pdf-editor") ||
   currentUrl.startsWith("/admin") ||
+  currentUrl.startsWith("/register") ||
   currentUrl.startsWith("/create-staff");
 
 // Navigation schema
@@ -37,7 +38,7 @@ interface NavItem {
   href: string;
   roles: UserRole[]; // Array of roles that can access this item
   isPrimary: boolean; // For styling primary CTA buttons
-  type: NavType; // Frontend or backend navigation
+  pageType: NavType; // Frontend or backend navigation
 }
 
 const navigation: NavItem[] = [
@@ -46,7 +47,8 @@ const navigation: NavItem[] = [
   //   label: "Home",
   //   href: "/",
   //   roles: ["any"],
-  //   type: "frontend",
+  //   pageType: "frontend",
+  //   isPrimary: currentUrl === "/",
   // },
 
   // Frontend navigation (hidden on backend pages to reduce clutter)
@@ -54,14 +56,14 @@ const navigation: NavItem[] = [
     label: "About",
     href: "/about",
     roles: ["any"],
-    type: "frontend",
+    pageType: "frontend",
     isPrimary: currentUrl.startsWith("/about"),
   },
   {
     label: "Projects",
     href: "/projects",
     roles: ["any"],
-    type: "frontend",
+    pageType: "frontend",
     isPrimary: currentUrl.startsWith("/projects"),
   },
 
@@ -70,7 +72,7 @@ const navigation: NavItem[] = [
     label: "Dashboard",
     href: "/dashboard",
     roles: ["client", "admin", "adminStaff"],
-    type: "backend",
+    pageType: "backend",
     isPrimary: currentUrl.startsWith("/dashboard"),
   },
   // {
@@ -83,15 +85,16 @@ const navigation: NavItem[] = [
     label: "PDF Editor",
     href: "/pdf-editor",
     roles: ["admin", "adminStaff"],
-    type: "backend",
+    pageType: "backend",
     isPrimary: currentUrl.startsWith("/pdf-editor"),
   },
-  // {
-  //   label: "User Management",
-  //   href: "/create-staff",
-  //   roles: ["admin"],
-  //   type: "backend",
-  // },
+  {
+    label: "User Management",
+    href: "/create-staff",
+    roles: ["admin"],
+    pageType: "backend",
+    isPrimary: currentUrl.startsWith("/create-staff"),
+  },
 ];
 
 // Filter navigation items based on auth state, role, and page type
@@ -103,17 +106,17 @@ function getVisibleNavItems(
 ): NavItem[] {
   return navItems.filter((item) => {
     // Always show Home link - users should always be able to return to main site
-    // if (item.href === "/") {
-    //   return true;
-    // }
+    if (item.href === "/") {
+      return true;
+    }
 
     // Page type filtering - hide other frontend nav on backend pages to reduce clutter
-    if (isBackendPage && item.type === "frontend") {
+    if (isBackendPage && item.pageType === "frontend") {
       return false;
     }
 
-    // Show backend nav only on backend pages or for authenticated users on frontend
-    if (item.type === "backend" && !isBackendPage && !isAuth) {
+    // Show backend nav only on backend pages
+    if (item.pageType === "backend" && !isBackendPage) {
       return false;
     }
 

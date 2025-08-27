@@ -1,0 +1,182 @@
+---
+// SMS Form Component using Email-to-SMS Gateway
+// This component allows sending SMS messages through carrier email gateways
+
+export interface Props {
+  compact?: boolean;
+}
+
+const { compact = false } = Astro.props;
+---
+
+<div class={compact ? "w-full" : "mx-auto w-full max-w-lg"}>
+  {!compact && (
+    <div class="mb-6">
+      <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Contact CAPCo</h3>
+      <p class="text-sm text-gray-600 dark:text-gray-400">
+        Send a message directly to our team
+      </p>
+    </div>
+  )}
+
+  <form action="/api/send-email-sms" method="post" class="space-y-4">
+    <!-- Hidden fields for hardcoded phone and carrier -->
+    <input type="hidden" name="phone" value="6176333533" />
+    <input type="hidden" name="carrier" value="@vtext.com" />
+    
+    <!-- Contact Information (Optional) -->
+    <div>
+      <label for="contact_info" class="mb-2 block text-sm font-medium text-gray-900 dark:text-gray-300">
+        Your Contact Info (Optional)
+      </label>
+      <input
+        type="text"
+        id="contact_info"
+        name="contact_info"
+        placeholder="Your name, email, or phone for response"
+        class="w-full rounded-md border border-gray-300 bg-gray-50 px-3 py-2 text-sm focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-600 focus:ring-opacity-60 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 dark:focus:bg-gray-900"
+      />
+      <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+        How should we respond to your message?
+      </p>
+    </div>
+
+    <!-- Message -->
+    <div>
+      <label for="message" class="mb-2 block text-sm font-medium text-gray-900 dark:text-gray-300">
+        Message <span class="text-red-500">*</span>
+      </label>
+      <textarea
+        id="message"
+        name="message"
+        required
+        rows="4"
+        maxlength="160"
+        placeholder="Your message here..."
+        class="w-full rounded-md border border-gray-300 bg-gray-50 px-3 py-2 text-sm focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-600 focus:ring-opacity-60 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 dark:focus:bg-gray-900"
+      ></textarea>
+      <div class="mt-1 flex justify-between">
+        <p class="text-xs text-gray-500 dark:text-gray-400">Keep it short for better delivery</p>
+        <span id="char-count" class="text-xs text-gray-500 dark:text-gray-400">0/160</span>
+      </div>
+    </div>
+
+    <!-- Optional: Project Reference -->
+    <div>
+      <label
+        for="project_id"
+        class="mb-2 block text-sm font-medium text-gray-900 dark:text-gray-300"
+      >
+        Project ID (Optional)
+      </label>
+      <input
+        type="text"
+        id="project_id"
+        name="project_id"
+        placeholder="e.g., PROJ-123"
+        class="w-full rounded-md border border-gray-300 bg-gray-50 px-3 py-2 text-sm focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-600 focus:ring-opacity-60 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 dark:focus:bg-gray-900"
+      />
+      <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+        Optional project reference for tracking
+      </p>
+    </div>
+
+    <!-- Submit Button -->
+    <div class="pt-4">
+      <button
+        type="submit"
+        class="w-full rounded-md border border-blue-600 bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+      >
+        Send Message to CAPCo
+      </button>
+    </div>
+  </form>
+
+  {!compact && (
+    <!-- Information Box -->
+    <div
+      class="mt-6 rounded-md border border-yellow-200 bg-yellow-50 p-4 dark:border-yellow-700 dark:bg-yellow-900/20"
+    >
+      <div class="flex">
+        <div class="flex-shrink-0">
+          <svg class="h-5 w-5 text-yellow-400" viewBox="0 0 20 20" fill="currentColor">
+            <path
+              fill-rule="evenodd"
+              d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
+              clip-rule="evenodd"></path>
+          </svg>
+        </div>
+        <div class="ml-3">
+          <h3 class="text-sm font-medium text-yellow-800 dark:text-yellow-200">Important Notes</h3>
+          <div class="mt-2 text-sm text-yellow-700 dark:text-yellow-300">
+            <ul class="list-disc space-y-1 pl-5">
+              <li>Delivery depends on carrier support and may not be immediate</li>
+              <li>Some carriers may block or delay these messages</li>
+              <li>Keep messages under 160 characters for best results</li>
+              <li>This method is free but less reliable than dedicated SMS services</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  )}
+</div>
+
+<script>
+  import { globalServices } from "../../lib/global-services";
+
+  document.addEventListener("DOMContentLoaded", () => {
+    const form = document.querySelector('form[action="/api/send-email-sms"]');
+    const messageTextarea = document.getElementById("message") as HTMLTextAreaElement;
+    const charCount = document.getElementById("char-count");
+
+    // Character counter for message
+    if (messageTextarea && charCount) {
+      function updateCharCount() {
+        const length = messageTextarea.value.length;
+        if (charCount) {
+          charCount.textContent = `${length}/160`;
+
+          // Change color based on length
+          if (length > 140) {
+            charCount.className = "text-xs text-red-500";
+          } else if (length > 120) {
+            charCount.className = "text-xs text-yellow-500";
+          } else {
+            charCount.className = "text-xs text-gray-500 dark:text-gray-400";
+          }
+        }
+      }
+
+      messageTextarea.addEventListener("input", updateCharCount);
+      updateCharCount(); // Initial call
+    }
+
+    // Form submission handling
+    if (form) {
+      form.addEventListener("submit", (e) => {
+        const message = (form.querySelector("#message") as HTMLTextAreaElement)?.value;
+
+        // Client-side validation - only check message since phone/carrier are hardcoded
+        if (!message || message.trim().length === 0) {
+          e.preventDefault();
+          globalServices.showNotification({
+            type: "error",
+            title: "Message Required",
+            message: "Please enter a message to send.",
+            duration: 5000,
+          });
+          return;
+        }
+
+        // Show loading notification
+        globalServices.showNotification({
+          type: "info",
+          title: "Sending Message...",
+          message: "Please wait while we send your message to CAPCo.",
+          duration: 3000,
+        });
+      });
+    }
+  });
+</script>
