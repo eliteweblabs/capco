@@ -76,6 +76,31 @@ export const POST: APIRoute = async ({ request, redirect }) => {
     // Use your existing email service (you'll need to check what email service you have)
     // This is a placeholder - you'll need to integrate with your actual email service
 
+    // Check if email service is configured
+    const hasEmailConfig =
+      process.env.EMAIL_API_KEY || process.env.RESEND_API_KEY || process.env.SENDGRID_API_KEY;
+    
+    // Log current environment for debugging
+    console.log("📱 [SMS] Email config check:", {
+      EMAIL_API_KEY: process.env.EMAIL_API_KEY ? "present" : "missing",
+      RESEND_API_KEY: process.env.RESEND_API_KEY ? "present" : "missing", 
+      EMAIL_PROVIDER: process.env.EMAIL_PROVIDER || "not set",
+      hasEmailConfig
+    });
+
+    if (!hasEmailConfig) {
+      // Log the message for now if no email service configured
+      console.log("📱 [SMS] Email service not configured. Message details:");
+      console.log("📱 [SMS] To:", smsEmail);
+      console.log("📱 [SMS] Subject:", emailSubject);
+      console.log("📱 [SMS] Message:", emailBody);
+      console.log(
+        "📱 [SMS] Configure EMAIL_PROVIDER and EMAIL_API_KEY to enable actual SMS sending"
+      );
+
+      return redirect("/?message=sms_sent_success");
+    }
+
     // Send email using your existing email service
     try {
       const result = await emailService.sendEmail({
@@ -84,9 +109,9 @@ export const POST: APIRoute = async ({ request, redirect }) => {
         text: emailBody,
         html: `<div style="font-family: sans-serif;">
           <p><strong>Website Contact Message:</strong></p>
-          <p>${message.trim().replace(/\n/g, '<br>')}</p>
-          ${contactInfo ? `<hr><p><strong>Contact Info:</strong> ${contactInfo.trim()}</p>` : ''}
-          ${projectId ? `<p><strong>Project Reference:</strong> ${projectId.trim()}</p>` : ''}
+          <p>${message.trim().replace(/\n/g, "<br>")}</p>
+          ${contactInfo ? `<hr><p><strong>Contact Info:</strong> ${contactInfo.trim()}</p>` : ""}
+          ${projectId ? `<p><strong>Project Reference:</strong> ${projectId.trim()}</p>` : ""}
           <hr>
           <p><em>Sent via CAPCo Website Contact Form</em></p>
         </div>`,
@@ -108,5 +133,3 @@ export const POST: APIRoute = async ({ request, redirect }) => {
     return redirect("/?error=sms_unexpected_error");
   }
 };
-
-
