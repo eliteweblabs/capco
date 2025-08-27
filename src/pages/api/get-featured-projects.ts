@@ -31,9 +31,9 @@ export const GET: APIRoute = async () => {
     
     console.log("🏗️ [FEATURED-PROJECTS] Basic connection test passed, fetching projects...");
 
-    // Fetch completed projects (for now, just get any completed projects since feature column might not exist)
-    // Status 220 = PROJECT_COMPLETE from global-services.ts
-    const { data: projects, error } = await supabase
+    // Fetch projects for display (since there might not be completed projects yet)
+    // Try completed projects first (status 220), then fall back to any projects with content
+    let { data: projects, error } = await supabase
       .from("projects")
       .select(
         `
@@ -43,6 +43,7 @@ export const GET: APIRoute = async () => {
         description,
         sq_ft,
         new_construction,
+        status,
         created_at,
         updated_at
       `
@@ -50,7 +51,38 @@ export const GET: APIRoute = async () => {
       .eq("status", 220) // Only completed projects
       .not("address", "is", null) // Has address
       .order("updated_at", { ascending: false })
-      .limit(6); // Limit to 6 projects for now
+      .limit(6);
+      
+    // If no completed projects found, get any projects for demo
+    if (!error && (!projects || projects.length === 0)) {
+      console.log("🏗️ [FEATURED-PROJECTS] No completed projects found, fetching any projects for demo...");
+      
+      const { data: fallbackProjects, error: fallbackError } = await supabase
+        .from("projects")
+        .select(
+          `
+          id,
+          address,
+          title,
+          description,
+          sq_ft,
+          new_construction,
+          status,
+          created_at,
+          updated_at
+        `
+        )
+        .not("address", "is", null) // Has address
+        .order("created_at", { ascending: false })
+        .limit(6);
+        
+      if (fallbackError) {
+        error = fallbackError;
+      } else {
+        projects = fallbackProjects;
+        console.log(`🏗️ [FEATURED-PROJECTS] Using ${projects?.length || 0} demo projects`);
+      }
+    }
 
     if (error) {
       console.error("🏗️ [FEATURED-PROJECTS] Database error:", error);
