@@ -35,6 +35,7 @@ Update this file at the end of each significant development session to maintain 
 - Flowbite
 - SupaBase
 - NO REACT
+- Stripe
 - All Pages to Format with App Component
 
 ### Environment Variables
