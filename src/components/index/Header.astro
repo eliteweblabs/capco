@@ -3,6 +3,7 @@
 import BoxIcon from "../BoxIcon.astro";
 import HeroButton from "../HeroButton.astro";
 import Logo from "./Logo.astro";
+import Auth from "./Auth.astro";
 // import LanguagePicker from "../LanguagePicker.astro";
 import Tooltip from "../Tooltip.astro";
 import NavLi from "./NavLi.astro";
@@ -16,54 +17,103 @@ console.log("📋 [HEADER] Header component loading...");
 import { checkAuth } from "../../lib/auth";
 const { isAuth, session, user, role } = await checkAuth(Astro.cookies);
 
+// Get current URL and determine page type
+const currentUrl = Astro.url.pathname;
+const isBackendPage =
+  currentUrl.startsWith("/dashboard") ||
+  currentUrl.startsWith("/project") ||
+  currentUrl.startsWith("/pdf-review") ||
+  currentUrl.startsWith("/pdf-editor") ||
+  currentUrl.startsWith("/admin") ||
+  currentUrl.startsWith("/create-staff");
+
 // Navigation schema
 type UserRole = "any" | "client" | "admin" | "adminStaff";
+type NavType = "frontend" | "backend";
 
 interface NavItem {
   label: string;
   href: string;
   roles: UserRole[]; // Array of roles that can access this item
   primary?: boolean; // For styling primary CTA buttons
+  type: NavType; // Frontend or backend navigation
 }
 
 const navigation: NavItem[] = [
+  // Always visible - Home link for easy return to main site
+  {
+    label: "Home",
+    href: "/",
+    roles: ["any"],
+    type: "frontend",
+  },
+  
+  // Frontend navigation (hidden on backend pages to reduce clutter)
   {
     label: "About",
     href: "/about",
-    roles: ["any"], // Public access
+    roles: ["any"],
+    type: "frontend",
   },
   {
     label: "Projects",
-    href: "/projects", 
-    roles: ["any"], // Public access
+    href: "/projects",
+    roles: ["any"],
+    type: "frontend",
   },
+  
+  // Backend navigation (shown on backend pages)
   {
     label: "Dashboard",
     href: "/dashboard",
-    roles: ["client", "admin", "adminStaff"], // Authenticated users only
+    roles: ["client", "admin", "adminStaff"],
+    type: "backend",
     primary: true,
   },
-  {
-    label: "PDF Review",
-    href: "/pdf-review",
-    roles: ["admin", "adminStaff"], // Admin access only
-  },
-  {
-    label: "Services Test",
-    href: "/services-test",
-    roles: ["admin", "adminStaff"], // Admin access only
-  },
+  // {
+  //   label: "PDF Review",
+  //   href: "/pdf-review",
+  //   roles: ["admin", "adminStaff"],
+  //   type: "backend",
+  // },
   {
     label: "PDF Editor",
     href: "/pdf-editor",
-    roles: ["admin", "adminStaff"], // Admin access only
+    roles: ["admin", "adminStaff"],
+    type: "backend",
   },
+  // {
+  //   label: "User Management",
+  //   href: "/create-staff",
+  //   roles: ["admin"],
+  //   type: "backend",
+  // },
 ];
 
-// Filter navigation items based on auth state and role
-function getVisibleNavItems(navItems: NavItem[], isAuth: boolean, userRole?: string | null): NavItem[] {
+// Filter navigation items based on auth state, role, and page type
+function getVisibleNavItems(
+  navItems: NavItem[],
+  isAuth: boolean,
+  userRole?: string | null,
+  isBackendPage: boolean = false
+): NavItem[] {
   return navItems.filter((item) => {
-    // If item allows "any" role, show it to everyone
+    // Always show Home link - users should always be able to return to main site
+    if (item.href === "/") {
+      return true;
+    }
+    
+    // Page type filtering - hide other frontend nav on backend pages to reduce clutter
+    if (isBackendPage && item.type === "frontend") {
+      return false;
+    }
+
+    // Show backend nav only on backend pages or for authenticated users on frontend
+    if (item.type === "backend" && !isBackendPage && !isAuth) {
+      return false;
+    }
+
+    // If item allows "any" role, show it based on page type rules above
     if (item.roles.includes("any")) return true;
 
     // If user is not authenticated, only show "any" role items
@@ -77,7 +127,7 @@ function getVisibleNavItems(navItems: NavItem[], isAuth: boolean, userRole?: str
   });
 }
 
-const visibleNavigation = getVisibleNavItems(navigation, isAuth, role);
+const visibleNavigation = getVisibleNavItems(navigation, isAuth, role, isBackendPage);
 ---
 
 <header class="sticky top-0 z-30 mb-2 bg-hub-background pb-2 pt-4 dark:bg-hub-background-dark">
@@ -127,109 +177,46 @@ const visibleNavigation = getVisibleNavItems(navigation, isAuth, role);
 
       {/* <LanguagePicker /> */}
 
-      <div class="relative">
-        {
-          isAuth ? (
-            // Authenticated: Profile Button with Dropdown
-            <Tooltip content="Profile" variant="link" href="/profile">
-              <HeroButton
-                aria-label="btn-profile"
-                id="profile-btn"
-                class="size-8 overflow-hidden rounded-full"
-              >
-                <img
-                  id="user-avatar"
-                  src=""
-                  alt="User avatar"
-                  class="h-full w-full object-cover"
-                  onerror="this.style.display='none'; this.nextElementSibling.style.display='block';"
-                />
-                <BoxIcon name="user" size="1rem" style="display:none;" />
-              </HeroButton>
+      <Auth />
 
-              <!-- Dropdown menu -->
-              <div
-                id="profile-dropdown"
-                class="absolute right-0 top-full mt-2 hidden w-48 rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 dark:bg-gray-800 dark:ring-gray-700"
-              >
-                <div class="py-1">
-                  <a
-                    href="/profile"
-                    class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-700"
-                  >
-                    <BoxIcon name="user" size="1rem" class="mr-2" />
-                    Profile
-                  </a>
-                  <button
-                    id="logout-btn"
-                    class="flex w-full items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-700"
-                  >
-                    <BoxIcon name="log-out" size="1rem" class="mr-2" />
-                    Logout
-                  </button>
-                </div>
-              </div>
-            </Tooltip>
-          ) : (
-            // Not Authenticated: Login Button
-            <Tooltip content="Login" variant="link" href="/login" placement="bottom">
-              <HeroButton
-                aria-label="btn-profile"
-                id="profile-btn"
-                class="size-8 overflow-hidden rounded-full"
-              >
-                <BoxIcon name="log-in" class="text-lg text-gray-700 dark:text-gray-300" />
-
-              </HeroButton>
-              {/* <div
-                aria-label="btn-login"
-                class="flex size-8 cursor-pointer items-center justify-center rounded-full bg-gray-100 transition-colors hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700"
-              >
-              </div> */}
-            </Tooltip>
-          )
-        }
-
-        {/* Mobile Menu Button (Hamburger) */}
-        <button
-          id="mobile-menu-btn"
-          aria-label="Open mobile menu"
-          class="flex size-8 items-center justify-center text-gray-700 transition-colors hover:text-red-600 dark:text-gray-300 dark:hover:text-red-400 md:hidden"
-        >
-          <BoxIcon name="menu" id="hamburger-icon" class="text-xl" />
-          <BoxIcon name="x" id="close-icon" class="hidden text-xl" />
-        </button>
+      {/* Mobile Menu Button (Hamburger) */}
+      <button
+        id="mobile-menu-btn"
+        aria-label="Open mobile menu"
+        class="flex size-8 items-center justify-center text-gray-700 transition-colors hover:text-red-600 dark:text-gray-300 dark:hover:text-red-400 md:hidden"
+      >
+        <BoxIcon name="menu" id="hamburger-icon" class="text-xl" />
+        <BoxIcon name="x" id="close-icon" class="hidden text-xl" />
+      </button>
+      {/* Mobile Navigation Menu */}
+      <div
+        id="mobile-menu"
+        class="hidden border-b border-gray-200 bg-white shadow-lg dark:border-gray-700 dark:bg-gray-800 md:hidden"
+      >
+        <nav class="space-y-4 px-6 py-4">
+          {/* Navigation Items */}
+          {
+            visibleNavigation.map((item) =>
+              item.primary ? (
+                <a
+                  href={item.href}
+                  class="block w-full rounded-lg bg-red-600 px-4 py-3 text-center font-medium text-white transition-colors hover:bg-red-700"
+                >
+                  {item.label}
+                </a>
+              ) : (
+                <a
+                  href={item.href}
+                  class="block py-2 font-medium text-gray-700 transition-colors hover:text-red-600 dark:text-gray-300 dark:hover:text-red-400"
+                >
+                  {item.label}
+                </a>
+              )
+            )
+          }
+        </nav>
       </div>
     </div>
-  </div>
-
-  {/* Mobile Navigation Menu */}
-  <div
-    id="mobile-menu"
-    class="hidden border-b border-gray-200 bg-white shadow-lg dark:border-gray-700 dark:bg-gray-800 md:hidden"
-  >
-    <nav class="space-y-4 px-6 py-4">
-      {/* Navigation Items */}
-      {
-        visibleNavigation.map((item) =>
-          item.primary ? (
-            <a
-              href={item.href}
-              class="block w-full rounded-lg bg-red-600 px-4 py-3 text-center font-medium text-white transition-colors hover:bg-red-700"
-            >
-              {item.label}
-            </a>
-          ) : (
-            <a
-              href={item.href}
-              class="block py-2 font-medium text-gray-700 transition-colors hover:text-red-600 dark:text-gray-300 dark:hover:text-red-400"
-            >
-              {item.label}
-            </a>
-          )
-        )
-      }
-    </nav>
   </div>
 </header>
 
@@ -290,7 +277,9 @@ const visibleNavigation = getVisibleNavItems(navigation, isAuth, role);
       }
       console.log("📋 [HEADER] Profile button configured for authenticated user");
     } else {
-      console.log("📋 [HEADER] Profile button configured for unauthenticated user - avatar elements not present");
+      console.log(
+        "📋 [HEADER] Profile button configured for unauthenticated user - avatar elements not present"
+      );
     }
   }
 
