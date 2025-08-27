@@ -10,13 +10,9 @@ import { getI18N } from "../i18n";
 const { currentLocale } = Astro;
 const i18n = getI18N({ currentLocale });
 
-// Check authentication - if logged in, redirect to dashboard
+// Check authentication for conditional content display
 import { checkAuth } from "../lib/auth";
-const { isAuth } = await checkAuth(Astro.cookies);
-
-if (isAuth) {
-  return Astro.redirect("/dashboard");
-}
+const { isAuth, role } = await checkAuth(Astro.cookies);
 ---
 
 <Base title={i18n.SEO_TITLE} description={i18n.SEO_DESCRIPTION}>
