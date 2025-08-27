@@ -1,0 +1,130 @@
+---
+// Staff Select Component - for assigning projects to staff members
+// Only visible to admin users
+
+interface Props {
+  id?: string;
+  name?: string;
+  label?: string;
+  value?: string;
+  required?: boolean;
+  placeholder?: string;
+}
+
+const {
+  id = "staff-select",
+  name = "assigned_to_id",
+  label = "Assign To",
+  value = "",
+  required = false,
+  placeholder = "Select staff member...",
+} = Astro.props;
+---
+
+<div class="space-y-2">
+  <label for={id} class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+    {label}
+    {required && <span class="text-red-500 ml-1">*</span>}
+  </label>
+  
+  <select
+    id={id}
+    name={name}
+    value={value}
+    required={required}
+    class="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 dark:focus:border-blue-400"
+  >
+    <option value="">{placeholder}</option>
+    <!-- Options will be populated by JavaScript -->
+  </select>
+  
+  <div id={`${id}-loading`} class="hidden">
+    <p class="text-sm text-gray-500 dark:text-gray-400">Loading staff members...</p>
+  </div>
+  
+  <div id={`${id}-error`} class="hidden">
+    <p class="text-sm text-red-600 dark:text-red-400">Failed to load staff members</p>
+  </div>
+</div>
+
+<script>
+  import { globalServices } from "../../lib/global-services";
+
+  document.addEventListener("DOMContentLoaded", async () => {
+    const selectElement = document.getElementById("staff-select") as HTMLSelectElement;
+    const loadingElement = document.getElementById("staff-select-loading");
+    const errorElement = document.getElementById("staff-select-error");
+    
+    if (!selectElement) return;
+
+    // Show loading state
+    if (loadingElement) loadingElement.classList.remove("hidden");
+    if (errorElement) errorElement.classList.add("hidden");
+
+    try {
+      console.log("🧑‍💼 [STAFF-SELECT] Fetching staff members...");
+      
+      // Fetch staff members from API
+      const response = await fetch("/api/get-staff-users");
+      const result = await response.json();
+
+      if (result.success && result.staffUsers) {
+        console.log(`🧑‍💼 [STAFF-SELECT] Loaded ${result.staffUsers.length} staff members`);
+        
+        // Store current value to preserve it
+        const currentValue = selectElement.value;
+        
+        // Clear existing options except the first placeholder
+        selectElement.innerHTML = `<option value="">${selectElement.options[0].text}</option>`;
+        
+        // Add staff options
+        result.staffUsers.forEach((staff: any) => {
+          const option = document.createElement("option");
+          option.value = staff.id;
+          option.textContent = staff.name;
+          option.selected = staff.id === currentValue;
+          selectElement.appendChild(option);
+        });
+
+        // Restore the selected value if it was set
+        if (currentValue) {
+          selectElement.value = currentValue;
+        }
+
+        console.log("🧑‍💼 [STAFF-SELECT] Staff options populated successfully");
+      } else {
+        console.error("🧑‍💼 [STAFF-SELECT] Failed to load staff:", result.error);
+        if (errorElement) {
+          errorElement.classList.remove("hidden");
+          errorElement.querySelector("p")!.textContent = result.error || "Failed to load staff members";
+        }
+      }
+    } catch (error) {
+      console.error("🧑‍💼 [STAFF-SELECT] Error fetching staff:", error);
+      if (errorElement) {
+        errorElement.classList.remove("hidden");
+      }
+    } finally {
+      // Hide loading state
+      if (loadingElement) loadingElement.classList.add("hidden");
+    }
+
+    // Handle selection changes
+    selectElement.addEventListener("change", (e) => {
+      const target = e.target as HTMLSelectElement;
+      const selectedValue = target.value;
+      const selectedText = target.options[target.selectedIndex]?.text || "Unassigned";
+      
+      console.log("🧑‍💼 [STAFF-SELECT] Assignment changed:", {
+        value: selectedValue,
+        name: selectedText
+      });
+
+      // Emit assignment change event
+      globalServices.emit("project:assignment-changed", {
+        assignedToId: selectedValue || null,
+        assignedToName: selectedText === "Select staff member..." ? "Unassigned" : selectedText
+      });
+    });
+  });
+</script>
