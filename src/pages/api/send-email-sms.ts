@@ -85,7 +85,8 @@ export const POST: APIRoute = async ({ request, redirect }) => {
       EMAIL_API_KEY: process.env.EMAIL_API_KEY ? "present" : "missing",
       RESEND_API_KEY: process.env.RESEND_API_KEY ? "present" : "missing", 
       EMAIL_PROVIDER: process.env.EMAIL_PROVIDER || "not set",
-      hasEmailConfig
+      hasEmailConfig,
+      timestamp: new Date().toISOString()
     });
 
     if (!hasEmailConfig) {
