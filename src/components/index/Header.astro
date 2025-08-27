@@ -174,8 +174,8 @@ const visibleNavigation = getVisibleNavItems(navigation, isAuth, role);
       }
 
       <HeroButton aria-label="btn-theme" id="toggle-theme" class="size-8">
-        <BoxIcon name="sun" class="size-5 dark:hidden" />
-        <BoxIcon name="moon" class="hidden size-5 dark:inline" />
+        <BoxIcon name="sun" id="sun-icon" class="size-5 block dark:hidden" />
+        <BoxIcon name="moon" id="moon-icon" class="size-5 hidden dark:block" />
       </HeroButton>
 
       {/* <LanguagePicker /> */}
@@ -289,6 +289,48 @@ const visibleNavigation = getVisibleNavItems(navigation, isAuth, role);
 <script type="module" define:vars={{ session }}>
   console.log("📋 [HEADER] Header script execution started");
   console.log("📋 [HEADER] Session data:", session);
+  
+  // Theme icon management
+  const htmlElement = document.documentElement;
+  const sunIcon = document.getElementById("sun-icon");
+  const moonIcon = document.getElementById("moon-icon");
+  
+  console.log("📋 [HEADER] HTML classes:", htmlElement.className);
+  console.log("📋 [HEADER] Has dark class:", htmlElement.classList.contains("dark"));
+  
+  // Function to update icon visibility
+  function updateThemeIcons() {
+    const isDark = htmlElement.classList.contains("dark");
+    console.log("📋 [HEADER] Updating icons, isDark:", isDark);
+    
+    if (sunIcon && moonIcon) {
+      if (isDark) {
+        // Dark mode: show moon, hide sun
+        sunIcon.classList.add("hidden");
+        moonIcon.classList.remove("hidden");
+        console.log("📋 [HEADER] Dark mode: showing moon icon");
+      } else {
+        // Light mode: show sun, hide moon
+        sunIcon.classList.remove("hidden");
+        moonIcon.classList.add("hidden");
+        console.log("📋 [HEADER] Light mode: showing sun icon");
+      }
+    }
+  }
+  
+  // Initial icon update
+  updateThemeIcons();
+  
+  // Watch for changes to the dark class
+  const observer = new MutationObserver(() => {
+    console.log("📋 [HEADER] HTML class changed, updating icons");
+    updateThemeIcons();
+  });
+  
+  observer.observe(htmlElement, {
+    attributes: true,
+    attributeFilter: ['class']
+  });
 
   const profileBtn = document.getElementById("profile-btn");
   const userAvatar = document.getElementById("user-avatar");
