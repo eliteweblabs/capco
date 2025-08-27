@@ -218,6 +218,14 @@ export const PROJECT_FORM_FIELDS: FormFieldConfig[] = [
     allow: ["admin", "staff"], // Only admin and staff can see description
   },
   {
+    id: "assigned-to-select",
+    name: "assigned_to_id",
+    type: "component",
+    label: "Assign To",
+    component: "StaffSelect",
+    allow: ["admin"], // Only admin can assign projects
+  },
+  {
     id: "new-construction",
     name: "new_construction",
     type: "checkbox",
