@@ -37,6 +37,25 @@ Update this file at the end of each significant development session to maintain 
 - NO REACT
 - All Pages to Format with App Component
 
+### Environment Variables
+
+**Railway Production Variables (for development reference):**
+
+```env
+EMAIL_API_KEY=<resend_api_key>
+EMAIL_PROVIDER=resend
+FROM_EMAIL=<noreply_email_address>
+FROM_NAME=CAPCo
+SUPABASE_ANON_KEY=<supabase_anonymous_key>
+SUPABASE_URL=<supabase_project_url>
+```
+
+**Required for local development:**
+- Copy these variables to your local `.env` file
+- Replace `<placeholders>` with actual values from Railway dashboard
+- Email service (Resend) is required for SMS contact form functionality
+- Supabase credentials are required for authentication and database access
+
 ### Architecture Principles
 
 **Server-Side Rendering First:**
