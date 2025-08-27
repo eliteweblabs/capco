@@ -1,0 +1,68 @@
+---
+import BoxIcon from "../BoxIcon.astro";
+import HeroButton from "../HeroButton.astro";
+import Tooltip from "../Tooltip.astro";
+
+// Check authentication
+import { checkAuth } from "../../lib/auth";
+const { isAuth, session, user, role } = await checkAuth(Astro.cookies);
+
+
+---
+<div class="relative">
+  {
+    isAuth ? (
+      // Authenticated: Profile Button with Dropdown
+      <Tooltip content="Profile" variant="link" href="/profile">
+        <HeroButton
+          aria-label="btn-profile"
+          id="profile-btn"
+          class="size-8 overflow-hidden rounded-full"
+        >
+          <img
+            id="user-avatar"
+            src=""
+            alt="User avatar"
+            class="h-full w-full object-cover"
+            onerror="this.style.display='none'; this.nextElementSibling.style.display='block';"
+          />
+          <BoxIcon name="user" size="1rem" style="display:none;" />
+        </HeroButton>
+
+        <!-- Dropdown menu -->
+        <div
+          id="profile-dropdown"
+          class="absolute right-0 top-full mt-2 hidden w-48 rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 dark:bg-gray-800 dark:ring-gray-700"
+        >
+          <div class="py-1">
+            <a
+              href="/profile"
+              class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-700"
+            >
+              <BoxIcon name="user" size="1rem" class="mr-2" />
+              Profile
+            </a>
+            <button
+              id="logout-btn"
+              class="flex w-full items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-700"
+            >
+              <BoxIcon name="log-out" size="1rem" class="mr-2" />
+              Logout
+            </button>
+          </div>
+        </div>
+      </Tooltip>
+    ) : (
+      // Not Authenticated: Login Button
+      <Tooltip content="Login" variant="link" href="/login" placement="bottom">
+        <HeroButton
+          aria-label="btn-profile"
+          id="profile-btn"
+          class="size-8 overflow-hidden rounded-full"
+        >
+          <BoxIcon name="log-in" class="text-lg text-gray-700 dark:text-gray-300" />
+        </HeroButton>
+      </Tooltip>
+    )
+  }
+</div>
