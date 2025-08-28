@@ -1,4 +1,5 @@
 import type { APIRoute } from "astro";
+import { SimpleProjectLogger } from "../../../lib/simple-logging";
 import { supabase } from "../../../lib/supabase";
 
 export const PUT: APIRoute = async ({ request, cookies, params }) => {
@@ -52,23 +53,45 @@ export const PUT: APIRoute = async ({ request, cookies, params }) => {
 
     const userRole = profile?.role?.toLowerCase();
 
-    // Build update query
-    let updateQuery = supabase!
+    // First, get the current project data for logging
+    const { data: currentProject, error: fetchError } = await supabase!
       .from("projects")
-      .update({
-        address: body.address,
-        // Don't update owner for existing projects (field is hidden)
-        architect: body.architect,
-        sq_ft: body.sq_ft,
-        description: body.description,
-        new_construction: body.new_construction === "on" || body.new_construction === true,
-        units: body.units,
-        building: body.building,
-        project: body.project,
-        service: body.service,
-        requested_docs: body.requested_docs,
-      })
-      .eq("id", projectId);
+      .select("*")
+      .eq("id", projectId)
+      .single();
+
+    if (fetchError || !currentProject) {
+      return new Response(JSON.stringify({ error: "Project not found" }), {
+        status: 404,
+      });
+    }
+
+    // Check permissions for non-admin users
+    if (userRole !== "admin" && currentProject.author_id !== userId) {
+      return new Response(JSON.stringify({ error: "Access denied" }), {
+        status: 403,
+      });
+    }
+
+    // Prepare update data
+    const updateData = {
+      address: body.address,
+      // Don't update owner for existing projects (field is hidden)
+      architect: body.architect,
+      sq_ft: body.sq_ft,
+      description: body.description,
+      new_construction: body.new_construction === "on" || body.new_construction === true,
+      units: body.units,
+      building: body.building,
+      project: body.project,
+      service: body.service,
+      requested_docs: body.requested_docs,
+    };
+
+    // Note: No complex setup needed for simple logging
+
+    // Build update query
+    let updateQuery = supabase!.from("projects").update(updateData).eq("id", projectId);
 
     // Only apply author_id filter for non-admin users
     if (userRole !== "admin") {
@@ -91,6 +114,21 @@ export const PUT: APIRoute = async ({ request, cookies, params }) => {
     }
 
     const project = projects[0]; // Get the first (and should be only) project
+
+    // Log the project update with simple logging
+    try {
+      const userEmail = session.session.user.email || "unknown";
+      await SimpleProjectLogger.logProjectUpdate(
+        parseInt(projectId),
+        userEmail,
+        "Project updated via API",
+        currentProject,
+        updateData
+      );
+    } catch (logError) {
+      console.error("Error logging project update:", logError);
+      // Don't fail the request if logging fails
+    }
 
     return new Response(JSON.stringify(project), {
       status: 200,

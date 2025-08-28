@@ -10,6 +10,7 @@ This app is designed to facilitate the process of submitting (by clients) and re
 
 - The index page (`/`) is now a marketing landing page for public visitors.
 - Authenticated users access the dashboard for project management.
+- User Roles: Admin > Staff > Client
 
 ## Development Session Management
 
@@ -34,9 +35,11 @@ Update this file at the end of each significant development session to maintain 
 - Tailwind
 - Flowbite
 - SupaBase
+- Railway
 - NO REACT
 - Stripe
 - All Pages to Format with App Component
+- avoid using JS to create Mark up whenever possible
 
 ### Environment Variables
 
@@ -107,45 +110,103 @@ ORDER BY table_name, ordinal_position;
 ### Recent Schema Updates
 
 - **projects.feature** (boolean): Added for marketing page project showcase. Default: false. Set to true for projects to display on public `/projects` page.
+- **projects.assigned_to_id** (uuid): References profiles table for staff assignment
+- **projects.building, project, service, requested_docs** (jsonb): Store form configuration data
+- **projects.created_at, updated_at** (timestamp): Proper timestamping with timezone
+- **profiles.created_at, updated_at** (timestamp): Proper timestamping with timezone
+- **projects.status** (integer): Project workflow status codes (10-220)
 
-| table_name | column_name      | data_type                   | is_nullable | column_default                       |
-| ---------- | ---------------- | --------------------------- | ----------- | ------------------------------------ |
-| files      | id               | integer                     | NO          | nextval('files_id_seq'::regclass)    |
-| files      | project_id       | integer                     | YES         | null                                 |
-| files      | author_id        | uuid                        | YES         | null                                 |
-| files      | name             | text                        | YES         | null                                 |
-| files      | type             | integer                     | YES         | null                                 |
-| files      | file_name        | text                        | YES         | null                                 |
-| files      | file_path        | text                        | YES         | null                                 |
-| files      | file_type        | text                        | YES         | null                                 |
-| files      | file_size        | bigint                      | YES         | null                                 |
-| files      | uploaded_at      | timestamp without time zone | YES         | now()                                |
-| files      | status           | text                        | YES         | 'active'::text                       |
-| profiles   | id               | uuid                        | NO          | null                                 |
-| profiles   | name             | text                        | YES         | null                                 |
-| profiles   | phone            | bigint                      | YES         | null                                 |
-| profiles   | role             | text                        | YES         | 'Client'::text                       |
-| profiles   | created          | timestamp without time zone | YES         | now()                                |
-| projects   | id               | integer                     | NO          | nextval('projects_id_seq'::regclass) |
-| projects   | author_id        | uuid                        | YES         | null                                 |
-| projects   | description      | text                        | YES         | null                                 |
-| projects   | address          | text                        | YES         | null                                 |
-| projects   | created          | timestamp without time zone | YES         | now()                                |
-| projects   | sq_ft            | integer                     | YES         | 0                                    |
-| projects   | new_construction | boolean                     | YES         | null                                 |
-| projects   | status           | integer                     | YES         | null                                 |
-| projects   | title            | text                        | YES         | null                                 |
+### Current Database Schema
 
-SELECT \* FROM pg_policies WHERE tablename = 'files';
+| table_name   | column_name      | data_type                   | is_nullable | column_default                       | description                    |
+| ------------ | ---------------- | --------------------------- | ----------- | ------------------------------------ | ------------------------------ |
+| **files**    | id               | integer                     | NO          | nextval('files_id_seq'::regclass)    | Primary key                    |
+| files        | project_id       | integer                     | YES         | null                                 | FK to projects.id              |
+| files        | author_id        | uuid                        | YES         | null                                 | FK to auth.users.id            |
+| files        | name             | text                        | YES         | null                                 | Original filename              |
+| files        | type             | integer                     | YES         | null                                 | File type code                 |
+| files        | file_name        | text                        | YES         | null                                 | Stored filename                |
+| files        | file_path        | text                        | YES         | null                                 | Storage path                   |
+| files        | file_type        | text                        | YES         | null                                 | MIME type                      |
+| files        | file_size        | bigint                      | YES         | null                                 | Size in bytes                  |
+| files        | uploaded_at      | timestamp without time zone | YES         | now()                                | Upload timestamp               |
+| files        | status           | text                        | YES         | 'active'::text                       | File status                    |
+| **profiles** | id               | uuid                        | NO          | null                                 | FK to auth.users.id            |
+| profiles     | name             | text                        | YES         | null                                 | Display name                   |
+| profiles     | phone            | text                        | YES         | null                                 | Phone number                   |
+| profiles     | role             | text                        | YES         | 'Client'::text                       | User role (Admin/Staff/Client) |
+| profiles     | created_at       | timestamp with time zone    | YES         | now()                                | Creation timestamp             |
+| profiles     | updated_at       | timestamp with time zone    | YES         | now()                                | Last update timestamp          |
+| **projects** | id               | integer                     | NO          | nextval('projects_id_seq'::regclass) | Primary key                    |
+| projects     | author_id        | uuid                        | YES         | null                                 | FK to auth.users.id (client)   |
+| projects     | assigned_to_id   | uuid                        | YES         | null                                 | FK to profiles.id (staff)      |
+| projects     | title            | text                        | YES         | null                                 | Project title                  |
+| projects     | description      | text                        | YES         | null                                 | Project description            |
+| projects     | address          | text                        | YES         | null                                 | Project address                |
+| projects     | status           | integer                     | YES         | 10                                   | Workflow status (10-220)       |
+| projects     | sq_ft            | integer                     | YES         | null                                 | Square footage                 |
+| projects     | new_construction | boolean                     | YES         | false                                | Construction type              |
+| projects     | building         | jsonb                       | YES         | null                                 | Building form data             |
+| projects     | project          | jsonb                       | YES         | null                                 | Project form data              |
+| projects     | service          | jsonb                       | YES         | null                                 | Service form data              |
+| projects     | requested_docs   | jsonb                       | YES         | null                                 | Requested documents            |
+| projects     | feature          | boolean                     | YES         | false                                | Featured on public page        |
+| projects     | created_at       | timestamp with time zone    | YES         | now()                                | Creation timestamp             |
+| projects     | updated_at       | timestamp with time zone    | YES         | now()                                | Last update timestamp          |
 
-| schemaname | tablename | policyname                  | permissive | roles    | cmd | qual               | with_check |
-| ---------- | --------- | --------------------------- | ---------- | -------- | --- | ------------------ | ---------- |
-| public     | files     | Admins full access to files | PERMISSIVE | {public} | ALL | (EXISTS ( SELECT 1 |
+### Project Status Workflow
 
-FROM profiles
-WHERE ((profiles.id = auth.uid()) AND (profiles.role = 'Admin'::text)))) | null |
-| public | files | Clients can view own files | PERMISSIVE | {public} | SELECT | ((EXISTS ( SELECT 1
-FROM profiles
-WHERE ((profiles.id = auth.uid()) AND (profiles.role = 'Client'::text)))) AND (EXISTS ( SELECT 1
-FROM projects
-WHERE ((projects.id = files.project_id) AND ((projects.author_id)::text = (auth.uid())::text))))) | null |
+| Status Code | Status Name                   | Description                      |
+| ----------- | ----------------------------- | -------------------------------- |
+| 10          | Specs Received                | Initial project submission       |
+| 20          | Generating Proposal           | Creating project proposal        |
+| 30          | Proposal Shipped              | Proposal sent to client          |
+| 40          | Proposal Viewed               | Client has viewed proposal       |
+| 50          | Proposal Signed Off           | Client approved proposal         |
+| 60          | Generating Deposit Invoice    | Creating initial invoice         |
+| 70          | Deposit Invoice Shipped       | Invoice sent to client           |
+| 80          | Deposit Invoice Viewed        | Client has viewed invoice        |
+| 90          | Deposit Invoice Paid          | Payment received                 |
+| 100         | Generating Submittals         | Creating project submittals      |
+| 110         | Submittals Shipped            | Submittals sent for review       |
+| 120         | Submittals Viewed             | Submittals under review          |
+| 130         | Submittals Signed Off         | Submittals approved              |
+| 140         | Generating Final Invoice      | Creating final invoice           |
+| 150         | Final Invoice Shipped         | Final invoice sent               |
+| 160         | Final Invoice Viewed          | Client has viewed final invoice  |
+| 170         | Final Invoice Paid            | Final payment received           |
+| 180         | Generating Final Deliverables | Creating final deliverables      |
+| 190         | Stamping Final Deliverables   | Official stamping process        |
+| 200         | Final Deliverables Shipped    | Deliverables sent to client      |
+| 210         | Final Deliverables Viewed     | Client has received deliverables |
+| 220         | Project Complete              | Project fully completed          |
+
+### Row Level Security (RLS) Policies
+
+#### Files Table Policies
+
+- **Admins full access to files**: Admins and Staff can perform all operations on files
+- **Clients can view own files**: Clients can only view files from their own projects
+
+#### Projects Table Policies
+
+- **projects_insert_own**: Users can only insert projects where they are the author
+- **projects_select_own_or_admin**: Users can see their own projects, Admins/Staff can see all
+- **projects_update_own_or_admin**: Users can update their own projects, Admins/Staff can update all
+- **projects_delete_own_or_admin**: Users can delete their own projects, Admins/Staff can delete all
+
+#### Profiles Table Policies
+
+- **Users can view their own profile**: Users can view their own profile data
+- **Users can update their own profile**: Users can update their own profile data
+- **Admins can view all profiles**: Admins and Staff can view all user profiles
+- **Admins can update all profiles**: Admins and Staff can update any profile
+- **Admins can insert profiles**: Admins and Staff can create new profiles
+
+### Key RLS Policy Notes
+
+- **Admin Role**: Full access to all data across all tables
+- **Staff Role**: Same permissions as Admin (Admin/Staff roles are equivalent)
+- **Client Role**: Access only to their own data (projects.author_id = auth.uid())
+- **Authentication Required**: All policies require valid authentication (auth.uid())
+- **Role-Based Access**: Policies check user role via profiles table join

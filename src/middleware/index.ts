@@ -1,10 +1,10 @@
 // this where the auth is handled and redirects
 //
 import { defineMiddleware } from "astro:middleware";
-import { supabase } from "../lib/supabase";
-import { setAuthCookies, clearAuthCookies } from "../lib/auth-cookies";
-import { ensureUserProfile } from "../lib/auth-utils";
 import micromatch from "micromatch";
+import { clearAuthCookies, setAuthCookies } from "../lib/auth-cookies";
+import { ensureUserProfile } from "../lib/auth-utils";
+import { supabase } from "../lib/supabase";
 
 const protectedRoutes = ["/dashboard(|/)", "/project/**"];
 const redirectRoutes = ["/signin(|/)", "/register(|/)"];
@@ -33,7 +33,7 @@ export const onRequest = defineMiddleware(async ({ locals, url, cookies, redirec
     const refreshToken = cookies.get("sb-refresh-token");
 
     if (!accessToken || !refreshToken) {
-      return redirect("/");
+      return redirect("/login");
     }
 
     const { data, error } = await supabase.auth.setSession({
@@ -43,7 +43,7 @@ export const onRequest = defineMiddleware(async ({ locals, url, cookies, redirec
 
     if (error) {
       clearAuthCookies(cookies);
-      return redirect("/");
+      return redirect("/login");
     }
 
     // Ensure user has a profile

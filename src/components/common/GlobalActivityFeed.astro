@@ -1,0 +1,504 @@
+---
+import BoxIcon from "./BoxIcon.astro";
+
+export interface Props {
+  title?: string;
+  showFilters?: boolean;
+  limit?: number;
+  class?: string;
+}
+
+const { 
+  title = "Global Activity Feed", 
+  showFilters = true, 
+  limit = 50,
+  class: className = ""
+} = Astro.props;
+---
+
+<div class={`rounded-lg border bg-white shadow-sm dark:border-gray-700 dark:bg-gray-800 ${className}`}>
+  <!-- Header -->
+  <div class="border-b border-gray-200 p-6 dark:border-gray-700">
+    <div class="flex items-center justify-between">
+      <h2 class="text-xl font-semibold text-gray-900 dark:text-white">
+        <BoxIcon name="pulse" class="mr-2 inline text-blue-600 dark:text-blue-400" />
+        {title}
+      </h2>
+      <button
+        id="refresh-global-feed"
+        class="rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
+      >
+        <BoxIcon name="refresh" class="mr-1 text-sm" />
+        Refresh
+      </button>
+    </div>
+    
+    <!-- Filter Controls -->
+    {showFilters && (
+      <div class="mt-4 flex flex-wrap gap-3">
+        <select
+          id="action-filter"
+          class="rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm text-gray-700 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300"
+        >
+          <option value="all">All Activities</option>
+          <!-- Options will be populated by JavaScript -->
+        </select>
+        
+        <input
+          type="text"
+          id="user-filter"
+          placeholder="Filter by user..."
+          class="rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm text-gray-700 placeholder-gray-400 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300 dark:placeholder-gray-500"
+        />
+        
+        <input
+          type="text"
+          id="project-filter"
+          placeholder="Filter by project..."
+          class="rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm text-gray-700 placeholder-gray-400 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300 dark:placeholder-gray-500"
+        />
+      </div>
+    )}
+  </div>
+
+  <!-- Loading State -->
+  <div id="global-feed-loading" class="flex items-center justify-center py-12">
+    <div class="flex items-center space-x-3 text-gray-500 dark:text-gray-400">
+      <div class="h-6 w-6 animate-spin rounded-full border-2 border-gray-300 border-t-blue-600"></div>
+      <span>Loading global activity...</span>
+    </div>
+  </div>
+
+  <!-- Error State -->
+  <div
+    id="global-feed-error"
+    class="hidden p-6"
+  >
+    <div class="rounded-md bg-red-50 p-4 text-red-800 dark:bg-red-900/20 dark:text-red-400">
+      <div class="flex items-center space-x-2">
+        <BoxIcon name="error-circle" class="text-lg" />
+        <span>Failed to load activity feed. <button id="retry-global-feed" class="underline hover:no-underline">Try again</button></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Empty State -->
+  <div id="global-feed-empty" class="hidden p-6">
+    <div class="py-8 text-center">
+      <BoxIcon name="info-circle" class="mx-auto mb-3 text-4xl text-gray-400 dark:text-gray-600" />
+      <h3 class="mb-2 text-lg font-medium text-gray-900 dark:text-white">No Activity Found</h3>
+      <p class="text-gray-500 dark:text-gray-400">
+        No matching activities found with the current filters.
+      </p>
+    </div>
+  </div>
+
+  <!-- Activity Feed Content -->
+  <div id="global-feed-content" class="hidden">
+    <div class="p-6">
+      <!-- Stats Summary -->
+      <div id="activity-stats" class="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <div class="rounded-lg bg-blue-50 p-4 dark:bg-blue-900/20">
+          <div class="flex items-center">
+            <BoxIcon name="activity" class="mr-2 text-blue-600 dark:text-blue-400" />
+            <div>
+              <p class="text-sm text-blue-600 dark:text-blue-400">Total Activities</p>
+              <p id="total-count" class="text-lg font-semibold text-blue-900 dark:text-blue-100">-</p>
+            </div>
+          </div>
+        </div>
+        
+        <div class="rounded-lg bg-green-50 p-4 dark:bg-green-900/20">
+          <div class="flex items-center">
+            <BoxIcon name="time" class="mr-2 text-green-600 dark:text-green-400" />
+            <div>
+              <p class="text-sm text-green-600 dark:text-green-400">Recent (24h)</p>
+              <p id="recent-count" class="text-lg font-semibold text-green-900 dark:text-green-100">-</p>
+            </div>
+          </div>
+        </div>
+        
+        <div class="rounded-lg bg-purple-50 p-4 dark:bg-purple-900/20">
+          <div class="flex items-center">
+            <BoxIcon name="group" class="mr-2 text-purple-600 dark:text-purple-400" />
+            <div>
+              <p class="text-sm text-purple-600 dark:text-purple-400">Active Users</p>
+              <p id="active-users" class="text-lg font-semibold text-purple-900 dark:text-purple-100">-</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Activity Timeline -->
+      <div id="activity-timeline" class="space-y-4">
+        <!-- Activities will be dynamically inserted here -->
+      </div>
+
+      <!-- Load More Button -->
+      <div id="load-more-container" class="mt-6 text-center">
+        <button
+          id="load-more-btn"
+          class="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
+        >
+          Load More Activities
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  interface GlobalActivity {
+    timestamp: string;
+    action: string;
+    user: string;
+    details: string;
+    old_value?: any;
+    new_value?: any;
+    project_id: number;
+    project_address: string;
+    project_title: string;
+    project_owner: string;
+    project_owner_id: string;
+  }
+
+  interface GlobalFeedResponse {
+    success: boolean;
+    activities: GlobalActivity[];
+    total: number;
+    total_all: number;
+    action_types: string[];
+    pagination: {
+      limit: number;
+      offset: number;
+      has_more: boolean;
+    };
+  }
+
+  class GlobalActivityFeedManager {
+    private currentOffset = 0;
+    private currentLimit = parseInt(document.querySelector('[data-limit]')?.getAttribute('data-limit') || '50');
+    private allActivities: GlobalActivity[] = [];
+    private actionTypes: string[] = [];
+
+    constructor() {
+      this.init();
+    }
+
+    private init() {
+      this.bindEventListeners();
+      this.loadActivities();
+    }
+
+    private bindEventListeners() {
+      // Refresh button
+      document.getElementById('refresh-global-feed')?.addEventListener('click', () => {
+        this.refreshFeed();
+      });
+
+      // Retry button
+      document.getElementById('retry-global-feed')?.addEventListener('click', () => {
+        this.loadActivities();
+      });
+
+      // Filter controls
+      document.getElementById('action-filter')?.addEventListener('change', () => {
+        this.applyFilters();
+      });
+
+      document.getElementById('user-filter')?.addEventListener('input', () => {
+        this.debounce(() => this.applyFilters(), 300)();
+      });
+
+      document.getElementById('project-filter')?.addEventListener('input', () => {
+        this.debounce(() => this.applyFilters(), 300)();
+      });
+
+      // Load more button
+      document.getElementById('load-more-btn')?.addEventListener('click', () => {
+        this.loadMoreActivities();
+      });
+    }
+
+    private debounce(func: Function, wait: number) {
+      let timeout: NodeJS.Timeout;
+      return function executedFunction(...args: any[]) {
+        const later = () => {
+          clearTimeout(timeout);
+          func(...args);
+        };
+        clearTimeout(timeout);
+        timeout = setTimeout(later, wait);
+      };
+    }
+
+    private async loadActivities(append = false) {
+      if (!append) {
+        this.showLoading();
+        this.currentOffset = 0;
+        this.allActivities = [];
+      }
+
+      try {
+        const actionFilter = (document.getElementById('action-filter') as HTMLSelectElement)?.value || 'all';
+        const url = `/api/get-global-activity-feed?limit=${this.currentLimit}&offset=${this.currentOffset}&action=${actionFilter}`;
+        
+        const response = await fetch(url);
+        const data: GlobalFeedResponse = await response.json();
+
+        if (!data.success) {
+          throw new Error('Failed to load activities');
+        }
+
+        if (append) {
+          this.allActivities = [...this.allActivities, ...data.activities];
+        } else {
+          this.allActivities = data.activities;
+          this.actionTypes = data.action_types;
+          this.populateActionFilter();
+        }
+
+        this.updateStats(data);
+        this.renderActivities();
+        this.updateLoadMoreButton(data.pagination.has_more);
+        this.showContent();
+
+      } catch (error) {
+        console.error('Error loading global activity feed:', error);
+        this.showError();
+      }
+    }
+
+    private async loadMoreActivities() {
+      this.currentOffset += this.currentLimit;
+      await this.loadActivities(true);
+    }
+
+    private refreshFeed() {
+      this.currentOffset = 0;
+      this.loadActivities();
+    }
+
+    private applyFilters() {
+      const actionFilter = (document.getElementById('action-filter') as HTMLSelectElement)?.value || 'all';
+      const userFilter = (document.getElementById('user-filter') as HTMLInputElement)?.value.toLowerCase() || '';
+      const projectFilter = (document.getElementById('project-filter') as HTMLInputElement)?.value.toLowerCase() || '';
+
+      let filtered = this.allActivities;
+
+      if (actionFilter !== 'all') {
+        filtered = filtered.filter(activity => activity.action === actionFilter);
+      }
+
+      if (userFilter) {
+        filtered = filtered.filter(activity => 
+          activity.user.toLowerCase().includes(userFilter) ||
+          activity.project_owner.toLowerCase().includes(userFilter)
+        );
+      }
+
+      if (projectFilter) {
+        filtered = filtered.filter(activity => 
+          activity.project_address.toLowerCase().includes(projectFilter) ||
+          (activity.project_title && activity.project_title.toLowerCase().includes(projectFilter))
+        );
+      }
+
+      this.renderActivities(filtered);
+      
+      if (filtered.length === 0) {
+        this.showEmpty();
+      } else {
+        this.showContent();
+      }
+    }
+
+    private populateActionFilter() {
+      const actionSelect = document.getElementById('action-filter') as HTMLSelectElement;
+      if (!actionSelect) return;
+
+      // Clear existing options except "All Activities"
+      while (actionSelect.children.length > 1) {
+        actionSelect.removeChild(actionSelect.lastChild!);
+      }
+
+      // Add action type options
+      this.actionTypes.forEach(actionType => {
+        const option = document.createElement('option');
+        option.value = actionType;
+        option.textContent = this.formatActionType(actionType);
+        actionSelect.appendChild(option);
+      });
+    }
+
+    private updateStats(data: GlobalFeedResponse) {
+      const totalCount = document.getElementById('total-count');
+      const recentCount = document.getElementById('recent-count');
+      const activeUsers = document.getElementById('active-users');
+
+      if (totalCount) totalCount.textContent = data.total_all.toString();
+
+      // Calculate recent activities (last 24 hours)
+      const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+      const recentActivities = this.allActivities.filter(activity => 
+        new Date(activity.timestamp) > oneDayAgo
+      );
+      if (recentCount) recentCount.textContent = recentActivities.length.toString();
+
+      // Calculate unique active users
+      const uniqueUsers = new Set(this.allActivities.map(activity => activity.user));
+      if (activeUsers) activeUsers.textContent = uniqueUsers.size.toString();
+    }
+
+    private renderActivities(activities = this.allActivities) {
+      const timeline = document.getElementById('activity-timeline');
+      if (!timeline) return;
+
+      timeline.innerHTML = '';
+
+      activities.forEach(activity => {
+        const activityElement = this.createActivityElement(activity);
+        timeline.appendChild(activityElement);
+      });
+    }
+
+    private createActivityElement(activity: GlobalActivity): HTMLElement {
+      const div = document.createElement('div');
+      div.className = 'flex items-start space-x-3 rounded-lg border border-gray-200 p-4 hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-750';
+
+      const icon = this.getActivityIcon(activity.action);
+      const timestamp = this.formatTimestamp(activity.timestamp);
+      const actionLabel = this.formatActionType(activity.action);
+
+      div.innerHTML = `
+        <div class="flex-shrink-0">
+          <div class="flex h-8 w-8 items-center justify-center rounded-full ${this.getActivityColor(activity.action)}">
+            <i class='bx ${icon} text-sm'></i>
+          </div>
+        </div>
+        <div class="min-w-0 flex-1">
+          <div class="flex items-center justify-between">
+            <p class="text-sm font-medium text-gray-900 dark:text-white">
+              ${actionLabel}
+            </p>
+            <p class="text-xs text-gray-500 dark:text-gray-400">${timestamp}</p>
+          </div>
+          <p class="mt-1 text-sm text-gray-600 dark:text-gray-300">${activity.details}</p>
+          <div class="mt-2 flex items-center space-x-4 text-xs text-gray-500 dark:text-gray-400">
+            <span>
+              <i class='bx bx-user mr-1'></i>
+              ${activity.user}
+            </span>
+            <a href="/project/${activity.project_id}" class="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300">
+              <i class='bx bx-building mr-1'></i>
+              ${activity.project_address}
+            </a>
+          </div>
+        </div>
+      `;
+
+      return div;
+    }
+
+    private getActivityIcon(action: string): string {
+      const iconMap: Record<string, string> = {
+        'project_created': 'bx-plus-circle',
+        'project_updated': 'bx-edit',
+        'status_change': 'bx-transfer',
+        'file_uploaded': 'bx-upload',
+        'comment_added': 'bx-message',
+        'invoice_generated': 'bx-receipt',
+        'payment_received': 'bx-dollar-circle'
+      };
+      return iconMap[action] || 'bx-info-circle';
+    }
+
+    private getActivityColor(action: string): string {
+      const colorMap: Record<string, string> = {
+        'project_created': 'bg-green-100 text-green-600 dark:bg-green-900/20 dark:text-green-400',
+        'project_updated': 'bg-blue-100 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400',
+        'status_change': 'bg-purple-100 text-purple-600 dark:bg-purple-900/20 dark:text-purple-400',
+        'file_uploaded': 'bg-yellow-100 text-yellow-600 dark:bg-yellow-900/20 dark:text-yellow-400',
+        'comment_added': 'bg-indigo-100 text-indigo-600 dark:bg-indigo-900/20 dark:text-indigo-400',
+        'invoice_generated': 'bg-orange-100 text-orange-600 dark:bg-orange-900/20 dark:text-orange-400',
+        'payment_received': 'bg-emerald-100 text-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-400'
+      };
+      return colorMap[action] || 'bg-gray-100 text-gray-600 dark:bg-gray-900/20 dark:text-gray-400';
+    }
+
+    private formatActionType(action: string): string {
+      const labelMap: Record<string, string> = {
+        'project_created': 'Project Created',
+        'project_updated': 'Project Updated', 
+        'status_change': 'Status Changed',
+        'file_uploaded': 'File Uploaded',
+        'comment_added': 'Comment Added',
+        'invoice_generated': 'Invoice Generated',
+        'payment_received': 'Payment Received'
+      };
+      return labelMap[action] || action.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+    }
+
+    private formatTimestamp(timestamp: string): string {
+      const date = new Date(timestamp);
+      const now = new Date();
+      const diffInMinutes = Math.floor((now.getTime() - date.getTime()) / (1000 * 60));
+
+      if (diffInMinutes < 1) return 'Just now';
+      if (diffInMinutes < 60) return `${diffInMinutes}m ago`;
+      
+      const diffInHours = Math.floor(diffInMinutes / 60);
+      if (diffInHours < 24) return `${diffInHours}h ago`;
+      
+      const diffInDays = Math.floor(diffInHours / 24);
+      if (diffInDays < 7) return `${diffInDays}d ago`;
+      
+      return date.toLocaleDateString();
+    }
+
+    private updateLoadMoreButton(hasMore: boolean) {
+      const container = document.getElementById('load-more-container');
+      const button = document.getElementById('load-more-btn');
+      
+      if (container && button) {
+        if (hasMore) {
+          container.style.display = 'block';
+        } else {
+          container.style.display = 'none';
+        }
+      }
+    }
+
+    private showLoading() {
+      this.hideAllStates();
+      document.getElementById('global-feed-loading')?.classList.remove('hidden');
+    }
+
+    private showError() {
+      this.hideAllStates();
+      document.getElementById('global-feed-error')?.classList.remove('hidden');
+    }
+
+    private showEmpty() {
+      this.hideAllStates();
+      document.getElementById('global-feed-empty')?.classList.remove('hidden');
+    }
+
+    private showContent() {
+      this.hideAllStates();
+      document.getElementById('global-feed-content')?.classList.remove('hidden');
+    }
+
+    private hideAllStates() {
+      document.getElementById('global-feed-loading')?.classList.add('hidden');
+      document.getElementById('global-feed-error')?.classList.add('hidden');
+      document.getElementById('global-feed-empty')?.classList.add('hidden');
+      document.getElementById('global-feed-content')?.classList.add('hidden');
+    }
+  }
+
+  // Initialize the global activity feed when the DOM is loaded
+  document.addEventListener('DOMContentLoaded', () => {
+    new GlobalActivityFeedManager();
+  });
+</script>

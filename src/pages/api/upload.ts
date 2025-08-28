@@ -1,4 +1,5 @@
 import type { APIRoute } from "astro";
+import { SimpleProjectLogger } from "../../lib/simple-logging";
 
 export const POST: APIRoute = async ({ request }) => {
   console.log("Upload API called");
@@ -142,9 +143,6 @@ export const POST: APIRoute = async ({ request }) => {
           console.error(`Error uploading ${file.name}:`, uploadError);
           console.error(`Upload error details:`, {
             message: uploadError.message,
-            statusCode: uploadError.statusCode,
-            error: uploadError.error,
-            details: uploadError.details,
           });
           throw new Error(`Failed to upload ${file.name}: ${uploadError.message}`);
         }
@@ -171,6 +169,17 @@ export const POST: APIRoute = async ({ request }) => {
           path: filePath,
           id: uploadData?.id || crypto.randomUUID(),
         });
+
+        // Log file upload
+        try {
+          // Get user ID from session (you may need to add session handling here)
+          // For now, we'll use a placeholder - this should be properly implemented
+          const userId = "system"; // This should be replaced with actual user ID from session
+          await SimpleProjectLogger.logFileUpload(parseInt(projectId), userId, file.name);
+        } catch (logError) {
+          console.error("Error logging file upload:", logError);
+          // Don't fail the upload if logging fails
+        }
       } catch (fileError) {
         console.error(`Error processing file ${file.name}:`, fileError);
         throw fileError;

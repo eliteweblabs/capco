@@ -1,15 +1,11 @@
 ---
-console.log("🔐 [LOGIN] Login page loading...");
+console.log("🔐 [LOGIN] Login/Register page loading...");
 
 import BoxIcon from "../components/common/BoxIcon.astro";
+import SectionContainer from "../components/common/SectionContainer.astro";
 import AuthForm from "../components/form/AuthForm.astro";
-import SectionContainer from "../components/SectionContainer.astro";
+import RegisterForm from "../components/form/RegisterForm.astro";
 import Base from "../layout/Base.astro";
-
-// Para cambiar idioma de textos
-import { getI18N } from "../i18n";
-const { currentLocale } = Astro;
-const i18n = getI18N({ currentLocale });
 
 // Check authentication - if logged in, redirect to dashboard
 import { checkAuth } from "../lib/auth";
@@ -18,17 +14,21 @@ const { isAuth } = await checkAuth(Astro.cookies);
 if (isAuth) {
   return Astro.redirect("/dashboard");
 }
+
+// Check for tab query parameter
+const urlParams = new URLSearchParams(Astro.url.search);
+const activeTab = urlParams.get("tab") || "login";
 ---
 
 <Base
-  title="Login - CAPCo Fire Protection"
-  description="Sign in to access your fire protection project management dashboard."
+  title="Login & Register - CAPCo Fire Protection"
+  description="Sign in or create an account to access your fire protection project management dashboard."
 >
   <!-- Features Reminder -->
   <SectionContainer class="bg-gray-50 px-6 py-16 dark:bg-gray-900">
     <div class="mx-auto max-w-4xl text-center">
       <h2 class="mb-8 text-2xl font-bold text-gray-900 dark:text-white">
-        Access Your Fire Protection Dashboard
+        Access Your CAPCo Dashboard
       </h2>
 
       <div class="grid grid-cols-1 gap-6 md:grid-cols-3">
@@ -71,10 +71,130 @@ if (isAuth) {
     </div>
   </SectionContainer>
 
-  <!-- Login Form Section -->
+  <!-- Login/Register Form Section -->
   <SectionContainer class="px-6 py-16">
     <div class="mx-auto max-w-md">
-      <AuthForm />
+      <!-- Tabs -->
+      <div class="mb-8">
+        <div class="flex rounded-lg bg-gray-100 p-1 dark:bg-gray-800">
+          <button
+            id="login-tab"
+            class={activeTab === "login"
+              ? "flex-1 rounded-md bg-white px-3 py-2 text-sm font-medium text-gray-900 shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:bg-gray-700 dark:text-white"
+              : "flex-1 rounded-md px-3 py-2 text-sm font-medium text-gray-600 transition-colors hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:text-gray-400 dark:hover:text-white"}
+            onclick="switchAuthTab('login')"
+          >
+            Sign In
+          </button>
+          <button
+            id="register-tab"
+            class={activeTab === "register"
+              ? "flex-1 rounded-md bg-white px-3 py-2 text-sm font-medium text-gray-900 shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:bg-gray-700 dark:text-white"
+              : "flex-1 rounded-md px-3 py-2 text-sm font-medium text-gray-600 transition-colors hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:text-gray-400 dark:hover:text-white"}
+            onclick="switchAuthTab('register')"
+          >
+            Create Account
+          </button>
+        </div>
+      </div>
+
+      <!-- Login Form -->
+      <div
+        id="login-form"
+        class={activeTab === "login" ? "auth-form-content" : "auth-form-content hidden"}
+      >
+        <AuthForm />
+      </div>
+
+      <!-- Register Form -->
+      <div
+        id="register-form"
+        class={activeTab === "register" ? "auth-form-content" : "auth-form-content hidden"}
+      >
+        <RegisterForm />
+      </div>
+
+      <!-- Contact Support -->
+      <div class="mt-8 space-y-4 text-center">
+        <div class="text-sm text-gray-500 dark:text-gray-400">
+          <p>
+            Need help? <button
+              type="button"
+              onclick="triggerSMSForm()"
+              class="cursor-pointer text-blue-600 underline hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
+              >Contact our support team</button
+            >
+          </p>
+        </div>
+      </div>
     </div>
   </SectionContainer>
 </Base>
+
+<script>
+  // Global function for tab switching
+  (window as any).switchAuthTab = function (tab: "login" | "register") {
+    const loginTab = document.getElementById("login-tab");
+    const registerTab = document.getElementById("register-tab");
+    const loginForm = document.getElementById("login-form");
+    const registerForm = document.getElementById("register-form");
+
+    if (!loginTab || !registerTab || !loginForm || !registerForm) return;
+
+    if (tab === "login") {
+      // Active login tab
+      loginTab.className =
+        "flex-1 rounded-md px-3 py-2 text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 bg-white text-gray-900 shadow-sm dark:bg-gray-700 dark:text-white";
+      registerTab.className =
+        "flex-1 rounded-md px-3 py-2 text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white";
+
+      // Show/hide forms
+      loginForm.classList.remove("hidden");
+      registerForm.classList.add("hidden");
+
+      // Update URL without reload
+      const url = new URL(window.location.href);
+      url.searchParams.set("tab", "login");
+      window.history.replaceState({}, "", url.toString());
+    } else {
+      // Active register tab
+      registerTab.className =
+        "flex-1 rounded-md px-3 py-2 text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 bg-white text-gray-900 shadow-sm dark:bg-gray-700 dark:text-white";
+      loginTab.className =
+        "flex-1 rounded-md px-3 py-2 text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white";
+
+      // Show/hide forms
+      registerForm.classList.remove("hidden");
+      loginForm.classList.add("hidden");
+
+      // Update URL without reload
+      const url = new URL(window.location.href);
+      url.searchParams.set("tab", "register");
+      window.history.replaceState({}, "", url.toString());
+    }
+
+    console.log(`🔐 [LOGIN] Switched to ${tab} tab`);
+  };
+
+  // Initialize tab state on page load (in case JavaScript executes before server-side rendering is complete)
+  document.addEventListener("DOMContentLoaded", function () {
+    const urlParams = new URLSearchParams(window.location.search);
+    const activeTab = urlParams.get("tab") || "login";
+
+    if (activeTab === "register") {
+      (window as any).switchAuthTab("register");
+      console.log("🔐 [LOGIN] Auto-switched to register tab from URL parameter");
+    }
+  });
+
+  // Global function to trigger SMS form
+  (window as any).triggerSMSForm = function () {
+    const smsToggleBtn = document.getElementById("sms-toggle-btn");
+    if (smsToggleBtn) {
+      smsToggleBtn.click();
+      console.log("📱 [LOGIN] SMS form triggered from contact support link");
+    } else {
+      console.warn("📱 [LOGIN] SMS toggle button not found");
+    }
+  };
+</script>

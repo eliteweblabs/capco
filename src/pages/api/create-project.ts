@@ -1,4 +1,5 @@
 import type { APIRoute } from "astro";
+import { SimpleProjectLogger } from "../../lib/simple-logging";
 import { supabase } from "../../lib/supabase";
 
 export const POST: APIRoute = async ({ request, cookies }) => {
@@ -82,6 +83,8 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       JSON.stringify(projectData, null, 2)
     );
 
+    // Note: No complex setup needed for simple logging
+
     // Create project
     const { data: projects, error } = await supabase!
       .from("projects")
@@ -102,6 +105,15 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     }
 
     const project = projects[0]; // Get the first (and should be only) project
+
+    // Log the project creation with simple logging
+    try {
+      const userEmail = session.session.user.email || "unknown";
+      await SimpleProjectLogger.logProjectCreation(project.id, userEmail, projectData);
+    } catch (logError) {
+      console.error("Error logging project creation:", logError);
+      // Don't fail the request if logging fails
+    }
 
     return new Response(JSON.stringify(project), {
       status: 201,

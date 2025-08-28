@@ -25,6 +25,7 @@ export interface FormFieldConfig {
   component?: string; // Component name to render (e.g., "UnitSlider")
   componentProps?: Record<string, any>; // Props to pass to the component
   allow?: string[]; // Control field visibility based on user roles - array of allowed roles
+  displayOnNew?: boolean; // Control field visibility for new projects - true = show on new projects, false = hide on new projects, undefined = show on both
 }
 
 export interface ButtonGroupConfig {
@@ -35,6 +36,7 @@ export interface ButtonGroupConfig {
   cssClass: string;
   options: { value: string; label: string }[];
   allow?: string[]; // Control button group visibility based on user roles - array of allowed roles
+  displayOnNew?: boolean; // Control button group visibility for new projects - true = show on new projects, false = hide on new projects, undefined = show on both
 }
 
 export interface FormActionConfig {
@@ -45,6 +47,8 @@ export interface FormActionConfig {
   cssClass: string;
   action?: string; // Function name or action identifier
   allow?: string[]; // Control button visibility based on user roles - array of allowed roles
+  status?: number[]; // Control button visibility based on project status - array of allowed status values
+  displayOnNew?: boolean; // Control button visibility for new projects - true = show on new projects, false = hide on new projects, undefined = show on both
 }
 
 // Helper function to check if a field or button group should be allowed based on user role
@@ -65,23 +69,30 @@ export function isAllowed(
   return item.allow.some((allowedRole) => allowedRole.toLowerCase() === normalizedUserRole);
 }
 
+// Helper function to check if a button should be shown based on project status
+export function isStatusAllowed(action: FormActionConfig, projectStatus?: number | null): boolean {
+  if (!action.status) return true; // If no status array specified, allow for all statuses
+  if (projectStatus === null || projectStatus === undefined) return false; // If no status provided but status array exists, deny access
+  return action.status.includes(projectStatus);
+}
+
+// Helper function to check if an item should be shown based on new/existing project state
+export function isDisplayOnNewAllowed(
+  item: FormFieldConfig | ButtonGroupConfig | FormActionConfig,
+  isNewProject: boolean
+): boolean {
+  if (item.displayOnNew === undefined) return true; // If not specified, show on both new and existing projects
+  return item.displayOnNew === isNewProject; // Show only if displayOnNew matches isNewProject
+}
+
 // Function to get filtered form fields based on user role
 export function getFilteredFormFields(
   userRole?: string | null,
   isNewProject: boolean = false
 ): FormFieldConfig[] {
-  let fields = PROJECT_FORM_FIELDS.filter((field) => isAllowed(field, userRole));
-
-  // For existing projects, hide all client-related fields
-  if (!isNewProject) {
-    fields = fields.filter(
-      (field) => !["owner", "owner_email", "author_id", "new_client"].includes(field.name)
-    );
-  } else {
-    // For new projects, keep owner and email fields in DOM but they'll be hidden via CSS initially
-    // (they'll be shown via JavaScript based on toggle)
-    // Remove the filter so these fields are included in the form
-  }
+  let fields = PROJECT_FORM_FIELDS.filter(
+    (field) => isAllowed(field, userRole) && isDisplayOnNewAllowed(field, isNewProject)
+  );
 
   return fields;
 }
@@ -91,13 +102,9 @@ export function getFilteredButtonGroups(
   userRole?: string | null,
   isNewProject: boolean = false
 ): ButtonGroupConfig[] {
-  let groups = BUTTON_GROUPS.filter((group) => isAllowed(group, userRole));
-
-  // For new projects, you could hide certain button groups if needed
-  if (isNewProject) {
-    // Currently all button groups are shown for new projects
-    // You can add logic here to hide specific groups for new projects
-  }
+  let groups = BUTTON_GROUPS.filter(
+    (group) => isAllowed(group, userRole) && isDisplayOnNewAllowed(group, isNewProject)
+  );
 
   return groups;
 }
@@ -105,20 +112,18 @@ export function getFilteredButtonGroups(
 // Function to get filtered form actions based on user role and project state
 export function getFilteredFormActions(
   userRole?: string | null,
-  isNewProject: boolean = false
+  isNewProject: boolean = false,
+  projectStatus?: number | null
 ): FormActionConfig[] {
-  let actions = FORM_ACTIONS.filter((action) => isAllowed(action, userRole));
+  let actions = FORM_ACTIONS.filter(
+    (action) =>
+      isAllowed(action, userRole) &&
+      isStatusAllowed(action, projectStatus) &&
+      isDisplayOnNewAllowed(action, isNewProject)
+  );
 
-  // For new projects, hide delete and estimate buttons
+  // Change "Save Project" to "Create Project" for new projects
   if (isNewProject) {
-    actions = actions.filter(
-      (action) =>
-        action.id !== "delete-project" &&
-        action.id !== "build-estimate" &&
-        action.id !== "edit-estimate"
-    );
-
-    // Change "Save Project" to "Create Project" for new projects
     actions = actions.map((action) => {
       if (action.id === "save-project") {
         return {
@@ -143,6 +148,7 @@ export const PROJECT_FORM_FIELDS: FormFieldConfig[] = [
     type: "checkbox",
     label: "New Client",
     allow: ["admin", "staff"], // Only admin and staff can set client type
+    displayOnNew: true, // Only show on new projects
   },
   {
     id: "address-input",
@@ -164,6 +170,7 @@ export const PROJECT_FORM_FIELDS: FormFieldConfig[] = [
     required: true,
     dataField: "owner",
     allow: ["admin", "staff", "client"], // All roles can see owner
+    displayOnNew: true, // Only show on new projects
   },
   // Owner email field (only shown for new projects with new client toggle on)
   {
@@ -175,6 +182,7 @@ export const PROJECT_FORM_FIELDS: FormFieldConfig[] = [
     required: true,
     dataField: "owner_email",
     allow: ["admin", "staff"], // Only admin and staff can set email
+    displayOnNew: true, // Only show on new projects
   },
   // Existing client dropdown (only shown for new projects with new client toggle off)
   {
@@ -186,6 +194,7 @@ export const PROJECT_FORM_FIELDS: FormFieldConfig[] = [
     required: true,
     options: [], // Will be populated dynamically
     allow: ["admin", "staff"], // Only admin and staff can select clients
+    displayOnNew: true, // Only show on new projects
   },
   {
     id: "architect-input",
@@ -258,6 +267,8 @@ export const FORM_ACTIONS: FormActionConfig[] = [
     cssClass:
       "px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors",
     allow: ["admin", "staff", "client"], // All roles can save
+    // No status restriction - can save project at any status
+    // displayOnNew undefined - shows on both new and existing projects
   },
   {
     id: "delete-project",
@@ -268,26 +279,32 @@ export const FORM_ACTIONS: FormActionConfig[] = [
       "px-4 py-2 bg-red-600 text-white text-sm font-medium rounded-lg hover:bg-red-700 transition-colors",
     action: "deleteProject",
     allow: ["admin", "staff"], // Only admin and staff can delete
+    status: [10, 20, 30, 40, 50], // Can only delete before proposal is signed off (status 50)
+    displayOnNew: false, // Hide on new projects
   },
   {
-    id: "build-estimate",
+    id: "build-proposal",
     type: "button",
-    label: "Build Estimate",
+    label: "Build Proposal",
     icon: "bx-file-pdf",
     cssClass:
       "px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 transition-colors",
-    action: "buildEstimate",
-    allow: ["admin", "staff"], // Only admin and staff can build estimates
+    action: "buildProposal",
+    allow: ["admin", "staff"], // Only admin and staff can build proposals
+    status: [10], // Only available when specs are received (status 10)
+    displayOnNew: false, // Hide on new projects
   },
   {
-    id: "edit-estimate",
+    id: "edit-proposal",
     type: "button",
-    label: "Edit Estimate",
+    label: "Edit Proposal",
     icon: "bx-edit",
     cssClass:
       "px-4 py-2 bg-purple-600 text-white text-sm font-medium rounded-lg hover:bg-purple-700 transition-colors",
-    action: "editEstimate",
-    allow: ["admin", "staff"], // Only admin and staff can edit estimates
+    action: "editProposal",
+    allow: ["admin", "staff"], // Only admin and staff can edit proposals
+    status: [20, 30, 40], // Available from generating proposal through proposal viewed, before sign off
+    displayOnNew: false, // Hide on new projects
   },
 ];
 
