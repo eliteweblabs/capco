@@ -72,7 +72,7 @@ console.log("Owner fields found:", ownerFieldsInForm.length, ownerFieldsInForm);
 <form
   class="space-y-4"
   data-project-id={formId}
-  data-project-data={JSON.stringify(project)}
+  data-project-data={JSON.stringify(project || {})}
   data-is-new-project={isNewProject}
 >
   <!-- New Client Toggle (Top of Form) -->
@@ -81,10 +81,10 @@ console.log("Owner fields found:", ownerFieldsInForm.length, ownerFieldsInForm);
       .filter((field) => field.name === "new_client")
       .map((field) => {
         const isChecked =
-          project[field.name] === true ||
-          project[field.name] === "true" ||
-          project[field.name] === 1 ||
-          project[field.name] === "1";
+          project?.[field.name] === true ||
+          project?.[field.name] === "true" ||
+          project?.[field.name] === 1 ||
+          project?.[field.name] === "1";
         return (
           <div class="relative">
             <label class="inline-flex items-center cursor-pointer">
@@ -95,7 +95,7 @@ console.log("Owner fields found:", ownerFieldsInForm.length, ownerFieldsInForm);
                 checked={isChecked}
                 class="sr-only peer"
                 data-project-id={formId}
-                data-project-data={JSON.stringify(project)}
+                data-project-data={JSON.stringify(project || {})}
               />
               <div class="relative w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600 dark:peer-checked:bg-blue-600" />
               <span class="ms-3 text-sm font-medium text-gray-900 dark:text-gray-300">
@@ -124,13 +124,13 @@ console.log("Owner fields found:", ownerFieldsInForm.length, ownerFieldsInForm);
             type="text"
             id={`owner-${formId}`}
             name="owner"
-            value={project.owner || ""}
+            value={project?.owner || ""}
             class="w-full py-2 px-3 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:focus:ring-blue-400 dark:focus:border-blue-400"
             placeholder="Owner *"
             required={false}
             data-field="owner"
             data-project-id={formId}
-            data-project-data={JSON.stringify(project)}
+            data-project-data={JSON.stringify(project || {})}
           />
         </div>
 
@@ -146,13 +146,13 @@ console.log("Owner fields found:", ownerFieldsInForm.length, ownerFieldsInForm);
             type="email"
             id={`owner-email-${formId}`}
             name="owner_email"
-            value={project.owner_email || ""}
+            value={project?.owner_email || ""}
             class="w-full py-2 px-3 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:focus:ring-blue-400 dark:focus:border-blue-400"
             placeholder="owner@example.com"
             required={false}
             data-field="owner_email"
             data-project-id={formId}
-            data-project-data={JSON.stringify(project)}
+            data-project-data={JSON.stringify(project || {})}
           />
         </div>
       </div>
@@ -162,7 +162,7 @@ console.log("Owner fields found:", ownerFieldsInForm.length, ownerFieldsInForm);
     <!-- Existing Client Selection using ClientSelect component -->
     <div id="existing-client-container" class="relative">
       <ClientSelect
-        selectedUserId={project.author_id || ""}
+        selectedUserId={project?.author_id || ""}
         name="author_id"
         id="existing-client-select"
         label="Select Existing Client"
@@ -190,7 +190,7 @@ console.log("Owner fields found:", ownerFieldsInForm.length, ownerFieldsInForm);
             type={field.type === "number" ? "number" : "text"}
             id={`${field.id}-${formId}`}
             name={field.name}
-            value={project[field.name] || ""}
+            value={project?.[field.name] || ""}
             class="w-full py-2 px-3 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:focus:ring-blue-400 dark:focus:border-blue-400"
             placeholder={field.placeholder || ""}
             required={field.required}
@@ -199,7 +199,7 @@ console.log("Owner fields found:", ownerFieldsInForm.length, ownerFieldsInForm);
             step={field.step}
             data-field={field.dataField}
             data-project-id={formId}
-            data-project-data={JSON.stringify(project)}
+            data-project-data={JSON.stringify(project || {})}
           />
         </div>
       ))
@@ -229,7 +229,7 @@ console.log("Owner fields found:", ownerFieldsInForm.length, ownerFieldsInForm);
               type={field.type === "number" ? "number" : "text"}
               id={`${field.id}-${formId}`}
               name={field.name}
-              value={project[field.name] || ""}
+              value={project?.[field.name] || ""}
               class="w-full py-2 px-3 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:focus:ring-blue-400 dark:focus:border-blue-400"
               placeholder={field.placeholder || ""}
               required={field.required}
@@ -238,7 +238,7 @@ console.log("Owner fields found:", ownerFieldsInForm.length, ownerFieldsInForm);
               step={field.step}
               data-field={field.dataField}
               data-project-id={formId}
-              data-project-data={JSON.stringify(project)}
+              data-project-data={JSON.stringify(project || {})}
             />
           </div>
         ))
@@ -264,9 +264,9 @@ console.log("Owner fields found:", ownerFieldsInForm.length, ownerFieldsInForm);
             class="w-full py-2 px-3 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:focus:ring-blue-400 dark:focus:border-blue-400"
             placeholder={field.placeholder || ""}
             data-project-id={formId}
-            data-project-data={JSON.stringify(project)}
+            data-project-data={JSON.stringify(project || {})}
           >
-            {project[field.name] || ""}
+            {project?.[field.name] || ""}
           </textarea>
         </div>
       ))
@@ -282,7 +282,7 @@ console.log("Owner fields found:", ownerFieldsInForm.length, ownerFieldsInForm);
             id={`${field.id}-${formId}`}
             name={field.name}
             label={field.label}
-            value={project[field.name] || ""}
+            value={project?.[field.name] || ""}
           />
         </div>
       ))
@@ -305,10 +305,10 @@ console.log("Owner fields found:", ownerFieldsInForm.length, ownerFieldsInForm);
             )
             .map((field) => {
               const isChecked =
-                project[field.name] === true ||
-                project[field.name] === "true" ||
-                project[field.name] === 1 ||
-                project[field.name] === "1";
+                project?.[field.name] === true ||
+                project?.[field.name] === "true" ||
+                project?.[field.name] === 1 ||
+                project?.[field.name] === "1";
               return (
                 <label class="inline-flex items-center cursor-pointer">
                   <input
@@ -318,7 +318,7 @@ console.log("Owner fields found:", ownerFieldsInForm.length, ownerFieldsInForm);
                     checked={isChecked}
                     class="sr-only peer"
                     data-project-id={formId}
-                    data-project-data={JSON.stringify(project)}
+                    data-project-data={JSON.stringify(project || {})}
                   />
                   <div class="relative w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600 dark:peer-checked:bg-blue-600" />
                   <span class="ms-3 text-sm font-medium text-gray-900 dark:text-gray-300">
@@ -332,7 +332,7 @@ console.log("Owner fields found:", ownerFieldsInForm.length, ownerFieldsInForm);
     </div>
 
     <!-- Units Slider -->
-    <UnitSlider projectId={formId} value={project.units || 1} />
+    <UnitSlider projectId={formId} value={project?.units || 1} />
   </div>
 
   <!-- Button Groups -->
@@ -340,7 +340,7 @@ console.log("Owner fields found:", ownerFieldsInForm.length, ownerFieldsInForm);
     buttonGroups.map((group) => {
       // Parse selected values from project data
       let selectedValues: string[] = [];
-      if (project[group.name]) {
+      if (project?.[group.name]) {
         if (Array.isArray(project[group.name])) {
           selectedValues = project[group.name];
         } else if (typeof project[group.name] === "string") {
@@ -730,27 +730,6 @@ console.log("Owner fields found:", ownerFieldsInForm.length, ownerFieldsInForm);
   function editEstimate(projectId: string) {
     console.log("Editing estimate for project:", projectId);
     // Add edit estimate logic here
-  }
-
-  // Reset form function
-  function resetForm() {
-    if (
-      confirm(
-        "Are you sure you want to reset the form? All unsaved changes will be lost."
-      )
-    ) {
-      // Show info toast
-      if ((window as any).toastAlertManager) {
-        (window as any).toastAlertManager.show({
-          type: "info",
-          title: "Form Reset",
-          message: "Form has been reset to its original state.",
-          duration: 3000,
-        });
-      }
-
-      window.location.reload();
-    }
   }
 
   // Form submission handler
