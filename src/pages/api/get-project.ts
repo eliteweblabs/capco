@@ -37,8 +37,13 @@ export const GET: APIRoute = async ({ request }) => {
       );
     }
 
-    // Build query based on role
-    let query = supabase.from("projects").select("*");
+    // Build query based on role - include author profile information
+    let query = supabase
+      .from("projects")
+      .select(`
+        *,
+        author_profile:profiles!projects_author_id_fkey(name)
+      `);
 
     if (role === "Admin") {
       // Admin gets all projects
@@ -46,7 +51,7 @@ export const GET: APIRoute = async ({ request }) => {
     } else if (role === "Staff") {
       // Staff gets projects where assigned_to matches user_id
       console.log("📡 [API] Staff role - fetching projects assigned to user:", userId);
-      query = query.eq("assigned_to", userId);
+      query = query.eq("assigned_to_id", userId);
     } else {
       // Client gets projects where author_id matches user_id
       console.log("📡 [API] Client role - fetching projects authored by user:", userId);
@@ -72,13 +77,21 @@ export const GET: APIRoute = async ({ request }) => {
       );
     }
 
-    console.log("📡 [API] Projects fetched:", projects?.length || 0);
+    // Flatten author profile data for easier access
+    const processedProjects = projects?.map(project => ({
+      ...project,
+      author_name: project.author_profile?.name || null,
+      // Remove the nested object to keep the response clean
+      author_profile: undefined
+    })) || [];
+
+    console.log("📡 [API] Projects fetched:", processedProjects.length);
 
     return new Response(
       JSON.stringify({
         success: true,
-        projects: projects || [],
-        count: projects?.length || 0,
+        projects: processedProjects,
+        count: processedProjects.length,
         role: role,
         user_id: userId,
       }),
