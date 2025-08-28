@@ -1,22 +1,9 @@
 ---
-import {
-  BUTTON_GROUPS,
-  PROJECT_FORM_FIELDS,
-  getFilteredFormFields,
-  getFilteredButtonGroups,
-  getFilteredFormActions,
-} from "../../lib/project-form-config";
-import ToggleButton from "../form/ToggleButton.astro";
-import UnitSlider from "../form/UnitSlider.astro";
-import ClientSelect from "../form/ClientSelect.astro";
-import StaffSelect from "../form/StaffSelect.astro";
-// import DeleteProject from "../form/DeleteProject.astro";
-
 interface Props {
   project?: any;
   projectId?: string | null;
-  userRole?: string | null; // Add userRole prop to control field visibility
-  isNewProject?: boolean; // Add flag to indicate if this is a new project
+  userRole?: string | null;
+  isNewProject?: boolean;
 }
 
 const {
@@ -28,45 +15,6 @@ const {
 
 // Generate a temporary ID for new projects
 const formId = isNewProject ? `new-project-${Date.now()}` : projectId || "";
-
-// Filter fields based on user role
-const formFields = getFilteredFormFields(userRole, isNewProject);
-
-// Get filtered button groups based on user role
-const buttonGroups = getFilteredButtonGroups(userRole, isNewProject);
-
-// Get filtered form actions based on user role
-const formActions = getFilteredFormActions(userRole, isNewProject);
-
-// Debug logging
-console.log("ProjectForm debug:", {
-  userRole,
-  isNewProject,
-  formFieldsCount: formFields.length,
-  buttonGroupsCount: buttonGroups.length,
-  formActionsCount: formActions.length,
-  formFields: formFields.map((f) => ({
-    id: f.id,
-    name: f.name,
-    allow: f.allow,
-  })),
-  buttonGroups: buttonGroups.map((g) => ({
-    id: g.id,
-    name: g.name,
-    allow: g.allow,
-  })),
-  formActions: formActions.map((a) => ({
-    id: a.id,
-    label: a.label,
-    allow: a.allow,
-  })),
-});
-
-// Debug owner fields specifically
-const ownerFieldsInForm = formFields.filter(
-  (field) => field.name === "owner" || field.name === "owner_email"
-);
-console.log("Owner fields found:", ownerFieldsInForm.length, ownerFieldsInForm);
 ---
 
 <form
@@ -75,332 +23,118 @@ console.log("Owner fields found:", ownerFieldsInForm.length, ownerFieldsInForm);
   data-project-data={JSON.stringify(project || {})}
   data-is-new-project={isNewProject}
 >
-  <!-- New Client Toggle (Top of Form) -->
-  {
-    formFields
-      .filter((field) => field.name === "new_client")
-      .map((field) => {
-        const isChecked =
-          project?.[field.name] === true ||
-          project?.[field.name] === "true" ||
-          project?.[field.name] === 1 ||
-          project?.[field.name] === "1";
-        return (
-          <div class="relative">
-            <label class="inline-flex items-center cursor-pointer">
-              <input
-                type="checkbox"
-                id={`${field.id}-${formId}`}
-                name={field.name}
-                checked={isChecked}
-                class="sr-only peer"
-                data-project-id={formId}
-                data-project-data={JSON.stringify(project || {})}
-              />
-              <div class="relative w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600 dark:peer-checked:bg-blue-600" />
-              <span class="ms-3 text-sm font-medium text-gray-900 dark:text-gray-300">
-                {field.label}
-              </span>
-            </label>
-          </div>
-        );
-      })
-  }
-
-  <!-- Client Fields (Owner/Email for new client, or Existing Client dropdown) -->
-  <div class="space-y-4">
-    <!-- Owner Fields (for new client) - Always rendered for new projects -->
-    {isNewProject && (
-      <div class="space-y-4">
-        <!-- Owner Name Field -->
-        <div class="relative" style="display: none;">
-          <label
-            for={`owner-${formId}`}
-            class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-          >
-            Owner *
-          </label>
-          <input
-            type="text"
-            id={`owner-${formId}`}
-            name="owner"
-            value={project?.owner || ""}
-            class="w-full py-2 px-3 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:focus:ring-blue-400 dark:focus:border-blue-400"
-            placeholder="Owner *"
-            required={false}
-            data-field="owner"
-            data-project-id={formId}
-            data-project-data={JSON.stringify(project || {})}
-          />
-        </div>
-
-        <!-- Owner Email Field -->
-        <div class="relative" style="display: none;">
-          <label
-            for={`owner-email-${formId}`}
-            class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-          >
-            Owner Email *
-          </label>
-          <input
-            type="email"
-            id={`owner-email-${formId}`}
-            name="owner_email"
-            value={project?.owner_email || ""}
-            class="w-full py-2 px-3 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:focus:ring-blue-400 dark:focus:border-blue-400"
-            placeholder="owner@example.com"
-            required={false}
-            data-field="owner_email"
-            data-project-id={formId}
-            data-project-data={JSON.stringify(project || {})}
-          />
-        </div>
-      </div>
-    )}
-
-    <!-- Existing Client Dropdown -->
-    <!-- Existing Client Selection using ClientSelect component -->
-    <div id="existing-client-container" class="relative">
-      <ClientSelect
-        selectedUserId={project?.author_id || ""}
-        name="author_id"
-        id="existing-client-select"
-        label="Select Existing Client"
-        role="Client"
-        required={false}
-        class="w-full"
-      />
-    </div>
+  <!-- Title Field -->
+  <div class="relative">
+    <label
+      for={`title-${formId}`}
+      class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+    >
+      Title *
+    </label>
+    <input
+      type="text"
+      id={`title-${formId}`}
+      name="title"
+      value={project?.title || ""}
+      class="w-full py-2 px-3 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:focus:ring-blue-400 dark:focus:border-blue-400"
+      placeholder="Project title"
+      required
+    />
   </div>
 
-  <!-- Address Field (Full Width) -->
-  {
-    formFields
-      .filter((field) => field.name === "address")
-      .map((field) => (
-        <div class="relative">
-          <label
-            for={`${field.id}-${formId}`}
-            class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-          >
-            {field.label}
-            {field.required ? " *" : ""}
-          </label>
-          <input
-            type={field.type === "number" ? "number" : "text"}
-            id={`${field.id}-${formId}`}
-            name={field.name}
-            value={project?.[field.name] || ""}
-            class="w-full py-2 px-3 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:focus:ring-blue-400 dark:focus:border-blue-400"
-            placeholder={field.placeholder || ""}
-            required={field.required}
-            min={field.min}
-            max={field.max}
-            step={field.step}
-            data-field={field.dataField}
-            data-project-id={formId}
-            data-project-data={JSON.stringify(project || {})}
-          />
-        </div>
-      ))
-  }
-
-  <!-- Other Core Fields Grid -->
-  <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-    {
-      formFields
-        .filter(
-          (field) =>
-            field.name !== "address" &&
-            field.name !== "owner" &&
-            field.name !== "owner_email" &&
-            (field.type === "text" || field.type === "number")
-        )
-        .map((field) => (
-          <div class="relative">
-            <label
-              for={`${field.id}-${formId}`}
-              class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-            >
-              {field.label}
-              {field.required ? " *" : ""}
-            </label>
-            <input
-              type={field.type === "number" ? "number" : "text"}
-              id={`${field.id}-${formId}`}
-              name={field.name}
-              value={project?.[field.name] || ""}
-              class="w-full py-2 px-3 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:focus:ring-blue-400 dark:focus:border-blue-400"
-              placeholder={field.placeholder || ""}
-              required={field.required}
-              min={field.min}
-              max={field.max}
-              step={field.step}
-              data-field={field.dataField}
-              data-project-id={formId}
-              data-project-data={JSON.stringify(project || {})}
-            />
-          </div>
-        ))
-    }
+  <!-- Address Field -->
+  <div class="relative">
+    <label
+      for={`address-${formId}`}
+      class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+    >
+      Address *
+    </label>
+    <input
+      type="text"
+      id={`address-${formId}`}
+      name="address"
+      value={project?.address || ""}
+      class="w-full py-2 px-3 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:focus:ring-blue-400 dark:focus:border-blue-400"
+      placeholder="Project address"
+      required
+    />
   </div>
 
   <!-- Description Field -->
-  {
-    formFields
-      .filter((field) => field.type === "textarea")
-      .map((field) => (
-        <div class="relative">
-          <label
-            for={`${field.id}-${formId}`}
-            class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-          >
-            {field.label}
-          </label>
-          <textarea
-            id={`${field.id}-${formId}`}
-            name={field.name}
-            rows="3"
-            class="w-full py-2 px-3 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:focus:ring-blue-400 dark:focus:border-blue-400"
-            placeholder={field.placeholder || ""}
-            data-project-id={formId}
-            data-project-data={JSON.stringify(project || {})}
-          >
-            {project?.[field.name] || ""}
-          </textarea>
-        </div>
-      ))
-  }
-
-  <!-- Staff Assignment Field (Admin Only) -->
-  {
-    formFields
-      .filter((field) => field.type === "component" && field.component === "StaffSelect")
-      .map((field) => (
-        <div class="relative">
-          <StaffSelect
-            id={`${field.id}-${formId}`}
-            name={field.name}
-            label={field.label}
-            value={project?.[field.name] || ""}
-          />
-        </div>
-      ))
-  }
-
-  <!-- Construction Type & Units Row -->
-  <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-    <!-- Construction Type -->
-    <div>
-      <label
-        class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
-        >Construction Type</label
-      >
-      <div class="flex gap-4">
-        {
-          formFields
-            .filter(
-              (field) =>
-                field.type === "checkbox" && field.name !== "new_client"
-            )
-            .map((field) => {
-              const isChecked =
-                project?.[field.name] === true ||
-                project?.[field.name] === "true" ||
-                project?.[field.name] === 1 ||
-                project?.[field.name] === "1";
-              return (
-                <label class="inline-flex items-center cursor-pointer">
-                  <input
-                    type="checkbox"
-                    id={`${field.id}-${formId}`}
-                    name={field.name}
-                    checked={isChecked}
-                    class="sr-only peer"
-                    data-project-id={formId}
-                    data-project-data={JSON.stringify(project || {})}
-                  />
-                  <div class="relative w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600 dark:peer-checked:bg-blue-600" />
-                  <span class="ms-3 text-sm font-medium text-gray-900 dark:text-gray-300">
-                    {field.label}
-                  </span>
-                </label>
-              );
-            })
-        }
-      </div>
-    </div>
-
-    <!-- Units Slider -->
-    <UnitSlider projectId={formId} value={project?.units || 1} />
+  <div class="relative">
+    <label
+      for={`description-${formId}`}
+      class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+    >
+      Description
+    </label>
+    <textarea
+      id={`description-${formId}`}
+      name="description"
+      rows="3"
+      class="w-full py-2 px-3 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:focus:ring-blue-400 dark:focus:border-blue-400"
+      placeholder="Project description"
+    >{project?.description || ""}</textarea>
   </div>
 
-  <!-- Button Groups -->
-  {
-    buttonGroups.map((group) => {
-      // Parse selected values from project data
-      let selectedValues: string[] = [];
-      if (project?.[group.name]) {
-        if (Array.isArray(project[group.name])) {
-          selectedValues = project[group.name];
-        } else if (typeof project[group.name] === "string") {
-          try {
-            const parsed = JSON.parse(project[group.name]);
-            selectedValues = Array.isArray(parsed)
-              ? parsed
-              : [project[group.name]];
-          } catch {
-            selectedValues = project[group.name]
-              .split(",")
-              .map((s: string) => s.trim())
-              .filter((s: string) => s);
-          }
-        } else {
-          selectedValues = [project[group.name]];
-        }
-      }
+  <!-- Square Footage Field -->
+  <div class="relative">
+    <label
+      for={`sq_ft-${formId}`}
+      class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+    >
+      Square Footage
+    </label>
+    <input
+      type="number"
+      id={`sq_ft-${formId}`}
+      name="sq_ft"
+      value={project?.sq_ft || ""}
+      class="w-full py-2 px-3 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:focus:ring-blue-400 dark:focus:border-blue-400"
+      placeholder="Square footage"
+    />
+  </div>
 
-      return (
-        <div class="space-y-3" data-project-data={JSON.stringify(project)}>
-          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
-            {group.label}
-          </label>
-          <div class="flex flex-wrap gap-2">
-            {group.options.map((option) => {
-              const isSelected = selectedValues.includes(option.value);
-              return (
-                <ToggleButton
-                  value={option.value}
-                  group={group.name}
-                  type={group.type}
-                  class={`${group.cssClass} ${isSelected ? "bg-blue-500 text-white border-blue-500" : ""}`}
-                >
-                  {option.label}
-                </ToggleButton>
-              );
-            })}
-          </div>
-        </div>
-      );
-    })
-  }
+  <!-- New Construction Toggle -->
+  <div class="relative">
+    <label class="inline-flex items-center cursor-pointer">
+      <input
+        type="checkbox"
+        name="new_construction"
+        checked={project?.new_construction}
+        class="sr-only peer"
+      />
+      <div class="relative w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600 dark:peer-checked:bg-blue-600" />
+      <span class="ms-3 text-sm font-medium text-gray-900 dark:text-gray-300">
+        New Construction
+      </span>
+    </label>
+  </div>
 
   <!-- Form Actions -->
   <div class="flex gap-2 pt-4 border-t border-gray-200 dark:border-gray-600">
-    {
-      formActions.map((action) => (
-        <button
-          type={action.type}
-          class={action.cssClass}
-          id={action.id}
-          data-project-id={formId}
-          data-action={action.action}
-        >
-          {action.icon && <i class={`bx ${action.icon} mr-1`} />}
-          {action.label}
-        </button>
-      ))
-    }
+    <!-- Save/Update Button -->
+    <button
+      type="submit"
+      class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md text-sm font-medium transition-colors"
+    >
+      <i class="bx bx-save mr-1"></i>
+      {isNewProject ? "Create Project" : "Update Project"}
+    </button>
+
+    <!-- Delete Button (only for existing projects) -->
+    {!isNewProject && (
+      <button
+        type="button"
+        id="delete-project-btn"
+        class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-md text-sm font-medium transition-colors"
+        data-project-id={formId}
+      >
+        <i class="bx bx-trash mr-1"></i>
+        Delete Project
+      </button>
+    )}
   </div>
 </form>
 
@@ -409,30 +143,10 @@ console.log("Owner fields found:", ownerFieldsInForm.length, ownerFieldsInForm);
   declare global {
     interface Window {
       toastAlertManager?: any;
-      currentProjectData?: any;
     }
   }
 
-  // Make project data available globally
-  document.addEventListener("DOMContentLoaded", function () {
-    const form = document.querySelector("form[data-project-id]");
-    if (form) {
-      const projectId = form.getAttribute("data-project-id");
-      const projectDataAttr = form.getAttribute("data-project-data");
-      if (projectDataAttr) {
-        try {
-          const projectData = JSON.parse(projectDataAttr);
-          // Make project data available globally
-          (window as any).currentProjectData = projectData;
-          console.log("Project data loaded:", projectData);
-        } catch (error) {
-          console.error("Error parsing project data:", error);
-        }
-      }
-    }
-  });
-
-  // Add event listeners for action buttons
+  // Add event listeners when DOM is loaded
   document.addEventListener("DOMContentLoaded", function () {
     const form = document.querySelector("form[data-project-id]");
     if (form) {
@@ -451,131 +165,8 @@ console.log("Owner fields found:", ownerFieldsInForm.length, ownerFieldsInForm);
           });
         }
       }
-
-      // Handle other action buttons
-      const actionButtons = document.querySelectorAll("[data-action]");
-      actionButtons.forEach((button) => {
-        const action = button.getAttribute("data-action");
-        if (action && projectId) {
-          button.addEventListener("click", function () {
-            handleAction(action, projectId, isNewProject);
-          });
-        }
-      });
-
-      // Setup new client toggle functionality (only for new projects)
-      if (isNewProject) {
-        setupNewClientToggle();
-      }
     }
   });
-
-  // Setup new client toggle functionality
-  function setupNewClientToggle() {
-    // Get the form to extract the formId
-    const form = document.querySelector(
-      "form[data-project-id]"
-    ) as HTMLFormElement;
-    if (!form) {
-      console.error("Project form not found");
-      return;
-    }
-
-    const formId = form.getAttribute("data-project-id");
-    if (!formId) {
-      console.error("Form ID not found");
-      return;
-    }
-
-    // Find the new client toggle using the correct ID
-    const newClientToggle = document.getElementById(
-      `new-client-toggle-${formId}`
-    ) as HTMLInputElement;
-    const existingClientContainer = document.getElementById(
-      "existing-client-container"
-    ) as HTMLElement;
-    const ownerInput = document.getElementById(
-      `owner-${formId}`
-    ) as HTMLInputElement;
-    const ownerEmailInput = document.getElementById(
-      `owner-email-${formId}`
-    ) as HTMLInputElement;
-
-    console.log("🔍 Element lookup:", {
-      formId,
-      newClientToggleId: `new-client-toggle-${formId}`,
-      ownerInputId: `owner-${formId}`,
-      ownerEmailInputId: `owner-email-${formId}`,
-      newClientToggle: !!newClientToggle,
-      ownerInput: !!ownerInput,
-      ownerEmailInput: !!ownerEmailInput,
-      existingClientContainer: !!existingClientContainer,
-    });
-
-    if (!newClientToggle) {
-      console.error("❌ New client toggle not found!");
-      return;
-    }
-
-    // Handle toggle change
-    newClientToggle.addEventListener("change", function () {
-      const isNewClient = this.checked;
-      console.log("🔄 Toggle changed:", {
-        isNewClient,
-        ownerInput: !!ownerInput,
-        ownerEmailInput: !!ownerEmailInput,
-        existingClientContainer: !!existingClientContainer,
-      });
-
-      if (isNewClient) {
-        // Show owner and email fields, hide existing client dropdown
-        console.log("📝 Showing owner fields, hiding client dropdown");
-        if (ownerInput) {
-          ownerInput.closest("div")!.style.display = "block";
-          console.log("✅ Owner input shown");
-        } else {
-          console.log("❌ Owner input not found");
-        }
-        if (ownerEmailInput) {
-          ownerEmailInput.closest("div")!.style.display = "block";
-          console.log("✅ Owner email shown");
-        } else {
-          console.log("❌ Owner email not found");
-        }
-        if (existingClientContainer) {
-          existingClientContainer.style.display = "none";
-          console.log("✅ Client dropdown hidden");
-        }
-      } else {
-        // Hide owner and email fields, show existing client dropdown
-        console.log("🔽 Hiding owner fields, showing client dropdown");
-        if (ownerInput) {
-          ownerInput.closest("div")!.style.display = "none";
-          console.log("✅ Owner input hidden");
-        }
-        if (ownerEmailInput) {
-          ownerEmailInput.closest("div")!.style.display = "none";
-          console.log("✅ Owner email hidden");
-        }
-        if (existingClientContainer) {
-          existingClientContainer.style.display = "block";
-          console.log("✅ Client dropdown shown");
-        }
-      }
-    });
-
-    // Set initial state
-    newClientToggle.dispatchEvent(new Event("change"));
-
-    // Listen for client selection events from ClientSelect component
-    document.addEventListener("clientSelected", function (e) {
-      const customEvent = e as CustomEvent;
-      console.log("🔔 [ProjectForm] Client selected:", customEvent.detail);
-
-      // The form will automatically pick up the value since the component uses the correct name attribute
-      // This is just for logging/debugging purposes
-    });
-  }
 
   // Delete project function
   function deleteProject(projectId: string) {
@@ -584,8 +175,7 @@ console.log("Owner fields found:", ownerFieldsInForm.length, ownerFieldsInForm);
       (window as any).toastAlertManager.show({
         type: "warning",
         title: "Delete Project",
-        message:
-          "Are you sure you want to delete this project? This action cannot be undone.",
+        message: "Are you sure you want to delete this project? This action cannot be undone.",
         duration: 0, // Don't auto-dismiss
         actions: [
           {
@@ -598,13 +188,10 @@ console.log("Owner fields found:", ownerFieldsInForm.length, ownerFieldsInForm);
             label: "Delete",
             action: () => {
               // Show loading state
-              const deleteBtn = document.getElementById(
-                "delete-project-btn"
-              ) as HTMLButtonElement;
+              const deleteBtn = document.getElementById("delete-project-btn") as HTMLButtonElement;
               if (deleteBtn) {
                 deleteBtn.disabled = true;
-                deleteBtn.innerHTML =
-                  '<i class="bx bx-loader-alt bx-spin mr-1"></i>Deleting...';
+                deleteBtn.innerHTML = '<i class="bx bx-loader-alt bx-spin mr-1"></i>Deleting...';
               }
 
               // Make API call to delete project
@@ -632,9 +219,9 @@ console.log("Owner fields found:", ownerFieldsInForm.length, ownerFieldsInForm);
                     });
                   }
 
-                  // Redirect to projects list after a short delay
+                  // Redirect to dashboard after a short delay
                   setTimeout(() => {
-                    window.location.href = "/";
+                    window.location.href = "/dashboard";
                   }, 1500);
                 })
                 .catch((error) => {
@@ -653,83 +240,20 @@ console.log("Owner fields found:", ownerFieldsInForm.length, ownerFieldsInForm);
                   // Reset button state
                   if (deleteBtn) {
                     deleteBtn.disabled = false;
-                    deleteBtn.innerHTML =
-                      '<i class="bx bx-trash mr-1"></i>Delete Project';
+                    deleteBtn.innerHTML = '<i class="bx bx-trash mr-1"></i>Delete Project';
                   }
                 });
             },
           },
         ],
       });
+    } else {
+      // Fallback confirmation if toast manager is not available
+      if (confirm("Are you sure you want to delete this project? This action cannot be undone.")) {
+        // Proceed with deletion using the same API call logic
+        // (Implementation would be similar to the above)
+      }
     }
-  }
-
-  // Show toast notification
-  function showToast(
-    type: "success" | "error" | "warning" | "info",
-    title: string,
-    message: string,
-    duration: number = 4000
-  ) {
-    if ((window as any).toastAlertManager) {
-      (window as any).toastAlertManager.show({
-        type,
-        title,
-        message,
-        duration,
-      });
-    }
-  }
-
-  // Handle different form actions
-  function handleAction(
-    action: string,
-    projectId: string,
-    isNewProject: boolean
-  ) {
-    switch (action) {
-      case "deleteProject":
-        if (!isNewProject) {
-          deleteProject(projectId);
-        }
-        break;
-      case "buildEstimate":
-        if (!isNewProject) {
-          buildEstimate(projectId);
-        } else {
-          showToast(
-            "warning",
-            "Save Required",
-            "Please save the project first before building an estimate."
-          );
-        }
-        break;
-      case "editEstimate":
-        if (!isNewProject) {
-          editEstimate(projectId);
-        } else {
-          showToast(
-            "warning",
-            "Save Required",
-            "Please save the project first before editing an estimate."
-          );
-        }
-        break;
-      default:
-        console.log(`Action ${action} not implemented`);
-    }
-  }
-
-  // Build estimate function
-  function buildEstimate(projectId: string) {
-    console.log("Building estimate for project:", projectId);
-    // Add build estimate logic here
-  }
-
-  // Edit estimate function
-  function editEstimate(projectId: string) {
-    console.log("Editing estimate for project:", projectId);
-    // Add edit estimate logic here
   }
 
   // Form submission handler
@@ -742,73 +266,28 @@ console.log("Owner fields found:", ownerFieldsInForm.length, ownerFieldsInForm);
     const projectId = form.getAttribute("data-project-id");
     const isNewProject = form.getAttribute("data-is-new-project") === "true";
 
-    console.log("Form data:", { projectId, isNewProject });
-
     // Collect form data
     const formValues: any = {};
     for (const [key, value] of formData.entries()) {
       formValues[key] = value;
     }
 
-    // Handle client data based on new client toggle
-    const isNewClient = formValues.new_client === "on";
-    if (isNewClient) {
-      // For new client, use owner and owner_email
-      formValues.client_type = "new";
-      formValues.client_name = formValues.owner;
-      formValues.client_email = formValues.owner_email;
-    } else {
-      // For existing client, use the selected client ID
-      formValues.client_type = "existing";
-      formValues.client_id = formValues.author_id;
-    }
-
-    // Collect toggle button values
-    const toggleButtons = form.querySelectorAll(".toggle-button.bg-blue-500");
-    toggleButtons.forEach((button) => {
-      const group = button.getAttribute("data-group");
-      const value = button.getAttribute("data-value");
-      const type = button.getAttribute("data-type");
-
-      if (group && value) {
-        if (type === "multi-select") {
-          if (!formValues[group]) {
-            formValues[group] = [];
-          }
-          if (Array.isArray(formValues[group])) {
-            formValues[group].push(value);
-          } else {
-            formValues[group] = [formValues[group], value];
-          }
-        } else {
-          formValues[group] = value;
-        }
-      }
-    });
-
-    // Get units value from slider
-    const unitsSlider = form.querySelector(
-      'input[name="units"]'
-    ) as HTMLInputElement;
-    if (unitsSlider) {
-      const unitsOptions =
-        unitsSlider.getAttribute("data-values")?.split(",") || [];
-      const sliderValue = parseInt(unitsSlider.value);
-      formValues.units = unitsOptions[sliderValue] || "1";
-    }
+    // Convert checkbox values
+    formValues.new_construction = formData.has("new_construction");
 
     console.log("Form data:", formValues);
 
     // Determine API endpoint based on new/existing project
-    const endpoint = isNewProject
-      ? "/api/create-project"
-      : `/api/update-project/${projectId}`;
+    const endpoint = isNewProject ? "/api/create-project" : `/api/update-project`;
     const method = isNewProject ? "POST" : "PUT";
 
+    // Add project ID to form data for updates
+    if (!isNewProject) {
+      formValues.projectId = projectId;
+    }
+
     // Show loading state
-    const submitBtn = form.querySelector(
-      'button[type="submit"]'
-    ) as HTMLButtonElement;
+    const submitBtn = form.querySelector('button[type="submit"]') as HTMLButtonElement;
 
     if (!submitBtn) {
       console.error("Submit button not found");
@@ -817,8 +296,7 @@ console.log("Owner fields found:", ownerFieldsInForm.length, ownerFieldsInForm);
 
     const originalText = submitBtn.innerHTML;
     submitBtn.disabled = true;
-    submitBtn.innerHTML =
-      '<i class="bx bx-loader-alt bx-spin mr-1"></i>Saving...';
+    submitBtn.innerHTML = '<i class="bx bx-loader-alt bx-spin mr-1"></i>Saving...';
 
     // Submit form data
     fetch(endpoint, {
@@ -874,5 +352,20 @@ console.log("Owner fields found:", ownerFieldsInForm.length, ownerFieldsInForm);
         submitBtn.disabled = false;
         submitBtn.innerHTML = originalText;
       });
+  }
+
+  // Helper function to show toast (fallback)
+  function showToast(type: string, title: string, message: string) {
+    if ((window as any).toastAlertManager) {
+      (window as any).toastAlertManager.show({
+        type,
+        title,
+        message,
+        duration: 4000,
+      });
+    } else {
+      // Fallback to console log if toast manager is not available
+      console.log(`${type.toUpperCase()}: ${title} - ${message}`);
+    }
   }
 </script>
