@@ -1,8 +1,16 @@
 ---
-const { class: className } = Astro.props;
+const { class: className, 'data-count': count, ...props } = Astro.props;
 ---
 
-<button class="px-4 py-2 text-sm w-auto rounded-full
-    hover:text-hub-title" {...Astro.props}>
+<button 
+  class="px-4 py-2 text-sm w-auto rounded-full hover:text-hub-title relative"
+  data-count={count || "0"}
+  {...props}
+>
   <slot />
+  {count && parseInt(count) > 0 && (
+    <span class="absolute -top-2 -right-2 bg-blue-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-medium">
+      {count}
+    </span>
+  )}
 </button>

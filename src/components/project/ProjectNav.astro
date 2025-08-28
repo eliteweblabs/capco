@@ -12,28 +12,56 @@ const { isAuth, user, role } = await checkAuth(Astro.cookies);
 
 // Fetch project_statuses from API
 let project_statuses: any[] = [];
+let projects: any[] = [];
+let statusCounts: Record<string, number> = {};
 
 try {
-  const response = await fetch(`${Astro.url.origin}/api/get-project-statuses`, {
+  // Fetch project statuses
+  const statusResponse = await fetch(`${Astro.url.origin}/api/get-project-statuses`, {
     method: "GET",
     headers: {
       "Content-Type": "application/json",
     },
   });
 
-  if (response.ok) {
-    const result = await response.json();
+  if (statusResponse.ok) {
+    const result = await statusResponse.json();
     if (result.success) {
-      // console.log("🏗️ [PROJECT NAV] Project statuses:", result.statuses);
       project_statuses = Object.values(result.statuses || {});
     } else {
       console.error("API returned error:", result.error);
     }
   } else {
-    console.error("Failed to fetch project_statuses:", response.status);
+    console.error("Failed to fetch project_statuses:", statusResponse.status);
+  }
+
+  // Fetch projects to calculate counts (only if user is authenticated)
+  if (isAuth && user) {
+    const projectsResponse = await fetch(`${Astro.url.origin}/api/get-project`, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        "user_id": user.id,
+        "role": role || "Client",
+      },
+    });
+
+    if (projectsResponse.ok) {
+      const projectsResult = await projectsResponse.json();
+      if (projectsResult.success) {
+        projects = projectsResult.projects || [];
+        
+        // Calculate status counts
+        statusCounts = {};
+        projects.forEach((project) => {
+          const status = project.status?.toString() || "10";
+          statusCounts[status] = (statusCounts[status] || 0) + 1;
+        });
+      }
+    }
   }
 } catch (error) {
-  console.error("Error fetching project_statuses:", error);
+  console.error("Error fetching data:", error);
 }
 ---
 
@@ -41,7 +69,12 @@ try {
   id="sub-nav"
   class="scrollbar-hide relative flex gap-1 overflow-x-auto whitespace-nowrap text-hub-inactive dark:border-hub-border-dark"
 >
-  <ProjectNavButton id="all-statuses" label="All Statuses" icon="bx bx-list-ul">
+  <ProjectNavButton 
+    id="all-statuses" 
+    label="All Statuses" 
+    icon="bx bx-list-ul"
+    data-count={projects.length.toString()}
+  >
     All Statuses
   </ProjectNavButton>
 
@@ -53,6 +86,7 @@ try {
             <ProjectNavButton
               label={status.status_name}
               data-project-status-filter={status.status_code}
+              data-count={(statusCounts[status.status_code] || 0).toString()}
             >
               {status.status_name}
             </ProjectNavButton>
@@ -136,6 +170,68 @@ try {
       // Add active class to clicked button
       activeButton.classList.remove("text-hub-inactive");
       activeButton.classList.add("bg-blue-500", "text-white", "border-blue-500");
+    }
+
+    // Function to update count bubbles based on visible projects
+    function updateCountBubbles() {
+      const projectsList = document.getElementById("projects-list");
+      if (!projectsList || !subNav) return;
+
+      const allProjects = projectsList.querySelectorAll("[data-project-status]");
+      const visibleProjects = projectsList.querySelectorAll('[data-project-status]:not([style*="display: none"])');
+      const statusCounts: Record<string, number> = {};
+
+      // Count visible projects by status
+      visibleProjects.forEach((project) => {
+        const htmlProject = project as HTMLElement;
+        const status = htmlProject.dataset.projectStatus || "10";
+        statusCounts[status] = (statusCounts[status] || 0) + 1;
+      });
+
+      // Update each nav button's count
+      const navButtons = subNav.querySelectorAll("button");
+      navButtons.forEach((button) => {
+        const htmlButton = button as HTMLButtonElement;
+        const statusFilter = htmlButton.dataset.projectStatusFilter;
+        const isAllStatuses = htmlButton.id === "all-statuses";
+        
+        let count = 0;
+        if (isAllStatuses) {
+          count = visibleProjects.length;
+        } else if (statusFilter) {
+          count = statusCounts[statusFilter] || 0;
+        }
+
+        // Update the count display
+        const countSpan = htmlButton.querySelector('span.absolute');
+        if (countSpan) {
+          countSpan.textContent = count.toString();
+          // Hide if count is 0
+          if (count === 0) {
+            countSpan.style.display = 'none';
+          } else {
+            countSpan.style.display = 'flex';
+          }
+        }
+      });
+    }
+
+    // Update counts when page loads
+    updateCountBubbles();
+
+    // Listen for project list changes to update counts
+    const observer = new MutationObserver(() => {
+      updateCountBubbles();
+    });
+
+    const projectsList = document.getElementById("projects-list");
+    if (projectsList) {
+      observer.observe(projectsList, {
+        childList: true,
+        subtree: true,
+        attributes: true,
+        attributeFilter: ['style']
+      });
     }
 
     // Handle URL hash on page load
