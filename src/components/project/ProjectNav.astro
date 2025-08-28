@@ -116,15 +116,13 @@ try {
         const filterValue = this.getAttribute("data-project-status-filter");
         filterProjectsByStatus(filterValue);
         updateActiveButton(this);
-        
-        // Scroll to the project list section
-        const projectList = document.getElementById("project-list");
-        if (projectList) {
-          projectList.scrollIntoView({
-            behavior: "smooth",
-            block: "start",
-          });
-        }
+
+        // Center the active button in the navigation
+        this.scrollIntoView({
+          behavior: "smooth",
+          block: "nearest",
+          inline: "center",
+        });
       });
     });
 
@@ -133,15 +131,13 @@ try {
       allStatusesButton.addEventListener("click", function (this: HTMLButtonElement) {
         filterProjectsByStatus("all");
         updateActiveButton(this);
-        
-        // Scroll to the project list section instead of the button
-        const projectList = document.getElementById("project-list");
-        if (projectList) {
-          projectList.scrollIntoView({
-            behavior: "smooth",
-            block: "start",
-          });
-        }
+
+        // Center the active button in the navigation
+        this.scrollIntoView({
+          behavior: "smooth",
+          block: "nearest",
+          inline: "center",
+        });
       });
     }
 
@@ -151,22 +147,17 @@ try {
         const projectStatus = item.getAttribute("data-project-status");
 
         if (statusFilter === "all" || statusFilter === projectStatus) {
-          // Show project
-          (item as HTMLElement).style.display = "block";
-          (item as HTMLElement).style.opacity = "1";
+          // Show project (but check if it's hidden by search)
+          if (!(item as HTMLElement).classList.contains("hidden")) {
+            (item as HTMLElement).style.display = "block";
+            (item as HTMLElement).style.opacity = "1";
+          }
         } else {
           // Hide project
           (item as HTMLElement).style.display = "none";
           (item as HTMLElement).style.opacity = "0";
         }
       });
-
-      // Update URL hash for bookmarking
-      if (statusFilter && statusFilter !== "all") {
-        window.location.hash = `status=${statusFilter}`;
-      } else {
-        window.location.hash = "";
-      }
     }
 
     // Update active button styling
@@ -185,26 +176,31 @@ try {
       activeButton.classList.add("bg-blue-500", "text-white", "border-blue-500");
     }
 
-    // Function to update count bubbles based on visible projects
-    function updateCountBubbles() {
-      const projectsList = document.getElementById("projects-list");
-      if (!projectsList || !subNav) return;
+    // Function to update count bubbles - only changes during search, not status filtering
+    function updateCountBubblesForSearch() {
+      console.log("🔢 [ProjectNav] updateCountBubblesForSearch called");
+      const projectsList = document.getElementById("project-list");
+      if (!projectsList || !subNav) {
+        console.log("❌ [ProjectNav] Missing projectsList or subNav");
+        return;
+      }
 
-      const allProjects = projectsList.querySelectorAll("[data-project-status]");
-      const visibleProjects = projectsList.querySelectorAll(
-        '[data-project-status]:not([style*="display: none"])'
+      // Only count projects that are not hidden by search (ignore status filter)
+      const searchVisibleProjects = projectsList.querySelectorAll(
+        "[data-project-status]:not(.hidden)"
       );
+      console.log("🔢 [ProjectNav] Found", searchVisibleProjects.length, "search-visible projects");
       const statusCounts: Record<string, number> = {};
 
-      // Count visible projects by status
-      visibleProjects.forEach((project) => {
+      // Count search-visible projects by status
+      searchVisibleProjects.forEach((project) => {
         const htmlProject = project as HTMLElement;
         const status = htmlProject.dataset.projectStatus || "10";
         statusCounts[status] = (statusCounts[status] || 0) + 1;
       });
 
       // Update each nav button's count
-      const navButtons = subNav.querySelectorAll("button");
+      const navButtons = subNav?.querySelectorAll("button") || [];
       navButtons.forEach((button) => {
         const htmlButton = button as HTMLButtonElement;
         const statusFilter = htmlButton.dataset.projectStatusFilter;
@@ -212,7 +208,7 @@ try {
 
         let count = 0;
         if (isAllStatuses) {
-          count = visibleProjects.length;
+          count = searchVisibleProjects.length;
         } else if (statusFilter) {
           count = statusCounts[statusFilter] || 0;
         }
@@ -231,49 +227,132 @@ try {
       });
     }
 
+    // Function to restore original count bubbles (when search is cleared)
+    function restoreOriginalCountBubbles() {
+      const projectsList = document.getElementById("project-list");
+      if (!projectsList || !subNav) return;
+
+      // Count all projects by status (ignore all filters)
+      const allProjects = projectsList.querySelectorAll("[data-project-status]");
+      const statusCounts: Record<string, number> = {};
+
+      allProjects.forEach((project) => {
+        const htmlProject = project as HTMLElement;
+        const status = htmlProject.dataset.projectStatus || "10";
+        statusCounts[status] = (statusCounts[status] || 0) + 1;
+      });
+
+      // Update each nav button's count back to original values
+      const navButtons = subNav?.querySelectorAll("button") || [];
+      navButtons.forEach((button) => {
+        const htmlButton = button as HTMLButtonElement;
+        const statusFilter = htmlButton.dataset.projectStatusFilter;
+        const isAllStatuses = htmlButton.id === "all-statuses";
+
+        let count = 0;
+        if (isAllStatuses) {
+          count = allProjects.length;
+        } else if (statusFilter) {
+          count = statusCounts[statusFilter] || 0;
+        }
+
+        // Update the count display
+        const countSpan = htmlButton.querySelector("span.absolute");
+        if (countSpan) {
+          countSpan.textContent = count.toString();
+          // Hide if count is 0
+          if (count === 0) {
+            (countSpan as HTMLElement).style.display = "none";
+          } else {
+            (countSpan as HTMLElement).style.display = "flex";
+          }
+        }
+      });
+    }
+
+    // Make functions globally available for search component
+    if (typeof window !== "undefined") {
+      (window as any).updateCountBubblesForSearch = updateCountBubblesForSearch;
+      (window as any).restoreOriginalCountBubbles = restoreOriginalCountBubbles;
+    }
+
     // Update counts when page loads
-    updateCountBubbles();
+    restoreOriginalCountBubbles();
 
     // Listen for project list changes to update counts
     const observer = new MutationObserver(() => {
-      updateCountBubbles();
+      restoreOriginalCountBubbles();
     });
 
-    const projectsList = document.getElementById("projects-list");
+    const projectsList = document.getElementById("project-list");
     if (projectsList) {
       observer.observe(projectsList, {
         childList: true,
         subtree: true,
         attributes: true,
-        attributeFilter: ["style"],
+        attributeFilter: ["style", "class"],
       });
     }
 
-    // Handle URL hash on page load
+    // Function to handle search state and disable nav when searching
+    function handleSearchState() {
+      const searchInput = document.getElementById("project-search");
+      if (!searchInput || !subNav) return;
+
+      const hasSearchValue = searchInput.value && searchInput.value.trim().length > 0;
+      const navButtons = subNav.querySelectorAll("button");
+
+      if (hasSearchValue) {
+        // Disable navigation when searching
+        navButtons.forEach((button) => {
+          button.disabled = true;
+          button.style.opacity = "0.5";
+          button.style.cursor = "not-allowed";
+          button.setAttribute("title", "Status filters are disabled while searching");
+        });
+      } else {
+        // Re-enable navigation when not searching
+        navButtons.forEach((button) => {
+          button.disabled = false;
+          button.style.opacity = "1";
+          button.style.cursor = "pointer";
+          button.removeAttribute("title");
+        });
+      }
+    }
+
+    // Monitor search input changes
+    function setupSearchMonitoring() {
+      const searchInput = document.getElementById("project-search");
+      if (searchInput) {
+        // Check on input change
+        searchInput.addEventListener("input", handleSearchState);
+
+        // Check on focus/blur
+        searchInput.addEventListener("focus", handleSearchState);
+        searchInput.addEventListener("blur", handleSearchState);
+
+        // Initial check
+        handleSearchState();
+      }
+
+      // Also check periodically in case search is updated by other components
+      setInterval(handleSearchState, 500);
+    }
+
+    // Handle initial filter on page load
     function handleInitialFilter() {
       if (!subNav) return;
 
-      const hash = window.location.hash;
-      if (hash && hash.includes("status=")) {
-        const statusMatch = hash.match(/status=([^&]+)/);
-        if (statusMatch) {
-          const statusFilter = statusMatch[1];
-          const targetButton = subNav.querySelector(
-            `[data-project-status-filter="${statusFilter}"]`
-          );
-          if (targetButton) {
-            filterProjectsByStatus(statusFilter);
-            updateActiveButton(targetButton);
-            return;
-          }
-        }
-      }
-
-      // Default to "All Statuses"
+      // Always default to "All Statuses" on page load
       if (allStatusesButton) {
         updateActiveButton(allStatusesButton);
+        filterProjectsByStatus("all");
       }
     }
+
+    // Initialize search monitoring
+    setupSearchMonitoring();
 
     // Initialize filter on page load
     handleInitialFilter();

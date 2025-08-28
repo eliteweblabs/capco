@@ -47,13 +47,11 @@ const {
   </div>
 </div>
 
-<script>
-  import { globalServices } from "../../lib/global-services";
-
+<script define:vars={{ id }}>
   document.addEventListener("DOMContentLoaded", async () => {
-    const selectElement = document.getElementById("staff-select") as HTMLSelectElement;
-    const loadingElement = document.getElementById("staff-select-loading");
-    const errorElement = document.getElementById("staff-select-error");
+    const selectElement = document.getElementById(id);
+    const loadingElement = document.getElementById(`${id}-loading`);
+    const errorElement = document.getElementById(`${id}-error`);
     
     if (!selectElement) return;
 
@@ -78,7 +76,7 @@ const {
         selectElement.innerHTML = `<option value="">${selectElement.options[0].text}</option>`;
         
         // Add staff options
-        result.staffUsers.forEach((staff: any) => {
+        result.staffUsers.forEach((staff) => {
           const option = document.createElement("option");
           option.value = staff.id;
           option.textContent = staff.name;
@@ -96,7 +94,8 @@ const {
         console.error("🧑‍💼 [STAFF-SELECT] Failed to load staff:", result.error);
         if (errorElement) {
           errorElement.classList.remove("hidden");
-          errorElement.querySelector("p")!.textContent = result.error || "Failed to load staff members";
+          const errorText = errorElement.querySelector("p");
+          if (errorText) errorText.textContent = result.error || "Failed to load staff members";
         }
       }
     } catch (error) {
@@ -111,7 +110,7 @@ const {
 
     // Handle selection changes
     selectElement.addEventListener("change", (e) => {
-      const target = e.target as HTMLSelectElement;
+      const target = e.target;
       const selectedValue = target.value;
       const selectedText = target.options[target.selectedIndex]?.text || "Unassigned";
       
@@ -121,10 +120,20 @@ const {
       });
 
       // Emit assignment change event
-      globalServices.emit("project:assignment-changed", {
-        assignedToId: selectedValue || null,
-        assignedToName: selectedText === "Select staff member..." ? "Unassigned" : selectedText
-      });
+      if (window.globalServices) {
+        window.globalServices.emit("project:assignment-changed", {
+          assignedToId: selectedValue || null,
+          assignedToName: selectedText === "Select staff member..." ? "Unassigned" : selectedText
+        });
+      } else {
+        // Fallback: dispatch custom event
+        document.dispatchEvent(new CustomEvent("project:assignment-changed", {
+          detail: {
+            assignedToId: selectedValue || null,
+            assignedToName: selectedText === "Select staff member..." ? "Unassigned" : selectedText
+          }
+        }));
+      }
     });
   });
 </script>

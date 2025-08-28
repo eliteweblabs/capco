@@ -4,9 +4,10 @@
 
 export interface Props {
   compact?: boolean;
+  id?: string;
 }
 
-const { compact = false } = Astro.props;
+const { compact = false, id = "sms-form" } = Astro.props;
 ---
 
 <div class={compact ? "w-full" : "mx-auto w-full max-w-lg"}>
@@ -26,12 +27,12 @@ const { compact = false } = Astro.props;
     
     <!-- Contact Information (Optional) -->
     <div>
-      <label for="contact_info" class="mb-2 block text-sm font-medium text-gray-900 dark:text-gray-300">
+      <label for={`${id}-contact-info`} class="mb-2 block text-sm font-medium text-gray-900 dark:text-gray-300">
         Your Contact Info (Optional)
       </label>
       <input
         type="text"
-        id="contact_info"
+        id={`${id}-contact-info`}
         name="contact_info"
         placeholder="Your name, email, or phone for response"
         class="w-full rounded-md border border-gray-300 bg-gray-50 px-3 py-2 text-sm focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-600 focus:ring-opacity-60 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 dark:focus:bg-gray-900"
@@ -43,11 +44,11 @@ const { compact = false } = Astro.props;
 
     <!-- Message -->
     <div>
-      <label for="message" class="mb-2 block text-sm font-medium text-gray-900 dark:text-gray-300">
+      <label for={`${id}-message`} class="mb-2 block text-sm font-medium text-gray-900 dark:text-gray-300">
         Message <span class="text-red-500">*</span>
       </label>
       <textarea
-        id="message"
+        id={`${id}-message`}
         name="message"
         required
         rows="4"
@@ -57,21 +58,21 @@ const { compact = false } = Astro.props;
       ></textarea>
       <div class="mt-1 flex justify-between">
         <p class="text-xs text-gray-500 dark:text-gray-400">Keep it short for better delivery</p>
-        <span id="char-count" class="text-xs text-gray-500 dark:text-gray-400">0/160</span>
+        <span id={`${id}-char-count`} class="text-xs text-gray-500 dark:text-gray-400">0/160</span>
       </div>
     </div>
 
     <!-- Optional: Project Reference -->
     <div>
       <label
-        for="project_id"
+        for={`${id}-project-id`}
         class="mb-2 block text-sm font-medium text-gray-900 dark:text-gray-300"
       >
         Project ID (Optional)
       </label>
       <input
         type="text"
-        id="project_id"
+        id={`${id}-project-id`}
         name="project_id"
         placeholder="e.g., PROJ-123"
         class="w-full rounded-md border border-gray-300 bg-gray-50 px-3 py-2 text-sm focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-600 focus:ring-opacity-60 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 dark:focus:bg-gray-900"
@@ -122,13 +123,11 @@ const { compact = false } = Astro.props;
   )}
 </div>
 
-<script>
-  import { globalServices } from "../../lib/global-services";
-
+<script define:vars={{ id }}>
   document.addEventListener("DOMContentLoaded", () => {
     const form = document.querySelector('form[action="/api/send-email-sms"]');
-    const messageTextarea = document.getElementById("message") as HTMLTextAreaElement;
-    const charCount = document.getElementById("char-count");
+    const messageTextarea = document.getElementById(`${id}-message`);
+    const charCount = document.getElementById(`${id}-char-count`);
 
     // Character counter for message
     if (messageTextarea && charCount) {
@@ -155,27 +154,31 @@ const { compact = false } = Astro.props;
     // Form submission handling
     if (form) {
       form.addEventListener("submit", (e) => {
-        const message = (form.querySelector("#message") as HTMLTextAreaElement)?.value;
+        const message = form.querySelector(`#${id}-message`)?.value;
 
         // Client-side validation - only check message since phone/carrier are hardcoded
         if (!message || message.trim().length === 0) {
           e.preventDefault();
-          globalServices.showNotification({
-            type: "error",
-            title: "Message Required",
-            message: "Please enter a message to send.",
-            duration: 5000,
-          });
+          if (window.globalServices) {
+            window.globalServices.showNotification({
+              type: "error",
+              title: "Message Required",
+              message: "Please enter a message to send.",
+              duration: 5000,
+            });
+          }
           return;
         }
 
         // Show loading notification
-        globalServices.showNotification({
-          type: "info",
-          title: "Sending Message...",
-          message: "Please wait while we send your message to CAPCo.",
-          duration: 3000,
-        });
+        if (window.globalServices) {
+          window.globalServices.showNotification({
+            type: "info",
+            title: "Sending Message...",
+            message: "Please wait while we send your message to CAPCo.",
+            duration: 3000,
+          });
+        }
       });
     }
   });

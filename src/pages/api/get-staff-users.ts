@@ -129,7 +129,7 @@ export const GET: APIRoute = async ({ request }) => {
         {
           status: 403,
           headers: { "Content-Type": "application/json" },
-        },
+        }
       );
       */
     }
