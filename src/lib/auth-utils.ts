@@ -29,13 +29,16 @@ export async function ensureUserProfile(user: User): Promise<void> {
       return;
     }
 
-    // Create profile with enhanced data
+    // Create profile with enhanced data - prioritize display_name
     const firstName = user.user_metadata?.first_name || "";
     const lastName = user.user_metadata?.last_name || "";
     const displayName = user.user_metadata?.display_name || "";
     const fullName =
       user.user_metadata?.full_name || (firstName && lastName ? `${firstName} ${lastName}` : "");
+
+    // Priority: display_name > full_name > constructed name > OAuth name > email > fallback
     const profileName = displayName || fullName || user.user_metadata?.name || user.email || "User";
+
     const phone = user.user_metadata?.phone || "";
 
     console.log("Creating profile for user:", user.id, "with enhanced data:", {

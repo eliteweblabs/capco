@@ -1,8 +1,17 @@
 ---
-import App from "../../components/common/App.astro";
+import Base from "../../layout/Base.astro";
+import SectionContainer from "../../components/common/SectionContainer.astro";
+import SocialMedia from "../../components/common/SocialMedia.astro";
+import Hero from "../../components/common/Hero.astro";
 import BoxIcon from "../../components/common/BoxIcon.astro";
-import SectionContainer from "../../components/SectionContainer.astro";
 import ProjectForm from "../../components/project/ProjectForm.astro";
+import PDFUpload from "../../components/project/PDFUpload.astro";
+import SimpleProjectLog from "../../components/project/SimpleProjectLog.astro";
+
+// Para cambiar idioma de textos
+import { getI18N } from "@/i18n";
+const { currentLocale } = Astro;
+const i18n = getI18N({ currentLocale });
 
 // Get the project ID from the URL parameter
 const { id } = Astro.params;
@@ -17,22 +26,89 @@ const role = Astro.locals.role;
 
 console.log("🌐 [PROJECT] User:", user?.id, "Role:", role);
 
-// Fetch project data - RLS will handle authorization
+// Fetch project data and user profile - RLS will handle authorization
 let project = null;
+let userProfile = null;
 if (supabase && user) {
-  const { data, error } = await supabase.from("projects").select("*").eq("id", id).single();
+  // Get project data
+  const { data: projectData, error: projectError } = await supabase
+    .from("projects")
+    .select("*")
+    .eq("id", id)
+    .single();
 
-  if (error) {
-    console.error("Error fetching project:", error);
+  if (projectError) {
+    console.error("Error fetching project:", projectError);
     // Project not found or no access - handled by RLS
   } else {
-    project = data;
+    project = projectData;
     console.log("🌐 [PROJECT] Project loaded:", project.title);
   }
+
+  // Get user profile data
+  const { data: profileData, error: profileError } = await supabase
+    .from("profiles")
+    .select("*")
+    .eq("id", user.id)
+    .single();
+
+  if (profileError) {
+    console.error("Error fetching profile:", profileError);
+  } else {
+    userProfile = profileData;
+    console.log("🌐 [PROJECT] Profile loaded:", userProfile.name);
+  }
+}
+
+// Status labels mapping
+const statusLabels: Record<number, string> = {
+  10: "Specs Received",
+  20: "Generating Proposal",
+  30: "Proposal Shipped",
+  40: "Proposal Viewed",
+  50: "Proposal Signed Off",
+  60: "Generating Deposit Invoice",
+  70: "Deposit Invoice Shipped",
+  80: "Deposit Invoice Viewed",
+  90: "Deposit Invoice Paid",
+  100: "Generating Submittals",
+  110: "Submittals Shipped",
+  120: "Submittals Viewed",
+  130: "Submittals Signed Off",
+  140: "Generating Final Invoice",
+  150: "Final Invoice Shipped",
+  160: "Final Invoice Viewed",
+  170: "Final Invoice Paid",
+  180: "Generating Final Deliverables",
+  190: "Stamping Final Deliverables",
+  200: "Final Deliverables Shipped",
+  210: "Final Deliverables Viewed",
+  220: "Project Complete",
+};
+
+// Get status color based on status code
+function getStatusColor(status: number): string {
+  if (status <= 50) return "blue"; // Early stages
+  if (status <= 100) return "yellow"; // Invoice stages
+  if (status <= 140) return "purple"; // Submittals
+  if (status <= 180) return "orange"; // Final invoice
+  if (status <= 220) return "green"; // Deliverables and complete
+  return "gray"; // Unknown
 }
 ---
 
-<App>
+<Base title={i18n.SEO_TITLE} description={i18n.SEO_DESCRIPTION}>
+  <SectionContainer id="hero" class="mx-6 my-6">
+    <Hero
+      title={project?.address || project?.title || "Untitled Project"}
+      description={userProfile?.name || user?.email?.split("@")[0] || "User"}
+      statusLabel={project?.status
+        ? statusLabels[project.status] || `Status ${project.status}`
+        : undefined}
+      statusColor={project?.status ? getStatusColor(project.status) : undefined}
+    />
+  </SectionContainer>
+
   <SectionContainer class="mx-6 flex flex-col gap-y-6">
     <div class="flex items-center justify-between">
       <a
@@ -44,18 +120,179 @@ if (supabase && user) {
       </a>
     </div>
 
+    <!-- Tab Navigation -->
+    <div class="border-b border-gray-200 dark:border-gray-700">
+      <nav class="-mb-px flex space-x-8" aria-label="Tabs">
+        <button
+          id="tab-project-form"
+          class="tab-button active whitespace-nowrap border-b-2 border-red-500 px-1 py-2 text-sm font-medium text-red-600 dark:text-red-400"
+          onclick="switchTab('project-form')"
+        >
+          <BoxIcon name="edit" class="mr-2 inline h-4 w-4" />
+          Project Form
+        </button>
+        <button
+          id="tab-documents"
+          class="tab-button whitespace-nowrap border-b-2 border-transparent px-1 py-2 text-sm font-medium text-gray-500 hover:border-gray-300 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
+          onclick="switchTab('documents')"
+        >
+          <BoxIcon name="file" class="mr-2 inline h-4 w-4" />
+          Documents
+        </button>
+        <button
+          id="tab-proposal"
+          class="tab-button whitespace-nowrap border-b-2 border-transparent px-1 py-2 text-sm font-medium text-gray-500 hover:border-gray-300 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
+          onclick="switchTab('proposal')"
+        >
+          <BoxIcon name="file-pdf" class="mr-2 inline h-4 w-4" />
+          Proposal
+        </button>
+        <button
+          id="tab-deliverables"
+          class="tab-button whitespace-nowrap border-b-2 border-transparent px-1 py-2 text-sm font-medium text-gray-500 hover:border-gray-300 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
+          onclick="switchTab('deliverables')"
+        >
+          <BoxIcon name="package" class="mr-2 inline h-4 w-4" />
+          Deliverables
+        </button>
+        <button
+          id="tab-final-invoice"
+          class="tab-button whitespace-nowrap border-b-2 border-transparent px-1 py-2 text-sm font-medium text-gray-500 hover:border-gray-300 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
+          onclick="switchTab('final-invoice')"
+        >
+          <BoxIcon name="receipt" class="mr-2 inline h-4 w-4" />
+          Final Invoice
+        </button>
+        <button
+          id="tab-activity-log"
+          class="tab-button whitespace-nowrap border-b-2 border-transparent px-1 py-2 text-sm font-medium text-gray-500 hover:border-gray-300 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
+          onclick="switchTab('activity-log')"
+        >
+          <BoxIcon name="history" class="mr-2 inline h-4 w-4" />
+          Activity Log
+        </button>
+      </nav>
+    </div>
+
+    <!-- Tab Content -->
     <div class="grid grid-cols-1 gap-6 lg:grid-cols-1">
-      <!-- Form Container -->
+      <!-- Project Form Tab -->
       <div
-        class="rounded-lg border border-gray-200 bg-white p-6 dark:border-gray-700 dark:bg-gray-800"
+        id="content-project-form"
+        class="tab-content rounded-lg border border-gray-200 bg-white p-6 dark:border-gray-700 dark:bg-gray-800"
       >
         <ProjectForm project={project} projectId={id ?? ""} isNewProject={false} userRole={role} />
       </div>
+
+      <!-- Documents Tab -->
+      <div id="content-documents" class="tab-content hidden">
+        <PDFUpload projectId={id ?? ""} fileType="media" />
+      </div>
+
+      <!-- Proposal Tab -->
+      <div
+        id="content-proposal"
+        class="tab-content hidden rounded-lg border border-gray-200 bg-white p-6 dark:border-gray-700 dark:bg-gray-800"
+      >
+        <div class="py-8 text-center">
+          <BoxIcon name="file-pdf" class="mx-auto mb-4 h-12 w-12 text-gray-400" />
+          <h3 class="mb-2 text-lg font-medium text-gray-900 dark:text-white">Proposal</h3>
+          <p class="text-gray-500 dark:text-gray-400">
+            Project proposal and estimates will be displayed here.
+          </p>
+        </div>
+      </div>
+
+      <!-- Deliverables Tab -->
+      <div
+        id="content-deliverables"
+        class="tab-content hidden rounded-lg border border-gray-200 bg-white p-6 dark:border-gray-700 dark:bg-gray-800"
+      >
+        <div class="py-8 text-center">
+          <BoxIcon name="package" class="mx-auto mb-4 h-12 w-12 text-gray-400" />
+          <h3 class="mb-2 text-lg font-medium text-gray-900 dark:text-white">Deliverables</h3>
+          <p class="text-gray-500 dark:text-gray-400">
+            Final project deliverables will be displayed here.
+          </p>
+        </div>
+      </div>
+
+      <!-- Final Invoice Tab -->
+      <div
+        id="content-final-invoice"
+        class="tab-content hidden rounded-lg border border-gray-200 bg-white p-6 dark:border-gray-700 dark:bg-gray-800"
+      >
+        <div class="py-8 text-center">
+          <BoxIcon name="receipt" class="mx-auto mb-4 h-12 w-12 text-gray-400" />
+          <h3 class="mb-2 text-lg font-medium text-gray-900 dark:text-white">Final Invoice</h3>
+          <p class="text-gray-500 dark:text-gray-400">
+            Final project invoice and billing information will be displayed here.
+          </p>
+        </div>
+      </div>
+
+      <!-- Activity Log Tab -->
+      <div id="content-activity-log" class="tab-content hidden">
+        <SimpleProjectLog projectId={parseInt(id ?? "0")} />
+      </div>
     </div>
   </SectionContainer>
-</App>
+
+  <SectionContainer class="fixed bottom-0 right-6 flex flex-col gap-y-6">
+    <SocialMedia />
+  </SectionContainer>
+</Base>
 
 <script>
+  // Tab switching functionality
+  function switchTab(tabName: string) {
+    // Hide all tab contents
+    const tabContents = document.querySelectorAll(".tab-content");
+    tabContents.forEach((content) => {
+      content.classList.add("hidden");
+    });
+
+    // Remove active class from all tab buttons
+    const tabButtons = document.querySelectorAll(".tab-button");
+    tabButtons.forEach((button) => {
+      button.classList.remove("active", "border-red-500", "text-red-600", "dark:text-red-400");
+      button.classList.add(
+        "border-transparent",
+        "text-gray-500",
+        "hover:border-gray-300",
+        "hover:text-gray-700",
+        "dark:text-gray-400",
+        "dark:hover:text-gray-300"
+      );
+    });
+
+    // Show selected tab content
+    const selectedContent = document.getElementById(`content-${tabName}`);
+    if (selectedContent) {
+      selectedContent.classList.remove("hidden");
+    }
+
+    // Add active class to selected tab button
+    const selectedButton = document.getElementById(`tab-${tabName}`);
+    if (selectedButton) {
+      selectedButton.classList.add("active", "border-red-500", "text-red-600", "dark:text-red-400");
+      selectedButton.classList.remove(
+        "border-transparent",
+        "text-gray-500",
+        "hover:border-gray-300",
+        "hover:text-gray-700",
+        "dark:text-gray-400",
+        "dark:hover:text-gray-300"
+      );
+    }
+  }
+
+  // Initialize tabs on page load
+  document.addEventListener("DOMContentLoaded", function () {
+    // Ensure the first tab is active by default
+    switchTab("project-form");
+  });
+
   // Form handling functions
   function deleteProject(projectId: string) {
     if (confirm("Are you sure you want to delete this project?")) {
@@ -64,13 +301,19 @@ if (supabase && user) {
     }
   }
 
-  function buildEstimate(projectId: string) {
+  function buildProposal(projectId: string) {
     // Add build estimate logic here
     console.log("Building estimate for project:", projectId);
   }
 
-  function editEstimate(projectId: string) {
+  function editProposal(projectId: string) {
     // Add edit estimate logic here
     console.log("Editing estimate for project:", projectId);
   }
+
+  // Make functions globally available
+  (window as any).switchTab = switchTab;
+  (window as any).deleteProject = deleteProject;
+  (window as any).buildProposal = buildProposal;
+  (window as any).editProposal = editProposal;
 </script>

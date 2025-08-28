@@ -1,12 +1,11 @@
 ---
 // import { getI18N } from "@/i18n";
 import BoxIcon from "./BoxIcon.astro";
-import HeroButton from "../HeroButton.astro";
 import Logo from "./Logo.astro";
-import Auth from "./Auth.astro";
+import AuthIcon from "./AuthIcon.astro";
 // import LanguagePicker from "../LanguagePicker.astro";
-import Tooltip from "../Tooltip.astro";
-import NavLi from "./NavLi.astro";
+import Tooltip from "./Tooltip.astro";
+// import NavLi from "./NavLi.astro";
 import ThemeToggle from "./ThemeToggle.astro";
 // const { currentLocale } = Astro;s
 // const i18n = getI18N({ currentLocale });
@@ -26,7 +25,6 @@ const isBackendPage =
   currentUrl.startsWith("/pdf-review") ||
   currentUrl.startsWith("/pdf-editor") ||
   currentUrl.startsWith("/admin") ||
-  currentUrl.startsWith("/register") ||
   currentUrl.startsWith("/create-staff");
 
 // Navigation schema
@@ -95,6 +93,13 @@ const navigation: NavItem[] = [
     pageType: "backend",
     isPrimary: currentUrl.startsWith("/create-staff"),
   },
+  {
+    label: "Global Activity",
+    href: "/admin/global-activity",
+    roles: ["admin"],
+    pageType: "backend",
+    isPrimary: currentUrl.startsWith("/admin/global-activity"),
+  },
 ];
 
 // Filter navigation items based on auth state, role, and page type
@@ -137,8 +142,8 @@ function getVisibleNavItems(
 const visibleNavigation = getVisibleNavItems(navigation, isAuth, role, isBackendPage);
 ---
 
-<header class="sticky top-0 z-30 mb-2 bg-hub-background pb-2 pt-4 dark:bg-hub-background-dark">
-  <div class="mx-6 flex items-center justify-between">
+<header class="sticky top-0 mb-2 bg-hub-background pb-2 pt-4 dark:bg-hub-background-dark">
+  <div class="relative mx-6 flex items-center justify-between">
     <Logo />
 
     <!-- Navigation (Desktop) -->
@@ -165,18 +170,29 @@ const visibleNavigation = getVisibleNavItems(navigation, isAuth, role, isBackend
     </nav>
 
     <div class="flex items-center gap-2">
-      <!-- Add User Link (Admin Only) -->
+      <!-- Admin Quick Actions -->
       {
         role === "Admin" && isBackendPage && (
-          <Tooltip content="Add User">
-            <a
-              href="/create-staff"
-              aria-label="btn-add-user"
-              class="flex size-8 items-center justify-center rounded-full bg-blue-600 text-white transition-colors hover:bg-blue-700"
-            >
-              <BoxIcon name="user-plus" class="text-lg" />
-            </a>
-          </Tooltip>
+          <>
+            <Tooltip content="Global Activity Feed" id="global-activity-tooltip">
+              <a
+                href="/admin/global-activity"
+                aria-label="btn-global-activity"
+                class="flex size-8 items-center justify-center rounded-full bg-purple-600 text-white transition-colors hover:bg-purple-700"
+              >
+                <BoxIcon name="pulse" class="text-lg" />
+              </a>
+            </Tooltip>
+            <Tooltip content="Add User" id="add-user-tooltip">
+              <a
+                href="/create-staff"
+                aria-label="btn-add-user"
+                class="flex size-8 items-center justify-center rounded-full bg-blue-600 text-white transition-colors hover:bg-blue-700"
+              >
+                <BoxIcon name="user-plus" class="text-lg" />
+              </a>
+            </Tooltip>
+          </>
         )
       }
 
@@ -184,21 +200,26 @@ const visibleNavigation = getVisibleNavItems(navigation, isAuth, role, isBackend
 
       {/* <LanguagePicker /> */}
 
-      <Auth />
+      <AuthIcon />
 
       {/* Mobile Menu Button (Hamburger) */}
       <button
+        type="button"
         id="mobile-menu-btn"
-        aria-label="Open mobile menu"
-        class="flex size-8 items-center justify-center text-gray-700 transition-colors hover:text-red-600 dark:text-gray-300 dark:hover:text-red-400 md:hidden"
+        aria-controls="drawer-example"
+        aria-label="Toggle mobile menu"
+        class="hamburger z-50 size-10 text-gray-700 transition-colors dark:text-gray-300 md:hidden"
       >
-        <BoxIcon name="menu" id="hamburger-icon" class="text-xl" />
-        <BoxIcon name="x" id="close-icon" class="hidden text-xl" />
+        <span class="line"></span>
+        <span class="line"></span>
+        <span class="line"></span>
       </button>
       {/* Mobile Navigation Menu */}
       <div
-        id="mobile-menu"
-        class="hidden border-b border-gray-200 bg-white shadow-lg dark:border-gray-700 dark:bg-gray-800 md:hidden"
+        id="drawer-example"
+        class="fixed left-0 top-0 z-40 h-screen w-screen -translate-x-full overflow-y-auto bg-white p-4 transition-transform dark:bg-gray-800"
+        tabindex="-1"
+        aria-labelledby="drawer-label"
       >
         <nav class="space-y-4 px-6 py-4">
           {/* Navigation Items */}
@@ -239,9 +260,8 @@ const visibleNavigation = getVisibleNavItems(navigation, isAuth, role, isBackend
 
   // Mobile menu elements
   const mobileMenuBtn = document.getElementById("mobile-menu-btn");
-  const mobileMenu = document.getElementById("mobile-menu");
-  const hamburgerIcon = document.getElementById("hamburger-icon");
-  const closeIcon = document.getElementById("close-icon");
+  const mobileMenu = document.getElementById("drawer-example");
+  const hamburgerIcon = document.getElementById("mobile-menu-btn"); // The button IS the hamburger
 
   console.log("📋 [HEADER] DOM elements found:", {
     profileBtn: !!profileBtn,
@@ -252,13 +272,11 @@ const visibleNavigation = getVisibleNavItems(navigation, isAuth, role, isBackend
     mobileMenuBtn: !!mobileMenuBtn,
     mobileMenu: !!mobileMenu,
     hamburgerIcon: !!hamburgerIcon,
-    closeIcon: !!closeIcon,
   });
 
   // Initialize mobile menu icon states
-  if (hamburgerIcon && closeIcon) {
-    hamburgerIcon.classList.remove("hidden");
-    closeIcon.classList.add("hidden");
+  if (hamburgerIcon) {
+    hamburgerIcon.classList.remove("is-active");
     console.log("📋 [HEADER] Mobile menu icons initialized");
   }
 
@@ -316,24 +334,25 @@ const visibleNavigation = getVisibleNavItems(navigation, isAuth, role, isBackend
 
   // Mobile menu toggle functionality
   function toggleMobileMenu() {
-    if (!mobileMenu || !hamburgerIcon || !closeIcon) {
+    if (!mobileMenu || !hamburgerIcon) {
       console.error("📋 [HEADER] Missing mobile menu elements");
       return;
     }
 
-    const isOpen = !mobileMenu.classList.contains("hidden");
+    const isOpen = mobileMenu.classList.contains("translate-x-0");
 
+    console.log("📋 [HEADER] isOpen:", isOpen);
     if (isOpen) {
-      // Close menu
-      mobileMenu.classList.add("hidden");
-      hamburgerIcon.classList.remove("hidden");
-      closeIcon.classList.add("hidden");
+      // Close drawer - slide out to the left
+      mobileMenu.classList.remove("translate-x-0");
+      mobileMenu.classList.add("-translate-x-full");
+      hamburgerIcon.classList.remove("is-active");
       console.log("📋 [HEADER] Mobile menu closed");
     } else {
-      // Open menu
-      mobileMenu.classList.remove("hidden");
-      hamburgerIcon.classList.add("hidden");
-      closeIcon.classList.remove("hidden");
+      // Open drawer - slide in from the left
+      mobileMenu.classList.remove("-translate-x-full");
+      mobileMenu.classList.add("translate-x-0");
+      hamburgerIcon.classList.add("is-active");
       console.log("📋 [HEADER] Mobile menu opened");
     }
   }
@@ -348,13 +367,13 @@ const visibleNavigation = getVisibleNavItems(navigation, isAuth, role, isBackend
 
   // Close mobile menu when clicking outside or on menu links
   document.addEventListener("click", (e) => {
-    if (mobileMenu && !mobileMenu.classList.contains("hidden")) {
+    if (mobileMenu && mobileMenu.classList.contains("translate-x-0")) {
       // Close if clicking outside the mobile menu
       if (!mobileMenu.contains(e.target) && !mobileMenuBtn?.contains(e.target)) {
-        mobileMenu.classList.add("hidden");
-        if (hamburgerIcon && closeIcon) {
-          hamburgerIcon.classList.remove("hidden");
-          closeIcon.classList.add("hidden");
+        mobileMenu.classList.remove("translate-x-0");
+        mobileMenu.classList.add("-translate-x-full");
+        if (hamburgerIcon) {
+          hamburgerIcon.classList.remove("is-active");
         }
         console.log("📋 [HEADER] Mobile menu closed by outside click");
       }
@@ -366,10 +385,10 @@ const visibleNavigation = getVisibleNavItems(navigation, isAuth, role, isBackend
     const mobileNavLinks = mobileMenu.querySelectorAll("a");
     mobileNavLinks.forEach((link) => {
       link.addEventListener("click", () => {
-        mobileMenu.classList.add("hidden");
-        if (hamburgerIcon && closeIcon) {
-          hamburgerIcon.classList.remove("hidden");
-          closeIcon.classList.add("hidden");
+        mobileMenu.classList.remove("translate-x-0");
+        mobileMenu.classList.add("-translate-x-full");
+        if (hamburgerIcon) {
+          hamburgerIcon.classList.remove("is-active");
         }
         console.log("📋 [HEADER] Mobile menu closed by navigation link click");
       });
@@ -402,3 +421,69 @@ const visibleNavigation = getVisibleNavItems(navigation, isAuth, role, isBackend
     });
   }
 </script>
+
+<style>
+  .hamburger .line {
+    width: 20px;
+    background-color: currentColor;
+    height: 2px;
+    display: block;
+    margin: 3px auto;
+    border-radius: 1px;
+    -webkit-transition: all 0.3s ease-in-out;
+    -o-transition: all 0.3s ease-in-out;
+    transition: all 0.3s ease-in-out;
+  }
+  #mobile-menu-btn {
+    -webkit-transition: all 0.3s ease-in-out;
+    -o-transition: all 0.3s ease-in-out;
+    transition: all 0.3s ease-in-out;
+  }
+
+  #mobile-menu-btn.is-active {
+    animation: smallbig 0.6s forwards;
+  }
+
+  #mobile-menu-btn.is-active .line:nth-child(1),
+  #mobile-menu-btn.is-active .line:nth-child(2),
+  #mobile-menu-btn.is-active .line:nth-child(3) {
+    -webkit-transition-delay: 0.2s;
+    -o-transition-delay: 0.2s;
+    transition-delay: 0.2s;
+  }
+
+  #mobile-menu-btn.is-active .line:nth-child(2) {
+    opacity: 0;
+  }
+
+  #mobile-menu-btn.is-active .line:nth-child(1) {
+    -webkit-transform: translateY(5px) rotate(45deg);
+    -ms-transform: translateY(5px) rotate(45deg);
+    -o-transform: translateY(5px) rotate(45deg);
+    transform: translateY(5px) rotate(45deg);
+  }
+
+  #mobile-menu-btn.is-active .line:nth-child(3) {
+    -webkit-transform: translateY(-5px) rotate(-45deg);
+    -ms-transform: translateY(-5px) rotate(-45deg);
+    -o-transform: translateY(-5px) rotate(-45deg);
+    transform: translateY(-5px) rotate(-45deg);
+  }
+
+  @keyframes smallbig {
+    0%,
+    100% {
+      -webkit-transform: scale(1);
+      -ms-transform: scale(1);
+      -o-transform: scale(1);
+      transform: scale(1);
+    }
+
+    50% {
+      -webkit-transform: scale(0);
+      -ms-transform: scale(0);
+      -o-transform: scale(0);
+      transform: scale(0);
+    }
+  }
+</style>

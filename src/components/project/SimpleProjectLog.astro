@@ -1,0 +1,245 @@
+---
+import BoxIcon from "../common/BoxIcon.astro";
+
+export interface Props {
+  projectId: number;
+}
+
+const { projectId } = Astro.props;
+---
+
+<div class="rounded-lg border bg-white p-6 shadow-sm dark:border-gray-700 dark:bg-gray-800">
+  <!-- Header -->
+  <div class="mb-4 flex items-center justify-between">
+    <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
+      <BoxIcon name="history" class="mr-2 inline text-blue-600 dark:text-blue-400" />
+      Project Activity
+    </h3>
+    <button
+      id="refresh-log"
+      class="rounded-md border border-gray-300 bg-white px-3 py-1 text-sm text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
+    >
+      <BoxIcon name="refresh" class="text-sm" />
+    </button>
+  </div>
+
+  <!-- Loading State -->
+  <div id="log-loading" class="flex items-center justify-center py-8">
+    <div class="flex items-center space-x-3 text-gray-500 dark:text-gray-400">
+      <div class="h-5 w-5 animate-spin rounded-full border-2 border-gray-300 border-t-blue-600">
+      </div>
+      <span>Loading activity...</span>
+    </div>
+  </div>
+
+  <!-- Error State -->
+  <div
+    id="log-error"
+    class="hidden rounded-md bg-red-50 p-4 text-red-800 dark:bg-red-900/20 dark:text-red-400"
+  >
+    <div class="flex items-center space-x-2">
+      <BoxIcon name="error-circle" class="text-lg" />
+      <span
+        >Failed to load activity. <button id="retry-log" class="underline hover:no-underline"
+          >Try again</button
+        ></span
+      >
+    </div>
+  </div>
+
+  <!-- Empty State -->
+  <div id="log-empty" class="hidden py-8 text-center">
+    <BoxIcon name="info-circle" class="mx-auto mb-3 text-4xl text-gray-400 dark:text-gray-600" />
+    <h4 class="mb-2 text-lg font-medium text-gray-900 dark:text-white">No Activity Yet</h4>
+    <p class="text-gray-500 dark:text-gray-400">
+      Project activity will appear here as changes are made.
+    </p>
+  </div>
+
+  <!-- Log Content -->
+  <div id="log-content" class="hidden space-y-3">
+    <!-- Log entries will be populated here -->
+  </div>
+</div>
+
+<script type="module" define:vars={{ projectId }}>
+  class SimpleLogViewer {
+    constructor(projectId) {
+      this.projectId = projectId;
+      this.loadingEl = document.getElementById("log-loading");
+      this.errorEl = document.getElementById("log-error");
+      this.emptyEl = document.getElementById("log-empty");
+      this.contentEl = document.getElementById("log-content");
+
+      this.attachEventListeners();
+      this.loadLog();
+    }
+
+    attachEventListeners() {
+      document.getElementById("refresh-log")?.addEventListener("click", () => {
+        this.loadLog();
+      });
+
+      document.getElementById("retry-log")?.addEventListener("click", () => {
+        this.loadLog();
+      });
+    }
+
+    async loadLog() {
+      try {
+        this.showLoading();
+
+        const response = await fetch(`/api/get-simple-project-log?projectId=${this.projectId}`);
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.error || "Failed to load log");
+        }
+
+        this.renderLog(data.log || []);
+      } catch (error) {
+        console.error("Error loading log:", error);
+        this.showError();
+      }
+    }
+
+    renderLog(logEntries) {
+      if (logEntries.length === 0) {
+        this.showEmpty();
+        return;
+      }
+
+      this.contentEl.innerHTML = "";
+
+      // Sort by timestamp (newest first)
+      const sortedEntries = logEntries.sort(
+        (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+      );
+
+      sortedEntries.forEach((entry) => {
+        const logItem = this.createLogItem(entry);
+        this.contentEl.appendChild(logItem);
+      });
+
+      this.showContent();
+    }
+
+    createLogItem(entry) {
+      const item = document.createElement("div");
+      item.className = "flex items-start space-x-3 rounded-lg bg-gray-50 p-4 dark:bg-gray-700";
+
+      const icon = this.getActionIcon(entry.action);
+      const color = this.getActionColor(entry.action);
+
+      item.innerHTML = `
+        <div class="flex-shrink-0">
+          <div class="flex h-8 w-8 items-center justify-center rounded-full ${color}">
+            <i class='bx ${icon} text-white'></i>
+          </div>
+        </div>
+        <div class="flex-1 min-w-0">
+          <div class="flex items-center justify-between">
+            <p class="text-sm font-medium text-gray-900 dark:text-white">
+              ${entry.details}
+            </p>
+            <span class="text-xs text-gray-500 dark:text-gray-400">
+              ${this.formatDate(entry.timestamp)}
+            </span>
+          </div>
+          <p class="text-xs text-gray-600 dark:text-gray-400">
+            by ${entry.user}
+          </p>
+          ${this.renderValueChanges(entry)}
+        </div>
+      `;
+
+      return item;
+    }
+
+    getActionIcon(action) {
+      const icons = {
+        project_created: "bx-plus",
+        project_updated: "bx-edit",
+        status_change: "bx-refresh",
+        file_uploaded: "bx-upload",
+        comment_added: "bx-comment",
+      };
+      return icons[action] || "bx-info-circle";
+    }
+
+    getActionColor(action) {
+      const colors = {
+        project_created: "bg-green-500",
+        project_updated: "bg-blue-500",
+        status_change: "bg-purple-500",
+        file_uploaded: "bg-teal-500",
+        comment_added: "bg-gray-500",
+      };
+      return colors[action] || "bg-gray-500";
+    }
+
+    renderValueChanges(entry) {
+      if (entry.old_value !== undefined && entry.new_value !== undefined) {
+        return `
+          <div class="mt-2 rounded bg-white p-2 text-xs dark:bg-gray-600">
+            <div class="grid grid-cols-2 gap-2">
+              <div>
+                <span class="font-medium text-red-600 dark:text-red-400">Before:</span>
+                <div class="mt-1 text-gray-600 dark:text-gray-400">${this.formatValue(entry.old_value)}</div>
+              </div>
+              <div>
+                <span class="font-medium text-green-600 dark:text-green-400">After:</span>
+                <div class="mt-1 text-gray-600 dark:text-gray-400">${this.formatValue(entry.new_value)}</div>
+              </div>
+            </div>
+          </div>
+        `;
+      }
+      return "";
+    }
+
+    formatValue(value) {
+      if (value === null || value === undefined) return "N/A";
+      if (typeof value === "object") return JSON.stringify(value, null, 2);
+      return String(value);
+    }
+
+    formatDate(dateString) {
+      const date = new Date(dateString);
+      return date.toLocaleString();
+    }
+
+    showLoading() {
+      this.loadingEl?.classList.remove("hidden");
+      this.errorEl?.classList.add("hidden");
+      this.emptyEl?.classList.add("hidden");
+      this.contentEl?.classList.add("hidden");
+    }
+
+    showError() {
+      this.loadingEl?.classList.add("hidden");
+      this.errorEl?.classList.remove("hidden");
+      this.emptyEl?.classList.add("hidden");
+      this.contentEl?.classList.add("hidden");
+    }
+
+    showEmpty() {
+      this.loadingEl?.classList.add("hidden");
+      this.errorEl?.classList.add("hidden");
+      this.emptyEl?.classList.remove("hidden");
+      this.contentEl?.classList.add("hidden");
+    }
+
+    showContent() {
+      this.loadingEl?.classList.add("hidden");
+      this.errorEl?.classList.add("hidden");
+      this.emptyEl?.classList.add("hidden");
+      this.contentEl?.classList.remove("hidden");
+    }
+  }
+
+  // Initialize when DOM is ready
+  document.addEventListener("DOMContentLoaded", () => {
+    new SimpleLogViewer(projectId);
+  });
+</script>

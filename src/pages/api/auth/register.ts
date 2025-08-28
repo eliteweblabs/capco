@@ -1,9 +1,13 @@
 import type { APIRoute } from "astro";
 import { supabase } from "../../../lib/supabase";
+import { supabaseAdmin } from "../../../lib/supabase-admin";
 
 export const POST: APIRoute = async ({ request, redirect }) => {
+  console.log("🔐 [REGISTER] Registration API called");
+
   // Check if Supabase is configured
-  if (!supabase) {
+  if (!supabase || !supabaseAdmin) {
+    console.error("🔐 [REGISTER] Supabase not configured");
     return new Response("Supabase is not configured", { status: 500 });
   }
 
@@ -14,6 +18,14 @@ export const POST: APIRoute = async ({ request, redirect }) => {
   const lastName = formData.get("last_name")?.toString();
   const displayName = formData.get("display_name")?.toString();
   const phone = formData.get("phone")?.toString();
+
+  console.log("🔐 [REGISTER] Form data:", {
+    email,
+    firstName,
+    lastName,
+    displayName,
+    hasPassword: !!password,
+  });
 
   if (!email || !password || !firstName || !lastName || !displayName) {
     return new Response("Email, password, first name, last name, and display name are required", {
@@ -34,6 +46,8 @@ export const POST: APIRoute = async ({ request, redirect }) => {
     });
   }
 
+  console.log("🔐 [REGISTER] Attempting Supabase auth.signUp for:", email);
+
   const { data, error } = await supabase.auth.signUp({
     email,
     password,
@@ -51,9 +65,50 @@ export const POST: APIRoute = async ({ request, redirect }) => {
     },
   });
 
+  console.log("🔐 [REGISTER] Supabase signUp result:", {
+    success: !!data.user,
+    userId: data.user?.id,
+    needsConfirmation: !data.user?.email_confirmed_at,
+    error: error?.message,
+  });
+
   if (error) {
     console.error("Registration error:", error);
+    console.error("Error details:", {
+      message: error.message,
+      status: error.status,
+      statusCode: error.statusCode,
+    });
     return new Response(error.message, { status: 500 });
+  }
+
+  // Create profile in the profiles table if user was created successfully
+  if (data.user) {
+    console.log("Attempting to create profile for user:", data.user.id);
+
+    // Use admin client to bypass RLS policies during registration
+    const { error: profileError } = await supabaseAdmin.from("profiles").insert({
+      id: data.user.id,
+      name: displayName,
+      phone: phone ? parseInt(phone) : null,
+      role: "Client",
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    });
+
+    if (profileError) {
+      console.error("Profile creation error:", profileError);
+      console.error("Profile error details:", {
+        message: profileError.message,
+        code: profileError.code,
+        hint: profileError.hint,
+        details: profileError.details,
+      });
+      // Don't fail the registration if profile creation fails
+      // The user can still log in and we can create the profile later
+    } else {
+      console.log("Profile created successfully for user:", data.user.id);
+    }
   }
 
   console.log("User registration successful:", !!data.user);

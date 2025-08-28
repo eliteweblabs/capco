@@ -90,7 +90,7 @@ console.log("Owner fields found:", ownerFieldsInForm.length, ownerFieldsInForm);
             <label class="inline-flex items-center cursor-pointer">
               <input
                 type="checkbox"
-                id={`${field.id}-${formId}`}
+                id={`${field.id}`}
                 name={field.name}
                 checked={isChecked}
                 class="sr-only peer"
@@ -115,14 +115,14 @@ console.log("Owner fields found:", ownerFieldsInForm.length, ownerFieldsInForm);
         <!-- Owner Name Field -->
         <div class="relative" style="display: none;">
           <label
-            for={`owner-${formId}`}
+            for={`owner`}
             class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
           >
             Owner *
           </label>
           <input
             type="text"
-            id={`owner-${formId}`}
+            id={`owner`}
             name="owner"
             value={project?.owner || ""}
             class="w-full py-2 px-3 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:focus:ring-blue-400 dark:focus:border-blue-400"
@@ -137,14 +137,14 @@ console.log("Owner fields found:", ownerFieldsInForm.length, ownerFieldsInForm);
         <!-- Owner Email Field -->
         <div class="relative" style="display: none;">
           <label
-            for={`owner-email-${formId}`}
+            for={`owner-email`}
             class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
           >
             Owner Email *
           </label>
           <input
             type="email"
-            id={`owner-email-${formId}`}
+            id={`owner-email`}
             name="owner_email"
             value={project?.owner_email || ""}
             class="w-full py-2 px-3 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:focus:ring-blue-400 dark:focus:border-blue-400"
@@ -179,7 +179,7 @@ console.log("Owner fields found:", ownerFieldsInForm.length, ownerFieldsInForm);
       .map((field) => (
         <div class="relative">
           <label
-            for={`${field.id}-${formId}`}
+            for={`${field.id}`}
             class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
           >
             {field.label}
@@ -187,7 +187,7 @@ console.log("Owner fields found:", ownerFieldsInForm.length, ownerFieldsInForm);
           </label>
           <input
             type={field.type === "number" ? "number" : "text"}
-            id={`${field.id}-${formId}`}
+            id={`${field.id}`}
             name={field.name}
             value={project?.[field.name] || ""}
             class="w-full py-2 px-3 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:focus:ring-blue-400 dark:focus:border-blue-400"
@@ -218,7 +218,7 @@ console.log("Owner fields found:", ownerFieldsInForm.length, ownerFieldsInForm);
         .map((field) => (
           <div class="relative">
             <label
-              for={`${field.id}-${formId}`}
+              for={`${field.id}`}
               class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
             >
               {field.label}
@@ -226,7 +226,7 @@ console.log("Owner fields found:", ownerFieldsInForm.length, ownerFieldsInForm);
             </label>
             <input
               type={field.type === "number" ? "number" : "text"}
-              id={`${field.id}-${formId}`}
+              id={`${field.id}`}
               name={field.name}
               value={project?.[field.name] || ""}
               class="w-full py-2 px-3 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:focus:ring-blue-400 dark:focus:border-blue-400"
@@ -251,13 +251,13 @@ console.log("Owner fields found:", ownerFieldsInForm.length, ownerFieldsInForm);
       .map((field) => (
         <div class="relative">
           <label
-            for={`${field.id}-${formId}`}
+            for={`${field.id}`}
             class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
           >
             {field.label}
           </label>
           <textarea
-            id={`${field.id}-${formId}`}
+            id={`${field.id}`}
             name={field.name}
             rows="3"
             class="w-full py-2 px-3 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:focus:ring-blue-400 dark:focus:border-blue-400"
@@ -278,7 +278,7 @@ console.log("Owner fields found:", ownerFieldsInForm.length, ownerFieldsInForm);
       .map((field) => (
         <div class="relative">
           <StaffSelect
-            id={`${field.id}-${formId}`}
+            id={`${field.id}`}
             name={field.name}
             label={field.label}
             value={project?.[field.name] || ""}
@@ -312,7 +312,7 @@ console.log("Owner fields found:", ownerFieldsInForm.length, ownerFieldsInForm);
                 <label class="inline-flex items-center cursor-pointer">
                   <input
                     type="checkbox"
-                    id={`${field.id}-${formId}`}
+                    id={`${field.id}`}
                     name={field.name}
                     checked={isChecked}
                     class="sr-only peer"
@@ -462,9 +462,15 @@ console.log("Owner fields found:", ownerFieldsInForm.length, ownerFieldsInForm);
         }
       });
 
-      // Setup new client toggle functionality (only for new projects)
+      // Setup new client toggle functionality (only for new projects and admin/staff users)
       if (isNewProject) {
-        setupNewClientToggle();
+        // Check if the new client toggle exists (only for admin/staff users)
+        const newClientToggleExists = document.getElementById('new-client-toggle');
+        if (newClientToggleExists) {
+          setupNewClientToggle();
+        } else {
+          console.log("ℹ️ New client toggle not available for this user role - skipping setup");
+        }
       }
     }
   });
@@ -488,23 +494,23 @@ console.log("Owner fields found:", ownerFieldsInForm.length, ownerFieldsInForm);
 
     // Find the new client toggle using the correct ID
     const newClientToggle = document.getElementById(
-      `new-client-toggle-${formId}`
+      `new-client-toggle`
     ) as HTMLInputElement;
     const existingClientContainer = document.getElementById(
       "existing-client-container"
     ) as HTMLElement;
     const ownerInput = document.getElementById(
-      `owner-${formId}`
+      `owner`
     ) as HTMLInputElement;
     const ownerEmailInput = document.getElementById(
-      `owner-email-${formId}`
+      `owner-email`
     ) as HTMLInputElement;
 
     console.log("🔍 Element lookup:", {
       formId,
-      newClientToggleId: `new-client-toggle-${formId}`,
-      ownerInputId: `owner-${formId}`,
-      ownerEmailInputId: `owner-email-${formId}`,
+      newClientToggleId: `new-client-toggle`,
+      ownerInputId: `owner`,
+      ownerEmailInputId: `owner-email`,
       newClientToggle: !!newClientToggle,
       ownerInput: !!ownerInput,
       ownerEmailInput: !!ownerEmailInput,
@@ -512,7 +518,7 @@ console.log("Owner fields found:", ownerFieldsInForm.length, ownerFieldsInForm);
     });
 
     if (!newClientToggle) {
-      console.error("❌ New client toggle not found!");
+      console.log("ℹ️ New client toggle not found - this is expected for client users");
       return;
     }
 

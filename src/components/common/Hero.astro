@@ -8,14 +8,31 @@
 interface Props {
   title: string;
   description: string;
+  statusLabel?: string;
+  statusColor?: string;
 }
 
-const { title, description } = Astro.props;
+const { title, description, statusLabel, statusColor = "blue" } = Astro.props;
 ---
 
-<h1 class="text-2xl font-medium text-hub-title dark:text-hub-title-dark" id="page-title">
-  {title}
-</h1>
-<p id="page-subtitle" class="text-base text-hub-subtitle dark:text-hub-subtitle-dark">
-  {description}
-</p>
+<div class="flex items-start justify-between">
+  <div class="flex-1">
+    <h1 class="text-2xl font-medium text-hub-title dark:text-hub-title-dark" id="page-title">
+      {title}
+    </h1>
+    <p id="page-subtitle" class="text-base text-hub-subtitle dark:text-hub-subtitle-dark">
+      {description}
+    </p>
+  </div>
+  {
+    statusLabel && (
+      <div class="ml-4 flex-shrink-0">
+        <span
+          class={`inline-flex items-center rounded-full px-3 py-1 text-sm font-medium bg-${statusColor}-100 text-${statusColor}-800 dark:bg-${statusColor}-900/30 dark:text-${statusColor}-400`}
+        >
+          {statusLabel}
+        </span>
+      </div>
+    )
+  }
+</div>
