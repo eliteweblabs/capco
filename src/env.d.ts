@@ -21,7 +21,9 @@ interface ImportMeta {
 
 declare namespace App {
   interface Locals {
-    email: string;
+    email?: string;
+    user?: import('@supabase/supabase-js').User;
+    role?: string;
   }
 }
 
