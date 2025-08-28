@@ -36,35 +36,35 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       });
     }
 
-    // Handle client data
+    // Handle client data and determine who the project author should be
     let owner = body.owner;
-    let client_id = null;
+    let projectAuthorId = userId; // Default to current user
 
     if (body.client_type === "new") {
-      // For new client, use the provided owner name and email
+      // For new client, use the provided owner name and current user as author
       owner = body.client_name;
+      projectAuthorId = userId; // Current user becomes the project author
       // Note: You might want to create a new client profile here
       // For now, we'll just use the owner name
-    } else if (body.client_type === "existing") {
-      // For existing client, get the client name from the profiles table
+    } else if (body.client_type === "existing" && body.author_id) {
+      // For existing client, use the selected client as the project author
       const { data: clientProfile } = await supabase!
         .from("profiles")
         .select("name")
-        .eq("id", body.client_id)
+        .eq("id", body.author_id)
         .single();
 
       if (clientProfile) {
         owner = clientProfile.name;
-        client_id = body.client_id;
+        projectAuthorId = body.author_id; // Selected client becomes the project author
       }
     }
 
     // Prepare project data
     const projectData = {
-      author_id: userId,
+      author_id: projectAuthorId, // Set to the appropriate client/user
       address: body.address,
       owner: owner,
-      client_id: client_id, // Store the client ID if it's an existing client
       architect: body.architect,
       sq_ft: body.sq_ft,
       description: body.description,
