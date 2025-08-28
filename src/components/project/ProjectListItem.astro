@@ -65,18 +65,27 @@ try {
       <div class="flex-1">
         {
           project.author_name && (
-            <h3 class="inline-block text-lg font-semibold text-gray-900 dark:text-white">
-              {project.author_name} |
+            <h3
+              class="inline-block text-lg font-semibold text-gray-900 dark:text-white"
+              data-searchable
+            >
+              {project.author_name}
             </h3>
+            <span class="text-gray-500 dark:text-gray-400">|</span>
           )
         }
         <h3
           class="inline-block text-lg font-semibold text-gray-900 dark:text-white"
           data-project-address
+          data-searchable
         >
           {project.address}
         </h3>
-        <p class="mt-2 text-sm text-gray-600 dark:text-gray-300" data-project-description>
+        <p
+          class="mt-2 text-sm text-gray-600 dark:text-gray-300"
+          data-project-description
+          data-searchable
+        >
           {project.description}
         </p>
         <div class="mt-4 flex items-center gap-4 text-sm text-gray-500 dark:text-gray-400">
@@ -99,14 +108,32 @@ try {
       </div>
     </div>
     <div class="mt-4 flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
-      <span>Created: {new Date(project.created_at).toLocaleDateString()}</span>
+      <span
+        >Created: {new Date(project.created_at).toLocaleDateString()}
+        {
+          new Date(project.created_at).toLocaleTimeString([], {
+            hour: "2-digit",
+            minute: "2-digit",
+            hour12: true,
+          })
+        }</span
+      >
       <div class="flex items-center gap-4">
-        <span>Updated: {new Date(project.updated_at).toLocaleDateString()}</span>
+        <span
+          >Last Updated: {new Date(project.updated_at).toLocaleDateString()}
+          {
+            new Date(project.updated_at).toLocaleTimeString([], {
+              hour: "2-digit",
+              minute: "2-digit",
+              hour12: true,
+            })
+          }</span
+        >
         {
           project.assigned_to_name && (
             <span class="flex items-center gap-1">
               <BoxIcon name="user" size="0.75rem" />
-              Assigned to: {project.assigned_to_name}
+              Assigned to: <span data-searchable>{project.assigned_to_name}</span>
             </span>
           )
         }
