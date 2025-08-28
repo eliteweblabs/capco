@@ -37,13 +37,8 @@ export const GET: APIRoute = async ({ request }) => {
       );
     }
 
-    // Build query based on role - include author profile information
-    let query = supabase
-      .from("projects")
-      .select(`
-        *,
-        author_profile:profiles!projects_author_id_fkey(name)
-      `);
+    // Build query based on role
+    let query = supabase.from("projects").select("*");
 
     if (role === "Admin") {
       // Admin gets all projects
@@ -77,12 +72,31 @@ export const GET: APIRoute = async ({ request }) => {
       );
     }
 
-    // Flatten author profile data for easier access
+    console.log("📡 [API] Projects fetched before author lookup:", projects?.length);
+
+    // Get unique author IDs for batch profile lookup
+    const authorIds = [...new Set(projects?.map(p => p.author_id).filter(Boolean))] || [];
+    
+    let authorProfiles = [];
+    if (authorIds.length > 0) {
+      const { data: profiles } = await supabase
+        .from("profiles")
+        .select("id, name")
+        .in("id", authorIds);
+      
+      authorProfiles = profiles || [];
+    }
+
+    // Create a map for quick author name lookup
+    const authorNameMap = new Map();
+    authorProfiles.forEach(profile => {
+      authorNameMap.set(profile.id, profile.name);
+    });
+
+    // Add author names to projects
     const processedProjects = projects?.map(project => ({
       ...project,
-      author_name: project.author_profile?.name || null,
-      // Remove the nested object to keep the response clean
-      author_profile: undefined
+      author_name: authorNameMap.get(project.author_id) || null
     })) || [];
 
     console.log("📡 [API] Projects fetched:", processedProjects.length);
