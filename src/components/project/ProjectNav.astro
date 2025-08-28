@@ -41,8 +41,8 @@ try {
       method: "GET",
       headers: {
         "Content-Type": "application/json",
-        "user_id": user.id,
-        "role": role || "Client",
+        user_id: user.id,
+        role: role || "Client",
       },
     });
 
@@ -50,7 +50,7 @@ try {
       const projectsResult = await projectsResponse.json();
       if (projectsResult.success) {
         projects = projectsResult.projects || [];
-        
+
         // Calculate status counts
         statusCounts = {};
         projects.forEach((project) => {
@@ -69,9 +69,9 @@ try {
   id="sub-nav"
   class="scrollbar-hide relative flex gap-1 overflow-x-auto whitespace-nowrap text-hub-inactive dark:border-hub-border-dark"
 >
-  <ProjectNavButton 
-    id="all-statuses" 
-    label="All Statuses" 
+  <ProjectNavButton
+    id="all-statuses"
+    label="All Statuses"
     icon="bx bx-list-ul"
     data-count={projects.length.toString()}
   >
@@ -178,7 +178,9 @@ try {
       if (!projectsList || !subNav) return;
 
       const allProjects = projectsList.querySelectorAll("[data-project-status]");
-      const visibleProjects = projectsList.querySelectorAll('[data-project-status]:not([style*="display: none"])');
+      const visibleProjects = projectsList.querySelectorAll(
+        '[data-project-status]:not([style*="display: none"])'
+      );
       const statusCounts: Record<string, number> = {};
 
       // Count visible projects by status
@@ -194,7 +196,7 @@ try {
         const htmlButton = button as HTMLButtonElement;
         const statusFilter = htmlButton.dataset.projectStatusFilter;
         const isAllStatuses = htmlButton.id === "all-statuses";
-        
+
         let count = 0;
         if (isAllStatuses) {
           count = visibleProjects.length;
@@ -203,14 +205,14 @@ try {
         }
 
         // Update the count display
-        const countSpan = htmlButton.querySelector('span.absolute');
+        const countSpan = htmlButton.querySelector("span.absolute");
         if (countSpan) {
           countSpan.textContent = count.toString();
           // Hide if count is 0
           if (count === 0) {
-            countSpan.style.display = 'none';
+            (countSpan as HTMLElement).style.display = "none";
           } else {
-            countSpan.style.display = 'flex';
+            (countSpan as HTMLElement).style.display = "flex";
           }
         }
       });
@@ -230,7 +232,7 @@ try {
         childList: true,
         subtree: true,
         attributes: true,
-        attributeFilter: ['style']
+        attributeFilter: ["style"],
       });
     }
 
