@@ -75,7 +75,7 @@ export function getFilteredFormFields(
   // For existing projects, hide all client-related fields
   if (!isNewProject) {
     fields = fields.filter(
-      (field) => !["owner", "owner_email", "existing_client_id", "new_client"].includes(field.name)
+      (field) => !["owner", "owner_email", "author_id", "new_client"].includes(field.name)
     );
   } else {
     // For new projects, keep owner and email fields in DOM but they'll be hidden via CSS initially
@@ -179,7 +179,7 @@ export const PROJECT_FORM_FIELDS: FormFieldConfig[] = [
   // Existing client dropdown (only shown for new projects with new client toggle off)
   {
     id: "existing-client-select",
-    name: "existing_client_id",
+    name: "author_id",
     type: "select",
     label: "Select Existing Client",
     placeholder: "Choose a client...",

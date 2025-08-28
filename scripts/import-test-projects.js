@@ -187,10 +187,10 @@ function generateProjectData(authors, staff) {
   const hasNeighborhood = faker.datatype.boolean(0.4);
   const neighborhood = hasNeighborhood ? faker.helpers.arrayElement(NEIGHBORHOODS) : null;
 
-    // Generate realistic address
+  // Generate realistic address
   const streetNumber = faker.number.int({ min: 1, max: 9999 });
   const streetName = faker.location.street();
-  const fullAddress = neighborhood 
+  const fullAddress = neighborhood
     ? `${streetNumber} ${streetName}, ${neighborhood}, ${city}, MA`
     : `${streetNumber} ${streetName}, ${city}, MA`;
 
@@ -390,7 +390,7 @@ async function importTestProjects(count = 30) {
       const { data: stats } = await supabase
         .from("projects")
         .select("status, new_construction")
-        .order('id', { ascending: false })
+        .order("id", { ascending: false })
         .limit(successful); // Get the recently inserted projects
 
       if (stats) {
