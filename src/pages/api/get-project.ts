@@ -74,29 +74,32 @@ export const GET: APIRoute = async ({ request }) => {
 
     console.log("📡 [API] Projects fetched before author lookup:", projects?.length);
 
-    // Get unique author IDs for batch profile lookup
+    // Get unique author and assigned user IDs for batch profile lookup
     const authorIds = [...new Set(projects?.map(p => p.author_id).filter(Boolean))] || [];
+    const assignedIds = [...new Set(projects?.map(p => p.assigned_to_id).filter(Boolean))] || [];
+    const allUserIds = [...new Set([...authorIds, ...assignedIds])];
     
-    let authorProfiles = [];
-    if (authorIds.length > 0) {
+    let userProfiles = [];
+    if (allUserIds.length > 0) {
       const { data: profiles } = await supabase
         .from("profiles")
         .select("id, name")
-        .in("id", authorIds);
+        .in("id", allUserIds);
       
-      authorProfiles = profiles || [];
+      userProfiles = profiles || [];
     }
 
-    // Create a map for quick author name lookup
-    const authorNameMap = new Map();
-    authorProfiles.forEach(profile => {
-      authorNameMap.set(profile.id, profile.name);
+    // Create a map for quick user name lookup
+    const userNameMap = new Map();
+    userProfiles.forEach(profile => {
+      userNameMap.set(profile.id, profile.name);
     });
 
-    // Add author names to projects
+    // Add author and assigned user names to projects
     const processedProjects = projects?.map(project => ({
       ...project,
-      author_name: authorNameMap.get(project.author_id) || null
+      author_name: userNameMap.get(project.author_id) || null,
+      assigned_to_name: userNameMap.get(project.assigned_to_id) || null
     })) || [];
 
     console.log("📡 [API] Projects fetched:", processedProjects.length);
