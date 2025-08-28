@@ -8,9 +8,11 @@ export const DELETE: APIRoute = async ({ request, cookies }) => {
     // Check if Supabase is configured
     if (!supabase) {
       console.error("Database not configured - supabase client not available");
-      return new Response(JSON.stringify({ error: "Database not configured" }), {
-        status: 500,
-        headers: { "Content-Type": "application/json" },
+      return new Response(null, {
+        status: 302,
+        headers: {
+          Location: "/dashboard?error=Database not configured.",
+        },
       });
     }
 
@@ -23,9 +25,11 @@ export const DELETE: APIRoute = async ({ request, cookies }) => {
 
     if (!accessToken || !refreshToken) {
       console.error("Not authenticated - missing tokens");
-      return new Response(JSON.stringify({ error: "Not authenticated" }), {
-        status: 401,
-        headers: { "Content-Type": "application/json" },
+      return new Response(null, {
+        status: 302,
+        headers: {
+          Location: "/dashboard?error=Not authenticated. Please log in.",
+        },
       });
     }
 
@@ -41,9 +45,11 @@ export const DELETE: APIRoute = async ({ request, cookies }) => {
 
     if (authError || !user) {
       console.error("Authentication failed:", authError);
-      return new Response(JSON.stringify({ error: "Authentication failed" }), {
-        status: 401,
-        headers: { "Content-Type": "application/json" },
+      return new Response(null, {
+        status: 302,
+        headers: {
+          Location: "/dashboard?error=Authentication failed. Please log in again.",
+        },
       });
     }
 
@@ -57,9 +63,11 @@ export const DELETE: APIRoute = async ({ request, cookies }) => {
 
     if (!projectId) {
       console.error("Project ID is required");
-      return new Response(JSON.stringify({ error: "Project ID is required" }), {
-        status: 400,
-        headers: { "Content-Type": "application/json" },
+      return new Response(null, {
+        status: 302,
+        headers: {
+          Location: "/dashboard?error=Project ID is required.",
+        },
       });
     }
 
@@ -68,9 +76,11 @@ export const DELETE: APIRoute = async ({ request, cookies }) => {
 
     if (isNaN(projectIdNum)) {
       console.error("Invalid project ID:", projectId);
-      return new Response(JSON.stringify({ error: "Invalid project ID" }), {
-        status: 400,
-        headers: { "Content-Type": "application/json" },
+      return new Response(null, {
+        status: 302,
+        headers: {
+          Location: "/dashboard?error=Invalid project ID.",
+        },
       });
     }
 
@@ -86,9 +96,11 @@ export const DELETE: APIRoute = async ({ request, cookies }) => {
 
     if (projectError || !project) {
       console.error("Project not found:", projectError);
-      return new Response(JSON.stringify({ error: "Project not found" }), {
-        status: 404,
-        headers: { "Content-Type": "application/json" },
+      return new Response(null, {
+        status: 302,
+        headers: {
+          Location: "/dashboard?error=Project not found.",
+        },
       });
     }
 
@@ -117,9 +129,11 @@ export const DELETE: APIRoute = async ({ request, cookies }) => {
 
     if (!isAdmin && !isAuthor) {
       console.error("Unauthorized to delete this project");
-      return new Response(JSON.stringify({ error: "Unauthorized to delete this project" }), {
-        status: 403,
-        headers: { "Content-Type": "application/json" },
+      return new Response(null, {
+        status: 302,
+        headers: {
+          Location: "/dashboard?error=Unauthorized to delete this project.",
+        },
       });
     }
 
@@ -155,21 +169,23 @@ export const DELETE: APIRoute = async ({ request, cookies }) => {
 
     console.log("Project deleted successfully");
 
-    return new Response(
-      JSON.stringify({
-        success: true,
-        message: "Project deleted successfully",
-      }),
-      {
-        status: 200,
-        headers: { "Content-Type": "application/json" },
-      }
-    );
+    // Redirect to dashboard after successful deletion
+    return new Response(null, {
+      status: 302,
+      headers: {
+        Location: "/dashboard",
+        "Set-Cookie": "project_deleted=true; Path=/; Max-Age=10",
+      },
+    });
   } catch (error) {
     console.error("Error in delete-project API:", error);
-    return new Response(JSON.stringify({ error: "Internal server error" }), {
-      status: 500,
-      headers: { "Content-Type": "application/json" },
+    // Redirect to dashboard with error message
+    return new Response(null, {
+      status: 302,
+      headers: {
+        Location: "/dashboard?error=Failed to delete project. Please try again.",
+        "Set-Cookie": "project_delete_error=true; Path=/; Max-Age=10",
+      },
     });
   }
 };
