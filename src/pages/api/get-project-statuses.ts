@@ -16,10 +16,11 @@ export const GET: APIRoute = async ({ request }) => {
       );
     }
 
-    // Fetch all project statuses from database
+    // Fetch all project statuses from database (excluding status 0)
     const { data: statuses, error } = await supabase
       .from("project_statuses")
       .select("status_code, status_name, email_content, est_time, notify, els_to_show, trigger")
+      .neq("status_code", 0)
       .order("status_code");
 
     if (error) {
