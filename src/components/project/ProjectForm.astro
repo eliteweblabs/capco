@@ -6,12 +6,7 @@ interface Props {
   isNewProject?: boolean;
 }
 
-const {
-  project = {},
-  projectId = "",
-  userRole,
-  isNewProject = false,
-} = Astro.props;
+const { project = {}, projectId = "", userRole, isNewProject = false } = Astro.props;
 
 // Generate a temporary ID for new projects
 const formId = isNewProject ? `new-project-${Date.now()}` : projectId || "";
@@ -27,7 +22,7 @@ const formId = isNewProject ? `new-project-${Date.now()}` : projectId || "";
   <div class="relative">
     <label
       for={`title-${formId}`}
-      class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+      class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300"
     >
       Title *
     </label>
@@ -36,7 +31,7 @@ const formId = isNewProject ? `new-project-${Date.now()}` : projectId || "";
       id={`title-${formId}`}
       name="title"
       value={project?.title || ""}
-      class="w-full py-2 px-3 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:focus:ring-blue-400 dark:focus:border-blue-400"
+      class="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:focus:border-blue-400 dark:focus:ring-blue-400"
       placeholder="Project title"
       required
     />
@@ -46,7 +41,7 @@ const formId = isNewProject ? `new-project-${Date.now()}` : projectId || "";
   <div class="relative">
     <label
       for={`address-${formId}`}
-      class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+      class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300"
     >
       Address *
     </label>
@@ -55,17 +50,93 @@ const formId = isNewProject ? `new-project-${Date.now()}` : projectId || "";
       id={`address-${formId}`}
       name="address"
       value={project?.address || ""}
-      class="w-full py-2 px-3 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:focus:ring-blue-400 dark:focus:border-blue-400"
+      class="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:focus:border-blue-400 dark:focus:ring-blue-400"
       placeholder="Project address"
       required
     />
+  </div>
+
+  <!-- Owner Field -->
+  <div class="relative">
+    <label
+      for={`owner-${formId}`}
+      class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300"
+    >
+      Owner
+    </label>
+    <input
+      type="text"
+      id={`owner-${formId}`}
+      name="owner"
+      value={project?.owner || ""}
+      class="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:focus:border-blue-400 dark:focus:ring-blue-400"
+      placeholder="Property owner"
+    />
+  </div>
+
+  <!-- Architect Field -->
+  <div class="relative">
+    <label
+      for={`architect-${formId}`}
+      class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300"
+    >
+      Architect
+    </label>
+    <input
+      type="text"
+      id={`architect-${formId}`}
+      name="architect"
+      value={project?.architect || ""}
+      class="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:focus:border-blue-400 dark:focus:ring-blue-400"
+      placeholder="Project architect"
+    />
+  </div>
+
+  <!-- Square Footage and Units Row -->
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <!-- Square Footage Field -->
+    <div class="relative">
+      <label
+        for={`sq_ft-${formId}`}
+        class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300"
+      >
+        Square Footage
+      </label>
+      <input
+        type="number"
+        id={`sq_ft-${formId}`}
+        name="sq_ft"
+        value={project?.sq_ft || ""}
+        class="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:focus:border-blue-400 dark:focus:ring-blue-400"
+        placeholder="Square footage"
+      />
+    </div>
+
+    <!-- Units Field -->
+    <div class="relative">
+      <label
+        for={`units-${formId}`}
+        class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300"
+      >
+        Units
+      </label>
+      <input
+        type="number"
+        id={`units-${formId}`}
+        name="units"
+        value={project?.units || "1"}
+        min="1"
+        class="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:focus:border-blue-400 dark:focus:ring-blue-400"
+        placeholder="Number of units"
+      />
+    </div>
   </div>
 
   <!-- Description Field -->
   <div class="relative">
     <label
       for={`description-${formId}`}
-      class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+      class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300"
     >
       Description
     </label>
@@ -73,68 +144,118 @@ const formId = isNewProject ? `new-project-${Date.now()}` : projectId || "";
       id={`description-${formId}`}
       name="description"
       rows="3"
-      class="w-full py-2 px-3 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:focus:ring-blue-400 dark:focus:border-blue-400"
-      placeholder="Project description"
-    >{project?.description || ""}</textarea>
-  </div>
-
-  <!-- Square Footage Field -->
-  <div class="relative">
-    <label
-      for={`sq_ft-${formId}`}
-      class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-    >
-      Square Footage
-    </label>
-    <input
-      type="number"
-      id={`sq_ft-${formId}`}
-      name="sq_ft"
-      value={project?.sq_ft || ""}
-      class="w-full py-2 px-3 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:focus:ring-blue-400 dark:focus:border-blue-400"
-      placeholder="Square footage"
-    />
+      class="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:focus:border-blue-400 dark:focus:ring-blue-400"
+      placeholder="Project description">{project?.description || ""}</textarea>
   </div>
 
   <!-- New Construction Toggle -->
   <div class="relative">
-    <label class="inline-flex items-center cursor-pointer">
+    <label class="inline-flex cursor-pointer items-center">
       <input
         type="checkbox"
         name="new_construction"
         checked={project?.new_construction}
-        class="sr-only peer"
+        class="peer sr-only"
       />
-      <div class="relative w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600 dark:peer-checked:bg-blue-600" />
+      <div
+        class="peer relative h-6 w-11 rounded-full bg-gray-200 after:absolute after:start-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:border after:border-gray-300 after:bg-white after:transition-all after:content-[''] peer-checked:bg-blue-600 peer-checked:after:translate-x-full peer-checked:after:border-white peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:border-gray-600 dark:bg-gray-700 dark:peer-checked:bg-blue-600 dark:peer-focus:ring-blue-800 rtl:peer-checked:after:-translate-x-full"
+      >
+      </div>
       <span class="ms-3 text-sm font-medium text-gray-900 dark:text-gray-300">
         New Construction
       </span>
     </label>
   </div>
 
+  <!-- Building Data (JSON field) -->
+  <div class="relative">
+    <label
+      for={`building-${formId}`}
+      class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300"
+    >
+      Building Information (JSON)
+    </label>
+    <textarea
+      id={`building-${formId}`}
+      name="building"
+      rows="3"
+      class="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:focus:border-blue-400 dark:focus:ring-blue-400"
+      placeholder='{"type": "Office Building", "floors": 3, "occupancy": "Commercial"}'>{project?.building ? JSON.stringify(project.building, null, 2) : ""}</textarea>
+  </div>
+
+  <!-- Project Data (JSON field) -->
+  <div class="relative">
+    <label
+      for={`project-${formId}`}
+      class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300"
+    >
+      Project Information (JSON)
+    </label>
+    <textarea
+      id={`project-${formId}`}
+      name="project"
+      rows="3"
+      class="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:focus:border-blue-400 dark:focus:ring-blue-400"
+      placeholder='{"priority": "High", "timeline": "3-6 months", "complexity": "Standard"}'>{project?.project ? JSON.stringify(project.project, null, 2) : ""}</textarea>
+  </div>
+
+  <!-- Service Data (JSON field) -->
+  <div class="relative">
+    <label
+      for={`service-${formId}`}
+      class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300"
+    >
+      Service Information (JSON)
+    </label>
+    <textarea
+      id={`service-${formId}`}
+      name="service"
+      rows="3"
+      class="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:focus:border-blue-400 dark:focus:ring-blue-400"
+      placeholder='{"primary_services": ["Fire Alarm System", "Sprinkler Installation"], "coverage_area": "Full Building"}'>{project?.service ? JSON.stringify(project.service, null, 2) : ""}</textarea>
+  </div>
+
+  <!-- Requested Documents (JSON field) -->
+  <div class="relative">
+    <label
+      for={`requested_docs-${formId}`}
+      class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300"
+    >
+      Requested Documents (JSON Array)
+    </label>
+    <textarea
+      id={`requested_docs-${formId}`}
+      name="requested_docs"
+      rows="3"
+      class="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:focus:border-blue-400 dark:focus:ring-blue-400"
+      placeholder='["As-Built Drawings", "Fire Safety Plan", "Code Compliance Reports"]'>{project?.requested_docs ? JSON.stringify(project.requested_docs, null, 2) : ""}</textarea>
+  </div>
+
   <!-- Form Actions -->
-  <div class="flex gap-2 pt-4 border-t border-gray-200 dark:border-gray-600">
+  <div class="flex gap-2 border-t border-gray-200 pt-4 dark:border-gray-600">
     <!-- Save/Update Button -->
     <button
       type="submit"
-      class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md text-sm font-medium transition-colors"
+      class="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700"
     >
       <i class="bx bx-save mr-1"></i>
       {isNewProject ? "Create Project" : "Update Project"}
     </button>
 
     <!-- Delete Button (only for existing projects) -->
-    {!isNewProject && (
-      <button
-        type="button"
-        id="delete-project-btn"
-        class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-md text-sm font-medium transition-colors"
-        data-project-id={formId}
-      >
-        <i class="bx bx-trash mr-1"></i>
-        Delete Project
-      </button>
-    )}
+    {
+      !isNewProject && (
+        <button
+          type="button"
+          id="delete-project-btn"
+          class="rounded-md bg-red-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-red-700"
+          data-project-id={formId}
+        >
+          <i class="bx bx-trash mr-1" />
+          Delete Project
+        </button>
+      )
+    }
   </div>
 </form>
 
@@ -274,6 +395,39 @@ const formId = isNewProject ? `new-project-${Date.now()}` : projectId || "";
 
     // Convert checkbox values
     formValues.new_construction = formData.has("new_construction");
+
+    // Parse JSON fields
+    try {
+      if (formValues.building) {
+        formValues.building = JSON.parse(formValues.building);
+      }
+    } catch (e) {
+      console.warn("Invalid JSON in building field");
+    }
+
+    try {
+      if (formValues.project) {
+        formValues.project = JSON.parse(formValues.project);
+      }
+    } catch (e) {
+      console.warn("Invalid JSON in project field");
+    }
+
+    try {
+      if (formValues.service) {
+        formValues.service = JSON.parse(formValues.service);
+      }
+    } catch (e) {
+      console.warn("Invalid JSON in service field");
+    }
+
+    try {
+      if (formValues.requested_docs) {
+        formValues.requested_docs = JSON.parse(formValues.requested_docs);
+      }
+    } catch (e) {
+      console.warn("Invalid JSON in requested_docs field");
+    }
 
     console.log("Form data:", formValues);
 
