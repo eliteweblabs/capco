@@ -10,11 +10,44 @@ interface Props {
     sq_ft: any;
     new_construction: any;
     status: any;
-    created: any;
+    created_at: any;
+    updated_at: any;
   };
 }
 
 const { project } = Astro.props;
+
+// Fetch project statuses to get the status name
+let statusName = `Status ${project.status}`;
+let statusColor = "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300";
+
+try {
+  const response = await fetch(`${Astro.url.origin}/api/get-project-statuses`);
+  if (response.ok) {
+    const result = await response.json();
+    if (result.success && result.statuses) {
+      const statusInfo = result.statuses[project.status];
+      if (statusInfo) {
+        statusName = statusInfo.status_name;
+        
+        // Set status color based on status code ranges
+        if (project.status <= 30) {
+          statusColor = "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300"; // Early stages
+        } else if (project.status <= 100) {
+          statusColor = "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300"; // In progress
+        } else if (project.status <= 200) {
+          statusColor = "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300"; // Completing
+        } else if (project.status === 220) {
+          statusColor = "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300"; // Complete
+        } else {
+          statusColor = "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300"; // Default
+        }
+      }
+    }
+  }
+} catch (error) {
+  console.error("Failed to fetch project statuses:", error);
+}
 ---
 
 <a
@@ -46,13 +79,14 @@ const { project } = Astro.props;
         </div>
       </div>
       <div class="ml-4">
-        <span class={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium`}>
-          {project.status}
+        <span class={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${statusColor}`}>
+          {statusName}
         </span>
       </div>
     </div>
     <div class="mt-4 flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
-      <span>Created: {new Date(project.created).toLocaleDateString()}</span>
+      <span>Created: {new Date(project.created_at).toLocaleDateString()}</span>
+      <span>Updated: {new Date(project.updated_at).toLocaleDateString()}</span>
     </div>
   </div>
 </a>
