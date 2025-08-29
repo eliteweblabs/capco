@@ -1,12 +1,48 @@
 import type { APIRoute } from "astro";
 import { SimpleProjectLogger } from "../../lib/simple-logging";
 
-export const POST: APIRoute = async ({ request }) => {
+export const POST: APIRoute = async ({ request, cookies }) => {
   console.log("Upload API called");
   try {
     const formData = await request.formData();
     const fileType = formData.get("fileType") as string;
     const projectId = formData.get("projectId") as string;
+
+    // Check authentication
+    const { supabase } = await import("../../lib/supabase");
+    if (!supabase) {
+      return new Response(JSON.stringify({ error: "Supabase client not configured" }), {
+        status: 500,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+
+    // Set up session from cookies
+    const accessToken = cookies.get("sb-access-token")?.value;
+    const refreshToken = cookies.get("sb-refresh-token")?.value;
+
+    if (accessToken && refreshToken) {
+      await supabase.auth.setSession({
+        access_token: accessToken,
+        refresh_token: refreshToken,
+      });
+    }
+
+    // Get current user
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser();
+
+    if (userError || !user) {
+      console.error("Authentication error:", userError);
+      return new Response(JSON.stringify({ error: "Authentication required" }), {
+        status: 401,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+
+    console.log("Upload request from user:", user.id);
 
     console.log("Upload request data:", {
       fileType,
@@ -33,6 +69,50 @@ export const POST: APIRoute = async ({ request }) => {
     if (!projectId) {
       return new Response(JSON.stringify({ error: "Project ID is required" }), {
         status: 400,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+
+    // Verify project ownership or admin access
+    try {
+      const { data: project, error: projectError } = await supabase
+        .from("projects")
+        .select("id, author_id")
+        .eq("id", projectId)
+        .single();
+
+      if (projectError || !project) {
+        console.error("Project not found:", projectError);
+        return new Response(JSON.stringify({ error: "Project not found" }), {
+          status: 404,
+          headers: { "Content-Type": "application/json" },
+        });
+      }
+
+      // Check if user is admin or project owner
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("role")
+        .eq("id", user.id)
+        .single();
+
+      const userRole = profile?.role || "Client";
+      const isAdmin = userRole === "Admin" || userRole === "Staff";
+      const isProjectOwner = project.author_id === user.id;
+
+      if (!isAdmin && !isProjectOwner) {
+        console.error("Access denied for project:", projectId);
+        return new Response(JSON.stringify({ error: "Access denied" }), {
+          status: 403,
+          headers: { "Content-Type": "application/json" },
+        });
+      }
+
+      console.log("Project access verified:", { projectId, userRole, isProjectOwner });
+    } catch (error) {
+      console.error("Error verifying project access:", error);
+      return new Response(JSON.stringify({ error: "Project access verification failed" }), {
+        status: 500,
         headers: { "Content-Type": "application/json" },
       });
     }
@@ -112,7 +192,39 @@ export const POST: APIRoute = async ({ request }) => {
     const { supabase } = await import("../../lib/supabase");
 
     if (!supabase) {
+      console.error("Supabase client not configured");
       return new Response(JSON.stringify({ error: "Supabase client not configured" }), {
+        status: 500,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+
+    // Check if the storage bucket exists
+    try {
+      const { data: buckets, error: bucketsError } = await supabase.storage.listBuckets();
+      if (bucketsError) {
+        console.error("Error listing buckets:", bucketsError);
+        return new Response(JSON.stringify({ error: "Storage access error" }), {
+          status: 500,
+          headers: { "Content-Type": "application/json" },
+        });
+      }
+      
+      const bucketNames = buckets?.map(b => b.name) || [];
+      console.log("Available buckets:", bucketNames);
+      
+      if (!bucketNames.includes("project-documents")) {
+        console.error("project-documents bucket not found. Available buckets:", bucketNames);
+        return new Response(JSON.stringify({ 
+          error: "Storage bucket 'project-documents' not found. Please create it in Supabase Storage." 
+        }), {
+          status: 500,
+          headers: { "Content-Type": "application/json" },
+        });
+      }
+    } catch (error) {
+      console.error("Error checking storage buckets:", error);
+      return new Response(JSON.stringify({ error: "Storage configuration error" }), {
         status: 500,
         headers: { "Content-Type": "application/json" },
       });
@@ -150,11 +262,13 @@ export const POST: APIRoute = async ({ request }) => {
         // Log file in database
         const { error: dbError } = await supabase.from("files").insert({
           project_id: parseInt(projectId),
+          author_id: user.id, // Add user ID
           file_path: filePath,
           file_name: file.name,
           file_size: file.size,
           file_type: file.type,
           status: "active",
+          uploaded_at: new Date().toISOString(),
         });
 
         if (dbError) {
@@ -172,10 +286,7 @@ export const POST: APIRoute = async ({ request }) => {
 
         // Log file upload
         try {
-          // Get user ID from session (you may need to add session handling here)
-          // For now, we'll use a placeholder - this should be properly implemented
-          const userId = "system"; // This should be replaced with actual user ID from session
-          await SimpleProjectLogger.logFileUpload(parseInt(projectId), userId, file.name);
+          await SimpleProjectLogger.logFileUpload(parseInt(projectId), user.id, file.name);
         } catch (logError) {
           console.error("Error logging file upload:", logError);
           // Don't fail the upload if logging fails
