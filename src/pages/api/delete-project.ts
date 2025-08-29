@@ -8,13 +8,10 @@ export const DELETE: APIRoute = async ({ request, cookies }) => {
     // Check if Supabase is configured
     if (!supabase) {
       console.error("Database not configured - supabase client not available");
-      return new Response(
-        JSON.stringify({ error: "Database not configured" }),
-        {
-          status: 500,
-          headers: { "Content-Type": "application/json" },
-        }
-      );
+      return new Response(JSON.stringify({ error: "Database not configured" }), {
+        status: 500,
+        headers: { "Content-Type": "application/json" },
+      });
     }
 
     // Get current user from cookies for authentication
@@ -26,13 +23,10 @@ export const DELETE: APIRoute = async ({ request, cookies }) => {
 
     if (!accessToken || !refreshToken) {
       console.error("Not authenticated - missing tokens");
-      return new Response(
-        JSON.stringify({ error: "Not authenticated. Please log in." }),
-        {
-          status: 401,
-          headers: { "Content-Type": "application/json" },
-        }
-      );
+      return new Response(JSON.stringify({ error: "Not authenticated. Please log in." }), {
+        status: 401,
+        headers: { "Content-Type": "application/json" },
+      });
     }
 
     // Set up session with regular supabase client
@@ -59,20 +53,26 @@ export const DELETE: APIRoute = async ({ request, cookies }) => {
     console.log("User authenticated:", user.id);
 
     // Get the request body
-    const requestBody = await request.json();
-    console.log("Request body:", requestBody);
+    let requestBody;
+    try {
+      requestBody = await request.json();
+      console.log("Request body:", requestBody);
+    } catch (parseError) {
+      console.error("Error parsing request body:", parseError);
+      return new Response(JSON.stringify({ error: "Invalid request body format" }), {
+        status: 400,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
 
     const { projectId } = requestBody;
 
     if (!projectId) {
       console.error("Project ID is required");
-      return new Response(
-        JSON.stringify({ error: "Project ID is required" }),
-        {
-          status: 400,
-          headers: { "Content-Type": "application/json" },
-        }
-      );
+      return new Response(JSON.stringify({ error: "Project ID is required" }), {
+        status: 400,
+        headers: { "Content-Type": "application/json" },
+      });
     }
 
     // Convert projectId to number if it's a string
@@ -80,13 +80,10 @@ export const DELETE: APIRoute = async ({ request, cookies }) => {
 
     if (isNaN(projectIdNum)) {
       console.error("Invalid project ID:", projectId);
-      return new Response(
-        JSON.stringify({ error: "Invalid project ID" }),
-        {
-          status: 400,
-          headers: { "Content-Type": "application/json" },
-        }
-      );
+      return new Response(JSON.stringify({ error: "Invalid project ID" }), {
+        status: 400,
+        headers: { "Content-Type": "application/json" },
+      });
     }
 
     console.log("Project ID:", projectIdNum);
@@ -101,13 +98,10 @@ export const DELETE: APIRoute = async ({ request, cookies }) => {
 
     if (projectError || !project) {
       console.error("Project not found:", projectError);
-      return new Response(
-        JSON.stringify({ error: "Project not found" }),
-        {
-          status: 404,
-          headers: { "Content-Type": "application/json" },
-        }
-      );
+      return new Response(JSON.stringify({ error: "Project not found" }), {
+        status: 404,
+        headers: { "Content-Type": "application/json" },
+      });
     }
 
     console.log("Project found:", project);
@@ -135,13 +129,10 @@ export const DELETE: APIRoute = async ({ request, cookies }) => {
 
     if (!isAdmin && !isAuthor) {
       console.error("Unauthorized to delete this project");
-      return new Response(
-        JSON.stringify({ error: "Unauthorized to delete this project" }),
-        {
-          status: 403,
-          headers: { "Content-Type": "application/json" },
-        }
-      );
+      return new Response(JSON.stringify({ error: "Unauthorized to delete this project" }), {
+        status: 403,
+        headers: { "Content-Type": "application/json" },
+      });
     }
 
     // Delete associated files first (cascade delete)
@@ -178,9 +169,9 @@ export const DELETE: APIRoute = async ({ request, cookies }) => {
 
     // Return success response
     return new Response(
-      JSON.stringify({ 
-        success: true, 
-        message: "Project deleted successfully" 
+      JSON.stringify({
+        success: true,
+        message: "Project deleted successfully",
       }),
       {
         status: 200,
@@ -190,8 +181,8 @@ export const DELETE: APIRoute = async ({ request, cookies }) => {
   } catch (error) {
     console.error("Error in delete-project API:", error);
     return new Response(
-      JSON.stringify({ 
-        error: "Failed to delete project. Please try again." 
+      JSON.stringify({
+        error: "Failed to delete project. Please try again.",
       }),
       {
         status: 500,

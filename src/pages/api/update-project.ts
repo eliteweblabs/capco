@@ -1,12 +1,12 @@
 import type { APIRoute } from "astro";
+import { buildUpdateData } from "../../lib/project-fields-config";
 import { supabase } from "../../lib/supabase";
-import { buildUpdateData, getAllFieldNames } from "../../lib/project-fields-config";
 
 export const POST: APIRoute = async ({ request }) => {
   try {
     const body = await request.json();
     console.log("Update project API received:", body);
-    
+
     const { projectId, ...updateFields } = body;
 
     if (!projectId) {
@@ -72,13 +72,17 @@ export const POST: APIRoute = async ({ request }) => {
     }
 
     // Build update data using the template configuration
-    const { core: coreUpdateData, optional: optionalUpdateData, new: newUpdateData } = buildUpdateData(updateFields);
-    
+    const {
+      core: coreUpdateData,
+      optional: optionalUpdateData,
+      new: newUpdateData,
+    } = buildUpdateData(updateFields);
+
     // Always update the updated_at timestamp when any field is modified
     const updateData = {
       ...coreUpdateData,
       ...optionalUpdateData,
-      updated_at: new Date().toISOString()
+      updated_at: new Date().toISOString(),
     };
 
     console.log("Attempting to update project with core data:", updateData);
