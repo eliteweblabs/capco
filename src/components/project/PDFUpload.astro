@@ -178,6 +178,17 @@ const { projectId, fileType = "media" } = Astro.props;
       this.downloadAllBtn.addEventListener("click", () => {
         this.downloadAllFiles();
       });
+
+      // Event delegation for download buttons
+      this.fileList.addEventListener("click", (e) => {
+        if (e.target.classList.contains("download-btn")) {
+          const filePath = e.target.getAttribute("data-file-path");
+          const fileName = e.target.getAttribute("data-file-name");
+          if (filePath && fileName) {
+            this.downloadFile(filePath, fileName);
+          }
+        }
+      });
     }
 
     async handleFiles(files) {
@@ -268,7 +279,7 @@ const { projectId, fileType = "media" } = Astro.props;
             <a href="${file.public_url}" target="_blank" class="text-blue-600 hover:text-blue-800 text-sm font-medium">
               View
             </a>
-            <button onclick="this.downloadFile('${file.file_path}', '${fileName}')" class="text-green-600 hover:text-green-800 text-sm font-medium">
+            <button class="download-btn text-green-600 hover:text-green-800 text-sm font-medium" data-file-path="${file.file_path}" data-file-name="${fileName}">
               Download
             </button>
           `
@@ -481,11 +492,6 @@ const { projectId, fileType = "media" } = Astro.props;
 
   // Initialize the PDF upload component
   document.addEventListener("DOMContentLoaded", () => {
-    const pdfUpload = new PDFUpload();
-    
-    // Make downloadFile method available globally for onclick handlers
-    window.downloadFile = (filePath, fileName) => {
-      pdfUpload.downloadFile(filePath, fileName);
-    };
+    new PDFUpload();
   });
 </script>
