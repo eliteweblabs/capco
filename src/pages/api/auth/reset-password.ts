@@ -1,5 +1,6 @@
 import type { APIRoute } from "astro";
 import { supabaseAdmin } from "../../../lib/supabase-admin";
+import { setAuthCookies } from "../../../lib/auth-cookies";
 
 export const POST: APIRoute = async ({ request, cookies }) => {
   try {
@@ -51,24 +52,10 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       );
     }
 
-    // Set session cookies directly using the tokens from the magic link
+    // Set session cookies using the proper auth-cookies function
     // These tokens are valid and can be used to establish a session
     if (accessToken && refreshToken) {
-      cookies.set("sb-access-token", accessToken, {
-        path: "/",
-        httpOnly: true,
-        secure: import.meta.env.PROD,
-        sameSite: "lax",
-        maxAge: 60 * 60 * 24 * 7, // 7 days
-      });
-
-      cookies.set("sb-refresh-token", refreshToken, {
-        path: "/",
-        httpOnly: true,
-        secure: import.meta.env.PROD,
-        sameSite: "lax",
-        maxAge: 60 * 60 * 24 * 30, // 30 days
-      });
+      setAuthCookies(cookies, accessToken, refreshToken);
 
       return new Response(
         JSON.stringify({ 
