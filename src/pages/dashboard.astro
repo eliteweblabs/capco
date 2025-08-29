@@ -3,11 +3,11 @@ console.log("📊 [DASHBOARD] Page loading started...");
 
 import App from "../components/common/App.astro";
 import DashboardComponent from "../components/common/Dashboard.astro";
+import Hero from "../components/common/Hero.astro";
 import SectionContainer from "../components/common/SectionContainer.astro";
 import ToastAlerts from "../components/common/ToastAlerts.astro";
 import ProjectNav from "../components/project/ProjectNav.astro";
 import { supabase } from "../lib/supabase";
-
 // Check authentication
 import { checkAuth } from "../lib/auth";
 const { isAuth, session, user, role } = await checkAuth(Astro.cookies);
@@ -93,9 +93,39 @@ console.log("🍪 [DASHBOARD] Cookie status:", {
   accessTokenLength: accessToken?.value?.length || 0,
   refreshTokenLength: refreshToken?.value?.length || 0,
 });
+
+// Fetch project_statuses from API
+let projects: any[] = [];
+try {
+  const response = await (fetch as any)(`${Astro.url.origin}/api/get-project`, {
+    method: "GET",
+    headers: {
+      "Content-Type": "application/json",
+      user_id: user.id,
+      role: role,
+    },
+  });
+
+  if (response.ok) {
+    const result = await response.json();
+    if (result.success) {
+      console.log("🏗️ [PROJECT NAV] Projects:", result.projects);
+      projects = Object.values(result.projects || {});
+    } else {
+      console.error("API returned error:", result.error);
+    }
+  } else {
+    console.error("Failed to fetch projects:", response.status);
+  }
+} catch (error) {
+  console.error("Error fetching projects:", error);
+}
 ---
 
 <App>
+  <SectionContainer id="hero" class="mx-6 my-6">
+    <Hero title={"" + user.name} description={"" + role} />
+  </SectionContainer>
   <!-- Debug Panel (can be hidden in production) -->
   <SectionContainer class="mx-6 mb-6">
     <details
@@ -217,12 +247,12 @@ console.log("🍪 [DASHBOARD] Cookie status:", {
 
   <!-- Navigation -->
   <SectionContainer class="mx-6 flex flex-col gap-y-6">
-    <ProjectNav role={role} />
+    <ProjectNav role={role} projects={projects} />
   </SectionContainer>
 
   <!-- Main Dashboard -->
   <SectionContainer id="dashboard" class="mx-6 mb-0 mt-0 flex">
-    <DashboardComponent role={role} />
+    <DashboardComponent role={role} projects={projects} />
   </SectionContainer>
 
   <!-- Toast Alerts -->

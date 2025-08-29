@@ -25,7 +25,7 @@ export interface FormFieldConfig {
   component?: string; // Component name to render (e.g., "UnitSlider")
   componentProps?: Record<string, any>; // Props to pass to the component
   allow?: string[]; // Control field visibility based on user roles - array of allowed roles
-  displayOnNew?: boolean; // Control field visibility for new projects - true = show on new projects, false = hide on new projects, undefined = show on both
+  hideAtStatus?: number[]; // Control field visibility based on project status - array of status values where field should be hidden
 }
 
 export interface ButtonGroupConfig {
@@ -36,7 +36,7 @@ export interface ButtonGroupConfig {
   cssClass: string;
   options: { value: string; label: string }[];
   allow?: string[]; // Control button group visibility based on user roles - array of allowed roles
-  displayOnNew?: boolean; // Control button group visibility for new projects - true = show on new projects, false = hide on new projects, undefined = show on both
+  hideAtStatus?: number[]; // Control button group visibility based on project status - array of status values where group should be hidden
 }
 
 export interface FormActionConfig {
@@ -47,8 +47,7 @@ export interface FormActionConfig {
   cssClass: string;
   action?: string; // Function name or action identifier
   allow?: string[]; // Control button visibility based on user roles - array of allowed roles
-  status?: number[]; // Control button visibility based on project status - array of allowed status values
-  displayOnNew?: boolean; // Control button visibility for new projects - true = show on new projects, false = hide on new projects, undefined = show on both
+  hideAtStatus?: number[]; // Control button visibility based on project status - array of status values where button should be hidden
 }
 
 // Helper function to check if a field or button group should be allowed based on user role
@@ -71,39 +70,58 @@ export function isAllowed(
 
 // Helper function to check if a button should be shown based on project status
 export function isStatusAllowed(action: FormActionConfig, projectStatus?: number | null): boolean {
-  if (!action.status) return true; // If no status array specified, allow for all statuses
-  if (projectStatus === null || projectStatus === undefined) return false; // If no status provided but status array exists, deny access
-  return action.status.includes(projectStatus);
+  if (!action.hideAtStatus) return true; // If no hideAtStatus array specified, always display
+  if (projectStatus === null || projectStatus === undefined) return true; // If no status provided, show by default
+  return !action.hideAtStatus.includes(projectStatus); // Hide if status is in the hideAtStatus array
 }
 
-// Helper function to check if an item should be shown based on new/existing project state
-export function isDisplayOnNewAllowed(
-  item: FormFieldConfig | ButtonGroupConfig | FormActionConfig,
-  isNewProject: boolean
+// Helper function to check if a form field should be shown based on project status
+export function isFieldStatusAllowed(
+  field: FormFieldConfig,
+  projectStatus?: number | null
 ): boolean {
-  if (item.displayOnNew === undefined) return true; // If not specified, show on both new and existing projects
-  return item.displayOnNew === isNewProject; // Show only if displayOnNew matches isNewProject
+  if (!field.hideAtStatus) return true; // If no hideAtStatus array specified, always display
+  if (projectStatus === null || projectStatus === undefined) return true; // If no status provided, show by default
+  return !field.hideAtStatus.includes(projectStatus); // Hide if status is in the hideAtStatus array
 }
 
-// Function to get filtered form fields based on user role
+// Helper function to check if a button group should be shown based on project status
+export function isButtonGroupStatusAllowed(
+  buttonGroup: ButtonGroupConfig,
+  projectStatus?: number | null
+): boolean {
+  if (!buttonGroup.hideAtStatus) return true; // If no hideAtStatus array specified, always display
+  if (projectStatus === null || projectStatus === undefined) return true; // If no status provided, show by default
+  return !buttonGroup.hideAtStatus.includes(projectStatus); // Hide if status is in the hideAtStatus array
+}
+
+// Function to get filtered form fields based on user role and project status
 export function getFilteredFormFields(
   userRole?: string | null,
-  isNewProject: boolean = false
+  isNewProject: boolean = false,
+  projectStatus?: number | null
 ): FormFieldConfig[] {
+  // For new projects, use status 0, otherwise use actual status
+  const effectiveStatus = isNewProject ? 0 : projectStatus;
+
   let fields = PROJECT_FORM_FIELDS.filter(
-    (field) => isAllowed(field, userRole) && isDisplayOnNewAllowed(field, isNewProject)
+    (field) => isAllowed(field, userRole) && isFieldStatusAllowed(field, effectiveStatus)
   );
 
   return fields;
 }
 
-// Function to get filtered button groups based on user role
+// Function to get filtered button groups based on user role and project status
 export function getFilteredButtonGroups(
   userRole?: string | null,
-  isNewProject: boolean = false
+  isNewProject: boolean = false,
+  projectStatus?: number | null
 ): ButtonGroupConfig[] {
+  // For new projects, use status 0, otherwise use actual status
+  const effectiveStatus = isNewProject ? 0 : projectStatus;
+
   let groups = BUTTON_GROUPS.filter(
-    (group) => isAllowed(group, userRole) && isDisplayOnNewAllowed(group, isNewProject)
+    (group) => isAllowed(group, userRole) && isButtonGroupStatusAllowed(group, effectiveStatus)
   );
 
   return groups;
@@ -115,11 +133,11 @@ export function getFilteredFormActions(
   isNewProject: boolean = false,
   projectStatus?: number | null
 ): FormActionConfig[] {
+  // For new projects, use status 0, otherwise use actual status
+  const effectiveStatus = isNewProject ? 0 : projectStatus;
+
   let actions = FORM_ACTIONS.filter(
-    (action) =>
-      isAllowed(action, userRole) &&
-      isStatusAllowed(action, projectStatus) &&
-      isDisplayOnNewAllowed(action, isNewProject)
+    (action) => isAllowed(action, userRole) && isStatusAllowed(action, effectiveStatus)
   );
 
   // Change "Save Project" to "Create Project" for new projects
@@ -148,17 +166,24 @@ export const PROJECT_FORM_FIELDS: FormFieldConfig[] = [
     type: "checkbox",
     label: "New Client",
     allow: ["admin", "staff"], // Only admin and staff can set client type
-    displayOnNew: true, // Only show on new projects
+    hideAtStatus: [10, 20, 30, 40, 50, 60, 70, 80, 90], // Hide on existing projects
   },
   {
     id: "address-input",
     name: "address",
-    type: "text",
+    type: "component",
     label: "Address / Title",
-    placeholder: "Address / Title *",
+    component: "GoogleAddressAutocomplete",
+    componentProps: {
+      placeholder: "Enter project address...",
+      required: true,
+    },
     required: true,
     dataField: "address",
     allow: ["admin", "staff", "client"], // All roles can see address
+    hideAtStatus: [
+      10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170, 180, 190, 200,
+    ], // Hide after proposal is signed off
   },
   // Owner field (only shown for new projects with new client toggle on)
   {
@@ -170,7 +195,7 @@ export const PROJECT_FORM_FIELDS: FormFieldConfig[] = [
     required: true,
     dataField: "owner",
     allow: ["admin", "staff", "client"], // All roles can see owner
-    displayOnNew: true, // Only show on new projects
+    hideAtStatus: [10, 20, 30, 40, 50, 60, 70, 80, 90], // Hide on existing projects
   },
   // Owner email field (only shown for new projects with new client toggle on)
   {
@@ -182,7 +207,7 @@ export const PROJECT_FORM_FIELDS: FormFieldConfig[] = [
     required: true,
     dataField: "owner_email",
     allow: ["admin", "staff"], // Only admin and staff can set email
-    displayOnNew: true, // Only show on new projects
+    hideAtStatus: [10, 20, 30, 40, 50, 60, 70, 80, 90], // Hide on existing projects
   },
   // Existing client dropdown (only shown for new projects with new client toggle off)
   {
@@ -194,7 +219,7 @@ export const PROJECT_FORM_FIELDS: FormFieldConfig[] = [
     required: true,
     options: [], // Will be populated dynamically
     allow: ["admin", "staff"], // Only admin and staff can select clients
-    displayOnNew: true, // Only show on new projects
+    hideAtStatus: [10, 20, 30, 40, 50, 60, 70, 80, 90], // Hide on existing projects
   },
   {
     id: "architect-input",
@@ -203,7 +228,8 @@ export const PROJECT_FORM_FIELDS: FormFieldConfig[] = [
     label: "Architect",
     placeholder: "Architect",
     dataField: "architect",
-    allow: ["admin", "staff"], // Only admin and staff can see architect
+    allow: ["admin", "staff", "client"], // Only admin and staff can see architect
+    hideAtStatus: [60, 70, 80, 90], // Hide after proposal is signed off
   },
   {
     id: "square-foot-input",
@@ -217,6 +243,7 @@ export const PROJECT_FORM_FIELDS: FormFieldConfig[] = [
     step: 1,
     dataField: "square_foot",
     allow: ["admin", "staff", "client"], // All roles can see square footage
+    hideAtStatus: [60, 70, 80, 90], // Hide after proposal is signed off
   },
   {
     id: "description-input",
@@ -224,7 +251,8 @@ export const PROJECT_FORM_FIELDS: FormFieldConfig[] = [
     type: "textarea",
     label: "Description",
     placeholder: "Project description...",
-    allow: ["admin", "staff"], // Only admin and staff can see description
+    allow: ["admin", "staff", "client"], // Only admin and staff can see description
+    hideAtStatus: [50, 60, 70, 80, 90], // Hide after proposal is viewed
   },
   {
     id: "assigned-to-select",
@@ -233,6 +261,7 @@ export const PROJECT_FORM_FIELDS: FormFieldConfig[] = [
     label: "Assign To",
     component: "StaffSelect",
     allow: ["admin"], // Only admin can assign projects
+    // Assignment available throughout most of the process (all statuses)
   },
   {
     id: "new-construction",
@@ -240,6 +269,7 @@ export const PROJECT_FORM_FIELDS: FormFieldConfig[] = [
     type: "checkbox",
     label: "New Construction",
     allow: ["admin", "staff", "client"], // All roles can see new construction
+    hideAtStatus: [60, 70, 80, 90], // Hide after proposal is signed off
   },
   // Units slider is now handled by UnitSlider.astro component
   {
@@ -253,7 +283,8 @@ export const PROJECT_FORM_FIELDS: FormFieldConfig[] = [
       label: "Units",
       required: false,
     },
-    allow: ["admin", "staff"], // Only admin and staff can see units slider
+    allow: ["admin", "staff", "client"], // Only admin and staff can see units slider
+    hideAtStatus: [0, 60, 70, 80, 90], // Hide on new projects and after proposal is signed off
   },
 ];
 
@@ -279,8 +310,7 @@ export const FORM_ACTIONS: FormActionConfig[] = [
       "px-4 py-2 bg-red-600 text-white text-sm font-medium rounded-lg hover:bg-red-700 transition-colors",
     action: "deleteProject",
     allow: ["admin", "staff"], // Only admin and staff can delete
-    status: [10, 20, 30, 40, 50], // Can only delete before proposal is signed off (status 50)
-    displayOnNew: false, // Hide on new projects
+    hideAtStatus: [0, 60, 70, 80, 90], // Hide on new projects and after proposal is signed off
   },
   {
     id: "build-proposal",
@@ -291,8 +321,7 @@ export const FORM_ACTIONS: FormActionConfig[] = [
       "px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 transition-colors",
     action: "buildProposal",
     allow: ["admin", "staff"], // Only admin and staff can build proposals
-    status: [10], // Only available when specs are received (status 10)
-    displayOnNew: false, // Hide on new projects
+    hideAtStatus: [0, 20, 30, 40, 50, 60, 70, 80, 90], // Only show when specs are received (status 10)
   },
   {
     id: "edit-proposal",
@@ -303,8 +332,7 @@ export const FORM_ACTIONS: FormActionConfig[] = [
       "px-4 py-2 bg-purple-600 text-white text-sm font-medium rounded-lg hover:bg-purple-700 transition-colors",
     action: "editProposal",
     allow: ["admin", "staff"], // Only admin and staff can edit proposals
-    status: [20, 30, 40], // Available from generating proposal through proposal viewed, before sign off
-    displayOnNew: false, // Hide on new projects
+    hideAtStatus: [0, 10, 50, 60, 70, 80, 90], // Only show during proposal generation to viewing stages
   },
 ];
 
@@ -317,6 +345,7 @@ export const BUTTON_GROUPS: ButtonGroupConfig[] = [
     type: "radio",
     cssClass: "building-type-radio",
     allow: ["admin", "staff", "client"], // All roles can see building type
+    hideAtStatus: [60, 70, 80, 90], // Hide after proposal is signed off
     options: [
       { value: "Residential", label: "Residential" },
       { value: "Mixed use", label: "Mixed use" },
@@ -334,6 +363,7 @@ export const BUTTON_GROUPS: ButtonGroupConfig[] = [
     type: "multi-select",
     cssClass: "consulting-service-btn",
     allow: ["admin", "staff"], // Only admin and staff can see consulting services
+    // hideAtStatus: [50, 60, 70, 80, 90], // Hide after proposal is viewed
     options: [
       { value: "Sprinkler", label: "Sprinkler" },
       { value: "Alarm", label: "Alarm" },
@@ -351,6 +381,7 @@ export const BUTTON_GROUPS: ButtonGroupConfig[] = [
     type: "radio",
     cssClass: "fire-service-radio",
     allow: ["admin", "staff", "client"], // All roles can see fire service
+    // hideAtStatus: [60, 70, 80, 90], // Hide after proposal is signed off
     options: [
       { value: "Pump & Tank", label: "Pump & Tank" },
       { value: "2' Copper", label: "2' Copper" },
@@ -365,7 +396,8 @@ export const BUTTON_GROUPS: ButtonGroupConfig[] = [
     label: "Reports Required",
     type: "multi-select",
     cssClass: "fire-safety-service-btn",
-    allow: ["admin", "staff"], // Only admin and staff can see reports required
+    allow: ["admin", "staff", "client"], // Only admin and staff can see reports required
+    // hideAtStatus: [50, 60, 70, 80, 90], // Hide after proposal is viewed
     options: [
       { value: "Narrative", label: "Narrative" },
       { value: "Sprinkler", label: "Sprinkler" },

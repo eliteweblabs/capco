@@ -74,7 +74,7 @@ export const PUT: APIRoute = async ({ request, cookies, params }) => {
     }
 
     // Prepare update data
-    const updateData = {
+    const updateData: any = {
       address: body.address,
       // Don't update owner for existing projects (field is hidden)
       architect: body.architect,
@@ -86,7 +86,13 @@ export const PUT: APIRoute = async ({ request, cookies, params }) => {
       project: body.project,
       service: body.service,
       requested_docs: body.requested_docs,
+      updated_at: new Date().toISOString(), // Always update the timestamp when any field is modified
     };
+
+    // Add status if provided
+    if (body.status !== undefined) {
+      updateData.status = body.status;
+    }
 
     // Note: No complex setup needed for simple logging
 
@@ -115,18 +121,26 @@ export const PUT: APIRoute = async ({ request, cookies, params }) => {
 
     const project = projects[0]; // Get the first (and should be only) project
 
-    // Log the project update with simple logging
+    // Log the project update with granular logging
     try {
       const userEmail = session.session.user.email || "unknown";
-      await SimpleProjectLogger.logProjectUpdate(
+
+      // Create the new project data by merging current project with updates
+      const newProjectData = { ...currentProject, ...updateData };
+
+      console.log(`📝 [API] Logging project update for project ${projectId} by ${userEmail}`);
+      console.log(`📝 [API] Status change: ${currentProject.status} -> ${newProjectData.status}`);
+
+      await SimpleProjectLogger.logProjectChanges(
         parseInt(projectId),
         userEmail,
-        "Project updated via API",
         currentProject,
-        updateData
+        newProjectData
       );
+
+      console.log(`📝 [API] Project update logged successfully`);
     } catch (logError) {
-      console.error("Error logging project update:", logError);
+      console.error("📝 [API] Error logging project update:", logError);
       // Don't fail the request if logging fails
     }
 

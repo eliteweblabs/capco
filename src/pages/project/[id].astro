@@ -1,7 +1,6 @@
 ---
 import Base from "../../layout/Base.astro";
 import SectionContainer from "../../components/common/SectionContainer.astro";
-import SocialMedia from "../../components/common/SocialMedia.astro";
 import Hero from "../../components/common/Hero.astro";
 import BoxIcon from "../../components/common/BoxIcon.astro";
 import ProjectForm from "../../components/project/ProjectForm.astro";
@@ -106,6 +105,8 @@ function getStatusColor(status: number): string {
         ? statusLabels[project.status] || `Status ${project.status}`
         : undefined}
       statusColor={project?.status ? getStatusColor(project.status) : undefined}
+      projectId={project?.id}
+      currentStatus={project?.status}
     />
   </SectionContainer>
 
@@ -181,7 +182,13 @@ function getStatusColor(status: number): string {
         id="content-project-form"
         class="tab-content rounded-lg border border-gray-200 bg-white p-6 dark:border-gray-700 dark:bg-gray-800"
       >
-        <ProjectForm project={project} projectId={id ?? ""} isNewProject={false} userRole={role} />
+        <ProjectForm
+          project={project}
+          projectId={id ?? ""}
+          isNewProject={false}
+          userRole={role}
+          projectStatus={project?.status}
+        />
       </div>
 
       <!-- Documents Tab -->
@@ -236,10 +243,6 @@ function getStatusColor(status: number): string {
         <SimpleProjectLog projectId={parseInt(id ?? "0")} />
       </div>
     </div>
-  </SectionContainer>
-
-  <SectionContainer class="fixed bottom-0 right-6 flex flex-col gap-y-6">
-    <SocialMedia />
   </SectionContainer>
 </Base>
 

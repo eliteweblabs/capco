@@ -1,0 +1,184 @@
+---
+interface Props {
+  id: string;
+  name: string;
+  label: string;
+  value?: string;
+  placeholder?: string;
+  required?: boolean;
+  class?: string;
+}
+
+const {
+  id,
+  name,
+  label,
+  value = "",
+  placeholder = "Enter address...",
+  required = false,
+  class: className = "",
+} = Astro.props;
+---
+
+<div class="relative">
+  <label for={id} class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
+    {label}
+    {required ? " *" : ""}
+  </label>
+  <input
+    type="text"
+    id={id}
+    name={name}
+    value={value}
+    class={`w-full py-2 px-3 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:focus:ring-blue-400 dark:focus:border-blue-400 ${className}`}
+    placeholder={placeholder}
+    required={required}
+    data-google-autocomplete
+  />
+  <!-- Loading indicator -->
+  <div id={`${id}-loading`} class="absolute right-3 top-8 hidden">
+    <svg class="h-4 w-4 animate-spin text-gray-400" fill="none" viewBox="0 0 24 24">
+      <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"
+      ></circle>
+      <path
+        class="opacity-75"
+        fill="currentColor"
+        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+      ></path>
+    </svg>
+  </div>
+</div>
+
+<script define:vars={{ id }}>
+  document.addEventListener("DOMContentLoaded", function () {
+    // Initialize Google Maps Autocomplete when the API is ready
+    function initializeAutocomplete() {
+      const input = document.getElementById(id);
+      const loadingIndicator = document.getElementById(`${id}-loading`);
+
+      if (!input || !window.google?.maps?.places) {
+        console.log("🗺️ [GoogleAutocomplete] Google Maps API not ready, retrying...");
+        setTimeout(initializeAutocomplete, 100);
+        return;
+      }
+
+      console.log("🗺️ [GoogleAutocomplete] Initializing for input:", id);
+
+      // Create autocomplete instance
+      const autocomplete = new google.maps.places.Autocomplete(input, {
+        types: ["address"],
+        componentRestrictions: { country: "us" }, // Restrict to US addresses
+        fields: ["formatted_address", "address_components", "geometry"],
+      });
+
+      // Handle place selection
+      autocomplete.addListener("place_changed", function () {
+        const place = autocomplete.getPlace();
+
+        if (!place.formatted_address) {
+          console.log("🗺️ [GoogleAutocomplete] No address details available");
+          return;
+        }
+
+        console.log("🗺️ [GoogleAutocomplete] Place selected:", place.formatted_address);
+
+        // Update the input value
+        input.value = place.formatted_address;
+
+        // Trigger change event for form handling
+        input.dispatchEvent(new Event("change", { bubbles: true }));
+
+        // Store additional data if needed
+        input.dataset.placeData = JSON.stringify({
+          formatted_address: place.formatted_address,
+          lat: place.geometry?.location?.lat(),
+          lng: place.geometry?.location?.lng(),
+          address_components: place.address_components,
+        });
+      });
+
+      // Show loading indicator while typing
+      input.addEventListener("input", function () {
+        if (this.value.length > 2) {
+          loadingIndicator?.classList.remove("hidden");
+        } else {
+          loadingIndicator?.classList.add("hidden");
+        }
+      });
+
+      // Hide loading indicator when autocomplete dropdown appears
+      input.addEventListener("keydown", function () {
+        setTimeout(() => {
+          loadingIndicator?.classList.add("hidden");
+        }, 100);
+      });
+
+      console.log("🗺️ [GoogleAutocomplete] Successfully initialized for:", id);
+    }
+
+    // Start initialization
+    initializeAutocomplete();
+  });
+</script>
+
+<style>
+  /* Style the Google autocomplete dropdown */
+  .pac-container {
+    background-color: white;
+    border-radius: 6px;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    border: 1px solid #e5e7eb;
+    font-family: inherit;
+    font-size: 14px;
+    z-index: 1000;
+  }
+
+  .pac-item {
+    padding: 8px 12px;
+    border-bottom: 1px solid #f3f4f6;
+    cursor: pointer;
+  }
+
+  .pac-item:hover {
+    background-color: #f9fafb;
+  }
+
+  .pac-item:last-child {
+    border-bottom: none;
+  }
+
+  .pac-item-query {
+    font-weight: 500;
+    color: #111827;
+  }
+
+  .pac-matched {
+    font-weight: 600;
+    color: #2563eb;
+  }
+
+  /* Dark mode styles */
+  @media (prefers-color-scheme: dark) {
+    .pac-container {
+      background-color: #374151;
+      border-color: #4b5563;
+    }
+
+    .pac-item {
+      border-bottom-color: #4b5563;
+      color: #f9fafb;
+    }
+
+    .pac-item:hover {
+      background-color: #4b5563;
+    }
+
+    .pac-item-query {
+      color: #f9fafb;
+    }
+
+    .pac-matched {
+      color: #60a5fa;
+    }
+  }
+</style>
