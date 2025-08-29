@@ -15,6 +15,9 @@ export const POST: APIRoute = async ({ request }) => {
     console.log("API: Fetching invoice with ID:", id);
 
     // Get invoice with project data
+    if (!supabase) {
+      throw new Error("Supabase client not available");
+    }
     const { data: invoice, error: invoiceError } = await supabase
       .from("invoices")
       .select(
@@ -65,7 +68,7 @@ export const POST: APIRoute = async ({ request }) => {
       try {
         const { data: profile } = await supabase
           .from("profiles")
-          .select("name")
+          .select("company_name")
           .eq("id", invoice.projects.author_id)
           .single();
         // Auth user email
