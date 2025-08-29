@@ -50,8 +50,8 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     const { data: profile, error: updateError } = await supabase
       .from("profiles")
       .update({
-        firstName: firstName.trim(),
-        lastName: lastName?.trim() || null,
+        first_name: firstName.trim(),
+        last_name: lastName?.trim() || null,
         name: `${firstName.trim()} ${lastName?.trim() || ""}`.trim(), // Keep name field for backward compatibility
         phone: phone?.trim() || null,
         updated_at: new Date().toISOString(),
