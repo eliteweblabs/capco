@@ -4,4 +4,5 @@ export const isBackendPage = (pathname: string) =>
   pathname.startsWith("/pdf-review") ||
   pathname.startsWith("/pdf-editor") ||
   pathname.startsWith("/admin") ||
+  pathname.startsWith("/profile") ||
   pathname.startsWith("/create-staff");

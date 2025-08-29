@@ -1,20 +1,15 @@
 ---
 // import { getI18N } from "@/i18n";
 import Logo from "./Logo.astro";
+import SectionContainer from "./SectionContainer.astro";
 // Check authentication
 import { checkAuth } from "../../lib/auth";
+import { isBackendPage } from "../../pages/api/backend-page-check";
 const { isAuth, session, user, role } = await checkAuth(Astro.cookies);
 
 // Get current URL and determine page type
 const currentUrl = Astro.url.pathname;
-console.log("📋 [HEADER] currentUrl:", currentUrl);
-const isBackendPage =
-  currentUrl.startsWith("/dashboard") ||
-  currentUrl.startsWith("/project/") || // Only match /project/123, not /projects
-  currentUrl.startsWith("/pdf-review") ||
-  currentUrl.startsWith("/pdf-editor") ||
-  currentUrl.startsWith("/admin") ||
-  currentUrl.startsWith("/create-staff");
+const isBackend = isBackendPage(currentUrl);
 
 // Navigation schema
 type UserRole = "any" | "client" | "admin" | "adminStaff";
@@ -96,7 +91,7 @@ function getVisibleNavItems(
   navItems: NavItem[],
   isAuth: boolean,
   userRole?: string | null,
-  isBackendPage: boolean = false
+  isBackend: boolean = false
 ): NavItem[] {
   return navItems.filter((item) => {
     // Always show Home link - users should always be able to return to main site
@@ -105,12 +100,12 @@ function getVisibleNavItems(
     }
 
     // Page type filtering - hide other frontend nav on backend pages to reduce clutter
-    if (isBackendPage && item.pageType === "frontend") {
+    if (isBackend && item.pageType === "frontend") {
       return false;
     }
 
     // Show backend nav only on backend pages
-    if (item.pageType === "backend" && !isBackendPage) {
+    if (item.pageType === "backend" && !isBackend) {
       return false;
     }
 
@@ -128,13 +123,14 @@ function getVisibleNavItems(
   });
 }
 
-const visibleNavigation = getVisibleNavItems(navigation, isAuth, role, isBackendPage);
+const visibleNavigation = getVisibleNavItems(navigation, isAuth, role, isBackend);
 ---
 
-<footer class="bottom-0 z-10 mb-2 bg-hub-background pb-2 pt-4 dark:bg-hub-background-dark">
-  <div class="relative mx-6 flex items-center justify-between">
-    <!-- Navigation (Desktop) -->
-    <!-- <nav class="hidden items-center space-x-8 md:flex">
+<footer class="bottom-0 bg-hub-background pb-2 pt-4 dark:bg-hub-background-dark">
+  <SectionContainer class="py-8">
+    <div class="relative mx-auto flex max-w-7xl items-center justify-between">
+      <!-- Navigation (Desktop) -->
+      <!-- <nav class="hidden items-center space-x-8 md:flex">
       {
         visibleNavigation.map((item) =>
           item.isPrimary ? (
@@ -156,15 +152,15 @@ const visibleNavigation = getVisibleNavItems(navigation, isAuth, role, isBackend
       }
     </nav> -->
 
-    <div class="flex items-center justify-center">
-      <p class="text-sm text-gray-500">
-        &copy; {new Date().getFullYear()} CAPCo Fire. All rights reserved.
-      </p>
-    </div>
+      <div class="flex items-center justify-center">
+        <p class="text-sm text-gray-500">
+          &copy; {new Date().getFullYear()} CAPCo Fire. All rights reserved.
+        </p>
+      </div>
 
-    <Logo />
+      <Logo />
 
-    <!-- <div class="flex items-center justify-center">
+      <!-- <div class="flex items-center justify-center">
       <p class="text-sm text-gray-500">
         <a href="/privacy-policy" class="text-gray-500 hover:text-red-600">Privacy Policy</a>
       </p>
@@ -199,5 +195,6 @@ const visibleNavigation = getVisibleNavItems(navigation, isAuth, role, isBackend
         <a href="/careers" class="text-gray-500 hover:text-red-600">Careers</a>
       </p>
     </div> -->
-  </div>
+    </div>
+  </SectionContainer>
 </footer>
