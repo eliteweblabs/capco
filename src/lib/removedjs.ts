@@ -1322,49 +1322,49 @@
 //               <div class="flex flex-wrap gap-2">
 //                 <button
 //                   type="button"
-//                   class="consulting-service-btn px-3 py-2 text-sm rounded-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
+//                   class="project-type-btns px-3 py-2 text-sm rounded-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
 //                   data-value="Sprinkler"
 //                 >
 //                   Sprinkler
 //                 </button>
 //                 <button
 //                   type="button"
-//                   class="consulting-service-btn px-3 py-2 text-sm rounded-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
+//                   class="project-type-btns px-3 py-2 text-sm rounded-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
 //                   data-value="Alarm"
 //                 >
 //                   Alarm
 //                 </button>
 //                 <button
 //                   type="button"
-//                   class="consulting-service-btn px-3 py-2 text-sm rounded-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
+//                   class="project-type-btns px-3 py-2 text-sm rounded-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
 //                   data-value="Mechanical"
 //                 >
 //                   Mechanical
 //                 </button>
 //                 <button
 //                   type="button"
-//                   class="consulting-service-btn px-3 py-2 text-sm rounded-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
+//                   class="project-type-btns px-3 py-2 text-sm rounded-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
 //                   data-value="Electrical"
 //                 >
 //                   Electrical
 //                 </button>
 //                 <button
 //                   type="button"
-//                   class="consulting-service-btn px-3 py-2 text-sm rounded-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
+//                   class="project-type-btns px-3 py-2 text-sm rounded-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
 //                   data-value="Plumbing"
 //                 >
 //                   Plumbing
 //                 </button>
 //                 <button
 //                   type="button"
-//                   class="consulting-service-btn px-3 py-2 text-sm rounded-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
+//                   class="project-type-btns px-3 py-2 text-sm rounded-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
 //                   data-value="Civil engineering"
 //                 >
 //                   Civil engineering
 //                 </button>
 //                 <button
 //                   type="button"
-//                   class="consulting-service-btn px-3 py-2 text-sm rounded-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
+//                   class="project-type-btns px-3 py-2 text-sm rounded-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
 //                   data-value="Other"
 //                 >
 //                   Other
@@ -2451,7 +2451,7 @@
 
 //     setupConsultingServices() {
 //       const buttons = this.container.querySelectorAll(
-//         ".consulting-service-btn"
+//         ".project-type-btns"
 //       );
 
 //       buttons.forEach((button) => {
@@ -2887,16 +2887,16 @@
 //           .querySelector(".fire-service-radio.selected")
 //           ?.getAttribute("data-value") || "";
 //       const selectedConsultingServices = Array.from(
-//         this.container.querySelectorAll(".consulting-service-btn.selected")
+//         this.container.querySelectorAll(".project-type-btns.selected")
 //       ).map((btn) => btn.getAttribute("data-value"));
 
 //       console.log("Consulting services selection:", {
 //         buttonsFound: this.container.querySelectorAll(
-//           ".consulting-service-btn.selected"
+//           ".project-type-btns.selected"
 //         ).length,
 //         selectedValues: selectedConsultingServices,
 //         allConsultingButtons: Array.from(
-//           this.container.querySelectorAll(".consulting-service-btn")
+//           this.container.querySelectorAll(".project-type-btns")
 //         ).map((btn) => ({
 //           text: btn.textContent?.trim(),
 //           hasSelected: btn.classList.contains("selected"),
@@ -3385,7 +3385,7 @@
 //         ) {
 //           metadata.consultingServices.forEach((service) => {
 //             const serviceBtn = this.container.querySelector(
-//               `.consulting-service-btn[data-value="${service}"]`
+//               `.project-type-btns[data-value="${service}"]`
 //             );
 //             if (serviceBtn) {
 //               this.selectButton(serviceBtn);
@@ -3522,7 +3522,7 @@
 
 //       // Clear consulting services selections
 //       const consultingServiceButtons = this.container.querySelectorAll(
-//         ".consulting-service-btn"
+//         ".project-type-btns"
 //       );
 //       consultingServiceButtons.forEach((button) => {
 //         button.classList.remove(
@@ -5133,7 +5133,7 @@
 //       // Listen for button group changes
 //       document.addEventListener("click", (e) => {
 //         const button = (e.target as HTMLElement).closest(
-//           ".building-type-radio, .consulting-service-btn, .fire-service-radio, .fire-safety-service-btn"
+//           ".building-type-radio, .project-type-btns, .fire-service-radio, .fire-safety-service-btn"
 //         );
 //         if (!button) return;
 
@@ -5307,7 +5307,7 @@
 
 //       // Check how many buttons we found
 //       const allButtons = accordionElement.querySelectorAll(
-//         ".building-type-radio, .consulting-service-btn, .fire-service-radio, .fire-safety-service-btn"
+//         ".building-type-radio, .project-type-btns, .fire-service-radio, .fire-safety-service-btn"
 //       );
 //       // console.log(`Found ${allButtons.length} form buttons in accordion`);
 
@@ -5326,7 +5326,7 @@
 //       // Handle button group clicks
 //       accordionElement.addEventListener("click", (e) => {
 //         const button = (e.target as HTMLElement).closest(
-//           ".building-type-radio, .consulting-service-btn, .fire-service-radio, .fire-safety-service-btn"
+//           ".building-type-radio, .project-type-btns, .fire-service-radio, .fire-safety-service-btn"
 //         );
 
 //         // Only proceed if we found a matching button
@@ -7292,7 +7292,7 @@
 //     // Handle button group clicks
 //     accordionElement.addEventListener("click", (e) => {
 //       const button = (e.target as HTMLElement).closest(
-//         ".building-type-radio, .consulting-service-btn, .fire-service-radio, .fire-safety-service-btn"
+//         ".building-type-radio, .project-type-btns, .fire-service-radio, .fire-safety-service-btn"
 //       );
 //       if (!button) return;
 
@@ -7483,7 +7483,7 @@
 //         name: "project",
 //         label: "Project",
 //         type: "multi-select",
-//         cssClass: "consulting-service-btn",
+//         cssClass: "project-type-btns",
 //         options: [
 //           "Sprinkler",
 //           "Alarm",
