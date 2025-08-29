@@ -2,8 +2,16 @@
 /// <reference types="astro/client" />
 
 interface ImportMetaEnv {
+  // Supabase - Server-side
   readonly SUPABASE_URL: string;
   readonly SUPABASE_ANON_KEY: string;
+  readonly SUPABASE_SERVICE_ROLE_KEY: string;
+  
+  // Supabase - Client-side (PUBLIC_ prefixed)
+  readonly PUBLIC_SUPABASE_URL: string;
+  readonly PUBLIC_SUPABASE_ANON_KEY: string;
+  
+  // Email configuration
   readonly EMAIL_PROVIDER?: string;
   readonly EMAIL_API_KEY?: string;
   readonly SMTP_HOST?: string;
