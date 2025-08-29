@@ -235,16 +235,17 @@ async function sendStatusChangeNotifications(
       .from("projects")
       .select(
         `
-        title,
-        address,
-        author_id,
-        profiles!projects_author_id_fkey (
-          email,
-          company_name,
-          first_name,
-          last_name
-        )
-      `
+          title,
+          address,
+          author_id,
+          assigned_to_id,
+          profiles!projects_author_id_fkey (
+            email,
+            company_name,
+            first_name,
+            last_name
+          )
+        `
       )
       .eq("id", projectId)
       .single();
@@ -262,15 +263,31 @@ async function sendStatusChangeNotifications(
       company_name?: string;
     }> = [];
 
-    if (notify.includes("admin") || notify.includes("staff")) {
-      // Get all admin and staff users
-      const { data: adminStaffUsers } = await supabase
+    if (notify.includes("admin")) {
+      // Get all admin users
+      const { data: adminUsers } = await supabase
         .from("profiles")
         .select("email, first_name, last_name, company_name")
-        .in("role", ["Admin", "Staff"]);
+        .eq("role", "Admin");
 
-      if (adminStaffUsers) {
-        usersToNotify.push(...adminStaffUsers);
+      if (adminUsers) {
+        usersToNotify.push(...adminUsers);
+      }
+    }
+
+    if (notify.includes("staff")) {
+      // Get the assigned staff member for this project
+      if (projectDetails.assigned_to_id) {
+        const { data: assignedStaff } = await supabase
+          .from("profiles")
+          .select("email, first_name, last_name, company_name")
+          .eq("id", projectDetails.assigned_to_id)
+          .eq("role", "Staff")
+          .single();
+
+        if (assignedStaff) {
+          usersToNotify.push(assignedStaff);
+        }
       }
     }
 
