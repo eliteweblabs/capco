@@ -6,24 +6,28 @@ import ProjectSearch from "../project/ProjectSearch.astro";
 
 const { role, projects } = Astro.props;
 
-
 // Debug logging
 console.log("Dashboard role:", projects);
 ---
 
-<!-- Projects List - 2/3 width on md+ screens -->
-{projects && projects.length > 0 ? (
-  <>
-    <div class="lg:w-2/3 w-full lg:pr-6">
-      <ProjectSearch projects={projects} />
-      <ProjectList projects={projects} />
-    </div>
-    <div id="new-project" class="h-full w-full overflow-auto lg:top-20 lg:w-1/3 lg:self-start">
+<!-- Dashboard Container -->
+<div class="flex flex-col lg:flex-row gap-6">
+  {projects && projects.length > 0 ? (
+    <>
+      <!-- Projects List - 2/3 width on lg+ screens -->
+      <div class="w-full lg:w-2/3">
+        <ProjectSearch projects={projects} />
+        <ProjectList projects={projects} />
+      </div>
+      <!-- Project Form - 1/3 width on lg+ screens -->
+      <div id="new-project" class="w-full lg:w-1/3 lg:sticky lg:top-20 lg:self-start">
+        <ProjectForm userRole={role} isNewProject={true} projectId="" />
+      </div>
+    </>
+  ) : (
+    <!-- No projects - show only form -->
+    <div id="new-project" class="w-full">
       <ProjectForm userRole={role} isNewProject={true} projectId="" />
     </div>
-  </>
-) : (
-    <div id="new-project" class="h-full w-full overflow-auto md:top-20 md:self-start">
-      <ProjectForm userRole={role} isNewProject={true} projectId="" />
-    </div>
-)}
+  )}
+</div>
