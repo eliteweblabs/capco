@@ -166,7 +166,9 @@ export const PROJECT_FORM_FIELDS: FormFieldConfig[] = [
     type: "checkbox",
     label: "New Client",
     allow: ["admin", "staff"], // Only admin and staff can set client type
-    hideAtStatus: [10, 20, 30, 40, 50, 60, 70, 80, 90], // Hide on existing projects
+    hideAtStatus: [
+      10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170, 180, 190, 200,
+    ], // Hide on existing projects
   },
   {
     id: "address-input",

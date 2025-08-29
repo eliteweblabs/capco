@@ -20,6 +20,14 @@ interface Props {
 
 const { project, role } = Astro.props;
 
+// Function to limit description to 200 words
+function limitDescription(text: string, wordLimit: number = 200): string {
+  if (!text) return "";
+  const words = text.trim().split(/\s+/);
+  if (words.length <= wordLimit) return text;
+  return words.slice(0, wordLimit).join(" ") + "...";
+}
+
 // Fetch project statuses to get the status name
 let statusName = `Status ${project.status}`;
 let statusColor = "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300";
@@ -92,8 +100,9 @@ try {
           class="mt-2 text-sm text-gray-600 dark:text-gray-300"
           data-project-description
           data-searchable
+          title={project.description}
         >
-          {project.description}
+          {limitDescription(project.description)}
         </p>
         <div class="mt-4 flex items-center gap-4 text-sm text-gray-500 dark:text-gray-400">
           <span class="flex items-center gap-1">
