@@ -263,7 +263,7 @@ export const GET: APIRoute = async ({ request }) => {
         if (profiles) {
           console.log("📡 [API] Processing profiles:", profiles);
           profiles.forEach((profile) => {
-            nameMap.set(profile.id, profile.name);
+            nameMap.set(profile.id, profile.company_name);
           });
         } else {
           console.log("📡 [API] No profiles found for user IDs:", uniqueUserIds);

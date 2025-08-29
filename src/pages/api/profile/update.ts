@@ -52,7 +52,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       .update({
         first_name: firstName.trim(),
         last_name: lastName?.trim() || null,
-        name: `${firstName.trim()} ${lastName?.trim() || ""}`.trim(), // Keep name field for backward compatibility
+        company_name: `${firstName.trim()} ${lastName?.trim() || ""}`.trim(), // Use company_name field
         phone: phone?.trim() || null,
         updated_at: new Date().toISOString(),
       })

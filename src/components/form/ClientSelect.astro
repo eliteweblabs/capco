@@ -28,7 +28,7 @@ let error = null;
 if (supabase) {
   try {
     // First, get profiles (name, role, id) with optional role filtering
-    let profilesQuery = supabase.from("profiles").select("id, name, role");
+    let profilesQuery = supabase.from("profiles").select("id, company_name, role");
 
     // Apply role filter if specified
     if (role) {
@@ -116,7 +116,7 @@ if (supabase) {
         <option value="">-- Choose a client --</option>
         {users.map((user) => (
           <option value={user.id} selected={user.id === selectedUserId}>
-            {user.name || user.email}
+            {user.company_name || user.email}
             {user.role && user.role !== "Client" && ` (${user.role})`}
           </option>
         ))}
@@ -149,7 +149,7 @@ if (supabase) {
             <ul class="ml-2">
               {users.slice(0, 3).map((user) => (
                 <li>
-                  • {user.name || user.email} ({user.role})
+                  • {user.company_name || user.email} ({user.role})
                 </li>
               ))}
               {users.length > 3 && <li>• ... and {users.length - 3} more</li>}

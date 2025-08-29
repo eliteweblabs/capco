@@ -92,7 +92,7 @@ export const GET: APIRoute = async ({ request }) => {
     // Create a map for quick user name lookup
     const userNameMap = new Map();
     userProfiles.forEach(profile => {
-      userNameMap.set(profile.id, profile.name);
+              userNameMap.set(profile.id, profile.company_name);
     });
 
     // Add author and assigned user names to projects

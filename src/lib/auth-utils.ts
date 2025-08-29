@@ -10,6 +10,11 @@ import { supabase } from "./supabase";
  * - Profile was accidentally deleted
  */
 export async function ensureUserProfile(user: User): Promise<void> {
+  if (!supabase) {
+    console.error("Supabase client not available");
+    return;
+  }
+
   try {
     // Check if profile already exists
     const { data: existingProfile, error: checkError } = await supabase
@@ -53,7 +58,7 @@ export async function ensureUserProfile(user: User): Promise<void> {
       .from("profiles")
       .insert({
         id: user.id,
-        name: profileName, // Use display_name as the main name field
+        company_name: profileName, // Use display_name as the main company_name field
         phone: phone,
         role: "Client",
       })
