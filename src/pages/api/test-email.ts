@@ -35,7 +35,10 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     }
 
     // Verify the current user session
-    const { data: { user }, error: userError } = await supabaseAdmin.auth.getUser(accessToken);
+    const {
+      data: { user },
+      error: userError,
+    } = await supabaseAdmin.auth.getUser(accessToken);
 
     if (userError || !user) {
       return new Response(JSON.stringify({ error: "Invalid session" }), {
@@ -80,14 +83,41 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       });
     }
 
+    // Check if the recipient email exists in the system
+    const { data: existingUser, error: userCheckError } =
+      await supabaseAdmin.auth.admin.listUsers();
+
+    if (userCheckError) {
+      console.error("User check error:", userCheckError);
+      return new Response(JSON.stringify({ error: "Failed to verify recipient" }), {
+        status: 500,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+
+    const userExists = existingUser.users.some((user) => user.email === to);
+
+    if (!userExists) {
+      return new Response(
+        JSON.stringify({
+          error: `Email address '${to}' does not exist in the system. Magic links only work for existing users.`,
+        }),
+        {
+          status: 400,
+          headers: { "Content-Type": "application/json" },
+        }
+      );
+    }
+
     // Generate magic link for the recipient
-    const { data: magicLinkData, error: magicLinkError } = await supabaseAdmin.auth.admin.generateLink({
-      type: 'magiclink',
-      email: to,
-      options: {
-        redirectTo: `${import.meta.env.SITE_URL || 'http://localhost:4321'}/dashboard`,
-      },
-    });
+    const { data: magicLinkData, error: magicLinkError } =
+      await supabaseAdmin.auth.admin.generateLink({
+        type: "magiclink",
+        email: to,
+        options: {
+          redirectTo: `${import.meta.env.SITE_URL || "http://localhost:4321"}/dashboard`,
+        },
+      });
 
     if (magicLinkError) {
       console.error("Magic link generation error:", magicLinkError);
