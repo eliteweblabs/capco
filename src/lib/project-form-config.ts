@@ -206,16 +206,40 @@ export const PROJECT_FORM_FIELDS: FormFieldConfig[] = [
       10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170, 180, 190, 200,
     ], // Hide after proposal is signed off
   },
-  // Owner field (only shown for new projects with new client toggle on)
+  // First Name field (only shown for new projects with new client toggle on)
   {
-    id: "owner-input",
-    name: "owner",
+    id: "first-name-input",
+    name: "first_name",
     type: "text",
-    label: "Owner",
-    placeholder: "Owner *",
+    label: "First Name",
+    placeholder: "First Name *",
     required: true,
-    dataField: "owner",
-    allow: ["admin", "staff", "client"], // All roles can see owner
+    dataField: "first_name",
+    allow: ["admin", "staff", "client"], // All roles can see first name
+    hideAtStatus: [10, 20, 30, 40, 50, 60, 70, 80, 90], // Hide on existing projects
+  },
+  // Last Name field (only shown for new projects with new client toggle on)
+  {
+    id: "last-name-input",
+    name: "last_name",
+    type: "text",
+    label: "Last Name",
+    placeholder: "Last Name *",
+    required: true,
+    dataField: "last_name",
+    allow: ["admin", "staff", "client"], // All roles can see last name
+    hideAtStatus: [10, 20, 30, 40, 50, 60, 70, 80, 90], // Hide on existing projects
+  },
+  // Company Name field (only shown for new projects with new client toggle on)
+  {
+    id: "company-name-input",
+    name: "company_name",
+    type: "text",
+    label: "Company Name",
+    placeholder: "Company Name",
+    required: false,
+    dataField: "company_name",
+    allow: ["admin", "staff", "client"], // All roles can see company name
     hideAtStatus: [10, 20, 30, 40, 50, 60, 70, 80, 90], // Hide on existing projects
   },
   // Owner email field (only shown for new projects with new client toggle on)
@@ -336,7 +360,7 @@ export const FORM_ACTIONS: FormActionConfig[] = [
       "px-4 py-2 bg-red-600 text-white text-sm font-medium rounded-lg hover:bg-red-700 transition-colors",
     action: "deleteProject",
     allow: ["admin", "staff"], // Only admin and staff can delete
-    hideAtStatus: [0, 60, 70, 80, 90], // Hide on new projects and after proposal is signed off
+    hideAtStatus: [0, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170, 180, 190, 200], // Hide on new projects and after proposal is signed off
   },
   {
     id: "build-proposal",
@@ -348,17 +372,6 @@ export const FORM_ACTIONS: FormActionConfig[] = [
     action: "buildProposal",
     allow: ["admin", "staff"], // Only admin and staff can build proposals
     hideAtStatus: [0, 20, 30, 40, 50, 60, 70, 80, 90], // Only show when specs are received (status 10)
-  },
-  {
-    id: "edit-proposal",
-    type: "button",
-    label: "Edit Proposal",
-    icon: "bx-edit",
-    cssClass:
-      "px-4 py-2 bg-purple-600 text-white text-sm font-medium rounded-lg hover:bg-purple-700 transition-colors",
-    action: "editProposal",
-    allow: ["admin", "staff"], // Only admin and staff can edit proposals
-    hideAtStatus: [0, 10, 50, 60, 70, 80, 90], // Only show during proposal generation to viewing stages
   },
 ];
 

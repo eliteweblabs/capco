@@ -72,11 +72,11 @@ console.log("📝 [ProjectForm] Debug info:", {
 const existingClientField = formFields.find(f => f.id === "existing-client-select");
 console.log(existingClientField ? "⚠️ [ProjectForm] Found existing-client-select field" : "✅ [ProjectForm] existing-client-select field correctly filtered out");
 
-// Debug owner fields specifically
-const ownerFieldsInForm = formFields.filter(
-  (field) => field.name === "owner" || field.name === "owner_email"
+// Debug new client fields specifically
+const newClientFieldsInForm = formFields.filter(
+  (field) => field.name === "first_name" || field.name === "last_name" || field.name === "company_name" || field.name === "owner_email"
 );
-console.log("Owner fields found:", ownerFieldsInForm.length, ownerFieldsInForm);
+console.log("New client fields found:", newClientFieldsInForm.length, newClientFieldsInForm);
 ---
 
 
@@ -118,54 +118,123 @@ console.log("Owner fields found:", ownerFieldsInForm.length, ownerFieldsInForm);
       })
   }
 
-  <!-- Client Fields (Owner/Email for new client, or Existing Client dropdown) -->
+  <!-- Client Fields (First Name, Last Name, Company Name for new client, or Existing Client dropdown) -->
   <div class="space-y-4">
-    <!-- Owner Fields (for new client) - Always rendered for new projects -->
+    <!-- New Client Fields (First Name, Last Name, Company Name) - Only shown when new client toggle is on -->
     {isNewProject && (
       <div class="space-y-4">
-        <!-- Owner Name Field -->
-        <div class="relative" style="display: none;">
-          <label
-            for={`owner`}
-            class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-          >
-            Owner *
-          </label>
-          <input
-            type="text"
-            id={`owner`}
-            name="owner"
-            value={project?.owner || ""}
-            class="w-full py-2 px-3 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:focus:ring-blue-400 dark:focus:border-blue-400"
-            placeholder="Owner *"
-            required={false}
-            data-field="owner"
-            data-project-id={formId}
-            data-project-data={JSON.stringify(project || {})}
-          />
+        <!-- First Name and Last Name Row -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {
+            formFields
+              .filter((field) => field.name === "first_name" || field.name === "last_name")
+              .map((field) => {
+                const isReadOnly = isFieldReadOnly(field, projectStatus);
+                return (
+                  <div class="relative">
+                    <label
+                      for={`${field.id}`}
+                      class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                    >
+                      {field.label}
+                      {field.required ? " *" : ""}
+                    </label>
+                    <input
+                      type="text"
+                      id={`${field.id}`}
+                      name={field.name}
+                      value={project?.[field.name] || ""}
+                      class={`w-full py-2 px-3 text-sm border border-gray-300 dark:border-gray-600 rounded-md text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:focus:ring-blue-400 dark:focus:border-blue-400 ${
+                        isReadOnly 
+                          ? "bg-gray-100 dark:bg-gray-800 cursor-not-allowed" 
+                          : "bg-white dark:bg-gray-700"
+                      }`}
+                      placeholder={field.placeholder || ""}
+                      required={field.required}
+                      readonly={isReadOnly}
+                      data-field={field.dataField}
+                      data-project-id={formId}
+                      data-project-data={JSON.stringify(project || {})}
+                    />
+                  </div>
+                );
+              })
+          }
         </div>
 
-        <!-- Owner Email Field -->
-        <div class="relative" style="display: none;">
-          <label
-            for={`owner-email`}
-            class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-          >
-            Owner Email *
-          </label>
-          <input
-            type="email"
-            id={`owner-email`}
-            name="owner_email"
-            value={project?.owner_email || ""}
-            class="w-full py-2 px-3 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:focus:ring-blue-400 dark:focus:border-blue-400"
-            placeholder="owner@example.com"
-            required={false}
-            data-field="owner_email"
-            data-project-id={formId}
-            data-project-data={JSON.stringify(project || {})}
-          />
-        </div>
+        <!-- Company Name Field (Full Width) -->
+        {
+          formFields
+            .filter((field) => field.name === "company_name")
+            .map((field) => {
+              const isReadOnly = isFieldReadOnly(field, projectStatus);
+              return (
+                <div class="relative">
+                  <label
+                    for={`${field.id}`}
+                    class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                  >
+                    {field.label}
+                    {field.required ? " *" : ""}
+                  </label>
+                  <input
+                    type="text"
+                    id={`${field.id}`}
+                    name={field.name}
+                    value={project?.[field.name] || ""}
+                    class={`w-full py-2 px-3 text-sm border border-gray-300 dark:border-gray-600 rounded-md text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:focus:ring-blue-400 dark:focus:border-blue-400 ${
+                      isReadOnly 
+                        ? "bg-gray-100 dark:bg-gray-800 cursor-not-allowed" 
+                        : "bg-white dark:bg-gray-700"
+                    }`}
+                    placeholder={field.placeholder || ""}
+                    required={field.required}
+                    readonly={isReadOnly}
+                    data-field={field.dataField}
+                    data-project-id={formId}
+                    data-project-data={JSON.stringify(project || {})}
+                  />
+                </div>
+              );
+            })
+        }
+
+        <!-- Owner Email Field (for new client) -->
+        {
+          formFields
+            .filter((field) => field.name === "owner_email")
+            .map((field) => {
+              const isReadOnly = isFieldReadOnly(field, projectStatus);
+              return (
+                <div class="relative">
+                  <label
+                    for={`${field.id}`}
+                    class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                  >
+                    {field.label}
+                    {field.required ? " *" : ""}
+                  </label>
+                  <input
+                    type="email"
+                    id={`${field.id}`}
+                    name={field.name}
+                    value={project?.[field.name] || ""}
+                    class={`w-full py-2 px-3 text-sm border border-gray-300 dark:border-gray-600 rounded-md text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:focus:ring-blue-400 dark:focus:border-blue-400 ${
+                      isReadOnly 
+                        ? "bg-gray-100 dark:bg-gray-800 cursor-not-allowed" 
+                        : "bg-white dark:bg-gray-700"
+                    }`}
+                    placeholder={field.placeholder || ""}
+                    required={field.required}
+                    readonly={isReadOnly}
+                    data-field={field.dataField}
+                    data-project-id={formId}
+                    data-project-data={JSON.stringify(project || {})}
+                  />
+                </div>
+              );
+            })
+        }
       </div>
     )}
 
@@ -214,7 +283,9 @@ console.log("Owner fields found:", ownerFieldsInForm.length, ownerFieldsInForm);
         .filter(
           (field) =>
             field.name !== "address" &&
-            field.name !== "owner" &&
+            field.name !== "first_name" &&
+            field.name !== "last_name" &&
+            field.name !== "company_name" &&
             field.name !== "owner_email" &&
             (field.type === "text" || field.type === "number")
         )
