@@ -361,7 +361,7 @@ export const BUTTON_GROUPS: ButtonGroupConfig[] = [
     name: "project",
     label: "Project",
     type: "multi-select",
-    cssClass: "consulting-service-btn",
+    cssClass: "project-type-btns",
     allow: ["admin", "staff"], // Only admin and staff can see consulting services
     // hideAtStatus: [50, 60, 70, 80, 90], // Hide after proposal is viewed
     options: [

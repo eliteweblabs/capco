@@ -1,27 +1,13 @@
 import type { APIRoute } from "astro";
 import { supabase } from "../../lib/supabase";
+import { buildUpdateData, getAllFieldNames } from "../../lib/project-fields-config";
 
 export const POST: APIRoute = async ({ request }) => {
   try {
     const body = await request.json();
     console.log("Update project API received:", body);
-    const {
-      projectId,
-      status,
-      title,
-      description,
-      address,
-      sq_ft,
-      new_construction,
-      building,
-      project,
-      service,
-      requested_docs,
-      assigned_to_id,
-      owner,
-      architect,
-      units,
-    } = body;
+    
+    const { projectId, ...updateFields } = body;
 
     if (!projectId) {
       return new Response(JSON.stringify({ error: "Project ID is required" }), {
@@ -37,22 +23,9 @@ export const POST: APIRoute = async ({ request }) => {
           success: true,
           project: {
             id: projectId,
-            status,
-            title,
-            description,
-            address,
-            sq_ft,
-            new_construction,
-            building,
-            project,
-            service,
-            requested_docs,
-            assigned_to_id,
-            owner,
-            architect,
-            units,
+            ...updateFields,
           },
-          message: `Demo: Project ${projectId} ${status !== undefined ? `status updated to ${status}` : "updated"} (No database interaction)`,
+          message: `Demo: Project ${projectId} ${updateFields.status !== undefined ? `status updated to ${updateFields.status}` : "updated"} (No database interaction)`,
         }),
         {
           status: 200,
@@ -73,22 +46,9 @@ export const POST: APIRoute = async ({ request }) => {
           success: true,
           project: {
             id: projectId,
-            status,
-            title,
-            description,
-            address,
-            sq_ft,
-            new_construction,
-            building,
-            project,
-            service,
-            requested_docs,
-            assigned_to_id,
-            owner,
-            architect,
-            units,
+            ...updateFields,
           },
-          message: `Demo: Project ${projectId} ${status !== undefined ? `status updated to ${status}` : "updated"} (Demo mode - sign in for real database interaction)`,
+          message: `Demo: Project ${projectId} ${updateFields.status !== undefined ? `status updated to ${updateFields.status}` : "updated"} (Demo mode - sign in for real database interaction)`,
         }),
         {
           status: 200,
@@ -111,35 +71,15 @@ export const POST: APIRoute = async ({ request }) => {
       isAdminOrStaff = false;
     }
 
-    // Update project with provided fields (only core fields that definitely exist)
-    const updateData: any = {};
-
-    // Core fields that should exist in most projects tables
-    if (status !== undefined) updateData.status = status;
-    if (title !== undefined) updateData.title = title;
-    if (description !== undefined) updateData.description = description;
-    if (address !== undefined) updateData.address = address;
-    if (sq_ft !== undefined) updateData.sq_ft = sq_ft;
-    if (new_construction !== undefined) updateData.new_construction = new_construction;
-
-    // Core fields - only add if they have values to avoid database errors
-    if (building !== undefined && building !== "") updateData.building = building;
-    if (project !== undefined && project !== "") updateData.project = project;
-    if (service !== undefined && service !== "") updateData.service = service;
-    if (requested_docs !== undefined && requested_docs !== "")
-      updateData.requested_docs = requested_docs;
-    if (assigned_to_id !== undefined && assigned_to_id !== "")
-      updateData.assigned_to_id = assigned_to_id;
-
-    // Additional fields - handle gracefully in case they don't exist in the database yet
-    // We'll try these but catch any column-not-found errors
-    const potentialNewFields: any = {};
-    if (owner !== undefined && owner !== "") potentialNewFields.owner = owner;
-    if (architect !== undefined && architect !== "") potentialNewFields.architect = architect;
-    if (units !== undefined) potentialNewFields.units = units;
-
+    // Build update data using the template configuration
+    const { core: coreUpdateData, optional: optionalUpdateData, new: newUpdateData } = buildUpdateData(updateFields);
+    
     // Always update the updated_at timestamp when any field is modified
-    updateData.updated_at = new Date().toISOString();
+    const updateData = {
+      ...coreUpdateData,
+      ...optionalUpdateData,
+      updated_at: new Date().toISOString()
+    };
 
     console.log("Attempting to update project with core data:", updateData);
 
@@ -183,12 +123,12 @@ export const POST: APIRoute = async ({ request }) => {
       );
     }
 
-    // If core update succeeded and we have potential new fields, try to update them
+    // If core update succeeded and we have new fields, try to update them
     let finalData = coreData;
-    if (Object.keys(potentialNewFields).length > 0) {
-      console.log("Attempting to update new fields:", potentialNewFields);
+    if (Object.keys(newUpdateData).length > 0) {
+      console.log("Attempting to update new fields:", newUpdateData);
 
-      let newFieldsQuery = supabase.from("projects").update(potentialNewFields).eq("id", projectId);
+      let newFieldsQuery = supabase.from("projects").update(newUpdateData).eq("id", projectId);
       if (!isAdminOrStaff) {
         newFieldsQuery = newFieldsQuery.eq("author_id", user.id);
       }

@@ -80,7 +80,7 @@ export const GET: APIRoute = async ({ request }) => {
       const demoStaffUsers = [
         {
           id: "guest-staff-1",
-          name: "Demo Staff Member",
+          company_name: "Demo Staff Member",
           phone: "555-000-0000",
           role: "Staff",
         },
@@ -158,7 +158,7 @@ export const GET: APIRoute = async ({ request }) => {
     // Try a simpler approach - get all profiles and filter in JavaScript
     const { data: allProfiles, error: allProfilesError } = await supabase
       .from("profiles")
-      .select("id, name, phone, role, created_at");
+      .select("id, company_name, phone, role, created_at");
 
     console.log("�� [API] All profiles result:", {
       allProfiles,
