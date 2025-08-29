@@ -167,10 +167,10 @@ export function shouldIncludeField(fieldName: string, value: any): boolean {
 /**
  * Build update data object from request body
  */
-export function buildUpdateData(body: any): { core: any, optional: any, new: any } {
+export function buildUpdateData(body: any): { core: any, optional: any, newFields: any } {
   const core: any = {};
   const optional: any = {};
-  const new: any = {};
+  const newFields: any = {};
 
   PROJECT_UPDATE_FIELDS.forEach(field => {
     const value = body[field.name];
@@ -180,10 +180,10 @@ export function buildUpdateData(body: any): { core: any, optional: any, new: any
       } else if (field.category === 'optional') {
         optional[field.name] = value;
       } else if (field.category === 'new') {
-        new[field.name] = value;
+        newFields[field.name] = value;
       }
     }
   });
 
-  return { core, optional, new };
+  return { core, optional, newFields };
 }

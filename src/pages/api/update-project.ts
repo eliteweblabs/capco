@@ -75,7 +75,7 @@ export const POST: APIRoute = async ({ request }) => {
     const {
       core: coreUpdateData,
       optional: optionalUpdateData,
-      new: newUpdateData,
+      newFields: newUpdateData,
     } = buildUpdateData(updateFields);
 
     // Always update the updated_at timestamp when any field is modified
