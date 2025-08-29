@@ -3,7 +3,7 @@ import BoxIcon from "./BoxIcon.astro";
 import Tooltip from "./Tooltip.astro";
 ---
 
-<div id="theme-toggle-wrapper">
+<!-- <div id="theme-toggle-wrapper">
   <div>
     <input type="checkbox" class="theme-toggle-checkbox" id="chk" />
     <label id="theme-toggle-label" for="chk">
@@ -48,12 +48,11 @@ import Tooltip from "./Tooltip.astro";
       </div>
     </label>
   </div>
-</div>
-
-<Tooltip content="Toggle Theme" id="toggle-theme" class="text-black dark:text-white">
+</div> -->
+<div id="toggle-theme" class="text-black dark:text-white">
   <BoxIcon name="sun" id="moon-icon" class="hidden size-4 dark:block" />
   <BoxIcon name="moon" id="sun-icon" class="block size-4 dark:hidden" />
-</Tooltip>
+</div>
 
 <!-- Theme initialization script - runs immediately to prevent flash -->
 <script>
@@ -156,3 +155,66 @@ import Tooltip from "./Tooltip.astro";
     }
   }
 </script>
+
+<style>
+  #theme-toggle-wrapper {
+    position: relative;
+    display: inline-block;
+  }
+
+  #theme-toggle-wrapper > div {
+    position: absolute;
+    right: 3px;
+    margin-top: 3px;
+  }
+
+  .theme-toggle-checkbox {
+    opacity: 0;
+    position: absolute;
+  }
+
+  #theme-toggle-label {
+    background-color: var(--toggle-table-background);
+    border-radius: 50px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 7.5px;
+    position: relative;
+    width: 66px;
+    height: 30px;
+    transform: scale(1.2);
+    box-shadow: 0 0 0 1px var(--toggle-border-color);
+    outline: 1px solid transparent;
+  }
+
+  .theme-toggle-checkbox:focus ~ #theme-toggle-label {
+    outline: 2px solid var(--toggle-border-color);
+    outline-offset: 4px;
+  }
+
+  #theme-toggle-label #theme-toggle-ball {
+    background-color: var(--accent);
+    border-radius: 50%;
+    position: absolute;
+    height: 30px;
+    width: 30px;
+    transform: translateX(-7.5px);
+    transition: all 0.5s cubic-bezier(0.23, 1, 0.32, 1) 0ms;
+  }
+
+  @media (forced-colors: active) {
+    #theme-toggle-label {
+      --moon-icon-color: #a3acc8;
+      --sun-icon-color: CanvasText;
+    }
+    #theme-toggle-label #theme-toggle-ball {
+      background-color: SelectedItem;
+    }
+  }
+
+  .theme-toggle-checkbox:checked + #theme-toggle-label #theme-toggle-ball {
+    transform: translateX(28.5px);
+  }
+</style>
