@@ -12,44 +12,14 @@ export const POST: APIRoute = async ({ request }) => {
       );
     }
 
-    // Check if user exists in the system
-    const { data: user, error: userError } = await supabase.auth.admin.listUsers();
-    
-    if (userError) {
-      console.error("Error checking user existence:", userError);
-      return new Response(
-        JSON.stringify({ error: "Failed to check user existence" }),
-        { status: 500, headers: { "Content-Type": "application/json" } }
-      );
-    }
-
-    // Check if email exists in the user list
-    const userExists = user.users.some(user => user.email === email);
-    
-    if (!userExists) {
-      // For security reasons, don't reveal if the email exists or not
-      // Just return success to prevent email enumeration attacks
-      return new Response(
-        JSON.stringify({ 
-          message: "If an account with that email exists, you will receive a password reset link shortly." 
-        }),
-        { status: 200, headers: { "Content-Type": "application/json" } }
-      );
-    }
-
     // Send password reset email using Supabase Auth
+    // This will only send an email if the user exists, and will fail silently if they don't
     const { error: resetError } = await supabase.auth.resetPasswordForEmail(email, {
       redirectTo: `${import.meta.env.SITE_URL || 'http://localhost:4321'}/reset-password`,
     });
 
-    if (resetError) {
-      console.error("Error sending password reset email:", resetError);
-      return new Response(
-        JSON.stringify({ error: "Failed to send password reset email" }),
-        { status: 500, headers: { "Content-Type": "application/json" } }
-      );
-    }
-
+    // Always return success to prevent email enumeration attacks
+    // Supabase will only send an email if the user exists, but won't reveal this information
     return new Response(
       JSON.stringify({ 
         message: "If an account with that email exists, you will receive a password reset link shortly." 
