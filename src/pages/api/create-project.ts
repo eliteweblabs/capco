@@ -3,6 +3,7 @@ import { SimpleProjectLogger } from "../../lib/simple-logging";
 import { supabase } from "../../lib/supabase";
 
 export const POST: APIRoute = async ({ request, cookies }) => {
+  console.log("📝 [CREATE-PROJECT] API route called!");
   try {
     const body = await request.json();
     console.log("📝 [CREATE-PROJECT] Received request body:", JSON.stringify(body, null, 2));
@@ -11,7 +12,15 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     const accessToken = cookies.get("sb-access-token")?.value;
     const refreshToken = cookies.get("sb-refresh-token")?.value;
 
+    console.log("📝 [CREATE-PROJECT] Auth check:", {
+      hasAccessToken: !!accessToken,
+      hasRefreshToken: !!refreshToken,
+      accessTokenLength: accessToken?.length || 0,
+      refreshTokenLength: refreshToken?.length || 0,
+    });
+
     if (!accessToken || !refreshToken) {
+      console.log("📝 [CREATE-PROJECT] Missing auth tokens");
       return new Response(JSON.stringify({ error: "Not authenticated" }), {
         status: 401,
       });
@@ -24,12 +33,19 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     });
 
     if (sessionError || !session.session?.user) {
+      console.log("📝 [CREATE-PROJECT] Session error:", sessionError);
+      console.log("📝 [CREATE-PROJECT] Session data:", session);
       return new Response(JSON.stringify({ error: "Invalid session" }), {
         status: 401,
       });
     }
 
     const userId = session.session.user.id;
+    console.log("📝 [CREATE-PROJECT] User authenticated:", {
+      userId,
+      userEmail: session.session.user.email,
+      userRole: session.session.user.user_metadata?.role,
+    });
 
     if (!supabase) {
       return new Response(JSON.stringify({ error: "Database connection not available" }), {
@@ -61,22 +77,27 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       }
     }
 
-    // Prepare project data
+    // Prepare project data (only include fields that exist in database)
     const projectData = {
       author_id: projectAuthorId, // Set to the appropriate client/user
+      title: body.address || "New Project", // Use address as title for now
       address: body.address,
-      owner: owner,
-      architect: body.architect,
-      sq_ft: body.sq_ft,
       description: body.description,
+      sq_ft: body.sq_ft ? parseInt(body.sq_ft) : null,
       new_construction: body.new_construction === "on" || body.new_construction === true,
-      units: body.units,
       building: body.building,
-      project: body.project,
       service: body.service,
       requested_docs: body.requested_docs,
-      status: 1, // Default status
+      status: 10, // Default status for new projects (Specs Received)
     };
+
+    console.log("📝 [CREATE-PROJECT] Client type processing:", {
+      clientType: body.client_type,
+      isNewClient: body.client_type === "new",
+      providedAuthorId: body.author_id,
+      finalProjectAuthorId: projectAuthorId,
+      finalOwner: owner,
+    });
 
     console.log(
       "📝 [CREATE-PROJECT] Inserting project data:",
@@ -86,13 +107,20 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     // Note: No complex setup needed for simple logging
 
     // Create project
+    console.log("📝 [CREATE-PROJECT] About to insert project into database");
     const { data: projects, error } = await supabase!
       .from("projects")
       .insert([projectData])
       .select();
 
     if (error) {
-      console.error("Error creating project:", error);
+      console.error("📝 [CREATE-PROJECT] Database error:", error);
+      console.error("📝 [CREATE-PROJECT] Error details:", {
+        message: error.message,
+        code: error.code,
+        details: error.details,
+        hint: error.hint,
+      });
       return new Response(JSON.stringify({ error: error.message }), {
         status: 500,
       });
@@ -122,7 +150,11 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       },
     });
   } catch (error) {
-    console.error("Error in create-project:", error);
+    console.error("📝 [CREATE-PROJECT] Catch block error:", error);
+    console.error(
+      "📝 [CREATE-PROJECT] Error stack:",
+      error instanceof Error ? error.stack : "No stack trace"
+    );
     return new Response(JSON.stringify({ error: "Internal server error" }), {
       status: 500,
     });

@@ -10,6 +10,7 @@ import ToggleButton from "../form/ToggleButton.astro";
 import UnitSlider from "../form/UnitSlider.astro";
 import ClientSelect from "../form/ClientSelect.astro";
 import StaffSelect from "../form/StaffSelect.astro";
+import GoogleAddressAutocomplete from "../form/GoogleAddressAutocomplete.astro";
 // import DeleteProject from "../form/DeleteProject.astro";
 
 interface Props {
@@ -17,6 +18,7 @@ interface Props {
   projectId?: string | null;
   userRole?: string | null; // Add userRole prop to control field visibility
   isNewProject?: boolean; // Add flag to indicate if this is a new project
+  projectStatus?: number | null; // Add project status for status-based field visibility
 }
 
 const {
@@ -24,24 +26,26 @@ const {
   projectId = "",
   userRole,
   isNewProject = false,
+  projectStatus = null,
 } = Astro.props;
 
 // Generate a temporary ID for new projects
 const formId = isNewProject ? `new-project-${Date.now()}` : projectId || "";
 
-// Filter fields based on user role
-const formFields = getFilteredFormFields(userRole, isNewProject);
+// Filter fields based on user role and project status
+const formFields = getFilteredFormFields(userRole, isNewProject, projectStatus);
 
-// Get filtered button groups based on user role
-const buttonGroups = getFilteredButtonGroups(userRole, isNewProject);
+// Get filtered button groups based on user role and project status
+const buttonGroups = getFilteredButtonGroups(userRole, isNewProject, projectStatus);
 
-// Get filtered form actions based on user role
-const formActions = getFilteredFormActions(userRole, isNewProject);
+// Get filtered form actions based on user role and project status
+const formActions = getFilteredFormActions(userRole, isNewProject, projectStatus);
 
 // Debug logging
-console.log("ProjectForm debug:", {
+console.log("📝 [ProjectForm] Debug info:", {
   userRole,
   isNewProject,
+  projectStatus,
   formFieldsCount: formFields.length,
   buttonGroupsCount: buttonGroups.length,
   formActionsCount: formActions.length,
@@ -61,6 +65,10 @@ console.log("ProjectForm debug:", {
     allow: a.allow,
   })),
 });
+
+// Check specifically for the existing client select field
+const existingClientField = formFields.find(f => f.id === "existing-client-select");
+console.log(existingClientField ? "⚠️ [ProjectForm] Found existing-client-select field" : "✅ [ProjectForm] existing-client-select field correctly filtered out");
 
 // Debug owner fields specifically
 const ownerFieldsInForm = formFields.filter(
@@ -158,47 +166,39 @@ console.log("Owner fields found:", ownerFieldsInForm.length, ownerFieldsInForm);
       </div>
     )}
 
-    <!-- Existing Client Selection -->
-    <div id="existing-client-container" class="relative">
-      <ClientSelect
-        selectedUserId={project?.author_id || ""}
-        name="author_id"
-        id="existing-client-select"
-        label="Select Existing Client"
-        role="Client"
-        required={false}
-        class="w-full"
-      />
-    </div>
+    <!-- Existing Client Selection (filtered by role) -->
+    {
+      formFields
+        .filter((field) => field.name === "author_id" && field.type === "select")
+        .map((field) => (
+            <div id="existing-client-container" class="relative">
+              <ClientSelect
+                selectedUserId={project?.author_id || ""}
+                name="author_id"
+                id="existing-client-select"
+                label="Select Existing Client"
+                role="Client"
+                required={false}
+                class="w-full"
+              />
+            </div>
+        ))
+    }
   </div>
 
-  <!-- Address Field (Full Width) -->
+  <!-- Google Address Autocomplete Field -->
   {
     formFields
-      .filter((field) => field.name === "address")
+      .filter((field) => field.type === "component" && field.component === "GoogleAddressAutocomplete")
       .map((field) => (
         <div class="relative">
-          <label
-            for={`${field.id}`}
-            class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-          >
-            {field.label}
-            {field.required ? " *" : ""}
-          </label>
-          <input
-            type={field.type === "number" ? "number" : "text"}
+          <GoogleAddressAutocomplete
             id={`${field.id}`}
             name={field.name}
+            label={field.label}
             value={project?.[field.name] || ""}
-            class="w-full py-2 px-3 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:focus:ring-blue-400 dark:focus:border-blue-400"
-            placeholder={field.placeholder || ""}
-            required={field.required}
-            min={field.min}
-            max={field.max}
-            step={field.step}
-            data-field={field.dataField}
-            data-project-id={formId}
-            data-project-data={JSON.stringify(project || {})}
+            placeholder={field.componentProps?.placeholder || "Enter address..."}
+            required={field.componentProps?.required || field.required || false}
           />
         </div>
       ))
@@ -264,9 +264,7 @@ console.log("Owner fields found:", ownerFieldsInForm.length, ownerFieldsInForm);
             placeholder={field.placeholder || ""}
             data-project-id={formId}
             data-project-data={JSON.stringify(project || {})}
-          >
-            {project?.[field.name] || ""}
-          </textarea>
+          >{project?.[field.name] || ""}</textarea>
         </div>
       ))
   }
@@ -817,9 +815,9 @@ console.log("Owner fields found:", ownerFieldsInForm.length, ownerFieldsInForm);
             type: "success",
             title: isNewProject ? "Project Created!" : "Project Updated!",
             message: isNewProject
-              ? "Your new project has been created successfully."
+              ? "Your new project has been created successfully. Please upload your project files by clicking the 'Documents' tab."
               : "Your project has been updated successfully.",
-            duration: 4000,
+            duration: isNewProject ? 10000 : 4000,
           });
         }
 

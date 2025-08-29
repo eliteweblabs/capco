@@ -1,0 +1,234 @@
+---
+import { checkAuth } from "../../lib/auth";
+
+// Get current user for authentication and role
+const { isAuth, user, role } = await checkAuth(Astro.cookies);
+
+interface Props {
+  projectId: number;
+  currentStatus: number;
+  statusLabel: string;
+  statusColor?: string;
+}
+
+const { projectId, currentStatus, statusLabel, statusColor = "blue" } = Astro.props;
+
+// Only show dropdown for Admin and Staff users
+const canChangeStatus = role === "Admin" || role === "Staff";
+
+// Fetch available project statuses
+let projectStatuses: any[] = [];
+if (canChangeStatus) {
+  try {
+    const statusResponse = await fetch(`${Astro.url.origin}/api/get-project-statuses`, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
+
+    if (statusResponse.ok) {
+      const result = await statusResponse.json();
+      if (result.success) {
+        projectStatuses = Object.values(result.statuses || {});
+      }
+    }
+  } catch (error) {
+    console.error("Error fetching project statuses:", error);
+  }
+}
+---
+
+{canChangeStatus ? (
+  <div class="ml-4 flex-shrink-0 relative">
+    <div class="relative inline-block text-left">
+      <button
+        type="button"
+        class={`inline-flex items-center rounded-full px-3 py-1 text-sm font-medium cursor-pointer transition-colors
+          bg-${statusColor}-100 text-${statusColor}-800 hover:bg-${statusColor}-200 
+          dark:bg-${statusColor}-900/30 dark:text-${statusColor}-400 dark:hover:bg-${statusColor}-900/50`}
+        id="status-dropdown-button"
+        aria-expanded="false"
+        aria-haspopup="true"
+      >
+        {statusLabel}
+        <svg class="ml-1 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+        </svg>
+      </button>
+
+      <div
+        class="absolute right-0 z-50 mt-2 w-64 origin-top-right rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none dark:bg-gray-800 dark:ring-gray-700 hidden"
+        id="status-dropdown-menu"
+        role="menu"
+        aria-orientation="vertical"
+        aria-labelledby="status-dropdown-button"
+      >
+        <div class="py-1" role="none">
+          <div class="px-4 py-2 text-sm text-gray-700 dark:text-gray-300 border-b border-gray-200 dark:border-gray-700">
+            <div class="font-medium">Change Project Status</div>
+            <div class="text-xs text-gray-500 dark:text-gray-400">Project #{projectId}</div>
+          </div>
+          
+          
+          {projectStatuses.filter((status: any) => status.display_in_nav === true)
+          .map((status: any) => (
+            <button
+              type="button"
+              class={`group flex w-full items-center px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors
+                ${status.status_code === currentStatus 
+                  ? 'bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400' 
+                  : 'text-gray-700 dark:text-gray-300'}`}
+              data-status-code={status.status_code}
+              data-status-name={status.status_name}
+              role="menuitem"
+            >
+              <div class="flex-1 text-left">
+                <div class="font-medium">{status.status_name}</div>
+                {status.status_code === currentStatus && (
+                  <div class="text-xs text-blue-600 dark:text-blue-400">Current Status</div>
+                )}
+              </div>
+              {status.status_code === currentStatus && (
+                <svg class="h-4 w-4 text-blue-600 dark:text-blue-400" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
+                </svg>
+              )}
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
+  </div>
+) : (
+  <!-- Non-admin users see static status badge -->
+  <div class="ml-4 flex-shrink-0">
+    <span
+      class={`inline-flex items-center rounded-full px-3 py-1 text-sm font-medium 
+        bg-${statusColor}-100 text-${statusColor}-800 
+        dark:bg-${statusColor}-900/30 dark:text-${statusColor}-400`}
+    >
+      {statusLabel}
+    </span>
+  </div>
+)}
+
+<script define:vars={{projectId}}>
+  document.addEventListener('DOMContentLoaded', function() {
+    const dropdownButton = document.getElementById('status-dropdown-button');
+    const dropdownMenu = document.getElementById('status-dropdown-menu');
+    const currentProjectId = projectId;
+    
+    if (!dropdownButton || !dropdownMenu) return;
+
+    // Toggle dropdown
+    dropdownButton.addEventListener('click', function(e) {
+      e.stopPropagation();
+      const isOpen = dropdownMenu.getAttribute('aria-expanded') === 'true';
+      
+      if (isOpen) {
+        closeDropdown();
+      } else {
+        openDropdown();
+      }
+    });
+
+    // Close dropdown when clicking outside
+    document.addEventListener('click', function(e) {
+      if (!dropdownButton.contains(e.target) && !dropdownMenu.contains(e.target)) {
+        closeDropdown();
+      }
+    });
+
+    // Handle status selection
+    const statusButtons = dropdownMenu.querySelectorAll('[data-status-code]');
+    statusButtons.forEach(button => {
+      button.addEventListener('click', async function() {
+        const statusCode = this.getAttribute('data-status-code');
+        const statusName = this.getAttribute('data-status-name');
+        
+        if (statusCode && statusName) {
+          await changeProjectStatus(currentProjectId, parseInt(statusCode), statusName);
+          closeDropdown();
+        }
+      });
+    });
+
+    function openDropdown() {
+      if (dropdownMenu && dropdownButton) {
+        dropdownMenu.classList.remove('hidden');
+        dropdownButton.setAttribute('aria-expanded', 'true');
+      }
+    }
+
+    function closeDropdown() {
+      if (dropdownMenu && dropdownButton) {
+        dropdownMenu.classList.add('hidden');
+        dropdownButton.setAttribute('aria-expanded', 'false');
+      }
+    }
+
+    async function changeProjectStatus(projectId, newStatus, statusName) {
+      if (!dropdownButton) return;
+      
+      const originalText = dropdownButton.innerHTML;
+      
+      try {
+        // Show loading state
+        dropdownButton.disabled = true;
+        dropdownButton.innerHTML = `
+          <svg class="animate-spin h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+          </svg>
+          Updating...
+        `;
+
+        // Make API call to update status
+        const response = await fetch(`/api/update-project/${projectId}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            status: newStatus
+          })
+        });
+
+        if (response.ok) {
+          // Success - reload the page to reflect changes
+          window.location.reload();
+        } else {
+          const errorData = await response.json();
+          throw new Error(errorData.error || 'Failed to update status');
+        }
+      } catch (error) {
+        console.error('Error updating project status:', error);
+        
+        // Show error notification
+        const notification = document.createElement('div');
+        notification.className = 'fixed top-4 right-4 z-50 bg-red-500 text-white px-4 py-2 rounded-lg shadow-lg';
+        notification.textContent = 'Failed to update project status. Please try again.';
+        document.body.appendChild(notification);
+        
+        // Remove notification after 3 seconds
+        setTimeout(() => {
+          notification.remove();
+        }, 3000);
+        
+        // Reset button
+        if (dropdownButton) {
+          dropdownButton.disabled = false;
+          dropdownButton.innerHTML = originalText;
+        }
+      }
+    }
+  });
+</script>
+
+<style>
+  /* Ensure the dropdown appears above other elements */
+  #status-dropdown-menu {
+    z-index: 50;
+  }
+</style>

@@ -1,5 +1,4 @@
 // Global Services - Centralized API and utility functions
-import { emailService } from "./email-service";
 import { supabase } from "./supabase";
 
 // Project Status Codes (for backward compatibility)
@@ -39,8 +38,68 @@ let PROJECT_STATUS_DATA: Record<
     email_content: string;
     est_time: string;
     notify: string[];
+    client_visible?: boolean; // Simple client visibility control
   }
 > = {};
+
+// Function to filter statuses by user role
+export function getStatusesForRole(userRole: string | null | undefined): Record<number, string> {
+  if (!userRole) return {};
+
+  const normalizedRole = userRole.toLowerCase();
+  const filteredStatuses: Record<number, string> = {};
+
+  // Filter statuses based on client_visible for client users
+  Object.entries(PROJECT_STATUS_LABELS).forEach(([code, label]) => {
+    const statusCode = parseInt(code);
+    const statusData = PROJECT_STATUS_DATA[statusCode];
+
+    // Admin and Staff can see all statuses
+    if (normalizedRole === "admin" || normalizedRole === "staff") {
+      filteredStatuses[statusCode] = label;
+      return;
+    }
+
+    // For clients, check client_visible flag
+    if (normalizedRole === "client") {
+      // If no visibility data, show to clients by default (backward compatibility)
+      if (statusData?.client_visible === undefined || statusData.client_visible === true) {
+        filteredStatuses[statusCode] = label;
+      }
+      return;
+    }
+
+    // For other roles, show all by default (backward compatibility)
+    filteredStatuses[statusCode] = label;
+  });
+
+  return filteredStatuses;
+}
+
+// Function to check if a status is visible to a role
+export function isStatusVisibleToRole(
+  statusCode: number,
+  userRole: string | null | undefined
+): boolean {
+  if (!userRole) return false;
+
+  const normalizedRole = userRole.toLowerCase();
+  const statusData = PROJECT_STATUS_DATA[statusCode];
+
+  // Admin and Staff can see all statuses
+  if (normalizedRole === "admin" || normalizedRole === "staff") {
+    return true;
+  }
+
+  // For clients, check client_visible flag
+  if (normalizedRole === "client") {
+    // If no visibility data, show to clients by default (backward compatibility)
+    return statusData?.client_visible === undefined || statusData.client_visible === true;
+  }
+
+  // For other roles, show all by default (backward compatibility)
+  return true;
+}
 
 // Function to load status data from database
 export async function loadProjectStatuses() {
@@ -117,7 +176,7 @@ export async function loadProjectStatuses() {
 }
 
 // Export the dynamic labels
-export { PROJECT_STATUS_LABELS, PROJECT_STATUS_DATA };
+export { PROJECT_STATUS_DATA, PROJECT_STATUS_LABELS };
 
 // Function to get status data for a specific status code
 export function getStatusData(statusCode: number) {

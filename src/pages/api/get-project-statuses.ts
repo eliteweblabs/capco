@@ -20,7 +20,7 @@ export const GET: APIRoute = async ({ request }) => {
     const { data: statuses, error } = await supabase
       .from("project_statuses")
       .select(
-        "status_code, status_name, email_content, est_time, notify, els_to_show, trigger, display_in_nav"
+        "status_code, status_name, email_content, est_time, notify, els_to_show, trigger, display_in_nav, client_visible"
       )
       .neq("status_code", 0)
       .order("status_code");
@@ -51,6 +51,7 @@ export const GET: APIRoute = async ({ request }) => {
           els_to_show: status.els_to_show || [],
           trigger: status.trigger || [],
           display_in_nav: status.display_in_nav || false,
+          client_visible: status.client_visible !== undefined ? status.client_visible : true, // Default to true
         };
         return acc;
       },
@@ -65,6 +66,7 @@ export const GET: APIRoute = async ({ request }) => {
           els_to_show: string[];
           trigger: string[];
           display_in_nav: boolean;
+          client_visible: boolean;
         }
       >
     );

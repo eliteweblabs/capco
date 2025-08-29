@@ -1,18 +1,23 @@
 ---
-// import { getI18N } from "../../i18n";
-
-//Para cambiar idioma de textos
-// const { currentLocale } = Astro;
-// const i18n = getI18N({ currentLocale });
+import ProjectStatusDropdown from "../project/ProjectStatusDropdown.astro";
 
 interface Props {
   title: string;
   description: string;
   statusLabel?: string;
   statusColor?: string;
+  projectId?: number;
+  currentStatus?: number;
 }
 
-const { title, description, statusLabel, statusColor = "blue" } = Astro.props;
+const {
+  title,
+  description,
+  statusLabel,
+  statusColor = "blue",
+  projectId,
+  currentStatus,
+} = Astro.props;
 ---
 
 <div class="flex items-start justify-between">
@@ -25,7 +30,14 @@ const { title, description, statusLabel, statusColor = "blue" } = Astro.props;
     </p>
   </div>
   {
-    statusLabel && (
+    statusLabel && projectId && currentStatus !== undefined ? (
+      <ProjectStatusDropdown
+        projectId={projectId}
+        currentStatus={currentStatus}
+        statusLabel={statusLabel}
+        statusColor={statusColor}
+      />
+    ) : statusLabel ? (
       <div class="ml-4 flex-shrink-0">
         <span
           class={`inline-flex items-center rounded-full px-3 py-1 text-sm font-medium bg-${statusColor}-100 text-${statusColor}-800 dark:bg-${statusColor}-900/30 dark:text-${statusColor}-400`}
@@ -33,6 +45,6 @@ const { title, description, statusLabel, statusColor = "blue" } = Astro.props;
           {statusLabel}
         </span>
       </div>
-    )
+    ) : null
   }
 </div>

@@ -56,7 +56,7 @@ export const GET: APIRoute = async ({ cookies, url }) => {
         address,
         title,
         log,
-        profiles!projects_author_id_fkey(name, id)
+        author_id
       `
       )
       .not("log", "is", null)
@@ -70,19 +70,41 @@ export const GET: APIRoute = async ({ cookies, url }) => {
       });
     }
 
+    // Get unique author IDs to fetch their profile information
+    const uniqueAuthorIds = projects
+      ? [...new Set(projects.map((p) => p.author_id).filter(Boolean))]
+      : [];
+
+    // Fetch profile information for all authors
+    let profilesMap = new Map();
+    if (uniqueAuthorIds.length > 0) {
+      const { data: profiles } = await supabase!
+        .from("profiles")
+        .select("id, name")
+        .in("id", uniqueAuthorIds);
+
+      if (profiles) {
+        profiles.forEach((profile) => {
+          profilesMap.set(profile.id, profile);
+        });
+      }
+    }
+
     // Extract and flatten all log entries with project context
     const allActivities: any[] = [];
 
     projects?.forEach((project) => {
       const logs = project.log || [];
+      const authorProfile = profilesMap.get(project.author_id);
+
       logs.forEach((logEntry: any) => {
         allActivities.push({
           ...logEntry,
           project_id: project.id,
           project_address: project.address,
           project_title: project.title,
-          project_owner: (project.profiles as any)?.name || "Unknown",
-          project_owner_id: (project.profiles as any)?.id,
+          project_owner: authorProfile?.name || "Unknown",
+          project_owner_id: authorProfile?.id || project.author_id,
         });
       });
     });
