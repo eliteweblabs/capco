@@ -75,7 +75,11 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       }
 
       // Check if profile needs updating (missing name or has generic name)
-      if (!userProfile.name || userProfile.name === "User" || userProfile.name.trim() === "") {
+      if (
+        !userProfile.company_name ||
+        userProfile.company_name === "User" ||
+        userProfile.company_name.trim() === ""
+      ) {
         const metadata = authUser.user_metadata || {};
 
         // Construct new name with priority order
@@ -110,7 +114,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
             updates.push({
               userId: authUser.id,
               email: authUser.email,
-              oldName: userProfile.name,
+              oldName: userProfile.company_name,
               newName: newName,
               phone: newPhone,
             });

@@ -225,7 +225,7 @@ export class SimpleProjectLogger {
         if (!error && profiles) {
           const userNames: Record<string, string> = {};
           profiles.forEach((profile: any) => {
-            userNames[profile.id] = profile.name;
+            userNames[profile.id] = profile.company_name;
           });
           return userNames;
         }

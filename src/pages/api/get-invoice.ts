@@ -73,7 +73,7 @@ export const POST: APIRoute = async ({ request }) => {
           invoice.projects.author_id
         );
         client = {
-          name: profile?.name || null,
+          name: profile?.company_name || null,
           email: userData?.user?.email || null,
         };
       } catch (_) {
