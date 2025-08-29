@@ -16,19 +16,19 @@ export const POST: APIRoute = async ({ request, redirect }) => {
   const password = formData.get("password")?.toString();
   const firstName = formData.get("first_name")?.toString();
   const lastName = formData.get("last_name")?.toString();
-  const displayName = formData.get("display_name")?.toString();
+  const companyName = formData.get("company_name")?.toString();
   const phone = formData.get("phone")?.toString();
 
   console.log("🔐 [REGISTER] Form data:", {
     email,
     firstName,
     lastName,
-    displayName,
+    companyName,
     hasPassword: !!password,
   });
 
-  if (!email || !password || !firstName || !lastName || !displayName) {
-    return new Response("Email, password, first name, last name, and display name are required", {
+  if (!email || !password || !firstName || !lastName || !companyName) {
+    return new Response("Email, password, first name, last name, and company name are required", {
       status: 400,
     });
   }
@@ -59,7 +59,7 @@ export const POST: APIRoute = async ({ request, redirect }) => {
         first_name: firstName,
         last_name: lastName,
         full_name: `${firstName} ${lastName}`,
-        display_name: displayName,
+        company_name: companyName,
         phone: phone || null,
       },
     },
@@ -89,7 +89,9 @@ export const POST: APIRoute = async ({ request, redirect }) => {
     // Use admin client to bypass RLS policies during registration
     const { error: profileError } = await supabaseAdmin.from("profiles").insert({
       id: data.user.id,
-      name: displayName,
+      company_name: companyName,
+      first_name: firstName,
+      last_name: lastName,
       phone: phone ? parseInt(phone) : null,
       role: "Client",
       created_at: new Date().toISOString(),

@@ -75,6 +75,24 @@ if (user) {
             <input type="file" id="avatar-input" accept="image/*" class="hidden" />
           </div>
 
+          <!-- Company Name Field -->
+          <div>
+            <label
+              for="companyName"
+              class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300"
+            >
+              Company Name
+            </label>
+            <input
+              type="text"
+              id="companyName"
+              name="companyName"
+              value={userProfile?.company_name || ""}
+              class="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-60 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:focus:border-blue-400"
+              placeholder="Enter your company name"
+            />
+          </div>
+
           <!-- First Name and Last Name Fields -->
           <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
             <div>
@@ -239,6 +257,7 @@ if (user) {
       e.preventDefault();
 
       const formData = new FormData(profileForm);
+      const companyName = formData.get("companyName") as string;
       const firstName = formData.get("firstName") as string;
       const lastName = formData.get("lastName") as string;
       const phone = formData.get("phone") as string;
@@ -253,7 +272,7 @@ if (user) {
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({ firstName, lastName, phone }),
+          body: JSON.stringify({ companyName, firstName, lastName, phone }),
         });
 
         const result = await response.json();
