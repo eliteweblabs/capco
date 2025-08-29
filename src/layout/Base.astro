@@ -100,8 +100,18 @@ const { title, description, user } = Astro.props;
     <script
       async
       defer
-      src={`https://maps.googleapis.com/maps/api/js?key=${import.meta.env.GOOGLE_MAPS_API_KEY}&libraries=places`}
+      src="https://maps.googleapis.com/maps/api/js?key=GOOGLE_MAPS_API_KEY_PLACEHOLDER&libraries=places"
+      id="google-maps-script"
     ></script>
+    <script>
+      // Replace placeholder with actual API key after environment variables are loaded
+      document.addEventListener('DOMContentLoaded', function() {
+        const script = document.getElementById('google-maps-script') as HTMLScriptElement;
+        if (script && (window as any).GOOGLE_MAPS_API_KEY) {
+          script.src = script.src.replace('GOOGLE_MAPS_API_KEY_PLACEHOLDER', (window as any).GOOGLE_MAPS_API_KEY);
+        }
+      });
+    </script>
   </head>
   <body class="bg-hub-background dark:bg-hub-background-dark md:flex md:justify-center">
     <main class="w-full md:max-w-[2000px]">
@@ -115,9 +125,9 @@ const { title, description, user } = Astro.props;
     <!-- Flowbite JavaScript -->
     <script src="/js/flowbite.min.js" crossorigin="anonymous"></script>
 
-    <!-- Inject Supabase environment variables and user data for client-side use -->
+    <!-- Inject environment variables for client-side use -->
     <script
-      set:html={`window.SUPABASE_URL = "${import.meta.env.SUPABASE_URL || ""}"; window.SUPABASE_ANON_KEY = "${(import.meta.env.SUPABASE_ANON_KEY || "").replace(/\s/g, "")}"; ${user ? `window.USER_DATA = ${JSON.stringify(user)};` : ""}`}
+      set:html={`window.SUPABASE_URL = "${import.meta.env.SUPABASE_URL || ""}"; window.SUPABASE_ANON_KEY = "${(import.meta.env.SUPABASE_ANON_KEY || "").replace(/\s/g, "")}"; window.GOOGLE_MAPS_API_KEY = "${import.meta.env.GOOGLE_MAPS_API_KEY || ""}"; ${user ? `window.USER_DATA = ${JSON.stringify(user)};` : ""}`}
     />
 
     <!-- Inject session tokens for client-side Supabase auth -->
