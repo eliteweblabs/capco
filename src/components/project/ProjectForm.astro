@@ -5,6 +5,8 @@ import {
   getFilteredFormFields,
   getFilteredButtonGroups,
   getFilteredFormActions,
+  isFieldReadOnly,
+  isButtonGroupReadOnly,
 } from "../../lib/project-form-config";
 import ToggleButton from "../form/ToggleButton.astro";
 import UnitSlider from "../form/UnitSlider.astro";
@@ -216,32 +218,40 @@ console.log("Owner fields found:", ownerFieldsInForm.length, ownerFieldsInForm);
             field.name !== "owner_email" &&
             (field.type === "text" || field.type === "number")
         )
-        .map((field) => (
-          <div class="relative">
-            <label
-              for={`${field.id}`}
-              class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-            >
-              {field.label}
-              {field.required ? " *" : ""}
-            </label>
-            <input
-              type={field.type === "number" ? "number" : "text"}
-              id={`${field.id}`}
-              name={field.name}
-              value={project?.[field.name] || ""}
-              class="w-full py-2 px-3 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:focus:ring-blue-400 dark:focus:border-blue-400"
-              placeholder={field.placeholder || ""}
-              required={field.required}
-              min={field.min}
-              max={field.max}
-              step={field.step}
-              data-field={field.dataField}
-              data-project-id={formId}
-              data-project-data={JSON.stringify(project || {})}
-            />
-          </div>
-        ))
+        .map((field) => {
+          const isReadOnly = isFieldReadOnly(field, projectStatus);
+          return (
+            <div class="relative">
+              <label
+                for={`${field.id}`}
+                class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+              >
+                {field.label}
+                {field.required ? " *" : ""}
+              </label>
+              <input
+                type={field.type === "number" ? "number" : "text"}
+                id={`${field.id}`}
+                name={field.name}
+                value={project?.[field.name] || ""}
+                class={`w-full py-2 px-3 text-sm border border-gray-300 dark:border-gray-600 rounded-md text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:focus:ring-blue-400 dark:focus:border-blue-400 ${
+                  isReadOnly 
+                    ? "bg-gray-100 dark:bg-gray-800 cursor-not-allowed" 
+                    : "bg-white dark:bg-gray-700"
+                }`}
+                placeholder={field.placeholder || ""}
+                required={field.required}
+                min={field.min}
+                max={field.max}
+                step={field.step}
+                readonly={isReadOnly}
+                data-field={field.dataField}
+                data-project-id={formId}
+                data-project-data={JSON.stringify(project || {})}
+              />
+            </div>
+          );
+        })
     }
   </div>
 
@@ -249,25 +259,33 @@ console.log("Owner fields found:", ownerFieldsInForm.length, ownerFieldsInForm);
   {
     formFields
       .filter((field) => field.type === "textarea")
-      .map((field) => (
-        <div class="relative">
-          <label
-            for={`${field.id}`}
-            class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-          >
-            {field.label}
-          </label>
-          <textarea
-            id={`${field.id}`}
-            name={field.name}
-            rows="3"
-            class="w-full py-2 px-3 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:focus:ring-blue-400 dark:focus:border-blue-400"
-            placeholder={field.placeholder || ""}
-            data-project-id={formId}
-            data-project-data={JSON.stringify(project || {})}
-          >{project?.[field.name] || ""}</textarea>
-        </div>
-      ))
+      .map((field) => {
+        const isReadOnly = isFieldReadOnly(field, projectStatus);
+        return (
+          <div class="relative">
+            <label
+              for={`${field.id}`}
+              class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+            >
+              {field.label}
+            </label>
+            <textarea
+              id={`${field.id}`}
+              name={field.name}
+              rows="3"
+              class={`w-full py-2 px-3 text-sm border border-gray-300 dark:border-gray-600 rounded-md text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:focus:ring-blue-400 dark:focus:border-blue-400 ${
+                isReadOnly 
+                  ? "bg-gray-100 dark:bg-gray-800 cursor-not-allowed" 
+                  : "bg-white dark:bg-gray-700"
+              }`}
+              placeholder={field.placeholder || ""}
+              readonly={isReadOnly}
+              data-project-id={formId}
+              data-project-data={JSON.stringify(project || {})}
+            >{project?.[field.name] || ""}</textarea>
+          </div>
+        );
+      })
   }
 
   <!-- Staff Assignment Field (Admin Only) -->
@@ -302,23 +320,29 @@ console.log("Owner fields found:", ownerFieldsInForm.length, ownerFieldsInForm);
                 field.type === "checkbox" && field.name !== "new_client"
             )
             .map((field) => {
+              const isReadOnly = isFieldReadOnly(field, projectStatus);
               const isChecked =
                 project?.[field.name] === true ||
                 project?.[field.name] === "true" ||
                 project?.[field.name] === 1 ||
                 project?.[field.name] === "1";
               return (
-                <label class="inline-flex items-center cursor-pointer">
+                <label class={`inline-flex items-center ${isReadOnly ? "cursor-not-allowed" : "cursor-pointer"}`}>
                   <input
                     type="checkbox"
                     id={`${field.id}`}
                     name={field.name}
                     checked={isChecked}
+                    disabled={isReadOnly}
                     class="sr-only peer"
                     data-project-id={formId}
                     data-project-data={JSON.stringify(project || {})}
                   />
-                  <div class="relative w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600 dark:peer-checked:bg-blue-600" />
+                  <div class={`relative w-11 h-6 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 ${
+                    isReadOnly 
+                      ? "bg-gray-300 dark:bg-gray-600 cursor-not-allowed" 
+                      : "bg-gray-200 dark:bg-gray-700 peer-checked:bg-blue-600 dark:peer-checked:bg-blue-600"
+                  }`} />
                   <span class="ms-3 text-sm font-medium text-gray-900 dark:text-gray-300">
                     {field.label}
                   </span>
@@ -336,6 +360,7 @@ console.log("Owner fields found:", ownerFieldsInForm.length, ownerFieldsInForm);
   <!-- Button Groups -->
   {
     buttonGroups.map((group) => {
+      const isReadOnly = isButtonGroupReadOnly(group, projectStatus);
       // Parse selected values from project data
       let selectedValues: string[] = [];
       if (project?.[group.name]) {
@@ -363,7 +388,7 @@ console.log("Owner fields found:", ownerFieldsInForm.length, ownerFieldsInForm);
           <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
             {group.label}
           </label>
-          <div class="flex flex-wrap gap-2">
+          <div class={`flex flex-wrap gap-2 ${isReadOnly ? "pointer-events-none opacity-75" : ""}`}>
             {group.options.map((option) => {
               const isSelected = selectedValues.includes(option.value);
               return (
@@ -371,7 +396,10 @@ console.log("Owner fields found:", ownerFieldsInForm.length, ownerFieldsInForm);
                   value={option.value}
                   group={group.name}
                   type={group.type}
-                  class={`${group.cssClass} ${isSelected ? "bg-blue-500 text-white border-blue-500" : ""}`}
+                  disabled={isReadOnly}
+                  class={`${group.cssClass} ${isSelected ? "bg-blue-500 text-white border-blue-500" : ""} ${
+                    isReadOnly ? "cursor-not-allowed" : ""
+                  }`}
                 >
                   {option.label}
                 </ToggleButton>
