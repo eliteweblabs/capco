@@ -79,7 +79,25 @@ export const POST: APIRoute = async ({ request, redirect }) => {
       status: error.status,
       statusCode: error.statusCode,
     });
-    return new Response(error.message, { status: 500 });
+    
+    // Check if it's a duplicate email error
+    const isDuplicateEmail = error.message?.includes("already registered") || 
+                           error.message?.includes("already exists") ||
+                           error.message?.includes("already been registered");
+    
+    return new Response(
+      JSON.stringify({
+        success: false,
+        error: isDuplicateEmail 
+          ? "A user with this email address has already been registered"
+          : "Failed to create user account. Please try again.",
+        details: error.message
+      }),
+      { 
+        status: isDuplicateEmail ? 409 : 500,
+        headers: { "Content-Type": "application/json" }
+      }
+    );
   }
 
   // Create profile in the profiles table if user was created successfully
@@ -115,6 +133,20 @@ export const POST: APIRoute = async ({ request, redirect }) => {
 
   console.log("User registration successful:", !!data.user);
 
-  // Redirect to home with success message
-  return redirect("/?message=registration_success");
+  // Return success response
+  return new Response(
+    JSON.stringify({
+      success: true,
+      message: "User registration successful",
+      user: data.user ? {
+        id: data.user.id,
+        email: data.user.email,
+        needsConfirmation: !data.user.email_confirmed_at
+      } : null
+    }),
+    {
+      status: 200,
+      headers: { "Content-Type": "application/json" }
+    }
+  );
 };
