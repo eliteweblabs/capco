@@ -360,93 +360,15 @@ export class GlobalServices {
     };
   }
 
-  // Email Functions
-  async sendEmail(options: {
-    to: string | string[];
-    type: "welcome" | "password-reset" | "notification" | "custom";
-    variables?: Record<string, string>;
-    subject?: string;
-    html?: string;
-    text?: string;
-  }) {
-    try {
-      this.emit("email:sending", { to: options.to, type: options.type });
-
-      const response = await fetch("/api/send-email", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(options),
-      });
-
-      const result = await response.json();
-
-      if (result.success) {
-        this.emit("email:sent", { ...options, messageId: result.messageId });
-        this.showNotification({
-          type: "success",
-          title: "Email Sent",
-          message:
-            result.message ||
-            `Email sent successfully to ${Array.isArray(options.to) ? options.to.join(", ") : options.to}`,
-        });
-      } else {
-        throw new Error(result.error);
-      }
-
-      return result;
-    } catch (error) {
-      this.emit("email:error", { ...options, error: (error as Error).message });
-      this.showNotification({
-        type: "error",
-        title: "Email Failed",
-        message: (error as Error).message || "Failed to send email",
-        duration: 0, // Errors stay until manually dismissed
-      });
-      throw error;
-    }
+  // Email Functions - Removed, using Supabase for emails
+  async sendEmail(options: any) {
+    console.warn("Email service removed - using Supabase for emails");
+    throw new Error("Email service removed - using Supabase for emails");
   }
 
-  // React Email Functions
-  async sendReactEmail(options: {
-    to: string | string[];
-    type: "welcome" | "project-notification" | "test";
-    [key: string]: any; // For additional props like name, projectTitle, etc.
-  }) {
-    try {
-      this.emit("email:sending", { to: options.to, type: options.type });
-
-      const response = await fetch("/api/send-react-email", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(options),
-      });
-
-      const result = await response.json();
-
-      if (result.success) {
-        this.emit("email:sent", { ...options, messageId: result.messageId });
-        this.showNotification({
-          type: "success",
-          title: "Email Sent",
-          message:
-            result.message ||
-            `Email sent successfully to ${Array.isArray(options.to) ? options.to.join(", ") : options.to}`,
-        });
-      } else {
-        throw new Error(result.error);
-      }
-
-      return result;
-    } catch (error) {
-      this.emit("email:error", { ...options, error: (error as Error).message });
-      this.showNotification({
-        type: "error",
-        title: "Email Failed",
-        message: (error as Error).message || "Failed to send React email",
-        duration: 0, // Errors stay until manually dismissed
-      });
-      throw error;
-    }
+  async sendReactEmail(options: any) {
+    console.warn("Email service removed - using Supabase for emails");
+    throw new Error("Email service removed - using Supabase for emails");
   }
 
   // Project Status Functions
