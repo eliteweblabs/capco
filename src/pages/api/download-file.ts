@@ -26,7 +26,10 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     }
 
     // Get current user
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser();
 
     if (userError || !user) {
       return new Response(JSON.stringify({ error: "Authentication required" }), {
@@ -37,15 +40,15 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
     // Download file from Supabase Storage
     console.log("Attempting to download from storage:", filePath);
-    
+
     // Extract the actual file path (remove bucket prefix if present)
     let actualFilePath = filePath;
     if (filePath.startsWith("project-documents/")) {
       actualFilePath = filePath.replace("project-documents/", "");
     }
-    
+
     console.log("Actual file path for download:", actualFilePath);
-    
+
     const { data: fileData, error: downloadError } = await supabase.storage
       .from("project-documents")
       .download(actualFilePath);
@@ -53,14 +56,17 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     if (downloadError || !fileData) {
       console.error("Error downloading file from storage:", downloadError);
       console.error("File path attempted:", filePath);
-      return new Response(JSON.stringify({ 
-        error: "Failed to download file",
-        details: downloadError?.message || "Unknown error",
-        filePath: filePath
-      }), {
-        status: 500,
-        headers: { "Content-Type": "application/json" },
-      });
+      return new Response(
+        JSON.stringify({
+          error: "Failed to download file",
+          details: downloadError?.message || "Unknown error",
+          filePath: filePath,
+        }),
+        {
+          status: 500,
+          headers: { "Content-Type": "application/json" },
+        }
+      );
     }
 
     // Convert blob to array buffer
@@ -77,11 +83,14 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     });
   } catch (error) {
     console.error("Download API error:", error);
-    return new Response(JSON.stringify({
-      error: error instanceof Error ? error.message : "Unknown error",
-    }), {
-      status: 500,
-      headers: { "Content-Type": "application/json" },
-    });
+    return new Response(
+      JSON.stringify({
+        error: error instanceof Error ? error.message : "Unknown error",
+      }),
+      {
+        status: 500,
+        headers: { "Content-Type": "application/json" },
+      }
+    );
   }
 };
