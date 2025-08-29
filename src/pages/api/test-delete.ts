@@ -2,16 +2,13 @@ import type { APIRoute } from "astro";
 
 export const DELETE: APIRoute = async ({ request }) => {
   try {
-    console.log("Test delete API called");
-
-    const requestBody = await request.json();
-    console.log("Request body:", requestBody);
-
+    console.log("Test delete endpoint called");
+    
     return new Response(
       JSON.stringify({
         success: true,
         message: "Test delete endpoint working",
-        receivedData: requestBody,
+        timestamp: new Date().toISOString()
       }),
       {
         status: 200,
@@ -19,10 +16,13 @@ export const DELETE: APIRoute = async ({ request }) => {
       }
     );
   } catch (error) {
-    console.error("Error in test-delete API:", error);
-    return new Response(JSON.stringify({ error: "Internal server error" }), {
-      status: 500,
-      headers: { "Content-Type": "application/json" },
-    });
+    console.error("Test delete error:", error);
+    return new Response(
+      JSON.stringify({ error: "Test delete failed" }),
+      {
+        status: 500,
+        headers: { "Content-Type": "application/json" },
+      }
+    );
   }
 };
