@@ -4,7 +4,7 @@ import { join } from "path";
 
 export const POST: APIRoute = async ({ request }) => {
   try {
-    const { to, subject, body } = await request.json();
+    const { to, subject, body, buttonText } = await request.json();
 
     // Validate input
     if (!to || !subject || !body) {
@@ -50,8 +50,9 @@ export const POST: APIRoute = async ({ request }) => {
       });
     }
 
-    // Replace the content variable with the provided body
-    const emailHtml = emailTemplate.replace("{{CONTENT}}", body);
+    // Replace template variables with provided content
+    let emailHtml = emailTemplate.replace("{{CONTENT}}", body);
+    emailHtml = emailHtml.replace("{{BUTTON_TEXT}}", buttonText || "Access Your Dashboard");
 
     // Send email via Resend
     const response = await fetch("https://api.resend.com/emails", {
