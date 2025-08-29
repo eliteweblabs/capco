@@ -137,15 +137,45 @@ export const DELETE: APIRoute = async ({ request, cookies }) => {
 
     // Delete associated files first (cascade delete)
     console.log("Deleting associated files...");
-    const { error: filesError } = await supabase
+
+    // Get all files associated with this project
+    const { data: projectFiles, error: filesQueryError } = await supabase
+      .from("files")
+      .select("file_path")
+      .eq("project_id", projectIdNum);
+
+    if (filesQueryError) {
+      console.error("Error querying project files:", filesQueryError);
+    } else {
+      console.log(`Found ${projectFiles?.length || 0} files to delete`);
+
+      // Delete files from storage
+      if (projectFiles && projectFiles.length > 0) {
+        const filePaths = projectFiles.map((file) => file.file_path);
+        console.log("Deleting files from storage:", filePaths);
+
+        const { error: storageDeleteError } = await supabase.storage
+          .from("project-documents")
+          .remove(filePaths);
+
+        if (storageDeleteError) {
+          console.error("Error deleting files from storage:", storageDeleteError);
+        } else {
+          console.log("Files deleted from storage successfully");
+        }
+      }
+    }
+
+    // Delete file records from database
+    const { error: filesDeleteError } = await supabase
       .from("files")
       .delete()
       .eq("project_id", projectIdNum);
 
-    if (filesError) {
-      console.error("Error deleting project files:", filesError);
+    if (filesDeleteError) {
+      console.error("Error deleting project files from database:", filesDeleteError);
     } else {
-      console.log("Files deleted successfully");
+      console.log("File records deleted from database successfully");
     }
 
     // Delete the project

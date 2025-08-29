@@ -7,6 +7,8 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     const formData = await request.formData();
     const fileType = formData.get("fileType") as string;
     const projectId = formData.get("projectId") as string;
+    const fileTitle = formData.get("fileTitle") as string;
+    const fileComments = formData.get("fileComments") as string;
 
     // Check authentication
     const { supabase } = await import("../../lib/supabase");
@@ -264,6 +266,8 @@ export const POST: APIRoute = async ({ request, cookies }) => {
           file_name: file.name,
           file_size: file.size,
           file_type: file.type,
+          title: fileTitle || file.name, // Use provided title or fallback to filename
+          comments: fileComments || null,
           status: "active",
           uploaded_at: new Date().toISOString(),
         });
