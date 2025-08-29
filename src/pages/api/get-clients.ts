@@ -51,9 +51,9 @@ export const GET: APIRoute = async ({ cookies }) => {
     // Fetch all users with role 'client'
     const { data: clients, error } = await supabase!
       .from("profiles")
-      .select("id, name, email")
+      .select("id, company_name, email")
       .eq("role", "Client")
-      .order("name");
+      .order("company_name");
 
     if (error) {
       console.error("Error fetching clients:", error);
