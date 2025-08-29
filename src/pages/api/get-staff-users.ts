@@ -138,9 +138,9 @@ export const GET: APIRoute = async ({ request }) => {
     console.log("📡 [API] Fetching staff users from database...");
     const { data: staffUsers, error } = await supabase
       .from("profiles")
-      .select("id, name, phone, role, created_at")
+      .select("id, company_name, phone, role, created_at")
       .eq("role", "Staff")
-      .order("name", { ascending: true });
+      .order("company_name", { ascending: true });
 
     console.log("📡 [API] Staff users query result:", { staffUsers, error });
 
