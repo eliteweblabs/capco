@@ -53,6 +53,7 @@ export default defineConfig({
       "process.env.EMAIL_API_KEY": JSON.stringify(env.EMAIL_API_KEY),
       "process.env.FROM_EMAIL": JSON.stringify(env.FROM_EMAIL),
       "process.env.FROM_NAME": JSON.stringify(env.FROM_NAME),
+      "process.env.GOOGLE_MAPS_API_KEY": JSON.stringify(env.GOOGLE_MAPS_API_KEY),
     },
   },
 });
