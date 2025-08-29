@@ -1,4 +1,6 @@
 import type { APIRoute } from "astro";
+import { readFileSync } from "fs";
+import { join } from "path";
 
 export const POST: APIRoute = async ({ request }) => {
   try {
@@ -6,10 +8,10 @@ export const POST: APIRoute = async ({ request }) => {
 
     // Validate input
     if (!to || !subject || !body) {
-      return new Response(
-        JSON.stringify({ error: "Email, subject, and body are required" }),
-        { status: 400, headers: { "Content-Type": "application/json" } }
-      );
+      return new Response(JSON.stringify({ error: "Email, subject, and body are required" }), {
+        status: 400,
+        headers: { "Content-Type": "application/json" },
+      });
     }
 
     // Get environment variables
@@ -20,63 +22,79 @@ export const POST: APIRoute = async ({ request }) => {
 
     if (!emailProvider || !emailApiKey || !fromEmail) {
       return new Response(
-        JSON.stringify({ 
-          error: "Email configuration missing. Please check EMAIL_PROVIDER, EMAIL_API_KEY, and FROM_EMAIL environment variables." 
+        JSON.stringify({
+          error:
+            "Email configuration missing. Please check EMAIL_PROVIDER, EMAIL_API_KEY, and FROM_EMAIL environment variables.",
         }),
         { status: 500, headers: { "Content-Type": "application/json" } }
       );
     }
 
-    if (emailProvider !== 'resend') {
+    if (emailProvider !== "resend") {
       return new Response(
         JSON.stringify({ error: "Only Resend provider is supported for this test endpoint" }),
         { status: 400, headers: { "Content-Type": "application/json" } }
       );
     }
 
+    // Read the email template
+    const templatePath = join(process.cwd(), "src", "emails", "template.html");
+    let emailTemplate = "";
+    try {
+      emailTemplate = readFileSync(templatePath, "utf-8");
+    } catch (error) {
+      console.error("Error reading email template:", error);
+      return new Response(JSON.stringify({ error: "Failed to load email template" }), {
+        status: 500,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+
+    // Replace the content variable with the provided body
+    const emailHtml = emailTemplate.replace("{{CONTENT}}", body);
+
     // Send email via Resend
-    const response = await fetch('https://api.resend.com/emails', {
-      method: 'POST',
+    const response = await fetch("https://api.resend.com/emails", {
+      method: "POST",
       headers: {
-        'Authorization': `Bearer ${emailApiKey}`,
-        'Content-Type': 'application/json',
+        Authorization: `Bearer ${emailApiKey}`,
+        "Content-Type": "application/json",
       },
       body: JSON.stringify({
         from: `${fromName} <${fromEmail}>`,
         to: [to],
         subject: subject,
-        html: body,
-        text: body.replace(/<[^>]*>/g, ''), // Strip HTML tags for text version
+        html: emailHtml,
+        text: body.replace(/<[^>]*>/g, ""), // Strip HTML tags for text version
       }),
     });
 
     const result = await response.json();
 
     if (!response.ok) {
-      console.error('Resend API error:', result);
+      console.error("Resend API error:", result);
       return new Response(
-        JSON.stringify({ 
-          error: `Failed to send email: ${result.message || 'Unknown error'}`,
-          details: result 
+        JSON.stringify({
+          error: `Failed to send email: ${result.message || "Unknown error"}`,
+          details: result,
         }),
         { status: response.status, headers: { "Content-Type": "application/json" } }
       );
     }
 
     return new Response(
-      JSON.stringify({ 
+      JSON.stringify({
         success: true,
         message: "Email sent successfully",
-        emailId: result.id 
+        emailId: result.id,
       }),
       { status: 200, headers: { "Content-Type": "application/json" } }
     );
-
   } catch (error) {
     console.error("Email test error:", error);
-    return new Response(
-      JSON.stringify({ error: "Internal server error" }),
-      { status: 500, headers: { "Content-Type": "application/json" } }
-    );
+    return new Response(JSON.stringify({ error: "Internal server error" }), {
+      status: 500,
+      headers: { "Content-Type": "application/json" },
+    });
   }
 };

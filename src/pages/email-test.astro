@@ -83,7 +83,7 @@ if (role !== "Admin") {
               for="body"
               class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300"
             >
-              Email Body (HTML) *
+              Email Content (HTML) *
             </label>
             <textarea
               id="body"
@@ -91,10 +91,12 @@ if (role !== "Admin") {
               required
               rows="8"
               class="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-60 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:focus:border-blue-400"
-              placeholder="<h1>Hello!</h1><p>This is a test email from CAPCo Fire Protection.</p>"
+              placeholder="<h2 style='margin: 0 0 24px 0; font-size: 24px; font-weight: 600; color: #111827; text-align: center;'>Your Custom Title</h2><p style='margin: 0 0 20px 0; font-size: 16px; line-height: 1.6; color: #4b5563; text-align: center;'>Your custom content here...</p>"
             ></textarea>
             <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
-              You can use HTML tags for formatting. The email will be sent with both HTML and plain text versions.
+              This content will be inserted into the CAPCo email template. Use HTML with inline
+              styles for best email compatibility. The template includes the header and "Access Your
+              Dashboard" button automatically.
             </p>
           </div>
 
@@ -119,26 +121,30 @@ if (role !== "Admin") {
 
       <!-- Environment Info -->
       <div class="mt-8 rounded-lg bg-gray-50 p-6 dark:bg-gray-800">
-        <h2 class="mb-4 text-lg font-semibold text-gray-900 dark:text-white">Environment Configuration</h2>
+        <h2 class="mb-4 text-lg font-semibold text-gray-900 dark:text-white">
+          Environment Configuration
+        </h2>
         <div class="space-y-2 text-sm text-gray-600 dark:text-gray-400">
           <div class="flex justify-between">
             <span>Email Provider:</span>
-            <span class="font-mono">{import.meta.env.EMAIL_PROVIDER || 'Not set'}</span>
+            <span class="font-mono">{import.meta.env.EMAIL_PROVIDER || "Not set"}</span>
           </div>
           <div class="flex justify-between">
             <span>From Email:</span>
-            <span class="font-mono">{import.meta.env.FROM_EMAIL || 'Not set'}</span>
+            <span class="font-mono">{import.meta.env.FROM_EMAIL || "Not set"}</span>
           </div>
           <div class="flex justify-between">
             <span>From Name:</span>
-            <span class="font-mono">{import.meta.env.FROM_NAME || 'Not set'}</span>
+            <span class="font-mono">{import.meta.env.FROM_NAME || "Not set"}</span>
           </div>
           <div class="flex justify-between">
             <span>API Key:</span>
             <span class="font-mono">
-              {import.meta.env.EMAIL_API_KEY 
-                ? `${import.meta.env.EMAIL_API_KEY.substring(0, 8)}...` 
-                : 'Not set'}
+              {
+                import.meta.env.EMAIL_API_KEY
+                  ? `${import.meta.env.EMAIL_API_KEY.substring(0, 8)}...`
+                  : "Not set"
+              }
             </span>
           </div>
         </div>
@@ -185,7 +191,7 @@ if (role !== "Admin") {
             message: `Test email sent to ${to}. Email ID: ${result.emailId}`,
             duration: 8000,
           });
-          
+
           // Reset form
           emailTestForm.reset();
         } else {
