@@ -190,31 +190,37 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
     // Upload files to Supabase Storage
 
-    // Check if the storage bucket exists
+    // Check if the storage bucket is accessible (more reliable than listBuckets)
     try {
-      const { data: buckets, error: bucketsError } = await supabase.storage.listBuckets();
-      if (bucketsError) {
-        console.error("Error listing buckets:", bucketsError);
-        return new Response(JSON.stringify({ error: "Storage access error" }), {
-          status: 500,
-          headers: { "Content-Type": "application/json" },
-        });
+      // Try to list files in the bucket to verify access
+      const { data: files, error: listError } = await supabase.storage
+        .from("project-documents")
+        .list("", { limit: 1 });
+      
+      if (listError) {
+        console.error("Error accessing project-documents bucket:", listError);
+        
+        // Check if it's a permissions issue vs bucket doesn't exist
+        if (listError.message.includes("not found") || listError.message.includes("does not exist")) {
+          return new Response(JSON.stringify({ 
+            error: "Storage bucket 'project-documents' not found. Please create it in Supabase Storage." 
+          }), {
+            status: 500,
+            headers: { "Content-Type": "application/json" },
+          });
+        } else {
+          return new Response(JSON.stringify({ 
+            error: "Storage access denied. Please check your permissions." 
+          }), {
+            status: 500,
+            headers: { "Content-Type": "application/json" },
+          });
+        }
       }
       
-      const bucketNames = buckets?.map(b => b.name) || [];
-      console.log("Available buckets:", bucketNames);
-      
-      if (!bucketNames.includes("project-documents")) {
-        console.error("project-documents bucket not found. Available buckets:", bucketNames);
-        return new Response(JSON.stringify({ 
-          error: "Storage bucket 'project-documents' not found. Please create it in Supabase Storage." 
-        }), {
-          status: 500,
-          headers: { "Content-Type": "application/json" },
-        });
-      }
+      console.log("project-documents bucket is accessible");
     } catch (error) {
-      console.error("Error checking storage buckets:", error);
+      console.error("Error checking storage bucket access:", error);
       return new Response(JSON.stringify({ error: "Storage configuration error" }), {
         status: 500,
         headers: { "Content-Type": "application/json" },
