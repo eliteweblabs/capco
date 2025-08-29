@@ -1,6 +1,8 @@
 import type { APIRoute } from "astro";
 import { supabaseAdmin } from "../../../lib/supabase-admin";
+import { supabase } from "../../../lib/supabase";
 import { setAuthCookies } from "../../../lib/auth-cookies";
+import { ensureUserProfile } from "../../../lib/auth-utils";
 
 export const POST: APIRoute = async ({ request, cookies }) => {
   try {
@@ -20,8 +22,8 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       );
     }
 
-    if (!supabaseAdmin) {
-      console.error("Supabase admin client not available");
+    if (!supabaseAdmin || !supabase) {
+      console.error("Supabase clients not available");
       return new Response(
         JSON.stringify({ error: "Server configuration error" }),
         { status: 500, headers: { "Content-Type": "application/json" } }
@@ -52,24 +54,33 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       );
     }
 
-    // Set session cookies using the proper auth-cookies function
-    // These tokens are valid and can be used to establish a session
-    if (accessToken && refreshToken) {
-      setAuthCookies(cookies, accessToken, refreshToken);
+    // Create a fresh session using the new password
+    const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+      email: user.email!,
+      password: password,
+    });
 
+    if (signInError) {
+      console.error("Error creating fresh session:", signInError);
       return new Response(
-        JSON.stringify({ 
-          message: "Password updated successfully and session created",
-          user: user 
-        }),
-        { status: 200, headers: { "Content-Type": "application/json" } }
+        JSON.stringify({ error: "Failed to create session with new password" }),
+        { status: 500, headers: { "Content-Type": "application/json" } }
       );
     }
 
+    // Ensure user profile exists
+    if (signInData.user) {
+      await ensureUserProfile(signInData.user);
+    }
+
+    // Set session cookies with the fresh session tokens
+    const { access_token, refresh_token } = signInData.session;
+    setAuthCookies(cookies, access_token, refresh_token);
+
     return new Response(
       JSON.stringify({ 
-        message: "Password updated successfully",
-        user: user 
+        message: "Password updated successfully and session created",
+        user: signInData.user 
       }),
       { status: 200, headers: { "Content-Type": "application/json" } }
     );
