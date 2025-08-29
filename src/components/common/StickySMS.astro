@@ -1,16 +1,10 @@
 ---
 import BoxIcon from "./BoxIcon.astro";
 import SMSForm from "../form/SMSForm.astro";
-
 // Get current URL and determine page type (same logic as Header component)
 const currentUrl = Astro.url.pathname;
-const isBackendPage =
-  currentUrl.startsWith("/dashboard") ||
-  currentUrl.startsWith("/project/") || // Only match /project/123, not /projects
-  currentUrl.startsWith("/pdf-review") ||
-  currentUrl.startsWith("/pdf-editor") ||
-  currentUrl.startsWith("/admin") ||
-  currentUrl.startsWith("/create-staff");
+import { isBackendPage } from "../../pages/api/backend-page-check";
+const isBackend = isBackendPage(currentUrl);
 
 // Extract project ID from URL if on a project page
 let projectId: string | undefined;
@@ -20,8 +14,7 @@ if (projectMatch) {
 }
 
 // Don't show on backend pages or SMS demo page
-// const shouldShow = !isBackendPage && !currentUrl.startsWith("/sms-demo");
-const shouldShow = true;
+const shouldShow = !currentUrl.startsWith("/sms-demo");
 ---
 
 {shouldShow && (
