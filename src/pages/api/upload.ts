@@ -189,15 +189,6 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     }
 
     // Upload files to Supabase Storage
-    const { supabase } = await import("../../lib/supabase");
-
-    if (!supabase) {
-      console.error("Supabase client not configured");
-      return new Response(JSON.stringify({ error: "Supabase client not configured" }), {
-        status: 500,
-        headers: { "Content-Type": "application/json" },
-      });
-    }
 
     // Check if the storage bucket exists
     try {
