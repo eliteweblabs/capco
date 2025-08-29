@@ -75,13 +75,22 @@ const { projectId, fileType = "media" } = Astro.props;
         <BoxIcon name="file" class="mr-2" />
         Uploaded Files
       </h4>
-      <button
-        id="refresh-files-btn"
-        class="flex items-center text-sm font-medium text-blue-600 hover:text-blue-800"
-      >
-        <BoxIcon name="refresh" class="mr-1 h-4 w-4" />
-        Refresh
-      </button>
+      <div class="flex items-center space-x-3">
+        <button
+          id="download-all-btn"
+          class="flex items-center text-sm font-medium text-green-600 hover:text-green-800"
+        >
+          <BoxIcon name="download" class="mr-1 h-4 w-4" />
+          Download All
+        </button>
+        <button
+          id="refresh-files-btn"
+          class="flex items-center text-sm font-medium text-blue-600 hover:text-blue-800"
+        >
+          <BoxIcon name="refresh" class="mr-1 h-4 w-4" />
+          Refresh
+        </button>
+      </div>
     </div>
     <div id="file-list" class="space-y-2"></div>
   </div>
@@ -123,6 +132,7 @@ const { projectId, fileType = "media" } = Astro.props;
       this.filesContainer = document.getElementById("uploaded-files");
       this.fileList = document.getElementById("file-list");
       this.refreshBtn = document.getElementById("refresh-files-btn");
+      this.downloadAllBtn = document.getElementById("download-all-btn");
       this.ocrResults = document.getElementById("ocr-results");
       this.extractedText = document.getElementById("extracted-text");
     }
@@ -162,6 +172,11 @@ const { projectId, fileType = "media" } = Astro.props;
       // Refresh button click
       this.refreshBtn.addEventListener("click", () => {
         this.refreshFileList();
+      });
+
+      // Download all button click
+      this.downloadAllBtn.addEventListener("click", () => {
+        this.downloadAllFiles();
       });
     }
 
@@ -253,10 +268,16 @@ const { projectId, fileType = "media" } = Astro.props;
             <a href="${file.public_url}" target="_blank" class="text-blue-600 hover:text-blue-800 text-sm font-medium">
               View
             </a>
+            <a href="${file.public_url}" download="${fileName}" class="text-green-600 hover:text-green-800 text-sm font-medium">
+              Download
+            </a>
           `
               : `
             <button class="text-gray-400 text-sm font-medium cursor-not-allowed" disabled>
               View
+            </button>
+            <button class="text-gray-400 text-sm font-medium cursor-not-allowed" disabled>
+              Download
             </button>
           `
           }
@@ -347,6 +368,41 @@ const { projectId, fileType = "media" } = Astro.props;
         }
       } catch (error) {
         console.error("Error loading existing files:", error);
+      }
+    }
+
+    async downloadAllFiles() {
+      try {
+        const response = await fetch("/api/get-project-files", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ projectId: this.projectId }),
+        });
+
+        if (response.ok) {
+          const result = await response.json();
+          if (result.files && result.files.length > 0) {
+            // Download each file with a slight delay to avoid browser blocking
+            for (let i = 0; i < result.files.length; i++) {
+              const file = result.files[i];
+              if (file.public_url) {
+                setTimeout(() => {
+                  const link = document.createElement('a');
+                  link.href = file.public_url;
+                  link.download = file.file_name || file.name || `file-${i + 1}`;
+                  document.body.appendChild(link);
+                  link.click();
+                  document.body.removeChild(link);
+                }, i * 500); // 500ms delay between downloads
+              }
+            }
+          } else {
+            this.showError("No files available to download");
+          }
+        }
+      } catch (error) {
+        console.error("Error downloading files:", error);
+        this.showError("Failed to download files");
       }
     }
 
