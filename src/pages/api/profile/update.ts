@@ -3,12 +3,12 @@ import { supabase } from "../../../lib/supabase";
 
 export const POST: APIRoute = async ({ request, cookies }) => {
   try {
-    const { name, phone } = await request.json();
+    const { firstName, lastName, phone } = await request.json();
 
     // Validate input
-    if (!name || name.trim().length === 0) {
+    if (!firstName || firstName.trim().length === 0) {
       return new Response(
-        JSON.stringify({ error: "Name is required" }),
+        JSON.stringify({ error: "First name is required" }),
         { status: 400, headers: { "Content-Type": "application/json" } }
       );
     }
@@ -50,7 +50,9 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     const { data: profile, error: updateError } = await supabase
       .from("profiles")
       .update({
-        name: name.trim(),
+        firstName: firstName.trim(),
+        lastName: lastName?.trim() || null,
+        name: `${firstName.trim()} ${lastName?.trim() || ""}`.trim(), // Keep name field for backward compatibility
         phone: phone?.trim() || null,
         updated_at: new Date().toISOString(),
       })
