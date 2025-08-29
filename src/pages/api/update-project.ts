@@ -71,6 +71,23 @@ export const POST: APIRoute = async ({ request }) => {
       isAdminOrStaff = false;
     }
 
+    // Check if this is a status change and get the old status
+    let oldStatus = null;
+    let isStatusChange = false;
+
+    if (updateFields.status !== undefined) {
+      const { data: currentProject } = await supabase
+        .from("projects")
+        .select("status")
+        .eq("id", projectId)
+        .single();
+
+      if (currentProject && currentProject.status !== updateFields.status) {
+        oldStatus = currentProject.status;
+        isStatusChange = true;
+      }
+    }
+
     // Build update data using the template configuration
     const {
       core: coreUpdateData,
@@ -152,11 +169,21 @@ export const POST: APIRoute = async ({ request }) => {
 
     const data = finalData;
 
+    // Handle status change notifications
+    if (isStatusChange && updateFields.status !== undefined) {
+      try {
+        await sendStatusChangeNotifications(projectId, updateFields.status, data);
+      } catch (notificationError) {
+        console.error("Status change notification error:", notificationError);
+        // Don't fail the update if notifications fail
+      }
+    }
+
     return new Response(
       JSON.stringify({
         success: true,
         project: data,
-        message: `Project ${status ? `status updated to ${status}` : "updated successfully"}`,
+        message: `Project ${updateFields.status ? `status updated to ${updateFields.status}` : "updated successfully"}`,
       }),
       {
         status: 200,
@@ -176,3 +203,160 @@ export const POST: APIRoute = async ({ request }) => {
     );
   }
 };
+
+// Function to send status change notifications
+async function sendStatusChangeNotifications(
+  projectId: string,
+  newStatus: number,
+  projectData: any
+) {
+  try {
+    if (!supabase || !supabaseAdmin) {
+      console.error("Supabase clients not available for notifications");
+      return;
+    }
+
+    // Get status configuration from project_statuses table
+    const { data: statusConfig, error: statusError } = await supabase
+      .from("project_statuses")
+      .select("notify, email_content, button_text")
+      .eq("status_code", newStatus)
+      .single();
+
+    if (statusError || !statusConfig) {
+      console.log(`No status configuration found for status ${newStatus}`);
+      return;
+    }
+
+    const { notify, email_content, button_text } = statusConfig;
+
+    // Get project details for email
+    const { data: projectDetails } = await supabase
+      .from("projects")
+      .select(
+        `
+        title,
+        address,
+        author_id,
+        profiles!projects_author_id_fkey (
+          email,
+          company_name,
+          first_name,
+          last_name
+        )
+      `
+      )
+      .eq("id", projectId)
+      .single();
+
+    if (!projectDetails) {
+      console.error("Project details not found for notifications");
+      return;
+    }
+
+    // Get all users to notify
+    const usersToNotify: Array<{
+      email: string;
+      first_name?: string;
+      last_name?: string;
+      company_name?: string;
+    }> = [];
+
+    if (notify.includes("admin") || notify.includes("staff")) {
+      // Get all admin and staff users
+      const { data: adminStaffUsers } = await supabase
+        .from("profiles")
+        .select("email, first_name, last_name, company_name")
+        .in("role", ["Admin", "Staff"]);
+
+      if (adminStaffUsers) {
+        usersToNotify.push(...adminStaffUsers);
+      }
+    }
+
+    if (notify.includes("client") && projectDetails.profiles) {
+      // Add the project owner/client
+      usersToNotify.push(projectDetails.profiles);
+    }
+
+    // Read email template
+    const templatePath = join(process.cwd(), "src", "emails", "template.html");
+    let emailTemplate = "";
+    try {
+      emailTemplate = readFileSync(templatePath, "utf-8");
+    } catch (error) {
+      console.error("Error reading email template:", error);
+      return;
+    }
+
+    // Send emails to each user
+    for (const user of usersToNotify) {
+      try {
+        // Generate magic link for the user
+        const { data: magicLinkData, error: magicLinkError } =
+          await supabaseAdmin!.auth.admin.generateLink({
+            type: "magiclink",
+            email: user.email,
+            options: {
+              redirectTo: `${import.meta.env.SITE_URL || "http://localhost:4321"}/project/${projectId}`,
+            },
+          });
+
+        if (magicLinkError) {
+          console.error(`Magic link generation error for ${user.email}:`, magicLinkError);
+          continue;
+        }
+
+        // Prepare email content
+        const personalizedContent = email_content
+          .replace("{{PROJECT_TITLE}}", projectDetails.title || "Project")
+          .replace("{{PROJECT_ADDRESS}}", projectDetails.address || "N/A")
+          .replace(
+            "{{CLIENT_NAME}}",
+            `${user.first_name || ""} ${user.last_name || ""}`.trim() ||
+              user.company_name ||
+              "Client"
+          );
+
+        // Replace template variables
+        let emailHtml = emailTemplate.replace("{{CONTENT}}", personalizedContent);
+        emailHtml = emailHtml.replace("{{BUTTON_TEXT}}", button_text || "View Project");
+        emailHtml = emailHtml.replace("{{BUTTON_LINK}}", magicLinkData.properties.action_link);
+
+        // Send email via Resend
+        const emailProvider = import.meta.env.EMAIL_PROVIDER;
+        const emailApiKey = import.meta.env.EMAIL_API_KEY;
+        const fromEmail = import.meta.env.FROM_EMAIL;
+        const fromName = import.meta.env.FROM_NAME;
+
+        if (emailProvider === "resend" && emailApiKey && fromEmail) {
+          const response = await fetch("https://api.resend.com/emails", {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${emailApiKey}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              from: `${fromName} <${fromEmail}>`,
+              to: [user.email],
+              subject: `Project Status Update: ${projectDetails.title || "Project"}`,
+              html: emailHtml,
+              text: personalizedContent.replace(/<[^>]*>/g, ""),
+            }),
+          });
+
+          if (!response.ok) {
+            console.error(`Failed to send email to ${user.email}:`, await response.text());
+          } else {
+            console.log(`Status change notification sent to ${user.email}`);
+          }
+        }
+      } catch (userError) {
+        console.error(`Error sending notification to ${user.email}:`, userError);
+      }
+    }
+  } catch (error) {
+    console.error("Error in sendStatusChangeNotifications:", error);
+    throw error;
+  }
+}
