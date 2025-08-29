@@ -443,8 +443,15 @@ console.log("Owner fields found:", ownerFieldsInForm.length, ownerFieldsInForm);
       // Handle delete button (only for existing projects)
       if (!isNewProject) {
         const deleteBtn = document.getElementById("delete-project");
+        console.log("Delete button setup:", {
+          deleteBtn: !!deleteBtn,
+          projectId,
+          isNewProject,
+          formId: form.getAttribute("data-project-id")
+        });
         if (deleteBtn && projectId) {
           deleteBtn.addEventListener("click", function () {
+            console.log("Delete button clicked with projectId:", projectId);
             deleteProject(projectId);
           });
         }
@@ -583,6 +590,22 @@ console.log("Owner fields found:", ownerFieldsInForm.length, ownerFieldsInForm);
 
   // Delete project function
   function deleteProject(projectId: string) {
+    console.log("deleteProject called with projectId:", projectId, "type:", typeof projectId);
+    
+    // Validate project ID
+    if (!projectId || projectId.startsWith("new-project-")) {
+      console.error("Invalid project ID for deletion:", projectId);
+      if ((window as any).toastAlertManager) {
+        (window as any).toastAlertManager.show({
+          type: "error",
+          title: "Delete Failed",
+          message: "Cannot delete a new project that hasn't been saved yet.",
+          duration: 5000,
+        });
+      }
+      return;
+    }
+    
     // Show confirmation toast with action buttons
     if ((window as any).toastAlertManager) {
       (window as any).toastAlertManager.show({
