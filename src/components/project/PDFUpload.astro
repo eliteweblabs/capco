@@ -268,9 +268,9 @@ const { projectId, fileType = "media" } = Astro.props;
             <a href="${file.public_url}" target="_blank" class="text-blue-600 hover:text-blue-800 text-sm font-medium">
               View
             </a>
-            <a href="${file.public_url}" download="${fileName}" class="text-green-600 hover:text-green-800 text-sm font-medium">
+            <button onclick="this.downloadFile('${file.file_path}', '${fileName}')" class="text-green-600 hover:text-green-800 text-sm font-medium">
               Download
-            </a>
+            </button>
           `
               : `
             <button class="text-gray-400 text-sm font-medium cursor-not-allowed" disabled>
@@ -371,6 +371,35 @@ const { projectId, fileType = "media" } = Astro.props;
       }
     }
 
+    async downloadFile(filePath, fileName) {
+      try {
+        const response = await fetch("/api/download-file", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ filePath, fileName }),
+        });
+
+        if (!response.ok) {
+          const error = await response.json();
+          throw new Error(error.error || "Download failed");
+        }
+
+        // Create blob from response and download
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = fileName;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(url);
+      } catch (error) {
+        console.error("Error downloading file:", error);
+        this.showError(`Failed to download ${fileName}: ${error.message}`);
+      }
+    }
+
     async downloadAllFiles() {
       try {
         const response = await fetch("/api/get-project-files", {
@@ -385,14 +414,9 @@ const { projectId, fileType = "media" } = Astro.props;
             // Download each file with a slight delay to avoid browser blocking
             for (let i = 0; i < result.files.length; i++) {
               const file = result.files[i];
-              if (file.public_url) {
+              if (file.file_path) {
                 setTimeout(() => {
-                  const link = document.createElement('a');
-                  link.href = file.public_url;
-                  link.download = file.file_name || file.name || `file-${i + 1}`;
-                  document.body.appendChild(link);
-                  link.click();
-                  document.body.removeChild(link);
+                  this.downloadFile(file.file_path, file.file_name || file.name || `file-${i + 1}`);
                 }, i * 500); // 500ms delay between downloads
               }
             }
@@ -457,6 +481,11 @@ const { projectId, fileType = "media" } = Astro.props;
 
   // Initialize the PDF upload component
   document.addEventListener("DOMContentLoaded", () => {
-    new PDFUpload();
+    const pdfUpload = new PDFUpload();
+    
+    // Make downloadFile method available globally for onclick handlers
+    window.downloadFile = (filePath, fileName) => {
+      pdfUpload.downloadFile(filePath, fileName);
+    };
   });
 </script>
