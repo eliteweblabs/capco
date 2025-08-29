@@ -11,8 +11,8 @@ const { isAuth, session, user, role } = await checkAuth(Astro.cookies);
   {
     isAuth ? (
       // Authenticated: Profile Button with Dropdown
-      <div id="profile-btn" class="text-black dark:text-white">
-       
+      <div class="relative">
+        <div id="profile-btn" class="text-black dark:text-white cursor-pointer">
           <img
             id="user-avatar"
             src=""
@@ -20,20 +20,20 @@ const { isAuth, session, user, role } = await checkAuth(Astro.cookies);
             class="block size-8 rounded-full"
             onerror="this.style.display='none'; this.nextElementSibling.style.display='block';"
           />
-          <BoxIcon name="user" style="display:none;" class="ml-2 block size-4 " />
-      </div>
+          <BoxIcon name="user" style="display:none;" class="ml-2 block size-4" />
+        </div>
 
         <!-- Dropdown menu -->
         <div
           id="profile-dropdown"
-          class="absolute right-0 top-full mt-2 hidden w-48 rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 dark:bg-gray-800 dark:ring-gray-700"
+          class="absolute right-0 top-full mt-2 hidden w-48 rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 dark:bg-gray-800 dark:ring-gray-700 z-50 transition-all duration-200 ease-in-out"
         >
           <div class="py-1">
             <a
               href="/dashboard"
               class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-700"
             >
-              <BoxIcon name="building" class="mr-2 block size-4 " />
+              <BoxIcon name="building" class="mr-2 block size-4" />
               Dashboard
             </a>
 
@@ -41,11 +41,12 @@ const { isAuth, session, user, role } = await checkAuth(Astro.cookies);
               id="logout-btn"
               class="flex w-full items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-700"
             >
-              <BoxIcon name="log-out" class="mr-2 block size-4 " />
+              <BoxIcon name="log-out" class="mr-2 block size-4" />
               Logout
             </button>
           </div>
         </div>
+      </div>
     ) : (
       // Not Authenticated: Login Button
       <Tooltip content="Login" variant="link" href="/login" placement="bottom" id="login-tooltip" class="text-black dark:text-white">
