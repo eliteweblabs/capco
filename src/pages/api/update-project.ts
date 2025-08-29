@@ -309,19 +309,27 @@ async function sendStatusChangeNotifications(
     // Send emails to each user
     for (const user of usersToNotify) {
       try {
-        // Generate magic link for the user
-        const { data: magicLinkData, error: magicLinkError } =
-          await supabaseAdmin!.auth.admin.generateLink({
-            type: "magiclink",
-            email: user.email,
-            options: {
-              redirectTo: `${import.meta.env.SITE_URL || "http://localhost:4321"}/project/${projectId}`,
-            },
-          });
+        // Determine if this user should get a magic link button
+        const isClient = user.email === projectDetails.profiles?.email;
+        const shouldShowButton = isClient; // Only show button for clients
 
-        if (magicLinkError) {
-          console.error(`Magic link generation error for ${user.email}:`, magicLinkError);
-          continue;
+        let magicLink = "";
+        if (shouldShowButton) {
+          // Generate magic link only for clients
+          const { data: magicLinkData, error: magicLinkError } =
+            await supabaseAdmin!.auth.admin.generateLink({
+              type: "magiclink",
+              email: user.email,
+              options: {
+                redirectTo: `${import.meta.env.SITE_URL || "http://localhost:4321"}/project/${projectId}`,
+              },
+            });
+
+          if (magicLinkError) {
+            console.error(`Magic link generation error for ${user.email}:`, magicLinkError);
+            continue;
+          }
+          magicLink = magicLinkData.properties.action_link;
         }
 
         // Prepare email content
@@ -337,8 +345,17 @@ async function sendStatusChangeNotifications(
 
         // Replace template variables
         let emailHtml = emailTemplate.replace("{{CONTENT}}", personalizedContent);
-        emailHtml = emailHtml.replace("{{BUTTON_TEXT}}", button_text || "View Project");
-        emailHtml = emailHtml.replace("{{BUTTON_LINK}}", magicLinkData.properties.action_link);
+
+        if (shouldShowButton) {
+          // For clients: Include magic link button
+          emailHtml = emailHtml.replace("{{BUTTON_TEXT}}", button_text || "View Project");
+          emailHtml = emailHtml.replace("{{BUTTON_LINK}}", magicLink);
+        } else {
+          // For admin/staff: Remove button, just show content
+          emailHtml = emailHtml.replace(/<a[^>]*{{BUTTON_TEXT}}[^>]*>.*?<\/a>/g, "");
+          emailHtml = emailHtml.replace("{{BUTTON_TEXT}}", "");
+          emailHtml = emailHtml.replace("{{BUTTON_LINK}}", "");
+        }
 
         // Send email via Resend
         const emailProvider = import.meta.env.EMAIL_PROVIDER;
