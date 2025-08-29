@@ -1,5 +1,5 @@
 import type { APIRoute } from "astro";
-import { supabase } from "../../../lib/supabase";
+import { supabaseAdmin } from "../../../lib/supabase-admin";
 
 export const POST: APIRoute = async ({ request }) => {
   try {
@@ -19,22 +19,27 @@ export const POST: APIRoute = async ({ request }) => {
       );
     }
 
-    // Set the session using the access token from the magic link
-    const { data: sessionData, error: sessionError } = await supabase.auth.setSession({
-      access_token: accessToken,
-      refresh_token: refreshToken || "",
-    });
+    if (!supabaseAdmin) {
+      console.error("Supabase admin client not available");
+      return new Response(
+        JSON.stringify({ error: "Server configuration error" }),
+        { status: 500, headers: { "Content-Type": "application/json" } }
+      );
+    }
 
-    if (sessionError || !sessionData.session) {
-      console.error("Error setting session:", sessionError);
+    // Get user from the access token
+    const { data: { user }, error: userError } = await supabaseAdmin.auth.getUser(accessToken);
+
+    if (userError || !user) {
+      console.error("Error getting user from token:", userError);
       return new Response(
         JSON.stringify({ error: "Invalid or expired reset link" }),
         { status: 400, headers: { "Content-Type": "application/json" } }
       );
     }
 
-    // Update the user's password
-    const { error: updateError } = await supabase.auth.updateUser({
+    // Update the user's password using admin client
+    const { error: updateError } = await supabaseAdmin.auth.admin.updateUserById(user.id, {
       password: password,
     });
 
@@ -49,7 +54,7 @@ export const POST: APIRoute = async ({ request }) => {
     return new Response(
       JSON.stringify({ 
         message: "Password updated successfully",
-        user: sessionData.user 
+        user: user 
       }),
       { status: 200, headers: { "Content-Type": "application/json" } }
     );
