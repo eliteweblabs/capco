@@ -92,7 +92,7 @@ export const POST: APIRoute = async ({ request, redirect }) => {
       company_name: companyName,
       first_name: firstName,
       last_name: lastName,
-      phone: phone ? parseInt(phone) : null,
+      phone: phone || null,
       role: "Client",
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
