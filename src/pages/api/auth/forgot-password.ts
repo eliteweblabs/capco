@@ -1,5 +1,5 @@
 import type { APIRoute } from "astro";
-import { supabase } from "../../../lib/supabase";
+import { supabaseAdmin } from "../../../lib/supabase-admin";
 
 export const POST: APIRoute = async ({ request }) => {
   try {
@@ -12,9 +12,17 @@ export const POST: APIRoute = async ({ request }) => {
       );
     }
 
+    if (!supabaseAdmin) {
+      console.error("Supabase admin client not available");
+      return new Response(
+        JSON.stringify({ error: "Server configuration error" }),
+        { status: 500, headers: { "Content-Type": "application/json" } }
+      );
+    }
+
     // Send password reset email using Supabase Auth
     // This will only send an email if the user exists, and will fail silently if they don't
-    const { error: resetError } = await supabase.auth.resetPasswordForEmail(email, {
+    const { error: resetError } = await supabaseAdmin.auth.resetPasswordForEmail(email, {
       redirectTo: `${import.meta.env.SITE_URL || 'http://localhost:4321'}/reset-password`,
     });
 
