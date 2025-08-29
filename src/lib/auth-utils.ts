@@ -37,20 +37,17 @@ export async function ensureUserProfile(user: User): Promise<void> {
     // Create profile with enhanced data - prioritize display_name
     const firstName = user.user_metadata?.first_name || "";
     const lastName = user.user_metadata?.last_name || "";
-    const displayName = user.user_metadata?.display_name || "";
-    const fullName =
-      user.user_metadata?.full_name || (firstName && lastName ? `${firstName} ${lastName}` : "");
+    const companyName = user.user_metadata?.company_name || "";
 
     // Priority: display_name > full_name > constructed name > OAuth name > email > fallback
-    const profileName = displayName || fullName || user.user_metadata?.name || user.email || "User";
 
     const phone = user.user_metadata?.phone || "";
 
     console.log("Creating profile for user:", user.id, "with enhanced data:", {
-      name: profileName,
+      company_name: companyName,
       firstName,
       lastName,
-      displayName,
+      companyName,
       phone: phone ? "provided" : "not provided",
     });
 
@@ -58,9 +55,11 @@ export async function ensureUserProfile(user: User): Promise<void> {
       .from("profiles")
       .insert({
         id: user.id,
-        company_name: profileName, // Use display_name as the main company_name field
+        company_name: companyName, // Use display_name as the main company_name field
         phone: phone,
         role: "Client",
+        first_name: firstName,
+        last_name: lastName,
       })
       .select()
       .single();
