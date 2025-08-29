@@ -18,14 +18,8 @@ const { isAuth, session, user, role } = await checkAuth(Astro.cookies);
 
 // Get current URL and determine page type
 const currentUrl = Astro.url.pathname;
-console.log("📋 [HEADER] currentUrl:", currentUrl);
-const isBackendPage =
-  currentUrl.startsWith("/dashboard") ||
-  currentUrl.startsWith("/project/") || // Only match /project/123, not /projects
-  currentUrl.startsWith("/pdf-review") ||
-  currentUrl.startsWith("/pdf-editor") ||
-  currentUrl.startsWith("/admin") ||
-  currentUrl.startsWith("/create-staff");
+import { isBackendPage } from "../../pages/api/backend-page-check";
+const isBackend = isBackendPage(currentUrl);
 
 // Navigation schema
 type UserRole = "any" | "client" | "admin" | "adminStaff";
@@ -107,7 +101,7 @@ function getVisibleNavItems(
   navItems: NavItem[],
   isAuth: boolean,
   userRole?: string | null,
-  isBackendPage: boolean = false
+  isBackend: boolean = false
 ): NavItem[] {
   return navItems.filter((item) => {
     // Always show Home link - users should always be able to return to main site
@@ -116,12 +110,12 @@ function getVisibleNavItems(
     }
 
     // Page type filtering - hide other frontend nav on backend pages to reduce clutter
-    if (isBackendPage && item.pageType === "frontend") {
+    if (isBackend && item.pageType === "frontend") {
       return false;
     }
 
     // Show backend nav only on backend pages
-    if (item.pageType === "backend" && !isBackendPage) {
+    if (item.pageType === "backend" && !isBackend) {
       return false;
     }
 
@@ -139,11 +133,11 @@ function getVisibleNavItems(
   });
 }
 
-const visibleNavigation = getVisibleNavItems(navigation, isAuth, role, isBackendPage);
+const visibleNavigation = getVisibleNavItems(navigation, isAuth, role, isBackend);
 ---
 
 <header class="sticky top-0 z-10 mb-2 bg-hub-background pb-2 pt-4 dark:bg-hub-background-dark">
-  <div class="relative mx-6 flex items-center justify-between">
+  <div class="relative mx-auto flex max-w-7xl items-center justify-between">
     <Logo />
 
     <!-- Navigation (Desktop) -->
@@ -173,7 +167,7 @@ const visibleNavigation = getVisibleNavItems(navigation, isAuth, role, isBackend
       <!-- Admin Quick Actions -->
       <ThemeToggle />
       {
-        role === "Admin" && isBackendPage && (
+        role === "Admin" && isBackend && (
           <>
             <Tooltip content="Global Activity Feed" id="global-activity-tooltip">
               <a
