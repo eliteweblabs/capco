@@ -3,12 +3,12 @@ import { supabase } from "../../lib/supabase";
 
 export const POST: APIRoute = async ({ request, cookies }) => {
   try {
-    const { filePath, fileName } = await request.json();
+    const { filePath, fileName, projectId } = await request.json();
 
-    console.log("Download API called with:", { filePath, fileName });
+    console.log("Download API called with:", { filePath, fileName, projectId });
 
-    if (!filePath || !fileName) {
-      return new Response(JSON.stringify({ error: "File path and name are required" }), {
+    if (!filePath || !fileName || !projectId) {
+      return new Response(JSON.stringify({ error: "File path, name, and project ID are required" }), {
         status: 400,
         headers: { "Content-Type": "application/json" },
       });
@@ -34,6 +34,38 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     if (userError || !user) {
       return new Response(JSON.stringify({ error: "Authentication required" }), {
         status: 401,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+
+    // Verify project access - check if user owns the project or is admin
+    const { data: project, error: projectError } = await supabase
+      .from("projects")
+      .select("id, author_id")
+      .eq("id", projectId)
+      .single();
+
+    if (projectError || !project) {
+      return new Response(JSON.stringify({ error: "Project not found" }), {
+        status: 404,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+
+    // Check if user is admin or project owner
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("role")
+      .eq("id", user.id)
+      .single();
+
+    const userRole = profile?.role || "Client";
+    const isAdmin = userRole === "Admin" || userRole === "Staff";
+    const isProjectOwner = project.author_id === user.id;
+
+    if (!isAdmin && !isProjectOwner) {
+      return new Response(JSON.stringify({ error: "Access denied to project files" }), {
+        status: 403,
         headers: { "Content-Type": "application/json" },
       });
     }
