@@ -18,10 +18,10 @@ if (user) {
   if (supabase) {
     const { data: profile, error } = await supabase
       .from("profiles")
-      .select("name, role, phone")
+      .select("name, firstName, lastName, role, phone")
       .eq("id", user.id)
       .single();
-    
+
     if (!error && profile) {
       userProfile = profile;
     }
@@ -37,7 +37,9 @@ if (user) {
     <div class="mx-auto max-w-2xl">
       <!-- Header -->
       <div class="mb-8 text-center">
-        <div class="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-blue-100 dark:bg-blue-900/30">
+        <div
+          class="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-blue-100 dark:bg-blue-900/30"
+        >
           <BoxIcon name="user" class="h-8 w-8 text-blue-600 dark:text-blue-400" />
         </div>
         <h1 class="text-3xl font-bold text-gray-900 dark:text-white">My Profile</h1>
@@ -51,7 +53,9 @@ if (user) {
         <form id="profile-form" class="space-y-6">
           <!-- Profile Picture Section -->
           <div class="text-center">
-            <div class="mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-gray-100 dark:bg-gray-700">
+            <div
+              class="mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-gray-100 dark:bg-gray-700"
+            >
               <img
                 id="profile-avatar"
                 src=""
@@ -68,32 +72,51 @@ if (user) {
             >
               Upload Photo
             </button>
-            <input
-              type="file"
-              id="avatar-input"
-              accept="image/*"
-              class="hidden"
-            />
+            <input type="file" id="avatar-input" accept="image/*" class="hidden" />
           </div>
 
-          <!-- Name Field -->
-          <div>
-            <label for="name" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Full Name
-            </label>
-            <input
-              type="text"
-              id="name"
-              name="name"
-              value={userProfile?.name || ""}
-              class="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-60 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:focus:border-blue-400"
-              placeholder="Enter your full name"
-            />
+          <!-- First Name and Last Name Fields -->
+          <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <div>
+              <label
+                for="firstName"
+                class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300"
+              >
+                First Name
+              </label>
+              <input
+                type="text"
+                id="firstName"
+                name="firstName"
+                value={userProfile?.firstName || ""}
+                class="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-60 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:focus:border-blue-400"
+                placeholder="Enter your first name"
+              />
+            </div>
+            <div>
+              <label
+                for="lastName"
+                class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300"
+              >
+                Last Name
+              </label>
+              <input
+                type="text"
+                id="lastName"
+                name="lastName"
+                value={userProfile?.lastName || ""}
+                class="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-60 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:focus:border-blue-400"
+                placeholder="Enter your last name"
+              />
+            </div>
           </div>
 
           <!-- Email Field (Read-only) -->
           <div>
-            <label for="email" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            <label
+              for="email"
+              class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300"
+            >
               Email Address
             </label>
             <input
@@ -111,7 +134,10 @@ if (user) {
 
           <!-- Phone Field -->
           <div>
-            <label for="phone" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            <label
+              for="phone"
+              class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300"
+            >
               Phone Number
             </label>
             <input
@@ -125,7 +151,7 @@ if (user) {
           </div>
 
           <!-- Role Field (Read-only) -->
-          <div>
+          <!-- <div>
             <label for="role" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
               Role
             </label>
@@ -137,7 +163,7 @@ if (user) {
               readonly
               class="w-full rounded-md border border-gray-300 bg-gray-50 px-3 py-2 text-sm text-gray-500 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-400"
             />
-          </div>
+          </div> -->
 
           <!-- Action Buttons -->
           <div class="flex gap-3 pt-4">
@@ -160,8 +186,8 @@ if (user) {
 
       <!-- Account Actions Section -->
       <div class="mt-8 rounded-lg bg-white p-6 shadow-sm dark:bg-gray-800">
-        <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Account Actions</h2>
-        
+        <h2 class="mb-4 text-lg font-semibold text-gray-900 dark:text-white">Account Actions</h2>
+
         <div class="space-y-3">
           <a
             href="/reset-password"
@@ -185,7 +211,9 @@ if (user) {
               <BoxIcon name="trash" class="mr-3 h-5 w-5 text-red-400" />
               <div>
                 <p class="text-sm font-medium text-red-600 dark:text-red-400">Delete Account</p>
-                <p class="text-xs text-red-500 dark:text-red-400">Permanently delete your account</p>
+                <p class="text-xs text-red-500 dark:text-red-400">
+                  Permanently delete your account
+                </p>
               </div>
             </div>
             <BoxIcon name="chevron-right" class="h-4 w-4 text-red-400" />
@@ -209,9 +237,10 @@ if (user) {
     // Handle profile form submission
     profileForm?.addEventListener("submit", async (e) => {
       e.preventDefault();
-      
+
       const formData = new FormData(profileForm);
-      const name = formData.get("name") as string;
+      const firstName = formData.get("firstName") as string;
+      const lastName = formData.get("lastName") as string;
       const phone = formData.get("phone") as string;
 
       // Disable button and show loading state
@@ -224,7 +253,7 @@ if (user) {
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({ name, phone }),
+          body: JSON.stringify({ firstName, lastName, phone }),
         });
 
         const result = await response.json();
