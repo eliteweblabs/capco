@@ -118,6 +118,9 @@ export const POST: APIRoute = async ({ request }) => {
     const filesWithUrls =
       files?.map((file) => {
         try {
+          if (!supabase) {
+            throw new Error("Supabase client not available");
+          }
           const { data } = supabase.storage.from("project-documents").getPublicUrl(file.file_path);
 
           return {
