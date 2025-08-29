@@ -26,6 +26,7 @@ export interface FormFieldConfig {
   componentProps?: Record<string, any>; // Props to pass to the component
   allow?: string[]; // Control field visibility based on user roles - array of allowed roles
   hideAtStatus?: number[]; // Control field visibility based on project status - array of status values where field should be hidden
+  readOnlyAtStatus?: number[]; // Control field read-only state based on project status - array of status values where field should be read-only
 }
 
 export interface ButtonGroupConfig {
@@ -37,6 +38,7 @@ export interface ButtonGroupConfig {
   options: { value: string; label: string }[];
   allow?: string[]; // Control button group visibility based on user roles - array of allowed roles
   hideAtStatus?: number[]; // Control button group visibility based on project status - array of status values where group should be hidden
+  readOnlyAtStatus?: number[]; // Control button group read-only state based on project status - array of status values where group should be read-only
 }
 
 export interface FormActionConfig {
@@ -93,6 +95,23 @@ export function isButtonGroupStatusAllowed(
   if (!buttonGroup.hideAtStatus) return true; // If no hideAtStatus array specified, always display
   if (projectStatus === null || projectStatus === undefined) return true; // If no status provided, show by default
   return !buttonGroup.hideAtStatus.includes(projectStatus); // Hide if status is in the hideAtStatus array
+}
+
+// Helper function to check if a form field should be read-only based on project status
+export function isFieldReadOnly(field: FormFieldConfig, projectStatus?: number | null): boolean {
+  if (!field.readOnlyAtStatus) return false; // If no readOnlyAtStatus array specified, not read-only
+  if (projectStatus === null || projectStatus === undefined) return false; // If no status provided, not read-only by default
+  return field.readOnlyAtStatus.includes(projectStatus); // Read-only if status is in the readOnlyAtStatus array
+}
+
+// Helper function to check if a button group should be read-only based on project status
+export function isButtonGroupReadOnly(
+  buttonGroup: ButtonGroupConfig,
+  projectStatus?: number | null
+): boolean {
+  if (!buttonGroup.readOnlyAtStatus) return false; // If no readOnlyAtStatus array specified, not read-only
+  if (projectStatus === null || projectStatus === undefined) return false; // If no status provided, not read-only by default
+  return buttonGroup.readOnlyAtStatus.includes(projectStatus); // Read-only if status is in the readOnlyAtStatus array
 }
 
 // Function to get filtered form fields based on user role and project status
@@ -221,7 +240,9 @@ export const PROJECT_FORM_FIELDS: FormFieldConfig[] = [
     required: true,
     options: [], // Will be populated dynamically
     allow: ["admin", "staff"], // Only admin and staff can select clients
-    hideAtStatus: [10, 20, 30, 40, 50, 60, 70, 80, 90], // Hide on existing projects
+    hideAtStatus: [
+      10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170, 180, 190, 200,
+    ], // Hide on existing projects
   },
   {
     id: "architect-input",
@@ -232,6 +253,7 @@ export const PROJECT_FORM_FIELDS: FormFieldConfig[] = [
     dataField: "architect",
     allow: ["admin", "staff", "client"], // Only admin and staff can see architect
     hideAtStatus: [60, 70, 80, 90], // Hide after proposal is signed off
+    readOnlyAtStatus: [50], // Read-only after proposal is viewed but before signed off
   },
   {
     id: "square-foot-input",
@@ -246,6 +268,7 @@ export const PROJECT_FORM_FIELDS: FormFieldConfig[] = [
     dataField: "square_foot",
     allow: ["admin", "staff", "client"], // All roles can see square footage
     hideAtStatus: [60, 70, 80, 90], // Hide after proposal is signed off
+    readOnlyAtStatus: [50], // Read-only after proposal is viewed but before signed off
   },
   {
     id: "description-input",
@@ -255,6 +278,7 @@ export const PROJECT_FORM_FIELDS: FormFieldConfig[] = [
     placeholder: "Project description...",
     allow: ["admin", "staff", "client"], // Only admin and staff can see description
     hideAtStatus: [50, 60, 70, 80, 90], // Hide after proposal is viewed
+    readOnlyAtStatus: [40], // Read-only after proposal is shipped but before viewed
   },
   {
     id: "assigned-to-select",
@@ -348,6 +372,7 @@ export const BUTTON_GROUPS: ButtonGroupConfig[] = [
     cssClass: "building-type-radio",
     allow: ["admin", "staff", "client"], // All roles can see building type
     hideAtStatus: [60, 70, 80, 90], // Hide after proposal is signed off
+    readOnlyAtStatus: [50], // Read-only after proposal is viewed but before signed off
     options: [
       { value: "Residential", label: "Residential" },
       { value: "Mixed use", label: "Mixed use" },
