@@ -1,8 +1,9 @@
 import type { APIRoute } from "astro";
 import { readFileSync } from "fs";
 import { join } from "path";
+import { supabaseAdmin } from "../../lib/supabase-admin";
 
-export const POST: APIRoute = async ({ request }) => {
+export const POST: APIRoute = async ({ request, cookies }) => {
   try {
     const { to, subject, body, buttonText } = await request.json();
 
@@ -10,6 +11,35 @@ export const POST: APIRoute = async ({ request }) => {
     if (!to || !subject || !body) {
       return new Response(JSON.stringify({ error: "Email, subject, and body are required" }), {
         status: 400,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+
+    // Get current user session for magic link generation
+    const accessToken = cookies.get("sb-access-token")?.value;
+    const refreshToken = cookies.get("sb-refresh-token")?.value;
+
+    if (!accessToken || !refreshToken) {
+      return new Response(JSON.stringify({ error: "Authentication required to send emails" }), {
+        status: 401,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+
+    // Set session to get current user
+    if (!supabaseAdmin) {
+      return new Response(JSON.stringify({ error: "Supabase not configured" }), {
+        status: 500,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+
+    // Verify the current user session
+    const { data: { user }, error: userError } = await supabaseAdmin.auth.getUser(accessToken);
+
+    if (userError || !user) {
+      return new Response(JSON.stringify({ error: "Invalid session" }), {
+        status: 401,
         headers: { "Content-Type": "application/json" },
       });
     }
@@ -50,9 +80,29 @@ export const POST: APIRoute = async ({ request }) => {
       });
     }
 
+    // Generate magic link for the recipient
+    const { data: magicLinkData, error: magicLinkError } = await supabaseAdmin.auth.admin.generateLink({
+      type: 'magiclink',
+      email: to,
+      options: {
+        redirectTo: `${import.meta.env.SITE_URL || 'http://localhost:4321'}/dashboard`,
+      },
+    });
+
+    if (magicLinkError) {
+      console.error("Magic link generation error:", magicLinkError);
+      return new Response(JSON.stringify({ error: "Failed to generate magic link" }), {
+        status: 500,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+
+    const buttonLink = magicLinkData.properties.action_link;
+
     // Replace template variables with provided content
     let emailHtml = emailTemplate.replace("{{CONTENT}}", body);
     emailHtml = emailHtml.replace("{{BUTTON_TEXT}}", buttonText || "Access Your Dashboard");
+    emailHtml = emailHtml.replace("{{BUTTON_LINK}}", buttonLink);
 
     // Send email via Resend
     const response = await fetch("https://api.resend.com/emails", {
