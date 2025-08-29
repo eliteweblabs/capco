@@ -612,6 +612,7 @@ console.log("Owner fields found:", ownerFieldsInForm.length, ownerFieldsInForm);
               }
 
               // Make API call to delete project
+              console.log("Sending delete request for project:", projectId);
               fetch(`/api/delete-project`, {
                 method: "DELETE",
                 headers: {
@@ -619,19 +620,21 @@ console.log("Owner fields found:", ownerFieldsInForm.length, ownerFieldsInForm);
                 },
                 body: JSON.stringify({ projectId }),
               })
-                .then((response) => {
+                .then(async (response) => {
+                  console.log("Delete response status:", response.status);
+                  const data = await response.json();
+                  console.log("Delete response data:", data);
+                  
                   if (!response.ok) {
-                    throw new Error("Failed to delete project");
+                    throw new Error(data.error || "Failed to delete project");
                   }
-                  return response.json();
-                })
-                .then((data) => {
+                  
                   // Show success toast
                   if ((window as any).toastAlertManager) {
                     (window as any).toastAlertManager.show({
                       type: "success",
                       title: "Project Deleted!",
-                      message: "Project has been deleted successfully.",
+                      message: data.message || "Project has been deleted successfully.",
                       duration: 3000,
                     });
                   }
