@@ -95,8 +95,30 @@ if (role !== "Admin") {
             ></textarea>
             <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
               This content will be inserted into the CAPCo email template. Use HTML with inline
-              styles for best email compatibility. The template includes the header and "Access Your
-              Dashboard" button automatically.
+              styles for best email compatibility. The template includes the header and customizable
+              button automatically.
+            </p>
+          </div>
+
+          <!-- Button Text Field -->
+          <div>
+            <label
+              for="button-text"
+              class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300"
+            >
+              Button Text *
+            </label>
+            <input
+              type="text"
+              id="button-text"
+              name="buttonText"
+              required
+              class="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-60 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:focus:border-blue-400"
+              placeholder="e.g., Pay Your Invoice, Submit Documents, View Project"
+            />
+            <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+              Customize the call-to-action button text. Examples: "Pay Your Invoice", "Submit
+              Documents", "View Project Status"
             </p>
           </div>
 
@@ -168,6 +190,7 @@ if (role !== "Admin") {
       const to = formData.get("to") as string;
       const subject = formData.get("subject") as string;
       const body = formData.get("body") as string;
+      const buttonText = formData.get("buttonText") as string;
 
       // Disable button and show loading state
       sendEmailBtn.disabled = true;
@@ -179,7 +202,7 @@ if (role !== "Admin") {
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({ to, subject, body }),
+          body: JSON.stringify({ to, subject, body, buttonText }),
         });
 
         const result = await response.json();
