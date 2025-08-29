@@ -5,6 +5,8 @@ export const POST: APIRoute = async ({ request, cookies }) => {
   try {
     const { filePath, fileName } = await request.json();
 
+    console.log("Download API called with:", { filePath, fileName });
+
     if (!filePath || !fileName) {
       return new Response(JSON.stringify({ error: "File path and name are required" }), {
         status: 400,
@@ -34,13 +36,28 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     }
 
     // Download file from Supabase Storage
+    console.log("Attempting to download from storage:", filePath);
+    
+    // Extract the actual file path (remove bucket prefix if present)
+    let actualFilePath = filePath;
+    if (filePath.startsWith("project-documents/")) {
+      actualFilePath = filePath.replace("project-documents/", "");
+    }
+    
+    console.log("Actual file path for download:", actualFilePath);
+    
     const { data: fileData, error: downloadError } = await supabase.storage
       .from("project-documents")
-      .download(filePath);
+      .download(actualFilePath);
 
     if (downloadError || !fileData) {
       console.error("Error downloading file from storage:", downloadError);
-      return new Response(JSON.stringify({ error: "Failed to download file" }), {
+      console.error("File path attempted:", filePath);
+      return new Response(JSON.stringify({ 
+        error: "Failed to download file",
+        details: downloadError?.message || "Unknown error",
+        filePath: filePath
+      }), {
         status: 500,
         headers: { "Content-Type": "application/json" },
       });
