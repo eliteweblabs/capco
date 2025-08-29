@@ -15,16 +15,23 @@ interface Props {
     author_name?: any;
     assigned_to_name?: any;
   };
+  role?: string;
 }
 
-const { project } = Astro.props;
+const { project, role } = Astro.props;
 
 // Fetch project statuses to get the status name
 let statusName = `Status ${project.status}`;
 let statusColor = "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300";
 
 try {
-  const response = await fetch(`${Astro.url.origin}/api/get-project-statuses`);
+  const response = await fetch(`${Astro.url.origin}/api/get-project-statuses`, {
+    method: "GET",
+    headers: {
+      "Content-Type": "application/json",
+      "role": role || "Client", // Pass user role for proper filtering
+    },
+  });
   if (response.ok) {
     const result = await response.json();
     if (result.success && result.statuses) {

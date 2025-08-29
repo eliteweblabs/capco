@@ -102,12 +102,18 @@ export function isStatusVisibleToRole(
 }
 
 // Function to load status data from database
-export async function loadProjectStatuses() {
+export async function loadProjectStatuses(userRole: string = "Client") {
   console.log("🌐 [GLOBAL] Loading project statuses...");
 
   try {
     console.log("🌐 [GLOBAL] Fetching project statuses from API...");
-    const response = await fetch("/api/get-project-statuses");
+    const response = await fetch("/api/get-project-statuses", {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        "role": userRole, // Pass user role for proper filtering
+      },
+    });
     console.log("🌐 [GLOBAL] Project statuses API response status:", response.status);
 
     const result = await response.json();

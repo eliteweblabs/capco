@@ -16,6 +16,9 @@ export const GET: APIRoute = async ({ request }) => {
       );
     }
 
+    // Get user role from headers
+    const userRole = request.headers.get("role") || "Client";
+
     // Fetch all project statuses from database (excluding status 0)
     const { data: statuses, error } = await supabase
       .from("project_statuses")
@@ -39,8 +42,24 @@ export const GET: APIRoute = async ({ request }) => {
       );
     }
 
-    // Convert array to object with status_code as key
-    const statusesObject = statuses.reduce(
+    // Filter statuses based on user role FIRST, then convert to object
+    const filteredStatuses = statuses.filter((status) => {
+      // Admin and Staff can see all statuses
+      if (userRole === "Admin" || userRole === "Staff") {
+        return true;
+      }
+      
+      // For clients, only show statuses that are client_visible
+      if (userRole === "Client") {
+        return status.client_visible !== undefined ? status.client_visible : true; // Default to true for backward compatibility
+      }
+      
+      // For other roles, show all by default (backward compatibility)
+      return true;
+    });
+
+    // Convert filtered array to object with status_code as key
+    const statusesObject = filteredStatuses.reduce(
       (acc, status) => {
         acc[status.status_code] = {
           status_name: status.status_name,
@@ -75,7 +94,7 @@ export const GET: APIRoute = async ({ request }) => {
       JSON.stringify({
         success: true,
         statuses: statusesObject,
-        count: statuses.length,
+        count: filteredStatuses.length,
       }),
       {
         status: 200,
