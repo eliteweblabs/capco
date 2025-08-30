@@ -64,7 +64,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
           name: `${body.first_name} ${body.last_name}`.trim(),
           company_name: body.company_name,
           email: body.email,
-          role: "Client"
+          role: "Client",
         };
 
         console.log("📝 [CREATE-PROJECT] Creating new client profile:", newClientData);
@@ -87,12 +87,18 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       } else {
         // Use existing client from form
         if (!body.author_id) {
-          return new Response(JSON.stringify({ error: "Author ID is required for admin/staff users" }), {
-            status: 400,
-          });
+          return new Response(
+            JSON.stringify({ error: "Author ID is required for admin/staff users" }),
+            {
+              status: 400,
+            }
+          );
         }
         projectAuthorId = body.author_id;
-        console.log("📝 [CREATE-PROJECT] Admin/Staff user - using existing client ID:", projectAuthorId);
+        console.log(
+          "📝 [CREATE-PROJECT] Admin/Staff user - using existing client ID:",
+          projectAuthorId
+        );
       }
     }
 
@@ -104,9 +110,6 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       description: body.description,
       sq_ft: body.sq_ft ? parseInt(body.sq_ft) : null,
       new_construction: body.new_construction === "on" || body.new_construction === true,
-      building: body.building,
-      service: body.service,
-      requested_docs: body.requested_docs,
       status: 10, // Default status for new projects (Specs Received)
     };
 
