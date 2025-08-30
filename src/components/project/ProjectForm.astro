@@ -93,12 +93,11 @@ console.log("New client fields found:", newClientFieldsInForm.length, newClientF
   data-project-id={formId}
   data-project-data={JSON.stringify(project || {})}
   data-is-new-project={isNewProject}
-  onsubmit="handleFormSubmit(event)"
   autocomplete="off"
   novalidate
 >
   <!-- New Client Toggle (Top of Form) -->
-  {isNewProject ? <NewOrExistingClient /> : ""}
+  {(isNewProject && userRole === "admin") || userRole === "staff" ? <NewOrExistingClient /> : ""}
 
   <!-- Google Address Autocomplete Field -->
   {
@@ -184,6 +183,7 @@ console.log("New client fields found:", newClientFieldsInForm.length, newClientF
             >
               {field.label}
             </label>
+
             <textarea
               id={`${field.id}`}
               name={field.name}
