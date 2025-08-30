@@ -22,7 +22,7 @@ export const GET: APIRoute = async ({ request }) => {
     // Fetch all project statuses from database (excluding status 0)
     const { data: statuses, error } = await supabase
       .from("project_statuses")
-      .select("status_code, status_name, client_visible")
+      .select("status_code, status_name, client_visible, display_in_nav")
       .neq("status_code", 0)
       .order("status_code");
 
@@ -63,7 +63,7 @@ export const GET: APIRoute = async ({ request }) => {
           status_name: status.status_name,
           status_code: status.status_code,
           client_visible: status.client_visible !== undefined ? status.client_visible : true, // Default to true
-          display_in_nav: true, // Default to true for now
+          display_in_nav: status.display_in_nav !== undefined ? status.display_in_nav : true, // Use actual value from DB
         };
         return acc;
       },
