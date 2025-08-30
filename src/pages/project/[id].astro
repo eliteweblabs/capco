@@ -15,6 +15,11 @@ const i18n = getI18N({ currentLocale });
 // Get the project ID from the URL parameter
 const { id } = Astro.params;
 
+// Get the tab parameter from URL query string
+const tabParam = Astro.url.searchParams.get("tab");
+const validTabs = ["project-form", "documents", "proposal", "deliverables", "final-invoice", "activity-log"];
+const defaultTab = validTabs.includes(tabParam || "") ? tabParam : "project-form";
+
 console.log("🌐 [PROJECT] Project ID:", id);
 import { supabase } from "../../lib/supabase";
 
@@ -293,12 +298,33 @@ function getStatusColor(status: number): string {
         inline: "center",
       });
     }
+
+    // Update URL with tab parameter (without page reload)
+    const currentUrl = new URL(window.location.href);
+    if (tabName === "project-form") {
+      // Remove tab parameter for default tab
+      currentUrl.searchParams.delete("tab");
+    } else {
+      // Add or update tab parameter
+      currentUrl.searchParams.set("tab", tabName);
+    }
+    
+    // Update browser history without reloading the page
+    window.history.replaceState({}, "", currentUrl.toString());
   }
 
   // Initialize tabs on page load
   document.addEventListener("DOMContentLoaded", function () {
-    // Ensure the first tab is active by default
-    switchTab("project-form");
+    // Get tab from URL parameter or use default
+    const urlParams = new URLSearchParams(window.location.search);
+    const tabFromUrl = urlParams.get("tab");
+    const validTabs = ["project-form", "documents", "proposal", "deliverables", "final-invoice", "activity-log"];
+    const initialTab = validTabs.includes(tabFromUrl || "") ? tabFromUrl! : "project-form";
+    
+    console.log("📋 [Tabs] Initializing with tab:", initialTab);
+    
+    // Switch to the initial tab
+    switchTab(initialTab);
   });
 
   // Form handling functions
