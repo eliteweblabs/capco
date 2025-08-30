@@ -363,7 +363,7 @@ const { projectId, fileType = "media" } = Astro.props;
         </div>
         
         <!-- Accordion Content -->
-        <div class="accordion-content border-t border-gray-200 dark:border-gray-600">
+        <div class="accordion-content border-t border-gray-200 dark:border-gray-600 ${fileTitle !== fileName ? "hidden" : ""}">
           <div class="p-4 space-y-4">
             <!-- File Metadata Form -->
             <div class="space-y-3">
@@ -442,11 +442,20 @@ const { projectId, fileType = "media" } = Astro.props;
           saveBtn.classList.remove("bg-blue-600", "hover:bg-blue-700");
           saveBtn.classList.add("bg-green-600", "hover:bg-green-700");
 
-          // Reset button after 2 seconds
+          // Reset button after 2 seconds and close accordion
           setTimeout(() => {
             saveBtn.innerHTML = originalText;
             saveBtn.classList.remove("bg-green-600", "hover:bg-green-700");
             saveBtn.classList.add("bg-blue-600", "hover:bg-blue-700");
+
+            // Close the accordion
+            const accordionContent = fileItem.querySelector(".accordion-content");
+            const chevron = fileItem.querySelector(".accordion-header svg");
+            if (accordionContent && chevron) {
+              accordionContent.classList.add("hidden");
+              chevron.style.transform = "rotate(0deg)";
+              fileItem.classList.remove("accordion-open");
+            }
           }, 2000);
         }
       } catch (error) {
