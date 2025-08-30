@@ -179,18 +179,6 @@ async function sendStatusChangeNotifications(
       company_name?: string;
     }> = [];
 
-    // HARDCODED FOR TESTING - Replace with actual user lookup logic
-    usersToNotify.push({
-      email: "ssen@eliteweblabs.com",
-      first_name: "Test",
-      last_name: "User",
-      company_name: "Test Company",
-    });
-
-    console.log("📧 [UPDATE-STATUS] Hardcoded test email will be used:", usersToNotify);
-
-    // ORIGINAL CODE (commented out for testing):
-    /*
     if (notify.includes("admin")) {
       // Get all admin users
       const { data: adminUsers } = await supabase
@@ -218,7 +206,6 @@ async function sendStatusChangeNotifications(
         }
       }
     }
-    */
 
     // Get environment variables for email
     const emailProvider = import.meta.env.EMAIL_PROVIDER;
