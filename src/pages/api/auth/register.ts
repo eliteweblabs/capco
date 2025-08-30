@@ -79,23 +79,24 @@ export const POST: APIRoute = async ({ request, redirect }) => {
       status: error.status,
       statusCode: error.statusCode,
     });
-    
+
     // Check if it's a duplicate email error
-    const isDuplicateEmail = error.message?.includes("already registered") || 
-                           error.message?.includes("already exists") ||
-                           error.message?.includes("already been registered");
-    
+    const isDuplicateEmail =
+      error.message?.includes("already registered") ||
+      error.message?.includes("already exists") ||
+      error.message?.includes("already been registered");
+
     return new Response(
       JSON.stringify({
         success: false,
-        error: isDuplicateEmail 
+        error: isDuplicateEmail
           ? "A user with this email address has already been registered"
           : "Failed to create user account. Please try again.",
-        details: error.message
+        details: error.message,
       }),
-      { 
+      {
         status: isDuplicateEmail ? 409 : 500,
-        headers: { "Content-Type": "application/json" }
+        headers: { "Content-Type": "application/json" },
       }
     );
   }
@@ -133,20 +134,39 @@ export const POST: APIRoute = async ({ request, redirect }) => {
 
   console.log("User registration successful:", !!data.user);
 
+  // Sign in the user immediately after registration
+  if (data.user) {
+    console.log("🔐 [REGISTER] Signing in user after registration:", data.user.email);
+
+    const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+
+    if (signInError) {
+      console.error("🔐 [REGISTER] Sign-in error after registration:", signInError);
+      // Don't fail the registration, but log the error
+    } else {
+      console.log("🔐 [REGISTER] User signed in successfully after registration");
+    }
+  }
+
   // Return success response
   return new Response(
     JSON.stringify({
       success: true,
       message: "User registration successful",
-      user: data.user ? {
-        id: data.user.id,
-        email: data.user.email,
-        needsConfirmation: !data.user.email_confirmed_at
-      } : null
+      user: data.user
+        ? {
+            id: data.user.id,
+            email: data.user.email,
+            needsConfirmation: !data.user.email_confirmed_at,
+          }
+        : null,
     }),
     {
       status: 200,
-      headers: { "Content-Type": "application/json" }
+      headers: { "Content-Type": "application/json" },
     }
   );
 };

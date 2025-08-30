@@ -15,29 +15,46 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       });
     }
 
-    // Get current user from session
-    const {
-      data: { user },
-      error: userError,
-    } = await supabase.auth.getUser();
+    // Get user from session using tokens
+    const accessToken = cookies.get("sb-access-token")?.value;
+    const refreshToken = cookies.get("sb-refresh-token")?.value;
 
-    if (userError || !user) {
-      console.log("📝 [CREATE-PROJECT] User not authenticated:", userError);
+    console.log("📝 [CREATE-PROJECT] Auth check:", {
+      hasAccessToken: !!accessToken,
+      hasRefreshToken: !!refreshToken,
+    });
+
+    if (!accessToken || !refreshToken) {
+      console.log("📝 [CREATE-PROJECT] Missing auth tokens");
       return new Response(JSON.stringify({ error: "Not authenticated" }), {
         status: 401,
       });
     }
 
+    // Set session
+    const { data: session, error: sessionError } = await supabase.auth.setSession({
+      access_token: accessToken,
+      refresh_token: refreshToken,
+    });
+
+    if (sessionError || !session.session?.user) {
+      console.log("📝 [CREATE-PROJECT] Session error:", sessionError);
+      return new Response(JSON.stringify({ error: "Invalid session" }), {
+        status: 401,
+      });
+    }
+
+    const userId = session.session.user.id;
     console.log("📝 [CREATE-PROJECT] User authenticated:", {
-      userId: user.id,
-      userEmail: user.email,
+      userId,
+      userEmail: session.session.user.email,
     });
 
     // Get user profile to determine role
     const { data: userProfile, error: profileError } = await supabase
       .from("profiles")
       .select("role")
-      .eq("id", user.id)
+      .eq("id", userId)
       .single();
 
     if (profileError) {
@@ -54,7 +71,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     // Determine project author based on user role
     if (userProfile.role === "Client") {
       // If current user is a client, they are the project author
-      projectAuthorId = user.id;
+      projectAuthorId = userId;
       console.log("📝 [CREATE-PROJECT] Client user - using their ID as author:", projectAuthorId);
     } else {
       // If current user is admin/staff, handle new client creation or existing client
@@ -108,8 +125,17 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       title: body.address || "New Project",
       address: body.address,
       description: body.description,
+      owner: body.owner,
+      architect: body.architect,
       sq_ft: body.sq_ft ? parseInt(body.sq_ft) : null,
       new_construction: body.new_construction === "on" || body.new_construction === true,
+      units: body.units,
+      building: body.building,
+      project: Array.isArray(body.project) ? JSON.stringify(body.project) : body.project,
+      service: body.service,
+      requested_docs: Array.isArray(body.requested_docs)
+        ? JSON.stringify(body.requested_docs)
+        : body.requested_docs,
       status: 10, // Default status for new projects (Specs Received)
     };
 
@@ -119,13 +145,17 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     );
 
     // Create project
-    const { data: projects, error } = await supabase
-      .from("projects")
-      .insert([projectData])
-      .select();
+    console.log("📝 [CREATE-PROJECT] About to insert project into database");
+    const { data: projects, error } = await supabase.from("project").insert([projectData]).select();
 
     if (error) {
       console.error("📝 [CREATE-PROJECT] Database error:", error);
+      console.error("📝 [CREATE-PROJECT] Error details:", {
+        message: error.message,
+        code: error.code,
+        details: error.details,
+        hint: error.hint,
+      });
       return new Response(JSON.stringify({ error: error.message }), {
         status: 500,
       });
@@ -143,7 +173,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     try {
       await SimpleProjectLogger.logProjectCreation(
         project.id,
-        user.email || "unknown",
+        session.session.user.email || "unknown",
         projectData
       );
     } catch (logError) {
