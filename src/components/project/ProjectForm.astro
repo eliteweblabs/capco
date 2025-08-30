@@ -609,23 +609,38 @@ console.log("New client fields found:", newClientFieldsInForm.length, newClientF
     // Handle toggle change
     newClientToggle.addEventListener("change", function () {
       const isNewClient = this.checked;
+      
+      // Find the new client fields container (the div that wraps first name, last name, company name, and email)
+      const newClientFieldsContainer = document.querySelector('.space-y-4 > .space-y-4') as HTMLElement;
+      
       console.log("🔄 Toggle changed:", {
         isNewClient,
+        newClientFieldsContainer: !!newClientFieldsContainer,
         existingClientContainer: !!existingClientContainer,
       });
 
       if (isNewClient) {
-        // Show owner and email fields, hide existing client dropdown
-        console.log("📝 Showing owner fields, hiding client dropdown");
- 
+        // Show new client fields (first name, last name, company name, email), hide existing client dropdown
+        console.log("📝 Showing new client fields, hiding client dropdown");
+        
+        if (newClientFieldsContainer) {
+          newClientFieldsContainer.style.display = "block";
+          console.log("✅ New client fields shown");
+        }
+        
         if (existingClientContainer) {
           existingClientContainer.style.display = "none";
           console.log("✅ Client dropdown hidden");
         }
       } else {
-        // Hide owner and email fields, show existing client dropdown
-        console.log("🔽 Hiding owner fields, showing client dropdown");
+        // Hide new client fields, show existing client dropdown
+        console.log("🔽 Hiding new client fields, showing client dropdown");
 
+        if (newClientFieldsContainer) {
+          newClientFieldsContainer.style.display = "none";
+          console.log("✅ New client fields hidden");
+        }
+        
         if (existingClientContainer) {
           existingClientContainer.style.display = "block";
           console.log("✅ Client dropdown shown");
