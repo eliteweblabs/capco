@@ -22,9 +22,7 @@ export const GET: APIRoute = async ({ request }) => {
     // Fetch all project statuses from database (excluding status 0)
     const { data: statuses, error } = await supabase
       .from("project_statuses")
-      .select(
-        "status_code, status_name, email_content, est_time, notify, els_to_show, trigger, display_in_nav, client_visible"
-      )
+      .select("status_code, status_name, client_visible")
       .neq("status_code", 0)
       .order("status_code");
 
@@ -48,12 +46,12 @@ export const GET: APIRoute = async ({ request }) => {
       if (userRole === "Admin" || userRole === "Staff") {
         return true;
       }
-      
+
       // For clients, only show statuses that are client_visible
       if (userRole === "Client") {
         return status.client_visible !== undefined ? status.client_visible : true; // Default to true for backward compatibility
       }
-      
+
       // For other roles, show all by default (backward compatibility)
       return true;
     });
@@ -64,13 +62,8 @@ export const GET: APIRoute = async ({ request }) => {
         acc[status.status_code] = {
           status_name: status.status_name,
           status_code: status.status_code,
-          email_content: status.email_content,
-          est_time: status.est_time,
-          notify: status.notify || ["admin"],
-          els_to_show: status.els_to_show || [],
-          trigger: status.trigger || [],
-          display_in_nav: status.display_in_nav || false,
           client_visible: status.client_visible !== undefined ? status.client_visible : true, // Default to true
+          display_in_nav: true, // Default to true for now
         };
         return acc;
       },
@@ -79,13 +72,8 @@ export const GET: APIRoute = async ({ request }) => {
         {
           status_name: string;
           status_code: number;
-          email_content: string;
-          est_time: string;
-          notify: string[];
-          els_to_show: string[];
-          trigger: string[];
-          display_in_nav: boolean;
           client_visible: boolean;
+          display_in_nav: boolean;
         }
       >
     );
