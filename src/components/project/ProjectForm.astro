@@ -14,6 +14,7 @@ import ClientSelect from "../form/ClientSelect.astro";
 import StaffSelect from "../form/StaffSelect.astro";
 import GoogleAddressAutocomplete from "../form/GoogleAddressAutocomplete.astro";
 // import DeleteProject from "../form/DeleteProject.astro";
+import NewOrExistingClient from "../form/newOrExistingClient.astro";
 
 interface Props {
   project?: any;
@@ -69,19 +70,26 @@ console.log("📝 [ProjectForm] Debug info:", {
 });
 
 // Check specifically for the existing client select field
-const existingClientField = formFields.find(f => f.id === "existing-client-select");
-console.log(existingClientField ? "⚠️ [ProjectForm] Found existing-client-select field" : "✅ [ProjectForm] existing-client-select field correctly filtered out");
+const existingClientField = formFields.find((f) => f.id === "existing-client-select");
+console.log(
+  existingClientField
+    ? "⚠️ [ProjectForm] Found existing-client-select field"
+    : "✅ [ProjectForm] existing-client-select field correctly filtered out"
+);
 
 // Debug new client fields specifically
 const newClientFieldsInForm = formFields.filter(
-  (field) => field.name === "first_name" || field.name === "last_name" || field.name === "company_name" || field.name === "email"
+  (field) =>
+    field.name === "first_name" ||
+    field.name === "last_name" ||
+    field.name === "company_name" ||
+    field.name === "email"
 );
 console.log("New client fields found:", newClientFieldsInForm.length, newClientFieldsInForm);
 ---
 
-
 <form
-  class="space-y-4 w-full"
+  class="w-full space-y-4"
   data-project-id={formId}
   data-project-data={JSON.stringify(project || {})}
   data-is-new-project={isNewProject}
@@ -89,182 +97,12 @@ console.log("New client fields found:", newClientFieldsInForm.length, newClientF
   autocomplete="off"
   novalidate
 >
-  <!-- New Client Toggle (Top of Form) -->
-  {
-    formFields
-      .filter((field) => field.name === "new_client")
-      .map((field) => {
-        const isChecked =
-          project?.[field.name] === true ||
-          project?.[field.name] === "true" ||
-          project?.[field.name] === 1 ||
-          project?.[field.name] === "1";
-        return (
-          <div class="relative">
-            <label class="inline-flex items-center cursor-pointer">
-              <input
-                type="checkbox"
-                id={`${field.id}`}
-                name={field.name}
-                checked={isChecked}
-                class="sr-only peer"
-                data-project-id={formId}
-                data-project-data={JSON.stringify(project || {})}
-              />
-              <div class="relative w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600 dark:peer-checked:bg-blue-600" />
-              <span class="ms-3 text-sm font-medium text-gray-900 dark:text-gray-300">
-                {field.label}
-              </span>
-            </label>
-          </div>
-        );
-      })
-  }
-
-  <!-- Client Fields (First Name, Last Name, Company Name for new client, or Existing Client dropdown) -->
-  <div class="space-y-4">
-    <!-- New Client Fields (First Name, Last Name, Company Name) - Only shown when new client toggle is on -->
-    {isNewProject && (
-      <div id="new-client-fields-container" class="space-y-4">
-        <!-- First Name and Last Name Row -->
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {
-            formFields
-              .filter((field) => field.name === "first_name" || field.name === "last_name")
-              .map((field) => {
-                const isReadOnly = isFieldReadOnly(field, projectStatus);
-                return (
-                  <div class="relative">
-                    <label
-                      for={`${field.id}`}
-                      class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-                    >
-                      {field.label}
-                      {field.required ? " *" : ""}
-                    </label>
-                    <input
-                      type="text"
-                      id={`${field.id}`}
-                      name={field.name}
-                      value={project?.[field.name] || ""}
-                      class={`w-full py-2 px-3 text-sm border border-gray-300 dark:border-gray-600 rounded-md text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:focus:ring-blue-400 dark:focus:border-blue-400 ${
-                        isReadOnly 
-                          ? "bg-gray-100 dark:bg-gray-800 cursor-not-allowed" 
-                          : "bg-white dark:bg-gray-700"
-                      }`}
-                      placeholder={field.placeholder || ""}
-                      required={field.required}
-                      readonly={isReadOnly}
-                      data-field={field.dataField}
-                      data-project-id={formId}
-                      data-project-data={JSON.stringify(project || {})}
-                    />
-                  </div>
-                );
-              })
-          }
-        </div>
-
-        <!-- Company Name Field (Full Width) -->
-        {
-          formFields
-            .filter((field) => field.name === "company_name")
-            .map((field) => {
-              const isReadOnly = isFieldReadOnly(field, projectStatus);
-              return (
-                <div class="relative">
-                  <label
-                    for={`${field.id}`}
-                    class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-                  >
-                    {field.label}
-                    {field.required ? " *" : ""}
-                  </label>
-                  <input
-                    type="text"
-                    id={`${field.id}`}
-                    name={field.name}
-                    value={project?.[field.name] || ""}
-                    class={`w-full py-2 px-3 text-sm border border-gray-300 dark:border-gray-600 rounded-md text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:focus:ring-blue-400 dark:focus:border-blue-400 ${
-                      isReadOnly 
-                        ? "bg-gray-100 dark:bg-gray-800 cursor-not-allowed" 
-                        : "bg-white dark:bg-gray-700"
-                    }`}
-                    placeholder={field.placeholder || ""}
-                    required={field.required}
-                    readonly={isReadOnly}
-                    data-field={field.dataField}
-                    data-project-id={formId}
-                    data-project-data={JSON.stringify(project || {})}
-                  />
-                </div>
-              );
-            })
-        }
-
-        <!-- Email Field (for new client) -->
-        {
-          formFields
-            .filter((field) => field.name === "email")
-            .map((field) => {
-              const isReadOnly = isFieldReadOnly(field, projectStatus);
-              return (
-                <div class="relative">
-                  <label
-                    for={`${field.id}`}
-                    class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-                  >
-                    {field.label}
-                    {field.required ? " *" : ""}
-                  </label>
-                  <input
-                    type="email"
-                    id={`${field.id}`}
-                    name={field.name}
-                    value={project?.[field.name] || ""}
-                    class={`w-full py-2 px-3 text-sm border border-gray-300 dark:border-gray-600 rounded-md text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:focus:ring-blue-400 dark:focus:border-blue-400 ${
-                      isReadOnly 
-                        ? "bg-gray-100 dark:bg-gray-800 cursor-not-allowed" 
-                        : "bg-white dark:bg-gray-700"
-                    }`}
-                    placeholder={field.placeholder || ""}
-                    required={field.required}
-                    readonly={isReadOnly}
-                    data-field={field.dataField}
-                    data-project-id={formId}
-                    data-project-data={JSON.stringify(project || {})}
-                  />
-                </div>
-              );
-            })
-        }
-      </div>
-    )}
-
-    <!-- Existing Client Selection (filtered by role) -->
-    {
-      formFields
-        .filter((field) => field.name === "author_id" && field.type === "select")
-        .map((field) => (
-            <div id="existing-client-container" class="relative">
-              <ClientSelect
-                selectedUserId={project?.author_id || ""}
-                name="author_id"
-                id="existing-client-select"
-                label="Select Existing Client"
-                role="Client"
-                required={false}
-                class="w-full"
-              />
-            </div>
-        ))
-    }
-  </div>
-
   <!-- Google Address Autocomplete Field -->
   {
     formFields
-      .filter((field) => field.type === "component" && field.component === "GoogleAddressAutocomplete")
+      .filter(
+        (field) => field.type === "component" && field.component === "GoogleAddressAutocomplete"
+      )
       .map((field) => (
         <div class="relative">
           <GoogleAddressAutocomplete
@@ -280,7 +118,7 @@ console.log("New client fields found:", newClientFieldsInForm.length, newClientF
   }
 
   <!-- Other Core Fields Grid -->
-  <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+  <div class="grid grid-cols-1 gap-4 lg:grid-cols-2">
     {
       formFields
         .filter(
@@ -298,7 +136,7 @@ console.log("New client fields found:", newClientFieldsInForm.length, newClientF
             <div class="relative">
               <label
                 for={`${field.id}`}
-                class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300"
               >
                 {field.label}
                 {field.required ? " *" : ""}
@@ -308,9 +146,9 @@ console.log("New client fields found:", newClientFieldsInForm.length, newClientF
                 id={`${field.id}`}
                 name={field.name}
                 value={project?.[field.name] || ""}
-                class={`w-full py-2 px-3 text-sm border border-gray-300 dark:border-gray-600 rounded-md text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:focus:ring-blue-400 dark:focus:border-blue-400 ${
-                  isReadOnly 
-                    ? "bg-gray-100 dark:bg-gray-800 cursor-not-allowed" 
+                class={`w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 dark:border-gray-600 dark:text-white dark:focus:border-blue-400 dark:focus:ring-blue-400 ${
+                  isReadOnly
+                    ? "cursor-not-allowed bg-gray-100 dark:bg-gray-800"
                     : "bg-white dark:bg-gray-700"
                 }`}
                 placeholder={field.placeholder || ""}
@@ -339,7 +177,7 @@ console.log("New client fields found:", newClientFieldsInForm.length, newClientF
           <div class="relative">
             <label
               for={`${field.id}`}
-              class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+              class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300"
             >
               {field.label}
             </label>
@@ -347,16 +185,18 @@ console.log("New client fields found:", newClientFieldsInForm.length, newClientF
               id={`${field.id}`}
               name={field.name}
               rows="3"
-              class={`w-full py-2 px-3 text-sm border border-gray-300 dark:border-gray-600 rounded-md text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:focus:ring-blue-400 dark:focus:border-blue-400 ${
-                isReadOnly 
-                  ? "bg-gray-100 dark:bg-gray-800 cursor-not-allowed" 
+              class={`w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 dark:border-gray-600 dark:text-white dark:focus:border-blue-400 dark:focus:ring-blue-400 ${
+                isReadOnly
+                  ? "cursor-not-allowed bg-gray-100 dark:bg-gray-800"
                   : "bg-white dark:bg-gray-700"
               }`}
               placeholder={field.placeholder || ""}
               readonly={isReadOnly}
               data-project-id={formId}
               data-project-data={JSON.stringify(project || {})}
-            >{project?.[field.name] || ""}</textarea>
+            >
+              {project?.[field.name] || ""}
+            </textarea>
           </div>
         );
       })
@@ -378,21 +218,20 @@ console.log("New client fields found:", newClientFieldsInForm.length, newClientF
       ))
   }
 
+  <!-- New Client Toggle (Top of Form) -->
+  {isNewProject ? <NewOrExistingClient /> : ""}
+
   <!-- Construction Type & Units Row -->
-  <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+  <div class="grid grid-cols-1 gap-4 lg:grid-cols-2">
     <!-- Construction Type -->
     <div>
-      <label
-        class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+      <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300"
         >Construction Type</label
       >
       <div class="flex gap-4">
         {
           formFields
-            .filter(
-              (field) =>
-                field.type === "checkbox" && field.name !== "new_client"
-            )
+            .filter((field) => field.type === "checkbox" && field.name !== "new_client")
             .map((field) => {
               const isReadOnly = isFieldReadOnly(field, projectStatus);
               const isChecked =
@@ -401,22 +240,26 @@ console.log("New client fields found:", newClientFieldsInForm.length, newClientF
                 project?.[field.name] === 1 ||
                 project?.[field.name] === "1";
               return (
-                <label class={`inline-flex items-center ${isReadOnly ? "cursor-not-allowed" : "cursor-pointer"}`}>
+                <label
+                  class={`inline-flex items-center ${isReadOnly ? "cursor-not-allowed" : "cursor-pointer"}`}
+                >
                   <input
                     type="checkbox"
                     id={`${field.id}`}
                     name={field.name}
                     checked={isChecked}
                     disabled={isReadOnly}
-                    class="sr-only peer"
+                    class="peer sr-only"
                     data-project-id={formId}
                     data-project-data={JSON.stringify(project || {})}
                   />
-                  <div class={`relative w-11 h-6 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 ${
-                    isReadOnly 
-                      ? "bg-gray-300 dark:bg-gray-600 cursor-not-allowed" 
-                      : "bg-gray-200 dark:bg-gray-700 peer-checked:bg-blue-600 dark:peer-checked:bg-blue-600"
-                  }`} />
+                  <div
+                    class={`peer relative h-6 w-11 rounded-full after:absolute after:start-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:border after:border-gray-300 after:bg-white after:transition-all after:content-[''] peer-checked:after:translate-x-full peer-checked:after:border-white peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:border-gray-600 dark:peer-focus:ring-blue-800 rtl:peer-checked:after:-translate-x-full ${
+                      isReadOnly
+                        ? "cursor-not-allowed bg-gray-300 dark:bg-gray-600"
+                        : "bg-gray-200 peer-checked:bg-blue-600 dark:bg-gray-700 dark:peer-checked:bg-blue-600"
+                    }`}
+                  />
                   <span class="ms-3 text-sm font-medium text-gray-900 dark:text-gray-300">
                     {field.label}
                   </span>
@@ -443,9 +286,7 @@ console.log("New client fields found:", newClientFieldsInForm.length, newClientF
         } else if (typeof project[group.name] === "string") {
           try {
             const parsed = JSON.parse(project[group.name]);
-            selectedValues = Array.isArray(parsed)
-              ? parsed
-              : [project[group.name]];
+            selectedValues = Array.isArray(parsed) ? parsed : [project[group.name]];
           } catch {
             selectedValues = project[group.name]
               .split(",")
@@ -471,7 +312,7 @@ console.log("New client fields found:", newClientFieldsInForm.length, newClientF
                   group={group.name}
                   type={group.type}
                   disabled={isReadOnly}
-                  class={`${group.cssClass} ${isSelected ? "bg-blue-500 text-white border-blue-500" : ""} ${
+                  class={`${group.cssClass} ${isSelected ? "border-blue-500 bg-blue-500 text-white" : ""} ${
                     isReadOnly ? "cursor-not-allowed" : ""
                   }`}
                 >
@@ -486,7 +327,7 @@ console.log("New client fields found:", newClientFieldsInForm.length, newClientF
   }
 
   <!-- Form Actions -->
-  <div class="flex gap-2 pt-4 border-t border-gray-200 dark:border-gray-600">
+  <div class="flex gap-2 border-t border-gray-200 pt-4 dark:border-gray-600">
     {
       formActions.map((action) => (
         <button
@@ -550,7 +391,7 @@ console.log("New client fields found:", newClientFieldsInForm.length, newClientF
           deleteBtn: !!deleteBtn,
           projectId,
           isNewProject,
-          formId: form.getAttribute("data-project-id")
+          formId: form.getAttribute("data-project-id"),
         });
       }
 
@@ -567,107 +408,15 @@ console.log("New client fields found:", newClientFieldsInForm.length, newClientF
 
       // Setup new client toggle functionality (only for new projects and admin/staff users)
       if (isNewProject) {
-        // Check if the new client toggle exists (only for admin/staff users)
-        const newClientToggleExists = document.getElementById('new-client-toggle');
-        if (newClientToggleExists) {
-          setupNewClientToggle();
-        } else {
-          console.log("ℹ️ New client toggle not available for this user role - skipping setup");
-        }
+        // New client toggle is now handled by the NewOrExistingClient component
       }
     }
   });
 
-  // Setup new client toggle functionality
-  function setupNewClientToggle() {
-    // Get the form to extract the formId
-    const form = document.querySelector(
-      "form[data-project-id]"
-    ) as HTMLFormElement;
-    if (!form) {
-      console.error("Project form not found");
-      return;
-    }
-
-    const formId = form.getAttribute("data-project-id");
-    if (!formId) {
-      console.error("Form ID not found");
-      return;
-    }
-
-    // Find the new client toggle using the correct ID
-    const newClientToggle = document.getElementById(
-      `new-client-toggle`
-    ) as HTMLInputElement;
-    const existingClientContainer = document.getElementById(
-      "existing-client-container"
-    ) as HTMLElement;
-    
- 
-    if (!newClientToggle) {
-      console.log("ℹ️ New client toggle not found - this is expected for client users");
-      return;
-    }
-
-    // Handle toggle change
-    newClientToggle.addEventListener("change", function () {
-      const isNewClient = this.checked;
-      
-      // Find the new client fields container using the specific ID
-      const newClientFieldsContainer = document.getElementById('new-client-fields-container') as HTMLElement;
-      
-      console.log("🔄 Toggle changed:", {
-        isNewClient,
-        newClientFieldsContainer: !!newClientFieldsContainer,
-        existingClientContainer: !!existingClientContainer,
-      });
-
-      if (isNewClient) {
-        // Show new client fields (first name, last name, company name, email), hide existing client dropdown
-        console.log("📝 Showing new client fields, hiding client dropdown");
-        
-        if (newClientFieldsContainer) {
-          newClientFieldsContainer.style.display = "block";
-          console.log("✅ New client fields shown");
-        }
-        
-        if (existingClientContainer) {
-          existingClientContainer.style.display = "none";
-          console.log("✅ Client dropdown hidden");
-        }
-      } else {
-        // Hide new client fields, show existing client dropdown
-        console.log("🔽 Hiding new client fields, showing client dropdown");
-
-        if (newClientFieldsContainer) {
-          newClientFieldsContainer.style.display = "none";
-          console.log("✅ New client fields hidden");
-        }
-        
-        if (existingClientContainer) {
-          existingClientContainer.style.display = "block";
-          console.log("✅ Client dropdown shown");
-        }
-      }
-    });
-
-    // Set initial state
-    newClientToggle.dispatchEvent(new Event("change"));
-
-    // Listen for client selection events from ClientSelect component
-    document.addEventListener("clientSelected", function (e) {
-      const customEvent = e as CustomEvent;
-      console.log("🔔 [ProjectForm] Client selected:", customEvent.detail);
-
-      // The form will automatically pick up the value since the component uses the correct name attribute
-      // This is just for logging/debugging purposes
-    });
-  }
-
   // Delete project function
   function deleteProject(projectId: string) {
     console.log("deleteProject called with projectId:", projectId, "type:", typeof projectId);
-    
+
     // Validate project ID
     if (!projectId || projectId.startsWith("new-project-")) {
       console.error("Invalid project ID for deletion:", projectId);
@@ -681,14 +430,13 @@ console.log("New client fields found:", newClientFieldsInForm.length, newClientF
       }
       return;
     }
-    
+
     // Show confirmation toast with action buttons
     if ((window as any).toastAlertManager) {
       (window as any).toastAlertManager.show({
         type: "warning",
         title: "Delete Project",
-        message:
-          "Are you sure you want to delete this project? This action cannot be undone.",
+        message: "Are you sure you want to delete this project? This action cannot be undone.",
         duration: 0, // Don't auto-dismiss
         actions: [
           {
@@ -701,13 +449,10 @@ console.log("New client fields found:", newClientFieldsInForm.length, newClientF
             label: "Delete",
             action: () => {
               // Show loading state
-              const deleteBtn = document.getElementById(
-                "delete-project"
-              ) as HTMLButtonElement;
+              const deleteBtn = document.getElementById("delete-project") as HTMLButtonElement;
               if (deleteBtn) {
                 deleteBtn.disabled = true;
-                deleteBtn.innerHTML =
-                  '<i class="bx bx-loader-alt bx-spin mr-1"></i>Deleting...';
+                deleteBtn.innerHTML = '<i class="bx bx-loader-alt bx-spin mr-1"></i>Deleting...';
               }
 
               // Make API call to delete project
@@ -723,11 +468,11 @@ console.log("New client fields found:", newClientFieldsInForm.length, newClientF
                   console.log("Delete response status:", response.status);
                   const data = await response.json();
                   console.log("Delete response data:", data);
-                  
+
                   if (!response.ok) {
                     throw new Error(data.error || "Failed to delete project");
                   }
-                  
+
                   // Show success toast
                   if ((window as any).toastAlertManager) {
                     (window as any).toastAlertManager.show({
@@ -759,8 +504,7 @@ console.log("New client fields found:", newClientFieldsInForm.length, newClientF
                   // Reset button state
                   if (deleteBtn) {
                     deleteBtn.disabled = false;
-                    deleteBtn.innerHTML =
-                      '<i class="bx bx-trash mr-1"></i>Delete Project';
+                    deleteBtn.innerHTML = '<i class="bx bx-trash mr-1"></i>Delete Project';
                   }
                 });
             },
@@ -788,11 +532,7 @@ console.log("New client fields found:", newClientFieldsInForm.length, newClientF
   }
 
   // Handle different form actions
-  function handleAction(
-    action: string,
-    projectId: string,
-    isNewProject: boolean
-  ) {
+  function handleAction(action: string, projectId: string, isNewProject: boolean) {
     switch (action) {
       case "deleteProject":
         if (!isNewProject) {
@@ -804,9 +544,6 @@ console.log("New client fields found:", newClientFieldsInForm.length, newClientF
     }
   }
 
- 
- 
-
   // Form submission handler
   function handleFormSubmit(event: Event) {
     event.preventDefault();
@@ -814,7 +551,7 @@ console.log("New client fields found:", newClientFieldsInForm.length, newClientF
 
     // Remove required attribute and disable hidden fields to prevent validation errors
     const form = event.target as HTMLFormElement;
-    
+
     // Find all hidden fields (by style, class, or parent visibility)
     const hiddenFields = form.querySelectorAll(`
       input[style*="display: none"], 
@@ -823,22 +560,32 @@ console.log("New client fields found:", newClientFieldsInForm.length, newClientF
       input[disabled],
       input[type="hidden"]
     `);
-    
+
     // Also check for fields in hidden containers
-    const hiddenContainers = form.querySelectorAll('[style*="display: none"], [style*="display:none"], .hidden');
-    hiddenContainers.forEach(container => {
-      const containerInputs = container.querySelectorAll('input, textarea, select');
-      containerInputs.forEach(field => {
-        if (field instanceof HTMLInputElement || field instanceof HTMLTextAreaElement || field instanceof HTMLSelectElement) {
-          field.removeAttribute('required');
+    const hiddenContainers = form.querySelectorAll(
+      '[style*="display: none"], [style*="display:none"], .hidden'
+    );
+    hiddenContainers.forEach((container) => {
+      const containerInputs = container.querySelectorAll("input, textarea, select");
+      containerInputs.forEach((field) => {
+        if (
+          field instanceof HTMLInputElement ||
+          field instanceof HTMLTextAreaElement ||
+          field instanceof HTMLSelectElement
+        ) {
+          field.removeAttribute("required");
           field.disabled = true;
         }
       });
     });
-    
+
     hiddenFields.forEach((field) => {
-      if (field instanceof HTMLInputElement || field instanceof HTMLTextAreaElement || field instanceof HTMLSelectElement) {
-        field.removeAttribute('required');
+      if (
+        field instanceof HTMLInputElement ||
+        field instanceof HTMLTextAreaElement ||
+        field instanceof HTMLSelectElement
+      ) {
+        field.removeAttribute("required");
         field.disabled = true;
       }
     });
@@ -856,7 +603,7 @@ console.log("New client fields found:", newClientFieldsInForm.length, newClientF
 
     console.log("📝 [ProjectForm] Raw form data collected:", formValues);
 
-    // Handle client data based on new client toggle
+    // Handle client data based on new client toggle (now handled by NewOrExistingClient component)
     const isNewClient = formValues.new_client === "on";
     if (isNewClient) {
       // For new client, use email
@@ -896,15 +643,15 @@ console.log("New client fields found:", newClientFieldsInForm.length, newClientF
     });
 
     // Get units value from slider
-    const unitsSlider = form.querySelector(
-      'input[name="units"]'
-    ) as HTMLInputElement;
+    const unitsSlider = form.querySelector('input[name="units"]') as HTMLInputElement;
     if (unitsSlider) {
-      const unitsOptions =
-        unitsSlider.getAttribute("data-values")?.split(",") || [];
+      const unitsOptions = unitsSlider.getAttribute("data-values")?.split(",") || [];
       const sliderValue = parseInt(unitsSlider.value);
       formValues.units = unitsOptions[sliderValue] || "1";
-      console.log("📝 [ProjectForm] Units slider value:", { sliderValue, unitsValue: formValues.units });
+      console.log("📝 [ProjectForm] Units slider value:", {
+        sliderValue,
+        unitsValue: formValues.units,
+      });
     } else {
       console.log("📝 [ProjectForm] Units slider not found");
     }
@@ -912,15 +659,11 @@ console.log("New client fields found:", newClientFieldsInForm.length, newClientF
     console.log("Form data:", formValues);
 
     // Determine API endpoint based on new/existing project
-    const endpoint = isNewProject
-      ? "/api/create-project"
-      : `/api/update-project/${projectId}`;
+    const endpoint = isNewProject ? "/api/create-project" : `/api/update-project/${projectId}`;
     const method = isNewProject ? "POST" : "PUT";
 
     // Show loading state
-    const submitBtn = form.querySelector(
-      'button[type="submit"]'
-    ) as HTMLButtonElement;
+    const submitBtn = form.querySelector('button[type="submit"]') as HTMLButtonElement;
 
     if (!submitBtn) {
       console.error("Submit button not found");
@@ -929,8 +672,7 @@ console.log("New client fields found:", newClientFieldsInForm.length, newClientF
 
     const originalText = submitBtn.innerHTML;
     submitBtn.disabled = true;
-    submitBtn.innerHTML =
-      '<i class="bx bx-loader-alt bx-spin mr-1"></i>Saving...';
+    submitBtn.innerHTML = '<i class="bx bx-loader-alt bx-spin mr-1"></i>Saving...';
 
     // Submit form data
     fetch(endpoint, {
@@ -993,46 +735,41 @@ console.log("New client fields found:", newClientFieldsInForm.length, newClientF
     const form = document.querySelector('form[data-is-new-project="true"]');
     if (form) {
       console.log("🧹 [ProjectForm] Resetting form to clear cached values");
-      
+
       // Reset all form inputs
-      const inputs = form.querySelectorAll('input, textarea, select');
+      const inputs = form.querySelectorAll("input, textarea, select");
       inputs.forEach((input) => {
         if (input instanceof HTMLInputElement) {
-          if (input.type === 'checkbox' || input.type === 'radio') {
+          if (input.type === "checkbox" || input.type === "radio") {
             input.checked = false;
           } else {
-            input.value = '';
+            input.value = "";
           }
         } else if (input instanceof HTMLTextAreaElement) {
-          input.value = '';
+          input.value = "";
         } else if (input instanceof HTMLSelectElement) {
           input.selectedIndex = 0;
         }
       });
 
       // Reset toggle buttons
-      const toggleButtons = form.querySelectorAll('.toggle-button');
+      const toggleButtons = form.querySelectorAll(".toggle-button");
       toggleButtons.forEach((button) => {
-        button.classList.remove('bg-blue-500', 'text-white', 'border-blue-500');
-        button.classList.add('bg-white', 'dark:bg-gray-700', 'text-gray-700', 'dark:text-gray-300');
+        button.classList.remove("bg-blue-500", "text-white", "border-blue-500");
+        button.classList.add("bg-white", "dark:bg-gray-700", "text-gray-700", "dark:text-gray-300");
       });
 
       // Reset units slider to default
       const unitsSlider = form.querySelector('input[name="units"]') as HTMLInputElement;
       if (unitsSlider) {
-        unitsSlider.value = '0'; // Default to first option
+        unitsSlider.value = "0"; // Default to first option
         const valueDisplay = form.querySelector('[id^="units-value-"]') as HTMLElement;
         if (valueDisplay) {
-          valueDisplay.textContent = '1';
+          valueDisplay.textContent = "1";
         }
       }
 
-      // Reset new client toggle to unchecked
-      const newClientToggle = form.querySelector('input[name="new_client"]') as HTMLInputElement;
-      if (newClientToggle) {
-        newClientToggle.checked = false;
-        newClientToggle.dispatchEvent(new Event('change'));
-      }
+      // New client toggle reset is now handled by the NewOrExistingClient component
 
       console.log("🧹 [ProjectForm] Form reset completed");
     }

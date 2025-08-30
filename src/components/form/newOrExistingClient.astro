@@ -1,0 +1,160 @@
+---
+// This component handles the toggle between new client and existing client
+// All toggle logic is contained here, and form data is handled by the parent component
+
+interface Props {
+  userRole?: string;
+}
+
+const { userRole = "client" } = Astro.props;
+---
+
+<div class="space-y-4">
+  <!-- New Client Toggle -->
+  <div class="flex items-center space-x-2">
+    <input
+      type="checkbox"
+      id="new-client-toggle"
+      name="new_client"
+      class="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+    />
+    <label for="new-client-toggle" class="text-sm font-medium text-gray-700"> New Client </label>
+  </div>
+
+  <!-- New Client Fields (hidden by default) -->
+  <div id="new-client-fields" class="hidden space-y-4">
+    <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+      <!-- First Name -->
+      <div>
+        <label for="first-name-input" class="mb-1 block text-sm font-medium text-gray-700">
+          First Name *
+        </label>
+        <input
+          type="text"
+          id="first-name-input"
+          name="first_name"
+          placeholder="First Name"
+          class="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-500"
+        />
+      </div>
+
+      <!-- Last Name -->
+      <div>
+        <label for="last-name-input" class="mb-1 block text-sm font-medium text-gray-700">
+          Last Name *
+        </label>
+        <input
+          type="text"
+          id="last-name-input"
+          name="last_name"
+          placeholder="Last Name"
+          class="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-500"
+        />
+      </div>
+    </div>
+
+    <!-- Company Name -->
+    <div>
+      <label for="company-name-input" class="mb-1 block text-sm font-medium text-gray-700">
+        Company Name
+      </label>
+      <input
+        type="text"
+        id="company-name-input"
+        name="company_name"
+        placeholder="Company Name"
+        class="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-500"
+      />
+    </div>
+
+    <!-- Email -->
+    <div>
+      <label for="email-input" class="mb-1 block text-sm font-medium text-gray-700">
+        Email *
+      </label>
+      <input
+        type="email"
+        id="email-input"
+        name="email"
+        placeholder="email@example.com"
+        class="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-500"
+      />
+    </div>
+  </div>
+
+  <!-- Existing Client Select (shown by default) -->
+  <div id="existing-client-select-container">
+    <label for="existing-client-select" class="mb-1 block text-sm font-medium text-gray-700">
+      Select Existing Client *
+    </label>
+    <select
+      id="existing-client-select"
+      name="author_id"
+      class="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-500"
+    >
+      <option value="">Choose a client...</option>
+      <!-- Will be populated dynamically -->
+    </select>
+  </div>
+</div>
+
+<script>
+  // Toggle logic for new/existing client
+  document.addEventListener("DOMContentLoaded", function () {
+    const toggle = document.getElementById("new-client-toggle") as HTMLInputElement;
+    const newClientFields = document.getElementById("new-client-fields") as HTMLDivElement;
+    const existingClientSelect = document.getElementById(
+      "existing-client-select-container"
+    ) as HTMLDivElement;
+
+    if (!toggle || !newClientFields || !existingClientSelect) return;
+
+    function updateVisibility() {
+      if (toggle.checked) {
+        // Show new client fields, hide existing client select
+        newClientFields.classList.remove("hidden");
+        existingClientSelect.classList.add("hidden");
+
+        // Disable existing client select
+        const select = document.getElementById("existing-client-select") as HTMLSelectElement;
+        if (select) {
+          select.disabled = true;
+          select.removeAttribute("required");
+        }
+
+        // Enable new client fields
+        const newFields = newClientFields.querySelectorAll("input");
+        newFields.forEach((field) => {
+          field.disabled = false;
+          if (field.name === "first_name" || field.name === "last_name" || field.name === "email") {
+            field.setAttribute("required", "required");
+          }
+        });
+      } else {
+        // Hide new client fields, show existing client select
+        newClientFields.classList.add("hidden");
+        existingClientSelect.classList.remove("hidden");
+
+        // Enable existing client select
+        const select = document.getElementById("existing-client-select") as HTMLSelectElement;
+        if (select) {
+          select.disabled = false;
+          select.setAttribute("required", "required");
+        }
+
+        // Disable new client fields
+        const newFields = newClientFields.querySelectorAll("input");
+        newFields.forEach((field) => {
+          field.disabled = true;
+          field.removeAttribute("required");
+        });
+      }
+    }
+
+    // Initial state
+    updateVisibility();
+
+    // Listen for toggle changes
+    toggle.addEventListener("change", updateVisibility);
+  });
+</script>
