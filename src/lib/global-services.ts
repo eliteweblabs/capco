@@ -1,7 +1,7 @@
-// Global Services - Centralized API and utility functions
+// Simplified Global Services - Only core functionality that's actually used
 import { supabase } from "./supabase";
 
-// Project Status Codes (for backward compatibility)
+// Project Status Codes (for backward compatibility - only used in type definitions)
 export const PROJECT_STATUS = {
   SPECS_RECEIVED: 10,
   GENERATING_PROPOSAL: 20,
@@ -29,247 +29,7 @@ export const PROJECT_STATUS = {
 
 export type ProjectStatusCode = (typeof PROJECT_STATUS)[keyof typeof PROJECT_STATUS];
 
-// Dynamic status labels from database
-let PROJECT_STATUS_LABELS: Record<number, string> = {};
-let PROJECT_STATUS_DATA: Record<
-  number,
-  {
-    status_name: string;
-    email_content: string;
-    est_time: string;
-    notify: string[];
-    client_visible?: boolean; // Simple client visibility control
-  }
-> = {};
-
-// Function to filter statuses by user role
-export function getStatusesForRole(userRole: string | null | undefined): Record<number, string> {
-  if (!userRole) return {};
-
-  const normalizedRole = userRole.toLowerCase();
-  const filteredStatuses: Record<number, string> = {};
-
-  // Filter statuses based on client_visible for client users
-  Object.entries(PROJECT_STATUS_LABELS).forEach(([code, label]) => {
-    const statusCode = parseInt(code);
-    const statusData = PROJECT_STATUS_DATA[statusCode];
-
-    // Admin and Staff can see all statuses
-    if (normalizedRole === "admin" || normalizedRole === "staff") {
-      filteredStatuses[statusCode] = label;
-      return;
-    }
-
-    // For clients, check client_visible flag
-    if (normalizedRole === "client") {
-      // If no visibility data, show to clients by default (backward compatibility)
-      if (statusData?.client_visible === undefined || statusData.client_visible === true) {
-        filteredStatuses[statusCode] = label;
-      }
-      return;
-    }
-
-    // For other roles, show all by default (backward compatibility)
-    filteredStatuses[statusCode] = label;
-  });
-
-  return filteredStatuses;
-}
-
-// Function to check if a status is visible to a role
-export function isStatusVisibleToRole(
-  statusCode: number,
-  userRole: string | null | undefined
-): boolean {
-  if (!userRole) return false;
-
-  const normalizedRole = userRole.toLowerCase();
-  const statusData = PROJECT_STATUS_DATA[statusCode];
-
-  // Admin and Staff can see all statuses
-  if (normalizedRole === "admin" || normalizedRole === "staff") {
-    return true;
-  }
-
-  // For clients, check client_visible flag
-  if (normalizedRole === "client") {
-    // If no visibility data, show to clients by default (backward compatibility)
-    return statusData?.client_visible === undefined || statusData.client_visible === true;
-  }
-
-  // For other roles, show all by default (backward compatibility)
-  return true;
-}
-
-// Function to load status data from database
-export async function loadProjectStatuses(userRole: string = "Client") {
-  console.log("🌐 [GLOBAL] Loading project statuses...");
-
-  try {
-    console.log("🌐 [GLOBAL] Fetching project statuses from API...");
-    const response = await fetch("/api/get-project-statuses", {
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-        "role": userRole, // Pass user role for proper filtering
-      },
-    });
-    console.log("🌐 [GLOBAL] Project statuses API response status:", response.status);
-
-    const result = await response.json();
-    console.log("🌐 [GLOBAL] Project statuses API result:", {
-      success: result.success,
-      hasStatuses: !!result.statuses,
-      statusCount: result.statuses ? Object.keys(result.statuses).length : 0,
-    });
-
-    if (result.success && result.statuses) {
-      console.log("🌐 [GLOBAL] Setting project status data...");
-      PROJECT_STATUS_DATA = result.statuses;
-
-      // Update labels
-      PROJECT_STATUS_LABELS = Object.entries(result.statuses).reduce(
-        (acc, [code, data]) => {
-          acc[parseInt(code)] = (data as any).status_name;
-          return acc;
-        },
-        {} as Record<number, string>
-      );
-
-      console.log("🌐 [GLOBAL] Project statuses loaded successfully:", {
-        statusCount: Object.keys(result.statuses).length,
-        labelCount: Object.keys(PROJECT_STATUS_LABELS).length,
-      });
-
-      return result.statuses;
-    } else {
-      console.warn(
-        "🌐 [GLOBAL] Failed to load project statuses from API:",
-        result.error || "Unknown error"
-      );
-    }
-  } catch (error) {
-    console.error("🌐 [GLOBAL] Failed to load project statuses:", error);
-  }
-
-  // Fallback to static labels if database fails
-  PROJECT_STATUS_LABELS = {
-    10: "Specs Received",
-    20: "Generating Proposal",
-    30: "Proposal Shipped",
-    40: "Proposal Viewed",
-    50: "Proposal Signed Off",
-    60: "Generating Deposit Invoice",
-    70: "Deposit Invoice Shipped",
-    80: "Deposit Invoice Viewed",
-    90: "Deposit Invoice Paid",
-    100: "Generating Submittals",
-    110: "Submittals Shipped",
-    120: "Submittals Viewed",
-    130: "Submittals Signed Off",
-    140: "Generating Final Invoice",
-    150: "Final Invoice Shipped",
-    160: "Final Invoice Viewed",
-    170: "Final Invoice Paid",
-    180: "Generating Final Deliverables",
-    190: "Stamping Final Deliverables",
-    200: "Final Deliverables Shipped",
-    210: "Final Deliverables Viewed",
-    220: "Project Complete",
-  };
-
-  return PROJECT_STATUS_LABELS;
-}
-
-// Export the dynamic labels
-export { PROJECT_STATUS_DATA, PROJECT_STATUS_LABELS };
-
-// Function to get status data for a specific status code
-export function getStatusData(statusCode: number) {
-  return (
-    PROJECT_STATUS_DATA[statusCode] || {
-      status_name: PROJECT_STATUS_LABELS[statusCode] || "Unknown Status",
-      email_content: "Your project status has been updated.",
-      est_time: "TBD",
-      notify: ["admin"],
-    }
-  );
-}
-
-// Function to check if a status should trigger client emails
-export function shouldEmailClient(statusCode: number): boolean {
-  const statusData = getStatusData(statusCode);
-  return statusData.notify.includes("client");
-}
-
-// Function to check if a status should trigger staff emails
-export function shouldEmailStaff(statusCode: number): boolean {
-  const statusData = getStatusData(statusCode);
-  return statusData.notify.includes("staff");
-}
-
-// Timing information for status stages
-export const PROJECT_STATUS_TIMING: Record<
-  ProjectStatusCode,
-  { default?: string; expedited?: string }
-> = {
-  [PROJECT_STATUS.SPECS_RECEIVED]: {},
-  [PROJECT_STATUS.GENERATING_PROPOSAL]: {
-    default: "24hrs",
-    expedited: "12hrs",
-  },
-  [PROJECT_STATUS.PROPOSAL_SHIPPED]: {},
-  [PROJECT_STATUS.PROPOSAL_VIEWED]: {},
-  [PROJECT_STATUS.PROPOSAL_SIGNED_OFF]: {},
-  [PROJECT_STATUS.GENERATING_DEPOSIT_INVOICE]: {
-    default: "2hrs",
-    expedited: "1hrs",
-  },
-  [PROJECT_STATUS.DEPOSIT_INVOICE_SHIPPED]: {},
-  [PROJECT_STATUS.DEPOSIT_INVOICE_VIEWED]: {},
-  [PROJECT_STATUS.DEPOSIT_INVOICE_PAID]: {},
-  [PROJECT_STATUS.GENERATING_SUBMITTALS]: {
-    default: "24hrs",
-    expedited: "12hrs",
-  },
-  [PROJECT_STATUS.SUBMITTALS_SHIPPED]: {},
-  [PROJECT_STATUS.SUBMITTALS_VIEWED]: {},
-  [PROJECT_STATUS.SUBMITTALS_SIGNED_OFF]: {},
-  [PROJECT_STATUS.GENERATING_FINAL_INVOICE]: {
-    default: "2hrs",
-    expedited: "1hrs",
-  },
-  [PROJECT_STATUS.FINAL_INVOICE_SHIPPED]: {},
-  [PROJECT_STATUS.FINAL_INVOICE_VIEWED]: {},
-  [PROJECT_STATUS.FINAL_INVOICE_PAID]: {},
-  [PROJECT_STATUS.GENERATING_FINAL_DELIVERABLES]: {
-    default: "24hrs",
-    expedited: "12hrs",
-  },
-  [PROJECT_STATUS.STAMPING_FINAL_DELIVERABLES]: {
-    default: "12hrs",
-    expedited: "6hrs",
-  },
-  [PROJECT_STATUS.FINAL_DELIVERABLES_SHIPPED]: {},
-  [PROJECT_STATUS.FINAL_DELIVERABLES_VIEWED]: {},
-  [PROJECT_STATUS.PROJECT_COMPLETE]: {},
-};
-
-export interface ProjectStatusUpdate {
-  projectId: string;
-  status?: ProjectStatusCode;
-  title?: string;
-  description?: string;
-  address?: string;
-  sq_ft?: number;
-  new_construction?: boolean;
-  building?: any; // JSONB
-  project?: any; // JSONB
-  service?: any; // JSONB
-  requested_docs?: any; // JSONB
-  assigned_to_id?: string;
-}
-
+// Type definitions for notifications
 export interface NotificationOptions {
   type: "success" | "error" | "warning" | "info";
   title: string;
@@ -287,6 +47,7 @@ export interface GlobalServiceEvent {
   source?: string;
 }
 
+// Simplified GlobalServices class - only core functionality
 export class GlobalServices {
   private static instance: GlobalServices;
   private eventTarget: EventTarget;
@@ -307,27 +68,7 @@ export class GlobalServices {
     return GlobalServices.instance;
   }
 
-  // Utility functions for status management
-  getStatusLabel(status: ProjectStatusCode): string {
-    return PROJECT_STATUS_LABELS[status] || `Status ${status}`;
-  }
-
-  getStatusTiming(status: ProjectStatusCode): {
-    default?: string;
-    expedited?: string;
-  } {
-    return PROJECT_STATUS_TIMING[status] || {};
-  }
-
-  getNextStatus(currentStatus: ProjectStatusCode): ProjectStatusCode | null {
-    const statusSequence = Object.values(PROJECT_STATUS).sort((a, b) => a - b);
-    const currentIndex = statusSequence.indexOf(currentStatus);
-    return currentIndex >= 0 && currentIndex < statusSequence.length - 1
-      ? statusSequence[currentIndex + 1]
-      : null;
-  }
-
-  // Event Management
+  // Event Management - Used by project-service.ts and various components
   emit(type: string, data: any, source?: string) {
     console.log("🌐 [GLOBAL] Emitting event:", { type, data, source });
     const event = new CustomEvent("global-service", {
@@ -353,178 +94,16 @@ export class GlobalServices {
         callback(event.detail.data);
       }
     };
+
     this.eventTarget.addEventListener("global-service", handler as EventListener);
     return () => {
-      console.log("🌐 [GLOBAL] Removing event listener for:", type);
       this.eventTarget.removeEventListener("global-service", handler as EventListener);
     };
   }
 
-
-
-  // Project Status Functions
-  async updateProjectStatus(update: ProjectStatusUpdate) {
-    try {
-      this.emit("project:status-updating", update);
-
-      const response = await this.makeApiCall("/api/update-project", {
-        method: "POST",
-        body: JSON.stringify(update),
-      });
-
-      this.emit("project:status-updated", { ...update, data: response });
-      this.showNotification({
-        type: "success",
-        title: "Project Updated",
-        message: response.message || "Project updated successfully",
-      });
-
-      return response;
-    } catch (error) {
-      this.emit("project:status-error", {
-        ...update,
-        error: (error as Error).message,
-      });
-      this.showNotification({
-        type: "error",
-        title: "Update Failed",
-        message: (error as Error).message || "Failed to update project status",
-        duration: 0, // Errors stay until manually dismissed
-      });
-      throw error;
-    }
-  }
-
-  // Create test project for demo purposes
-  async createTestProject() {
-    try {
-      console.log("Creating test project...");
-      const response = await this.makeApiCall("/api/create-test-project", {
-        method: "POST",
-        body: JSON.stringify({}),
-      });
-
-      console.log("Test project created successfully:", response);
-      this.showNotification({
-        type: "success",
-        title: "Test Project Created",
-        message: response.message || "Test project created successfully",
-      });
-
-      return response.project;
-    } catch (error) {
-      console.error("Failed to create test project:", error);
-      this.showNotification({
-        type: "error",
-        title: "Failed to Create Project",
-        message: (error as Error).message || "Failed to create test project",
-        duration: 0, // Errors stay until manually dismissed
-      });
-      throw error;
-    }
-  }
-
-  async getProjectStatus(projectId: string) {
-    try {
-      if (!supabase) {
-        throw new Error("Database not configured");
-      }
-
-      const { data, error } = await supabase
-        .from("projects")
-        .select("status, metadata, updated_at, updated_by")
-        .eq("id", projectId)
-        .single();
-
-      if (error) throw error;
-      return data;
-    } catch (error) {
-      this.emit("project:status-error", {
-        projectId,
-        error: (error as Error).message,
-      });
-      throw error;
-    }
-  }
-
-  // Project Management Functions
-  async getUserProjects() {
-    try {
-      const response = await this.makeApiCall("/api/get-user-projects", {
-        method: "GET",
-      });
-
-      // Extract the projects array from the response
-      const projects = response.projects || [];
-      this.emit("projects:fetched", { projects });
-      return projects;
-    } catch (error) {
-      this.emit("projects:fetch-error", { error: (error as Error).message });
-      this.showNotification({
-        type: "error",
-        title: "Failed to Load Projects",
-        message: (error as Error).message,
-        duration: 0, // Errors stay until manually dismissed
-      });
-      throw error;
-    }
-  }
-
-  // File Upload Functions
-  async uploadFiles(files: FileList | File[], projectId?: string) {
-    try {
-      this.emit("files:uploading", { files: Array.from(files), projectId });
-
-      const formData = new FormData();
-      Array.from(files).forEach((file) => {
-        formData.append("files", file);
-      });
-
-      if (projectId) {
-        formData.append("projectId", projectId);
-      }
-
-      const response = await fetch("/api/upload", {
-        method: "POST",
-        body: formData,
-      });
-
-      const result = await response.json();
-
-      if (result.success) {
-        this.emit("files:uploaded", {
-          files: Array.from(files),
-          result,
-          projectId,
-        });
-        this.showNotification({
-          type: "success",
-          title: "Files Uploaded",
-          message: `Successfully uploaded ${files.length} file(s)`,
-        });
-      } else {
-        throw new Error(result.error);
-      }
-
-      return result;
-    } catch (error) {
-      this.emit("files:error", {
-        files: Array.from(files),
-        error: (error as Error).message,
-        projectId,
-      });
-      this.showNotification({
-        type: "error",
-        title: "Upload Failed",
-        message: (error as Error).message || "Failed to upload files",
-        duration: 0, // Errors stay until manually dismissed
-      });
-      throw error;
-    }
-  }
-
-  // Notification System
+  // Notification System - Heavily used across the app
   showNotification(options: NotificationOptions) {
+    console.log("🌐 [GLOBAL] Showing notification:", options);
     this.emit("notification:show", options);
   }
 
@@ -532,147 +111,88 @@ export class GlobalServices {
     this.emit("notification:hide", { id });
   }
 
-  // Utility Functions
-  async makeApiCall(endpoint: string, options: RequestInit = {}) {
+  // User Management - Used by project-service.ts
+  async getCurrentUser() {
     try {
-      const response = await fetch(endpoint, {
-        headers: {
-          "Content-Type": "application/json",
-          ...options.headers,
-        },
-        ...options,
-      });
-
-      if (!response.ok) {
-        // Try to get the error details from the response
-        let errorMessage = `API call failed: ${response.status} ${response.statusText}`;
-        try {
-          const errorData = await response.json();
-          if (errorData.error) {
-            errorMessage += ` - ${errorData.error}`;
-          }
-        } catch {
-          // If we can't parse JSON, just use the basic error
-        }
-        throw new Error(errorMessage);
+      if (!supabase) {
+        throw new Error("Database not configured");
       }
 
-      return await response.json();
+      const {
+        data: { user },
+        error,
+      } = await supabase.auth.getUser();
+
+      if (error) {
+        console.error("🌐 [GLOBAL] Error getting current user:", error);
+        return null;
+      }
+
+      return user;
     } catch (error) {
-      console.error("API call error:", {
-        endpoint,
-        error: (error as Error).message,
-        options,
-      });
-      this.emit("api:error", { endpoint, error: (error as Error).message });
+      console.error("🌐 [GLOBAL] Error in getCurrentUser:", error);
+      return null;
+    }
+  }
+
+  // Sign out - Used by some components
+  async signOut() {
+    try {
+      if (!supabase) {
+        throw new Error("Database not configured");
+      }
+
+      const { error } = await supabase.auth.signOut();
+
+      if (error) {
+        console.error("🌐 [GLOBAL] Error signing out:", error);
+        throw error;
+      }
+
+      this.emit("auth:signout", {});
+      console.log("🌐 [GLOBAL] User signed out successfully");
+    } catch (error) {
+      console.error("🌐 [GLOBAL] Error in signOut:", error);
       throw error;
     }
   }
 
-  // Auth helpers
-  async getCurrentUser() {
-    if (!supabase) return null;
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    return user;
-  }
+  // Project Status - Get current status of a project
+  async getProjectStatus(projectId: string) {
+    try {
+      console.log("🌐 [GLOBAL] Getting project status for:", projectId);
 
-  async signOut() {
-    if (!supabase) return;
-    const { error } = await supabase.auth.signOut();
-    if (!error) {
-      this.emit("auth:signout", {});
+      if (!supabase) {
+        throw new Error("Database not configured");
+      }
+
+      const { data, error } = await supabase
+        .from("projects")
+        .select("status")
+        .eq("id", projectId)
+        .single();
+
+      if (error) {
+        console.error("🌐 [GLOBAL] Error getting project status:", error);
+        throw error;
+      }
+
+      console.log("🌐 [GLOBAL] Project status retrieved:", data?.status);
+      return data?.status;
+    } catch (error) {
+      console.error("🌐 [GLOBAL] Error in getProjectStatus:", error);
+      return null;
     }
-    return { error };
   }
 }
 
 // Export singleton instance
 export const globalServices = GlobalServices.getInstance();
 
-
-
-export const updateProjectStatus = (update: ProjectStatusUpdate) =>
-  globalServices.updateProjectStatus(update);
-
+// Export convenience functions for direct use
 export const showNotification = (options: NotificationOptions) =>
   globalServices.showNotification(options);
 
-export const uploadFiles = (files: FileList | File[], projectId?: string) =>
-  globalServices.uploadFiles(files, projectId);
-
-export const createTestProject = () => globalServices.createTestProject();
-
-// Hook for listening to global events
-export const useGlobalEvents = () => ({
-  on: globalServices.on.bind(globalServices),
-  emit: globalServices.emit.bind(globalServices),
-});
-
-// Event types for TypeScript
-export type GlobalEventType =
-  | "project:status-updating"
-  | "project:status-updated"
-  | "project:status-error"
-  | "files:uploading"
-  | "files:uploaded"
-  | "files:error"
-  | "notification:show"
-  | "notification:hide"
-  | "auth:signout"
-  | "api:error";
-
-// Utility function to format time difference since last update
-export function formatTimeSinceUpdate(updatedAt: string | null | undefined): string {
-  if (!updatedAt) return "Unknown";
-
-  const now = new Date();
-  const updated = new Date(updatedAt);
-  const diffMs = now.getTime() - updated.getTime();
-
-  // Convert to different time units
-  const diffMinutes = Math.floor(diffMs / (1000 * 60));
-  const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
-  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-  const diffWeeks = Math.floor(diffMs / (1000 * 60 * 60 * 24 * 7));
-  const diffMonths = Math.floor(diffMs / (1000 * 60 * 60 * 24 * 30));
-  const diffYears = Math.floor(diffMs / (1000 * 60 * 60 * 24 * 365));
-
-  // Return formatted string based on time difference
-  if (diffMinutes < 1) {
-    return "Just now";
-  } else if (diffMinutes < 60) {
-    return `${diffMinutes}m`;
-  } else if (diffHours < 24) {
-    const remainingMinutes = diffMinutes % 60;
-    if (remainingMinutes === 0) {
-      return `${diffHours}h`;
-    }
-    return `${diffHours}h, ${remainingMinutes}m`;
-  } else if (diffDays < 7) {
-    const remainingHours = diffHours % 24;
-    if (remainingHours === 0) {
-      return `${diffDays}d`;
-    }
-    return `${diffDays}d, ${remainingHours}h`;
-  } else if (diffWeeks < 4) {
-    const remainingDays = diffDays % 7;
-    if (remainingDays === 0) {
-      return `${diffWeeks}w`;
-    }
-    return `${diffWeeks}w, ${remainingDays}d`;
-  } else if (diffMonths < 12) {
-    const remainingWeeks = Math.floor((diffDays % 30) / 7);
-    if (remainingWeeks === 0) {
-      return `${diffMonths}mo`;
-    }
-    return `${diffMonths}mo, ${remainingWeeks}w`;
-  } else {
-    const remainingMonths = diffMonths % 12;
-    if (remainingMonths === 0) {
-      return `${diffYears}y`;
-    }
-    return `${diffYears}y, ${remainingMonths}mo`;
-  }
-}
+export const emit = globalServices.emit.bind(globalServices);
+export const on = globalServices.on.bind(globalServices);
+export const getProjectStatus = globalServices.getProjectStatus.bind(globalServices);

@@ -185,6 +185,63 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
     const project = projects[0];
 
+    console.log("📝 [CREATE-PROJECT] Project created successfully:", project.id);
+
+    // Set initial status to 10 (Specs Received) and trigger email notifications
+    try {
+      console.log("📝 [CREATE-PROJECT] Setting initial status to 10 and sending notifications...");
+
+      // Update project with initial status
+      const { data: updatedProject, error: statusError } = await supabase
+        .from("projects")
+        .update({
+          status: 10, // "Specs Received"
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", project.id)
+        .select()
+        .single();
+
+      if (statusError) {
+        console.error("📝 [CREATE-PROJECT] Error setting initial status:", statusError);
+      } else {
+        console.log("📝 [CREATE-PROJECT] Initial status set successfully:", updatedProject.status);
+      }
+
+      // Trigger email notifications via update-status API
+      try {
+        console.log("📝 [CREATE-PROJECT] Triggering email notifications via update-status...");
+        const statusResponse = await fetch(
+          `${import.meta.env.SITE_URL || "http://localhost:4321"}/api/update-status`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Cookie: `sb-access-token=${cookies.get("sb-access-token")?.value}; sb-refresh-token=${cookies.get("sb-refresh-token")?.value}`,
+            },
+            body: JSON.stringify({
+              projectId: project.id,
+              newStatus: 10,
+            }),
+          }
+        );
+
+        if (statusResponse.ok) {
+          console.log("📝 [CREATE-PROJECT] Email notifications triggered successfully");
+        } else {
+          console.error(
+            "📝 [CREATE-PROJECT] Failed to trigger email notifications:",
+            await statusResponse.text()
+          );
+        }
+      } catch (emailError) {
+        console.error("📝 [CREATE-PROJECT] Error triggering email notifications:", emailError);
+      }
+    } catch (statusUpdateError) {
+      console.error("📝 [CREATE-PROJECT] Error in status update process:", statusUpdateError);
+      // Don't fail the request if status update fails
+    }
+
     // Log the project creation
     try {
       await SimpleProjectLogger.logProjectCreation(
@@ -196,8 +253,6 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       console.error("Error logging project creation:", logError);
       // Don't fail the request if logging fails
     }
-
-    console.log("📝 [CREATE-PROJECT] Project created successfully:", project.id);
 
     return new Response(JSON.stringify(project), {
       status: 201,
@@ -212,3 +267,6 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     });
   }
 };
+
+// Email notifications are now centralized in update-status.ts
+// All status changes (including initial status 10) trigger emails via the status change system

@@ -1,6 +1,7 @@
 import type { APIRoute } from "astro";
 import { readFileSync } from "fs";
 import { join } from "path";
+import { supabase } from "../../lib/supabase";
 import { supabaseAdmin } from "../../lib/supabase-admin";
 
 export const POST: APIRoute = async ({ request, cookies }) => {
@@ -15,32 +16,31 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       });
     }
 
-    // Get current user session for magic link generation
+    // Get user from session using tokens
     const accessToken = cookies.get("sb-access-token")?.value;
     const refreshToken = cookies.get("sb-refresh-token")?.value;
 
     if (!accessToken || !refreshToken) {
-      return new Response(JSON.stringify({ error: "Authentication required to send emails" }), {
+      return new Response(JSON.stringify({ error: "Not authenticated" }), {
         status: 401,
         headers: { "Content-Type": "application/json" },
       });
     }
 
-    // Set session to get current user
-    if (!supabaseAdmin) {
-      return new Response(JSON.stringify({ error: "Supabase not configured" }), {
+    if (!supabase) {
+      return new Response(JSON.stringify({ error: "Database connection not available" }), {
         status: 500,
         headers: { "Content-Type": "application/json" },
       });
     }
 
-    // Verify the current user session
-    const {
-      data: { user },
-      error: userError,
-    } = await supabaseAdmin.auth.getUser(accessToken);
+    // Set session
+    const { data: session, error: sessionError } = await supabase.auth.setSession({
+      access_token: accessToken,
+      refresh_token: refreshToken,
+    });
 
-    if (userError || !user) {
+    if (sessionError || !session.session?.user) {
       return new Response(JSON.stringify({ error: "Invalid session" }), {
         status: 401,
         headers: { "Content-Type": "application/json" },
