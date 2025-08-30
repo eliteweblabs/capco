@@ -74,7 +74,7 @@ console.log(existingClientField ? "⚠️ [ProjectForm] Found existing-client-se
 
 // Debug new client fields specifically
 const newClientFieldsInForm = formFields.filter(
-  (field) => field.name === "first_name" || field.name === "last_name" || field.name === "company_name" || field.name === "owner_email"
+  (field) => field.name === "first_name" || field.name === "last_name" || field.name === "company_name" || field.name === "email"
 );
 console.log("New client fields found:", newClientFieldsInForm.length, newClientFieldsInForm);
 ---
@@ -199,10 +199,10 @@ console.log("New client fields found:", newClientFieldsInForm.length, newClientF
             })
         }
 
-        <!-- Owner Email Field (for new client) -->
+        <!-- Email Field (for new client) -->
         {
           formFields
-            .filter((field) => field.name === "owner_email")
+            .filter((field) => field.name === "email")
             .map((field) => {
               const isReadOnly = isFieldReadOnly(field, projectStatus);
               return (
@@ -286,7 +286,7 @@ console.log("New client fields found:", newClientFieldsInForm.length, newClientF
             field.name !== "first_name" &&
             field.name !== "last_name" &&
             field.name !== "company_name" &&
-            field.name !== "owner_email" &&
+            field.name !== "email" &&
             (field.type === "text" || field.type === "number")
         )
         .map((field) => {
@@ -825,10 +825,10 @@ console.log("New client fields found:", newClientFieldsInForm.length, newClientF
     // Handle client data based on new client toggle
     const isNewClient = formValues.new_client === "on";
     if (isNewClient) {
-      // For new client, use owner and owner_email
+      // For new client, use email
       formValues.client_type = "new";
-      formValues.client_name = formValues.owner;
-      formValues.client_email = formValues.owner_email;
+      formValues.client_name = `${formValues.first_name} ${formValues.last_name}`.trim();
+      formValues.client_email = formValues.email;
     } else {
       // For existing client, use the selected client ID
       formValues.client_type = "existing";
