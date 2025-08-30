@@ -1,6 +1,9 @@
 import type { APIRoute } from "astro";
+import { readFileSync } from "fs";
+import { join } from "path";
 import { buildUpdateData } from "../../lib/project-fields-config";
 import { supabase } from "../../lib/supabase";
+import { supabaseAdmin } from "../../lib/supabase-admin";
 
 export const POST: APIRoute = async ({ request }) => {
   try {
@@ -291,9 +294,13 @@ async function sendStatusChangeNotifications(
       }
     }
 
-    if (notify.includes("client") && projectDetails.profiles) {
+    if (
+      notify.includes("client") &&
+      projectDetails.profiles &&
+      projectDetails.profiles.length > 0
+    ) {
       // Add the project owner/client
-      usersToNotify.push(projectDetails.profiles);
+      usersToNotify.push(projectDetails.profiles[0]);
     }
 
     // Read email template
@@ -310,7 +317,7 @@ async function sendStatusChangeNotifications(
     for (const user of usersToNotify) {
       try {
         // Determine if this user should get a magic link button
-        const isClient = user.email === projectDetails.profiles?.email;
+        const isClient = user.email === projectDetails.profiles[0].email;
         const shouldShowButton = isClient; // Only show button for clients
 
         let magicLink = "";
