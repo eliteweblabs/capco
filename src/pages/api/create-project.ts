@@ -119,6 +119,33 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       }
     }
 
+    // Debug all button group fields
+    const buttonGroupFields = ["building", "project", "service", "requested_docs"];
+
+    buttonGroupFields.forEach((fieldName) => {
+      console.log(`📝 [CREATE-PROJECT] Debug ${fieldName} field:`, {
+        value: body[fieldName],
+        type: typeof body[fieldName],
+        isArray: Array.isArray(body[fieldName]),
+        stringified: Array.isArray(body[fieldName])
+          ? JSON.stringify(body[fieldName])
+          : body[fieldName],
+      });
+    });
+
+    // Helper function to format button group fields as JSONB
+    const formatButtonGroupField = (value: any) => {
+      if (Array.isArray(value)) {
+        return JSON.stringify(value);
+      } else if (typeof value === "string" && value.trim()) {
+        // If it's a single string value, wrap it in an array
+        return JSON.stringify([value]);
+      } else {
+        // If it's null, undefined, or empty, return null
+        return null;
+      }
+    };
+
     // Prepare project data
     const projectData = {
       author_id: projectAuthorId,
@@ -130,12 +157,11 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       sq_ft: body.sq_ft ? parseInt(body.sq_ft) : null,
       new_construction: body.new_construction === "on" || body.new_construction === true,
       units: body.units,
-      building: body.building,
-      project: Array.isArray(body.project) ? JSON.stringify(body.project) : body.project,
-      service: body.service,
-      requested_docs: Array.isArray(body.requested_docs)
-        ? JSON.stringify(body.requested_docs)
-        : body.requested_docs,
+      // Format all button group fields consistently as JSONB
+      building: formatButtonGroupField(body.building),
+      project: formatButtonGroupField(body.project),
+      service: formatButtonGroupField(body.service),
+      requested_docs: formatButtonGroupField(body.requested_docs),
       status: 10, // Default status for new projects (Specs Received)
     };
 
