@@ -172,7 +172,10 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
     // Create project
     console.log("📝 [CREATE-PROJECT] About to insert project into database");
-    const { data: projects, error } = await supabase.from("project").insert([projectData]).select();
+    const { data: projects, error } = await supabase
+      .from("projects")
+      .insert([projectData])
+      .select();
 
     if (error) {
       console.error("📝 [CREATE-PROJECT] Database error:", error);
