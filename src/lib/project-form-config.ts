@@ -178,17 +178,6 @@ export function getFilteredFormActions(
 
 // Core form fields
 export const PROJECT_FORM_FIELDS: FormFieldConfig[] = [
-  // New client toggle (only for new projects) - moved to top
-  {
-    id: "new-client-toggle",
-    name: "new_client",
-    type: "checkbox",
-    label: "New Client",
-    allow: ["admin", "staff"], // Only admin and staff can set client type
-    hideAtStatus: [
-      10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170, 180, 190, 200,
-    ], // Hide on existing projects
-  },
   {
     id: "address-input",
     name: "address",
@@ -208,67 +197,54 @@ export const PROJECT_FORM_FIELDS: FormFieldConfig[] = [
   },
 
   // Company Name field (only shown for new projects with new client toggle on)
-  {
-    id: "company-name-input",
-    name: "company_name",
-    type: "text",
-    label: "Company Name",
-    placeholder: "Company Name",
-    required: false,
-    dataField: "company_name",
-    allow: ["admin", "staff", "client"], // All roles can see company name
-    hideAtStatus: [10, 20, 30, 40, 50, 60, 70, 80, 90], // Hide on existing projects
-  },
+  // {
+  //   id: "company-name-input",
+  //   name: "company_name",
+  //   type: "text",
+  //   label: "Company Name",
+  //   placeholder: "Company Name",
+  //   required: false,
+  //   dataField: "company_name",
+  //   allow: ["admin", "staff", "client"], // All roles can see company name
+  //   hideAtStatus: [10, 20, 30, 40, 50, 60, 70, 80, 90], // Hide on existing projects
+  // },
   // Owner email field (only shown for new projects with new client toggle on)
-  {
-    id: "email-input",
-    name: "email",
-    type: "text",
-    label: "Email",
-    placeholder: "email@example.com",
-    required: true,
-    dataField: "email",
-    allow: ["admin", "staff"], // Only admin and staff can set email
-    hideAtStatus: [10, 20, 30, 40, 50, 60, 70, 80, 90], // Hide on existing projects
-  },
-  // First Name field (only shown for new projects with new client toggle on)
-  {
-    id: "first-name-input",
-    name: "first_name",
-    type: "text",
-    label: "First Name",
-    placeholder: "First Name *",
-    required: true,
-    dataField: "first_name",
-    allow: ["admin", "staff", "client"], // All roles can see first name
-    hideAtStatus: [10, 20, 30, 40, 50, 60, 70, 80, 90], // Hide on existing projects
-  },
-  // Last Name field (only shown for new projects with new client toggle on)
-  {
-    id: "last-name-input",
-    name: "last_name",
-    type: "text",
-    label: "Last Name",
-    placeholder: "Last Name *",
-    required: true,
-    dataField: "last_name",
-    allow: ["admin", "staff", "client"], // All roles can see last name
-    hideAtStatus: [10, 20, 30, 40, 50, 60, 70, 80, 90], // Hide on existing projects
-  },
-  // Existing client dropdown (only shown for new projects with new client toggle off)
-  {
-    id: "existing-client-select",
-    name: "author_id",
-    type: "select",
-    label: "Select Existing Client",
-    placeholder: "Choose a client...",
-    required: true,
-    options: [], // Will be populated dynamically
-    allow: ["admin", "staff"], // Only admin and staff can select clients
-    hideAtStatus: [
-      10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170, 180, 190, 200,
-    ], // Hide on existing projects
-  },
+  // {
+  //   id: "email-input",
+  //   name: "email",
+  //   type: "text",
+  //   label: "Email",
+  //   placeholder: "email@example.com",
+  //   required: true,
+  //   dataField: "email",
+  //   allow: ["admin", "staff"], // Only admin and staff can set email
+  //   hideAtStatus: [10, 20, 30, 40, 50, 60, 70, 80, 90], // Hide on existing projects
+  // },
+  // // First Name field (only shown for new projects with new client toggle on)
+  // {
+  //   id: "first-name-input",
+  //   name: "first_name",
+  //   type: "text",
+  //   label: "First Name",
+  //   placeholder: "First Name *",
+  //   required: true,
+  //   dataField: "first_name",
+  //   allow: ["admin", "staff", "client"], // All roles can see first name
+  //   hideAtStatus: [10, 20, 30, 40, 50, 60, 70, 80, 90], // Hide on existing projects
+  // },
+  // // Last Name field (only shown for new projects with new client toggle on)
+  // {
+  //   id: "last-name-input",
+  //   name: "last_name",
+  //   type: "text",
+  //   label: "Last Name",
+  //   placeholder: "Last Name *",
+  //   required: true,
+  //   dataField: "last_name",
+  //   allow: ["admin", "staff", "client"], // All roles can see last name
+  //   hideAtStatus: [10, 20, 30, 40, 50, 60, 70, 80, 90], // Hide on existing projects
+  // },
+
   {
     id: "architect-input",
     name: "architect",
