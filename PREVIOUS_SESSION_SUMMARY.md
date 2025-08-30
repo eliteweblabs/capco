@@ -1,96 +1,82 @@
-# Previous Development Session Summary
+# Previous Session Summary - CAPCo Fire Protection Systems
 
-## Latest Session (Current)
+## Session Overview
 
-### Completed Features
+This session focused on resolving the `NewOrExistingClient` component loading issue in the ProjectForm.astro file, which was preventing Admin and Staff users from seeing the client selection component when creating new projects.
 
-1. **Fixed Hero.astro component** - Restored project status dropdown functionality
-2. **Auto-populated SMS form project ID** - When on project pages, project ID auto-fills
-3. **Role-based project status filtering** - Clients see only visible statuses, admins see all
-4. **Enhanced PDF uploader** - Added individual download buttons and "Download All" feature
-5. **Fixed profile dropdown** - Resolved "twitchy" behavior with proper click handling
-6. **Implemented "Forgot Password"** - Magic link functionality with proper session creation
-7. **Enhanced user profiles** - Added first name, last name, company name fields
-8. **Fixed dashboard layout** - Responsive stacking and space utilization
-9. **Resolved build errors** - Fixed TypeScript issues, API response handling, and CSS import order
+## Key Issues Resolved
 
-### Current Status
+### 1. NewOrExistingClient Component Loading Issue
 
-- All major features implemented and working
-- Build process clean with no errors
-- Ready for deployment
-- User authentication and authorization working correctly
-- File upload/download system fully functional
-- Profile management complete
+**Problem**: The `NewOrExistingClient` component was not loading for Admin users on the new project form due to:
 
-### Key Technical Achievements
+- Malformed conditional logic in the component usage
+- TypeScript import cache issues after case sensitivity changes
 
-- Fixed Supabase configuration for remote deployment
-- Implemented proper RLS policies for file access
-- Created robust error handling for API endpoints
-- Established consistent database schema usage (company_name, first_name, last_name)
-- Resolved authentication flow issues after password reset
+**Solution**:
 
-### Files Modified in Latest Session
+- Fixed the malformed condition from `{(isNewProject && role === "Admin" && "Staff") || role === "Staff" ? <NewOrExistingClient /> : ""}` to `{(isNewProject && role === "Admin") || role === "Staff" ? <NewOrExistingClient /> : ""}`
+- Cleared all build caches (Astro, node_modules, dist) and restarted the dev server
+- The component now loads correctly for Admin and Staff users
 
-- `src/components/common/Hero.astro` - Fixed corrupted syntax
-- `src/components/form/SMSForm.astro` - Added projectId prop
-- `src/components/common/StickySMS.astro` - Auto-populate project ID
-- `src/pages/api/get-project-statuses.ts` - Role-based filtering
-- `src/components/project/ProjectNav.astro` - Pass user role to API
-- `src/pages/api/upload.ts` - Enhanced with auth and storage checks
-- `src/components/project/PDFUpload.astro` - Added download functionality
-- `src/pages/api/download-file.ts` - New download API endpoint
-- `src/components/common/Header.astro` - Fixed dropdown behavior
-- `src/components/common/AuthIcon.astro` - Enhanced profile display
-- `src/components/common/Dashboard.astro` - Improved responsive layout
-- `src/pages/api/auth/forgot-password.ts` - Magic link implementation
-- `src/pages/reset-password.astro` - Password reset page
-- `src/pages/api/auth/reset-password.ts` - Password update API
-- `src/pages/profile.astro` - Enhanced profile form
-- `src/pages/api/profile/update.ts` - Profile update API
-- `src/components/form/RegisterForm.astro` - Updated registration
-- `src/pages/api/auth/register.ts` - Registration API improvements
-- `src/lib/project-fields-config.ts` - Centralized field configuration
-- `src/pages/api/delete-project.ts` - Improved error handling
-- `src/styles/global.css` - Fixed CSS import order
+### 2. TypeScript Cache Issues
 
-### Environment Configuration
+**Problem**: TypeScript language server showing false positive errors for valid imports after case sensitivity changes.
 
-- Supabase environment variables properly configured
-- Dockerfile includes all necessary build args
-- Railway deployment configuration complete
+**Solution**:
 
-### Next Steps
+- Cleared TypeScript language server cache
+- Restarted development server with clean cache
+- Component functionality confirmed working despite IDE warnings
 
-- Ready for production deployment
-- All features tested and working
-- No known issues remaining
+## Technical Details
 
----
+### Files Modified
 
-## Previous Sessions
+- `src/components/project/ProjectForm.astro`: Fixed component condition and import
 
-### Session 1: Initial Setup and Core Features
+### Component Behavior
 
-- Basic Astro + Supabase setup
-- User authentication system
-- Project management functionality
-- File upload system
-- Basic UI components
+- `NewOrExistingClient` component now displays for:
+  - Admin users creating new projects (`isNewProject && role === "Admin"`)
+  - Staff users in all scenarios (`role === "Staff"`)
+- Component provides toggle between new client creation and existing client selection
 
-### Session 2: Enhanced Features and Bug Fixes
+### Cache Management
 
-- PDF viewer integration
-- Status management system
-- Email notifications
-- Admin panel development
-- Security improvements
+- Cleared: `node_modules/.cache`, `.astro`, `dist`
+- Restarted dev server on port 4322 (4321 was in use)
+- TypeScript language server cache cleared
 
-### Session 3: Advanced Features and Polish
+## Current Status
 
-- Google Maps integration
-- SMS functionality
-- Advanced filtering
-- UI/UX improvements
-- Performance optimizations
+✅ **RESOLVED**: `NewOrExistingClient` component is now loading and functional for Admin and Staff users
+✅ **WORKING**: Component displays correctly in browser despite TypeScript IDE warnings
+✅ **READY**: New project form now includes client selection functionality for appropriate user roles
+
+## Next Steps
+
+- TypeScript IDE warnings should clear after IDE restart
+- Component is fully functional and ready for use
+- No further action required for this issue
+
+## Session Commands Executed
+
+```bash
+# Cache clearing
+rm -rf node_modules/.cache .astro dist
+
+# Server restart
+npm run dev
+
+# TypeScript cache clearing
+pkill -f "typescript" && pkill -f "tsc" && pkill -f "eslint"
+```
+
+## Environment
+
+- **Framework**: Astro v5.12.6
+- **Port**: 4322 (dev server)
+- **User Role**: Admin (Tom Sens)
+- **Component**: NewOrExistingClient.astro
+- **Status**: Fully functional

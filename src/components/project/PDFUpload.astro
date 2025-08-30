@@ -4,9 +4,10 @@ import BoxIcon from "../common/BoxIcon.astro";
 interface Props {
   projectId: string;
   fileType?: string;
+  role?: string;
 }
 
-const { projectId, fileType = "media" } = Astro.props;
+const { projectId, fileType = "media", role } = Astro.props;
 ---
 
 <div class="rounded-lg bg-white p-6 shadow-md dark:bg-gray-800">
@@ -105,6 +106,26 @@ const { projectId, fileType = "media" } = Astro.props;
       <p class="text-gray-600 dark:text-gray-400">Text extraction results will appear here...</p>
     </div>
   </div>
+
+  <!-- All Documents Uploaded Button (Clients Only) -->
+  {
+    role === "Client" && (
+      <div class="mt-6 border-t border-gray-200 pt-6 dark:border-gray-700">
+        <div class="text-center">
+          <p class="mb-4 text-sm text-gray-600 dark:text-gray-400">
+            Once you have uploaded all your documents, click the button below to notify us.
+          </p>
+          <button
+            id="all-documents-uploaded-btn"
+            class="inline-flex items-center rounded-lg bg-green-600 px-6 py-3 text-sm font-medium text-white transition-colors hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
+          >
+            <BoxIcon name="check-circle" class="mr-2 h-5 w-5" />
+            All Documents Uploaded
+          </button>
+        </div>
+      </div>
+    )
+  }
 </div>
 
 <script define:vars={{ projectId, fileType }}>
@@ -136,6 +157,7 @@ const { projectId, fileType = "media" } = Astro.props;
       this.downloadAllBtn = document.getElementById("download-all-btn");
       this.ocrResults = document.getElementById("ocr-results");
       this.extractedText = document.getElementById("extracted-text");
+      this.allDocumentsUploadedBtn = document.getElementById("all-documents-uploaded-btn");
     }
 
     setupEventListeners() {
@@ -179,6 +201,13 @@ const { projectId, fileType = "media" } = Astro.props;
       this.downloadAllBtn.addEventListener("click", () => {
         this.downloadAllFiles();
       });
+
+      // All documents uploaded button click
+      if (this.allDocumentsUploadedBtn) {
+        this.allDocumentsUploadedBtn.addEventListener("click", () => {
+          this.markAllDocumentsUploaded();
+        });
+      }
 
       // Event delegation for download buttons
       this.fileList.addEventListener("click", (e) => {
@@ -643,12 +672,93 @@ const { projectId, fileType = "media" } = Astro.props;
       }, 5000);
     }
 
+    showSuccess(message) {
+      // Create a simple success notification
+      const successDiv = document.createElement("div");
+      successDiv.className = "mt-4 p-3 bg-green-50 border border-green-200 rounded-lg";
+      successDiv.innerHTML = `
+        <div class="flex">
+          <svg class="h-5 w-5 text-green-400" fill="currentColor" viewBox="0 0 20 20">
+            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+          </svg>
+          <div class="ml-3">
+            <h3 class="text-sm font-medium text-green-800">Success</h3>
+            <p class="text-sm text-green-700 mt-1">${message}</p>
+          </div>
+        </div>
+      `;
+
+      this.dropzone.parentNode.insertBefore(successDiv, this.dropzone.nextSibling);
+
+      // Remove success message after 5 seconds
+      setTimeout(() => {
+        successDiv.remove();
+      }, 5000);
+    }
+
     formatFileSize(bytes) {
       if (bytes === 0) return "0 Bytes";
       const k = 1024;
       const sizes = ["Bytes", "KB", "MB", "GB"];
       const i = Math.floor(Math.log(bytes) / Math.log(k));
       return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
+    }
+
+    async markAllDocumentsUploaded() {
+      try {
+        // Disable button and show loading state
+        this.allDocumentsUploadedBtn.disabled = true;
+        this.allDocumentsUploadedBtn.innerHTML = `
+          <svg class="animate-spin mr-2 h-5 w-5" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+          </svg>
+          Updating Status...
+        `;
+
+        // Call the update-status API
+        const response = await fetch("/api/update-status", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            projectId: this.projectId,
+            newStatus: 20, // "Generating Proposal" status
+          }),
+        });
+
+        if (!response.ok) {
+          const error = await response.json();
+          throw new Error(error.error || "Failed to update project status");
+        }
+
+        const result = await response.json();
+
+        if (result.success) {
+          // Show success message
+          this.showSuccess(
+            "Project status updated successfully! We'll start generating your proposal."
+          );
+
+          // Update button to show completion
+          this.allDocumentsUploadedBtn.innerHTML = `
+            <BoxIcon name="check-circle" class="mr-2 h-5 w-5" />
+            Documents Submitted ✓
+          `;
+          this.allDocumentsUploadedBtn.classList.remove("bg-green-600", "hover:bg-green-700");
+          this.allDocumentsUploadedBtn.classList.add("bg-gray-600", "cursor-not-allowed");
+          this.allDocumentsUploadedBtn.disabled = true;
+        }
+      } catch (error) {
+        console.error("Error updating project status:", error);
+        this.showError(`Failed to update project status: ${error.message}`);
+
+        // Reset button to original state
+        this.allDocumentsUploadedBtn.disabled = false;
+        this.allDocumentsUploadedBtn.innerHTML = `
+          <BoxIcon name="check-circle" class="mr-2 h-5 w-5" />
+          All Documents Uploaded
+        `;
+      }
     }
 
     getFileIcon(fileType) {
