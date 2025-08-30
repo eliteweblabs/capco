@@ -85,6 +85,7 @@ console.log("New client fields found:", newClientFieldsInForm.length, newClientF
   data-project-id={formId}
   data-project-data={JSON.stringify(project || {})}
   data-is-new-project={isNewProject}
+  onsubmit="handleFormSubmit(event)"
 >
   <!-- New Client Toggle (Top of Form) -->
   {
@@ -822,6 +823,8 @@ console.log("New client fields found:", newClientFieldsInForm.length, newClientF
       formValues[key] = value;
     }
 
+    console.log("📝 [ProjectForm] Raw form data collected:", formValues);
+
     // Handle client data based on new client toggle
     const isNewClient = formValues.new_client === "on";
     if (isNewClient) {
@@ -837,10 +840,13 @@ console.log("New client fields found:", newClientFieldsInForm.length, newClientF
 
     // Collect toggle button values
     const toggleButtons = form.querySelectorAll(".toggle-button.bg-blue-500");
+    console.log("📝 [ProjectForm] Found toggle buttons:", toggleButtons.length);
     toggleButtons.forEach((button) => {
       const group = button.getAttribute("data-group");
       const value = button.getAttribute("data-value");
       const type = button.getAttribute("data-type");
+
+      console.log("📝 [ProjectForm] Toggle button:", { group, value, type });
 
       if (group && value) {
         if (type === "multi-select") {
@@ -867,6 +873,9 @@ console.log("New client fields found:", newClientFieldsInForm.length, newClientF
         unitsSlider.getAttribute("data-values")?.split(",") || [];
       const sliderValue = parseInt(unitsSlider.value);
       formValues.units = unitsOptions[sliderValue] || "1";
+      console.log("📝 [ProjectForm] Units slider value:", { sliderValue, unitsValue: formValues.units });
+    } else {
+      console.log("📝 [ProjectForm] Units slider not found");
     }
 
     console.log("Form data:", formValues);
