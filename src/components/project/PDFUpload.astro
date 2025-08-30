@@ -12,7 +12,7 @@ interface Props {
 const user = await globalServices.getCurrentUser();
 
 const { projectId, fileType = "media", role, projectAuthorEmail } = Astro.props;
-console.log("🔔 [PDF-UPLOAD] Component props:", { projectId, fileType, role });
+console.log("🔔 [PDF-UPLOAD] Component props:", { projectId, fileType, role, projectAuthorEmail });
 ---
 
 <div class="rounded-lg bg-white p-6 shadow-md dark:bg-gray-800">
@@ -135,7 +135,7 @@ console.log("🔔 [PDF-UPLOAD] Component props:", { projectId, fileType, role })
   }
 </div>
 
-<script define:vars={{ projectId, fileType, projectAuthorEmail }}>
+<script define:vars={{ projectId, fileType, projectAuthorEmail, role, user }}>
   class PDFUpload {
     constructor() {
       this.projectId = projectId;
@@ -780,9 +780,20 @@ console.log("🔔 [PDF-UPLOAD] Component props:", { projectId, fileType, role })
         const result = await response.json();
 
         if (result.success) {
-          // Show success message with project author email
-          const emailMessage = projectAuthorEmail
-            ? `Documents submitted successfully! You will be notified by email to ${projectAuthorEmail}.`
+          // Debug: Log what email is being used
+          console.log("🔔 [PDF-UPLOAD] Success - projectAuthorEmail:", projectAuthorEmail);
+
+          // For clients, show their own email. For admins/staff, show the project author's email
+          let emailToShow = projectAuthorEmail;
+          if (role === "Client") {
+            // For clients, we should show their own email (they are the project author)
+            // But if projectAuthorEmail is somehow wrong, we can get it from the current user
+            emailToShow = projectAuthorEmail || user?.email;
+          }
+
+          // Show success message with appropriate email
+          const emailMessage = emailToShow
+            ? `Documents submitted successfully! You will be notified by email to ${emailToShow}.`
             : "Documents submitted successfully!";
           this.showSuccess(emailMessage);
 
