@@ -4,11 +4,10 @@
 
 export interface Props {
   compact?: boolean;
-  id?: string;
   projectId?: string | number;
 }
 
-const { compact = false, id = "sms-form", projectId } = Astro.props;
+const { compact = false, projectId = 'new' } = Astro.props;
 ---
 
 <div class={compact ? "w-full" : "mx-auto w-full max-w-lg"}>
@@ -28,12 +27,12 @@ const { compact = false, id = "sms-form", projectId } = Astro.props;
     
     <!-- Contact Information (Optional) -->
     <div>
-      <label for={`${id}-contact-info`} class="mb-2 block text-sm font-medium text-gray-900 dark:text-gray-300">
+      <label for={`${projectId}-contact-info`} class="mb-2 block text-sm font-medium text-gray-900 dark:text-gray-300">
         Your Contact Info (Optional)
       </label>
       <input
         type="text"
-        id={`${id}-contact-info`}
+        id={`${projectId}-contact-info`}
         name="contact_info"
         placeholder="Your name, email, or phone for response"
         class="w-full rounded-md border border-gray-300 bg-gray-50 px-3 py-2 text-sm focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-600 focus:ring-opacity-60 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 dark:focus:bg-gray-900"
@@ -45,11 +44,11 @@ const { compact = false, id = "sms-form", projectId } = Astro.props;
 
     <!-- Message -->
     <div>
-      <label for={`${id}-message`} class="mb-2 block text-sm font-medium text-gray-900 dark:text-gray-300">
+      <label for={`${projectId}-message`} class="mb-2 block text-sm font-medium text-gray-900 dark:text-gray-300">
         Message <span class="text-red-500">*</span>
       </label>
       <textarea
-        id={`${id}-message`}
+        id={`${projectId}-message`}
         name="message"
         required
         rows="4"
@@ -59,21 +58,21 @@ const { compact = false, id = "sms-form", projectId } = Astro.props;
       ></textarea>
       <div class="mt-1 flex justify-between">
         <p class="text-xs text-gray-500 dark:text-gray-400">Keep it short for better delivery</p>
-        <span id={`${id}-char-count`} class="text-xs text-gray-500 dark:text-gray-400">0/160</span>
+        <span id={`${projectId}-char-count`} class="text-xs text-gray-500 dark:text-gray-400">0/160</span>
       </div>
     </div>
 
     <!-- Optional: Project Reference -->
     <div>
       <label
-        for={`${id}-project-id`}
+        for={`${projectId}-project-id`}
         class="mb-2 block text-sm font-medium text-gray-900 dark:text-gray-300"
       >
         Project ID (Optional)
       </label>
       <input
         type="text"
-        id={`${id}-project-id`}
+        id={`${projectId}-project-id`}
         name="project_id"
         placeholder="e.g., PROJ-123"
         value={projectId ? String(projectId) : ""}
@@ -125,7 +124,7 @@ const { compact = false, id = "sms-form", projectId } = Astro.props;
   )}
 </div>
 
-<script define:vars={{ id }}>
+<script define:vars={{ projectId }}>
   document.addEventListener("DOMContentLoaded", () => {
     const form = document.querySelector('form[action="/api/send-email-sms"]');
     const messageTextarea = document.getElementById(`${id}-message`);

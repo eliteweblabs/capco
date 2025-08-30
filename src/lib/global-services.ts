@@ -360,16 +360,7 @@ export class GlobalServices {
     };
   }
 
-  // Email Functions - Removed, using Supabase for emails
-  async sendEmail(options: any) {
-    console.warn("Email service removed - using Supabase for emails");
-    throw new Error("Email service removed - using Supabase for emails");
-  }
 
-  async sendReactEmail(options: any) {
-    console.warn("Email service removed - using Supabase for emails");
-    throw new Error("Email service removed - using Supabase for emails");
-  }
 
   // Project Status Functions
   async updateProjectStatus(update: ProjectStatusUpdate) {
@@ -600,13 +591,7 @@ export class GlobalServices {
 // Export singleton instance
 export const globalServices = GlobalServices.getInstance();
 
-// Export convenience functions
-export const sendEmail = (options: Parameters<typeof globalServices.sendEmail>[0]) =>
-  globalServices.sendEmail(options);
 
-// React Email convenience function
-export const sendReactEmail = (options: Parameters<typeof globalServices.sendReactEmail>[0]) =>
-  globalServices.sendReactEmail(options);
 
 export const updateProjectStatus = (update: ProjectStatusUpdate) =>
   globalServices.updateProjectStatus(update);
@@ -627,9 +612,6 @@ export const useGlobalEvents = () => ({
 
 // Event types for TypeScript
 export type GlobalEventType =
-  | "email:sending"
-  | "email:sent"
-  | "email:error"
   | "project:status-updating"
   | "project:status-updated"
   | "project:status-error"
