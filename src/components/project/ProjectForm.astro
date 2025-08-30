@@ -856,6 +856,29 @@ console.log("New client fields found:", newClientFieldsInForm.length, newClientF
 
     console.log("📝 [ProjectForm] Raw form data collected:", formValues);
 
+    // Add timestamped placeholder data for required fields if they're blank
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
+    
+    if (!formValues.first_name || formValues.first_name.trim() === '') {
+      formValues.first_name = `Client_${timestamp}`;
+      console.log("📝 [ProjectForm] Added placeholder first_name:", formValues.first_name);
+    }
+    
+    if (!formValues.last_name || formValues.last_name.trim() === '') {
+      formValues.last_name = `User_${timestamp}`;
+      console.log("📝 [ProjectForm] Added placeholder last_name:", formValues.last_name);
+    }
+    
+    if (!formValues.company_name || formValues.company_name.trim() === '') {
+      formValues.company_name = `Company_${timestamp}`;
+      console.log("📝 [ProjectForm] Added placeholder company_name:", formValues.company_name);
+    }
+    
+    if (!formValues.email || formValues.email.trim() === '') {
+      formValues.email = `client_${timestamp}@placeholder.com`;
+      console.log("📝 [ProjectForm] Added placeholder email:", formValues.email);
+    }
+
     // Handle client data based on new client toggle
     const isNewClient = formValues.new_client === "on";
     if (isNewClient) {
