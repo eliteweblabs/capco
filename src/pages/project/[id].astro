@@ -15,6 +15,12 @@ const i18n = getI18N({ currentLocale });
 // Get the project ID from the URL parameter
 const { id } = Astro.params;
 
+// Check authentication
+import { checkAuth } from "../../lib/auth";
+import { supabase } from "../../lib/supabase";
+
+const { isAuth, session, user, role } = await checkAuth(Astro.cookies);
+
 // Get the tab parameter from URL query string
 const tabParam = Astro.url.searchParams.get("tab");
 const validTabs = [
@@ -28,19 +34,15 @@ const validTabs = [
 const defaultTab = validTabs.includes(tabParam || "") ? tabParam : "project-form";
 
 console.log("🌐 [PROJECT] Project ID:", id);
-
-// Check authentication
-import { checkAuth } from "../../lib/auth";
-import { supabase } from "../../lib/supabase";
-
-const { isAuth, session, user, role } = await checkAuth(Astro.cookies);
+console.log("🌐 [PROJECT] Authentication check:", { isAuth, hasUser: !!user, role });
 
 // Redirect if not authenticated
 if (!isAuth) {
+  console.log("🌐 [PROJECT] Not authenticated, redirecting to login");
   return Astro.redirect("/login");
 }
 
-console.log("🌐 [PROJECT] User:", user?.id, "Role:", role);
+console.log("🌐 [PROJECT] User authenticated:", { userId: user?.id, userEmail: user?.email, role });
 
 // Fetch project data and project author profile - RLS will handle authorization
 let project = null;
@@ -119,6 +121,18 @@ function getStatusColor(status: number): string {
 ---
 
 <Base title={i18n.SEO_TITLE} description={i18n.SEO_DESCRIPTION}>
+  <script>
+    // Client-side debugging
+    console.log("🌐 [PROJECT-CLIENT] Page loaded");
+    console.log(
+      "🌐 [PROJECT-CLIENT] Project ID from URL:",
+      window.location.pathname.split("/").pop()
+    );
+    console.log(
+      "🌐 [PROJECT-CLIENT] Current tab:",
+      new URLSearchParams(window.location.search).get("tab")
+    );
+  </script>
   <SectionContainer id="hero" class="mx-6 my-6">
     <Hero
       title={project?.address || project?.title || "Untitled Project"}
@@ -159,12 +173,12 @@ function getStatusColor(status: number): string {
         <BoxIcon name="edit" class="mr-2 inline h-4 w-4" />
         Project Form
       </button>
-      {
-        role === "admin" || role === "staff" ? (
+      <!-- {
+        role === "Admin" || role === "Staff" ? (
           <button
-            id="tab-documents"
+            id="tab-comments"
             class="tab-button relative mt-2 w-auto rounded-full px-4 py-2 text-sm font-medium text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
-            onclick="switchTab('documents')"
+            onclick="switchTab('comments')"
           >
             <BoxIcon name="file" class="mr-2 inline h-4 w-4" />
             Comments
@@ -172,7 +186,7 @@ function getStatusColor(status: number): string {
         ) : (
           ""
         )
-      }
+      } -->
       <button
         id="tab-documents"
         class="tab-button relative mt-2 w-auto rounded-full px-4 py-2 text-sm font-medium text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
@@ -226,14 +240,14 @@ function getStatusColor(status: number): string {
           project={project}
           projectId={id ?? ""}
           isNewProject={false}
-          userRole={role}
+          role={role}
           projectStatus={project?.status}
         />
       </div>
 
       <!-- Documents Tab -->
       <div id="content-documents" class="tab-content hidden">
-        <PDFUpload projectId={id ?? ""} fileType="media" />
+        <PDFUpload projectId={id ?? ""} fileType="media" role={role || undefined} />
       </div>
 
       <!-- Proposal Tab -->

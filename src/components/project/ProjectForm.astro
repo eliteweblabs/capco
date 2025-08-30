@@ -10,43 +10,46 @@ import {
 } from "../../lib/project-form-config";
 import ToggleButton from "../form/ToggleButton.astro";
 import UnitSlider from "../form/UnitSlider.astro";
-import ClientSelect from "../form/ClientSelect.astro";
+// import ClientSelect from "../form/ClientSelect.astro";
 import StaffSelect from "../form/StaffSelect.astro";
 import GoogleAddressAutocomplete from "../form/GoogleAddressAutocomplete.astro";
 // import DeleteProject from "../form/DeleteProject.astro";
-import NewOrExistingClient from "../form/newOrExistingClient.astro";
+import NewOrExistingClient from "../form/NewOrExistingClient.astro";
+
+import { checkAuth } from "../../lib/auth";
 
 interface Props {
   project?: any;
   projectId?: string | null;
-  userRole?: string | null; // Add userRole prop to control field visibility
+  role?: string | null; // Add role prop to control field visibility
   isNewProject?: boolean; // Add flag to indicate if this is a new project
   projectStatus?: number | null; // Add project status for status-based field visibility
 }
 
-const {
-  project = {},
-  projectId = "",
-  userRole,
-  isNewProject = false,
-  projectStatus = null,
-} = Astro.props;
+const { project = {}, projectId = "", isNewProject = true, projectStatus = null } = Astro.props;
+
+const { isAuth, session, user, role } = await checkAuth(Astro.cookies);
+
+// Redirect if not authenticated
+if (!isAuth) {
+  return Astro.redirect("/login");
+}
 
 // Generate a temporary ID for new projects
 const formId = isNewProject ? `new-project-${Date.now()}` : projectId || "";
 
 // Filter fields based on user role and project status
-const formFields = getFilteredFormFields(userRole, isNewProject, projectStatus);
+const formFields = getFilteredFormFields(role, isNewProject, projectStatus);
 
 // Get filtered button groups based on user role and project status
-const buttonGroups = getFilteredButtonGroups(userRole, isNewProject, projectStatus);
+const buttonGroups = getFilteredButtonGroups(role, isNewProject, projectStatus);
 
 // Get filtered form actions based on user role and project status
-const formActions = getFilteredFormActions(userRole, isNewProject, projectStatus);
+const formActions = getFilteredFormActions(role, isNewProject, projectStatus);
 
 // Debug logging
 console.log("📝 [ProjectForm] Debug info:", {
-  userRole,
+  role,
   isNewProject,
   projectStatus,
   formFieldsCount: formFields.length,
@@ -97,7 +100,7 @@ console.log("New client fields found:", newClientFieldsInForm.length, newClientF
   novalidate
 >
   <!-- New Client Toggle (Top of Form) -->
-  {(isNewProject && userRole === "admin") || userRole === "staff" ? <NewOrExistingClient /> : ""}
+  {(isNewProject && role === "Admin") || role === "Staff" ? <NewOrExistingClient /> : ""}
 
   <!-- Google Address Autocomplete Field -->
   {
@@ -678,7 +681,7 @@ console.log("New client fields found:", newClientFieldsInForm.length, newClientF
             type: "success",
             title: isNewProject ? "Project Created!" : "Project Updated!",
             message: isNewProject
-              ? "Your new project has been created successfully. Please upload your project files by clicking the 'Documents' tab."
+              ? "Your new project has been created successfully. Redirecting to the documents page, please upload your project files."
               : "Your project has been updated successfully.",
             duration: isNewProject ? 10000 : 4000,
           });
