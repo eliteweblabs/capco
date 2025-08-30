@@ -360,7 +360,6 @@ export const FORM_ACTIONS: FormActionConfig[] = [
       "px-4 py-2 bg-red-600 text-white text-sm font-medium rounded-lg hover:bg-red-700 transition-colors",
     action: "deleteProject",
     allow: ["admin", "staff"], // Only admin and staff can delete
-    hideAtStatus: [0, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170, 180, 190, 200], // Hide on new projects and after proposal is signed off
   },
   {
     id: "build-proposal",
