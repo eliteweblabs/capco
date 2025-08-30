@@ -96,21 +96,24 @@ const { title, description, user } = Astro.props;
 
     <title>{title}</title>
 
-    <!-- Google Maps Places API -->
+    <!-- Inject environment variables for client-side use FIRST -->
     <script
-      async
-      defer
-      src="https://maps.googleapis.com/maps/api/js?key=GOOGLE_MAPS_API_KEY_PLACEHOLDER&libraries=places"
-      id="google-maps-script"
-    ></script>
+      set:html={`window.SUPABASE_URL = "${import.meta.env.SUPABASE_URL || ""}"; window.SUPABASE_ANON_KEY = "${(import.meta.env.SUPABASE_ANON_KEY || "").replace(/\s/g, "")}"; window.GOOGLE_MAPS_API_KEY = "${import.meta.env.GOOGLE_MAPS_API_KEY || ""}"; ${user ? `window.USER_DATA = ${JSON.stringify(user)};` : ""}`}
+    />
+
+    <!-- Google Maps Places API - Load only if API key is available -->
     <script>
-      // Replace placeholder with actual API key after environment variables are loaded
-      document.addEventListener('DOMContentLoaded', function() {
-        const script = document.getElementById('google-maps-script') as HTMLScriptElement;
-        if (script && (window as any).GOOGLE_MAPS_API_KEY) {
-          script.src = script.src.replace('GOOGLE_MAPS_API_KEY_PLACEHOLDER', (window as any).GOOGLE_MAPS_API_KEY);
-        }
-      });
+      // Only load Google Maps if API key is available
+      if ((window as any).GOOGLE_MAPS_API_KEY && (window as any).GOOGLE_MAPS_API_KEY.trim() !== '') {
+        const script = document.createElement('script');
+        script.async = true;
+        script.defer = true;
+        script.src = `https://maps.googleapis.com/maps/api/js?key=${(window as any).GOOGLE_MAPS_API_KEY}&libraries=places`;
+        script.id = 'google-maps-script';
+        document.head.appendChild(script);
+      } else {
+        console.warn('Google Maps API key not found. Maps functionality will be disabled.');
+      }
     </script>
   </head>
   <body class="bg-hub-background dark:bg-hub-background-dark md:flex md:justify-center">
@@ -125,10 +128,7 @@ const { title, description, user } = Astro.props;
     <!-- Flowbite JavaScript -->
     <script src="/js/flowbite.min.js" crossorigin="anonymous"></script>
 
-    <!-- Inject environment variables for client-side use -->
-    <script
-      set:html={`window.SUPABASE_URL = "${import.meta.env.SUPABASE_URL || ""}"; window.SUPABASE_ANON_KEY = "${(import.meta.env.SUPABASE_ANON_KEY || "").replace(/\s/g, "")}"; window.GOOGLE_MAPS_API_KEY = "${import.meta.env.GOOGLE_MAPS_API_KEY || ""}"; ${user ? `window.USER_DATA = ${JSON.stringify(user)};` : ""}`}
-    />
+
 
     <!-- Inject session tokens for client-side Supabase auth -->
     <script
