@@ -86,6 +86,8 @@ console.log("New client fields found:", newClientFieldsInForm.length, newClientF
   data-project-data={JSON.stringify(project || {})}
   data-is-new-project={isNewProject}
   onsubmit="handleFormSubmit(event)"
+  autocomplete="off"
+  novalidate
 >
   <!-- New Client Toggle (Top of Form) -->
   {
@@ -810,12 +812,34 @@ console.log("New client fields found:", newClientFieldsInForm.length, newClientF
     event.preventDefault();
     console.log("Form submission started");
 
-    // Remove required attribute from hidden fields to prevent validation errors
+    // Remove required attribute and disable hidden fields to prevent validation errors
     const form = event.target as HTMLFormElement;
-    const hiddenFields = form.querySelectorAll('input[style*="display: none"], input[style*="display:none"], .hidden input');
+    
+    // Find all hidden fields (by style, class, or parent visibility)
+    const hiddenFields = form.querySelectorAll(`
+      input[style*="display: none"], 
+      input[style*="display:none"], 
+      .hidden input,
+      input[disabled],
+      input[type="hidden"]
+    `);
+    
+    // Also check for fields in hidden containers
+    const hiddenContainers = form.querySelectorAll('[style*="display: none"], [style*="display:none"], .hidden');
+    hiddenContainers.forEach(container => {
+      const containerInputs = container.querySelectorAll('input, textarea, select');
+      containerInputs.forEach(field => {
+        if (field instanceof HTMLInputElement || field instanceof HTMLTextAreaElement || field instanceof HTMLSelectElement) {
+          field.removeAttribute('required');
+          field.disabled = true;
+        }
+      });
+    });
+    
     hiddenFields.forEach((field) => {
-      if (field instanceof HTMLInputElement) {
+      if (field instanceof HTMLInputElement || field instanceof HTMLTextAreaElement || field instanceof HTMLSelectElement) {
         field.removeAttribute('required');
+        field.disabled = true;
       }
     });
     const formData = new FormData(form);
@@ -963,4 +987,66 @@ console.log("New client fields found:", newClientFieldsInForm.length, newClientF
         submitBtn.innerHTML = originalText;
       });
   }
+
+  // Form reset function to clear cached values
+  function resetForm() {
+    const form = document.querySelector('form[data-is-new-project="true"]');
+    if (form) {
+      console.log("🧹 [ProjectForm] Resetting form to clear cached values");
+      
+      // Reset all form inputs
+      const inputs = form.querySelectorAll('input, textarea, select');
+      inputs.forEach((input) => {
+        if (input instanceof HTMLInputElement) {
+          if (input.type === 'checkbox' || input.type === 'radio') {
+            input.checked = false;
+          } else {
+            input.value = '';
+          }
+        } else if (input instanceof HTMLTextAreaElement) {
+          input.value = '';
+        } else if (input instanceof HTMLSelectElement) {
+          input.selectedIndex = 0;
+        }
+      });
+
+      // Reset toggle buttons
+      const toggleButtons = form.querySelectorAll('.toggle-button');
+      toggleButtons.forEach((button) => {
+        button.classList.remove('bg-blue-500', 'text-white', 'border-blue-500');
+        button.classList.add('bg-white', 'dark:bg-gray-700', 'text-gray-700', 'dark:text-gray-300');
+      });
+
+      // Reset units slider to default
+      const unitsSlider = form.querySelector('input[name="units"]') as HTMLInputElement;
+      if (unitsSlider) {
+        unitsSlider.value = '0'; // Default to first option
+        const valueDisplay = form.querySelector('[id^="units-value-"]') as HTMLElement;
+        if (valueDisplay) {
+          valueDisplay.textContent = '1';
+        }
+      }
+
+      // Reset new client toggle to unchecked
+      const newClientToggle = form.querySelector('input[name="new_client"]') as HTMLInputElement;
+      if (newClientToggle) {
+        newClientToggle.checked = false;
+        newClientToggle.dispatchEvent(new Event('change'));
+      }
+
+      console.log("🧹 [ProjectForm] Form reset completed");
+    }
+  }
+
+  // Auto-reset form on page load for new projects
+  document.addEventListener("DOMContentLoaded", function () {
+    const form = document.querySelector('form[data-is-new-project="true"]');
+    if (form) {
+      console.log("🧹 [ProjectForm] Auto-resetting new project form");
+      resetForm();
+    }
+  });
+
+  // Make resetForm globally available
+  (window as any).resetForm = resetForm;
 </script>
