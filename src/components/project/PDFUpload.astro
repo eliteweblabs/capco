@@ -7,12 +7,26 @@ interface Props {
   fileType?: string;
   role?: string;
   projectAuthorEmail?: string;
+  status?: number;
 }
 
 const user = await globalServices.getCurrentUser();
 
-const { projectId, fileType = "media", role, projectAuthorEmail } = Astro.props;
-console.log("🔔 [PDF-UPLOAD] Component props:", { projectId, fileType, role, projectAuthorEmail });
+const { projectId, fileType = "media", role, projectAuthorEmail, status } = Astro.props;
+console.log("🔔 [PDF-UPLOAD] Component props:", {
+  projectId,
+  fileType,
+  role,
+  projectAuthorEmail,
+  status,
+});
+
+// Debug button condition
+console.log("🔔 [PDF-UPLOAD] Button condition check:", {
+  role,
+  isClient: role === "Client",
+  status,
+});
 ---
 
 <div class="rounded-lg bg-white p-6 shadow-md dark:bg-gray-800">
@@ -116,40 +130,44 @@ console.log("🔔 [PDF-UPLOAD] Component props:", { projectId, fileType, role, p
 
   <!-- All Documents Uploaded Button (Clients Only) -->
   {
-    (() => {
-      console.log("🔔 [PDF-UPLOAD] Button condition check:", { role, isClient: role === "Client" });
-      return role === "Client" ? (
-        <div class="mt-6 border-t border-gray-200 pt-6 dark:border-gray-700">
-          <div class="text-center">
-            <button
-              id="all-documents-uploaded-btn"
-              class="inline-flex items-center rounded-lg bg-green-600 px-6 py-3 text-sm font-medium text-white transition-colors hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
-            >
-              <BoxIcon name="check-circle" class="mr-2 h-5 w-5" />
-              All Documents Uploaded
-            </button>
-          </div>
+    role === "Client" ? (
+      <div class="mt-6 border-t border-gray-200 pt-6 dark:border-gray-700">
+        <div class="text-center">
+          <button
+            id="all-documents-uploaded-btn"
+            class="inline-flex items-center rounded-lg bg-green-600 px-6 py-3 text-sm font-medium text-white transition-colors hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
+          >
+            <BoxIcon name="check-circle" class="mr-2 h-5 w-5" />
+            All Documents Uploaded
+          </button>
         </div>
-      ) : null;
-    })()
+      </div>
+    ) : null
   }
 </div>
 
-<script define:vars={{ projectId, fileType, projectAuthorEmail, role, user }}>
+<script define:vars={{ projectId, fileType, projectAuthorEmail, role, user, status }}>
   class PDFUpload {
     constructor() {
       this.projectId = projectId;
       this.fileType = fileType;
+      this.status = status;
       this.uploadedFiles = [];
       this.init();
     }
 
     init() {
-      console.log("📁 [PDF-UPLOAD] Initializing with projectId:", this.projectId);
+      console.log(
+        "📁 [PDF-UPLOAD] Initializing with projectId:",
+        this.projectId,
+        "status:",
+        this.status
+      );
       this.setupElements();
       this.setupEventListeners();
       this.setupAccordionListeners();
       this.loadExistingFiles();
+      this.handleStatusBasedVisibility();
     }
 
     setupElements() {
@@ -747,6 +765,27 @@ console.log("🔔 [PDF-UPLOAD] Component props:", { projectId, fileType, role, p
       const sizes = ["Bytes", "KB", "MB", "GB"];
       const i = Math.floor(Math.log(bytes) / Math.log(k));
       return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
+    }
+
+    handleStatusBasedVisibility() {
+      console.log(
+        "📁 [PDF-UPLOAD] Handling status-based visibility. Status:",
+        this.status,
+        "Role:",
+        role
+      );
+
+      // Hide "All Documents Uploaded" button for clients if status is > 10
+      if (this.allDocumentsUploadedBtn && role === "Client" && this.status > 10) {
+        console.log("📁 [PDF-UPLOAD] Hiding 'All Documents Uploaded' button - status > 10");
+        this.allDocumentsUploadedBtn.style.display = "none";
+      }
+
+      // You can add more status-based visibility logic here
+      // For example:
+      // - Hide upload area if status is completed
+      // - Show different messages based on status
+      // - Disable certain features based on project stage
     }
 
     async markAllDocumentsUploaded() {
