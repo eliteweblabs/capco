@@ -1,18 +1,23 @@
 ---
 import BoxIcon from "../common/BoxIcon.astro";
+import { globalServices } from "../../lib/global-services";
 
 interface Props {
   projectId: string;
   fileType?: string;
   role?: string;
+  projectAuthorEmail?: string;
 }
 
-const { projectId, fileType = "media", role } = Astro.props;
+const user = await globalServices.getCurrentUser();
+
+const { projectId, fileType = "media", role, projectAuthorEmail } = Astro.props;
+console.log("🔔 [PDF-UPLOAD] Component props:", { projectId, fileType, role });
 ---
 
 <div class="rounded-lg bg-white p-6 shadow-md dark:bg-gray-800">
   <!-- Upload Header -->
-  <div class="mb-6">
+  <div class="mb-6" id="upload-header">
     <h3 class="mb-2 flex items-center text-lg font-semibold text-gray-900 dark:text-white">
       <BoxIcon name="cloud-upload" class="mr-2" />
       Document Upload
@@ -66,7 +71,9 @@ const { projectId, fileType = "media", role } = Astro.props;
       >
       </div>
     </div>
-    <p id="upload-status" class="mt-2 text-sm text-gray-600 dark:text-gray-400">Uploading...</p>
+    <p id="upload-status" class="mt-2 max-w-full truncate text-sm text-gray-600 dark:text-gray-400">
+      Uploading...
+    </p>
   </div>
 
   <!-- File List -->
@@ -109,26 +116,26 @@ const { projectId, fileType = "media", role } = Astro.props;
 
   <!-- All Documents Uploaded Button (Clients Only) -->
   {
-    role === "Client" && (
-      <div class="mt-6 border-t border-gray-200 pt-6 dark:border-gray-700">
-        <div class="text-center">
-          <p class="mb-4 text-sm text-gray-600 dark:text-gray-400">
-            Once you have uploaded all your documents, click the button below to notify us.
-          </p>
-          <button
-            id="all-documents-uploaded-btn"
-            class="inline-flex items-center rounded-lg bg-green-600 px-6 py-3 text-sm font-medium text-white transition-colors hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
-          >
-            <BoxIcon name="check-circle" class="mr-2 h-5 w-5" />
-            All Documents Uploaded
-          </button>
+    (() => {
+      console.log("🔔 [PDF-UPLOAD] Button condition check:", { role, isClient: role === "Client" });
+      return role === "Client" ? (
+        <div class="mt-6 border-t border-gray-200 pt-6 dark:border-gray-700">
+          <div class="text-center">
+            <button
+              id="all-documents-uploaded-btn"
+              class="inline-flex items-center rounded-lg bg-green-600 px-6 py-3 text-sm font-medium text-white transition-colors hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
+            >
+              <BoxIcon name="check-circle" class="mr-2 h-5 w-5" />
+              All Documents Uploaded
+            </button>
+          </div>
         </div>
-      </div>
-    )
+      ) : null;
+    })()
   }
 </div>
 
-<script define:vars={{ projectId, fileType }}>
+<script define:vars={{ projectId, fileType, projectAuthorEmail }}>
   class PDFUpload {
     constructor() {
       this.projectId = projectId;
@@ -138,6 +145,7 @@ const { projectId, fileType = "media", role } = Astro.props;
     }
 
     init() {
+      console.log("📁 [PDF-UPLOAD] Initializing with projectId:", this.projectId);
       this.setupElements();
       this.setupEventListeners();
       this.setupAccordionListeners();
@@ -163,6 +171,7 @@ const { projectId, fileType = "media", role } = Astro.props;
     setupEventListeners() {
       // File input change
       this.fileInput.addEventListener("change", (e) => {
+        console.log("📁 [PDF-UPLOAD] File input change event triggered:", e.target.files);
         this.handleFiles(e.target.files);
       });
 
@@ -257,9 +266,17 @@ const { projectId, fileType = "media", role } = Astro.props;
     }
 
     async handleFiles(files) {
-      if (!files || files.length === 0) return;
+      console.log("📁 [PDF-UPLOAD] handleFiles called with:", files);
+      if (!files || files.length === 0) {
+        console.log("📁 [PDF-UPLOAD] No files provided");
+        return;
+      }
 
       const fileArray = Array.from(files);
+      console.log(
+        "📁 [PDF-UPLOAD] File array:",
+        fileArray.map((f) => ({ name: f.name, size: f.size, type: f.type }))
+      );
       this.showProgress();
 
       for (let i = 0; i < fileArray.length; i++) {
@@ -267,7 +284,7 @@ const { projectId, fileType = "media", role } = Astro.props;
         try {
           await this.uploadFile(file, i + 1, fileArray.length);
         } catch (error) {
-          console.error(`Error uploading ${file.name}:`, error);
+          console.error(`📁 [PDF-UPLOAD] Error uploading ${file.name}:`, error);
           this.showError(`Failed to upload ${file.name}: ${error.message}`);
         }
       }
@@ -276,6 +293,13 @@ const { projectId, fileType = "media", role } = Astro.props;
     }
 
     async uploadFile(file, index, total) {
+      console.log("📁 [PDF-UPLOAD] uploadFile called:", {
+        file: file.name,
+        index,
+        total,
+        projectId: this.projectId,
+      });
+
       const formData = new FormData();
       formData.append("file", file);
       formData.append("projectId", this.projectId);
@@ -294,17 +318,22 @@ const { projectId, fileType = "media", role } = Astro.props;
 
       this.updateProgress((index / total) * 100, `Uploading ${file.name}...`);
 
+      console.log("📁 [PDF-UPLOAD] Sending upload request to /api/upload");
       const response = await fetch("/api/upload", {
         method: "POST",
         body: formData,
       });
 
+      console.log("📁 [PDF-UPLOAD] Upload response status:", response.status);
+
       if (!response.ok) {
         const error = await response.json();
+        console.error("📁 [PDF-UPLOAD] Upload failed:", error);
         throw new Error(error.error || "Upload failed");
       }
 
       const result = await response.json();
+      console.log("📁 [PDF-UPLOAD] Upload successful:", result);
       const uploadedFile = result.files[0];
 
       this.addFileToList(uploadedFile);
@@ -645,55 +674,71 @@ const { projectId, fileType = "media", role } = Astro.props;
 
     updateProgress(percent, status) {
       this.progressBar.style.width = `${percent}%`;
-      this.uploadStatus.textContent = status;
+
+      // Truncate long filenames to prevent screen jumping on mobile
+      let displayStatus = status;
+      if (status.includes("Uploading") && status.length > 50) {
+        // Extract filename from "Uploading filename.ext..."
+        const match = status.match(/Uploading (.+?)\.\.\./);
+        if (match) {
+          const filename = match[1];
+          const extension = filename.split(".").pop();
+          const nameWithoutExt = filename.substring(0, filename.lastIndexOf("."));
+
+          // Truncate to 30 characters + extension
+          if (nameWithoutExt.length > 30) {
+            const truncatedName = nameWithoutExt.substring(0, 30) + "...";
+            displayStatus = `Uploading ${truncatedName}.${extension}...`;
+          }
+        }
+      }
+
+      this.uploadStatus.textContent = displayStatus;
+
+      // Add title attribute for full filename on hover
+      if (status !== displayStatus) {
+        this.uploadStatus.title = status;
+      } else {
+        this.uploadStatus.title = "";
+      }
     }
 
     showError(message) {
-      // Create a simple error notification
-      const errorDiv = document.createElement("div");
-      errorDiv.className = "mt-4 p-3 bg-red-50 border border-red-200 rounded-lg";
-      errorDiv.innerHTML = `
-        <div class="flex">
-          <svg class="h-5 w-5 text-red-400" fill="currentColor" viewBox="0 0 20 20">
-            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/>
-          </svg>
-          <div class="ml-3">
-            <h3 class="text-sm font-medium text-red-800">Upload Error</h3>
-            <p class="text-sm text-red-700 mt-1">${message}</p>
-          </div>
-        </div>
-      `;
-
-      this.dropzone.parentNode.insertBefore(errorDiv, this.dropzone.nextSibling);
-
-      // Remove error after 5 seconds
-      setTimeout(() => {
-        errorDiv.remove();
-      }, 5000);
+      // Use global services toast notification
+      if (typeof window !== "undefined" && window.showNotification) {
+        window.showNotification({
+          type: "error",
+          title: "Upload Error",
+          message: message,
+          duration: 5000,
+        });
+      } else {
+        // Fallback to console log if toast system not available
+        console.error("❌ Error:", message);
+      }
     }
 
     showSuccess(message) {
-      // Create a simple success notification
-      const successDiv = document.createElement("div");
-      successDiv.className = "mt-4 p-3 bg-green-50 border border-green-200 rounded-lg";
-      successDiv.innerHTML = `
-        <div class="flex">
-          <svg class="h-5 w-5 text-green-400" fill="currentColor" viewBox="0 0 20 20">
-            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
-          </svg>
-          <div class="ml-3">
-            <h3 class="text-sm font-medium text-green-800">Success</h3>
-            <p class="text-sm text-green-700 mt-1">${message}</p>
-          </div>
-        </div>
-      `;
+      console.log("🔔 [PDF-UPLOAD] showSuccess called with:", message);
+      console.log(
+        "🔔 [PDF-UPLOAD] window.showNotification available:",
+        typeof window !== "undefined" && window.showNotification
+      );
 
-      this.dropzone.parentNode.insertBefore(successDiv, this.dropzone.nextSibling);
-
-      // Remove success message after 5 seconds
-      setTimeout(() => {
-        successDiv.remove();
-      }, 5000);
+      // Use global services toast notification
+      if (typeof window !== "undefined" && window.showNotification) {
+        console.log("🔔 [PDF-UPLOAD] Calling window.showNotification");
+        window.showNotification({
+          type: "success",
+          title: "Success",
+          message: message,
+          duration: 5000,
+        });
+      } else {
+        // Fallback to console log if toast system not available
+        console.log("✅ Success:", message);
+        console.log("🔔 [PDF-UPLOAD] Toast system not available, using console fallback");
+      }
     }
 
     formatFileSize(bytes) {
@@ -720,6 +765,7 @@ const { projectId, fileType = "media", role } = Astro.props;
         const response = await fetch("/api/update-status", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
+          credentials: "include", // Include cookies for authentication
           body: JSON.stringify({
             projectId: this.projectId,
             newStatus: 20, // "Generating Proposal" status
@@ -734,19 +780,27 @@ const { projectId, fileType = "media", role } = Astro.props;
         const result = await response.json();
 
         if (result.success) {
-          // Show success message
-          this.showSuccess(
-            "Project status updated successfully! We'll start generating your proposal."
-          );
+          // Show success message with project author email
+          const emailMessage = projectAuthorEmail
+            ? `Documents submitted successfully! You will be notified by email to ${projectAuthorEmail}.`
+            : "Documents submitted successfully!";
+          this.showSuccess(emailMessage);
 
+          const uploadHeader = document.getElementById("upload-header");
+          uploadHeader.innerHTML = ``;
+          this.dropzone.classList.add("hidden");
           // Update button to show completion
           this.allDocumentsUploadedBtn.innerHTML = `
-            <BoxIcon name="check-circle" class="mr-2 h-5 w-5" />
+            <svg class="mr-2 h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+            </svg>
             Documents Submitted ✓
           `;
           this.allDocumentsUploadedBtn.classList.remove("bg-green-600", "hover:bg-green-700");
           this.allDocumentsUploadedBtn.classList.add("bg-gray-600", "cursor-not-allowed");
           this.allDocumentsUploadedBtn.disabled = true;
+
+          // window.location.href = `/project/${this.projectId}?tab=proposal`;
         }
       } catch (error) {
         console.error("Error updating project status:", error);
@@ -755,7 +809,9 @@ const { projectId, fileType = "media", role } = Astro.props;
         // Reset button to original state
         this.allDocumentsUploadedBtn.disabled = false;
         this.allDocumentsUploadedBtn.innerHTML = `
-          <BoxIcon name="check-circle" class="mr-2 h-5 w-5" />
+          <svg class="mr-2 h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
+            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+          </svg>
           All Documents Uploaded
         `;
       }
@@ -837,6 +893,7 @@ const { projectId, fileType = "media", role } = Astro.props;
 
   // Initialize the PDF upload component
   document.addEventListener("DOMContentLoaded", () => {
+    console.log("📁 [PDF-UPLOAD] Initializing PDFUpload component");
     new PDFUpload();
   });
 </script>
