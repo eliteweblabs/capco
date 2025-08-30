@@ -810,7 +810,14 @@ console.log("New client fields found:", newClientFieldsInForm.length, newClientF
     event.preventDefault();
     console.log("Form submission started");
 
+    // Remove required attribute from hidden fields to prevent validation errors
     const form = event.target as HTMLFormElement;
+    const hiddenFields = form.querySelectorAll('input[style*="display: none"], input[style*="display:none"], .hidden input');
+    hiddenFields.forEach((field) => {
+      if (field instanceof HTMLInputElement) {
+        field.removeAttribute('required');
+      }
+    });
     const formData = new FormData(form);
     const projectId = form.getAttribute("data-project-id");
     const isNewProject = form.getAttribute("data-is-new-project") === "true";
