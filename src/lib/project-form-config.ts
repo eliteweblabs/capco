@@ -206,6 +206,31 @@ export const PROJECT_FORM_FIELDS: FormFieldConfig[] = [
       10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170, 180, 190, 200,
     ], // Hide after proposal is signed off
   },
+
+  // Company Name field (only shown for new projects with new client toggle on)
+  {
+    id: "company-name-input",
+    name: "company_name",
+    type: "text",
+    label: "Company Name",
+    placeholder: "Company Name",
+    required: false,
+    dataField: "company_name",
+    allow: ["admin", "staff", "client"], // All roles can see company name
+    hideAtStatus: [10, 20, 30, 40, 50, 60, 70, 80, 90], // Hide on existing projects
+  },
+  // Owner email field (only shown for new projects with new client toggle on)
+  {
+    id: "email-input",
+    name: "email",
+    type: "text",
+    label: "Email",
+    placeholder: "email@example.com",
+    required: true,
+    dataField: "email",
+    allow: ["admin", "staff"], // Only admin and staff can set email
+    hideAtStatus: [10, 20, 30, 40, 50, 60, 70, 80, 90], // Hide on existing projects
+  },
   // First Name field (only shown for new projects with new client toggle on)
   {
     id: "first-name-input",
@@ -228,30 +253,6 @@ export const PROJECT_FORM_FIELDS: FormFieldConfig[] = [
     required: true,
     dataField: "last_name",
     allow: ["admin", "staff", "client"], // All roles can see last name
-    hideAtStatus: [10, 20, 30, 40, 50, 60, 70, 80, 90], // Hide on existing projects
-  },
-  // Company Name field (only shown for new projects with new client toggle on)
-  {
-    id: "company-name-input",
-    name: "company_name",
-    type: "text",
-    label: "Company Name",
-    placeholder: "Company Name",
-    required: false,
-    dataField: "company_name",
-    allow: ["admin", "staff", "client"], // All roles can see company name
-    hideAtStatus: [10, 20, 30, 40, 50, 60, 70, 80, 90], // Hide on existing projects
-  },
-  // Owner email field (only shown for new projects with new client toggle on)
-  {
-    id: "owner-email-input",
-    name: "owner_email",
-    type: "text",
-    label: "Owner Email",
-    placeholder: "owner@example.com",
-    required: true,
-    dataField: "owner_email",
-    allow: ["admin", "staff"], // Only admin and staff can set email
     hideAtStatus: [10, 20, 30, 40, 50, 60, 70, 80, 90], // Hide on existing projects
   },
   // Existing client dropdown (only shown for new projects with new client toggle off)
