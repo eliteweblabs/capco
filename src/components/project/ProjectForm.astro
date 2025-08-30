@@ -603,18 +603,9 @@ console.log("New client fields found:", newClientFieldsInForm.length, newClientF
 
     console.log("📝 [ProjectForm] Raw form data collected:", formValues);
 
-    // Handle client data based on new client toggle (now handled by NewOrExistingClient component)
-    const isNewClient = formValues.new_client === "on";
-    if (isNewClient) {
-      // For new client, use email
-      formValues.client_type = "new";
-      formValues.client_name = `${formValues.first_name} ${formValues.last_name}`.trim();
-      formValues.client_email = formValues.email;
-    } else {
-      // For existing client, use the selected client ID
-      formValues.client_type = "existing";
-      formValues.client_id = formValues.author_id;
-    }
+    // The API will handle author_id logic based on user role
+    // For admin/staff: author_id comes from form (new client or existing client select)
+    // For clients: author_id will be set to their own ID
 
     // Collect toggle button values
     const toggleButtons = form.querySelectorAll(".toggle-button.bg-blue-500");
