@@ -1,8 +1,9 @@
 import type { APIRoute } from "astro";
 import { supabase } from "../../../lib/supabase";
 import { supabaseAdmin } from "../../../lib/supabase-admin";
+import { setAuthCookies } from "../../../lib/auth-cookies";
 
-export const POST: APIRoute = async ({ request, redirect }) => {
+export const POST: APIRoute = async ({ request, redirect, cookies }) => {
   console.log("🔐 [REGISTER] Registration API called");
 
   // Check if Supabase is configured
@@ -134,10 +135,10 @@ export const POST: APIRoute = async ({ request, redirect }) => {
 
   console.log("User registration successful:", !!data.user);
 
-  // Sign in the user immediately after registration
+    // Sign in the user immediately after registration
   if (data.user) {
     console.log("🔐 [REGISTER] Signing in user after registration:", data.user.email);
-
+    
     const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
       email,
       password,
@@ -148,6 +149,13 @@ export const POST: APIRoute = async ({ request, redirect }) => {
       // Don't fail the registration, but log the error
     } else {
       console.log("🔐 [REGISTER] User signed in successfully after registration");
+      
+      // Set auth cookies to maintain the session
+      if (signInData.session) {
+        const { access_token, refresh_token } = signInData.session;
+        setAuthCookies(cookies, access_token, refresh_token);
+        console.log("🔐 [REGISTER] Auth cookies set successfully");
+      }
     }
   }
 
