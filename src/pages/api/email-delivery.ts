@@ -33,12 +33,31 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     console.log("  - projectDetails:", projectDetails ? "Present" : "Missing");
     console.log("  - email_content:", email_content ? "Present" : "Missing");
 
-    if (!projectId || !newStatus || !usersToNotify || !projectDetails || !email_content) {
+    // For test emails, newStatus might be invalid (like 999) or 0, so we'll allow it
+    const isTestEmail = projectId === "test-project" || newStatus === 999 || newStatus === 0;
+    console.log("📧 [EMAIL-DELIVERY] Is test email:", isTestEmail);
+
+    if (!projectId || !usersToNotify || !projectDetails || !email_content) {
       console.error("📧 [EMAIL-DELIVERY] Missing required parameters");
       return new Response(
         JSON.stringify({
           success: false,
           error: "Missing required parameters",
+        }),
+        {
+          status: 400,
+          headers: { "Content-Type": "application/json" },
+        }
+      );
+    }
+
+    // Only validate newStatus for non-test emails
+    if (!isTestEmail && !newStatus) {
+      console.error("📧 [EMAIL-DELIVERY] Missing newStatus for non-test email");
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: "Missing newStatus parameter",
         }),
         {
           status: 400,
@@ -77,19 +96,21 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     console.log("📧 [EMAIL-DELIVERY] Reading email template...");
     const emailTemplatePath = new URL("../../../emails/template.html", import.meta.url);
     console.log("📧 [EMAIL-DELIVERY] Template path:", emailTemplatePath.toString());
-    
+
     let emailTemplate: string;
     try {
       const templateResponse = await fetch(emailTemplatePath);
       console.log("📧 [EMAIL-DELIVERY] Template response status:", templateResponse.status);
-      
+
       if (!templateResponse.ok) {
-        throw new Error(`Template fetch failed: ${templateResponse.status} ${templateResponse.statusText}`);
+        throw new Error(
+          `Template fetch failed: ${templateResponse.status} ${templateResponse.statusText}`
+        );
       }
-      
+
       emailTemplate = await templateResponse.text();
       console.log("📧 [EMAIL-DELIVERY] Email template loaded, length:", emailTemplate.length);
-      
+
       if (!emailTemplate || emailTemplate.length === 0) {
         throw new Error("Email template is empty");
       }
