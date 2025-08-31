@@ -295,7 +295,7 @@ async function sendStatusChangeNotifications(
     }
 
     if (
-      notify.includes("client") &&
+      (notify.includes("client") || notify.includes("author")) &&
       projectDetails.profiles &&
       projectDetails.profiles.length > 0
     ) {

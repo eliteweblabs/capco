@@ -94,17 +94,17 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       );
     }
 
-        // Read email template
+    // Read email template
     console.log("📧 [EMAIL-DELIVERY] Reading email template...");
-    
+
     let emailTemplate: string;
     try {
       const templatePath = join(process.cwd(), "src", "emails", "template.html");
       console.log("📧 [EMAIL-DELIVERY] Template path:", templatePath);
-      
+
       emailTemplate = readFileSync(templatePath, "utf-8");
       console.log("📧 [EMAIL-DELIVERY] Email template loaded, length:", emailTemplate.length);
-      
+
       if (!emailTemplate || emailTemplate.length === 0) {
         throw new Error("Email template is empty");
       }

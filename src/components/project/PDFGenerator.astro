@@ -151,25 +151,30 @@ const {
         this.showStatus(statusDiv, successDiv);
         this.loadExistingPDFs();
 
-        if (window.globalServices) {
-          window.globalServices.showNotification({
-            type: "success",
-            title: "PDF Generated",
-            message: "Project agreement PDF has been generated successfully.",
-            duration: 5000,
-          });
+        if (window.showSuccess) {
+          window.showSuccess(
+            "PDF Generated",
+            "Project agreement PDF has been generated successfully.",
+            5000
+          );
+        } else {
+          console.log("🔔 [PDF Generated] Project agreement PDF has been generated successfully.");
         }
       } catch (error) {
         console.error("PDF generation error:", error);
         this.showStatus(statusDiv, errorDiv);
 
-        if (window.globalServices) {
-          window.globalServices.showNotification({
-            type: "error",
-            title: "PDF Generation Failed",
-            message: error.message || "There was an error generating the PDF.",
-            duration: 0,
-          });
+        if (window.showError) {
+          window.showError(
+            "PDF Generation Failed",
+            error.message || "There was an error generating the PDF.",
+            0
+          );
+        } else {
+          console.error(
+            "🔔 [PDF Generation Failed]",
+            error.message || "There was an error generating the PDF."
+          );
         }
       } finally {
         button.disabled = false;

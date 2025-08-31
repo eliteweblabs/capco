@@ -217,23 +217,21 @@ const {
         document.dispatchEvent(event);
 
         // Show success notification
-        if ((window as any).globalServices) {
-          (window as any).globalServices.showNotification({
-            type: "success",
-            title: "Signature Saved",
-            message: "Digital signature has been captured successfully.",
-            duration: 3000,
-          });
+        if (window.showSuccess) {
+          window.showSuccess(
+            "Signature Saved",
+            "Digital signature has been captured successfully.",
+            3000
+          );
+        } else {
+          console.log("🔔 [Signature Saved] Digital signature has been captured successfully.");
         }
       } else {
         // Show error notification
-        if ((window as any).globalServices) {
-          (window as any).globalServices.showNotification({
-            type: "error",
-            title: "No Signature",
-            message: "Please provide a signature before saving.",
-            duration: 0,
-          });
+        if (window.showError) {
+          window.showError("No Signature", "Please provide a signature before saving.", 0);
+        } else {
+          console.error("🔔 [No Signature] Please provide a signature before saving.");
         }
       }
     }

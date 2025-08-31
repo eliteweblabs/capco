@@ -1,6 +1,6 @@
 ---
 import BoxIcon from "../../components/common/BoxIcon.astro";
-import DigitalSignature from "../../components/DigitalSignature.astro";
+// import DigitalSignature from "../../components/DigitalSignature.astro";
 
 export const prerender = false;
 
@@ -188,7 +188,7 @@ const isPdfMode = mode === "pdf";
 
   <body class={isPdfMode ? "pdf-mode" : ""}>
     <!-- Document Header -->
-    <div class="header flex flex-col items-center mx-auto max-w-xl">
+    <div class="header mx-auto flex max-w-xl flex-col items-center">
       <img
         src="../src/assets/mass-logo-for-affidavit.png"
         alt="Massachusetts Logo"
@@ -249,7 +249,7 @@ const isPdfMode = mode === "pdf";
         engineering practices for the proposed project. I understand and agree that I ( or my
         designee) shall perform the necessary professional services and be present on the
         construction site on a regular and periodic basis to:
-        <ol class="list-decimal list-inside ml-4 my-4">
+        <ol class="my-4 ml-4 list-inside list-decimal">
           <li>
             Review, for conformance to this code and the design concept, shop drawings, samples, and
             other submittals by the contractor in accordance with the requirements of the
@@ -307,7 +307,7 @@ const isPdfMode = mode === "pdf";
         <button
           id="generate-pdf-btn"
           type="button"
-          class="px-6 py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors"
+          class="rounded-lg bg-blue-600 px-6 py-3 font-medium text-white transition-colors hover:bg-blue-700"
         >
           <BoxIcon name="download" class="mr-2" />
           Generate PDF Document
@@ -328,18 +328,14 @@ const isPdfMode = mode === "pdf";
         const consultantSigEmpty =
           window.digitalSignatureManager?.isSignatureEmpty("consultant-signature");
 
-        if (clientSigEmpty || consultantSigEmpty) {
-          if (window.globalServices) {
-            window.globalServices.showNotification({
-              type: "error",
-              title: "Missing Signatures",
-              message:
-                "Please complete both client and consultant signatures before generating PDF.",
-              duration: 0,
-            });
+                  if (clientSigEmpty || consultantSigEmpty) {
+            if (window.showError) {
+              window.showError("Missing Signatures", "Please complete both client and consultant signatures before generating PDF.", 0);
+            } else {
+              console.error("🔔 [Missing Signatures] Please complete both client and consultant signatures before generating PDF.");
+            }
+            return;
           }
-          return;
-        }
 
         // Get signature data
         const signatures = window.digitalSignatureManager?.getAllSignatures() || {};
@@ -380,26 +376,20 @@ const isPdfMode = mode === "pdf";
             window.URL.revokeObjectURL(url);
             document.body.removeChild(a);
 
-            if (window.globalServices) {
-              window.globalServices.showNotification({
-                type: "success",
-                title: "PDF Generated",
-                message: "Project agreement PDF has been generated and downloaded.",
-                duration: 5000,
-              });
+            if (window.showSuccess) {
+              window.showSuccess("PDF Generated", "Project agreement PDF has been generated and downloaded.", 5000);
+            } else {
+              console.log("🔔 [PDF Generated] Project agreement PDF has been generated and downloaded.");
             }
           } else {
             throw new Error("Failed to generate PDF");
           }
         } catch (error) {
           console.error("PDF generation error:", error);
-          if (window.globalServices) {
-            window.globalServices.showNotification({
-              type: "error",
-              title: "PDF Generation Failed",
-              message: "There was an error generating the PDF. Please try again.",
-              duration: 0,
-            });
+          if (window.showError) {
+            window.showError("PDF Generation Failed", "There was an error generating the PDF. Please try again.", 0);
+          } else {
+            console.error("🔔 [PDF Generation Failed] There was an error generating the PDF. Please try again.");
           }
         } finally {
           generatePdfBtn.disabled = false;
@@ -412,13 +402,10 @@ const isPdfMode = mode === "pdf";
         const signatures = window.digitalSignatureManager?.getAllSignatures() || {};
         localStorage.setItem("pdf-draft-signatures", JSON.stringify(signatures));
 
-        if (window.globalServices) {
-          window.globalServices.showNotification({
-            type: "success",
-            title: "Draft Saved",
-            message: "Document draft has been saved locally.",
-            duration: 3000,
-          });
+        if (window.showSuccess) {
+          window.showSuccess("Draft Saved", "Document draft has been saved locally.", 3000);
+        } else {
+          console.log("🔔 [Draft Saved] Document draft has been saved locally.");
         }
       });
 

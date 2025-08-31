@@ -1,5 +1,5 @@
 ---
-import Base from "../../layout/Base.astro";
+import App from "../../components/common/App.astro";
 import SectionContainer from "../../components/common/SectionContainer.astro";
 import Hero from "../../components/common/Hero.astro";
 import BoxIcon from "../../components/common/BoxIcon.astro";
@@ -120,7 +120,7 @@ function getStatusColor(status: number): string {
 }
 ---
 
-<Base title={i18n.SEO_TITLE} description={i18n.SEO_DESCRIPTION}>
+<App title={i18n.SEO_TITLE} description={i18n.SEO_DESCRIPTION}>
   <script>
     // Client-side debugging
     console.log("🌐 [PROJECT-CLIENT] Page loaded");
@@ -145,6 +145,9 @@ function getStatusColor(status: number): string {
       statusColor={project?.status ? getStatusColor(project.status) : undefined}
       projectId={project?.id}
       currentStatus={project?.status}
+      userRole={role}
+      projectTitle={project?.title || project?.address || "Project"}
+      clientEmail={(projectAuthorProfile?.email || user?.email || "Client") as string}
     />
   </SectionContainer>
 
@@ -167,7 +170,7 @@ function getStatusColor(status: number): string {
     >
       <button
         id="tab-project-form"
-        class="tab-button active relative mt-2 w-auto rounded-full px-4 py-2 text-sm font-medium text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300"
+        class="tab-button relative mt-2 w-auto rounded-full px-4 py-2 text-sm font-medium text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
         onclick="switchTab('project-form')"
       >
         <BoxIcon name="edit" class="mr-2 inline h-4 w-4" />
@@ -200,7 +203,7 @@ function getStatusColor(status: number): string {
         class="tab-button relative mt-2 w-auto rounded-full px-4 py-2 text-sm font-medium text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
         onclick="switchTab('proposal')"
       >
-        <BoxIcon name="file-pdf" class="mr-2 inline h-4 w-4" />
+        <BoxIcon name="grid" class="mr-2 inline h-4 w-4" />
         Proposal
       </button>
       <button
@@ -251,7 +254,7 @@ function getStatusColor(status: number): string {
           projectId={id ?? ""}
           fileType="media"
           role={role || undefined}
-          projectAuthorEmail={projectAuthorProfile?.email || "admin@capco.com"}
+          projectAuthorEmail={projectAuthorProfile?.email || user?.email || "admin@capco.com"}
           status={project?.status}
         />
       </div>
@@ -304,7 +307,7 @@ function getStatusColor(status: number): string {
       </div>
     </div>
   </SectionContainer>
-</Base>
+</App>
 
 <script>
   // Tab switching functionality
