@@ -264,7 +264,20 @@ console.log("New client fields found:", newClientFieldsInForm.length, newClientF
     </div>
 
     <!-- Units Slider -->
-    <UnitSlider projectId={formId} value={project?.units || 1} />
+    {
+      formFields
+        .filter((field) => field.type === "component" && field.component === "UnitSlider")
+        .map((field) => {
+          const isReadOnly = isFieldReadOnly(field, projectStatus);
+          return (
+            <UnitSlider 
+              projectId={formId} 
+              value={project?.units || 1} 
+              readOnly={isReadOnly}
+            />
+          );
+        })
+    }
   </div>
 
   <!-- Button Groups -->

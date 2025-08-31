@@ -202,6 +202,12 @@ export const POST: APIRoute = async ({ request, cookies }) => {
           subject: `Project Status Update: ${projectDetails.title || "Project"}`,
           html: emailHtml,
           text: personalizedContent.replace(/<[^>]*>/g, ""),
+          // Add custom headers for webhook tracking
+          headers: {
+            "X-Project-ID": projectId,
+            "X-Project-Status": newStatus.toString(),
+            "X-User-Email": user.email,
+          },
         };
 
         console.log(`📧 [EMAIL-DELIVERY] Email payload for ${user.email}:`, {
