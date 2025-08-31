@@ -1,4 +1,6 @@
 import type { APIRoute } from "astro";
+import { readFileSync } from "fs";
+import { join } from "path";
 import { supabase } from "../../lib/supabase";
 import { supabaseAdmin } from "../../lib/supabase-admin";
 
@@ -92,25 +94,17 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       );
     }
 
-    // Read email template
+        // Read email template
     console.log("📧 [EMAIL-DELIVERY] Reading email template...");
-    const emailTemplatePath = new URL("../../../emails/template.html", import.meta.url);
-    console.log("📧 [EMAIL-DELIVERY] Template path:", emailTemplatePath.toString());
-
+    
     let emailTemplate: string;
     try {
-      const templateResponse = await fetch(emailTemplatePath);
-      console.log("📧 [EMAIL-DELIVERY] Template response status:", templateResponse.status);
-
-      if (!templateResponse.ok) {
-        throw new Error(
-          `Template fetch failed: ${templateResponse.status} ${templateResponse.statusText}`
-        );
-      }
-
-      emailTemplate = await templateResponse.text();
+      const templatePath = join(process.cwd(), "src", "emails", "template.html");
+      console.log("📧 [EMAIL-DELIVERY] Template path:", templatePath);
+      
+      emailTemplate = readFileSync(templatePath, "utf-8");
       console.log("📧 [EMAIL-DELIVERY] Email template loaded, length:", emailTemplate.length);
-
+      
       if (!emailTemplate || emailTemplate.length === 0) {
         throw new Error("Email template is empty");
       }
