@@ -5,11 +5,15 @@ import { supabase } from "../../lib/supabase";
 import { supabaseAdmin } from "../../lib/supabase-admin";
 
 export const POST: APIRoute = async ({ request, cookies }) => {
+  console.log("📧 [TEST-EMAIL] API endpoint called");
+  
   try {
     const { to, subject, body, buttonText } = await request.json();
+    console.log("📧 [TEST-EMAIL] Request data:", { to, subject, body: body?.substring(0, 100) + "...", buttonText });
 
     // Validate input
     if (!to || !subject || !body) {
+      console.error("📧 [TEST-EMAIL] Missing required fields");
       return new Response(JSON.stringify({ error: "Email, subject, and body are required" }), {
         status: 400,
         headers: { "Content-Type": "application/json" },
@@ -21,6 +25,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     const refreshToken = cookies.get("sb-refresh-token")?.value;
 
     if (!accessToken || !refreshToken) {
+      console.error("📧 [TEST-EMAIL] Not authenticated");
       return new Response(JSON.stringify({ error: "Not authenticated" }), {
         status: 401,
         headers: { "Content-Type": "application/json" },
@@ -28,6 +33,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     }
 
     if (!supabase) {
+      console.error("📧 [TEST-EMAIL] Database connection not available");
       return new Response(JSON.stringify({ error: "Database connection not available" }), {
         status: 500,
         headers: { "Content-Type": "application/json" },
@@ -41,54 +47,21 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     });
 
     if (sessionError || !session.session?.user) {
+      console.error("📧 [TEST-EMAIL] Invalid session:", sessionError);
       return new Response(JSON.stringify({ error: "Invalid session" }), {
         status: 401,
         headers: { "Content-Type": "application/json" },
       });
     }
 
-    // Get environment variables
-    const emailProvider = import.meta.env.EMAIL_PROVIDER;
-    const emailApiKey = import.meta.env.EMAIL_API_KEY;
-    const fromEmail = import.meta.env.FROM_EMAIL;
-    const fromName = import.meta.env.FROM_NAME;
-
-    if (!emailProvider || !emailApiKey || !fromEmail) {
-      return new Response(
-        JSON.stringify({
-          error:
-            "Email configuration missing. Please check EMAIL_PROVIDER, EMAIL_API_KEY, and FROM_EMAIL environment variables.",
-        }),
-        { status: 500, headers: { "Content-Type": "application/json" } }
-      );
-    }
-
-    if (emailProvider !== "resend") {
-      return new Response(
-        JSON.stringify({ error: "Only Resend provider is supported for this test endpoint" }),
-        { status: 400, headers: { "Content-Type": "application/json" } }
-      );
-    }
-
-    // Read the email template
-    const templatePath = join(process.cwd(), "src", "emails", "template.html");
-    let emailTemplate = "";
-    try {
-      emailTemplate = readFileSync(templatePath, "utf-8");
-    } catch (error) {
-      console.error("Error reading email template:", error);
-      return new Response(JSON.stringify({ error: "Failed to load email template" }), {
-        status: 500,
-        headers: { "Content-Type": "application/json" },
-      });
-    }
+    console.log("📧 [TEST-EMAIL] User authenticated:", session.session.user.email);
 
     // Check if the recipient email exists in the system
     const { data: existingUser, error: userCheckError } =
       await supabaseAdmin.auth.admin.listUsers();
 
     if (userCheckError) {
-      console.error("User check error:", userCheckError);
+      console.error("📧 [TEST-EMAIL] User check error:", userCheckError);
       return new Response(JSON.stringify({ error: "Failed to verify recipient" }), {
         status: 500,
         headers: { "Content-Type": "application/json" },
@@ -96,8 +69,10 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     }
 
     const userExists = existingUser.users.some((user) => user.email === to);
+    console.log("📧 [TEST-EMAIL] User exists check:", { to, userExists });
 
     if (!userExists) {
+      console.error("📧 [TEST-EMAIL] User does not exist:", to);
       return new Response(
         JSON.stringify({
           error: `Email address '${to}' does not exist in the system. Magic links only work for existing users.`,
@@ -109,70 +84,68 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       );
     }
 
-    // Generate magic link for the recipient
-    const { data: magicLinkData, error: magicLinkError } =
-      await supabaseAdmin.auth.admin.generateLink({
-        type: "magiclink",
-        email: to,
-        options: {
-          redirectTo: `${import.meta.env.SITE_URL || "http://localhost:4321"}/dashboard`,
+    // Call the email delivery API
+    console.log("📧 [TEST-EMAIL] Calling email delivery API...");
+    const emailResponse = await fetch(
+      `${import.meta.env.SITE_URL || "http://localhost:4321"}/api/email-delivery`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
         },
-      });
+        body: JSON.stringify({
+          projectId: "test-project",
+          newStatus: 999, // Test status
+          usersToNotify: [{
+            email: to,
+            first_name: "Test",
+            last_name: "User",
+            company_name: "Test Company"
+          }],
+          projectDetails: {
+            title: "Test Project",
+            address: "Test Address",
+            profiles: [{
+              email: to,
+              first_name: "Test",
+              last_name: "User",
+              company_name: "Test Company"
+            }]
+          },
+          email_content: body,
+          button_text: buttonText || "Access Your Dashboard",
+        }),
+      }
+    );
 
-    if (magicLinkError) {
-      console.error("Magic link generation error:", magicLinkError);
-      return new Response(JSON.stringify({ error: "Failed to generate magic link" }), {
-        status: 500,
-        headers: { "Content-Type": "application/json" },
-      });
-    }
+    console.log("📧 [TEST-EMAIL] Email delivery response status:", emailResponse.status);
 
-    const buttonLink = magicLinkData.properties.action_link;
-
-    // Replace template variables with provided content
-    let emailHtml = emailTemplate.replace("{{CONTENT}}", body);
-    emailHtml = emailHtml.replace("{{BUTTON_TEXT}}", buttonText || "Access Your Dashboard");
-    emailHtml = emailHtml.replace("{{BUTTON_LINK}}", buttonLink);
-
-    // Send email via Resend
-    const response = await fetch("https://api.resend.com/emails", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${emailApiKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        from: `${fromName} <${fromEmail}>`,
-        to: [to],
-        subject: subject,
-        html: emailHtml,
-        text: body.replace(/<[^>]*>/g, ""), // Strip HTML tags for text version
-      }),
-    });
-
-    const result = await response.json();
-
-    if (!response.ok) {
-      console.error("Resend API error:", result);
+    if (emailResponse.ok) {
+      const emailResult = await emailResponse.json();
+      console.log("📧 [TEST-EMAIL] Email delivery result:", emailResult);
+      
       return new Response(
         JSON.stringify({
-          error: `Failed to send email: ${result.message || "Unknown error"}`,
-          details: result,
+          success: true,
+          message: "Email sent successfully",
+          emailId: emailResult.sentEmails?.[0] || "unknown",
+          details: emailResult,
         }),
-        { status: response.status, headers: { "Content-Type": "application/json" } }
+        { status: 200, headers: { "Content-Type": "application/json" } }
+      );
+    } else {
+      const errorText = await emailResponse.text();
+      console.error("📧 [TEST-EMAIL] Email delivery failed:", errorText);
+      
+      return new Response(
+        JSON.stringify({
+          error: `Failed to send email: ${errorText}`,
+        }),
+        { status: emailResponse.status, headers: { "Content-Type": "application/json" } }
       );
     }
-
-    return new Response(
-      JSON.stringify({
-        success: true,
-        message: "Email sent successfully",
-        emailId: result.id,
-      }),
-      { status: 200, headers: { "Content-Type": "application/json" } }
-    );
   } catch (error) {
-    console.error("Email test error:", error);
+    console.error("📧 [TEST-EMAIL] Error:", error);
     return new Response(JSON.stringify({ error: "Internal server error" }), {
       status: 500,
       headers: { "Content-Type": "application/json" },

@@ -3,8 +3,11 @@ import { supabase } from "../../lib/supabase";
 import { supabaseAdmin } from "../../lib/supabase-admin";
 
 export const POST: APIRoute = async ({ request, cookies }) => {
+  console.log("📧 [EMAIL-DELIVERY] API endpoint called");
+
   try {
     if (!supabase || !supabaseAdmin) {
+      console.error("📧 [EMAIL-DELIVERY] Database clients not available");
       return new Response(
         JSON.stringify({
           success: false,
@@ -18,10 +21,20 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     }
 
     const body = await request.json();
+    console.log("📧 [EMAIL-DELIVERY] Request body:", JSON.stringify(body, null, 2));
+
     const { projectId, newStatus, usersToNotify, projectDetails, email_content, button_text } =
       body;
 
+    console.log("📧 [EMAIL-DELIVERY] Parameter validation:");
+    console.log("  - projectId:", projectId);
+    console.log("  - newStatus:", newStatus);
+    console.log("  - usersToNotify count:", usersToNotify?.length || 0);
+    console.log("  - projectDetails:", projectDetails ? "Present" : "Missing");
+    console.log("  - email_content:", email_content ? "Present" : "Missing");
+
     if (!projectId || !newStatus || !usersToNotify || !projectDetails || !email_content) {
+      console.error("📧 [EMAIL-DELIVERY] Missing required parameters");
       return new Response(
         JSON.stringify({
           success: false,
@@ -40,8 +53,14 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     const fromEmail = import.meta.env.FROM_EMAIL;
     const fromName = import.meta.env.FROM_NAME;
 
+    console.log("📧 [EMAIL-DELIVERY] Environment variables:");
+    console.log("  - EMAIL_PROVIDER:", emailProvider ? "Set" : "Missing");
+    console.log("  - EMAIL_API_KEY:", emailApiKey ? "Set" : "Missing");
+    console.log("  - FROM_EMAIL:", fromEmail);
+    console.log("  - FROM_NAME:", fromName);
+
     if (!emailProvider || !emailApiKey || !fromEmail) {
-      console.log("Email configuration not available, skipping notifications");
+      console.error("📧 [EMAIL-DELIVERY] Email configuration not available");
       return new Response(
         JSON.stringify({
           success: false,
@@ -55,22 +74,34 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     }
 
     // Read email template
+    console.log("📧 [EMAIL-DELIVERY] Reading email template...");
     const emailTemplatePath = new URL("../../../emails/template.html", import.meta.url);
     const emailTemplate = await fetch(emailTemplatePath).then((res) => res.text());
+    console.log("📧 [EMAIL-DELIVERY] Email template loaded, length:", emailTemplate.length);
 
     const sentEmails = [];
     const failedEmails = [];
 
+    console.log("📧 [EMAIL-DELIVERY] Starting email delivery to", usersToNotify.length, "users");
+
     // Send emails to each user
     for (const user of usersToNotify) {
+      console.log(`📧 [EMAIL-DELIVERY] Processing user: ${user.email}`);
+
       try {
         // Determine if this user should get a magic link button
         const profileEmails = projectDetails.profiles.map((profile: any) => profile.email);
         const isClient = profileEmails.includes(user.email);
         const shouldShowButton = isClient; // Only show button for clients
 
+        console.log(`📧 [EMAIL-DELIVERY] User analysis for ${user.email}:`);
+        console.log("  - Profile emails:", profileEmails);
+        console.log("  - Is client:", isClient);
+        console.log("  - Should show button:", shouldShowButton);
+
         let magicLink = "";
         if (shouldShowButton) {
+          console.log(`📧 [EMAIL-DELIVERY] Generating magic link for ${user.email}...`);
           // Generate magic link only for clients
           const { data: magicLinkData, error: magicLinkError } =
             await supabaseAdmin.auth.admin.generateLink({
@@ -82,11 +113,17 @@ export const POST: APIRoute = async ({ request, cookies }) => {
             });
 
           if (magicLinkError) {
-            console.error(`Magic link generation error for ${user.email}:`, magicLinkError);
+            console.error(
+              `📧 [EMAIL-DELIVERY] Magic link generation error for ${user.email}:`,
+              magicLinkError
+            );
             failedEmails.push({ email: user.email, error: magicLinkError.message });
             continue;
           }
           magicLink = magicLinkData.properties.action_link;
+          console.log(`📧 [EMAIL-DELIVERY] Magic link generated for ${user.email}`);
+        } else {
+          console.log(`📧 [EMAIL-DELIVERY] No magic link needed for ${user.email} (not a client)`);
         }
 
         // Prepare email content
@@ -115,37 +152,62 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         }
 
         // Send email via Resend
+        console.log(`📧 [EMAIL-DELIVERY] Sending email to ${user.email}...`);
+        const emailPayload = {
+          from: `${fromName} <${fromEmail}>`,
+          to: [user.email],
+          subject: `Project Status Update: ${projectDetails.title || "Project"}`,
+          html: emailHtml,
+          text: personalizedContent.replace(/<[^>]*>/g, ""),
+        };
+
+        console.log(`📧 [EMAIL-DELIVERY] Email payload for ${user.email}:`, {
+          from: emailPayload.from,
+          to: emailPayload.to,
+          subject: emailPayload.subject,
+          htmlLength: emailPayload.html.length,
+          textLength: emailPayload.text.length,
+        });
+
         const response = await fetch("https://api.resend.com/emails", {
           method: "POST",
           headers: {
             Authorization: `Bearer ${emailApiKey}`,
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({
-            from: `${fromName} <${fromEmail}>`,
-            to: [user.email],
-            subject: `Project Status Update: ${projectDetails.title || "Project"}`,
-            html: emailHtml,
-            text: personalizedContent.replace(/<[^>]*>/g, ""),
-          }),
+          body: JSON.stringify(emailPayload),
         });
 
         if (!response.ok) {
           const errorText = await response.text();
-          console.error(`Failed to send email to ${user.email}:`, errorText);
+          console.error(`📧 [EMAIL-DELIVERY] Failed to send email to ${user.email}:`, errorText);
+          console.error(`📧 [EMAIL-DELIVERY] Response status:`, response.status);
           failedEmails.push({ email: user.email, error: errorText });
         } else {
-          console.log(`Status change notification sent to ${user.email}`);
+          const responseData = await response.json();
+          console.log(
+            `📧 [EMAIL-DELIVERY] Email sent successfully to ${user.email}:`,
+            responseData
+          );
           sentEmails.push(user.email);
         }
       } catch (userError) {
-        console.error(`Error sending notification to ${user.email}:`, userError);
+        console.error(
+          `📧 [EMAIL-DELIVERY] Error sending notification to ${user.email}:`,
+          userError
+        );
         failedEmails.push({
           email: user.email,
           error: userError instanceof Error ? userError.message : "Unknown error",
         });
       }
     }
+
+    console.log("📧 [EMAIL-DELIVERY] Email delivery completed:");
+    console.log("  - Sent emails:", sentEmails);
+    console.log("  - Failed emails:", failedEmails);
+    console.log("  - Total sent:", sentEmails.length);
+    console.log("  - Total failed:", failedEmails.length);
 
     return new Response(
       JSON.stringify({
