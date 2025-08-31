@@ -6,13 +6,36 @@ export const GET: APIRoute = async ({ request }) => {
 
   try {
     if (!supabase) {
+      console.log("📡 [API] Supabase not configured, returning demo projects");
+
+      // For demo purposes, return mock projects when database is not configured
+      const mockProjects = [
+        {
+          id: 1001,
+          title: "Demo Office Building",
+          description: "Fire protection system for 3-story office building",
+          address: "123 Business Blvd, Demo City",
+          author_id: "demo-user-id",
+          author_email: "demo@example.com",
+          assigned_to_name: "John Smith",
+          assigned_to_email: "john.smith@example.com",
+          status: 20,
+          sq_ft: 2500,
+          new_construction: true,
+          created_at: "2025-01-01T10:00:00Z",
+          updated_at: "2025-01-15T09:45:00Z",
+        },
+      ];
+
       return new Response(
         JSON.stringify({
-          success: false,
-          error: "Database not configured",
+          success: true,
+          projects: mockProjects,
+          message: "Demo projects (no database interaction)",
+          demo: true,
         }),
         {
-          status: 500,
+          status: 200,
           headers: { "Content-Type": "application/json" },
         }
       );
@@ -24,33 +47,85 @@ export const GET: APIRoute = async ({ request }) => {
 
     console.log("📡 [API] Role:", role, "User ID:", userId);
 
+    // Initialize final values
+    let finalRole = role;
+    let finalUserId = userId;
+
+    // If no role/userId provided, try to get from auth
     if (!role || !userId) {
-      return new Response(
-        JSON.stringify({
-          success: false,
-          error: "Role and user_id are required",
-        }),
-        {
-          status: 400,
-          headers: { "Content-Type": "application/json" },
-        }
-      );
+      console.log("📡 [API] No role/userId in headers, trying auth...");
+
+      const {
+        data: { user },
+        error: userError,
+      } = await supabase.auth.getUser();
+
+      if (userError || !user) {
+        console.log("📡 [API] No authenticated user, returning demo projects");
+
+        const mockProjects = [
+          {
+            id: 2001,
+            title: "Demo Warehouse",
+            description: "Fire suppression for industrial facility",
+            address: "789 Industrial Pkwy, Demo City",
+            author_id: "demo-user-id",
+            author_email: "demo@example.com",
+            assigned_to_name: "Mike Davis",
+            assigned_to_email: "mike.davis@example.com",
+            status: 10,
+            sq_ft: 10000,
+            new_construction: false,
+            created_at: "2024-12-15T14:30:00Z",
+            updated_at: "2025-01-10T16:20:00Z",
+          },
+        ];
+
+        return new Response(
+          JSON.stringify({
+            success: true,
+            projects: mockProjects,
+            message: "Demo projects (not authenticated)",
+            demo: true,
+          }),
+          {
+            status: 200,
+            headers: { "Content-Type": "application/json" },
+          }
+        );
+      }
+
+      // Get user profile to determine role
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("role")
+        .eq("id", user.id)
+        .single();
+
+      const userRole = profile?.role || "Client";
+      console.log("📡 [API] Auth user role:", userRole);
+
+      // Use auth user data
+      finalRole = role || userRole;
+      finalUserId = userId || user.id;
+
+      console.log("📡 [API] Final role:", finalRole, "Final user ID:", finalUserId);
     }
 
     // Build query based on role
     let query = supabase.from("projects").select("*");
 
-    if (role === "Admin") {
+    if (finalRole === "Admin") {
       // Admin gets all projects
       console.log("📡 [API] Admin role - fetching all projects");
-    } else if (role === "Staff") {
+    } else if (finalRole === "Staff") {
       // Staff gets projects where assigned_to matches user_id
-      console.log("📡 [API] Staff role - fetching projects assigned to user:", userId);
-      query = query.eq("assigned_to_id", userId);
+      console.log("📡 [API] Staff role - fetching projects assigned to user:", finalUserId);
+      query = query.eq("assigned_to_id", finalUserId);
     } else {
       // Client gets projects where author_id matches user_id
-      console.log("📡 [API] Client role - fetching projects authored by user:", userId);
-      query = query.eq("author_id", userId);
+      console.log("📡 [API] Client role - fetching projects authored by user:", finalUserId);
+      query = query.eq("author_id", finalUserId);
     }
 
     // Execute query
@@ -83,7 +158,7 @@ export const GET: APIRoute = async ({ request }) => {
     if (allUserIds.length > 0) {
       const { data: profiles } = await supabase
         .from("profiles")
-        .select("id, name")
+        .select("id, first_name, last_name, company_name")
         .in("id", allUserIds);
 
       userProfiles = profiles || [];
@@ -92,7 +167,18 @@ export const GET: APIRoute = async ({ request }) => {
     // Create a map for quick user name lookup
     const userNameMap = new Map();
     userProfiles.forEach((profile) => {
-      userNameMap.set(profile.id, profile.name);
+      // For staff members, use first_name + last_name
+      let displayName = null;
+      if (profile.first_name) {
+        displayName = profile.last_name
+          ? `${profile.first_name} ${profile.last_name}`
+          : profile.first_name;
+      }
+      // Fallback to user ID if no name available
+      if (!displayName) {
+        displayName = `User ${profile.id.slice(0, 8)}`;
+      }
+      userNameMap.set(profile.id, displayName);
     });
 
     // Add author and assigned user names to projects
@@ -110,8 +196,8 @@ export const GET: APIRoute = async ({ request }) => {
         success: true,
         projects: processedProjects,
         count: processedProjects.length,
-        role: role,
-        user_id: userId,
+        role: finalRole,
+        user_id: finalUserId,
       }),
       {
         status: 200,
