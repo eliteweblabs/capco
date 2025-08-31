@@ -86,6 +86,7 @@ export const PUT: APIRoute = async ({ request, cookies, params }) => {
       project: body.project,
       service: body.service,
       requested_docs: body.requested_docs,
+      assigned_to_id: body.assigned_to_id || null, // Add assigned_to_id field
       updated_at: new Date().toISOString(), // Always update the timestamp when any field is modified
     };
 

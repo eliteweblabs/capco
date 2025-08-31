@@ -86,7 +86,7 @@ export const PROJECT_UPDATE_FIELDS: ProjectField[] = [
     name: "assigned_to_id",
     type: "string",
     category: "optional",
-    allowEmpty: false,
+    allowEmpty: true,
     description: "Assigned user ID",
   },
 
@@ -157,6 +157,11 @@ export function shouldIncludeField(fieldName: string, value: any): boolean {
 
   // If value is undefined, don't include
   if (value === undefined) return false;
+
+  // Special handling for assigned_to_id - always include it even if empty
+  if (fieldName === "assigned_to_id") {
+    return true;
+  }
 
   // If field doesn't allow empty and value is empty string, don't include
   if (field.allowEmpty === false && value === "") return false;
