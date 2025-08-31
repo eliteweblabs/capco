@@ -207,96 +207,30 @@ async function sendStatusChangeNotifications(
       }
     }
 
-    // Get environment variables for email
-    const emailProvider = import.meta.env.EMAIL_PROVIDER;
-    const emailApiKey = import.meta.env.EMAIL_API_KEY;
-    const fromEmail = import.meta.env.FROM_EMAIL;
-    const fromName = import.meta.env.FROM_NAME;
-
-    if (!emailProvider || !emailApiKey || !fromEmail) {
-      console.log("Email configuration not available, skipping notifications");
-      return;
-    }
-
-    // Read email template
-    const emailTemplatePath = new URL("../../../emails/template.html", import.meta.url);
-    const emailTemplate = await fetch(emailTemplatePath).then((res) => res.text());
-
-    // Send emails to each user
-    for (const user of usersToNotify) {
-      try {
-        // Determine if this user should get a magic link button
-        const isClient = user.email === projectDetails.profiles[0].email;
-        const shouldShowButton = isClient; // Only show button for clients
-
-        let magicLink = "";
-        if (shouldShowButton) {
-          // Generate magic link only for clients
-          const { data: magicLinkData, error: magicLinkError } =
-            await supabaseAdmin.auth.admin.generateLink({
-              type: "magiclink",
-              email: user.email,
-              options: {
-                redirectTo: `${import.meta.env.SITE_URL || "http://localhost:4321"}/project/${projectId}`,
-              },
-            });
-
-          if (magicLinkError) {
-            console.error(`Magic link generation error for ${user.email}:`, magicLinkError);
-            continue;
-          }
-          magicLink = magicLinkData.properties.action_link;
-        }
-
-        // Prepare email content
-        const personalizedContent = email_content
-          .replace("{{PROJECT_TITLE}}", projectDetails.title || "Project")
-          .replace("{{PROJECT_ADDRESS}}", projectDetails.address || "N/A")
-          .replace(
-            "{{CLIENT_NAME}}",
-            `${user.first_name || ""} ${user.last_name || ""}`.trim() ||
-              user.company_name ||
-              "Client"
-          );
-
-        // Replace template variables
-        let emailHtml = emailTemplate.replace("{{CONTENT}}", personalizedContent);
-
-        if (shouldShowButton) {
-          // For clients: Include magic link button
-          emailHtml = emailHtml.replace("{{BUTTON_TEXT}}", button_text || "View Project");
-          emailHtml = emailHtml.replace("{{BUTTON_LINK}}", magicLink);
-        } else {
-          // For admin/staff: Remove button, just show content
-          emailHtml = emailHtml.replace(/<a[^>]*{{BUTTON_TEXT}}[^>]*>.*?<\/a>/g, "");
-          emailHtml = emailHtml.replace("{{BUTTON_TEXT}}", "");
-          emailHtml = emailHtml.replace("{{BUTTON_LINK}}", "");
-        }
-
-        // Send email via Resend
-        const response = await fetch("https://api.resend.com/emails", {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${emailApiKey}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            from: `${fromName} <${fromEmail}>`,
-            to: [user.email],
-            subject: `Project Status Update: ${projectDetails.title || "Project"}`,
-            html: emailHtml,
-            text: personalizedContent.replace(/<[^>]*>/g, ""),
-          }),
-        });
-
-        if (!response.ok) {
-          console.error(`Failed to send email to ${user.email}:`, await response.text());
-        } else {
-          console.log(`Status change notification sent to ${user.email}`);
-        }
-      } catch (userError) {
-        console.error(`Error sending notification to ${user.email}:`, userError);
+    // Call the email delivery API
+    const emailResponse = await fetch(
+      `${import.meta.env.SITE_URL || "http://localhost:4321"}/api/email-delivery`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          projectId,
+          newStatus,
+          usersToNotify,
+          projectDetails,
+          email_content,
+          button_text,
+        }),
       }
+    );
+
+    if (emailResponse.ok) {
+      const emailResult = await emailResponse.json();
+      console.log("📧 [UPDATE-STATUS] Email delivery result:", emailResult);
+    } else {
+      console.error("📧 [UPDATE-STATUS] Email delivery failed:", await emailResponse.text());
     }
   } catch (error) {
     console.error("Error in sendStatusChangeNotifications:", error);
