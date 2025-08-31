@@ -1,5 +1,6 @@
 import type { APIRoute } from "astro";
-import { supabase, supabaseAdmin } from "../../lib/supabase";
+import { supabase } from "../../lib/supabase";
+import { supabaseAdmin } from "../../lib/supabase-admin";
 
 export const POST: APIRoute = async ({ request, cookies }) => {
   try {
@@ -17,7 +18,8 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     }
 
     const body = await request.json();
-    const { projectId, newStatus, usersToNotify, projectDetails, email_content, button_text } = body;
+    const { projectId, newStatus, usersToNotify, projectDetails, email_content, button_text } =
+      body;
 
     if (!projectId || !newStatus || !usersToNotify || !projectDetails || !email_content) {
       return new Response(
@@ -63,7 +65,8 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     for (const user of usersToNotify) {
       try {
         // Determine if this user should get a magic link button
-        const isClient = user.email === projectDetails.profiles[0].email;
+        const profileEmails = projectDetails.profiles.map((profile: any) => profile.email);
+        const isClient = profileEmails.includes(user.email);
         const shouldShowButton = isClient; // Only show button for clients
 
         let magicLink = "";
@@ -137,7 +140,10 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         }
       } catch (userError) {
         console.error(`Error sending notification to ${user.email}:`, userError);
-        failedEmails.push({ email: user.email, error: userError.message });
+        failedEmails.push({
+          email: user.email,
+          error: userError instanceof Error ? userError.message : "Unknown error",
+        });
       }
     }
 
