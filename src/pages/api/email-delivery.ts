@@ -76,8 +76,27 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     // Read email template
     console.log("📧 [EMAIL-DELIVERY] Reading email template...");
     const emailTemplatePath = new URL("../../../emails/template.html", import.meta.url);
-    const emailTemplate = await fetch(emailTemplatePath).then((res) => res.text());
-    console.log("📧 [EMAIL-DELIVERY] Email template loaded, length:", emailTemplate.length);
+    console.log("📧 [EMAIL-DELIVERY] Template path:", emailTemplatePath.toString());
+    
+    let emailTemplate: string;
+    try {
+      const templateResponse = await fetch(emailTemplatePath);
+      console.log("📧 [EMAIL-DELIVERY] Template response status:", templateResponse.status);
+      
+      if (!templateResponse.ok) {
+        throw new Error(`Template fetch failed: ${templateResponse.status} ${templateResponse.statusText}`);
+      }
+      
+      emailTemplate = await templateResponse.text();
+      console.log("📧 [EMAIL-DELIVERY] Email template loaded, length:", emailTemplate.length);
+      
+      if (!emailTemplate || emailTemplate.length === 0) {
+        throw new Error("Email template is empty");
+      }
+    } catch (templateError) {
+      console.error("📧 [EMAIL-DELIVERY] Template loading error:", templateError);
+      throw templateError;
+    }
 
     const sentEmails = [];
     const failedEmails = [];
@@ -223,11 +242,16 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       }
     );
   } catch (error) {
-    console.error("Email delivery error:", error);
+    console.error("📧 [EMAIL-DELIVERY] Top-level error:", error);
+    console.error(
+      "📧 [EMAIL-DELIVERY] Error stack:",
+      error instanceof Error ? error.stack : "No stack trace"
+    );
     return new Response(
       JSON.stringify({
         success: false,
         error: "Failed to send email notifications",
+        details: error instanceof Error ? error.message : "Unknown error",
       }),
       {
         status: 500,
