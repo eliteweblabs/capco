@@ -1,0 +1,210 @@
+---
+// This component handles staff creation form fields
+// Based on IsNewOrExistingClient but forced to show new client fields
+
+// interface Props {
+//   userRole?: string;
+// }
+
+// const { userRole = "Admin" } = Astro.props;
+---
+
+<div class="space-y-4">
+  <!-- New Staff Fields (always shown) -->
+  <div id="new-staff-fields" class="space-y-4">
+    <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+      <!-- First Name -->
+      <div>
+        <label for="first-name-input" class="mb-1 block text-sm font-medium text-gray-700">
+          First Name *
+        </label>
+        <input
+          type="text"
+          id="first-name-input"
+          name="first_name"
+          placeholder="First Name"
+          required
+          class="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-500"
+        />
+      </div>
+
+      <!-- Last Name -->
+      <div>
+        <label for="last-name-input" class="mb-1 block text-sm font-medium text-gray-700">
+          Last Name *
+        </label>
+        <input
+          type="text"
+          id="last-name-input"
+          name="last_name"
+          placeholder="Last Name"
+          required
+          class="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-500"
+        />
+      </div>
+    </div>
+
+    <!-- Company Name (Optional) -->
+    <div>
+      <label for="company-name-input" class="mb-1 block text-sm font-medium text-gray-700">
+        Company Name
+      </label>
+      <input
+        type="text"
+        id="company-name-input"
+        name="company_name"
+        placeholder="Company Name (optional)"
+        class="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-500"
+      />
+    </div>
+
+    <!-- Email -->
+    <div>
+      <label for="email-input" class="mb-1 block text-sm font-medium text-gray-700">
+        Email Address *
+      </label>
+      <input
+        type="email"
+        id="email-input"
+        name="email"
+        placeholder="email@example.com"
+        required
+        class="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-500"
+      />
+    </div>
+
+    <!-- Phone (Optional) -->
+    <div>
+      <label for="phone-input" class="mb-1 block text-sm font-medium text-gray-700">
+        Phone Number
+      </label>
+      <input
+        type="tel"
+        id="phone-input"
+        name="phone"
+        placeholder="(555) 123-4567"
+        class="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-500"
+      />
+    </div>
+
+    <!-- Role Selection -->
+    <div>
+      <label for="role-select" class="mb-1 block text-sm font-medium text-gray-700"> Role * </label>
+      <select
+        id="role-select"
+        name="role"
+        required
+        class="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-500"
+      >
+        <option value="">Select Role</option>
+        <option value="Admin">Admin</option>
+        <option value="Staff">Staff</option>
+        <option value="Client">Client</option>
+      </select>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Form validation and handling for staff creation
+  document.addEventListener("DOMContentLoaded", function () {
+    const form = document.getElementById("create-staff-form") as HTMLFormElement;
+    const submitButton = document.querySelector('button[type="submit"]') as HTMLButtonElement;
+
+    if (!form || !submitButton) return;
+
+    // Form submission handler
+    form.addEventListener("submit", async function (e) {
+      e.preventDefault();
+
+      // Disable submit button to prevent double submission
+      submitButton.disabled = true;
+      submitButton.textContent = "Creating User...";
+
+      try {
+        // Collect form data
+        const formData = new FormData(form);
+        const data = {
+          first_name: formData.get("first_name"),
+          last_name: formData.get("last_name"),
+          company_name: formData.get("company_name"),
+          email: formData.get("email"),
+          phone: formData.get("phone"),
+          role: formData.get("role"),
+        };
+
+        console.log("📝 [STAFF-FORM] Submitting data:", data);
+
+        // Send to API
+        const response = await fetch("/api/create-staff", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(data),
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+          // Show success message
+          showMessage("success", result.message || "User created successfully!");
+
+          // Show notification if provided
+          if (result.notification && window.toastAlertManager) {
+            window.toastAlertManager.show(result.notification);
+          }
+
+          // Reset form
+          form.reset();
+        } else {
+          // Show error message
+          showMessage("error", result.error || "Failed to create user");
+
+          // Show notification if provided
+          if (result.notification && window.toastAlertManager) {
+            window.toastAlertManager.show(result.notification);
+          }
+        }
+      } catch (error) {
+        console.error("📝 [STAFF-FORM] Error:", error);
+        showMessage("error", "An error occurred while creating the user");
+      } finally {
+        // Re-enable submit button
+        submitButton.disabled = false;
+        submitButton.textContent = "Create User";
+      }
+    });
+
+    function showMessage(type: string, message: string) {
+      const messageContainer = document.getElementById("message-container");
+      const successMessage = document.getElementById("success-message");
+      const errorMessage = document.getElementById("error-message");
+      const successText = document.getElementById("success-text");
+      const errorText = document.getElementById("error-text");
+
+      if (!messageContainer || !successMessage || !errorMessage || !successText || !errorText)
+        return;
+
+      // Hide all messages first
+      messageContainer.classList.add("hidden");
+      successMessage.classList.add("hidden");
+      errorMessage.classList.add("hidden");
+
+      // Show appropriate message
+      messageContainer.classList.remove("hidden");
+      if (type === "success") {
+        successText.textContent = message;
+        successMessage.classList.remove("hidden");
+      } else {
+        errorText.textContent = message;
+        errorMessage.classList.remove("hidden");
+      }
+
+      // Auto-hide after 5 seconds
+      setTimeout(() => {
+        messageContainer.classList.add("hidden");
+      }, 5000);
+    }
+  });
+</script>

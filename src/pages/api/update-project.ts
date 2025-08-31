@@ -80,6 +80,7 @@ export const POST: APIRoute = async ({ request }) => {
 
     if (updateFields.status !== undefined) {
       console.log("🔔 [UPDATE-PROJECT] Checking for status change...");
+      console.log("🔔 [UPDATE-PROJECT] Status field received:", updateFields.status);
       const { data: currentProject, error: currentProjectError } = await supabase
         .from("projects")
         .select("status")
@@ -196,6 +197,12 @@ export const POST: APIRoute = async ({ request }) => {
 
     if (isStatusChange && updateFields.status !== undefined) {
       console.log("🔔 [UPDATE-PROJECT] Calling sendStatusChangeNotifications...");
+      console.log("🔔 [UPDATE-PROJECT] Status change details:", {
+        projectId,
+        newStatus: updateFields.status,
+        oldStatus,
+        isStatusChange,
+      });
       try {
         await sendStatusChangeNotifications(projectId, updateFields.status, data);
         console.log("🔔 [UPDATE-PROJECT] sendStatusChangeNotifications completed successfully");
@@ -205,6 +212,12 @@ export const POST: APIRoute = async ({ request }) => {
       }
     } else {
       console.log("🔔 [UPDATE-PROJECT] No status change detected, skipping notifications");
+      console.log("🔔 [UPDATE-PROJECT] Status change check details:", {
+        isStatusChange,
+        hasStatusField: updateFields.status !== undefined,
+        newStatus: updateFields.status,
+        oldStatus,
+      });
     }
 
     return new Response(
@@ -247,16 +260,26 @@ async function sendStatusChangeNotifications(
     // Get status configuration from project_statuses table
     const { data: statusConfig, error: statusError } = await supabase
       .from("project_statuses")
-      .select("notify, email_content, button_text")
+      .select("notify, email_content, button_text, est_time")
       .eq("status_code", newStatus)
       .single();
 
+    console.log("🔔 [UPDATE-PROJECT] Status configuration query:", {
+      statusCode: newStatus,
+      hasConfig: !!statusConfig,
+      error: statusError,
+      config: statusConfig,
+    });
+
     if (statusError || !statusConfig) {
-      console.log(`No status configuration found for status ${newStatus}`);
+      console.log(`🔔 [UPDATE-PROJECT] No status configuration found for status ${newStatus}`);
+      console.log("🔔 [UPDATE-PROJECT] This means no email will be sent for this status change");
       return;
     }
 
-    const { notify, email_content, button_text } = statusConfig;
+    console.log("🔔 [UPDATE-PROJECT] Status configuration found:", statusConfig);
+
+    const { notify, email_content, button_text, est_time } = statusConfig;
 
     // Get project details for email
     console.log("🔔 [UPDATE-PROJECT] Fetching project details for ID:", projectId);
@@ -372,6 +395,14 @@ async function sendStatusChangeNotifications(
       return;
     }
 
+    console.log(
+      "🔔 [UPDATE-PROJECT] Users to notify:",
+      usersToNotify.map((u) => ({
+        email: u.email,
+        name: u.first_name || u.company_name,
+      }))
+    );
+
     // Send emails to each user
     for (const user of usersToNotify) {
       try {
@@ -402,6 +433,7 @@ async function sendStatusChangeNotifications(
         const personalizedContent = email_content
           .replace("{{PROJECT_TITLE}}", projectDetails.title || "Project")
           .replace("{{PROJECT_ADDRESS}}", projectDetails.address || "N/A")
+          .replace("{{EST_TIME}}", est_time || "2-3 business days")
           .replace(
             "{{CLIENT_NAME}}",
             `${user.first_name || ""} ${user.last_name || ""}`.trim() ||
@@ -436,6 +468,7 @@ async function sendStatusChangeNotifications(
             projectDetails: {
               title: projectDetails.title || "Project",
               address: projectDetails.address || "N/A",
+              est_time: est_time || "2-3 business days",
               profiles: [user],
             },
             email_content: personalizedContent,

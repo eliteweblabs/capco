@@ -173,6 +173,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         const personalizedContent = email_content
           .replace("{{PROJECT_TITLE}}", projectDetails.title || "Project")
           .replace("{{PROJECT_ADDRESS}}", projectDetails.address || "N/A")
+          .replace("{{EST_TIME}}", projectDetails.est_time || "2-3 business days")
           .replace(
             "{{CLIENT_NAME}}",
             `${user.first_name || ""} ${user.last_name || ""}`.trim() ||

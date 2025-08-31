@@ -200,20 +200,33 @@ if (canChangeStatus) {
           Updating...
         `;
 
+        console.log("🔔 [STATUS-DROPDOWN] Updating project status:", {
+          projectId,
+          newStatus,
+          statusName
+        });
+
         // Make API call to update status using update-project endpoint
+        const requestBody = {
+          projectId: projectId,
+          status: newStatus
+        };
+        
+        console.log("🔔 [STATUS-DROPDOWN] Making API call to /api/update-project with body:", requestBody);
+        
         const response = await fetch('/api/update-project', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({
-            projectId: projectId,
-            status: newStatus
-          })
+          body: JSON.stringify(requestBody)
         });
+
+        console.log("🔔 [STATUS-DROPDOWN] API response status:", response.status);
 
         if (response.ok) {
           const result = await response.json();
+          console.log("🔔 [STATUS-DROPDOWN] API response result:", result);
           
           // Show success toast notification if status config is available
           if (result.statusConfig && window.globalServices) {
@@ -248,8 +261,71 @@ if (canChangeStatus) {
             }
           }
           
-          // Reload the page to reflect changes
-          window.location.reload();
+          // Update the button text to show new status
+          if (dropdownButton) {
+            dropdownButton.innerHTML = `
+              <span class="flex items-center">
+                <span class="mr-2">${statusName}</span>
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                </svg>
+              </span>
+            `;
+            dropdownButton.disabled = false;
+          }
+          
+          // Update the selected status in the dropdown menu
+          const statusButtons = dropdownMenu.querySelectorAll('[data-status-code]');
+          statusButtons.forEach(button => {
+            const buttonStatusCode = parseInt(button.getAttribute('data-status-code'));
+            
+            // Remove selection from all buttons first
+            button.classList.remove('bg-blue-50', 'text-blue-700', 'dark:bg-blue-900/20', 'dark:text-blue-400');
+            button.classList.add('text-gray-700', 'dark:text-gray-300');
+            
+            // Remove "Current Status" text and checkmark from all buttons
+            const currentStatusDiv = button.querySelector('.text-xs');
+            if (currentStatusDiv) {
+              currentStatusDiv.remove();
+            }
+            const checkmark = button.querySelector('svg');
+            if (checkmark) {
+              checkmark.remove();
+            }
+            
+            // Add selection to the new status button
+            if (buttonStatusCode === newStatus) {
+              button.classList.remove('text-gray-700', 'dark:text-gray-300');
+              button.classList.add('bg-blue-50', 'text-blue-700', 'dark:bg-blue-900/20', 'dark:text-blue-400');
+              
+              // Add "Current Status" text
+              const textDiv = button.querySelector('.flex-1');
+              if (textDiv) {
+                const currentStatusDiv = document.createElement('div');
+                currentStatusDiv.className = 'text-xs text-blue-600 dark:text-blue-400';
+                currentStatusDiv.textContent = 'Current Status';
+                textDiv.appendChild(currentStatusDiv);
+              }
+              
+              // Add checkmark
+              const checkmarkSvg = document.createElement('svg');
+              checkmarkSvg.className = 'h-4 w-4 text-blue-600 dark:text-blue-400';
+              checkmarkSvg.setAttribute('fill', 'currentColor');
+              checkmarkSvg.setAttribute('viewBox', '0 0 20 20');
+              checkmarkSvg.innerHTML = '<path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>';
+              button.appendChild(checkmarkSvg);
+              
+              console.log("🔔 [STATUS-DROPDOWN] Added checkmark to status button:", {
+                statusCode: buttonStatusCode,
+                newStatus,
+                buttonText: button.querySelector('.font-medium')?.textContent
+              });
+            }
+          });
+          
+          // Show success message
+          console.log("🔔 [STATUS-DROPDOWN] Status updated successfully to:", statusName);
+          console.log("🔔 [STATUS-DROPDOWN] Email notifications should have been triggered");
         } else {
           const errorData = await response.json();
           throw new Error(errorData.error || 'Failed to update status');

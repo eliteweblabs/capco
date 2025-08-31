@@ -68,6 +68,8 @@ export const POST: APIRoute = async ({ request }) => {
       profileError: !!profileError,
     });
 
+    console.log("📡 [API] Project access check for projectId:", projectId);
+
     // Fetch files for the project
     let query = supabase
       .from("files")
@@ -77,7 +79,14 @@ export const POST: APIRoute = async ({ request }) => {
       .order("uploaded_at", { ascending: false });
 
     // Apply RLS - Admins can see all files, Staff can see assigned projects, Clients can only see their own projects
-    if (userRole !== "Admin") {
+    const normalizedUserRole = userRole.toLowerCase();
+    console.log("📡 [API] Role check:", {
+      userRole,
+      normalizedUserRole,
+      isAdmin: normalizedUserRole === "admin",
+    });
+
+    if (normalizedUserRole !== "admin") {
       // Check project permissions based on user role
       const { data: project, error: projectError } = await supabase
         .from("projects")
@@ -86,11 +95,19 @@ export const POST: APIRoute = async ({ request }) => {
         .single();
 
       if (projectError || !project) {
+        console.log("🚨 [API] Project not found:", { projectId, error: projectError });
         return new Response(JSON.stringify({ error: "Project not found" }), {
           status: 404,
           headers: { "Content-Type": "application/json" },
         });
       }
+
+      console.log("📡 [API] Project found:", {
+        projectId,
+        authorId: project.author_id,
+        assignedToId: project.assigned_to_id,
+        hasAssignment: !!project.assigned_to_id,
+      });
 
       // Check access based on role (case-insensitive)
       let hasAccess = false;
@@ -115,15 +132,24 @@ export const POST: APIRoute = async ({ request }) => {
       }
 
       if (!hasAccess) {
-        console.log("Access denied for user:", {
+        console.log("🚨 [API] Access denied for user:", {
           userId: user.id,
           userRole,
           projectAuthorId: project.author_id,
           projectAssignedToId: project.assigned_to_id,
+          isAssigned: project.assigned_to_id === user.id,
+          isAuthor: project.author_id === user.id,
         });
         return new Response(JSON.stringify({ error: "Access denied" }), {
           status: 403,
           headers: { "Content-Type": "application/json" },
+        });
+      } else {
+        console.log("✅ [API] Access granted for user:", {
+          userId: user.id,
+          userRole,
+          projectAuthorId: project.author_id,
+          projectAssignedToId: project.assigned_to_id,
         });
       }
     }
