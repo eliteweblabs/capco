@@ -5,6 +5,7 @@ export interface Props {
   name?: string;
   label?: string;
   required?: boolean;
+  readOnly?: boolean;
 }
 
 const {
@@ -13,6 +14,7 @@ const {
   name = "units",
   label = "Units",
   required = false,
+  readOnly = false,
 } = Astro.props;
 
 // Convert units value to slider position
@@ -40,10 +42,17 @@ const fieldId = `units-slider-${projectId}`;
 ---
 
 <div>
-  <label for={fieldId} class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+  <label
+    for={fieldId}
+    class={`block text-sm font-medium mb-2 ${
+      readOnly ? "text-gray-500 dark:text-gray-400" : "text-gray-700 dark:text-gray-300"
+    }`}
+  >
     {label}: <span
       id={`units-value-${projectId}`}
-      class="font-semibold text-blue-600 dark:text-blue-400">{value}</span
+      class={`font-semibold ${
+        readOnly ? "text-gray-500 dark:text-gray-400" : "text-blue-600 dark:text-blue-400"
+      }`}>{value}</span
     >
   </label>
   <div class="relative">
@@ -54,12 +63,15 @@ const fieldId = `units-slider-${projectId}`;
       min="0"
       max="14"
       value={sliderValue}
-      class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700 units-range-slider relative z-10"
+      class={`w-full h-2 bg-gray-200 rounded-lg appearance-none dark:bg-gray-700 units-range-slider relative z-10 ${
+        readOnly ? "cursor-not-allowed opacity-60" : "cursor-pointer"
+      }`}
       data-values={unitsOptions.join(",")}
       aria-label="Select number of units"
       {required}
+      disabled={readOnly}
     />
-    <div class="flex justify-between text-xs text-gray-500 dark:text-gray-400 mt-1">
+    <div class="mt-1 flex justify-between text-xs text-gray-500 dark:text-gray-400">
       <span>1</span>
       <span>5</span>
       <span>10</span>
@@ -136,6 +148,22 @@ const fieldId = `units-slider-${projectId}`;
     box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3);
   }
 
+  /* Disabled state styling */
+  .units-range-slider:disabled {
+    cursor: not-allowed;
+    opacity: 0.6;
+  }
+
+  .units-range-slider:disabled::-webkit-slider-thumb {
+    background: #9ca3af;
+    cursor: not-allowed;
+  }
+
+  .units-range-slider:disabled::-moz-range-thumb {
+    background: #9ca3af;
+    cursor: not-allowed;
+  }
+
   input[type="range"].units-range-slider {
     background: transparent;
     border: none;
@@ -156,17 +184,20 @@ const fieldId = `units-slider-${projectId}`;
   }
 </style>
 
-<script define:vars={{ projectId, unitsOptions }}>
+<script define:vars={{ projectId, unitsOptions, readOnly }}>
   // Update the units value display when slider changes
   const slider = document.getElementById(`units-slider-${projectId}`);
   const valueDisplay = document.getElementById(`units-value-${projectId}`);
 
   if (slider && valueDisplay) {
-    slider.addEventListener("input", (e) => {
-      const target = e.target;
-      const index = parseInt(target.value);
-      const unitsValue = unitsOptions[index] || "1";
-      valueDisplay.textContent = unitsValue;
-    });
+    // Only add event listener if not read-only
+    if (!readOnly) {
+      slider.addEventListener("input", (e) => {
+        const target = e.target;
+        const index = parseInt(target.value);
+        const unitsValue = unitsOptions[index] || "1";
+        valueDisplay.textContent = unitsValue;
+      });
+    }
   }
 </script>

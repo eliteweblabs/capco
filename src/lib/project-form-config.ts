@@ -194,6 +194,9 @@ export const PROJECT_FORM_FIELDS: FormFieldConfig[] = [
     hideAtStatus: [
       10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170, 180, 190, 200,
     ], // Hide after proposal is signed off
+    readOnlyAtStatus: [
+      20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170, 180, 190, 200,
+    ], // Read-only after proposal is viewed but before signed off
   },
 
   // Company Name field (only shown for new projects with new client toggle on)
@@ -252,9 +255,11 @@ export const PROJECT_FORM_FIELDS: FormFieldConfig[] = [
     label: "Architect",
     placeholder: "Architect",
     dataField: "architect",
-    allow: ["admin", "staff", "client"], // Only admin and staff can see architect
+    allow: ["Admin", "Staff", "Client"], // Only admin and staff can see architect
     hideAtStatus: [60, 70, 80, 90], // Hide after proposal is signed off
-    readOnlyAtStatus: [50], // Read-only after proposal is viewed but before signed off
+    readOnlyAtStatus: [
+      20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170, 180, 190, 200,
+    ], // Read-only after proposal is viewed but before signed off
   },
   {
     id: "square-foot-input",
@@ -267,9 +272,11 @@ export const PROJECT_FORM_FIELDS: FormFieldConfig[] = [
     max: 50000,
     step: 1,
     dataField: "square_foot",
-    allow: ["admin", "staff", "client"], // All roles can see square footage
+    allow: ["Admin", "Staff", "Client"], // All roles can see square footage
     hideAtStatus: [60, 70, 80, 90], // Hide after proposal is signed off
-    readOnlyAtStatus: [50], // Read-only after proposal is viewed but before signed off
+    readOnlyAtStatus: [
+      20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170, 180, 190, 200,
+    ], // Read-only after proposal is viewed but before signed off
   },
   {
     id: "description-input",
@@ -277,9 +284,11 @@ export const PROJECT_FORM_FIELDS: FormFieldConfig[] = [
     type: "textarea",
     label: "Description",
     placeholder: "Project description...",
-    allow: ["admin", "staff", "client"], // Only admin and staff can see description
+    allow: ["Admin", "Staff", "Client"], // Only admin and staff can see description
     hideAtStatus: [50, 60, 70, 80, 90], // Hide after proposal is viewed
-    readOnlyAtStatus: [40], // Read-only after proposal is shipped but before viewed
+    readOnlyAtStatus: [
+      20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170, 180, 190, 200,
+    ], // Read-only after proposal is viewed but before signed off
   },
   {
     id: "assigned-to-select",
@@ -287,7 +296,7 @@ export const PROJECT_FORM_FIELDS: FormFieldConfig[] = [
     type: "component",
     label: "Assign To",
     component: "StaffSelect",
-    allow: ["admin"], // Only admin can assign projects
+    allow: ["Admin"], // Only admin can assign projects
     // Assignment available throughout most of the process (all statuses)
   },
   {
@@ -295,8 +304,10 @@ export const PROJECT_FORM_FIELDS: FormFieldConfig[] = [
     name: "new_construction",
     type: "checkbox",
     label: "New Construction",
-    allow: ["admin", "staff", "client"], // All roles can see new construction
-    hideAtStatus: [60, 70, 80, 90], // Hide after proposal is signed off
+    allow: ["Admin", "Staff", "Client"], // All roles can see new construction
+    readOnlyAtStatus: [
+      20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170, 180, 190, 200,
+    ], // Read-only after proposal is viewed but before signed off
   },
   // Units slider is now handled by UnitSlider.astro component
   {
@@ -310,8 +321,11 @@ export const PROJECT_FORM_FIELDS: FormFieldConfig[] = [
       label: "Units",
       required: false,
     },
-    allow: ["admin", "staff", "client"], // Only admin and staff can see units slider
+    allow: ["Admin", "Staff", "Client"], // Only admin and staff can see units slider
     hideAtStatus: [0, 60, 70, 80, 90], // Hide on new projects and after proposal is signed off
+    readOnlyAtStatus: [
+      20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170, 180, 190, 200,
+    ], // Read-only after proposal is viewed but before signed off
   },
 ];
 
@@ -324,7 +338,7 @@ export const FORM_ACTIONS: FormActionConfig[] = [
     icon: "bx-save",
     cssClass:
       "px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors",
-    allow: ["admin", "staff", "client"], // All roles can save
+    allow: ["Admin", "Staff", "Client"], // All roles can save
     // No status restriction - can save project at any status
     // displayOnNew undefined - shows on both new and existing projects
   },
@@ -336,7 +350,7 @@ export const FORM_ACTIONS: FormActionConfig[] = [
     cssClass:
       "px-4 py-2 bg-red-600 text-white text-sm font-medium rounded-lg hover:bg-red-700 transition-colors",
     action: "deleteProject",
-    allow: ["admin", "staff"], // Only admin and staff can delete
+    allow: ["Admin", "Staff"], // Only admin and staff can delete
     hideAtStatus: [0], // Only show when specs are received (status 10)
   },
   {
@@ -347,7 +361,7 @@ export const FORM_ACTIONS: FormActionConfig[] = [
     cssClass:
       "px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 transition-colors",
     action: "buildProposal",
-    allow: ["admin", "staff"], // Only admin and staff can build proposals
+    allow: ["Admin", "Staff"], // Only admin and staff can build proposals
     hideAtStatus: [0, 20, 30, 40, 50, 60, 70, 80, 90], // Only show when specs are received (status 10)
   },
 ];
@@ -360,9 +374,11 @@ export const BUTTON_GROUPS: ButtonGroupConfig[] = [
     label: "Building",
     type: "radio",
     cssClass: "building-type-radio",
-    allow: ["admin", "staff", "client"], // All roles can see building type
+    allow: ["Admin", "Staff", "Client"], // All roles can see building type
     hideAtStatus: [60, 70, 80, 90], // Hide after proposal is signed off
-    readOnlyAtStatus: [50], // Read-only after proposal is viewed but before signed off
+    readOnlyAtStatus: [
+      20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170, 180, 190, 200,
+    ], // Read-only after proposal is viewed but before signed off
     options: [
       { value: "Residential", label: "Residential" },
       { value: "Mixed use", label: "Mixed use" },
@@ -379,8 +395,12 @@ export const BUTTON_GROUPS: ButtonGroupConfig[] = [
     label: "Project",
     type: "multi-select",
     cssClass: "project-type-btns",
-    allow: ["admin", "staff", "client"], // Only admin and staff can see consulting services
+    allow: ["Admin", "Staff", "Client"], // Only admin and staff can see consulting services
     // hideAtStatus: [50, 60, 70, 80, 90], // Hide after proposal is viewed
+    readOnlyAtStatus: [
+      20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170, 180, 190, 200,
+    ], // Read-only after proposal is viewed but before signed off
+
     options: [
       { value: "Sprinkler", label: "Sprinkler" },
       { value: "Alarm", label: "Alarm" },
@@ -397,7 +417,11 @@ export const BUTTON_GROUPS: ButtonGroupConfig[] = [
     label: "Supply / Service",
     type: "radio",
     cssClass: "fire-service-radio",
-    allow: ["admin", "staff", "client"], // All roles can see fire service
+    allow: ["Admin", "Staff", "Client"], // All roles can see fire service
+    readOnlyAtStatus: [
+      20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170, 180, 190, 200,
+    ], // Read-only after proposal is viewed but before signed off
+
     // hideAtStatus: [60, 70, 80, 90], // Hide after proposal is signed off
     options: [
       { value: "Pump & Tank", label: "Pump & Tank" },
@@ -413,7 +437,11 @@ export const BUTTON_GROUPS: ButtonGroupConfig[] = [
     label: "Reports Required",
     type: "multi-select",
     cssClass: "fire-safety-service-btn",
-    allow: ["admin", "staff", "client"], // Only admin and staff can see reports required
+    allow: ["Admin", "Staff", "Client"], // Only admin and staff can see reports required
+    readOnlyAtStatus: [
+      20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170, 180, 190, 200,
+    ], // Read-only after proposal is viewed but before signed off
+
     // hideAtStatus: [50, 60, 70, 80, 90], // Hide after proposal is viewed
     options: [
       { value: "Narrative", label: "Narrative" },
