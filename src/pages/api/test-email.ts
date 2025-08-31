@@ -1,15 +1,18 @@
 import type { APIRoute } from "astro";
-import { readFileSync } from "fs";
-import { join } from "path";
 import { supabase } from "../../lib/supabase";
 import { supabaseAdmin } from "../../lib/supabase-admin";
 
 export const POST: APIRoute = async ({ request, cookies }) => {
   console.log("📧 [TEST-EMAIL] API endpoint called");
-  
+
   try {
     const { to, subject, body, buttonText } = await request.json();
-    console.log("📧 [TEST-EMAIL] Request data:", { to, subject, body: body?.substring(0, 100) + "...", buttonText });
+    console.log("📧 [TEST-EMAIL] Request data:", {
+      to,
+      subject,
+      body: body?.substring(0, 100) + "...",
+      buttonText,
+    });
 
     // Validate input
     if (!to || !subject || !body) {
@@ -95,22 +98,26 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         },
         body: JSON.stringify({
           projectId: "test-project",
-          newStatus: 999, // Test status
-          usersToNotify: [{
-            email: to,
-            first_name: "Test",
-            last_name: "User",
-            company_name: "Test Company"
-          }],
-          projectDetails: {
-            title: "Test Project",
-            address: "Test Address",
-            profiles: [{
+          newStatus: 0, // Use 0 for test emails (no real status)
+          usersToNotify: [
+            {
               email: to,
               first_name: "Test",
               last_name: "User",
-              company_name: "Test Company"
-            }]
+              company_name: "Test Company",
+            },
+          ],
+          projectDetails: {
+            title: "Test Project",
+            address: "Test Address",
+            profiles: [
+              {
+                email: to,
+                first_name: "Test",
+                last_name: "User",
+                company_name: "Test Company",
+              },
+            ],
           },
           email_content: body,
           button_text: buttonText || "Access Your Dashboard",
@@ -123,7 +130,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     if (emailResponse.ok) {
       const emailResult = await emailResponse.json();
       console.log("📧 [TEST-EMAIL] Email delivery result:", emailResult);
-      
+
       return new Response(
         JSON.stringify({
           success: true,
@@ -136,7 +143,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     } else {
       const errorText = await emailResponse.text();
       console.error("📧 [TEST-EMAIL] Email delivery failed:", errorText);
-      
+
       return new Response(
         JSON.stringify({
           error: `Failed to send email: ${errorText}`,
