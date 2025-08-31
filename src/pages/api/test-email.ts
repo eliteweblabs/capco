@@ -97,17 +97,26 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
     // Call the email delivery API
     console.log("📧 [TEST-EMAIL] Calling email delivery API...");
-    const emailResponse = await fetch(
-      `${import.meta.env.SITE_URL || "http://localhost:4321"}/api/email-delivery`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          projectId: "test-project",
-          newStatus: 0, // Use 0 for test emails (no real status)
-          usersToNotify: [
+    const emailResponse = await fetch("http://localhost:4321/api/email-delivery", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        projectId: "test-project",
+        newStatus: 0, // Use 0 for test emails (no real status)
+        usersToNotify: [
+          {
+            email: to,
+            first_name: "Test",
+            last_name: "User",
+            company_name: "Test Company",
+          },
+        ],
+        projectDetails: {
+          title: "Test Project",
+          address: "Test Address",
+          profiles: [
             {
               email: to,
               first_name: "Test",
@@ -115,23 +124,11 @@ export const POST: APIRoute = async ({ request, cookies }) => {
               company_name: "Test Company",
             },
           ],
-          projectDetails: {
-            title: "Test Project",
-            address: "Test Address",
-            profiles: [
-              {
-                email: to,
-                first_name: "Test",
-                last_name: "User",
-                company_name: "Test Company",
-              },
-            ],
-          },
-          email_content: body,
-          button_text: buttonText || "Access Your Dashboard",
-        }),
-      }
-    );
+        },
+        email_content: body,
+        button_text: buttonText || "Access Your Dashboard",
+      }),
+    });
 
     console.log("📧 [TEST-EMAIL] Email delivery response status:", emailResponse.status);
 
@@ -139,12 +136,21 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       const emailResult = await emailResponse.json();
       console.log("📧 [TEST-EMAIL] Email delivery result:", emailResult);
 
+      // Log success notification
+      console.log("🔔 [TEST-EMAIL] Email sent successfully to:", to);
+
       return new Response(
         JSON.stringify({
           success: true,
           message: "Email sent successfully",
           emailId: emailResult.sentEmails?.[0] || "unknown",
           details: emailResult,
+          notification: {
+            type: "success",
+            title: "Test Email Sent",
+            message: `Test email sent successfully to ${to}`,
+            duration: 5000,
+          },
         }),
         { status: 200, headers: { "Content-Type": "application/json" } }
       );
@@ -152,9 +158,18 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       const errorText = await emailResponse.text();
       console.error("📧 [TEST-EMAIL] Email delivery failed:", errorText);
 
+      // Log error notification
+      console.error("🔔 [TEST-EMAIL] Failed to send test email to:", to);
+
       return new Response(
         JSON.stringify({
           error: `Failed to send email: ${errorText}`,
+          notification: {
+            type: "error",
+            title: "Test Email Failed",
+            message: `Failed to send test email to ${to}: ${errorText}`,
+            duration: 0,
+          },
         }),
         { status: emailResponse.status, headers: { "Content-Type": "application/json" } }
       );

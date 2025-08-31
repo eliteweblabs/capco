@@ -210,3 +210,12 @@ ORDER BY table_name, ordinal_position;
 - **Client Role**: Access only to their own data (projects.author_id = auth.uid())
 - **Authentication Required**: All policies require valid authentication (auth.uid())
 - **Role-Based Access**: Policies check user role via profiles table join
+
+## Known Issues & Future Improvements
+
+### Email Rate Limiting
+
+- **Issue**: Resend API has rate limiting (2 requests per second) causing email delivery failures
+- **Current Workaround**: Added 1-second delay between emails in `/api/email-delivery.ts`
+- **Future Fix**: Investigate Resend account settings or consider alternative email providers for higher rate limits
+- **Location**: `src/pages/api/email-delivery.ts` - email sending loop with delay

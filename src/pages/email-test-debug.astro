@@ -1,0 +1,107 @@
+---
+import App from "../components/common/App.astro";
+import SectionContainer from "../components/common/SectionContainer.astro";
+
+// Check if user is authenticated
+import { checkAuth } from "../lib/auth";
+const authResult = await checkAuth(Astro.cookies);
+const { isAuth, user, role } = authResult;
+
+// Redirect to login if not authenticated
+if (!isAuth || !user) {
+  return Astro.redirect("/login");
+}
+
+// Only allow admins to access this page
+if (role !== "Admin") {
+  return Astro.redirect("/dashboard");
+}
+---
+
+<App
+  title="Email Test Debug - CAPCo Fire Protection"
+  description="Debug version of email test page."
+  user={user}
+>
+  <SectionContainer class="px-6 py-16">
+    <div class="mx-auto max-w-2xl">
+      <!-- Header -->
+      <div class="mb-8 text-center">
+        <h1 class="text-3xl font-bold text-gray-900 dark:text-white">Email Test Debug</h1>
+        <p class="mt-2 text-gray-600 dark:text-gray-300">Debug version to isolate the 500 error</p>
+      </div>
+
+      <!-- Simple Form -->
+      <div class="rounded-lg bg-white p-6 shadow-sm dark:bg-gray-800">
+        <h2 class="mb-4 text-lg font-semibold text-gray-900 dark:text-white">Simple Test Form</h2>
+        <form id="debug-form" class="space-y-4">
+          <div>
+            <label
+              for="test-input"
+              class="block text-sm font-medium text-gray-700 dark:text-gray-300"
+            >
+              Test Input
+            </label>
+            <input
+              type="text"
+              id="test-input"
+              name="test"
+              class="w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+              placeholder="Test input"
+            />
+          </div>
+          <button
+            type="submit"
+            id="test-btn"
+            class="w-full rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white"
+          >
+            Test Button
+          </button>
+        </form>
+      </div>
+
+      <!-- Environment Info -->
+      <div class="mt-8 rounded-lg bg-gray-50 p-6 dark:bg-gray-800">
+        <h2 class="mb-4 text-lg font-semibold text-gray-900 dark:text-white">
+          Environment Configuration
+        </h2>
+        <div class="space-y-2 text-sm text-gray-600 dark:text-gray-400">
+          <div class="flex justify-between">
+            <span>Email Provider:</span>
+            <span class="font-mono">{import.meta.env.EMAIL_PROVIDER || "Not set"}</span>
+          </div>
+          <div class="flex justify-between">
+            <span>From Email:</span>
+            <span class="font-mono">{import.meta.env.FROM_EMAIL || "Not set"}</span>
+          </div>
+          <div class="flex justify-between">
+            <span>From Name:</span>
+            <span class="font-mono">{import.meta.env.FROM_NAME || "Not set"}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </SectionContainer>
+</App>
+
+<script>
+  document.addEventListener("DOMContentLoaded", () => {
+    console.log("🔧 [DEBUG] Email test debug page loaded");
+
+    const form = document.getElementById("debug-form");
+    const button = document.getElementById("test-btn");
+
+    if (form && button) {
+      form.addEventListener("submit", (e) => {
+        e.preventDefault();
+        console.log("🔧 [DEBUG] Form submitted");
+
+        if (window.showSuccess) {
+          window.showSuccess("Debug Test", "Form submitted successfully", 3000);
+        } else {
+          console.log("🔧 [DEBUG] showSuccess not available");
+        }
+      });
+    }
+  });
+</script>

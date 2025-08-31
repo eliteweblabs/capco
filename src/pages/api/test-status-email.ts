@@ -7,23 +7,17 @@ export const POST: APIRoute = async ({ request }) => {
     const { projectId, statusCode, testEmail } = body;
 
     if (!projectId || !statusCode) {
-      return new Response(
-        JSON.stringify({ error: "Project ID and status code are required" }),
-        {
-          status: 400,
-          headers: { "Content-Type": "application/json" },
-        }
-      );
+      return new Response(JSON.stringify({ error: "Project ID and status code are required" }), {
+        status: 400,
+        headers: { "Content-Type": "application/json" },
+      });
     }
 
     if (!supabase) {
-      return new Response(
-        JSON.stringify({ error: "Database connection not available" }),
-        {
-          status: 500,
-          headers: { "Content-Type": "application/json" },
-        }
-      );
+      return new Response(JSON.stringify({ error: "Database connection not available" }), {
+        status: 500,
+        headers: { "Content-Type": "application/json" },
+      });
     }
 
     // Get status configuration
@@ -35,9 +29,9 @@ export const POST: APIRoute = async ({ request }) => {
 
     if (statusError || !statusConfig) {
       return new Response(
-        JSON.stringify({ 
+        JSON.stringify({
           error: `No status configuration found for status ${statusCode}`,
-          statusError: statusError?.message 
+          statusError: statusError?.message,
         }),
         {
           status: 404,
@@ -68,9 +62,9 @@ export const POST: APIRoute = async ({ request }) => {
 
     if (projectError || !projectDetails) {
       return new Response(
-        JSON.stringify({ 
+        JSON.stringify({
           error: "Project details not found",
-          projectError: projectError?.message 
+          projectError: projectError?.message,
         }),
         {
           status: 404,
@@ -119,45 +113,81 @@ export const POST: APIRoute = async ({ request }) => {
     }
 
     // Call the email delivery API
-    const emailResponse = await fetch(
-      `${import.meta.env.SITE_URL || "http://localhost:4321"}/api/email-delivery`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          projectId,
-          newStatus: statusCode,
-          usersToNotify,
-          projectDetails,
-          email_content,
-          button_text,
-        }),
-      }
-    );
+    const emailResponse = await fetch("http://localhost:4321/api/email-delivery", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        projectId,
+        newStatus: statusCode,
+        usersToNotify,
+        projectDetails,
+        email_content,
+        button_text,
+      }),
+    });
 
     const emailResult = await emailResponse.json();
 
-    return new Response(
-      JSON.stringify({
-        success: true,
-        statusConfig,
-        projectDetails,
-        usersToNotify,
-        emailResult,
-        testInfo: {
-          projectId,
-          statusCode,
-          statusName: statusConfig.name,
-          testEmail,
-        },
-      }),
-      {
-        status: 200,
-        headers: { "Content-Type": "application/json" },
-      }
-    );
+    // Check if email delivery was successful
+    if (emailResponse.ok && emailResult.success) {
+      console.log("🔔 [TEST-STATUS-EMAIL] Status email test successful");
+
+      return new Response(
+        JSON.stringify({
+          success: true,
+          statusConfig,
+          projectDetails,
+          usersToNotify,
+          emailResult,
+          testInfo: {
+            projectId,
+            statusCode,
+            statusName: statusConfig.name,
+            testEmail,
+          },
+          notification: {
+            type: "success",
+            title: "Status Email Test Successful",
+            message: `Status ${statusCode} (${statusConfig.name}) email test completed successfully`,
+            duration: 5000,
+          },
+        }),
+        {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        }
+      );
+    } else {
+      console.error("🔔 [TEST-STATUS-EMAIL] Status email test failed");
+
+      return new Response(
+        JSON.stringify({
+          success: false,
+          statusConfig,
+          projectDetails,
+          usersToNotify,
+          emailResult,
+          testInfo: {
+            projectId,
+            statusCode,
+            statusName: statusConfig.name,
+            testEmail,
+          },
+          notification: {
+            type: "error",
+            title: "Status Email Test Failed",
+            message: `Status ${statusCode} (${statusConfig.name}) email test failed`,
+            duration: 0,
+          },
+        }),
+        {
+          status: 500,
+          headers: { "Content-Type": "application/json" },
+        }
+      );
+    }
   } catch (error) {
     console.error("Test status email error:", error);
     return new Response(

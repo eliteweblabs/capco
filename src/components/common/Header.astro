@@ -5,6 +5,7 @@ import Logo from "./Logo.astro";
 import AuthIcon from "./AuthIcon.astro";
 // import LanguagePicker from "../LanguagePicker.astro";
 import Tooltip from "./Tooltip.astro";
+import SectionContainer from "./SectionContainer.astro";
 // import NavLi from "./NavLi.astro";
 import ThemeToggle from "./ThemeToggle.astro";
 // const { currentLocale } = Astro;s
@@ -143,123 +144,125 @@ function getVisibleNavItems(
 const visibleNavigation = getVisibleNavItems(navigation, isAuth, role, isBackend);
 ---
 
-<header class="sticky top-0 z-10 mb-2 bg-hub-background px-6 pb-2 pt-4 dark:bg-hub-background-dark">
-  <div class="max-w-8xl relative mx-auto flex items-center justify-between">
-    <Logo />
+<header class="sticky top-0 z-10 mb-2 bg-hub-background dark:bg-hub-background-dark">
+  <SectionContainer>
+    <div class="flex items-center justify-between">
+      <Logo />
 
-    <!-- Navigation (Desktop) -->
-    <nav class="hidden items-center space-x-8 md:flex">
-      {
-        visibleNavigation.map((item) =>
-          item.isPrimary ? (
-            <a
-              href={item.href}
-              class="inline-flex items-center rounded-lg bg-red-600 px-4 py-2 font-medium text-white transition-colors hover:bg-red-700"
-            >
-              {item.label}
-            </a>
-          ) : (
-            <a
-              href={item.href}
-              class="font-medium text-gray-700 transition-colors hover:text-red-600 dark:text-gray-300 dark:hover:text-red-400"
-            >
-              {item.label}
-            </a>
-          )
-        )
-      }
-    </nav>
-
-    <div class="flex items-center gap-2">
-      <!-- Admin Quick Actions -->
-      <ThemeToggle />
-      {
-        role === "Admin" && isBackend && (
-          <>
-            <Tooltip content="Global Activity Feed" id="global-activity-tooltip">
+      <!-- Navigation (Desktop) -->
+      <nav class="hidden items-center space-x-8 md:flex">
+        {
+          visibleNavigation.map((item) =>
+            item.isPrimary ? (
               <a
-                href="/admin/global-activity"
-                aria-label="btn-global-activity"
-                class="flex size-8 items-center justify-center rounded-full bg-purple-600 text-white transition-colors hover:bg-purple-700"
+                href={item.href}
+                class="inline-flex items-center rounded-lg bg-red-600 px-4 py-2 font-medium text-white transition-colors hover:bg-red-700"
               >
-                <BoxIcon name="pulse" class="text-lg" />
+                {item.label}
               </a>
-            </Tooltip>
-            <Tooltip
-              content="New Project"
-              id="new-project-tooltip"
-              class="cursor-pointer md:hidden"
-            >
+            ) : (
               <a
-                href="/dashboard#new-project"
-                aria-label="btn-new-project"
-                class="flex size-8 items-center justify-center rounded-full bg-blue-600 text-white transition-colors hover:bg-blue-700"
+                href={item.href}
+                class="font-medium text-gray-700 transition-colors hover:text-red-600 dark:text-gray-300 dark:hover:text-red-400"
               >
-                <BoxIcon name="plus-circle" class="text-lg" />
+                {item.label}
               </a>
-            </Tooltip>
-
-            <Tooltip content="Add User" id="add-user-tooltip">
-              <a
-                href="/create-staff"
-                aria-label="btn-add-user"
-                class="flex size-8 items-center justify-center rounded-full bg-blue-600 text-white transition-colors hover:bg-blue-700"
-              >
-                <BoxIcon name="user-plus" class="text-lg" />
-              </a>
-            </Tooltip>
-          </>
-        )
-      }
-
-      {/* <LanguagePicker /> */}
-
-      <AuthIcon />
-
-      {/* Mobile Menu Button (Hamburger) */}
-      <button
-        type="button"
-        id="mobile-menu-btn"
-        aria-controls="drawer-example"
-        aria-label="Toggle mobile menu"
-        class="hamburger z-50 size-10 text-gray-700 transition-colors dark:text-gray-300 md:hidden"
-      >
-        <span class="line"></span>
-        <span class="line"></span>
-        <span class="line"></span>
-      </button>
-      {/* Mobile Navigation Menu */}
-      <div
-        id="drawer-example"
-        class="fixed left-0 top-0 z-40 h-screen w-screen -translate-x-full overflow-y-auto bg-white p-4 transition-transform dark:bg-gray-800"
-        tabindex="-1"
-        aria-labelledby="drawer-label"
-      >
-        <nav class="space-y-4 px-6 py-4">
-          {/* Navigation Items */}
-          {
-            visibleNavigation.map((item) =>
-              item.isPrimary ? (
-                <a
-                  href={item.href}
-                  class="block w-full rounded-lg bg-red-600 px-4 py-3 text-center font-medium text-white transition-colors hover:bg-red-700"
-                >
-                  {item.label}
-                </a>
-              ) : (
-                <a
-                  href={item.href}
-                  class="block py-2 font-medium text-gray-700 transition-colors hover:text-red-600 dark:text-gray-300 dark:hover:text-red-400"
-                >
-                  {item.label}
-                </a>
-              )
             )
-          }
-        </nav>
+          )
+        }
+      </nav>
+
+      <div class="flex items-center gap-2">
+        <!-- Admin Quick Actions -->
+        <ThemeToggle />
+        {
+          role === "Admin" && isBackend && (
+            <>
+              <Tooltip content="Global Activity Feed" id="global-activity-tooltip">
+                <a
+                  href="/admin/global-activity"
+                  aria-label="btn-global-activity"
+                  class="flex size-8 items-center justify-center rounded-full bg-purple-600 text-white transition-colors hover:bg-purple-700"
+                >
+                  <BoxIcon name="pulse" class="text-lg" />
+                </a>
+              </Tooltip>
+              <Tooltip
+                content="New Project"
+                id="new-project-tooltip"
+                class="cursor-pointer md:hidden"
+              >
+                <a
+                  href="/dashboard#new-project"
+                  aria-label="btn-new-project"
+                  class="flex size-8 items-center justify-center rounded-full bg-blue-600 text-white transition-colors hover:bg-blue-700"
+                >
+                  <BoxIcon name="plus-circle" class="text-lg" />
+                </a>
+              </Tooltip>
+
+              <Tooltip content="Add User" id="add-user-tooltip">
+                <a
+                  href="/create-staff"
+                  aria-label="btn-add-user"
+                  class="flex size-8 items-center justify-center rounded-full bg-blue-600 text-white transition-colors hover:bg-blue-700"
+                >
+                  <BoxIcon name="user-plus" class="text-lg" />
+                </a>
+              </Tooltip>
+            </>
+          )
+        }
+
+        {/* <LanguagePicker /> */}
+
+        <AuthIcon />
+
+        {/* Mobile Menu Button (Hamburger) */}
+        <button
+          type="button"
+          id="mobile-menu-btn"
+          aria-controls="drawer-example"
+          aria-label="Toggle mobile menu"
+          class="hamburger z-50 size-10 text-gray-700 transition-colors dark:text-gray-300 md:hidden"
+        >
+          <span class="line"></span>
+          <span class="line"></span>
+          <span class="line"></span>
+        </button>
+        {/* Mobile Navigation Menu */}
+        <div
+          id="drawer-example"
+          class="fixed left-0 top-0 z-40 h-screen w-screen -translate-x-full overflow-y-auto bg-white p-4 transition-transform dark:bg-gray-800"
+          tabindex="-1"
+          aria-labelledby="drawer-label"
+        >
+          <nav class="space-y-4 px-6 py-4">
+            {/* Navigation Items */}
+            {
+              visibleNavigation.map((item) =>
+                item.isPrimary ? (
+                  <a
+                    href={item.href}
+                    class="block w-full rounded-lg bg-red-600 px-4 py-3 text-center font-medium text-white transition-colors hover:bg-red-700"
+                  >
+                    {item.label}
+                  </a>
+                ) : (
+                  <a
+                    href={item.href}
+                    class="block py-2 font-medium text-gray-700 transition-colors hover:text-red-600 dark:text-gray-300 dark:hover:text-red-400"
+                  >
+                    {item.label}
+                  </a>
+                )
+              )
+            }
+          </nav>
+        </div>
       </div>
     </div>
-  </div>
+  </SectionContainer>
 </header>
 
 <script type="module" define:vars={{ session }}>

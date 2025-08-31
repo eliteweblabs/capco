@@ -119,8 +119,17 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     console.log("📧 [EMAIL-DELIVERY] Starting email delivery to", usersToNotify.length, "users");
 
     // Send emails to each user
-    for (const user of usersToNotify) {
-      console.log(`📧 [EMAIL-DELIVERY] Processing user: ${user.email}`);
+    for (let i = 0; i < usersToNotify.length; i++) {
+      const user = usersToNotify[i];
+      console.log(
+        `📧 [EMAIL-DELIVERY] Processing user: ${user.email} (${i + 1}/${usersToNotify.length})`
+      );
+
+      // Add delay between emails to avoid rate limiting (except for the first email)
+      if (i > 0) {
+        console.log(`📧 [EMAIL-DELIVERY] Waiting 1 second before sending next email...`);
+        await new Promise((resolve) => setTimeout(resolve, 1000));
+      }
 
       try {
         // Determine if this user should get a magic link button

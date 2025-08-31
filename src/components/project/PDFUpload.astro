@@ -1,6 +1,7 @@
 ---
 import BoxIcon from "../common/BoxIcon.astro";
 import { globalServices } from "../../lib/global-services";
+import SectionContainer from "../common/SectionContainer.astro";
 
 interface Props {
   projectId: string;
@@ -29,122 +30,127 @@ console.log("🔔 [PDF-UPLOAD] Button condition check:", {
 });
 ---
 
-<div class="rounded-lg bg-white p-6 shadow-md dark:bg-gray-800">
-  <!-- Upload Header -->
-  <div class="mb-6" id="upload-header">
-    <h3 class="mb-2 flex items-center text-lg font-semibold text-gray-900 dark:text-white">
-      <BoxIcon name="cloud-upload" class="mr-2" />
-      Document Upload
-    </h3>
-    <p class="text-sm text-gray-600 dark:text-gray-400">
-      Upload PDFs and any other project documents you have
-    </p>
-  </div>
-
-  <!-- Upload Area -->
-  <div
-    id="upload-dropzone"
-    class="cursor-pointer rounded-lg border-2 border-dashed border-gray-300 p-8 text-center transition-colors hover:border-blue-400 dark:border-gray-600 dark:hover:border-blue-500"
-  >
-    <div class="space-y-4">
-      <BoxIcon name="cloud-upload" class="mx-auto h-12 w-12 text-gray-400" />
-      <div>
-        <p class="font-medium text-gray-600 dark:text-gray-300">
-          Drop files here or click to browse
-        </p>
-        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-          Supports PDF, images, CAD files, and documents (max 10MB each)
-        </p>
-      </div>
-      <button
-        id="browse-files-btn"
-        class="inline-flex items-center rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700"
-      >
-        <BoxIcon name="folder-open" class="mr-2 h-4 w-4" />
-        Browse Files
-      </button>
+<SectionContainer>
+  <div class="rounded-lg bg-white p-6 shadow-md dark:bg-gray-800">
+    <!-- Upload Header -->
+    <div class="mb-6" id="upload-header">
+      <h3 class="mb-2 flex items-center text-lg font-semibold text-gray-900 dark:text-white">
+        <BoxIcon name="cloud-upload" class="mr-2" />
+        Document Upload
+      </h3>
+      <p class="text-sm text-gray-600 dark:text-gray-400">
+        Upload PDFs and any other project documents you have
+      </p>
     </div>
-  </div>
 
-  <!-- Hidden file input -->
-  <input
-    type="file"
-    id="file-input"
-    multiple
-    accept=".pdf,.png,.jpg,.jpeg,.gif,.webp,.dwg,.doc,.docx,.xls,.xlsx,.txt"
-    class="hidden"
-  />
-
-  <!-- Upload Progress -->
-  <div id="upload-progress" class="mt-4 hidden">
-    <div class="h-2 rounded-full bg-gray-200 dark:bg-gray-700">
-      <div
-        id="progress-bar"
-        class="h-2 rounded-full bg-blue-600 transition-all duration-300"
-        style="width: 0%"
-      >
-      </div>
-    </div>
-    <p id="upload-status" class="mt-2 max-w-full truncate text-sm text-gray-600 dark:text-gray-400">
-      Uploading...
-    </p>
-  </div>
-
-  <!-- File List -->
-  <div id="uploaded-files" class="mt-6 hidden">
-    <div class="mb-3 flex items-center justify-between">
-      <h4 class="text-md flex items-center font-medium text-gray-900 dark:text-white">
-        <BoxIcon name="file" class="mr-2" />
-        Uploaded Files
-      </h4>
-      <div class="flex items-center space-x-3">
+    <!-- Upload Area -->
+    <div
+      id="upload-dropzone"
+      class="cursor-pointer rounded-lg border-2 border-dashed border-gray-300 p-8 text-center transition-colors hover:border-blue-400 dark:border-gray-600 dark:hover:border-blue-500"
+    >
+      <div class="space-y-4">
+        <BoxIcon name="cloud-upload" class="mx-auto h-12 w-12 text-gray-400" />
+        <div>
+          <p class="font-medium text-gray-600 dark:text-gray-300">
+            Drop files here or click to browse
+          </p>
+          <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+            Supports PDF, images, CAD files, and documents (max 10MB each)
+          </p>
+        </div>
         <button
-          id="download-all-btn"
-          class="flex items-center text-sm font-medium text-green-600 hover:text-green-800"
+          id="browse-files-btn"
+          class="inline-flex items-center rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700"
         >
-          <BoxIcon name="download" class="mr-1 h-4 w-4" />
-          Download All
-        </button>
-        <button
-          id="refresh-files-btn"
-          class="flex items-center text-sm font-medium text-blue-600 hover:text-blue-800"
-        >
-          <BoxIcon name="refresh" class="mr-1 h-4 w-4" />
-          Refresh
+          <BoxIcon name="folder-open" class="mr-2 h-4 w-4" />
+          Browse Files
         </button>
       </div>
     </div>
-    <div id="file-list" class="space-y-2"></div>
-  </div>
 
-  <!-- OCR Results -->
-  <div id="ocr-results" class="mt-6 hidden">
-    <h4 class="text-md mb-3 flex items-center font-medium text-gray-900 dark:text-white">
-      <BoxIcon name="text" class="mr-2" />
-      Extracted Text
-    </h4>
-    <div id="extracted-text" class="rounded-lg bg-gray-50 p-4 text-sm dark:bg-gray-700">
-      <p class="text-gray-600 dark:text-gray-400">Text extraction results will appear here...</p>
+    <!-- Hidden file input -->
+    <input
+      type="file"
+      id="file-input"
+      multiple
+      accept=".pdf,.png,.jpg,.jpeg,.gif,.webp,.dwg,.doc,.docx,.xls,.xlsx,.txt"
+      class="hidden"
+    />
+
+    <!-- Upload Progress -->
+    <div id="upload-progress" class="mt-4 hidden">
+      <div class="h-2 rounded-full bg-gray-200 dark:bg-gray-700">
+        <div
+          id="progress-bar"
+          class="h-2 rounded-full bg-blue-600 transition-all duration-300"
+          style="width: 0%"
+        >
+        </div>
+      </div>
+      <p
+        id="upload-status"
+        class="mt-2 max-w-full truncate text-sm text-gray-600 dark:text-gray-400"
+      >
+        Uploading...
+      </p>
     </div>
-  </div>
 
-  <!-- All Documents Uploaded Button (Clients Only) -->
-  {
-    role === "Client" ? (
-      <div class="mt-6 border-t border-gray-200 pt-6 dark:border-gray-700">
-        <div class="text-center">
+    <!-- File List -->
+    <div id="uploaded-files" class="mt-6 hidden">
+      <div class="mb-3 flex items-center justify-between">
+        <h4 class="text-md flex items-center font-medium text-gray-900 dark:text-white">
+          <BoxIcon name="file" class="mr-2" />
+          Uploaded Files
+        </h4>
+        <div class="flex items-center space-x-3">
           <button
-            id="all-documents-uploaded-btn"
-            class="inline-flex items-center rounded-lg bg-green-600 px-6 py-3 text-sm font-medium text-white transition-colors hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
+            id="download-all-btn"
+            class="flex items-center text-sm font-medium text-green-600 hover:text-green-800"
           >
-            <BoxIcon name="check-circle" class="mr-2 h-5 w-5" />
-            All Documents Uploaded
+            <BoxIcon name="download" class="mr-1 h-4 w-4" />
+            Download All
+          </button>
+          <button
+            id="refresh-files-btn"
+            class="flex items-center text-sm font-medium text-blue-600 hover:text-blue-800"
+          >
+            <BoxIcon name="refresh" class="mr-1 h-4 w-4" />
+            Refresh
           </button>
         </div>
       </div>
-    ) : null
-  }
-</div>
+      <div id="file-list" class="space-y-2"></div>
+    </div>
+
+    <!-- OCR Results -->
+    <div id="ocr-results" class="mt-6 hidden">
+      <h4 class="text-md mb-3 flex items-center font-medium text-gray-900 dark:text-white">
+        <BoxIcon name="text" class="mr-2" />
+        Extracted Text
+      </h4>
+      <div id="extracted-text" class="rounded-lg bg-gray-50 p-4 text-sm dark:bg-gray-700">
+        <p class="text-gray-600 dark:text-gray-400">Text extraction results will appear here...</p>
+      </div>
+    </div>
+
+    <!-- All Documents Uploaded Button (Clients Only) -->
+    {
+      status === 10 ? (
+        <div class="mt-6 border-t border-gray-200 pt-6 dark:border-gray-700">
+          <div class="text-center">
+            <button
+              id="all-documents-uploaded-btn"
+              class="inline-flex items-center rounded-lg bg-green-600 px-6 py-3 text-sm font-medium text-white transition-colors hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
+            >
+              <BoxIcon name="check-circle" class="mr-2 h-5 w-5" />
+              All Documents Uploaded
+            </button>
+          </div>
+        </div>
+      ) : null
+    }
+  </div>
+</SectionContainer>
 
 <script define:vars={{ projectId, fileType, projectAuthorEmail, role, user, status }}>
   class PDFUpload {
@@ -790,16 +796,23 @@ console.log("🔔 [PDF-UPLOAD] Button condition check:", {
           Updating Status...
         `;
 
-        // Call the update-project API to change status
-        const response = await fetch("/api/update-project", {
+        // Call the update-status API to change status
+        console.log("🔔 [PDF-UPLOAD] Calling /api/update-status with:", {
+          projectId: this.projectId,
+          status: 20,
+        });
+
+        const response = await fetch("/api/update-status", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           credentials: "include", // Include cookies for authentication
           body: JSON.stringify({
             projectId: this.projectId,
-            status: 20, // "Generating Proposal" status
+            newStatus: 20, // Status 20 - All Documents Uploaded
           }),
         });
+
+        console.log("🔔 [PDF-UPLOAD] API response status:", response.status);
 
         if (!response.ok) {
           const error = await response.json();
@@ -809,48 +822,11 @@ console.log("🔔 [PDF-UPLOAD] Button condition check:", {
         const result = await response.json();
 
         if (result.success) {
-          // Debug: Log what email is being used
-          console.log("🔔 [PDF-UPLOAD] Success - projectAuthorEmail:", projectAuthorEmail);
-
-          // Show success message using centralized toast system
-          if (result.statusConfig) {
-            // Get user role and project data
-            const userRole = role;
-            const projectTitle = this.projectTitle || "Project";
-            const clientEmail = this.projectAuthorEmail || "Client";
-
-            // Get est_time from status configuration
-            const estTime = result.statusConfig.est_time || "2-3 business days";
-
-            // Determine which toast message to show based on user role
-            let toastMessage = "";
-            if (userRole === "Admin" || userRole === "Staff") {
-              toastMessage = result.statusConfig.toast_admin || "";
-            } else {
-              toastMessage = result.statusConfig.toast_client || "";
-            }
-
-            // Replace placeholders in the message
-            toastMessage = toastMessage
-              .replace(/{{PROJECT_TITLE}}/g, projectTitle)
-              .replace(/{{CLIENT_EMAIL}}/g, clientEmail)
-              .replace(/{{EST_TIME}}/g, estTime);
-
-            if (toastMessage) {
-              this.showSuccess(toastMessage);
-            } else {
-              // Fallback message if no toast config
-              const emailMessage = this.projectAuthorEmail
-                ? `Documents submitted successfully! You will be notified by email to ${this.projectAuthorEmail}.`
-                : "Documents submitted successfully!";
-              this.showSuccess(emailMessage);
-            }
+          // Show success message from API response
+          if (result.message) {
+            this.showSuccess(result.message);
           } else {
-            // Fallback message if no status config
-            const emailMessage = this.projectAuthorEmail
-              ? `Documents submitted successfully! You will be notified by email to ${this.projectAuthorEmail}.`
-              : "Documents submitted successfully!";
-            this.showSuccess(emailMessage);
+            this.showSuccess("Documents submitted successfully!");
           }
 
           const uploadHeader = document.getElementById("upload-header");
