@@ -101,14 +101,25 @@ export class GlobalServices {
     };
   }
 
-  // Notification System - Heavily used across the app
+  // Notification System - DEPRECATED: Use centralized notifications instead
+  // This is kept for backward compatibility but should not be used
   showNotification(options: NotificationOptions) {
-    console.log("🌐 [GLOBAL] Showing notification:", options);
-    this.emit("notification:show", options);
+    console.warn(
+      "🌐 [GLOBAL] DEPRECATED: showNotification called. Use centralized notifications instead."
+    );
+    // Forward to centralized system if available
+    if (typeof window !== "undefined" && (window as any).showNotification) {
+      (window as any).showNotification(options);
+    } else {
+      console.log("🌐 [GLOBAL] Fallback notification:", options);
+    }
   }
 
   hideNotification(id?: string) {
-    this.emit("notification:hide", { id });
+    console.warn(
+      "🌐 [GLOBAL] DEPRECATED: hideNotification called. Use centralized notifications instead."
+    );
+    // No-op for now
   }
 
   // User Management - Used by project-service.ts

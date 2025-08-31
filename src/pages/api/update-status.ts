@@ -86,6 +86,13 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       newStatus,
     });
 
+    // Get status configuration for response
+    const { data: statusConfig, error: statusError } = await supabase
+      .from("project_statuses")
+      .select("name, toast_admin, toast_client, est_time")
+      .eq("status_code", newStatus)
+      .single();
+
     // Send email notifications for status change
     try {
       await sendStatusChangeNotifications(projectId, newStatus, updatedProject);
@@ -99,6 +106,14 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         success: true,
         project: updatedProject,
         message: "Status updated successfully",
+        statusConfig: statusConfig
+          ? {
+              name: statusConfig.name,
+              toast_admin: statusConfig.toast_admin,
+              toast_client: statusConfig.toast_client,
+              est_time: statusConfig.est_time,
+            }
+          : null,
       }),
       {
         status: 200,
@@ -135,7 +150,7 @@ async function sendStatusChangeNotifications(
     // Get status configuration from project_statuses table
     const { data: statusConfig, error: statusError } = await supabase
       .from("project_statuses")
-      .select("notify, email_content, button_text")
+      .select("notify, email_content, button_text, toast_admin, toast_client, name, est_time")
       .eq("status_code", newStatus)
       .single();
 
@@ -204,6 +219,13 @@ async function sendStatusChangeNotifications(
         if (assignedStaff) {
           usersToNotify.push(assignedStaff);
         }
+      }
+    }
+
+    if (notify.includes("client") || notify.includes("author")) {
+      // Add the project author/client to notifications
+      if (projectDetails.profiles && projectDetails.profiles.length > 0) {
+        usersToNotify.push(projectDetails.profiles[0]);
       }
     }
 

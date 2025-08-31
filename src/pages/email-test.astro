@@ -175,8 +175,6 @@ if (role !== "Admin") {
 </App>
 
 <script>
-  import { globalServices } from "../lib/global-services";
-
   document.addEventListener("DOMContentLoaded", () => {
     const emailTestForm = document.getElementById("email-test-form") as HTMLFormElement;
     const sendEmailBtn = document.getElementById("send-email-btn") as HTMLButtonElement;
@@ -208,31 +206,28 @@ if (role !== "Admin") {
         const result = await response.json();
 
         if (response.ok) {
-          globalServices.showNotification({
-            type: "success",
-            title: "Email Sent Successfully",
-            message: `Test email sent to ${to}. Email ID: ${result.emailId}`,
-            duration: 8000,
-          });
+          if (window.showSuccess) {
+            window.showSuccess("Email Sent Successfully", `Test email sent to ${to}. Email ID: ${result.emailId}`, 8000);
+          } else {
+            console.log("🔔 [Email Sent Successfully] Test email sent to ${to}. Email ID: ${result.emailId}");
+          }
 
           // Reset form
           emailTestForm.reset();
         } else {
-          globalServices.showNotification({
-            type: "error",
-            title: "Email Send Failed",
-            message: result.error || "Failed to send email. Please check your configuration.",
-            duration: 8000,
-          });
+          if (window.showError) {
+            window.showError("Email Send Failed", result.error || "Failed to send email. Please check your configuration.", 8000);
+          } else {
+            console.error("🔔 [Email Send Failed]", result.error || "Failed to send email. Please check your configuration.");
+          }
         }
       } catch (error) {
         console.error("Email test error:", error);
-        globalServices.showNotification({
-          type: "error",
-          title: "Network Error",
-          message: "Failed to send email. Please check your connection and try again.",
-          duration: 5000,
-        });
+        if (window.showError) {
+          window.showError("Network Error", "Failed to send email. Please check your connection and try again.", 5000);
+        } else {
+          console.error("🔔 [Network Error] Failed to send email. Please check your connection and try again.");
+        }
       } finally {
         // Re-enable button
         sendEmailBtn.disabled = false;

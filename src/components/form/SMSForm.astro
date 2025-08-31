@@ -160,25 +160,19 @@ const { compact = false, projectId = 'new' } = Astro.props;
         // Client-side validation - only check message since phone/carrier are hardcoded
         if (!message || message.trim().length === 0) {
           e.preventDefault();
-          if (window.globalServices) {
-            window.globalServices.showNotification({
-              type: "error",
-              title: "Message Required",
-              message: "Please enter a message to send.",
-              duration: 5000,
-            });
+          if (window.showError) {
+            window.showError("Message Required", "Please enter a message to send.", 5000);
+          } else {
+            console.error("🔔 [Message Required] Please enter a message to send.");
           }
           return;
         }
 
         // Show loading notification
-        if (window.globalServices) {
-          window.globalServices.showNotification({
-            type: "info",
-            title: "Sending Message...",
-            message: "Please wait while we send your message to CAPCo.",
-            duration: 3000,
-          });
+        if (window.showInfo) {
+          window.showInfo("Sending Message...", "Please wait while we send your message to CAPCo.", 3000);
+        } else {
+          console.log("🔔 [Sending Message...] Please wait while we send your message to CAPCo.");
         }
       });
     }

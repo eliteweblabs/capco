@@ -9,9 +9,20 @@ interface Props {
   currentStatus: number;
   statusLabel: string;
   statusColor?: string;
+  userRole?: string;
+  projectTitle?: string;
+  clientEmail?: string;
 }
 
-const { projectId, currentStatus, statusLabel, statusColor = "blue" } = Astro.props;
+const { 
+  projectId, 
+  currentStatus, 
+  statusLabel, 
+  statusColor = "blue",
+  userRole = role,
+  projectTitle = "Project",
+  clientEmail = "Client"
+} = Astro.props;
 
 // Only show dropdown for Admin and Staff users
 const canChangeStatus = role === "Admin" || role === "Staff";
@@ -51,6 +62,9 @@ if (canChangeStatus) {
         id="status-dropdown-button"
         aria-expanded="false"
         aria-haspopup="true"
+        data-user-role={userRole}
+        data-project-title={projectTitle}
+        data-client-email={clientEmail}
       >
         {statusLabel}
         <svg class="ml-1 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -186,19 +200,55 @@ if (canChangeStatus) {
           Updating...
         `;
 
-        // Make API call to update status
-        const response = await fetch(`/api/update-project/${projectId}`, {
-          method: 'PUT',
+        // Make API call to update status using update-project endpoint
+        const response = await fetch('/api/update-project', {
+          method: 'POST',
           headers: {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
+            projectId: projectId,
             status: newStatus
           })
         });
 
         if (response.ok) {
-          // Success - reload the page to reflect changes
+          const result = await response.json();
+          
+          // Show success toast notification if status config is available
+          if (result.statusConfig && window.globalServices) {
+            // Get user role and project data from data attributes
+            const userRole = dropdownButton.getAttribute('data-user-role') || 'Client';
+            const projectTitle = dropdownButton.getAttribute('data-project-title') || 'Project';
+            const clientEmail = dropdownButton.getAttribute('data-client-email') || 'Client';
+            
+            // Get est_time from status configuration
+            const estTime = result.statusConfig.est_time || '2-3 business days';
+            
+            // Determine which toast message to show based on user role
+            let toastMessage = '';
+            if (userRole === 'Admin' || userRole === 'Staff') {
+              toastMessage = result.statusConfig.toast_admin || '';
+            } else {
+              toastMessage = result.statusConfig.toast_client || '';
+            }
+            
+            // Replace placeholders in the message
+            toastMessage = toastMessage
+              .replace(/{{PROJECT_TITLE}}/g, projectTitle)
+              .replace(/{{CLIENT_EMAIL}}/g, clientEmail)
+              .replace(/{{EST_TIME}}/g, estTime);
+            
+            if (toastMessage) {
+              if (window.showSuccess) {
+                window.showSuccess('Status Updated', toastMessage, 5000);
+              } else {
+                console.log(`🔔 [Status Updated] ${toastMessage}`);
+              }
+            }
+          }
+          
+          // Reload the page to reflect changes
           window.location.reload();
         } else {
           const errorData = await response.json();

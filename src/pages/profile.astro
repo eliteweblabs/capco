@@ -1,5 +1,5 @@
 ---
-import Base from "../layout/Base.astro";
+import App from "../components/common/App.astro";
 import SectionContainer from "../components/common/SectionContainer.astro";
 import BoxIcon from "../components/common/BoxIcon.astro";
 
@@ -29,7 +29,7 @@ if (user) {
 }
 ---
 
-<Base
+<App
   title="My Profile - CAPCo Fire Protection"
   description="Manage your profile and account settings."
 >
@@ -302,11 +302,9 @@ if (user) {
       </div>
     </div>
   </SectionContainer>
-</Base>
+</App>
 
 <script>
-  import { globalServices } from "../lib/global-services";
-
   document.addEventListener("DOMContentLoaded", () => {
     const profileForm = document.getElementById("profile-form") as HTMLFormElement;
     const saveProfileBtn = document.getElementById("save-profile-btn") as HTMLButtonElement;
@@ -349,28 +347,42 @@ if (user) {
         const result = await response.json();
 
         if (response.ok) {
-          globalServices.showNotification({
-            type: "success",
-            title: "Profile Updated",
-            message: "Your profile has been updated successfully.",
-            duration: 5000,
-          });
+          if (window.showSuccess) {
+            window.showSuccess(
+              "Profile Updated",
+              "Your profile has been updated successfully.",
+              5000
+            );
+          } else {
+            console.log("🔔 [Profile Updated] Your profile has been updated successfully.");
+          }
         } else {
-          globalServices.showNotification({
-            type: "error",
-            title: "Update Failed",
-            message: result.error || "Failed to update profile. Please try again.",
-            duration: 5000,
-          });
+          if (window.showError) {
+            window.showError(
+              "Update Failed",
+              result.error || "Failed to update profile. Please try again.",
+              5000
+            );
+          } else {
+            console.error(
+              "🔔 [Update Failed]",
+              result.error || "Failed to update profile. Please try again."
+            );
+          }
         }
       } catch (error) {
         console.error("Profile update error:", error);
-        globalServices.showNotification({
-          type: "error",
-          title: "Network Error",
-          message: "Failed to update profile. Please check your connection and try again.",
-          duration: 5000,
-        });
+        if (window.showError) {
+          window.showError(
+            "Network Error",
+            "Failed to update profile. Please check your connection and try again.",
+            5000
+          );
+        } else {
+          console.error(
+            "🔔 [Network Error] Failed to update profile. Please check your connection and try again."
+          );
+        }
       } finally {
         // Re-enable button
         saveProfileBtn.disabled = false;
@@ -388,24 +400,26 @@ if (user) {
       if (!file) return;
 
       // TODO: Implement avatar upload functionality
-      globalServices.showNotification({
-        type: "info",
-        title: "Avatar Upload",
-        message: "Avatar upload functionality coming soon!",
-        duration: 3000,
-      });
+      if (window.showInfo) {
+        window.showInfo("Avatar Upload", "Avatar upload functionality coming soon!", 3000);
+      } else {
+        console.log("🔔 [Avatar Upload] Avatar upload functionality coming soon!");
+      }
     });
 
     // Handle account deletion
     deleteAccountBtn?.addEventListener("click", () => {
       if (confirm("Are you sure you want to delete your account? This action cannot be undone.")) {
         // TODO: Implement account deletion
-        globalServices.showNotification({
-          type: "warning",
-          title: "Account Deletion",
-          message: "Account deletion functionality coming soon!",
-          duration: 3000,
-        });
+        if (window.showWarning) {
+          window.showWarning(
+            "Account Deletion",
+            "Account deletion functionality coming soon!",
+            3000
+          );
+        } else {
+          console.warn("🔔 [Account Deletion] Account deletion functionality coming soon!");
+        }
       }
     });
 
@@ -439,12 +453,11 @@ if (user) {
       const email = resetEmailInput?.value.trim();
 
       if (!email) {
-        globalServices.showNotification({
-          type: "error",
-          title: "Validation Error",
-          message: "Please enter your email address.",
-          duration: 5000,
-        });
+        if (window.showError) {
+          window.showError("Validation Error", "Please enter your email address.", 5000);
+        } else {
+          console.error("🔔 [Validation Error] Please enter your email address.");
+        }
         return;
       }
 
@@ -464,30 +477,45 @@ if (user) {
         const result = await response.json();
 
         if (response.ok) {
-          globalServices.showNotification({
-            type: "success",
-            title: "Reset Link Sent",
-            message:
+          if (window.showSuccess) {
+            window.showSuccess(
+              "Reset Link Sent",
               "If an account with that email exists, you will receive a password reset link shortly.",
-            duration: 8000,
-          });
+              8000
+            );
+          } else {
+            console.log(
+              "🔔 [Reset Link Sent] If an account with that email exists, you will receive a password reset link shortly."
+            );
+          }
           closeModal();
         } else {
-          globalServices.showNotification({
-            type: "error",
-            title: "Error",
-            message: result.error || "Failed to send reset link. Please try again.",
-            duration: 5000,
-          });
+          if (window.showError) {
+            window.showError(
+              "Error",
+              result.error || "Failed to send reset link. Please try again.",
+              5000
+            );
+          } else {
+            console.error(
+              "🔔 [Error]",
+              result.error || "Failed to send reset link. Please try again."
+            );
+          }
         }
       } catch (error) {
         console.error("Forgot password error:", error);
-        globalServices.showNotification({
-          type: "error",
-          title: "Network Error",
-          message: "Failed to send reset link. Please check your connection and try again.",
-          duration: 5000,
-        });
+        if (window.showError) {
+          window.showError(
+            "Network Error",
+            "Failed to send reset link. Please check your connection and try again.",
+            5000
+          );
+        } else {
+          console.error(
+            "🔔 [Network Error] Failed to send reset link. Please check your connection and try again."
+          );
+        }
       } finally {
         // Re-enable button
         sendResetLinkBtn.disabled = false;

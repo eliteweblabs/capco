@@ -60,6 +60,14 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     console.log("📧 [TEST-EMAIL] User authenticated:", session.session.user.email);
 
     // Check if the recipient email exists in the system
+    if (!supabaseAdmin) {
+      console.error("📧 [TEST-EMAIL] Supabase admin not available");
+      return new Response(JSON.stringify({ error: "Database admin not available" }), {
+        status: 500,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+
     const { data: existingUser, error: userCheckError } =
       await supabaseAdmin.auth.admin.listUsers();
 

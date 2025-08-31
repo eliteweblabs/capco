@@ -11,7 +11,7 @@ interface Props {
 import { checkAuth } from "../../lib/auth";
 const { isAuth, session, user, role } = await checkAuth(Astro.cookies);
 
-import { getI18N } from "@/i18n";
+import { getI18N } from "../../i18n";
 const { currentLocale } = Astro;
 const i18n = getI18N({ currentLocale });
 
@@ -197,8 +197,6 @@ console.log("🏗️ [APP] App component loading...", user);
 
     <!-- Global URL Parameter Toast Handler -->
     <script>
-      import { globalServices } from "../../lib/global-services";
-
       // Handle URL parameters and show appropriate toast notifications globally
       document.addEventListener("DOMContentLoaded", () => {
         const currentUrl = new URL(window.location.href);
@@ -284,12 +282,12 @@ console.log("🏗️ [APP] App component loading...", user);
               errorTitle = "Error";
           }
 
-          globalServices.showNotification({
-            type: "error",
-            title: errorTitle,
-            message: errorMessage,
-            duration: 0, // Keep error messages until manually dismissed
-          });
+          // Use centralized notification system
+          if (window.showError) {
+            window.showError(errorTitle, errorMessage, 0); // Keep error messages until manually dismissed
+          } else {
+            console.error(`🔔 [${errorTitle}] ${errorMessage}`);
+          }
 
           // Clean up URL parameters
           currentUrl.searchParams.delete("error");
@@ -328,12 +326,12 @@ console.log("🏗️ [APP] App component loading...", user);
               successTitle = "Success!";
           }
 
-          globalServices.showNotification({
-            type: "success",
-            title: successTitle,
-            message: successMessage,
-            duration: 6000,
-          });
+          // Use centralized notification system
+          if (window.showSuccess) {
+            window.showSuccess(successTitle, successMessage, 6000);
+          } else {
+            console.log(`🔔 [${successTitle}] ${successMessage}`);
+          }
 
           // Clean up URL parameters
           currentUrl.searchParams.delete("message");
@@ -342,15 +340,26 @@ console.log("🏗️ [APP] App component loading...", user);
       });
     </script>
 
-    <!-- Expose global services to window object -->
+    <!-- Expose centralized notification system to window object -->
     <script>
-      import { globalServices, showNotification } from "../../lib/global-services";
+      import {
+        showNotification,
+        showSuccess,
+        showError,
+        showWarning,
+        showInfo,
+        showStatusToast,
+      } from "../../lib/centralized-notifications";
 
-      // Make global services available globally
-      (window as any).globalServices = globalServices;
+      // Make centralized notifications available globally
       (window as any).showNotification = showNotification;
+      (window as any).showSuccess = showSuccess;
+      (window as any).showError = showError;
+      (window as any).showWarning = showWarning;
+      (window as any).showInfo = showInfo;
+      (window as any).showStatusToast = showStatusToast;
 
-      console.log("🌐 [APP] Global services exposed to window object");
+      console.log("🔔 [APP] Centralized notification system exposed to window object");
     </script>
   </body>
 </html>

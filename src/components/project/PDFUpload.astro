@@ -722,14 +722,9 @@ console.log("🔔 [PDF-UPLOAD] Button condition check:", {
     }
 
     showError(message) {
-      // Use global services toast notification
-      if (typeof window !== "undefined" && window.showNotification) {
-        window.showNotification({
-          type: "error",
-          title: "Upload Error",
-          message: message,
-          duration: 5000,
-        });
+      // Use centralized notification system
+      if (typeof window !== "undefined" && window.showError) {
+        window.showError("Upload Error", message, 5000);
       } else {
         // Fallback to console log if toast system not available
         console.error("❌ Error:", message);
@@ -739,19 +734,14 @@ console.log("🔔 [PDF-UPLOAD] Button condition check:", {
     showSuccess(message) {
       console.log("🔔 [PDF-UPLOAD] showSuccess called with:", message);
       console.log(
-        "🔔 [PDF-UPLOAD] window.showNotification available:",
-        typeof window !== "undefined" && window.showNotification
+        "🔔 [PDF-UPLOAD] window.showSuccess available:",
+        typeof window !== "undefined" && window.showSuccess
       );
 
-      // Use global services toast notification
-      if (typeof window !== "undefined" && window.showNotification) {
-        console.log("🔔 [PDF-UPLOAD] Calling window.showNotification");
-        window.showNotification({
-          type: "success",
-          title: "Success",
-          message: message,
-          duration: 5000,
-        });
+      // Use centralized notification system
+      if (typeof window !== "undefined" && window.showSuccess) {
+        console.log("🔔 [PDF-UPLOAD] Calling window.showSuccess");
+        window.showSuccess("Success", message, 5000);
       } else {
         // Fallback to console log if toast system not available
         console.log("✅ Success:", message);
@@ -800,14 +790,14 @@ console.log("🔔 [PDF-UPLOAD] Button condition check:", {
           Updating Status...
         `;
 
-        // Call the update-status API
-        const response = await fetch("/api/update-status", {
+        // Call the update-project API to change status
+        const response = await fetch("/api/update-project", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           credentials: "include", // Include cookies for authentication
           body: JSON.stringify({
             projectId: this.projectId,
-            newStatus: 20, // "Generating Proposal" status
+            status: 20, // "Generating Proposal" status
           }),
         });
 
@@ -822,19 +812,46 @@ console.log("🔔 [PDF-UPLOAD] Button condition check:", {
           // Debug: Log what email is being used
           console.log("🔔 [PDF-UPLOAD] Success - projectAuthorEmail:", projectAuthorEmail);
 
-          // For clients, show their own email. For admins/staff, show the project author's email
-          let emailToShow = projectAuthorEmail;
-          if (role === "Client") {
-            // For clients, we should show their own email (they are the project author)
-            // But if projectAuthorEmail is somehow wrong, we can get it from the current user
-            emailToShow = projectAuthorEmail || user?.email;
-          }
+          // Show success message using centralized toast system
+          if (result.statusConfig) {
+            // Get user role and project data
+            const userRole = role;
+            const projectTitle = this.projectTitle || "Project";
+            const clientEmail = this.projectAuthorEmail || "Client";
 
-          // Show success message with appropriate email
-          const emailMessage = emailToShow
-            ? `Documents submitted successfully! You will be notified by email to ${emailToShow}.`
-            : "Documents submitted successfully!";
-          this.showSuccess(emailMessage);
+            // Get est_time from status configuration
+            const estTime = result.statusConfig.est_time || "2-3 business days";
+
+            // Determine which toast message to show based on user role
+            let toastMessage = "";
+            if (userRole === "Admin" || userRole === "Staff") {
+              toastMessage = result.statusConfig.toast_admin || "";
+            } else {
+              toastMessage = result.statusConfig.toast_client || "";
+            }
+
+            // Replace placeholders in the message
+            toastMessage = toastMessage
+              .replace(/{{PROJECT_TITLE}}/g, projectTitle)
+              .replace(/{{CLIENT_EMAIL}}/g, clientEmail)
+              .replace(/{{EST_TIME}}/g, estTime);
+
+            if (toastMessage) {
+              this.showSuccess(toastMessage);
+            } else {
+              // Fallback message if no toast config
+              const emailMessage = this.projectAuthorEmail
+                ? `Documents submitted successfully! You will be notified by email to ${this.projectAuthorEmail}.`
+                : "Documents submitted successfully!";
+              this.showSuccess(emailMessage);
+            }
+          } else {
+            // Fallback message if no status config
+            const emailMessage = this.projectAuthorEmail
+              ? `Documents submitted successfully! You will be notified by email to ${this.projectAuthorEmail}.`
+              : "Documents submitted successfully!";
+            this.showSuccess(emailMessage);
+          }
 
           const uploadHeader = document.getElementById("upload-header");
           uploadHeader.innerHTML = ``;
