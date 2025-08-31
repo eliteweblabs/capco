@@ -79,15 +79,30 @@ export const POST: APIRoute = async ({ request }) => {
     let isStatusChange = false;
 
     if (updateFields.status !== undefined) {
-      const { data: currentProject } = await supabase
+      console.log("🔔 [UPDATE-PROJECT] Checking for status change...");
+      const { data: currentProject, error: currentProjectError } = await supabase
         .from("projects")
         .select("status")
         .eq("id", projectId)
         .single();
 
+      console.log("🔔 [UPDATE-PROJECT] Current project status check:", {
+        hasData: !!currentProject,
+        error: currentProjectError,
+        currentStatus: currentProject?.status,
+        newStatus: updateFields.status,
+        projectId,
+      });
+
       if (currentProject && currentProject.status !== updateFields.status) {
         oldStatus = currentProject.status;
         isStatusChange = true;
+        console.log("🔔 [UPDATE-PROJECT] Status change detected:", {
+          oldStatus,
+          newStatus: updateFields.status,
+        });
+      } else {
+        console.log("🔔 [UPDATE-PROJECT] No status change - same status or no current project");
       }
     }
 
@@ -173,13 +188,23 @@ export const POST: APIRoute = async ({ request }) => {
     const data = finalData;
 
     // Handle status change notifications
+    console.log("🔔 [UPDATE-PROJECT] Status change check:", {
+      isStatusChange,
+      newStatus: updateFields.status,
+      oldStatus,
+    });
+
     if (isStatusChange && updateFields.status !== undefined) {
+      console.log("🔔 [UPDATE-PROJECT] Calling sendStatusChangeNotifications...");
       try {
         await sendStatusChangeNotifications(projectId, updateFields.status, data);
+        console.log("🔔 [UPDATE-PROJECT] sendStatusChangeNotifications completed successfully");
       } catch (notificationError) {
         console.error("Status change notification error:", notificationError);
         // Don't fail the update if notifications fail
       }
+    } else {
+      console.log("🔔 [UPDATE-PROJECT] No status change detected, skipping notifications");
     }
 
     return new Response(
@@ -234,29 +259,67 @@ async function sendStatusChangeNotifications(
     const { notify, email_content, button_text } = statusConfig;
 
     // Get project details for email
-    const { data: projectDetails } = await supabase
+    console.log("🔔 [UPDATE-PROJECT] Fetching project details for ID:", projectId);
+    const { data: projectDetails, error: projectDetailsError } = await supabase
       .from("projects")
-      .select(
-        `
-          title,
-          address,
-          author_id,
-          assigned_to_id,
-          profiles!projects_author_id_fkey (
-            email,
-            company_name,
-            first_name,
-            last_name
-          )
-        `
-      )
+      .select("title, address, author_id, assigned_to_id")
       .eq("id", projectId)
       .single();
+
+    console.log("🔔 [UPDATE-PROJECT] Project details query result:", {
+      hasData: !!projectDetails,
+      error: projectDetailsError,
+      projectId,
+      projectDetails: projectDetails
+        ? {
+            title: projectDetails.title,
+            address: projectDetails.address,
+            author_id: projectDetails.author_id,
+            assigned_to_id: projectDetails.assigned_to_id,
+          }
+        : null,
+    });
 
     if (!projectDetails) {
       console.error("Project details not found for notifications");
       return;
     }
+
+    // Get author profile separately
+    console.log("🔔 [UPDATE-PROJECT] Fetching author profile for ID:", projectDetails.author_id);
+    const { data: authorProfile, error: authorProfileError } = await supabase
+      .from("profiles")
+      .select("company_name")
+      .eq("id", projectDetails.author_id)
+      .single();
+
+    // Get user email from auth system
+    const { data: userData, error: userError } = await supabaseAdmin!.auth.admin.getUserById(
+      projectDetails.author_id
+    );
+
+    console.log("🔔 [UPDATE-PROJECT] Author profile and user query result:", {
+      hasProfile: !!authorProfile,
+      profileError: authorProfileError,
+      hasUserData: !!userData,
+      userError: userError,
+      authorId: projectDetails.author_id,
+      userEmail: userData?.user?.email,
+      companyName: authorProfile?.company_name,
+    });
+
+    if (!authorProfile || !userData?.user?.email) {
+      console.error("Author profile or email not found for notifications");
+      return;
+    }
+
+    // Create a user object with the available data
+    const userInfo = {
+      email: userData.user.email,
+      company_name: authorProfile.company_name,
+      first_name: userData.user.user_metadata?.full_name?.split(" ")[0] || "",
+      last_name: userData.user.user_metadata?.full_name?.split(" ").slice(1).join(" ") || "",
+    };
 
     // Get all users to notify
     const usersToNotify: Array<{
@@ -294,13 +357,9 @@ async function sendStatusChangeNotifications(
       }
     }
 
-    if (
-      (notify.includes("client") || notify.includes("author")) &&
-      projectDetails.profiles &&
-      projectDetails.profiles.length > 0
-    ) {
+    if (notify.includes("client") || notify.includes("author")) {
       // Add the project owner/client
-      usersToNotify.push(projectDetails.profiles[0]);
+      usersToNotify.push(userInfo);
     }
 
     // Read email template
@@ -317,7 +376,7 @@ async function sendStatusChangeNotifications(
     for (const user of usersToNotify) {
       try {
         // Determine if this user should get a magic link button
-        const isClient = user.email === projectDetails.profiles[0].email;
+        const isClient = user.email === userInfo.email;
         const shouldShowButton = isClient; // Only show button for clients
 
         let magicLink = "";
@@ -364,33 +423,30 @@ async function sendStatusChangeNotifications(
           emailHtml = emailHtml.replace("{{BUTTON_LINK}}", "");
         }
 
-        // Send email via Resend
-        const emailProvider = import.meta.env.EMAIL_PROVIDER;
-        const emailApiKey = import.meta.env.EMAIL_API_KEY;
-        const fromEmail = import.meta.env.FROM_EMAIL;
-        const fromName = import.meta.env.FROM_NAME;
-
-        if (emailProvider === "resend" && emailApiKey && fromEmail) {
-          const response = await fetch("https://api.resend.com/emails", {
-            method: "POST",
-            headers: {
-              Authorization: `Bearer ${emailApiKey}`,
-              "Content-Type": "application/json",
+        // Use centralized email delivery system
+        const emailResponse = await fetch("http://localhost:4321/api/email-delivery", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            projectId,
+            newStatus,
+            usersToNotify: [user],
+            projectDetails: {
+              title: projectDetails.title || "Project",
+              address: projectDetails.address || "N/A",
+              profiles: [user],
             },
-            body: JSON.stringify({
-              from: `${fromName} <${fromEmail}>`,
-              to: [user.email],
-              subject: `Project Status Update: ${projectDetails.title || "Project"}`,
-              html: emailHtml,
-              text: personalizedContent.replace(/<[^>]*>/g, ""),
-            }),
-          });
+            email_content: personalizedContent,
+            button_text: shouldShowButton ? button_text || "View Project" : "",
+          }),
+        });
 
-          if (!response.ok) {
-            console.error(`Failed to send email to ${user.email}:`, await response.text());
-          } else {
-            console.log(`Status change notification sent to ${user.email}`);
-          }
+        if (!emailResponse.ok) {
+          console.error(`Failed to send email to ${user.email}:`, await emailResponse.text());
+        } else {
+          console.log(`Status change notification sent to ${user.email}`);
         }
       } catch (userError) {
         console.error(`Error sending notification to ${user.email}:`, userError);

@@ -174,7 +174,7 @@ console.log("🏗️ [APP] App component loading...", user);
     </script>
   </head>
   <body class="bg-hub-background dark:bg-hub-background-dark md:flex md:justify-center">
-    <main class="w-full md:max-w-[2000px]">
+    <main class="section relative mx-auto w-full max-w-[2000px]">
       <Header />
       <slot />
       <Footer />
@@ -283,8 +283,8 @@ console.log("🏗️ [APP] App component loading...", user);
           }
 
           // Use centralized notification system
-          if (window.showError) {
-            window.showError(errorTitle, errorMessage, 0); // Keep error messages until manually dismissed
+          if ((window as any).showError) {
+            (window as any).showError(errorTitle, errorMessage, 0); // Keep error messages until manually dismissed
           } else {
             console.error(`🔔 [${errorTitle}] ${errorMessage}`);
           }
@@ -327,8 +327,8 @@ console.log("🏗️ [APP] App component loading...", user);
           }
 
           // Use centralized notification system
-          if (window.showSuccess) {
-            window.showSuccess(successTitle, successMessage, 6000);
+          if ((window as any).showSuccess) {
+            (window as any).showSuccess(successTitle, successMessage, 6000);
           } else {
             console.log(`🔔 [${successTitle}] ${successMessage}`);
           }
@@ -360,6 +360,12 @@ console.log("🏗️ [APP] App component loading...", user);
       (window as any).showStatusToast = showStatusToast;
 
       console.log("🔔 [APP] Centralized notification system exposed to window object");
+      console.log("🔔 [APP] Window functions available:", {
+        showSuccess: typeof (window as any).showSuccess,
+        showError: typeof (window as any).showError,
+        showWarning: typeof (window as any).showWarning,
+        showInfo: typeof (window as any).showInfo,
+      });
     </script>
   </body>
 </html>

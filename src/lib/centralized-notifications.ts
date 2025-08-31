@@ -42,7 +42,21 @@ export function showNotification(options: NotificationOptions): void {
     return;
   }
 
-  // Use centralized system only - no fallback to global services
+  // Try to use the toast alert manager directly
+  if ((window as any).toastAlertManager) {
+    console.log("🔔 [CENTRALIZED] Using toast alert manager");
+    (window as any).toastAlertManager.show(options);
+    return;
+  }
+
+  // Fallback to global services if available
+  if ((window as any).globalServices?.showNotification) {
+    console.log("🔔 [CENTRALIZED] Using global services fallback");
+    (window as any).globalServices.showNotification(options);
+    return;
+  }
+
+  // Final fallback to console logging
   const logLevel = options.type === "error" ? "error" : "log";
   console[logLevel](`🔔 [${options.type.toUpperCase()}] ${options.title}: ${options.message}`);
 }

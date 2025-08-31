@@ -57,7 +57,8 @@ if (supabase && user) {
 
   if (projectError) {
     console.error("Error fetching project:", projectError);
-    // Project not found or no access - handled by RLS
+    console.log("🌐 [PROJECT] Project not found or no access, redirecting to dashboard");
+    return Astro.redirect("/dashboard");
   } else {
     project = projectData;
     console.log("🌐 [PROJECT] Project loaded:", project.title);
@@ -83,31 +84,84 @@ if (supabase && user) {
   }
 }
 
-// Status labels mapping
-const statusLabels: Record<number, string> = {
-  10: "Specs Received",
-  20: "Generating Proposal",
-  30: "Proposal Shipped",
-  40: "Proposal Viewed",
-  50: "Proposal Signed Off",
-  60: "Generating Deposit Invoice",
-  70: "Deposit Invoice Shipped",
-  80: "Deposit Invoice Viewed",
-  90: "Deposit Invoice Paid",
-  100: "Generating Submittals",
-  110: "Submittals Shipped",
-  120: "Submittals Viewed",
-  130: "Submittals Signed Off",
-  140: "Generating Final Invoice",
-  150: "Final Invoice Shipped",
-  160: "Final Invoice Viewed",
-  170: "Final Invoice Paid",
-  180: "Generating Final Deliverables",
-  190: "Stamping Final Deliverables",
-  200: "Final Deliverables Shipped",
-  210: "Final Deliverables Viewed",
-  220: "Project Complete",
-};
+// Safety check - if no project was found, redirect to dashboard
+if (!project) {
+  console.log("🌐 [PROJECT] No project data available, redirecting to dashboard");
+  return Astro.redirect("/dashboard");
+}
+
+// Fetch status labels from database
+let statusLabels: Record<number, string> = {};
+
+if (supabase) {
+  try {
+    // Fetch all project statuses from database (excluding status 0)
+    const { data: statuses, error } = await supabase
+      .from("project_statuses")
+      .select("status_code, status_name, client_visible")
+      .neq("status_code", 0)
+      .order("status_code");
+
+    if (error) {
+      console.error("Error fetching project statuses:", error);
+    } else if (statuses) {
+      // Filter statuses based on user role
+      const filteredStatuses = statuses.filter((status) => {
+        // Admin and Staff can see all statuses
+        if (role === "Admin" || role === "Staff") {
+          return true;
+        }
+
+        // For clients, only show statuses that are client_visible
+        if (role === "Client") {
+          return status.client_visible !== undefined ? status.client_visible : true;
+        }
+
+        // For other roles, show all by default
+        return true;
+      });
+
+      // Convert to status_code -> status_name mapping
+      statusLabels = filteredStatuses.reduce(
+        (acc, status) => {
+          acc[status.status_code] = status.status_name;
+          return acc;
+        },
+        {} as Record<number, string>
+      );
+    }
+  } catch (error) {
+    console.error("Error fetching status labels:", error);
+  }
+}
+
+// Fallback to basic labels if no data from database
+if (Object.keys(statusLabels).length === 0) {
+  statusLabels = {
+    10: "Specs Received",
+    20: "Generating Proposal",
+    30: "Proposal Shipped",
+    40: "Proposal Viewed",
+    50: "Proposal Signed Off",
+    60: "Generating Deposit Invoice",
+    70: "Deposit Invoice Shipped",
+    80: "Deposit Invoice Viewed",
+    90: "Deposit Invoice Paid",
+    100: "Generating Submittals",
+    110: "Submittals Shipped",
+    120: "Submittals Viewed",
+    130: "Submittals Signed Off",
+    140: "Generating Final Invoice",
+    150: "Final Invoice Shipped",
+    160: "Final Invoice Viewed",
+    170: "Final Invoice Paid",
+    180: "Generating Final Deliverables",
+    190: "Stamping Final Deliverables",
+    200: "Final Deliverables Shipped",
+    210: "Final Deliverables Viewed",
+    220: "Project Complete",
+  };
+}
 
 // Get status color based on status code
 function getStatusColor(status: number): string {
@@ -133,25 +187,22 @@ function getStatusColor(status: number): string {
       new URLSearchParams(window.location.search).get("tab")
     );
   </script>
-  <SectionContainer id="hero" class="mx-6 my-6">
-    <Hero
-      title={project?.address || project?.title || "Untitled Project"}
-      description={projectAuthorProfile?.company_name ||
-        projectAuthorProfile?.name ||
-        "Unknown Author"}
-      statusLabel={project?.status
-        ? statusLabels[project.status] || `Status ${project.status}`
-        : undefined}
-      statusColor={project?.status ? getStatusColor(project.status) : undefined}
-      projectId={project?.id}
-      currentStatus={project?.status}
-      userRole={role}
-      projectTitle={project?.title || project?.address || "Project"}
-      clientEmail={(projectAuthorProfile?.email || user?.email || "Client") as string}
-    />
-  </SectionContainer>
-
-  <SectionContainer class="mx-6 flex h-full flex-col gap-y-6">
+  <Hero
+    title={project?.address || project?.title || "Untitled Project"}
+    description={projectAuthorProfile?.company_name ||
+      projectAuthorProfile?.name ||
+      "Unknown Author"}
+    statusLabel={project?.status
+      ? statusLabels[project.status] || `Status ${project.status}`
+      : undefined}
+    statusColor={project?.status ? getStatusColor(project.status) : undefined}
+    projectId={project?.id}
+    currentStatus={project?.status}
+    userRole={role || "Client"}
+    projectTitle={project?.title || project?.address || "Project"}
+    clientEmail={(projectAuthorProfile?.email || user?.email || "Client") as string}
+  />
+  <SectionContainer>
     <div class="flex items-center justify-between">
       <a
         href="/dashboard"
@@ -165,7 +216,7 @@ function getStatusColor(status: number): string {
     <!-- Tab Navigation -->
     <nav
       id="project-tab-nav"
-      class="scrollbar-hide relative flex gap-1 overflow-x-auto whitespace-nowrap dark:border-gray-700"
+      class="scrollbar-hide relative my-4 flex gap-1 overflow-x-auto whitespace-nowrap dark:border-gray-700"
       aria-label="Tabs"
     >
       <button

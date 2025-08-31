@@ -1,11 +1,11 @@
 ---
 import App from "../components/common/App.astro";
 import SectionContainer from "../components/common/SectionContainer.astro";
-import BoxIcon from "../components/common/BoxIcon.astro";
 
 // Check if user is authenticated
 import { checkAuth } from "../lib/auth";
-const { isAuth, user, role } = await checkAuth(Astro.cookies);
+const authResult = await checkAuth(Astro.cookies);
+const { isAuth, user, role } = authResult;
 
 // Redirect to login if not authenticated
 if (!isAuth || !user) {
@@ -30,7 +30,7 @@ if (role !== "Admin") {
         <div
           class="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-blue-100 dark:bg-blue-900/30"
         >
-          <BoxIcon name="mail-send" class="h-8 w-8 text-blue-600 dark:text-blue-400" />
+          <i class="bx bx-mail-send h-8 w-8 text-blue-600 dark:text-blue-400"></i>
         </div>
         <h1 class="text-3xl font-bold text-gray-900 dark:text-white">Email Test</h1>
         <p class="mt-2 text-gray-600 dark:text-gray-300">
@@ -140,6 +140,97 @@ if (role !== "Admin") {
         </form>
       </div>
 
+      <!-- Status Email Test Section -->
+      <div
+        class="mt-8 rounded-lg border border-gray-200 bg-white p-6 dark:border-gray-700 dark:bg-gray-800"
+      >
+        <h2 class="mb-4 text-lg font-semibold text-gray-900 dark:text-white">
+          Test Status-Specific Emails
+        </h2>
+        <p class="mb-4 text-sm text-gray-600 dark:text-gray-400">
+          Test emails for specific project statuses using the database configuration.
+        </p>
+
+        <form id="status-email-test-form" class="space-y-4">
+          <!-- Project ID Field -->
+          <div>
+            <label
+              for="status-project-id"
+              class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300"
+            >
+              Project ID *
+            </label>
+            <input
+              type="text"
+              id="status-project-id"
+              name="projectId"
+              required
+              class="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-60 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:focus:border-blue-400"
+              placeholder="Enter a valid project ID"
+            />
+          </div>
+
+          <!-- Status Code Field -->
+          <div>
+            <label
+              for="status-code"
+              class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300"
+            >
+              Status Code *
+            </label>
+            <select
+              id="status-code"
+              name="statusCode"
+              required
+              class="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-60 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:focus:border-blue-400"
+            >
+              <option value="">Select a status</option>
+              <option value="10">10 - Project Created</option>
+              <option value="20">20 - Documents Submitted</option>
+              <option value="30">30 - Under Review</option>
+              <option value="40">40 - Proposal Ready</option>
+              <option value="50">50 - Proposal Sent</option>
+              <option value="60">60 - Contract Signed</option>
+              <option value="70">70 - Work Started</option>
+              <option value="80">80 - Work Completed</option>
+              <option value="90">90 - Final Inspection</option>
+              <option value="100">100 - Project Closed</option>
+            </select>
+          </div>
+
+          <!-- Test Email Field (Optional) -->
+          <div>
+            <label
+              for="status-test-email"
+              class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300"
+            >
+              Test Email (Optional)
+            </label>
+            <input
+              type="email"
+              id="status-test-email"
+              name="testEmail"
+              class="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-60 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:focus:border-blue-400"
+              placeholder="test@example.com (optional)"
+            />
+            <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+              If provided, this email will be added to the notification list for testing.
+            </p>
+          </div>
+
+          <!-- Action Button -->
+          <div class="pt-4">
+            <button
+              type="submit"
+              id="test-status-email-btn"
+              class="w-full rounded-md bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 disabled:opacity-50"
+            >
+              Test Status Email
+            </button>
+          </div>
+        </form>
+      </div>
+
       <!-- Environment Info -->
       <div class="mt-8 rounded-lg bg-gray-50 p-6 dark:bg-gray-800">
         <h2 class="mb-4 text-lg font-semibold text-gray-900 dark:text-white">
@@ -175,9 +266,35 @@ if (role !== "Admin") {
 </App>
 
 <script>
+  // TypeScript declarations for window properties
+  declare global {
+    interface Window {
+      showSuccess?: (title: string, message: string, duration?: number) => void;
+      showError?: (title: string, message: string, duration?: number) => void;
+      showWarning?: (title: string, message: string, duration?: number) => void;
+      showInfo?: (title: string, message: string, duration?: number) => void;
+    }
+  }
+
   document.addEventListener("DOMContentLoaded", () => {
+    console.log("🔧 [DEBUG] Email test page DOM loaded");
+    console.log("🔧 [DEBUG] Window notification functions:", {
+      showSuccess: typeof window.showSuccess,
+      showError: typeof window.showError,
+      showWarning: typeof window.showWarning,
+      showInfo: typeof window.showInfo,
+    });
+
+    
+
     const emailTestForm = document.getElementById("email-test-form") as HTMLFormElement;
     const sendEmailBtn = document.getElementById("send-email-btn") as HTMLButtonElement;
+    const statusEmailTestForm = document.getElementById(
+      "status-email-test-form"
+    ) as HTMLFormElement;
+    const testStatusEmailBtn = document.getElementById(
+      "test-status-email-btn"
+    ) as HTMLButtonElement;
 
     // Handle email test form submission
     emailTestForm?.addEventListener("submit", async (e) => {
@@ -200,38 +317,212 @@ if (role !== "Admin") {
           headers: {
             "Content-Type": "application/json",
           },
+          credentials: "include", // Include cookies
           body: JSON.stringify({ to, subject, body, buttonText }),
         });
 
         const result = await response.json();
 
         if (response.ok) {
-          if (window.showSuccess) {
-            window.showSuccess("Email Sent Successfully", `Test email sent to ${to}. Email ID: ${result.emailId}`, 8000);
+          console.log("🔧 [DEBUG] Email test response OK, result:", result);
+
+          // Use notification from API response if available, otherwise fallback
+          if (result.notification) {
+            console.log("🔧 [DEBUG] Using API notification:", result.notification);
+            if (result.notification.type === "success" && window.showSuccess) {
+              console.log("🔧 [DEBUG] Calling window.showSuccess");
+              window.showSuccess(
+                result.notification.title,
+                result.notification.message,
+                result.notification.duration || 8000
+              );
+            } else if (result.notification.type === "error" && window.showError) {
+              console.log("🔧 [DEBUG] Calling window.showError");
+              window.showError(
+                result.notification.title,
+                result.notification.message,
+                result.notification.duration || 8000
+              );
+            } else {
+              // Fallback to console logging
+              console.log(`🔔 [${result.notification.title}] ${result.notification.message}`);
+            }
           } else {
-            console.log("🔔 [Email Sent Successfully] Test email sent to ${to}. Email ID: ${result.emailId}");
+            console.log("🔧 [DEBUG] No API notification, using fallback");
+            // Fallback to original notification
+            if (window.showSuccess) {
+              console.log("🔧 [DEBUG] Calling window.showSuccess (fallback)");
+              window.showSuccess(
+                "Email Sent Successfully",
+                `Test email sent to ${to}. Email ID: ${result.emailId}`,
+                8000
+              );
+            } else {
+              console.log("🔧 [DEBUG] window.showSuccess not available, using console");
+              console.log(
+                "🔔 [Email Sent Successfully] Test email sent to ${to}. Email ID: ${result.emailId}"
+              );
+            }
           }
 
           // Reset form
           emailTestForm.reset();
         } else {
-          if (window.showError) {
-            window.showError("Email Send Failed", result.error || "Failed to send email. Please check your configuration.", 8000);
+          // Use notification from API response if available, otherwise fallback
+          if (result.notification) {
+            if (result.notification.type === "error" && window.showError) {
+              window.showError(
+                result.notification.title,
+                result.notification.message,
+                result.notification.duration || 8000
+              );
+            } else {
+              // Fallback to console logging
+              console.error(`🔔 [${result.notification.title}] ${result.notification.message}`);
+            }
           } else {
-            console.error("🔔 [Email Send Failed]", result.error || "Failed to send email. Please check your configuration.");
+            // Fallback to original notification
+            if (window.showError) {
+              window.showError(
+                "Email Send Failed",
+                result.error || "Failed to send email. Please check your configuration.",
+                8000
+              );
+            } else {
+              console.error(
+                "🔔 [Email Send Failed]",
+                result.error || "Failed to send email. Please check your configuration."
+              );
+            }
           }
         }
       } catch (error) {
         console.error("Email test error:", error);
         if (window.showError) {
-          window.showError("Network Error", "Failed to send email. Please check your connection and try again.", 5000);
+          window.showError(
+            "Network Error",
+            "Failed to send email. Please check your connection and try again.",
+            5000
+          );
         } else {
-          console.error("🔔 [Network Error] Failed to send email. Please check your connection and try again.");
+          console.error(
+            "🔔 [Network Error] Failed to send email. Please check your connection and try again."
+          );
         }
       } finally {
         // Re-enable button
         sendEmailBtn.disabled = false;
         sendEmailBtn.textContent = "Send Test Email";
+      }
+    });
+
+    // Handle status email test form submission
+    statusEmailTestForm?.addEventListener("submit", async (e) => {
+      e.preventDefault();
+
+      const formData = new FormData(statusEmailTestForm);
+      const projectId = formData.get("projectId") as string;
+      const statusCode = formData.get("statusCode") as string;
+      const testEmail = formData.get("testEmail") as string;
+
+      // Disable button and show loading state
+      testStatusEmailBtn.disabled = true;
+      testStatusEmailBtn.textContent = "Testing...";
+
+      try {
+        const response = await fetch("/api/test-status-email", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          credentials: "include", // Include cookies
+          body: JSON.stringify({ projectId, statusCode, testEmail }),
+        });
+
+        const result = await response.json();
+
+        if (response.ok) {
+          // Use notification from API response if available, otherwise fallback
+          if (result.notification) {
+            if (result.notification.type === "success" && window.showSuccess) {
+              window.showSuccess(
+                result.notification.title,
+                result.notification.message,
+                result.notification.duration || 8000
+              );
+            } else if (result.notification.type === "error" && window.showError) {
+              window.showError(
+                result.notification.title,
+                result.notification.message,
+                result.notification.duration || 8000
+              );
+            } else {
+              // Fallback to console logging
+              console.log(`🔔 [${result.notification.title}] ${result.notification.message}`);
+            }
+          } else {
+            // Fallback to original notification
+            if (window.showSuccess) {
+              window.showSuccess(
+                "Status Email Test Successful",
+                `Status ${statusCode} email test completed successfully`,
+                8000
+              );
+            } else {
+              console.log(
+                "🔔 [Status Email Test Successful] Status ${statusCode} email test completed successfully"
+              );
+            }
+          }
+
+          // Log detailed results
+          console.log("📧 [STATUS-TEST] Test results:", result);
+        } else {
+          // Use notification from API response if available, otherwise fallback
+          if (result.notification) {
+            if (result.notification.type === "error" && window.showError) {
+              window.showError(
+                result.notification.title,
+                result.notification.message,
+                result.notification.duration || 8000
+              );
+            } else {
+              // Fallback to console logging
+              console.error(`🔔 [${result.notification.title}] ${result.notification.message}`);
+            }
+          } else {
+            // Fallback to original notification
+            if (window.showError) {
+              window.showError(
+                "Status Email Test Failed",
+                result.error || "Failed to test status email. Please try again.",
+                8000
+              );
+            } else {
+              console.error(
+                "🔔 [Status Email Test Failed]",
+                result.error || "Failed to test status email. Please try again."
+              );
+            }
+          }
+        }
+      } catch (error) {
+        console.error("Status email test error:", error);
+        if (window.showError) {
+          window.showError(
+            "Network Error",
+            "Failed to test status email. Please check your connection and try again.",
+            5000
+          );
+        } else {
+          console.error(
+            "🔔 [Network Error] Failed to test status email. Please check your connection and try again."
+          );
+        }
+      } finally {
+        // Re-enable button
+        testStatusEmailBtn.disabled = false;
+        testStatusEmailBtn.textContent = "Test Status Email";
       }
     });
   });
