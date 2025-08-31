@@ -81,6 +81,25 @@ if (supabase && user) {
         );
       }
     }
+
+    // Get assigned user's profile data if project has an assigned user
+    if (project.assigned_to_id) {
+      const { data: assignedProfileData, error: assignedProfileError } = await supabase
+        .from("profiles")
+        .select("id, name, company_name")
+        .eq("id", project.assigned_to_id)
+        .single();
+
+      if (assignedProfileError) {
+        console.error("Error fetching assigned user profile:", assignedProfileError);
+      } else {
+        // Add assigned user name to the project data
+        project.assigned_to_name = assignedProfileData.company_name || assignedProfileData.name;
+        console.log("🌐 [PROJECT] Assigned user profile loaded:", project.assigned_to_name);
+      }
+    } else {
+      project.assigned_to_name = null;
+    }
   }
 }
 

@@ -244,7 +244,7 @@ export const GET: APIRoute = async ({ request }) => {
         // Fetch user profiles for names
         const { data: profiles, error: profilesError } = await supabase
           .from("profiles")
-          .select("id, name")
+          .select("id, name, company_name")
           .in("id", uniqueUserIds);
 
         console.log("📡 [API] Profiles query result:", {
@@ -263,7 +263,10 @@ export const GET: APIRoute = async ({ request }) => {
         if (profiles) {
           console.log("📡 [API] Processing profiles:", profiles);
           profiles.forEach((profile) => {
-            nameMap.set(profile.id, profile.company_name);
+            // Use company_name if available, otherwise fall back to name
+            const displayName =
+              profile.company_name || profile.name || `User ${profile.id.slice(0, 8)}`;
+            nameMap.set(profile.id, displayName);
           });
         } else {
           console.log("📡 [API] No profiles found for user IDs:", uniqueUserIds);
@@ -328,9 +331,18 @@ export const GET: APIRoute = async ({ request }) => {
               project.assigned_to_name =
                 nameMap.get(project.assigned_to_id) || project.assigned_to_name;
               project.assigned_to_avatar = avatarMap.get(project.assigned_to_id) || null;
+
+              console.log(`📡 [API] Project ${project.id} assigned user data:`, {
+                assigned_to_id: project.assigned_to_id,
+                assigned_to_name: project.assigned_to_name,
+                assigned_to_email: project.assigned_to_email,
+                nameMap_has_key: nameMap.has(project.assigned_to_id),
+                nameMap_value: nameMap.get(project.assigned_to_id),
+              });
             } else {
               project.assigned_to_email = null;
               project.assigned_to_avatar = null;
+              console.log(`📡 [API] Project ${project.id} has no assigned user`);
             }
           });
         } else {

@@ -3,7 +3,7 @@ import { supabase } from "../../lib/supabase";
 
 export const POST: APIRoute = async ({ request }) => {
   try {
-    console.log("get-project-files API called");
+    console.log("🚨 [API] get-project-files API called at:", new Date().toISOString());
     const { projectId } = await request.json();
     console.log("Project ID:", projectId);
 
@@ -60,21 +60,28 @@ export const POST: APIRoute = async ({ request }) => {
       // Keep default role
     }
 
+    console.log("📡 [API] User role check:", {
+      userId: user.id,
+      userRole,
+      profileRole: profile?.role,
+      hasProfile: !!profile,
+      profileError: !!profileError,
+    });
+
     // Fetch files for the project
     let query = supabase
       .from("files")
       .select("*")
-      .eq("project_id", projectId)
+      .eq("project_id", parseInt(projectId))
       .eq("status", "active")
       .order("uploaded_at", { ascending: false });
 
-    // Apply RLS - Admins can see all files, Clients can only see files for their own projects
+    // Apply RLS - Admins can see all files, Staff can see assigned projects, Clients can only see their own projects
     if (userRole !== "Admin") {
-      // For clients, we need to ensure they can only access files for their own projects
-      // The RLS policy should handle this, but we'll add an extra check
+      // Check project permissions based on user role
       const { data: project, error: projectError } = await supabase
         .from("projects")
-        .select("author_id")
+        .select("author_id, assigned_to_id")
         .eq("id", projectId)
         .single();
 
@@ -85,7 +92,35 @@ export const POST: APIRoute = async ({ request }) => {
         });
       }
 
-      if (project.author_id !== user.id) {
+      // Check access based on role (case-insensitive)
+      let hasAccess = false;
+      const normalizedRole = userRole.toLowerCase();
+
+      if (normalizedRole === "staff") {
+        // Staff can access projects assigned to them
+        hasAccess = project.assigned_to_id === user.id;
+        console.log("📡 [API] Staff access check:", {
+          assignedToId: project.assigned_to_id,
+          userId: user.id,
+          hasAccess,
+        });
+      } else if (normalizedRole === "client") {
+        // Clients can only access their own projects
+        hasAccess = project.author_id === user.id;
+        console.log("📡 [API] Client access check:", {
+          authorId: project.author_id,
+          userId: user.id,
+          hasAccess,
+        });
+      }
+
+      if (!hasAccess) {
+        console.log("Access denied for user:", {
+          userId: user.id,
+          userRole,
+          projectAuthorId: project.author_id,
+          projectAssignedToId: project.assigned_to_id,
+        });
         return new Response(JSON.stringify({ error: "Access denied" }), {
           status: 403,
           headers: { "Content-Type": "application/json" },
@@ -98,7 +133,26 @@ export const POST: APIRoute = async ({ request }) => {
     console.log("Files fetch result:", {
       filesCount: files?.length || 0,
       error,
+      projectId,
+      userRole,
+      query:
+        "SELECT * FROM files WHERE project_id = ? AND status = 'active' ORDER BY uploaded_at DESC",
     });
+
+    // Log individual files for debugging
+    if (files && files.length > 0) {
+      console.log(
+        "Files found:",
+        files.map((f) => ({
+          id: f.id,
+          file_name: f.file_name,
+          status: f.status,
+          project_id: f.project_id,
+        }))
+      );
+    } else {
+      console.log("No files found for project:", projectId);
+    }
 
     if (error) {
       console.error("Error fetching project files:", error);

@@ -296,7 +296,7 @@ export const PROJECT_FORM_FIELDS: FormFieldConfig[] = [
     type: "component",
     label: "Assign To",
     component: "StaffSelect",
-    allow: ["Admin"], // Only admin can assign projects
+    allow: ["Admin", "Staff", "Client"], // Temporarily allow all roles for testing
     // Assignment available throughout most of the process (all statuses)
   },
   {
