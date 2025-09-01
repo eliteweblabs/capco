@@ -10,54 +10,61 @@ export const GET: APIRoute = async ({ request, cookies }) => {
     if (!supabase) {
       console.log("📡 [API] Supabase not configured, returning demo staff users");
 
-      // Return demo staff users when database is not configured
-      const demoStaffUsers = [
-        {
-          id: "demo-staff-1",
-          name: "John Smith",
-          phone: "555-123-4567",
-          role: "Staff",
-        },
-        {
-          id: "demo-staff-2",
-          name: "Sarah Johnson",
-          phone: "555-987-6543",
-          role: "Staff",
-        },
-        {
-          id: "demo-staff-3",
-          name: "Mike Davis",
-          phone: "555-555-1234",
-          role: "Staff",
-        },
-        {
-          id: "demo-staff-4",
-          name: "Lisa Chen",
-          phone: "555-456-7890",
-          role: "Staff",
-        },
-        {
-          id: "demo-staff-5",
-          name: "Robert Wilson",
-          phone: "555-333-4567",
-          role: "Staff",
-        },
-      ];
+      // // Return demo staff users when database is not configured
+      // const demoStaffUsers = [
+      //   {
+      //     id: "demo-staff-1",
+      //     name: "John Smith",
+      //     phone: "555-123-4567",
+      //     role: "Staff",
+      //   },
+      //   {
+      //     id: "demo-staff-2",
+      //     name: "Sarah Johnson",
+      //     phone: "555-987-6543",
+      //     role: "Staff",
+      //   },
+      //   {
+      //     id: "demo-staff-3",
+      //     name: "Mike Davis",
+      //     phone: "555-555-1234",
+      //     role: "Staff",
+      //   },
+      //   {
+      //     id: "demo-staff-4",
+      //     name: "Lisa Chen",
+      //     phone: "555-456-7890",
+      //     role: "Staff",
+      //   },
+      //   {
+      //     id: "demo-staff-5",
+      //     name: "Robert Wilson",
+      //     phone: "555-333-4567",
+      //     role: "Staff",
+      //   },
+      // ];
 
-      return new Response(
-        JSON.stringify({
-          success: true,
-          staffUsers: demoStaffUsers,
-          message: "Demo staff users (no database interaction)",
-        }),
-        {
-          status: 200,
-          headers: { "Content-Type": "application/json" },
-        }
-      );
+      // return new Response(
+      //   JSON.stringify({
+      //     success: true,
+      //     staffUsers: demoStaffUsers,
+      //     message: "Demo staff users (no database interaction)",
+      //   }),
+      //   {
+      //     status: 200,
+      //     headers: { "Content-Type": "application/json" },
+      //   }
+      // );
     }
 
     console.log("📡 [API] Getting current user...");
+
+    if (!supabase) {
+      return new Response(JSON.stringify({ error: "Database not configured" }), {
+        status: 500,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
 
     // Set up session from cookies
     const accessToken = cookies.get("sb-access-token")?.value;

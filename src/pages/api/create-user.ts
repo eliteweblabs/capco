@@ -352,6 +352,7 @@ The user will receive a magic link to access their account.`;
               },
               body: JSON.stringify({
                 projectId: "new-user-creation",
+                emailType: "registration",
                 newStatus: 0,
                 usersToNotify: [
                   {
@@ -360,18 +361,7 @@ The user will receive a magic link to access their account.`;
                     last_name: user.last_name,
                   },
                 ],
-                projectDetails: {
-                  title: "New User Created",
-                  address: "System Notification",
-                  est_time: "2-3 business days",
-                  profiles: [
-                    {
-                      email: userEmail,
-                      first_name: user.first_name,
-                      last_name: user.last_name,
-                    },
-                  ],
-                },
+
                 email_content: emailContent,
                 button_text: "",
                 custom_subject: `New User ${displayName} Created As ${staffRole}`,
@@ -395,7 +385,7 @@ The user will receive a magic link to access their account.`;
         }
 
         // Send welcome email to the new user
-        const welcomeContent = `Welcome to the system!<br><br>
+        const welcomeContent = `Welcome to the CAPCo App!<br><br>
 
 Your account has been created successfully:<br><br>
 
@@ -412,8 +402,8 @@ Click the button below to access your account and set up your password.`;
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            projectId: "new-user-creation",
-            newStatus: 0,
+            // projectId: "new-user-creation",
+            // newStatus: 0,
             usersToNotify: [
               {
                 email: email,
@@ -421,18 +411,6 @@ Click the button below to access your account and set up your password.`;
                 last_name: last_name.trim(),
               },
             ],
-            projectDetails: {
-              title: "Welcome to the System",
-              address: "Account Creation",
-              est_time: "2-3 business days",
-              profiles: [
-                {
-                  email: email,
-                  first_name: first_name.trim(),
-                  last_name: last_name.trim(),
-                },
-              ],
-            },
             email_content: welcomeContent,
             button_text: "Access Your Account",
             custom_subject: `Welcome to CAPCo Fire Protection - ${displayName}`,

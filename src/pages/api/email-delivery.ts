@@ -34,7 +34,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     const body = await request.json();
     console.log("📧 [EMAIL-DELIVERY] Request body:", JSON.stringify(body, null, 2));
 
-    const { projectId, newStatus, usersToNotify, emailType } = body;
+    const { projectId, newStatus, usersToNotify, emailType, custom_subject, email_content } = body;
 
     console.log("📧 [EMAIL-DELIVERY] Parameter validation:");
     console.log("  - projectId:", projectId);
@@ -42,13 +42,12 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     console.log("  - emailType:", emailType);
     console.log("  - usersToNotify count:", usersToNotify?.length || 0);
 
-    // For test emails, registration emails, or special cases, bypass normal project validation
-    const isTestEmail = projectId === "test-project" || newStatus === 999 || newStatus === 0;
+    // Determine email type flags
     const isRegistrationEmail = emailType === "registration";
-    const skipProjectValidation = isTestEmail || isRegistrationEmail;
-    console.log("📧 [EMAIL-DELIVERY] Is test email:", isTestEmail);
-    console.log("📧 [EMAIL-DELIVERY] Is registration email:", isRegistrationEmail);
-    console.log("📧 [EMAIL-DELIVERY] Skip project validation:", skipProjectValidation);
+    const isStaffAssignmentEmail = emailType === "staff_assignment";
+    const isStatusUpdateEmail = emailType === "update_status";
+    const skipProjectValidation = isRegistrationEmail || isStaffAssignmentEmail;
+    console.log("📧 [EMAIL-DELIVERY] Email type:", emailType);
 
     if (!projectId || !usersToNotify) {
       console.error("📧 [EMAIL-DELIVERY] Missing required parameters");
@@ -81,7 +80,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
     // Get status configuration from cached API
     let statusConfig = null;
-    if (!skipProjectValidation) {
+    if (emailType === "update_status" && newStatus) {
       try {
         const baseUrl = import.meta.env.SITE_URL || "http://localhost:4321";
         const statusResponse = await fetch(`${baseUrl}/api/get-project-statuses`);
@@ -246,13 +245,20 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         let emailContent;
         if (isRegistrationEmail) {
           // For registration emails, use content from request body
+          emailContent = email_content || "Thank you for registering with CAPCo Fire Protection!";
+        } else if (isStaffAssignmentEmail) {
+          // For staff assignment emails, use content from request body
           emailContent =
-            body.email_content || "Thank you for registering with CAPCo Fire Protection!";
-        } else {
-          // For status emails, use content from database
+            email_content ||
+            "You have been assigned to a new project. Please review the project details and take appropriate action.";
+        } else if (isStatusUpdateEmail) {
+          // For status updates, use rigid content from database
           emailContent =
             statusConfig?.email_content ||
             "Your project status has been updated. Please check your project dashboard for more details.";
+        } else {
+          // Fallback for unknown email types
+          emailContent = email_content || "You have a new notification.";
         }
 
         // Convert plain text to HTML with line breaks
@@ -296,8 +302,15 @@ export const POST: APIRoute = async ({ request, cookies }) => {
             emailHtml = emailHtml.replace("{{BUTTON_TEXT}}", "");
             emailHtml = emailHtml.replace("{{BUTTON_LINK}}", "");
           }
-        } else {
-          // For status update emails, use original logic
+        } else if (isStaffAssignmentEmail) {
+          // For staff assignment emails, add button to view project
+          emailHtml = emailHtml.replace("{{BUTTON_TEXT}}", "View Project");
+          emailHtml = emailHtml.replace(
+            "{{BUTTON_LINK}}",
+            `${process.env.BASE_URL || "http://localhost:4321"}/project/${projectId}`
+          );
+        } else if (isStatusUpdateEmail) {
+          // For status update emails, use rigid logic from database
           const hasButtonText =
             statusConfig?.button_text &&
             statusConfig.button_text.trim() !== "" &&
@@ -317,6 +330,14 @@ export const POST: APIRoute = async ({ request, cookies }) => {
             emailHtml = emailHtml.replace("{{BUTTON_TEXT}}", "");
             emailHtml = emailHtml.replace("{{BUTTON_LINK}}", "");
           }
+        } else {
+          // For unknown email types, remove button
+          emailHtml = emailHtml.replace(
+            /<!-- Call to Action Button -->[\s\S]*?<!-- \/Call to Action Button -->/g,
+            ""
+          );
+          emailHtml = emailHtml.replace("{{BUTTON_TEXT}}", "");
+          emailHtml = emailHtml.replace("{{BUTTON_LINK}}", "");
         }
 
         // Send email via Resend
@@ -332,13 +353,18 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         // Set subject based on email type
         let emailSubject;
         if (isRegistrationEmail) {
-          // Use custom subject from request body, fallback to default with company name
+          // Use custom subject from request body, fallback to default
+          emailSubject = custom_subject || "Welcome to CAPCo Fire Protection";
+        } else if (isStaffAssignmentEmail) {
+          // Use custom subject from request body, fallback to default with project title
           emailSubject =
-            body.custom_subject ||
-            `Welcome to CAPCo Fire Protection - ${projectDetails.title || "New Registration"}`;
+            custom_subject || `Project Assignment - ${projectDetails?.title || "Project"}`;
+        } else if (isStatusUpdateEmail) {
+          // Status update subject - only rigid built-in logic
+          emailSubject = `${statusConfig?.status_name || "Status Update"}: ${projectDetails?.title || "Project"}`;
         } else {
-          // Status update subject
-          emailSubject = `${statusConfig?.status_name || "Status Update"}: ${projectDetails.title || "Project"}`;
+          // Fallback for unknown email types
+          emailSubject = custom_subject || "Notification";
         }
 
         const emailPayload = {

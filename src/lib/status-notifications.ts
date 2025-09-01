@@ -219,6 +219,7 @@ async function sendEmailNotifications(
         projectId,
         newStatus,
         usersToNotify,
+        emailType: "update_status",
       }),
     });
 

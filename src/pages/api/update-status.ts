@@ -1,6 +1,5 @@
 import type { APIRoute } from "astro";
 import { SimpleProjectLogger } from "../../lib/simple-logging";
-import { sendStatusChangeNotifications } from "../../lib/status-notifications";
 import { supabase } from "../../lib/supabase";
 import { supabaseAdmin } from "../../lib/supabase-admin";
 
@@ -147,7 +146,42 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
     // Send email notifications for status change
     let notificationMessage = "Status updated successfully";
-    console.log("📊 [UPDATE-STATUS] About to send status change notifications...");
+    console.log("📊 [UPDATE-STATUS] Sending email notifications...");
+
+    try {
+      const baseUrl = import.meta.env.SITE_URL || "http://localhost:4321";
+
+      const emailResponse = await fetch(`${baseUrl}/api/email-delivery`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          projectId,
+          newStatus,
+          emailType: "update_status",
+          usersToNotify: [
+            { role: "Admin" },
+            { role: "Staff" },
+            { id: updatedProject.author_id }, // Project owner
+          ],
+        }),
+      });
+
+      if (emailResponse.ok) {
+        const emailResult = await emailResponse.json();
+        console.log("📧 [UPDATE-STATUS] Email notifications sent successfully:", emailResult);
+      } else {
+        const errorText = await emailResponse.text();
+        console.error("📧 [UPDATE-STATUS] Failed to send email notifications:", errorText);
+      }
+    } catch (emailError) {
+      console.error("📊 [UPDATE-STATUS] Error sending email notifications:", emailError);
+      // Don't fail the request if email notifications fail
+    }
+
+    // Get toast message for UI feedback
+    console.log("📊 [UPDATE-STATUS] Getting toast message configuration...");
     console.log("📊 [UPDATE-STATUS] Notification parameters:", {
       projectId,
       newStatus,
@@ -156,10 +190,8 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       projectAddress: updatedProject?.address,
     });
 
+    // Get toast message configuration
     try {
-      await sendStatusChangeNotifications(projectId, newStatus, updatedProject, "UPDATE-STATUS");
-      console.log("📊 [UPDATE-STATUS] Status change notifications sent successfully");
-
       // Log email notification activity
       try {
         console.log("📊 [UPDATE-STATUS] Logging email notification activity...");
