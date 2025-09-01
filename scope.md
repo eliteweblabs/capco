@@ -219,3 +219,5 @@ ORDER BY table_name, ordinal_position;
 - **Current Workaround**: Added 1-second delay between emails in `/api/email-delivery.ts`
 - **Future Fix**: Investigate Resend account settings or consider alternative email providers for higher rate limits
 - **Location**: `src/pages/api/email-delivery.ts` - email sending loop with delay
+
+all emails deliver through email-delivery.ts except for the authentication ones which are handled by Superbase
