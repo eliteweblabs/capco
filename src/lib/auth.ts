@@ -55,7 +55,7 @@ export async function checkAuth(cookies: any): Promise<AuthResult> {
 
           const { data: profile, error: profileError } = await supabase
             .from("profiles")
-            .select("role")
+            .select("*")
             .eq("id", user.id)
             .single();
 
@@ -67,6 +67,15 @@ export async function checkAuth(cookies: any): Promise<AuthResult> {
 
           if (profile && !profileError) {
             role = profile.role;
+            // Enhance user object with profile data
+            user.profile = profile;
+            user.company_name = profile.company_name;
+            user.display_name =
+              profile.company_name ||
+              profile.name ||
+              user.user_metadata?.full_name ||
+              user.email?.split("@")[0] ||
+              "Unknown User";
             console.log("🔐 [AUTH] User role set:", role);
           } else {
             console.warn("🔐 [AUTH] Failed to get user profile:", profileError);

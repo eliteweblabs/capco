@@ -1,7 +1,7 @@
 import type { APIRoute } from "astro";
 import { supabase } from "../../lib/supabase";
 
-export const POST: APIRoute = async ({ request }) => {
+export const POST: APIRoute = async ({ request, cookies }) => {
   try {
     console.log("🚨 [API] get-project-files API called at:", new Date().toISOString());
     const { projectId } = await request.json();
@@ -18,6 +18,22 @@ export const POST: APIRoute = async ({ request }) => {
       return new Response(JSON.stringify({ error: "Database not configured" }), {
         status: 500,
         headers: { "Content-Type": "application/json" },
+      });
+    }
+
+    // Set up session from cookies
+    const accessToken = cookies.get("sb-access-token")?.value;
+    const refreshToken = cookies.get("sb-refresh-token")?.value;
+
+    console.log("📡 [API] Auth check:", {
+      hasAccessToken: !!accessToken,
+      hasRefreshToken: !!refreshToken,
+    });
+
+    if (accessToken && refreshToken) {
+      await supabase.auth.setSession({
+        access_token: accessToken,
+        refresh_token: refreshToken,
       });
     }
 
@@ -78,15 +94,14 @@ export const POST: APIRoute = async ({ request }) => {
       .eq("status", "active")
       .order("uploaded_at", { ascending: false });
 
-    // Apply RLS - Admins can see all files, Staff can see assigned projects, Clients can only see their own projects
-    const normalizedUserRole = userRole.toLowerCase();
+    // Apply RLS - Admins and Staff can see all files, Clients can only see their own projects
     console.log("📡 [API] Role check:", {
       userRole,
-      normalizedUserRole,
-      isAdmin: normalizedUserRole === "admin",
+      isAdmin: userRole === "Admin",
+      isStaff: userRole === "Staff",
     });
 
-    if (normalizedUserRole !== "admin") {
+    if (userRole !== "Admin" && userRole !== "Staff") {
       // Check project permissions based on user role
       const { data: project, error: projectError } = await supabase
         .from("projects")
@@ -109,19 +124,10 @@ export const POST: APIRoute = async ({ request }) => {
         hasAssignment: !!project.assigned_to_id,
       });
 
-      // Check access based on role (case-insensitive)
+      // Check access based on role
       let hasAccess = false;
-      const normalizedRole = userRole.toLowerCase();
 
-      if (normalizedRole === "staff") {
-        // Staff can access projects assigned to them
-        hasAccess = project.assigned_to_id === user.id;
-        console.log("📡 [API] Staff access check:", {
-          assignedToId: project.assigned_to_id,
-          userId: user.id,
-          hasAccess,
-        });
-      } else if (normalizedRole === "client") {
+      if (userRole === "Client") {
         // Clients can only access their own projects
         hasAccess = project.author_id === user.id;
         console.log("📡 [API] Client access check:", {

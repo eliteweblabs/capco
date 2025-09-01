@@ -76,31 +76,68 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     } else {
       // If current user is admin/staff, handle new client creation or existing client
       if (body.new_client === "on") {
-        // Create new client profile
-        const newClientData = {
-          name: `${body.first_name} ${body.last_name}`.trim(),
-          company_name: body.company_name,
-          email: body.email,
-          role: "Client",
-        };
+        // Create new client using the existing create-user endpoint
+        const { first_name, last_name, company_name, email } = body;
 
-        console.log("📝 [CREATE-PROJECT] Creating new client profile:", newClientData);
-
-        const { data: newClient, error: clientError } = await supabase
-          .from("profiles")
-          .insert([newClientData])
-          .select()
-          .single();
-
-        if (clientError) {
-          console.error("📝 [CREATE-PROJECT] Error creating client profile:", clientError);
-          return new Response(JSON.stringify({ error: "Failed to create client profile" }), {
-            status: 500,
-          });
+        if (!first_name?.trim() || !last_name?.trim() || !email?.trim()) {
+          return new Response(
+            JSON.stringify({
+              error: "First name, last name, and email are required for new clients",
+              details: "Please fill in all required fields for the new client",
+            }),
+            { status: 400 }
+          );
         }
 
-        projectAuthorId = newClient.id;
-        console.log("📝 [CREATE-PROJECT] New client created, using ID as author:", projectAuthorId);
+        console.log("📝 [CREATE-PROJECT] Creating new client using create-user endpoint");
+
+        try {
+          // Call the create-user API to create the new client
+          const createUserResponse = await fetch(
+            `${import.meta.env.SITE_URL || "http://localhost:4321"}/api/create-user`,
+            {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                Cookie: `sb-access-token=${cookies.get("sb-access-token")?.value}; sb-refresh-token=${cookies.get("sb-refresh-token")?.value}`,
+              },
+              body: JSON.stringify({
+                first_name: first_name.trim(),
+                last_name: last_name.trim(),
+                company_name: company_name?.trim() || "",
+                email: email.trim(),
+                phone: "",
+                role: "Client",
+              }),
+            }
+          );
+
+          const createUserResult = await createUserResponse.json();
+
+          if (!createUserResponse.ok || !createUserResult.success) {
+            console.error("📝 [CREATE-PROJECT] Failed to create client:", createUserResult);
+            return new Response(
+              JSON.stringify({
+                error: createUserResult.error || "Failed to create client",
+                details: createUserResult.details || "Please try again",
+              }),
+              { status: createUserResponse.status }
+            );
+          }
+
+          // Use the created user's ID as the project author
+          projectAuthorId = createUserResult.user.id;
+          console.log("📝 [CREATE-PROJECT] New client created successfully, ID:", projectAuthorId);
+        } catch (error) {
+          console.error("📝 [CREATE-PROJECT] Error calling create-user endpoint:", error);
+          return new Response(
+            JSON.stringify({
+              error: "Failed to create client",
+              details: error instanceof Error ? error.message : "Unknown error",
+            }),
+            { status: 500 }
+          );
+        }
       } else {
         // Use existing client from form
         if (!body.author_id) {
@@ -136,7 +173,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     // Prepare project data - match the update-project API structure
     const projectData = {
       author_id: projectAuthorId,
-      title: body.address || "New Project",
+      title: body.address || body.title,
       address: body.address,
       description: body.description,
       architect: body.architect,
@@ -187,60 +224,10 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
     console.log("📝 [CREATE-PROJECT] Project created successfully:", project.id);
 
-    // Set initial status to 10 (Specs Received) and trigger email notifications
-    try {
-      console.log("📝 [CREATE-PROJECT] Setting initial status to 10...");
+    // Note: Status update and email notifications will be handled by update-status API
+    // called from the frontend after project creation
 
-      // Update project with initial status
-      const { data: updatedProject, error: statusError } = await supabase
-        .from("projects")
-        .update({
-          status: 10, // "Specs Received"
-          updated_at: new Date().toISOString(),
-        })
-        .eq("id", project.id)
-        .select()
-        .single();
-
-      if (statusError) {
-        console.error("📝 [CREATE-PROJECT] Error setting initial status:", statusError);
-      } else {
-        console.log("📝 [CREATE-PROJECT] Initial status set successfully:", updatedProject.status);
-
-        // Trigger email notifications via update-status API
-        try {
-          console.log("📝 [CREATE-PROJECT] Triggering email notifications via update-status...");
-          const statusResponse = await fetch(
-            `${import.meta.env.SITE_URL || "http://localhost:4321"}/api/update-status`,
-            {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-                Cookie: `sb-access-token=${cookies.get("sb-access-token")?.value}; sb-refresh-token=${cookies.get("sb-refresh-token")?.value}`,
-              },
-              body: JSON.stringify({
-                projectId: project.id,
-                newStatus: 10,
-              }),
-            }
-          );
-
-          if (statusResponse.ok) {
-            console.log("📝 [CREATE-PROJECT] Email notifications triggered successfully");
-          } else {
-            console.error(
-              "📝 [CREATE-PROJECT] Failed to trigger email notifications:",
-              await statusResponse.text()
-            );
-          }
-        } catch (emailError) {
-          console.error("📝 [CREATE-PROJECT] Error triggering email notifications:", emailError);
-        }
-      }
-    } catch (statusUpdateError) {
-      console.error("📝 [CREATE-PROJECT] Error in status update process:", statusUpdateError);
-      // Don't fail the request if status update fails
-    }
+    console.log("📝 [CREATE-PROJECT] ==========================================");
 
     // Log the project creation
     try {
@@ -254,7 +241,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       // Don't fail the request if logging fails
     }
 
-    return new Response(JSON.stringify(project), {
+    return new Response(JSON.stringify(updatedProject), {
       status: 201,
       headers: {
         "Content-Type": "application/json",
@@ -267,6 +254,3 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     });
   }
 };
-
-// Email notifications are centralized in update-status.ts
-// All status changes (including initial status 10) trigger emails via the status change system

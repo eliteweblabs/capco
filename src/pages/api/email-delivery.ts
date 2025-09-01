@@ -5,7 +5,16 @@ import { supabase } from "../../lib/supabase";
 import { supabaseAdmin } from "../../lib/supabase-admin";
 
 export const POST: APIRoute = async ({ request, cookies }) => {
-  console.log("📧 [EMAIL-DELIVERY] API endpoint called");
+  console.log("📧 little bit bigger API endpoint called");
+  console.log("📧 [EMAIL-DELIVERY] ==========================================");
+  console.log("📧 [EMAIL-DELIVERY] Timestamp:", new Date().toISOString());
+  console.log("📧 [EMAIL-DELIVERY] Request method:", request.method);
+  console.log("📧 [EMAIL-DELIVERY] Request URL:", request.url);
+
+  // Log to file for debugging
+  const fs = await import("fs");
+  const logEntry = `[${new Date().toISOString()}] EMAIL-DELIVERY API called\n`;
+  fs.appendFileSync("/tmp/astro-email.log", logEntry);
 
   try {
     if (!supabase || !supabaseAdmin) {
@@ -25,21 +34,23 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     const body = await request.json();
     console.log("📧 [EMAIL-DELIVERY] Request body:", JSON.stringify(body, null, 2));
 
-    const { projectId, newStatus, usersToNotify, projectDetails, email_content, button_text } =
-      body;
+    const { projectId, newStatus, usersToNotify, emailType } = body;
 
     console.log("📧 [EMAIL-DELIVERY] Parameter validation:");
     console.log("  - projectId:", projectId);
     console.log("  - newStatus:", newStatus);
+    console.log("  - emailType:", emailType);
     console.log("  - usersToNotify count:", usersToNotify?.length || 0);
-    console.log("  - projectDetails:", projectDetails ? "Present" : "Missing");
-    console.log("  - email_content:", email_content ? "Present" : "Missing");
 
-    // For test emails, newStatus might be invalid (like 999) or 0, so we'll allow it
+    // For test emails, registration emails, or special cases, bypass normal project validation
     const isTestEmail = projectId === "test-project" || newStatus === 999 || newStatus === 0;
+    const isRegistrationEmail = emailType === "registration";
+    const skipProjectValidation = isTestEmail || isRegistrationEmail;
     console.log("📧 [EMAIL-DELIVERY] Is test email:", isTestEmail);
+    console.log("📧 [EMAIL-DELIVERY] Is registration email:", isRegistrationEmail);
+    console.log("📧 [EMAIL-DELIVERY] Skip project validation:", skipProjectValidation);
 
-    if (!projectId || !usersToNotify || !projectDetails || !email_content) {
+    if (!projectId || !usersToNotify) {
       console.error("📧 [EMAIL-DELIVERY] Missing required parameters");
       return new Response(
         JSON.stringify({
@@ -53,8 +64,8 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       );
     }
 
-    // Only validate newStatus for non-test emails
-    if (!isTestEmail && !newStatus) {
+    // Only validate newStatus for emails that require project validation
+    if (!skipProjectValidation && !newStatus) {
       console.error("📧 [EMAIL-DELIVERY] Missing newStatus for non-test email");
       return new Response(
         JSON.stringify({
@@ -66,6 +77,89 @@ export const POST: APIRoute = async ({ request, cookies }) => {
           headers: { "Content-Type": "application/json" },
         }
       );
+    }
+
+    // Get status configuration from cached API
+    let statusConfig = null;
+    if (!skipProjectValidation) {
+      try {
+        const baseUrl = import.meta.env.SITE_URL || "http://localhost:4321";
+        const statusResponse = await fetch(`${baseUrl}/api/get-project-statuses`);
+
+        if (statusResponse.ok) {
+          const statusData = await statusResponse.json();
+          statusConfig = statusData.statuses[newStatus];
+
+          if (!statusConfig) {
+            console.error(
+              "📧 [EMAIL-DELIVERY] Status configuration not found for status:",
+              newStatus
+            );
+            return new Response(
+              JSON.stringify({
+                success: false,
+                error: "Status configuration not found",
+              }),
+              {
+                status: 404,
+                headers: { "Content-Type": "application/json" },
+              }
+            );
+          }
+        } else {
+          console.error("📧 [EMAIL-DELIVERY] Failed to fetch project statuses");
+          return new Response(
+            JSON.stringify({
+              success: false,
+              error: "Failed to fetch project statuses",
+            }),
+            {
+              status: 500,
+              headers: { "Content-Type": "application/json" },
+            }
+          );
+        }
+      } catch (error) {
+        console.error("📧 [EMAIL-DELIVERY] Error fetching project statuses:", error);
+        return new Response(
+          JSON.stringify({
+            success: false,
+            error: "Failed to fetch project statuses",
+          }),
+          {
+            status: 500,
+            headers: { "Content-Type": "application/json" },
+          }
+        );
+      }
+    }
+
+    // Get project details from database (skip for registration emails)
+    let projectDetails = null;
+    if (!skipProjectValidation) {
+      const { data: fetchedProjectDetails, error: projectError } = await supabase
+        .from("projects")
+        .select("title, address")
+        .eq("id", projectId)
+        .single();
+
+      if (projectError || !fetchedProjectDetails) {
+        console.error("📧 [EMAIL-DELIVERY] Failed to get project details:", projectError);
+        return new Response(
+          JSON.stringify({
+            success: false,
+            error: "Project not found",
+          }),
+          {
+            status: 404,
+            headers: { "Content-Type": "application/json" },
+          }
+        );
+      }
+      projectDetails = fetchedProjectDetails;
+    } else {
+      // Use project details from request body for registration emails
+      projectDetails = body.projectDetails || { title: projectId, address: "Registration" };
     }
 
     // Get environment variables for email
@@ -133,83 +227,144 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
       try {
         // Determine if this user should get a magic link button
-        const profileEmails = projectDetails.profiles.map((profile: any) => profile.email);
-        const isClient = profileEmails.includes(user.email);
+        const isClient = usersToNotify.some((u: any) => u.email === user.email);
         const shouldShowButton = isClient; // Only show button for clients
 
         console.log(`📧 [EMAIL-DELIVERY] User analysis for ${user.email}:`);
-        console.log("  - Profile emails:", profileEmails);
         console.log("  - Is client:", isClient);
         console.log("  - Should show button:", shouldShowButton);
 
-        let magicLink = "";
-        if (shouldShowButton) {
-          console.log(`📧 [EMAIL-DELIVERY] Generating magic link for ${user.email}...`);
-          // Generate magic link only for clients
-          const { data: magicLinkData, error: magicLinkError } =
-            await supabaseAdmin.auth.admin.generateLink({
-              type: "magiclink",
-              email: user.email,
-              options: {
-                redirectTo: `${import.meta.env.SITE_URL || "http://localhost:4321"}/project/${projectId}`,
-              },
-            });
+        // Use button_link from database
+        const magicLink = statusConfig?.button_link || "";
+        console.log(`📧 [EMAIL-DELIVERY] Using button_link from database: ${magicLink}`);
 
-          if (magicLinkError) {
-            console.error(
-              `📧 [EMAIL-DELIVERY] Magic link generation error for ${user.email}:`,
-              magicLinkError
-            );
-            failedEmails.push({ email: user.email, error: magicLinkError.message });
-            continue;
-          }
-          magicLink = magicLinkData.properties.action_link;
-          console.log(`📧 [EMAIL-DELIVERY] Magic link generated for ${user.email}`);
+        // Prepare email content with line breaks for names
+        const fullName = `${user.first_name || ""} ${user.last_name || ""}`.trim();
+        const displayName = fullName || user.company_name || "Client";
+
+        // Use the email content based on email type
+        let emailContent;
+        if (isRegistrationEmail) {
+          // For registration emails, use content from request body
+          emailContent =
+            body.email_content || "Thank you for registering with CAPCo Fire Protection!";
         } else {
-          console.log(`📧 [EMAIL-DELIVERY] No magic link needed for ${user.email} (not a client)`);
+          // For status emails, use content from database
+          emailContent =
+            statusConfig?.email_content ||
+            "Your project status has been updated. Please check your project dashboard for more details.";
         }
 
-        // Prepare email content
-        const personalizedContent = email_content
-          .replace("{{PROJECT_TITLE}}", projectDetails.title || "Project")
-          .replace("{{PROJECT_ADDRESS}}", projectDetails.address || "N/A")
-          .replace("{{EST_TIME}}", projectDetails.est_time || "2-3 business days")
-          .replace(
-            "{{CLIENT_NAME}}",
-            `${user.first_name || ""} ${user.last_name || ""}`.trim() ||
-              user.company_name ||
-              "Client"
-          );
+        // Convert plain text to HTML with line breaks
+        const htmlContent = emailContent
+          .replace(/{{PROJECT_TITLE}}/g, projectDetails.title || "Project")
+          .replace(/{{PROJECT_ADDRESS}}/g, projectDetails.address || "N/A")
+          .replace(/{{ADDRESS}}/g, projectDetails.address || "N/A")
+          .replace(/{{EST_TIME}}/g, statusConfig?.est_time || "2-3 business days")
+          .replace(/{{CLIENT_NAME}}/g, displayName)
+          .replace(/{{CLIENT_EMAIL}}/g, user.email)
+          // Replace any remaining {{PLACEHOLDER}} with empty string
+          .replace(/\{\{[^}]+\}\}/g, "")
+          .replace(/\n/g, "<br>"); // Convert line breaks to HTML
+
+        const personalizedContent = emailContent
+          .replace(/{{PROJECT_TITLE}}/g, projectDetails.title || "Project")
+          .replace(/{{PROJECT_ADDRESS}}/g, projectDetails.address || "N/A")
+          .replace(/{{ADDRESS}}/g, projectDetails.address || "N/A")
+          .replace(/{{EST_TIME}}/g, statusConfig?.est_time || "2-3 business days")
+          .replace(/{{CLIENT_NAME}}/g, displayName)
+          .replace(/{{CLIENT_EMAIL}}/g, user.email)
+          // Replace any remaining {{PLACEHOLDER}} with empty string
+          .replace(/\{\{[^}]+\}\}/g, "");
 
         // Replace template variables
-        let emailHtml = emailTemplate.replace("{{CONTENT}}", personalizedContent);
+        let emailHtml = emailTemplate.replace("{{CONTENT}}", htmlContent);
 
-        if (shouldShowButton) {
-          // For clients: Include magic link button
-          emailHtml = emailHtml.replace("{{BUTTON_TEXT}}", button_text || "View Project");
-          emailHtml = emailHtml.replace("{{BUTTON_LINK}}", magicLink);
+        // Handle button display logic based on email type
+        if (isRegistrationEmail) {
+          // For registration emails, use button_text and button_link from request body
+          const hasRegistrationButton = body.button_text && body.button_text.trim() !== "";
+          if (hasRegistrationButton) {
+            emailHtml = emailHtml.replace("{{BUTTON_TEXT}}", body.button_text.trim());
+            emailHtml = emailHtml.replace("{{BUTTON_LINK}}", body.button_link || "#");
+          } else {
+            // Remove button for registration emails without button_text
+            emailHtml = emailHtml.replace(
+              /<!-- Call to Action Button -->[\s\S]*?<!-- \/Call to Action Button -->/g,
+              ""
+            );
+            emailHtml = emailHtml.replace("{{BUTTON_TEXT}}", "");
+            emailHtml = emailHtml.replace("{{BUTTON_LINK}}", "");
+          }
         } else {
-          // For admin/staff: Remove button, just show content
-          emailHtml = emailHtml.replace(/<a[^>]*{{BUTTON_TEXT}}[^>]*>.*?<\/a>/g, "");
-          emailHtml = emailHtml.replace("{{BUTTON_TEXT}}", "");
-          emailHtml = emailHtml.replace("{{BUTTON_LINK}}", "");
+          // For status update emails, use original logic
+          const hasButtonText =
+            statusConfig?.button_text &&
+            statusConfig.button_text.trim() !== "" &&
+            statusConfig.button_text !== "#";
+          const hasValidLink = magicLink && magicLink.trim() !== "";
+
+          if (shouldShowButton && hasButtonText && hasValidLink) {
+            // For clients with valid button_text and link: Include magic link button
+            emailHtml = emailHtml.replace("{{BUTTON_TEXT}}", statusConfig.button_text.trim());
+            emailHtml = emailHtml.replace("{{BUTTON_LINK}}", magicLink);
+          } else {
+            // For admin/staff or when button_text/link is invalid: Remove button completely
+            emailHtml = emailHtml.replace(
+              /<!-- Call to Action Button -->[\s\S]*?<!-- \/Call to Action Button -->/g,
+              ""
+            );
+            emailHtml = emailHtml.replace("{{BUTTON_TEXT}}", "");
+            emailHtml = emailHtml.replace("{{BUTTON_LINK}}", "");
+          }
         }
 
         // Send email via Resend
         console.log(`📧 [EMAIL-DELIVERY] Sending email to ${user.email}...`);
+
+        // Email content is already properly built in emailHtml using the template
+
+        // Validate from field
+        const validFromName = fromName && fromName.trim() !== "" ? fromName.trim() : "CAPCo";
+        const validFromEmail =
+          fromEmail && fromEmail.trim() !== "" ? fromEmail.trim() : "noreply@capcofire.com";
+
+        // Set subject based on email type
+        let emailSubject;
+        if (isRegistrationEmail) {
+          // Use custom subject from request body, fallback to default with company name
+          emailSubject =
+            body.custom_subject ||
+            `Welcome to CAPCo Fire Protection - ${projectDetails.title || "New Registration"}`;
+        } else {
+          // Status update subject
+          emailSubject = `${statusConfig?.status_name || "Status Update"}: ${projectDetails.title || "Project"}`;
+        }
+
         const emailPayload = {
-          from: `${fromName} <${fromEmail}>`,
+          from: `${validFromName} <${validFromEmail}>`,
           to: [user.email],
-          subject: `Project Status Update: ${projectDetails.title || "Project"}`,
+          subject: emailSubject,
           html: emailHtml,
-          text: personalizedContent.replace(/<[^>]*>/g, ""),
-          // Add custom headers for webhook tracking
+          text: personalizedContent,
+          // Add proper content type and custom headers
           headers: {
-            "X-Project-ID": projectId,
-            "X-Project-Status": newStatus.toString(),
-            "X-User-Email": user.email,
+            "Content-Type": "text/html; charset=UTF-8",
+            // "X-Project-ID": projectId,
+            // "X-Project-Status": newStatus.toString(),
+            // "X-User-Email": user.email,
           },
         };
+
+        // Validate payload before sending
+        console.log(`📧 [EMAIL-DELIVERY] Validating payload for ${user.email}:`);
+        console.log(`  - from: "${emailPayload.from}"`);
+        console.log(`  - to: ${JSON.stringify(emailPayload.to)}`);
+        console.log(`  - subject: "${emailPayload.subject}"`);
+        console.log(`  - html length: ${emailPayload.html.length}`);
+        console.log(`  - text length: ${emailPayload.text.length}`);
+        console.log(`  - fromName: "${fromName}"`);
+        console.log(`  - fromEmail: "${fromEmail}"`);
 
         console.log(`📧 [EMAIL-DELIVERY] Email payload for ${user.email}:`, {
           from: emailPayload.from,
@@ -217,7 +372,15 @@ export const POST: APIRoute = async ({ request, cookies }) => {
           subject: emailPayload.subject,
           htmlLength: emailPayload.html.length,
           textLength: emailPayload.text.length,
+          buttonText: statusConfig?.button_text || "",
+          shouldShowButton: shouldShowButton,
         });
+
+        // Log the actual payload being sent to Resend
+        console.log(
+          `📧 [EMAIL-DELIVERY] Resend payload for ${user.email}:`,
+          JSON.stringify(emailPayload, null, 2)
+        );
 
         const response = await fetch("https://api.resend.com/emails", {
           method: "POST",

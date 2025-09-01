@@ -1,68 +1,32 @@
 ---
+export interface Props {
+  role?: string;
+  projects?: any[];
+  statuses?: any[];
+  stat?: boolean;
+}
+
 import ProjectNavButton from "./ProjectNavButton.astro";
 import { getI18N } from "@/i18n";
-import { checkAuth } from "../../lib/auth";
 
 // Para cambiar idioma de textos
 const { currentLocale } = Astro;
 const i18n = getI18N({ currentLocale });
 
-// Get current user for authentication and role
-const { isAuth, user, role } = await checkAuth(Astro.cookies);
+// Get props
+const { role, projects = [], statuses = [], stat } = Astro.props;
 
-// Fetch project_statuses from API
-let project_statuses: any[] = [];
-let projects: any[] = [];
+// Use provided data instead of fetching
+let project_statuses: any[] = statuses;
 let statusCounts: Record<string, number> = {};
 
-try {
-  // Fetch project statuses with user role for proper filtering
-  const statusResponse = await fetch(`${Astro.url.origin}/api/get-project-statuses`, {
-    method: "GET",
-    headers: {
-      "Content-Type": "application/json",
-      role: role || "Client", // Pass user role to API for filtering
-    },
+// Calculate status counts from provided projects
+if (projects && projects.length > 0) {
+  statusCounts = {};
+  projects.forEach((project) => {
+    const status = project.status?.toString() || "10";
+    statusCounts[status] = (statusCounts[status] || 0) + 1;
   });
-
-  if (statusResponse.ok) {
-    const result = await statusResponse.json();
-    if (result.success) {
-      project_statuses = Object.values(result.statuses || {});
-    } else {
-      console.error("API returned error:", result.error);
-    }
-  } else {
-    console.error("Failed to fetch project_statuses:", statusResponse.status);
-  }
-
-  // Fetch projects to calculate counts (only if user is authenticated)
-  if (isAuth && user) {
-    const projectsResponse = await fetch(`${Astro.url.origin}/api/get-project`, {
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-        user_id: user.id,
-        role: role || "Client",
-      },
-    });
-
-    if (projectsResponse.ok) {
-      const projectsResult = await projectsResponse.json();
-      if (projectsResult.success) {
-        projects = projectsResult.projects || [];
-
-        // Calculate status counts
-        statusCounts = {};
-        projects.forEach((project) => {
-          const status = project.status?.toString() || "10";
-          statusCounts[status] = (statusCounts[status] || 0) + 1;
-        });
-      }
-    }
-  }
-} catch (error) {
-  console.error("Error fetching data:", error);
 }
 
 if (!projects || projects.length === 0) return;
@@ -84,7 +48,16 @@ if (!projects || projects.length === 0) return;
   {
     project_statuses.length > 0
       ? project_statuses
-          .filter((status: any) => status.display_in_nav === true)
+          .filter((status: any) => {
+            // Role-based filtering
+            if (role === "Admin" || role === "Staff") {
+              return status.admin_visible !== false; // Show unless explicitly false
+            }
+            if (role === "Client") {
+              return status.client_visible !== false; // Show unless explicitly false
+            }
+            return true; // Default for other roles
+          })
           .map((status: any) => (
             <ProjectNavButton
               label={status.status_name}

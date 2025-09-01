@@ -5,4 +5,9 @@ export const isBackendPage = (pathname: string) =>
   pathname.startsWith("/pdf-editor") ||
   pathname.startsWith("/admin") ||
   pathname.startsWith("/profile") ||
-  pathname.startsWith("/create-staff");
+  pathname.startsWith("/create-staff") ||
+  pathname.startsWith("/create-user") ||
+  pathname.startsWith("/email-test") ||
+  pathname.startsWith("/email-test-debug") ||
+  pathname.startsWith("/discussions") ||
+  pathname.startsWith("/global-activity");

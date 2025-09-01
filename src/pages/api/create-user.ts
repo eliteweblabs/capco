@@ -39,7 +39,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
   console.log("=== CREATE STAFF API CALLED ===");
   console.log("Request headers:", Object.fromEntries(request.headers.entries()));
   try {
-    console.log("1. Starting create-staff endpoint");
+    console.log("1. Starting create-user endpoint");
 
     // Check if Supabase is configured
     console.log("2. Checking Supabase configuration:", !!supabase);
@@ -93,15 +93,22 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       );
     }
 
-        console.log("5. Auth successful, parsing request body...");
+    console.log("5. Auth successful, parsing request body...");
     let body;
     let first_name, last_name, company_name, email, phone, staffRole;
-    
+
     try {
       body = await request.json();
       console.log("6. Request body:", body);
       ({ first_name, last_name, company_name, email, phone, role: staffRole } = body);
-      console.log("7. Extracted data:", { first_name, last_name, company_name, email, phone, staffRole });
+      console.log("7. Extracted data:", {
+        first_name,
+        last_name,
+        company_name,
+        email,
+        phone,
+        staffRole,
+      });
     } catch (parseError) {
       console.error("Request body parsing error:", parseError);
       return new Response(
@@ -194,7 +201,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       password: tempPassword,
       email_confirm: true, // Auto-confirm email
       user_metadata: {
-        full_name: name.trim(),
+        full_name: company_name?.trim() || `${first_name.trim()} ${last_name.trim()}`,
         role: staffRole,
         created_by_admin: true,
         must_change_password: true,
@@ -249,7 +256,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       first_name: first_name.trim(),
       last_name: last_name.trim(),
       company_name: company_name?.trim() || null,
-      phone: phone?.trim() ? parseInt(phone.trim()) : null,
+      phone: phone?.trim() || null,
       role: staffRole,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
@@ -290,97 +297,116 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     // Calculate display name for notifications
     const displayName = company_name?.trim() || `${first_name.trim()} ${last_name.trim()}`;
 
-    // Send email notifications to all admins and the new user
-    console.log("📧 [CREATE-STAFF] Sending email notifications...");
+    // Send email notifications to all admin and staff users, plus the new user
+    console.log("📧 [CREATE-USER] Sending email notifications...");
+
+    // Define base URL for email API calls
+    const baseUrl = import.meta.env.SITE_URL || "http://localhost:4321";
 
     try {
-      // Get all admin users
-      const { data: adminUsers, error: adminError } = await supabase
+      // Get all admin and staff users
+      const { data: adminAndStaffUsers, error: userError } = await supabase
         .from("profiles")
-        .select("id, first_name, last_name, email")
-        .eq("role", "Admin");
+        .select("id, first_name, last_name, role")
+        .in("role", ["Admin", "Staff"]);
 
-      if (adminError) {
-        console.error("📧 [CREATE-STAFF] Failed to fetch admin users:", adminError);
+      if (userError) {
+        console.error("📧 [CREATE-USER] Failed to fetch admin and staff users:", userError);
       } else {
-        console.log("📧 [CREATE-STAFF] Found admin users:", adminUsers?.length || 0);
+        console.log(
+          "📧 [CREATE-USER] Found admin and staff users:",
+          adminAndStaffUsers?.length || 0
+        );
 
-        // Prepare email content
+        // Prepare email content with proper name formatting
         const displayName = company_name?.trim() || `${first_name.trim()} ${last_name.trim()}`;
-        const emailContent = `A new user has been created in the system:
+        const emailContent = `A new user has been created in the system:<br><br>
 
-Name: ${displayName}
-Email: ${email}
-Role: ${staffRole}
-Temporary Password: ${tempPassword}
+Name: ${displayName}<br>
+Email: ${email}<br>
+Role: ${staffRole}<br><br>
 
-The user will need to change their password upon first login.`;
+The user will receive a magic link to access their account.`;
 
-        // Send email to all admins
-        for (const admin of adminUsers || []) {
+        // Send email to all admin and staff users
+        for (const user of adminAndStaffUsers || []) {
           try {
-            const emailResponse = await fetch("http://localhost:4321/api/email-delivery", {
+            // Get user's email using admin client
+            const { data: authUser, error: authError } = await supabaseAdmin.auth.admin.getUserById(
+              user.id
+            );
+
+            if (authError || !authUser?.user?.email) {
+              console.log(`📧 [CREATE-USER] No email found for ${user.role} ${user.id}, skipping`);
+              continue;
+            }
+
+            const userEmail = authUser.user.email;
+
+            // Send email using the email delivery API with full URL
+            const baseUrl = import.meta.env.SITE_URL || "http://localhost:4321";
+            const emailResponse = await fetch(`${baseUrl}/api/email-delivery`, {
               method: "POST",
               headers: {
                 "Content-Type": "application/json",
               },
               body: JSON.stringify({
                 projectId: "new-user-creation",
-                newStatus: 0, // Not a status change, but required by email API
+                newStatus: 0,
                 usersToNotify: [
                   {
-                    email: admin.email,
-                    first_name: admin.first_name,
-                    last_name: admin.last_name,
+                    email: userEmail,
+                    first_name: user.first_name,
+                    last_name: user.last_name,
                   },
                 ],
                 projectDetails: {
                   title: "New User Created",
                   address: "System Notification",
+                  est_time: "2-3 business days",
                   profiles: [
                     {
-                      email: admin.email,
-                      first_name: admin.first_name,
-                      last_name: admin.last_name,
+                      email: userEmail,
+                      first_name: user.first_name,
+                      last_name: user.last_name,
                     },
                   ],
                 },
                 email_content: emailContent,
-                button_text: "", // No button for admin notifications
+                button_text: "",
+                custom_subject: `New User ${displayName} Created As ${staffRole}`,
               }),
             });
 
             if (emailResponse.ok) {
-              console.log(`📧 [CREATE-STAFF] Admin notification sent to ${admin.email}`);
+              console.log(`📧 [CREATE-USER] ${user.role} notification sent to ${userEmail}`);
             } else {
               console.error(
-                `📧 [CREATE-STAFF] Failed to send admin notification to ${admin.email}:`,
+                `📧 [CREATE-USER] Failed to send ${user.role} notification to ${userEmail}:`,
                 await emailResponse.text()
               );
             }
           } catch (emailError) {
             console.error(
-              `📧 [CREATE-STAFF] Error sending admin notification to ${admin.email}:`,
+              `📧 [CREATE-USER] Error sending ${user.role} notification to ${user.id}:`,
               emailError
             );
           }
         }
 
         // Send welcome email to the new user
-        const welcomeContent = `Welcome to the system!
+        const welcomeContent = `Welcome to the system!<br><br>
 
-Your account has been created successfully:
+Your account has been created successfully:<br><br>
 
-Name: ${displayName}
-Email: ${email}
-Role: ${staffRole}
-Temporary Password: ${tempPassword}
+Name: ${displayName}<br>
+Email: ${email}<br><br>
 
-Please log in with your email and temporary password, then change your password immediately.
+Click the button below to access your account and set up your password.`;
 
-You can access the system at: ${import.meta.env.SITE_URL || "http://localhost:4321"}`;
-
-        const userEmailResponse = await fetch("http://localhost:4321/api/email-delivery", {
+        // Send welcome email using the email delivery API with full URL
+        // For new users, we want to ensure they get a magic link, so we include them in profiles
+        const userEmailResponse = await fetch(`${baseUrl}/api/email-delivery`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -398,6 +424,7 @@ You can access the system at: ${import.meta.env.SITE_URL || "http://localhost:43
             projectDetails: {
               title: "Welcome to the System",
               address: "Account Creation",
+              est_time: "2-3 business days",
               profiles: [
                 {
                   email: email,
@@ -407,21 +434,22 @@ You can access the system at: ${import.meta.env.SITE_URL || "http://localhost:43
               ],
             },
             email_content: welcomeContent,
-            button_text: "Log In",
+            button_text: "Access Your Account",
+            custom_subject: `Welcome to CAPCo Fire Protection - ${displayName}`,
           }),
         });
 
         if (userEmailResponse.ok) {
-          console.log(`📧 [CREATE-STAFF] Welcome email sent to ${email}`);
+          console.log(`📧 [CREATE-USER] Welcome email sent to ${email}`);
         } else {
           console.error(
-            `📧 [CREATE-STAFF] Failed to send welcome email to ${email}:`,
+            `📧 [CREATE-USER] Failed to send welcome email to ${email}:`,
             await userEmailResponse.text()
           );
         }
       }
     } catch (notificationError) {
-      console.error("📧 [CREATE-STAFF] Email notification error:", notificationError);
+      console.error("📧 [CREATE-USER] Email notification error:", notificationError);
       // Don't fail the user creation if email notifications fail
     }
 
@@ -438,14 +466,12 @@ You can access the system at: ${import.meta.env.SITE_URL || "http://localhost:43
           last_name: last_name.trim(),
           role: staffRole,
         },
-        // TODO: Remove this in production - send via email instead
-        tempPassword: tempPassword,
         // Add notification data for client-side toast
         notification: {
           type: "success",
           title: "User Created Successfully",
-          message: `${displayName} has been created as ${staffRole}. Temporary password: ${tempPassword}`,
-          duration: 8000, // Longer duration to show password
+          message: `${displayName} has been created as ${staffRole}. They will receive a magic link to access their account.`,
+          duration: 5000,
         },
       }),
       {

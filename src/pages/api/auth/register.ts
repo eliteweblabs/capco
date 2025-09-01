@@ -1,7 +1,7 @@
 import type { APIRoute } from "astro";
+import { setAuthCookies } from "../../../lib/auth-cookies";
 import { supabase } from "../../../lib/supabase";
 import { supabaseAdmin } from "../../../lib/supabase-admin";
-import { setAuthCookies } from "../../../lib/auth-cookies";
 
 export const POST: APIRoute = async ({ request, redirect, cookies }) => {
   console.log("🔐 [REGISTER] Registration API called");
@@ -78,7 +78,6 @@ export const POST: APIRoute = async ({ request, redirect, cookies }) => {
     console.error("Error details:", {
       message: error.message,
       status: error.status,
-      statusCode: error.statusCode,
     });
 
     // Check if it's a duplicate email error
@@ -101,6 +100,13 @@ export const POST: APIRoute = async ({ request, redirect, cookies }) => {
       }
     );
   }
+
+  // Track email sending status for notifications
+  let emailStatus = {
+    welcomeEmailSent: false,
+    adminEmailsSent: 0,
+    emailErrors: [] as string[],
+  };
 
   // Create profile in the profiles table if user was created successfully
   if (data.user) {
@@ -131,14 +137,186 @@ export const POST: APIRoute = async ({ request, redirect, cookies }) => {
     } else {
       console.log("Profile created successfully for user:", data.user.id);
     }
+
+    // Send welcome email to the new user
+    const displayName = companyName || `${firstName} ${lastName}`;
+    const welcomeContent = `Welcome to CAPCo Fire Protection! Your account has been created successfully:<br>
+
+<b>Company Name:</b> ${displayName}
+<b>Email:</b> ${email}
+<b>First Name:</b> ${firstName}
+<b>Last Name:</b> ${lastName}
+<b>Phone:</b> ${phone || "Not provided"}<br>
+
+You're now signed in and ready to start creating projects. Click the button below to access your dashboard.`;
+
+    // Get the base URL for the email API call
+    const baseUrl = import.meta.env.DEV ? "http://localhost:4321" : "https://de.capcofire.com";
+
+    try {
+      // Send welcome email using the email delivery API
+      const emailResponse = await fetch(`${baseUrl}/api/email-delivery`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          projectId: "new-user-registration",
+          newStatus: 0,
+          emailType: "registration",
+          usersToNotify: [
+            {
+              email: email,
+              first_name: firstName,
+              last_name: lastName,
+            },
+          ],
+          projectDetails: {
+            title: "Welcome to CAPCo Fire Protection",
+            address: "Account Registration",
+            est_time: "immediate",
+            profiles: [
+              {
+                email: email,
+                first_name: firstName,
+                last_name: lastName,
+              },
+            ],
+          },
+          email_content: welcomeContent,
+          button_text: "Access Your Dashboard",
+          custom_subject: `Welcome to CAPCo Fire Protection - ${displayName}`,
+        }),
+      });
+
+      if (emailResponse.ok) {
+        console.log("📧 [REGISTER] Welcome email sent successfully to:", email);
+        emailStatus.welcomeEmailSent = true;
+      } else {
+        const errorText = await emailResponse.text();
+        console.error("📧 [REGISTER] Failed to send welcome email to:", email, errorText);
+        emailStatus.emailErrors.push(`Welcome email failed: ${errorText}`);
+      }
+    } catch (emailError) {
+      console.error("📧 [REGISTER] Error sending welcome email:", emailError);
+      emailStatus.emailErrors.push(
+        `Welcome email error: ${emailError instanceof Error ? emailError.message : String(emailError)}`
+      );
+      // Don't fail registration if email sending fails
+    }
+
+    // Send notification email to all admin users about the new registration
+    try {
+      // Get all admin users
+      const { data: adminUsers, error: adminError } = await supabase
+        .from("profiles")
+        .select("id, first_name, last_name, role")
+        .eq("role", "Admin");
+
+      if (adminError) {
+        console.error("📧 [REGISTER] Failed to fetch admin users:", adminError);
+      } else {
+        console.log("📧 [REGISTER] Found admin users:", adminUsers?.length || 0);
+
+        // Prepare admin notification email content
+        const adminEmailContent = `A new user has registered on the platform:<br>
+
+<b>Company Name:</b> ${displayName}
+<b>Email:</b> ${email}
+<b>First Name:</b> ${firstName}
+<b>Last Name:</b> ${lastName}
+<b>Phone:</b> ${phone || "Not provided"}<br>
+
+Registration Date: ${new Date().toLocaleDateString()}<br>
+
+The user has been automatically assigned the "Client" role and can now access the platform.`;
+
+        // Send notification to all admin users
+        for (const admin of adminUsers || []) {
+          try {
+            // Get admin's email using admin client
+            const { data: authUser, error: authError } = await supabaseAdmin.auth.admin.getUserById(
+              admin.id
+            );
+
+            if (authError || !authUser?.user?.email) {
+              console.log(`📧 [REGISTER] No email found for admin ${admin.id}, skipping`);
+              continue;
+            }
+
+            const adminEmail = authUser.user.email;
+
+            // Send notification email to admin
+            const adminEmailResponse = await fetch(`${baseUrl}/api/email-delivery`, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                projectId: "new-user-registration-admin",
+                newStatus: 0,
+                emailType: "registration",
+                usersToNotify: [
+                  {
+                    email: adminEmail,
+                    first_name: admin.first_name,
+                    last_name: admin.last_name,
+                  },
+                ],
+                projectDetails: {
+                  title: "New User Registration",
+                  address: "System Notification",
+                  est_time: "immediate",
+                  profiles: [
+                    {
+                      email: adminEmail,
+                      first_name: admin.first_name,
+                      last_name: admin.last_name,
+                    },
+                  ],
+                },
+                email_content: adminEmailContent,
+                button_text: "View All Users",
+                custom_subject: `New User Registration: ${displayName}`,
+              }),
+            });
+
+            if (adminEmailResponse.ok) {
+              console.log(`📧 [REGISTER] Admin notification sent to: ${adminEmail}`);
+              emailStatus.adminEmailsSent++;
+            } else {
+              const adminErrorText = await adminEmailResponse.text();
+              console.error(
+                `📧 [REGISTER] Failed to send admin notification to: ${adminEmail}`,
+                adminErrorText
+              );
+              emailStatus.emailErrors.push(
+                `Admin notification to ${adminEmail} failed: ${adminErrorText}`
+              );
+            }
+          } catch (adminEmailError) {
+            console.error(
+              `📧 [REGISTER] Error sending admin notification to ${admin.id}:`,
+              adminEmailError
+            );
+            emailStatus.emailErrors.push(
+              `Admin notification error: ${adminEmailError instanceof Error ? adminEmailError.message : String(adminEmailError)}`
+            );
+          }
+        }
+      }
+    } catch (adminNotificationError) {
+      console.error("📧 [REGISTER] Error sending admin notifications:", adminNotificationError);
+      // Don't fail registration if admin notification fails
+    }
   }
 
   console.log("User registration successful:", !!data.user);
 
-    // Sign in the user immediately after registration
+  // Sign in the user immediately after registration
   if (data.user) {
     console.log("🔐 [REGISTER] Signing in user after registration:", data.user.email);
-    
+
     const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
       email,
       password,
@@ -149,7 +327,7 @@ export const POST: APIRoute = async ({ request, redirect, cookies }) => {
       // Don't fail the registration, but log the error
     } else {
       console.log("🔐 [REGISTER] User signed in successfully after registration");
-      
+
       // Set auth cookies to maintain the session
       if (signInData.session) {
         const { access_token, refresh_token } = signInData.session;
@@ -159,7 +337,7 @@ export const POST: APIRoute = async ({ request, redirect, cookies }) => {
     }
   }
 
-  // Return success response
+  // Return success response with email status for toast notifications
   return new Response(
     JSON.stringify({
       success: true,
@@ -171,6 +349,13 @@ export const POST: APIRoute = async ({ request, redirect, cookies }) => {
             needsConfirmation: !data.user.email_confirmed_at,
           }
         : null,
+      emailStatus: emailStatus,
+      notification: {
+        type: "success",
+        title: "Account Created!",
+        message: `Welcome! ${emailStatus.welcomeEmailSent ? "Check your email for welcome instructions." : "You're now signed in and ready to create projects."}`,
+        duration: 5000,
+      },
     }),
     {
       status: 200,

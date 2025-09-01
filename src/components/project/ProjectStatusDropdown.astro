@@ -35,7 +35,6 @@ if (canChangeStatus) {
       method: "GET",
       headers: {
         "Content-Type": "application/json",
-        "role": role || "Client", // Pass user role for proper filtering
       },
     });
 
@@ -62,7 +61,6 @@ if (canChangeStatus) {
         id="status-dropdown-button"
         aria-expanded="false"
         aria-haspopup="true"
-        data-user-role={userRole}
         data-project-title={projectTitle}
         data-client-email={clientEmail}
       >
@@ -87,7 +85,13 @@ if (canChangeStatus) {
           </div>
           
           
-          {projectStatuses.filter((status: any) => status.display_in_nav === true)
+          {projectStatuses.filter((status: any) => {
+            if (role === "Admin" || role === "Staff") {
+              return status.admin_visible !== false;
+            } else {
+              return status.client_visible !== false;
+            }
+          })
           .map((status: any) => (
             <button
               type="button"
@@ -206,15 +210,15 @@ if (canChangeStatus) {
           statusName
         });
 
-        // Make API call to update status using update-project endpoint
+        // Make API call to update status using update-status endpoint
         const requestBody = {
           projectId: projectId,
           status: newStatus
         };
         
-        console.log("🔔 [STATUS-DROPDOWN] Making API call to /api/update-project with body:", requestBody);
+        console.log("🔔 [STATUS-DROPDOWN] Making API call to /api/update-status with body:", requestBody);
         
-        const response = await fetch('/api/update-project', {
+        const response = await fetch('/api/update-status', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -229,9 +233,13 @@ if (canChangeStatus) {
           console.log("🔔 [STATUS-DROPDOWN] API response result:", result);
           
           // Show success toast notification if status config is available
-          if (result.statusConfig && window.globalServices) {
+          console.log("🔔 [STATUS-DROPDOWN] Checking for statusConfig:", !!result.statusConfig);
+          console.log("🔔 [STATUS-DROPDOWN] Available result:", Object.keys(result || {}));
+          console.log("🔔 [STATUS-DROPDOWN] StatusConfig details:", result.statusConfig);
+          
+          if (result.statusConfig) {
             // Get user role and project data from data attributes
-            const userRole = dropdownButton.getAttribute('data-user-role') || 'Client';
+            const userRole = '${role}' || 'Client';
             const projectTitle = dropdownButton.getAttribute('data-project-title') || 'Project';
             const clientEmail = dropdownButton.getAttribute('data-client-email') || 'Client';
             
@@ -253,10 +261,39 @@ if (canChangeStatus) {
               .replace(/{{EST_TIME}}/g, estTime);
             
             if (toastMessage) {
+              console.log("🔔 [STATUS-DROPDOWN] Attempting to show toast:", toastMessage);
+              console.log("🔔 [STATUS-DROPDOWN] window.showSuccess available:", typeof window.showSuccess);
+              console.log("🔔 [STATUS-DROPDOWN] Available window functions:", {
+                showSuccess: typeof window.showSuccess,
+                showError: typeof window.showError,
+                simpleToastManager: typeof window.simpleToastManager,
+                toastAlertManager: typeof window.toastAlertManager
+              });
+              
               if (window.showSuccess) {
+                console.log("🔔 [STATUS-DROPDOWN] Calling window.showSuccess");
                 window.showSuccess('Status Updated', toastMessage, 5000);
               } else {
                 console.log(`🔔 [Status Updated] ${toastMessage}`);
+                
+                // Try direct toast managers as fallback
+                if (window.simpleToastManager) {
+                  console.log("🔔 [STATUS-DROPDOWN] Using simpleToastManager fallback");
+                window.simpleToastManager.show({
+                    type: "success",
+                    title: "Status Updated",
+                    message: toastMessage,
+                    duration: 5000
+                  });
+                } else if (window.toastAlertManager) {
+                  console.log("🔔 [STATUS-DROPDOWN] Using toastAlertManager fallback");
+                  window.toastAlertManager.show({
+                    type: "success",
+                    title: "Status Updated",
+                    message: toastMessage,
+                    duration: 5000
+                  });
+                }
               }
             }
           }

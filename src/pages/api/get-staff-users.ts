@@ -1,7 +1,7 @@
 import type { APIRoute } from "astro";
 import { supabase } from "../../lib/supabase";
 
-export const GET: APIRoute = async ({ request }) => {
+export const GET: APIRoute = async ({ request, cookies }) => {
   console.log("📡 [API] GET /api/get-staff-users called");
 
   try {
@@ -58,6 +58,22 @@ export const GET: APIRoute = async ({ request }) => {
     }
 
     console.log("📡 [API] Getting current user...");
+
+    // Set up session from cookies
+    const accessToken = cookies.get("sb-access-token")?.value;
+    const refreshToken = cookies.get("sb-refresh-token")?.value;
+
+    console.log("📡 [API] Auth check:", {
+      hasAccessToken: !!accessToken,
+      hasRefreshToken: !!refreshToken,
+    });
+
+    if (accessToken && refreshToken) {
+      await supabase.auth.setSession({
+        access_token: accessToken,
+        refresh_token: refreshToken,
+      });
+    }
 
     // Get current user to verify permissions
     const {
@@ -160,11 +176,6 @@ export const GET: APIRoute = async ({ request }) => {
       .from("profiles")
       .select("id, company_name, phone, role, created_at");
 
-    console.log("�� [API] All profiles result:", {
-      allProfiles,
-      allProfilesError,
-    });
-
     // Filter for staff users and convert phone to string
     const staffUsersFromAll =
       allProfiles
@@ -174,7 +185,7 @@ export const GET: APIRoute = async ({ request }) => {
           phone: p.phone ? p.phone.toString() : null,
         })) || [];
 
-    console.log("📡 [API] Staff users from all profiles:", staffUsersFromAll);
+    // console.log("📡 [API] Staff users from all profiles:", staffUsersFromAll);
 
     if (error) {
       console.error("📡 [API] Database error:", error);
