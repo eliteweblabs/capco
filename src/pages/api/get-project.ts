@@ -1,10 +1,15 @@
 import type { APIRoute } from "astro";
+import { checkAuth } from "../../lib/auth";
 import { supabase } from "../../lib/supabase";
 
 export const GET: APIRoute = async ({ request, cookies }) => {
   console.log("📡 [API] GET /api/get-project called");
 
   try {
+    // Check authentication to get user role for filtering
+    const { role } = await checkAuth(cookies);
+    const isClient = role === "Client";
+    console.log("📡 [GET-PROJECT] User role:", role, "isClient:", isClient);
     if (!supabase) {
       console.log("📡 [API] Supabase not configured, returning demo projects");
 
@@ -24,6 +29,7 @@ export const GET: APIRoute = async ({ request, cookies }) => {
           new_construction: true,
           created_at: "2025-01-01T10:00:00Z",
           updated_at: "2025-01-15T09:45:00Z",
+          comment_count: 3,
         },
       ];
 
@@ -64,6 +70,55 @@ export const GET: APIRoute = async ({ request, cookies }) => {
     }
 
     console.log("📡 [API] Projects fetched:", projects?.length || 0);
+
+    // Add comment counts with role-based filtering
+    if (projects && projects.length > 0) {
+      // Get all discussions for these projects
+      const projectIds = projects.map((p) => p.id);
+
+      let discussionsQuery = supabase
+        .from("discussion")
+        .select("project_id, internal")
+        .in("project_id", projectIds);
+
+      // For clients, exclude internal discussions (Admin/Staff see all)
+      if (isClient) {
+        discussionsQuery = discussionsQuery.eq("internal", false);
+        console.log("📡 [GET-PROJECT] Client filter applied - excluding internal discussions");
+      } else {
+        console.log("📡 [GET-PROJECT] Admin/Staff - showing all discussions");
+      }
+
+      const { data: discussions, error: countError } = await discussionsQuery;
+
+      console.log("📡 [GET-PROJECT] Discussions fetched:", {
+        isClient,
+        role,
+        discussionsCount: discussions?.length || 0,
+        discussions:
+          discussions?.map((d) => ({ project_id: d.project_id, internal: d.internal })) || [],
+      });
+
+      if (!countError && discussions) {
+        // Count discussions per project
+        const countsByProject: Record<number, number> = {};
+        discussions.forEach((discussion) => {
+          countsByProject[discussion.project_id] =
+            (countsByProject[discussion.project_id] || 0) + 1;
+        });
+
+        // Add comment counts to projects
+        projects.forEach((project) => {
+          project.comment_count = countsByProject[project.id] || 0;
+        });
+      } else {
+        console.error("Error fetching discussions:", countError);
+        // Set default comment count to 0 if there's an error
+        projects.forEach((project) => {
+          project.comment_count = 0;
+        });
+      }
+    }
 
     return new Response(
       JSON.stringify({

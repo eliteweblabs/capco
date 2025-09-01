@@ -1,4 +1,5 @@
 import type { APIRoute } from "astro";
+import { checkAuth } from "../../lib/auth";
 import { supabase } from "../../lib/supabase";
 import { supabaseAdmin } from "../../lib/supabase-admin";
 
@@ -60,6 +61,11 @@ async function getUserInfoServer(userId: string) {
 
 export const GET: APIRoute = async ({ url, cookies }) => {
   try {
+    // Check authentication to get user role for filtering
+    const { role } = await checkAuth(cookies);
+    const isClient = role === "Client";
+    console.log("📡 [GET-DISCUSSIONS] User role:", role, "isClient:", isClient);
+
     const projectId = url.searchParams.get("projectId");
 
     if (!projectId) {
@@ -105,7 +111,7 @@ export const GET: APIRoute = async ({ url, cookies }) => {
       );
     }
 
-    const { data: discussions, error } = await supabase
+    let discussionsQuery = supabase
       .from("discussion")
       .select(
         `
@@ -113,11 +119,21 @@ export const GET: APIRoute = async ({ url, cookies }) => {
         created_at,
         message,
         author_id,
-        project_id
+        project_id,
+        internal
       `
       )
-      .eq("project_id", projectIdInt)
-      .order("created_at", { ascending: false });
+      .eq("project_id", projectIdInt);
+
+    // For clients, exclude internal discussions (Admin/Staff see all)
+    if (isClient) {
+      discussionsQuery = discussionsQuery.eq("internal", false);
+    }
+    // Admin and Staff see all discussions (no additional filtering needed)
+
+    const { data: discussions, error } = await discussionsQuery.order("created_at", {
+      ascending: false,
+    });
 
     if (error) {
       console.error("Error fetching discussions:", error);

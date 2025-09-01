@@ -466,6 +466,9 @@ function getStatusColor(status: number): string {
   </SectionContainer>
 </App>
 
+<script define:vars={{ userRole: role }}>
+window.PROJECT_USER_ROLE = userRole;</script>
+
 <script>
   // Tab switching functionality
   function switchTab(tabName: string) {
@@ -562,6 +565,7 @@ function getStatusColor(status: number): string {
   // Discussion functionality
   let discussions: any[] = [];
   let currentProjectId = "";
+  const userRole = (window as any).PROJECT_USER_ROLE || 'Client'; // Get role from global variable
 
   async function loadDiscussions(projectId: string) {
     try {
@@ -584,6 +588,12 @@ function getStatusColor(status: number): string {
   function renderDiscussions() {
     const commentsList = document.getElementById("comments-list");
     if (!commentsList) return;
+
+    console.log("🔍 [DEBUG] renderDiscussions called with:", {
+      userRole,
+      discussionsCount: discussions.length,
+      discussions: discussions.map(d => ({ id: d.id, internal: d.internal, author_id: d.author_id }))
+    });
 
     if (discussions.length === 0) {
       commentsList.innerHTML = `
@@ -619,6 +629,18 @@ function getStatusColor(status: number): string {
               </p>
             </div>
           </div>
+          ${(() => {
+            const shouldShow = (userRole === "Admin" || userRole === "Staff") && discussion.internal;
+            console.log("🔍 [DEBUG] Badge condition:", { userRole, discussionInternal: discussion.internal, shouldShow });
+            return shouldShow ? `
+              <div class="flex items-center space-x-2">
+                <div class="inline-flex items-center px-2 py-1 bg-orange-100 dark:bg-orange-900/30 text-orange-800 dark:text-orange-300 text-xs font-medium rounded-full" title="Internal Comment - Only visible to Admin and Staff">
+                  <i class="bx bx-lock-alt mr-1"></i>
+                  Internal
+                </div>
+              </div>
+            ` : '';
+          })()}
         </div>
         <div class="prose dark:prose-invert max-w-none">
           <p class="text-gray-700 dark:text-gray-300 text-sm whitespace-pre-wrap">

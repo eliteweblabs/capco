@@ -6,7 +6,6 @@ import DashboardComponent from "../components/common/Dashboard.astro";
 import SectionContainer from "../components/common/SectionContainer.astro";
 
 import ProjectNav from "../components/project/ProjectNav.astro";
-import { supabase } from "../lib/supabase";
 
 import Hero from "../components/common/Hero.astro";
 
@@ -31,18 +30,6 @@ console.log("🔍 [DASHBOARD] Auth check results:", {
 
 // Test database access if authenticated
 let projectCount = 0;
-let profileData: any = null;
-let dbError: any = null;
-
-// Environment check for debugging
-const envStatus = {
-  hasSupabaseUrl: !!import.meta.env.PUBLIC_SUPABASE_URL,
-  hasSupabaseAnonKey: !!import.meta.env.PUBLIC_SUPABASE_ANON_KEY,
-  hasSupabaseServiceKey: !!import.meta.env.SUPABASE_SERVICE_ROLE_KEY,
-  supabaseClientCreated: !!supabase,
-};
-
-console.log("🔧 [DASHBOARD] Environment status:", envStatus);
 
 // Additional debugging - check cookies directly
 const accessToken = Astro.cookies.get("sb-access-token");
@@ -125,134 +112,18 @@ try {
 
 <App>
   <!-- <SectionContainer id="hero" class="mx-6 my-6"> -->
-  <Hero
-    title={profileData?.company_name || "Dashboard"}
-    description={profileData?.email || "User"}
-  />
+  <Hero title={user?.company_name || "Dashboard"} description={user?.email || "User"} />
   <!-- </SectionContainer> -->
-  <!-- Debug Panel (can be hidden in production) -->
-  <SectionContainer class="mx-6 mb-6">
-    <details
-      class="rounded-lg border border-gray-300 bg-gray-100 dark:border-gray-600 dark:bg-gray-800"
-    >
-      <summary
-        class="cursor-pointer rounded-lg p-4 font-medium text-gray-700 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-gray-700"
-      >
-        🔍 Debug Information (Click to expand)
-      </summary>
 
-      <div class="p-4 pt-0">
-        <!-- Authentication Status -->
-        <div class="mb-4 grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-          <div class="rounded bg-white p-3 dark:bg-gray-700">
-            <h3 class="mb-2 text-sm font-semibold">🔐 Authentication</h3>
-            <div class="space-y-1 text-xs">
-              <div>
-                Authenticated: <span class={isAuth ? "text-green-600" : "text-red-600"}
-                  >{isAuth ? "✅ Yes" : "❌ No"}</span
-                >
-              </div>
-              <div>
-                User ID: <span class="font-mono">{user?.id || "None"}</span>
-              </div>
-              <div>
-                Email: <span class="font-mono">{user?.email || "None"}</span>
-              </div>
-              <div>
-                Role: <span class={role ? "text-blue-600" : "text-gray-500"}>{role || "None"}</span>
-              </div>
-            </div>
-          </div>
-
-          <div class="rounded bg-white p-3 dark:bg-gray-700">
-            <h3 class="mb-2 text-sm font-semibold">🍪 Cookies</h3>
-            <div class="space-y-1 text-xs">
-              <div>
-                Access Token: <span class={accessToken ? "text-green-600" : "text-red-600"}
-                  >{
-                    accessToken ? `✅ ${accessToken.value.substring(0, 20)}...` : "❌ Missing"
-                  }</span
-                >
-              </div>
-              <div>
-                Refresh Token: <span class={refreshToken ? "text-green-600" : "text-red-600"}
-                  >{
-                    refreshToken ? `✅ ${refreshToken.value.substring(0, 20)}...` : "❌ Missing"
-                  }</span
-                >
-              </div>
-            </div>
-          </div>
-
-          <div class="rounded bg-white p-3 dark:bg-gray-700">
-            <h3 class="mb-2 text-sm font-semibold">🔧 Environment</h3>
-            <div class="space-y-1 text-xs">
-              <div>
-                Supabase URL: <span
-                  class={envStatus.hasSupabaseUrl ? "text-green-600" : "text-red-600"}
-                  >{envStatus.hasSupabaseUrl ? "✅ Set" : "❌ Missing"}</span
-                >
-              </div>
-              <div>
-                Anon Key: <span
-                  class={envStatus.hasSupabaseAnonKey ? "text-green-600" : "text-red-600"}
-                  >{envStatus.hasSupabaseAnonKey ? "✅ Set" : "❌ Missing"}</span
-                >
-              </div>
-              <div>
-                Client: <span
-                  class={envStatus.supabaseClientCreated ? "text-green-600" : "text-red-600"}
-                  >{envStatus.supabaseClientCreated ? "✅ Created" : "❌ Failed"}</span
-                >
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Database Status -->
-        <div class="mb-4 rounded bg-white p-3 dark:bg-gray-700">
-          <h3 class="mb-2 text-sm font-semibold">📊 Database Access</h3>
-          <div class="space-y-1 text-xs">
-            <div>
-              Profile Data:{" "}
-              <span class={profileData ? "text-green-600" : "text-red-600"}>
-                {profileData ? `✅ Found (Role: ${profileData.role})` : "❌ Not Found"}
-              </span>
-            </div>
-            <div>
-              Projects Found:{" "}
-              <span class={projectCount > 0 ? "text-green-600" : "text-yellow-600"}>
-                {projectCount} projects
-              </span>
-            </div>
-            {dbError && <div class="text-red-600">❌ DB Error: {dbError}</div>}
-          </div>
-        </div>
-
-        <!-- Quick Actions -->
-        <div class="flex gap-2 text-xs">
-          <a href="/api/reset-auth" class="rounded bg-red-500 px-2 py-1 text-white hover:bg-red-600"
-            >🔄 Reset Auth</a
-          >
-          <a
-            href="/api/check-env"
-            class="rounded bg-blue-500 px-2 py-1 text-white hover:bg-blue-600"
-            target="_blank">🔧 Check Env</a
-          >
-        </div>
-      </div>
-    </details>
-  </SectionContainer>
+  <!-- <DebugComponent/> -->
 
   <!-- Navigation -->
   <SectionContainer class="mx-6 flex flex-col gap-y-6">
-    <ProjectNav projects={projects} statuses={project_statuses} stat />
+    <ProjectNav role={role || "Client"} projects={projects} statuses={project_statuses} stat />
   </SectionContainer>
 
   <!-- Main Dashboard -->
   <SectionContainer id="dashboard" class="mx-6 mb-0 mt-0 flex">
-    <DashboardComponent role={role} projects={projects} />
+    <DashboardComponent role={role || "Client"} projects={projects} />
   </SectionContainer>
-
-  <!-- Toast Alerts -->
 </App>

@@ -1,7 +1,7 @@
 import type { APIRoute } from "astro";
-import { supabase } from "../../../lib/supabase";
 import { setAuthCookies } from "../../../lib/auth-cookies";
 import { ensureUserProfile } from "../../../lib/auth-utils";
+import { supabase } from "../../../lib/supabase";
 
 export const GET: APIRoute = async ({ url, cookies, redirect }) => {
   console.log("Auth callback started");
@@ -33,7 +33,6 @@ export const GET: APIRoute = async ({ url, cookies, redirect }) => {
       console.error("Error details:", {
         message: error.message,
         status: error.status,
-        statusCode: error.statusCode,
       });
 
       // If it's a PKCE error, redirect to home with error message
