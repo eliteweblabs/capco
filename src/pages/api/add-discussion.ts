@@ -54,7 +54,7 @@ async function getUserInfoServer(userId: string) {
 export const POST: APIRoute = async ({ request, cookies }) => {
   try {
     // Check authentication
-    const { isAuth, user } = await checkAuth(cookies);
+    const { isAuth, user, role } = await checkAuth(cookies);
 
     if (!isAuth || !user) {
       return new Response(
@@ -83,7 +83,21 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     }
 
     const body = await request.json();
-    const { projectId, message, internal = false, sms_alert = false } = body;
+    let { projectId, message, internal = false, sms_alert = false } = body;
+
+    // Force internal = false for clients (only Admin/Staff can create internal comments)
+    const isClient = role === "Client";
+    if (isClient) {
+      internal = false;
+      console.log("📡 [ADD-DISCUSSION] Client user - forcing internal = false");
+    }
+
+    console.log("📡 [ADD-DISCUSSION] Comment settings:", {
+      role,
+      isClient,
+      internal,
+      sms_alert,
+    });
 
     if (!projectId || !message || message.trim() === "") {
       return new Response(
