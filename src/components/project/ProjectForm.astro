@@ -343,6 +343,7 @@ console.log("New client fields found:", newClientFieldsInForm.length, newClientF
           id={action.id}
           data-project-id={formId}
           data-action={action.action}
+          data-tab={action.tab}
         >
           {action.icon && <i class={`bx ${action.icon} mr-1`} />}
           {action.label}
@@ -406,9 +407,17 @@ console.log("New client fields found:", newClientFieldsInForm.length, newClientF
       const actionButtons = document.querySelectorAll("[data-action]");
       actionButtons.forEach((button) => {
         const action = button.getAttribute("data-action");
-        if (action && projectId) {
+        const tab = button.getAttribute("data-tab");
+
+        if (projectId) {
           button.addEventListener("click", function () {
-            handleAction(action, projectId, isNewProject);
+            // If button has a tab property, navigate to that tab
+            if (tab && typeof window !== "undefined" && (window as any).switchTab) {
+              (window as any).switchTab(tab);
+            } else if (action) {
+              // Otherwise handle the action normally
+              handleAction(action, projectId, isNewProject);
+            }
           });
         }
       });
@@ -544,6 +553,12 @@ console.log("New client fields found:", newClientFieldsInForm.length, newClientF
       case "deleteProject":
         if (!isNewProject) {
           deleteProject(projectId);
+        }
+        break;
+      case "buildProposal":
+        // Navigate to proposal tab
+        if (typeof window !== "undefined" && (window as any).switchTab) {
+          (window as any).switchTab("proposal");
         }
         break;
       default:
@@ -682,45 +697,122 @@ console.log("New client fields found:", newClientFieldsInForm.length, newClientF
       },
       body: JSON.stringify(formValues),
     })
-      .then((response) => {
-        if (!response.ok) {
-          throw new Error("Failed to save project");
-        }
-        return response.json();
-      })
-      .then((data) => {
-        console.log("Project saved successfully:", data);
+      .then(async (response) => {
+        const result = await response.json();
 
-        // Show success toast
-        if ((window as any).toastAlertManager) {
-          (window as any).toastAlertManager.show({
-            type: "success",
-            title: isNewProject ? "Project Created!" : "Project Updated!",
-            message: isNewProject
+        if (!response.ok) {
+          // Handle different error types from API response
+          let errorTitle = "Save Failed";
+          let errorMessage = "Failed to save project. Please try again.";
+          let errorDuration = 5000;
+
+          // Check for specific error types
+          if (result.error) {
+            errorMessage = result.error;
+          }
+
+          if (result.details) {
+            // Use the detailed error message for more specific feedback
+            errorMessage = result.details;
+          }
+
+          // Handle specific error cases
+          if (result.error && result.error.includes("validation")) {
+            errorTitle = "Validation Error";
+            errorMessage = "Please check your input and try again.";
+          } else if (result.error && result.error.includes("authentication")) {
+            errorTitle = "Authentication Error";
+            errorMessage = "Please log in again and try saving the project.";
+          } else if (result.error && result.error.includes("permission")) {
+            errorTitle = "Permission Denied";
+            errorMessage = "You don't have permission to save this project.";
+          } else if (result.error && result.error.includes("not found")) {
+            errorTitle = "Project Not Found";
+            errorMessage = "The project you're trying to update could not be found.";
+          } else if (result.error && result.error.includes("required")) {
+            errorTitle = "Missing Information";
+            errorMessage = "Please fill in all required fields.";
+          }
+
+          // Show error toast using centralized system
+          if ((window as any).showError) {
+            (window as any).showError(errorTitle, errorMessage, errorDuration);
+          }
+
+          throw new Error(errorMessage);
+        }
+
+        console.log("Project saved successfully:", result);
+
+        // Show success toast using centralized system
+        if ((window as any).showSuccess) {
+          (window as any).showSuccess(
+            isNewProject ? "Project Created!" : "Project Updated!",
+            isNewProject
               ? "Your new project has been created successfully. Redirecting to the documents page, please upload your project files."
               : "Your project has been updated successfully.",
-            duration: isNewProject ? 10000 : 4000,
-          });
+            isNewProject ? 10000 : 4000
+          );
         }
 
-        // Redirect to project page with documents tab if it's a new project
-        if (isNewProject && data.id) {
+        // For new projects, set initial status to 10 and trigger email notifications
+        if (isNewProject && result.id) {
+          console.log("🔍 [ProjectForm] New project created, setting initial status to 10...");
+
+          try {
+            console.log("🔍 [ProjectForm] About to call update-status API...");
+            console.log("🔍 [ProjectForm] Project ID:", result.id);
+
+            // Call update-status API to set initial status and trigger notifications
+            const statusResponse = await fetch("/api/update-status", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              credentials: "include", // Include cookies for authentication
+              body: JSON.stringify({
+                projectId: result.id,
+                newStatus: 10,
+              }),
+            });
+
+            if (statusResponse.ok) {
+              const statusResult = await statusResponse.json();
+              console.log("🔍 [ProjectForm] Status update successful:", statusResult);
+            } else {
+              const errorText = await statusResponse.text();
+              console.error("🔍 [ProjectForm] Status update failed:", errorText);
+            }
+          } catch (statusError) {
+            console.error("🔍 [ProjectForm] Error calling update-status API:", statusError);
+          }
+
+          console.log("🔍 [ProjectForm] About to redirect after project creation...");
+          console.log("🔍 [ProjectForm] Project result:", result);
+          console.log("🔍 [ProjectForm] Redirect URL:", `/project/${result.id}?tab=documents`);
+          console.log("🔍 [ProjectForm] Current timestamp:", new Date().toISOString());
+
+          // Add debugger statement for inspection
+          // debugger;
+
           setTimeout(() => {
-            window.location.href = `/project/${data.id}?tab=documents`;
+            console.log("🔍 [ProjectForm] Executing redirect now...");
+            window.location.href = `/project/${result.id}?tab=documents`;
           }, 1500); // Small delay to show the toast
         }
+
+        return result;
       })
       .catch((error) => {
         console.error("Error saving project:", error);
 
-        // Show error toast
-        if ((window as any).toastAlertManager) {
-          (window as any).toastAlertManager.show({
-            type: "error",
-            title: "Save Failed",
-            message: "Failed to save project. Please try again.",
-            duration: 5000,
-          });
+        // Only show generic error if we haven't already shown a specific error
+        if ((window as any).showError && !error.message.includes("Failed to save project")) {
+          (window as any).showError(
+            "Network Error",
+            "Network error. Please check your connection and try again.",
+            5000
+          );
         }
       })
       .finally(() => {

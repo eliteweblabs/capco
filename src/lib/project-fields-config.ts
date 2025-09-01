@@ -82,13 +82,6 @@ export const PROJECT_UPDATE_FIELDS: ProjectField[] = [
     allowEmpty: false,
     description: "Requested documents",
   },
-  {
-    name: "assigned_to_id",
-    type: "string",
-    category: "optional",
-    allowEmpty: true,
-    description: "Assigned user ID",
-  },
 
   // New fields - experimental or recently added
   {
@@ -158,10 +151,7 @@ export function shouldIncludeField(fieldName: string, value: any): boolean {
   // If value is undefined, don't include
   if (value === undefined) return false;
 
-  // Special handling for assigned_to_id - always include it even if empty
-  if (fieldName === "assigned_to_id") {
-    return true;
-  }
+  // assigned_to_id is handled by StaffSelect component directly
 
   // If field doesn't allow empty and value is empty string, don't include
   if (field.allowEmpty === false && value === "") return false;

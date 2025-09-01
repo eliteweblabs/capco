@@ -172,8 +172,6 @@
 </div>
 
 <script>
-  import { globalServices } from "../../lib/global-services";
-
   // Handle form submission with client-side validation feedback
   document.addEventListener("DOMContentLoaded", () => {
     const registerForm = document.querySelector('form[action="/api/auth/register"]');
@@ -198,9 +196,15 @@
         // Check required fields
         if (!firstName || !lastName || !companyName || !email || !password) {
           if (window.showError) {
-            window.showError("Validation Error", "Please fill in all required fields (marked with *).", 5000);
+            window.showError(
+              "Validation Error",
+              "Please fill in all required fields (marked with *).",
+              5000
+            );
           } else {
-            console.error("🔔 [Validation Error] Please fill in all required fields (marked with *).");
+            console.error(
+              "🔔 [Validation Error] Please fill in all required fields (marked with *)."
+            );
           }
           return;
         }
@@ -208,9 +212,15 @@
         // Validate name fields
         if (firstName.length < 2 || lastName.length < 2) {
           if (window.showError) {
-            window.showError("Validation Error", "First and last names must be at least 2 characters long.", 5000);
+            window.showError(
+              "Validation Error",
+              "First and last names must be at least 2 characters long.",
+              5000
+            );
           } else {
-            console.error("🔔 [Validation Error] First and last names must be at least 2 characters long.");
+            console.error(
+              "🔔 [Validation Error] First and last names must be at least 2 characters long."
+            );
           }
           return;
         }
@@ -218,7 +228,11 @@
         // Validate company name
         if (companyName.length < 2) {
           if (window.showError) {
-            window.showError("Validation Error", "Company name must be at least 2 characters long.", 5000);
+            window.showError(
+              "Validation Error",
+              "Company name must be at least 2 characters long.",
+              5000
+            );
           } else {
             console.error("🔔 [Validation Error] Company name must be at least 2 characters long.");
           }
@@ -228,7 +242,11 @@
         // Validate password
         if (password.length < 6) {
           if (window.showError) {
-            window.showError("Validation Error", "Password must be at least 6 characters long.", 5000);
+            window.showError(
+              "Validation Error",
+              "Password must be at least 6 characters long.",
+              5000
+            );
           } else {
             console.error("🔔 [Validation Error] Password must be at least 6 characters long.");
           }
@@ -255,16 +273,57 @@
           if (result.success === false) {
             // Show error notification
             if (window.showError) {
-              window.showError("Registration Failed", result.error || "Failed to create account. Please try again.", 5000);
+              window.showError(
+                "Registration Failed",
+                result.error || "Failed to create account. Please try again.",
+                5000
+              );
             } else {
-              console.error("🔔 [Registration Failed]", result.error || "Failed to create account. Please try again.");
+              console.error(
+                "🔔 [Registration Failed]",
+                result.error || "Failed to create account. Please try again."
+              );
             }
           } else {
-            // Show success notification and redirect
+            // Show success notification based on email status
+            const emailStatus = result.emailStatus || {};
+            const notification = result.notification || {};
+
             if (window.showSuccess) {
-              window.showSuccess("Account Created!", "Welcome! You're now signed in and ready to create projects.", 3000);
+              window.showSuccess(
+                notification.title || "Account Created!",
+                notification.message ||
+                  "Welcome! You're now signed in and ready to create projects.",
+                notification.duration || 3000
+              );
             } else {
-              console.log("🔔 [Account Created!] Welcome! You're now signed in and ready to create projects.");
+              console.log("🔔 [Account Created!]", notification.message);
+            }
+
+            // Show additional email status notifications
+            if (emailStatus.welcomeEmailSent && window.showInfo) {
+              setTimeout(() => {
+                (window.showInfo as any)(
+                  "Email Sent",
+                  "Welcome email delivered successfully! Check your inbox. Now redirecting you to the dashboard",
+                  3000
+                );
+              }, 1000);
+            }
+
+            // Show email errors if any
+            if (
+              emailStatus.emailErrors &&
+              emailStatus.emailErrors.length > 0 &&
+              window.showWarning
+            ) {
+              setTimeout(() => {
+                (window.showWarning as any)(
+                  "Email Issues",
+                  "Some notification emails may not have been delivered. Your account was created successfully.",
+                  5000
+                );
+              }, 3000);
             }
 
             // Redirect to dashboard
@@ -275,9 +334,15 @@
         } catch (error) {
           console.error("Registration error:", error);
           if (window.showError) {
-            window.showError("Registration Failed", "An unexpected error occurred. Please try again.", 5000);
+            window.showError(
+              "Registration Failed",
+              "An unexpected error occurred. Please try again.",
+              5000
+            );
           } else {
-            console.error("🔔 [Registration Failed] An unexpected error occurred. Please try again.");
+            console.error(
+              "🔔 [Registration Failed] An unexpected error occurred. Please try again."
+            );
           }
         }
       });

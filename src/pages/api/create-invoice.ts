@@ -1,7 +1,7 @@
 import type { APIRoute } from "astro";
 import { supabase } from "../../lib/supabase";
 
-export const POST: APIRoute = async ({ request }) => {
+export const POST: APIRoute = async ({ request, cookies }) => {
   try {
     const { projectId, projectData } = await request.json();
 
@@ -9,6 +9,22 @@ export const POST: APIRoute = async ({ request }) => {
       return new Response(JSON.stringify({ error: "Project ID is required" }), {
         status: 400,
         headers: { "Content-Type": "application/json" },
+      });
+    }
+
+    // Set up session from cookies
+    const accessToken = cookies.get("sb-access-token")?.value;
+    const refreshToken = cookies.get("sb-refresh-token")?.value;
+
+    console.log("📡 [API] Auth check:", {
+      hasAccessToken: !!accessToken,
+      hasRefreshToken: !!refreshToken,
+    });
+
+    if (accessToken && refreshToken) {
+      await supabase.auth.setSession({
+        access_token: accessToken,
+        refresh_token: refreshToken,
       });
     }
 

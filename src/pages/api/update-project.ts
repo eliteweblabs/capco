@@ -285,7 +285,7 @@ async function sendStatusChangeNotifications(
     console.log("🔔 [UPDATE-PROJECT] Fetching project details for ID:", projectId);
     const { data: projectDetails, error: projectDetailsError } = await supabase
       .from("projects")
-      .select("title, address, author_id, assigned_to_id")
+      .select("title, address, author_id")
       .eq("id", projectId)
       .single();
 
@@ -298,7 +298,6 @@ async function sendStatusChangeNotifications(
             title: projectDetails.title,
             address: projectDetails.address,
             author_id: projectDetails.author_id,
-            assigned_to_id: projectDetails.assigned_to_id,
           }
         : null,
     });
@@ -364,21 +363,7 @@ async function sendStatusChangeNotifications(
       }
     }
 
-    if (notify.includes("staff")) {
-      // Get the assigned staff member for this project
-      if (projectDetails.assigned_to_id) {
-        const { data: assignedStaff } = await supabase
-          .from("profiles")
-          .select("email, first_name, last_name, company_name")
-          .eq("id", projectDetails.assigned_to_id)
-          .eq("role", "Staff")
-          .single();
-
-        if (assignedStaff) {
-          usersToNotify.push(assignedStaff);
-        }
-      }
-    }
+    // Staff notifications are handled by the StaffSelect component
 
     if (notify.includes("client") || notify.includes("author")) {
       // Add the project owner/client
@@ -431,15 +416,19 @@ async function sendStatusChangeNotifications(
 
         // Prepare email content
         const personalizedContent = email_content
-          .replace("{{PROJECT_TITLE}}", projectDetails.title || "Project")
-          .replace("{{PROJECT_ADDRESS}}", projectDetails.address || "N/A")
-          .replace("{{EST_TIME}}", est_time || "2-3 business days")
+          .replace(/{{PROJECT_TITLE}}/g, projectDetails.title || "Project")
+          .replace(/{{PROJECT_ADDRESS}}/g, projectDetails.address || "N/A")
+          .replace(/{{ADDRESS}}/g, projectDetails.address || "N/A")
+          .replace(/{{EST_TIME}}/g, est_time || "2-3 business days")
           .replace(
-            "{{CLIENT_NAME}}",
+            /{{CLIENT_NAME}}/g,
             `${user.first_name || ""} ${user.last_name || ""}`.trim() ||
               user.company_name ||
               "Client"
-          );
+          )
+          .replace(/{{CLIENT_EMAIL}}/g, user.email)
+          // Replace any remaining {{PLACEHOLDER}} with empty string
+          .replace(/\{\{[^}]+\}\}/g, "");
 
         // Replace template variables
         let emailHtml = emailTemplate.replace("{{CONTENT}}", personalizedContent);

@@ -1,0 +1,299 @@
+---
+import App from "../components/common/App.astro";
+import SectionContainer from "../components/common/SectionContainer.astro";
+import BoxIcon from "../components/common/BoxIcon.astro";
+
+// Para cambiar idioma de textos
+import { getI18N } from "../i18n";
+const { currentLocale } = Astro;
+const i18n = getI18N({ currentLocale });
+
+// Check authentication
+import { checkAuth } from "../lib/auth";
+import { supabase } from "../lib/supabase";
+import { supabaseAdmin } from "../lib/supabase-admin";
+
+// Server-side function to get user info directly from database
+async function getUserInfoServer(userId: string) {
+  // Get user metadata from auth.users table
+  const { data: authUser, error: authError } = await supabaseAdmin.auth.admin.getUserById(userId);
+
+  if (authError || !authUser.user) {
+    console.error("Error fetching auth user:", authError);
+    return null;
+  }
+
+  // Get user profile from profiles table
+  const { data: profile, error: profileError } = await supabase
+    .from("profiles")
+    .select("*")
+    .eq("id", userId)
+    .single();
+
+  // Combine auth user data with profile data
+  const userInfo = {
+    id: authUser.user.id,
+    email: authUser.user.email,
+    profile: profile || null,
+    // Computed fields for easy access
+    display_name:
+      profile?.company_name ||
+      profile?.name ||
+      authUser.user.user_metadata?.full_name ||
+      authUser.user.email?.split("@")[0] ||
+      "Unknown User",
+    company_name: profile?.company_name || null,
+    name: profile?.name || null,
+    role: profile?.role || "Unknown",
+  };
+
+  return userInfo;
+}
+
+const { isAuth, session, user, role } = await checkAuth(Astro.cookies);
+
+// Redirect if not authenticated
+if (!isAuth) {
+  console.log("🌐 [DISCUSSIONS] Not authenticated, redirecting to login");
+  return Astro.redirect("/login");
+}
+
+// Fetch all discussions with project and author information
+let discussions: any[] = [];
+let error: string | null = null;
+
+if (supabase) {
+  try {
+    // Get discussions without foreign key relationships
+    const { data: discussionsData, error: discussionsError } = await supabase
+      .from("discussion")
+      .select(`
+        id,
+        created_at,
+        message,
+        author_id,
+        project_id
+      `)
+      .order("created_at", { ascending: false })
+      .limit(50); // Limit to most recent 50 discussions
+
+    if (discussionsError) {
+      console.error("Error fetching discussions:", discussionsError);
+      error = "Failed to load discussions";
+    } else {
+      // Get author profiles using getUserInfoServer function
+      const authorIds = [...new Set(discussionsData?.map(d => d.author_id) || [])];
+      let authorProfiles: any = {};
+      
+      if (authorIds.length > 0) {
+        try {
+          const userPromises = authorIds.map(async (authorId) => {
+            try {
+              const userInfo = await getUserInfoServer(authorId);
+              return { id: authorId, userInfo };
+            } catch (error) {
+              console.error(`Failed to fetch user info for ${authorId}:`, error);
+              return null;
+            }
+          });
+
+          const userResults = await Promise.all(userPromises);
+          userResults.forEach((result) => {
+            if (result) {
+              authorProfiles[result.id] = result.userInfo;
+            }
+          });
+        } catch (error) {
+          console.error("Error fetching user profiles:", error);
+        }
+      }
+
+      // Get project details separately
+      const projectIds = [...new Set(discussionsData?.map(d => d.project_id) || [])];
+      let projectDetails: any = {};
+      
+      if (projectIds.length > 0) {
+        const { data: projects, error: projectsError } = await supabase
+          .from("projects")
+          .select("id, title, address")
+          .in("id", projectIds);
+        
+        if (!projectsError && projects) {
+          projectDetails = projects.reduce((acc: any, project: any) => {
+            acc[project.id] = project;
+            return acc;
+          }, {});
+        }
+      }
+
+      // Combine discussions with profiles and project details
+      discussions = (discussionsData || []).map(discussion => ({
+        ...discussion,
+        profiles: authorProfiles[discussion.author_id] || null,
+        projects: projectDetails[discussion.project_id] || null
+      }));
+
+      console.log(`🌐 [DISCUSSIONS] Loaded ${discussions.length} discussions`);
+    }
+  } catch (fetchError) {
+    console.error("🌐 [DISCUSSIONS] Fetch error:", fetchError);
+    error = "Failed to connect to database";
+  }
+}
+
+// Helper function to format date
+function formatDate(dateString: string): string {
+  return new Date(dateString).toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  });
+}
+
+// Helper function to get author display name
+function getAuthorName(profile: any): string {
+  // Prioritize company_name first
+  if (profile?.company_name) return profile.company_name;
+  if (profile?.display_name) return profile.display_name;
+  if (profile?.name) return profile.name;
+  if (profile?.email) return profile.email.split('@')[0];
+  return "Unknown User";
+}
+---
+
+<App title="Global Discussions - CAPCo Fire Protection" description="View all project discussions and comments across all projects.">
+  <!-- Header Section -->
+  <SectionContainer class="py-16 px-6 bg-gradient-to-r from-red-50 to-orange-50 dark:from-red-900/20 dark:to-orange-900/20">
+    <div class="max-w-6xl mx-auto text-center">
+      <h1 class="text-4xl md:text-5xl font-bold text-gray-900 dark:text-white mb-6">
+        Global <span class="text-red-600 dark:text-red-400">Discussions</span>
+      </h1>
+      <p class="text-xl text-gray-600 dark:text-gray-300 max-w-3xl mx-auto mb-8">
+        View all project discussions and comments across all projects. Stay updated with the latest conversations.
+      </p>
+      
+      <!-- Navigation -->
+      <div class="flex justify-center gap-4">
+        <a 
+          href="/dashboard" 
+          class="inline-flex items-center px-6 py-3 border-2 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 font-medium rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+        >
+          <BoxIcon name="dashboard" class="w-5 h-5 mr-2" />
+          Dashboard
+        </a>
+        <a 
+          href="/" 
+          class="inline-flex items-center px-6 py-3 bg-red-600 text-white font-medium rounded-lg hover:bg-red-700 transition-colors"
+        >
+          <BoxIcon name="home" class="w-5 h-5 mr-2" />
+          Home
+        </a>
+      </div>
+    </div>
+  </SectionContainer>
+
+  <!-- Discussions Section -->
+  <SectionContainer class="py-16 px-6">
+    <div class="max-w-4xl mx-auto">
+      {error ? (
+        <!-- Error State -->
+        <div class="text-center py-16">
+          <div class="w-16 h-16 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center mx-auto mb-6">
+            <BoxIcon name="error-circle" class="w-8 h-8 text-red-600 dark:text-red-400" />
+          </div>
+          <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-4">
+            Unable to Load Discussions
+          </h2>
+          <p class="text-gray-600 dark:text-gray-300 mb-6">
+            {error}
+          </p>
+          <button 
+            onclick="window.location.reload()" 
+            class="inline-flex items-center px-6 py-3 bg-red-600 text-white font-medium rounded-lg hover:bg-red-700 transition-colors"
+          >
+            <BoxIcon name="refresh" class="w-5 h-5 mr-2" />
+            Try Again
+          </button>
+        </div>
+      ) : discussions.length === 0 ? (
+        <!-- Empty State -->
+        <div class="text-center py-16">
+          <div class="w-16 h-16 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-6">
+            <BoxIcon name="message-rounded-dots" class="w-8 h-8 text-gray-400" />
+          </div>
+          <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-4">
+            No Discussions Yet
+          </h2>
+          <p class="text-gray-600 dark:text-gray-300 mb-6">
+            Start the conversation by adding comments to your projects.
+          </p>
+          <a 
+            href="/dashboard" 
+            class="inline-flex items-center px-6 py-3 bg-red-600 text-white font-medium rounded-lg hover:bg-red-700 transition-colors"
+          >
+            <BoxIcon name="folder" class="w-5 h-5 mr-2" />
+            Go to Dashboard
+          </a>
+        </div>
+      ) : (
+        <!-- Discussions List -->
+        <div class="space-y-6">
+          {discussions.map((discussion) => (
+            <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6 shadow-sm">
+              <div class="flex items-start justify-between mb-4">
+                <div class="flex items-center space-x-3">
+                  <div class="w-10 h-10 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center">
+                    <BoxIcon name="user" class="w-5 h-5 text-red-600 dark:text-red-400" />
+                  </div>
+                  <div>
+                    <h3 class="font-medium text-gray-900 dark:text-white">
+                      {getAuthorName(discussion.profiles)}
+                    </h3>
+                    <p class="text-sm text-gray-500 dark:text-gray-400">
+                      {formatDate(discussion.created_at)}
+                    </p>
+                  </div>
+                </div>
+                {discussion.projects && (
+                  <a 
+                    href={`/project/${discussion.project_id}`}
+                    class="inline-flex items-center px-3 py-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 text-sm rounded-full hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                  >
+                    <BoxIcon name="folder" class="w-4 h-4 mr-1" />
+                    {discussion.projects.title || discussion.projects.address || "Project"}
+                  </a>
+                )}
+              </div>
+              
+              <div class="prose dark:prose-invert max-w-none">
+                <p class="text-gray-700 dark:text-gray-300 whitespace-pre-wrap">
+                  {discussion.message}
+                </p>
+              </div>
+              
+              <div class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+                <a 
+                  href={`/project/${discussion.project_id}?tab=discussion`}
+                  class="inline-flex items-center text-sm text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300"
+                >
+                  <BoxIcon name="message-rounded-dots" class="w-4 h-4 mr-1" />
+                  View in Project
+                </a>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  </SectionContainer>
+
+  <!-- Auto-refresh script -->
+  <script>
+    // Auto-refresh every 30 seconds
+    setInterval(() => {
+      window.location.reload();
+    }, 30000);
+  </script>
+</App>

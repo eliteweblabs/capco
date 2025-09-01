@@ -1,4 +1,6 @@
 import type { APIRoute } from "astro";
+import { SimpleProjectLogger } from "../../lib/simple-logging";
+import { sendStatusChangeNotifications } from "../../lib/status-notifications";
 import { supabase } from "../../lib/supabase";
 import { supabaseAdmin } from "../../lib/supabase-admin";
 
@@ -17,14 +19,31 @@ export const OPTIONS: APIRoute = async () => {
 export const POST: APIRoute = async ({ request, cookies }) => {
   console.log("📊 [UPDATE-STATUS] API route called!");
   console.log("📊 [UPDATE-STATUS] ==========================================");
+  console.log("📊 [UPDATE-STATUS] Timestamp:", new Date().toISOString());
+  console.log("📊 [UPDATE-STATUS] Request method:", request.method);
+  console.log("📊 [UPDATE-STATUS] Request URL:", request.url);
+  console.log("📊 [UPDATE-STATUS] Has cookies:", !!cookies);
+  console.log("📊 [UPDATE-STATUS] Has access token:", !!cookies.get("sb-access-token")?.value);
+  console.log("📊 [UPDATE-STATUS] Has refresh token:", !!cookies.get("sb-refresh-token")?.value);
+
+  // Also log to a file for debugging
+  const fs = await import("fs");
+  const logEntry = `[${new Date().toISOString()}] UPDATE-STATUS API called\n`;
+  fs.appendFileSync("/tmp/astro-debug.log", logEntry);
+
+  // Log more details to a separate file
+  const detailedLogEntry = `[${new Date().toISOString()}] UPDATE-STATUS API called with cookies: ${!!cookies}, access token: ${!!cookies.get("sb-access-token")?.value}, refresh token: ${!!cookies.get("sb-refresh-token")?.value}\n`;
+  fs.appendFileSync("/tmp/astro-detailed.log", detailedLogEntry);
 
   try {
     const body = await request.json();
     console.log("📊 [UPDATE-STATUS] Received request body:", JSON.stringify(body, null, 2));
 
-    const { projectId, newStatus } = body;
+    const { projectId, status: newStatus } = body;
+    console.log("📊 [UPDATE-STATUS] Extracted parameters:", { projectId, newStatus });
 
     if (!projectId || newStatus === undefined) {
+      console.log("📊 [UPDATE-STATUS] Missing required parameters:", { projectId, newStatus });
       return new Response(JSON.stringify({ error: "Project ID and new status are required" }), {
         status: 400,
         headers: { "Content-Type": "application/json" },
@@ -32,6 +51,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     }
 
     if (!supabase) {
+      console.log("📊 [UPDATE-STATUS] Supabase client not available");
       return new Response(JSON.stringify({ error: "Database connection not available" }), {
         status: 500,
         headers: { "Content-Type": "application/json" },
@@ -42,7 +62,15 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     const accessToken = cookies.get("sb-access-token")?.value;
     const refreshToken = cookies.get("sb-refresh-token")?.value;
 
+    console.log("📊 [UPDATE-STATUS] Authentication check:", {
+      hasAccessToken: !!accessToken,
+      hasRefreshToken: !!refreshToken,
+      accessTokenLength: accessToken?.length || 0,
+      refreshTokenLength: refreshToken?.length || 0,
+    });
+
     if (!accessToken || !refreshToken) {
+      console.log("📊 [UPDATE-STATUS] Missing authentication tokens");
       return new Response(JSON.stringify({ error: "Not authenticated" }), {
         status: 401,
         headers: { "Content-Type": "application/json" },
@@ -50,17 +78,25 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     }
 
     // Set session
+    console.log("📊 [UPDATE-STATUS] Setting up session...");
     const { data: session, error: sessionError } = await supabase.auth.setSession({
       access_token: accessToken,
       refresh_token: refreshToken,
     });
 
     if (sessionError || !session.session?.user) {
+      console.log("📊 [UPDATE-STATUS] Session error:", sessionError);
+      console.log("📊 [UPDATE-STATUS] Session data:", session);
       return new Response(JSON.stringify({ error: "Invalid session" }), {
         status: 401,
         headers: { "Content-Type": "application/json" },
       });
     }
+
+    console.log("📊 [UPDATE-STATUS] User authenticated successfully:", {
+      userId: session.session.user.id,
+      userEmail: session.session.user.email,
+    });
 
     // Update project status
     const { data: updatedProject, error: updateError } = await supabase
@@ -87,6 +123,21 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       newStatus,
     });
 
+    // Log the status change activity
+    try {
+      console.log("📊 [UPDATE-STATUS] Logging status change activity...");
+      await SimpleProjectLogger.logStatusChange(
+        projectId,
+        session.session.user.email || "unknown",
+        updatedProject.status,
+        newStatus
+      );
+      console.log("📊 [UPDATE-STATUS] Status change activity logged successfully");
+    } catch (logError) {
+      console.error("📊 [UPDATE-STATUS] Error logging status change activity:", logError);
+      // Don't fail the request if logging fails
+    }
+
     // Get status configuration and send notifications
     const { data: statusConfig, error: statusError } = await supabase
       .from("project_statuses")
@@ -97,9 +148,37 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     // Send email notifications for status change
     let notificationMessage = "Status updated successfully";
     console.log("📊 [UPDATE-STATUS] About to send status change notifications...");
+    console.log("📊 [UPDATE-STATUS] Notification parameters:", {
+      projectId,
+      newStatus,
+      hasUpdatedProject: !!updatedProject,
+      projectTitle: updatedProject?.title,
+      projectAddress: updatedProject?.address,
+    });
+
     try {
-      await sendStatusChangeNotifications(projectId, newStatus, updatedProject);
+      await sendStatusChangeNotifications(projectId, newStatus, updatedProject, "UPDATE-STATUS");
       console.log("📊 [UPDATE-STATUS] Status change notifications sent successfully");
+
+      // Log email notification activity
+      try {
+        console.log("📊 [UPDATE-STATUS] Logging email notification activity...");
+        await SimpleProjectLogger.addLogEntry(
+          projectId,
+          "EMAIL_NOTIFICATION",
+          session.session.user.email || "unknown",
+          `Status change notification sent for status ${newStatus}`,
+          null,
+          newStatus
+        );
+        console.log("📊 [UPDATE-STATUS] Email notification activity logged successfully");
+      } catch (emailLogError) {
+        console.error(
+          "📊 [UPDATE-STATUS] Error logging email notification activity:",
+          emailLogError
+        );
+        // Don't fail the request if logging fails
+      }
 
       // Use status config for message if available
       if (statusConfig) {
@@ -211,294 +290,3 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     });
   }
 };
-
-// Function to send status change notifications
-async function sendStatusChangeNotifications(
-  projectId: string,
-  newStatus: number,
-  projectData: any
-) {
-  console.log("🔔 [UPDATE-STATUS] sendStatusChangeNotifications called with:", {
-    projectId,
-    newStatus,
-    hasProjectData: !!projectData,
-  });
-
-  try {
-    if (!supabase || !supabaseAdmin) {
-      console.error("Supabase clients not available for notifications");
-      return;
-    }
-
-    // Get status configuration from project_statuses table
-    console.log("🔔 [UPDATE-STATUS] Fetching status configuration for status:", newStatus);
-    const { data: statusConfig, error: statusError } = await supabase
-      .from("project_statuses")
-      .select(
-        "notify, email_content, button_text, toast_admin, toast_client, status_name, est_time"
-      )
-      .eq("status_code", newStatus)
-      .single();
-
-    console.log("🔔 [UPDATE-STATUS] Status configuration result:", {
-      hasData: !!statusConfig,
-      error: statusError,
-      statusCode: newStatus,
-      config: statusConfig
-        ? {
-            notify: statusConfig.notify,
-            hasEmailContent: !!statusConfig.email_content,
-            hasButtonText: !!statusConfig.button_text,
-          }
-        : null,
-    });
-
-    if (statusError || !statusConfig) {
-      console.log(`🔔 [UPDATE-STATUS] No status configuration found for status ${newStatus}`);
-      return;
-    }
-
-    const { notify, email_content, button_text } = statusConfig;
-
-    // Get project details for email
-    console.log("🔔 [UPDATE-STATUS] Fetching project details for ID:", projectId);
-    const { data: projectDetails, error: projectDetailsError } = await supabase
-      .from("projects")
-      .select("title, address, author_id, assigned_to_id")
-      .eq("id", projectId)
-      .single();
-
-    console.log("🔔 [UPDATE-STATUS] Project details query result:", {
-      hasData: !!projectDetails,
-      error: projectDetailsError,
-      projectId,
-      projectDetails: projectDetails
-        ? {
-            title: projectDetails.title,
-            address: projectDetails.address,
-            author_id: projectDetails.author_id,
-            assigned_to_id: projectDetails.assigned_to_id,
-          }
-        : null,
-    });
-
-    if (!projectDetails) {
-      console.error("Project details not found for notifications");
-      return;
-    }
-
-    // Get all users to notify
-    const usersToNotify: Array<{
-      email: string;
-      first_name?: string;
-      last_name?: string;
-      company_name?: string;
-    }> = [];
-
-    console.log("🔔 [UPDATE-STATUS] Notification configuration:", {
-      notify,
-      projectId,
-      newStatus,
-    });
-
-    if (notify.includes("admin") || notify.includes("Admin")) {
-      // Get all admin users
-      console.log("🔔 [UPDATE-STATUS] Fetching admin users...");
-      console.log(
-        "🔔 [UPDATE-STATUS] Notify array contains admin:",
-        notify.includes("admin") || notify.includes("Admin")
-      );
-
-      // Try different case variations for the role
-      console.log("🔔 [UPDATE-STATUS] Trying to find admin users...");
-
-      let adminUsers = null;
-      let adminError = null;
-
-      // Try "Admin" first using admin client to bypass RLS
-      const { data: adminUsers1, error: adminError1 } = await supabaseAdmin!
-        .from("profiles")
-        .select("id, first_name, last_name, company_name, role")
-        .eq("role", "Admin");
-
-      if (adminUsers1 && adminUsers1.length > 0) {
-        adminUsers = adminUsers1;
-        console.log("🔔 [UPDATE-STATUS] Found admin users with 'Admin'");
-      } else {
-        // Try "admin" (lowercase) using admin client
-        const { data: adminUsers2, error: adminError2 } = await supabaseAdmin!
-          .from("profiles")
-          .select("id, first_name, last_name, company_name, role")
-          .eq("role", "admin");
-
-        if (adminUsers2 && adminUsers2.length > 0) {
-          adminUsers = adminUsers2;
-          console.log("🔔 [UPDATE-STATUS] Found admin users with 'admin'");
-        } else {
-          // Try "ADMIN" (uppercase) using admin client
-          const { data: adminUsers3, error: adminError3 } = await supabaseAdmin!
-            .from("profiles")
-            .select("id, first_name, last_name, company_name, role")
-            .eq("role", "ADMIN");
-
-          if (adminUsers3 && adminUsers3.length > 0) {
-            adminUsers = adminUsers3;
-            console.log("🔔 [UPDATE-STATUS] Found admin users with 'ADMIN'");
-          } else {
-            adminError = adminError1 || adminError2 || adminError3;
-            console.log("🔔 [UPDATE-STATUS] No admin users found with any case variation");
-          }
-        }
-      }
-
-      console.log("🔔 [UPDATE-STATUS] Admin profiles result:", {
-        count: adminUsers?.length || 0,
-        error: adminError,
-        profiles: adminUsers?.map((p) => ({
-          id: p.id,
-          name: `${p.first_name} ${p.last_name}`.trim(),
-          role: p.role,
-        })),
-      });
-
-      if (adminUsers && adminUsers.length > 0) {
-        // Fetch emails for admin users from auth.users
-        const adminUsersWithEmails = [];
-        for (const profile of adminUsers) {
-          const { data: userData, error: userError } = await supabaseAdmin!.auth.admin.getUserById(
-            profile.id
-          );
-          if (userData?.user?.email) {
-            adminUsersWithEmails.push({
-              email: userData.user.email,
-              first_name: profile.first_name,
-              last_name: profile.last_name,
-              company_name: profile.company_name,
-            });
-          }
-        }
-
-        if (adminUsersWithEmails.length > 0) {
-          usersToNotify.push(...adminUsersWithEmails);
-          console.log(
-            "🔔 [UPDATE-STATUS] Added admin users to notify list:",
-            adminUsersWithEmails.map((u) => u.email)
-          );
-        } else {
-          console.log("🔔 [UPDATE-STATUS] No admin user emails found");
-        }
-      } else {
-        console.log("🔔 [UPDATE-STATUS] No admin users found");
-
-        // Let's also check what roles exist in the database
-        const { data: allRoles, error: rolesError } = await supabase
-          .from("profiles")
-          .select("role")
-          .limit(10);
-
-        console.log("🔔 [UPDATE-STATUS] Sample roles in database:", {
-          roles: allRoles?.map((r) => r.role),
-          error: rolesError,
-        });
-      }
-    }
-
-    if (notify.includes("staff") || notify.includes("Staff")) {
-      // Only get staff users that are assigned to this specific project
-      if (projectDetails.assigned_to_id) {
-        const { data: assignedStaff } = await supabase
-          .from("profiles")
-          .select("email, first_name, last_name, company_name")
-          .eq("id", projectDetails.assigned_to_id)
-          .eq("role", "Staff")
-          .single();
-
-        if (assignedStaff) {
-          usersToNotify.push(assignedStaff);
-        }
-      }
-    }
-
-    if (
-      notify.includes("client") ||
-      notify.includes("Client") ||
-      notify.includes("author") ||
-      notify.includes("Author")
-    ) {
-      // Get author profile separately
-      console.log("🔔 [UPDATE-STATUS] Fetching author profile for ID:", projectDetails.author_id);
-      const { data: authorProfile, error: authorProfileError } = await supabase
-        .from("profiles")
-        .select("company_name")
-        .eq("id", projectDetails.author_id)
-        .single();
-
-      // Get user email from auth system
-      const { data: userData, error: userError } = await supabaseAdmin!.auth.admin.getUserById(
-        projectDetails.author_id
-      );
-
-      console.log("🔔 [UPDATE-STATUS] Author profile and user query result:", {
-        hasProfile: !!authorProfile,
-        profileError: authorProfileError,
-        hasUserData: !!userData,
-        userError: userError,
-        authorId: projectDetails.author_id,
-        userEmail: userData?.user?.email,
-        companyName: authorProfile?.company_name,
-      });
-
-      if (authorProfile && userData?.user?.email) {
-        // Create a user object with the available data
-        const userInfo = {
-          email: userData.user.email,
-          company_name: authorProfile.company_name,
-          first_name: userData.user.user_metadata?.full_name?.split(" ")[0] || "",
-          last_name: userData.user.user_metadata?.full_name?.split(" ").slice(1).join(" ") || "",
-        };
-        usersToNotify.push(userInfo);
-        console.log("🔔 [UPDATE-STATUS] Added client user to notify list:", userInfo.email);
-      } else {
-        console.log("🔔 [UPDATE-STATUS] No client user found - missing profile or email");
-        console.log("🔔 [UPDATE-STATUS] Debug info:", {
-          hasAuthorProfile: !!authorProfile,
-          hasUserData: !!userData,
-          hasUserEmail: !!userData?.user?.email,
-          authorProfileError: authorProfileError,
-          userError: userError,
-        });
-      }
-    }
-
-    // Call the email delivery API
-    console.log("🔔 [UPDATE-STATUS] Calling email delivery API with users:", usersToNotify.length);
-    const emailResponse = await fetch("http://localhost:4321/api/email-delivery", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        projectId,
-        newStatus,
-        usersToNotify,
-        projectDetails: {
-          title: projectDetails.title || "Project",
-          address: projectDetails.address || "N/A",
-          profiles: usersToNotify,
-        },
-        email_content,
-        button_text,
-      }),
-    });
-
-    if (emailResponse.ok) {
-      const emailResult = await emailResponse.json();
-      console.log("📧 [UPDATE-STATUS] Email delivery result:", emailResult);
-    } else {
-      console.error("📧 [UPDATE-STATUS] Email delivery failed:", await emailResponse.text());
-    }
-  } catch (error) {
-    console.error("Error in sendStatusChangeNotifications:", error);
-    throw error;
-  }
-}

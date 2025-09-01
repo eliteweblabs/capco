@@ -25,6 +25,7 @@ const { isAuth, session, user, role } = await checkAuth(Astro.cookies);
 const tabParam = Astro.url.searchParams.get("tab");
 const validTabs = [
   "project-form",
+  "discussion",
   "documents",
   "proposal",
   "deliverables",
@@ -109,53 +110,38 @@ if (!project) {
   return Astro.redirect("/dashboard");
 }
 
-// Fetch status labels from database
-let statusLabels: Record<number, string> = {};
+// Initialize with fallback status labels
+let statusLabels: Record<number, string> = {
+  10: "Specs Received",
+  20: "Generating Proposal",
+  30: "Proposal Shipped",
+  40: "Proposal Viewed",
+  50: "Proposal Signed Off",
+  60: "Generating Deposit Invoice",
+  70: "Deposit Invoice Shipped",
+  80: "Deposit Invoice Viewed",
+  90: "Deposit Invoice Paid",
+  100: "Generating Submittals",
+  110: "Submittals Shipped",
+  120: "Submittals Viewed",
+  130: "Submittals Signed Off",
+  140: "Generating Final Invoice",
+  150: "Final Invoice Shipped",
+  160: "Final Invoice Viewed",
+  170: "Final Invoice Paid",
+  180: "Generating Final Deliverables",
+  190: "Stamping Final Deliverables",
+  200: "Final Deliverables Shipped",
+  210: "Final Deliverables Viewed",
+  220: "Project Complete",
+};
 
-if (supabase) {
-  try {
-    // Fetch all project statuses from database (excluding status 0)
-    const { data: statuses, error } = await supabase
-      .from("project_statuses")
-      .select("status_code, status_name, client_visible")
-      .neq("status_code", 0)
-      .order("status_code");
+// Note: Status labels will be updated client-side via JavaScript
+// to ensure they're always current and handle any missing statuses
 
-    if (error) {
-      console.error("Error fetching project statuses:", error);
-    } else if (statuses) {
-      // Filter statuses based on user role
-      const filteredStatuses = statuses.filter((status) => {
-        // Admin and Staff can see all statuses
-        if (role === "Admin" || role === "Staff") {
-          return true;
-        }
-
-        // For clients, only show statuses that are client_visible
-        if (role === "Client") {
-          return status.client_visible !== undefined ? status.client_visible : true;
-        }
-
-        // For other roles, show all by default
-        return true;
-      });
-
-      // Convert to status_code -> status_name mapping
-      statusLabels = filteredStatuses.reduce(
-        (acc, status) => {
-          acc[status.status_code] = status.status_name;
-          return acc;
-        },
-        {} as Record<number, string>
-      );
-    }
-  } catch (error) {
-    console.error("Error fetching status labels:", error);
-  }
-}
-
-// Fallback to basic labels if no data from database
+// Fallback to basic labels if no data from API
 if (Object.keys(statusLabels).length === 0) {
+  console.warn("No status labels from API, using fallback labels");
   statusLabels = {
     10: "Specs Received",
     20: "Generating Proposal",
@@ -208,9 +194,9 @@ function getStatusColor(status: number): string {
   </script>
   <Hero
     title={project?.address || project?.title || "Untitled Project"}
-    description={projectAuthorProfile?.company_name ||
-      projectAuthorProfile?.name ||
-      "Unknown Author"}
+    description={`<span class="inline-flex items-center"><i class="bx bx-user mr-2 text-gray-500"></i>${
+      projectAuthorProfile?.company_name || projectAuthorProfile?.name || "Unknown Author"
+    }</span>`}
     statusLabel={project?.status
       ? statusLabels[project.status] || `Status ${project.status}`
       : undefined}
@@ -220,6 +206,7 @@ function getStatusColor(status: number): string {
     userRole={role || "Client"}
     projectTitle={project?.title || project?.address || "Project"}
     clientEmail={(projectAuthorProfile?.email || user?.email || "Client") as string}
+    project={project}
   />
   <SectionContainer>
     <div class="flex items-center justify-between">
@@ -245,6 +232,14 @@ function getStatusColor(status: number): string {
       >
         <BoxIcon name="edit" class="mr-2 inline h-4 w-4" />
         Project Form
+      </button>
+      <button
+        id="tab-discussion"
+        class="tab-button relative mt-2 w-auto rounded-full px-4 py-2 text-sm font-medium text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
+        onclick="switchTab('discussion')"
+      >
+        <BoxIcon name="message-rounded-dots" class="mr-2 inline h-4 w-4" />
+        Discussion
       </button>
       <!-- {
         role === "Admin" || role === "Staff" ? (
@@ -292,6 +287,8 @@ function getStatusColor(status: number): string {
         <BoxIcon name="receipt" class="mr-2 inline h-4 w-4" />
         Final Invoice
       </button>
+      {role === "Admin" || role === "Staff" ? (
+
       <button
         id="tab-activity-log"
         class="tab-button relative mt-2 w-auto rounded-full px-4 py-2 text-sm font-medium text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
@@ -300,6 +297,9 @@ function getStatusColor(status: number): string {
         <BoxIcon name="history" class="mr-2 inline h-4 w-4" />
         Activity Log
       </button>
+      ) : (
+        ""
+      )}
     </nav>
 
     <!-- Tab Content -->
@@ -316,6 +316,89 @@ function getStatusColor(status: number): string {
           role={role}
           projectStatus={project?.status}
         />
+      </div>
+
+      <!-- Discussion Tab -->
+      <div
+        id="content-discussion"
+        class="tab-content hidden rounded-lg border border-gray-200 bg-white p-6 dark:border-gray-700 dark:bg-gray-800"
+      >
+        <div id="discussion-container" data-project-id={id}>
+          <div class="mb-6 flex items-center justify-between">
+            <h3 class="text-lg font-medium text-gray-900 dark:text-white">Project Discussion</h3>
+            <button
+              id="new-comment-btn"
+              class="inline-flex items-center rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-red-700"
+            >
+              <BoxIcon name="plus" class="mr-2 h-4 w-4" />
+              New Comment
+            </button>
+          </div>
+
+          <!-- Comment Form (hidden by default) -->
+          <div
+            id="comment-form"
+            class="mb-6 hidden rounded-lg border border-gray-200 p-4 dark:border-gray-700"
+          >
+            <textarea
+              id="comment-message"
+              placeholder="Write your comment here..."
+              class="w-full resize-none rounded-lg border border-gray-300 p-3 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+              rows="4"></textarea>
+            
+            {/* Admin/Staff Only Toggles */}
+            {(role === "Admin" || role === "Staff") && (
+              <div class="mt-3 flex flex-wrap gap-4 border-t border-gray-200 pt-3 dark:border-gray-600">
+                <label class="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    id="internal-toggle"
+                    class="h-4 w-4 rounded border-gray-300 text-red-600 focus:ring-red-500 dark:border-gray-600 dark:bg-gray-700"
+                  />
+                  <span class="text-sm text-gray-700 dark:text-gray-300">
+                    <i class="bx bx-lock mr-1"></i>
+                    Internal Only
+                  </span>
+                </label>
+                
+                <label class="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    id="sms-alert-toggle"
+                    class="h-4 w-4 rounded border-gray-300 text-red-600 focus:ring-red-500 dark:border-gray-600 dark:bg-gray-700"
+                  />
+                  <span class="text-sm text-gray-700 dark:text-gray-300">
+                    <i class="bx bx-mobile mr-1"></i>
+                    SMS Alert
+                  </span>
+                </label>
+              </div>
+            )}
+            
+            <div class="mt-3 flex justify-end gap-2">
+              <button
+                id="cancel-comment-btn"
+                class="px-4 py-2 text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200"
+              >
+                Cancel
+              </button>
+              <button
+                id="submit-comment-btn"
+                class="rounded-lg bg-red-600 px-4 py-2 text-white transition-colors hover:bg-red-700"
+              >
+                Post Comment
+              </button>
+            </div>
+          </div>
+
+          <!-- Comments List -->
+          <div id="comments-list" class="space-y-4">
+            <div class="py-8 text-center text-gray-500 dark:text-gray-400">
+              <BoxIcon name="message-rounded-dots" class="mx-auto mb-4 h-12 w-12" />
+              <p>Loading comments...</p>
+            </div>
+          </div>
+        </div>
       </div>
 
       <!-- Documents Tab -->
@@ -371,10 +454,14 @@ function getStatusColor(status: number): string {
         </div>
       </div>
 
+      {role === "Admin" || role === "Staff" ? (
       <!-- Activity Log Tab -->
       <div id="content-activity-log" class="tab-content hidden">
         <SimpleProjectLog projectId={parseInt(id ?? "0")} />
       </div>
+      ) : (
+        ""
+      )}
     </div>
   </SectionContainer>
 </App>
@@ -446,6 +533,7 @@ function getStatusColor(status: number): string {
     const tabFromUrl = urlParams.get("tab");
     const validTabs = [
       "project-form",
+      "discussion",
       "documents",
       "proposal",
       "deliverables",
@@ -471,8 +559,259 @@ function getStatusColor(status: number): string {
     console.log("Editing estimate for project:", projectId);
   }
 
+  // Discussion functionality
+  let discussions: any[] = [];
+  let currentProjectId = "";
+
+  async function loadDiscussions(projectId: string) {
+    try {
+      const response = await fetch(`/api/get-project-discussions?projectId=${projectId}`);
+      const data = await response.json();
+
+      if (data.success) {
+        discussions = data.discussions;
+        renderDiscussions();
+      } else {
+        console.error("Failed to load discussions:", data.error);
+        showDiscussionError("Failed to load discussions");
+      }
+    } catch (error) {
+      console.error("Error loading discussions:", error);
+      showDiscussionError("Failed to load discussions");
+    }
+  }
+
+  function renderDiscussions() {
+    const commentsList = document.getElementById("comments-list");
+    if (!commentsList) return;
+
+    if (discussions.length === 0) {
+      commentsList.innerHTML = `
+        <div class="text-center py-8 text-gray-500 dark:text-gray-400">
+          <i class="bx bx-message-rounded-dots mx-auto mb-4 text-4xl"></i>
+          <p>No comments yet. Be the first to start the discussion!</p>
+        </div>
+      `;
+      return;
+    }
+
+    commentsList.innerHTML = discussions
+      .map(
+        (discussion) => `
+      <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
+        <div class="flex items-start justify-between mb-3">
+          <div class="flex items-center space-x-3">
+            <div class="w-8 h-8 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center">
+              <i class="bx bx-user text-red-600 dark:text-red-400 text-sm"></i>
+            </div>
+            <div>
+              <h4 class="font-medium text-gray-900 dark:text-white text-sm">
+                ${discussion.profiles?.company_name || discussion.profiles?.display_name || discussion.profiles?.name || discussion.profiles?.email?.split("@")[0] || `User ${discussion.author_id?.slice(0, 8)}...`}
+              </h4>
+              <p class="text-xs text-gray-500 dark:text-gray-400">
+                ${new Date(discussion.created_at).toLocaleDateString("en-US", {
+                  year: "numeric",
+                  month: "short",
+                  day: "numeric",
+                  hour: "2-digit",
+                  minute: "2-digit",
+                })}
+              </p>
+            </div>
+          </div>
+        </div>
+        <div class="prose dark:prose-invert max-w-none">
+          <p class="text-gray-700 dark:text-gray-300 text-sm whitespace-pre-wrap">
+            ${discussion.message}
+          </p>
+        </div>
+      </div>
+    `
+      )
+      .join("");
+  }
+
+  function showDiscussionError(message: string) {
+    const commentsList = document.getElementById("comments-list");
+    if (commentsList) {
+      commentsList.innerHTML = `
+        <div class="text-center py-8 text-red-500">
+          <i class="bx bx-error-circle mx-auto mb-4 text-4xl"></i>
+          <p>${message}</p>
+        </div>
+      `;
+    }
+  }
+
+  function toggleCommentForm() {
+    console.log("🔔 [DISCUSSION] toggleCommentForm called");
+    const commentForm = document.getElementById("comment-form");
+    const newCommentBtn = document.getElementById("new-comment-btn");
+
+    console.log("🔔 [DISCUSSION] Elements found:", {
+      commentForm: !!commentForm,
+      newCommentBtn: !!newCommentBtn,
+    });
+
+    if (commentForm && newCommentBtn) {
+      const isHidden = commentForm.classList.contains("hidden");
+      console.log("🔔 [DISCUSSION] Form is hidden:", isHidden);
+
+      if (isHidden) {
+        commentForm.classList.remove("hidden");
+        newCommentBtn.textContent = "Cancel";
+        newCommentBtn.innerHTML = '<i class="bx bx-x mr-2 h-4 w-4"></i>Cancel';
+        document.getElementById("comment-message")?.focus();
+        console.log("🔔 [DISCUSSION] Form shown");
+      } else {
+        commentForm.classList.add("hidden");
+        newCommentBtn.textContent = "New Comment";
+        newCommentBtn.innerHTML = '<i class="bx bx-plus mr-2 h-4 w-4"></i>New Comment';
+        (document.getElementById("comment-message") as HTMLTextAreaElement).value = "";
+        
+        // Reset toggles if they exist
+        const internalToggle = document.getElementById("internal-toggle") as HTMLInputElement;
+        const smsAlertToggle = document.getElementById("sms-alert-toggle") as HTMLInputElement;
+        if (internalToggle) internalToggle.checked = false;
+        if (smsAlertToggle) smsAlertToggle.checked = false;
+        
+        console.log("🔔 [DISCUSSION] Form hidden");
+      }
+    }
+  }
+
+  async function submitComment() {
+    const messageInput = document.getElementById("comment-message") as HTMLTextAreaElement;
+    const message = messageInput?.value?.trim();
+
+    if (!message) {
+      alert("Please enter a message");
+      return;
+    }
+
+    // Get toggle values (only if elements exist - for Admin/Staff only)
+    const internalToggle = document.getElementById("internal-toggle") as HTMLInputElement;
+    const smsAlertToggle = document.getElementById("sms-alert-toggle") as HTMLInputElement;
+    
+    const isInternal = internalToggle?.checked || false;
+    const smsAlert = smsAlertToggle?.checked || false;
+
+    const submitBtn = document.getElementById("submit-comment-btn") as HTMLButtonElement;
+    if (submitBtn) {
+      submitBtn.textContent = "Posting...";
+      submitBtn.disabled = true;
+    }
+
+    try {
+      const response = await fetch("/api/add-discussion", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          projectId: currentProjectId,
+          message: message,
+          internal: isInternal,
+          sms_alert: smsAlert,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        // Add new comment to the beginning of the list
+        discussions.unshift(data.discussion);
+        renderDiscussions();
+
+        // Reset form
+        if (messageInput) messageInput.value = "";
+        
+        // Reset toggles if they exist
+        const internalToggle = document.getElementById("internal-toggle") as HTMLInputElement;
+        const smsAlertToggle = document.getElementById("sms-alert-toggle") as HTMLInputElement;
+        if (internalToggle) internalToggle.checked = false;
+        if (smsAlertToggle) smsAlertToggle.checked = false;
+        
+        toggleCommentForm();
+      } else {
+        alert("Failed to post comment: " + data.error);
+      }
+    } catch (error) {
+      console.error("Error posting comment:", error);
+      alert("Failed to post comment");
+    } finally {
+      if (submitBtn) {
+        submitBtn.textContent = "Post Comment";
+        submitBtn.disabled = false;
+      }
+    }
+  }
+
+  // Initialize discussion functionality when discussion tab is shown
+  function initializeDiscussion() {
+    const discussionContainer = document.getElementById("discussion-container");
+    if (discussionContainer) {
+      currentProjectId = discussionContainer.dataset.projectId || "";
+      if (currentProjectId) {
+        loadDiscussions(currentProjectId);
+      }
+    }
+
+    // Remove existing event listeners to prevent duplicates
+    const newCommentBtn = document.getElementById("new-comment-btn");
+    const cancelCommentBtn = document.getElementById("cancel-comment-btn");
+    const submitCommentBtn = document.getElementById("submit-comment-btn");
+
+    if (newCommentBtn) {
+      // Remove all existing event listeners by cloning the node
+      const newBtn = newCommentBtn.cloneNode(true) as HTMLButtonElement;
+      newCommentBtn.parentNode?.replaceChild(newBtn, newCommentBtn);
+      
+      // Add single clean event listener
+      newBtn.addEventListener("click", function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        console.log("🔔 [DISCUSSION] New comment button clicked!");
+        toggleCommentForm();
+      });
+    }
+
+    if (cancelCommentBtn) {
+      cancelCommentBtn.removeEventListener("click", toggleCommentForm);
+      cancelCommentBtn.addEventListener("click", toggleCommentForm);
+    }
+
+    if (submitCommentBtn) {
+      submitCommentBtn.removeEventListener("click", submitComment);
+      submitCommentBtn.addEventListener("click", submitComment);
+    }
+
+    console.log("🔔 [DISCUSSION] Event listeners attached");
+  }
+
+  // Create enhanced switchTab function that initializes discussion
+  function enhancedSwitchTab(tabName: string) {
+    switchTab(tabName);
+
+    if (tabName === "discussion") {
+      // Small delay to ensure DOM is ready
+      setTimeout(initializeDiscussion, 100);
+    }
+  }
+
+  // Also initialize discussion functionality on page load if discussion tab is active
+  document.addEventListener("DOMContentLoaded", function () {
+    const urlParams = new URLSearchParams(window.location.search);
+    const tabFromUrl = urlParams.get("tab");
+
+    if (tabFromUrl === "discussion") {
+      console.log("🔔 [DISCUSSION] Discussion tab active on page load, initializing...");
+      setTimeout(initializeDiscussion, 200);
+    }
+  });
+
   // Make functions globally available
-  (window as any).switchTab = switchTab;
+  (window as any).switchTab = enhancedSwitchTab;
   (window as any).buildProposal = buildProposal;
   (window as any).editProposal = editProposal;
 </script>

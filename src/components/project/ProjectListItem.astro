@@ -1,9 +1,11 @@
 ---
 import BoxIcon from "../common/BoxIcon.astro";
+import { supabase } from "../../lib/supabase";
 
 interface Props {
   project: {
     id: any;
+    author_id?: any;
     title?: any;
     address: any;
     description: any;
@@ -15,6 +17,7 @@ interface Props {
     author_name?: any;
     assigned_to_name?: any;
     assigned_to_id?: any;
+    company_name?: any;
   };
   role?: string;
   user?: any;
@@ -72,6 +75,26 @@ try {
 } catch (error) {
   console.error("Failed to fetch project statuses:", error);
 }
+
+let projectAuthorProfile: any = null;
+if (project.author_id && supabase) {
+  const { data: authorProfileData, error: authorProfileError } = await supabase
+    .from("profiles")
+    .select("*")
+    .eq("id", project.author_id)
+    .single();
+
+  if (authorProfileError) {
+    console.error("Error fetching project author profile:", authorProfileError);
+  } else {
+    projectAuthorProfile = authorProfileData;
+    console.log(
+      "🌐 [PROJECT] Project author profile loaded:",
+      projectAuthorProfile?.company_name
+    );
+  }
+}
+
 ---
 
 <a
@@ -86,12 +109,12 @@ try {
     <div class="flex items-start justify-between">
       <div class="flex-1">
         {
-          project.author_name && (
+          (projectAuthorProfile?.company_name || projectAuthorProfile?.name || "Unknown Author") && (
             <h3
               class="inline-block text-lg font-semibold text-gray-900 dark:text-white"
               data-searchable
             >
-              {project.author_name}
+              {projectAuthorProfile?.company_name || projectAuthorProfile?.name || "Unknown Author"}
             </h3>
             <span class="text-gray-500 dark:text-gray-400">|</span>
           )
@@ -113,7 +136,7 @@ try {
         <div class="mt-4 flex items-center gap-4 text-sm text-gray-500 dark:text-gray-400">
           <span class="flex items-center gap-1">
             <BoxIcon name="area" size="1rem" />
-            {project.sq_ft.toLocaleString()} sq ft
+            {project.sq_ft ? project.sq_ft.toLocaleString() : 0} sq ft
           </span>
           <span class="flex items-center gap-1">
             <BoxIcon name="building" size="1rem" />

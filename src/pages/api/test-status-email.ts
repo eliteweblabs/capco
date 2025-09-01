@@ -112,6 +112,12 @@ export const POST: APIRoute = async ({ request }) => {
       });
     }
 
+    // Add est_time to projectDetails
+    const projectDetailsWithEstTime = {
+      ...projectDetails,
+      est_time: statusConfig.est_time || "2-3 business days",
+    };
+
     // Call the email delivery API
     const emailResponse = await fetch("http://localhost:4321/api/email-delivery", {
       method: "POST",
@@ -122,7 +128,7 @@ export const POST: APIRoute = async ({ request }) => {
         projectId,
         newStatus: statusCode,
         usersToNotify,
-        projectDetails,
+        projectDetails: projectDetailsWithEstTime,
         email_content,
         button_text,
       }),

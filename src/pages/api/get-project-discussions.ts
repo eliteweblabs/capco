@@ -1,0 +1,198 @@
+import type { APIRoute } from "astro";
+import { supabase } from "../../lib/supabase";
+import { supabaseAdmin } from "../../lib/supabase-admin";
+
+// // Server-side function to get user info directly from database
+
+async function getUserInfoServer(userId: string) {
+  // Get user metadata from auth.users table
+  if (!supabaseAdmin) {
+    return null;
+  }
+  const { data: authUser, error: authError } = await supabaseAdmin.auth.admin.getUserById(userId);
+
+  if (authError || !authUser.user) {
+    console.error("Error fetching auth user:", authError);
+    return null;
+  }
+
+  if (!supabase) {
+    return null;
+  }
+
+  // Get user profile from profiles table
+  const { data: profile, error: profileError } = await supabase
+    .from("profiles")
+    .select("*")
+    .eq("id", userId)
+    .single();
+
+  console.log(`🔍 [USER-INFO] Profile data for ${userId}:`, profile);
+  console.log(`🔍 [USER-INFO] Profile error:`, profileError);
+  console.log(`🔍 [USER-INFO] Auth user metadata:`, authUser.user.user_metadata);
+
+  // Combine auth user data with profile data
+  const userInfo = {
+    id: authUser.user.id,
+    email: authUser.user.email,
+    profile: profile || null,
+    // Computed fields for easy access
+    display_name:
+      profile?.company_name ||
+      profile?.name ||
+      authUser.user.user_metadata?.full_name ||
+      authUser.user.email?.split("@")[0] ||
+      "Unknown User",
+    company_name: profile?.company_name || null,
+    name: profile?.name || null,
+    role: profile?.role || "Unknown",
+  };
+
+  console.log(`🔍 [USER-INFO] Final userInfo for ${userId}:`, {
+    company_name: userInfo.company_name,
+    name: userInfo.name,
+    display_name: userInfo.display_name,
+    email: userInfo.email,
+  });
+
+  return userInfo;
+}
+
+export const GET: APIRoute = async ({ url, cookies }) => {
+  try {
+    const projectId = url.searchParams.get("projectId");
+
+    if (!projectId) {
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: "Project ID is required",
+        }),
+        {
+          status: 400,
+          headers: { "Content-Type": "application/json" },
+        }
+      );
+    }
+
+    if (!supabase) {
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: "Database not configured",
+        }),
+        {
+          status: 500,
+          headers: { "Content-Type": "application/json" },
+        }
+      );
+    }
+
+    // Get discussions with author information
+    // Convert projectId to integer since projects table uses integer IDs
+    const projectIdInt = parseInt(projectId, 10);
+
+    if (isNaN(projectIdInt)) {
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: "Invalid project ID format",
+        }),
+        {
+          status: 400,
+          headers: { "Content-Type": "application/json" },
+        }
+      );
+    }
+
+    const { data: discussions, error } = await supabase
+      .from("discussion")
+      .select(
+        `
+        id,
+        created_at,
+        message,
+        author_id,
+        project_id
+      `
+      )
+      .eq("project_id", projectIdInt)
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      console.error("Error fetching discussions:", error);
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: error.message,
+        }),
+        {
+          status: 500,
+          headers: { "Content-Type": "application/json" },
+        }
+      );
+    }
+
+    // Get author profiles separately to avoid foreign key relationship issues
+    const authorIds = [...new Set(discussions?.map((d) => d.author_id) || [])];
+    let authorProfiles: any = {};
+
+    if (authorIds.length > 0) {
+      // Use the user-utils function for better data consistency
+      try {
+        const userPromises = authorIds.map(async (authorId) => {
+          console.log(`📞 [DISCUSSIONS] Fetching user info for: ${authorId}`);
+          try {
+            const userInfo = await getUserInfoServer(authorId);
+            console.log(`✅ [DISCUSSIONS] User info response for ${authorId}:`, userInfo);
+            return { id: authorId, userInfo };
+          } catch (error) {
+            console.error(`❌ [DISCUSSIONS] Failed to fetch user info for ${authorId}:`, error);
+            return null;
+          }
+        });
+
+        const userResults = await Promise.all(userPromises);
+        userResults.forEach((result) => {
+          if (result) {
+            authorProfiles[result.id] = result.userInfo;
+          }
+        });
+      } catch (error) {
+        console.error("Error fetching user profiles:", error);
+        // Fallback to basic profile data if needed
+      }
+    }
+
+    // Combine discussions with author profiles
+    const discussionsWithProfiles =
+      discussions?.map((discussion) => ({
+        ...discussion,
+        profiles: authorProfiles[discussion.author_id] || null,
+      })) || [];
+
+    return new Response(
+      JSON.stringify({
+        success: true,
+        discussions: discussionsWithProfiles,
+        count: discussionsWithProfiles.length,
+      }),
+      {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      }
+    );
+  } catch (error) {
+    console.error("Get project discussions error:", error);
+    return new Response(
+      JSON.stringify({
+        success: false,
+        error: "Failed to fetch discussions",
+      }),
+      {
+        status: 500,
+        headers: { "Content-Type": "application/json" },
+      }
+    );
+  }
+};

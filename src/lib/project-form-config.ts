@@ -48,6 +48,7 @@ export interface FormActionConfig {
   icon?: string; // BoxIcons class name
   cssClass: string;
   action?: string; // Function name or action identifier
+  tab?: string; // Tab to navigate to when button is clicked
   allow?: string[]; // Control button visibility based on user roles - array of allowed roles
   hideAtStatus?: number[]; // Control button visibility based on project status - array of status values where button should be hidden
 }
@@ -291,15 +292,6 @@ export const PROJECT_FORM_FIELDS: FormFieldConfig[] = [
     ], // Read-only after proposal is viewed but before signed off
   },
   {
-    id: "assigned-to-select",
-    name: "assigned_to_id",
-    type: "component",
-    label: "Assign To",
-    component: "StaffSelect",
-    allow: ["Admin", "Staff", "Client"], // Temporarily allow all roles for testing
-    // Assignment available throughout most of the process (all statuses)
-  },
-  {
     id: "new-construction",
     name: "new_construction",
     type: "checkbox",
@@ -322,7 +314,7 @@ export const PROJECT_FORM_FIELDS: FormFieldConfig[] = [
       required: false,
     },
     allow: ["Admin", "Staff", "Client"], // Only admin and staff can see units slider
-    hideAtStatus: [0, 60, 70, 80, 90], // Hide on new projects and after proposal is signed off
+    // hideAtStatus: [0, 60, 70, 80, 90], // Hide on new projects and after proposal is signed off
     readOnlyAtStatus: [
       20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170, 180, 190, 200,
     ], // Read-only after proposal is viewed but before signed off
@@ -358,11 +350,60 @@ export const FORM_ACTIONS: FormActionConfig[] = [
     type: "button",
     label: "Build Proposal",
     icon: "bx-file-pdf",
+    tab: "proposal",
     cssClass:
       "px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 transition-colors",
     action: "buildProposal",
     allow: ["Admin", "Staff"], // Only admin and staff can build proposals
-    hideAtStatus: [0, 20, 30, 40, 50, 60, 70, 80, 90], // Only show when specs are received (status 10)
+    hideAtStatus: [
+      0, 10, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170, 180, 190, 200,
+    ], // Only show when specs are received (status 10)
+  },
+  {
+    id: "view-documents",
+    type: "button",
+    label: "View Documents",
+    icon: "bx-file",
+    tab: "documents",
+    cssClass:
+      "px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors",
+    allow: ["Admin", "Staff", "Client"], // All roles can view documents
+    hideAtStatus: [0], // Hide on new projects
+  },
+  {
+    id: "view-deliverables",
+    type: "button",
+    label: "View Deliverables",
+    icon: "bx-package",
+    tab: "deliverables",
+    cssClass:
+      "px-4 py-2 bg-purple-600 text-white text-sm font-medium rounded-lg hover:bg-purple-700 transition-colors",
+    allow: ["Admin", "Staff", "Client"], // All roles can view deliverables
+    hideAtStatus: [
+      0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170, 180, 190,
+    ], // Only show when project is complete
+  },
+  {
+    id: "view-invoice",
+    type: "button",
+    label: "View Invoice",
+    icon: "bx-receipt",
+    tab: "final-invoice",
+    cssClass:
+      "px-4 py-2 bg-orange-600 text-white text-sm font-medium rounded-lg hover:bg-orange-700 transition-colors",
+    allow: ["Admin", "Staff", "Client"], // All roles can view invoices
+    hideAtStatus: [0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140], // Only show when final invoice is generated
+  },
+  {
+    id: "view-activity",
+    type: "button",
+    label: "View Activity Log",
+    icon: "bx-history",
+    tab: "activity-log",
+    cssClass:
+      "px-4 py-2 bg-gray-600 text-white text-sm font-medium rounded-lg hover:bg-gray-700 transition-colors",
+    allow: ["Admin", "Staff", "Client"], // All roles can view activity log
+    hideAtStatus: [0], // Hide on new projects
   },
 ];
 

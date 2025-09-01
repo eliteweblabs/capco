@@ -17,6 +17,7 @@ export interface NotificationOptions {
   message: string;
   duration?: number;
   id?: string;
+  actions?: Array<{ label: string; action: () => void }>;
 }
 
 export interface ToastMessageData {
@@ -42,17 +43,26 @@ export function showNotification(options: NotificationOptions): void {
     return;
   }
 
-  // Try to use the toast alert manager directly
-  if ((window as any).toastAlertManager) {
-    console.log("🔔 [CENTRALIZED] Using toast alert manager");
-    (window as any).toastAlertManager.show(options);
+  // Use ToastAlerts for notifications with action buttons
+  if (options.actions && options.actions.length > 0) {
+    if ((window as any).toastAlertManager) {
+      console.log("🔔 [CENTRALIZED] Using toast alert manager for actions");
+      (window as any).toastAlertManager.show(options);
+      return;
+    }
+  }
+
+  // Use SimpleToast for simple notifications
+  if ((window as any).simpleToastManager) {
+    console.log("🔔 [CENTRALIZED] Using simple toast manager");
+    (window as any).simpleToastManager.show(options);
     return;
   }
 
-  // Fallback to global services if available
-  if ((window as any).globalServices?.showNotification) {
-    console.log("🔔 [CENTRALIZED] Using global services fallback");
-    (window as any).globalServices.showNotification(options);
+  // Fallback to ToastAlerts if SimpleToast unavailable
+  if ((window as any).toastAlertManager) {
+    console.log("🔔 [CENTRALIZED] Using toast alert manager fallback");
+    (window as any).toastAlertManager.show(options);
     return;
   }
 

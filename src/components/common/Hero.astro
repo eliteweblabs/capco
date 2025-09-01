@@ -1,4 +1,5 @@
 ---
+import StaffSelect from "../form/StaffSelect.astro";
 import ProjectStatusDropdown from "../project/ProjectStatusDropdown.astro";
 import SectionContainer from "./SectionContainer.astro";
 
@@ -12,6 +13,7 @@ interface Props {
   userRole?: string;
   projectTitle?: string;
   clientEmail?: string;
+  project?: any;
 }
 
 const {
@@ -24,6 +26,7 @@ const {
   userRole,
   projectTitle,
   clientEmail,
+  project,
 } = Astro.props;
 ---
 
@@ -37,22 +40,40 @@ const {
       >
         {title}
       </h1>
-      <p id="page-subtitle" class="text-base text-hub-subtitle dark:text-hub-subtitle-dark">
-        {description}
-      </p>
+      <h2
+        id="page-subtitle"
+        class="font-semibold text-hub-subtitle dark:text-hub-subtitle-dark"
+        set:html={description}
+      />
     </div>
     {
       statusLabel && projectId ? (
-        <ProjectStatusDropdown
-          projectId={projectId}
-          currentStatus={currentStatus ?? 0}
-          statusLabel={statusLabel}
-          statusColor={statusColor}
-          userRole={userRole}
-          projectTitle={projectTitle}
-          clientEmail={clientEmail}
-          data-refresh
-        />
+        <div class="ml-4 flex flex-shrink-0 items-center gap-2">
+          <ProjectStatusDropdown
+            projectId={projectId}
+            currentStatus={currentStatus ?? 0}
+            statusLabel={statusLabel}
+            statusColor={statusColor}
+            userRole={userRole}
+            projectTitle={projectTitle}
+            clientEmail={clientEmail}
+            data-refresh
+          />
+          {(userRole === "Admin" || userRole === "Staff") && (
+            <div class="relative inline-block text-left">
+              <div class="staff-select-hero">
+                <StaffSelect
+                  id="hero-staff-select"
+                  projectId={projectId?.toString() || ""}
+                  value={project?.assigned_to_id || ""}
+                  autoSave={true}
+                  variant="hero"
+                  placeholder="Assign staff..."
+                />
+              </div>
+            </div>
+          )}
+        </div>
       ) : statusLabel ? (
         <div class="ml-4 flex-shrink-0">
           <span
