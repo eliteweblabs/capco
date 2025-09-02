@@ -343,7 +343,7 @@ export const FORM_ACTIONS: FormActionConfig[] = [
       "px-4 py-2 bg-red-600 text-white text-sm font-medium rounded-lg hover:bg-red-700 transition-colors",
     action: "deleteProject",
     allow: ["Admin", "Staff"], // Only admin and staff can delete
-    hideAtStatus: [0], // Only show when specs are received (status 10)
+    // hideAtStatus: [0], // Only show when specs are received (status 10)
   },
   {
     id: "build-proposal",

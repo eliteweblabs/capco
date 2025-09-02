@@ -62,30 +62,30 @@ const canManageProposals = role === "Admin" || role === "Staff";
           </div>
 
           <div id="proposal-subject-edit" class="hidden">
-            <div class="flex items-center space-x-2">
-              <input
-                type="text"
-                id="proposal-subject-input"
-                class="flex-1 rounded-lg border border-gray-300 px-3 py-2 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
-                placeholder="Enter proposal subject..."
-                maxlength="200"
-              />
-              <button
-                type="button"
-                id="save-subject-btn"
-                class="rounded-lg bg-blue-600 px-3 py-2 text-sm text-white transition-colors hover:bg-blue-700"
-                title="Save subject"
-              >
-                <i class="bx bx-check"></i>
-              </button>
-              <button
-                type="button"
-                id="cancel-subject-btn"
-                class="rounded-lg bg-gray-500 px-3 py-2 text-sm text-white transition-colors hover:bg-gray-600"
-                title="Cancel"
-              >
-                <i class="bx bx-x"></i>
-              </button>
+            <div class="space-y-2">
+              <div id="subject-dropdown-container">
+                <!-- Subject dropdown will be inserted here -->
+              </div>
+              <div class="flex items-center space-x-2">
+                <button
+                  type="button"
+                  id="save-subject-btn"
+                  class="rounded-lg bg-blue-600 px-3 py-2 text-sm text-white transition-colors hover:bg-blue-700"
+                  title="Save subject"
+                >
+                  <i class="bx bx-check mr-1"></i>
+                  Save
+                </button>
+                <button
+                  type="button"
+                  id="cancel-subject-btn"
+                  class="rounded-lg bg-gray-500 px-3 py-2 text-sm text-white transition-colors hover:bg-gray-600"
+                  title="Cancel"
+                >
+                  <i class="bx bx-x mr-1"></i>
+                  Cancel
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -287,7 +287,7 @@ const canManageProposals = role === "Admin" || role === "Staff";
     const displayDiv = document.getElementById("proposal-subject-display");
     const editDiv = document.getElementById("proposal-subject-edit");
     const subjectText = document.getElementById("proposal-subject-text");
-    const subjectInput = document.getElementById("proposal-subject-input");
+    const dropdownContainer = document.getElementById("subject-dropdown-container");
 
     if (
       !editBtn ||
@@ -296,25 +296,382 @@ const canManageProposals = role === "Admin" || role === "Staff";
       !displayDiv ||
       !editDiv ||
       !subjectText ||
-      !subjectInput
+      !dropdownContainer
     ) {
       return; // Elements not found, proposal not generated yet
     }
 
+    let subjectDropdown = null;
+
+    // Create subject dropdown dynamically
+    function createSubjectDropdown() {
+      const currentSubject = subjectText.textContent.trim();
+
+      dropdownContainer.innerHTML = `
+            <div class="grid grid-cols-1 gap-2">
+              <label class="text-sm font-medium text-zinc-900 dark:text-zinc-300">
+                Proposal Subject
+              </label>
+              <div class="relative w-full">
+                <div class="relative">
+                  <input
+                    type="text"
+                    id="proposal-subject-dropdown-search"
+                    placeholder="Search and select or create subject..."
+                    class="w-full px-3 py-2 pl-8 pr-10 text-sm text-left border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:placeholder-gray-400"
+                    autocomplete="off"
+                    value="${currentSubject}"
+                  />
+                  <svg class="absolute left-2.5 top-2.5 h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                  </svg>
+                  <button
+                    type="button"
+                    id="proposal-subject-dropdown-clear"
+                    class="absolute right-2.5 top-2.5 h-4 w-4 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 ${currentSubject ? "" : "hidden"}"
+                  >
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                  </button>
+                </div>
+                <div
+                  class="absolute left-0 right-0 z-50 mt-1 bg-white rounded-md shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none dark:bg-gray-800 dark:ring-gray-700 hidden"
+                  id="proposal-subject-dropdown-menu"
+                  role="listbox"
+                >
+                  <div class="px-3 py-2 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50">
+                    <div class="text-xs text-gray-500 dark:text-gray-400">
+                      <span id="proposal-subject-dropdown-results-count">0</span> subjects available
+                    </div>
+                  </div>
+                  <div class="max-h-64 overflow-y-auto">
+                    <div id="proposal-subject-dropdown-options">
+                      <!-- Options will be loaded dynamically -->
+                    </div>
+                    <div id="proposal-subject-dropdown-create-new" class="hidden border-t border-gray-200 dark:border-gray-700">
+                      <button
+                        type="button"
+                        class="group flex w-full items-center px-3 py-3 text-sm hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-colors text-blue-600 dark:text-blue-400"
+                        id="proposal-subject-dropdown-create-btn"
+                      >
+                        <svg class="w-4 h-4 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                        </svg>
+                        <div class="flex-1 text-left">
+                          <div class="font-medium">Create new subject:</div>
+                          <div class="text-xs opacity-75" id="proposal-subject-dropdown-create-preview"></div>
+                        </div>
+                      </button>
+                    </div>
+                    <div id="proposal-subject-dropdown-no-results" class="hidden px-4 py-8 text-center text-sm text-gray-500 dark:text-gray-400">
+                      <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                      </svg>
+                      <div class="mt-2">No subjects found</div>
+                      <div class="text-xs">Try a different search or create a new subject</div>
+                    </div>
+                    <div id="proposal-subject-dropdown-loading" class="hidden px-4 py-8 text-center text-sm text-gray-500 dark:text-gray-400">
+                      <div class="animate-spin mx-auto h-6 w-6 border-2 border-blue-500 border-t-transparent rounded-full"></div>
+                      <div class="mt-2">Loading subjects...</div>
+                    </div>
+                  </div>
+                </div>
+                <input type="hidden" id="proposal-subject-dropdown-hidden" value="${currentSubject}" />
+              </div>
+            </div>
+          `;
+
+      // Initialize the dropdown functionality
+      initializeDropdownFunctionality();
+    }
+
+    // Initialize dropdown functionality
+    function initializeDropdownFunctionality() {
+      const searchInput = document.getElementById("proposal-subject-dropdown-search");
+      const menuElement = document.getElementById("proposal-subject-dropdown-menu");
+      const hiddenInput = document.getElementById("proposal-subject-dropdown-hidden");
+      const optionsContainer = document.getElementById("proposal-subject-dropdown-options");
+      const resultsCountElement = document.getElementById(
+        "proposal-subject-dropdown-results-count"
+      );
+      const noResultsElement = document.getElementById("proposal-subject-dropdown-no-results");
+      const loadingElement = document.getElementById("proposal-subject-dropdown-loading");
+      const createNewElement = document.getElementById("proposal-subject-dropdown-create-new");
+      const createBtn = document.getElementById("proposal-subject-dropdown-create-btn");
+      const createPreview = document.getElementById("proposal-subject-dropdown-create-preview");
+      const clearButton = document.getElementById("proposal-subject-dropdown-clear");
+
+      if (!searchInput || !menuElement || !hiddenInput || !optionsContainer) return;
+
+      let subjects = [];
+      let isDropdownVisible = false;
+      let searchTimeout = null;
+
+      // Load subjects from API
+      async function loadSubjects(searchTerm = "") {
+        if (loadingElement) loadingElement.classList.remove("hidden");
+        if (noResultsElement) noResultsElement.classList.add("hidden");
+        if (createNewElement) createNewElement.classList.add("hidden");
+
+        try {
+          const params = new URLSearchParams();
+          if (searchTerm) params.append("search", searchTerm);
+          params.append("limit", "20");
+
+          const response = await fetch(`/api/subject?${params}`, {
+            credentials: "include",
+          });
+
+          if (response.ok) {
+            const data = await response.json();
+            subjects = data.subjects || [];
+            renderSubjects(searchTerm);
+          } else {
+            console.error("Failed to load subjects");
+            subjects = [];
+            renderSubjects(searchTerm);
+          }
+        } catch (error) {
+          console.error("Error loading subjects:", error);
+          subjects = [];
+          renderSubjects(searchTerm);
+        } finally {
+          if (loadingElement) loadingElement.classList.add("hidden");
+        }
+      }
+
+      // Render subjects in dropdown
+      function renderSubjects(searchTerm = "") {
+        if (!optionsContainer) return;
+
+        const term = searchTerm.toLowerCase().trim();
+        let visibleCount = 0;
+
+        // Clear existing options
+        optionsContainer.innerHTML = "";
+
+        // Filter and render subjects
+        subjects.forEach((subject) => {
+          const matches =
+            !term ||
+            subject.subject.toLowerCase().includes(term) ||
+            (subject.description && subject.description.toLowerCase().includes(term)) ||
+            (subject.category && subject.category.toLowerCase().includes(term));
+
+          if (matches) {
+            const option = createSubjectOption(subject);
+            optionsContainer.appendChild(option);
+            visibleCount++;
+          }
+        });
+
+        // Update results count
+        if (resultsCountElement) {
+          resultsCountElement.textContent = visibleCount;
+        }
+
+        // Show/hide create new option
+        if (createNewElement && createPreview) {
+          if (term && !subjects.some((s) => s.subject.toLowerCase() === term)) {
+            createPreview.textContent = `"${searchTerm}"`;
+            createNewElement.classList.remove("hidden");
+          } else {
+            createNewElement.classList.add("hidden");
+          }
+        }
+
+        // Show/hide no results message
+        if (noResultsElement) {
+          if (visibleCount === 0 && term && createNewElement?.classList.contains("hidden")) {
+            noResultsElement.classList.remove("hidden");
+          } else {
+            noResultsElement.classList.add("hidden");
+          }
+        }
+      }
+
+      // Create subject option element
+      function createSubjectOption(subject) {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className =
+          "group flex w-full items-left px-3 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-gray-700 dark:text-gray-300 subject-option";
+        button.setAttribute("data-subject-id", subject.id);
+        button.setAttribute("data-subject-text", subject.subject);
+
+        button.innerHTML = `
+              <span class="flex items-center flex-1 min-w-0">
+                <svg class="w-4 h-4 mr-3 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path>
+                </svg>
+                <div class="flex-1 min-w-0">
+                  <div class="truncate font-medium">${subject.subject}</div>
+                  ${subject.description ? `<div class="text-xs text-gray-500 dark:text-gray-400 truncate">${subject.description}</div>` : ""}
+                  <div class="flex items-center mt-1 text-xs text-gray-400">
+                    ${subject.category ? `<span class="mr-2">${subject.category}</span>` : ""}
+                    <span class="flex items-center">
+                      <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path>
+                      </svg>
+                      ${subject.usage_count} uses
+                    </span>
+                  </div>
+                </div>
+              </span>
+            `;
+
+        return button;
+      }
+
+      // Show/hide clear button
+      function toggleClearButton() {
+        if (clearButton) {
+          if (searchInput.value.trim()) {
+            clearButton.classList.remove("hidden");
+          } else {
+            clearButton.classList.add("hidden");
+          }
+        }
+      }
+
+      // Show/hide dropdown
+      function showDropdown() {
+        if (!isDropdownVisible) {
+          menuElement.classList.remove("hidden");
+          isDropdownVisible = true;
+        }
+      }
+
+      function hideDropdown() {
+        if (isDropdownVisible) {
+          menuElement.classList.add("hidden");
+          isDropdownVisible = false;
+        }
+      }
+
+      // Event listeners
+      searchInput.addEventListener("input", (e) => {
+        const value = e.target.value;
+        hiddenInput.value = value;
+        toggleClearButton();
+
+        // Debounce search
+        if (searchTimeout) clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(() => {
+          loadSubjects(value);
+          if (value.trim() && !isDropdownVisible) {
+            showDropdown();
+          }
+        }, 300);
+      });
+
+      searchInput.addEventListener("focus", () => {
+        showDropdown();
+        if (subjects.length === 0) {
+          loadSubjects(searchInput.value);
+        }
+      });
+
+      searchInput.addEventListener("blur", () => {
+        setTimeout(() => {
+          hideDropdown();
+        }, 150);
+      });
+
+      if (clearButton) {
+        clearButton.addEventListener("click", (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          searchInput.value = "";
+          hiddenInput.value = "";
+          toggleClearButton();
+          searchInput.focus();
+          loadSubjects("");
+        });
+      }
+
+      // Handle option selection
+      optionsContainer.addEventListener("click", (e) => {
+        const option = e.target.closest("button[data-subject-text]");
+        if (!option) return;
+
+        const subjectText = option.getAttribute("data-subject-text");
+        searchInput.value = subjectText;
+        hiddenInput.value = subjectText;
+        toggleClearButton();
+        hideDropdown();
+      });
+
+      // Handle create new subject
+      if (createBtn) {
+        createBtn.addEventListener("click", async () => {
+          const newSubject = searchInput.value.trim();
+          if (newSubject) {
+            try {
+              const response = await fetch("/api/subject", {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                },
+                credentials: "include",
+                body: JSON.stringify({
+                  subject: newSubject,
+                  category: "General",
+                }),
+              });
+
+              const data = await response.json();
+
+              if (data.success) {
+                searchInput.value = newSubject;
+                hiddenInput.value = newSubject;
+                hideDropdown();
+                showToast(data.isNew ? "New subject created!" : "Subject selected!", "success");
+                loadSubjects("");
+              } else {
+                console.error("Failed to create subject:", data.error);
+                showToast("Failed to create subject", "error");
+              }
+            } catch (error) {
+              console.error("Error creating subject:", error);
+              showToast("Failed to create subject", "error");
+            }
+          }
+        });
+      }
+
+      // Prevent dropdown from closing when clicking inside
+      menuElement.addEventListener("mousedown", (e) => {
+        e.preventDefault();
+      });
+
+      // Close dropdown when clicking outside
+      document.addEventListener("click", (e) => {
+        if (!searchInput.contains(e.target) && !menuElement.contains(e.target)) {
+          hideDropdown();
+        }
+      });
+
+      // Initialize
+      toggleClearButton();
+      loadSubjects("");
+    }
+
     // Edit button click
     editBtn.addEventListener("click", () => {
-      const currentText = subjectText.textContent.trim();
-      subjectInput.value = currentText;
       displayDiv.classList.add("hidden");
       editDiv.classList.remove("hidden");
-      subjectInput.focus();
+      createSubjectDropdown();
     });
 
     // Save button click
     saveBtn.addEventListener("click", async () => {
-      const newSubject = subjectInput.value.trim();
+      const hiddenInput = document.getElementById("proposal-subject-dropdown-hidden");
+      const newSubject = hiddenInput ? hiddenInput.value.trim() : "";
+
       if (!newSubject) {
-        alert("Please enter a subject");
+        showToast("Please select or enter a subject", "error");
         return;
       }
 
@@ -325,6 +682,7 @@ const canManageProposals = role === "Admin" || role === "Staff";
           headers: {
             "Content-Type": "application/json",
           },
+          credentials: "include",
           body: JSON.stringify({
             projectId: projectId,
             subject: newSubject,
@@ -344,7 +702,7 @@ const canManageProposals = role === "Admin" || role === "Staff";
         } else {
           // Check if it's a migration required error
           if (data.migration_required) {
-            showToast("Database column 'subject' not found in projects table", "error");
+            showToast("Database column 'subject' not found in invoices table", "error");
             console.error("Column missing:", data.details);
           } else {
             throw new Error(data.error || "Failed to update subject");
@@ -360,15 +718,6 @@ const canManageProposals = role === "Admin" || role === "Staff";
     cancelBtn.addEventListener("click", () => {
       editDiv.classList.add("hidden");
       displayDiv.classList.remove("hidden");
-    });
-
-    // Enter key to save, Escape key to cancel
-    subjectInput.addEventListener("keydown", (e) => {
-      if (e.key === "Enter") {
-        saveBtn.click();
-      } else if (e.key === "Escape") {
-        cancelBtn.click();
-      }
     });
   }
 
@@ -388,24 +737,54 @@ const canManageProposals = role === "Admin" || role === "Staff";
     }
   }
 
-  // Simple toast notification function
+  // Mobile-friendly toast notification function
   function showToast(message, type = "info") {
     const toast = document.createElement("div");
-    toast.className = `fixed top-4 right-4 px-4 py-2 rounded-lg text-white z-50 transition-all duration-300 ${
-      type === "success" ? "bg-green-600" : type === "error" ? "bg-red-600" : "bg-blue-600"
-    }`;
-    toast.textContent = message;
+
+    // Mobile-first responsive positioning
+    toast.className = `fixed z-50 transition-all duration-300 rounded-lg text-white shadow-lg
+          top-4 left-4 right-4 mx-auto max-w-sm
+          sm:top-4 sm:right-4 sm:left-auto sm:mx-0 sm:max-w-none sm:w-auto
+          px-4 py-3 text-sm font-medium
+          ${type === "success" ? "bg-green-600" : type === "error" ? "bg-red-600" : "bg-blue-600"}`;
+
+    // Add icon based on type
+    const icons = {
+      success: "✓",
+      error: "✕",
+      info: "ℹ",
+    };
+
+    toast.innerHTML = `
+          <div class="flex items-center space-x-2">
+            <span class="flex-shrink-0 text-lg font-bold">${icons[type] || icons.info}</span>
+            <span class="flex-1">${message}</span>
+          </div>
+        `;
 
     document.body.appendChild(toast);
 
+    // Auto-dismiss after 4 seconds (longer for mobile users to read)
     setTimeout(() => {
       toast.style.opacity = "0";
+      toast.style.transform = "translateY(-10px)";
       setTimeout(() => {
         if (document.body.contains(toast)) {
           document.body.removeChild(toast);
         }
       }, 300);
-    }, 3000);
+    }, 4000);
+
+    // Allow manual dismiss by tapping
+    toast.addEventListener("click", () => {
+      toast.style.opacity = "0";
+      toast.style.transform = "translateY(-10px)";
+      setTimeout(() => {
+        if (document.body.contains(toast)) {
+          document.body.removeChild(toast);
+        }
+      }, 300);
+    });
   }
 
   // Make functions globally available

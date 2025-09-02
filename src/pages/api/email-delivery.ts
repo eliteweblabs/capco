@@ -34,7 +34,16 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     const body = await request.json();
     console.log("📧 [EMAIL-DELIVERY] Request body:", JSON.stringify(body, null, 2));
 
-    const { projectId, newStatus, usersToNotify, emailType, custom_subject, email_content } = body;
+    const {
+      projectId,
+      newStatus,
+      usersToNotify,
+      emailType,
+      custom_subject,
+      email_content,
+      comment_timestamp,
+      client_name,
+    } = body;
 
     console.log("📧 [EMAIL-DELIVERY] Parameter validation:");
     console.log("  - projectId:", projectId);
@@ -46,11 +55,12 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     const isRegistrationEmail = emailType === "registration";
     const isStaffAssignmentEmail = emailType === "staff_assignment";
     const isStatusUpdateEmail = emailType === "update_status";
+    const isClientCommentEmail = emailType === "client_comment";
 
     console.log("📧 [EMAIL-DELIVERY] Email type:", emailType);
 
     // Simple validation - just need projectId and usersToNotify
-    if (!projectId || !usersToNotify) {
+    if (!usersToNotify) {
       console.error("📧 [EMAIL-DELIVERY] Missing required parameters");
       return new Response(
         JSON.stringify({
@@ -63,6 +73,106 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         }
       );
     }
+
+    // Resolve users to notify - convert role/id references to actual user objects with emails
+    console.log("📧 [EMAIL-DELIVERY] Resolving users to notify:", usersToNotify);
+    const resolvedUsers = [];
+
+    for (const userRef of usersToNotify) {
+      try {
+        if (userRef.email) {
+          // Already has email, use as-is
+          resolvedUsers.push(userRef);
+          console.log("📧 [EMAIL-DELIVERY] Using user with email:", userRef.email);
+        } else if (userRef.role) {
+          // Role-based notification - get all users with this role
+          console.log("📧 [EMAIL-DELIVERY] Resolving role:", userRef.role);
+
+          const { data: roleUsers, error: roleError } = await supabase
+            .from("profiles")
+            .select("id, first_name, last_name, company_name, role")
+            .eq("role", userRef.role);
+
+          if (roleError) {
+            console.error(`📧 [EMAIL-DELIVERY] Error fetching ${userRef.role} users:`, roleError);
+            continue;
+          }
+
+          if (roleUsers) {
+            for (const roleUser of roleUsers) {
+              // Get email from auth.users table
+              const { data: authUser, error: authError } =
+                await supabaseAdmin?.auth.admin.getUserById(roleUser.id);
+
+              if (authError || !authUser?.user?.email) {
+                console.log(
+                  `📧 [EMAIL-DELIVERY] No email found for ${userRef.role} user ${roleUser.id}`
+                );
+                continue;
+              }
+
+              resolvedUsers.push({
+                id: roleUser.id,
+                email: authUser.user.email,
+                first_name: roleUser.first_name,
+                last_name: roleUser.last_name,
+                company_name: roleUser.company_name,
+                role: roleUser.role,
+              });
+
+              console.log(
+                `📧 [EMAIL-DELIVERY] Resolved ${userRef.role} user:`,
+                authUser.user.email
+              );
+            }
+          }
+        } else if (userRef.id) {
+          // ID-based notification - get specific user
+          console.log("📧 [EMAIL-DELIVERY] Resolving user ID:", userRef.id);
+
+          const { data: specificUser, error: specificError } = await supabase
+            .from("profiles")
+            .select("id, first_name, last_name, company_name, role")
+            .eq("id", userRef.id)
+            .single();
+
+          if (specificError || !specificUser) {
+            console.error(`📧 [EMAIL-DELIVERY] Error fetching user ${userRef.id}:`, specificError);
+            continue;
+          }
+
+          // Get email from auth.users table
+          const { data: authUser, error: authError } = await supabaseAdmin?.auth.admin.getUserById(
+            specificUser.id
+          );
+
+          if (authError || !authUser?.user?.email) {
+            console.log(`📧 [EMAIL-DELIVERY] No email found for user ${userRef.id}`);
+            continue;
+          }
+
+          resolvedUsers.push({
+            id: specificUser.id,
+            email: authUser.user.email,
+            first_name: specificUser.first_name,
+            last_name: specificUser.last_name,
+            company_name: specificUser.company_name,
+            role: specificUser.role,
+          });
+
+          console.log(`📧 [EMAIL-DELIVERY] Resolved user:`, authUser.user.email);
+        }
+      } catch (userError) {
+        console.error("📧 [EMAIL-DELIVERY] Error resolving user:", userRef, userError);
+      }
+    }
+
+    console.log(
+      `📧 [EMAIL-DELIVERY] Resolved ${resolvedUsers.length} users from ${usersToNotify.length} references`
+    );
+
+    // Use resolved users for email delivery
+    const finalUsersToNotify = resolvedUsers;
 
     // Get status configuration from cached API
     let statusConfig = null;
@@ -121,10 +231,13 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
     // Get project details from database (skip for registration emails)
     let projectDetails = null;
-    if (!isRegistrationEmail) {
+    let projectAuthor = null;
+
+    if (!isRegistrationEmail && !isClientCommentEmail) {
+      // First, get basic project details
       const { data: fetchedProjectDetails, error: projectError } = await supabase
         .from("projects")
-        .select("title, address")
+        .select("title, address, author_id")
         .eq("id", projectId)
         .single();
 
@@ -141,7 +254,32 @@ export const POST: APIRoute = async ({ request, cookies }) => {
           }
         );
       }
+
       projectDetails = fetchedProjectDetails;
+
+      // Separately fetch the project author's profile information
+      if (fetchedProjectDetails.author_id) {
+        const { data: authorProfile, error: authorError } = await supabase
+          .from("profiles")
+          .select("first_name, last_name, company_name, id")
+          .eq("id", fetchedProjectDetails.author_id)
+          .single();
+
+        if (authorError) {
+          console.error("📧 [EMAIL-DELIVERY] Failed to get author profile:", authorError);
+        } else {
+          projectAuthor = authorProfile;
+          console.log("📧 [EMAIL-DELIVERY] Project author found:", {
+            firstName: projectAuthor.first_name,
+            lastName: projectAuthor.last_name,
+            companyName: projectAuthor.company_name,
+          });
+        }
+      }
+
+      if (!projectAuthor) {
+        console.warn("📧 [EMAIL-DELIVERY] No author profile found for project:", projectId);
+      }
     } else {
       // Use project details from request body for registration emails
       projectDetails = body.projectDetails || { title: projectId, address: "Registration" };
@@ -195,13 +333,17 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     const sentEmails = [];
     const failedEmails = [];
 
-    console.log("📧 [EMAIL-DELIVERY] Starting email delivery to", usersToNotify.length, "users");
+    console.log(
+      "📧 [EMAIL-DELIVERY] Starting email delivery to",
+      finalUsersToNotify.length,
+      "users"
+    );
 
     // Send emails to each user
-    for (let i = 0; i < usersToNotify.length; i++) {
-      const user = usersToNotify[i];
+    for (let i = 0; i < finalUsersToNotify.length; i++) {
+      const user = finalUsersToNotify[i];
       console.log(
-        `📧 [EMAIL-DELIVERY] Processing user: ${user.email} (${i + 1}/${usersToNotify.length})`
+        `📧 [EMAIL-DELIVERY] Processing user: ${user.email} (${i + 1}/${finalUsersToNotify.length})`
       );
 
       // Add delay between emails to avoid rate limiting (except for the first email)
@@ -212,7 +354,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
       try {
         // Determine if this user should get a magic link button
-        const isClient = usersToNotify.some((u: any) => u.email === user.email);
+        const isClient = finalUsersToNotify.some((u: any) => u.email === user.email);
         const shouldShowButton = isClient; // Only show button for clients
 
         console.log(`📧 [EMAIL-DELIVERY] User analysis for ${user.email}:`);
@@ -227,6 +369,26 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         const fullName = `${user.first_name || ""} ${user.last_name || ""}`.trim();
         const displayName = fullName || user.company_name || "Client";
 
+        // Get the project author's name for CLIENT_NAME placeholder (should always be the project owner)
+        let clientName = "Client";
+        if (projectAuthor) {
+          const authorFullName =
+            `${projectAuthor.first_name || ""} ${projectAuthor.last_name || ""}`.trim();
+          clientName = authorFullName || projectAuthor.company_name || "Client";
+        }
+
+        console.log("📧 [EMAIL-DELIVERY] Name resolution:", {
+          recipientDisplayName: displayName,
+          projectClientName: clientName,
+          projectAuthor: projectAuthor
+            ? {
+                firstName: projectAuthor.first_name,
+                lastName: projectAuthor.last_name,
+                companyName: projectAuthor.company_name,
+              }
+            : null,
+        });
+
         // Use the email content based on email type
         let emailContent;
         if (isRegistrationEmail) {
@@ -237,6 +399,35 @@ export const POST: APIRoute = async ({ request, cookies }) => {
           emailContent =
             email_content ||
             "You have been assigned to a new project. Please review the project details and take appropriate action.";
+        } else if (isClientCommentEmail) {
+          // For client comment emails, we need to fetch basic project info for placeholders
+          let commentProjectTitle = "Project";
+          if (projectId) {
+            const { data: basicProject } = await supabase
+              .from("projects")
+              .select("title, address")
+              .eq("id", projectId)
+              .single();
+            commentProjectTitle = basicProject?.title || basicProject?.address || "Project";
+          }
+
+          // Format the comment with timestamp
+          const commentTime = comment_timestamp
+            ? new Date(comment_timestamp).toLocaleString()
+            : "Unknown time";
+          emailContent = `
+            <p><strong>{{CLIENT_NAME}}</strong> posted a new comment on <strong>{{PROJECT_TITLE}}</strong>:</p>
+            <div style="background-color: #f8f9fa; border-left: 4px solid #007bff; padding: 16px; margin: 16px 0; border-radius: 4px;">
+              <p style="margin: 0; font-style: italic;">"${email_content}"</p>
+            </div>
+            <p style="color: #6c757d; font-size: 14px;"><strong>Posted:</strong> ${commentTime}</p>
+            <p>Please review and respond to this comment as needed.</p>
+          `;
+
+          // Replace placeholders for client comment emails
+          emailContent = emailContent
+            .replace(/{{CLIENT_NAME}}/g, client_name || "Client")
+            .replace(/{{PROJECT_TITLE}}/g, commentProjectTitle);
         } else if (isStatusUpdateEmail) {
           // For status updates, use rigid content from database
           emailContent =
@@ -253,7 +444,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
           .replace(/{{PROJECT_ADDRESS}}/g, projectDetails.address || "N/A")
           .replace(/{{ADDRESS}}/g, projectDetails.address || "N/A")
           .replace(/{{EST_TIME}}/g, statusConfig?.est_time || "2-3 business days")
-          .replace(/{{CLIENT_NAME}}/g, displayName)
+          .replace(/{{CLIENT_NAME}}/g, clientName) // Use project author's name, not recipient's name
           .replace(/{{CLIENT_EMAIL}}/g, user.email)
           // Replace any remaining {{PLACEHOLDER}} with empty string
           .replace(/\{\{[^}]+\}\}/g, "")
@@ -264,7 +455,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
           .replace(/{{PROJECT_ADDRESS}}/g, projectDetails.address || "N/A")
           .replace(/{{ADDRESS}}/g, projectDetails.address || "N/A")
           .replace(/{{EST_TIME}}/g, statusConfig?.est_time || "2-3 business days")
-          .replace(/{{CLIENT_NAME}}/g, displayName)
+          .replace(/{{CLIENT_NAME}}/g, clientName) // Use project author's name, not recipient's name
           .replace(/{{CLIENT_EMAIL}}/g, user.email)
           // Replace any remaining {{PLACEHOLDER}} with empty string
           .replace(/\{\{[^}]+\}\}/g, "");
@@ -294,6 +485,13 @@ export const POST: APIRoute = async ({ request, cookies }) => {
           emailHtml = emailHtml.replace(
             "{{BUTTON_LINK}}",
             `${process.env.BASE_URL || "http://localhost:4321"}/project/${projectId}`
+          );
+        } else if (isClientCommentEmail) {
+          // For client comment emails, add button to view project and respond
+          emailHtml = emailHtml.replace("{{BUTTON_TEXT}}", "View Comment & Respond");
+          emailHtml = emailHtml.replace(
+            "{{BUTTON_LINK}}",
+            `${process.env.BASE_URL || "http://localhost:4321"}/project/${projectId}#comments`
           );
         } else if (isStatusUpdateEmail) {
           // For status update emails, use rigid logic from database
@@ -345,6 +543,9 @@ export const POST: APIRoute = async ({ request, cookies }) => {
           // Use custom subject from request body, fallback to default with project title
           emailSubject =
             custom_subject || `Project Assignment - ${projectDetails?.title || "Project"}`;
+        } else if (isClientCommentEmail) {
+          // For client comment emails, use the custom subject which includes client name
+          emailSubject = custom_subject || `New Comment from ${client_name || "Client"}`;
         } else if (isStatusUpdateEmail) {
           // Status update subject - only rigid built-in logic
           emailSubject = `${statusConfig?.status_name || "Status Update"}: ${projectDetails?.title || "Project"}`;
@@ -364,7 +565,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
             "Content-Type": "text/html; charset=UTF-8",
             // "X-Project-ID": projectId,
             // "X-Project-Status": newStatus.toString(),
-            // "X-User-Email": user.email,
+            "X-User-Email": user.email,
           },
         };
 

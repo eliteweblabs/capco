@@ -320,16 +320,21 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
         // Prepare email content with proper name formatting
         const displayName = company_name?.trim() || `${first_name.trim()} ${last_name.trim()}`;
-        const emailContent = `A new user has been created in the system:<br><br>
+        const emailContent = `A new user has been created in the system:<br>
 
-Name: ${displayName}<br>
-Email: ${email}<br>
-Role: ${staffRole}<br><br>
+Name: ${displayName}
+Email: ${email}
+Role: ${staffRole}<br>
 
 The user will receive a magic link to access their account.`;
 
-        // Send email to all admin and staff users
-        for (const user of adminAndStaffUsers || []) {
+        // Send email to all admin and staff users (excluding the newly created user)
+        const filteredAdminStaff = (adminAndStaffUsers || []).filter((user) => {
+          // Filter out the newly created user
+          return user.id !== authData.user.id;
+        });
+
+        for (const user of filteredAdminStaff) {
           try {
             // Get user's email using admin client
             const { data: authUser, error: authError } = await supabaseAdmin.auth.admin.getUserById(
@@ -385,12 +390,12 @@ The user will receive a magic link to access their account.`;
         }
 
         // Send welcome email to the new user
-        const welcomeContent = `Welcome to the CAPCo App!<br><br>
+        const welcomeContent = `Welcome to the CAPCo App!<br>
 
-Your account has been created successfully:<br><br>
+Your account has been created successfully:<br>
 
-Name: ${displayName}<br>
-Email: ${email}<br><br>
+Name: ${displayName}
+Email: ${email}<br>
 
 Click the button below to access your account and set up your password.`;
 

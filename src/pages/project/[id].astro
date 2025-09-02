@@ -37,6 +37,11 @@ const defaultTab = validTabs.includes(tabParam || "") ? tabParam : "project-form
 
 console.log("🌐 [PROJECT] Project ID:", id);
 console.log("🌐 [PROJECT] Authentication check:", { isAuth, hasUser: !!user, role });
+console.log("🌐 [PROJECT] Request URL:", Astro.url.href);
+console.log("🌐 [PROJECT] Cookies:", {
+  hasAccessToken: !!Astro.cookies.get("sb-access-token")?.value,
+  hasRefreshToken: !!Astro.cookies.get("sb-refresh-token")?.value,
+});
 
 // Redirect if not authenticated
 if (!isAuth) {
@@ -49,6 +54,8 @@ console.log("🌐 [PROJECT] User authenticated:", { userId: user?.id, userEmail:
 // Fetch project data and project author profile - RLS will handle authorization
 let project = null;
 let projectAuthorProfile = null;
+let statusLabels: Record<number, string> = {};
+
 if (supabase && user) {
   // Get project data
   const { data: projectData, error: projectError } = await supabase
@@ -103,6 +110,31 @@ if (supabase && user) {
       project.assigned_to_name = null;
     }
   }
+
+  // Fetch status labels using API
+  try {
+    const statusesResponse = await fetch(`${Astro.url.origin}/api/get-project-statuses`, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        "X-User-Role": role || "Client",
+        Cookie: `sb-access-token=${Astro.cookies.get("sb-access-token")?.value}; sb-refresh-token=${Astro.cookies.get("sb-refresh-token")?.value}`,
+      },
+    });
+
+    if (statusesResponse.ok) {
+      const statusesResult = await statusesResponse.json();
+      if (statusesResult.success) {
+        statusLabels = statusesResult.statuses || {};
+        console.log("🌐 [PROJECT] Status labels loaded:", Object.keys(statusLabels).length);
+        console.log("🌐 [PROJECT] Status labels object:", statusLabels);
+        console.log("🌐 [PROJECT] Current project status:", project?.status);
+        console.log("🌐 [PROJECT] Status label for current status:", statusLabels[project?.status]);
+      }
+    }
+  } catch (error) {
+    console.error("🌐 [PROJECT] Error fetching status labels:", error);
+  }
 }
 
 // Safety check - if no project was found, redirect to dashboard
@@ -111,63 +143,21 @@ if (!project) {
   return Astro.redirect("/dashboard");
 }
 
-// Initialize with fallback status labels
-let statusLabels: Record<number, string> = {
-  10: "Specs Received",
-  20: "Generating Proposal",
-  30: "Proposal Shipped",
-  40: "Proposal Viewed",
-  50: "Proposal Signed Off",
-  60: "Generating Deposit Invoice",
-  70: "Deposit Invoice Shipped",
-  80: "Deposit Invoice Viewed",
-  90: "Deposit Invoice Paid",
-  100: "Generating Submittals",
-  110: "Submittals Shipped",
-  120: "Submittals Viewed",
-  130: "Submittals Signed Off",
-  140: "Generating Final Invoice",
-  150: "Final Invoice Shipped",
-  160: "Final Invoice Viewed",
-  170: "Final Invoice Paid",
-  180: "Generating Final Deliverables",
-  190: "Stamping Final Deliverables",
-  200: "Final Deliverables Shipped",
-  210: "Final Deliverables Viewed",
-  220: "Project Complete",
-};
+// Add debug logging for project data and Hero props
+console.log("🌐 [PROJECT] Project data loaded:", {
+  hasProject: !!project,
+  projectId: project?.id,
+  projectStatus: project?.status,
+  projectTitle: project?.title || project?.address,
+  hasAuthorProfile: !!projectAuthorProfile,
+});
 
-// Note: Status labels will be updated client-side via JavaScript
-// to ensure they're always current and handle any missing statuses
-
-// Fallback to basic labels if no data from API
-if (Object.keys(statusLabels).length === 0) {
-  console.warn("No status labels from API, using fallback labels");
-  statusLabels = {
-    10: "Specs Received",
-    20: "Generating Proposal",
-    30: "Proposal Shipped",
-    40: "Proposal Viewed",
-    50: "Proposal Signed Off",
-    60: "Generating Deposit Invoice",
-    70: "Deposit Invoice Shipped",
-    80: "Deposit Invoice Viewed",
-    90: "Deposit Invoice Paid",
-    100: "Generating Submittals",
-    110: "Submittals Shipped",
-    120: "Submittals Viewed",
-    130: "Submittals Signed Off",
-    140: "Generating Final Invoice",
-    150: "Final Invoice Shipped",
-    160: "Final Invoice Viewed",
-    170: "Final Invoice Paid",
-    180: "Generating Final Deliverables",
-    190: "Stamping Final Deliverables",
-    200: "Final Deliverables Shipped",
-    210: "Final Deliverables Viewed",
-    220: "Project Complete",
-  };
-}
+console.log("🌐 [PROJECT] Hero component props being passed:", {
+  statusLabel: project?.status ? (statusLabels[project.status] || `Status ${project.status}`) : undefined,
+  projectId: project?.id,
+  userRole: role || "Client",
+  hasProject: !!project,
+});
 
 // Get status color based on status code
 function getStatusColor(status: number): string {
@@ -199,7 +189,7 @@ function getStatusColor(status: number): string {
       projectAuthorProfile?.company_name || projectAuthorProfile?.name || "Unknown Author"
     }</span>`}
     statusLabel={project?.status
-      ? statusLabels[project.status] || `Status ${project.status}`
+      ? (statusLabels[project.status]?.status_name || `Status ${project.status}`)
       : undefined}
     statusColor={project?.status ? getStatusColor(project.status) : undefined}
     projectId={project?.id}
@@ -208,6 +198,7 @@ function getStatusColor(status: number): string {
     projectTitle={project?.title || project?.address || "Project"}
     clientEmail={(projectAuthorProfile?.email || user?.email || "Client") as string}
     project={project}
+    statuses={Object.values(statusLabels)}
   />
   <SectionContainer>
     <div class="flex items-center justify-between">

@@ -1,6 +1,6 @@
 import type { APIRoute } from "astro";
-import { supabase } from "../../lib/supabase";
 import { apiCache } from "../../lib/api-cache";
+import { supabase } from "../../lib/supabase";
 
 export const GET: APIRoute = async ({ request }) => {
   try {
@@ -23,12 +23,12 @@ export const GET: APIRoute = async ({ request }) => {
     // Check cache first (statuses don't change often)
     const cacheKey = `project-statuses-${userRole}`;
     const cachedStatuses = apiCache.get(cacheKey);
-    
+
     if (cachedStatuses) {
       return new Response(
         JSON.stringify({
           success: true,
-          data: cachedStatuses,
+          statuses: cachedStatuses,
           cached: true,
         }),
         {

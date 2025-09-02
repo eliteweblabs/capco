@@ -8,9 +8,9 @@ This document clarifies how proposals and invoices work in the system and where 
 
 ### **Proposals**
 
-- **Subject Storage**: `projects.subject` column
+- **Subject Storage**: `invoices.subject` column (in "proposal" status invoices)
 - **Line Items**: Generated dynamically from project data OR selected from `line_items_catalog`
-- **Relationship**: 1 Project → 1 Proposal (embedded in project)
+- **Relationship**: 1 Project → 1 Proposal Invoice (status="proposal")
 - **Purpose**: Pre-sales estimates and service proposals
 
 ### **Invoices**
@@ -73,8 +73,7 @@ CREATE TABLE projects (
   status INTEGER,
   -- ... other existing columns
 
-  -- EXISTING COLUMN (should already exist)
-  subject TEXT DEFAULT NULL  -- ← This should exist!
+  -- No subject column needed here - proposals use invoices table
 );
 ```
 
@@ -86,9 +85,13 @@ CREATE TABLE invoices (
   id SERIAL PRIMARY KEY,
   project_id INTEGER REFERENCES projects(id),
   invoice_number TEXT,
-  status TEXT,
+  status TEXT, -- Can be "proposal", "draft", "sent", "paid", etc.
   total_amount DECIMAL(10,2),
   created_by UUID REFERENCES auth.users(id),
+
+  -- PROPOSAL SUBJECT COLUMN (should already exist)
+  subject TEXT DEFAULT NULL, -- ← Stores proposal subjects!
+
   -- ... other invoice fields
 );
 ```
@@ -131,18 +134,19 @@ CREATE TABLE line_items_catalog (
 
 ### **Step 1: Verify Column Exists**
 
-Since you already created the `subject` column, you can verify it exists:
+Since you already created the `subject` column in the invoices table, you can verify it exists:
 
 ```sql
--- Check if the subject column exists
-SELECT column_name, data_type, is_nullable 
-FROM information_schema.columns 
-WHERE table_name = 'projects' AND column_name = 'subject';
+-- Check if the subject column exists in invoices table
+SELECT column_name, data_type, is_nullable
+FROM information_schema.columns
+WHERE table_name = 'invoices' AND column_name = 'subject';
 ```
 
 If the column doesn't exist, create it:
+
 ```sql
-ALTER TABLE projects 
+ALTER TABLE invoices
 ADD COLUMN subject TEXT DEFAULT NULL;
 ```
 
@@ -203,13 +207,13 @@ catalog_item_id reference              Invoice Display
 
 ### **Error: "Failed to update proposal subject"**
 
-**Cause**: `subject` column doesn't exist in `projects` table
-**Solution**: Ensure the `subject` column exists in your projects table
+**Cause**: `subject` column doesn't exist in `invoices` table
+**Solution**: Ensure the `subject` column exists in your invoices table
 
 ### **Error: "Column 'subject' not found"**
 
-**Cause**: Subject column missing from projects table
-**Solution**: Verify the `subject` column exists in the projects table
+**Cause**: Subject column missing from invoices table
+**Solution**: Verify the `subject` column exists in the invoices table
 
 ### **Error: "Migration required"**
 
@@ -220,7 +224,7 @@ catalog_item_id reference              Invoice Display
 
 ### **Immediate (Fix Current Error)**
 
-1. ✅ Verify `subject` column exists in projects table
+1. ✅ Verify `subject` column exists in invoices table
 2. ✅ Test proposal subject editing
 3. ✅ Verify data persistence
 
@@ -233,16 +237,16 @@ catalog_item_id reference              Invoice Display
 
 ## 📋 **Summary**
 
-| Feature                 | Storage Location             | Status             |
-| ----------------------- | ---------------------------- | ------------------ |
-| **Proposal Subject**    | `projects.subject`            | ✅ Ready           |
-| **Proposal Line Items** | Generated dynamically        | ✅ Working         |
-| **Invoice Data**        | `invoices` table             | ✅ Working         |
-| **Invoice Line Items**  | `invoice_line_items` table   | ✅ Working         |
-| **Catalog Items**       | `line_items_catalog` table   | ✅ Working         |
-| **Catalog Integration** | `catalog_item_id` references | ✅ Working         |
+| Feature                 | Storage Location             | Status     |
+| ----------------------- | ---------------------------- | ---------- |
+| **Proposal Subject**    | `invoices.subject`           | ✅ Ready   |
+| **Proposal Line Items** | Generated dynamically        | ✅ Working |
+| **Invoice Data**        | `invoices` table             | ✅ Working |
+| **Invoice Line Items**  | `invoice_line_items` table   | ✅ Working |
+| **Catalog Items**       | `line_items_catalog` table   | ✅ Working |
+| **Catalog Integration** | `catalog_item_id` references | ✅ Working |
 
-**Status**: Ready to use! The system now uses the existing `subject` column in the projects table.
+**Status**: Ready to use! The system now uses the existing `subject` column in the invoices table to store proposal subjects.
 
 ---
 

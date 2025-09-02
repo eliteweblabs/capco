@@ -12,6 +12,7 @@ interface Props {
   userRole?: string;
   projectTitle?: string;
   clientEmail?: string;
+  statuses?: any[]; // Accept statuses as props to avoid redundant API calls
 }
 
 const { 
@@ -21,31 +22,39 @@ const {
   statusColor = "blue",
   userRole = role,
   projectTitle = "Project",
-  clientEmail = "Client"
+  clientEmail = "Client",
+  statuses = []
 } = Astro.props;
 
 // Only show dropdown for Admin and Staff users
 const canChangeStatus = role === "Admin" || role === "Staff";
 
-// Fetch available project statuses
+// Use passed statuses or fetch as fallback (prefer passed data to avoid redundant API calls)
 let projectStatuses: any[] = [];
 if (canChangeStatus) {
-  try {
-    const statusResponse = await fetch(`${Astro.url.origin}/api/get-project-statuses`, {
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-      },
-    });
+  if (statuses && statuses.length > 0) {
+    projectStatuses = statuses;
+    console.log("🔄 [STATUS-DROPDOWN] Using passed statuses:", projectStatuses.length);
+  } else {
+    // Fallback to API call if statuses not provided
+    try {
+      const statusResponse = await fetch(`${Astro.url.origin}/api/get-project-statuses`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
 
-    if (statusResponse.ok) {
-      const result = await statusResponse.json();
-      if (result.success) {
-        projectStatuses = Object.values(result.statuses || {});
+      if (statusResponse.ok) {
+        const result = await statusResponse.json();
+        if (result.success) {
+          projectStatuses = Object.values(result.statuses || {});
+          console.log("🔄 [STATUS-DROPDOWN] Fetched statuses via API:", projectStatuses.length);
+        }
       }
+    } catch (error) {
+      console.error("Error fetching project statuses:", error);
     }
-  } catch (error) {
-    console.error("Error fetching project statuses:", error);
   }
 }
 ---

@@ -45,6 +45,7 @@ console.log("🍪 [DASHBOARD] Cookie status:", {
 // Fetch projects and statuses from API
 let projects: any[] = [];
 let project_statuses: any[] = [];
+let project_statuses_object: any = {};
 
 try {
   // Fetch projects
@@ -98,7 +99,17 @@ try {
         "🏗️ [DASHBOARD] Statuses fetched:",
         Object.keys(statusesResult.statuses || {}).length
       );
+      // Convert to array format for existing components
       project_statuses = Object.values(statusesResult.statuses || {});
+      // Keep object format for project actions (make it global for script)
+      project_statuses_object = statusesResult.statuses || {};
+
+      console.log("🏗️ [DASHBOARD] project_statuses array length:", project_statuses.length);
+      console.log(
+        "🏗️ [DASHBOARD] project_statuses_object keys:",
+        Object.keys(project_statuses_object)
+      );
+      console.log("🏗️ [DASHBOARD] Status 10 config:", project_statuses_object[10]);
     } else {
       console.error("Statuses API returned error:", statusesResult.error);
     }
@@ -124,6 +135,145 @@ try {
 
   <!-- Main Dashboard -->
   <SectionContainer id="dashboard" class="mx-6 mb-0 mt-0 flex">
-    <DashboardComponent role={role || "Client"} projects={projects} />
+    <DashboardComponent role={role || "Client"} projects={projects} statuses={project_statuses} />
   </SectionContainer>
 </App>
+
+<script define:vars={{ projects, project_statuses, project_statuses_object, role, user }}>
+  // Project Action Notification System - Only for Clients
+  document.addEventListener("DOMContentLoaded", function () {
+    console.log("🔔 [PROJECT-ACTIONS] Initializing project action notifications...");
+    console.log("🔔 [PROJECT-ACTIONS] Current user role:", role);
+    console.log("🔔 [PROJECT-ACTIONS] Projects data:", projects);
+    console.log("🔔 [PROJECT-ACTIONS] Project statuses data:", project_statuses_object);
+
+    // Only run for clients
+    if (role !== "Client") {
+      console.log("🔔 [PROJECT-ACTIONS] Skipping - user is not a client");
+      return;
+    }
+
+    if (!projects || !Array.isArray(projects) || projects.length === 0) {
+      console.log("🔔 [PROJECT-ACTIONS] No projects found for client");
+      return;
+    }
+
+    if (!project_statuses_object || typeof project_statuses_object !== "object") {
+      console.log("🔔 [PROJECT-ACTIONS] No project statuses found");
+      return;
+    }
+
+    console.log("🔔 [PROJECT-ACTIONS] Processing projects:", projects.length);
+    console.log("🔔 [PROJECT-ACTIONS] Available statuses:", Object.keys(project_statuses_object));
+
+    // Check each project for action notifications
+    projects.forEach((project, index) => {
+      const projectStatus = project.status;
+      const statusConfig = project_statuses_object[projectStatus];
+
+      console.log(`🔔 [PROJECT-ACTIONS] Checking project ${index + 1}:`, {
+        id: project.id,
+        title: project.title,
+        status: projectStatus,
+        hasStatusConfig: !!statusConfig,
+      });
+
+      if (statusConfig && statusConfig.project_action) {
+        console.log(
+          `🔔 [PROJECT-ACTIONS] Found project action for project "${project.title}":`,
+          statusConfig.project_action
+        );
+
+        // Replace placeholders in the project action message
+        const actionMessage = replacePlaceholders(
+          statusConfig.project_action,
+          project,
+          statusConfig
+        );
+
+        console.log(
+          `🔔 [PROJECT-ACTIONS] Showing toast for project "${project.title}":`,
+          actionMessage
+        );
+
+        // Show dismissible toast notification
+        if (window.showInfo) {
+          console.log("🔔 [PROJECT-ACTIONS] Toast system available, showing notification...");
+          window.showInfo("Project Action Required", actionMessage, -1); // -1 = persistent, no auto-dismiss
+        } else {
+          console.error("🔔 [PROJECT-ACTIONS] Toast system not available");
+          console.error(
+            "🔔 [PROJECT-ACTIONS] Available window methods:",
+            Object.keys(window).filter((key) => key.includes("show"))
+          );
+        }
+      } else {
+        console.log(`🔔 [PROJECT-ACTIONS] No project action for project "${project.title}"`);
+      }
+    });
+  });
+
+  // Function to replace placeholders in project action messages
+  function replacePlaceholders(message, project, statusConfig) {
+    if (!message) return "";
+
+    console.log("🔄 [PLACEHOLDER] Original message:", message);
+
+    // Get client name from user data
+    const clientName =
+      user && user.user_metadata
+        ? user.user_metadata.display_name ||
+          `${user.user_metadata.first_name || ""} ${user.user_metadata.last_name || ""}`.trim() ||
+          user.user_metadata.company_name ||
+          "Client"
+        : "Client";
+
+    // Handle PROJECT_LINK with optional query parameters
+    const baseProjectLink = `${window.location.origin}/project/${project.id}`;
+
+    // Replace PROJECT_LINK placeholders with query parameters and user-friendly text
+    let processedMessage = message.replace(/{{PROJECT_LINK(\?[^}]*)?}}/g, (match, queryParams) => {
+      const fullUrl = baseProjectLink + (queryParams || "");
+
+      // Extract tab parameter for display text
+      let displayText = "View Project";
+      if (queryParams) {
+        const tabMatch = queryParams.match(/[?&]tab=([^&]*)/);
+        if (tabMatch && tabMatch[1]) {
+          // Capitalize and format tab name
+          const tabName = tabMatch[1]
+            .replace(/([a-z])([A-Z])/g, "$1 $2") // camelCase to spaces
+            .replace(/[-_]/g, " ") // replace dashes/underscores with spaces
+            .split(" ")
+            .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+            .join(" ");
+          displayText = `Go to ${tabName}`;
+        }
+      }
+
+      const linkHtml = `<a href="${fullUrl}" style="color: #3b82f6; text-decoration: underline; font-weight: 500;">${displayText}</a>`;
+      console.log("🔗 [PROJECT-LINK] Generated link:", {
+        match,
+        queryParams,
+        fullUrl,
+        displayText,
+        linkHtml,
+      });
+      return linkHtml;
+    });
+
+    const finalMessage = processedMessage
+      .replace(/{{PROJECT_TITLE}}/g, project.title || "Project")
+      .replace(/{{PROJECT_ADDRESS}}/g, project.address || "N/A")
+      .replace(/{{ADDRESS}}/g, project.address || "N/A")
+      .replace(/{{CLIENT_NAME}}/g, clientName)
+      .replace(/{{CLIENT_EMAIL}}/g, user?.email || "")
+      .replace(/{{EST_TIME}}/g, statusConfig?.est_time || "2-3 business days")
+      .replace(/{{STATUS_NAME}}/g, statusConfig?.status_name || "Status Update")
+      // Replace any remaining {{PLACEHOLDER}} with empty string
+      .replace(/\{\{[^}]+\}\}/g, "");
+
+    console.log("🔄 [PLACEHOLDER] Final processed message:", finalMessage);
+    return finalMessage;
+  }
+</script>

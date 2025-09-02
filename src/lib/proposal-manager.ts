@@ -325,6 +325,29 @@ export class ProposalManager {
   }
 
   // Private methods
+
+  /**
+   * Load proposal subject from invoice table
+   */
+  private async loadProposalSubject(): Promise<string | null> {
+    try {
+      const response = await fetch(`/api/get-proposal-subject?projectId=${this.project.id}`, {
+        method: "GET",
+        credentials: "include",
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        return data.subject || null;
+      }
+
+      return null;
+    } catch (error) {
+      console.error("Error loading proposal subject:", error);
+      return null;
+    }
+  }
+
   private populateHeader(): void {
     const titleElement = document.getElementById("proposal-project-title");
     const dateElement = document.getElementById("proposal-date");
@@ -336,7 +359,21 @@ export class ProposalManager {
     // Set proposal subject from project data or use default
     if (subjectElement) {
       const defaultSubject = `Fire Protection Services Proposal - ${this.project.title || "Project"}`;
-      const proposalSubject = this.project.subject || defaultSubject;
+      // First check if we have a proposal invoice with a subject
+      let proposalSubject = defaultSubject;
+
+      // Try to load subject from proposal invoice
+      this.loadProposalSubject()
+        .then((subject) => {
+          if (subject) {
+            subjectElement.textContent = subject;
+          }
+        })
+        .catch((error) => {
+          console.warn("Could not load proposal subject:", error);
+        });
+
+      // Set default for now
       subjectElement.textContent = proposalSubject;
     }
 
