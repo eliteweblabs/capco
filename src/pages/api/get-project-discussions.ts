@@ -1,4 +1,5 @@
 import type { APIRoute } from "astro";
+import { apiCache } from "../../lib/api-cache";
 import { checkAuth } from "../../lib/auth";
 import { supabase } from "../../lib/supabase";
 import { supabaseAdmin } from "../../lib/supabase-admin";
@@ -149,34 +150,51 @@ export const GET: APIRoute = async ({ url, cookies }) => {
       );
     }
 
-    // Get author profiles separately to avoid foreign key relationship issues
+    // Get author profiles efficiently with caching
     const authorIds = [...new Set(discussions?.map((d) => d.author_id) || [])];
     let authorProfiles: any = {};
 
     if (authorIds.length > 0) {
-      // Use the user-utils function for better data consistency
       try {
-        const userPromises = authorIds.map(async (authorId) => {
-          console.log(`📞 [DISCUSSIONS] Fetching user info for: ${authorId}`);
-          try {
-            const userInfo = await getUserInfoServer(authorId);
-            console.log(`✅ [DISCUSSIONS] User info response for ${authorId}:`, userInfo);
-            return { id: authorId, userInfo };
-          } catch (error) {
-            console.error(`❌ [DISCUSSIONS] Failed to fetch user info for ${authorId}:`, error);
-            return null;
-          }
-        });
+        // Check cache first
+        const cacheResult = apiCache.getProfiles(authorIds);
+        authorProfiles = { ...cacheResult.cached };
 
-        const userResults = await Promise.all(userPromises);
-        userResults.forEach((result) => {
-          if (result) {
-            authorProfiles[result.id] = result.userInfo;
+        // Fetch missing profiles from database
+        if (cacheResult.missing.length > 0) {
+          const { data: profiles, error: profilesError } = await supabase
+            .from("profiles")
+            .select("id, name, company_name, role")
+            .in("id", cacheResult.missing);
+
+          if (!profilesError && profiles) {
+            const processedProfiles = profiles.map((profile) => ({
+              id: profile.id,
+              display_name: profile.company_name || profile.name || "Unknown User",
+              company_name: profile.company_name,
+              name: profile.name,
+              role: profile.role,
+            }));
+
+            // Cache the new profiles
+            apiCache.setProfiles(processedProfiles);
+
+            // Add to result
+            processedProfiles.forEach((profile) => {
+              authorProfiles[profile.id] = profile;
+            });
+
+            console.log(
+              `✅ [DISCUSSIONS] Fetched ${profiles.length} new profiles, ${Object.keys(cacheResult.cached).length} from cache`
+            );
+          } else {
+            console.error("Error fetching user profiles:", profilesError);
           }
-        });
+        } else {
+          console.log(`✅ [DISCUSSIONS] All ${authorIds.length} profiles served from cache`);
+        }
       } catch (error) {
         console.error("Error fetching user profiles:", error);
-        // Fallback to basic profile data if needed
       }
     }
 

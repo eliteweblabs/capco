@@ -46,30 +46,16 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     const isRegistrationEmail = emailType === "registration";
     const isStaffAssignmentEmail = emailType === "staff_assignment";
     const isStatusUpdateEmail = emailType === "update_status";
-    const skipProjectValidation = isRegistrationEmail || isStaffAssignmentEmail;
+
     console.log("📧 [EMAIL-DELIVERY] Email type:", emailType);
 
+    // Simple validation - just need projectId and usersToNotify
     if (!projectId || !usersToNotify) {
       console.error("📧 [EMAIL-DELIVERY] Missing required parameters");
       return new Response(
         JSON.stringify({
           success: false,
           error: "Missing required parameters",
-        }),
-        {
-          status: 400,
-          headers: { "Content-Type": "application/json" },
-        }
-      );
-    }
-
-    // Only validate newStatus for emails that require project validation
-    if (!skipProjectValidation && !newStatus) {
-      console.error("📧 [EMAIL-DELIVERY] Missing newStatus for non-test email");
-      return new Response(
-        JSON.stringify({
-          success: false,
-          error: "Missing newStatus parameter",
         }),
         {
           status: 400,
@@ -135,7 +121,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
     // Get project details from database (skip for registration emails)
     let projectDetails = null;
-    if (!skipProjectValidation) {
+    if (!isRegistrationEmail) {
       const { data: fetchedProjectDetails, error: projectError } = await supabase
         .from("projects")
         .select("title, address")
@@ -192,7 +178,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
     let emailTemplate: string;
     try {
-      const templatePath = join(process.cwd(), "src", "emails", "template.html");
+      const templatePath = join(process.cwd(), "src", "templates-email", "template.html");
       console.log("📧 [EMAIL-DELIVERY] Template path:", templatePath);
 
       emailTemplate = readFileSync(templatePath, "utf-8");

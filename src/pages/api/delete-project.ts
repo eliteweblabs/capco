@@ -201,7 +201,7 @@ export const DELETE: APIRoute = async ({ request, cookies }) => {
     return new Response(
       JSON.stringify({
         success: true,
-        message: "Project deleted successfully",
+        message: "Project deleted successfully, redirecting to dashboard...",
       }),
       {
         status: 200,

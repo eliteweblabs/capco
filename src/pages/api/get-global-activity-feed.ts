@@ -75,18 +75,26 @@ export const GET: APIRoute = async ({ cookies, url }) => {
       ? [...new Set(projects.map((p) => p.author_id).filter(Boolean))]
       : [];
 
-    // Fetch profile information for all authors
+    // Fetch profile information for all authors efficiently
     let profilesMap = new Map();
     if (uniqueAuthorIds.length > 0) {
-      const { data: profiles } = await supabase!
+      const { data: profiles, error: profilesError } = await supabase!
         .from("profiles")
-        .select("id, name")
+        .select("id, name, company_name, role")
         .in("id", uniqueAuthorIds);
 
-      if (profiles) {
+      if (!profilesError && profiles) {
         profiles.forEach((profile) => {
-          profilesMap.set(profile.id, profile);
+          profilesMap.set(profile.id, {
+            id: profile.id,
+            name: profile.name,
+            display_name: profile.company_name || profile.name || "Unknown User",
+            role: profile.role,
+          });
         });
+        console.log(`✅ [ACTIVITY-FEED] Fetched ${profiles.length} user profiles efficiently`);
+      } else {
+        console.error("Error fetching activity feed profiles:", profilesError);
       }
     }
 
@@ -103,7 +111,7 @@ export const GET: APIRoute = async ({ cookies, url }) => {
           project_id: project.id,
           project_address: project.address,
           project_title: project.title,
-          project_owner: authorProfile?.name || "Unknown",
+          project_owner: authorProfile?.display_name || authorProfile?.name || "Unknown",
           project_owner_id: authorProfile?.id || project.author_id,
         });
       });

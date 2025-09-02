@@ -2,6 +2,7 @@
 import App from "../../components/common/App.astro";
 import BoxIcon from "../../components/common/BoxIcon.astro";
 import PaymentForm from "../../components/project/PaymentForm.astro";
+import LineItemSelector from "../../components/form/LineItemSelector.astro";
 import { checkAuth } from "../../lib/auth";
 
 // Get invoice ID from URL
@@ -190,15 +191,33 @@ const { invoice, lineItems, project, client } = data;
           </table>
         </div>
 
+        <!-- Line Item Selector -->
+        <div class="mt-6" id="line-item-selector-container" style="display: none;">
+          <LineItemSelector
+            invoiceId={invoice.id.toString()}
+            onItemAdded="onLineItemAdded"
+            showAddToInvoice={true}
+          />
+        </div>
+
         <!-- Add Line Item Button -->
-        <div class="mt-4">
+        <div class="mt-4 flex space-x-3">
           <button
             type="button"
-            id="add-line-item-btn"
+            id="show-selector-btn"
             class="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700"
           >
             <BoxIcon name="plus" class="mr-1" />
-            Add Line Item
+            Add from Catalog
+          </button>
+
+          <button
+            type="button"
+            id="add-blank-item-btn"
+            class="rounded-lg bg-gray-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-gray-700"
+          >
+            <BoxIcon name="edit" class="mr-1" />
+            Add Blank Item
           </button>
         </div>
 
@@ -475,12 +494,40 @@ const { invoice, lineItems, project, client } = data;
       }
     }
 
+    // Callback function for when line item is added from catalog
+    window.onLineItemAdded = function (lineItem) {
+      console.log("Line item added from catalog:", lineItem);
+
+      // Hide the selector
+      document.getElementById("line-item-selector-container").style.display = "none";
+
+      // Refresh the page to show the new item
+      window.location.reload();
+    };
+
+    // Toggle line item selector visibility
+    function toggleSelector() {
+      const container = document.getElementById("line-item-selector-container");
+      if (container.style.display === "none") {
+        container.style.display = "block";
+        document.getElementById("show-selector-btn").textContent = "Hide Catalog";
+      } else {
+        container.style.display = "none";
+        document.getElementById("show-selector-btn").innerHTML = `
+          <i class="bx bx-plus mr-1"></i>
+          Add from Catalog
+        `;
+      }
+    }
+
     // Initialize event listeners
     document.addEventListener("DOMContentLoaded", () => {
       addInputListeners();
       updateInvoiceTotals();
 
-      document.getElementById("add-line-item-btn").addEventListener("click", addLineItem);
+      // Updated button listeners
+      document.getElementById("show-selector-btn").addEventListener("click", toggleSelector);
+      document.getElementById("add-blank-item-btn").addEventListener("click", addLineItem);
       document.getElementById("save-invoice-btn").addEventListener("click", saveInvoice);
       document.getElementById("send-invoice-btn").addEventListener("click", sendInvoice);
 
