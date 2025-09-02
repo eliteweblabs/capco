@@ -4,7 +4,21 @@ import { supabase } from "../../lib/supabase";
 
 export const POST: APIRoute = async ({ request }) => {
   try {
-    const { invoiceId, paymentMethod } = await request.json();
+    // Check if Stripe is configured
+    if (!stripe) {
+      console.error("Stripe is not configured. Missing STRIPE_SECRET_KEY environment variable.");
+      return new Response(
+        JSON.stringify({
+          error: "Payment processing is not configured. Please contact support.",
+        }),
+        {
+          status: 500,
+          headers: { "Content-Type": "application/json" },
+        }
+      );
+    }
+
+    const { invoiceId, paymentMethod, billingDetails } = await request.json();
 
     if (!invoiceId) {
       return new Response(JSON.stringify({ error: "Invoice ID is required" }), {
@@ -52,8 +66,20 @@ export const POST: APIRoute = async ({ request }) => {
       automatic_payment_methods: {
         enabled: true,
       },
-      // Add customer email if available
-      receipt_email: invoice.projects.author_id ? undefined : undefined, // We'll add this when we have user emails
+      // Add customer email and billing details if provided
+      receipt_email: billingDetails?.email || undefined,
+      shipping: billingDetails
+        ? {
+            name: billingDetails.name,
+            address: {
+              line1: billingDetails.address?.line1,
+              city: billingDetails.address?.city,
+              state: billingDetails.address?.state,
+              postal_code: billingDetails.address?.postal_code,
+              country: billingDetails.address?.country || "US",
+            },
+          }
+        : undefined,
     });
 
     return new Response(

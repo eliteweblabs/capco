@@ -8,40 +8,9 @@ export const GET: APIRoute = async ({ request, cookies }) => {
     const { role } = await checkAuth(cookies);
     const isClient = role === "Client";
     if (!supabase) {
-      console.log("📡 [API] Supabase not configured, returning demo projects");
-
-      // For demo purposes, return mock projects when database is not configured
-      const mockProjects = [
-        {
-          id: 1001,
-          title: "Demo Office Building",
-          description: "Fire protection system for 3-story office building",
-          address: "123 Business Blvd, Demo City",
-          author_id: "demo-user-id",
-          author_email: "demo@example.com",
-          assigned_to_name: "John Smith",
-          assigned_to_email: "john.smith@example.com",
-          status: 20,
-          sq_ft: 2500,
-          new_construction: true,
-          created_at: "2025-01-01T10:00:00Z",
-          updated_at: "2025-01-15T09:45:00Z",
-          comment_count: 3,
-        },
-      ];
-
-      return new Response(
-        JSON.stringify({
-          success: true,
-          projects: mockProjects,
-          message: "Demo projects (no database interaction)",
-          demo: true,
-        }),
-        {
-          status: 200,
-          headers: { "Content-Type": "application/json" },
-        }
-      );
+      return new Response(JSON.stringify({ error: "Database connection not available" }), {
+        status: 500,
+      });
     }
 
     // Fetch all projects - no role-based filtering
@@ -64,6 +33,7 @@ export const GET: APIRoute = async ({ request, cookies }) => {
         created_at,
         updated_at,
         assigned_to_id
+        
       `
       )
       .order("updated_at", { ascending: false });
@@ -116,7 +86,7 @@ export const GET: APIRoute = async ({ request, cookies }) => {
       }
 
       // Attach profile data to projects
-      projects.forEach((project) => {
+      projects.forEach((project: any) => {
         if (project.author_id) {
           project.profiles = profilesMap.get(project.author_id) || null;
         }

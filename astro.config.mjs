@@ -14,9 +14,9 @@
 // });
 
 // @ts-check
-import { defineConfig } from "astro/config";
 import node from "@astrojs/node";
 import tailwind from "@astrojs/tailwind";
+import { defineConfig } from "astro/config";
 
 // Load environment variables
 import { loadEnv } from "vite";
@@ -54,6 +54,9 @@ export default defineConfig({
       "process.env.FROM_EMAIL": JSON.stringify(env.FROM_EMAIL),
       "process.env.FROM_NAME": JSON.stringify(env.FROM_NAME),
       "process.env.GOOGLE_MAPS_API_KEY": JSON.stringify(env.GOOGLE_MAPS_API_KEY),
+      // Stripe environment variables
+      "process.env.STRIPE_SECRET_KEY": JSON.stringify(env.STRIPE_SECRET_KEY),
+      "process.env.STRIPE_PUBLISHABLE_KEY": JSON.stringify(env.STRIPE_PUBLISHABLE_KEY),
     },
   },
 });

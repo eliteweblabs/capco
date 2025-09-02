@@ -19,6 +19,7 @@ interface Props {
     company_name?: any;
     comment_count?: any;
     profiles?: any;
+    assigned_profiles?: any;
   };
   role?: string;
   user?: any;
@@ -93,8 +94,8 @@ if (project.profiles) {
   <div
     class="rounded-lg border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-700 dark:bg-gray-800 mb-4"
   >
-    <div class="flex items-start justify-between">
-      <div class="flex-1">
+    <div class="md:flex items-start justify-between">
+      <div class="flex-none md:flex-1">
         {
           ( role !== "Client" && (projectAuthorProfile?.company_name || projectAuthorProfile?.email ) && (
             <h3
@@ -107,7 +108,7 @@ if (project.profiles) {
           ))
         }
         <h3
-          class="inline-block text-lg font-semibold text-gray-900 dark:text-white"
+          class="inline-flex text-lg font-semibold text-gray-900 dark:text-white"
           data-project-address
           data-searchable
         >
@@ -124,7 +125,7 @@ if (project.profiles) {
          
         </div>
       </div>
-      <div class="ml-4">
+      <div class="md:ml-4">
         <span
           class={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${statusColor}`}
         >
@@ -148,6 +149,15 @@ if (project.profiles) {
         </div>
            )}
 
+{
+  project.assigned_profiles && role !== "Client" && (
+    <span class="flex items-center gap-1">
+      <BoxIcon name="user" size="1rem" />
+      <span data-searchable>{project.assigned_profiles.company_name || project.assigned_profiles.name || "Assigned User"}</span>
+    </span>
+  )
+}
+
 <span class="flex items-center gap-1">
   <BoxIcon name="area" size="1rem" />
   {project.sq_ft ? project.sq_ft.toLocaleString() : 0} sq ft
@@ -155,16 +165,6 @@ if (project.profiles) {
 <span class="flex items-center gap-1">
   <BoxIcon name="building" size="1rem" />
   {project.new_construction ? "New Construction" : "Existing"}
-</span>
-<span class="flex items-center gap-1">
-  {
-    project.assigned_to_name && (
-      <span class="flex items-center gap-1">
-        <BoxIcon name="user" size="1rem" />
-        <span data-searchable>{project.assigned_to_name}</span>
-      </span>
-    )
-  }
 </span>
 
 <span class="flex items-center gap-1">

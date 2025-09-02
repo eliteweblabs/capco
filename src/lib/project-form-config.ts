@@ -343,7 +343,7 @@ export const FORM_ACTIONS: FormActionConfig[] = [
       "px-4 py-2 bg-red-600 text-white text-sm font-medium rounded-lg hover:bg-red-700 transition-colors",
     action: "deleteProject",
     allow: ["Admin", "Staff"], // Only admin and staff can delete
-    // hideAtStatus: [0], // Only show when specs are received (status 10)
+    hideAtStatus: [0], // Only show when specs are received (status 10)
   },
   {
     id: "build-proposal",
@@ -394,17 +394,17 @@ export const FORM_ACTIONS: FormActionConfig[] = [
     allow: ["Admin", "Staff", "Client"], // All roles can view invoices
     hideAtStatus: [0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140], // Only show when final invoice is generated
   },
-  {
-    id: "view-activity",
-    type: "button",
-    label: "View Activity Log",
-    icon: "bx-history",
-    tab: "activity-log",
-    cssClass:
-      "px-4 py-2 bg-gray-600 text-white text-sm font-medium rounded-lg hover:bg-gray-700 transition-colors",
-    allow: ["Admin", "Staff", "Client"], // All roles can view activity log
-    hideAtStatus: [0], // Hide on new projects
-  },
+  // {
+  //   id: "view-activity",
+  //   type: "button",
+  //   label: "View Activity Log",
+  //   icon: "bx-history",
+  //   tab: "activity-log",
+  //   cssClass:
+  //     "px-4 py-2 bg-gray-600 text-white text-sm font-medium rounded-lg hover:bg-gray-700 transition-colors",
+  //   allow: ["Admin", "Staff", "Client"], // All roles can view activity log
+  //   hideAtStatus: [0], // Hide on new projects
+  // },
 ];
 
 // Button group configurations
