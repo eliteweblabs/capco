@@ -56,6 +56,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     const isStaffAssignmentEmail = emailType === "staff_assignment";
     const isStatusUpdateEmail = emailType === "update_status";
     const isClientCommentEmail = emailType === "client_comment";
+    const isEmergencySmsEmail = emailType === "emergency_sms";
 
     console.log("📧 [EMAIL-DELIVERY] Email type:", emailType);
 
@@ -428,6 +429,9 @@ export const POST: APIRoute = async ({ request, cookies }) => {
           emailContent = emailContent
             .replace(/{{CLIENT_NAME}}/g, client_name || "Client")
             .replace(/{{PROJECT_TITLE}}/g, commentProjectTitle);
+        } else if (isEmergencySmsEmail) {
+          // For emergency SMS, use the content directly (no HTML formatting)
+          emailContent = email_content || "Emergency contact message from CAPCo website";
         } else if (isStatusUpdateEmail) {
           // For status updates, use rigid content from database
           emailContent =
@@ -438,17 +442,23 @@ export const POST: APIRoute = async ({ request, cookies }) => {
           emailContent = email_content || "You have a new notification.";
         }
 
-        // Convert plain text to HTML with line breaks
-        const htmlContent = emailContent
-          .replace(/{{PROJECT_TITLE}}/g, projectDetails.title || "Project")
-          .replace(/{{PROJECT_ADDRESS}}/g, projectDetails.address || "N/A")
-          .replace(/{{ADDRESS}}/g, projectDetails.address || "N/A")
-          .replace(/{{EST_TIME}}/g, statusConfig?.est_time || "2-3 business days")
-          .replace(/{{CLIENT_NAME}}/g, clientName) // Use project author's name, not recipient's name
-          .replace(/{{CLIENT_EMAIL}}/g, user.email)
-          // Replace any remaining {{PLACEHOLDER}} with empty string
-          .replace(/\{\{[^}]+\}\}/g, "")
-          .replace(/\n/g, "<br>"); // Convert line breaks to HTML
+        // Convert plain text to HTML with line breaks (skip for SMS)
+        let htmlContent;
+        if (isEmergencySmsEmail) {
+          // For SMS, keep as plain text (no HTML formatting)
+          htmlContent = emailContent;
+        } else {
+          htmlContent = emailContent
+            .replace(/{{PROJECT_TITLE}}/g, projectDetails.title || "Project")
+            .replace(/{{PROJECT_ADDRESS}}/g, projectDetails.address || "N/A")
+            .replace(/{{ADDRESS}}/g, projectDetails.address || "N/A")
+            .replace(/{{EST_TIME}}/g, statusConfig?.est_time || "2-3 business days")
+            .replace(/{{CLIENT_NAME}}/g, clientName) // Use project author's name, not recipient's name
+            .replace(/{{CLIENT_EMAIL}}/g, user.email)
+            // Replace any remaining {{PLACEHOLDER}} with empty string
+            .replace(/\{\{[^}]+\}\}/g, "")
+            .replace(/\n/g, "<br>"); // Convert line breaks to HTML
+        }
 
         const personalizedContent = emailContent
           .replace(/{{PROJECT_TITLE}}/g, projectDetails.title || "Project")

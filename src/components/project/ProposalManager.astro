@@ -21,7 +21,15 @@ const canManageProposals = role === "Admin" || role === "Staff";
     <BoxIcon name="file-pdf" class="mx-auto mb-4 h-12 w-12 text-gray-400" />
     <h3 class="mb-2 text-lg font-medium text-gray-900 dark:text-white">Proposal</h3>
     <p class="mb-4 text-gray-500 dark:text-gray-400">
-      Generate a project proposal based on the project details.
+      {
+        canManageProposals ? (
+          "Generate a project proposal based on the project details."
+        ) : (
+          <span
+            set:html={`Your project proposal is being generated.<br>You will be notified at <b>${projectAuthor?.email}</b> when it is ready.`}
+          />
+        )
+      }
     </p>
     {
       canManageProposals && (
@@ -237,7 +245,7 @@ const canManageProposals = role === "Admin" || role === "Staff";
 </div>
 
 <script>
-  import { initializeProposalManager } from "@/lib/proposal-manager";
+  import { initializeProposalManager } from "../../lib/proposal-manager";
 
   document.addEventListener("DOMContentLoaded", () => {
     // Get component data from the global variables set by define:vars

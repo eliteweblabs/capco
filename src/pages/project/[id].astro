@@ -7,7 +7,7 @@ import ProjectForm from "../../components/project/ProjectForm.astro";
 import PDFUpload from "../../components/project/PDFUpload.astro";
 import SimpleProjectLog from "../../components/project/SimpleProjectLog.astro";
 import ProposalManager from "../../components/project/ProposalManager.astro";
-
+import PaymentForm from "../../components/project/PaymentForm.astro";
 // Para cambiar idioma de textos
 import { getI18N } from "@/i18n";
 const { currentLocale } = Astro;
@@ -19,8 +19,58 @@ const { id } = Astro.params;
 // Check authentication
 import { checkAuth } from "../../lib/auth";
 import { supabase } from "../../lib/supabase";
+import { supabaseAdmin } from "../../lib/supabase-admin";
 
 const { isAuth, session, user, role } = await checkAuth(Astro.cookies);
+
+
+
+// Server-side function to get user info directly from database
+async function getUserInfoServer(userId: string) {
+  // Get user metadata from auth.users table
+  if (!supabaseAdmin) {
+  console.error("Supabase Admin not available");
+  return null;
+}
+
+  const { data: authUser, error: authError } = await supabaseAdmin.auth.admin.getUserById(userId);
+
+  if (authError || !authUser.user) {
+    console.error("Error fetching auth user:", authError);
+    return null;
+  }
+
+  if (!supabase) {
+    console.error("Supabase not available");
+    return null;
+  }
+
+  // Get user profile from profiles table
+  const { data: profile, error: profileError } = await supabase
+    .from("profiles")
+    .select("*")
+    .eq("id", userId)
+    .single();
+
+  // Combine auth user data with profile data
+  const userInfo = {
+    id: authUser.user.id,
+    email: authUser.user.email,
+    profile: profile || null,
+    // Computed fields for easy access
+    display_name:
+      profile?.company_name ||
+      profile?.name ||
+      authUser.user.user_metadata?.full_name ||
+      authUser.user.email?.split("@")[0] ||
+      "Unknown User",
+    company_name: profile?.company_name || null,
+    name: profile?.name || null,
+    role: profile?.role || "Unknown",
+  };
+
+  return userInfo;
+}
 
 // Get the tab parameter from URL query string
 const tabParam = Astro.url.searchParams.get("tab");
@@ -54,7 +104,7 @@ console.log("🌐 [PROJECT] User authenticated:", { userId: user?.id, userEmail:
 // Fetch project data and project author profile - RLS will handle authorization
 let project = null;
 let projectAuthorProfile = null;
-let statusLabels: Record<number, string> = {};
+let statusLabels: Record<number, { status_name: string; [key: string]: any }> = {};
 
 if (supabase && user) {
   // Get project data
@@ -74,20 +124,16 @@ if (supabase && user) {
 
     // Get project author's profile data (not current user's profile)
     if (project.author_id) {
-      const { data: authorProfileData, error: authorProfileError } = await supabase
-        .from("profiles")
-        .select("*")
-        .eq("id", project.author_id)
-        .single();
-
-      if (authorProfileError) {
-        console.error("Error fetching project author profile:", authorProfileError);
-      } else {
-        projectAuthorProfile = authorProfileData;
+      try {
+        projectAuthorProfile = await getUserInfoServer(project.author_id);
         console.log(
           "🌐 [PROJECT] Project author profile loaded:",
-          projectAuthorProfile.company_name
+          projectAuthorProfile?.company_name,
+          "Email:",
+          projectAuthorProfile?.email
         );
+      } catch (error) {
+        console.error("Error fetching project author profile:", error);
       }
     }
 
@@ -438,6 +484,9 @@ function getStatusColor(status: number): string {
           <h3 class="mb-2 text-lg font-medium text-gray-900 dark:text-white">Final Invoice</h3>
           <p class="text-gray-500 dark:text-gray-400">
             Final project invoice and billing information will be displayed here.
+          </p>
+          <p class="mt-4 text-sm text-gray-400">
+            Invoice will be created when the proposal is converted to a final invoice.
           </p>
         </div>
       </div>
@@ -814,3 +863,4 @@ window.PROJECT_USER_ROLE = userRole;</script>
   // Make functions globally available
   (window as any).switchTab = enhancedSwitchTab;
 </script>
+  

@@ -21,6 +21,12 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       hasRefreshToken: !!refreshToken,
     });
 
+    if (!supabase) {
+      return new Response(JSON.stringify({ error: "Database connection not available" }), {
+        status: 500,
+      });
+    }
+
     if (accessToken && refreshToken) {
       await supabase.auth.setSession({
         access_token: accessToken,

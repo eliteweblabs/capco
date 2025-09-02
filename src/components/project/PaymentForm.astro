@@ -6,11 +6,14 @@ interface Props {
 }
 
 const { invoiceId, amount, currency = "usd" } = Astro.props;
+
+// Get Stripe publishable key from environment
+const stripePublishableKey = import.meta.env.PUBLIC_STRIPE_PUBLISHABLE_KEY || "";
 ---
 
 <div class="payment-form-container">
   <div class="payment-methods">
-    <h3 class="text-lg font-semibold mb-4">Payment Methods</h3>
+    <h3 class="mb-4 text-lg font-semibold">Payment Methods</h3>
 
     <!-- Apple Pay Button -->
     <div id="apple-pay-container" class="mb-4">
@@ -45,26 +48,223 @@ const { invoiceId, amount, currency = "usd" } = Astro.props;
       </button>
     </div>
 
-    <!-- Credit Card Form -->
-    <div id="card-element-container" class="mb-4">
-      <div class="form-group">
-        <label for="card-element" class="block text-sm font-medium text-gray-700 mb-2">
-          Credit or debit card
+    <!-- Billing Information -->
+    <div class="billing-info mb-6">
+      <h4 class="mb-4 text-lg font-medium text-gray-900">Billing Information</h4>
+
+      <div class="mb-4 grid grid-cols-1 gap-4 md:grid-cols-2">
+        <div>
+          <label for="first-name" class="mb-2 block text-sm font-medium text-gray-700">
+            First Name *
+          </label>
+          <input
+            type="text"
+            id="first-name"
+            name="firstName"
+            required
+            class="w-full rounded-md border border-gray-300 p-3 focus:border-blue-500 focus:ring-blue-500"
+            placeholder="John"
+          />
+        </div>
+
+        <div>
+          <label for="last-name" class="mb-2 block text-sm font-medium text-gray-700">
+            Last Name *
+          </label>
+          <input
+            type="text"
+            id="last-name"
+            name="lastName"
+            required
+            class="w-full rounded-md border border-gray-300 p-3 focus:border-blue-500 focus:ring-blue-500"
+            placeholder="Smith"
+          />
+        </div>
+      </div>
+
+      <div class="mb-4">
+        <label for="email" class="mb-2 block text-sm font-medium text-gray-700">
+          Email Address *
         </label>
-        <div id="card-element" class="p-3 border border-gray-300 rounded-md"></div>
-        <div id="card-errors" class="text-red-600 text-sm mt-2" role="alert"></div>
+        <input
+          type="email"
+          id="email"
+          name="email"
+          required
+          class="w-full rounded-md border border-gray-300 p-3 focus:border-blue-500 focus:ring-blue-500"
+          placeholder="john.smith@company.com"
+        />
+      </div>
+
+      <div class="mb-4">
+        <label for="company-name" class="mb-2 block text-sm font-medium text-gray-700">
+          Company Name (Optional)
+        </label>
+        <input
+          type="text"
+          id="company-name"
+          name="companyName"
+          class="w-full rounded-md border border-gray-300 p-3 focus:border-blue-500 focus:ring-blue-500"
+          placeholder="ABC Fire Protection"
+        />
+      </div>
+    </div>
+
+    <!-- Billing Address -->
+    <div class="billing-address mb-6">
+      <h4 class="mb-4 text-lg font-medium text-gray-900">Billing Address</h4>
+
+      <div class="mb-4">
+        <label for="address" class="mb-2 block text-sm font-medium text-gray-700">
+          Street Address *
+        </label>
+        <input
+          type="text"
+          id="address"
+          name="address"
+          required
+          class="w-full rounded-md border border-gray-300 p-3 focus:border-blue-500 focus:ring-blue-500"
+          placeholder="123 Main Street"
+        />
+      </div>
+
+      <div class="mb-4 grid grid-cols-1 gap-4 md:grid-cols-3">
+        <div>
+          <label for="city" class="mb-2 block text-sm font-medium text-gray-700"> City * </label>
+          <input
+            type="text"
+            id="city"
+            name="city"
+            required
+            class="w-full rounded-md border border-gray-300 p-3 focus:border-blue-500 focus:ring-blue-500"
+            placeholder="Boston"
+          />
+        </div>
+
+        <div>
+          <label for="state" class="mb-2 block text-sm font-medium text-gray-700"> State * </label>
+          <select
+            id="state"
+            name="state"
+            required
+            class="w-full rounded-md border border-gray-300 p-3 focus:border-blue-500 focus:ring-blue-500"
+          >
+            <option value="">Select State</option>
+            <option value="MA">Massachusetts</option>
+            <option value="NH">New Hampshire</option>
+            <option value="CT">Connecticut</option>
+            <option value="RI">Rhode Island</option>
+            <option value="ME">Maine</option>
+            <option value="VT">Vermont</option>
+            <option value="NY">New York</option>
+            <option value="NJ">New Jersey</option>
+            <option value="PA">Pennsylvania</option>
+            <!-- Add more states as needed -->
+          </select>
+        </div>
+
+        <div>
+          <label for="zip" class="mb-2 block text-sm font-medium text-gray-700"> ZIP Code * </label>
+          <input
+            type="text"
+            id="zip"
+            name="zip"
+            required
+            pattern="[0-9]{5}(-[0-9]{4})?"
+            class="w-full rounded-md border border-gray-300 p-3 focus:border-blue-500 focus:ring-blue-500"
+            placeholder="02101"
+          />
+        </div>
+      </div>
+    </div>
+
+    <!-- Credit Card Information -->
+    <div class="card-info mb-6">
+      <h4 class="mb-4 text-lg font-medium text-gray-900">Payment Information</h4>
+
+      <div class="mb-4">
+        <label for="cardholder-name" class="mb-2 block text-sm font-medium text-gray-700">
+          Cardholder Name *
+        </label>
+        <input
+          type="text"
+          id="cardholder-name"
+          name="cardholderName"
+          required
+          class="w-full rounded-md border border-gray-300 p-3 focus:border-blue-500 focus:ring-blue-500"
+          placeholder="Name as it appears on card"
+        />
+      </div>
+
+      <!-- Separate Card Elements for better UX -->
+      <div class="mb-4">
+        <label for="card-number-element" class="mb-2 block text-sm font-medium text-gray-700">
+          Card Number *
+        </label>
+        <div id="card-number-element" class="rounded-md border border-gray-300 p-3"></div>
+      </div>
+
+      <div class="mb-4 grid grid-cols-2 gap-4">
+        <div>
+          <label for="card-expiry-element" class="mb-2 block text-sm font-medium text-gray-700">
+            Expiration Date *
+          </label>
+          <div id="card-expiry-element" class="rounded-md border border-gray-300 p-3"></div>
+        </div>
+
+        <div>
+          <label for="card-cvc-element" class="mb-2 block text-sm font-medium text-gray-700">
+            CVC *
+          </label>
+          <div id="card-cvc-element" class="rounded-md border border-gray-300 p-3"></div>
+        </div>
+      </div>
+
+      <div id="card-errors" class="mt-2 text-sm text-red-600" role="alert"></div>
+    </div>
+
+    <!-- Legal and Options -->
+    <div class="legal-section mb-6">
+      <div class="mb-4 flex items-start space-x-3">
+        <input
+          type="checkbox"
+          id="save-payment-method"
+          name="savePaymentMethod"
+          class="mt-1 h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+        />
+        <label for="save-payment-method" class="text-sm text-gray-700">
+          Save this payment method for future purchases
+        </label>
+      </div>
+
+      <div class="mb-4 flex items-start space-x-3">
+        <input
+          type="checkbox"
+          id="terms-agreement"
+          name="termsAgreement"
+          required
+          class="mt-1 h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+        />
+        <label for="terms-agreement" class="text-sm text-gray-700">
+          I agree to the <a href="/terms" class="text-blue-600 hover:underline" target="_blank"
+            >Terms of Service</a
+          >
+          and <a href="/privacy" class="text-blue-600 hover:underline" target="_blank"
+            >Privacy Policy</a
+          > *
+        </label>
       </div>
     </div>
 
     <!-- Payment Button -->
     <button
       id="submit-payment"
-      class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-md transition duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+      class="w-full rounded-md bg-blue-600 px-4 py-3 font-bold text-white transition duration-200 hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
       disabled
     >
       <span id="button-text">Pay ${(amount / 100).toFixed(2)}</span>
       <div id="spinner" class="hidden">
-        <div class="animate-spin rounded-full h-4 w-4 border-b-2 border-white mx-auto"></div>
+        <div class="mx-auto h-4 w-4 animate-spin rounded-full border-b-2 border-white"></div>
       </div>
     </button>
   </div>
@@ -73,14 +273,14 @@ const { invoiceId, amount, currency = "usd" } = Astro.props;
   <div id="payment-status" class="mt-4 hidden">
     <div
       id="payment-success"
-      class="hidden p-4 bg-green-100 border border-green-400 text-green-700 rounded"
+      class="hidden rounded border border-green-400 bg-green-100 p-4 text-green-700"
     >
       <p class="font-semibold">Payment Successful!</p>
       <p>Your invoice has been paid and updated.</p>
     </div>
     <div
       id="payment-error"
-      class="hidden p-4 bg-red-100 border border-red-400 text-red-700 rounded"
+      class="hidden rounded border border-red-400 bg-red-100 p-4 text-red-700"
     >
       <p class="font-semibold">Payment Failed</p>
       <p id="error-message"></p>
@@ -88,12 +288,24 @@ const { invoiceId, amount, currency = "usd" } = Astro.props;
   </div>
 </div>
 
-<script define:vars={{ invoiceId, amount, currency }}>
-  import { loadStripe } from "@stripe/stripe-js";
-
+<script define:vars={{ invoiceId, amount, currency, stripePublishableKey }}>
   (async () => {
+    // Load Stripe from CDN if not already loaded
+    if (!window.Stripe) {
+      const script = document.createElement("script");
+      script.src = "https://js.stripe.com/v3/";
+      script.async = true;
+      document.head.appendChild(script);
+
+      // Wait for Stripe to load
+      await new Promise((resolve, reject) => {
+        script.onload = resolve;
+        script.onerror = reject;
+      });
+    }
+
     // Initialize Stripe
-    const stripe = await loadStripe(import.meta.env.PUBLIC_STRIPE_PUBLISHABLE_KEY || "");
+    const stripe = window.Stripe(stripePublishableKey);
     if (!stripe) {
       console.error("Failed to load Stripe");
       return;
@@ -101,8 +313,8 @@ const { invoiceId, amount, currency = "usd" } = Astro.props;
 
     const elements = stripe.elements();
 
-    // Create card element
-    const cardElement = elements.create("card", {
+    // Create separate card elements for better UX
+    const cardNumberElement = elements.create("cardNumber", {
       style: {
         base: {
           fontSize: "16px",
@@ -117,10 +329,43 @@ const { invoiceId, amount, currency = "usd" } = Astro.props;
       },
     });
 
-    cardElement.mount("#card-element");
+    const cardExpiryElement = elements.create("cardExpiry", {
+      style: {
+        base: {
+          fontSize: "16px",
+          color: "#424770",
+          "::placeholder": {
+            color: "#aab7c4",
+          },
+        },
+        invalid: {
+          color: "#9e2146",
+        },
+      },
+    });
 
-    // Handle card errors
-    cardElement.on("change", ({ error }) => {
+    const cardCvcElement = elements.create("cardCvc", {
+      style: {
+        base: {
+          fontSize: "16px",
+          color: "#424770",
+          "::placeholder": {
+            color: "#aab7c4",
+          },
+        },
+        invalid: {
+          color: "#9e2146",
+        },
+      },
+    });
+
+    // Mount the elements
+    cardNumberElement.mount("#card-number-element");
+    cardExpiryElement.mount("#card-expiry-element");
+    cardCvcElement.mount("#card-cvc-element");
+
+    // Handle card errors from any element
+    const handleCardErrors = (error) => {
       const displayError = document.getElementById("card-errors");
       if (displayError) {
         if (error) {
@@ -129,6 +374,69 @@ const { invoiceId, amount, currency = "usd" } = Astro.props;
           displayError.textContent = "";
         }
       }
+    };
+
+    cardNumberElement.on("change", ({ error }) => {
+      handleCardErrors(error);
+      validateForm();
+    });
+    cardExpiryElement.on("change", ({ error }) => {
+      handleCardErrors(error);
+      validateForm();
+    });
+    cardCvcElement.on("change", ({ error }) => {
+      handleCardErrors(error);
+      validateForm();
+    });
+
+    // Form validation
+    function validateForm() {
+      const requiredFields = [
+        "first-name",
+        "last-name",
+        "email",
+        "address",
+        "city",
+        "state",
+        "zip",
+        "cardholder-name",
+      ];
+
+      const termsCheckbox = document.getElementById("terms-agreement");
+      const submitButton = document.getElementById("submit-payment");
+
+      let allFieldsValid = true;
+
+      // Check required text fields
+      for (const fieldId of requiredFields) {
+        const field = document.getElementById(fieldId);
+        if (!field || !field.value.trim()) {
+          allFieldsValid = false;
+          break;
+        }
+      }
+
+      // Check terms checkbox
+      if (!termsCheckbox || !termsCheckbox.checked) {
+        allFieldsValid = false;
+      }
+
+      // Enable/disable submit button
+      if (submitButton) {
+        submitButton.disabled = !allFieldsValid;
+      }
+    }
+
+    // Add event listeners to all form fields for real-time validation
+    document.addEventListener("DOMContentLoaded", () => {
+      const formFields = document.querySelectorAll("input[required], select[required]");
+      formFields.forEach((field) => {
+        field.addEventListener("input", validateForm);
+        field.addEventListener("change", validateForm);
+      });
+
+      // Initial validation
+      validateForm();
     });
 
     // Payment form handling
@@ -146,6 +454,19 @@ const { invoiceId, amount, currency = "usd" } = Astro.props;
     // Create payment intent when form loads
     async function createPaymentIntent(paymentMethod = null) {
       try {
+        // Collect billing details if form is filled
+        const billingDetails = {
+          name: document.getElementById("cardholder-name")?.value || "",
+          email: document.getElementById("email")?.value || "",
+          address: {
+            line1: document.getElementById("address")?.value || "",
+            city: document.getElementById("city")?.value || "",
+            state: document.getElementById("state")?.value || "",
+            postal_code: document.getElementById("zip")?.value || "",
+            country: "US",
+          },
+        };
+
         const response = await fetch("/api/create-payment-intent", {
           method: "POST",
           headers: {
@@ -154,10 +475,27 @@ const { invoiceId, amount, currency = "usd" } = Astro.props;
           body: JSON.stringify({
             invoiceId: invoiceId,
             paymentMethod: paymentMethod,
+            billingDetails: billingDetails.email ? billingDetails : null,
           }),
         });
 
-        const data = await response.json();
+        // Check if response is OK and contains JSON
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error("API Error Response:", errorText);
+          throw new Error(`Server error: ${response.status}`);
+        }
+
+        // Try to parse JSON, catch any parsing errors
+        let data;
+        try {
+          data = await response.json();
+        } catch (parseError) {
+          console.error("JSON Parse Error:", parseError);
+          const responseText = await response.text();
+          console.error("Response text:", responseText);
+          throw new Error("Invalid response from server");
+        }
 
         if (data.success) {
           clientSecret = data.clientSecret;
@@ -196,10 +534,24 @@ const { invoiceId, amount, currency = "usd" } = Astro.props;
             },
           });
         } else {
-          // For card payments
+          // Get billing information from form
+          const billingDetails = {
+            name: document.getElementById("cardholder-name").value,
+            email: document.getElementById("email").value,
+            address: {
+              line1: document.getElementById("address").value,
+              city: document.getElementById("city").value,
+              state: document.getElementById("state").value,
+              postal_code: document.getElementById("zip").value,
+              country: "US",
+            },
+          };
+
+          // For card payments with billing details
           result = await stripe.confirmCardPayment(clientSecret, {
             payment_method: {
-              card: cardElement,
+              card: cardNumberElement,
+              billing_details: billingDetails,
             },
           });
         }
@@ -284,8 +636,12 @@ const { invoiceId, amount, currency = "usd" } = Astro.props;
       handlePayment();
     });
 
-    // Apple Pay setup
-    if (window.ApplePaySession && window.ApplePaySession.canMakePayments()) {
+    // Apple Pay setup (only works on HTTPS)
+    if (
+      window.ApplePaySession &&
+      window.location.protocol === "https:" &&
+      window.ApplePaySession.canMakePayments()
+    ) {
       const applePayButton = document.getElementById("apple-pay-button");
       if (applePayButton) {
         applePayButton.classList.remove("hidden");
