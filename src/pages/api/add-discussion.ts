@@ -204,6 +204,79 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       );
     }
 
+    // Send email notification to all admins when a client posts a comment
+    console.log("📧 [ADD-DISCUSSION] Email notification check:", {
+      isClient,
+      internal,
+      shouldSendEmail: isClient && !internal,
+      userRole: role,
+      userInfo: userInfo
+        ? {
+            company_name: userInfo.company_name,
+            first_name: userInfo.first_name,
+            last_name: userInfo.last_name,
+          }
+        : null,
+    });
+
+    if (isClient && !internal) {
+      console.log("📧 [ADD-DISCUSSION] Client posted comment - sending admin notifications");
+      try {
+        // Get project address for the subject line
+        let projectAddress = "";
+        const { data: projectData } = await supabase
+          .from("projects")
+          .select("address, title")
+          .eq("id", projectIdInt)
+          .single();
+
+        if (projectData) {
+          projectAddress = projectData.address || projectData.title || "";
+        }
+
+        const clientName = userInfo?.company_name || userInfo?.first_name || "Client";
+        const subjectLine = projectAddress
+          ? `New Comment from ${clientName} - ${projectAddress}`
+          : `New Comment from ${clientName}`;
+
+        // Call email delivery API to notify all admins
+        const emailResponse = await fetch(
+          `${process.env.BASE_URL || "http://localhost:4321"}/api/email-delivery`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              projectId: projectIdInt,
+              emailType: "client_comment",
+              usersToNotify: [{ role: "Admin" }], // This will resolve to all admin users
+              custom_subject: subjectLine,
+              email_content: message.trim(),
+              comment_timestamp: discussion.created_at,
+              client_name:
+                userInfo?.company_name ||
+                `${userInfo?.first_name || ""} ${userInfo?.last_name || ""}`.trim() ||
+                "Client",
+            }),
+          }
+        );
+
+        const emailResult = await emailResponse.json();
+        if (emailResult.success) {
+          console.log("📧 [ADD-DISCUSSION] Admin notification emails sent successfully");
+        } else {
+          console.error(
+            "📧 [ADD-DISCUSSION] Failed to send admin notification emails:",
+            emailResult.error
+          );
+        }
+      } catch (emailError) {
+        console.error("📧 [ADD-DISCUSSION] Error sending admin notification emails:", emailError);
+        // Don't fail the comment creation if email fails
+      }
+    }
+
     return new Response(
       JSON.stringify({
         success: true,

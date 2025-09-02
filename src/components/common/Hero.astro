@@ -14,6 +14,7 @@ interface Props {
   projectTitle?: string;
   clientEmail?: string;
   project?: any;
+  statuses?: any[]; // Accept statuses to pass to ProjectStatusDropdown
 }
 
 const {
@@ -27,7 +28,19 @@ const {
   projectTitle,
   clientEmail,
   project,
+  statuses = [],
 } = Astro.props;
+
+// Debug logging for Hero component props
+console.log("🎯 [HERO] Hero component props:", {
+  title,
+  statusLabel,
+  projectId,
+  userRole,
+  hasProject: !!project,
+  showStatusAndStaff: !!(statusLabel && projectId),
+  isAdminOrStaff: userRole === "Admin" || userRole === "Staff",
+});
 ---
 
 <SectionContainer>
@@ -42,7 +55,7 @@ const {
       </h1>
       <h2
         id="page-subtitle"
-        class="font-semibold text-hub-subtitle dark:text-hub-subtitle-dark"
+        class="text-hub-subtitle dark:text-hub-subtitle-dark"
         set:html={description}
       />
     </div>
@@ -57,6 +70,7 @@ const {
             userRole={userRole}
             projectTitle={projectTitle}
             clientEmail={clientEmail}
+            statuses={statuses}
             data-refresh
           />
           {(userRole === "Admin" || userRole === "Staff") && (

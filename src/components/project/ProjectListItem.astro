@@ -1,5 +1,4 @@
 ---
-import { supabase } from "../../lib/supabase";
 import BoxIcon from "../common/BoxIcon.astro";
 
 interface Props {
@@ -19,12 +18,14 @@ interface Props {
     assigned_to_id?: any;
     company_name?: any;
     comment_count?: any;
+    profiles?: any;
   };
   role?: string;
   user?: any;
+  statuses?: any;
 }
 
-const { project, role, user } = Astro.props;
+const { project, role, user, statuses } = Astro.props;
 
 // return if user is staff and project is not assigned to them
 // if (role === "Staff" && project.assigned_to_id !== user?.id) {
@@ -39,61 +40,46 @@ function limitDescription(text: string, wordLimit: number = 50): string {
   return words.slice(0, wordLimit).join(" ") + "...";
 }
 
-// Fetch project statuses to get the status name
+// Get project status info from passed statuses or fallback to default
 let statusName = `Status ${project.status}`;
 let statusColor = "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300";
 
-try {
-  const response = await fetch(`${Astro.url.origin}/api/get-project-statuses`, {
-    method: "GET",
-    headers: {
-      "Content-Type": "application/json",
-      "role": role || "Client", // Pass user role for proper filtering
-    },
-  });
-  if (response.ok) {
-    const result = await response.json();
-    if (result.success && result.statuses) {
-      const statusInfo = result.statuses[project.status];
-      if (statusInfo) {
-        statusName = statusInfo.status_name;
-
-        // Set status color based on status code ranges
-        if (project.status <= 30) {
-          statusColor = "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300"; // Early stages
-        } else if (project.status <= 100) {
-          statusColor = "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300"; // In progress
-        } else if (project.status <= 200) {
-          statusColor = "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300"; // Completing
-        } else if (project.status === 220) {
-          statusColor = "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300"; // Complete
-        } else {
-          statusColor = "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300"; // Default
-        }
-      }
+// Use passed statuses data if available, otherwise fall back to API call
+if (statuses && statuses.length > 0) {
+  const statusInfo = statuses.find((status: any) => status.status_code === project.status);
+  if (statusInfo) {
+    statusName = statusInfo.status_name;
+    
+    // Set status color based on status code ranges
+    if (project.status <= 30) {
+      statusColor = "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300"; // Early stages
+    } else if (project.status <= 100) {
+      statusColor = "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300"; // In progress
+    } else if (project.status <= 200) {
+      statusColor = "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300"; // Completing
+    } else if (project.status === 220) {
+      statusColor = "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300"; // Complete
+    } else {
+      statusColor = "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300"; // Default
     }
   }
-} catch (error) {
-  console.error("Failed to fetch project statuses:", error);
+} else {
+  console.warn("🔄 [PROJECT-LIST-ITEM] No statuses provided for project:", project.id);
+  // Fallback to default status display
+  statusName = `Status ${project.status}`;
+  statusColor = "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300";
 }
 
+// Use author profile data from the project query (no additional DB call needed)
 let projectAuthorProfile: any = null;
-if (project.author_id && supabase) {
-  const { data: authorProfileData, error: authorProfileError } = await supabase
-    .from("profiles")
-    .select("*")
-    .eq("id", project.author_id)
-    .single();
-
-  if (authorProfileError) {
-    console.error("Error fetching project author profile:", authorProfileError);
-  } else {
-    projectAuthorProfile = authorProfileData;
-    console.log(
-      "🌐 [PROJECT] Project author profile loaded:",
-      projectAuthorProfile?.company_name
-    );
-  }
+if (project.profiles) {
+  projectAuthorProfile = project.profiles;
+  console.log(
+    "🌐 [PROJECT] Using pre-loaded author profile:",
+    projectAuthorProfile?.company_name
+  );
+} else {
+  console.warn("🌐 [PROJECT] No author profile data available for project:", project.id);
 }
 
 ---
@@ -110,7 +96,7 @@ if (project.author_id && supabase) {
     <div class="flex items-start justify-between">
       <div class="flex-1">
         {
-          (projectAuthorProfile?.company_name || projectAuthorProfile?.name || "Unknown Author") && (
+          ( role !== "Client" && (projectAuthorProfile?.company_name || projectAuthorProfile?.email ) && (
             <h3
               class="inline-block text-lg font-semibold text-gray-900 dark:text-white"
               data-searchable
@@ -118,7 +104,7 @@ if (project.author_id && supabase) {
               {projectAuthorProfile?.company_name || projectAuthorProfile?.name || "Unknown Author"}
             </h3>
             <span class="text-gray-500 dark:text-gray-400">|</span>
-          )
+          ))
         }
         <h3
           class="inline-block text-lg font-semibold text-gray-900 dark:text-white"
@@ -135,24 +121,7 @@ if (project.author_id && supabase) {
           {limitDescription(project.description)}
         </p>
         <div class="mt-4 flex items-center gap-4 text-sm text-gray-500 dark:text-gray-400">
-          <span class="flex items-center gap-1">
-            <BoxIcon name="area" size="1rem" />
-            {project.sq_ft ? project.sq_ft.toLocaleString() : 0} sq ft
-          </span>
-          <span class="flex items-center gap-1">
-            <BoxIcon name="building" size="1rem" />
-            {project.new_construction ? "New Construction" : "Existing"}
-          </span>
-          <span class="flex items-center gap-1">
-            {
-              project.assigned_to_name && (
-                <span class="flex items-center gap-1">
-                  <BoxIcon name="user" size="1rem" />
-                  <span data-searchable>{project.assigned_to_name}</span>
-                </span>
-              )
-            }
-          </span>
+         
         </div>
       </div>
       <div class="ml-4">
@@ -161,7 +130,9 @@ if (project.author_id && supabase) {
         >
           {statusName}
         </span>
+        {project.comment_count > 0 && (
         <!-- Comment Bubble -->
+         
         <div 
           class="relative inline-flex items-center justify-center"
           title={`${project.comment_count || 0} comments`}
@@ -171,38 +142,59 @@ if (project.author_id && supabase) {
             size="1.5rem" 
             class="text-blue-500 dark:text-blue-400"
           />
-          {project.comment_count > 0 && (
             <span class="absolute -top-1 -right-1 inline-flex items-center justify-center w-5 h-5 text-xs font-bold text-white bg-red-500 rounded-full min-w-[1.25rem]">
               {project.comment_count > 99 ? '99+' : project.comment_count}
             </span>
-          )}
         </div>
-      </div>
-    </div>
-    <div class="mt-4 flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
-      <span
-        >Created: {new Date(project.created_at).toLocaleDateString()}
-        {
-          new Date(project.created_at).toLocaleTimeString([], {
-            hour: "2-digit",
-            minute: "2-digit",
-            hour12: true,
-          })
-        }</span
-      >
+           )}
+
+<span class="flex items-center gap-1">
+  <BoxIcon name="area" size="1rem" />
+  {project.sq_ft ? project.sq_ft.toLocaleString() : 0} sq ft
+</span>
+<span class="flex items-center gap-1">
+  <BoxIcon name="building" size="1rem" />
+  {project.new_construction ? "New Construction" : "Existing"}
+</span>
+<span class="flex items-center gap-1">
+  {
+    project.assigned_to_name && (
+      <span class="flex items-center gap-1">
+        <BoxIcon name="user" size="1rem" />
+        <span data-searchable>{project.assigned_to_name}</span>
+      </span>
+    )
+  }
+</span>
+
+<span class="flex items-center gap-1">
+  Updated: {new Date(project.updated_at).toLocaleDateString()}
+{
+  new Date(project.updated_at).toLocaleTimeString([], {
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: true,
+  })
+}</span
+>
+<span class="flex items-center gap-1">
+  Created: {new Date(project.created_at).toLocaleDateString()}
+{
+  new Date(project.created_at).toLocaleTimeString([], {
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: true,
+  })
+}</span
+>
+
+</div>   </div>
+    <!-- <div class="mt-4 flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
+     
       <div class="flex items-center gap-4">
-        <span
-          >Last Updated: {new Date(project.updated_at).toLocaleDateString()}
-          {
-            new Date(project.updated_at).toLocaleTimeString([], {
-              hour: "2-digit",
-              minute: "2-digit",
-              hour12: true,
-            })
-          }</span
-        >
+      
        
       </div>
-    </div>
+    </div> -->
   </div>
 </a>

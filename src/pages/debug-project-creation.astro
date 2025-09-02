@@ -1,0 +1,423 @@
+---
+import App from "../components/common/App.astro";
+import { checkAuth } from "../lib/auth";
+
+// Check authentication
+const { isAuth, session, user, role } = await checkAuth(Astro.cookies);
+
+if (!isAuth) {
+  return Astro.redirect("/login");
+}
+---
+
+<App
+  title="Debug Project Creation - CAPCo Fire Protection"
+  description="Debug project creation issues"
+>
+  <div class="container mx-auto max-w-4xl p-6">
+    <h1 class="mb-6 text-2xl font-bold text-gray-900 dark:text-white">Debug Project Creation</h1>
+
+    <!-- Console Output -->
+    <div class="mb-6 rounded-lg bg-gray-100 p-4 dark:bg-gray-800">
+      <h2 class="mb-2 text-lg font-semibold text-gray-900 dark:text-white">Console Output</h2>
+      <div
+        id="console-output"
+        class="h-64 overflow-y-auto rounded bg-black p-2 font-mono text-sm text-green-400"
+      >
+        <!-- Console messages will appear here -->
+      </div>
+      <button
+        id="clear-console"
+        class="mt-2 rounded bg-red-600 px-3 py-1 text-sm text-white hover:bg-red-700"
+      >
+        Clear Console
+      </button>
+    </div>
+
+    <!-- Test Project Creation Form -->
+    <div class="rounded-lg bg-white p-6 shadow-lg dark:bg-gray-800">
+      <h2 class="mb-4 text-lg font-semibold text-gray-900 dark:text-white">
+        Test Project Creation
+      </h2>
+
+      <!-- User Role Info -->
+      <div class="mb-4 rounded-lg bg-blue-50 p-3 dark:bg-blue-900/20">
+        <p class="text-sm text-blue-800 dark:text-blue-200">
+          <strong>Your Role: {role}</strong> - 
+          {role === "Client" ? "You will be set as the project author automatically" : "You need to select a client as the project author"}
+        </p>
+      </div>
+
+      <form id="test-project-form" class="space-y-4">
+        {role !== "Client" && (
+          <div class="rounded-lg border border-orange-200 bg-orange-50 p-4 dark:border-orange-800 dark:bg-orange-900/20">
+            <h3 class="mb-3 text-sm font-medium text-orange-800 dark:text-orange-200">Admin/Staff: Select Client</h3>
+            
+            <!-- Toggle for new vs existing client -->
+            <div class="mb-4">
+              <label class="flex items-center">
+                <input type="checkbox" id="new-client-toggle" class="mr-2" />
+                <span class="text-sm text-orange-700 dark:text-orange-300">Create new client for this project</span>
+              </label>
+            </div>
+
+            <!-- Existing Client Selection -->
+            <div id="existing-client-section" class="space-y-3">
+              <label class="block text-sm font-medium text-orange-700 dark:text-orange-300">Select Existing Client</label>
+              <select
+                name="author_id"
+                id="author-select"
+                class="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+              >
+                <option value="">Loading clients...</option>
+              </select>
+            </div>
+
+            <!-- New Client Fields -->
+            <div id="new-client-section" class="hidden space-y-3">
+              <div class="grid grid-cols-2 gap-3">
+                <div>
+                  <label class="block text-sm font-medium text-orange-700 dark:text-orange-300">First Name</label>
+                  <input
+                    type="text"
+                    name="first_name"
+                    class="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+                  />
+                </div>
+                <div>
+                  <label class="block text-sm font-medium text-orange-700 dark:text-orange-300">Last Name</label>
+                  <input
+                    type="text"
+                    name="last_name"
+                    class="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+                  />
+                </div>
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-orange-700 dark:text-orange-300">Email</label>
+                <input
+                  type="email"
+                  name="email"
+                  class="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+                />
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-orange-700 dark:text-orange-300">Company Name</label>
+                <input
+                  type="text"
+                  name="company_name"
+                  class="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+                />
+              </div>
+            </div>
+          </div>
+        )}
+        <div>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300"
+            >Project Address</label
+          >
+          <input
+            type="text"
+            name="address"
+            value="123 Test Street, Test City, CA 90210"
+            class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+          />
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300"
+            >Description</label
+          >
+          <textarea
+            name="description"
+            class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+            >Test project for debugging console errors</textarea
+          >
+        </div>
+
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300"
+              >Square Footage</label
+            >
+            <input
+              type="number"
+              name="sq_ft"
+              value="1000"
+              class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+            />
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Units</label>
+            <input
+              type="number"
+              name="units"
+              value="5"
+              class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+            />
+          </div>
+        </div>
+
+        <div>
+          <label class="flex items-center">
+            <input type="checkbox" name="new_construction" class="mr-2" />
+            <span class="text-sm text-gray-700 dark:text-gray-300">New Construction</span>
+          </label>
+        </div>
+
+        <button
+          type="submit"
+          class="w-full rounded-lg bg-blue-600 px-4 py-2 text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+        >
+          Test Create Project
+        </button>
+      </form>
+    </div>
+
+    <!-- Current User Info -->
+    <div class="mt-6 rounded-lg bg-blue-50 p-4 dark:bg-blue-900/20">
+      <h3 class="text-sm font-medium text-blue-800 dark:text-blue-200">Current User Info</h3>
+      <p class="text-sm text-blue-600 dark:text-blue-300">
+        Role: {role} | Email: {user?.email} | ID: {user?.id}
+      </p>
+    </div>
+  </div>
+</App>
+
+<script>
+  // Console capture and display
+  const consoleOutput = document.getElementById("console-output");
+  const originalConsole = {
+    log: console.log,
+    error: console.error,
+    warn: console.warn,
+    info: console.info,
+  };
+
+  function addToConsole(type, args) {
+    const timestamp = new Date().toLocaleTimeString();
+    const message = Array.from(args)
+      .map((arg) => (typeof arg === "object" ? JSON.stringify(arg, null, 2) : String(arg)))
+      .join(" ");
+
+    const colors = {
+      log: "text-green-400",
+      error: "text-red-400",
+      warn: "text-yellow-400",
+      info: "text-blue-400",
+    };
+
+    const div = document.createElement("div");
+    div.className = colors[type] || "text-green-400";
+    div.innerHTML = `<span class="text-gray-500">[${timestamp}]</span> <span class="text-purple-400">[${type.toUpperCase()}]</span> ${message}`;
+
+    consoleOutput.appendChild(div);
+    consoleOutput.scrollTop = consoleOutput.scrollHeight;
+  }
+
+  // Override console methods
+  console.log = function (...args) {
+    originalConsole.log.apply(console, args);
+    addToConsole("log", args);
+  };
+
+  console.error = function (...args) {
+    originalConsole.error.apply(console, args);
+    addToConsole("error", args);
+  };
+
+  console.warn = function (...args) {
+    originalConsole.warn.apply(console, args);
+    addToConsole("warn", args);
+  };
+
+  console.info = function (...args) {
+    originalConsole.info.apply(console, args);
+    addToConsole("info", args);
+  };
+
+  // Clear console button
+  document.getElementById("clear-console").addEventListener("click", () => {
+    consoleOutput.innerHTML = "";
+  });
+
+  // Load clients for admin/staff users
+  async function loadClients() {
+    const userRole = '{role}';
+    if (userRole === 'Client') return;
+
+    try {
+      console.log("🧪 [DEBUG] Loading clients for admin/staff user...");
+      const response = await fetch('/api/get-clients');
+      
+      if (response.ok) {
+        const clients = await response.json();
+        console.log("🧪 [DEBUG] Loaded clients:", clients);
+        
+        const select = document.getElementById('author-select');
+        if (select) {
+          select.innerHTML = '<option value="">Select a client...</option>';
+          clients.forEach(client => {
+            const displayName = client.company_name || `${client.first_name} ${client.last_name}`;
+            const option = document.createElement('option');
+            option.value = client.id;
+            option.textContent = `${displayName} (${client.email || 'No email'})`;
+            select.appendChild(option);
+          });
+        }
+      } else {
+        console.error("🧪 [DEBUG] Failed to load clients:", response.status);
+      }
+    } catch (error) {
+      console.error("🧪 [DEBUG] Error loading clients:", error);
+    }
+  }
+
+  // Toggle between new and existing client
+  const newClientToggle = document.getElementById('new-client-toggle');
+  const existingSection = document.getElementById('existing-client-section');
+  const newSection = document.getElementById('new-client-section');
+  
+  if (newClientToggle && existingSection && newSection) {
+    newClientToggle.addEventListener('change', (e) => {
+      if (e.target.checked) {
+        existingSection.classList.add('hidden');
+        newSection.classList.remove('hidden');
+        console.log("🧪 [DEBUG] Switched to new client mode");
+      } else {
+        existingSection.classList.remove('hidden');
+        newSection.classList.add('hidden');
+        console.log("🧪 [DEBUG] Switched to existing client mode");
+      }
+    });
+  }
+
+  // Form submission
+  document.getElementById("test-project-form").addEventListener("submit", async (e) => {
+    e.preventDefault();
+
+    console.log("🧪 [DEBUG] Starting test project creation...");
+
+    const formData = new FormData(e.target);
+    const userRole = '{role}';
+    
+    // Build project data based on user role
+    const projectData = {
+      address: formData.get("address"),
+      description: formData.get("description"),
+      sq_ft: formData.get("sq_ft"),
+      units: formData.get("units"),
+      new_construction: formData.get("new_construction") === "on",
+    };
+
+    // Add client/author data for admin/staff
+    if (userRole !== 'Client') {
+      const isNewClient = document.getElementById('new-client-toggle')?.checked;
+      
+      if (isNewClient) {
+        // Creating new client
+        projectData.new_client = 'on';
+        projectData.first_name = formData.get("first_name");
+        projectData.last_name = formData.get("last_name");
+        projectData.email = formData.get("email");
+        projectData.company_name = formData.get("company_name");
+        console.log("🧪 [DEBUG] Creating project with NEW client");
+      } else {
+        // Using existing client
+        projectData.author_id = formData.get("author_id");
+        console.log("🧪 [DEBUG] Creating project for EXISTING client:", projectData.author_id);
+        
+        if (!projectData.author_id) {
+          console.error("🧪 [DEBUG] ❌ No client selected!");
+          return;
+        }
+      }
+    } else {
+      console.log("🧪 [DEBUG] Client user - will be set as author automatically");
+    }
+
+    console.log("🧪 [DEBUG] Final project data:", projectData);
+
+    try {
+      console.log("🧪 [DEBUG] Sending request to /api/create-project...");
+
+      const response = await fetch("/api/create-project", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(projectData),
+      });
+
+      console.log("🧪 [DEBUG] Response status:", response.status);
+      console.log("🧪 [DEBUG] Response headers:", Object.fromEntries(response.headers.entries()));
+
+      const result = await response.json();
+
+      if (response.ok) {
+        console.log("🧪 [DEBUG] ✅ Project created successfully:", result);
+        console.log("🧪 [DEBUG] Project ID:", result.id);
+        console.log("🧪 [DEBUG] Project Status:", result.status);
+
+        if (result.status === 0) {
+          console.log(
+            "🧪 [DEBUG] ✅ Status is correctly set to 0! Now calling update-status API..."
+          );
+
+          // Call update-status API to set status to 10 and trigger emails
+          try {
+            console.log("🧪 [DEBUG] Calling /api/update-status to set status to 10...");
+
+                         const statusResponse = await fetch("/api/update-status", {
+               method: "POST",
+               headers: {
+                 "Content-Type": "application/json",
+               },
+               body: JSON.stringify({
+                 projectId: result.id,
+                 status: 10, // Fixed: API expects 'status', not 'newStatus'
+               }),
+             });
+
+            console.log("🧪 [DEBUG] Status update response status:", statusResponse.status);
+
+            if (statusResponse.ok) {
+              const statusResult = await statusResponse.json();
+              console.log("🧪 [DEBUG] ✅ Status updated successfully:", statusResult);
+              console.log('🧪 [DEBUG] ✅ Emails should now be sent for "Specs Received" status!');
+            } else {
+              const statusError = await statusResponse.text();
+              console.error("🧪 [DEBUG] ❌ Status update failed:", statusError);
+            }
+          } catch (statusError) {
+            console.error("🧪 [DEBUG] ❌ Status update error:", statusError);
+          }
+        } else {
+          console.error("🧪 [DEBUG] ❌ Status is NOT 0! Actual status:", result.status);
+        }
+      } else {
+        console.error("🧪 [DEBUG] ❌ Project creation failed:", result);
+        console.error("🧪 [DEBUG] Error details:", {
+          status: response.status,
+          error: result.error,
+          details: result.details,
+          code: result.code,
+          hint: result.hint,
+        });
+      }
+    } catch (error) {
+      console.error("🧪 [DEBUG] ❌ Network or parsing error:", error);
+      console.error("🧪 [DEBUG] Error details:", {
+        name: error.name,
+        message: error.message,
+        stack: error.stack,
+      });
+    }
+  });
+
+  console.log("🧪 [DEBUG] Debug page loaded and ready!");
+  
+  // Load clients on page load for admin/staff users
+  loadClients();
+</script>

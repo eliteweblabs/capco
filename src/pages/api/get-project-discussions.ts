@@ -1,5 +1,4 @@
 import type { APIRoute } from "astro";
-import { apiCache } from "../../lib/api-cache";
 import { checkAuth } from "../../lib/auth";
 import { supabase } from "../../lib/supabase";
 import { supabaseAdmin } from "../../lib/supabase-admin";
@@ -150,52 +149,32 @@ export const GET: APIRoute = async ({ url, cookies }) => {
       );
     }
 
-    // Get author profiles efficiently with caching
+    // Get author profiles using getUserInfoServer (same as add-discussion.ts)
     const authorIds = [...new Set(discussions?.map((d) => d.author_id) || [])];
     let authorProfiles: any = {};
 
     if (authorIds.length > 0) {
-      try {
-        // Check cache first
-        const cacheResult = apiCache.getProfiles(authorIds);
-        authorProfiles = { ...cacheResult.cached };
+      console.log(`🔔 [DISCUSSIONS] Fetching profiles for ${authorIds.length} authors:`, authorIds);
 
-        // Fetch missing profiles from database
-        if (cacheResult.missing.length > 0) {
-          const { data: profiles, error: profilesError } = await supabase
-            .from("profiles")
-            .select("id, name, company_name, role")
-            .in("id", cacheResult.missing);
-
-          if (!profilesError && profiles) {
-            const processedProfiles = profiles.map((profile) => ({
-              id: profile.id,
-              display_name: profile.company_name || profile.name || "Unknown User",
-              company_name: profile.company_name,
-              name: profile.name,
-              role: profile.role,
-            }));
-
-            // Cache the new profiles
-            apiCache.setProfiles(processedProfiles);
-
-            // Add to result
-            processedProfiles.forEach((profile) => {
-              authorProfiles[profile.id] = profile;
+      for (const authorId of authorIds) {
+        try {
+          const userInfo = await getUserInfoServer(authorId);
+          if (userInfo) {
+            authorProfiles[authorId] = userInfo;
+            console.log(`🔔 [DISCUSSIONS] Profile for ${authorId}:`, {
+              company_name: userInfo.company_name,
+              display_name: userInfo.display_name,
+              name: userInfo.name,
             });
-
-            console.log(
-              `✅ [DISCUSSIONS] Fetched ${profiles.length} new profiles, ${Object.keys(cacheResult.cached).length} from cache`
-            );
           } else {
-            console.error("Error fetching user profiles:", profilesError);
+            console.log(`🔔 [DISCUSSIONS] No profile found for ${authorId}`);
           }
-        } else {
-          console.log(`✅ [DISCUSSIONS] All ${authorIds.length} profiles served from cache`);
+        } catch (error) {
+          console.error(`🔔 [DISCUSSIONS] Error fetching profile for ${authorId}:`, error);
         }
-      } catch (error) {
-        console.error("Error fetching user profiles:", error);
       }
+
+      console.log(`🔔 [DISCUSSIONS] Total profiles fetched: ${Object.keys(authorProfiles).length}`);
     }
 
     // Combine discussions with author profiles

@@ -47,7 +47,8 @@ export const GET: APIRoute = async ({ request, cookies }) => {
     // Fetch all projects - no role-based filtering
     console.log("📡 [API] Fetching all projects");
 
-    // Optimize: Select only needed fields instead of *
+    // First, get projects without JOINs to ensure basic functionality works
+    console.log("📡 [API] Fetching projects with basic query first...");
     const { data: projects, error } = await supabase
       .from("projects")
       .select(
@@ -60,14 +61,18 @@ export const GET: APIRoute = async ({ request, cookies }) => {
         status,
         sq_ft,
         new_construction,
-        renovation,
-        addition,
         created_at,
-        updated_at
+        updated_at,
+        assigned_to_id
       `
       )
-      .order("updated_at", { ascending: false })
-      .limit(50); // Add reasonable limit
+      .order("updated_at", { ascending: false });
+
+    if (error) {
+      console.error("📡 [API] Error fetching projects:", error);
+    } else {
+      console.log("📡 [API] Successfully fetched projects:", projects?.length || 0);
+    }
 
     if (error) {
       console.error("Error fetching projects:", error);
@@ -85,15 +90,51 @@ export const GET: APIRoute = async ({ request, cookies }) => {
 
     console.log("📡 [API] Projects fetched:", projects?.length || 0);
 
+    // Optimize: Batch fetch author profiles to eliminate N+1 queries
+    if (projects && projects.length > 0) {
+      const uniqueAuthorIds = [...new Set(projects.map((p) => p.author_id).filter(Boolean))];
+      const uniqueAssignedIds = [...new Set(projects.map((p) => p.assigned_to_id).filter(Boolean))];
+      const allUserIds = [...new Set([...uniqueAuthorIds, ...uniqueAssignedIds])];
+
+      console.log("📡 [API] Fetching profiles for users:", allUserIds.length);
+
+      let profilesMap = new Map();
+      if (allUserIds.length > 0) {
+        const { data: profiles, error: profilesError } = await supabase
+          .from("profiles")
+          .select("id, company_name, first_name, last_name")
+          .in("id", allUserIds);
+
+        if (!profilesError && profiles) {
+          profiles.forEach((profile) => {
+            profilesMap.set(profile.id, profile);
+          });
+          console.log("📡 [API] Successfully fetched profiles:", profiles.length);
+        } else {
+          console.error("📡 [API] Error fetching profiles:", profilesError);
+        }
+      }
+
+      // Attach profile data to projects
+      projects.forEach((project) => {
+        if (project.author_id) {
+          project.profiles = profilesMap.get(project.author_id) || null;
+        }
+        if (project.assigned_to_id) {
+          project.assigned_profiles = profilesMap.get(project.assigned_to_id) || null;
+        }
+      });
+    }
+
     // Optimize: Add comment counts with efficient aggregation query
     if (projects && projects.length > 0) {
       const projectIds = projects.map((p) => p.id);
 
       try {
-        // Use optimized aggregation query to get counts directly
+        // Use proper aggregation query to get counts directly
         let countQuery = supabase
           .from("discussion")
-          .select("project_id, count(*)", { count: "exact" })
+          .select("project_id")
           .in("project_id", projectIds);
 
         // For clients, exclude internal discussions (Admin/Staff see all)
@@ -104,7 +145,7 @@ export const GET: APIRoute = async ({ request, cookies }) => {
           console.log("📡 [GET-PROJECT] Admin/Staff - showing all discussions");
         }
 
-        // Use direct query approach (RPC function fallback removed for now)
+        // Execute the query to get all discussions
         const { data: discussions, error: countError } = await countQuery;
 
         let discussionCounts: Array<{ project_id: number; comment_count: number }> = [];

@@ -185,6 +185,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       project: body.project,
       service: body.service,
       requested_docs: body.requested_docs,
+      status: 0, // Set initial status to 0, will be updated to 10 via update-status API to trigger emails
       created_at: new Date().toISOString(), // Set creation timestamp
       updated_at: new Date().toISOString(), // Set initial update timestamp
     };
@@ -209,9 +210,21 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         details: error.details,
         hint: error.hint,
       });
-      return new Response(JSON.stringify({ error: error.message }), {
-        status: 500,
-      });
+      console.error(
+        "📝 [CREATE-PROJECT] Project data that failed:",
+        JSON.stringify(projectData, null, 2)
+      );
+      return new Response(
+        JSON.stringify({
+          error: error.message,
+          details: error.details,
+          code: error.code,
+          hint: error.hint,
+        }),
+        {
+          status: 500,
+        }
+      );
     }
 
     if (!projects || projects.length === 0) {
@@ -222,10 +235,30 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
     const project = projects[0];
 
-    console.log("📝 [CREATE-PROJECT] Project created successfully:", project.id);
+    console.log("📝 [CREATE-PROJECT] Project created successfully:", {
+      id: project.id,
+      author_id: project.author_id,
+      title: project.title,
+      address: project.address,
+      status: project.status,
+    });
 
-    // Note: Status update and email notifications will be handled by update-status API
-    // called from the frontend after project creation
+    // Verify the project has the correct initial status
+    if (project.status !== 0) {
+      console.error("📝 [CREATE-PROJECT] WARNING: Project created without status 0!", {
+        actualStatus: project.status,
+        expectedStatus: 0,
+        projectId: project.id,
+      });
+    } else {
+      console.log(
+        "📝 [CREATE-PROJECT] ✅ Project created with correct initial status:",
+        project.status
+      );
+    }
+
+    // Note: Frontend should now call /api/update-status to set status from 0 -> 10
+    // This will trigger proper email notifications for "Specs Received" status
 
     console.log("📝 [CREATE-PROJECT] ==========================================");
 
@@ -241,7 +274,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       // Don't fail the request if logging fails
     }
 
-    return new Response(JSON.stringify(updatedProject), {
+    return new Response(JSON.stringify(project), {
       status: 201,
       headers: {
         "Content-Type": "application/json",

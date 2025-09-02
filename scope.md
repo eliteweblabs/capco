@@ -221,3 +221,42 @@ ORDER BY table_name, ordinal_position;
 - **Location**: `src/pages/api/email-delivery.ts` - email sending loop with delay
 
 all emails deliver through email-delivery.ts except for the authentication ones which are handled by Superbase
+
+### Database Query Optimization TODOs
+
+#### ✅ Completed Optimizations
+
+- **Fixed N+1 Profile Queries**: Enhanced `/api/get-project` with JOINs to fetch author profiles, eliminating individual profile queries in ProjectListItem
+- **Eliminated Redundant Status Calls**: Pass statuses from dashboard to child components instead of individual API fetches
+
+#### 🔄 Pending Optimizations
+
+**#3 - Medium Priority: Optimize Project Page Queries with JOINs**
+
+- **Issue**: Project page makes 4-5 separate queries (project data, author profile, assigned user profile, project statuses)
+- **Solution**: Create consolidated project page query with JOINs to reduce to 1-2 database queries
+- **Impact**: ~40-50% reduction in project page load queries
+- **Location**: `src/pages/project/[id].astro` - consolidate direct Supabase queries
+- **Implementation**:
+  - Enhance project query to include author and assigned user profiles via JOINs
+  - Use existing status data instead of separate API call
+  - Consider creating dedicated `/api/project-page/[id]` endpoint
+
+**#4 - Low Priority: Create Consolidated Dashboard API Endpoint**
+
+- **Issue**: Dashboard makes multiple API calls that could be combined
+- **Solution**: Create `/api/dashboard-data` that returns projects with profiles and statuses in one call
+- **Impact**: Simplify dashboard data fetching and improve consistency
+- **Location**: Create new `src/pages/api/dashboard-data.ts`
+- **Implementation**:
+  - Combine project fetching with profile JOINs
+  - Include status data in single response
+  - Apply role-based filtering server-side
+  - Return optimized data structure for dashboard components
+
+**Performance Impact Summary:**
+
+- **Current State**: Dashboard (~2 queries), Project Page (~4-5 queries)
+- **After #3**: Dashboard (~2 queries), Project Page (~1-2 queries)
+- **After #4**: Dashboard (~1 query), Project Page (~1-2 queries)
+- **Total Expected Improvement**: ~60-70% reduction in database queries across main pages

@@ -35,10 +35,10 @@ const { userRole = "client" } = Astro.props;
         for="new-client-toggle"
         class="relative flex h-6 w-11 cursor-pointer items-center rounded-full bg-gray-300 px-0.5 transition-colors duration-200 ease-in-out peer-checked:bg-green-500 peer-focus:ring-2 peer-focus:ring-green-500 peer-focus:ring-offset-2 dark:bg-gray-600 dark:peer-checked:bg-green-600"
       >
-        <span
-          class="inline-block h-5 w-5 transform rounded-full bg-white shadow-lg transition-transform duration-200 ease-in-out peer-checked:translate-x-5"
-          aria-hidden="true"></span>
       </label>
+      <span
+        class="pointer-events-none absolute left-0.5 top-0.5 inline-block h-5 w-5 transform rounded-full bg-white shadow-lg transition-transform duration-200 ease-in-out peer-checked:translate-x-5"
+        aria-hidden="true"></span>
     </div>
   </div>
 
@@ -55,7 +55,7 @@ const { userRole = "client" } = Astro.props;
           id="first-name-input"
           name="first_name"
           placeholder="First Name"
-          class="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-500"
+          class="w-full rounded-md border border-gray-300 px-3 py-2.5 text-sm text-gray-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:focus:border-blue-400 dark:focus:ring-blue-400"
         />
       </div>
 
@@ -69,7 +69,7 @@ const { userRole = "client" } = Astro.props;
           id="last-name-input"
           name="last_name"
           placeholder="Last Name"
-          class="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-500"
+          class="w-full rounded-md border border-gray-300 px-3 py-2.5 text-sm text-gray-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:focus:border-blue-400 dark:focus:ring-blue-400"
         />
       </div>
     </div>
@@ -84,7 +84,7 @@ const { userRole = "client" } = Astro.props;
         id="company-name-input"
         name="company_name"
         placeholder="Company Name"
-        class="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-500"
+        class="w-full rounded-md border border-gray-300 px-3 py-2.5 text-sm text-gray-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:focus:border-blue-400 dark:focus:ring-blue-400"
       />
     </div>
 
@@ -98,7 +98,7 @@ const { userRole = "client" } = Astro.props;
         id="email-input"
         name="email"
         placeholder="email@example.com"
-        class="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-500"
+        class="w-full rounded-md border border-gray-300 px-3 py-2.5 text-sm text-gray-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:focus:border-blue-400 dark:focus:ring-blue-400"
       />
     </div>
   </div>
@@ -119,16 +119,31 @@ const { userRole = "client" } = Astro.props;
 <script>
   // Toggle logic for new/existing client
   document.addEventListener("DOMContentLoaded", function () {
+    console.log("🔄 [NEW-CLIENT-TOGGLE] Initializing toggle logic...");
+
     const toggle = document.getElementById("new-client-toggle") as HTMLInputElement;
     const newClientFields = document.getElementById("new-client-fields") as HTMLDivElement;
     const existingClientSelect = document.getElementById(
       "existing-client-select-container"
     ) as HTMLDivElement;
 
-    if (!toggle || !newClientFields || !existingClientSelect) return;
+    console.log("🔄 [NEW-CLIENT-TOGGLE] Elements found:", {
+      toggle: !!toggle,
+      newClientFields: !!newClientFields,
+      existingClientSelect: !!existingClientSelect,
+    });
+
+    if (!toggle || !newClientFields || !existingClientSelect) {
+      console.error("🔄 [NEW-CLIENT-TOGGLE] Missing required elements!");
+      return;
+    }
 
     function updateVisibility() {
+      console.log("🔄 [NEW-CLIENT-TOGGLE] Toggle state:", toggle.checked);
+
       if (toggle.checked) {
+        console.log("🔄 [NEW-CLIENT-TOGGLE] Switching to NEW CLIENT mode");
+
         // Show new client fields, hide existing client select
         newClientFields.classList.remove("hidden");
         existingClientSelect.classList.add("hidden");
@@ -138,17 +153,23 @@ const { userRole = "client" } = Astro.props;
         if (select) {
           select.disabled = true;
           select.removeAttribute("required");
+          console.log("🔄 [NEW-CLIENT-TOGGLE] Disabled existing client select");
         }
 
         // Enable new client fields and add required to first_name, last_name, email
         const newFields = newClientFields.querySelectorAll("input");
+        console.log("🔄 [NEW-CLIENT-TOGGLE] Found new client fields:", newFields.length);
+
         newFields.forEach((field) => {
           field.disabled = false;
           if (field.name === "first_name" || field.name === "last_name" || field.name === "email") {
             field.setAttribute("required", "required");
+            console.log("🔄 [NEW-CLIENT-TOGGLE] Made field required:", field.name);
           }
         });
       } else {
+        console.log("🔄 [NEW-CLIENT-TOGGLE] Switching to EXISTING CLIENT mode");
+
         // Hide new client fields, show existing client select
         newClientFields.classList.add("hidden");
         existingClientSelect.classList.remove("hidden");
@@ -158,21 +179,30 @@ const { userRole = "client" } = Astro.props;
         if (select) {
           select.disabled = false;
           select.setAttribute("required", "required");
+          console.log("🔄 [NEW-CLIENT-TOGGLE] Enabled existing client select");
         }
 
         // Disable new client fields and remove required from first_name, last_name, company_name, email
         const newFields = newClientFields.querySelectorAll("input");
+        console.log("🔄 [NEW-CLIENT-TOGGLE] Removing required from fields:", newFields.length);
+
         newFields.forEach((field) => {
           field.disabled = true;
           field.removeAttribute("required");
+          console.log("🔄 [NEW-CLIENT-TOGGLE] Removed required from:", field.name);
         });
       }
     }
 
     // Initial state
+    console.log("🔄 [NEW-CLIENT-TOGGLE] Setting initial state...");
     updateVisibility();
 
     // Listen for toggle changes
-    toggle.addEventListener("change", updateVisibility);
+    console.log("🔄 [NEW-CLIENT-TOGGLE] Adding event listener...");
+    toggle.addEventListener("change", function () {
+      console.log("🔄 [NEW-CLIENT-TOGGLE] Toggle changed!");
+      updateVisibility();
+    });
   });
 </script>

@@ -1,6 +1,6 @@
 // Project Service - Database operations for projects
-import { supabase } from "./supabase";
 import { globalServices } from "./global-services";
+import { supabase } from "./supabase";
 
 import type { ProjectStatusCode } from "./global-services";
 
@@ -21,6 +21,7 @@ export interface Project {
   service?: any; // JSONB
   requested_docs?: any; // JSONB
   assigned_to_id?: string;
+  subject?: string; // Proposal subject
 }
 
 export interface CreateProjectData {

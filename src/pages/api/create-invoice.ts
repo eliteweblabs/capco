@@ -130,7 +130,6 @@ Tier I Fire Alarm Design
         success: true,
         invoice: {
           id: invoice.id,
-          invoice_number: invoice.invoice_number,
           status: invoice.status,
         },
         message: "Invoice created successfully",

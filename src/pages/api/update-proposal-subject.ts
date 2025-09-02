@@ -60,34 +60,86 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       });
     }
 
-    // Check if proposal_subject column exists, if not, create it
-    let updatedProject;
+    // Since subject is in invoices table, we need to find or create a "proposal invoice" for this project
+    console.log("Looking for existing proposal invoice for project:", projectId);
+
+    // First, check if there's already a "proposal" type invoice for this project
+    const { data: existingInvoice, error: findError } = await supabase
+      .from("invoices")
+      .select("id, subject, status")
+      .eq("project_id", projectId)
+      .eq("status", "proposal") // Assuming "proposal" is a status type
+      .single();
+
+    console.log("Existing proposal invoice search:", { existingInvoice, findError });
+
+    let invoiceId;
+    let updatedInvoice;
     let updateError;
 
-    try {
-      // Try to update with subject column
+    if (existingInvoice) {
+      // Update existing proposal invoice
+      invoiceId = existingInvoice.id;
+      console.log("Updating existing proposal invoice:", invoiceId);
+
       const result = await supabase
-        .from("projects")
+        .from("invoices")
         .update({
           subject: subject.trim() || null,
           updated_at: new Date().toISOString(),
         })
-        .eq("id", projectId)
-        .select("id, subject, title")
+        .eq("id", invoiceId)
+        .select("id, subject, status")
         .single();
 
-      updatedProject = result.data;
+      updatedInvoice = result.data;
       updateError = result.error;
-    } catch (error: any) {
-      // If column doesn't exist, provide helpful error message
-      if (error.message?.includes("subject") || error.code === "42703") {
-        console.error(
-          "Subject column not found. Please check if the subject column exists in the projects table."
-        );
+    } else if (findError?.code === "PGRST116") {
+      // No proposal invoice exists, create one
+      console.log("Creating new proposal invoice for project:", projectId);
+
+      const result = await supabase
+        .from("invoices")
+        .insert({
+          project_id: projectId,
+          subject: subject.trim() || null,
+          status: "proposal",
+          total_amount: 0.0,
+          created_by: user.id,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        })
+        .select("id, subject, status")
+        .single();
+
+      updatedInvoice = result.data;
+      updateError = result.error;
+      invoiceId = result.data?.id;
+    } else {
+      // Database error occurred
+      console.error("Error finding proposal invoice:", findError);
+      return new Response(
+        JSON.stringify({
+          error: "Failed to find or create proposal invoice",
+          details: findError?.message,
+        }),
+        {
+          status: 500,
+          headers: { "Content-Type": "application/json" },
+        }
+      );
+    }
+
+    console.log("Invoice update result:", { updatedInvoice, updateError, invoiceId });
+
+    if (updateError) {
+      console.error("Error updating proposal subject:", updateError);
+      // Check if it's a column missing error
+      if (updateError.message?.includes("subject") || updateError.code === "42703") {
         return new Response(
           JSON.stringify({
-            error: "Database column 'subject' not found",
-            details: "Please ensure the 'subject' column exists in the projects table",
+            error: "Database column 'subject' not found in invoices table",
+            details: "Please ensure the 'subject' column exists in the invoices table",
             migration_required: true,
           }),
           {
@@ -96,11 +148,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
           }
         );
       }
-      throw error;
-    }
 
-    if (updateError) {
-      console.error("Error updating proposal subject:", updateError);
       return new Response(
         JSON.stringify({
           error: "Failed to update proposal subject",
@@ -117,7 +165,8 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     return new Response(
       JSON.stringify({
         success: true,
-        project: updatedProject,
+        invoice: updatedInvoice,
+        invoiceId: invoiceId,
         message: "Proposal subject updated successfully",
       }),
       {

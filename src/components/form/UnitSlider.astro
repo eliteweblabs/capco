@@ -71,12 +71,32 @@ const fieldId = `units-slider-${projectId}`;
       {required}
       disabled={readOnly}
     />
-    <div class="mt-1 flex justify-between text-xs text-gray-500 dark:text-gray-400">
-      <span>1</span>
-      <span>5</span>
-      <span>10</span>
-      <span>30</span>
-      <span>50</span>
+    <!-- Tick marks and labels positioned to match actual slider positions -->
+    <div class="relative mt-1 h-6">
+      {unitsOptions.map((unit, index) => {
+        // Calculate position as percentage across the slider
+        const position = (index / (unitsOptions.length - 1)) * 100;
+        
+        // Show labels for key values to avoid overcrowding
+        const showLabel = [0, 4, 9, 12, 14].includes(index); // positions for 1, 5, 10, 30, 50
+        
+        return (
+          <div 
+            class="absolute transform -translate-x-1/2"
+            style={`left: ${position}%`}
+          >
+            <!-- Small tick mark -->
+            <div class={`w-px bg-gray-300 dark:bg-gray-600 ${showLabel ? 'h-3' : 'h-2'} mx-auto`}></div>
+            
+            <!-- Label for key positions -->
+            {showLabel && (
+              <span class="block text-xs text-gray-500 dark:text-gray-400 text-center mt-1">
+                {unit}
+              </span>
+            )}
+          </div>
+        );
+      })}
     </div>
   </div>
 </div>

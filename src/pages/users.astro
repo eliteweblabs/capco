@@ -1,0 +1,886 @@
+---
+import App from "../components/common/App.astro";
+import BoxIcon from "../components/common/BoxIcon.astro";
+import SectionContainer from "../components/common/SectionContainer.astro";
+import StaffCreationForm from "../components/form/StaffCreationForm.astro";
+import { checkAuth } from "../lib/auth";
+import { supabase } from "../lib/supabase";
+import { supabaseAdmin } from "../lib/supabase-admin";
+
+// Check authentication and ensure user is Admin
+const { isAuth, session, user, role } = await checkAuth(Astro.cookies);
+
+if (!isAuth || role !== "Admin") {
+  return Astro.redirect("/login");
+}
+
+// Fetch all users for the admin panel
+let users: any[] = [];
+let error = null;
+
+try {
+  if (supabase) {
+    // First get all profiles
+    const { data: allProfiles, error: profilesError } = await supabase
+      .from("profiles")
+      .select("id, first_name, last_name, company_name, phone, role, created_at")
+      .order("created_at", { ascending: false });
+
+    if (profilesError) {
+      console.error("Error fetching profiles:", profilesError);
+      error = profilesError.message;
+    } else if (allProfiles) {
+      // Get emails from auth.users for each profile using admin client
+      const profilesWithEmails = await Promise.all(
+        allProfiles.map(async (profile) => {
+          try {
+            if (supabaseAdmin) {
+              const { data: authUser, error: authError } =
+                await supabaseAdmin.auth.admin.getUserById(profile.id);
+              return {
+                ...profile,
+                email: authUser?.user?.email || "No email found",
+              };
+            } else {
+              return {
+                ...profile,
+                email: "Admin client unavailable",
+              };
+            }
+          } catch (authError) {
+            console.error(`Error fetching email for user ${profile.id}:`, authError);
+            return {
+              ...profile,
+              email: "Email unavailable",
+            };
+          }
+        })
+      );
+
+      users = profilesWithEmails;
+      console.log(`Fetched ${users.length} users with emails for admin panel`);
+    }
+  }
+} catch (fetchError) {
+  console.error("Error in users fetch:", fetchError);
+  error = "Failed to fetch users";
+}
+
+// Get user counts by role
+const userCounts = {
+  Admin: users.filter((u) => u.role === "Admin").length,
+  Staff: users.filter((u) => u.role === "Staff").length,
+  Client: users.filter((u) => u.role === "Client").length,
+  Total: users.length,
+};
+---
+
+<App title="User Management - CAPCo Fire Protection" description="Manage system users">
+  <SectionContainer class="mx-auto max-w-7xl">
+    <!-- Page Header -->
+    <div class="mb-8">
+      <h1 class="mb-2 text-3xl font-bold text-gray-900 dark:text-white">User Management</h1>
+      <p class="text-gray-600 dark:text-gray-400">Create, view, and manage all system users</p>
+    </div>
+
+    <!-- User Statistics Cards -->
+    <div class="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div
+        class="rounded-lg bg-white p-6 shadow-sm ring-1 ring-gray-200 dark:bg-gray-800 dark:ring-gray-700"
+      >
+        <div class="flex items-center">
+          <div class="flex-shrink-0">
+            <BoxIcon name="group" class="h-8 w-8 text-blue-600" />
+          </div>
+          <div class="ml-4">
+            <dt class="text-sm font-medium text-gray-500 dark:text-gray-400">Total Users</dt>
+            <dd class="text-2xl font-semibold text-gray-900 dark:text-white">{userCounts.Total}</dd>
+          </div>
+        </div>
+      </div>
+
+      <div
+        class="rounded-lg bg-white p-6 shadow-sm ring-1 ring-gray-200 dark:bg-gray-800 dark:ring-gray-700"
+      >
+        <div class="flex items-center">
+          <div class="flex-shrink-0">
+            <BoxIcon name="shield-check" class="h-8 w-8 text-red-600" />
+          </div>
+          <div class="ml-4">
+            <dt class="text-sm font-medium text-gray-500 dark:text-gray-400">Admins</dt>
+            <dd class="text-2xl font-semibold text-gray-900 dark:text-white">{userCounts.Admin}</dd>
+          </div>
+        </div>
+      </div>
+
+      <div
+        class="rounded-lg bg-white p-6 shadow-sm ring-1 ring-gray-200 dark:bg-gray-800 dark:ring-gray-700"
+      >
+        <div class="flex items-center">
+          <div class="flex-shrink-0">
+            <BoxIcon name="user-check" class="h-8 w-8 text-green-600" />
+          </div>
+          <div class="ml-4">
+            <dt class="text-sm font-medium text-gray-500 dark:text-gray-400">Staff</dt>
+            <dd class="text-2xl font-semibold text-gray-900 dark:text-white">{userCounts.Staff}</dd>
+          </div>
+        </div>
+      </div>
+
+      <div
+        class="rounded-lg bg-white p-6 shadow-sm ring-1 ring-gray-200 dark:bg-gray-800 dark:ring-gray-700"
+      >
+        <div class="flex items-center">
+          <div class="flex-shrink-0">
+            <BoxIcon name="user" class="h-8 w-8 text-purple-600" />
+          </div>
+          <div class="ml-4">
+            <dt class="text-sm font-medium text-gray-500 dark:text-gray-400">Clients</dt>
+            <dd class="text-2xl font-semibold text-gray-900 dark:text-white">
+              {userCounts.Client}
+            </dd>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Main Content Grid -->
+    <div class="grid grid-cols-1 gap-8 lg:grid-cols-3">
+      <!-- User List (Left Side - 2 columns) -->
+      <div class="lg:col-span-2">
+        <div
+          class="rounded-lg bg-white shadow-sm ring-1 ring-gray-200 dark:bg-gray-800 dark:ring-gray-700"
+        >
+          <!-- Header with Search and Filters -->
+          <div class="border-b border-gray-200 p-6 dark:border-gray-700">
+            <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <div class="flex items-center gap-4">
+                <h2 class="text-lg font-semibold text-gray-900 dark:text-white">All Users</h2>
+                <!-- Test Toast Button (remove after testing) -->
+                <button
+                  type="button"
+                  onclick="testToastSystem()"
+                  class="rounded bg-gray-100 px-2 py-1 text-xs text-gray-600 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-400 dark:hover:bg-gray-600"
+                  title="Test toast notifications"
+                >
+                  Test Toast
+                </button>
+              </div>
+
+              <div class="flex flex-col gap-2 sm:flex-row sm:items-center">
+                <!-- Search -->
+                <div class="relative">
+                  <BoxIcon
+                    name="search"
+                    class="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400"
+                  />
+                  <input
+                    type="text"
+                    id="user-search"
+                    placeholder="Search by name or email..."
+                    class="w-full rounded-md border border-gray-300 bg-white py-2 pl-10 pr-4 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:focus:border-blue-400"
+                  />
+                </div>
+
+                <!-- Role Filter -->
+                <select
+                  id="role-filter"
+                  class="rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:focus:border-blue-400"
+                >
+                  <option value="">All Roles</option>
+                  <option value="Admin">Admin</option>
+                  <option value="Staff">Staff</option>
+                  <option value="Client">Client</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <!-- Users Table -->
+          <div class="overflow-hidden">
+            <div class="overflow-x-auto">
+              <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                <thead class="bg-gray-50 dark:bg-gray-900">
+                  <tr>
+                    <th
+                      class="cursor-pointer px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                      data-sort="name"
+                    >
+                      <div class="flex items-center gap-1">
+                        Name
+                        <BoxIcon name="chevron-up-down" class="h-3 w-3" />
+                      </div>
+                    </th>
+                    <th
+                      class="cursor-pointer px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                      data-sort="email"
+                    >
+                      <div class="flex items-center gap-1">
+                        Email
+                        <BoxIcon name="chevron-up-down" class="h-3 w-3" />
+                      </div>
+                    </th>
+                    <th
+                      class="cursor-pointer px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                      data-sort="role"
+                    >
+                      <div class="flex items-center gap-1">
+                        Role
+                        <BoxIcon name="chevron-up-down" class="h-3 w-3" />
+                      </div>
+                    </th>
+                    <th
+                      class="cursor-pointer px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                      data-sort="created"
+                    >
+                      <div class="flex items-center gap-1">
+                        Created
+                        <BoxIcon name="chevron-up-down" class="h-3 w-3" />
+                      </div>
+                    </th>
+                    <th
+                      class="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400"
+                    >
+                      Actions
+                    </th>
+                  </tr>
+                </thead>
+                <tbody
+                  id="users-table-body"
+                  class="divide-y divide-gray-200 bg-white dark:divide-gray-700 dark:bg-gray-800"
+                >
+                  {
+                    users.map((user) => {
+                      const fullName = `${user.first_name || ""} ${user.last_name || ""}`.trim();
+                      const displayName = fullName || user.company_name || "Unknown User";
+                      const createdDate = new Date(user.created_at).toLocaleDateString();
+
+                      return (
+                        <tr
+                          class="user-row hover:bg-gray-50 dark:hover:bg-gray-700"
+                          data-role={user.role}
+                          data-name={displayName.toLowerCase()}
+                        >
+                          <td class="whitespace-nowrap px-6 py-4">
+                            <div class="flex items-center">
+                              <div class="flex-shrink-0">
+                                <div
+                                  class={`flex h-10 w-10 items-center justify-center rounded-full ${
+                                    user.role === "Admin"
+                                      ? "bg-red-100 dark:bg-red-900/30"
+                                      : user.role === "Staff"
+                                        ? "bg-green-100 dark:bg-green-900/30"
+                                        : "bg-purple-100 dark:bg-purple-900/30"
+                                  }`}
+                                >
+                                  <BoxIcon
+                                    name={
+                                      user.role === "Admin"
+                                        ? "shield-check"
+                                        : user.role === "Staff"
+                                          ? "user-check"
+                                          : "user"
+                                    }
+                                    class={`h-5 w-5 ${
+                                      user.role === "Admin"
+                                        ? "text-red-600 dark:text-red-400"
+                                        : user.role === "Staff"
+                                          ? "text-green-600 dark:text-green-400"
+                                          : "text-purple-600 dark:text-purple-400"
+                                    }`}
+                                  />
+                                </div>
+                              </div>
+                              <div class="ml-4">
+                                <div class="text-sm font-medium text-gray-900 dark:text-white">
+                                  {displayName}
+                                </div>
+                                {user.phone && (
+                                  <div class="text-sm text-gray-500 dark:text-gray-400">
+                                    {user.phone}
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          </td>
+                          <td class="whitespace-nowrap px-6 py-4">
+                            <div class="text-sm text-gray-900 dark:text-white">{user.email}</div>
+                          </td>
+                          <td class="whitespace-nowrap px-6 py-4">
+                            <span
+                              class={`inline-flex rounded-full px-2 py-1 text-xs font-semibold ${
+                                user.role === "Admin"
+                                  ? "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400"
+                                  : user.role === "Staff"
+                                    ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400"
+                                    : "bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400"
+                              }`}
+                            >
+                              {user.role}
+                            </span>
+                          </td>
+                          <td class="whitespace-nowrap px-6 py-4 text-sm text-gray-500 dark:text-gray-400">
+                            {createdDate}
+                          </td>
+                          <td class="whitespace-nowrap px-6 py-4 text-right text-sm font-medium">
+                            <button
+                              type="button"
+                              class="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"
+                              onclick={`confirmDeleteUser('${user.id}', '${displayName}')`}
+                              title="Delete user"
+                            >
+                              <BoxIcon name="trash" class="h-4 w-4" />
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    })
+                  }
+                </tbody>
+              </table>
+
+              {
+                users.length === 0 && (
+                  <div class="py-12 text-center">
+                    <BoxIcon name="users" class="mx-auto h-12 w-12 text-gray-400" />
+                    <h3 class="mt-2 text-sm font-medium text-gray-900 dark:text-white">
+                      No users found
+                    </h3>
+                    <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                      {error ? `Error: ${error}` : "Get started by creating a new user."}
+                    </p>
+                  </div>
+                )
+              }
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Create User Form (Right Side - 1 column) -->
+      <div class="lg:col-span-1">
+        <div
+          class="rounded-lg bg-white p-6 shadow-sm ring-1 ring-gray-200 dark:bg-gray-800 dark:ring-gray-700"
+        >
+          <!-- Header -->
+          <div class="mb-6">
+            <h2 class="mb-2 text-lg font-semibold text-gray-900 dark:text-white">
+              Create New User
+            </h2>
+            <p class="text-sm text-gray-600 dark:text-gray-400">Add a new user to the system</p>
+          </div>
+
+          <!-- Create User Form -->
+          <form id="create-user-form" class="space-y-4">
+            <StaffCreationForm />
+
+            <!-- Submit Button -->
+            <div class="pt-2">
+              <button
+                type="submit"
+                id="submit-btn"
+                class="w-full rounded-lg bg-blue-600 px-4 py-2 text-white transition-colors hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                <span id="submit-text">Create User</span>
+                <BoxIcon name="loader-alt" id="submit-spinner" class="ml-2 hidden animate-spin" />
+              </button>
+            </div>
+
+            <!-- Info Box -->
+            <div
+              class="rounded-lg border border-blue-200 bg-blue-50 p-4 dark:border-blue-800 dark:bg-blue-900/20"
+            >
+              <div class="flex items-start">
+                <BoxIcon
+                  name="info-circle"
+                  class="mr-2 mt-0.5 text-lg text-blue-600 dark:text-blue-400"
+                />
+                <div class="text-sm text-blue-800 dark:text-blue-400">
+                  <p class="mb-1 font-medium">Account Setup:</p>
+                  <ol class="list-inside list-decimal space-y-1 text-xs">
+                    <li>An invitation email will be sent</li>
+                    <li>User can set up authentication</li>
+                    <li>User will appear in the list immediately</li>
+                  </ol>
+                </div>
+              </div>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </SectionContainer>
+
+  <!-- Delete Confirmation Modal -->
+  <div
+    id="delete-modal"
+    class="fixed inset-0 z-50 hidden items-center justify-center bg-black bg-opacity-50"
+  >
+    <div class="mx-4 w-full max-w-md rounded-lg bg-white p-6 dark:bg-gray-800">
+      <div class="flex items-center">
+        <div class="flex-shrink-0">
+          <BoxIcon name="error" class="h-6 w-6 text-red-600" />
+        </div>
+        <div class="ml-3">
+          <h3 class="text-lg font-medium text-gray-900 dark:text-white">Delete User</h3>
+        </div>
+      </div>
+      <div class="mt-4">
+        <p class="text-sm text-gray-500 dark:text-gray-400">
+          Are you sure you want to delete <span id="delete-user-name" class="font-medium"></span>?
+          This action cannot be undone.
+        </p>
+      </div>
+      <div class="mt-6 flex justify-end gap-3">
+        <button
+          type="button"
+          id="cancel-delete"
+          class="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
+        >
+          Cancel
+        </button>
+        <button
+          type="button"
+          id="confirm-delete"
+          class="rounded-md bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700"
+        >
+          Delete User
+        </button>
+      </div>
+    </div>
+  </div>
+</App>
+
+<script>
+  // User management functionality
+  let currentUsers = [];
+  let currentSort = { field: "created", direction: "desc" };
+  let deleteUserId = null;
+
+  document.addEventListener("DOMContentLoaded", function () {
+    // Reset form values on page load to ensure clean state
+    const searchInput = document.getElementById("user-search");
+    const roleFilter = document.getElementById("role-filter");
+    if (searchInput) searchInput.value = "";
+    if (roleFilter) roleFilter.value = "";
+
+    initializeUserManagement();
+
+    // Test toast system on page load
+    console.log("🔔 [USERS] Testing toast system availability:", {
+      showSuccess: typeof window.showSuccess,
+      showError: typeof window.showError,
+      simpleToastManager: typeof window.simpleToastManager,
+      toastAlertManager: typeof window.toastAlertManager,
+    });
+  });
+
+  function initializeUserManagement() {
+    // Get initial users data
+    currentUsers = Array.from(document.querySelectorAll(".user-row")).map((row) => ({
+      element: row,
+      name: row.dataset.name || "",
+      email: row.querySelector("td:nth-child(2) div")?.textContent?.trim() || "",
+      role: row.dataset.role || "",
+      created: row.querySelector("td:nth-child(4)")?.textContent?.trim() || "",
+    }));
+
+    // Initialize event listeners
+    setupSearchAndFilter();
+    setupSorting();
+    setupDeleteModal();
+    setupFormSubmission();
+
+    // Apply initial filters (in case browser retains form values after refresh)
+    setTimeout(() => {
+      filterUsers();
+    }, 100);
+  }
+
+  function setupSearchAndFilter() {
+    const searchInput = document.getElementById("user-search");
+    const roleFilter = document.getElementById("role-filter");
+
+    if (searchInput) {
+      searchInput.addEventListener("input", filterUsers);
+    }
+
+    if (roleFilter) {
+      roleFilter.addEventListener("change", filterUsers);
+    }
+  }
+
+  function setupSorting() {
+    const sortHeaders = document.querySelectorAll("[data-sort]");
+    sortHeaders.forEach((header) => {
+      header.addEventListener("click", () => {
+        const field = header.dataset.sort;
+        if (currentSort.field === field) {
+          currentSort.direction = currentSort.direction === "asc" ? "desc" : "asc";
+        } else {
+          currentSort.field = field;
+          currentSort.direction = "asc";
+        }
+        sortUsers();
+        updateSortIndicators();
+      });
+    });
+  }
+
+  function setupDeleteModal() {
+    const modal = document.getElementById("delete-modal");
+    const cancelBtn = document.getElementById("cancel-delete");
+    const confirmBtn = document.getElementById("confirm-delete");
+
+    if (cancelBtn) {
+      cancelBtn.addEventListener("click", () => {
+        modal.classList.add("hidden");
+        modal.classList.remove("flex");
+        deleteUserId = null;
+      });
+    }
+
+    if (confirmBtn) {
+      confirmBtn.addEventListener("click", executeDeleteUser);
+    }
+
+    // Close modal on background click
+    if (modal) {
+      modal.addEventListener("click", (e) => {
+        if (e.target === modal) {
+          modal.classList.add("hidden");
+          modal.classList.remove("flex");
+          deleteUserId = null;
+        }
+      });
+    }
+  }
+
+  function setupFormSubmission() {
+    const form = document.getElementById("create-user-form");
+    const submitBtn = document.getElementById("submit-btn");
+    const submitText = document.getElementById("submit-text");
+    const submitSpinner = document.getElementById("submit-spinner");
+
+    if (!form || !submitBtn) return;
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+
+      const formData = new FormData(form);
+      const userData = {
+        email: formData.get("email"),
+        phone: formData.get("phone"),
+        role: formData.get("role"),
+        first_name: formData.get("first_name"),
+        last_name: formData.get("last_name"),
+        company_name: formData.get("company_name"),
+      };
+
+      // Validate required fields
+      if (
+        !userData.first_name?.trim() ||
+        !userData.last_name?.trim() ||
+        !userData.email?.trim() ||
+        !userData.role
+      ) {
+        if ((window as any).toastAlertManager) {
+          (window as any).toastAlertManager.show({
+            type: "error",
+            title: "Validation Error",
+            message: "Please fill in all required fields.",
+            duration: 5000,
+          });
+        } else if (window.showError) {
+          window.showError("Validation Error", "Please fill in all required fields.", 5000);
+        }
+        return;
+      }
+
+      // Validate email format
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(userData.email)) {
+        if ((window as any).toastAlertManager) {
+          (window as any).toastAlertManager.show({
+            type: "error",
+            title: "Validation Error",
+            message: "Please enter a valid email address.",
+            duration: 5000,
+          });
+        } else if (window.showError) {
+          window.showError("Validation Error", "Please enter a valid email address.", 5000);
+        }
+        return;
+      }
+
+      // Use first + last name if company is empty
+      if (!userData.company_name) {
+        userData.company_name = userData.first_name + " " + userData.last_name;
+      }
+
+      // Show loading state
+      setFormLoading(true);
+
+      try {
+        const response = await fetch("/api/create-user", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(userData),
+        });
+
+        const result = await response.json();
+
+        if (response.ok && result.success) {
+          // Show toast notification if provided by API
+          if (result.notification && (window as any).toastAlertManager) {
+            (window as any).toastAlertManager.show(result.notification);
+          } else if (window.showSuccess) {
+            // Fallback to simple toast
+            window.showSuccess(
+              "User Created",
+              `${userData.first_name} ${userData.last_name} has been created successfully!`,
+              3000
+            );
+          }
+
+          // Reset form
+          form.reset();
+
+          // Refresh page after short delay to show new user
+          setTimeout(() => {
+            window.location.reload();
+          }, 1500);
+        } else {
+          // Handle different error types from API response
+          let errorTitle = "User Creation Failed";
+          let errorMessage = "Failed to create user. Please try again.";
+          let errorDuration = 5000;
+
+          // Check for specific error types
+          if (result.error) {
+            errorMessage = result.error;
+          }
+
+          if (result.details) {
+            // Use the detailed error message for more specific feedback
+            errorMessage = result.details;
+          }
+
+          // Handle specific error cases
+          if (result.error && result.error.includes("email address has already been registered")) {
+            errorTitle = "Email Already Exists";
+            errorMessage =
+              "A user with this email address already exists. Please use a different email.";
+            errorDuration = 7000;
+          } else if (result.error && result.error.includes("validation")) {
+            errorTitle = "Validation Error";
+            errorMessage = "Please check your input and try again.";
+          } else if (result.error && result.error.includes("authentication")) {
+            errorTitle = "Authentication Error";
+            errorMessage = "Please log in again and try creating the user.";
+          } else if (result.error && result.error.includes("permission")) {
+            errorTitle = "Permission Denied";
+            errorMessage = "You don't have permission to create users.";
+          }
+
+          // Show error toast notification
+          if ((window as any).toastAlertManager) {
+            (window as any).toastAlertManager.show({
+              type: "error",
+              title: errorTitle,
+              message: errorMessage,
+              duration: errorDuration,
+            });
+          } else if (window.showError) {
+            // Fallback to simple toast
+            window.showError(errorTitle, errorMessage, errorDuration);
+          }
+        }
+      } catch (error) {
+        console.error("Create user error:", error);
+        if ((window as any).toastAlertManager) {
+          (window as any).toastAlertManager.show({
+            type: "error",
+            title: "Network Error",
+            message: "Network error. Please check your connection and try again.",
+            duration: 5000,
+          });
+        } else if (window.showError) {
+          window.showError(
+            "Network Error",
+            "Network error. Please check your connection and try again.",
+            5000
+          );
+        }
+      } finally {
+        setFormLoading(false);
+      }
+    });
+
+    function setFormLoading(loading) {
+      if (loading) {
+        submitBtn.disabled = true;
+        submitText.textContent = "Creating...";
+        submitSpinner.classList.remove("hidden");
+      } else {
+        submitBtn.disabled = false;
+        submitText.textContent = "Create User";
+        submitSpinner.classList.add("hidden");
+      }
+    }
+  }
+
+  function filterUsers() {
+    const searchTerm = document.getElementById("user-search")?.value?.toLowerCase() || "";
+    const roleFilter = document.getElementById("role-filter")?.value || "";
+
+    currentUsers.forEach((user) => {
+      const matchesSearch =
+        !searchTerm ||
+        user.name.includes(searchTerm) ||
+        user.email.toLowerCase().includes(searchTerm);
+      const matchesRole = !roleFilter || user.role === roleFilter;
+      const shouldShow = matchesSearch && matchesRole;
+
+      if (shouldShow) {
+        user.element.style.display = "";
+      } else {
+        user.element.style.display = "none";
+      }
+    });
+  }
+
+  function sortUsers() {
+    const tbody = document.getElementById("users-table-body");
+    if (!tbody) return;
+
+    const sortedUsers = [...currentUsers].sort((a, b) => {
+      let aVal, bVal;
+
+      switch (currentSort.field) {
+        case "name":
+          aVal = a.name;
+          bVal = b.name;
+          break;
+        case "email":
+          aVal = a.email;
+          bVal = b.email;
+          break;
+        case "role":
+          aVal = a.role;
+          bVal = b.role;
+          break;
+        case "created":
+          aVal = new Date(a.created);
+          bVal = new Date(b.created);
+          break;
+        default:
+          return 0;
+      }
+
+      if (aVal < bVal) return currentSort.direction === "asc" ? -1 : 1;
+      if (aVal > bVal) return currentSort.direction === "asc" ? 1 : -1;
+      return 0;
+    });
+
+    // Reorder DOM elements
+    sortedUsers.forEach((user) => {
+      tbody.appendChild(user.element);
+    });
+  }
+
+  function updateSortIndicators() {
+    const headers = document.querySelectorAll("[data-sort]");
+    headers.forEach((header) => {
+      const icon = header.querySelector(".bx");
+      if (header.dataset.sort === currentSort.field) {
+        icon.className =
+          currentSort.direction === "asc"
+            ? "bx bx-chevron-up h-3 w-3"
+            : "bx bx-chevron-down h-3 w-3";
+      } else {
+        icon.className = "bx bx-chevron-up-down h-3 w-3";
+      }
+    });
+  }
+
+  // Global functions for delete functionality
+  window.confirmDeleteUser = function (userId, userName) {
+    deleteUserId = userId;
+    document.getElementById("delete-user-name").textContent = userName;
+    const modal = document.getElementById("delete-modal");
+    modal.classList.remove("hidden");
+    modal.classList.add("flex");
+  };
+
+  // Test toast system function
+  window.testToastSystem = function () {
+    console.log("🔔 [TEST] Testing toast system...");
+
+    if (window.showSuccess) {
+      window.showSuccess("Toast Test", "Success toast is working! 🎉", 3000);
+    } else {
+      console.log("❌ window.showSuccess not available");
+    }
+
+    setTimeout(() => {
+      if (window.showError) {
+        window.showError("Toast Test", "Error toast is working! ⚠️", 3000);
+      } else {
+        console.log("❌ window.showError not available");
+      }
+    }, 500);
+  };
+
+  async function executeDeleteUser() {
+    if (!deleteUserId) return;
+
+    try {
+      const response = await fetch("/api/delete-user", {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ userId: deleteUserId }),
+      });
+
+      if (response.ok) {
+        // Show success message
+        if (window.showSuccess) {
+          window.showSuccess("User Deleted", "User has been successfully deleted.", 3000);
+        }
+
+        // Remove user from DOM
+        const userRow = document
+          .querySelector(`[onclick*="${deleteUserId}"]`)
+          ?.closest(".user-row");
+        if (userRow) {
+          userRow.remove();
+        }
+
+        // Clear filters before refresh to avoid state issues
+        const searchInput = document.getElementById("user-search");
+        const roleFilter = document.getElementById("role-filter");
+        if (searchInput) searchInput.value = "";
+        if (roleFilter) roleFilter.value = "";
+
+        // Update user counts (simple refresh for now)
+        setTimeout(() => window.location.reload(), 1500);
+      } else {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Failed to delete user");
+      }
+    } catch (error) {
+      console.error("Delete user error:", error);
+      if (window.showError) {
+        window.showError("Delete Failed", error.message || "Failed to delete user", 5000);
+      }
+    } finally {
+      // Close modal
+      const modal = document.getElementById("delete-modal");
+      modal.classList.add("hidden");
+      modal.classList.remove("flex");
+      deleteUserId = null;
+    }
+  }
+</script>
