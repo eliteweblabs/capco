@@ -6,6 +6,7 @@ import BoxIcon from "../../components/common/BoxIcon.astro";
 import ProjectForm from "../../components/project/ProjectForm.astro";
 import PDFUpload from "../../components/project/PDFUpload.astro";
 import SimpleProjectLog from "../../components/project/SimpleProjectLog.astro";
+import ProposalManager from "../../components/project/ProposalManager.astro";
 
 // Para cambiar idioma de textos
 import { getI18N } from "@/i18n";
@@ -413,17 +414,13 @@ function getStatusColor(status: number): string {
       </div>
 
       <!-- Proposal Tab -->
-      <div
-        id="content-proposal"
-        class="tab-content hidden rounded-lg border border-gray-200 bg-white p-6 dark:border-gray-700 dark:bg-gray-800"
-      >
-        <div class="py-8 text-center">
-          <BoxIcon name="file-pdf" class="mx-auto mb-4 h-12 w-12 text-gray-400" />
-          <h3 class="mb-2 text-lg font-medium text-gray-900 dark:text-white">Proposal</h3>
-          <p class="text-gray-500 dark:text-gray-400">
-            Project proposal and estimates will be displayed here.
-          </p>
-        </div>
+      <div id="content-proposal" class="tab-content hidden">
+        <ProposalManager 
+          projectId={id ?? ""} 
+          project={project} 
+          projectAuthor={projectAuthorProfile} 
+          role={role || undefined}
+        />
       </div>
 
       <!-- Deliverables Tab -->
@@ -551,16 +548,7 @@ window.PROJECT_USER_ROLE = userRole;</script>
     switchTab(initialTab);
   });
 
-  // Form handling functions
-  function buildProposal(projectId: string) {
-    // Add build estimate logic here
-    console.log("Building estimate for project:", projectId);
-  }
-
-  function editProposal(projectId: string) {
-    // Add edit estimate logic here
-    console.log("Editing estimate for project:", projectId);
-  }
+  // Form handling functions - proposal functions moved to ProposalManager component
 
   // Discussion functionality
   let discussions: any[] = [];
@@ -834,6 +822,4 @@ window.PROJECT_USER_ROLE = userRole;</script>
 
   // Make functions globally available
   (window as any).switchTab = enhancedSwitchTab;
-  (window as any).buildProposal = buildProposal;
-  (window as any).editProposal = editProposal;
 </script>

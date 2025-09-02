@@ -1,8 +1,7 @@
 /** @type {import('tailwindcss').Config} */
-import flowbite from "flowbite/plugin";
 
 export default {
-  content: ["./src/**/*.{astro,js,ts,jsx,tsx,vue,svelte}", "./node_modules/flowbite/**/*.js"],
+  content: ["./src/**/*.{astro,js,ts,jsx,tsx,vue,svelte}"],
   darkMode: "class", // Esto permite usar 'dark:' en clases
   theme: {
     extend: {
@@ -39,5 +38,5 @@ export default {
       },
     },
   },
-  plugins: [flowbite, require("tailwindcss-animate")],
+  plugins: [require("tailwindcss-animate")],
 };

@@ -1,17 +1,66 @@
 import type { APIRoute } from "astro";
 import { SimpleProjectLogger } from "../../../lib/simple-logging";
 import { supabase } from "../../../lib/supabase";
+import { FALLBACK_MODE, mockProjects } from "../../../lib/supabase-fallback";
 
 export const PUT: APIRoute = async ({ request, cookies, params }) => {
-  console.log("🔧 [UPDATE-PROJECT] API called with projectId:", params.id);
+  const projectId = params.id;
+  console.log(
+    "🔧 [UPDATE-PROJECT] API called with projectId:",
+    projectId,
+    "fallback mode:",
+    FALLBACK_MODE
+  );
+
   try {
     const body = await request.json();
     console.log("🔧 [UPDATE-PROJECT] Request body:", body);
-    const projectId = params.id;
 
     if (!projectId) {
       return new Response(JSON.stringify({ error: "Project ID required" }), {
         status: 400,
+      });
+    }
+
+    // Use fallback mode if enabled
+    if (FALLBACK_MODE) {
+      console.log("🔧 [UPDATE-PROJECT] Using fallback mode - simulating update");
+
+      // Simulate finding the project
+      const mockProject = mockProjects.find((p) => p.id === parseInt(projectId));
+      if (!mockProject) {
+        return new Response(JSON.stringify({ error: "Project not found" }), {
+          status: 404,
+        });
+      }
+
+      // Simulate updating the project
+      const updatedProject = {
+        ...mockProject,
+        ...body,
+        updated_at: new Date().toISOString(),
+      };
+
+      console.log("🔧 [UPDATE-PROJECT] Simulated update:", updatedProject);
+
+      // Simulate success response
+      return new Response(
+        JSON.stringify({
+          ...updatedProject,
+          fallback: true,
+          message: "Project updated successfully (fallback mode)",
+        }),
+        {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        }
+      );
+    }
+
+    // Normal Supabase logic (existing code)
+    if (!supabase) {
+      return new Response(JSON.stringify({ error: "Database not configured" }), {
+        status: 500,
       });
     }
 
@@ -78,7 +127,6 @@ export const PUT: APIRoute = async ({ request, cookies, params }) => {
     // Prepare update data
     const updateData: any = {
       address: body.address,
-      // Don't update owner for existing projects (field is hidden)
       architect: body.architect,
       sq_ft: body.sq_ft,
       description: body.description,
@@ -88,8 +136,8 @@ export const PUT: APIRoute = async ({ request, cookies, params }) => {
       project: body.project,
       service: body.service,
       requested_docs: body.requested_docs,
-      assigned_to_id: body.assigned_to_id || null, // Add assigned_to_id field
-      updated_at: new Date().toISOString(), // Always update the timestamp when any field is modified
+      assigned_to_id: body.assigned_to_id || null,
+      updated_at: new Date().toISOString(),
     };
 
     // Add status if provided
@@ -97,9 +145,6 @@ export const PUT: APIRoute = async ({ request, cookies, params }) => {
       updateData.status = body.status;
     }
 
-    // Note: No complex setup needed for simple logging
-
-    // Build update query
     console.log("🔧 [UPDATE-PROJECT] Building update query for project:", projectId);
     console.log("🔧 [UPDATE-PROJECT] Update data:", updateData);
     console.log("🔧 [UPDATE-PROJECT] User role:", userRole);
@@ -132,13 +177,11 @@ export const PUT: APIRoute = async ({ request, cookies, params }) => {
       });
     }
 
-    const project = projects[0]; // Get the first (and should be only) project
+    const project = projects[0];
 
     // Log the project update with granular logging
     try {
       const userEmail = session.session.user.email || "unknown";
-
-      // Create the new project data by merging current project with updates
       const newProjectData = { ...currentProject, ...updateData };
 
       console.log(`📝 [API] Logging project update for project ${projectId} by ${userEmail}`);
@@ -159,14 +202,18 @@ export const PUT: APIRoute = async ({ request, cookies, params }) => {
 
     return new Response(JSON.stringify(project), {
       status: 200,
-      headers: {
-        "Content-Type": "application/json",
-      },
+      headers: { "Content-Type": "application/json" },
     });
   } catch (error) {
-    console.error("Error in update-project:", error);
-    return new Response(JSON.stringify({ error: "Internal server error" }), {
-      status: 500,
-    });
+    console.error("Update project API error:", error);
+    return new Response(
+      JSON.stringify({
+        error: error instanceof Error ? error.message : "Unknown error",
+      }),
+      {
+        status: 500,
+        headers: { "Content-Type": "application/json" },
+      }
+    );
   }
 };

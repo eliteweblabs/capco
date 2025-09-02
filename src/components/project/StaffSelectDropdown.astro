@@ -190,6 +190,10 @@ const {
         console.log("🧑‍💼 [STAFF-SELECT] Updating staff assignment:", { staffId, staffName, projectId });
 
         // Update project assignment
+        console.log("🧑‍💼 [STAFF-SELECT] Making API call to update project assignment...");
+        console.log("🧑‍💼 [STAFF-SELECT] API URL:", `/api/update-project/${projectId}`);
+        console.log("🧑‍💼 [STAFF-SELECT] Request payload:", { assigned_to_id: staffId || null });
+        
         const response = await fetch(`/api/update-project/${projectId}`, {
           method: "PUT",
           headers: {
@@ -199,6 +203,8 @@ const {
             assigned_to_id: staffId || null,
           }),
         });
+        
+        console.log("🧑‍💼 [STAFF-SELECT] API response received:", response.status, response.statusText);
 
         if (!response.ok) {
           const errorData = await response.json();
@@ -220,6 +226,7 @@ const {
         }
 
         // Send staff assignment email notification in the background (only for assignments, not unassignments)
+        console.log("🧑‍💼 [STAFF-SELECT] Checking if should send email:", { staffId, shouldSend: !!staffId });
         if (staffId) {
           try {
             console.log("🧑‍💼 [STAFF-SELECT] Sending assignment notification email...");

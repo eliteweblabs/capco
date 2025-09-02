@@ -1,0 +1,577 @@
+---
+// Line Item Selector Component
+// Allows users to search and select from catalog items or create new ones
+interface Props {
+  invoiceId?: string;
+  onItemAdded?: string; // JavaScript callback function name
+  showAddToInvoice?: boolean;
+}
+
+const { invoiceId, onItemAdded = "onLineItemAdded", showAddToInvoice = true } = Astro.props;
+---
+
+<div class="line-item-selector mb-4 rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
+  <!-- Header -->
+  <div class="mb-4 flex items-center justify-between">
+    <h3 class="text-lg font-semibold text-gray-900">Add Line Item</h3>
+    <button
+      type="button"
+      id="toggle-create-new"
+      class="text-sm font-medium text-blue-600 hover:text-blue-800"
+    >
+      + Create New Item
+    </button>
+  </div>
+
+  <!-- Search Existing Items -->
+  <div id="search-section" class="space-y-4">
+    <!-- Search Input -->
+    <div class="relative">
+      <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+        <i class="bx bx-search text-gray-400"></i>
+      </div>
+      <input
+        type="text"
+        id="catalog-search"
+        placeholder="Search line items..."
+        class="w-full rounded-lg border border-gray-300 py-2 pl-10 pr-4 focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
+      />
+    </div>
+
+    <!-- Category Filter -->
+    <div class="flex items-center space-x-4">
+      <select
+        id="category-filter"
+        class="rounded-lg border border-gray-300 px-3 py-2 focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
+      >
+        <option value="">All Categories</option>
+        <option value="Design Services">Design Services</option>
+        <option value="Consulting">Consulting</option>
+        <option value="Inspection">Inspection</option>
+        <option value="Testing">Testing</option>
+        <option value="Safety Equipment">Safety Equipment</option>
+      </select>
+
+      <button
+        type="button"
+        id="clear-filters"
+        class="px-3 py-1 text-sm text-gray-600 hover:text-gray-800"
+      >
+        Clear Filters
+      </button>
+    </div>
+
+    <!-- Search Results -->
+    <div id="search-results" class="max-h-60 space-y-2 overflow-y-auto">
+      <div id="search-loading" class="hidden py-4 text-center">
+        <i class="bx bx-loader-alt animate-spin text-xl text-gray-400"></i>
+        <p class="mt-2 text-sm text-gray-600">Searching...</p>
+      </div>
+      <div id="search-empty" class="hidden py-4 text-center">
+        <i class="bx bx-search text-2xl text-gray-400"></i>
+        <p class="mt-2 text-sm text-gray-600">No items found. Try a different search term.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Create New Item Form -->
+  <div id="create-section" class="hidden space-y-4">
+    <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+      <div>
+        <label for="new-item-name" class="mb-1 block text-sm font-medium text-gray-700">
+          Item Name *
+        </label>
+        <input
+          type="text"
+          id="new-item-name"
+          required
+          class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
+          placeholder="e.g., Fire Alarm System Design"
+        />
+      </div>
+
+      <div>
+        <label for="new-item-price" class="mb-1 block text-sm font-medium text-gray-700">
+          Unit Price *
+        </label>
+        <div class="relative">
+          <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+            <span class="text-gray-500 sm:text-sm">$</span>
+          </div>
+          <input
+            type="number"
+            id="new-item-price"
+            required
+            min="0"
+            step="0.01"
+            class="w-full rounded-lg border border-gray-300 py-2 pl-8 pr-3 focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
+            placeholder="0.00"
+          />
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <label for="new-item-category" class="mb-1 block text-sm font-medium text-gray-700">
+        Category
+      </label>
+      <select
+        id="new-item-category"
+        class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
+      >
+        <option value="">Select Category</option>
+        <option value="Design Services">Design Services</option>
+        <option value="Consulting">Consulting</option>
+        <option value="Inspection">Inspection</option>
+        <option value="Testing">Testing</option>
+        <option value="Safety Equipment">Safety Equipment</option>
+      </select>
+    </div>
+
+    <div>
+      <label for="new-item-description" class="mb-1 block text-sm font-medium text-gray-700">
+        Description *
+      </label>
+      <textarea
+        id="new-item-description"
+        required
+        rows="3"
+        class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
+        placeholder="Detailed description of the service or item..."></textarea>
+    </div>
+
+    <div class="flex items-center justify-between">
+      <button
+        type="button"
+        id="cancel-create"
+        class="rounded-lg bg-gray-100 px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-200"
+      >
+        Cancel
+      </button>
+      <button
+        type="button"
+        id="save-new-item"
+        class="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700"
+      >
+        <i class="bx bx-save mr-1"></i>
+        Save to Catalog
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Add Item Modal (for quantity selection) -->
+<div
+  id="add-item-modal"
+  class="fixed inset-0 z-50 hidden h-full w-full overflow-y-auto bg-gray-600 bg-opacity-50"
+>
+  <div class="relative top-20 mx-auto w-96 rounded-md border bg-white p-5 shadow-lg">
+    <div class="mt-3">
+      <div class="mb-4 flex items-center justify-between">
+        <h3 class="text-lg font-semibold text-gray-900">Add to Invoice</h3>
+        <button type="button" id="close-modal" class="text-gray-400 hover:text-gray-600">
+          <i class="bx bx-x text-xl"></i>
+        </button>
+      </div>
+
+      <div id="modal-item-details" class="mb-4 rounded-lg bg-gray-50 p-3">
+        <!-- Item details will be populated here -->
+      </div>
+
+      <div class="space-y-4">
+        <div>
+          <label for="item-quantity" class="mb-1 block text-sm font-medium text-gray-700">
+            Quantity
+          </label>
+          <input
+            type="number"
+            id="item-quantity"
+            value="1"
+            min="1"
+            step="1"
+            class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
+          />
+        </div>
+
+        <div>
+          <label for="custom-description" class="mb-1 block text-sm font-medium text-gray-700">
+            Custom Description (optional)
+          </label>
+          <textarea
+            id="custom-description"
+            rows="3"
+            class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
+            placeholder="Leave blank to use default description..."></textarea>
+        </div>
+      </div>
+
+      <div class="mt-6 flex items-center justify-between">
+        <button
+          type="button"
+          id="modal-cancel"
+          class="rounded-lg bg-gray-100 px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-200"
+        >
+          Cancel
+        </button>
+        <button
+          type="button"
+          id="modal-add-item"
+          class="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700"
+        >
+          <i class="bx bx-plus mr-1"></i>
+          Add to Invoice
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script define:vars={{ invoiceId, onItemAdded, showAddToInvoice }}>
+  class LineItemSelector {
+    constructor() {
+      this.invoiceId = invoiceId;
+      this.onItemAdded = onItemAdded;
+      this.showAddToInvoice = showAddToInvoice;
+      this.selectedItem = null;
+      this.searchTimeout = null;
+
+      this.initializeEventListeners();
+      this.loadInitialItems();
+    }
+
+    initializeEventListeners() {
+      // Toggle between search and create sections
+      document.getElementById("toggle-create-new")?.addEventListener("click", () => {
+        this.toggleCreateSection();
+      });
+
+      document.getElementById("cancel-create")?.addEventListener("click", () => {
+        this.showSearchSection();
+      });
+
+      // Search functionality
+      document.getElementById("catalog-search")?.addEventListener("input", (e) => {
+        clearTimeout(this.searchTimeout);
+        this.searchTimeout = setTimeout(() => {
+          this.searchItems(e.target.value);
+        }, 300);
+      });
+
+      document.getElementById("category-filter")?.addEventListener("change", (e) => {
+        this.searchItems(document.getElementById("catalog-search")?.value || "", e.target.value);
+      });
+
+      document.getElementById("clear-filters")?.addEventListener("click", () => {
+        document.getElementById("catalog-search").value = "";
+        document.getElementById("category-filter").value = "";
+        this.loadInitialItems();
+      });
+
+      // Create new item
+      document.getElementById("save-new-item")?.addEventListener("click", () => {
+        this.createNewItem();
+      });
+
+      // Modal functionality
+      document.getElementById("close-modal")?.addEventListener("click", () => {
+        this.closeModal();
+      });
+
+      document.getElementById("modal-cancel")?.addEventListener("click", () => {
+        this.closeModal();
+      });
+
+      document.getElementById("modal-add-item")?.addEventListener("click", () => {
+        this.addItemToInvoice();
+      });
+
+      // Close modal when clicking outside
+      document.getElementById("add-item-modal")?.addEventListener("click", (e) => {
+        if (e.target.id === "add-item-modal") {
+          this.closeModal();
+        }
+      });
+    }
+
+    async loadInitialItems() {
+      await this.searchItems("", "");
+    }
+
+    async searchItems(searchTerm = "", category = "") {
+      const loadingEl = document.getElementById("search-loading");
+      const emptyEl = document.getElementById("search-empty");
+      const resultsEl = document.getElementById("search-results");
+
+      // Show loading
+      loadingEl?.classList.remove("hidden");
+      emptyEl?.classList.add("hidden");
+
+      try {
+        const params = new URLSearchParams();
+        if (searchTerm) params.append("search", searchTerm);
+        if (category) params.append("category", category);
+        params.append("limit", "15");
+
+        const response = await fetch(`/api/line-items-catalog?${params}`);
+        const data = await response.json();
+
+        loadingEl?.classList.add("hidden");
+
+        if (!data.success) {
+          console.error("Error loading catalog items:", data.error);
+          return;
+        }
+
+        this.renderSearchResults(data.items || []);
+      } catch (error) {
+        console.error("Error searching catalog items:", error);
+        loadingEl?.classList.add("hidden");
+      }
+    }
+
+    renderSearchResults(items) {
+      const resultsEl = document.getElementById("search-results");
+      const emptyEl = document.getElementById("search-empty");
+
+      if (!resultsEl) return;
+
+      if (items.length === 0) {
+        resultsEl.innerHTML = "";
+        emptyEl?.classList.remove("hidden");
+        return;
+      }
+
+      emptyEl?.classList.add("hidden");
+
+      resultsEl.innerHTML = items
+        .map(
+          (item) => `
+        <div class="catalog-item border border-gray-200 rounded-lg p-3 hover:border-blue-300 hover:shadow-sm transition-all cursor-pointer"
+             data-item='${JSON.stringify(item)}'>
+          <div class="flex items-start justify-between">
+            <div class="flex-1">
+              <div class="flex items-center space-x-2 mb-1">
+                <h4 class="font-medium text-gray-900">${this.escapeHtml(item.name)}</h4>
+                ${item.category ? `<span class="px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded-full">${this.escapeHtml(item.category)}</span>` : ""}
+              </div>
+              <p class="text-sm text-gray-600 mb-2">${this.escapeHtml(item.description)}</p>
+              <div class="flex items-center justify-between">
+                <span class="text-lg font-semibold text-green-600">$${parseFloat(item.unit_price).toFixed(2)}</span>
+                ${item.usage_count ? `<span class="text-xs text-gray-500">Used ${item.usage_count} times</span>` : ""}
+              </div>
+            </div>
+            ${
+              this.showAddToInvoice && this.invoiceId
+                ? `
+              <button class="add-item-btn ml-3 px-3 py-1 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                <i class="bx bx-plus mr-1"></i>Add
+              </button>
+            `
+                : ""
+            }
+          </div>
+        </div>
+      `
+        )
+        .join("");
+
+      // Add click listeners to items and buttons
+      resultsEl.querySelectorAll(".catalog-item").forEach((itemEl) => {
+        const addBtn = itemEl.querySelector(".add-item-btn");
+        if (addBtn) {
+          addBtn.addEventListener("click", (e) => {
+            e.stopPropagation();
+            const item = JSON.parse(itemEl.dataset.item);
+            this.showAddItemModal(item);
+          });
+        }
+      });
+    }
+
+    showAddItemModal(item) {
+      this.selectedItem = item;
+      const modal = document.getElementById("add-item-modal");
+      const detailsEl = document.getElementById("modal-item-details");
+
+      if (detailsEl) {
+        detailsEl.innerHTML = `
+          <div class="flex items-center justify-between mb-2">
+            <h5 class="font-medium text-gray-900">${this.escapeHtml(item.name)}</h5>
+            <span class="text-lg font-semibold text-green-600">$${parseFloat(item.unit_price).toFixed(2)}</span>
+          </div>
+          <p class="text-sm text-gray-600">${this.escapeHtml(item.description)}</p>
+        `;
+      }
+
+      // Reset form
+      document.getElementById("item-quantity").value = "1";
+      document.getElementById("custom-description").value = "";
+
+      modal?.classList.remove("hidden");
+    }
+
+    closeModal() {
+      document.getElementById("add-item-modal")?.classList.add("hidden");
+      this.selectedItem = null;
+    }
+
+    async addItemToInvoice() {
+      if (!this.selectedItem || !this.invoiceId) return;
+
+      const quantity = document.getElementById("item-quantity")?.value || 1;
+      const customDescription = document.getElementById("custom-description")?.value.trim();
+
+      try {
+        const response = await fetch("/api/add-catalog-item-to-invoice", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            invoice_id: this.invoiceId,
+            catalog_item_id: this.selectedItem.id,
+            quantity: parseFloat(quantity),
+            custom_description: customDescription || null,
+          }),
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          this.closeModal();
+
+          // Call the callback function if provided
+          if (typeof window[this.onItemAdded] === "function") {
+            window[this.onItemAdded](data.line_item);
+          }
+
+          // Show success message
+          this.showMessage("Line item added successfully!", "success");
+        } else {
+          this.showMessage(data.error || "Failed to add line item", "error");
+        }
+      } catch (error) {
+        console.error("Error adding item to invoice:", error);
+        this.showMessage("Failed to add line item", "error");
+      }
+    }
+
+    async createNewItem() {
+      const name = document.getElementById("new-item-name")?.value.trim();
+      const price = document.getElementById("new-item-price")?.value;
+      const category = document.getElementById("new-item-category")?.value.trim();
+      const description = document.getElementById("new-item-description")?.value.trim();
+
+      if (!name || !price || !description) {
+        this.showMessage("Please fill in all required fields", "error");
+        return;
+      }
+
+      try {
+        const response = await fetch("/api/line-items-catalog", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            name,
+            unit_price: parseFloat(price),
+            category: category || null,
+            description,
+          }),
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          // Clear form
+          document.getElementById("new-item-name").value = "";
+          document.getElementById("new-item-price").value = "";
+          document.getElementById("new-item-category").value = "";
+          document.getElementById("new-item-description").value = "";
+
+          this.showSearchSection();
+          this.showMessage("New catalog item created successfully!", "success");
+
+          // Refresh search results
+          this.loadInitialItems();
+        } else {
+          this.showMessage(data.error || "Failed to create catalog item", "error");
+        }
+      } catch (error) {
+        console.error("Error creating catalog item:", error);
+        this.showMessage("Failed to create catalog item", "error");
+      }
+    }
+
+    toggleCreateSection() {
+      const searchSection = document.getElementById("search-section");
+      const createSection = document.getElementById("create-section");
+      const toggleBtn = document.getElementById("toggle-create-new");
+
+      if (createSection?.classList.contains("hidden")) {
+        searchSection?.classList.add("hidden");
+        createSection?.classList.remove("hidden");
+        toggleBtn.textContent = "← Back to Search";
+      } else {
+        this.showSearchSection();
+      }
+    }
+
+    showSearchSection() {
+      const searchSection = document.getElementById("search-section");
+      const createSection = document.getElementById("create-section");
+      const toggleBtn = document.getElementById("toggle-create-new");
+
+      searchSection?.classList.remove("hidden");
+      createSection?.classList.add("hidden");
+      toggleBtn.textContent = "+ Create New Item";
+    }
+
+    showMessage(message, type = "info") {
+      // Create a simple toast notification
+      const toast = document.createElement("div");
+      toast.className = `fixed top-4 right-4 px-4 py-2 rounded-lg text-white z-50 transition-all duration-300 ${
+        type === "success" ? "bg-green-600" : type === "error" ? "bg-red-600" : "bg-blue-600"
+      }`;
+      toast.textContent = message;
+
+      document.body.appendChild(toast);
+
+      setTimeout(() => {
+        toast.style.opacity = "0";
+        setTimeout(() => {
+          document.body.removeChild(toast);
+        }, 300);
+      }, 3000);
+    }
+
+    escapeHtml(text) {
+      const map = {
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+        "'": "&#039;",
+      };
+      return text.replace(/[&<>"']/g, function (m) {
+        return map[m];
+      });
+    }
+  }
+
+  // Initialize when DOM is loaded
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", () => {
+      new LineItemSelector();
+    });
+  } else {
+    new LineItemSelector();
+  }
+</script>
+
+<style>
+  .catalog-item:hover {
+    transform: translateY(-1px);
+  }
+</style>

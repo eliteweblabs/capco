@@ -1,0 +1,418 @@
+---
+import BoxIcon from "../common/BoxIcon.astro";
+import LineItemSelector from "../form/LineItemSelector.astro";
+
+interface Props {
+  projectId: string;
+  project: any;
+  projectAuthor?: any;
+  role?: string;
+}
+
+const { projectId, project, projectAuthor, role } = Astro.props;
+
+// Only show to Admin/Staff users
+const canManageProposals = role === "Admin" || role === "Staff";
+---
+
+<div class="rounded-lg border border-gray-200 bg-white p-6 dark:border-gray-700 dark:bg-gray-800">
+  <!-- Initial state: No proposal generated -->
+  <div id="proposal-placeholder" class="py-8 text-center">
+    <BoxIcon name="file-pdf" class="mx-auto mb-4 h-12 w-12 text-gray-400" />
+    <h3 class="mb-2 text-lg font-medium text-gray-900 dark:text-white">Proposal</h3>
+    <p class="mb-4 text-gray-500 dark:text-gray-400">
+      Generate a project proposal based on the project details.
+    </p>
+    {
+      canManageProposals && (
+        <button
+          onclick={`buildProposal('${projectId}')`}
+          class="inline-flex items-center rounded-lg bg-green-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-green-700"
+        >
+          <BoxIcon name="file-pdf" class="mr-2 h-4 w-4" />
+          Build Proposal
+        </button>
+      )
+    }
+  </div>
+
+  <!-- Generated proposal content (hidden initially) -->
+  <div id="proposal-content" class="hidden">
+    <!-- Proposal Header -->
+    <div class="mb-6 flex items-start justify-between">
+      <div class="flex-1">
+        <h1 class="text-3xl font-bold text-gray-900 dark:text-white">Project Proposal</h1>
+
+        <!-- Editable Subject Line -->
+        <div class="mt-3">
+          <div id="proposal-subject-display" class="cursor-pointer">
+            <p
+              class="text-lg font-medium text-gray-800 transition-colors hover:text-blue-600 dark:text-gray-200 dark:hover:text-blue-400"
+            >
+              <span id="proposal-subject-text">Fire Protection Services Proposal</span>
+              <button
+                type="button"
+                id="edit-subject-btn"
+                class="ml-2 text-gray-400 hover:text-blue-600 dark:hover:text-blue-400"
+                title="Edit subject"
+              >
+                <i class="bx bx-edit text-sm"></i>
+              </button>
+            </p>
+          </div>
+
+          <div id="proposal-subject-edit" class="hidden">
+            <div class="flex items-center space-x-2">
+              <input
+                type="text"
+                id="proposal-subject-input"
+                class="flex-1 rounded-lg border border-gray-300 px-3 py-2 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+                placeholder="Enter proposal subject..."
+                maxlength="200"
+              />
+              <button
+                type="button"
+                id="save-subject-btn"
+                class="rounded-lg bg-blue-600 px-3 py-2 text-sm text-white transition-colors hover:bg-blue-700"
+                title="Save subject"
+              >
+                <i class="bx bx-check"></i>
+              </button>
+              <button
+                type="button"
+                id="cancel-subject-btn"
+                class="rounded-lg bg-gray-500 px-3 py-2 text-sm text-white transition-colors hover:bg-gray-600"
+                title="Cancel"
+              >
+                <i class="bx bx-x"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <p class="mt-2 text-gray-600 dark:text-gray-400">
+          <span id="proposal-project-title">Project Title</span>
+        </p>
+        <p class="text-sm text-gray-500 dark:text-gray-500">
+          Generated on: <span id="proposal-date"></span>
+        </p>
+      </div>
+      <div class="ml-4 text-right">
+        <p class="text-2xl font-bold text-green-600 dark:text-green-400">
+          $<span id="proposal-total">0.00</span>
+        </p>
+        <p class="text-sm text-gray-600 dark:text-gray-400">Estimated Total</p>
+      </div>
+    </div>
+
+    <!-- Project Details -->
+    <div class="mb-6 grid grid-cols-1 gap-6 md:grid-cols-2">
+      <div class="rounded-lg bg-gray-50 p-4 dark:bg-gray-700">
+        <h3 class="mb-2 font-semibold text-gray-900 dark:text-white">Project Information</h3>
+        <div class="space-y-1 text-sm">
+          <p><strong>Address:</strong> <span id="proposal-address">-</span></p>
+          <p><strong>Square Footage:</strong> <span id="proposal-sq-ft">-</span> sq ft</p>
+          <p><strong>Construction Type:</strong> <span id="proposal-construction-type">-</span></p>
+        </div>
+      </div>
+      <div class="rounded-lg bg-gray-50 p-4 dark:bg-gray-700">
+        <h3 class="mb-2 font-semibold text-gray-900 dark:text-white">Contact Information</h3>
+        <div class="space-y-1 text-sm">
+          <p><strong>Client:</strong> <span id="proposal-client-name">-</span></p>
+          <p><strong>Email:</strong> <span id="proposal-client-email">-</span></p>
+          <p><strong>Phone:</strong> <span id="proposal-client-phone">-</span></p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Line Items Table -->
+    <div class="mb-6">
+      <h3 class="mb-4 text-lg font-semibold text-gray-900 dark:text-white">Services & Pricing</h3>
+      <div class="overflow-hidden rounded-lg border border-gray-200 dark:border-gray-600">
+        <table class="w-full">
+          <thead class="bg-gray-50 dark:bg-gray-700">
+            <tr>
+              <th
+                class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-300"
+              >
+                Description
+              </th>
+              <th
+                class="px-4 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-300"
+              >
+                Quantity
+              </th>
+              <th
+                class="px-4 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-300"
+              >
+                Unit Price
+              </th>
+              <th
+                class="px-4 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-300"
+              >
+                Total
+              </th>
+            </tr>
+          </thead>
+          <tbody
+            id="proposal-line-items"
+            class="divide-y divide-gray-200 bg-white dark:divide-gray-600 dark:bg-gray-800"
+          >
+            <!-- Line items will be inserted here dynamically -->
+          </tbody>
+          <tfoot class="bg-gray-50 dark:bg-gray-700">
+            <tr>
+              <td
+                colspan="3"
+                class="px-4 py-3 text-right font-semibold text-gray-900 dark:text-white"
+              >
+                Total:
+              </td>
+              <td class="px-4 py-3 text-right font-bold text-green-600 dark:text-green-400">
+                $<span id="proposal-total-footer">0.00</span>
+              </td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+
+      <!-- Line Item Selector for Proposals -->
+      <div class="mt-6" id="proposal-line-item-selector-container" style="display: none;">
+        <h3 class="mb-3 text-lg font-semibold text-gray-900 dark:text-white">Add Line Items</h3>
+        <LineItemSelector onItemAdded="onProposalLineItemSelected" showAddToInvoice={false} />
+      </div>
+    </div>
+
+    <!-- Actions -->
+    {
+      canManageProposals && (
+        <div class="flex justify-between">
+          <div class="flex gap-2">
+            <button
+              onclick={`editProposal('${projectId}')`}
+              class="inline-flex items-center rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700"
+            >
+              <BoxIcon name="edit" class="mr-2 h-4 w-4" />
+              Edit Proposal
+            </button>
+
+            <button
+              id="show-proposal-selector-btn"
+              onclick="toggleProposalSelector()"
+              class="inline-flex items-center rounded-lg bg-green-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-green-700"
+            >
+              <BoxIcon name="plus" class="mr-2 h-4 w-4" />
+              Add Line Items
+            </button>
+          </div>
+
+          <div class="flex gap-2">
+            <button
+              onclick="regenerateProposal()"
+              class="inline-flex items-center rounded-lg bg-gray-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-gray-700"
+            >
+              <BoxIcon name="refresh" class="mr-2 h-4 w-4" />
+              Regenerate
+            </button>
+            <button
+              id="send-proposal-btn"
+              onclick="sendProposal()"
+              class="inline-flex items-center rounded-lg bg-purple-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-purple-700"
+            >
+              <BoxIcon name="send" class="mr-2 h-4 w-4" />
+              Send Proposal
+            </button>
+            <button
+              onclick="convertToInvoice()"
+              class="inline-flex items-center rounded-lg bg-green-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-green-700"
+            >
+              <BoxIcon name="receipt" class="mr-2 h-4 w-4" />
+              Convert to Invoice
+            </button>
+          </div>
+        </div>
+      )
+    }
+  </div>
+</div>
+
+<script>
+  import { initializeProposalManager } from "@/lib/proposal-manager";
+
+  document.addEventListener("DOMContentLoaded", () => {
+    // Get component data from the global variables set by define:vars
+    const projectId = window.PROPOSAL_PROJECT_ID;
+    const project = window.PROPOSAL_PROJECT_DATA;
+    const projectAuthor = window.PROPOSAL_PROJECT_AUTHOR;
+
+    // Initialize the global proposal manager
+    if (projectId && project) {
+      initializeProposalManager(projectId, project, projectAuthor);
+    }
+
+    // Make wrapper functions available globally for onclick handlers
+    window.buildProposal = (id) => window.proposalManager?.buildProposal();
+    window.editProposal = (id) => window.proposalManager?.editProposal();
+    window.regenerateProposal = () => window.proposalManager?.regenerateProposal();
+    window.sendProposal = () => window.proposalManager?.sendProposal();
+    window.convertToInvoice = () => window.proposalManager?.convertToInvoice();
+    window.updateRowTotal = (index) => window.proposalManager?.updateRowTotal(index);
+    window.addProposalRow = () => window.proposalManager?.addProposalRow();
+    window.deleteProposalRow = (index) => window.proposalManager?.deleteProposalRow(index);
+    // toggleProposalSelector will be defined in the define:vars script below
+
+    // Initialize subject editing functionality
+    (window as any).initializeSubjectEditing();
+
+    // Proposal line item selector callback
+    (window as any).onProposalLineItemSelected = function (item: any) {
+      console.log("Proposal line item selected:", item);
+      // Add logic to handle selected catalog item for proposals
+      // This would integrate with the proposal manager to add the item
+    };
+  });
+</script>
+
+<script define:vars={{ projectId, project, projectAuthor }}>
+  // Make data available globally for the proposal functions
+  window.PROPOSAL_PROJECT_ID = projectId;
+  window.PROPOSAL_PROJECT_DATA = project;
+  window.PROPOSAL_PROJECT_AUTHOR = projectAuthor;
+
+  // Subject editing functionality
+  function initializeSubjectEditing() {
+    const editBtn = document.getElementById("edit-subject-btn");
+    const saveBtn = document.getElementById("save-subject-btn");
+    const cancelBtn = document.getElementById("cancel-subject-btn");
+    const displayDiv = document.getElementById("proposal-subject-display");
+    const editDiv = document.getElementById("proposal-subject-edit");
+    const subjectText = document.getElementById("proposal-subject-text");
+    const subjectInput = document.getElementById("proposal-subject-input");
+
+    if (
+      !editBtn ||
+      !saveBtn ||
+      !cancelBtn ||
+      !displayDiv ||
+      !editDiv ||
+      !subjectText ||
+      !subjectInput
+    ) {
+      return; // Elements not found, proposal not generated yet
+    }
+
+    // Edit button click
+    editBtn.addEventListener("click", () => {
+      const currentText = subjectText.textContent.trim();
+      subjectInput.value = currentText;
+      displayDiv.classList.add("hidden");
+      editDiv.classList.remove("hidden");
+      subjectInput.focus();
+    });
+
+    // Save button click
+    saveBtn.addEventListener("click", async () => {
+      const newSubject = subjectInput.value.trim();
+      if (!newSubject) {
+        alert("Please enter a subject");
+        return;
+      }
+
+      try {
+        // Save to database
+        const response = await fetch("/api/update-proposal-subject", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            projectId: projectId,
+            subject: newSubject,
+          }),
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          // Update UI
+          subjectText.textContent = newSubject;
+          editDiv.classList.add("hidden");
+          displayDiv.classList.remove("hidden");
+
+          // Show success message
+          showToast("Proposal subject updated successfully!", "success");
+        } else {
+          // Check if it's a migration required error
+          if (data.migration_required) {
+            showToast(
+              "Database column 'subject' not found in projects table",
+              "error"
+            );
+            console.error("Column missing:", data.details);
+          } else {
+            throw new Error(data.error || "Failed to update subject");
+          }
+        }
+      } catch (error) {
+        console.error("Error updating proposal subject:", error);
+        showToast("Failed to update proposal subject", "error");
+      }
+    });
+
+    // Cancel button click
+    cancelBtn.addEventListener("click", () => {
+      editDiv.classList.add("hidden");
+      displayDiv.classList.remove("hidden");
+    });
+
+    // Enter key to save, Escape key to cancel
+    subjectInput.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
+        saveBtn.click();
+      } else if (e.key === "Escape") {
+        cancelBtn.click();
+      }
+    });
+  }
+
+  // Toggle proposal line item selector
+  function toggleProposalSelector() {
+    const container = document.getElementById("proposal-line-item-selector-container");
+    const btn = document.getElementById("show-proposal-selector-btn");
+
+    if (!container || !btn) return;
+
+    if (container.style.display === "none") {
+      container.style.display = "block";
+      btn.innerHTML = '<i class="bx bx-minus mr-2 h-4 w-4"></i>Hide Line Items';
+    } else {
+      container.style.display = "none";
+      btn.innerHTML = '<i class="bx bx-plus mr-2 h-4 w-4"></i>Add Line Items';
+    }
+  }
+
+  // Simple toast notification function
+  function showToast(message, type = "info") {
+    const toast = document.createElement("div");
+    toast.className = `fixed top-4 right-4 px-4 py-2 rounded-lg text-white z-50 transition-all duration-300 ${
+      type === "success" ? "bg-green-600" : type === "error" ? "bg-red-600" : "bg-blue-600"
+    }`;
+    toast.textContent = message;
+
+    document.body.appendChild(toast);
+
+    setTimeout(() => {
+      toast.style.opacity = "0";
+      setTimeout(() => {
+        if (document.body.contains(toast)) {
+          document.body.removeChild(toast);
+        }
+      }, 300);
+    }, 3000);
+  }
+
+  // Make functions globally available
+  window.initializeSubjectEditing = initializeSubjectEditing;
+  window.toggleProposalSelector = toggleProposalSelector;
+  window.showToast = showToast;
+</script>

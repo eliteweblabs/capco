@@ -3,13 +3,10 @@ import { checkAuth } from "../../lib/auth";
 import { supabase } from "../../lib/supabase";
 
 export const GET: APIRoute = async ({ request, cookies }) => {
-  console.log("📡 [API] GET /api/get-project called");
-
   try {
     // Check authentication to get user role for filtering
     const { role } = await checkAuth(cookies);
     const isClient = role === "Client";
-    console.log("📡 [GET-PROJECT] User role:", role, "isClient:", isClient);
     if (!supabase) {
       console.log("📡 [API] Supabase not configured, returning demo projects");
 
@@ -50,10 +47,27 @@ export const GET: APIRoute = async ({ request, cookies }) => {
     // Fetch all projects - no role-based filtering
     console.log("📡 [API] Fetching all projects");
 
+    // Optimize: Select only needed fields instead of *
     const { data: projects, error } = await supabase
       .from("projects")
-      .select("*")
-      .order("updated_at", { ascending: false });
+      .select(
+        `
+        id,
+        title,
+        description,
+        address,
+        author_id,
+        status,
+        sq_ft,
+        new_construction,
+        renovation,
+        addition,
+        created_at,
+        updated_at
+      `
+      )
+      .order("updated_at", { ascending: false })
+      .limit(50); // Add reasonable limit
 
     if (error) {
       console.error("Error fetching projects:", error);
@@ -71,50 +85,67 @@ export const GET: APIRoute = async ({ request, cookies }) => {
 
     console.log("📡 [API] Projects fetched:", projects?.length || 0);
 
-    // Add comment counts with role-based filtering
+    // Optimize: Add comment counts with efficient aggregation query
     if (projects && projects.length > 0) {
-      // Get all discussions for these projects
       const projectIds = projects.map((p) => p.id);
 
-      let discussionsQuery = supabase
-        .from("discussion")
-        .select("project_id, internal")
-        .in("project_id", projectIds);
+      try {
+        // Use optimized aggregation query to get counts directly
+        let countQuery = supabase
+          .from("discussion")
+          .select("project_id, count(*)", { count: "exact" })
+          .in("project_id", projectIds);
 
-      // For clients, exclude internal discussions (Admin/Staff see all)
-      if (isClient) {
-        discussionsQuery = discussionsQuery.eq("internal", false);
-        console.log("📡 [GET-PROJECT] Client filter applied - excluding internal discussions");
-      } else {
-        console.log("📡 [GET-PROJECT] Admin/Staff - showing all discussions");
-      }
+        // For clients, exclude internal discussions (Admin/Staff see all)
+        if (isClient) {
+          countQuery = countQuery.eq("internal", false);
+          console.log("📡 [GET-PROJECT] Client filter applied - excluding internal discussions");
+        } else {
+          console.log("📡 [GET-PROJECT] Admin/Staff - showing all discussions");
+        }
 
-      const { data: discussions, error: countError } = await discussionsQuery;
+        // Use direct query approach (RPC function fallback removed for now)
+        const { data: discussions, error: countError } = await countQuery;
 
-      console.log("📡 [GET-PROJECT] Discussions fetched:", {
-        isClient,
-        role,
-        discussionsCount: discussions?.length || 0,
-        discussions:
-          discussions?.map((d) => ({ project_id: d.project_id, internal: d.internal })) || [],
-      });
+        let discussionCounts: Array<{ project_id: number; comment_count: number }> = [];
 
-      if (!countError && discussions) {
-        // Count discussions per project
-        const countsByProject: Record<number, number> = {};
-        discussions.forEach((discussion) => {
-          countsByProject[discussion.project_id] =
-            (countsByProject[discussion.project_id] || 0) + 1;
-        });
+        if (!countError && discussions) {
+          // Count discussions per project
+          const countsByProject: Record<number, number> = {};
+          discussions.forEach((discussion: any) => {
+            countsByProject[discussion.project_id] =
+              (countsByProject[discussion.project_id] || 0) + 1;
+          });
 
-        // Add comment counts to projects
-        projects.forEach((project) => {
-          project.comment_count = countsByProject[project.id] || 0;
-        });
-      } else {
-        console.error("Error fetching discussions:", countError);
-        // Set default comment count to 0 if there's an error
-        projects.forEach((project) => {
+          discussionCounts = Object.entries(countsByProject).map(([project_id, comment_count]) => ({
+            project_id: parseInt(project_id),
+            comment_count,
+          }));
+        }
+
+        if (!countError && discussionCounts) {
+          // Create lookup map for comment counts
+          const countsByProject: Record<number, number> = {};
+          discussionCounts.forEach((item: any) => {
+            countsByProject[item.project_id] = item.comment_count;
+          });
+
+          // Add comment counts to projects
+          projects.forEach((project: any) => {
+            project.comment_count = countsByProject[project.id] || 0;
+          });
+
+          console.log("📡 [GET-PROJECT] Comment counts added efficiently");
+        } else {
+          console.error("Error fetching discussion counts:", countError);
+          // Set default comment count to 0 if there's an error
+          projects.forEach((project: any) => {
+            project.comment_count = 0;
+          });
+        }
+      } catch (error) {
+        console.error("Error in comment count optimization:", error);
+        projects.forEach((project: any) => {
           project.comment_count = 0;
         });
       }
