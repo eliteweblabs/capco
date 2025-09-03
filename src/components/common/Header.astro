@@ -71,7 +71,7 @@ const navigation: NavItem[] = [
   {
     label: "Email Testing",
     href: "/email-test",
-    roles: ["Admin", "Staff"],
+    roles: ["Admin"],
     pageType: "backend",
     isPrimary: currentUrl.startsWith("/email-test"),
   },
@@ -84,7 +84,7 @@ const navigation: NavItem[] = [
   {
     label: "PDF Editor",
     href: "/pdf-editor",
-    roles: ["Admin", "Staff"],
+    roles: ["Admin"],
     pageType: "backend",
     isPrimary: currentUrl.startsWith("/pdf-editor"),
   },
@@ -141,7 +141,8 @@ function getVisibleNavItems(
     if (!isAuth) return false;
 
     // Map database role to our role system
-    const mappedRole: UserRole = userRole === "Admin" ? "Admin" : "Client";
+    const mappedRole: UserRole =
+      userRole === "Admin" ? "Admin" : userRole === "Staff" ? "Staff" : "Client";
 
     // Check if user's role is in the allowed roles for this item
     return item.roles.includes(mappedRole);
@@ -159,7 +160,7 @@ const visibleNavigation = getVisibleNavItems(navigation, isAuth, role, isBackend
     <Logo />
 
     <!-- Navigation (Desktop) -->
-    <nav class="items-center space-x-8 md:flex">
+    <nav class="hidden items-center space-x-8 md:flex">
       {
         visibleNavigation.map((item) =>
           item.isPrimary ? (

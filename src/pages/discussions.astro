@@ -79,7 +79,8 @@ if (supabase) {
         created_at,
         message,
         author_id,
-        project_id
+        project_id,
+        mark_completed
       `)
       .order("created_at", { ascending: false })
       .limit(50); // Limit to most recent 50 discussions
@@ -172,7 +173,7 @@ function getAuthorName(profile: any): string {
 
 <App title="Global Discussions - CAPCo Fire Protection" description="View all project discussions and comments across all projects.">
   <!-- Header Section -->
-  <SectionContainer class="py-10 px-6 bg-gradient-to-r from-red-50 to-orange-50 dark:from-red-900/20 dark:to-orange-900/20">
+  <div class="py-16 px-6 bg-gradient-to-r from-red-50 to-orange-50 dark:from-red-900/20 dark:to-orange-900/20">
     <div class="max-w-6xl mx-auto text-center">
       <h1 class="text-4xl md:text-5xl font-bold text-gray-900 dark:text-white mb-6">
         Global <span class="text-red-600 dark:text-red-400">Discussions</span>
@@ -199,7 +200,7 @@ function getAuthorName(profile: any): string {
         </a>
       </div>
     </div>
-  </SectionContainer>
+  </div>
 
   <!-- Discussions Section -->
   <SectionContainer class="py-16 px-6">
@@ -288,15 +289,50 @@ function getAuthorName(profile: any): string {
                 </p>
               </div>
               
-              <div class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
-                <a 
-                  href={`/project/${discussion.project_id}?tab=discussion`}
-                  class="inline-flex items-center text-sm text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300"
-                >
-                  <BoxIcon name="message-rounded-dots" class="w-4 h-4 mr-1" />
-                  View in Project
-                </a>
-              </div>
+              <!-- Admin/Staff Only: Mark Completed Toggle -->
+              {(role === "Admin" || role === "Staff") && (
+                <div class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+                  <div class="flex items-center justify-between">
+                    <label class="flex items-center gap-3 cursor-pointer">
+                      <div class="relative">
+                        <input
+                          type="checkbox"
+                          id="completed-toggle-{discussion.id}"
+                          class="sr-only peer completed-toggle"
+                          data-discussion-id={discussion.id}
+                          checked={discussion.mark_completed || false}
+                        />
+                        <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-green-300 dark:peer-focus:ring-green-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-green-600"></div>
+                      </div>
+                      <span class="text-sm text-gray-700 dark:text-gray-300">
+                        <i class="bx bx-check-circle mr-1"></i>
+                        Mark completed
+                      </span>
+                    </label>
+                    
+                    <a 
+                      href={`/project/${discussion.project_id}?tab=discussion`}
+                      class="inline-flex items-center text-sm text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300"
+                    >
+                      <BoxIcon name="message-rounded-dots" class="w-4 h-4 mr-1" />
+                      View in Project
+                    </a>
+                  </div>
+                </div>
+              )}
+              
+              <!-- For non-Admin/Staff users, show just the link -->
+              {!(role === "Admin" || role === "Staff") && (
+                <div class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+                  <a 
+                    href={`/project/${discussion.project_id}?tab=discussion`}
+                    class="inline-flex items-center text-sm text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300"
+                  >
+                    <BoxIcon name="message-rounded-dots" class="w-4 h-4 mr-1" />
+                    View in Project
+                  </a>
+                </div>
+              )}
             </div>
           ))}
         </div>
@@ -310,5 +346,67 @@ function getAuthorName(profile: any): string {
     setInterval(() => {
       window.location.reload();
     }, 30000);
+    
+    // Add event delegation for completed toggles
+    document.addEventListener("change", (e) => {
+      const target = e.target as HTMLElement;
+      if (target.classList.contains("completed-toggle")) {
+        const discussionId = parseInt(target.getAttribute("data-discussion-id") || "0");
+        const isCompleted = (target as HTMLInputElement).checked;
+        if (discussionId) {
+          toggleDiscussionCompleted(discussionId, isCompleted);
+        }
+      }
+    });
+    
+    // Toggle discussion completed status
+    async function toggleDiscussionCompleted(discussionId: number, isCompleted: boolean) {
+      try {
+        console.log("🔔 [DISCUSSIONS] Toggling completed status:", { discussionId, isCompleted });
+        
+        const response = await fetch("/api/update-discussion-completed", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            discussionId: discussionId,
+            mark_completed: isCompleted,
+          }),
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          console.log("✅ [DISCUSSIONS] Discussion completed status updated successfully");
+          // Show success notification
+          if (window.showSuccess) {
+            window.showSuccess("Discussion status updated", `Marked as ${isCompleted ? 'completed' : 'incomplete'}`);
+          }
+        } else {
+          console.error("❌ [DISCUSSIONS] Failed to update discussion status:", data.error);
+          // Revert the toggle if the API call failed
+          const toggle = document.getElementById(`completed-toggle-${discussionId}`) as HTMLInputElement;
+          if (toggle) {
+            toggle.checked = !isCompleted;
+          }
+          // Show error notification
+          if (window.showError) {
+            window.showError("Update Failed", "Failed to update discussion status");
+          }
+        }
+      } catch (error) {
+        console.error("❌ [DISCUSSIONS] Error updating discussion status:", error);
+        // Revert the toggle if there was an error
+        const toggle = document.getElementById(`completed-toggle-${discussionId}`) as HTMLInputElement;
+        if (toggle) {
+          toggle.checked = !isCompleted;
+        }
+        // Show error notification
+        if (window.showError) {
+          window.showError("Update Failed", "Error updating discussion status");
+        }
+      }
+    }
   </script>
 </App>

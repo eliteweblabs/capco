@@ -418,7 +418,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
           // Client Comment Email Configuration
           emailSubject =
             custom_subject ||
-            `New Comment from ${client_name || "Client"} on ${projectDetails?.title || "Project"}`;
+            `New Comment: ${projectDetails?.title || "Project"} from ${client_name || "Client"}`;
 
           // Fetch basic project info for content
           let commentProjectTitle = "Project";
@@ -450,7 +450,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
             .replace(/{{PROJECT_TITLE}}/g, commentProjectTitle);
 
           buttonText = "View Comment & Respond";
-          buttonLink = `${process.env.BASE_URL || "http://localhost:4321"}/project/${projectId}#comments`;
+          buttonLink = `${process.env.BASE_URL || "http://localhost:4321"}/project/${projectId}?tab=discussion`;
         } else if (isStatusUpdateEmail) {
           // Status Update Email Configuration
           emailSubject = `${statusConfig?.status_name || "Status Update"}: ${projectDetails?.title || "Project"}`;

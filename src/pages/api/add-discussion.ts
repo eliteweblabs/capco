@@ -89,7 +89,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     }
 
     const body = await request.json();
-    let { projectId, message, internal = false, sms_alert = false } = body;
+    let { projectId, message, internal = false, sms_alert = false, parent_id = null } = body;
 
     // Force internal = false for clients (only Admin/Staff can create internal comments)
     const isClient = role === "Client";
@@ -151,6 +151,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         message: message.trim(),
         internal: internal,
         sms_alert: sms_alert,
+        parent_id: parent_id,
       })
       .select(
         `
@@ -160,7 +161,8 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         author_id,
         internal,
         sms_alert,
-        project_id
+        project_id,
+        parent_id
       `
       )
       .single();
@@ -227,77 +229,95 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
     //
 
-    // Send notifications for different scenarios
-    if (isClient && !internal) {
-      console.log("📧 [ADD-DISCUSSION] Client posted comment - sending admin notifications");
-    } else if (internal) {
-      console.log(
-        "📧 [ADD-DISCUSSION] Internal comment posted - sending staff/admin notifications"
-      );
-    }
+    // Send notifications for ALL comments (new logic)
+    console.log(
+      "📧 [ADD-DISCUSSION] Sending notifications for comment - always email Admin + Staff"
+    );
 
-    if ((isClient && !internal) || internal) {
-      try {
-        // Get project address for the subject line
-        let projectAddress = "";
-        const { data: projectData } = await supabase
-          .from("projects")
-          .select("address, title")
-          .eq("id", projectIdInt)
+    try {
+      // Get project address and author_id for the subject line
+      let projectAddress = "";
+      let projectAuthorId = "";
+      const { data: projectData } = await supabase
+        .from("projects")
+        .select("address, title, author_id")
+        .eq("id", projectIdInt)
+        .single();
+
+      if (projectData) {
+        projectAddress = projectData.address || projectData.title || "";
+        projectAuthorId = projectData.author_id || "";
+      }
+
+      const authorName =
+        userInfo?.company_name || userInfo?.profile?.first_name || userInfo?.display_name || "User";
+
+      // Always indicate if it's internal or not in subject and content
+      const commentType = internal ? "Internal Comment" : "Public Comment";
+      const subjectLine = projectAddress
+        ? `New ${commentType} from ${authorName} - ${projectAddress}`
+        : `New ${commentType} from ${authorName}`;
+
+      // Prepare users to notify
+      const usersToNotify: Array<{ role: string } | { email: string }> = [
+        { role: "Admin" }, // Always notify all Admins
+        { role: "Staff" }, // Always notify all Staff
+      ];
+
+      // If it's NOT internal, also notify the client (project author)
+      if (!internal && projectAuthorId) {
+        const { data: projectAuthor } = await supabase
+          .from("profiles")
+          .select("id, email")
+          .eq("id", projectAuthorId)
           .single();
 
-        if (projectData) {
-          projectAddress = projectData.address || projectData.title || "";
-        }
-
-        const authorName =
-          userInfo?.company_name ||
-          userInfo?.profile?.first_name ||
-          userInfo?.display_name ||
-          "User";
-        const commentType = internal ? "Internal Comment" : "Comment";
-        const subjectLine = projectAddress
-          ? `New ${commentType} from ${authorName} - ${projectAddress}`
-          : `New ${commentType} from ${authorName}`;
-
-        // Call email delivery API to notify all admins
-        const emailResponse = await fetch(
-          `${process.env.BASE_URL || "http://localhost:4321"}/api/email-delivery`,
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              projectId: projectIdInt,
-              emailType: "client_comment",
-              usersToNotify: internal
-                ? [{ role: "Admin" }, { role: "Staff" }]
-                : [{ role: "Admin" }],
-              custom_subject: subjectLine,
-              email_content: message.trim(),
-              comment_timestamp: discussion.created_at,
-              client_name:
-                userInfo?.company_name ||
-                `${userInfo?.profile?.first_name || ""} ${userInfo?.profile?.last_name || ""}`.trim() ||
-                "Client",
-            }),
-          }
-        );
-
-        const emailResult = await emailResponse.json();
-        if (emailResult.success) {
-          console.log("📧 [ADD-DISCUSSION] Admin notification emails sent successfully");
-        } else {
-          console.error(
-            "📧 [ADD-DISCUSSION] Failed to send admin notification emails:",
-            emailResult.error
+        if (projectAuthor?.email) {
+          usersToNotify.push({ email: projectAuthor.email });
+          console.log(
+            "📧 [ADD-DISCUSSION] Adding project author to notifications:",
+            projectAuthor.email
           );
         }
-      } catch (emailError) {
-        console.error("📧 [ADD-DISCUSSION] Error sending admin notification emails:", emailError);
-        // Don't fail the comment creation if email fails
       }
+
+      console.log("📧 [ADD-DISCUSSION] Users to notify:", usersToNotify);
+
+      // Call email delivery API to notify everyone
+      const emailResponse = await fetch(
+        `${process.env.BASE_URL || "http://localhost:4321"}/api/email-delivery`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            projectId: projectIdInt,
+            emailType: "client_comment",
+            usersToNotify: usersToNotify,
+            custom_subject: subjectLine,
+            email_content: message.trim(),
+            comment_timestamp: discussion.created_at,
+            client_name:
+              userInfo?.company_name ||
+              `${userInfo?.profile?.first_name || ""} ${userInfo?.profile?.last_name || ""}`.trim() ||
+              "Client",
+          }),
+        }
+      );
+
+      const emailResult = await emailResponse.json();
+      if (emailResult.success) {
+        console.log(
+          "📧 [ADD-DISCUSSION] Notification emails sent successfully to Admin + Staff" +
+            (!internal ? " + Client" : "")
+        );
+      } else {
+        console.error("📧 [ADD-DISCUSSION] Failed to send notification emails:", emailResult.error);
+      }
+    } catch (emailError) {
+      console.error("📧 [ADD-DISCUSSION] Error sending notification emails:", emailError);
+      // Don't fail the comment creation if email fails
     }
 
     return new Response(

@@ -195,6 +195,46 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       JSON.stringify(projectData, null, 2)
     );
 
+    // SAFETY CHECK: Ensure project author is always a client
+    // This prevents the issue where projects could be created with admin/staff authors
+    // The check validates that the author_id corresponds to a user with role = 'Client'
+    console.log("📝 [CREATE-PROJECT] Safety check: Verifying project author role");
+    const { data: authorProfile, error: authorCheckError } = await supabase
+      .from("profiles")
+      .select("role")
+      .eq("id", projectAuthorId)
+      .single();
+
+    if (authorCheckError) {
+      console.error("📝 [CREATE-PROJECT] Safety check failed - could not verify author role:", authorCheckError);
+      return new Response(JSON.stringify({ 
+        error: "Failed to verify project author role",
+        details: "Could not validate that the project author is a client"
+      }), {
+        status: 500,
+      });
+    }
+
+    if (authorProfile.role !== "Client") {
+      console.error("📝 [CREATE-PROJECT] SAFETY CHECK FAILED - Project author is not a client!", {
+        authorId: projectAuthorId,
+        authorRole: authorProfile.role,
+        expectedRole: "Client",
+        currentUserRole: userProfile.role
+      });
+      return new Response(JSON.stringify({ 
+        error: "Project author must be a client",
+        details: `Cannot create project with author role: ${authorProfile.role}. Only clients can be project authors.`
+      }), {
+        status: 400,
+      });
+    }
+
+    console.log("📝 [CREATE-PROJECT] ✅ Safety check passed - project author is a client:", {
+      authorId: projectAuthorId,
+      authorRole: authorProfile.role
+    });
+
     // Create project
     console.log("📝 [CREATE-PROJECT] About to insert project into database");
     const { data: projects, error } = await supabase
