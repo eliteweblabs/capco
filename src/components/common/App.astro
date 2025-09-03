@@ -19,29 +19,24 @@ const i18n = getI18N({ currentLocale });
 const title = Astro.props.title || i18n.SEO_TITLE;
 const description = Astro.props.description || i18n.SEO_DESCRIPTION;
 
+// Extract environment variables to avoid template literal parsing issues
+const supabaseUrl = import.meta.env.SUPABASE_URL || "";
+const supabaseAnonKey = (import.meta.env.SUPABASE_ANON_KEY || "").replace(/\s/g, "");
+const googleMapsApiKey = import.meta.env.GOOGLE_MAPS_API_KEY || "";
+const stripePublishableKey =
+  import.meta.env.PUBLIC_STRIPE_PUBLISHABLE_KEY ||
+  import.meta.env.STRIPE_PUBLISHABLE_KEY ||
+  process.env.PUBLIC_STRIPE_PUBLISHABLE_KEY ||
+  process.env.STRIPE_PUBLISHABLE_KEY ||
+  "";
+
 // Debug environment variables during server-side rendering
 console.log("🔧 [APP.ASTRO] Server-side environment check:");
-console.log(
-  "🔧 [APP.ASTRO] import.meta.env.PUBLIC_STRIPE_PUBLISHABLE_KEY:",
-  import.meta.env.PUBLIC_STRIPE_PUBLISHABLE_KEY
-);
-console.log(
-  "🔧 [APP.ASTRO] import.meta.env.STRIPE_PUBLISHABLE_KEY:",
-  import.meta.env.STRIPE_PUBLISHABLE_KEY
-);
-console.log(
-  "🔧 [APP.ASTRO] process.env.PUBLIC_STRIPE_PUBLISHABLE_KEY:",
-  process.env.PUBLIC_STRIPE_PUBLISHABLE_KEY
-);
-console.log(
-  "🔧 [APP.ASTRO] process.env.STRIPE_PUBLISHABLE_KEY:",
-  process.env.STRIPE_PUBLISHABLE_KEY
-);
-console.log("🔧 [APP.ASTRO] GOOGLE_MAPS_API_KEY:", import.meta.env.GOOGLE_MAPS_API_KEY);
-console.log(
-  "🔧 [APP.ASTRO] All import.meta.env keys with STRIPE:",
-  Object.keys(import.meta.env).filter((key) => key.includes("STRIPE"))
-);
+console.log("🔧 [APP.ASTRO] supabaseUrl:", !!supabaseUrl);
+console.log("🔧 [APP.ASTRO] supabaseAnonKey:", !!supabaseAnonKey);
+console.log("🔧 [APP.ASTRO] googleMapsApiKey:", !!googleMapsApiKey);
+console.log("🔧 [APP.ASTRO] stripePublishableKey:", !!stripePublishableKey);
+console.log("🔧 [APP.ASTRO] stripePublishableKey length:", stripePublishableKey?.length || 0);
 
 // Import components
 import Header from "./Header.astro";
@@ -136,7 +131,7 @@ console.log("🏗️ [APP] App component loading...", user);
 
     <!-- Inject environment variables for client-side use FIRST -->
     <script
-      set:html={`window.SUPABASE_URL = "${import.meta.env.SUPABASE_URL || ""}"; window.SUPABASE_ANON_KEY = "${(import.meta.env.SUPABASE_ANON_KEY || "").replace(/\s/g, "")}"; window.GOOGLE_MAPS_API_KEY = "${import.meta.env.GOOGLE_MAPS_API_KEY || ""}"; window.STRIPE_PUBLISHABLE_KEY = "${import.meta.env.PUBLIC_STRIPE_PUBLISHABLE_KEY || import.meta.env.STRIPE_PUBLISHABLE_KEY || process.env.PUBLIC_STRIPE_PUBLISHABLE_KEY || process.env.STRIPE_PUBLISHABLE_KEY || ""}"; ${user ? `window.USER_DATA = ${JSON.stringify(user)};` : ""} console.log("Environment variables loaded:", { SUPABASE_URL: window.SUPABASE_URL ? "Set" : "Missing", SUPABASE_ANON_KEY: window.SUPABASE_ANON_KEY ? "Set" : "Missing", GOOGLE_MAPS_API_KEY: window.GOOGLE_MAPS_API_KEY ? "Set" : "Missing", STRIPE_PUBLISHABLE_KEY: window.STRIPE_PUBLISHABLE_KEY ? "Set" : "Missing" });`}
+      set:html={`window.SUPABASE_URL = "${supabaseUrl}"; window.SUPABASE_ANON_KEY = "${supabaseAnonKey}"; window.GOOGLE_MAPS_API_KEY = "${googleMapsApiKey}"; window.STRIPE_PUBLISHABLE_KEY = "${stripePublishableKey}"; ${user ? `window.USER_DATA = ${JSON.stringify(user)};` : ""} console.log("Environment variables loaded:", { SUPABASE_URL: window.SUPABASE_URL ? "Set" : "Missing", SUPABASE_ANON_KEY: window.SUPABASE_ANON_KEY ? "Set" : "Missing", GOOGLE_MAPS_API_KEY: window.GOOGLE_MAPS_API_KEY ? "Set" : "Missing", STRIPE_PUBLISHABLE_KEY: window.STRIPE_PUBLISHABLE_KEY ? "Set" : "Missing" });`}
     />
 
     <!-- Google Maps Places API - Load only if API key is available -->
