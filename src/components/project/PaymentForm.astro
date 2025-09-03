@@ -11,6 +11,18 @@ const { invoiceId, amount, currency = "usd", paymentType = "deposit", clientProf
 
 // Get Stripe publishable key from environment
 const stripePublishableKey = import.meta.env.PUBLIC_STRIPE_PUBLISHABLE_KEY || "";
+
+// Debug environment variables
+console.log("🔧 [STRIPE] Environment check:");
+console.log(
+  "🔧 [STRIPE] PUBLIC_STRIPE_PUBLISHABLE_KEY exists:",
+  !!import.meta.env.PUBLIC_STRIPE_PUBLISHABLE_KEY
+);
+console.log("🔧 [STRIPE] Key length:", stripePublishableKey?.length || 0);
+console.log("🔧 [STRIPE] Key starts with pk_:", stripePublishableKey?.startsWith("pk_"));
+if (!stripePublishableKey) {
+  console.error("🔧 [STRIPE] CRITICAL: Stripe publishable key is missing!");
+}
 ---
 
 <div class="payment-form-container">
@@ -310,6 +322,26 @@ const stripePublishableKey = import.meta.env.PUBLIC_STRIPE_PUBLISHABLE_KEY || ""
         script.onload = resolve;
         script.onerror = reject;
       });
+    }
+
+    // Validate Stripe publishable key
+    console.log("🔧 [STRIPE] Client-side key check:");
+    console.log("🔧 [STRIPE] stripePublishableKey:", stripePublishableKey);
+    console.log("🔧 [STRIPE] Key length:", stripePublishableKey?.length);
+    console.log("🔧 [STRIPE] Key starts with pk_:", stripePublishableKey?.startsWith("pk_"));
+
+    if (!stripePublishableKey || stripePublishableKey.trim() === "") {
+      console.error("🔧 [STRIPE] CRITICAL ERROR: Stripe publishable key is empty or missing!");
+      console.error(
+        "🔧 [STRIPE] Make sure PUBLIC_STRIPE_PUBLISHABLE_KEY is set in your environment variables"
+      );
+      return;
+    }
+
+    if (!stripePublishableKey.startsWith("pk_")) {
+      console.error("🔧 [STRIPE] CRITICAL ERROR: Invalid Stripe publishable key format!");
+      console.error("🔧 [STRIPE] Publishable keys should start with 'pk_'");
+      return;
     }
 
     // Initialize Stripe
