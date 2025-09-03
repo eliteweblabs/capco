@@ -413,10 +413,10 @@ export const BUTTON_GROUPS: ButtonGroupConfig[] = [
     id: "building-type",
     name: "building",
     label: "Building",
-    type: "radio",
+    type: "multi-select",
     cssClass: "building-type-radio",
     allow: ["Admin", "Staff", "Client"], // All roles can see building type
-    hideAtStatus: [60, 70, 80, 90], // Hide after proposal is signed off
+    // hideAtStatus: [60, 70, 80, 90], // Hide after proposal is signed off
     readOnlyAtStatus: [
       20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170, 180, 190, 200,
     ], // Read-only after proposal is viewed but before signed off
