@@ -758,6 +758,13 @@ window.PROJECT_USER_ROLE = userRole;</script>
     }
 
     try {
+      console.log("🔔 [DISCUSSION] Submitting comment:", {
+        projectId: currentProjectId,
+        message: message.substring(0, 50) + "...",
+        internal: isInternal,
+        sms_alert: smsAlert,
+      });
+
       const response = await fetch("/api/add-discussion", {
         method: "POST",
         headers: {
@@ -770,6 +777,9 @@ window.PROJECT_USER_ROLE = userRole;</script>
           sms_alert: smsAlert,
         }),
       });
+
+      console.log("🔔 [DISCUSSION] Response status:", response.status);
+      console.log("🔔 [DISCUSSION] Response ok:", response.ok);
 
       const data = await response.json();
 

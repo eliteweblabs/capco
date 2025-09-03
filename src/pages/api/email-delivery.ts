@@ -356,11 +356,9 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       try {
         // Determine if this user should get a magic link button
         const isClient = finalUsersToNotify.some((u: any) => u.email === user.email);
-        const shouldShowButton = isClient; // Only show button for clients
 
         console.log(`📧 [EMAIL-DELIVERY] User analysis for ${user.email}:`);
         console.log("  - Is client:", isClient);
-        console.log("  - Should show button:", shouldShowButton);
 
         // Use button_link from database
         const magicLink = statusConfig?.button_link || "";
@@ -390,18 +388,39 @@ export const POST: APIRoute = async ({ request, cookies }) => {
             : null,
         });
 
-        // Use the email content based on email type
-        let emailContent;
+        // Consolidated email configuration by type
+        let emailContent, emailSubject, buttonText, buttonLink;
+        let shouldShowButton = true;
+
         if (isRegistrationEmail) {
-          // For registration emails, use content from request body
+          // Registration Email Configuration
+          emailSubject = custom_subject || "Welcome to CAPCo Fire Protection";
           emailContent = email_content || "Thank you for registering with CAPCo Fire Protection!";
+
+          // Button logic for registration
+          const hasRegistrationButton = body.button_text && body.button_text.trim() !== "";
+          if (hasRegistrationButton) {
+            buttonText = body.button_text.trim();
+            buttonLink = body.button_link || "#";
+          } else {
+            shouldShowButton = false;
+          }
         } else if (isStaffAssignmentEmail) {
-          // For staff assignment emails, use content from request body
+          // Staff Assignment Email Configuration
+          emailSubject =
+            custom_subject || `Project Assignment - ${projectDetails?.title || "Project"}`;
           emailContent =
             email_content ||
             "You have been assigned to a new project. Please review the project details and take appropriate action.";
+          buttonText = "View Project";
+          buttonLink = `${process.env.BASE_URL || "http://localhost:4321"}/project/${projectId}`;
         } else if (isClientCommentEmail) {
-          // For client comment emails, we need to fetch basic project info for placeholders
+          // Client Comment Email Configuration
+          emailSubject =
+            custom_subject ||
+            `New Comment from ${client_name || "Client"} on ${projectDetails?.title || "Project"}`;
+
+          // Fetch basic project info for content
           let commentProjectTitle = "Project";
           if (projectId) {
             const { data: basicProject } = await supabase
@@ -429,17 +448,39 @@ export const POST: APIRoute = async ({ request, cookies }) => {
           emailContent = emailContent
             .replace(/{{CLIENT_NAME}}/g, client_name || "Client")
             .replace(/{{PROJECT_TITLE}}/g, commentProjectTitle);
-        } else if (isEmergencySmsEmail) {
-          // For emergency SMS, use the content directly (no HTML formatting)
-          emailContent = email_content || "Emergency contact message from CAPCo website";
+
+          buttonText = "View Comment & Respond";
+          buttonLink = `${process.env.BASE_URL || "http://localhost:4321"}/project/${projectId}#comments`;
         } else if (isStatusUpdateEmail) {
-          // For status updates, use rigid content from database
+          // Status Update Email Configuration
+          emailSubject = `${statusConfig?.status_name || "Status Update"}: ${projectDetails?.title || "Project"}`;
           emailContent =
             statusConfig?.email_content ||
             "Your project status has been updated. Please check your project dashboard for more details.";
+
+          // Button logic for status updates
+          const hasButtonText =
+            statusConfig?.button_text &&
+            statusConfig.button_text.trim() !== "" &&
+            statusConfig.button_text !== "#";
+          const hasValidLink = magicLink && magicLink.trim() !== "";
+
+          if (hasButtonText && hasValidLink) {
+            buttonText = statusConfig.button_text.trim();
+            buttonLink = magicLink;
+          } else {
+            shouldShowButton = false;
+          }
+        } else if (isEmergencySmsEmail) {
+          // Emergency SMS Email Configuration
+          emailSubject = custom_subject || "Emergency Contact";
+          emailContent = email_content || "Emergency contact message from CAPCo website";
+          shouldShowButton = false;
         } else {
           // Fallback for unknown email types
+          emailSubject = custom_subject || "Notification";
           emailContent = email_content || "You have a new notification.";
+          shouldShowButton = false;
         }
 
         // Convert plain text to HTML with line breaks (skip for SMS)
@@ -473,59 +514,12 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         // Replace template variables
         let emailHtml = emailTemplate.replace("{{CONTENT}}", htmlContent);
 
-        // Handle button display logic based on email type
-        if (isRegistrationEmail) {
-          // For registration emails, use button_text and button_link from request body
-          const hasRegistrationButton = body.button_text && body.button_text.trim() !== "";
-          if (hasRegistrationButton) {
-            emailHtml = emailHtml.replace("{{BUTTON_TEXT}}", body.button_text.trim());
-            emailHtml = emailHtml.replace("{{BUTTON_LINK}}", body.button_link || "#");
-          } else {
-            // Remove button for registration emails without button_text
-            emailHtml = emailHtml.replace(
-              /<!-- Call to Action Button -->[\s\S]*?<!-- \/Call to Action Button -->/g,
-              ""
-            );
-            emailHtml = emailHtml.replace("{{BUTTON_TEXT}}", "");
-            emailHtml = emailHtml.replace("{{BUTTON_LINK}}", "");
-          }
-        } else if (isStaffAssignmentEmail) {
-          // For staff assignment emails, add button to view project
-          emailHtml = emailHtml.replace("{{BUTTON_TEXT}}", "View Project");
-          emailHtml = emailHtml.replace(
-            "{{BUTTON_LINK}}",
-            `${process.env.BASE_URL || "http://localhost:4321"}/project/${projectId}`
-          );
-        } else if (isClientCommentEmail) {
-          // For client comment emails, add button to view project and respond
-          emailHtml = emailHtml.replace("{{BUTTON_TEXT}}", "View Comment & Respond");
-          emailHtml = emailHtml.replace(
-            "{{BUTTON_LINK}}",
-            `${process.env.BASE_URL || "http://localhost:4321"}/project/${projectId}#comments`
-          );
-        } else if (isStatusUpdateEmail) {
-          // For status update emails, use rigid logic from database
-          const hasButtonText =
-            statusConfig?.button_text &&
-            statusConfig.button_text.trim() !== "" &&
-            statusConfig.button_text !== "#";
-          const hasValidLink = magicLink && magicLink.trim() !== "";
-
-          if (shouldShowButton && hasButtonText && hasValidLink) {
-            // For clients with valid button_text and link: Include magic link button
-            emailHtml = emailHtml.replace("{{BUTTON_TEXT}}", statusConfig.button_text.trim());
-            emailHtml = emailHtml.replace("{{BUTTON_LINK}}", magicLink);
-          } else {
-            // For admin/staff or when button_text/link is invalid: Remove button completely
-            emailHtml = emailHtml.replace(
-              /<!-- Call to Action Button -->[\s\S]*?<!-- \/Call to Action Button -->/g,
-              ""
-            );
-            emailHtml = emailHtml.replace("{{BUTTON_TEXT}}", "");
-            emailHtml = emailHtml.replace("{{BUTTON_LINK}}", "");
-          }
+        // Apply button configuration
+        if (shouldShowButton && buttonText && buttonLink) {
+          emailHtml = emailHtml.replace("{{BUTTON_TEXT}}", buttonText);
+          emailHtml = emailHtml.replace("{{BUTTON_LINK}}", buttonLink);
         } else {
-          // For unknown email types, remove button
+          // Remove button section entirely
           emailHtml = emailHtml.replace(
             /<!-- Call to Action Button -->[\s\S]*?<!-- \/Call to Action Button -->/g,
             ""
@@ -544,25 +538,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         const validFromEmail =
           fromEmail && fromEmail.trim() !== "" ? fromEmail.trim() : "noreply@capcofire.com";
 
-        // Set subject based on email type
-        let emailSubject;
-        if (isRegistrationEmail) {
-          // Use custom subject from request body, fallback to default
-          emailSubject = custom_subject || "Welcome to CAPCo Fire Protection";
-        } else if (isStaffAssignmentEmail) {
-          // Use custom subject from request body, fallback to default with project title
-          emailSubject =
-            custom_subject || `Project Assignment - ${projectDetails?.title || "Project"}`;
-        } else if (isClientCommentEmail) {
-          // For client comment emails, use the custom subject which includes client name
-          emailSubject = custom_subject || `New Comment from ${client_name || "Client"}`;
-        } else if (isStatusUpdateEmail) {
-          // Status update subject - only rigid built-in logic
-          emailSubject = `${statusConfig?.status_name || "Status Update"}: ${projectDetails?.title || "Project"}`;
-        } else {
-          // Fallback for unknown email types
-          emailSubject = custom_subject || "Notification";
-        }
+        // Email subject was already set in the consolidated configuration above
 
         const emailPayload = {
           from: `${validFromName} <${validFromEmail}>`,
