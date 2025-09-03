@@ -321,33 +321,20 @@ const { invoiceId, amount, currency = "usd", paymentType = "deposit", clientProf
       window.STRIPE_PUBLISHABLE_KEY ? window.STRIPE_PUBLISHABLE_KEY.length : 0
     );
 
-    let stripePublishableKey = window.STRIPE_PUBLISHABLE_KEY;
+    const stripePublishableKey = window.STRIPE_PUBLISHABLE_KEY;
 
-    // If window variable isn't available, try API fallback
     if (!stripePublishableKey || stripePublishableKey.trim() === "") {
-      console.log("🔧 [STRIPE] Window variable not available, trying API fallback...");
-      try {
-        const response = await fetch("/api/stripe-key");
-        const data = await response.json();
-
-        if (data.success && data.publishableKey) {
-          stripePublishableKey = data.publishableKey;
-          console.log("🔧 [STRIPE] Key fetched from API successfully");
-        } else {
-          throw new Error(data.error || "Failed to get Stripe key from API");
-        }
-      } catch (error) {
-        console.error("🔧 [STRIPE] CRITICAL ERROR: Stripe publishable key not found!");
-        console.error("🔧 [STRIPE] Window variable:", window.STRIPE_PUBLISHABLE_KEY);
-        console.error("🔧 [STRIPE] API error:", error);
-        console.error("🔧 [STRIPE] Available window vars:", {
-          SUPABASE_URL: window.SUPABASE_URL ? "Set" : "Missing",
-          SUPABASE_ANON_KEY: window.SUPABASE_ANON_KEY ? "Set" : "Missing",
-          GOOGLE_MAPS_API_KEY: window.GOOGLE_MAPS_API_KEY ? "Set" : "Missing",
-          STRIPE_PUBLISHABLE_KEY: window.STRIPE_PUBLISHABLE_KEY ? "Set" : "Missing",
-        });
-        return;
-      }
+      console.error("🔧 [STRIPE] CRITICAL ERROR: Stripe publishable key not found!");
+      console.error(
+        "🔧 [STRIPE] Make sure PUBLIC_STRIPE_PUBLISHABLE_KEY is set in Railway environment variables"
+      );
+      console.error("🔧 [STRIPE] Available window vars:", {
+        SUPABASE_URL: window.SUPABASE_URL ? "Set" : "Missing",
+        SUPABASE_ANON_KEY: window.SUPABASE_ANON_KEY ? "Set" : "Missing",
+        GOOGLE_MAPS_API_KEY: window.GOOGLE_MAPS_API_KEY ? "Set" : "Missing",
+        STRIPE_PUBLISHABLE_KEY: window.STRIPE_PUBLISHABLE_KEY ? "Set" : "Missing",
+      });
+      return;
     }
 
     if (!stripePublishableKey.startsWith("pk_")) {
