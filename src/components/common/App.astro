@@ -16,8 +16,10 @@ const { currentLocale } = Astro;
 const i18n = getI18N({ currentLocale });
 
 // Use provided props or fall back to i18n defaults
-const title = Astro.props.title || i18n.SEO_TITLE;
-const description = Astro.props.description || i18n.SEO_DESCRIPTION;
+const title = Astro.props.title || "CAPCo Fire Protection Systems";
+const description =
+  Astro.props.description ||
+  "Fire Protection Services, Fire Sprinkler Design, Fire Alarm Design, Fire Protection Plans, Fire Protection Installation, Fire Protection Maintenance, Fire Protection Inspection, Fire Protection Training, Fire Protection Consulting";
 
 // Extract environment variables to avoid template literal parsing issues
 const supabaseUrl = import.meta.env.SUPABASE_URL || "";
@@ -211,8 +213,8 @@ console.log("🏗️ [APP] App component loading...", user);
     <!-- Inject session tokens for client-side Supabase auth -->
     <script
       set:html={`
-        const accessToken = "${Astro.cookies.get("sb-access-token")?.value || ""}";
-        const refreshToken = "${Astro.cookies.get("sb-refresh-token")?.value || ""}";
+        const accessToken = ${JSON.stringify(Astro.cookies.get("sb-access-token")?.value || "")};
+        const refreshToken = ${JSON.stringify(Astro.cookies.get("sb-refresh-token")?.value || "")};
         if (accessToken) window.SUPABASE_ACCESS_TOKEN = accessToken;
         if (refreshToken) window.SUPABASE_REFRESH_TOKEN = refreshToken;
       `}
