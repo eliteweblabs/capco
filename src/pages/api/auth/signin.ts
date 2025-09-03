@@ -1,8 +1,8 @@
+import type { Provider } from "@supabase/supabase-js";
 import type { APIRoute } from "astro";
-import { supabase } from "../../../lib/supabase";
 import { setAuthCookies } from "../../../lib/auth-cookies";
 import { ensureUserProfile } from "../../../lib/auth-utils";
-import type { Provider } from "@supabase/supabase-js";
+import { supabase } from "../../../lib/supabase";
 
 export const POST: APIRoute = async ({ request, cookies, redirect }) => {
   // Check if Supabase is configured
@@ -21,7 +21,7 @@ export const POST: APIRoute = async ({ request, cookies, redirect }) => {
       options: {
         redirectTo: import.meta.env.DEV
           ? "http://localhost:4321/api/auth/callback"
-          : "https://de.capcofire.com/api/auth/callback",
+          : "https://capcofire.com/api/auth/callback",
         queryParams: {
           access_type: "offline",
           prompt: "consent",

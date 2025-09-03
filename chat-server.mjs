@@ -14,7 +14,7 @@ const server = createServer(app);
 // Configure CORS for Socket.IO
 const io = new Server(server, {
   cors: {
-    origin: ["http://localhost:4321", "http://localhost:3000", "https://de.capcofire.com"],
+    origin: ["http://localhost:4321", "http://localhost:3000", "https://capcofire.com"],
     methods: ["GET", "POST", "OPTIONS"],
     credentials: true,
     allowedHeaders: ["Content-Type", "Authorization"],
@@ -25,7 +25,7 @@ const io = new Server(server, {
 // Enable CORS for Express app
 app.use(
   cors({
-    origin: ["http://localhost:4321", "http://localhost:3000", "https://de.capcofire.com"],
+    origin: ["http://localhost:4321", "http://localhost:3000", "https://capcofire.com"],
     credentials: true,
     methods: ["GET", "POST", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
@@ -231,7 +231,7 @@ const PORT = process.env.CHAT_PORT || 3001;
 server.listen(PORT, () => {
   console.log(`🚀 [CHAT-SERVER] Chat server running on port ${PORT}`);
   console.log(
-    `🔔 [CHAT-SERVER] CORS enabled for: http://localhost:4321, http://localhost:3000, https://de.capcofire.com`
+    `🔔 [CHAT-SERVER] CORS enabled for: http://localhost:4321, http://localhost:3000, https://capcofire.com`
   );
 });
 
