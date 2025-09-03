@@ -18,33 +18,70 @@ export const POST: APIRoute = async ({ request }) => {
       );
     }
 
-    const { invoiceId, paymentMethod, billingDetails } = await request.json();
+    const { projectId, invoiceId, paymentType, paymentMethod, billingDetails } =
+      await request.json();
 
-    if (!invoiceId) {
-      return new Response(JSON.stringify({ error: "Invoice ID is required" }), {
+    // Support both old invoice-based and new project-based payments
+    const id = projectId || invoiceId;
+    const isProjectPayment = !!projectId;
+
+    if (!id) {
+      return new Response(JSON.stringify({ error: "Project ID or Invoice ID is required" }), {
         status: 400,
         headers: { "Content-Type": "application/json" },
       });
     }
 
-    // Get invoice details from database
-    const { data: invoice, error: invoiceError } = await supabase
-      .from("invoices")
-      .select(
-        `
-        *,
-        projects!inner(id, title, address, author_id)
-      `
-      )
-      .eq("id", invoiceId)
-      .single();
+    let invoice, invoiceError, project;
 
-    if (invoiceError || !invoice) {
-      console.error("Error fetching invoice:", invoiceError);
-      return new Response(JSON.stringify({ error: "Invoice not found" }), {
-        status: 404,
-        headers: { "Content-Type": "application/json" },
-      });
+    if (isProjectPayment) {
+      // For project-based payments, get project details and create/find invoice
+      const { data: projectData, error: projectError } = await supabase
+        .from("projects")
+        .select("id, title, address, author_id")
+        .eq("id", id)
+        .single();
+
+      if (projectError || !projectData) {
+        console.error("Error fetching project:", projectError);
+        return new Response(JSON.stringify({ error: "Project not found" }), {
+          status: 404,
+          headers: { "Content-Type": "application/json" },
+        });
+      }
+
+      project = projectData;
+
+      // Create a simple invoice object for payment processing
+      invoice = {
+        id: `project_${id}_${paymentType || "deposit"}`,
+        project_id: id,
+        total_amount: 500.0, // Default amount - you can calculate this based on your logic
+        projects: project,
+      };
+    } else {
+      // Original invoice-based payment
+      const { data: invoiceData, error: invoiceErr } = await supabase
+        .from("invoices")
+        .select(
+          `
+          *,
+          projects!inner(id, title, address, author_id)
+        `
+        )
+        .eq("id", id)
+        .single();
+
+      if (invoiceErr || !invoiceData) {
+        console.error("Error fetching invoice:", invoiceErr);
+        return new Response(JSON.stringify({ error: "Invoice not found" }), {
+          status: 404,
+          headers: { "Content-Type": "application/json" },
+        });
+      }
+
+      invoice = invoiceData;
+      invoiceError = invoiceErr;
     }
 
     // Calculate total amount in cents (Stripe expects cents)
@@ -55,14 +92,13 @@ export const POST: APIRoute = async ({ request }) => {
       amount: amountInCents,
       currency: "usd",
       metadata: {
-        invoice_id: invoiceId.toString(),
+        invoice_id: invoice.id.toString(),
         project_id: invoice.project_id.toString(),
         project_title: invoice.projects.title,
+        payment_type: paymentType || "deposit",
+        is_project_payment: isProjectPayment.toString(),
       },
-      payment_method_types: paymentMethod
-        ? [paymentMethod]
-        : ["card", "apple_pay", "google_pay", "link"],
-      // Enable automatic payment methods
+      // Enable automatic payment methods (this will include card, apple_pay, google_pay, link automatically)
       automatic_payment_methods: {
         enabled: true,
       },

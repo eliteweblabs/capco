@@ -1,6 +1,7 @@
 ---
 import BoxIcon from "../common/BoxIcon.astro";
 import LineItemSelector from "../form/LineItemSelector.astro";
+import PaymentForm from "./PaymentForm.astro";
 
 interface Props {
   projectId: string;
@@ -238,6 +239,29 @@ const canManageProposals = role === "Admin" || role === "Staff";
               Convert to Invoice
             </button>
           </div>
+        </div>
+      )
+    }
+    
+    <!-- Payment Section for Proposal (50% Deposit) -->
+    {
+      canManageProposals === false && (
+        <div class="mt-8 rounded-lg border border-gray-200 bg-white p-6 dark:border-gray-700 dark:bg-gray-800">
+          <div class="mb-6">
+            <h3 class="mb-2 text-lg font-medium text-gray-900 dark:text-white">Proposal Payment - 50% Deposit</h3>
+            <p class="text-gray-500 dark:text-gray-400">
+              Pay 50% deposit to approve this proposal and begin work.
+            </p>
+          </div>
+          
+          <!-- Import PaymentForm component -->
+          <PaymentForm 
+            invoiceId={parseInt(projectId)} 
+            amount={0}
+            currency="usd"
+            paymentType="deposit"
+            clientProfile={projectAuthor}
+          />
         </div>
       )
     }

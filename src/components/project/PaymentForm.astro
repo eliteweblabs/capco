@@ -3,9 +3,11 @@ interface Props {
   invoiceId: number;
   amount: number;
   currency?: string;
+  paymentType?: "deposit" | "balance";
+  clientProfile?: any;
 }
 
-const { invoiceId, amount, currency = "usd" } = Astro.props;
+const { invoiceId, amount, currency = "usd", paymentType = "deposit", clientProfile } = Astro.props;
 
 // Get Stripe publishable key from environment
 const stripePublishableKey = import.meta.env.PUBLIC_STRIPE_PUBLISHABLE_KEY || "";
@@ -62,6 +64,7 @@ const stripePublishableKey = import.meta.env.PUBLIC_STRIPE_PUBLISHABLE_KEY || ""
             id="first-name"
             name="firstName"
             required
+            value={clientProfile?.first_name || ""}
             class="w-full rounded-md border border-gray-300 p-3 focus:border-blue-500 focus:ring-blue-500"
             placeholder="John"
           />
@@ -76,6 +79,7 @@ const stripePublishableKey = import.meta.env.PUBLIC_STRIPE_PUBLISHABLE_KEY || ""
             id="last-name"
             name="lastName"
             required
+            value={clientProfile?.last_name || ""}
             class="w-full rounded-md border border-gray-300 p-3 focus:border-blue-500 focus:ring-blue-500"
             placeholder="Smith"
           />
@@ -91,6 +95,7 @@ const stripePublishableKey = import.meta.env.PUBLIC_STRIPE_PUBLISHABLE_KEY || ""
           id="email"
           name="email"
           required
+          value={clientProfile?.email || ""}
           class="w-full rounded-md border border-gray-300 p-3 focus:border-blue-500 focus:ring-blue-500"
           placeholder="john.smith@company.com"
         />
@@ -104,6 +109,7 @@ const stripePublishableKey = import.meta.env.PUBLIC_STRIPE_PUBLISHABLE_KEY || ""
           type="text"
           id="company-name"
           name="companyName"
+          value={clientProfile?.company_name || ""}
           class="w-full rounded-md border border-gray-300 p-3 focus:border-blue-500 focus:ring-blue-500"
           placeholder="ABC Fire Protection"
         />
@@ -288,7 +294,9 @@ const stripePublishableKey = import.meta.env.PUBLIC_STRIPE_PUBLISHABLE_KEY || ""
   </div>
 </div>
 
-<script define:vars={{ invoiceId, amount, currency, stripePublishableKey }}>
+<script
+  define:vars={{ invoiceId, amount, currency, stripePublishableKey, paymentType, clientProfile }}
+>
   (async () => {
     // Load Stripe from CDN if not already loaded
     if (!window.Stripe) {
@@ -473,7 +481,8 @@ const stripePublishableKey = import.meta.env.PUBLIC_STRIPE_PUBLISHABLE_KEY || ""
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            invoiceId: invoiceId,
+            projectId: invoiceId, // Using invoiceId as projectId for now
+            paymentType: paymentType,
             paymentMethod: paymentMethod,
             billingDetails: billingDetails.email ? billingDetails : null,
           }),
@@ -636,46 +645,84 @@ const stripePublishableKey = import.meta.env.PUBLIC_STRIPE_PUBLISHABLE_KEY || ""
       handlePayment();
     });
 
-    // Apple Pay setup (only works on HTTPS)
-    if (
-      window.ApplePaySession &&
-      window.location.protocol === "https:" &&
-      window.ApplePaySession.canMakePayments()
-    ) {
-      const applePayButton = document.getElementById("apple-pay-button");
-      if (applePayButton) {
-        applePayButton.classList.remove("hidden");
+    // Apple Pay setup - Debug and improved checks
+    console.log("🍎 [APPLE PAY] Checking Apple Pay availability...");
+    console.log("🍎 [APPLE PAY] ApplePaySession available:", !!window.ApplePaySession);
+    console.log("🍎 [APPLE PAY] Protocol:", window.location.protocol);
+    console.log("🍎 [APPLE PAY] Hostname:", window.location.hostname);
 
-        applePayButton.addEventListener("click", async () => {
-          const paymentRequest = {
-            countryCode: "US",
-            currencyCode: "USD",
-            supportedNetworks: ["visa", "masterCard", "amex"],
-            merchantCapabilities: ["supports3DS"],
-            total: {
-              label: "CAPCo Fire Protection",
-              amount: (amount / 100).toFixed(2),
-            },
-          };
+    // Allow localhost for testing (Apple Pay works on localhost in development)
+    const isSecure =
+      window.location.protocol === "https:" || window.location.hostname === "localhost";
 
-          const session = new window.ApplePaySession(3, paymentRequest);
+    // Apple Pay requires HTTPS even for localhost - only show on actual HTTPS
+    if (window.ApplePaySession && window.location.protocol === "https:") {
+      console.log("🍎 [APPLE PAY] Checking canMakePayments...");
 
-          session.onvalidatemerchant = async (event) => {
-            // You'll need to implement merchant validation
-            session.completeMerchantValidation({});
-          };
+      try {
+        const canMakePayments = window.ApplePaySession.canMakePayments();
+        console.log("🍎 [APPLE PAY] Can make payments:", canMakePayments);
 
-          session.onpaymentauthorized = async (event) => {
-            await handlePayment(event.payment.token);
-            session.completePayment(window.ApplePaySession.STATUS_SUCCESS);
-          };
+        if (canMakePayments) {
+          const applePayButton = document.getElementById("apple-pay-button");
+          console.log("🍎 [APPLE PAY] Apple Pay button element:", applePayButton);
 
-          session.oncancel = () => {
-            console.log("Apple Pay cancelled");
-          };
+          if (applePayButton) {
+            applePayButton.classList.remove("hidden");
+            console.log("🍎 [APPLE PAY] Apple Pay button shown!");
 
-          session.begin();
-        });
+            applePayButton.addEventListener("click", async () => {
+              const paymentRequest = {
+                countryCode: "US",
+                currencyCode: "USD",
+                supportedNetworks: ["visa", "masterCard", "amex"],
+                merchantCapabilities: ["supports3DS"],
+                total: {
+                  label: "CAPCo Fire Protection",
+                  amount: (amount / 100).toFixed(2),
+                },
+              };
+
+              const session = new window.ApplePaySession(3, paymentRequest);
+
+              session.onvalidatemerchant = async (event) => {
+                // You'll need to implement merchant validation
+                session.completeMerchantValidation({});
+              };
+
+              session.onpaymentauthorized = async (event) => {
+                await handlePayment(event.payment.token);
+                session.completePayment(window.ApplePaySession.STATUS_SUCCESS);
+              };
+
+              session.oncancel = () => {
+                console.log("Apple Pay cancelled");
+              };
+
+              session.begin();
+            });
+          } else {
+            console.log("🍎 [APPLE PAY] Apple Pay button element not found in DOM");
+          }
+        } else {
+          console.log("🍎 [APPLE PAY] Device cannot make Apple Pay payments");
+        }
+      } catch (error) {
+        console.error("🍎 [APPLE PAY] Error checking Apple Pay availability:", error);
+      }
+    } else {
+      if (!window.ApplePaySession) {
+        console.log(
+          "🍎 [APPLE PAY] ApplePaySession not available (not Safari or not supported device)"
+        );
+      } else if (window.location.protocol !== "https:") {
+        console.log(
+          "🍎 [APPLE PAY] Apple Pay requires HTTPS. Current protocol:",
+          window.location.protocol
+        );
+        console.log(
+          "🍎 [APPLE PAY] To test Apple Pay, deploy to HTTPS or use a tunneling service like ngrok"
+        );
       }
     }
 
