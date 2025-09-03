@@ -6,6 +6,9 @@ import { supabaseAdmin } from "../../lib/supabase-admin";
 // Server-side function to get user info directly from database
 async function getUserInfoServer(userId: string) {
   // Get user metadata from auth.users table
+  if (!supabaseAdmin) {
+    return null;
+  }
   const { data: authUser, error: authError } = await supabaseAdmin.auth.admin.getUserById(userId);
 
   if (authError || !authUser.user) {
@@ -13,6 +16,9 @@ async function getUserInfoServer(userId: string) {
     return null;
   }
 
+  if (!supabase) {
+    return null;
+  }
   // Get user profile from profiles table
   const { data: profile, error: profileError } = await supabase
     .from("profiles")
@@ -195,7 +201,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       return new Response(
         JSON.stringify({
           success: false,
-          error: error.message,
+          error: "Failed to add discussion",
         }),
         {
           status: 500,
@@ -213,14 +219,24 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       userInfo: userInfo
         ? {
             company_name: userInfo.company_name,
-            first_name: userInfo.first_name,
-            last_name: userInfo.last_name,
+            first_name: userInfo.profile?.first_name,
+            last_name: userInfo.profile?.last_name,
           }
         : null,
     });
 
+    //
+
+    // Send notifications for different scenarios
     if (isClient && !internal) {
       console.log("📧 [ADD-DISCUSSION] Client posted comment - sending admin notifications");
+    } else if (internal) {
+      console.log(
+        "📧 [ADD-DISCUSSION] Internal comment posted - sending staff/admin notifications"
+      );
+    }
+
+    if ((isClient && !internal) || internal) {
       try {
         // Get project address for the subject line
         let projectAddress = "";
@@ -234,10 +250,15 @@ export const POST: APIRoute = async ({ request, cookies }) => {
           projectAddress = projectData.address || projectData.title || "";
         }
 
-        const clientName = userInfo?.company_name || userInfo?.first_name || "Client";
+        const authorName =
+          userInfo?.company_name ||
+          userInfo?.profile?.first_name ||
+          userInfo?.display_name ||
+          "User";
+        const commentType = internal ? "Internal Comment" : "Comment";
         const subjectLine = projectAddress
-          ? `New Comment from ${clientName} - ${projectAddress}`
-          : `New Comment from ${clientName}`;
+          ? `New ${commentType} from ${authorName} - ${projectAddress}`
+          : `New ${commentType} from ${authorName}`;
 
         // Call email delivery API to notify all admins
         const emailResponse = await fetch(
@@ -250,13 +271,15 @@ export const POST: APIRoute = async ({ request, cookies }) => {
             body: JSON.stringify({
               projectId: projectIdInt,
               emailType: "client_comment",
-              usersToNotify: [{ role: "Admin" }], // This will resolve to all admin users
+              usersToNotify: internal
+                ? [{ role: "Admin" }, { role: "Staff" }]
+                : [{ role: "Admin" }],
               custom_subject: subjectLine,
               email_content: message.trim(),
               comment_timestamp: discussion.created_at,
               client_name:
                 userInfo?.company_name ||
-                `${userInfo?.first_name || ""} ${userInfo?.last_name || ""}`.trim() ||
+                `${userInfo?.profile?.first_name || ""} ${userInfo?.profile?.last_name || ""}`.trim() ||
                 "Client",
             }),
           }
