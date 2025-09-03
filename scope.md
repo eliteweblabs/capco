@@ -106,6 +106,15 @@ ORDER BY table_name, ordinal_position;
 - Use `id` not `project_id` in files table
 - `author_id` references user ID, not project ID
 - UUID vs text comparisons in RLS policies
+- **IMPORTANT**: The `profiles` table does NOT have a `name` column. Use `first_name` and `last_name` (or `company_name` as fallback) for user display names. Many APIs incorrectly assume a `name` field exists.
+
+### TODO Items
+
+- **HIGH PRIORITY**: Fix RLS policies - current implementation broke everything and needs complete overhaul
+- Implement auto-suggest mention system for comments (Admin, Staff, Project Author)
+- Add "completed" toggle for discussions/comments (checkbox true/false) next to SMS alert
+- Convert SMS alert and internal into toggles too
+- Fix Supabase RLS security issues (Policy Exists RLS Disabled, RLS Disabled in Public)
 
 ### Recent Schema Updates
 

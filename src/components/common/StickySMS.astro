@@ -13,11 +13,17 @@ if (projectMatch) {
   projectId = projectMatch[1];
 }
 
+import { checkAuth } from "../../lib/auth";
+
+// Get current user for authentication and role
+const authResult = await checkAuth(Astro.cookies);
+const { isAuth, user, role } = authResult;
+
 // Don't show on backend pages or SMS demo page
 const shouldShow = !currentUrl.startsWith("/sms-demo");
 ---
 
-{shouldShow && (
+{shouldShow && role !== "Admin" && role !== "Staff" && (
   <div id="sticky-sms-container" class="fixed bottom-6 right-6 z-40">
     <!-- SMS Button (collapsed state) -->
     <button

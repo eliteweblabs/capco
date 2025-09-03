@@ -1,0 +1,392 @@
+---
+// Chat Widget Component - Fixed bottom-left floating chat
+// Only visible to Admin/Staff users
+
+interface Props {
+  user?: {
+    id: string;
+    email: string;
+  };
+  role?: string;
+}
+
+const { user, role } = Astro.props;
+---
+
+<div
+  id="chat-widget"
+  class="fixed bottom-4 right-4 z-50"
+  data-user-role={role || "Client"}
+  data-user-id={user?.id || "unknown"}
+  data-user-name={user?.email?.split("@")[0] || "Unknown User"}
+>
+  <!-- Chat Icon (Always Visible) -->
+  <button
+    id="chat-toggle"
+    class="rounded-full bg-red-600 p-3 text-white shadow-lg transition-all duration-200 hover:scale-110 hover:bg-red-700"
+    title="Team Chat"
+  >
+    <i class="bx bx-message-rounded-dots text-xl"></i>
+  </button>
+
+  <!-- Chat Widget (Hidden by Default) -->
+  <div
+    id="chat-panel"
+    class="absolute bottom-16 right-0 hidden h-96 w-80 rounded-lg border border-gray-200 bg-white shadow-xl dark:border-gray-700 dark:bg-gray-800"
+  >
+    <!-- Chat Header -->
+    <div
+      class="flex items-center justify-between rounded-t-lg border-b border-gray-200 bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-700"
+    >
+      <div class="flex items-center space-x-2">
+        <div
+          class="flex h-8 w-8 items-center justify-center rounded-full bg-red-100 dark:bg-red-900/30"
+        >
+          <i class="bx bx-message-rounded-dots text-red-600 dark:text-red-400"></i>
+        </div>
+        <div>
+          <h3 class="text-sm font-medium text-gray-900 dark:text-white">Team Chat</h3>
+          <p class="text-xs text-gray-500 dark:text-gray-400" id="online-count">0 online</p>
+        </div>
+      </div>
+      <button
+        id="chat-close"
+        class="text-gray-400 transition-colors hover:text-gray-600 dark:hover:text-gray-300"
+      >
+        <i class="bx bx-x text-xl"></i>
+      </button>
+    </div>
+
+    <!-- Chat Messages -->
+    <div class="h-64 flex-1 space-y-3 overflow-y-auto p-4" id="chat-messages">
+      <div class="py-8 text-center text-sm text-gray-500 dark:text-gray-400">
+        <i class="bx bx-message-rounded-dots mx-auto mb-2 text-2xl"></i>
+        <p>Start chatting with your team!</p>
+      </div>
+    </div>
+
+    <!-- Typing Indicator -->
+    <div id="typing-indicator" class="hidden px-4 py-2 text-xs text-gray-500 dark:text-gray-400">
+      <span class="typing-text">Someone is typing...</span>
+    </div>
+
+    <!-- Chat Input -->
+    <div class="border-t border-gray-200 p-4 dark:border-gray-700">
+      <div class="flex space-x-2">
+        <input
+          type="text"
+          id="chat-input"
+          placeholder="Type your message..."
+          class="flex-1 rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-transparent focus:ring-2 focus:ring-red-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+          maxlength="500"
+        />
+        <button
+          id="chat-send"
+          class="rounded-lg bg-red-600 px-4 py-2 text-sm text-white transition-colors hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50"
+          disabled
+        >
+          <i class="bx bx-send"></i>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Chat Widget Functionality
+  let socket: any = null;
+  let isConnected = false;
+  let currentUser: any = null;
+  let typingTimeout: any = null;
+  let onlineUsers = new Set();
+  let isInitialized = false; // Prevent multiple initializations
+
+  // Initialize chat widget
+  function initializeChat() {
+    // Prevent multiple initializations
+    if (isInitialized) {
+      console.log("🔔 [CHAT] Chat widget already initialized, skipping");
+      return;
+    }
+
+    console.log("🔔 [CHAT] Initializing chat widget");
+
+    // Check if user is Admin/Staff
+    const chatWidget = document.getElementById("chat-widget");
+    if (!chatWidget) {
+      console.log("🔔 [CHAT] Chat widget element not found!");
+      return;
+    }
+
+    console.log("🔔 [CHAT] Chat widget element found:", chatWidget);
+    console.log("🔔 [CHAT] All data attributes:", chatWidget.dataset);
+
+    const userRole = chatWidget.dataset.userRole || "Client";
+    const userId = chatWidget.dataset.userId || "unknown";
+    const userName = chatWidget.dataset.userName || "Unknown User";
+
+    console.log("🔔 [CHAT] User role from data attribute:", userRole);
+    console.log("🔔 [CHAT] User ID:", userId);
+    console.log("🔔 [CHAT] User name:", userName);
+
+    if (userRole !== "Admin" && userRole !== "Staff") {
+      console.log("🔔 [CHAT] User not Admin/Staff, hiding chat widget");
+      chatWidget.classList.add("hidden");
+      return;
+    }
+
+    console.log("🔔 [CHAT] User is Admin/Staff, showing chat widget");
+
+    // Get current user info from data attributes
+    currentUser = {
+      id: userId,
+      name: userName,
+      role: userRole,
+    };
+
+    console.log("🔔 [CHAT] Current user:", currentUser);
+
+    // Setup event listeners
+    setupChatEvents();
+
+    // Connect to chat server
+    connectToChat();
+
+    // Mark as initialized
+    isInitialized = true;
+    console.log("🔔 [CHAT] Chat widget initialization complete");
+  }
+
+  // Setup chat event listeners
+  function setupChatEvents() {
+    const chatToggle = document.getElementById("chat-toggle");
+    const chatClose = document.getElementById("chat-close");
+    const chatInput = document.getElementById("chat-input");
+    const chatSend = document.getElementById("chat-send");
+
+    // Toggle chat panel
+    chatToggle?.addEventListener("click", () => {
+      const chatPanel = document.getElementById("chat-panel");
+      chatPanel?.classList.toggle("hidden");
+
+      if (!chatPanel?.classList.contains("hidden")) {
+        chatInput?.focus();
+      }
+    });
+
+    // Close chat panel
+    chatClose?.addEventListener("click", () => {
+      document.getElementById("chat-panel")?.classList.add("hidden");
+    });
+
+    // Handle input changes
+    chatInput?.addEventListener("input", (e) => {
+      const target = e.target as HTMLInputElement;
+      const sendBtn = document.getElementById("chat-send") as HTMLButtonElement;
+
+      // Enable/disable send button
+      sendBtn.disabled = !target.value.trim();
+
+      // Send typing indicator
+      if (socket && isConnected) {
+        socket.emit("typing", { userId: currentUser.id, userName: currentUser.name });
+      }
+    });
+
+    // Handle send button
+    chatSend?.addEventListener("click", sendMessage);
+
+    // Handle Enter key
+    chatInput?.addEventListener("keypress", (e) => {
+      if (e.key === "Enter" && !e.shiftKey) {
+        e.preventDefault();
+        sendMessage();
+      }
+    });
+  }
+
+  // Connect to chat server
+  function connectToChat() {
+    try {
+      // Load Socket.io from CDN
+      const script = document.createElement("script");
+      script.src = "https://cdn.socket.io/4.7.2/socket.io.min.js";
+      script.onload = () => {
+        console.log("🔔 [CHAT] Socket.io loaded, connecting to server");
+        connectSocket();
+      };
+      document.head.appendChild(script);
+    } catch (error) {
+      console.error("🔔 [CHAT] Error loading Socket.io:", error);
+    }
+  }
+
+  // Connect socket to server
+  function connectSocket() {
+    try {
+      socket = (window as any).io("http://localhost:3001");
+
+      socket.on("connect", () => {
+        console.log("🔔 [CHAT] Connected to chat server");
+        isConnected = true;
+
+        // Join chat room
+        socket.emit("join", {
+          userId: currentUser.id,
+          userName: currentUser.name,
+          userRole: currentUser.role,
+        });
+      });
+
+      socket.on("disconnect", () => {
+        console.log("🔔 [CHAT] Disconnected from chat server");
+        isConnected = false;
+      });
+
+      socket.on("userJoined", (data: any) => {
+        console.log("🔔 [CHAT] User joined:", data);
+        onlineUsers.add(data.userId);
+        updateOnlineCount();
+        addSystemMessage(`${data.userName} joined the chat`);
+      });
+
+      socket.on("userLeft", (data: any) => {
+        console.log("🔔 [CHAT] User left:", data);
+        onlineUsers.delete(data.userId);
+        updateOnlineCount();
+        addSystemMessage(`${data.userName} left the chat`);
+      });
+
+      socket.on("message", (data: any) => {
+        console.log("🔔 [CHAT] New message:", data);
+        addMessage(data);
+      });
+
+      socket.on("typing", (data: any) => {
+        if (data.userId !== currentUser.id) {
+          showTypingIndicator(data.userName);
+        }
+      });
+
+      socket.on("stopTyping", (data: any) => {
+        if (data.userId !== currentUser.id) {
+          hideTypingIndicator();
+        }
+      });
+    } catch (error) {
+      console.error("🔔 [CHAT] Error connecting socket:", error);
+    }
+  }
+
+  // Send message
+  function sendMessage() {
+    const input = document.getElementById("chat-input") as HTMLInputElement;
+    const message = input.value.trim();
+
+    if (!message || !socket || !isConnected) return;
+
+    const messageData = {
+      userId: currentUser.id,
+      userName: currentUser.name,
+      message: message,
+      timestamp: new Date().toISOString(),
+    };
+
+    socket.emit("message", messageData);
+    input.value = "";
+
+    // Disable send button
+    const sendBtn = document.getElementById("chat-send") as HTMLButtonElement;
+    sendBtn.disabled = true;
+
+    // Stop typing indicator
+    if (typingTimeout) {
+      clearTimeout(typingTimeout);
+    }
+    typingTimeout = setTimeout(() => {
+      if (socket && isConnected) {
+        socket.emit("stopTyping", { userId: currentUser.id });
+      }
+    }, 1000);
+  }
+
+  // Add message to chat
+  function addMessage(data: any) {
+    const messagesContainer = document.getElementById("chat-messages");
+    if (!messagesContainer) return;
+
+    const isOwnMessage = data.userId === currentUser.id;
+    const messageElement = document.createElement("div");
+    messageElement.className = `flex ${isOwnMessage ? "justify-end" : "justify-start"}`;
+
+    messageElement.innerHTML = `
+      <div class="max-w-xs ${isOwnMessage ? "bg-red-600 text-white" : "bg-gray-100 dark:bg-gray-600 text-gray-900 dark:text-white"} rounded-lg px-3 py-2">
+        <div class="flex items-center space-x-2 mb-1">
+          <span class="text-xs font-medium">${data.userName}</span>
+          <span class="text-xs opacity-75">${new Date(data.timestamp).toLocaleTimeString()}</span>
+        </div>
+        <p class="text-sm">${data.message}</p>
+      </div>
+    `;
+
+    messagesContainer.appendChild(messageElement);
+    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+  }
+
+  // Add system message
+  function addSystemMessage(message: string) {
+    const messagesContainer = document.getElementById("chat-messages");
+    if (!messagesContainer) return;
+
+    const messageElement = document.createElement("div");
+    messageElement.className = "text-center";
+    messageElement.innerHTML = `
+      <span class="text-xs text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded-full">
+        ${message}
+      </span>
+    `;
+
+    messagesContainer.appendChild(messageElement);
+    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+  }
+
+  // Show typing indicator
+  function showTypingIndicator(userName: string) {
+    const indicator = document.getElementById("typing-indicator");
+    const typingText = document.querySelector(".typing-text");
+
+    if (indicator && typingText) {
+      typingText.textContent = `${userName} is typing...`;
+      indicator.classList.remove("hidden");
+    }
+  }
+
+  // Hide typing indicator
+  function hideTypingIndicator() {
+    const indicator = document.getElementById("typing-indicator");
+    indicator?.classList.add("hidden");
+  }
+
+  // Update online count
+  function updateOnlineCount() {
+    const countElement = document.getElementById("online-count");
+    if (countElement) {
+      countElement.textContent = `${onlineUsers.size} online`;
+    }
+  }
+
+  // Initialize when DOM is ready
+  document.addEventListener("DOMContentLoaded", () => {
+    console.log("🔔 [CHAT] DOM Content Loaded");
+    // Wait a bit for other scripts to load
+    setTimeout(initializeChat, 1000);
+  });
+
+  // Also initialize when window loads (fallback)
+  window.addEventListener("load", () => {
+    console.log("🔔 [CHAT] Window Loaded");
+    if (!isInitialized) {
+      setTimeout(initializeChat, 500);
+    }
+  });
+</script>

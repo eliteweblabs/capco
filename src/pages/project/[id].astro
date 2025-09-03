@@ -275,9 +275,13 @@ function getStatusColor(status: number): string {
         id="tab-discussion"
         class="tab-button relative mt-2 w-auto rounded-full px-4 py-2 text-sm font-medium text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
         onclick="switchTab('discussion')"
+        data-count="0"
       >
         <BoxIcon name="message-rounded-dots" class="mr-2 inline h-4 w-4" />
         Discussion
+        <span class="incomplete-comments-count absolute -right-2 -top-2 flex h-5 w-5 items-center justify-center rounded-full border border-blue-500 bg-white text-xs font-medium text-blue-500 hidden">
+          0
+        </span>
       </button>
       <!-- {
         role === "Admin" || role === "Staff" ? (
@@ -378,38 +382,54 @@ function getStatusColor(status: number): string {
             id="comment-form"
             class="mb-6 hidden rounded-lg border border-gray-200 p-4 dark:border-gray-700"
           >
-            <textarea
-              id="comment-message"
-              placeholder="Write your comment here..."
-              class="w-full resize-none rounded-lg border border-gray-300 p-3 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
-              rows="4"></textarea>
+            <div class="relative">
+              <textarea
+                id="comment-message"
+                placeholder="Write your comment here... (Use @ to mention users)"
+                class="w-full resize-none rounded-lg border border-gray-300 p-3 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+                rows="4"></textarea>
+              <div
+                id="mention-dropdown"
+                class="absolute z-50 mt-1 hidden w-full max-h-48 overflow-y-auto rounded-lg border border-gray-300 bg-white shadow-lg dark:border-gray-600 dark:bg-gray-700"
+              ></div>
+            </div>
             
             {/* Admin/Staff Only Toggles */}
             {(role === "Admin" || role === "Staff") && (
-              <div class="mt-3 flex flex-wrap gap-4 border-t border-gray-200 pt-3 dark:border-gray-600">
-                <label class="flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    id="internal-toggle"
-                    class="h-4 w-4 rounded border-gray-300 text-red-600 focus:ring-red-500 dark:border-gray-600 dark:bg-gray-700"
-                  />
+              <div class="mt-3 flex flex-wrap gap-6 border-t border-gray-200 pt-3 dark:border-gray-600">
+                <!-- Internal Only Toggle -->
+                <label class="flex items-center gap-3 cursor-pointer">
+                  <div class="relative">
+                    <input
+                      type="checkbox"
+                      id="internal-toggle"
+                      class="sr-only peer"
+                    />
+                    <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-red-300 dark:peer-focus:ring-red-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-red-600"></div>
+                  </div>
                   <span class="text-sm text-gray-700 dark:text-gray-300">
                     <i class="bx bx-lock mr-1"></i>
                     Internal Only
                   </span>
                 </label>
                 
-                <label class="flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    id="sms-alert-toggle"
-                    class="h-4 w-4 rounded border-gray-300 text-red-600 focus:ring-red-500 dark:border-gray-600 dark:bg-gray-700"
-                  />
+                <!-- SMS Alert Toggle -->
+                {/* <label class="flex items-center gap-3 cursor-pointer">
+                  <div class="relative">
+                    <input
+                      type="checkbox"
+                      id="sms-alert-toggle"
+                      class="sr-only peer"
+                    />
+                    <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-red-300 dark:peer-focus:ring-red-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-red-600"></div>
+                  </div>
                   <span class="text-sm text-gray-700 dark:text-gray-300">
                     <i class="bx bx-mobile mr-1"></i>
                     SMS Alert
                   </span>
-                </label>
+                </label> */}
+                
+
               </div>
             )}
             
@@ -422,9 +442,13 @@ function getStatusColor(status: number): string {
               </button>
               <button
                 id="submit-comment-btn"
-                class="rounded-lg bg-red-600 px-4 py-2 text-white transition-colors hover:bg-red-700"
+                class="rounded-lg bg-red-600 px-4 py-2 text-white transition-colors hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                Post Comment
+                <span class="inline-flex items-center">
+                  <i class="bx bx-send mr-2"></i>
+                  <span class="button-text">Post Comment</span>
+                  <i class="bx bx-loader-alt bx-spin ml-2 hidden loading-spinner"></i>
+                </span>
               </button>
             </div>
           </div>
@@ -598,7 +622,7 @@ window.PROJECT_USER_ROLE = userRole;</script>
   // Discussion functionality
   let discussions: any[] = [];
   let currentProjectId = "";
-  const userRole = (window as any).PROJECT_USER_ROLE || 'Client'; // Get role from global variable
+  let userRole = 'Client'; // Will be set from server-side data
 
   async function loadDiscussions(projectId: string) {
     try {
@@ -608,6 +632,7 @@ window.PROJECT_USER_ROLE = userRole;</script>
       if (data.success) {
         discussions = data.discussions;
         renderDiscussions();
+        updateIncompleteCommentsCount(); // Update count after loading discussions
       } else {
         console.error("Failed to load discussions:", data.error);
         showDiscussionError("Failed to load discussions");
@@ -618,6 +643,26 @@ window.PROJECT_USER_ROLE = userRole;</script>
     }
   }
 
+  // Update incomplete comments count in the discussion tab
+  function updateIncompleteCommentsCount() {
+    const incompleteCount = discussions.filter(discussion => !discussion.mark_completed).length;
+    const countElement = document.querySelector('.incomplete-comments-count');
+    const tabButton = document.getElementById('tab-discussion');
+    
+    if (countElement && tabButton) {
+      if (incompleteCount > 0) {
+        countElement.textContent = incompleteCount.toString();
+        countElement.classList.remove('hidden');
+        tabButton.setAttribute('data-count', incompleteCount.toString());
+      } else {
+        countElement.classList.add('hidden');
+        tabButton.setAttribute('data-count', '0');
+      }
+      
+      console.log("🔍 [DISCUSSION] Incomplete comments count updated:", incompleteCount);
+    }
+  }
+
   function renderDiscussions() {
     const commentsList = document.getElementById("comments-list");
     if (!commentsList) return;
@@ -625,7 +670,7 @@ window.PROJECT_USER_ROLE = userRole;</script>
     console.log("🔍 [DEBUG] renderDiscussions called with:", {
       userRole,
       discussionsCount: discussions.length,
-      discussions: discussions.map(d => ({ id: d.id, internal: d.internal, author_id: d.author_id }))
+      discussions: discussions.map(d => ({ id: d.id, internal: d.internal, author_id: d.author_id, parent_id: d.parent_id }))
     });
 
     if (discussions.length === 0) {
@@ -638,9 +683,31 @@ window.PROJECT_USER_ROLE = userRole;</script>
       return;
     }
 
-    commentsList.innerHTML = discussions
+    // Separate top-level comments and replies
+    const topLevelComments = discussions.filter(d => !d.parent_id);
+    const replies = discussions.filter(d => d.parent_id);
+
+    console.log("🔍 [DEBUG] Threading:", {
+      topLevel: topLevelComments.length,
+      replies: replies.length,
+      topLevelIds: topLevelComments.map(c => c.id),
+      replyParents: replies.map(r => r.parent_id)
+    });
+
+    // Debug the first few replies to see their structure
+    if (replies.length > 0) {
+      console.log("🔍 [DEBUG] First reply structure:", replies[0]);
+      console.log("🔍 [DEBUG] Reply profiles:", replies.map(r => ({ id: r.id, author_id: r.author_id, profiles: r.profiles })));
+    }
+
+    // Render top-level comments with their replies
+    commentsList.innerHTML = topLevelComments
       .map(
-        (discussion) => `
+        (discussion) => {
+          // Find replies for this comment
+          const commentReplies = replies.filter(reply => reply.parent_id === discussion.id);
+          
+          return `
       <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
         <div class="flex items-start justify-between mb-3">
           <div class="flex items-center space-x-3">
@@ -680,8 +747,118 @@ window.PROJECT_USER_ROLE = userRole;</script>
             ${discussion.message}
           </p>
         </div>
+        
+        <!-- Admin/Staff Only: Mark Completed Toggle -->
+        ${(() => {
+          const shouldShowToggle = (userRole === "Admin" || userRole === "Staff");
+          return shouldShowToggle ? `
+            <div class="mt-3 pt-3 border-t border-gray-200 dark:border-gray-600">
+              <label class="flex items-center gap-3 cursor-pointer">
+                <div class="relative">
+                  <input
+                    type="checkbox"
+                    id="completed-toggle-${discussion.id}"
+                    class="sr-only peer completed-toggle"
+                    data-discussion-id="${discussion.id}"
+                    ${discussion.mark_completed ? 'checked' : ''}
+                  />
+                  <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-green-300 dark:peer-focus:ring-green-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-green-600"></div>
+                </div>
+                <span class="text-sm text-gray-700 dark:text-gray-300">
+                  <i class="bx bx-check-circle mr-1"></i>
+                  Mark completed
+                </span>
+              </label>
+            </div>
+          ` : '';
+        })()}
+        
+        <!-- Reply Button -->
+        <div class="mt-3 pt-3 border-t border-gray-200 dark:border-gray-600">
+          <button
+            class="reply-button inline-flex items-center text-sm text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300"
+            data-discussion-id="${discussion.id}"
+          >
+            <i class="bx bx-reply mr-1"></i>
+            Reply
+          </button>
+        </div>
+        
+        <!-- Render replies underneath this comment -->
+        ${commentReplies.length > 0 ? `
+          <div class="mt-4 space-y-3">
+            ${commentReplies.map(reply => `
+              <div class="ml-6 pl-4 border-l-2 border-blue-200 dark:border-blue-700 bg-blue-50 dark:bg-blue-900/20 rounded-r-lg p-3">
+                <div class="flex items-start justify-between mb-2">
+                  <div class="flex items-center space-x-3">
+                    <div class="w-6 h-6 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center">
+                      <i class="bx bx-reply text-blue-600 dark:text-blue-400 text-xs"></i>
+                    </div>
+                    <div>
+                      <h5 class="font-medium text-gray-900 dark:text-white text-sm">
+                        ${reply.profiles?.company_name || reply.profiles?.display_name || reply.profiles?.name || reply.profiles?.email?.split("@")[0] || `User ${reply.author_id?.slice(0, 8)}...`}
+                      </h5>
+                      <p class="text-xs text-gray-500 dark:text-gray-400">
+                        ${new Date(reply.created_at).toLocaleDateString("en-US", {
+                          year: "numeric",
+                          month: "short",
+                          day: "numeric",
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
+                      </p>
+                    </div>
+                  </div>
+                  ${(() => {
+                    const shouldShow = (userRole === "Admin" || userRole === "Staff") && reply.internal;
+                    return shouldShow ? `
+                      <div class="flex items-center space-x-2">
+                        <div class="inline-flex items-center px-2 py-1 bg-orange-100 dark:bg-orange-900/30 text-orange-800 dark:text-orange-300 text-xs font-medium rounded-full" title="Internal Reply - Only visible to Admin and Staff">
+                          <i class="bx bx-lock-alt mr-1"></i>
+                          Internal
+                        </div>
+                      </div>
+                    ` : '';
+                  })()}
+                </div>
+                <div class="prose dark:prose-invert max-w-none">
+                  <p class="text-gray-700 dark:text-gray-300 text-sm whitespace-pre-wrap">
+                    ${reply.message}
+                  </p>
+                  <p class="text-xs text-blue-600 mt-2">↳ Reply to comment #${reply.parent_id}</p>
+                </div>
+                
+                <!-- Admin/Staff Only: Mark Completed Toggle for Reply -->
+                ${(() => {
+                  const shouldShowToggle = (userRole === "Admin" || userRole === "Staff");
+                  return shouldShowToggle ? `
+                    <div class="mt-2 pt-2 border-t border-gray-200 dark:border-gray-600">
+                      <label class="flex items-center gap-3 cursor-pointer">
+                        <div class="relative">
+                          <input
+                            type="checkbox"
+                            id="completed-toggle-${reply.id}"
+                            class="sr-only peer completed-toggle"
+                            data-discussion-id="${reply.id}"
+                            ${reply.mark_completed ? 'checked' : ''}
+                          />
+                          <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-green-300 dark:peer-focus:ring-green-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-green-600"></div>
+                        </div>
+                        <span class="text-sm text-gray-700 dark:text-gray-300">
+                          <i class="bx bx-check-circle mr-1"></i>
+                          Mark completed
+                        </span>
+                      </label>
+                    </div>
+                  ` : '';
+                })()}
+              </div>
+            `).join('')}
+          </div>
+        ` : ''}
       </div>
-    `
+    `;
+        }
       )
       .join("");
   }
@@ -713,11 +890,21 @@ window.PROJECT_USER_ROLE = userRole;</script>
       console.log("🔔 [DISCUSSION] Form is hidden:", isHidden);
 
       if (isHidden) {
+        // Reset reply state for new comment
+        (window as any).currentReplyTo = null;
+        
         commentForm.classList.remove("hidden");
         newCommentBtn.textContent = "Cancel";
         newCommentBtn.innerHTML = '<i class="bx bx-x mr-2 h-4 w-4"></i>Cancel';
+        
+        // Reset placeholder for new comment
+        const messageInput = document.getElementById("comment-message") as HTMLTextAreaElement;
+        if (messageInput) {
+          messageInput.placeholder = "Write your comment here... (Use @ to mention users)";
+        }
+        
         document.getElementById("comment-message")?.focus();
-        console.log("🔔 [DISCUSSION] Form shown");
+        console.log("🔔 [DISCUSSION] Form shown for new comment");
       } else {
         commentForm.classList.add("hidden");
         newCommentBtn.textContent = "New Comment";
@@ -734,6 +921,96 @@ window.PROJECT_USER_ROLE = userRole;</script>
       }
     }
   }
+
+  // Cancel reply form
+  function cancelReply(parentCommentId: number) {
+    console.log("🔔 [DISCUSSION] Canceling reply for comment:", parentCommentId);
+    
+    // Remove the inline reply form
+    const replyForm = document.querySelector('.inline-reply-form');
+    if (replyForm) {
+      replyForm.remove();
+    }
+    
+    // Reset the reply state
+    (window as any).currentReplyTo = null;
+    
+    console.log("🔔 [DISCUSSION] Reply form canceled");
+  }
+
+  // Submit reply
+  async function submitReply(parentCommentId: number) {
+    console.log("🔔 [DISCUSSION] Submitting reply for comment:", parentCommentId);
+    
+    const replyTextarea = document.querySelector('.reply-message-input') as HTMLTextAreaElement;
+    const message = replyTextarea?.value?.trim();
+    
+    if (!message) {
+      alert("Please enter a reply message");
+      return;
+    }
+    
+    // Get internal toggle state
+    const internalToggle = document.querySelector('.reply-internal-toggle') as HTMLInputElement;
+    const isInternal = internalToggle?.checked || false;
+    
+    try {
+      // Submit the reply using the same API
+      const response = await fetch("/api/add-discussion", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          projectId: currentProjectId,
+          message: message,
+          internal: isInternal,
+          sms_alert: false, // Replies don't have SMS alerts
+          parent_id: parentCommentId,
+        }),
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        console.log("🔔 [DISCUSSION] Reply submitted successfully:", result);
+        
+        // Remove the reply form
+        const replyForm = document.querySelector('.inline-reply-form');
+        if (replyForm) {
+          replyForm.remove();
+        }
+        
+        // Reset reply state
+        (window as any).currentReplyTo = null;
+        
+        // Reload discussions to show the new reply
+        const reloadResult = await loadDiscussions(currentProjectId);
+        console.log("🔔 [DISCUSSION] Discussions reloaded:", reloadResult);
+        
+        // Show success message
+        if ((window as any).showSuccess) {
+          (window as any).showSuccess("Reply posted successfully!");
+        }
+      } else {
+        const errorData = await response.json();
+        console.error("🔔 [DISCUSSION] Failed to submit reply:", errorData);
+        
+        if ((window as any).showError) {
+          (window as any).showError("Failed to post reply. Please try again.");
+        }
+      }
+    } catch (error) {
+      console.error("🔔 [DISCUSSION] Error submitting reply:", error);
+      
+      if ((window as any).showError) {
+        (window as any).showError("Error posting reply. Please try again.");
+      }
+    }
+  }
+
+  // Make functions globally available
+  (window as any).cancelReply = cancelReply;
+  (window as any).submitReply = submitReply;
 
   async function submitComment() {
     const messageInput = document.getElementById("comment-message") as HTMLTextAreaElement;
@@ -753,8 +1030,12 @@ window.PROJECT_USER_ROLE = userRole;</script>
 
     const submitBtn = document.getElementById("submit-comment-btn") as HTMLButtonElement;
     if (submitBtn) {
-      submitBtn.textContent = "Posting...";
       submitBtn.disabled = true;
+      const buttonText = submitBtn.querySelector('.button-text') as HTMLElement;
+      const loadingSpinner = submitBtn.querySelector('.loading-spinner') as HTMLElement;
+      
+      if (buttonText) buttonText.textContent = "Posting...";
+      if (loadingSpinner) loadingSpinner.classList.remove('hidden');
     }
 
     try {
@@ -765,18 +1046,24 @@ window.PROJECT_USER_ROLE = userRole;</script>
         sms_alert: smsAlert,
       });
 
-      const response = await fetch("/api/add-discussion", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          projectId: currentProjectId,
-          message: message,
-          internal: isInternal,
-          sms_alert: smsAlert,
-        }),
-      });
+              // Check if this is a reply
+        const parentId = (window as any).currentReplyTo || null;
+        
+        console.log("🔔 [DISCUSSION] Submitting comment with parent_id:", parentId);
+        
+        const response = await fetch("/api/add-discussion", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            projectId: currentProjectId,
+            message: message,
+            internal: isInternal,
+            sms_alert: smsAlert,
+            parent_id: parentId,
+          }),
+        });
 
       console.log("🔔 [DISCUSSION] Response status:", response.status);
       console.log("🔔 [DISCUSSION] Response ok:", response.ok);
@@ -787,9 +1074,13 @@ window.PROJECT_USER_ROLE = userRole;</script>
         // Add new comment to the beginning of the list
         discussions.unshift(data.discussion);
         renderDiscussions();
+        updateIncompleteCommentsCount(); // Update count after adding new comment
 
         // Reset form
         if (messageInput) messageInput.value = "";
+        
+        // Reset reply state
+        (window as any).currentReplyTo = null;
         
         // Reset toggles if they exist
         const internalToggle = document.getElementById("internal-toggle") as HTMLInputElement;
@@ -806,19 +1097,164 @@ window.PROJECT_USER_ROLE = userRole;</script>
       alert("Failed to post comment");
     } finally {
       if (submitBtn) {
-        submitBtn.textContent = "Post Comment";
         submitBtn.disabled = false;
+        const buttonText = submitBtn.querySelector('.button-text') as HTMLElement;
+        const loadingSpinner = submitBtn.querySelector('.loading-spinner') as HTMLElement;
+        
+        if (buttonText) buttonText.textContent = "Post Comment";
+        if (loadingSpinner) loadingSpinner.classList.add('hidden');
       }
     }
   }
 
+  // Mention system variables
+  let mentionableUsers: Array<{id: string, name: string, role: string}> = [];
+  let currentMentionStart = -1;
+  let currentMentionQuery = "";
+
+  // Load mentionable users
+  
+  async function loadMentionableUsers() {
+    if (!currentProjectId) return;
+    
+    try {
+      const response = await fetch(`/api/get-mentionable-users?projectId=${currentProjectId}`, {
+        method: 'GET',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+      const data = await response.json();
+      
+      if (data.success) {
+        mentionableUsers = data.users;
+        console.log("🔍 [MENTIONS] Loaded users:", mentionableUsers);
+      } else {
+        console.error("🔍 [MENTIONS] API error:", data.error);
+      }
+    } catch (error) {
+      console.error("Failed to load mentionable users:", error);
+    }
+  }
+
+  // Show mention dropdown
+  function showMentionDropdown(query: string, position: number) {
+    const dropdown = document.getElementById("mention-dropdown");
+    const textarea = document.getElementById("comment-message") as HTMLTextAreaElement;
+    
+    if (!dropdown || !textarea) return;
+
+    const filteredUsers = mentionableUsers.filter(user => 
+      user.name.toLowerCase().includes(query.toLowerCase())
+    );
+
+    if (filteredUsers.length === 0) {
+      hideMentionDropdown();
+      return;
+    }
+
+    dropdown.innerHTML = filteredUsers.map((user, index) => `
+      <div 
+        class="mention-item cursor-pointer px-3 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 ${index === 0 ? 'bg-gray-50 dark:bg-gray-600' : ''}"
+        data-user-id="${user.id}"
+        data-user-name="${user.name}"
+        data-index="${index}"
+      >
+        <span class="font-medium">${user.name}</span>
+        <span class="ml-2 text-sm text-gray-500 dark:text-gray-400">(${user.role})</span>
+      </div>
+    `).join("");
+
+    dropdown.classList.remove("hidden");
+
+    // Add click handlers
+    dropdown.querySelectorAll(".mention-item").forEach(item => {
+      item.addEventListener("click", () => {
+        const userName = item.getAttribute("data-user-name");
+        insertMention(userName || "");
+      });
+    });
+  }
+
+  // Hide mention dropdown
+  function hideMentionDropdown() {
+    const dropdown = document.getElementById("mention-dropdown");
+    if (dropdown) {
+      dropdown.classList.add("hidden");
+    }
+    currentMentionStart = -1;
+    currentMentionQuery = "";
+  }
+
+  // Insert mention into textarea
+  function insertMention(userName: string) {
+    const textarea = document.getElementById("comment-message") as HTMLTextAreaElement;
+    if (!textarea || currentMentionStart === -1) return;
+
+    const value = textarea.value;
+    const beforeMention = value.substring(0, currentMentionStart);
+    const afterMention = value.substring(textarea.selectionStart);
+    
+    const newValue = beforeMention + `@${userName} ` + afterMention;
+    textarea.value = newValue;
+    
+    // Set cursor position after the mention
+    const newCursorPos = beforeMention.length + userName.length + 2;
+    textarea.setSelectionRange(newCursorPos, newCursorPos);
+    
+    hideMentionDropdown();
+    textarea.focus();
+  }
+
+  // Handle mention input
+  function handleMentionInput() {
+    const textarea = document.getElementById("comment-message") as HTMLTextAreaElement;
+    if (!textarea) return;
+
+    const value = textarea.value;
+    const cursorPos = textarea.selectionStart;
+    
+    // Find @ symbol before cursor
+    let atPos = -1;
+    for (let i = cursorPos - 1; i >= 0; i--) {
+      if (value[i] === "@") {
+        atPos = i;
+        break;
+      }
+      if (value[i] === " " || value[i] === "\n") {
+        break;
+      }
+    }
+
+    if (atPos !== -1) {
+      const query = value.substring(atPos + 1, cursorPos);
+      if (query.length >= 0 && !query.includes(" ") && !query.includes("\n")) {
+        currentMentionStart = atPos;
+        currentMentionQuery = query;
+        showMentionDropdown(query, cursorPos);
+        return;
+      }
+    }
+
+    hideMentionDropdown();
+  }
+
   // Initialize discussion functionality when discussion tab is shown
   function initializeDiscussion() {
+    // Set user role from server-side data
+    userRole = "${role || 'Client'}";
+    console.log("🔔 [DISCUSSION] User role set to:", userRole);
+    
+    // Make user role available globally for reply forms
+    (window as any).currentUserRole = userRole;
+    
     const discussionContainer = document.getElementById("discussion-container");
     if (discussionContainer) {
       currentProjectId = discussionContainer.dataset.projectId || "";
       if (currentProjectId) {
         loadDiscussions(currentProjectId);
+        loadMentionableUsers();
       }
     }
 
@@ -826,6 +1262,7 @@ window.PROJECT_USER_ROLE = userRole;</script>
     const newCommentBtn = document.getElementById("new-comment-btn");
     const cancelCommentBtn = document.getElementById("cancel-comment-btn");
     const submitCommentBtn = document.getElementById("submit-comment-btn");
+    const commentTextarea = document.getElementById("comment-message") as HTMLTextAreaElement;
 
     if (newCommentBtn) {
       // Remove all existing event listeners by cloning the node
@@ -850,6 +1287,92 @@ window.PROJECT_USER_ROLE = userRole;</script>
       submitCommentBtn.removeEventListener("click", submitComment);
       submitCommentBtn.addEventListener("click", submitComment);
     }
+
+    // Add mention functionality to textarea
+    if (commentTextarea) {
+      commentTextarea.addEventListener("input", handleMentionInput);
+      commentTextarea.addEventListener("keydown", (e) => {
+        const dropdown = document.getElementById("mention-dropdown");
+        if (!dropdown || dropdown.classList.contains("hidden")) return;
+
+        const items = dropdown.querySelectorAll(".mention-item");
+        const selected = dropdown.querySelector(".mention-item.bg-gray-50, .mention-item.dark\\:bg-gray-600");
+        let selectedIndex = 0;
+        
+        if (selected) {
+          selectedIndex = parseInt(selected.getAttribute("data-index") || "0");
+        }
+
+        if (e.key === "ArrowDown") {
+          e.preventDefault();
+          const nextIndex = Math.min(selectedIndex + 1, items.length - 1);
+          items.forEach((item, i) => {
+            item.classList.toggle("bg-gray-50", i === nextIndex);
+            item.classList.toggle("dark:bg-gray-600", i === nextIndex);
+          });
+        } else if (e.key === "ArrowUp") {
+          e.preventDefault();
+          const prevIndex = Math.max(selectedIndex - 1, 0);
+          items.forEach((item, i) => {
+            item.classList.toggle("bg-gray-50", i === prevIndex);
+            item.classList.toggle("dark:bg-gray-600", i === prevIndex);
+          });
+        } else if (e.key === "Enter" || e.key === "Tab") {
+          e.preventDefault();
+          const selectedItem = items[selectedIndex];
+          if (selectedItem) {
+            const userName = selectedItem.getAttribute("data-user-name");
+            if (userName) insertMention(userName);
+          }
+        } else if (e.key === "Escape") {
+          e.preventDefault();
+          hideMentionDropdown();
+        }
+      });
+
+      // Hide dropdown when clicking outside
+      document.addEventListener("click", (e) => {
+        const dropdown = document.getElementById("mention-dropdown");
+        const textarea = document.getElementById("comment-message");
+        if (dropdown && !dropdown.contains(e.target as Node) && e.target !== textarea) {
+          hideMentionDropdown();
+        }
+      });
+    }
+
+    // Add event delegation for completed toggles
+    document.addEventListener("change", (e) => {
+      const target = e.target as HTMLElement;
+      if (target.classList.contains("completed-toggle")) {
+        const discussionId = parseInt(target.getAttribute("data-discussion-id") || "0");
+        const isCompleted = (target as HTMLInputElement).checked;
+        if (discussionId) {
+          toggleDiscussionCompleted(discussionId, isCompleted);
+        }
+      }
+    });
+
+    // Add event delegation for reply buttons
+    document.addEventListener("click", (e) => {
+      const target = e.target as HTMLElement;
+      
+      // Only log clicks on buttons or elements that might be reply-related
+      if (target.tagName === 'BUTTON' || target.closest('button') || target.classList.contains('reply-button')) {
+        console.log("🔔 [DISCUSSION] Click event on:", target.tagName, target.className, target.textContent?.trim());
+      }
+      
+      if (target.classList.contains("reply-button") || target.closest(".reply-button")) {
+        console.log("🔔 [DISCUSSION] Reply button clicked!");
+        const button = target.classList.contains("reply-button") ? target : target.closest(".reply-button");
+        if (button) {
+          const discussionId = parseInt(button.getAttribute("data-discussion-id") || "0");
+          console.log("🔔 [DISCUSSION] Discussion ID from button:", discussionId);
+          if (discussionId) {
+            showReplyForm(discussionId);
+          }
+        }
+      }
+    });
 
     console.log("🔔 [DISCUSSION] Event listeners attached");
   }
@@ -877,5 +1400,147 @@ window.PROJECT_USER_ROLE = userRole;</script>
 
   // Make functions globally available
   (window as any).switchTab = enhancedSwitchTab;
+  
+  // Show reply form for a specific comment
+  function showReplyForm(parentCommentId: number) {
+    console.log("🔔 [DISCUSSION] showReplyForm called with:", parentCommentId);
+    
+    // First, hide any existing inline reply forms
+    const existingReplyForms = document.querySelectorAll('.inline-reply-form');
+    existingReplyForms.forEach(form => form.remove());
+    
+    // Find the comment element to reply to
+    const commentElement = document.querySelector(`[data-discussion-id="${parentCommentId}"]`);
+    if (!commentElement) {
+      console.error("🔔 [DISCUSSION] Comment element not found for ID:", parentCommentId);
+      return;
+    }
+    
+    // Create inline reply form
+    const replyFormHTML = `
+      <div class="inline-reply-form mt-3 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-600">
+        <!-- Textarea -->
+        <div class="relative">
+          <textarea
+            class="reply-message-input w-full resize-none rounded-lg border border-gray-300 p-3 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+            placeholder="Write your reply here... (Use @ to mention users)"
+            rows="3"
+          ></textarea>
+        </div>
+        
+        <!-- Admin/Staff Only Toggles for Reply -->
+        ${(() => {
+          const userRole = (window as any).currentUserRole || 'Client';
+          return (userRole === "Admin" || userRole === "Staff") ? `
+            <div class="mt-3 flex flex-wrap gap-6 border-t border-gray-200 pt-3 dark:border-gray-600">
+              <!-- Internal Only Toggle -->
+              <label class="flex items-center gap-3 cursor-pointer">
+                <div class="relative">
+                  <input
+                    type="checkbox"
+                    class="reply-internal-toggle sr-only peer"
+                  />
+                  <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-red-300 dark:peer-focus:ring-red-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-red-600"></div>
+                </div>
+                <span class="text-sm text-gray-700 dark:text-gray-300">
+                  <i class="bx bx-lock mr-1"></i>
+                  Internal Only
+                </span>
+              </label>
+            </div>
+          ` : '';
+        })()}
+        
+        <!-- Buttons Row -->
+        <div class="mt-3 flex items-center justify-between">
+          <button
+            class="cancel-reply-btn px-4 py-2 text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200"
+            onclick="window.cancelReply(${parentCommentId})"
+          >
+            Cancel
+          </button>
+          <button
+            class="submit-reply-btn rounded-lg bg-blue-600 px-4 py-2 text-white transition-colors hover:bg-blue-700"
+            onclick="window.submitReply(${parentCommentId})"
+          >
+            <i class="bx bx-send mr-2"></i>
+            Post Reply
+          </button>
+        </div>
+      </div>
+    `;
+    
+    // Insert the reply form after the comment
+    commentElement.insertAdjacentHTML('afterend', replyFormHTML);
+    
+    // Set the parent comment ID for the reply
+    (window as any).currentReplyTo = parentCommentId;
+    
+    // Focus on the reply textarea
+    const replyTextarea = document.querySelector('.reply-message-input') as HTMLTextAreaElement;
+    if (replyTextarea) {
+      replyTextarea.focus();
+    }
+    
+    console.log("🔔 [DISCUSSION] Inline reply form created for comment:", parentCommentId);
+    console.log("🔔 [DISCUSSION] currentReplyTo set to:", (window as any).currentReplyTo);
+  }
+
+  // Toggle discussion completed status
+  async function toggleDiscussionCompleted(discussionId: number, isCompleted: boolean) {
+    try {
+      console.log("🔔 [DISCUSSION] Toggling completed status:", { discussionId, isCompleted });
+      
+      const response = await fetch("/api/update-discussion-completed", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          discussionId: discussionId,
+          mark_completed: isCompleted,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        console.log("✅ [DISCUSSION] Discussion completed status updated successfully");
+        // Update the local discussion data
+        const discussion = discussions.find(d => d.id === discussionId);
+        if (discussion) {
+          discussion.mark_completed = isCompleted;
+        }
+        // Update the incomplete comments count
+        updateIncompleteCommentsCount();
+        // Show success notification
+        if (window.showSuccess) {
+          window.showSuccess("Discussion status updated", `Marked as ${isCompleted ? 'completed' : 'incomplete'}`);
+        }
+      } else {
+        console.error("❌ [DISCUSSION] Failed to update discussion status:", data.error);
+        // Revert the toggle if the API call failed
+        const toggle = document.getElementById(`completed-toggle-${discussionId}`) as HTMLInputElement;
+        if (toggle) {
+          toggle.checked = !isCompleted;
+        }
+        // Show error notification
+        if (window.showError) {
+          window.showError("Update Failed", "Failed to update discussion status");
+        }
+      }
+    } catch (error) {
+      console.error("❌ [DISCUSSION] Error updating discussion status:", error);
+      // Revert the toggle if there was an error
+      const toggle = document.getElementById(`completed-toggle-${discussionId}`) as HTMLInputElement;
+      if (toggle) {
+        toggle.checked = !isCompleted;
+      }
+      // Show error notification
+      if (window.showError) {
+        window.showError("Update Failed", "Error updating discussion status");
+      }
+    }
+  }
 </script>
   
