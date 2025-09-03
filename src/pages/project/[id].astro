@@ -622,7 +622,8 @@ window.PROJECT_USER_ROLE = userRole;</script>
   // Discussion functionality
   let discussions: any[] = [];
   let currentProjectId = "";
-  let userRole = 'Client'; // Will be set from server-side data
+      let userRole = 'Client'; // Will be set from server-side data
+    console.log("🔔 [DISCUSSION] Initial userRole:", userRole);
 
   async function loadDiscussions(projectId: string) {
     try {
@@ -751,6 +752,7 @@ window.PROJECT_USER_ROLE = userRole;</script>
         <!-- Admin/Staff Only: Mark Completed Toggle -->
         ${(() => {
           const shouldShowToggle = (userRole === "Admin" || userRole === "Staff");
+          console.log("🔔 [DISCUSSION] Toggle visibility check:", { userRole, shouldShowToggle, discussionId: discussion.id });
           return shouldShowToggle ? `
             <div class="mt-3 pt-3 border-t border-gray-200 dark:border-gray-600">
               <label class="flex items-center gap-3 cursor-pointer">
@@ -770,7 +772,7 @@ window.PROJECT_USER_ROLE = userRole;</script>
                 </span>
               </label>
             </div>
-          ` : '';
+          ` : '<div class="mt-3 pt-3 text-xs text-gray-500">Toggle hidden - Admin/Staff only</div>';
         })()}
         
         <!-- Reply Button -->
@@ -1242,8 +1244,8 @@ window.PROJECT_USER_ROLE = userRole;</script>
 
   // Initialize discussion functionality when discussion tab is shown
   function initializeDiscussion() {
-    // Set user role from server-side data
-    userRole = "${role || 'Client'}";
+    // Set user role from server-side data (already set via define:vars)
+    userRole = (window as any).PROJECT_USER_ROLE || 'Client';
     console.log("🔔 [DISCUSSION] User role set to:", userRole);
     
     // Make user role available globally for reply forms

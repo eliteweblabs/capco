@@ -6,8 +6,6 @@ const currentUrl = Astro.url.pathname;
 import { isBackendPage } from "../../pages/api/backend-page-check";
 const isBackend = isBackendPage(currentUrl);
 
-
-
 import { checkAuth } from "../../lib/auth";
 
 // Get current user for authentication and role
@@ -18,49 +16,44 @@ const { isAuth, user, role } = authResult;
 const shouldShow = !currentUrl.startsWith("/sms-demo");
 ---
 
-{shouldShow && role !== "Admin" && role !== "Staff" && (
-  <div id="sticky-sms-container" class="fixed bottom-6 right-6 z-40">
-    <!-- SMS Button (collapsed state) -->
-    <button
-      id="sms-toggle-btn"
-      aria-label="Contact CAPCo"
-      class="flex h-14 w-14 items-center justify-center rounded-full bg-blue-600 text-white shadow-lg transition-all duration-300 hover:bg-blue-700 hover:shadow-xl focus:outline-none focus:ring-4 focus:ring-blue-300 dark:focus:ring-blue-800"
-    >
-      <BoxIcon name="message-rounded" class="text-xl" />
-    </button>
+<div id="sticky-sms-container" class="fixed bottom-6 right-6 z-40">
+  <!-- SMS Button (collapsed state) -->
+  <button
+    id="sms-toggle-btn"
+    aria-label="Contact CAPCo"
+    class="flex h-14 w-14 items-center justify-center rounded-full bg-blue-600 text-white shadow-lg transition-all duration-300 hover:bg-blue-700 hover:shadow-xl focus:outline-none focus:ring-4 focus:ring-blue-300 dark:focus:ring-blue-800"
+  >
+    <BoxIcon name="message-rounded" class="text-xl" />
+  </button>
 
-    <!-- SMS Form Panel (expanded state) -->
+  <!-- SMS Form Panel (expanded state) -->
+  <div
+    id="sms-form-panel"
+    class="absolute bottom-16 right-0 hidden w-80 max-w-[calc(100vw-3rem)] transform rounded-lg border border-gray-200 bg-white shadow-2xl transition-all duration-300 dark:border-gray-700 dark:bg-gray-800"
+  >
+    <!-- Panel Header -->
     <div
-      id="sms-form-panel"
-      class="absolute bottom-16 right-0 hidden w-80 max-w-[calc(100vw-3rem)] transform rounded-lg border border-gray-200 bg-white shadow-2xl transition-all duration-300 dark:border-gray-700 dark:bg-gray-800"
+      class="flex items-center justify-between border-b border-gray-200 p-4 dark:border-gray-700"
     >
-      <!-- Panel Header -->
-      <div class="flex items-center justify-between border-b border-gray-200 p-4 dark:border-gray-700">
-        <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
-          💬 Contact CAPCo
-        </h3>
-        <button
-          id="sms-close-btn"
-          aria-label="Close SMS panel"
-          class="flex h-8 w-8 items-center justify-center rounded-full text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-700 dark:hover:text-gray-300"
-        >
-          <BoxIcon name="x" class="text-lg" />
-        </button>
-      </div>
-
-      <!-- Panel Content -->
-      <div class="p-4">
-        <SMSForm compact={true} />
-      </div>
+      <h3 class="text-lg font-semibold text-gray-900 dark:text-white">💬 Contact CAPCo</h3>
+      <button
+        id="sms-close-btn"
+        aria-label="Close SMS panel"
+        class="flex h-8 w-8 items-center justify-center rounded-full text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-700 dark:hover:text-gray-300"
+      >
+        <BoxIcon name="x" class="text-lg" />
+      </button>
     </div>
 
-    <!-- Backdrop for mobile -->
-    <div
-      id="sms-backdrop"
-      class="fixed inset-0 z-[-1] hidden bg-black bg-opacity-50 md:hidden"
-    ></div>
+    <!-- Panel Content -->
+    <div class="p-4">
+      <SMSForm compact={true} />
+    </div>
   </div>
-)}
+
+  <!-- Backdrop for mobile -->
+  <div id="sms-backdrop" class="fixed inset-0 z-[-1] hidden bg-black bg-opacity-50 md:hidden"></div>
+</div>
 
 <script>
   document.addEventListener("DOMContentLoaded", () => {
@@ -84,7 +77,7 @@ const shouldShow = !currentUrl.startsWith("/sms-demo");
       if (backdrop) {
         backdrop.classList.remove("hidden");
       }
-      
+
       // Add animation classes
       requestAnimationFrame(() => {
         if (formPanel) {
@@ -105,7 +98,7 @@ const shouldShow = !currentUrl.startsWith("/sms-demo");
 
     function closePanel() {
       isOpen = false;
-      
+
       // Add closing animation
       if (formPanel) {
         formPanel.classList.add("animate-fade-out-down");

@@ -55,6 +55,7 @@ const { userRole = "client" } = Astro.props;
           id="first-name-input"
           name="first_name"
           placeholder="First Name"
+          required
           class="w-full rounded-md border border-gray-300 px-3 py-2.5 text-sm text-gray-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:focus:border-blue-400 dark:focus:ring-blue-400"
         />
       </div>
@@ -69,6 +70,7 @@ const { userRole = "client" } = Astro.props;
           id="last-name-input"
           name="last_name"
           placeholder="Last Name"
+          required
           class="w-full rounded-md border border-gray-300 px-3 py-2.5 text-sm text-gray-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:focus:border-blue-400 dark:focus:ring-blue-400"
         />
       </div>
@@ -98,6 +100,7 @@ const { userRole = "client" } = Astro.props;
         id="email-input"
         name="email"
         placeholder="email@example.com"
+        required
         class="w-full rounded-md border border-gray-300 px-3 py-2.5 text-sm text-gray-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:focus:border-blue-400 dark:focus:ring-blue-400"
       />
     </div>
@@ -148,24 +151,24 @@ const { userRole = "client" } = Astro.props;
         newClientFields.classList.remove("hidden");
         existingClientSelect.classList.add("hidden");
 
-        // Remove required from existing client select and disable it
-        const select = document.getElementById("existing-client-select") as HTMLSelectElement;
-        if (select) {
-          select.disabled = true;
-          select.removeAttribute("required");
-          console.log("🔄 [NEW-CLIENT-TOGGLE] Disabled existing client select");
+        // Remove required from existing client select hidden input
+        const selectInput = document.getElementById("existing-client-select") as HTMLInputElement;
+        if (selectInput) {
+          selectInput.removeAttribute("required");
+          console.log("🔄 [NEW-CLIENT-TOGGLE] Removed required from existing client select");
         }
 
-        // Enable new client fields and add required to first_name, last_name, email
+        // Enable new client fields and add required attributes back
         const newFields = newClientFields.querySelectorAll("input");
         console.log("🔄 [NEW-CLIENT-TOGGLE] Found new client fields:", newFields.length);
 
         newFields.forEach((field) => {
           field.disabled = false;
+          // Add required attribute back when enabling
           if (field.name === "first_name" || field.name === "last_name" || field.name === "email") {
             field.setAttribute("required", "required");
-            console.log("🔄 [NEW-CLIENT-TOGGLE] Made field required:", field.name);
           }
+          console.log("🔄 [NEW-CLIENT-TOGGLE] Enabled field and added required:", field.name);
         });
       } else {
         console.log("🔄 [NEW-CLIENT-TOGGLE] Switching to EXISTING CLIENT mode");
@@ -174,28 +177,40 @@ const { userRole = "client" } = Astro.props;
         newClientFields.classList.add("hidden");
         existingClientSelect.classList.remove("hidden");
 
-        // Add required to existing client select and enable it
-        const select = document.getElementById("existing-client-select") as HTMLSelectElement;
-        if (select) {
-          select.disabled = false;
-          select.setAttribute("required", "required");
-          console.log("🔄 [NEW-CLIENT-TOGGLE] Enabled existing client select");
+        // Add required to existing client select hidden input
+        const selectInput = document.getElementById("existing-client-select") as HTMLInputElement;
+        if (selectInput) {
+          selectInput.setAttribute("required", "required");
+          console.log("🔄 [NEW-CLIENT-TOGGLE] Added required to existing client select");
         }
 
-        // Disable new client fields and remove required from first_name, last_name, company_name, email
+        // Disable new client fields and remove required attributes
         const newFields = newClientFields.querySelectorAll("input");
-        console.log("🔄 [NEW-CLIENT-TOGGLE] Removing required from fields:", newFields.length);
+        console.log("🔄 [NEW-CLIENT-TOGGLE] Disabling new client fields:", newFields.length);
 
         newFields.forEach((field) => {
           field.disabled = true;
-          field.removeAttribute("required");
-          console.log("🔄 [NEW-CLIENT-TOGGLE] Removed required from:", field.name);
+          field.removeAttribute("required"); // Remove required when disabled
+          console.log("🔄 [NEW-CLIENT-TOGGLE] Disabled field and removed required:", field.name);
         });
       }
+
+      // Update the toggle state in the form data
+      console.log("🔄 [NEW-CLIENT-TOGGLE] Toggle state updated:", toggle.checked);
     }
 
-    // Initial state
+    // Initial state - start with existing client mode (toggle unchecked)
     console.log("🔄 [NEW-CLIENT-TOGGLE] Setting initial state...");
+    toggle.checked = false; // Ensure toggle starts unchecked
+
+    // Remove required attributes from new client fields initially since they're hidden
+    const initialNewFields = newClientFields.querySelectorAll("input");
+    initialNewFields.forEach((field) => {
+      if (field.name === "first_name" || field.name === "last_name" || field.name === "email") {
+        field.removeAttribute("required");
+      }
+    });
+
     updateVisibility();
 
     // Listen for toggle changes
@@ -204,5 +219,82 @@ const { userRole = "client" } = Astro.props;
       console.log("🔄 [NEW-CLIENT-TOGGLE] Toggle changed!");
       updateVisibility();
     });
+
+    // Add form validation debugging and manual validation
+    const form = toggle.closest("form");
+    if (form) {
+      form.addEventListener("submit", function (event) {
+        console.log("🔄 [NEW-CLIENT-TOGGLE] Form submission intercepted for validation check");
+
+        // Check current toggle state
+        console.log("🔄 [NEW-CLIENT-TOGGLE] Current toggle state:", toggle.checked);
+
+        // Check required fields
+        const requiredFields = form.querySelectorAll("[required]");
+        console.log("🔄 [NEW-CLIENT-TOGGLE] Required fields found:", requiredFields.length);
+
+        requiredFields.forEach((field, index) => {
+          const input = field as HTMLInputElement;
+          console.log(`🔄 [NEW-CLIENT-TOGGLE] Required field ${index + 1}:`, {
+            name: input.name,
+            value: input.value,
+            disabled: input.disabled,
+            hidden: input.closest(".hidden") !== null,
+          });
+        });
+
+        // Manual validation: ensure only appropriate fields are required
+        let isValid = true;
+
+        if (toggle.checked) {
+          // New client mode: new client fields should be required, existing client select should not
+          const newClientRequired = form.querySelectorAll(
+            "#new-client-fields input[required]"
+          ).length;
+          const existingClientRequired = form.querySelectorAll(
+            "#existing-client-select[required]"
+          ).length;
+
+          console.log("🔄 [NEW-CLIENT-TOGGLE] Validation - New client mode:", {
+            newClientRequired,
+            existingClientRequired,
+          });
+
+          if (existingClientRequired > 0) {
+            console.error(
+              "🔄 [NEW-CLIENT-TOGGLE] Validation failed: existing client select still required in new client mode"
+            );
+            isValid = false;
+          }
+        } else {
+          // Existing client mode: existing client select should be required, new client fields should not
+          const newClientRequired = form.querySelectorAll(
+            "#new-client-fields input[required]"
+          ).length;
+          const existingClientRequired = form.querySelectorAll(
+            "#existing-client-select[required]"
+          ).length;
+
+          console.log("🔄 [NEW-CLIENT-TOGGLE] Validation - Existing client mode:", {
+            newClientRequired,
+            existingClientRequired,
+          });
+
+          if (newClientRequired > 0) {
+            console.error(
+              "🔄 [NEW-CLIENT-TOGGLE] Validation failed: new client fields still required in existing client mode"
+            );
+            isValid = false;
+          }
+        }
+
+        if (!isValid) {
+          console.error(
+            "🔄 [NEW-CLIENT-TOGGLE] Form validation failed - fixing required attributes..."
+          );
+          updateVisibility(); // Re-run visibility update to fix required attributes
+        }
+      });
+    }
   });
 </script>
