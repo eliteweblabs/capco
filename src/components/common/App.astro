@@ -19,6 +19,30 @@ const i18n = getI18N({ currentLocale });
 const title = Astro.props.title || i18n.SEO_TITLE;
 const description = Astro.props.description || i18n.SEO_DESCRIPTION;
 
+// Debug environment variables during server-side rendering
+console.log("🔧 [APP.ASTRO] Server-side environment check:");
+console.log(
+  "🔧 [APP.ASTRO] import.meta.env.PUBLIC_STRIPE_PUBLISHABLE_KEY:",
+  import.meta.env.PUBLIC_STRIPE_PUBLISHABLE_KEY
+);
+console.log(
+  "🔧 [APP.ASTRO] import.meta.env.STRIPE_PUBLISHABLE_KEY:",
+  import.meta.env.STRIPE_PUBLISHABLE_KEY
+);
+console.log(
+  "🔧 [APP.ASTRO] process.env.PUBLIC_STRIPE_PUBLISHABLE_KEY:",
+  process.env.PUBLIC_STRIPE_PUBLISHABLE_KEY
+);
+console.log(
+  "🔧 [APP.ASTRO] process.env.STRIPE_PUBLISHABLE_KEY:",
+  process.env.STRIPE_PUBLISHABLE_KEY
+);
+console.log("🔧 [APP.ASTRO] GOOGLE_MAPS_API_KEY:", import.meta.env.GOOGLE_MAPS_API_KEY);
+console.log(
+  "🔧 [APP.ASTRO] All import.meta.env keys with STRIPE:",
+  Object.keys(import.meta.env).filter((key) => key.includes("STRIPE"))
+);
+
 // Import components
 import Header from "./Header.astro";
 import Footer from "./Footer.astro";
@@ -112,7 +136,7 @@ console.log("🏗️ [APP] App component loading...", user);
 
     <!-- Inject environment variables for client-side use FIRST -->
     <script
-      set:html={`window.SUPABASE_URL = "${import.meta.env.SUPABASE_URL || ""}"; window.SUPABASE_ANON_KEY = "${(import.meta.env.SUPABASE_ANON_KEY || "").replace(/\s/g, "")}"; window.GOOGLE_MAPS_API_KEY = "${import.meta.env.GOOGLE_MAPS_API_KEY || ""}"; window.STRIPE_PUBLISHABLE_KEY = "${import.meta.env.PUBLIC_STRIPE_PUBLISHABLE_KEY || import.meta.env.STRIPE_PUBLISHABLE_KEY || ""}"; ${user ? `window.USER_DATA = ${JSON.stringify(user)};` : ""} console.log("Environment variables loaded:", { SUPABASE_URL: window.SUPABASE_URL ? "Set" : "Missing", SUPABASE_ANON_KEY: window.SUPABASE_ANON_KEY ? "Set" : "Missing", GOOGLE_MAPS_API_KEY: window.GOOGLE_MAPS_API_KEY ? "Set" : "Missing", STRIPE_PUBLISHABLE_KEY: window.STRIPE_PUBLISHABLE_KEY ? "Set" : "Missing" });`}
+      set:html={`window.SUPABASE_URL = "${import.meta.env.SUPABASE_URL || ""}"; window.SUPABASE_ANON_KEY = "${(import.meta.env.SUPABASE_ANON_KEY || "").replace(/\s/g, "")}"; window.GOOGLE_MAPS_API_KEY = "${import.meta.env.GOOGLE_MAPS_API_KEY || ""}"; window.STRIPE_PUBLISHABLE_KEY = "${import.meta.env.PUBLIC_STRIPE_PUBLISHABLE_KEY || import.meta.env.STRIPE_PUBLISHABLE_KEY || process.env.PUBLIC_STRIPE_PUBLISHABLE_KEY || process.env.STRIPE_PUBLISHABLE_KEY || ""}"; ${user ? `window.USER_DATA = ${JSON.stringify(user)};` : ""} console.log("Environment variables loaded:", { SUPABASE_URL: window.SUPABASE_URL ? "Set" : "Missing", SUPABASE_ANON_KEY: window.SUPABASE_ANON_KEY ? "Set" : "Missing", GOOGLE_MAPS_API_KEY: window.GOOGLE_MAPS_API_KEY ? "Set" : "Missing", STRIPE_PUBLISHABLE_KEY: window.STRIPE_PUBLISHABLE_KEY ? "Set" : "Missing" });`}
     />
 
     <!-- Google Maps Places API - Load only if API key is available -->
