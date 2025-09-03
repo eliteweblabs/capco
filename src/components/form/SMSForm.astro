@@ -134,12 +134,12 @@ const { compact = false } = Astro.props;
 
     // Form submission handling
     if (form) {
-      form.addEventListener("submit", (e) => {
+      form.addEventListener("submit", async (e) => {
+        e.preventDefault();
         const message = (form.querySelector("#message") as HTMLTextAreaElement)?.value;
 
         // Client-side validation - only check message since phone/carrier are hardcoded
         if (!message || message.trim().length === 0) {
-          e.preventDefault();
           if (window.showError) {
             window.showError("Message Required", "Please enter a message to send.", 5000);
           } else {
@@ -151,6 +151,8 @@ const { compact = false } = Astro.props;
         // Show loading notification
         if (window.showInfo) {
           window.showInfo("Sending Message...", "Please wait while we send your message to CAPCo.", 3000);
+          (form as HTMLFormElement).reset();
+          
         } else {
           console.log("🔔 [Sending Message...] Please wait while we send your message to CAPCo.");
         }
