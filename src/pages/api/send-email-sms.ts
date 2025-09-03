@@ -7,14 +7,12 @@ export const POST: APIRoute = async ({ request }) => {
     const carrier = formData.get("carrier") as string;
     const message = formData.get("message") as string;
     const contactInfo = formData.get("contact_info") as string;
-    const projectId = formData.get("project_id") as string;
 
-    console.log("📱 [SMS-API] Emergency SMS request received:", {
+    console.log("📱 [SMS-API] SMS request received:", {
       phone: phone ? "***" + phone.slice(-4) : "none",
       carrier,
       messageLength: message?.length || 0,
       hasContactInfo: !!contactInfo,
-      projectId,
     });
 
     if (!phone || !carrier || !message) {
@@ -34,17 +32,13 @@ export const POST: APIRoute = async ({ request }) => {
     const smsEmail = `${phone}${carrier}`;
 
     // Format the message with context
-    let emailContent = `CAPCo Emergency Contact:\n\n${message}`;
+    let emailContent = `CAPCo Website Contact:\n\n${message}`;
 
     if (contactInfo) {
       emailContent += `\n\nContact Info: ${contactInfo}`;
     }
 
-    if (projectId && projectId !== "new") {
-      emailContent += `\nProject ID: ${projectId}`;
-    }
-
-    emailContent += `\n\nSent via Emergency SMS System`;
+    emailContent += `\n\nSent via CAPCo Website`;
 
     // Use the existing email delivery system
     const emailResponse = await fetch(
@@ -56,7 +50,7 @@ export const POST: APIRoute = async ({ request }) => {
         },
         body: JSON.stringify({
           emailType: "emergency_sms",
-          custom_subject: "CAPCo Emergency Contact",
+          custom_subject: "CAPCo Website Contact",
           email_content: emailContent,
           usersToNotify: [{ email: smsEmail }], // Send to SMS gateway
         }),
@@ -66,11 +60,11 @@ export const POST: APIRoute = async ({ request }) => {
     const emailResult = await emailResponse.json();
 
     if (emailResult.success) {
-      console.log("📱 [SMS-API] Emergency SMS sent successfully to:", smsEmail);
+      console.log("📱 [SMS-API] SMS sent successfully to:", smsEmail);
       return new Response(
         JSON.stringify({
           success: true,
-          message: "Emergency SMS sent successfully",
+          message: "SMS sent successfully",
         }),
         {
           status: 200,
@@ -78,7 +72,7 @@ export const POST: APIRoute = async ({ request }) => {
         }
       );
     } else {
-      console.error("📱 [SMS-API] Failed to send emergency SMS:", emailResult.error);
+      console.error("📱 [SMS-API] Failed to send SMS:", emailResult.error);
       return new Response(
         JSON.stringify({
           success: false,
@@ -91,7 +85,7 @@ export const POST: APIRoute = async ({ request }) => {
       );
     }
   } catch (error) {
-    console.error("📱 [SMS-API] Emergency SMS API error:", error);
+    console.error("📱 [SMS-API] SMS API error:", error);
     return new Response(
       JSON.stringify({
         success: false,

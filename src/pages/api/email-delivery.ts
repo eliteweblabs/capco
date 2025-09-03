@@ -230,11 +230,29 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       }
     }
 
-    // Get project details from database (skip for registration emails)
+    // Get project details from database (only for emails that need project context)
+    // Positive logic: explicitly define which email types need project details
     let projectDetails = null;
     let projectAuthor = null;
 
-    if (!isRegistrationEmail && !isClientCommentEmail) {
+    if (isStatusUpdateEmail || isStaffAssignmentEmail) {
+      // These email types need project details for context
+      if (!projectId) {
+        console.error(
+          "📧 [EMAIL-DELIVERY] Project ID required for status update or staff assignment emails"
+        );
+        return new Response(
+          JSON.stringify({
+            success: false,
+            error: "Project ID required",
+          }),
+          {
+            status: 400,
+            headers: { "Content-Type": "application/json" },
+          }
+        );
+      }
+
       // First, get basic project details
       const { data: fetchedProjectDetails, error: projectError } = await supabase
         .from("projects")
@@ -281,9 +299,12 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       if (!projectAuthor) {
         console.warn("📧 [EMAIL-DELIVERY] No author profile found for project:", projectId);
       }
-    } else {
+    } else if (isRegistrationEmail) {
       // Use project details from request body for registration emails
       projectDetails = body.projectDetails || { title: projectId, address: "Registration" };
+    } else {
+      // For other email types (client comments, emergency SMS), no project details needed
+      console.log("📧 [EMAIL-DELIVERY] No project details needed for this email type:", emailType);
     }
 
     // Get environment variables for email
@@ -473,8 +494,8 @@ export const POST: APIRoute = async ({ request, cookies }) => {
           }
         } else if (isEmergencySmsEmail) {
           // Emergency SMS Email Configuration
-          emailSubject = custom_subject || "Emergency Contact";
-          emailContent = email_content || "Emergency contact message from CAPCo website";
+          emailSubject = custom_subject || "Contact";
+          emailContent = email_content || "Contact message from CAPCo website";
           shouldShowButton = false;
         } else {
           // Fallback for unknown email types
@@ -502,11 +523,11 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         }
 
         const personalizedContent = emailContent
-          .replace(/{{PROJECT_TITLE}}/g, projectDetails.title || "Project")
-          .replace(/{{PROJECT_ADDRESS}}/g, projectDetails.address || "N/A")
-          .replace(/{{ADDRESS}}/g, projectDetails.address || "N/A")
+          .replace(/{{PROJECT_TITLE}}/g, projectDetails?.title || "Project")
+          .replace(/{{PROJECT_ADDRESS}}/g, projectDetails?.address || "N/A")
+          .replace(/{{ADDRESS}}/g, projectDetails?.address || "N/A")
           .replace(/{{EST_TIME}}/g, statusConfig?.est_time || "2-3 business days")
-          .replace(/{{CLIENT_NAME}}/g, clientName) // Use project author's name, not recipient's name
+          .replace(/{{CLIENT_NAME}}/g, clientName || "Client") // Use project author's name, not recipient's name
           .replace(/{{CLIENT_EMAIL}}/g, user.email)
           // Replace any remaining {{PLACEHOLDER}} with empty string
           .replace(/\{\{[^}]+\}\}/g, "");
