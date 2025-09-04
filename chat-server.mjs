@@ -226,7 +226,7 @@ app.get("/users", (req, res) => {
   });
 });
 
-const PORT = process.env.PORT || 8080;
+const PORT = process.env.PORT || 3000;
 
 server.listen(PORT, "0.0.0.0", () => {
   console.log(`🚀 [CHAT-SERVER] Chat server running on port ${PORT} (all interfaces)`);
