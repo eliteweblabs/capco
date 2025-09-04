@@ -274,10 +274,10 @@ export class SimpleProjectLogger {
       );
 
       const oldAssignment = oldData.assigned_to_id
-        ? assignmentNames[oldData.company_name] || `User ${oldData.company_name}`
+        ? assignmentNames[oldData.assigned_to_id] || `User ${oldData.assigned_to_id}`
         : "Unassigned";
       const newAssignment = newData.assigned_to_id
-        ? assignmentNames[newData.company_name] || `User ${newData.company_name}`
+        ? assignmentNames[newData.assigned_to_id] || `User ${newData.assigned_to_id}`
         : "Unassigned";
 
       await this.addLogEntry(
