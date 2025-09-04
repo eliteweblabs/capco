@@ -19,6 +19,7 @@ interface Props {
   projectId?: string;
   autoSave?: boolean;
   variant?: "default" | "hero";
+  address?: string;
 }
 
 const {
@@ -27,10 +28,11 @@ const {
   label = "Assign To",
   value = "",
   required = false,
-  placeholder = "Select staff member...",
+  placeholder = "Select team member...",
   projectId = "",
   autoSave = false,
   variant = "default",
+  address = "",
 } = Astro.props;
 
 // Debug logging for StaffSelectDropdown (after props are destructured)
@@ -40,6 +42,7 @@ console.log("🧑‍💼 [STAFF-SELECT] StaffSelectDropdown props:", {
   projectId,
   variant,
   value,
+  address,
 });
 ---
 
@@ -70,12 +73,12 @@ console.log("🧑‍💼 [STAFF-SELECT] StaffSelectDropdown props:", {
       >
         <div class="py-1" role="none">
           <div class="px-4 py-2 text-sm text-gray-700 dark:text-gray-300 border-b border-gray-200 dark:border-gray-700">
-            <div class="font-medium">Assign Staff Member</div>
+            <div class="font-medium">Assign Team Member</div>
             <div class="text-xs text-gray-500 dark:text-gray-400">Project #{projectId}</div>
           </div>
           
           <div id={`${id}-loading`} class="px-4 py-2 text-sm text-gray-500 dark:text-gray-400 hidden">
-            Loading staff members...
+            Loading team members...
           </div>
 
           <div id={`${id}-error`} class="px-4 py-2 text-sm text-red-600 dark:text-red-400 hidden">
@@ -117,7 +120,7 @@ console.log("🧑‍💼 [STAFF-SELECT] StaffSelectDropdown props:", {
   </div>
 )}
 
-<script define:vars={{ id, projectId, autoSave, value }}>
+<script define:vars={{ id, projectId, autoSave, value, address }}>
   document.addEventListener("DOMContentLoaded", async () => {
     const buttonElement = document.getElementById(`${id}-button`);
     const menuElement = document.getElementById(`${id}-menu`);
@@ -266,8 +269,8 @@ console.log("🧑‍💼 [STAFF-SELECT] StaffSelectDropdown props:", {
                 newStatus: null, // Not a status change, just assignment
                 assigned_to_id: staffId,
                 assigned_to_name: staffName,
-                email_content: `A project has been assigned to ${staffName}. Please review the project details and take appropriate action.`,
-                custom_subject: `Project Assignment - ${staffName}`
+                email_content: `A project has been assigned to ${staffName} for ${address}. Please review the project details and take appropriate action.`,
+                custom_subject: `Project Assignment > ${address} > ${staffName}`
               }),
             });
 
@@ -312,7 +315,7 @@ console.log("🧑‍💼 [STAFF-SELECT] StaffSelectDropdown props:", {
       console.log("🧑‍💼 [STAFF-SELECT] Fetching staff members...");
 
       // Fetch staff members from API
-      const response = await fetch("/api/get-staff-users");
+      const response = await fetch("/api/get-team-users");
       const result = await response.json();
 
       if (result.success && result.staffUsers) {
