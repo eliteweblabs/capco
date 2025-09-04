@@ -2,6 +2,7 @@
 import BoxIcon from "../common/BoxIcon.astro";
 import LineItemSelector from "../form/LineItemSelector.astro";
 import PaymentForm from "./PaymentForm.astro";
+import { supabase } from "../../lib/supabase";
 
 interface Props {
   projectId: string;
@@ -14,11 +15,30 @@ const { projectId, project, projectAuthor, role } = Astro.props;
 
 // Only show to Admin/Staff users
 const canManageProposals = role === "Admin" || role === "Staff";
+
+// Check if there's already an invoice for this project
+let existingInvoice = null;
+try {
+  const { data: invoice, error } = await supabase
+    .from("invoices")
+    .select("*")
+    .eq("project_id", parseInt(projectId))
+    .eq("type", "proposal")
+    .single();
+  
+  if (!error && invoice) {
+    existingInvoice = invoice;
+  }
+} catch (error) {
+  console.log("No existing proposal invoice found for project:", projectId);
+}
+
+const hasExistingInvoice = !!existingInvoice;
 ---
 
 <div class="rounded-lg border border-gray-200 bg-white p-6 dark:border-gray-700 dark:bg-gray-800">
   <!-- Initial state: No proposal generated -->
-  <div id="proposal-placeholder" class="py-8 text-center">
+  <div id="proposal-placeholder" class={hasExistingInvoice ? "hidden" : "py-8 text-center"}>
     <BoxIcon name="file-pdf" class="mx-auto mb-4 h-12 w-12 text-gray-400" />
     <h3 class="mb-2 text-lg font-medium text-gray-900 dark:text-white">Proposal</h3>
     <p class="mb-4 text-gray-500 dark:text-gray-400">
@@ -48,7 +68,7 @@ const canManageProposals = role === "Admin" || role === "Staff";
   </div>
 
   <!-- Generated proposal content (hidden initially) -->
-  <div id="proposal-content" class="hidden">
+  <div id="proposal-content" class={hasExistingInvoice ? "" : "hidden"}>
     <!-- Proposal Header -->
     <div class="mb-6 flex items-start justify-between">
       <div class="flex-1">
@@ -288,10 +308,18 @@ const canManageProposals = role === "Admin" || role === "Staff";
     const projectId = window.PROPOSAL_PROJECT_ID;
     const project = window.PROPOSAL_PROJECT_DATA;
     const projectAuthor = window.PROPOSAL_PROJECT_AUTHOR;
+    const existingInvoice = window.PROPOSAL_EXISTING_INVOICE;
+    const hasExistingInvoice = window.PROPOSAL_HAS_EXISTING_INVOICE;
 
     // Initialize the global proposal manager
     if (projectId && project) {
       initializeProposalManager(projectId, project, projectAuthor);
+      
+      // If there's an existing invoice, load it automatically
+      if (hasExistingInvoice && existingInvoice && window.proposalManager) {
+        console.log("Loading existing proposal invoice:", existingInvoice);
+        window.proposalManager.loadExistingInvoice(existingInvoice);
+      }
     }
 
     // Make wrapper functions available globally for onclick handlers
@@ -317,11 +345,13 @@ const canManageProposals = role === "Admin" || role === "Staff";
   });
 </script>
 
-<script define:vars={{ projectId, project, projectAuthor }}>
+<script define:vars={{ projectId, project, projectAuthor, existingInvoice, hasExistingInvoice }}>
   // Make data available globally for the proposal functions
   window.PROPOSAL_PROJECT_ID = projectId;
   window.PROPOSAL_PROJECT_DATA = project;
   window.PROPOSAL_PROJECT_AUTHOR = projectAuthor;
+  window.PROPOSAL_EXISTING_INVOICE = existingInvoice;
+  window.PROPOSAL_HAS_EXISTING_INVOICE = hasExistingInvoice;
 
   // Subject editing functionality
   function initializeSubjectEditing() {
