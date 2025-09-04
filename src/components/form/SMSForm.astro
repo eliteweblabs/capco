@@ -37,12 +37,16 @@ const { compact = false } = Astro.props;
         type="text"
         id="contact-info"
         name="contact_info"
+        maxlength="50"
         placeholder="Your name, email, or phone for response"
         class="w-full rounded-md border border-gray-300 bg-gray-50 px-3 py-2 text-sm focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-600 focus:ring-opacity-60 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 dark:focus:bg-gray-900"
       />
-      <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
-        How should we respond to your message?
-      </p>
+      <div class="mt-1 flex justify-between">
+        <p class="text-xs text-gray-500 dark:text-gray-400">
+          How should we respond? (Keep short - SMS has character limits)
+        </p>
+        <span id="contact-char-count" class="text-xs text-gray-500 dark:text-gray-400">0/50</span>
+      </div>
     </div>
 
     <!-- Message -->
@@ -113,6 +117,8 @@ const { compact = false } = Astro.props;
     const form = document.querySelector('form[action="/api/send-email-sms"]');
     const messageTextarea = document.getElementById("message");
     const charCount = document.getElementById("char-count");
+    const contactInput = document.getElementById("contact-info");
+    const contactCharCount = document.getElementById("contact-char-count");
 
     // Character counter for message
     if (messageTextarea && charCount) {
@@ -134,6 +140,28 @@ const { compact = false } = Astro.props;
 
       messageTextarea.addEventListener("input", updateCharCount);
       updateCharCount(); // Initial call
+    }
+
+    // Character counter for contact info
+    if (contactInput && contactCharCount) {
+      function updateContactCharCount() {
+        const length = (contactInput as HTMLInputElement).value.length;
+        if (contactCharCount) {
+          contactCharCount.textContent = `${length}/50`;
+
+          // Change color based on length
+          if (length > 40) {
+            contactCharCount.className = "text-xs text-red-500";
+          } else if (length > 30) {
+            contactCharCount.className = "text-xs text-yellow-500";
+          } else {
+            contactCharCount.className = "text-xs text-gray-500 dark:text-gray-400";
+          }
+        }
+      }
+
+      contactInput.addEventListener("input", updateContactCharCount);
+      updateContactCharCount(); // Initial call
     }
 
     // Form submission handling
