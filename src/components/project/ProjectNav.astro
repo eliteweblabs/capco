@@ -35,6 +35,7 @@ if (!projects || projects.length === 0) return;
 <nav
   id="project-nav"
   class="scrollbar-hide relative flex gap-1 overflow-x-auto whitespace-nowrap text-hub-inactive dark:border-hub-border-dark"
+  data-statuses={JSON.stringify(project_statuses)}
 >
   <ProjectNavButton
     id="all-statuses"
@@ -71,13 +72,16 @@ if (!projects || projects.length === 0) return;
   }
 </nav>
 
-<script define:vars={{ project_statuses }}>
+<script>
   // Project status filtering functionality
   document.addEventListener("DOMContentLoaded", function () {
     const subNav = document.getElementById("project-nav");
     const projectList = document.getElementById("project-list");
 
     if (!subNav || !projectList) return;
+
+    // Get statuses data from data attribute
+    const project_statuses = JSON.parse(subNav.dataset.statuses || '[]');
 
     // Check if event listeners are already attached to prevent duplicates
     if (subNav.hasAttribute('data-listeners-attached')) {
