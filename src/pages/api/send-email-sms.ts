@@ -4,23 +4,27 @@ import { getApiBaseUrl } from "../../lib/url-utils";
 export const POST: APIRoute = async ({ request }) => {
   try {
     const formData = await request.formData();
-    const phone = formData.get("phone") as string;
-    const carrier = formData.get("carrier") as string;
+    const phone1 = formData.get("phone1") as string;
+    const carrier1 = formData.get("carrier1") as string;
+    const phone2 = formData.get("phone2") as string;
+    const carrier2 = formData.get("carrier2") as string;
     const message = formData.get("message") as string;
     const contactInfo = formData.get("contact_info") as string;
 
     console.log("📱 [SMS-API] SMS request received:", {
-      phone: phone ? "***" + phone.slice(-4) : "none",
-      carrier,
+      phone1: phone1 ? "***" + phone1.slice(-4) : "none",
+      carrier1,
+      phone2: phone2 ? "***" + phone2.slice(-4) : "none", 
+      carrier2,
       messageLength: message?.length || 0,
       hasContactInfo: !!contactInfo,
     });
 
-    if (!phone || !carrier || !message) {
+    if (!message) {
       return new Response(
         JSON.stringify({
           success: false,
-          error: "Phone, carrier, and message are required",
+          error: "Message is required",
         }),
         {
           status: 400,
@@ -29,8 +33,29 @@ export const POST: APIRoute = async ({ request }) => {
       );
     }
 
-    // Construct the SMS email address
-    const smsEmail = `${phone}${carrier}`;
+    // Build list of SMS recipients
+    const smsRecipients = [];
+    
+    if (phone1 && carrier1) {
+      smsRecipients.push(`${phone1}${carrier1}`);
+    }
+    
+    if (phone2 && carrier2) {
+      smsRecipients.push(`${phone2}${carrier2}`);
+    }
+
+    if (smsRecipients.length === 0) {
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: "At least one phone number and carrier are required",
+        }),
+        {
+          status: 400,
+          headers: { "Content-Type": "application/json" },
+        }
+      );
+    }
 
     // Format the message with context
     let emailContent = `CAPCo Website Contact:\n\n${message}`;
@@ -44,6 +69,8 @@ export const POST: APIRoute = async ({ request }) => {
     // Use the existing email delivery system
     const baseUrl = getApiBaseUrl(request);
     console.log("📱 [SMS] Using base URL for email delivery:", baseUrl);
+    console.log("📱 [SMS] Sending to recipients:", smsRecipients);
+    
     const emailResponse = await fetch(`${baseUrl}/api/email-delivery`, {
       method: "POST",
       headers: {
@@ -53,18 +80,18 @@ export const POST: APIRoute = async ({ request }) => {
         emailType: "emergency_sms",
         custom_subject: "CAPCo Website Contact",
         email_content: emailContent,
-        usersToNotify: [{ email: smsEmail }], // Send to SMS gateway
+        usersToNotify: smsRecipients.map(email => ({ email })), // Send to all SMS gateways
       }),
     });
 
     const emailResult = await emailResponse.json();
 
     if (emailResult.success) {
-      console.log("📱 [SMS-API] SMS sent successfully to:", smsEmail);
+      console.log("📱 [SMS-API] SMS sent successfully to:", smsRecipients);
       return new Response(
         JSON.stringify({
           success: true,
-          message: "SMS sent successfully",
+          message: `SMS sent successfully to ${smsRecipients.length} recipient(s)`,
         }),
         {
           status: 200,
