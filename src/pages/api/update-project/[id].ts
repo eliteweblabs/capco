@@ -68,8 +68,9 @@ export const PUT: APIRoute = async ({ request, cookies, params }) => {
       });
     }
 
-    // Check permissions for non-admin and non-staff users
-    if (userRole !== "admin" && userRole !== "staff" && currentProject.author_id !== userId) {
+    // Check permissions - only Admin and Staff can assign projects
+    // Project authors (clients) should never be able to assign projects
+    if (userRole !== "admin" && userRole !== "staff") {
       return new Response(JSON.stringify({ error: "Access denied" }), {
         status: 403,
       });
@@ -106,11 +107,8 @@ export const PUT: APIRoute = async ({ request, cookies, params }) => {
 
     let updateQuery = supabase!.from("projects").update(updateData).eq("id", projectId);
 
-    // Only apply author_id filter for non-admin and non-staff users
-    if (userRole !== "admin" && userRole !== "staff") {
-      updateQuery = updateQuery.eq("author_id", userId);
-      console.log("🔧 [UPDATE-PROJECT] Added author_id filter for non-admin/non-staff user:", userId);
-    }
+    // No additional filters needed - only Admin and Staff can reach this point
+    // Both Admin and Staff can update any project
 
     console.log("🔧 [UPDATE-PROJECT] Executing database update...");
     const { data: projects, error } = await updateQuery.select();
