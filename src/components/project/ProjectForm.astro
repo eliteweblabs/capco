@@ -386,6 +386,141 @@ console.log("New client fields found:", newClientFieldsInForm.length, newClientF
     // Add form submission handler
     form.addEventListener("submit", handleFormSubmit);
 
+    // Form submission handler
+    async function handleFormSubmit(event: Event) {
+      event.preventDefault();
+      console.log("📝 [ProjectForm] Form submission started");
+
+      const form = event.target as HTMLFormElement;
+      const formData = new FormData(form);
+      const projectData: any = {};
+
+      // Convert FormData to object
+      for (const [key, value] of formData.entries()) {
+        if (key.includes('[]')) {
+          // Handle array fields (like multi-select button groups)
+          const fieldName = key.replace('[]', '');
+          if (!projectData[fieldName]) {
+            projectData[fieldName] = [];
+          }
+          projectData[fieldName].push(value);
+        } else {
+          projectData[key] = value;
+        }
+      }
+
+      console.log("📝 [ProjectForm] Form data:", projectData);
+
+      try {
+        const submitBtn = form.querySelector('button[type="submit"]') as HTMLButtonElement;
+        if (submitBtn) {
+          submitBtn.disabled = true;
+          submitBtn.innerHTML = '<i class="bx bx-loader-alt animate-spin mr-1"></i>Saving...';
+        }
+
+        let response;
+        if (isNewProject) {
+          // Create new project
+          console.log("📝 [ProjectForm] Creating new project");
+          response = await fetch("/api/create-project", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify(projectData),
+          });
+        } else {
+          // Update existing project
+          console.log("📝 [ProjectForm] Updating existing project:", projectId);
+          response = await fetch(`/api/update-project/${projectId}`, {
+            method: "PUT",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify(projectData),
+          });
+        }
+
+        const result = await response.json();
+        console.log("📝 [ProjectForm] API response:", result);
+
+        if (result.success) {
+          if (isNewProject) {
+            // For new projects, update status to 10 (Project Created) to trigger database-driven notifications
+            console.log("📝 [ProjectForm] Updating status to 10 for new project");
+            const statusResponse = await fetch("/api/update-status", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                projectId: result.project.id,
+                status: 10, // Project Created
+              }),
+            });
+
+            const statusResult = await statusResponse.json();
+            console.log("📝 [ProjectForm] Status update response:", statusResult);
+
+            if (statusResult.success && statusResult.statusConfig?.redirect_url) {
+              // Use database-driven redirect
+              const delay = statusResult.statusConfig.redirect_delay || 0;
+              const showCountdown = statusResult.statusConfig.redirect_show_countdown !== false;
+              
+              if (delay > 0 && showCountdown) {
+                // Show countdown and redirect after delay
+                if ((window as any).showNotification) {
+                  (window as any).showNotification({
+                    type: "success",
+                    title: "Project Created",
+                    message: statusResult.message || "Project created successfully! Redirecting in {{COUNTDOWN}} seconds...",
+                    redirect: {
+                      url: statusResult.statusConfig.redirect_url,
+                      delay: delay,
+                      showCountdown: true
+                    }
+                  });
+                } else {
+                  // Fallback: redirect after delay
+                  setTimeout(() => {
+                    window.location.href = statusResult.statusConfig.redirect_url;
+                  }, delay * 1000);
+                }
+              } else {
+                // Immediate redirect
+                window.location.href = statusResult.statusConfig.redirect_url;
+              }
+            } else {
+              // No redirect configured, just refresh
+              window.location.reload();
+            }
+          } else {
+            // For existing projects, just show success and refresh
+            if ((window as any).showSuccess) {
+              (window as any).showSuccess("Project Updated", "Project has been updated successfully!");
+            }
+            setTimeout(() => {
+              window.location.reload();
+            }, 1000);
+          }
+        } else {
+          throw new Error(result.error || "Failed to save project");
+        }
+      } catch (error) {
+        console.error("📝 [ProjectForm] Error saving project:", error);
+        if ((window as any).showError) {
+          (window as any).showError("Error", error instanceof Error ? error.message : "Failed to save project");
+        }
+      } finally {
+        // Reset button state
+        const submitBtn = form.querySelector('button[type="submit"]') as HTMLButtonElement;
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.innerHTML = '<i class="bx bx-save mr-1"></i>Save Project';
+        }
+      }
+    }
+
     // Handle delete button (only for existing projects)
     // Note: Delete button is handled by the action button system below
     if (!isNewProject) {
