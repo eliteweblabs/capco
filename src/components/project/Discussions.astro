@@ -108,6 +108,17 @@ const { projectId, userRole, userId, userName } = Astro.props;
 
       if (data.success) {
         discussions = data.discussions;
+        console.log("🔍 [DISCUSSIONS] Loaded discussions data:", discussions.map(d => ({
+          id: d.id,
+          author_id: d.author_id,
+          author_name: d.author_name,
+          hasProfiles: !!d.profiles,
+          profileData: d.profiles ? {
+            display_name: d.profiles.display_name,
+            company_name: d.profiles.company_name,
+            name: d.profiles.name
+          } : null
+        })));
         renderDiscussions();
         updateIncompleteCommentsCount(); // Update count after loading discussions
       } else {
