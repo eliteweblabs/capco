@@ -149,7 +149,10 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     console.log("📊 [UPDATE-STATUS] Sending email notifications...");
 
     try {
-      const baseUrl = import.meta.env.SITE_URL || "http://localhost:4321";
+      // Use the current request origin instead of environment variable
+      const baseUrl = new URL(request.url).origin;
+      console.log("📊 [UPDATE-STATUS] Base URL for email delivery:", baseUrl);
+      console.log("📊 [UPDATE-STATUS] Full email delivery URL:", `${baseUrl}/api/email-delivery`);
 
       const emailResponse = await fetch(`${baseUrl}/api/email-delivery`, {
         method: "POST",
