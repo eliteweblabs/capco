@@ -1,4 +1,4 @@
-// import { defineConfig } from "astro/config";
+import { defineConfig } from "astro/config";
 // import node from "@astrojs/node";
 // import tailwind from "@astrojs/tailwind";
 // import solidJs from "@astrojs/solid-js";
@@ -16,7 +16,7 @@
 // @ts-check
 import node from "@astrojs/node";
 import tailwind from "@astrojs/tailwind";
-import { defineConfig } from "astro/config";
+// import { defineConfig } from "astro/config";
 
 // Load environment variables
 import { loadEnv } from "vite";
