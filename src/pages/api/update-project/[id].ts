@@ -68,8 +68,8 @@ export const PUT: APIRoute = async ({ request, cookies, params }) => {
       });
     }
 
-    // Check permissions for non-admin users
-    if (userRole !== "admin" && currentProject.author_id !== userId) {
+    // Check permissions for non-admin and non-staff users
+    if (userRole !== "admin" && userRole !== "staff" && currentProject.author_id !== userId) {
       return new Response(JSON.stringify({ error: "Access denied" }), {
         status: 403,
       });
@@ -106,10 +106,10 @@ export const PUT: APIRoute = async ({ request, cookies, params }) => {
 
     let updateQuery = supabase!.from("projects").update(updateData).eq("id", projectId);
 
-    // Only apply author_id filter for non-admin users
-    if (userRole !== "admin") {
+    // Only apply author_id filter for non-admin and non-staff users
+    if (userRole !== "admin" && userRole !== "staff") {
       updateQuery = updateQuery.eq("author_id", userId);
-      console.log("🔧 [UPDATE-PROJECT] Added author_id filter for non-admin user:", userId);
+      console.log("🔧 [UPDATE-PROJECT] Added author_id filter for non-admin/non-staff user:", userId);
     }
 
     console.log("🔧 [UPDATE-PROJECT] Executing database update...");
