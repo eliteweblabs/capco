@@ -361,70 +361,66 @@ console.log("New client fields found:", newClientFieldsInForm.length, newClientF
     }
   }
 
-  // Make project data available globally
+  // Initialize project form
   document.addEventListener("DOMContentLoaded", function () {
     const form = document.querySelector("form[data-project-id]");
-    if (form) {
-      const projectId = form.getAttribute("data-project-id");
-      const projectDataAttr = form.getAttribute("data-project-data");
-      if (projectDataAttr) {
-        try {
-          const projectData = JSON.parse(projectDataAttr);
-          // Make project data available globally
-          (window as any).currentProjectData = projectData;
-          console.log("Project data loaded:", projectData);
-        } catch (error) {
-          console.error("Error parsing project data:", error);
-        }
+    if (!form) return;
+
+    const projectId = form.getAttribute("data-project-id");
+    const isNewProject = form.getAttribute("data-is-new-project") === "true";
+
+    // Make project data available globally
+    const projectDataAttr = form.getAttribute("data-project-data");
+    if (projectDataAttr) {
+      try {
+        const projectData = JSON.parse(projectDataAttr);
+        // Make project data available globally
+        (window as any).currentProjectData = projectData;
+        console.log("Project data loaded:", projectData);
+      } catch (error) {
+        console.error("Error parsing project data:", error);
       }
     }
-  });
 
-  // Add event listeners for action buttons
-  document.addEventListener("DOMContentLoaded", function () {
-    const form = document.querySelector("form[data-project-id]");
-    if (form) {
-      const projectId = form.getAttribute("data-project-id");
-      const isNewProject = form.getAttribute("data-is-new-project") === "true";
+    // Add event listeners for action buttons
 
-      // Add form submission handler
-      form.addEventListener("submit", handleFormSubmit);
+    // Add form submission handler
+    form.addEventListener("submit", handleFormSubmit);
 
-      // Handle delete button (only for existing projects)
-      // Note: Delete button is handled by the action button system below
-      if (!isNewProject) {
-        const deleteBtn = document.getElementById("delete-project");
-        console.log("Delete button setup:", {
-          deleteBtn: !!deleteBtn,
-          projectId,
-          isNewProject,
-          formId: form.getAttribute("data-project-id"),
+    // Handle delete button (only for existing projects)
+    // Note: Delete button is handled by the action button system below
+    if (!isNewProject) {
+      const deleteBtn = document.getElementById("delete-project");
+      console.log("Delete button setup:", {
+        deleteBtn: !!deleteBtn,
+        projectId,
+        isNewProject,
+        formId: form.getAttribute("data-project-id"),
+      });
+    }
+
+    // Handle other action buttons
+    const actionButtons = document.querySelectorAll("[data-action]");
+    actionButtons.forEach((button) => {
+      const action = button.getAttribute("data-action");
+      const tab = button.getAttribute("data-tab");
+
+      if (projectId) {
+        button.addEventListener("click", function () {
+          // If button has a tab property, navigate to that tab
+          if (tab && typeof window !== "undefined" && (window as any).switchTab) {
+            (window as any).switchTab(tab);
+          } else if (action) {
+            // Otherwise handle the action normally
+            handleAction(action, projectId, isNewProject);
+          }
         });
       }
+    });
 
-      // Handle other action buttons
-      const actionButtons = document.querySelectorAll("[data-action]");
-      actionButtons.forEach((button) => {
-        const action = button.getAttribute("data-action");
-        const tab = button.getAttribute("data-tab");
-
-        if (projectId) {
-          button.addEventListener("click", function () {
-            // If button has a tab property, navigate to that tab
-            if (tab && typeof window !== "undefined" && (window as any).switchTab) {
-              (window as any).switchTab(tab);
-            } else if (action) {
-              // Otherwise handle the action normally
-              handleAction(action, projectId, isNewProject);
-            }
-          });
-        }
-      });
-
-      // Setup new client toggle functionality (only for new projects and admin/staff users)
-      if (isNewProject) {
-        // New client toggle is now handled by the NewOrExistingClient component
-      }
+    // Setup new client toggle functionality (only for new projects and admin/staff users)
+    if (isNewProject) {
+      // New client toggle is now handled by the NewOrExistingClient component
     }
   });
 
@@ -779,16 +775,19 @@ console.log("New client fields found:", newClientFieldsInForm.length, newClientF
           }
 
           // Use centralized notification system with redirect
-          showNotification({
-            type: "success",
-            title: "Project Created!",
-            message: "Your new project has been created successfully. Redirecting you to documents in {{COUNTDOWN}} seconds.",
-            redirect: {
-              url: `/project/${result.id}?tab=documents`,
-              delay: 5, // 5 second countdown
-              showCountdown: true
-            }
-          });
+          if ((window as any).showNotification) {
+            (window as any).showNotification({
+              type: "success",
+              title: "Project Created!",
+              message:
+                "Your new project has been created successfully. Redirecting you to documents in {{COUNTDOWN}} seconds.",
+              redirect: {
+                url: `/project/${result.id}?tab=documents`,
+                delay: 5, // 5 second countdown
+                showCountdown: true,
+              },
+            });
+          }
         }
 
         return result;
@@ -866,6 +865,7 @@ console.log("New client fields found:", newClientFieldsInForm.length, newClientF
     }
   });
 
-  // Make resetForm globally available
+  // Make functions globally available
   (window as any).resetForm = resetForm;
+  (window as any).showNotification = showNotification;
 </script>
