@@ -493,7 +493,7 @@ export class ProposalManager {
 
     // Get notes from project data or use default
     const notes = this.project.notes || this.project.description || "";
-    
+
     if (notes) {
       notesElement.textContent = notes;
       notesElement.style.display = "block";
@@ -513,7 +513,8 @@ export class ProposalManager {
 
     // Set proposal subject from invoice data
     if (subjectElement) {
-      const invoiceSubject = invoice.subject || `Fire Protection Services Proposal - ${this.project.title || "Project"}`;
+      const invoiceSubject =
+        invoice.subject || `Fire Protection Services Proposal - ${this.project.title || "Project"}`;
       subjectElement.textContent = invoiceSubject;
     }
 
@@ -537,9 +538,8 @@ export class ProposalManager {
     let total = 0;
 
     // Parse line items from invoice
-    const lineItems = typeof invoice.line_items === 'string' 
-      ? JSON.parse(invoice.line_items) 
-      : invoice.line_items;
+    const lineItems =
+      typeof invoice.line_items === "string" ? JSON.parse(invoice.line_items) : invoice.line_items;
 
     lineItems.forEach((item: any) => {
       const row = document.createElement("tr");
