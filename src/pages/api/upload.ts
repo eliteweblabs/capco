@@ -198,28 +198,38 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       const { data: files, error: listError } = await supabase.storage
         .from("project-documents")
         .list("", { limit: 1 });
-      
+
       if (listError) {
         console.error("Error accessing project-documents bucket:", listError);
-        
+
         // Check if it's a permissions issue vs bucket doesn't exist
-        if (listError.message.includes("not found") || listError.message.includes("does not exist")) {
-          return new Response(JSON.stringify({ 
-            error: "Storage bucket 'project-documents' not found. Please create it in Supabase Storage." 
-          }), {
-            status: 500,
-            headers: { "Content-Type": "application/json" },
-          });
+        if (
+          listError.message.includes("not found") ||
+          listError.message.includes("does not exist")
+        ) {
+          return new Response(
+            JSON.stringify({
+              error:
+                "Storage bucket 'project-documents' not found. Please create it in Supabase Storage.",
+            }),
+            {
+              status: 500,
+              headers: { "Content-Type": "application/json" },
+            }
+          );
         } else {
-          return new Response(JSON.stringify({ 
-            error: "Storage access denied. Please check your permissions." 
-          }), {
-            status: 500,
-            headers: { "Content-Type": "application/json" },
-          });
+          return new Response(
+            JSON.stringify({
+              error: "Storage access denied. Please check your permissions.",
+            }),
+            {
+              status: 500,
+              headers: { "Content-Type": "application/json" },
+            }
+          );
         }
       }
-      
+
       console.log("project-documents bucket is accessible");
     } catch (error) {
       console.error("Error checking storage bucket access:", error);
@@ -287,7 +297,11 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
         // Log file upload
         try {
-          await SimpleProjectLogger.logFileUpload(parseInt(projectId), user.id, file.name);
+          await SimpleProjectLogger.logFileUpload(
+            parseInt(projectId),
+            user.email || user.id,
+            file.name
+          );
         } catch (logError) {
           console.error("Error logging file upload:", logError);
           // Don't fail the upload if logging fails

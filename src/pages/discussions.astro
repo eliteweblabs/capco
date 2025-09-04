@@ -350,9 +350,11 @@ function getAuthorName(profile: any): string {
     // Add event delegation for completed toggles
     document.addEventListener("change", (e) => {
       const target = e.target as HTMLElement;
+      console.log("🔔 [DISCUSSIONS] Change event triggered on:", target);
       if (target.classList.contains("completed-toggle")) {
         const discussionId = parseInt(target.getAttribute("data-discussion-id") || "0");
         const isCompleted = (target as HTMLInputElement).checked;
+        console.log("🔔 [DISCUSSIONS] Completed toggle detected:", { discussionId, isCompleted });
         if (discussionId) {
           toggleDiscussionCompleted(discussionId, isCompleted);
         }
@@ -363,6 +365,7 @@ function getAuthorName(profile: any): string {
     async function toggleDiscussionCompleted(discussionId: number, isCompleted: boolean) {
       try {
         console.log("🔔 [DISCUSSIONS] Toggling completed status:", { discussionId, isCompleted });
+        console.log("🔔 [DISCUSSIONS] Making API call to /api/update-discussion-completed");
         
         const response = await fetch("/api/update-discussion-completed", {
           method: "POST",

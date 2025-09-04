@@ -3,9 +3,11 @@ import { checkAuth } from "../../lib/auth";
 import { supabase } from "../../lib/supabase";
 
 export const POST: APIRoute = async ({ request, cookies }) => {
+  console.log("🔔 [UPDATE-DISCUSSION] API endpoint called");
   try {
     // Check authentication
     const { isAuth, user, role } = await checkAuth(cookies);
+    console.log("🔔 [UPDATE-DISCUSSION] Auth check result:", { isAuth, hasUser: !!user, role });
 
     if (!isAuth || !user) {
       return new Response(JSON.stringify({ success: false, error: "Authentication required" }), {
@@ -23,6 +25,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     }
 
     const body = await request.json();
+    console.log("🔔 [UPDATE-DISCUSSION] Request body:", body);
     const { discussionId, mark_completed } = body;
 
     if (discussionId === undefined || mark_completed === undefined) {

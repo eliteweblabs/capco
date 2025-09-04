@@ -208,7 +208,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
           projectId,
           "EMAIL_NOTIFICATION",
           session.session.user.email || "unknown",
-          `Status change notification sent for status: ${statusConfig?.status_name || newStatus}`,
+          `Status change notification sent for status: ${statusConfig?.status_name || `Status ${newStatus}`}`,
           null,
           newStatus
         );
