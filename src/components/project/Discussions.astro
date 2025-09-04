@@ -346,6 +346,7 @@ const { projectId, userRole, userId, userName } = Astro.props;
     
     const messageInput = replyForm.querySelector('.reply-message-input');
     const internalToggle = replyForm.querySelector('.reply-internal-toggle');
+    const submitBtn = replyForm.querySelector('.submit-reply-btn');
     
     const message = messageInput?.value?.trim();
     const isInternal = internalToggle?.checked || false;
@@ -353,6 +354,18 @@ const { projectId, userRole, userId, userName } = Astro.props;
     if (!message) {
       alert("Please enter a reply message");
       return;
+    }
+
+    // Set loading state
+    if (submitBtn) {
+      submitBtn.disabled = true;
+      submitBtn.innerHTML = `
+        <svg class="animate-spin mr-2 h-4 w-4" fill="none" viewBox="0 0 24 24">
+          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+        </svg>
+        Posting...
+      `;
     }
     
     try {
@@ -388,6 +401,15 @@ const { projectId, userRole, userId, userName } = Astro.props;
     } catch (error) {
       console.error("Error submitting reply:", error);
       alert("Error submitting reply");
+    } finally {
+      // Reset loading state
+      if (submitBtn) {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = `
+          <i class="bx bx-send mr-2"></i>
+          Post Reply
+        `;
+      }
     }
   }
 
@@ -400,10 +422,23 @@ const { projectId, userRole, userId, userName } = Astro.props;
     const message = messageInput?.value?.trim();
     const internalToggle = document.getElementById("internal-toggle");
     const isInternal = internalToggle?.checked || false;
+    const submitBtn = document.getElementById("submit-comment-btn");
 
     if (!message) {
       alert("Please enter a comment message");
       return;
+    }
+
+    // Set loading state
+    if (submitBtn) {
+      submitBtn.disabled = true;
+      submitBtn.innerHTML = `
+        <svg class="animate-spin mr-2 h-4 w-4" fill="none" viewBox="0 0 24 24">
+          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+        </svg>
+        Posting...
+      `;
     }
 
     try {
@@ -440,6 +475,15 @@ const { projectId, userRole, userId, userName } = Astro.props;
     } catch (error) {
       console.error("Error submitting comment:", error);
       alert("Error submitting comment");
+    } finally {
+      // Reset loading state
+      if (submitBtn) {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = `
+          <i class="bx bx-send mr-2 h-4 w-4"></i>
+          Post Comment
+        `;
+      }
     }
   }
 
