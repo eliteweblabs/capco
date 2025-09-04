@@ -210,7 +210,6 @@ const shouldShow = !currentUrl.startsWith("/sms-demo");
     setInterval(fixSafariViewport, 2000);
 
     // Also fix when the panel is toggled
-    const toggleBtn = document.getElementById("sms-toggle-btn");
     if (toggleBtn) {
       toggleBtn.addEventListener("click", () => {
         setTimeout(fixSafariViewport, 100);
@@ -226,7 +225,10 @@ const shouldShow = !currentUrl.startsWith("/sms-demo");
           (mutation.attributeName === "style" || mutation.attributeName === "class")
         ) {
           const target = mutation.target;
-          if (target.id === "sticky-container" || target.id === "sms-form-panel") {
+          if (
+            target instanceof HTMLElement &&
+            (target.id === "sticky-container" || target.id === "sms-form-panel")
+          ) {
             shouldFix = true;
           }
         }
@@ -237,7 +239,6 @@ const shouldShow = !currentUrl.startsWith("/sms-demo");
     });
 
     // Start observing
-    const container = document.getElementById("sticky-container");
     if (container) {
       observer.observe(container, {
         attributes: true,
