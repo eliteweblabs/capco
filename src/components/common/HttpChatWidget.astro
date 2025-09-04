@@ -30,7 +30,7 @@ const { user, role } = Astro.props;
     <!-- Notification Count Bubble -->
     <span
       id="chat-notification-count"
-      class="absolute -top-2 -right-2 hidden h-6 w-6 items-center justify-center rounded-full bg-yellow-500 text-xs font-bold text-white"
+      class="absolute -right-2 -top-2 hidden h-6 w-6 items-center justify-center rounded-full bg-yellow-500 text-xs font-bold text-white"
     >
       0
     </span>
@@ -185,7 +185,7 @@ const { user, role } = Astro.props;
     chatToggle?.addEventListener("click", () => {
       const chatPanel = document.getElementById("chat-panel");
       const isHidden = chatPanel?.classList.contains("hidden");
-      
+
       if (isHidden) {
         // Opening chat
         chatPanel?.classList.remove("hidden");
@@ -235,7 +235,7 @@ const { user, role } = Astro.props;
   async function joinChat() {
     try {
       console.log("🔔 [HTTP-CHAT] Joining chat...");
-      
+
       const response = await fetch("/api/chat", {
         method: "POST",
         headers: {
@@ -310,7 +310,7 @@ const { user, role } = Astro.props;
       if (data.success && data.message) {
         // Add message to chat
         addMessage(data.message);
-        
+
         // Update online users
         if (data.onlineUsers) {
           onlineUsers = data.onlineUsers;
@@ -358,7 +358,7 @@ const { user, role } = Astro.props;
     const isOwnMessage = userId === currentUser.id;
     const messageElement = document.createElement("div");
     messageElement.className = `flex ${isOwnMessage ? "justify-end" : "justify-start"}`;
-    messageElement.setAttribute('data-message-id', data.id || 'unknown');
+    messageElement.setAttribute("data-message-id", data.id || "unknown");
 
     messageElement.innerHTML = `
       <div class="max-w-xs ${isOwnMessage ? "bg-red-600 text-white" : "bg-gray-100 dark:bg-gray-600 text-gray-900 dark:text-white"} rounded-lg px-3 py-2">
@@ -434,9 +434,11 @@ const { user, role } = Astro.props;
             const messagesContainer = document.getElementById("chat-messages");
             if (messagesContainer) {
               const existingMessageIds = new Set(
-                Array.from(messagesContainer.children).map(el => el.getAttribute('data-message-id'))
+                Array.from(messagesContainer.children).map((el) =>
+                  el.getAttribute("data-message-id")
+                )
               );
-              
+
               // Add only new messages
               data.messages.forEach((msg: any) => {
                 if (!existingMessageIds.has(msg.id.toString())) {
@@ -539,7 +541,7 @@ const { user, role } = Astro.props;
   function saveChatStateToCookie(isOpen: boolean) {
     try {
       const expires = new Date();
-      expires.setTime(expires.getTime() + (24 * 60 * 60 * 1000)); // 24 hours
+      expires.setTime(expires.getTime() + 24 * 60 * 60 * 1000); // 24 hours
       document.cookie = `chatOpen=${isOpen}; expires=${expires.toUTCString()}; path=/`;
       console.log("🔔 [HTTP-CHAT] Chat state saved to cookie:", isOpen);
     } catch (error) {
@@ -549,13 +551,13 @@ const { user, role } = Astro.props;
 
   function checkChatStateFromCookie() {
     try {
-      const cookies = document.cookie.split(';');
-      const chatOpenCookie = cookies.find(cookie => cookie.trim().startsWith('chatOpen='));
-      
+      const cookies = document.cookie.split(";");
+      const chatOpenCookie = cookies.find((cookie) => cookie.trim().startsWith("chatOpen="));
+
       if (chatOpenCookie) {
-        const isOpen = chatOpenCookie.split('=')[1] === 'true';
+        const isOpen = chatOpenCookie.split("=")[1] === "true";
         console.log("🔔 [HTTP-CHAT] Chat state from cookie:", isOpen);
-        
+
         if (isOpen) {
           const chatPanel = document.getElementById("chat-panel");
           chatPanel?.classList.remove("hidden");
