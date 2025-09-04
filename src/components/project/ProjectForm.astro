@@ -480,44 +480,61 @@ console.log("New client fields found:", newClientFieldsInForm.length, newClientF
               console.log("📝 [ProjectForm] Status update response:", statusResult);
               console.log("📝 [ProjectForm] Status update response status:", statusResponse.status);
               console.log("📝 [ProjectForm] Status update response ok:", statusResponse.ok);
+              
+              // Store response in localStorage for debugging
+              localStorage.setItem('projectFormStatusResponse', JSON.stringify({
+                response: statusResult,
+                status: statusResponse.status,
+                ok: statusResponse.ok,
+                timestamp: new Date().toISOString(),
+                projectId: result.project.id
+              }));
 
-            if (statusResult.success && statusResult.statusConfig?.redirect_url) {
-              // Use database-driven redirect
-              const delay = statusResult.statusConfig.redirect_delay || 0;
-              const showCountdown = statusResult.statusConfig.redirect_show_countdown !== false;
+              if (statusResult.success && statusResult.statusConfig?.redirect_url) {
+                // Use database-driven redirect
+                const delay = statusResult.statusConfig.redirect_delay || 0;
+                const showCountdown = statusResult.statusConfig.redirect_show_countdown !== false;
 
-              if (delay > 0 && showCountdown) {
-                // Show countdown and redirect after delay
-                if ((window as any).showNotification) {
-                  (window as any).showNotification({
-                    type: "success",
-                    title: "Project Created",
-                    message:
-                      statusResult.message ||
-                      "Project created successfully! Redirecting in {{COUNTDOWN}} seconds...",
-                    redirect: {
-                      url: statusResult.statusConfig.redirect_url,
-                      delay: delay,
-                      showCountdown: true,
-                    },
-                  });
+                if (delay > 0 && showCountdown) {
+                  // Show countdown and redirect after delay
+                  if ((window as any).showNotification) {
+                    (window as any).showNotification({
+                      type: "success",
+                      title: "Project Created",
+                      message:
+                        statusResult.message ||
+                        "Project created successfully! Redirecting in {{COUNTDOWN}} seconds...",
+                      redirect: {
+                        url: statusResult.statusConfig.redirect_url,
+                        delay: delay,
+                        showCountdown: true,
+                      },
+                    });
+                  } else {
+                    // Fallback: redirect after delay
+                    setTimeout(() => {
+                      window.location.href = statusResult.statusConfig.redirect_url;
+                    }, delay * 1000);
+                  }
                 } else {
-                  // Fallback: redirect after delay
-                  setTimeout(() => {
-                    window.location.href = statusResult.statusConfig.redirect_url;
-                  }, delay * 1000);
+                  // Immediate redirect
+                  window.location.href = statusResult.statusConfig.redirect_url;
                 }
               } else {
-                // Immediate redirect
-                window.location.href = statusResult.statusConfig.redirect_url;
+                // No redirect configured, just refresh
+                window.location.reload();
               }
-            } else {
-              // No redirect configured, just refresh
-              window.location.reload();
-            }
             } catch (statusError) {
               console.error("📝 [ProjectForm] Status update failed:", statusError);
               console.error("📝 [ProjectForm] Status update error details:", statusError);
+              
+              // Store error in localStorage for debugging
+              localStorage.setItem('projectFormError', JSON.stringify({
+                error: statusError.message || statusError,
+                timestamp: new Date().toISOString(),
+                projectId: result.project.id
+              }));
+              
               // Fallback: just refresh the page
               window.location.reload();
             }
