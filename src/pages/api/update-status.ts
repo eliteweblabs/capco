@@ -120,7 +120,6 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       projectId,
       oldStatus: updatedProject.status,
       newStatus,
-      newStatusName: statusConfig?.status_name || `Status ${newStatus}`,
     });
 
     // Log the status change activity
@@ -144,6 +143,12 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       .select("status_name, toast_admin, toast_client, est_time")
       .eq("status_code", newStatus)
       .single();
+
+    // Log status name now that statusConfig is available
+    console.log(
+      "📊 [UPDATE-STATUS] Status name:",
+      statusConfig?.status_name || `Status ${newStatus}`
+    );
 
     // Send email notifications for status change
     let notificationMessage = "Status updated successfully";
