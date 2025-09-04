@@ -1,6 +1,7 @@
 import type { APIRoute } from "astro";
 import { SimpleProjectLogger } from "../../lib/simple-logging";
 import { supabase } from "../../lib/supabase";
+import { getApiBaseUrl } from "../../lib/url-utils";
 
 export const POST: APIRoute = async ({ request, cookies }) => {
   console.log("📝 [CREATE-PROJECT] API route called!");
@@ -93,8 +94,9 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
         try {
           // Call the create-user API to create the new client
+          const baseUrl = getApiBaseUrl(request);
           const createUserResponse = await fetch(
-            `${import.meta.env.SITE_URL || "http://localhost:4321"}/api/create-user`,
+            `${baseUrl}/api/create-user`,
             {
               method: "POST",
               headers: {
