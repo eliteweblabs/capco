@@ -65,6 +65,8 @@ export const POST: APIRoute = async ({ request }) => {
         );
 
       case "message":
+        console.log("🔔 [CHAT-API] Saving message:", { userId, userName, userRole, message });
+        
         // Save message to database
         const { data: savedMessage, error: messageError } = await supabase
           .from("chat_messages")
@@ -80,11 +82,14 @@ export const POST: APIRoute = async ({ request }) => {
 
         if (messageError) {
           console.error("❌ [CHAT-API] Error saving message:", messageError);
-          return new Response(JSON.stringify({ error: "Failed to save message" }), {
+          console.error("❌ [CHAT-API] Error details:", JSON.stringify(messageError, null, 2));
+          return new Response(JSON.stringify({ error: "Failed to save message", details: messageError.message }), {
             status: 500,
             headers: { "Content-Type": "application/json" },
           });
         }
+
+        console.log("✅ [CHAT-API] Message saved successfully:", savedMessage);
 
         // Update user's last seen
         if (activeConnections.has(userId)) {
