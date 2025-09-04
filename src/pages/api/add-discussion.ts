@@ -2,6 +2,7 @@ import type { APIRoute } from "astro";
 import { checkAuth } from "../../lib/auth";
 import { supabase } from "../../lib/supabase";
 import { supabaseAdmin } from "../../lib/supabase-admin";
+import { getApiBaseUrl } from "../../lib/url-utils";
 
 // Server-side function to get user info directly from database
 async function getUserInfoServer(userId: string) {
@@ -284,8 +285,10 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       console.log("📧 [ADD-DISCUSSION] Users to notify:", usersToNotify);
 
       // Call email delivery API to notify everyone
+      const baseUrl = getApiBaseUrl(request);
+      console.log("💬 [DISCUSSION] Using base URL for email delivery:", baseUrl);
       const emailResponse = await fetch(
-        `${process.env.BASE_URL || "http://localhost:4321"}/api/email-delivery`,
+        `${baseUrl}/api/email-delivery`,
         {
           method: "POST",
           headers: {

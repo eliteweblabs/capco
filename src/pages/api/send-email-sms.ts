@@ -1,4 +1,5 @@
 import type { APIRoute } from "astro";
+import { getApiBaseUrl } from "../../lib/url-utils";
 
 export const POST: APIRoute = async ({ request }) => {
   try {
@@ -41,8 +42,10 @@ export const POST: APIRoute = async ({ request }) => {
     emailContent += `\n\nSent via CAPCo Website`;
 
     // Use the existing email delivery system
+    const baseUrl = getApiBaseUrl(request);
+    console.log("📱 [SMS] Using base URL for email delivery:", baseUrl);
     const emailResponse = await fetch(
-      `${process.env.BASE_URL || "http://localhost:4321"}/api/email-delivery`,
+      `${baseUrl}/api/email-delivery`,
       {
         method: "POST",
         headers: {

@@ -3,6 +3,7 @@ import { readFileSync } from "fs";
 import { join } from "path";
 import { supabase } from "../../lib/supabase";
 import { supabaseAdmin } from "../../lib/supabase-admin";
+import { getApiBaseUrl } from "../../lib/url-utils";
 
 export const POST: APIRoute = async ({ request, cookies }) => {
   console.log("📧 little bit bigger API endpoint called");
@@ -179,7 +180,8 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     let statusConfig = null;
     if (emailType === "update_status" && newStatus) {
       try {
-        const baseUrl = import.meta.env.SITE_URL || "http://localhost:4321";
+        const baseUrl = getApiBaseUrl(request);
+        console.log("📧 [EMAIL-DELIVERY] Using base URL for status fetch:", baseUrl);
         const statusResponse = await fetch(`${baseUrl}/api/get-project-statuses`);
 
         if (statusResponse.ok) {
@@ -434,7 +436,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
             email_content ||
             "You have been assigned to a new project. Please review the project details and take appropriate action.";
           buttonText = "View Project";
-          buttonLink = `${process.env.BASE_URL || "http://localhost:4321"}/project/${projectId}`;
+          buttonLink = `${getApiBaseUrl(request)}/project/${projectId}`;
         } else if (isClientCommentEmail) {
           // Client Comment Email Configuration
           emailSubject =
@@ -471,7 +473,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
             .replace(/{{PROJECT_TITLE}}/g, commentProjectTitle);
 
           buttonText = "View Comment & Respond";
-          buttonLink = `${process.env.BASE_URL || "http://localhost:4321"}/project/${projectId}?tab=discussion`;
+          buttonLink = `${getApiBaseUrl(request)}/project/${projectId}?tab=discussion`;
         } else if (isStatusUpdateEmail) {
           // Status Update Email Configuration
           emailSubject = `${statusConfig?.status_name || "Status Update"}: ${projectDetails?.title || "Project"}`;
