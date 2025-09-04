@@ -278,9 +278,9 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
           // Replace placeholders
           toastMessage = toastMessage
-            .replace(/{{PROJECT_TITLE}}/g, updatedProject.title || "Project")
-            .replace(/{{CLIENT_EMAIL}}/g, clientEmail)
-            .replace(/{{EST_TIME}}/g, statusConfig.est_time || "2-3 business days");
+            .replace(/{{PROJECT_TITLE}}/g, `<strong>${updatedProject.title || "Project"}</strong>`)
+            .replace(/{{CLIENT_EMAIL}}/g, `<strong>${clientEmail}</strong>`)
+            .replace(/{{EST_TIME}}/g, `<strong>${statusConfig.est_time || "2-3 business days"}</strong>`);
           notificationMessage = toastMessage;
           console.log("📊 [UPDATE-STATUS] Final notification message:", notificationMessage);
         } else {

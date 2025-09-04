@@ -417,17 +417,17 @@ async function sendStatusChangeNotifications(
 
         // Prepare email content
         const personalizedContent = email_content
-          .replace(/{{PROJECT_TITLE}}/g, projectDetails.title || "Project")
-          .replace(/{{PROJECT_ADDRESS}}/g, projectDetails.address || "N/A")
-          .replace(/{{ADDRESS}}/g, projectDetails.address || "N/A")
-          .replace(/{{EST_TIME}}/g, est_time || "2-3 business days")
+          .replace(/{{PROJECT_TITLE}}/g, `<strong>${projectDetails.title || "Project"}</strong>`)
+          .replace(/{{PROJECT_ADDRESS}}/g, `<strong>${projectDetails.address || "N/A"}</strong>`)
+          .replace(/{{ADDRESS}}/g, `<strong>${projectDetails.address || "N/A"}</strong>`)
+          .replace(/{{EST_TIME}}/g, `<strong>${est_time || "2-3 business days"}</strong>`)
           .replace(
             /{{CLIENT_NAME}}/g,
-            `${user.first_name || ""} ${user.last_name || ""}`.trim() ||
+            `<strong>${`${user.first_name || ""} ${user.last_name || ""}`.trim() ||
               user.company_name ||
-              "Client"
+              "Client"}</strong>`
           )
-          .replace(/{{CLIENT_EMAIL}}/g, user.email)
+          .replace(/{{CLIENT_EMAIL}}/g, `<strong>${user.email}</strong>`)
           // Replace any remaining {{PLACEHOLDER}} with empty string
           .replace(/\{\{[^}]+\}\}/g, "");
 

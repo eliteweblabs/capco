@@ -40,7 +40,7 @@ export class AuthEmailService {
       // In production, you might want to use a proper template engine
       this.templates = {
         welcome: {
-          subject: "Welcome to CAPCo Fire Protection - {{USER_NAME}}",
+          subject: "Welcome to CAPCo Fire Protection - <strong>{{USER_NAME}}</strong>",
           html: templateContent,
           text: "Welcome to CAPCo Fire Protection! Your account has been created successfully.",
         },

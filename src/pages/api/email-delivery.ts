@@ -465,8 +465,8 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
           // Replace placeholders for client comment emails
           emailContent = emailContent
-            .replace(/{{CLIENT_NAME}}/g, client_name || "Client")
-            .replace(/{{PROJECT_TITLE}}/g, commentProjectTitle);
+            .replace(/{{CLIENT_NAME}}/g, `<strong>${client_name || "Client"}</strong>`)
+            .replace(/{{PROJECT_TITLE}}/g, `<strong>${commentProjectTitle}</strong>`);
 
           buttonText = "View Comment & Respond";
           buttonLink = `${getApiBaseUrl(request)}/project/${projectId}?tab=discussion`;
@@ -517,24 +517,30 @@ export const POST: APIRoute = async ({ request, cookies }) => {
           htmlContent = emailContent;
         } else {
           htmlContent = emailContent
-            .replace(/{{PROJECT_TITLE}}/g, projectDetails.title || "Project")
-            .replace(/{{PROJECT_ADDRESS}}/g, projectDetails.address || "N/A")
-            .replace(/{{ADDRESS}}/g, projectDetails.address || "N/A")
-            .replace(/{{EST_TIME}}/g, statusConfig?.est_time || "2-3 business days")
-            .replace(/{{CLIENT_NAME}}/g, clientName) // Use project author's name, not recipient's name
-            .replace(/{{CLIENT_EMAIL}}/g, user.email)
+            .replace(/{{PROJECT_TITLE}}/g, `<strong>${projectDetails.title || "Project"}</strong>`)
+            .replace(/{{PROJECT_ADDRESS}}/g, `<strong>${projectDetails.address || "N/A"}</strong>`)
+            .replace(/{{ADDRESS}}/g, `<strong>${projectDetails.address || "N/A"}</strong>`)
+            .replace(
+              /{{EST_TIME}}/g,
+              `<strong>${statusConfig?.est_time || "2-3 business days"}</strong>`
+            )
+            .replace(/{{CLIENT_NAME}}/g, `<strong>${clientName}</strong>`) // Use project author's name, not recipient's name
+            .replace(/{{CLIENT_EMAIL}}/g, `<strong>${user.email}</strong>`)
             // Replace any remaining {{PLACEHOLDER}} with empty string
             .replace(/\{\{[^}]+\}\}/g, "")
             .replace(/\n/g, "<br>"); // Convert line breaks to HTML
         }
 
         const personalizedContent = emailContent
-          .replace(/{{PROJECT_TITLE}}/g, projectDetails?.title || "Project")
-          .replace(/{{PROJECT_ADDRESS}}/g, projectDetails?.address || "N/A")
-          .replace(/{{ADDRESS}}/g, projectDetails?.address || "N/A")
-          .replace(/{{EST_TIME}}/g, statusConfig?.est_time || "2-3 business days")
-          .replace(/{{CLIENT_NAME}}/g, clientName || "Client") // Use project author's name, not recipient's name
-          .replace(/{{CLIENT_EMAIL}}/g, user.email)
+          .replace(/{{PROJECT_TITLE}}/g, `<strong>${projectDetails?.title || "Project"}</strong>`)
+          .replace(/{{PROJECT_ADDRESS}}/g, `<strong>${projectDetails?.address || "N/A"}</strong>`)
+          .replace(/{{ADDRESS}}/g, `<strong>${projectDetails?.address || "N/A"}</strong>`)
+          .replace(
+            /{{EST_TIME}}/g,
+            `<strong>${statusConfig?.est_time || "2-3 business days"}</strong>`
+          )
+          .replace(/{{CLIENT_NAME}}/g, `<strong>${clientName || "Client"}</strong>`) // Use project author's name, not recipient's name
+          .replace(/{{CLIENT_EMAIL}}/g, `<strong>${user.email}</strong>`)
           // Replace any remaining {{PLACEHOLDER}} with empty string
           .replace(/\{\{[^}]+\}\}/g, "");
 
