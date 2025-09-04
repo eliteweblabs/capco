@@ -113,34 +113,28 @@ const { value, group, type, class: className } = Astro.props;
     const form = document.querySelector("form[data-project-id]");
     if (!form) return;
 
+    // Always use array format for consistency
+    let input = form.querySelector(`input[name="${group}"]`) as HTMLInputElement;
+    if (!input) {
+      input = document.createElement("input") as HTMLInputElement;
+      input.type = "hidden";
+      input.name = group;
+      form.appendChild(input);
+    }
+
+    // Parse current values
+    let currentValues: string[] = [];
+    try {
+      currentValues = input.value ? JSON.parse(input.value) : [];
+    } catch {
+      currentValues = input.value ? input.value.split(",").map((v: string) => v.trim()) : [];
+    }
+
     if (type === "radio") {
-      // For radio, set a single value
-      let input = form.querySelector(`input[name="${group}"]`) as HTMLInputElement;
-      if (!input) {
-        input = document.createElement("input") as HTMLInputElement;
-        input.type = "hidden";
-        input.name = group;
-        form.appendChild(input);
-      }
-      input.value = value;
+      // For radio, replace the entire array with just the selected value
+      currentValues = isSelected ? [value] : [];
     } else if (type === "multi-select") {
-      // For multi-select, manage an array of values
-      let input = form.querySelector(`input[name="${group}"]`) as HTMLInputElement;
-      if (!input) {
-        input = document.createElement("input") as HTMLInputElement;
-        input.type = "hidden";
-        input.name = group;
-        form.appendChild(input);
-      }
-
-      // Parse current values
-      let currentValues: string[] = [];
-      try {
-        currentValues = input.value ? JSON.parse(input.value) : [];
-      } catch {
-        currentValues = input.value ? input.value.split(",").map((v: string) => v.trim()) : [];
-      }
-
+      // For multi-select, add/remove values
       if (isSelected) {
         // Add value if not already present
         if (!currentValues.includes(value)) {
@@ -150,9 +144,9 @@ const { value, group, type, class: className } = Astro.props;
         // Remove value
         currentValues = currentValues.filter((v: string) => v !== value);
       }
-
-      input.value = JSON.stringify(currentValues);
     }
+
+    input.value = JSON.stringify(currentValues);
   }
 
   // Global function to get selected values for a group

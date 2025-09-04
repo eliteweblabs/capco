@@ -182,11 +182,11 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       sq_ft: body.sq_ft && body.sq_ft.trim() !== "" ? parseInt(body.sq_ft) : null,
       new_construction: body.new_construction === "on" || body.new_construction === true,
       units: body.units && body.units.trim() !== "" ? parseInt(body.units) : null,
-      // Button group fields - pass through as-is (Supabase handles JSONB conversion)
-      building: body.building,
-      project: body.project,
-      service: body.service,
-      requested_docs: body.requested_docs,
+      // Button group fields - all are now consistently arrays
+      building: body.building || [],
+      project: body.project || [],
+      service: body.service || [],
+      requested_docs: body.requested_docs || [],
       status: 0, // Set initial status to 0, will be updated to 10 via update-status API to trigger emails
       created_at: new Date().toISOString(), // Set creation timestamp
       updated_at: new Date().toISOString(), // Set initial update timestamp
