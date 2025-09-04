@@ -79,6 +79,15 @@ if (!projects || projects.length === 0) return;
 
     if (!subNav || !projectList) return;
 
+    // Check if event listeners are already attached to prevent duplicates
+    if (subNav.hasAttribute('data-listeners-attached')) {
+      console.log("🔔 [ProjectNav] Event listeners already attached, skipping");
+      return;
+    }
+    
+    // Mark as having listeners attached
+    subNav.setAttribute('data-listeners-attached', 'true');
+
     // Get all filter buttons
     const filterButtons = subNav.querySelectorAll("[data-project-status-filter]");
     const allStatusesButton = subNav.querySelector("#all-statuses");
@@ -142,6 +151,14 @@ if (!projects || projects.length === 0) return;
       const noProjectsMessage = document.getElementById("no-projects-message");
       const noProjectsText = document.getElementById("no-projects-text");
 
+      console.log("🔍 [ProjectNav] Filtering projects:", {
+        statusFilter,
+        visibleCount,
+        totalProjects: projectItems.length,
+        hasNoProjectsMessage: !!noProjectsMessage,
+        hasNoProjectsText: !!noProjectsText
+      });
+
       if (noProjectsMessage && noProjectsText) {
         if (visibleCount === 0) {
           // Show "no projects" message with specific status name
@@ -153,10 +170,13 @@ if (!projects || projects.length === 0) return;
             }
           }
 
-          noProjectsText.textContent = `No projects currently at ${statusName}.`;
+          const messageText = `No projects currently at ${statusName}.`;
+          console.log("🔍 [ProjectNav] Setting no projects message:", messageText);
+          noProjectsText.textContent = messageText;
           noProjectsMessage.classList.remove("hidden");
         } else {
           // Hide "no projects" message
+          console.log("🔍 [ProjectNav] Hiding no projects message");
           noProjectsMessage.classList.add("hidden");
         }
       }
