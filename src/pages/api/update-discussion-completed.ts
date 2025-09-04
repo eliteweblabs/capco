@@ -63,10 +63,11 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     console.log("🔍 [UPDATE-DISCUSSION] Found existing discussion:", existingDiscussion);
 
     // Update the discussion
-    const { error } = await supabase
+    const { data: updateResult, error } = await supabase
       .from("discussion")
       .update({ mark_completed: mark_completed })
-      .eq("id", discussionId);
+      .eq("id", discussionId)
+      .select("id, mark_completed");
 
     if (error) {
       console.error("❌ [UPDATE-DISCUSSION] Database error:", error);
@@ -85,7 +86,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       );
     }
 
-    console.log("✅ [UPDATE-DISCUSSION] Discussion updated successfully");
+    console.log("✅ [UPDATE-DISCUSSION] Discussion updated successfully:", updateResult);
 
     return new Response(
       JSON.stringify({
