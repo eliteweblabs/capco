@@ -13,6 +13,7 @@ interface EmailWebhookData {
     contentType: string;
   }>;
   headers?: Record<string, string>;
+  placeholders?: Record<string, string>;
 }
 
 export const POST: APIRoute = async ({ request }) => {
@@ -204,37 +205,50 @@ async function findOrCreateUser(email: string) {
 function extractProjectInfo(emailData: EmailWebhookData) {
   const text = emailData.text || emailData.html || "";
 
-  // Extract address (look for common patterns)
-  const addressPatterns = [
-    /address[:\s]+([^\n\r]+)/i,
-    /location[:\s]+([^\n\r]+)/i,
-    /property[:\s]+([^\n\r]+)/i,
-    /site[:\s]+([^\n\r]+)/i,
-  ];
+  // First, check for structured placeholders
+  const placeholders = extractPlaceholders(text);
+  console.log("🔍 [EMAIL-WEBHOOK] Extracted placeholders:", placeholders);
 
-  let address = "";
-  for (const pattern of addressPatterns) {
-    const match = text.match(pattern);
-    if (match && match[1]) {
-      address = match[1].trim();
-      break;
+  // Use placeholders if available, otherwise fall back to pattern matching
+  let address = placeholders.PROJECT_ADDRESS || "";
+  let sqft = placeholders.PROJECT_SQFT ? parseInt(placeholders.PROJECT_SQFT) : null;
+  let isNewConstruction = placeholders.PROJECT_TYPE
+    ? /new\s*construction|new\s*build|new\s*project|ground\s*up/i.test(placeholders.PROJECT_TYPE)
+    : false;
+
+  // If no placeholders found, use pattern matching as fallback
+  if (!address) {
+    const addressPatterns = [
+      /address[:\s]+([^\n\r]+)/i,
+      /location[:\s]+([^\n\r]+)/i,
+      /property[:\s]+([^\n\r]+)/i,
+      /site[:\s]+([^\n\r]+)/i,
+    ];
+
+    for (const pattern of addressPatterns) {
+      const match = text.match(pattern);
+      if (match && match[1]) {
+        address = match[1].trim();
+        break;
+      }
     }
   }
 
-  // Extract square footage
-  const sqftPattern = /(\d+)\s*(?:sq\s*ft|square\s*feet|sf)/i;
-  const sqftMatch = text.match(sqftPattern);
-  const sqft = sqftMatch ? parseInt(sqftMatch[1]) : null;
+  if (!sqft) {
+    const sqftPattern = /(\d+)\s*(?:sq\s*ft|square\s*feet|sf)/i;
+    const sqftMatch = text.match(sqftPattern);
+    sqft = sqftMatch ? parseInt(sqftMatch[1]) : null;
+  }
 
-  // Determine if it's new construction
-  const newConstructionPatterns = [
-    /new\s*construction/i,
-    /new\s*build/i,
-    /new\s*project/i,
-    /ground\s*up/i,
-  ];
-
-  const isNewConstruction = newConstructionPatterns.some((pattern) => pattern.test(text));
+  if (!isNewConstruction) {
+    const newConstructionPatterns = [
+      /new\s*construction/i,
+      /new\s*build/i,
+      /new\s*project/i,
+      /ground\s*up/i,
+    ];
+    isNewConstruction = newConstructionPatterns.some((pattern) => pattern.test(text));
+  }
 
   // Generate project title from subject and address
   let title = emailData.subject;
@@ -249,6 +263,24 @@ function extractProjectInfo(emailData: EmailWebhookData) {
     new_construction: isNewConstruction,
     description: text.substring(0, 500), // First 500 characters as description
   };
+}
+
+// Extract structured placeholders from email text
+function extractPlaceholders(text: string): Record<string, string> {
+  const placeholders: Record<string, string> = {};
+
+  // Pattern: {{PLACEHOLDER_NAME: value}}
+  const placeholderRegex = /\{\{(\w+):\s*([^}]+)\}\}/g;
+
+  let match;
+  while ((match = placeholderRegex.exec(text)) !== null) {
+    const key = match[1];
+    const value = match[2].trim();
+    placeholders[key] = value;
+    console.log(`🔍 [EMAIL-WEBHOOK] Found placeholder: ${key} = ${value}`);
+  }
+
+  return placeholders;
 }
 
 // Create new project from email

@@ -77,6 +77,29 @@ Please review the attached architectural drawings and let us know if you need an
       attachments: [],
     },
   },
+  {
+    name: "Structured Placeholders (Recommended Format)",
+    data: {
+      from: "admin@company.com",
+      to: "projects@capcofire.com",
+      subject: "New Construction Project",
+      text: `{{PROJECT_ADDRESS: 789 Innovation Drive, Tech City, CA 90212}}
+{{PROJECT_SQFT: 15000}}
+{{PROJECT_TYPE: New Construction}}
+
+Additional project details:
+This is a new office building with multiple floors. We need a comprehensive fire protection system including sprinklers, alarms, and emergency lighting.
+
+Please review and let us know what additional information you need.`,
+      attachments: [
+        {
+          filename: "building-plans.pdf",
+          content: "JVBERi0xLjQKJcOkw7zDtsO...", // Base64 encoded PDF content
+          contentType: "application/pdf",
+        },
+      ],
+    },
+  },
 ];
 
 async function testWebhook(testName, testData) {
