@@ -1,4 +1,5 @@
 import { supabase } from "./supabase";
+import { getApiBaseUrl } from "./url-utils";
 import { supabaseAdmin } from "./supabase-admin";
 
 // Function to send status change notifications
@@ -6,7 +7,8 @@ export async function sendStatusChangeNotifications(
   projectId: string,
   newStatus: number,
   projectData: any,
-  context: string = "API"
+  context: string = "API",
+  request?: Request
 ) {
   console.log(`🔔 [${context}] sendStatusChangeNotifications called with:`, {
     projectId,
@@ -207,7 +209,7 @@ async function sendEmailNotifications(
 ) {
   console.log(`🔔 [${context}] Sending email notifications to ${usersToNotify.length} users`);
 
-  const baseUrl = import.meta.env.SITE_URL || "http://localhost:4321";
+  const baseUrl = request ? getApiBaseUrl(request) : (import.meta.env.SITE_URL || "http://localhost:4321");
 
   try {
     const emailResponse = await fetch(`${baseUrl}/api/email-delivery`, {
