@@ -140,7 +140,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     // Get status configuration and send notifications
     const { data: statusConfig, error: statusError } = await supabase
       .from("project_statuses")
-      .select("status_name, toast_admin, toast_client, est_time")
+      .select("status_name, toast_admin, toast_client, est_time, redirect_url, redirect_delay, redirect_show_countdown")
       .eq("status_code", newStatus)
       .single();
 
@@ -290,6 +290,9 @@ export const POST: APIRoute = async ({ request, cookies }) => {
               toast_admin: statusConfig.toast_admin,
               toast_client: statusConfig.toast_client,
               est_time: statusConfig.est_time,
+              redirect_url: statusConfig.redirect_url,
+              redirect_delay: statusConfig.redirect_delay,
+              redirect_show_countdown: statusConfig.redirect_show_countdown,
             }
           : null,
       }),

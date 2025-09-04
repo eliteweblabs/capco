@@ -134,14 +134,39 @@ export class ProposalManager {
       if (data.success) {
         // The update-status API should trigger database-driven toast messages
         // No need for hardcoded notifications - let the status system handle it
-
-        // Update the project status in the global data
-        if (this.project) {
-          this.project.status = 30;
+        
+        // Check if there's a redirect configuration from the database
+        if (data.statusConfig?.redirect_url) {
+          const delay = data.statusConfig.redirect_delay || 0;
+          const showCountdown = data.statusConfig.redirect_show_countdown !== false;
+          
+          if (delay > 0 && showCountdown) {
+            // Show countdown and redirect after delay
+            if ((window as any).showNotification) {
+              (window as any).showNotification({
+                type: "success",
+                title: "Proposal Sent",
+                message: data.message || "Proposal sent successfully! Redirecting in {{COUNTDOWN}} seconds...",
+                redirect: {
+                  url: data.statusConfig.redirect_url,
+                  delay: delay,
+                  showCountdown: true
+                }
+              });
+            } else {
+              // Fallback: redirect after delay
+              setTimeout(() => {
+                window.location.href = data.statusConfig.redirect_url;
+              }, delay * 1000);
+            }
+          } else {
+            // Immediate redirect
+            window.location.href = data.statusConfig.redirect_url;
+          }
+        } else {
+          // No redirect configured, just refresh the page
+          window.location.reload();
         }
-
-        // Update the status display on the page if it exists
-        this.updateStatusDisplay();
 
         // Update send button to show success state
         if (sendBtn) {
