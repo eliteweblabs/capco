@@ -58,7 +58,7 @@ export const GET: APIRoute = async () => {
       .not("address", "is", null) // Has address
       .eq("featured", "yes") // Has featured
       .order("updated_at", { ascending: false })
-      .limit(6);
+      .limit(0);
 
     console.log("🏗️ [FEATURED-PROJECTS] Featured query result:", {
       projects: projects?.length,
@@ -89,6 +89,7 @@ export const GET: APIRoute = async () => {
         )
         .not("address", "is", null) // Has address
         .order("created_at", { ascending: false })
+        .eq("featured", "yes") // Has featured
         .limit(6);
 
       if (fallbackError) {
