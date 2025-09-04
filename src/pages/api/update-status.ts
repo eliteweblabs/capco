@@ -2,6 +2,7 @@ import type { APIRoute } from "astro";
 import { SimpleProjectLogger } from "../../lib/simple-logging";
 import { supabase } from "../../lib/supabase";
 import { supabaseAdmin } from "../../lib/supabase-admin";
+import { getToastMessage, prepareToastData } from "../../lib/toast-message-utils";
 
 export const OPTIONS: APIRoute = async () => {
   return new Response(null, {
@@ -151,7 +152,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     );
 
     // Send email notifications for status change
-    let notificationMessage = "Status updated successfully";
+    let notificationMessage = "";
     console.log("📊 [UPDATE-STATUS] Sending email notifications...");
 
     try {
@@ -254,33 +255,18 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
         console.log("📊 [UPDATE-STATUS] User role determined:", userRole);
 
-        let toastMessage = "";
-        if (userRole === "Admin" || userRole === "Staff") {
-          toastMessage = statusConfig.toast_admin || "";
-        } else {
-          toastMessage = statusConfig.toast_client || "";
-        }
+        // Use the proper toast message system from database
+        const toastData = prepareToastData(
+          updatedProject,
+          user,
+          statusConfig.status_name
+        );
 
-        console.log("📊 [UPDATE-STATUS] Selected toast message:", toastMessage);
+        const toastMessage = getToastMessage(statusConfig, userRole, toastData);
+        
+        console.log("📊 [UPDATE-STATUS] Database-driven toast message:", toastMessage);
 
         if (toastMessage) {
-          // Get the actual client email from the project author
-          let clientEmail = "Client"; // Default fallback
-
-          if (updatedProject.author_id) {
-            const { data: userData } = await supabaseAdmin!.auth.admin.getUserById(
-              updatedProject.author_id
-            );
-            if (userData?.user?.email) {
-              clientEmail = userData.user.email;
-            }
-          }
-
-          // Replace placeholders
-          toastMessage = toastMessage
-            .replace(/{{PROJECT_TITLE}}/g, `<strong>${updatedProject.title || "Project"}</strong>`)
-            .replace(/{{CLIENT_EMAIL}}/g, `<strong>${clientEmail}</strong>`)
-            .replace(/{{EST_TIME}}/g, `<strong>${statusConfig.est_time || "2-3 business days"}</strong>`);
           notificationMessage = toastMessage;
           console.log("📊 [UPDATE-STATUS] Final notification message:", notificationMessage);
         } else {
