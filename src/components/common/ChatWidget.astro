@@ -237,14 +237,13 @@ const { user, role } = Astro.props;
   // Connect socket to server
   function connectSocket() {
     try {
-              // Determine chat server URL based on environment
-        const chatServerUrl = window.location.hostname === 'localhost' 
-          ? 'http://localhost:8080' 
-          : 'https://capcofire.com:8080';
-        
-        console.log("🔔 [CHAT] Attempting to connect to chat server at", chatServerUrl);
+      // Determine chat server URL based on environment
+      const chatServerUrl =
+        window.location.hostname === "localhost" ? "http://localhost:8080" : window.location.origin; // Use same domain and port as main app
 
-        socket = (window as any).io(chatServerUrl, {
+      console.log("🔔 [CHAT] Attempting to connect to chat server at", chatServerUrl);
+
+      socket = (window as any).io(chatServerUrl, {
         transports: ["websocket", "polling"],
         upgrade: true,
         rememberUpgrade: true,
