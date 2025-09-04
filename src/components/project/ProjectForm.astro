@@ -405,7 +405,20 @@ console.log("New client fields found:", newClientFieldsInForm.length, newClientF
           }
           projectData[fieldName].push(value);
         } else {
-          projectData[key] = value;
+          // Check if this is a button group field that contains JSON arrays
+          const buttonGroupFields = ["building", "project", "service", "requested_docs"];
+          if (buttonGroupFields.includes(key) && value && typeof value === "string") {
+            try {
+              // Parse as JSON array (all button groups now use consistent array format)
+              const parsed = JSON.parse(value);
+              projectData[key] = Array.isArray(parsed) ? parsed : [];
+            } catch {
+              // If parsing fails, default to empty array
+              projectData[key] = [];
+            }
+          } else {
+            projectData[key] = value;
+          }
         }
       }
 
