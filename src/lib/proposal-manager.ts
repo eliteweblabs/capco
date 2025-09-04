@@ -72,6 +72,43 @@ export class ProposalManager {
   }
 
   /**
+   * Load existing invoice data into the proposal
+   */
+  loadExistingInvoice(invoice: any): void {
+    console.log("Loading existing invoice into proposal:", invoice);
+
+    if (!invoice) {
+      console.error("No invoice data provided");
+      return;
+    }
+
+    // Hide placeholder and show proposal content
+    const placeholder = document.getElementById("proposal-placeholder");
+    const content = document.getElementById("proposal-content");
+
+    if (placeholder) placeholder.classList.add("hidden");
+    if (content) content.classList.remove("hidden");
+
+    // Populate proposal header with invoice data
+    this.populateHeaderFromInvoice(invoice);
+
+    // Populate project and client information
+    this.populateProjectInfo();
+    this.populateClientInfo();
+
+    // Populate line items from invoice data
+    this.populateLineItemsFromInvoice(invoice);
+
+    // Populate notes section
+    this.populateNotes();
+
+    // Update button states based on project status
+    this.updateProposalButtonStates(this.project.status);
+
+    console.log("Existing invoice loaded successfully");
+  }
+
+  /**
    * Toggle between edit and view mode
    */
   editProposal(): void {
@@ -464,6 +501,95 @@ export class ProposalManager {
       // Hide notes section if no notes available
       notesElement.style.display = "none";
     }
+  }
+
+  private populateHeaderFromInvoice(invoice: any): void {
+    const titleElement = document.getElementById("proposal-project-title");
+    const dateElement = document.getElementById("proposal-date");
+    const subjectElement = document.getElementById("proposal-subject-text");
+
+    if (titleElement) titleElement.textContent = this.project.title || "Untitled Project";
+    if (dateElement) dateElement.textContent = new Date(invoice.created_at).toLocaleDateString();
+
+    // Set proposal subject from invoice data
+    if (subjectElement) {
+      const invoiceSubject = invoice.subject || `Fire Protection Services Proposal - ${this.project.title || "Project"}`;
+      subjectElement.textContent = invoiceSubject;
+    }
+
+    // Re-initialize subject editing after populating header
+    setTimeout(() => {
+      if (typeof window.initializeSubjectEditing === "function") {
+        window.initializeSubjectEditing();
+      }
+    }, 100);
+  }
+
+  private populateLineItemsFromInvoice(invoice: any): void {
+    const tbody = document.getElementById("proposal-line-items");
+    if (!tbody || !invoice.line_items) return;
+
+    // Clear existing content
+    tbody.innerHTML = "";
+
+    // Optimize: Use DocumentFragment for better performance
+    const fragment = document.createDocumentFragment();
+    let total = 0;
+
+    // Parse line items from invoice
+    const lineItems = typeof invoice.line_items === 'string' 
+      ? JSON.parse(invoice.line_items) 
+      : invoice.line_items;
+
+    lineItems.forEach((item: any) => {
+      const row = document.createElement("tr");
+      row.className = "hover:bg-gray-50 dark:hover:bg-gray-700";
+
+      const itemTotal = (item.quantity || 0) * (item.unit_price || 0);
+      total += itemTotal;
+
+      // Create cells programmatically
+      const descCell = document.createElement("td");
+      descCell.className = "px-4 py-3 text-sm text-gray-900 dark:text-white";
+
+      const descDiv = document.createElement("div");
+      descDiv.className = "font-medium";
+      descDiv.textContent = item.description || "Line Item";
+      descCell.appendChild(descDiv);
+
+      if (item.details) {
+        const detailsDiv = document.createElement("div");
+        detailsDiv.className = "text-xs text-gray-500 dark:text-gray-400";
+        detailsDiv.textContent = item.details;
+        descCell.appendChild(detailsDiv);
+      }
+
+      const qtyCell = document.createElement("td");
+      qtyCell.className = "px-4 py-3 text-sm text-right text-gray-900 dark:text-white";
+      qtyCell.textContent = (item.quantity || 0).toString();
+
+      const priceCell = document.createElement("td");
+      priceCell.className = "px-4 py-3 text-sm text-right text-gray-900 dark:text-white";
+      priceCell.textContent = `$${(item.unit_price || 0).toFixed(2)}`;
+
+      const totalCell = document.createElement("td");
+      totalCell.className =
+        "px-4 py-3 text-sm text-right font-medium text-gray-900 dark:text-white";
+      totalCell.textContent = `$${itemTotal.toFixed(2)}`;
+
+      row.appendChild(descCell);
+      row.appendChild(qtyCell);
+      row.appendChild(priceCell);
+      row.appendChild(totalCell);
+
+      fragment.appendChild(row);
+    });
+
+    // Single DOM update
+    tbody.appendChild(fragment);
+
+    // Update totals
+    this.updateTotalDisplay(total);
   }
 
   private populateLineItems(lineItems: LineItem[]): void {
@@ -937,6 +1063,8 @@ declare global {
     PROPOSAL_PROJECT_ID?: string;
     PROPOSAL_PROJECT_DATA?: any;
     PROPOSAL_PROJECT_AUTHOR?: any;
+    PROPOSAL_EXISTING_INVOICE?: any;
+    PROPOSAL_HAS_EXISTING_INVOICE?: boolean;
     buildProposal?: (id: any) => void;
     editProposal?: (id: any) => void;
     regenerateProposal?: () => void;
