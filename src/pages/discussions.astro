@@ -378,6 +378,16 @@ function getAuthorName(profile: any): string {
             mark_completed: isCompleted,
           }),
         });
+        
+        console.log("🔔 [DISCUSSIONS] API response status:", response.status);
+        console.log("🔔 [DISCUSSIONS] API response ok:", response.ok);
+
+        if (!response.ok) {
+          console.error("❌ [DISCUSSIONS] API response not ok:", response.status, response.statusText);
+          const errorText = await response.text();
+          console.error("❌ [DISCUSSIONS] Error response body:", errorText);
+          throw new Error(`API call failed: ${response.status} ${response.statusText}`);
+        }
 
         const data = await response.json();
 
