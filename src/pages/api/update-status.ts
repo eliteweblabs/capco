@@ -138,6 +138,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     }
 
     // Get status configuration and send notifications
+    console.log("📊 [UPDATE-STATUS] Fetching status config for status_code:", newStatus);
     const { data: statusConfig, error: statusError } = await supabase
       .from("project_statuses")
       .select(
@@ -145,6 +146,12 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       )
       .eq("status_code", newStatus)
       .single();
+
+    console.log("📊 [UPDATE-STATUS] Status config query result:", {
+      statusConfig,
+      statusError,
+      newStatus
+    });
 
     // Log status name now that statusConfig is available
     console.log(
@@ -257,7 +264,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         console.log("📊 [UPDATE-STATUS] User role determined:", userRole);
 
         // Use the proper toast message system from database
-        const toastData = prepareToastData(updatedProject, user, statusConfig.status_name);
+          const toastData = prepareToastData(updatedProject, session.session.user, statusConfig.status_name);
 
         const toastMessage = getToastMessage(statusConfig, userRole, toastData);
 
