@@ -1,6 +1,7 @@
 import type { APIRoute } from "astro";
 import { checkAuth } from "../../lib/auth";
 import { supabase } from "../../lib/supabase";
+import { supabaseAdmin } from "../../lib/supabase-admin";
 
 export const POST: APIRoute = async ({ request, cookies }) => {
   console.log("🔔 [UPDATE-DISCUSSION] API endpoint called");
@@ -83,8 +84,8 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
     console.log("🔍 [UPDATE-DISCUSSION] Found existing discussion:", existingDiscussion);
 
-    // Update the discussion
-    const { data: updateResult, error } = await supabase
+    // Update the discussion using admin client to bypass RLS
+    const { data: updateResult, error } = await supabaseAdmin
       .from("discussion")
       .update({ mark_completed: mark_completed })
       .eq("id", discussionIdNum)
