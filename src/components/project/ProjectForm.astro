@@ -16,7 +16,6 @@ import GoogleAddressAutocomplete from "../form/GoogleAddressAutocomplete.astro";
 import IsNewOrExistingClient from "./IsNewOrExistingClient.astro";
 
 import { checkAuth } from "../../lib/auth";
-import { showNotification } from "../../lib/centralized-notifications";
 
 interface Props {
   project?: any;
@@ -774,7 +773,7 @@ console.log("New client fields found:", newClientFieldsInForm.length, newClientF
             console.error("🔍 [ProjectForm] Error calling update-status API:", statusError);
           }
 
-          // Use centralized notification system with redirect
+          // Use global notification system with redirect
           if ((window as any).showNotification) {
             (window as any).showNotification({
               type: "success",
@@ -865,7 +864,6 @@ console.log("New client fields found:", newClientFieldsInForm.length, newClientF
     }
   });
 
-  // Make functions globally available
+  // Make resetForm globally available
   (window as any).resetForm = resetForm;
-  (window as any).showNotification = showNotification;
 </script>
