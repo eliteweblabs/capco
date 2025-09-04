@@ -239,7 +239,13 @@ const { user, role } = Astro.props;
     try {
       // Determine chat server URL based on environment
       const chatServerUrl =
-        window.location.hostname === "localhost" ? "http://localhost:8080" : window.location.origin; // Use same domain and port as main app
+        window.location.hostname === "localhost"
+          ? "http://localhost:4321"
+          : window.location.href.split("/")[0] +
+            "//" +
+            window.location.hostname +
+            ":" +
+            (window.location.port || "3000");
 
       console.log("🔔 [CHAT] Attempting to connect to chat server at", chatServerUrl);
 
