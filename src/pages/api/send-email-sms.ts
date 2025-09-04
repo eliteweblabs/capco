@@ -57,19 +57,22 @@ export const POST: APIRoute = async ({ request }) => {
       );
     }
 
-    // Format the message with context
-    let emailContent = `CAPCo Website Contact:\n\n${message}`;
+    // Format the message with context - put contact info first to avoid truncation
+    let emailContent = `CAPCo Contact`;
 
     if (contactInfo) {
-      emailContent += `\n\nContact Info: ${contactInfo}`;
+      emailContent += ` from ${contactInfo}`;
     }
 
-    emailContent += `\n\nSent via CAPCo Website`;
+    emailContent += `:\n\n${message}\n\nCAPCo Website`;
 
     // Debug: Log the full email content being sent
     console.log("📱 [SMS-API] Full email content being sent:");
     console.log("📱 [SMS-API] Content length:", emailContent.length);
-    console.log("📱 [SMS-API] Content preview:", emailContent.substring(0, 200) + (emailContent.length > 200 ? "..." : ""));
+    console.log(
+      "📱 [SMS-API] Content preview:",
+      emailContent.substring(0, 200) + (emailContent.length > 200 ? "..." : "")
+    );
 
     // Use the existing email delivery system
     const baseUrl = getApiBaseUrl(request);

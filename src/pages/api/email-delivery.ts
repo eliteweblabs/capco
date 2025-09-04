@@ -499,11 +499,14 @@ export const POST: APIRoute = async ({ request, cookies }) => {
           emailSubject = custom_subject || "Contact";
           emailContent = email_content || "Contact message from CAPCo website";
           shouldShowButton = false;
-          
+
           // Debug: Log SMS email content
           console.log("📧 [EMAIL-DELIVERY] SMS email content received:");
           console.log("📧 [EMAIL-DELIVERY] Content length:", emailContent.length);
-          console.log("📧 [EMAIL-DELIVERY] Content preview:", emailContent.substring(0, 200) + (emailContent.length > 200 ? "..." : ""));
+          console.log(
+            "📧 [EMAIL-DELIVERY] Content preview:",
+            emailContent.substring(0, 200) + (emailContent.length > 200 ? "..." : "")
+          );
         } else {
           // Fallback for unknown email types
           emailSubject = custom_subject || "Notification";
