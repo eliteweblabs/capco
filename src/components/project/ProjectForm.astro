@@ -463,20 +463,23 @@ console.log("New client fields found:", newClientFieldsInForm.length, newClientF
           if (isNewProject) {
             // For new projects, update status to 10 (Project Created) to trigger database-driven notifications
             console.log("📝 [ProjectForm] Updating status to 10 for new project");
-            const statusResponse = await fetch("/api/update-status", {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-                Cookie: `sb-access-token=${document.cookie.match(/sb-access-token=([^;]+)/)?.[1] || ''}; sb-refresh-token=${document.cookie.match(/sb-refresh-token=([^;]+)/)?.[1] || ''}`,
-              },
-              body: JSON.stringify({
-                projectId: result.project.id,
-                status: 10, // Project Created
-              }),
-            });
+            try {
+              const statusResponse = await fetch("/api/update-status", {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                  Cookie: `sb-access-token=${document.cookie.match(/sb-access-token=([^;]+)/)?.[1] || ""}; sb-refresh-token=${document.cookie.match(/sb-refresh-token=([^;]+)/)?.[1] || ""}`,
+                },
+                body: JSON.stringify({
+                  projectId: result.project.id,
+                  status: 10, // Project Created
+                }),
+              });
 
-            const statusResult = await statusResponse.json();
-            console.log("📝 [ProjectForm] Status update response:", statusResult);
+              const statusResult = await statusResponse.json();
+              console.log("📝 [ProjectForm] Status update response:", statusResult);
+              console.log("📝 [ProjectForm] Status update response status:", statusResponse.status);
+              console.log("📝 [ProjectForm] Status update response ok:", statusResponse.ok);
 
             if (statusResult.success && statusResult.statusConfig?.redirect_url) {
               // Use database-driven redirect
@@ -510,6 +513,12 @@ console.log("New client fields found:", newClientFieldsInForm.length, newClientF
               }
             } else {
               // No redirect configured, just refresh
+              window.location.reload();
+            }
+            } catch (statusError) {
+              console.error("📝 [ProjectForm] Status update failed:", statusError);
+              console.error("📝 [ProjectForm] Status update error details:", statusError);
+              // Fallback: just refresh the page
               window.location.reload();
             }
           } else {
