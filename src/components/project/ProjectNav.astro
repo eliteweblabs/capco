@@ -147,7 +147,7 @@ if (!projects || projects.length === 0) return;
         }
       });
 
-      // Show/hide "no projects" message
+      // Show/hide "no projects" message - get fresh references each time
       const noProjectsMessage = document.getElementById("no-projects-message");
       const noProjectsText = document.getElementById("no-projects-text");
 
@@ -172,13 +172,25 @@ if (!projects || projects.length === 0) return;
 
           const messageText = `No projects currently at ${statusName}.`;
           console.log("🔍 [ProjectNav] Setting no projects message:", messageText);
+          
+          // Force update by clearing and setting text content
+          noProjectsText.textContent = "";
           noProjectsText.textContent = messageText;
+          
+          // Force visibility update
+          noProjectsMessage.classList.add("hidden");
+          noProjectsMessage.offsetHeight; // Force reflow
           noProjectsMessage.classList.remove("hidden");
         } else {
           // Hide "no projects" message
           console.log("🔍 [ProjectNav] Hiding no projects message");
           noProjectsMessage.classList.add("hidden");
         }
+      } else {
+        console.warn("🔍 [ProjectNav] No projects message elements not found:", {
+          noProjectsMessage: !!noProjectsMessage,
+          noProjectsText: !!noProjectsText
+        });
       }
     }
 
