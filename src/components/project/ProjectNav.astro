@@ -164,9 +164,16 @@ if (!projects || projects.length === 0) return;
           // Show "no projects" message with specific status name
           let statusName = "this status";
           if (statusFilter !== "all") {
-            const activeButton = subNav?.querySelector(".bg-blue-500");
-            if (activeButton) {
-              statusName = activeButton.textContent?.trim() || "this status";
+            // Get status name from the statuses data
+            const statusData = project_statuses.find(status => status.status_code.toString() === statusFilter);
+            if (statusData) {
+              statusName = statusData.status_name;
+            } else {
+              // Fallback: try to get from button text
+              const statusButton = subNav?.querySelector(`[data-project-status-filter="${statusFilter}"]`);
+              if (statusButton) {
+                statusName = statusButton.textContent?.trim() || "this status";
+              }
             }
           }
 
