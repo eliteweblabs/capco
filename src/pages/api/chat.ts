@@ -1,17 +1,21 @@
 import type { APIRoute } from "astro";
-import { createClient } from "@supabase/supabase-js";
-
-// Initialize Supabase client
-const supabase = createClient(
-  import.meta.env.PUBLIC_SUPABASE_URL!,
-  import.meta.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+import { supabase } from "../../lib/supabase";
 
 // In-memory storage for active connections (in production, use Redis)
 const activeConnections = new Map<string, { userId: string; userName: string; userRole: string; lastSeen: Date }>();
 
 export const POST: APIRoute = async ({ request }) => {
   try {
+    console.log("🔔 [CHAT-API] API called, checking supabase connection...");
+
+    if (!supabase) {
+      console.error("🔔 [CHAT-API] Supabase client is null - database connection not available");
+      return new Response(JSON.stringify({ error: "Database connection not available" }), {
+        status: 500,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+
     const { action, userId, userName, userRole, message } = await request.json();
 
     switch (action) {
