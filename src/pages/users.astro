@@ -453,16 +453,26 @@ const userCounts = {
 
 <script>
   // User management functionality
-  let currentUsers = [];
+
+  interface User {
+    element: Element;
+    name: string;
+    email: string;
+    role: string;
+    created: string;
+  }
+
+  let currentUsers: User[] = [];
+
   let currentSort = { field: "created", direction: "desc" };
-  let deleteUserId = null;
+  let deleteUserId: string | null = null;
 
   document.addEventListener("DOMContentLoaded", function () {
     // Reset form values on page load to ensure clean state
     const searchInput = document.getElementById("user-search");
     const roleFilter = document.getElementById("role-filter");
-    if (searchInput) searchInput.value = "";
-    if (roleFilter) roleFilter.value = "";
+    if (searchInput) (searchInput as HTMLInputElement).value = "";
+    if (roleFilter) (roleFilter as HTMLSelectElement).value = "";
 
     initializeUserManagement();
 
@@ -470,8 +480,8 @@ const userCounts = {
     console.log("🔔 [USERS] Testing toast system availability:", {
       showSuccess: typeof window.showSuccess,
       showError: typeof window.showError,
-      simpleToastManager: typeof window.simpleToastManager,
-      toastAlertManager: typeof window.toastAlertManager,
+      simpleToastManager: typeof (window as any).simpleToastManager,
+      toastAlertManager: typeof (window as any).toastAlertManager,
     });
   });
 
@@ -479,10 +489,10 @@ const userCounts = {
     // Get initial users data
     currentUsers = Array.from(document.querySelectorAll(".user-row")).map((row) => ({
       element: row,
-      name: row.dataset.name || "",
-      email: row.querySelector("td:nth-child(2) div")?.textContent?.trim() || "",
-      role: row.dataset.role || "",
-      created: row.querySelector("td:nth-child(4)")?.textContent?.trim() || "",
+      name: (row as HTMLElement).dataset.name || "",
+      email: (row as HTMLElement).querySelector("td:nth-child(2) div")?.textContent?.trim() || "",
+      role: (row as HTMLElement).dataset.role || "",
+      created: (row as HTMLElement).querySelector("td:nth-child(4)")?.textContent?.trim() || "",
     }));
 
     // Initialize event listeners
@@ -502,11 +512,11 @@ const userCounts = {
     const roleFilter = document.getElementById("role-filter");
 
     if (searchInput) {
-      searchInput.addEventListener("input", filterUsers);
+      searchInput.addEventListener("input", filterUsers as EventListener);
     }
 
     if (roleFilter) {
-      roleFilter.addEventListener("change", filterUsers);
+      roleFilter.addEventListener("change", filterUsers as EventListener);
     }
   }
 
@@ -514,11 +524,11 @@ const userCounts = {
     const sortHeaders = document.querySelectorAll("[data-sort]");
     sortHeaders.forEach((header) => {
       header.addEventListener("click", () => {
-        const field = header.dataset.sort;
+        const field = (header as HTMLElement).dataset.sort;
         if (currentSort.field === field) {
           currentSort.direction = currentSort.direction === "asc" ? "desc" : "asc";
         } else {
-          currentSort.field = field;
+          currentSort.field = field as keyof typeof currentSort;
           currentSort.direction = "asc";
         }
         sortUsers();
@@ -534,8 +544,8 @@ const userCounts = {
 
     if (cancelBtn) {
       cancelBtn.addEventListener("click", () => {
-        modal.classList.add("hidden");
-        modal.classList.remove("flex");
+        modal?.classList.add("hidden");
+        modal?.classList.remove("flex");
         deleteUserId = null;
       });
     }
@@ -548,7 +558,7 @@ const userCounts = {
     if (modal) {
       modal.addEventListener("click", (e) => {
         if (e.target === modal) {
-          modal.classList.add("hidden");
+          modal?.classList.add("hidden");
           modal.classList.remove("flex");
           deleteUserId = null;
         }
@@ -567,14 +577,14 @@ const userCounts = {
     form.addEventListener("submit", async (e) => {
       e.preventDefault();
 
-      const formData = new FormData(form);
+      const formData = new FormData(form as HTMLFormElement);
       const userData = {
-        email: formData.get("email"),
-        phone: formData.get("phone"),
-        role: formData.get("role"),
-        first_name: formData.get("first_name"),
-        last_name: formData.get("last_name"),
-        company_name: formData.get("company_name"),
+        email: formData.get("email") as string,
+        phone: formData.get("phone") as string,
+        role: formData.get("role") as string,
+        first_name: formData.get("first_name") as string,
+        last_name: formData.get("last_name") as string,
+        company_name: formData.get("company_name") as string,
       };
 
       // Validate required fields
@@ -644,7 +654,7 @@ const userCounts = {
           }
 
           // Reset form
-          form.reset();
+          (form as HTMLFormElement).reset();
 
           // Refresh page after short delay to show new user
           setTimeout(() => {
@@ -717,22 +727,26 @@ const userCounts = {
       }
     });
 
-    function setFormLoading(loading) {
+    function setFormLoading(loading: boolean) {
       if (loading) {
-        submitBtn.disabled = true;
-        submitText.textContent = "Creating...";
-        submitSpinner.classList.remove("hidden");
+        (submitBtn as HTMLButtonElement).disabled = true;
+        (submitText as HTMLElement).textContent = "Creating...";
+        (submitSpinner as HTMLElement).classList.remove("hidden");
       } else {
-        submitBtn.disabled = false;
-        submitText.textContent = "Create User";
-        submitSpinner.classList.add("hidden");
+        (submitBtn as HTMLButtonElement).disabled = false;
+        (submitText as HTMLElement).textContent = "Create User";
+        (submitSpinner as HTMLElement).classList.add("hidden");
       }
     }
   }
 
   function filterUsers() {
-    const searchTerm = document.getElementById("user-search")?.value?.toLowerCase() || "";
-    const roleFilter = document.getElementById("role-filter")?.value || "";
+    const searchTerm =
+      ((
+        document.getElementById("user-search") as HTMLInputElement
+      )?.value?.toLowerCase() as string) || "";
+    const roleFilter =
+      ((document.getElementById("role-filter") as HTMLSelectElement)?.value as string) || "";
 
     currentUsers.forEach((user) => {
       const matchesSearch =
@@ -743,19 +757,19 @@ const userCounts = {
       const shouldShow = matchesSearch && matchesRole;
 
       if (shouldShow) {
-        user.element.style.display = "";
+        (user.element as HTMLElement).style.display = "";
       } else {
-        user.element.style.display = "none";
+        (user.element as HTMLElement).style.display = "none";
       }
     });
   }
 
   function sortUsers() {
-    const tbody = document.getElementById("users-table-body");
+    const tbody = document.getElementById("users-table-body") as HTMLTableSectionElement;
     if (!tbody) return;
 
     const sortedUsers = [...currentUsers].sort((a, b) => {
-      let aVal, bVal;
+      let aVal: any, bVal: any;
 
       switch (currentSort.field) {
         case "name":
@@ -792,8 +806,8 @@ const userCounts = {
   function updateSortIndicators() {
     const headers = document.querySelectorAll("[data-sort]");
     headers.forEach((header) => {
-      const icon = header.querySelector(".bx");
-      if (header.dataset.sort === currentSort.field) {
+      const icon = header.querySelector(".bx") as HTMLElement;
+      if ((header as HTMLElement).dataset.sort === currentSort.field) {
         icon.className =
           currentSort.direction === "asc"
             ? "bx bx-chevron-up h-3 w-3"
@@ -805,16 +819,16 @@ const userCounts = {
   }
 
   // Global functions for delete functionality
-  window.confirmDeleteUser = function (userId, userName) {
+  (window as any).confirmDeleteUser = function (userId: string, userName: string) {
     deleteUserId = userId;
-    document.getElementById("delete-user-name").textContent = userName;
+    (document.getElementById("delete-user-name") as HTMLElement).textContent = userName;
     const modal = document.getElementById("delete-modal");
-    modal.classList.remove("hidden");
-    modal.classList.add("flex");
+    modal?.classList.remove("hidden");
+    modal?.classList.add("flex");
   };
 
   // Test toast system function
-  window.testToastSystem = function () {
+  (window as any).testToastSystem = function () {
     console.log("🔔 [TEST] Testing toast system...");
 
     if (window.showSuccess) {
@@ -860,9 +874,9 @@ const userCounts = {
 
         // Clear filters before refresh to avoid state issues
         const searchInput = document.getElementById("user-search");
-        const roleFilter = document.getElementById("role-filter");
-        if (searchInput) searchInput.value = "";
-        if (roleFilter) roleFilter.value = "";
+        const roleFilter = document.getElementById("role-filter") as HTMLSelectElement;
+        if (searchInput) (searchInput as HTMLSelectElement).value = "";
+        if (roleFilter) (roleFilter as HTMLSelectElement).value = "";
 
         // Update user counts (simple refresh for now)
         setTimeout(() => window.location.reload(), 1500);
@@ -873,13 +887,17 @@ const userCounts = {
     } catch (error) {
       console.error("Delete user error:", error);
       if (window.showError) {
-        window.showError("Delete Failed", error.message || "Failed to delete user", 5000);
+        window.showError(
+          "Delete Failed",
+          (error as Error).message || "Failed to delete user",
+          5000
+        );
       }
     } finally {
       // Close modal
       const modal = document.getElementById("delete-modal");
-      modal.classList.add("hidden");
-      modal.classList.remove("flex");
+      modal?.classList.add("hidden");
+      modal?.classList.remove("flex");
       deleteUserId = null;
     }
   }
