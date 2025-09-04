@@ -397,9 +397,9 @@ console.log("New client fields found:", newClientFieldsInForm.length, newClientF
 
       // Convert FormData to object
       for (const [key, value] of formData.entries()) {
-        if (key.includes('[]')) {
+        if (key.includes("[]")) {
           // Handle array fields (like multi-select button groups)
-          const fieldName = key.replace('[]', '');
+          const fieldName = key.replace("[]", "");
           if (!projectData[fieldName]) {
             projectData[fieldName] = [];
           }
@@ -466,19 +466,21 @@ console.log("New client fields found:", newClientFieldsInForm.length, newClientF
               // Use database-driven redirect
               const delay = statusResult.statusConfig.redirect_delay || 0;
               const showCountdown = statusResult.statusConfig.redirect_show_countdown !== false;
-              
+
               if (delay > 0 && showCountdown) {
                 // Show countdown and redirect after delay
                 if ((window as any).showNotification) {
                   (window as any).showNotification({
                     type: "success",
                     title: "Project Created",
-                    message: statusResult.message || "Project created successfully! Redirecting in {{COUNTDOWN}} seconds...",
+                    message:
+                      statusResult.message ||
+                      "Project created successfully! Redirecting in {{COUNTDOWN}} seconds...",
                     redirect: {
                       url: statusResult.statusConfig.redirect_url,
                       delay: delay,
-                      showCountdown: true
-                    }
+                      showCountdown: true,
+                    },
                   });
                 } else {
                   // Fallback: redirect after delay
@@ -497,7 +499,10 @@ console.log("New client fields found:", newClientFieldsInForm.length, newClientF
           } else {
             // For existing projects, just show success and refresh
             if ((window as any).showSuccess) {
-              (window as any).showSuccess("Project Updated", "Project has been updated successfully!");
+              (window as any).showSuccess(
+                "Project Updated",
+                "Project has been updated successfully!"
+              );
             }
             setTimeout(() => {
               window.location.reload();
@@ -509,7 +514,10 @@ console.log("New client fields found:", newClientFieldsInForm.length, newClientF
       } catch (error) {
         console.error("📝 [ProjectForm] Error saving project:", error);
         if ((window as any).showError) {
-          (window as any).showError("Error", error instanceof Error ? error.message : "Failed to save project");
+          (window as any).showError(
+            "Error",
+            error instanceof Error ? error.message : "Failed to save project"
+          );
         }
       } finally {
         // Reset button state

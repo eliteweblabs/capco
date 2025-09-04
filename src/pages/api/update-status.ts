@@ -140,7 +140,9 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     // Get status configuration and send notifications
     const { data: statusConfig, error: statusError } = await supabase
       .from("project_statuses")
-      .select("status_name, toast_admin, toast_client, est_time, redirect_url, redirect_delay, redirect_show_countdown")
+      .select(
+        "status_name, toast_admin, toast_client, est_time, redirect_url, redirect_delay, redirect_show_countdown"
+      )
       .eq("status_code", newStatus)
       .single();
 

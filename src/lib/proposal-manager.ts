@@ -62,6 +62,9 @@ export class ProposalManager {
     const lineItems = this.getLineItems();
     this.populateLineItems(lineItems);
 
+    // Populate notes section
+    this.populateNotes();
+
     // Update button states based on project status
     this.updateProposalButtonStates(this.project.status);
 
@@ -134,24 +137,26 @@ export class ProposalManager {
       if (data.success) {
         // The update-status API should trigger database-driven toast messages
         // No need for hardcoded notifications - let the status system handle it
-        
+
         // Check if there's a redirect configuration from the database
         if (data.statusConfig?.redirect_url) {
           const delay = data.statusConfig.redirect_delay || 0;
           const showCountdown = data.statusConfig.redirect_show_countdown !== false;
-          
+
           if (delay > 0 && showCountdown) {
             // Show countdown and redirect after delay
             if ((window as any).showNotification) {
               (window as any).showNotification({
                 type: "success",
                 title: "Proposal Sent",
-                message: data.message || "Proposal sent successfully! Redirecting in {{COUNTDOWN}} seconds...",
+                message:
+                  data.message ||
+                  "Proposal sent successfully! Redirecting in {{COUNTDOWN}} seconds...",
                 redirect: {
                   url: data.statusConfig.redirect_url,
                   delay: delay,
-                  showCountdown: true
-                }
+                  showCountdown: true,
+                },
               });
             } else {
               // Fallback: redirect after delay
@@ -443,6 +448,22 @@ export class ProposalManager {
     }
     if (emailElement) emailElement.textContent = this.projectAuthor.email || "Not specified";
     if (phoneElement) phoneElement.textContent = this.projectAuthor.phone || "Not specified";
+  }
+
+  private populateNotes(): void {
+    const notesElement = document.getElementById("proposal-notes");
+    if (!notesElement) return;
+
+    // Get notes from project data or use default
+    const notes = this.project.notes || this.project.description || "";
+    
+    if (notes) {
+      notesElement.textContent = notes;
+      notesElement.style.display = "block";
+    } else {
+      // Hide notes section if no notes available
+      notesElement.style.display = "none";
+    }
   }
 
   private populateLineItems(lineItems: LineItem[]): void {
@@ -924,6 +945,7 @@ declare global {
     updateRowTotal?: (index: any) => void;
     addProposalRow?: () => void;
     deleteProposalRow?: (index: any) => void;
+    initializeSubjectEditing?: () => void;
   }
 }
 
