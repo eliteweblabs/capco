@@ -44,21 +44,18 @@ export const POST: APIRoute = async ({ request }) => {
     // Use the existing email delivery system
     const baseUrl = getApiBaseUrl(request);
     console.log("📱 [SMS] Using base URL for email delivery:", baseUrl);
-    const emailResponse = await fetch(
-      `${baseUrl}/api/email-delivery`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          emailType: "emergency_sms",
-          custom_subject: "CAPCo Website Contact",
-          email_content: emailContent,
-          usersToNotify: [{ email: smsEmail }], // Send to SMS gateway
-        }),
-      }
-    );
+    const emailResponse = await fetch(`${baseUrl}/api/email-delivery`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        emailType: "emergency_sms",
+        custom_subject: "CAPCo Website Contact",
+        email_content: emailContent,
+        usersToNotify: [{ email: smsEmail }], // Send to SMS gateway
+      }),
+    });
 
     const emailResult = await emailResponse.json();
 
