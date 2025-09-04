@@ -71,35 +71,35 @@ export const GET: APIRoute = async () => {
         "🏗️ [FEATURED-PROJECTS] No completed projects found, fetching any projects for demo..."
       );
 
-      const { data: fallbackProjects, error: fallbackError } = await supabase
-        .from("projects")
-        .select(
-          `
-          id,
-          address,
-          title,
-          description,
-          sq_ft,
-          new_construction,
-          status,
-          created_at,
-          updated_at,
-          featured
-        `
-        )
-        .not("address", "is", null) // Has address
-        .order("created_at", { ascending: false })
-        .eq("featured", "yes") // Has featured
-        .limit(6);
+      // const { data: fallbackProjects, error: fallbackError } = await supabase
+      //   .from("projects")
+      //   .select(
+      //     `
+      //     id,
+      //     address,
+      //     title,
+      //     description,
+      //     sq_ft,
+      //     new_construction,
+      //     status,
+      //     created_at,
+      //     updated_at,
+      //     featured
+      //   `
+      //   )
+      //   .not("address", "is", null) // Has address
+      //   .order("created_at", { ascending: false })
+      //   .eq("featured", "yes") // Has featured
+      //   .limit(6);
 
-      if (fallbackError) {
-        error = fallbackError;
-      } else {
-        projects = fallbackProjects;
-        console.log(
-          `🏗️ [FEATURED-PROJECTS] Using ${projects?.length || 0} demo projects (fallback query - no featured filter)`
-        );
-      }
+      // if (fallbackError) {
+      //   error = fallbackError;
+      // } else {
+      //   projects = fallbackProjects;
+      //   console.log(
+      //     `🏗️ [FEATURED-PROJECTS] Using ${projects?.length || 0} demo projects (fallback query - no featured filter)`
+      //   );
+      // }
     }
 
     if (error) {
