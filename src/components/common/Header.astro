@@ -454,6 +454,26 @@ const visibleNavigation = getVisibleNavItems(navigation, isAuth, role, isBackend
       }
     });
   }
+
+  // Safari 18 beta fix - ensure header stays fixed to top
+  function fixHeaderPosition() {
+    const header = document.querySelector("header");
+    if (header) {
+      // Force re-apply positioning
+      header.style.position = "sticky";
+      header.style.top = "0";
+      header.style.zIndex = "10";
+    }
+  }
+
+  // Apply fix on load and resize
+  fixHeaderPosition();
+  window.addEventListener("resize", fixHeaderPosition);
+  window.addEventListener("orientationchange", () => {
+    setTimeout(fixHeaderPosition, 100);
+  });
+
+  console.log("📋 [HEADER] Header initialized with Safari 18 beta fix");
 </script>
 
 <style>
