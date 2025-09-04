@@ -139,7 +139,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
     // Get status configuration and send notifications
     console.log("📊 [UPDATE-STATUS] Fetching status config for status_code:", newStatus);
-    const { data: statusConfig, error: statusError } = await supabase
+    let { data: statusConfig, error: statusError } = await supabase
       .from("project_statuses")
       .select(
         "status_name, toast_admin, toast_client, est_time, redirect_url, redirect_delay, redirect_show_countdown"
@@ -147,10 +147,25 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       .eq("status_code", newStatus)
       .single();
 
+    // If not found with number, try with string
+    if (!statusConfig && statusError) {
+      console.log("📊 [UPDATE-STATUS] Not found with number, trying with string:", newStatus.toString());
+      const stringResult = await supabase
+        .from("project_statuses")
+        .select(
+          "status_name, toast_admin, toast_client, est_time, redirect_url, redirect_delay, redirect_show_countdown"
+        )
+        .eq("status_code", newStatus.toString())
+        .single();
+      
+      statusConfig = stringResult.data;
+      statusError = stringResult.error;
+    }
+
     console.log("📊 [UPDATE-STATUS] Status config query result:", {
       statusConfig,
       statusError,
-      newStatus
+      newStatus,
     });
 
     // Log status name now that statusConfig is available
@@ -264,7 +279,11 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         console.log("📊 [UPDATE-STATUS] User role determined:", userRole);
 
         // Use the proper toast message system from database
-          const toastData = prepareToastData(updatedProject, session.session.user, statusConfig.status_name);
+        const toastData = prepareToastData(
+          updatedProject,
+          session.session.user,
+          statusConfig.status_name
+        );
 
         const toastMessage = getToastMessage(statusConfig, userRole, toastData);
 
