@@ -91,46 +91,72 @@ export const POST: APIRoute = async ({ request }) => {
 // Handle email opened events
 async function handleEmailOpened(data: any) {
   try {
-    const { email, created_at } = data;
+    const { email, created_at, email_id } = data;
+    console.log("📧 [RESEND-WEBHOOK] Processing email opened event:", { email, email_id, created_at });
 
-    // Find the project associated with this email
-    // You'll need to store email-to-project mapping when sending emails
-    const { data: project, error } = await supabase
-      .from("projects")
-      .select("id, status, title")
-      .eq(
-        "author_id",
-        (await supabase.from("profiles").select("id").eq("email", email).single())?.data?.id
-      )
-      .single();
+    // Get project ID from email headers (set in email-delivery.ts)
+    const projectId = data.headers?.["X-Project-ID"] || data.headers?.["x-project-id"];
+    const currentStatus = data.headers?.["X-Project-Status"] || data.headers?.["x-project-status"];
 
-    if (error || !project) {
-      console.log("📧 [RESEND-WEBHOOK] No project found for email:", email);
+    if (!projectId) {
+      console.log("📧 [RESEND-WEBHOOK] No project ID found in email headers for:", email);
       return;
     }
 
+    // Get project details
+    const { data: project, error: projectError } = await supabase
+      .from("projects")
+      .select("id, status, title, address")
+      .eq("id", projectId)
+      .single();
+
+    if (projectError || !project) {
+      console.log("📧 [RESEND-WEBHOOK] Project not found for ID:", projectId);
+      return;
+    }
+
+    console.log("📧 [RESEND-WEBHOOK] Found project:", {
+      id: project.id,
+      title: project.title,
+      address: project.address,
+      currentStatus: project.status,
+      emailStatus: currentStatus
+    });
+
     // Update project status based on current status
     let newStatus = project.status;
+    let statusUpdateReason = "";
 
     switch (project.status) {
       case 30: // Proposal Shipped
         newStatus = 40; // Proposal Viewed
+        statusUpdateReason = "Proposal email opened";
         break;
       case 70: // Deposit Invoice Shipped
         newStatus = 80; // Deposit Invoice Viewed
+        statusUpdateReason = "Deposit invoice email opened";
         break;
       case 110: // Submittals Shipped
         newStatus = 120; // Submittals Viewed
+        statusUpdateReason = "Submittals email opened";
         break;
       case 150: // Final Invoice Shipped
         newStatus = 160; // Final Invoice Viewed
+        statusUpdateReason = "Final invoice email opened";
         break;
       case 200: // Final Deliverables Shipped
         newStatus = 210; // Final Deliverables Viewed
+        statusUpdateReason = "Final deliverables email opened";
         break;
       default:
         console.log("📧 [RESEND-WEBHOOK] No status update needed for status:", project.status);
         return;
+    }
+
+    // Only update if status actually changed
+    if (newStatus === project.status) {
+      console.log("📧 [RESEND-WEBHOOK] Status already at target:", project.status);
+      return;
     }
 
     // Update project status
@@ -145,11 +171,15 @@ async function handleEmailOpened(data: any) {
     if (updateError) {
       console.error("📧 [RESEND-WEBHOOK] Error updating project status:", updateError);
     } else {
-      console.log("📧 [RESEND-WEBHOOK] Project status updated:", {
+      console.log("📧 [RESEND-WEBHOOK] ✅ Project status updated successfully:", {
         projectId: project.id,
+        projectTitle: project.title,
+        projectAddress: project.address,
         oldStatus: project.status,
         newStatus,
+        reason: statusUpdateReason,
         email,
+        timestamp: new Date().toISOString()
       });
     }
   } catch (error) {
