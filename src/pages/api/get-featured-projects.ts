@@ -56,9 +56,14 @@ export const GET: APIRoute = async () => {
       )
       .eq("status", 220) // Only completed projects
       .not("address", "is", null) // Has address
-      .eq("featured", true) // Has featured
+      .eq("featured", "yes") // Has featured
       .order("updated_at", { ascending: false })
       .limit(6);
+
+    console.log("🏗️ [FEATURED-PROJECTS] Featured query result:", {
+      projects: projects?.length,
+      error,
+    });
 
     // If no completed projects found, get any projects for demo
     if (!error && (!projects || projects.length === 0)) {
@@ -90,7 +95,9 @@ export const GET: APIRoute = async () => {
         error = fallbackError;
       } else {
         projects = fallbackProjects;
-        console.log(`🏗️ [FEATURED-PROJECTS] Using ${projects?.length || 0} demo projects`);
+        console.log(
+          `🏗️ [FEATURED-PROJECTS] Using ${projects?.length || 0} demo projects (fallback query - no featured filter)`
+        );
       }
     }
 
