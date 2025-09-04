@@ -46,39 +46,13 @@ if (supabase) {
         `📋 [ClientSelect] Loaded ${profiles.length} profiles${role ? ` (filtered by role: ${role})` : ""}`
       );
 
-      // Then get emails from auth.users using admin API
-      const { data: authUsers, error: authError } = await supabase.auth.admin.listUsers();
-
-      if (authError) {
-        console.error("Error fetching auth users:", authError);
-        // Still use profiles but without emails
-        users = profiles.map((profile) => ({
-          ...profile,
-          email: null,
-        }));
-      } else if (authUsers?.users) {
-        console.log(`📋 [ClientSelect] Loaded ${authUsers.users.length} auth users`);
-
-        // Create email map from auth users
-        const emailMap = new Map();
-        authUsers.users.forEach((authUser) => {
-          emailMap.set(authUser.id, authUser.email);
-        });
-
-        // Combine profiles with emails
-        users = profiles.map((profile) => ({
-          ...profile,
-          email: emailMap.get(profile.id) || null,
-        }));
-
-        console.log(`📋 [ClientSelect] Combined ${users.length} users with emails`);
-      } else {
-        // Use profiles without emails
-        users = profiles.map((profile) => ({
-          ...profile,
-          email: null,
-        }));
-      }
+      // Use profiles without emails (Admin API requires service role key)
+      users = profiles.map((profile) => ({
+        ...profile,
+        email: null,
+      }));
+      
+      console.log(`📋 [ClientSelect] Using ${users.length} profiles without email lookup`);
     } else {
       users = [];
     }
