@@ -4,6 +4,7 @@ import { join } from "path";
 import { buildUpdateData } from "../../lib/project-fields-config";
 import { supabase } from "../../lib/supabase";
 import { supabaseAdmin } from "../../lib/supabase-admin";
+import { getApiBaseUrl } from "../../lib/url-utils";
 
 export const POST: APIRoute = async ({ request }) => {
   try {
@@ -204,7 +205,7 @@ export const POST: APIRoute = async ({ request }) => {
         isStatusChange,
       });
       try {
-        await sendStatusChangeNotifications(projectId, updateFields.status, data);
+        await sendStatusChangeNotifications(projectId, updateFields.status, data, "UPDATE-PROJECT", request);
         console.log("🔔 [UPDATE-PROJECT] sendStatusChangeNotifications completed successfully");
       } catch (notificationError) {
         console.error("Status change notification error:", notificationError);
@@ -403,7 +404,7 @@ async function sendStatusChangeNotifications(
               type: "magiclink",
               email: user.email,
               options: {
-                redirectTo: `${import.meta.env.SITE_URL || "http://localhost:4321"}/project/${projectId}`,
+                redirectTo: `${getApiBaseUrl(request)}/project/${projectId}`,
               },
             });
 
@@ -445,7 +446,7 @@ async function sendStatusChangeNotifications(
         }
 
         // Use centralized email delivery system
-        const emailResponse = await fetch("http://localhost:4321/api/email-delivery", {
+        const emailResponse = await fetch(`${getApiBaseUrl(request)}/api/email-delivery`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",

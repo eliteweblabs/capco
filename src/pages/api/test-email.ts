@@ -115,7 +115,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
     // Call the email delivery API
     console.log("📧 [TEST-EMAIL] Calling email delivery API...");
-    const emailResponse = await fetch("http://localhost:4321/api/email-delivery", {
+    const emailResponse = await fetch(`${getApiBaseUrl(request)}/api/email-delivery`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

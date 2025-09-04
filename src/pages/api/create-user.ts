@@ -1,6 +1,7 @@
 import type { APIRoute } from "astro";
 import { checkAuth } from "../../lib/auth";
 import { supabase } from "../../lib/supabase";
+import { getApiBaseUrl } from "../../lib/url-utils";
 import { supabaseAdmin } from "../../lib/supabase-admin";
 
 export const GET: APIRoute = async ({ cookies }) => {
@@ -301,7 +302,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     console.log("📧 [CREATE-USER] Sending email notifications...");
 
     // Define base URL for email API calls
-    const baseUrl = import.meta.env.SITE_URL || "http://localhost:4321";
+    const baseUrl = getApiBaseUrl(request);
 
     try {
       // Get all admin and staff users
@@ -349,7 +350,7 @@ The user will receive a magic link to access their account.`;
             const userEmail = authUser.user.email;
 
             // Send email using the email delivery API with full URL
-            const baseUrl = import.meta.env.SITE_URL || "http://localhost:4321";
+            const baseUrl = getApiBaseUrl(request);
             const emailResponse = await fetch(`${baseUrl}/api/email-delivery`, {
               method: "POST",
               headers: {

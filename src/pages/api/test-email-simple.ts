@@ -1,4 +1,5 @@
 import type { APIRoute } from "astro";
+import { getApiBaseUrl } from "../../lib/url-utils";
 
 export const POST: APIRoute = async ({ request }) => {
   console.log("🧪 [TEST-EMAIL] Simple test endpoint called");
@@ -41,7 +42,7 @@ export const POST: APIRoute = async ({ request }) => {
     }
 
     // Try to send a test email using the email delivery API
-    const baseUrl = import.meta.env.SITE_URL || "http://localhost:4321";
+    const baseUrl = getApiBaseUrl(request);
     console.log("🧪 [TEST-EMAIL] Calling email delivery API...");
 
     const emailResponse = await fetch(`${baseUrl}/api/email-delivery`, {

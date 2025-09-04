@@ -1,5 +1,6 @@
 import type { APIRoute } from "astro";
 import { supabaseAdmin } from "../../../lib/supabase-admin";
+import { getApiBaseUrl } from "../../../lib/url-utils";
 
 export const POST: APIRoute = async ({ request }) => {
   try {
@@ -23,7 +24,7 @@ export const POST: APIRoute = async ({ request }) => {
     // Send password reset email using Supabase Auth
     // This will only send an email if the user exists, and will fail silently if they don't
     const { error: resetError } = await supabaseAdmin.auth.resetPasswordForEmail(email, {
-      redirectTo: `${import.meta.env.SITE_URL || 'http://localhost:4321'}/reset-password`,
+      redirectTo: `${getApiBaseUrl(request)}/reset-password`,
     });
 
     // Always return success to prevent email enumeration attacks
