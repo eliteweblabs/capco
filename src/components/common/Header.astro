@@ -459,19 +459,54 @@ const visibleNavigation = getVisibleNavItems(navigation, isAuth, role, isBackend
   function fixHeaderPosition() {
     const header = document.querySelector("header");
     if (header) {
-      // Force re-apply positioning
-      header.style.position = "sticky";
-      header.style.top = "0";
-      header.style.zIndex = "10";
+      // Force re-apply positioning with !important
+      header.style.setProperty("position", "sticky", "important");
+      header.style.setProperty("top", "0", "important");
+      header.style.setProperty("z-index", "10", "important");
+      header.style.setProperty("transform", "translateZ(0)", "important"); // Force hardware acceleration
     }
   }
 
-  // Apply fix on load and resize
+  // Apply fix on load and multiple events
   fixHeaderPosition();
+  
+  // Add multiple event listeners to catch Safari 18 beta resets
   window.addEventListener("resize", fixHeaderPosition);
   window.addEventListener("orientationchange", () => {
     setTimeout(fixHeaderPosition, 100);
   });
+  window.addEventListener("scroll", fixHeaderPosition);
+  window.addEventListener("focus", fixHeaderPosition);
+  window.addEventListener("blur", fixHeaderPosition);
+  
+  // Periodic check to ensure positioning stays correct (every 3 seconds)
+  setInterval(fixHeaderPosition, 3000);
+  
+  // Use MutationObserver to catch DOM changes that might reset positioning
+  const headerObserver = new MutationObserver((mutations) => {
+    let shouldFix = false;
+    mutations.forEach((mutation) => {
+      if (mutation.type === 'attributes' && 
+          (mutation.attributeName === 'style' || mutation.attributeName === 'class')) {
+        const target = mutation.target;
+        if (target.tagName === 'HEADER') {
+          shouldFix = true;
+        }
+      }
+    });
+    if (shouldFix) {
+      setTimeout(fixHeaderPosition, 50);
+    }
+  });
+  
+  // Start observing
+  const header = document.querySelector("header");
+  if (header) {
+    headerObserver.observe(header, { 
+      attributes: true, 
+      attributeFilter: ['style', 'class'] 
+    });
+  }
 
   console.log("📋 [HEADER] Header initialized with Safari 18 beta fix");
 </script>
@@ -539,5 +574,13 @@ const visibleNavigation = getVisibleNavItems(navigation, isAuth, role, isBackend
       -o-transform: scale(0);
       transform: scale(0);
     }
+  }
+
+  /* Safari 18 beta fix for header */
+  header {
+    position: sticky !important;
+    top: 0 !important;
+    z-index: 10 !important;
+    transform: translateZ(0) !important; /* Force hardware acceleration */
   }
 </style>
