@@ -132,13 +132,8 @@ export class ProposalManager {
       const data = await response.json();
 
       if (data.success) {
-        // Show success message
-        if ((window as any).showSuccess) {
-          (window as any).showSuccess(
-            "Proposal Sent",
-            'The proposal has been sent to the client successfully! Status updated to "Proposal Shipped".'
-          );
-        }
+        // The update-status API should trigger database-driven toast messages
+        // No need for hardcoded notifications - let the status system handle it
 
         // Update the project status in the global data
         if (this.project) {
