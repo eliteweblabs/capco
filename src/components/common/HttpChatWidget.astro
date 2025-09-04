@@ -23,10 +23,17 @@ const { user, role } = Astro.props;
   <!-- Chat Icon (Always Visible) -->
   <button
     id="chat-toggle"
-    class="rounded-full bg-red-600 px-4 py-3 text-white shadow-lg transition-all duration-200 hover:scale-110 hover:bg-red-700"
+    class="relative rounded-full bg-red-600 px-4 py-3 text-white shadow-lg transition-all duration-200 hover:scale-110 hover:bg-red-700"
     title="Team Chat"
   >
     <i class="bx bx-message-rounded-dots text-xl"></i>
+    <!-- Notification Count Bubble -->
+    <span
+      id="chat-notification-count"
+      class="absolute -top-2 -right-2 hidden h-6 w-6 items-center justify-center rounded-full bg-yellow-500 text-xs font-bold text-white"
+    >
+      0
+    </span>
   </button>
 
   <!-- Chat Widget (Hidden by Default) -->
@@ -106,6 +113,9 @@ const { user, role } = Astro.props;
   let onlineUsers: any[] = [];
   let isInitialized = false;
   let heartbeatInterval: any = null;
+  let unreadCount = 0;
+  let lastMessageTimestamp: string | null = null;
+  let isChatOpen = false;
 
   // Initialize chat widget
   function initializeChat() {
@@ -151,6 +161,9 @@ const { user, role } = Astro.props;
     // Setup event listeners
     setupChatEvents();
 
+    // Check if chat should be open from cookie
+    checkChatStateFromCookie();
+
     // Join chat
     joinChat();
 
@@ -171,16 +184,32 @@ const { user, role } = Astro.props;
     // Toggle chat panel
     chatToggle?.addEventListener("click", () => {
       const chatPanel = document.getElementById("chat-panel");
-      chatPanel?.classList.toggle("hidden");
-
-      if (!chatPanel?.classList.contains("hidden")) {
+      const isHidden = chatPanel?.classList.contains("hidden");
+      
+      if (isHidden) {
+        // Opening chat
+        chatPanel?.classList.remove("hidden");
+        isChatOpen = true;
         chatInput?.focus();
+        // Reset unread count when opening
+        resetUnreadCount();
+        // Save chat state to cookie
+        saveChatStateToCookie(true);
+      } else {
+        // Closing chat
+        chatPanel?.classList.add("hidden");
+        isChatOpen = false;
+        // Save chat state to cookie
+        saveChatStateToCookie(false);
       }
     });
 
     // Close chat panel
     chatClose?.addEventListener("click", () => {
       document.getElementById("chat-panel")?.classList.add("hidden");
+      isChatOpen = false;
+      // Save chat state to cookie
+      saveChatStateToCookie(false);
     });
 
     // Handle input changes
@@ -343,6 +372,14 @@ const { user, role } = Astro.props;
 
     messagesContainer.appendChild(messageElement);
     messagesContainer.scrollTop = messagesContainer.scrollHeight;
+
+    // Update notification count if message is not from current user and chat is closed
+    if (!isOwnMessage && !isChatOpen) {
+      incrementUnreadCount();
+    }
+
+    // Update last message timestamp
+    lastMessageTimestamp = timestamp;
   }
 
   // Start heartbeat to maintain connection
@@ -401,7 +438,7 @@ const { user, role } = Astro.props;
               );
               
               // Add only new messages
-              data.messages.forEach(msg => {
+              data.messages.forEach((msg: any) => {
                 if (!existingMessageIds.has(msg.id.toString())) {
                   addMessage(msg);
                 }
@@ -473,10 +510,69 @@ const { user, role } = Astro.props;
     }
   });
 
+  // Notification count management
+  function incrementUnreadCount() {
+    unreadCount++;
+    updateNotificationCount();
+  }
+
+  function resetUnreadCount() {
+    unreadCount = 0;
+    updateNotificationCount();
+  }
+
+  function updateNotificationCount() {
+    const countElement = document.getElementById("chat-notification-count");
+    if (countElement) {
+      if (unreadCount > 0) {
+        countElement.textContent = unreadCount > 99 ? "99+" : unreadCount.toString();
+        countElement.classList.remove("hidden");
+        countElement.classList.add("flex");
+      } else {
+        countElement.classList.add("hidden");
+        countElement.classList.remove("flex");
+      }
+    }
+  }
+
+  // Cookie management for chat state
+  function saveChatStateToCookie(isOpen: boolean) {
+    try {
+      const expires = new Date();
+      expires.setTime(expires.getTime() + (24 * 60 * 60 * 1000)); // 24 hours
+      document.cookie = `chatOpen=${isOpen}; expires=${expires.toUTCString()}; path=/`;
+      console.log("🔔 [HTTP-CHAT] Chat state saved to cookie:", isOpen);
+    } catch (error) {
+      console.error("🔔 [HTTP-CHAT] Error saving chat state to cookie:", error);
+    }
+  }
+
+  function checkChatStateFromCookie() {
+    try {
+      const cookies = document.cookie.split(';');
+      const chatOpenCookie = cookies.find(cookie => cookie.trim().startsWith('chatOpen='));
+      
+      if (chatOpenCookie) {
+        const isOpen = chatOpenCookie.split('=')[1] === 'true';
+        console.log("🔔 [HTTP-CHAT] Chat state from cookie:", isOpen);
+        
+        if (isOpen) {
+          const chatPanel = document.getElementById("chat-panel");
+          chatPanel?.classList.remove("hidden");
+          isChatOpen = true;
+        }
+      }
+    } catch (error) {
+      console.error("🔔 [HTTP-CHAT] Error reading chat state from cookie:", error);
+    }
+  }
+
   // Cleanup on page unload
   window.addEventListener("beforeunload", () => {
     if (heartbeatInterval) {
       clearInterval(heartbeatInterval);
     }
+    // Save current chat state
+    saveChatStateToCookie(isChatOpen);
   });
 </script>
