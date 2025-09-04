@@ -84,7 +84,10 @@ export const POST: APIRoute = async ({ request }) => {
 
         if (messageError) {
           console.error("❌ [CHAT-API] Error saving message:", messageError);
-          console.error("❌ [CHAT-API] Error details:", JSON.stringify(messageError, null, 2));
+          console.error("❌ [CHAT-API] Error code:", messageError.code);
+          console.error("❌ [CHAT-API] Error message:", messageError.message);
+          console.error("❌ [CHAT-API] Error details:", messageError.details);
+          console.error("❌ [CHAT-API] Error hint:", messageError.hint);
           return new Response(JSON.stringify({ error: "Failed to save message", details: messageError.message }), {
             status: 500,
             headers: { "Content-Type": "application/json" },
