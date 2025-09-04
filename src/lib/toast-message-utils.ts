@@ -24,11 +24,11 @@ export function replaceToastPlaceholders(message: string, data: ToastMessageData
 
   // Replace common placeholders
   const placeholders = {
-    '{{PROJECT_TITLE}}': data.projectTitle || 'Project',
-    '{{CLIENT_EMAIL}}': data.clientEmail || 'Client',
-    '{{CLIENT_NAME}}': data.clientName || 'Client',
-    '{{PROJECT_ADDRESS}}': data.projectAddress || 'N/A',
-    '{{STATUS_NAME}}': data.statusName || 'Status Update',
+    '{{PROJECT_TITLE}}': `<strong>${data.projectTitle || 'Project'}</strong>`,
+    '{{CLIENT_EMAIL}}': `<strong>${data.clientEmail || 'Client'}</strong>`,
+    '{{CLIENT_NAME}}': `<strong>${data.clientName || 'Client'}</strong>`,
+    '{{PROJECT_ADDRESS}}': `<strong>${data.projectAddress || 'N/A'}</strong>`,
+    '{{STATUS_NAME}}': `<strong>${data.statusName || 'Status Update'}</strong>`,
   };
 
   // Replace each placeholder
