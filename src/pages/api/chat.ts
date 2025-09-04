@@ -134,6 +134,34 @@ export const POST: APIRoute = async ({ request }) => {
           }
         );
 
+      case "get_messages":
+        // Get recent messages
+        const { data: recentMessages, error: recentError } = await supabase
+          .from("chat_messages")
+          .select("*")
+          .order("created_at", { ascending: false })
+          .limit(50);
+
+        if (recentError) {
+          console.error("❌ [CHAT-API] Error fetching recent messages:", recentError);
+          return new Response(JSON.stringify({ error: "Failed to fetch messages" }), {
+            status: 500,
+            headers: { "Content-Type": "application/json" },
+          });
+        }
+
+        return new Response(
+          JSON.stringify({
+            success: true,
+            action: "get_messages",
+            messages: recentMessages || [],
+          }),
+          {
+            status: 200,
+            headers: { "Content-Type": "application/json" },
+          }
+        );
+
       default:
         return new Response(JSON.stringify({ error: "Invalid action" }), {
           status: 400,

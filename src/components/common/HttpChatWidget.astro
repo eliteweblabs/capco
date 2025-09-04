@@ -329,6 +329,7 @@ const { user, role } = Astro.props;
     const isOwnMessage = userId === currentUser.id;
     const messageElement = document.createElement("div");
     messageElement.className = `flex ${isOwnMessage ? "justify-end" : "justify-start"}`;
+    messageElement.setAttribute('data-message-id', data.id || 'unknown');
 
     messageElement.innerHTML = `
       <div class="max-w-xs ${isOwnMessage ? "bg-red-600 text-white" : "bg-gray-100 dark:bg-gray-600 text-gray-900 dark:text-white"} rounded-lg px-3 py-2">
@@ -372,6 +373,44 @@ const { user, role } = Astro.props;
         console.error("🔔 [HTTP-CHAT] Heartbeat error:", error);
       }
     }, 30000); // Every 30 seconds
+
+    // Also poll for new messages every 5 seconds
+    setInterval(async () => {
+      try {
+        const response = await fetch("/api/chat", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            action: "get_messages",
+            userId: currentUser.id,
+          }),
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          if (data.messages && data.messages.length > 0) {
+            // Check if we have new messages
+            const messagesContainer = document.getElementById("chat-messages");
+            if (messagesContainer) {
+              const existingMessageIds = new Set(
+                Array.from(messagesContainer.children).map(el => el.getAttribute('data-message-id'))
+              );
+              
+              // Add only new messages
+              data.messages.forEach(msg => {
+                if (!existingMessageIds.has(msg.id.toString())) {
+                  addMessage(msg);
+                }
+              });
+            }
+          }
+        }
+      } catch (error) {
+        console.error("🔔 [HTTP-CHAT] Message polling error:", error);
+      }
+    }, 5000); // Every 5 seconds
   }
 
   // Update online count and show usernames
