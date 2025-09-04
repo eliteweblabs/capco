@@ -183,10 +183,24 @@ export const GET: APIRoute = async ({ url, cookies }) => {
     const discussionsWithProfiles =
       discussions?.map((discussion) => {
         const authorProfile = authorProfiles[discussion.author_id];
+        const authorName = authorProfile?.display_name || authorProfile?.company_name || authorProfile?.name || "Unknown User";
+        
+        console.log(`🔍 [DISCUSSIONS] Discussion ${discussion.id} author mapping:`, {
+          author_id: discussion.author_id,
+          hasProfile: !!authorProfile,
+          profileData: authorProfile ? {
+            display_name: authorProfile.display_name,
+            company_name: authorProfile.company_name,
+            name: authorProfile.name,
+            email: authorProfile.email
+          } : null,
+          finalAuthorName: authorName
+        });
+        
         return {
           ...discussion,
           profiles: authorProfile || null,
-          author_name: authorProfile?.display_name || authorProfile?.company_name || authorProfile?.name || "Unknown User",
+          author_name: authorName,
         };
       }) || [];
 
