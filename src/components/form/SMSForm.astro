@@ -151,10 +151,49 @@ const { compact = false } = Astro.props;
         // Show loading notification
         if (window.showInfo) {
           window.showInfo("Sending Message...", "Please wait while we send your message to CAPCo.", 5000);
-          (form as HTMLFormElement).reset();
-
         } else {
           console.log("🔔 [Sending Message...] Please wait while we send your message to CAPCo.");
+        }
+
+        try {
+          // Create FormData from the form
+          const formData = new FormData(form as HTMLFormElement);
+          
+          // Make the API call
+          const response = await fetch("/api/send-email-sms", {
+            method: "POST",
+            body: formData,
+          });
+
+          if (response.ok) {
+            // Success
+            if (window.showSuccess) {
+              window.showSuccess("Message Sent!", "Your message has been sent to CAPCo successfully.", 5000);
+            } else {
+              console.log("🔔 [Message Sent!] Your message has been sent to CAPCo successfully.");
+            }
+            (form as HTMLFormElement).reset();
+            
+            // Dispatch custom event to close the SMS panel
+            const closeEvent = new CustomEvent('smsFormSubmitted');
+            document.dispatchEvent(closeEvent);
+          } else {
+            // Error
+            const errorText = await response.text();
+            console.error("🔔 [SMS Error] API response:", response.status, errorText);
+            if (window.showError) {
+              window.showError("Send Failed", "Failed to send message. Please try again.", 5000);
+            } else {
+              console.error("🔔 [Send Failed] Failed to send message. Please try again.");
+            }
+          }
+        } catch (error) {
+          console.error("🔔 [SMS Error] Network error:", error);
+          if (window.showError) {
+            window.showError("Network Error", "Failed to send message. Please check your connection.", 5000);
+          } else {
+            console.error("🔔 [Network Error] Failed to send message. Please check your connection.");
+          }
         }
       });
     }
