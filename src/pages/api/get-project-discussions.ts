@@ -183,7 +183,7 @@ export const GET: APIRoute = async ({ url, cookies }) => {
     const discussionsWithProfiles =
       discussions?.map((discussion) => {
         const authorProfile = authorProfiles[discussion.author_id];
-        const authorName = authorProfile?.display_name || authorProfile?.company_name || authorProfile?.name || "Unknown User";
+        const companyName = authorProfile?.company_name || authorProfile?.display_name || authorProfile?.name || "Unknown User";
         
         console.log(`🔍 [DISCUSSIONS] Discussion ${discussion.id} author mapping:`, {
           author_id: discussion.author_id,
@@ -194,13 +194,13 @@ export const GET: APIRoute = async ({ url, cookies }) => {
             name: authorProfile.name,
             email: authorProfile.email
           } : null,
-          finalAuthorName: authorName
+          finalCompanyName: companyName
         });
         
         return {
           ...discussion,
           profiles: authorProfile || null,
-          author_name: authorName,
+          company_name: companyName,
         };
       }) || [];
 
