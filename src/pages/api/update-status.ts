@@ -16,14 +16,15 @@ export const OPTIONS: APIRoute = async () => {
 };
 
 export const POST: APIRoute = async ({ request, cookies }) => {
-  console.log("📊 [UPDATE-STATUS] API route called!");
   console.log("📊 [UPDATE-STATUS] ==========================================");
+  console.log("📊 [UPDATE-STATUS] API route called!");
   console.log("📊 [UPDATE-STATUS] Timestamp:", new Date().toISOString());
   console.log("📊 [UPDATE-STATUS] Request method:", request.method);
   console.log("📊 [UPDATE-STATUS] Request URL:", request.url);
   console.log("📊 [UPDATE-STATUS] Has cookies:", !!cookies);
   console.log("📊 [UPDATE-STATUS] Has access token:", !!cookies.get("sb-access-token")?.value);
   console.log("📊 [UPDATE-STATUS] Has refresh token:", !!cookies.get("sb-refresh-token")?.value);
+  console.log("📊 [UPDATE-STATUS] ==========================================");
 
   // Also log to a file for debugging
   const fs = await import("fs");
@@ -149,7 +150,10 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
     // If not found with number, try with string
     if (!statusConfig && statusError) {
-      console.log("📊 [UPDATE-STATUS] Not found with number, trying with string:", newStatus.toString());
+      console.log(
+        "📊 [UPDATE-STATUS] Not found with number, trying with string:",
+        newStatus.toString()
+      );
       const stringResult = await supabase
         .from("project_statuses")
         .select(
@@ -157,7 +161,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         )
         .eq("status_code", newStatus.toString())
         .single();
-      
+
       statusConfig = stringResult.data;
       statusError = stringResult.error;
     }
