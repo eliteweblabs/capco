@@ -95,24 +95,21 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         try {
           // Call the create-user API to create the new client
           const baseUrl = getApiBaseUrl(request);
-          const createUserResponse = await fetch(
-            `${baseUrl}/api/create-user`,
-            {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-                Cookie: `sb-access-token=${cookies.get("sb-access-token")?.value}; sb-refresh-token=${cookies.get("sb-refresh-token")?.value}`,
-              },
-              body: JSON.stringify({
-                first_name: first_name.trim(),
-                last_name: last_name.trim(),
-                company_name: company_name?.trim() || "",
-                email: email.trim(),
-                phone: "",
-                role: "Client",
-              }),
-            }
-          );
+          const createUserResponse = await fetch(`${baseUrl}/api/create-user`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Cookie: `sb-access-token=${cookies.get("sb-access-token")?.value}; sb-refresh-token=${cookies.get("sb-refresh-token")?.value}`,
+            },
+            body: JSON.stringify({
+              first_name: first_name.trim(),
+              last_name: last_name.trim(),
+              company_name: company_name?.trim() || "",
+              email: email.trim(),
+              phone: "",
+              role: "Client",
+            }),
+          });
 
           const createUserResult = await createUserResponse.json();
 
@@ -208,13 +205,19 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       .single();
 
     if (authorCheckError) {
-      console.error("📝 [CREATE-PROJECT] Safety check failed - could not verify author role:", authorCheckError);
-      return new Response(JSON.stringify({ 
-        error: "Failed to verify project author role",
-        details: "Could not validate that the project author is a client"
-      }), {
-        status: 500,
-      });
+      console.error(
+        "📝 [CREATE-PROJECT] Safety check failed - could not verify author role:",
+        authorCheckError
+      );
+      return new Response(
+        JSON.stringify({
+          error: "Failed to verify project author role",
+          details: "Could not validate that the project author is a client",
+        }),
+        {
+          status: 500,
+        }
+      );
     }
 
     if (authorProfile.role !== "Client") {
@@ -222,19 +225,22 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         authorId: projectAuthorId,
         authorRole: authorProfile.role,
         expectedRole: "Client",
-        currentUserRole: userProfile.role
+        currentUserRole: userProfile.role,
       });
-      return new Response(JSON.stringify({ 
-        error: "Project author must be a client",
-        details: `Cannot create project with author role: ${authorProfile.role}. Only clients can be project authors.`
-      }), {
-        status: 400,
-      });
+      return new Response(
+        JSON.stringify({
+          error: "Project author must be a client",
+          details: `Cannot create project with author role: ${authorProfile.role}. Only clients can be project authors.`,
+        }),
+        {
+          status: 400,
+        }
+      );
     }
 
     console.log("📝 [CREATE-PROJECT] ✅ Safety check passed - project author is a client:", {
       authorId: projectAuthorId,
-      authorRole: authorProfile.role
+      authorRole: authorProfile.role,
     });
 
     // Create project
@@ -316,7 +322,11 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       // Don't fail the request if logging fails
     }
 
-    return new Response(JSON.stringify(project), {
+    return new Response(JSON.stringify({
+      success: true,
+      project: project,
+      message: "Project created successfully"
+    }), {
       status: 201,
       headers: {
         "Content-Type": "application/json",
