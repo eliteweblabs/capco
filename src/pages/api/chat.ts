@@ -1,5 +1,6 @@
 import type { APIRoute } from "astro";
 import { supabase } from "../../lib/supabase";
+import { supabaseAdmin } from "../../lib/supabase-admin";
 
 // In-memory storage for active connections (in production, use Redis)
 const activeConnections = new Map<string, { userId: string; userName: string; userRole: string; lastSeen: Date }>();
@@ -37,8 +38,8 @@ export const POST: APIRoute = async ({ request }) => {
           lastSeen: new Date(),
         });
 
-        // Get recent chat history
-        const { data: messages, error: historyError } = await supabase
+        // Get recent chat history using admin client
+        const { data: messages, error: historyError } = await supabaseAdmin
           .from("chat_messages")
           .select("*")
           .order("created_at", { ascending: false })
@@ -76,8 +77,8 @@ export const POST: APIRoute = async ({ request }) => {
       case "message":
         console.log("🔔 [CHAT-API] Saving message:", { userId, userName, userRole, message });
         
-        // Save message to database
-        const { data: savedMessage, error: messageError } = await supabase
+        // Save message to database using admin client to bypass RLS
+        const { data: savedMessage, error: messageError } = await supabaseAdmin
           .from("chat_messages")
           .insert({
             user_id: userId,
@@ -142,8 +143,8 @@ export const POST: APIRoute = async ({ request }) => {
         );
 
       case "get_messages":
-        // Get recent messages
-        const { data: recentMessages, error: recentError } = await supabase
+        // Get recent messages using admin client
+        const { data: recentMessages, error: recentError } = await supabaseAdmin
           .from("chat_messages")
           .select("*")
           .order("created_at", { ascending: false })
