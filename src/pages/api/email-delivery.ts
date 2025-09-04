@@ -370,11 +370,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         `📧 [EMAIL-DELIVERY] Processing user: ${user.email} (${i + 1}/${finalUsersToNotify.length})`
       );
 
-      // Add delay between emails to avoid rate limiting (except for the first email)
-      if (i > 0) {
-        console.log(`📧 [EMAIL-DELIVERY] Waiting 1 second before sending next email...`);
-        await new Promise((resolve) => setTimeout(resolve, 1000));
-      }
+      // No delay needed with paid Resend account - higher rate limits
 
       try {
         // Determine if this user should get a magic link button
@@ -580,8 +576,8 @@ export const POST: APIRoute = async ({ request, cookies }) => {
           // Add proper content type and custom headers
           headers: {
             "Content-Type": "text/html; charset=UTF-8",
-            // "X-Project-ID": projectId,
-            // "X-Project-Status": newStatus.toString(),
+            "X-Project-ID": projectId,
+            "X-Project-Status": newStatus.toString(),
             "X-User-Email": user.email,
           },
         };
