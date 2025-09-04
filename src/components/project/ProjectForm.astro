@@ -480,15 +480,18 @@ console.log("New client fields found:", newClientFieldsInForm.length, newClientF
               console.log("📝 [ProjectForm] Status update response:", statusResult);
               console.log("📝 [ProjectForm] Status update response status:", statusResponse.status);
               console.log("📝 [ProjectForm] Status update response ok:", statusResponse.ok);
-              
+
               // Store response in localStorage for debugging
-              localStorage.setItem('projectFormStatusResponse', JSON.stringify({
-                response: statusResult,
-                status: statusResponse.status,
-                ok: statusResponse.ok,
-                timestamp: new Date().toISOString(),
-                projectId: result.project.id
-              }));
+              localStorage.setItem(
+                "projectFormStatusResponse",
+                JSON.stringify({
+                  response: statusResult,
+                  status: statusResponse.status,
+                  ok: statusResponse.ok,
+                  timestamp: new Date().toISOString(),
+                  projectId: result.project.id,
+                })
+              );
 
               if (statusResult.success && statusResult.statusConfig?.redirect_url) {
                 // Use database-driven redirect
@@ -527,14 +530,17 @@ console.log("New client fields found:", newClientFieldsInForm.length, newClientF
             } catch (statusError) {
               console.error("📝 [ProjectForm] Status update failed:", statusError);
               console.error("📝 [ProjectForm] Status update error details:", statusError);
-              
+
               // Store error in localStorage for debugging
-              localStorage.setItem('projectFormError', JSON.stringify({
-                error: statusError.message || statusError,
-                timestamp: new Date().toISOString(),
-                projectId: result.project.id
-              }));
-              
+              localStorage.setItem(
+                "projectFormError",
+                JSON.stringify({
+                  error: statusError.message || statusError,
+                  timestamp: new Date().toISOString(),
+                  projectId: result.project.id,
+                })
+              );
+
               // Fallback: just refresh the page
               window.location.reload();
             }
