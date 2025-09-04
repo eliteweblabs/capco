@@ -322,16 +322,19 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       // Don't fail the request if logging fails
     }
 
-    return new Response(JSON.stringify({
-      success: true,
-      project: project,
-      message: "Project created successfully"
-    }), {
-      status: 201,
-      headers: {
-        "Content-Type": "application/json",
-      },
-    });
+    return new Response(
+      JSON.stringify({
+        success: true,
+        project: project,
+        message: "Project created successfully",
+      }),
+      {
+        status: 201,
+        headers: {
+          "Content-Type": "application/json",
+        },
+      }
+    );
   } catch (error) {
     console.error("📝 [CREATE-PROJECT] Catch block error:", error);
     return new Response(JSON.stringify({ error: "Internal server error" }), {
