@@ -27,16 +27,27 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     const body = await request.json();
     console.log("🔔 [UPDATE-DISCUSSION] Request body:", body);
     const { discussionId, mark_completed } = body;
-    
+
     // Ensure discussionId is a number
     const discussionIdNum = parseInt(discussionId, 10);
-    console.log("🔔 [UPDATE-DISCUSSION] Parsed discussionId:", discussionIdNum, "Original:", discussionId);
+    console.log(
+      "🔔 [UPDATE-DISCUSSION] Parsed discussionId:",
+      discussionIdNum,
+      "Original:",
+      discussionId
+    );
 
     if (isNaN(discussionIdNum) || mark_completed === undefined) {
-      return new Response(JSON.stringify({ success: false, error: "Invalid discussion ID or missing required fields" }), {
-        status: 400,
-        headers: { "Content-Type": "application/json" },
-      });
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: "Invalid discussion ID or missing required fields",
+        }),
+        {
+          status: 400,
+          headers: { "Content-Type": "application/json" },
+        }
+      );
     }
 
     console.log("🔔 [UPDATE-DISCUSSION] Updating discussion:", {
@@ -47,7 +58,12 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     });
 
     // First, check if the discussion exists and get its current state
-    console.log("🔍 [UPDATE-DISCUSSION] Looking for discussion with ID:", discussionIdNum, "Type:", typeof discussionIdNum);
+    console.log(
+      "🔍 [UPDATE-DISCUSSION] Looking for discussion with ID:",
+      discussionIdNum,
+      "Type:",
+      typeof discussionIdNum
+    );
     const { data: existingDiscussion, error: fetchError } = await supabase
       .from("discussion")
       .select("id, mark_completed")
