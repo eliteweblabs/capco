@@ -16,6 +16,7 @@ import GoogleAddressAutocomplete from "../form/GoogleAddressAutocomplete.astro";
 import IsNewOrExistingClient from "./IsNewOrExistingClient.astro";
 
 import { checkAuth } from "../../lib/auth";
+import { showNotification } from "../../lib/centralized-notifications";
 
 interface Props {
   project?: any;
@@ -777,18 +778,17 @@ console.log("New client fields found:", newClientFieldsInForm.length, newClientF
             console.error("🔍 [ProjectForm] Error calling update-status API:", statusError);
           }
 
-          console.log("🔍 [ProjectForm] About to redirect after project creation...");
-          console.log("🔍 [ProjectForm] Project result:", result);
-          console.log("🔍 [ProjectForm] Redirect URL:", `/project/${result.id}?tab=documents`);
-          console.log("🔍 [ProjectForm] Current timestamp:", new Date().toISOString());
-
-          // Add debugger statement for inspection
-          // debugger;
-
-          setTimeout(() => {
-            console.log("🔍 [ProjectForm] Executing redirect now...");
-            window.location.href = `/project/${result.id}?tab=documents`;
-          }, 1500); // Small delay to show the toast
+          // Use centralized notification system with redirect
+          showNotification({
+            type: "success",
+            title: "Project Created!",
+            message: "Your new project has been created successfully. Redirecting you to documents in {{COUNTDOWN}} seconds.",
+            redirect: {
+              url: `/project/${result.id}?tab=documents`,
+              delay: 5, // 5 second countdown
+              showCountdown: true
+            }
+          });
         }
 
         return result;

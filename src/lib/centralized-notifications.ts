@@ -18,6 +18,11 @@ export interface NotificationOptions {
   duration?: number;
   id?: string;
   actions?: Array<{ label: string; action: () => void }>;
+  redirect?: {
+    url: string;
+    delay?: number; // Delay in seconds before redirect (default: 0)
+    showCountdown?: boolean; // Show countdown in message (default: true)
+  };
 }
 
 export interface ToastMessageData {
@@ -27,6 +32,7 @@ export interface ToastMessageData {
   projectAddress?: string;
   statusName?: string;
   estTime?: string;
+  countdown?: number; // Duration in seconds for countdown
   [key: string]: any;
 }
 
@@ -43,11 +49,41 @@ export function showNotification(options: NotificationOptions): void {
     return;
   }
 
+  // Process redirect if specified
+  let processedOptions = { ...options };
+  if (options.redirect) {
+    const delay = options.redirect.delay || 0;
+    const showCountdown = options.redirect.showCountdown !== false; // Default to true
+    
+    if (showCountdown && delay > 0) {
+      // Add countdown to message
+      processedOptions.message = options.message.replace(
+        /{{COUNTDOWN}}/g,
+        `<span class="countdown-timer" data-duration="${delay}">${delay}</span>`
+      );
+    }
+    
+    // Schedule redirect
+    if (delay > 0) {
+      setTimeout(() => {
+        console.log("🔔 [CENTRALIZED] Redirecting to:", options.redirect!.url);
+        window.location.href = options.redirect!.url;
+      }, delay * 1000);
+    } else {
+      // Immediate redirect
+      console.log("🔔 [CENTRALIZED] Immediate redirect to:", options.redirect.url);
+      window.location.href = options.redirect.url;
+      return; // Don't show notification for immediate redirects
+    }
+  }
+
   // Use ToastAlerts for notifications with action buttons
-  if (options.actions && options.actions.length > 0) {
+  if (processedOptions.actions && processedOptions.actions.length > 0) {
     if ((window as any).toastAlertManager) {
       console.log("🔔 [CENTRALIZED] Using toast alert manager for actions");
-      (window as any).toastAlertManager.show(options);
+      (window as any).toastAlertManager.show(processedOptions);
+      // Initialize countdown timers after notification is shown
+      setTimeout(() => initializeCountdownTimers(), 100);
       return;
     }
   }
@@ -55,20 +91,24 @@ export function showNotification(options: NotificationOptions): void {
   // Use SimpleToast for simple notifications
   if ((window as any).simpleToastManager) {
     console.log("🔔 [CENTRALIZED] Using simple toast manager");
-    (window as any).simpleToastManager.show(options);
+    (window as any).simpleToastManager.show(processedOptions);
+    // Initialize countdown timers after notification is shown
+    setTimeout(() => initializeCountdownTimers(), 100);
     return;
   }
 
   // Fallback to ToastAlerts if SimpleToast unavailable
   if ((window as any).toastAlertManager) {
     console.log("🔔 [CENTRALIZED] Using toast alert manager fallback");
-    (window as any).toastAlertManager.show(options);
+    (window as any).toastAlertManager.show(processedOptions);
+    // Initialize countdown timers after notification is shown
+    setTimeout(() => initializeCountdownTimers(), 100);
     return;
   }
 
   // Final fallback to console logging
-  const logLevel = options.type === "error" ? "error" : "log";
-  console[logLevel](`🔔 [${options.type.toUpperCase()}] ${options.title}: ${options.message}`);
+  const logLevel = processedOptions.type === "error" ? "error" : "log";
+  console[logLevel](`🔔 [${processedOptions.type.toUpperCase()}] ${processedOptions.title}: ${processedOptions.message}`);
 }
 
 /**
@@ -138,6 +178,7 @@ export function replaceToastPlaceholders(message: string, data: ToastMessageData
     "{{PROJECT_ADDRESS}}": `<strong>${data.projectAddress || "N/A"}</strong>`,
     "{{STATUS_NAME}}": `<strong>${data.statusName || "Status Update"}</strong>`,
     "{{EST_TIME}}": `<strong>${data.estTime || "2-3 business days"}</strong>`, // From status configuration
+    "{{COUNTDOWN}}": data.countdown ? `<span class="countdown-timer" data-duration="${data.countdown}">${data.countdown}</span>` : '',
   };
 
   // Replace each placeholder
@@ -231,3 +272,43 @@ export function showStatusToast(
 
 // Export for backward compatibility
 export const showToast = showNotification;
+
+/**
+ * Initialize countdown timers for all countdown elements in the DOM
+ * This should be called after toast messages are displayed
+ */
+export function initializeCountdownTimers(): void {
+  const countdownElements = document.querySelectorAll('.countdown-timer');
+  
+  countdownElements.forEach((element) => {
+    const duration = parseInt(element.getAttribute('data-duration') || '0');
+    if (duration > 0) {
+      startCountdown(element as HTMLElement, duration);
+    }
+  });
+}
+
+/**
+ * Start a countdown timer for a specific element
+ * @param element - The HTML element to update
+ * @param duration - Duration in seconds
+ */
+function startCountdown(element: HTMLElement, duration: number): void {
+  let remaining = duration;
+  
+  const updateCountdown = () => {
+    element.textContent = remaining.toString();
+    
+    if (remaining <= 0) {
+      // Countdown finished
+      element.textContent = '0';
+      return;
+    }
+    
+    remaining--;
+    setTimeout(updateCountdown, 1000);
+  };
+  
+  // Start the countdown
+  updateCountdown();
+}

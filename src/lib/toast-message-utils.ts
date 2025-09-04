@@ -8,6 +8,7 @@ export interface ToastMessageData {
   clientName?: string;
   projectAddress?: string;
   statusName?: string;
+  countdown?: number; // Duration in seconds for countdown
   [key: string]: any;
 }
 
@@ -29,6 +30,7 @@ export function replaceToastPlaceholders(message: string, data: ToastMessageData
     '{{CLIENT_NAME}}': `<strong>${data.clientName || 'Client'}</strong>`,
     '{{PROJECT_ADDRESS}}': `<strong>${data.projectAddress || 'N/A'}</strong>`,
     '{{STATUS_NAME}}': `<strong>${data.statusName || 'Status Update'}</strong>`,
+    '{{COUNTDOWN}}': data.countdown ? `<span class="countdown-timer" data-duration="${data.countdown}">${data.countdown}</span>` : '',
   };
 
   // Replace each placeholder
@@ -93,4 +95,44 @@ export function prepareToastData(
     projectAddress: project?.address || 'N/A',
     statusName: statusName || 'Status Update',
   };
+}
+
+/**
+ * Initialize countdown timers for all countdown elements in the DOM
+ * This should be called after toast messages are displayed
+ */
+export function initializeCountdownTimers(): void {
+  const countdownElements = document.querySelectorAll('.countdown-timer');
+  
+  countdownElements.forEach((element) => {
+    const duration = parseInt(element.getAttribute('data-duration') || '0');
+    if (duration > 0) {
+      startCountdown(element as HTMLElement, duration);
+    }
+  });
+}
+
+/**
+ * Start a countdown timer for a specific element
+ * @param element - The HTML element to update
+ * @param duration - Duration in seconds
+ */
+function startCountdown(element: HTMLElement, duration: number): void {
+  let remaining = duration;
+  
+  const updateCountdown = () => {
+    element.textContent = remaining.toString();
+    
+    if (remaining <= 0) {
+      // Countdown finished - you can add redirect logic here if needed
+      element.textContent = '0';
+      return;
+    }
+    
+    remaining--;
+    setTimeout(updateCountdown, 1000);
+  };
+  
+  // Start the countdown
+  updateCountdown();
 }
