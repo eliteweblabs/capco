@@ -1,7 +1,6 @@
 import type { APIRoute } from "astro";
 import { SimpleProjectLogger } from "../../lib/simple-logging";
 import { supabase } from "../../lib/supabase";
-import { supabaseAdmin } from "../../lib/supabase-admin";
 import { getToastMessage, prepareToastData } from "../../lib/toast-message-utils";
 
 export const OPTIONS: APIRoute = async () => {
@@ -256,14 +255,10 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         console.log("📊 [UPDATE-STATUS] User role determined:", userRole);
 
         // Use the proper toast message system from database
-        const toastData = prepareToastData(
-          updatedProject,
-          user,
-          statusConfig.status_name
-        );
+        const toastData = prepareToastData(updatedProject, user, statusConfig.status_name);
 
         const toastMessage = getToastMessage(statusConfig, userRole, toastData);
-        
+
         console.log("📊 [UPDATE-STATUS] Database-driven toast message:", toastMessage);
 
         if (toastMessage) {
