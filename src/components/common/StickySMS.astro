@@ -137,12 +137,23 @@ const shouldShow = !currentUrl.startsWith("/sms-demo");
     toggleBtn.addEventListener("click", togglePanel);
     closeBtn.addEventListener("click", closePanel);
     backdrop.addEventListener("click", closePanel);
-    (form as HTMLFormElement).addEventListener("submit", closePanel);
+    
+    // Don't close panel on form submit - let the form handle it
+    // (form as HTMLFormElement).addEventListener("submit", closePanel);
 
     // Close on escape key
     document.addEventListener("keydown", (e) => {
       if (e.key === "Escape" && isOpen) {
         closePanel();
+      }
+    });
+
+    // Close panel when SMS form is successfully submitted
+    document.addEventListener("smsFormSubmitted", () => {
+      if (isOpen) {
+        setTimeout(() => {
+          closePanel();
+        }, 1000); // Wait 1 second to show success message
       }
     });
 
