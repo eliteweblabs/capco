@@ -181,10 +181,14 @@ export const GET: APIRoute = async ({ url, cookies }) => {
 
     // Combine discussions with author profiles
     const discussionsWithProfiles =
-      discussions?.map((discussion) => ({
-        ...discussion,
-        profiles: authorProfiles[discussion.author_id] || null,
-      })) || [];
+      discussions?.map((discussion) => {
+        const authorProfile = authorProfiles[discussion.author_id];
+        return {
+          ...discussion,
+          profiles: authorProfile || null,
+          author_name: authorProfile?.display_name || authorProfile?.company_name || authorProfile?.name || "Unknown User",
+        };
+      }) || [];
 
     return new Response(
       JSON.stringify({
