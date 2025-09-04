@@ -120,6 +120,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       projectId,
       oldStatus: updatedProject.status,
       newStatus,
+      newStatusName: statusConfig?.status_name || `Status ${newStatus}`,
     });
 
     // Log the status change activity
