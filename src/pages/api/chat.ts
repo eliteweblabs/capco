@@ -6,6 +6,7 @@ const activeConnections = new Map<string, { userId: string; userName: string; us
 
 export const POST: APIRoute = async ({ request }) => {
   try {
+    console.log("🔔 [CHAT-API] ===== CHAT API CALLED =====");
     console.log("🔔 [CHAT-API] API called, checking supabase connection...");
 
     if (!supabase) {
@@ -17,6 +18,7 @@ export const POST: APIRoute = async ({ request }) => {
     }
 
     const { action, userId, userName, userRole, message } = await request.json();
+    console.log("🔔 [CHAT-API] Request data:", { action, userId, userName, userRole, message: message?.substring(0, 50) + "..." });
 
     switch (action) {
       case "join":
