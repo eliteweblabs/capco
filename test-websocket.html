@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>WebSocket Test</title>
+    <script src="https://cdn.socket.io/4.8.1/socket.io.min.js"></script>
+</head>
+<body>
+    <h1>WebSocket Connection Test</h1>
+    <div id="status">Connecting...</div>
+    <div id="logs"></div>
+
+    <script>
+        const statusDiv = document.getElementById('status');
+        const logsDiv = document.getElementById('logs');
+
+        function log(message) {
+            logsDiv.innerHTML += '<div>' + new Date().toLocaleTimeString() + ': ' + message + '</div>';
+        }
+
+        log('Starting WebSocket test...');
+
+        // Test both local and production URLs
+        const testUrls = [
+            'http://localhost:8080',
+            'https://capcofire.com:8080'
+        ];
+
+        let currentUrlIndex = 0;
+
+        function testConnection() {
+            if (currentUrlIndex >= testUrls.length) {
+                log('All tests completed');
+                return;
+            }
+
+            const url = testUrls[currentUrlIndex];
+            log('Testing connection to: ' + url);
+
+            try {
+                const socket = io(url, {
+                    transports: ['websocket', 'polling'],
+                    timeout: 5000
+                });
+
+                socket.on('connect', () => {
+                    log('✅ SUCCESS: Connected to ' + url);
+                    statusDiv.innerHTML = '✅ Connected to ' + url;
+                    statusDiv.style.color = 'green';
+                    socket.disconnect();
+                    currentUrlIndex++;
+                    setTimeout(testConnection, 1000);
+                });
+
+                socket.on('connect_error', (error) => {
+                    log('❌ FAILED: ' + url + ' - ' + error.message);
+                    currentUrlIndex++;
+                    setTimeout(testConnection, 1000);
+                });
+
+                socket.on('error', (error) => {
+                    log('❌ ERROR: ' + url + ' - ' + error.message);
+                    currentUrlIndex++;
+                    setTimeout(testConnection, 1000);
+                });
+
+            } catch (error) {
+                log('❌ EXCEPTION: ' + url + ' - ' + error.message);
+                currentUrlIndex++;
+                setTimeout(testConnection, 1000);
+            }
+        }
+
+        // Start testing
+        testConnection();
+    </script>
+</body>
+</html>

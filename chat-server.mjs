@@ -228,8 +228,8 @@ app.get("/users", (req, res) => {
 
 const PORT = process.env.CHAT_PORT || 8080;
 
-server.listen(PORT, () => {
-  console.log(`🚀 [CHAT-SERVER] Chat server running on port ${PORT}`);
+server.listen(PORT, "0.0.0.0", () => {
+  console.log(`🚀 [CHAT-SERVER] Chat server running on port ${PORT} (all interfaces)`);
   console.log(
     `🔔 [CHAT-SERVER] CORS enabled for: http://localhost:4321, http://localhost:3000, https://capcofire.com`
   );
