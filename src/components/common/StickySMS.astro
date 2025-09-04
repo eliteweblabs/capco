@@ -177,7 +177,26 @@ const shouldShow = !currentUrl.startsWith("/sms-demo");
       }
     }
 
-    console.log("📱 [STICKY-SMS] Component initialized");
+    // Safari 18 beta fix - ensure proper positioning
+    function fixSafariViewport() {
+      const container = document.getElementById("sticky-sms-container");
+      if (container) {
+        // Force re-apply positioning
+        container.style.position = "fixed";
+        container.style.bottom = "1.5rem";
+        container.style.right = "1.5rem";
+        container.style.zIndex = "40";
+      }
+    }
+
+    // Apply fix on load and resize
+    fixSafariViewport();
+    window.addEventListener("resize", fixSafariViewport);
+    window.addEventListener("orientationchange", () => {
+      setTimeout(fixSafariViewport, 100);
+    });
+
+    console.log("📱 [STICKY-SMS] Component initialized with Safari 18 beta fix");
   });
 </script>
 
