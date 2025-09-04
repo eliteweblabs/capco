@@ -14,7 +14,7 @@ export const POST: APIRoute = async ({ request }) => {
     console.log("📱 [SMS-API] SMS request received:", {
       phone1: phone1 ? "***" + phone1.slice(-4) : "none",
       carrier1,
-      phone2: phone2 ? "***" + phone2.slice(-4) : "none", 
+      phone2: phone2 ? "***" + phone2.slice(-4) : "none",
       carrier2,
       messageLength: message?.length || 0,
       hasContactInfo: !!contactInfo,
@@ -35,11 +35,11 @@ export const POST: APIRoute = async ({ request }) => {
 
     // Build list of SMS recipients
     const smsRecipients = [];
-    
+
     if (phone1 && carrier1) {
       smsRecipients.push(`${phone1}${carrier1}`);
     }
-    
+
     if (phone2 && carrier2) {
       smsRecipients.push(`${phone2}${carrier2}`);
     }
@@ -66,11 +66,16 @@ export const POST: APIRoute = async ({ request }) => {
 
     emailContent += `\n\nSent via CAPCo Website`;
 
+    // Debug: Log the full email content being sent
+    console.log("📱 [SMS-API] Full email content being sent:");
+    console.log("📱 [SMS-API] Content length:", emailContent.length);
+    console.log("📱 [SMS-API] Content preview:", emailContent.substring(0, 200) + (emailContent.length > 200 ? "..." : ""));
+
     // Use the existing email delivery system
     const baseUrl = getApiBaseUrl(request);
     console.log("📱 [SMS] Using base URL for email delivery:", baseUrl);
     console.log("📱 [SMS] Sending to recipients:", smsRecipients);
-    
+
     const emailResponse = await fetch(`${baseUrl}/api/email-delivery`, {
       method: "POST",
       headers: {
@@ -80,7 +85,7 @@ export const POST: APIRoute = async ({ request }) => {
         emailType: "emergency_sms",
         custom_subject: "CAPCo Website Contact",
         email_content: emailContent,
-        usersToNotify: smsRecipients.map(email => ({ email })), // Send to all SMS gateways
+        usersToNotify: smsRecipients.map((email) => ({ email })), // Send to all SMS gateways
       }),
     });
 
@@ -91,7 +96,7 @@ export const POST: APIRoute = async ({ request }) => {
       return new Response(
         JSON.stringify({
           success: true,
-          message: `SMS sent successfully to ${smsRecipients.length} recipient(s)`,
+          message: `Message sent successfully to CAPCo Fire, Someone will respond to you shortly.`,
         }),
         {
           status: 200,
