@@ -162,7 +162,7 @@ export const GET: APIRoute = async ({ request, cookies }) => {
     const { data: staffUsers, error } = await supabase
       .from("profiles")
       .select("id, company_name, phone, role, created_at")
-      .eq("role", "Staff")
+      .neq("role", "Client")
       .order("company_name", { ascending: true });
 
     console.log("📡 [API] Staff users query result:", { staffUsers, error });
