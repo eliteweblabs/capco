@@ -35,10 +35,10 @@ export const GET: APIRoute = async ({ request, cookies }) => {
       );
     }
 
-    // Get catalog item IDs from the invoice's catalog_item_ids JSONB field
+    // Get catalog line items from the invoice's catalog_line_items JSONB field
     const { data: invoice, error: invoiceError } = await supabase
       .from("invoices")
-      .select("catalog_item_ids")
+      .select("catalog_line_items")
       .eq("id", parseInt(invoiceId))
       .single();
 
@@ -56,32 +56,8 @@ export const GET: APIRoute = async ({ request, cookies }) => {
       );
     }
 
-    const catalogItemIds = invoice?.catalog_item_ids || [];
-
-    // Fetch the actual catalog items
-    let lineItems: any[] = [];
-    if (catalogItemIds.length > 0) {
-      const { data: catalogItems, error: catalogError } = await supabase
-        .from("line_items_catalog")
-        .select("*")
-        .in("id", catalogItemIds);
-
-      if (catalogError) {
-        console.error("❌ [GET-INVOICE-LINE-ITEMS] Catalog error:", catalogError);
-        return new Response(
-          JSON.stringify({
-            success: false,
-            error: catalogError.message,
-          }),
-          {
-            status: 500,
-            headers: { "Content-Type": "application/json" },
-          }
-        );
-      }
-
-      lineItems = catalogItems || [];
-    }
+    // Use the stored catalog line items directly (no need to fetch from catalog)
+    const lineItems = invoice?.catalog_line_items || [];
 
     console.log("🔍 [GET-INVOICE-LINE-ITEMS] Query result:", { lineItems });
 

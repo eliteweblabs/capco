@@ -106,14 +106,14 @@ Tier I Fire Alarm Design
 
     console.log("Creating line items:", lineItems);
 
-    // For now, create empty catalog_item_ids array
+    // Initialize empty catalog_line_items array
     // Line items will be added via the catalog system
-    const catalogItemIds: number[] = [];
+    const catalogLineItems: any[] = [];
 
-    // Update the invoice with empty catalog_item_ids
+    // Update the invoice with empty catalog_line_items
     const { error: updateError } = await supabase
       .from("invoices")
-      .update({ catalog_item_ids: catalogItemIds })
+      .update({ catalog_line_items: catalogLineItems })
       .eq("id", invoice.id);
 
     if (updateError) {

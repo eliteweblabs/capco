@@ -17,7 +17,7 @@ export const POST: APIRoute = async ({ request }) => {
     // Get current invoice
     const { data: invoice, error: fetchError } = await supabase
       .from("invoices")
-      .select("catalog_item_ids")
+      .select("catalog_line_items")
       .eq("id", parseInt(invoiceId))
       .single();
 
@@ -35,14 +35,16 @@ export const POST: APIRoute = async ({ request }) => {
       );
     }
 
-    // Remove the catalog item ID from the array
-    const currentCatalogIds = invoice.catalog_item_ids || [];
-    const updatedCatalogIds = currentCatalogIds.filter((id: number) => id !== parseInt(itemId));
+    // Remove the line item from the array
+    const currentLineItems = invoice.catalog_line_items || [];
+    const updatedLineItems = currentLineItems.filter(
+      (item: any) => item.catalog_item_id !== parseInt(itemId)
+    );
 
     // Update the invoice
     const { error: updateError } = await supabase
       .from("invoices")
-      .update({ catalog_item_ids: updatedCatalogIds })
+      .update({ catalog_line_items: updatedLineItems })
       .eq("id", parseInt(invoiceId));
 
     if (updateError) {

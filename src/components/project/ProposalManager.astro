@@ -30,7 +30,7 @@ try {
     .from("invoices")
     .select(`
       *,
-      catalog_item_ids
+      catalog_line_items
     `)
     .eq("project_id", parseInt(projectId))
     .eq("status", "proposal")
@@ -42,9 +42,9 @@ try {
   if (!error && invoices && invoices.length > 0) {
     existingInvoice = invoices[0]; // Get the most recent proposal
     // console.log("✅ [ProposalManager] Found existing invoice:", existingInvoice);
-    // console.log("🔍 [ProposalManager] Invoice catalog_item_ids:", existingInvoice.catalog_item_ids);
-    // console.log("🔍 [ProposalManager] Invoice catalog_item_ids length:", existingInvoice.catalog_item_ids?.length);
-    // console.log("🔍 [ProposalManager] Invoice catalog_item_ids type:", typeof existingInvoice.catalog_item_ids);
+    // console.log("🔍 [ProposalManager] Invoice catalog_line_items:", existingInvoice.catalog_line_items);
+    // console.log("🔍 [ProposalManager] Invoice catalog_line_items length:", existingInvoice.catalog_line_items?.length);
+    // console.log("🔍 [ProposalManager] Invoice catalog_line_items type:", typeof existingInvoice.catalog_line_items);
     
     // Let's also check if there are line items directly
     if (existingInvoice.id) {
@@ -52,7 +52,7 @@ try {
       const { data: directLineItems, error: lineItemsError } = await supabase
         .from("line_items_catalog")
         .select("*")
-        .in("id", existingInvoice.catalog_item_ids || []);
+        .in("id", existingInvoice.catalog_line_items?.map((item: any) => item.catalog_item_id) || []);
       
       // console.log("🔍 [ProposalManager] Direct line items query:", { directLineItems, lineItemsError });
     }
@@ -225,72 +225,7 @@ const hasExistingInvoice = !!existingInvoice;
             id="proposal-line-items"
             class="divide-y divide-gray-200 bg-white dark:divide-gray-600 dark:bg-gray-800"
           >
-            <!-- Default empty line item row -->
-            <tr class="hover:bg-gray-50 dark:hover:bg-gray-700 line-item-row">
-              <td class="px-4 py-3 text-sm text-gray-900 dark:text-white">
-                <div class="relative">
-                  <input
-                    type="text"
-                    class="line-item-description w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                    placeholder="Enter line item description..."
-                    autocomplete="off"
-                  />
-                  <!-- Autocomplete dropdown -->
-                  <div class="autocomplete-dropdown absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg dark:bg-gray-700 dark:border-gray-600 hidden">
-                    <!-- Suggestions will be populated here -->
-                  </div>
-                </div>
-                <input
-                  type="text"
-                  class="line-item-details w-full mt-2 px-3 py-1 text-sm border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                  placeholder="Details (optional)"
-                />
-              </td>
-              <td class="px-4 py-3 text-sm text-right text-gray-900 dark:text-white">
-                <input
-                  type="number"
-                  class="line-item-quantity w-20 px-2 py-1 text-right border border-gray-300 rounded dark:border-gray-600 dark:bg-gray-700 dark:text-white"
-                  value="1"
-                  min="0"
-                  step="1"
-                  oninput="updateRowTotalDirect(this)"
-                  onchange="updateRowTotalDirect(this)"
-                />
-              </td>
-              <td class="px-4 py-3 text-sm text-right text-gray-900 dark:text-white">
-                <input
-                  type="number"
-                  class="line-item-unit-price w-24 px-2 py-1 text-right border border-gray-300 rounded dark:border-gray-600 dark:bg-gray-700 dark:text-white"
-                  value="0"
-                  min="0"
-                  step="1"
-                  oninput="updateRowTotalDirect(this)"
-                  onchange="updateRowTotalDirect(this)"
-                />
-              </td>
-              <td class="px-4 py-3 text-sm text-right font-medium text-gray-900 dark:text-white">
-                <span class="line-item-total">$0.00</span>
-              </td>
-              <td class="px-4 py-3 text-center">
-                <div class="flex gap-2 justify-center">
-                  <button
-                    type="button"
-                    class="add-line-item-btn px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800"
-                  >
-                    Add
-                  </button>
-                  <button
-                    type="button"
-                    class="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300"
-                    onclick="this.closest('tr').remove(); updateProposalTotal();"
-                    title="Delete line item"
-                  >
-                    <i class="bx bx-trash"></i>
-                  </button>
-                </div>
-              </td>
-            </tr>
-            <!-- Additional line items will be loaded dynamically via JavaScript -->
+            <!-- All line items will be generated dynamically via JavaScript -->
           </tbody>
           <tfoot class="bg-gray-50 dark:bg-gray-700">
             <tr>
@@ -525,7 +460,7 @@ const hasExistingInvoice = !!existingInvoice;
     window.updateRowTotal = (index) => window.proposalManager?.updateRowTotal(index);
     window.addProposalRow = () => window.proposalManager?.addProposalRow();
     window.deleteProposalRow = (index) => window.proposalManager?.deleteProposalRow(index);
-    window.saveProposal = () => window.proposalManager?.saveProposalChanges();
+    window.saveProposal = () => window.proposalManager?.saveCurrentProposalData();
     // toggleProposalSelector will be defined in the define:vars script below
 
     // Initialize subject editing functionality
@@ -539,6 +474,103 @@ const hasExistingInvoice = !!existingInvoice;
     
     // Initialize autocomplete functionality
     initializeAutocomplete();
+
+    // Generate initial empty row
+    generateInitialEmptyRow();
+
+    // Generate initial empty row function
+    function generateInitialEmptyRow() {
+      const lineItemsContainer = document.getElementById("proposal-line-items");
+      if (!lineItemsContainer) return;
+
+      // Only add initial row if there are no existing rows
+      if (lineItemsContainer.querySelectorAll("tr").length === 0) {
+        const initialRow = createLineItemRow({
+          description: "",
+          details: "",
+          quantity: 1,
+          unitPrice: 0
+        });
+        lineItemsContainer.appendChild(initialRow);
+      }
+    }
+
+    // Create a line item row with consistent structure
+    function createLineItemRow(item: any = {}) {
+      const row = document.createElement("tr");
+      row.className = "hover:bg-gray-50 dark:hover:bg-gray-700 line-item-row";
+      
+      const currentTotal = (item.quantity || 0) * (item.unitPrice || 0);
+      
+      row.innerHTML = `
+        <td class="px-4 py-3 text-sm text-gray-900 dark:text-white">
+          <div class="">
+            <input
+              type="text"
+              class="line-item-description w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+              placeholder="Enter line item description..."
+              value="${item.description || ""}"
+              autocomplete="off"
+            />
+            <!-- Autocomplete dropdown -->
+            <div class="autocomplete-dropdown overflow-y-auto absolute z-50 w-66 h-80 mt-1 bg-white border border-gray-300 rounded-md shadow-lg dark:bg-gray-700 dark:border-gray-600 hidden">
+              <!-- Suggestions will be populated here -->
+            </div>
+          </div>
+          <input
+            type="text"
+            class="line-item-details w-full mt-2 px-3 py-1 text-sm border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+            placeholder="Details (optional)"
+            value="${item.details || ""}"
+          />
+        </td>
+        <td class="px-4 py-3 text-sm text-right text-gray-900 dark:text-white">
+          <input
+            type="number"
+            class="line-item-quantity w-20 px-2 py-1 text-right border border-gray-300 rounded dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+            value="${item.quantity || 1}"
+            min="0"
+            step="1"
+            oninput="updateRowTotalDirect(this)"
+            onchange="updateRowTotalDirect(this)"
+          />
+        </td>
+        <td class="px-4 py-3 text-sm text-right text-gray-900 dark:text-white">
+          <input
+            type="number"
+            class="line-item-unit-price w-24 px-2 py-1 text-right border border-gray-300 rounded dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+            value="${item.unitPrice || 0}"
+            min="0"
+            step="1"
+            oninput="updateRowTotalDirect(this)"
+            onchange="updateRowTotalDirect(this)"
+          />
+        </td>
+        <td class="px-4 py-3 text-sm text-right font-medium text-gray-900 dark:text-white">
+          <span class="line-item-total">$${currentTotal.toFixed(2)}</span>
+        </td>
+        <td class="px-4 py-3 text-center">
+          <div class="flex gap-2 justify-center">
+            <button
+              type="button"
+              class="add-line-item-btn px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800"
+            >
+              Add
+            </button>
+            <button
+              type="button"
+              class="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300"
+              onclick="this.closest('tr').remove(); updateProposalTotal();"
+              title="Delete line item"
+            >
+              <i class="bx bx-trash"></i>
+            </button>
+          </div>
+        </td>
+      `;
+      
+      return row;
+    }
 
     // Initialize existing line items with event listeners
     function initializeExistingLineItems() {
@@ -668,8 +700,8 @@ const hasExistingInvoice = !!existingInvoice;
               const inputContainer = target.closest('td');
               if (inputContainer) {
                 dropdown = document.createElement('div');
-                dropdown.className = 'autocomplete-dropdown absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-xl dark:bg-gray-700 dark:border-gray-600 hidden max-h-60 overflow-y-auto';
-                inputContainer.style.position = 'relative';
+                dropdown.className = 'autocomplete-dropdown overflow-y-auto absolute z-50 w-66 h-80 mt-1 bg-white border border-gray-300 rounded-md shadow-lg dark:bg-gray-700 dark:border-gray-600 hidden';
+                // inputContainer.style.position = 'relative';
                 inputContainer.appendChild(dropdown);
                 console.log("🔍 [AUTOCOMPLETE] Created dropdown for row");
               }
@@ -793,70 +825,13 @@ const hasExistingInvoice = !!existingInvoice;
       // Add the line item to the proposal
       const lineItemsContainer = document.getElementById("proposal-line-items");
       if (lineItemsContainer) {
-        const newRow = document.createElement("tr");
-        newRow.className = "hover:bg-gray-50 dark:hover:bg-gray-700 line-item-row";
-        newRow.innerHTML = `
-          <td class="px-4 py-3 text-sm text-gray-900 dark:text-white">
-            <div class="relative">
-              <input
-                type="text"
-                class="line-item-description w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                placeholder="Enter line item description..."
-                value="${description}"
-                autocomplete="off"
-              />
-              <!-- Autocomplete dropdown -->
-              <div class="autocomplete-dropdown absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg dark:bg-gray-700 dark:border-gray-600 hidden">
-                <!-- Suggestions will be populated here -->
-              </div>
-            </div>
-            <input
-              type="text"
-              class="line-item-details w-full mt-2 px-3 py-1 text-sm border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-              placeholder="Details (optional)"
-              value="${details}"
-            />
-          </td>
-          <td class="px-4 py-3 text-sm text-right text-gray-900 dark:text-white">
-            <input
-              type="number"
-              class="line-item-quantity w-20 px-2 py-1 text-right border border-gray-300 rounded dark:border-gray-600 dark:bg-gray-700 dark:text-white"
-              value="${quantity}"
-              min="0"
-              step="1"
-            />
-          </td>
-          <td class="px-4 py-3 text-sm text-right text-gray-900 dark:text-white">
-            <input
-              type="number"
-              class="line-item-unit-price w-24 px-2 py-1 text-right border border-gray-300 rounded dark:border-gray-600 dark:bg-gray-700 dark:text-white"
-              value="${unitPrice}"
-              min="0"
-              step="1"
-            />
-          </td>
-          <td class="px-4 py-3 text-sm text-right font-medium text-gray-900 dark:text-white">
-            <span class="line-item-total">$${(quantity * unitPrice).toFixed(2)}</span>
-          </td>
-          <td class="px-4 py-3 text-center">
-            <div class="flex gap-2 justify-center">
-              <button
-                type="button"
-                class="add-line-item-btn px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800"
-              >
-                Add
-              </button>
-              <button
-                type="button"
-                class="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300"
-                onclick="this.closest('tr').remove(); updateProposalTotal();"
-                title="Delete line item"
-              >
-                <i class="bx bx-trash"></i>
-              </button>
-            </div>
-          </td>
-        `;
+        // Create new row using the consistent function
+        const newRow = createLineItemRow({
+          description: description,
+          details: details,
+          quantity: quantity,
+          unitPrice: unitPrice
+        });
 
         // Insert before the last row (the input row)
         const inputRow = lineItemsContainer.querySelector("tr:last-child");
@@ -865,22 +840,6 @@ const hasExistingInvoice = !!existingInvoice;
         } else {
           lineItemsContainer.appendChild(newRow);
         }
-
-        // Add event listeners to the new row
-        const newQuantityInput = newRow.querySelector(".line-item-quantity") as HTMLInputElement;
-        const newUnitPriceInput = newRow.querySelector(".line-item-unit-price") as HTMLInputElement;
-        const newTotalDisplay = newRow.querySelector(".line-item-total") as HTMLSpanElement;
-
-        const updateNewRowTotal = () => {
-          const qty = parseFloat(newQuantityInput.value) || 0;
-          const price = parseFloat(newUnitPriceInput.value) || 0;
-          const total = qty * price;
-          newTotalDisplay.textContent = `$${total.toFixed(2)}`;
-          updateProposalTotal();
-        };
-
-        newQuantityInput.addEventListener("input", updateNewRowTotal);
-        newUnitPriceInput.addEventListener("input", updateNewRowTotal);
       }
 
       // Clear the input fields
