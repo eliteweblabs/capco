@@ -86,10 +86,10 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       );
     }
 
-    // Get current invoice to update its catalog_item_ids
+    // Get current invoice to update its catalog_line_items
     const { data: currentInvoice, error: invoiceFetchError } = await supabase
       .from("invoices")
-      .select("catalog_item_ids")
+      .select("catalog_line_items")
       .eq("id", parseInt(invoice_id))
       .single();
 
@@ -107,13 +107,20 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       );
     }
 
-    // Update invoice with new catalog item ID
-    const currentCatalogIds = currentInvoice.catalog_item_ids || [];
-    const updatedCatalogIds = [...currentCatalogIds, parseInt(catalog_item_id)];
+    // Add new catalog item to the line items array
+    const currentLineItems = currentInvoice.catalog_line_items || [];
+    const newLineItem = {
+      catalog_item_id: parseInt(catalog_item_id),
+      quantity: 1,
+      unit_price: catalogItem.unit_price || 0,
+      description: catalogItem.name || "",
+      details: catalogItem.description || "",
+    };
+    const updatedLineItems = [...currentLineItems, newLineItem];
 
     const { error: updateError } = await supabase
       .from("invoices")
-      .update({ catalog_item_ids: updatedCatalogIds })
+      .update({ catalog_line_items: updatedLineItems })
       .eq("id", parseInt(invoice_id));
 
     if (updateError) {

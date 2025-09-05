@@ -53,20 +53,8 @@ export const POST: APIRoute = async ({ request }) => {
       );
     }
 
-    // Get catalog item IDs and fetch the actual catalog items
-    const catalogItemIds = invoice?.catalog_item_ids || [];
-    let lineItems: any[] = [];
-
-    if (catalogItemIds.length > 0) {
-      const { data: catalogItems, error: catalogError } = await supabase
-        .from("line_items_catalog")
-        .select("*")
-        .in("id", catalogItemIds);
-
-      if (!catalogError) {
-        lineItems = catalogItems || [];
-      }
-    }
+    // Get catalog line items directly from the stored data
+    const lineItems = invoice?.catalog_line_items || [];
 
     // Lookup client profile for name/email
     let client = null as null | { name: string | null; email: string | null };

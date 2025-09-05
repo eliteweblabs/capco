@@ -36,14 +36,18 @@ export const POST: APIRoute = async ({ request }) => {
 
     // Update catalog item IDs
     if (lineItems && lineItems.length > 0) {
-      const catalogItemIds = lineItems
-        .map((item: any) => item.catalog_item_id || item.id)
-        .filter((id: any) => id && !isNaN(parseInt(id)))
-        .map((id: any) => parseInt(id));
+      // Store complete line item data as JSONB array
+      const lineItemsData = lineItems.map((item: any) => ({
+        catalog_item_id: item.catalog_item_id || item.id,
+        quantity: item.quantity || 1,
+        unit_price: item.price || item.unit_price || 0,
+        description: item.description || "",
+        details: item.details || "",
+      }));
 
       const { error: lineItemsError } = await supabase
         .from("invoices")
-        .update({ catalog_item_ids: catalogItemIds })
+        .update({ catalog_line_items: lineItemsData })
         .eq("id", invoiceId);
 
       if (lineItemsError) {

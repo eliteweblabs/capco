@@ -3,7 +3,9 @@ import { supabase } from "../../lib/supabase";
 
 export const POST: APIRoute = async ({ request, cookies }) => {
   try {
-    const { projectId, lineItems } = await request.json();
+    const { projectId, lineItems, subject } = await request.json();
+
+    console.log("📝 [API] Received request:", { projectId, lineItems, subject });
 
     if (!projectId || !lineItems) {
       return new Response(JSON.stringify({ error: "Project ID and line items are required" }), {
@@ -62,27 +64,76 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
     console.log("Found proposal invoice:", invoice.id);
 
-    // Extract catalog item IDs from line items
-    const catalogItemIds = lineItems
-      .map((item: any) => item.catalog_item_id || item.id)
-      .filter((id: any) => id && !isNaN(parseInt(id)))
-      .map((id: any) => parseInt(id));
+    // Store complete line item data as JSONB array to preserve pricing
+    const lineItemsData = lineItems.map((item: any) => ({
+      catalog_item_id: item.catalog_item_id || item.id,
+      quantity: item.quantity || 1,
+      unit_price: item.price || item.unit_price || 0,
+      description: item.description || "",
+      details: item.details || "",
+    }));
 
-    // Update invoice with catalog item IDs
+    console.log("📝 [API] Line items received:", lineItems);
+    console.log("📝 [API] Processed line items data:", lineItemsData);
+
+    // Update invoice with complete catalog line items data and subject
+    console.log(
+      "📝 [API] Updating invoice",
+      invoice.id,
+      "with catalog_line_items:",
+      lineItemsData,
+      "and subject:",
+      subject
+    );
+
+    const updateData: any = { catalog_line_items: lineItemsData };
+    if (subject) {
+      updateData.subject = subject;
+    }
+
+    console.log("📝 [API] About to update invoice with data:", JSON.stringify(updateData, null, 2));
+
     const { error: updateError } = await supabase
       .from("invoices")
-      .update({ catalog_item_ids: catalogItemIds })
+      .update(updateData)
       .eq("id", invoice.id);
 
     if (updateError) {
-      console.error("Error updating line items:", updateError);
-      return new Response(JSON.stringify({ error: "Failed to save line items" }), {
-        status: 500,
-        headers: { "Content-Type": "application/json" },
-      });
+      console.error("❌ [API] Error updating line items:", updateError);
+      console.error("❌ [API] Update data that failed:", updateData);
+      console.error("❌ [API] Invoice ID:", invoice.id);
+      return new Response(
+        JSON.stringify({
+          error: "Failed to save line items",
+          details: updateError.message,
+          updateData: updateData,
+        }),
+        {
+          status: 500,
+          headers: { "Content-Type": "application/json" },
+        }
+      );
     }
 
-    console.log("Successfully updated line items for invoice:", invoice.id);
+    console.log("✅ [API] Successfully updated line items for invoice:", invoice.id);
+
+    // Verify the update by reading back the data
+    const { data: updatedInvoice, error: verifyError } = await supabase
+      .from("invoices")
+      .select("catalog_line_items, subject")
+      .eq("id", invoice.id)
+      .single();
+
+    if (verifyError) {
+      console.error("❌ [API] Error verifying update:", verifyError);
+    } else {
+      console.log(
+        "✅ [API] Verified update - catalog_line_items:",
+        updatedInvoice.catalog_line_items,
+        "subject:",
+        updatedInvoice.subject
+      );
+    }
 
     return new Response(
       JSON.stringify({

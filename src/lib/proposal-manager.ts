@@ -151,6 +151,90 @@ export class ProposalManager {
   }
 
   /**
+   * Create a line item row with consistent structure
+   */
+  private createLineItemRow(item: any = {}): HTMLTableRowElement {
+    const row = document.createElement("tr");
+    row.className = "hover:bg-gray-50 dark:hover:bg-gray-700 line-item-row";
+
+    const currentTotal = (item.quantity || 0) * (item.unitPrice || 0);
+
+    row.innerHTML = `
+      <td class="px-4 py-3 text-sm text-gray-900 dark:text-white">
+        <div class="relative">
+          <input
+            type="text"
+            class="line-item-description w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+            placeholder="Enter line item description..."
+            value="${item.description || ""}"
+            autocomplete="off"
+          />
+          <!-- Autocomplete dropdown -->
+          <div class="autocomplete-dropdown absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg dark:bg-gray-700 dark:border-gray-600 hidden">
+            <!-- Suggestions will be populated here -->
+          </div>
+        </div>
+        <input
+          type="text"
+          class="line-item-details w-full mt-2 px-3 py-1 text-sm border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+          placeholder="Details (optional)"
+          value="${item.details || ""}"
+        />
+      </td>
+      <td class="px-4 py-3 text-sm text-right text-gray-900 dark:text-white">
+        <input
+          type="number"
+          class="line-item-quantity w-20 px-2 py-1 text-right border border-gray-300 rounded dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+          value="${item.quantity || 1}"
+          min="0"
+          step="1"
+          oninput="updateRowTotalDirect(this)"
+          onchange="updateRowTotalDirect(this)"
+        />
+      </td>
+      <td class="px-4 py-3 text-sm text-right text-gray-900 dark:text-white">
+        <input
+          type="number"
+          class="line-item-unit-price w-24 px-2 py-1 text-right border border-gray-300 rounded dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+          value="${item.unitPrice || 0}"
+          min="0"
+          step="1"
+          oninput="updateRowTotalDirect(this)"
+          onchange="updateRowTotalDirect(this)"
+        />
+      </td>
+      <td class="px-4 py-3 text-sm text-right font-medium text-gray-900 dark:text-white">
+        <span class="line-item-total">$${currentTotal.toFixed(2)}</span>
+      </td>
+      <td class="px-4 py-3 text-center">
+        <div class="flex gap-2 justify-center">
+          <button
+            type="button"
+            class="add-line-item-btn px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800"
+          >
+            Add
+          </button>
+          <button
+            type="button"
+            class="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300"
+            onclick="this.closest('tr').remove(); updateProposalTotal();"
+            title="Delete line item"
+          >
+            <i class="bx bx-trash"></i>
+          </button>
+        </div>
+      </td>
+    `;
+
+    // Store catalog_item_id as a data attribute for reference
+    if (item.catalog_item_id) {
+      row.setAttribute("data-catalog-item-id", item.catalog_item_id.toString());
+    }
+
+    return row;
+  }
+
+  /**
    * Get line items data from the proposal table
    */
   private getLineItemsData(): any[] {
@@ -160,23 +244,72 @@ export class ProposalManager {
     const rows = tbody.querySelectorAll("tr");
     const lineItems: any[] = [];
 
-    rows.forEach((row) => {
+    console.log("🔍 [PROPOSAL-MANAGER] Getting line items data from", rows.length, "rows");
+
+    rows.forEach((row, index) => {
       const cells = row.querySelectorAll("td");
       if (cells.length >= 3) {
-        const description = cells[0]?.textContent?.trim() || "";
-        const quantity = cells[1]?.textContent?.trim() || "1";
-        const price = cells[2]?.textContent?.trim() || "0";
+        // Look for input elements using the unified class names
+        const descInput = row.querySelector(".line-item-description") as HTMLInputElement;
+        const detailsInput = row.querySelector(".line-item-details") as HTMLInputElement;
+        const qtyInput = row.querySelector(".line-item-quantity") as HTMLInputElement;
+        const priceInput = row.querySelector(".line-item-unit-price") as HTMLInputElement;
 
+        console.log(`🔍 [PROPOSAL-MANAGER] Row ${index}:`, {
+          descInput: !!descInput,
+          detailsInput: !!detailsInput,
+          qtyInput: !!qtyInput,
+          priceInput: !!priceInput,
+        });
+
+        let description = "";
+        let details = "";
+        let quantity = 1;
+        let price = 0;
+
+        if (descInput) {
+          // Get values from inputs
+          description = descInput.value?.trim() || "";
+          details = detailsInput?.value?.trim() || "";
+          quantity = parseFloat(qtyInput?.value || "1") || 1;
+          price = parseFloat(priceInput?.value || "0") || 0;
+
+          console.log(`🔍 [PROPOSAL-MANAGER] Row ${index} values:`, {
+            description,
+            details,
+            quantity,
+            price,
+          });
+        } else {
+          // Fallback: try to get from text content (display mode)
+          description = cells[0]?.textContent?.trim() || "";
+          quantity = parseFloat(cells[1]?.textContent?.trim() || "1") || 1;
+          price = parseFloat(cells[2]?.textContent?.replace(/[$,]/g, "") || "0") || 0;
+
+          console.log(`🔍 [PROPOSAL-MANAGER] Row ${index} fallback values:`, {
+            description,
+            quantity,
+            price,
+          });
+        }
+
+        // Only add items with a description
         if (description) {
+          // Get catalog_item_id from the row's data attribute if it exists
+          const catalogItemId = row.getAttribute("data-catalog-item-id");
+
           lineItems.push({
             description,
-            quantity: parseFloat(quantity) || 1,
-            price: parseFloat(price.replace(/[$,]/g, "")) || 0,
+            details,
+            quantity,
+            price,
+            catalog_item_id: catalogItemId ? parseInt(catalogItemId) : undefined,
           });
         }
       }
     });
 
+    console.log("🔍 [PROPOSAL-MANAGER] Final line items:", lineItems);
     return lineItems;
   }
 
@@ -278,12 +411,83 @@ export class ProposalManager {
   /**
    * Save current proposal data to the database
    */
-  private async saveCurrentProposalData(): Promise<void> {
+  async saveCurrentProposalData(): Promise<void> {
     try {
       console.log("💾 [PROPOSAL-MANAGER] Saving current proposal data");
 
       // Get line items data
       const lineItems = this.getLineItemsData();
+      console.log("💾 [PROPOSAL-MANAGER] Line items to save:", lineItems);
+
+      // Get proposal subject
+      const subjectElement = document.getElementById("proposal-subject") as HTMLInputElement;
+      const subject = subjectElement?.value || "";
+
+      // For each line item, we need to either:
+      // 1. Use existing catalog_item_id if it's from the catalog
+      // 2. Create a new catalog item and get its ID
+      const processedLineItems = [];
+
+      for (const item of lineItems) {
+        if (item.catalog_item_id) {
+          // Item already has a catalog ID, use it
+          processedLineItems.push({
+            catalog_item_id: item.catalog_item_id,
+            description: item.description,
+            details: item.details,
+            quantity: item.quantity,
+            unit_price: item.price,
+          });
+        } else {
+          // New item, save to catalog first
+          try {
+            const catalogResponse = await fetch("/api/line-items-catalog", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                name: item.description,
+                description: item.details,
+                unit_price: item.price,
+                category: "General",
+              }),
+            });
+
+            const catalogResult = await catalogResponse.json();
+
+            if (catalogResult.success && catalogResult.item) {
+              processedLineItems.push({
+                catalog_item_id: catalogResult.item.id,
+                description: item.description,
+                details: item.details,
+                quantity: item.quantity,
+                unit_price: item.price,
+              });
+              console.log("✅ [PROPOSAL-MANAGER] Created new catalog item:", catalogResult.item.id);
+            } else {
+              console.error(
+                "❌ [PROPOSAL-MANAGER] Failed to create catalog item:",
+                catalogResult.error
+              );
+              // Still add the item without catalog_item_id for now
+              processedLineItems.push({
+                ...item,
+                unit_price: item.price,
+              });
+            }
+          } catch (catalogError) {
+            console.error("❌ [PROPOSAL-MANAGER] Error creating catalog item:", catalogError);
+            // Still add the item without catalog_item_id for now
+            processedLineItems.push({
+              ...item,
+              unit_price: item.price,
+            });
+          }
+        }
+      }
+
+      console.log("💾 [PROPOSAL-MANAGER] Processed line items:", processedLineItems);
 
       // Update line items in database
       const response = await fetch("/api/update-invoice-line-items", {
@@ -293,17 +497,33 @@ export class ProposalManager {
         },
         body: JSON.stringify({
           projectId: this.projectId,
-          lineItems: lineItems,
+          lineItems: processedLineItems,
+          subject: subject,
         }),
       });
 
       const result = await response.json();
 
-      if (!result.success) {
+      if (result.success) {
+        console.log("✅ [PROPOSAL-MANAGER] Proposal data saved successfully");
+        // Show success message
+        if ((window as any).showSuccess) {
+          (window as any).showSuccess(
+            "Proposal Saved",
+            "Your proposal has been saved successfully!"
+          );
+        }
+      } else {
         console.error("❌ [PROPOSAL-MANAGER] Failed to save proposal data:", result.error);
+        if ((window as any).showError) {
+          (window as any).showError("Save Failed", result.error || "Failed to save proposal");
+        }
       }
     } catch (error) {
       console.error("❌ [PROPOSAL-MANAGER] Error saving proposal data:", error);
+      if ((window as any).showError) {
+        (window as any).showError("Save Failed", "An error occurred while saving the proposal");
+      }
     }
   }
 
@@ -728,40 +948,20 @@ export class ProposalManager {
     const tbody = document.getElementById("proposal-line-items");
     if (!tbody) return;
 
-    // Get catalog item IDs from the catalog_item_ids JSONB field
-    const catalogItemIds = invoice.catalog_item_ids || [];
-    console.log("🔄 [PROPOSAL-MANAGER] Populating line items from catalog IDs:", catalogItemIds);
+    // Get line item data from the catalog_line_items JSONB field
+    const catalogLineItems = invoice.catalog_line_items || [];
+    console.log("🔄 [PROPOSAL-MANAGER] Populating line items from stored data:", catalogLineItems);
     console.log("🔄 [PROPOSAL-MANAGER] Invoice data:", invoice);
 
-    if (catalogItemIds.length === 0) {
-      console.log("❌ [PROPOSAL-MANAGER] No catalog item IDs found in invoice");
+    if (catalogLineItems.length === 0) {
+      console.log("❌ [PROPOSAL-MANAGER] No catalog line items found in invoice");
       console.log("❌ [PROPOSAL-MANAGER] Invoice structure:", JSON.stringify(invoice, null, 2));
       return;
     }
 
-    // Fetch catalog items for these IDs
-    let lineItems: any[] = [];
-    try {
-      const response = await fetch(`/api/line-items-catalog?ids=${catalogItemIds.join(",")}`, {
-        credentials: "include",
-      });
-      if (response.ok) {
-        const data = await response.json();
-        lineItems = data.items || [];
-        console.log("🔄 [PROPOSAL-MANAGER] Fetched catalog items:", lineItems);
-      } else {
-        console.error("❌ [PROPOSAL-MANAGER] Error fetching catalog items:", response.statusText);
-        return;
-      }
-    } catch (error) {
-      console.error("❌ [PROPOSAL-MANAGER] Error fetching catalog items:", error);
-      return;
-    }
-
-    if (lineItems.length === 0) {
-      console.log("❌ [PROPOSAL-MANAGER] No catalog items found for IDs:", catalogItemIds);
-      return;
-    }
+    // Use the stored catalog line items data directly (no need to fetch from catalog)
+    const lineItems = catalogLineItems;
+    console.log("🔄 [PROPOSAL-MANAGER] Using stored catalog line items data:", lineItems);
 
     // Clear existing content
     tbody.innerHTML = "";
@@ -770,116 +970,24 @@ export class ProposalManager {
     const fragment = document.createDocumentFragment();
     let total = 0;
 
-    // Use line items from the line_items JSON field
+    // Use line items from the catalog and create interactive rows
     lineItems.forEach((item: any) => {
       console.log("🔍 [PROPOSAL-MANAGER] Processing line item:", item);
       console.log("🔍 [PROPOSAL-MANAGER] Item keys:", Object.keys(item));
       console.log("🔍 [PROPOSAL-MANAGER] Unit price value:", item.unit_price);
       console.log("🔍 [PROPOSAL-MANAGER] Quantity value:", item.quantity);
 
-      const row = document.createElement("tr");
-      row.className = "hover:bg-gray-50 dark:hover:bg-gray-700";
+      // Create row using the stored data (preserves original pricing)
+      const row = this.createLineItemRow({
+        description: item.description || "Line Item",
+        details: item.details || "",
+        quantity: item.quantity || 1,
+        unitPrice: item.unit_price || 0,
+        catalog_item_id: item.catalog_item_id, // Store the catalog item ID for reference
+      });
 
-      const itemTotal = (item.quantity || 0) * (item.unit_price || 0);
+      const itemTotal = (item.quantity || 1) * (item.unit_price || 0);
       total += itemTotal;
-
-      // Create cells programmatically
-      const descCell = document.createElement("td");
-      descCell.className = "px-4 py-3 text-sm text-gray-900 dark:text-white";
-
-      const descDiv = document.createElement("div");
-      descDiv.className = "font-medium";
-      descDiv.textContent = item.description || "Line Item";
-      descCell.appendChild(descDiv);
-
-      if (item.details) {
-        const detailsDiv = document.createElement("div");
-        detailsDiv.className = "text-xs text-gray-500 dark:text-gray-400";
-        detailsDiv.textContent = item.details;
-        descCell.appendChild(detailsDiv);
-      }
-
-      const qtyCell = document.createElement("td");
-      qtyCell.className = "px-4 py-3 text-sm text-right text-gray-900 dark:text-white";
-      const quantityInput = document.createElement("input");
-      quantityInput.type = "number";
-      quantityInput.className =
-        "quantity-input w-20 px-2 py-1 text-right border border-gray-300 rounded dark:border-gray-600 dark:bg-gray-700 dark:text-white";
-      // Handle potential data type issues
-      const quantity = parseFloat(item.quantity) || 0;
-      console.log(
-        "🔍 [PROPOSAL-MANAGER] Setting quantity input value:",
-        quantity,
-        "from:",
-        item.quantity
-      );
-      quantityInput.value = quantity.toString();
-      quantityInput.min = "0";
-      quantityInput.step = "1";
-      qtyCell.appendChild(quantityInput);
-
-      const priceCell = document.createElement("td");
-      priceCell.className = "px-4 py-3 text-sm text-right text-gray-900 dark:text-white";
-      const unitPriceInput = document.createElement("input");
-      unitPriceInput.type = "number";
-      unitPriceInput.className =
-        "unit-price-input w-24 px-2 py-1 text-right border border-gray-300 rounded dark:border-gray-600 dark:bg-gray-700 dark:text-white";
-      // Handle potential data type issues
-      const unitPrice = parseFloat(item.unit_price) || 0;
-      console.log(
-        "🔍 [PROPOSAL-MANAGER] Setting unit price input value:",
-        unitPrice,
-        "from:",
-        item.unit_price
-      );
-      unitPriceInput.value = unitPrice.toString();
-      unitPriceInput.min = "0";
-      unitPriceInput.step = "1";
-      priceCell.appendChild(unitPriceInput);
-
-      const totalCell = document.createElement("td");
-      totalCell.className =
-        "px-4 py-3 text-sm text-right font-medium text-gray-900 dark:text-white";
-      const totalDisplay = document.createElement("span");
-      totalDisplay.className = "total-display";
-      totalDisplay.textContent = `$${itemTotal.toFixed(2)}`;
-      totalCell.appendChild(totalDisplay);
-
-      // Create delete button cell
-      const deleteCell = document.createElement("td");
-      deleteCell.className = "px-4 py-3 text-center";
-      const deleteButton = document.createElement("button");
-      deleteButton.className =
-        "text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300";
-      deleteButton.innerHTML = '<i class="bx bx-trash"></i>';
-      deleteButton.title = "Delete line item";
-      deleteButton.onclick = () => {
-        if (confirm("Are you sure you want to delete this line item?")) {
-          row.remove();
-          this.updateProposalTotalFromManager();
-        }
-      };
-      deleteCell.appendChild(deleteButton);
-
-      row.appendChild(descCell);
-      row.appendChild(qtyCell);
-      row.appendChild(priceCell);
-      row.appendChild(totalCell);
-      row.appendChild(deleteCell);
-
-      // Add event listeners for quantity and price changes
-      const updateRowTotal = () => {
-        const quantity = parseFloat(quantityInput.value) || 0;
-        const unitPrice = parseFloat(unitPriceInput.value) || 0;
-        const rowTotal = quantity * unitPrice;
-        totalDisplay.textContent = `$${rowTotal.toFixed(2)}`;
-
-        // Update the overall total
-        this.updateProposalTotalFromManager();
-      };
-
-      quantityInput.addEventListener("input", updateRowTotal);
-      unitPriceInput.addEventListener("input", updateRowTotal);
 
       fragment.appendChild(row);
     });
@@ -1164,11 +1272,19 @@ export class ProposalManager {
       const cells = row.querySelectorAll("td");
       if (cells.length !== 5) return;
 
-      // Get values from inputs
-      const descInput = row.querySelector('input[data-field="description"]') as HTMLInputElement;
-      const detailsInput = row.querySelector('input[data-field="details"]') as HTMLInputElement;
-      const qtyInput = row.querySelector('input[data-field="quantity"]') as HTMLInputElement;
-      const priceInput = row.querySelector('input[data-field="unitPrice"]') as HTMLInputElement;
+      // Get values from inputs - look for both data attributes and class names
+      const descInput = row.querySelector(
+        'input[data-field="description"], .line-item-description'
+      ) as HTMLInputElement;
+      const detailsInput = row.querySelector(
+        'input[data-field="details"], .line-item-details'
+      ) as HTMLInputElement;
+      const qtyInput = row.querySelector(
+        'input[data-field="quantity"], .line-item-quantity'
+      ) as HTMLInputElement;
+      const priceInput = row.querySelector(
+        'input[data-field="unitPrice"], .line-item-unit-price'
+      ) as HTMLInputElement;
 
       if (!descInput || !qtyInput || !priceInput) return;
 
@@ -1467,6 +1583,7 @@ declare global {
     addProposalRow?: () => void;
     deleteProposalRow?: (index: any) => void;
     initializeSubjectEditing?: () => void;
+    saveProposal?: () => void;
   }
 }
 
