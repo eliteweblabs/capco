@@ -491,7 +491,7 @@ export class ProposalManager {
     const newRow = document.createElement("tr");
     newRow.className = "hover:bg-gray-50 dark:hover:bg-gray-700";
     newRow.innerHTML = this.getEditableRowHTML(rowIndex, {
-      description: "New Line Item",
+      description: "",
       details: "",
       quantity: 1,
       unitPrice: 0,
@@ -535,25 +535,52 @@ export class ProposalManager {
    * Update total for a specific row
    */
   updateRowTotal(rowIndex: number): void {
+    console.log("🔍 [PROPOSAL-MANAGER] updateRowTotal called for row:", rowIndex);
     const tbody = document.getElementById("proposal-line-items");
-    if (!tbody) return;
+    if (!tbody) {
+      console.log("❌ [PROPOSAL-MANAGER] No tbody found");
+      return;
+    }
 
     const row = tbody.querySelectorAll("tr")[rowIndex];
-    if (!row) return;
+    if (!row) {
+      console.log("❌ [PROPOSAL-MANAGER] No row found at index:", rowIndex);
+      return;
+    }
 
-    const qtyInput = row.querySelector('input[data-field="quantity"]') as HTMLInputElement;
-    const priceInput = row.querySelector('input[data-field="unitPrice"]') as HTMLInputElement;
-    const totalSpan = row.querySelector(".row-total");
+    // Look for both old and new class names to support all row types
+    const qtyInput = row.querySelector(
+      'input[data-field="quantity"], .line-item-quantity'
+    ) as HTMLInputElement;
+    const priceInput = row.querySelector(
+      'input[data-field="unitPrice"], .line-item-unit-price'
+    ) as HTMLInputElement;
+    const totalSpan = row.querySelector(".row-total, .line-item-total");
+
+    console.log("🔍 [PROPOSAL-MANAGER] Found elements:", {
+      qtyInput: !!qtyInput,
+      priceInput: !!priceInput,
+      totalSpan: !!totalSpan,
+      qtyValue: qtyInput?.value,
+      priceValue: priceInput?.value,
+    });
 
     if (qtyInput && priceInput && totalSpan) {
       const quantity = parseFloat(qtyInput.value) || 0;
       const unitPrice = parseFloat(priceInput.value) || 0;
       const total = quantity * unitPrice;
 
+      console.log("🔍 [PROPOSAL-MANAGER] Calculating total:", { quantity, unitPrice, total });
       totalSpan.textContent = `$${total.toFixed(2)}`;
 
-      // Update grand total
+      // Update grand total using both methods
       this.updateGrandTotal();
+      // Also call the global updateProposalTotal function
+      if ((window as any).updateProposalTotal) {
+        (window as any).updateProposalTotal();
+      }
+    } else {
+      console.log("❌ [PROPOSAL-MANAGER] Missing required elements for total calculation");
     }
   }
 
@@ -788,7 +815,7 @@ export class ProposalManager {
       );
       quantityInput.value = quantity.toString();
       quantityInput.min = "0";
-      quantityInput.step = "0.01";
+      quantityInput.step = "1";
       qtyCell.appendChild(quantityInput);
 
       const priceCell = document.createElement("td");
@@ -807,7 +834,7 @@ export class ProposalManager {
       );
       unitPriceInput.value = unitPrice.toString();
       unitPriceInput.min = "0";
-      unitPriceInput.step = "0.01";
+      unitPriceInput.step = "1";
       priceCell.appendChild(unitPriceInput);
 
       const totalCell = document.createElement("td");
@@ -1135,7 +1162,7 @@ export class ProposalManager {
 
     rows.forEach((row) => {
       const cells = row.querySelectorAll("td");
-      if (cells.length !== 4) return;
+      if (cells.length !== 5) return;
 
       // Get values from inputs
       const descInput = row.querySelector('input[data-field="description"]') as HTMLInputElement;
@@ -1161,6 +1188,7 @@ export class ProposalManager {
       cells[1].innerHTML = `<span class="text-sm text-gray-900 dark:text-white">${quantity}</span>`;
       cells[2].innerHTML = `<span class="text-sm text-gray-900 dark:text-white">$${unitPrice.toFixed(2)}</span>`;
       cells[3].innerHTML = `<span class="text-sm font-medium text-gray-900 dark:text-white">$${itemTotal.toFixed(2)}</span>`;
+      cells[4].innerHTML = `<span class="text-sm text-gray-500 dark:text-gray-400">-</span>`;
     });
 
     // Update totals
@@ -1350,12 +1378,13 @@ export class ProposalManager {
         <input 
           type="number" 
           value="${item.quantity || 1}" 
-          min="0" 
-          step="0.01"
-          class="w-full px-2 py-1 text-sm text-right border rounded focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+          min="1" 
+          step="1"
+          class="line-item-quantity w-20 px-2 py-1 text-right border border-gray-300 rounded dark:border-gray-600 dark:bg-gray-700 dark:text-white"
           data-field="quantity"
           data-row="${index}"
-          onchange="window.proposalManager?.updateRowTotal(${index})"
+          oninput="updateRowTotalDirect(this)"
+          onchange="updateRowTotalDirect(this)"
         />
       </td>
       <td class="px-4 py-3 text-sm text-right text-gray-900 dark:text-white">
@@ -1363,20 +1392,30 @@ export class ProposalManager {
           type="number" 
           value="${item.unitPrice || 0}" 
           min="0" 
-          step="0.01"
-          class="w-full px-2 py-1 text-sm text-right border rounded focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+          step="1"
+          class="line-item-unit-price w-24 px-2 py-1 text-right border border-gray-300 rounded dark:border-gray-600 dark:bg-gray-700 dark:text-white"
           data-field="unitPrice"
           data-row="${index}"
-          onchange="window.proposalManager?.updateRowTotal(${index})"
+          oninput="updateRowTotalDirect(this)"
+          onchange="updateRowTotalDirect(this)"
         />
       </td>
       <td class="px-4 py-3 text-sm text-right font-medium text-gray-900 dark:text-white">
-        <div class="flex items-center justify-between">
-          <span class="row-total font-medium text-gray-900 dark:text-white">$${currentTotal.toFixed(2)}</span>
+        <span class="line-item-total font-medium text-gray-900 dark:text-white">$${currentTotal.toFixed(2)}</span>
+      </td>
+      <td class="px-4 py-3 text-sm text-center">
+        <div class="flex items-center justify-center space-x-2">
+          <button 
+            type="button"
+            class="add-line-item-btn px-3 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700 transition-colors"
+            title="Add line item"
+          >
+            Add
+          </button>
           <button 
             type="button"
             onclick="window.proposalManager?.deleteProposalRow(${index})"
-            class="ml-2 p-1 text-red-600 hover:text-red-800 hover:bg-red-100 rounded transition-colors"
+            class="p-1 text-red-600 hover:text-red-800 hover:bg-red-100 rounded transition-colors"
             title="Delete line item"
           >
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
