@@ -9,30 +9,26 @@ import SimpleProjectLog from "../../components/project/SimpleProjectLog.astro";
 import ProposalManager from "../../components/project/ProposalManager.astro";
 import PaymentForm from "../../components/project/PaymentForm.astro";
 import Discussions from "../../components/project/Discussions.astro";
-// Para cambiar idioma de textos
 import { getI18N } from "@/i18n";
+import { supabase } from "../../lib/supabase";
+import { supabaseAdmin } from "../../lib/supabase-admin";
+
 const { currentLocale } = Astro;
 const i18n = getI18N({ currentLocale });
 
 // Get the project ID from the URL parameter
 const { id } = Astro.params;
 
-// Check authentication
+// Get auth data directly since App component handles auth requirements
 import { checkAuth } from "../../lib/auth";
-import { supabase } from "../../lib/supabase";
-import { supabaseAdmin } from "../../lib/supabase-admin";
+const { isAuth, currentUser, currentRole } = await checkAuth(Astro.cookies);
 
-const { isAuth, session, user, role } = await checkAuth(Astro.cookies);
-
-
-
-// Server-side function to get user info directly from database
-async function getUserInfoServer(userId: string) {
-  // Get user metadata from auth.users table
+// Server-side function to get author info directly from database
+async function getAuthorInfoServer(userId: string) {
   if (!supabaseAdmin) {
-  console.error("Supabase Admin not available");
-  return null;
-}
+    console.error("Supabase Admin not available");
+    return null;
+  }
 
   const { data: authUser, error: authError } = await supabaseAdmin.auth.admin.getUserById(userId);
 
@@ -58,18 +54,21 @@ async function getUserInfoServer(userId: string) {
     id: authUser.user.id,
     email: authUser.user.email,
     profile: profile || null,
-    // Computed fields for easy access
     display_name:
       profile?.company_name ||
       authUser.user.user_metadata?.full_name ||
       authUser.user.email?.split("@")[0] ||
       "Unknown User",
     company_name: profile?.company_name || null,
+    first_name: profile?.first_name || null,
+    last_name: profile?.last_name || null,
+    phone: profile?.phone || null,
     role: profile?.role || "Unknown",
   };
 
   return userInfo;
 }
+
 
 // Get the tab parameter from URL query string
 const tabParam = Astro.url.searchParams.get("tab");
@@ -84,28 +83,13 @@ const validTabs = [
 ];
 const defaultTab = validTabs.includes(tabParam || "") ? tabParam : "project-form";
 
-// console.log("🌐 [PROJECT] Project ID:", id);
-// console.log("🌐 [PROJECT] Authentication check:", { isAuth, hasUser: !!user, role });
-// console.log("🌐 [PROJECT] Request URL:", Astro.url.href);
-// console.log("🌐 [PROJECT] Cookies:", {
-//   hasAccessToken: !!Astro.cookies.get("sb-access-token")?.value,
-//   hasRefreshToken: !!Astro.cookies.get("sb-refresh-token")?.value,
-// });
-
-// Redirect if not authenticated
-if (!isAuth) {
-  console.log("🌐 [PROJECT] Not authenticated, redirecting to login");
-  return Astro.redirect("/login");
-}
-
-// console.log("🌐 [PROJECT] User authenticated:", { userId: user?.id, userEmail: user?.email, role });
 
 // Fetch project data and project author profile - RLS will handle authorization
 let project = null;
 let projectAuthorProfile = null;
 let statusLabels: Record<number, { status_name: string; [key: string]: any }> = {};
 
-if (supabase && user) {
+if (supabase) {
   // Get project data
   const { data: projectData, error: projectError } = await supabase
     .from("projects")
@@ -119,18 +103,11 @@ if (supabase && user) {
     return Astro.redirect("/dashboard");
   } else {
     project = projectData;
-    // console.log("🌐 [PROJECT] Project loaded:", project.title);
 
     // Get project author's profile data (not current user's profile)
     if (project.author_id) {
       try {
-        projectAuthorProfile = await getUserInfoServer(project.author_id);
-        // console.log(
-        //   "🌐 [PROJECT] Project author profile loaded:",
-        //   projectAuthorProfile?.company_name,
-        //   "Email:",
-        //   projectAuthorProfile?.email
-        // );
+        projectAuthorProfile = await getAuthorInfoServer(project.author_id);
       } catch (error) {
         console.error("Error fetching project author profile:", error);
       }
@@ -149,7 +126,6 @@ if (supabase && user) {
       } else {
         // Add assigned user name to the project data
         project.assigned_to_name = assignedProfileData.company_name || assignedProfileData.id;
-        // console.log("🌐 [PROJECT] Assigned user profile loaded:", project.assigned_to_name);
       }
     } else {
       project.assigned_to_name = null;
@@ -162,7 +138,7 @@ if (supabase && user) {
       method: "GET",
       headers: {
         "Content-Type": "application/json",
-        "X-User-Role": role || "Client",
+        "X-User-Role": "Client", // Default role for status fetching
         Cookie: `sb-access-token=${Astro.cookies.get("sb-access-token")?.value}; sb-refresh-token=${Astro.cookies.get("sb-refresh-token")?.value}`,
       },
     });
@@ -171,38 +147,17 @@ if (supabase && user) {
       const statusesResult = await statusesResponse.json();
       if (statusesResult.success) {
         statusLabels = statusesResult.statuses || {};
-        // console.log("🌐 [PROJECT] Status labels loaded:", Object.keys(statusLabels).length);
-        // console.log("🌐 [PROJECT] Status labels object:", statusLabels);
-        // console.log("🌐 [PROJECT] Current project status:", project?.status);
-        // console.log("🌐 [PROJECT] Status label for current status:", statusLabels[project?.status]);
       }
     }
   } catch (error) {
-    console.error("🌐 [PROJECT] Error fetching status labels:", error);
+    console.error("Error fetching status labels:", error);
   }
 }
 
 // Safety check - if no project was found, redirect to dashboard
 if (!project) {
-  console.log("🌐 [PROJECT] No project data available, redirecting to dashboard");
   return Astro.redirect("/dashboard");
 }
-
-// Add debug logging for project data and Hero props
-// console.log("🌐 [PROJECT] Project data loaded:", {
-//   hasProject: !!project,
-//   projectId: project?.id,
-//   projectStatus: project?.status,
-//   projectTitle: project?.title || project?.address,
-//   hasAuthorProfile: !!projectAuthorProfile,
-// });
-
-// console.log("🌐 [PROJECT] Hero component props being passed:", {
-//   statusLabel: project?.status ? (statusLabels[project.status] || `Status ${project.status}`) : undefined,
-//   projectId: project?.id,
-//   userRole: role || "Client",
-//   hasProject: !!project,
-// });
 
 // Get status color based on status code
 function getStatusColor(status: number): string {
@@ -215,35 +170,30 @@ function getStatusColor(status: number): string {
 }
 ---
 
-<App title={i18n.SEO_TITLE} description={i18n.SEO_DESCRIPTION}>
-  <script>
-    // Client-side debugging
-    // console.log("🌐 [PROJECT-CLIENT] Page loaded");
-    // console.log(
-    //   "🌐 [PROJECT-CLIENT] Project ID from URL:",
-    //   window.location.pathname.split("/").pop()
-    // );
-    // console.log(
-    //   "🌐 [PROJECT-CLIENT] Current tab:",
-    //   new URLSearchParams(window.location.search).get("tab")
-    // );
-  </script>
+<App title={i18n.SEO_TITLE} description={i18n.SEO_DESCRIPTION} requireAuth={true}>
   <Hero
     title={project?.address || project?.title || "Untitled Project"}
-    description={`<span class="inline-flex items-center"><i class="bx bx-user mr-2 text-gray-500"></i>${
-      projectAuthorProfile?.company_name || "Unknown Author"
-    }</span>`}
+    description={`<div class="space-y-1">
+      <div class="inline-flex items-center">
+        <i class="bx bx-user mr-2 text-gray-500"></i>
+        <span class="font-medium">${projectAuthorProfile?.company_name || "Unknown Author"}</span>
+      </div>
+      <div class="text-sm text-gray-600 dark:text-gray-400">
+        ${projectAuthorProfile?.first_name || projectAuthorProfile?.last_name ? 
+          `<br/>${projectAuthorProfile?.first_name || ""} ${projectAuthorProfile?.last_name || ""}` : ""}
+        ${projectAuthorProfile?.phone ? `<br/>${projectAuthorProfile.phone}` : ""}
+      </div>
+    </div>`}
     statusLabel={project?.status
       ? (statusLabels[project.status]?.status_name || `Status ${project.status}`)
       : undefined}
     statusColor={project?.status ? getStatusColor(project.status) : undefined}
     projectId={project?.id}
-    currentStatus={project?.status}
-    userRole={role || "Client"}
-    projectTitle={project?.title || project?.address || "Project"}
-    clientEmail={(projectAuthorProfile?.email || user?.email || "Client") as string}
+    projectStatus={project?.status}
+    currentRole={currentRole || "Client"}
     project={project}
     statuses={Object.values(statusLabels)}
+    authorProfile={projectAuthorProfile}
   />
   <SectionContainer>
     <div class="flex items-center justify-between">
@@ -283,7 +233,7 @@ function getStatusColor(status: number): string {
         </span>
       </button>
       <!-- {
-        role === "Admin" || role === "Staff" ? (
+        currentRole === "Admin" || currentRole === "Staff" ? (
           <button
             id="tab-comments"
             class="tab-button relative mt-2 w-auto rounded-full px-4 py-2 text-sm font-medium text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
@@ -328,7 +278,7 @@ function getStatusColor(status: number): string {
         <BoxIcon name="receipt" class="mr-2 inline h-4 w-4" />
         Final Invoice
       </button>
-      {role === "Admin" || role === "Staff" ? (
+      {currentRole === "Admin" || currentRole === "Staff" ? (
 
       <button
         id="tab-activity-log"
@@ -354,7 +304,7 @@ function getStatusColor(status: number): string {
           project={project}
           projectId={id ?? ""}
           isNewProject={false}
-          role={role}
+          currentRole={currentRole}
           projectStatus={project?.status}
         />
       </div>
@@ -366,9 +316,9 @@ function getStatusColor(status: number): string {
       >
         <Discussions 
           projectId={id ?? ""} 
-          userRole={role || "Client"} 
-          userId={user?.id || ""} 
-          userName={user?.user_metadata?.company_name || user?.email || "Unknown User"} 
+          currentRole={currentRole || "Client"} 
+          userId={currentUser?.id || ""} 
+          userName={currentUser?.user_metadata?.company_name || currentUser?.email || "Unknown User"} 
         />
       </div>
 
@@ -377,9 +327,8 @@ function getStatusColor(status: number): string {
         <PDFUpload
           projectId={id ?? ""}
           fileType="media"
-          role={role || undefined}
-          projectAuthorEmail={projectAuthorProfile?.email || user?.email || "admin@capco.com"}
-          status={project?.status}
+          currentRole={currentRole || undefined}
+          projectStatus={project?.status}
         />
       </div>
 
@@ -388,8 +337,9 @@ function getStatusColor(status: number): string {
         <ProposalManager 
           projectId={id ?? ""} 
           project={project} 
-          projectAuthor={projectAuthorProfile} 
-          role={role || undefined}
+          authorProfile={projectAuthorProfile} 
+          currentRole={currentRole || undefined}
+          projectStatus={project?.status}
         />
       </div>
 
@@ -429,7 +379,7 @@ function getStatusColor(status: number): string {
         />
       </div>
 
-      {role === "Admin" || role === "Staff" ? (
+      {currentRole === "Admin" || currentRole === "Staff" ? (
       <!-- Activity Log Tab -->
       <div id="content-activity-log" class="tab-content hidden">
         <SimpleProjectLog projectId={parseInt(id ?? "0")} />
@@ -441,7 +391,7 @@ function getStatusColor(status: number): string {
   </SectionContainer>
 </App>
 
-<script define:vars={{ userRole: role }}>
+<script define:vars={{ userRole: currentRole }}>
 window.PROJECT_USER_ROLE = userRole;</script>
 
 <script>
@@ -520,16 +470,10 @@ window.PROJECT_USER_ROLE = userRole;</script>
     ];
     const initialTab = validTabs.includes(tabFromUrl || "") ? tabFromUrl! : "project-form";
 
-    // console.log("📋 [Tabs] Initializing with tab:", initialTab);
-
     // Switch to the initial tab
     switchTab(initialTab);
   });
 
   // Make switchTab globally available for other components
   (window as any).switchTab = switchTab;
-
-  // Form handling functions - proposal functions moved to ProposalManager component
-
-  // Discussion functionality moved to Discussions.astro component
 </script>

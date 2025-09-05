@@ -3,25 +3,54 @@ import { supabase } from "../../lib/supabase";
 
 export const POST: APIRoute = async ({ request }) => {
   try {
-    const { itemId } = await request.json();
+    const { itemId, invoiceId } = await request.json();
 
-    if (!itemId) {
-      return new Response(JSON.stringify({ error: "Line item ID is required" }), {
+    if (!itemId || !invoiceId) {
+      return new Response(JSON.stringify({ error: "Line item ID and invoice ID are required" }), {
         status: 400,
         headers: { "Content-Type": "application/json" },
       });
     }
 
-    console.log("Deleting line item:", itemId);
+    console.log("Deleting line item:", itemId, "from invoice:", invoiceId);
 
-    const { error } = await supabase.from("invoice_line_items").delete().eq("id", itemId);
+    // Get current invoice
+    const { data: invoice, error: fetchError } = await supabase
+      .from("invoices")
+      .select("catalog_item_ids")
+      .eq("id", parseInt(invoiceId))
+      .single();
 
-    if (error) {
-      console.error("Error deleting line item:", error);
+    if (fetchError || !invoice) {
+      console.error("Error fetching invoice:", fetchError);
+      return new Response(
+        JSON.stringify({
+          error: "Invoice not found",
+          details: fetchError?.message,
+        }),
+        {
+          status: 404,
+          headers: { "Content-Type": "application/json" },
+        }
+      );
+    }
+
+    // Remove the catalog item ID from the array
+    const currentCatalogIds = invoice.catalog_item_ids || [];
+    const updatedCatalogIds = currentCatalogIds.filter((id: number) => id !== parseInt(itemId));
+
+    // Update the invoice
+    const { error: updateError } = await supabase
+      .from("invoices")
+      .update({ catalog_item_ids: updatedCatalogIds })
+      .eq("id", parseInt(invoiceId));
+
+    if (updateError) {
+      console.error("Error updating invoice:", updateError);
       return new Response(
         JSON.stringify({
           error: "Failed to delete line item",
-          details: error.message,
+          details: updateError.message,
         }),
         {
           status: 500,

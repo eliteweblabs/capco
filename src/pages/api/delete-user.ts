@@ -8,9 +8,9 @@ export const DELETE: APIRoute = async ({ request, cookies }) => {
 
   try {
     // Check authentication and ensure user is Admin
-    const { isAuth, user, role } = await checkAuth(cookies);
+    const { isAuth, currentUser, currentRole } = await checkAuth(cookies);
 
-    if (!isAuth || role !== "Admin") {
+    if (!isAuth || currentRole !== "Admin") {
       console.log("🗑️ [DELETE-USER] Unauthorized access attempt");
       return new Response(
         JSON.stringify({
@@ -40,10 +40,10 @@ export const DELETE: APIRoute = async ({ request, cookies }) => {
       );
     }
 
-    console.log(`🗑️ [DELETE-USER] Admin ${user.email} attempting to delete user ${userId}`);
+    console.log(`🗑️ [DELETE-USER] Admin ${currentUser?.email} attempting to delete user ${userId}`);
 
     // Prevent self-deletion
-    if (userId === user.id) {
+    if (userId === currentUser?.id) {
       return new Response(
         JSON.stringify({
           success: false,

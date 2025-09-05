@@ -15,36 +15,38 @@ import GoogleAddressAutocomplete from "../form/GoogleAddressAutocomplete.astro";
 // import DeleteProject from "../form/DeleteProject.astro";
 import IsNewOrExistingClient from "./IsNewOrExistingClient.astro";
 
-import { checkAuth } from "../../lib/auth";
-
 interface Props {
   project?: any;
   projectId?: string | null;
-  role?: string | null; // Add role prop to control field visibility
+  authorProfile?: any;
+  currentRole?: string | null; // Add role prop to control field visibility
   isNewProject?: boolean; // Add flag to indicate if this is a new project
   projectStatus?: number | null; // Add project status for status-based field visibility
 }
 
-const { project = {}, projectId = "", isNewProject = true, projectStatus = null } = Astro.props;
-
-const { isAuth, session, user, role } = await checkAuth(Astro.cookies);
-
-// Redirect if not authenticated
-if (!isAuth) {
-  return Astro.redirect("/login");
-}
+const {
+  project = {},
+  projectId = "",
+  authorProfile,
+  currentRole,
+  isNewProject = true,
+  projectStatus = null,
+} = Astro.props;
 
 // Generate a temporary ID for new projects
 const formId = isNewProject ? `new-project-${Date.now()}` : projectId || "";
 
+// Use currentRole prop if provided, otherwise use authenticated role
+const effectiveRole = currentRole || currentRole;
+
 // Filter fields based on user role and project status
-const formFields = getFilteredFormFields(role, isNewProject, projectStatus);
+const formFields = getFilteredFormFields(effectiveRole, isNewProject, projectStatus);
 
 // Get filtered button groups based on user role and project status
-const buttonGroups = getFilteredButtonGroups(role, isNewProject, projectStatus);
+const buttonGroups = getFilteredButtonGroups(effectiveRole, isNewProject, projectStatus);
 
 // Get filtered form actions based on user role and project status
-const formActions = getFilteredFormActions(role, isNewProject, projectStatus);
+const formActions = getFilteredFormActions(effectiveRole, isNewProject, projectStatus);
 
 // Debug logging
 // console.log("📝 [ProjectForm] Debug info:", {
@@ -80,13 +82,13 @@ const existingClientField = formFields.find((f) => f.id === "existing-client-sel
 // );
 
 // Debug new client fields specifically
-const newClientFieldsInForm = formFields.filter(
-  (field) =>
-    field.name === "first_name" ||
-    field.name === "last_name" ||
-    field.name === "company_name" ||
-    field.name === "email"
-);
+// const newClientFieldsInForm = formFields.filter(
+//   (field) =>
+//     field.name === "first_name" ||
+//     field.name === "last_name" ||
+//     field.name === "company_name" ||
+//     field.name === "email"
+// );
 // console.log("New client fields found:", newClientFieldsInForm.length, newClientFieldsInForm);
 ---
 
@@ -99,7 +101,13 @@ const newClientFieldsInForm = formFields.filter(
   novalidate
 >
   <!-- New Client Toggle (Top of Form) -->
-  {isNewProject && (role === "Admin" || role === "Staff") ? <IsNewOrExistingClient /> : ""}
+  {
+    isNewProject && (effectiveRole === "Admin" || effectiveRole === "Staff") ? (
+      <IsNewOrExistingClient />
+    ) : (
+      ""
+    )
+  }
 
   <!-- Google Address Autocomplete Field -->
   {
@@ -211,6 +219,7 @@ const newClientFieldsInForm = formFields.filter(
               value={project?.[field.name] || ""}
               projectId={project?.id?.toString() || ""}
               autoSave={true}
+              currentRole={currentRole}
             />
           </div>
         );

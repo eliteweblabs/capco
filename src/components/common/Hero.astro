@@ -9,38 +9,40 @@ interface Props {
   statusLabel?: string;
   statusColor?: string;
   projectId?: number;
-  currentStatus?: number;
   userRole?: string;
   projectTitle?: string;
-  clientEmail?: string;
   project?: any;
   statuses?: any[]; // Accept statuses to pass to ProjectStatusDropdown
+  authorProfile?: any;
+  projectStatus?: number;
+  currentRole?: string;
 }
 
 const {
   title,
   description,
+  currentRole,
   statusLabel,
   statusColor = "blue",
   projectId,
-  currentStatus,
+  projectStatus,
   userRole,
   projectTitle,
-  clientEmail,
+  authorProfile,
   project,
   statuses = [],
 } = Astro.props;
 
 // Debug logging for Hero component props
-console.log("🎯 [HERO] Hero component props:", {
-  title,
-  statusLabel,
-  projectId,
-  userRole,
-  hasProject: !!project,
-  showStatusAndStaff: !!(statusLabel && projectId),
-  isAdminOrStaff: userRole === "Admin" || userRole === "Staff",
-});
+// console.log("🎯 [HERO] Hero component props:", {
+//   title,
+//   statusLabel,
+//   projectId,
+//   userRole,
+//   hasProject: !!project,
+//   showStatusAndStaff: !!(statusLabel && projectId),
+//   isAdminOrStaff: userRole === "Admin" || userRole === "Staff",
+// });
 ---
 
 <SectionContainer>
@@ -58,29 +60,33 @@ console.log("🎯 [HERO] Hero component props:", {
         class="text-hub-subtitle dark:text-hub-subtitle-dark"
         set:html={description}
       />
+      {
+        authorProfile?.email && (
+          <p class="text-sm text-gray-500 dark:text-gray-400">{authorProfile.email}</p>
+        )
+      }
     </div>
     {
       statusLabel && projectId ? (
         <div class="my-4 ml-4 flex flex-shrink-0 items-center gap-2 md:my-2">
           <ProjectStatusDropdown
             projectId={projectId}
-            currentStatus={currentStatus ?? 0}
+            projectStatus={projectStatus ?? 0}
             statusLabel={statusLabel}
             statusColor={statusColor}
-            userRole={userRole}
+            currentRole={currentRole}
             projectTitle={projectTitle}
-            clientEmail={clientEmail}
             statuses={statuses}
             data-refresh
           />
-          {(userRole === "Admin" || userRole === "Staff") && (
+          {(currentRole === "Admin" || currentRole === "Staff") && (
             <div class="relative inline-block text-left">
               <StaffSelect
                 id="hero-staff-select"
                 projectId={projectId?.toString() || ""}
                 value={project?.assigned_to_id || ""}
                 autoSave={true}
-                variant="hero"
+                currentRole={currentRole}
                 placeholder="Assign staff..."
                 address={project?.address || ""}
               />

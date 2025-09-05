@@ -4,8 +4,8 @@ import { supabase } from "../../lib/supabase";
 
 export const POST: APIRoute = async ({ request, cookies }) => {
   try {
-    const { isAuth, user, role } = await checkAuth(cookies);
-    if (!isAuth || !user) {
+    const { isAuth, currentUser, role } = await checkAuth(cookies);
+    if (!isAuth || !currentUser) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 401,
         headers: { "Content-Type": "application/json" },

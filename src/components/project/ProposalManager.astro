@@ -3,18 +3,19 @@ import BoxIcon from "../common/BoxIcon.astro";
 import LineItemSelector from "../form/LineItemSelector.astro";
 import PaymentForm from "./PaymentForm.astro";
 import { supabase } from "../../lib/supabase";
+import DigitalSignature from "./DigitalSignature.astro";
 
 interface Props {
   projectId: string;
   project: any;
-  projectAuthor?: any;
-  role?: string;
+  authorProfile?: any;
+  projectStatus?: number;
+  currentRole?: string;
 }
-
-const { projectId, project, projectAuthor, role } = Astro.props;
+const { projectId, project, authorProfile, projectStatus, currentRole } = Astro.props;
 
 // Only show to Admin/Staff users
-const canManageProposals = role === "Admin" || role === "Staff";
+const canManageProposals = currentRole === "Admin" || currentRole === "Staff";
 
 // Check if there's already an invoice for this project
 let existingInvoice = null;
@@ -30,38 +31,31 @@ try {
     .from("invoices")
     .select(`
       *,
-      invoice_line_items (
-        id,
-        description,
-        quantity,
-        unit_price,
-        total_price,
-        sort_order
-      )
+      catalog_item_ids
     `)
     .eq("project_id", parseInt(projectId))
     .eq("status", "proposal")
     .order("created_at", { ascending: false })
     .limit(1);
   
-  console.log("🔍 [ProposalManager] Invoice query result:", { invoices, error });
+  // console.log("🔍 [ProposalManager] Invoice query result:", { invoices, error });
   
   if (!error && invoices && invoices.length > 0) {
     existingInvoice = invoices[0]; // Get the most recent proposal
-    console.log("✅ [ProposalManager] Found existing invoice:", existingInvoice);
-    console.log("🔍 [ProposalManager] Invoice line_items:", existingInvoice.invoice_line_items);
-    console.log("🔍 [ProposalManager] Invoice line_items length:", existingInvoice.invoice_line_items?.length);
-    console.log("🔍 [ProposalManager] Invoice line_items type:", typeof existingInvoice.invoice_line_items);
+    // console.log("✅ [ProposalManager] Found existing invoice:", existingInvoice);
+    // console.log("🔍 [ProposalManager] Invoice catalog_item_ids:", existingInvoice.catalog_item_ids);
+    // console.log("🔍 [ProposalManager] Invoice catalog_item_ids length:", existingInvoice.catalog_item_ids?.length);
+    // console.log("🔍 [ProposalManager] Invoice catalog_item_ids type:", typeof existingInvoice.catalog_item_ids);
     
     // Let's also check if there are line items directly
     if (existingInvoice.id) {
-      console.log("🔍 [ProposalManager] Checking for line items directly for invoice ID:", existingInvoice.id);
+      // console.log("🔍 [ProposalManager] Checking for line items directly for invoice ID:", existingInvoice.id);
       const { data: directLineItems, error: lineItemsError } = await supabase
-        .from("invoice_line_items")
+        .from("line_items_catalog")
         .select("*")
-        .eq("invoice_id", existingInvoice.id);
+        .in("id", existingInvoice.catalog_item_ids || []);
       
-      console.log("🔍 [ProposalManager] Direct line items query:", { directLineItems, lineItemsError });
+      // console.log("🔍 [ProposalManager] Direct line items query:", { directLineItems, lineItemsError });
     }
   } else {
     console.log("❌ [ProposalManager] No existing invoice found:", error);
@@ -82,11 +76,11 @@ const hasExistingInvoice = !!existingInvoice;
       {
         canManageProposals ? (
           <span
-            set:html={`Generate a project proposal for <b>${projectAuthor.company_name}</b> for <b>${project.address}</b> based on the project form data.`}
+            set:html={`Generate a project proposal for <b>${authorProfile?.company_name || 'Client'}</b> for <b>${project.address}</b> based on the project form data.`}
           />
         ) : (   
           <span
-            set:html={`Your project proposal is being generated.<br>You will be notified at <b>${projectAuthor?.email}</b> when it is ready.`}
+            set:html={`Your project proposal is being generated.<br>You will be notified at <b>${authorProfile?.email}</b> when it is ready.`}
           />
         )
       }
@@ -187,9 +181,9 @@ const hasExistingInvoice = !!existingInvoice;
         <h3 class="mb-2 font-semibold text-gray-900 dark:text-white">Contact Information</h3>
         <div class="space-y-1 text-sm">
           
-          <p><strong>Client:</strong> <span id="proposal-client-name">{projectAuthor.company_name}</span></p>
-          <p><strong>Email:</strong> <span id="proposal-client-email">{projectAuthor.email}</span></p>
-          <p><strong>Phone:</strong> <span id="proposal-client-phone">{projectAuthor.phone}</span></p>
+          <p><strong>Client:</strong> <span id="proposal-client-name">{authorProfile?.company_name || 'N/A'}</span></p>
+          <p><strong>Email:</strong> <span id="proposal-client-email">{authorProfile?.email || 'N/A'}</span></p>
+          <p><strong>Phone:</strong> <span id="proposal-client-phone">{authorProfile?.phone || 'N/A'}</span></p>
         </div>
       </div>
     </div>
@@ -221,6 +215,11 @@ const hasExistingInvoice = !!existingInvoice;
               >
                 Total
               </th>
+              <th
+                class="px-4 py-3 text-center text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-300"
+              >
+                Actions
+              </th>
             </tr>
           </thead>
           <tbody
@@ -228,54 +227,15 @@ const hasExistingInvoice = !!existingInvoice;
             class="divide-y divide-gray-200 bg-white dark:divide-gray-600 dark:bg-gray-800"
           >
             <!-- Line items will be inserted here dynamically -->
-            {
-              existingInvoice?.invoice_line_items?.map((item: any) => (
-                <tr class="proposal-line-item-row" data-item-id={item.id}>
-                  <td class="px-6 py-4 text-sm text-gray-900 dark:text-white">
-                    <div class="font-medium">{item.description}</div>
-                  </td>
-                  <td class="px-6 py-4 text-sm text-gray-900 dark:text-white">
-                    <input
-                      type="number"
-                      class="quantity-input w-20 px-2 py-1 border border-gray-300 rounded text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                      value={item.quantity}
-                      min="1"
-                      data-item-id={item.id}
-                    />
-                  </td>
-                  <td class="px-6 py-4 text-sm text-gray-900 dark:text-white">
-                    <input
-                      type="number"
-                      class="unit-price-input w-24 px-2 py-1 border border-gray-300 rounded text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                      value={item.unit_price}
-                      min="0"
-                      step="0.01"
-                      data-item-id={item.id}
-                    />
-                  </td>
-                  <td class="px-6 py-4 text-sm text-gray-900 dark:text-white">
-                    <span class="total-display font-semibold text-green-600">${item.total_price.toFixed(2)}</span>
-                  </td>
-                  <td class="px-6 py-4 text-sm text-gray-900 dark:text-white">
-                    <button
-                      type="button"
-                      class="remove-item-btn text-red-600 hover:text-red-800"
-                      data-item-id={item.id}
-                    >
-                      <i class="bx bx-trash"></i>
-                    </button>
-                  </td>
-                </tr>
-              ))
-            }
+            <!-- Line items will be loaded dynamically via JavaScript -->
           </tbody>
           <tfoot class="bg-gray-50 dark:bg-gray-700">
             <tr>
               <td
-                colspan="3"
+                colspan="4"
                 class="px-4 py-3 text-right font-semibold text-gray-900 dark:text-white"
               >
-                Total:
+                Total: 
               </td>
               <td class="px-4 py-3 text-right font-bold text-green-600 dark:text-green-400">
                 $<span id="proposal-total-footer">0.00</span>
@@ -304,17 +264,9 @@ const hasExistingInvoice = !!existingInvoice;
 
     <!-- Actions -->
     {
-      canManageProposals && (
+      canManageProposals && projectStatus === 20 && (
         <div class="flex justify-between">
           <div class="flex gap-2">
-            <button
-              onclick={`editProposal('${projectId}')`}
-              class="inline-flex items-center rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700"
-            >
-              <BoxIcon name="edit" class="mr-2 h-4 w-4" />
-              Edit Proposal
-            </button>
-
             <button
               id="show-proposal-selector-btn"
               onclick="toggleProposalSelector()"
@@ -327,11 +279,11 @@ const hasExistingInvoice = !!existingInvoice;
 
           <div class="flex gap-2">
             <button
-              onclick="regenerateProposal()"
+              onclick="saveProposal()"
               class="inline-flex items-center rounded-lg bg-gray-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-gray-700"
             >
-              <BoxIcon name="refresh" class="mr-2 h-4 w-4" />
-              Regenerate
+              <BoxIcon name="save" class="mr-2 h-4 w-4" />
+              Save Proposal
             </button>
             <button
               id="send-proposal-btn"
@@ -354,27 +306,33 @@ const hasExistingInvoice = !!existingInvoice;
     }
     
     <!-- Payment Section for Proposal (50% Deposit) -->
-    {
-      canManageProposals === false && (
+
+
+              {projectStatus === 20 && currentRole === "Admin" && (
+
+<DigitalSignature id="proposal-signature" required={true} width={300} height={280} placeholder="Proposal Signature" />
+          
+)}
+          {projectStatus === 20 && currentRole === "Client" && (
+
         <div class="mt-8 rounded-lg border border-gray-200 bg-white p-6 dark:border-gray-700 dark:bg-gray-800">
           <div class="mb-6">
             <h3 class="mb-2 text-lg font-medium text-gray-900 dark:text-white">Proposal Payment - 50% Deposit</h3>
             <p class="text-gray-500 dark:text-gray-400">
               Pay 50% deposit to approve this proposal and begin work.
             </p>
-          </div>
-          
-          <!-- Import PaymentForm component -->
+          </div>   <!-- Import PaymentForm component -->
           <PaymentForm 
             invoiceId={parseInt(projectId)} 
             amount={0}
             currency="usd"
             paymentType="deposit"
-            clientProfile={projectAuthor}
+            clientProfile={authorProfile}
           />
         </div>
-      )
-    }
+
+        )}
+  
   </div>
 </div>
 
@@ -385,19 +343,64 @@ const hasExistingInvoice = !!existingInvoice;
     // Get component data from the global variables set by define:vars
     const projectId = window.PROPOSAL_PROJECT_ID;
     const project = window.PROPOSAL_PROJECT_DATA;
-    const projectAuthor = window.PROPOSAL_PROJECT_AUTHOR;
+    const authorProfile = window.PROPOSAL_PROJECT_AUTHOR;
     const existingInvoice = window.PROPOSAL_EXISTING_INVOICE;
     const hasExistingInvoice = window.PROPOSAL_HAS_EXISTING_INVOICE;
 
+    // Update proposal total function
+    function updateProposalTotal() {
+      const lineItemsContainer = document.getElementById("proposal-line-items");
+      if (!lineItemsContainer) return;
+
+      let total = 0;
+      const rows = lineItemsContainer.querySelectorAll("tr");
+      
+      rows.forEach((row) => {
+        const quantityInput = row.querySelector(".quantity-input") as HTMLInputElement;
+        const unitPriceInput = row.querySelector(".unit-price-input") as HTMLInputElement;
+        
+        if (quantityInput && unitPriceInput) {
+          const quantity = parseFloat(quantityInput.value) || 0;
+          const unitPrice = parseFloat(unitPriceInput.value) || 0;
+          const rowTotal = quantity * unitPrice;
+          total += rowTotal;
+          
+          // Update individual row total
+          const totalDisplay = row.querySelector(".total-display");
+          if (totalDisplay) {
+            totalDisplay.textContent = `$${rowTotal.toFixed(2)}`;
+          }
+        }
+      });
+
+      // Update total display in header
+      const totalElement = document.getElementById("proposal-total");
+      if (totalElement) {
+        totalElement.textContent = total.toFixed(2);
+      }
+      
+      // Update total display in footer
+      const tfootTotal = document.getElementById("proposal-total-footer");
+      if (tfootTotal) {
+        tfootTotal.textContent = total.toFixed(2);
+      }
+    }
+
+    // Make updateProposalTotal available globally
+    (window as any).updateProposalTotal = updateProposalTotal;
+
     // Initialize the global proposal manager
     if (projectId && project) {
-      initializeProposalManager(projectId, project, projectAuthor);
+      initializeProposalManager(projectId, project, authorProfile);
       
       // If there's an existing invoice, load it automatically
-      console.log("🔍 [Client] Checking if should load existing invoice:", { hasExistingInvoice, existingInvoice, proposalManager: !!window.proposalManager });
+      // console.log("🔍 [Client] Checking if should load existing invoice:", { hasExistingInvoice, existingInvoice, proposalManager: !!window.proposalManager });
       if (hasExistingInvoice && existingInvoice && window.proposalManager) {
-        console.log("✅ [Client] Loading existing proposal invoice:", existingInvoice);
-        window.proposalManager.loadExistingInvoice(existingInvoice).catch(error => {
+        // console.log("✅ [Client] Loading existing proposal invoice:", existingInvoice);
+        window.proposalManager.loadExistingInvoice(existingInvoice).then(() => {
+          // Recalculate total after loading existing invoice to ensure interactive elements work
+          updateProposalTotal();
+        }).catch(error => {
           console.error("❌ [Client] Error loading existing invoice:", error);
         });
       } else {
@@ -407,7 +410,6 @@ const hasExistingInvoice = !!existingInvoice;
 
     // Make wrapper functions available globally for onclick handlers
     window.buildProposal = (id) => window.proposalManager?.buildProposal();
-    window.editProposal = (id) => window.proposalManager?.editProposal();
     window.regenerateProposal = () => window.proposalManager?.regenerateProposal();
     window.sendProposal = () => window.proposalManager?.sendProposal();
     window.convertToInvoice = () => window.proposalManager?.convertToInvoice();
@@ -433,15 +435,15 @@ const hasExistingInvoice = !!existingInvoice;
       // Add event listeners to existing line items
       const existingRows = lineItemsContainer.querySelectorAll(".proposal-line-item-row");
       existingRows.forEach((row) => {
-        const quantityInput = row.querySelector(".quantity-input");
-        const unitPriceInput = row.querySelector(".unit-price-input");
-        const removeBtn = row.querySelector(".remove-item-btn");
+        const quantityInput = row.querySelector(".quantity-input") as HTMLInputElement;
+        const unitPriceInput = row.querySelector(".unit-price-input") as HTMLInputElement;
+        const removeBtn = row.querySelector(".remove-item-btn") as HTMLButtonElement;
 
         const updateTotal = () => {
-          const quantity = parseFloat(quantityInput.value) || 0;
-          const unitPrice = parseFloat(unitPriceInput.value) || 0;
+          const quantity = parseFloat(quantityInput?.value) || 0;
+          const unitPrice = parseFloat(unitPriceInput?.value) || 0;
           const total = quantity * unitPrice;
-          row.querySelector(".total-display").textContent = `$${total.toFixed(2)}`;
+          (row.querySelector(".total-display") as HTMLSpanElement).textContent = `$${total.toFixed(2)}`;
           updateProposalTotal();
         };
 
@@ -478,44 +480,6 @@ const hasExistingInvoice = !!existingInvoice;
       });
     }
 
-    // Update proposal total
-    function updateProposalTotal() {
-      const lineItemsContainer = document.getElementById("proposal-line-items");
-      if (!lineItemsContainer) return;
-
-      let total = 0;
-      const rows = lineItemsContainer.querySelectorAll("tr");
-      
-      rows.forEach((row) => {
-        const quantityInput = row.querySelector(".quantity-input");
-        const unitPriceInput = row.querySelector(".unit-price-input");
-        
-        if (quantityInput && unitPriceInput) {
-          const quantity = parseFloat(quantityInput.value) || 0;
-          const unitPrice = parseFloat(unitPriceInput.value) || 0;
-          const rowTotal = quantity * unitPrice;
-          total += rowTotal;
-          
-          // Update individual row total
-          const totalDisplay = row.querySelector(".total-display");
-          if (totalDisplay) {
-            totalDisplay.textContent = `$${rowTotal.toFixed(2)}`;
-          }
-        }
-      });
-
-      // Update total display in header
-      const totalElement = document.getElementById("proposal-total");
-      if (totalElement) {
-        totalElement.textContent = total.toFixed(2);
-      }
-      
-      // Update total display in footer
-      const tfootTotal = document.getElementById("proposal-total-footer");
-      if (tfootTotal) {
-        tfootTotal.textContent = total.toFixed(2);
-      }
-    }
 
     // Proposal line item selector callback
     (window as any).onProposalLineItemSelected = function (item: any) {
@@ -545,8 +509,8 @@ const hasExistingInvoice = !!existingInvoice;
               type="number"
               class="unit-price-input w-24 px-2 py-1 border border-gray-300 rounded text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white"
               value="${item.unit_price}"
-              min="0"
-              step="0.01"
+              min="1"
+              step="1"
               data-item-id="${item.id}"
             />
           </td>
@@ -567,15 +531,16 @@ const hasExistingInvoice = !!existingInvoice;
         lineItemsContainer.appendChild(newItem);
         
         // Add event listeners for the new item
-        const quantityInput = newItem.querySelector(".quantity-input");
-        const unitPriceInput = newItem.querySelector(".unit-price-input");
-        const removeBtn = newItem.querySelector(".remove-item-btn");
+        const quantityInput = newItem.querySelector(".quantity-input") as HTMLInputElement;
+        const unitPriceInput = newItem.querySelector(".unit-price-input") as HTMLInputElement;
+        const removeBtn = newItem.querySelector(".remove-item-btn") as HTMLButtonElement;
         
         const updateTotal = () => {
-          const quantity = parseFloat(quantityInput.value) || 0;
-          const unitPrice = parseFloat(unitPriceInput.value) || 0;
+          const quantity = parseFloat(quantityInput?.value) || 0;
+          const unitPrice = parseFloat(unitPriceInput?.value) || 0;
           const total = quantity * unitPrice;
-          newItem.querySelector(".total-display").textContent = `$${total.toFixed(2)}`;
+          const totalDisplay = newItem.querySelector(".total-display") as HTMLSpanElement;
+          if (totalDisplay) totalDisplay.textContent = `$${total.toFixed(2)}`;
           updateProposalTotal();
         };
         
@@ -592,11 +557,11 @@ const hasExistingInvoice = !!existingInvoice;
   });
 </script>
 
-<script define:vars={{ projectId, project, projectAuthor, existingInvoice, hasExistingInvoice }}>
+<script define:vars={{ projectId, project, authorProfile, existingInvoice, hasExistingInvoice }}>
   // Make data available globally for the proposal functions
   window.PROPOSAL_PROJECT_ID = projectId;
   window.PROPOSAL_PROJECT_DATA = project;
-  window.PROPOSAL_PROJECT_AUTHOR = projectAuthor;
+  window.PROPOSAL_PROJECT_AUTHOR = authorProfile;
   window.PROPOSAL_EXISTING_INVOICE = existingInvoice;
   window.PROPOSAL_HAS_EXISTING_INVOICE = hasExistingInvoice;
 

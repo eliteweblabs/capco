@@ -3,6 +3,7 @@ import { supabase } from "./supabase";
 
 // Project Status Codes (for backward compatibility - only used in type definitions)
 export const PROJECT_STATUS = {
+  NEW_PROJECT_STARTED: 0,
   SPECS_RECEIVED: 10,
   GENERATING_PROPOSAL: 20,
   PROPOSAL_SHIPPED: 30,
@@ -53,24 +54,24 @@ export class GlobalServices {
   private eventTarget: EventTarget;
 
   constructor() {
-    console.log("🌐 [GLOBAL] GlobalServices constructor called");
+    // console.log("🌐 [GLOBAL] GlobalServices constructor called");
     this.eventTarget = new EventTarget();
-    console.log("🌐 [GLOBAL] GlobalServices initialized");
+    // console.log("🌐 [GLOBAL] GlobalServices initialized");
   }
 
   static getInstance(): GlobalServices {
     if (!GlobalServices.instance) {
-      console.log("🌐 [GLOBAL] Creating new GlobalServices instance");
+      // console.log("🌐 [GLOBAL] Creating new GlobalServices instance");
       GlobalServices.instance = new GlobalServices();
     } else {
-      console.log("🌐 [GLOBAL] Returning existing GlobalServices instance");
+      // console.log("🌐 [GLOBAL] Returning existing GlobalServices instance");
     }
     return GlobalServices.instance;
   }
 
   // Event Management - Used by project-service.ts and various components
   emit(type: string, data: any, source?: string) {
-    console.log("🌐 [GLOBAL] Emitting event:", { type, data, source });
+    // console.log("🌐 [GLOBAL] Emitting event:", { type, data, source });
     const event = new CustomEvent("global-service", {
       detail: { type, data, source } as GlobalServiceEvent,
     });
@@ -78,19 +79,19 @@ export class GlobalServices {
 
     // Also dispatch to window for cross-component access
     if (typeof window !== "undefined") {
-      console.log("🌐 [GLOBAL] Dispatching to window:", `global:${type}`);
+      // console.log("🌐 [GLOBAL] Dispatching to window:", `global:${type}`);
       window.dispatchEvent(new CustomEvent(`global:${type}`, { detail: data }));
     }
   }
 
   on(type: string, callback: (data: any) => void) {
-    console.log("🌐 [GLOBAL] Registering event listener for:", type);
+    // console.log("🌐 [GLOBAL] Registering event listener for:", type);
     const handler = (event: CustomEvent<GlobalServiceEvent>) => {
       if (event.detail.type === type) {
-        console.log("🌐 [GLOBAL] Event handler called:", {
-          type,
-          data: event.detail.data,
-        });
+        // console.log("🌐 [GLOBAL] Event handler called:", {
+        //   type,
+        //   data: event.detail.data,
+        // });
         callback(event.detail.data);
       }
     };
@@ -140,38 +141,10 @@ export class GlobalServices {
       }
 
       this.emit("auth:signout", {});
-      console.log("🌐 [GLOBAL] User signed out successfully");
+      // console.log("🌐 [GLOBAL] User signed out successfully");
     } catch (error) {
-      console.error("🌐 [GLOBAL] Error in signOut:", error);
+      // console.error("🌐 [GLOBAL] Error in signOut:", error);
       throw error;
-    }
-  }
-
-  // Project Status - Get current status of a project
-  async getProjectStatus(projectId: string) {
-    try {
-      console.log("🌐 [GLOBAL] Getting project status for:", projectId);
-
-      if (!supabase) {
-        throw new Error("Database not configured");
-      }
-
-      const { data, error } = await supabase
-        .from("projects")
-        .select("status")
-        .eq("id", projectId)
-        .single();
-
-      if (error) {
-        console.error("🌐 [GLOBAL] Error getting project status:", error);
-        throw error;
-      }
-
-      console.log("🌐 [GLOBAL] Project status retrieved:", data?.status);
-      return data?.status;
-    } catch (error) {
-      console.error("🌐 [GLOBAL] Error in getProjectStatus:", error);
-      return null;
     }
   }
 }
@@ -184,4 +157,3 @@ export const globalServices = GlobalServices.getInstance();
 
 export const emit = globalServices.emit.bind(globalServices);
 export const on = globalServices.on.bind(globalServices);
-export const getProjectStatus = globalServices.getProjectStatus.bind(globalServices);

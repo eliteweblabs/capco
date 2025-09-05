@@ -2,18 +2,22 @@
 import App from "../components/common/App.astro";
 import SectionContainer from "../components/common/SectionContainer.astro";
 
-// Check if user is authenticated
-import { checkAuth } from "../lib/auth";
-const authResult = await checkAuth(Astro.cookies);
-const { isAuth, user, role } = authResult;
+interface Props {
+  isAuth: boolean;
+  currentUser: any;
+  currentRole: string | null;
+}
+
+// Auth props will be passed from App component
+const { isAuth, currentUser, currentRole } = Astro.props;
 
 // Redirect to login if not authenticated
-if (!isAuth || !user) {
+if (!isAuth || !currentUser) {
   return Astro.redirect("/login");
 }
 
 // Only allow admins to access this page
-if (role !== "Admin") {
+if (currentRole !== "Admin") {
   return Astro.redirect("/dashboard");
 }
 ---

@@ -5,9 +5,9 @@ import { supabase } from "../../lib/supabase";
 export const POST: APIRoute = async ({ request, cookies }) => {
   try {
     // Check authentication
-    const { isAuth, user } = await checkAuth(cookies);
+    const { isAuth, currentUser } = await checkAuth(cookies);
 
-    if (!isAuth || !user) {
+    if (!isAuth || !currentUser) {
       return new Response(
         JSON.stringify({
           success: false,

@@ -1,69 +1,14 @@
 import type { APIRoute } from "astro";
 import { checkAuth } from "../../lib/auth";
 import { supabase } from "../../lib/supabase";
-import { supabaseAdmin } from "../../lib/supabase-admin";
 import { getApiBaseUrl } from "../../lib/url-utils";
-
-// Server-side function to get user info directly from database
-async function getUserInfoServer(userId: string) {
-  // Get user metadata from auth.users table
-  if (!supabaseAdmin) {
-    return null;
-  }
-  const { data: authUser, error: authError } = await supabaseAdmin.auth.admin.getUserById(userId);
-
-  if (authError || !authUser.user) {
-    console.error("Error fetching auth user:", authError);
-    return null;
-  }
-
-  if (!supabase) {
-    return null;
-  }
-  // Get user profile from profiles table
-  const { data: profile, error: profileError } = await supabase
-    .from("profiles")
-    .select("*")
-    .eq("id", userId)
-    .single();
-
-  console.log(`🔍 [USER-INFO] Profile data for ${userId}:`, profile);
-  console.log(`🔍 [USER-INFO] Profile error:`, profileError);
-  console.log(`🔍 [USER-INFO] Auth user metadata:`, authUser.user.user_metadata);
-
-  // Combine auth user data with profile data
-  const userInfo = {
-    id: authUser.user.id,
-    email: authUser.user.email,
-    profile: profile || null,
-    // Computed fields for easy access
-    display_name:
-      profile?.company_name ||
-      profile?.name ||
-      authUser.user.user_metadata?.full_name ||
-      authUser.user.email?.split("@")[0] ||
-      "Unknown User",
-    company_name: profile?.company_name || null,
-    name: profile?.name || null,
-    role: profile?.role || "Unknown",
-  };
-
-  console.log(`🔍 [USER-INFO] Final userInfo for ${userId}:`, {
-    company_name: userInfo.company_name,
-    name: userInfo.name,
-    display_name: userInfo.display_name,
-    email: userInfo.email,
-  });
-
-  return userInfo;
-}
 
 export const POST: APIRoute = async ({ request, cookies }) => {
   try {
     // Check authentication
-    const { isAuth, user, role } = await checkAuth(cookies);
+    const { isAuth, currentUser, currentRole } = await checkAuth(cookies);
 
-    if (!isAuth || !user) {
+    if (!isAuth || !currentUser) {
       return new Response(
         JSON.stringify({
           success: false,
@@ -93,18 +38,18 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     let { projectId, message, internal = false, sms_alert = false, parent_id = null } = body;
 
     // Force internal = false for clients (only Admin/Staff can create internal comments)
-    const isClient = role === "Client";
+    const isClient = currentRole === "Client";
     if (isClient) {
       internal = false;
-      console.log("📡 [ADD-DISCUSSION] Client user - forcing internal = false");
+      // console.log("📡 [ADD-DISCUSSION] Client user - forcing internal = false");
     }
 
-    console.log("📡 [ADD-DISCUSSION] Comment settings:", {
-      role,
-      isClient,
-      internal,
-      sms_alert,
-    });
+    // console.log("📡 [ADD-DISCUSSION] Comment settings:", {
+    //   currentRole,
+    //   isClient,
+    //   internal,
+    //   sms_alert,
+    // });
 
     if (!projectId || !message || message.trim() === "") {
       return new Response(
@@ -138,7 +83,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     // Add the discussion
     console.log("🔔 [DISCUSSION] Inserting discussion:", {
       project_id: projectIdInt,
-      author_id: user.id,
+      author_id: currentUser.id,
       message: message.trim(),
       internal: internal,
       sms_alert: sms_alert,
@@ -148,7 +93,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       .from("discussion")
       .insert({
         project_id: projectIdInt,
-        author_id: user.id,
+        author_id: currentUser.id,
         message: message.trim(),
         internal: internal,
         sms_alert: sms_alert,
@@ -183,15 +128,16 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     }
 
     // Get the author profile using the server-side function
-    console.log("🔔 [DISCUSSION] Fetching user info for user:", user.id);
+    console.log("🔔 [DISCUSSION] Fetching user info for user:", currentUser.id);
 
-    let userInfo = null;
-    try {
-      userInfo = await getUserInfoServer(user.id);
-      console.log("🔔 [DISCUSSION] User info result:", userInfo);
-    } catch (error) {
-      console.error("Error fetching user info:", error);
-    }
+    const userInfo = {
+      company_name: currentUser.company_name || currentUser.display_name,
+      name: currentUser.display_name,
+      display_name: currentUser.display_name,
+      email: currentUser.email,
+      profile: currentUser.profile,
+    };
+    console.log("🔔 [DISCUSSION] User info from currentUser:", userInfo);
 
     // Combine discussion with user info
     const discussionWithProfile = {
@@ -218,7 +164,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       isClient,
       internal,
       shouldSendEmail: isClient && !internal,
-      userRole: role,
+      userRole: currentRole,
       userInfo: userInfo
         ? {
             company_name: userInfo.company_name,
@@ -287,27 +233,24 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       // Call email delivery API to notify everyone
       const baseUrl = getApiBaseUrl(request);
       console.log("💬 [DISCUSSION] Using base URL for email delivery:", baseUrl);
-      const emailResponse = await fetch(
-        `${baseUrl}/api/email-delivery`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            projectId: projectIdInt,
-            emailType: "client_comment",
-            usersToNotify: usersToNotify,
-            custom_subject: subjectLine,
-            email_content: message.trim(),
-            comment_timestamp: discussion.created_at,
-            client_name:
-              userInfo?.company_name ||
-              `${userInfo?.profile?.first_name || ""} ${userInfo?.profile?.last_name || ""}`.trim() ||
-              "Client",
-          }),
-        }
-      );
+      const emailResponse = await fetch(`${baseUrl}/api/email-delivery`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          projectId: projectIdInt,
+          emailType: "client_comment",
+          usersToNotify: usersToNotify,
+          custom_subject: subjectLine,
+          email_content: message.trim(),
+          comment_timestamp: discussion.created_at,
+          client_name:
+            userInfo?.company_name ||
+            `${userInfo?.profile?.first_name || ""} ${userInfo?.profile?.last_name || ""}`.trim() ||
+            "Client",
+        }),
+      });
 
       const emailResult = await emailResponse.json();
       if (emailResult.success) {

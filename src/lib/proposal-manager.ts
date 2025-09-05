@@ -71,6 +71,9 @@ export class ProposalManager {
     // Save the proposal as an invoice in the database
     this.saveProposalAsInvoice();
 
+    // Make proposal editable by default
+    this.enterEditMode();
+
     console.log("Proposal generated successfully");
   }
 
@@ -235,6 +238,9 @@ export class ProposalManager {
       (window as any).hidePreloader();
     }
 
+    // Make proposal editable by default
+    this.enterEditMode();
+
     console.log("Existing invoice loaded successfully");
   }
 
@@ -270,6 +276,38 @@ export class ProposalManager {
   }
 
   /**
+   * Save current proposal data to the database
+   */
+  private async saveCurrentProposalData(): Promise<void> {
+    try {
+      console.log("💾 [PROPOSAL-MANAGER] Saving current proposal data");
+
+      // Get line items data
+      const lineItems = this.getLineItemsData();
+
+      // Update line items in database
+      const response = await fetch("/api/update-invoice-line-items", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          projectId: this.projectId,
+          lineItems: lineItems,
+        }),
+      });
+
+      const result = await response.json();
+
+      if (!result.success) {
+        console.error("❌ [PROPOSAL-MANAGER] Failed to save proposal data:", result.error);
+      }
+    } catch (error) {
+      console.error("❌ [PROPOSAL-MANAGER] Error saving proposal data:", error);
+    }
+  }
+
+  /**
    * Send proposal by updating project status to 30
    */
   async sendProposal(): Promise<void> {
@@ -287,7 +325,10 @@ export class ProposalManager {
     }
 
     try {
-      // Update project status to 30 (Proposal Shipped)
+      // First, save the current proposal data to the database
+      await this.saveCurrentProposalData();
+
+      // Then update project status to 30 (Proposal Shipped)
       const response = await fetch("/api/update-status", {
         method: "POST",
         headers: {
@@ -660,44 +701,38 @@ export class ProposalManager {
     const tbody = document.getElementById("proposal-line-items");
     if (!tbody) return;
 
-    // Get line items from the invoice_line_items relationship
-    let lineItems = invoice.invoice_line_items || [];
-    console.log("🔄 [PROPOSAL-MANAGER] Populating line items:", lineItems);
+    // Get catalog item IDs from the catalog_item_ids JSONB field
+    const catalogItemIds = invoice.catalog_item_ids || [];
+    console.log("🔄 [PROPOSAL-MANAGER] Populating line items from catalog IDs:", catalogItemIds);
     console.log("🔄 [PROPOSAL-MANAGER] Invoice data:", invoice);
-    console.log("🔄 [PROPOSAL-MANAGER] Invoice line_items property:", invoice.invoice_line_items);
-    console.log("🔄 [PROPOSAL-MANAGER] Invoice keys:", Object.keys(invoice));
-    console.log(
-      "🔄 [PROPOSAL-MANAGER] Invoice line_items type:",
-      typeof invoice.invoice_line_items
-    );
-    console.log(
-      "🔄 [PROPOSAL-MANAGER] Invoice line_items length:",
-      invoice.invoice_line_items?.length
-    );
 
-    // If no line items from relationship, try direct query
-    if (lineItems.length === 0 && invoice.id) {
-      console.log(
-        "🔄 [PROPOSAL-MANAGER] No line items from relationship, trying direct query for invoice ID:",
-        invoice.id
-      );
-      try {
-        const response = await fetch(`/api/get-invoice-line-items?invoiceId=${invoice.id}`, {
-          credentials: "include",
-        });
-        if (response.ok) {
-          const data = await response.json();
-          lineItems = data.lineItems || [];
-          console.log("🔄 [PROPOSAL-MANAGER] Direct query result:", lineItems);
-        }
-      } catch (error) {
-        console.error("❌ [PROPOSAL-MANAGER] Error fetching line items directly:", error);
+    if (catalogItemIds.length === 0) {
+      console.log("❌ [PROPOSAL-MANAGER] No catalog item IDs found in invoice");
+      console.log("❌ [PROPOSAL-MANAGER] Invoice structure:", JSON.stringify(invoice, null, 2));
+      return;
+    }
+
+    // Fetch catalog items for these IDs
+    let lineItems: any[] = [];
+    try {
+      const response = await fetch(`/api/line-items-catalog?ids=${catalogItemIds.join(",")}`, {
+        credentials: "include",
+      });
+      if (response.ok) {
+        const data = await response.json();
+        lineItems = data.items || [];
+        console.log("🔄 [PROPOSAL-MANAGER] Fetched catalog items:", lineItems);
+      } else {
+        console.error("❌ [PROPOSAL-MANAGER] Error fetching catalog items:", response.statusText);
+        return;
       }
+    } catch (error) {
+      console.error("❌ [PROPOSAL-MANAGER] Error fetching catalog items:", error);
+      return;
     }
 
     if (lineItems.length === 0) {
-      console.log("❌ [PROPOSAL-MANAGER] No line items found in invoice");
-      console.log("❌ [PROPOSAL-MANAGER] Invoice structure:", JSON.stringify(invoice, null, 2));
+      console.log("❌ [PROPOSAL-MANAGER] No catalog items found for IDs:", catalogItemIds);
       return;
     }
 
@@ -708,8 +743,13 @@ export class ProposalManager {
     const fragment = document.createDocumentFragment();
     let total = 0;
 
-    // Use line items from the invoice_line_items relationship
+    // Use line items from the line_items JSON field
     lineItems.forEach((item: any) => {
+      console.log("🔍 [PROPOSAL-MANAGER] Processing line item:", item);
+      console.log("🔍 [PROPOSAL-MANAGER] Item keys:", Object.keys(item));
+      console.log("🔍 [PROPOSAL-MANAGER] Unit price value:", item.unit_price);
+      console.log("🔍 [PROPOSAL-MANAGER] Quantity value:", item.quantity);
+
       const row = document.createElement("tr");
       row.className = "hover:bg-gray-50 dark:hover:bg-gray-700";
 
@@ -734,21 +774,85 @@ export class ProposalManager {
 
       const qtyCell = document.createElement("td");
       qtyCell.className = "px-4 py-3 text-sm text-right text-gray-900 dark:text-white";
-      qtyCell.textContent = (item.quantity || 0).toString();
+      const quantityInput = document.createElement("input");
+      quantityInput.type = "number";
+      quantityInput.className =
+        "quantity-input w-20 px-2 py-1 text-right border border-gray-300 rounded dark:border-gray-600 dark:bg-gray-700 dark:text-white";
+      // Handle potential data type issues
+      const quantity = parseFloat(item.quantity) || 0;
+      console.log(
+        "🔍 [PROPOSAL-MANAGER] Setting quantity input value:",
+        quantity,
+        "from:",
+        item.quantity
+      );
+      quantityInput.value = quantity.toString();
+      quantityInput.min = "0";
+      quantityInput.step = "0.01";
+      qtyCell.appendChild(quantityInput);
 
       const priceCell = document.createElement("td");
       priceCell.className = "px-4 py-3 text-sm text-right text-gray-900 dark:text-white";
-      priceCell.textContent = `$${(item.unit_price || 0).toFixed(2)}`;
+      const unitPriceInput = document.createElement("input");
+      unitPriceInput.type = "number";
+      unitPriceInput.className =
+        "unit-price-input w-24 px-2 py-1 text-right border border-gray-300 rounded dark:border-gray-600 dark:bg-gray-700 dark:text-white";
+      // Handle potential data type issues
+      const unitPrice = parseFloat(item.unit_price) || 0;
+      console.log(
+        "🔍 [PROPOSAL-MANAGER] Setting unit price input value:",
+        unitPrice,
+        "from:",
+        item.unit_price
+      );
+      unitPriceInput.value = unitPrice.toString();
+      unitPriceInput.min = "0";
+      unitPriceInput.step = "0.01";
+      priceCell.appendChild(unitPriceInput);
 
       const totalCell = document.createElement("td");
       totalCell.className =
         "px-4 py-3 text-sm text-right font-medium text-gray-900 dark:text-white";
-      totalCell.textContent = `$${itemTotal.toFixed(2)}`;
+      const totalDisplay = document.createElement("span");
+      totalDisplay.className = "total-display";
+      totalDisplay.textContent = `$${itemTotal.toFixed(2)}`;
+      totalCell.appendChild(totalDisplay);
+
+      // Create delete button cell
+      const deleteCell = document.createElement("td");
+      deleteCell.className = "px-4 py-3 text-center";
+      const deleteButton = document.createElement("button");
+      deleteButton.className =
+        "text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300";
+      deleteButton.innerHTML = '<i class="bx bx-trash"></i>';
+      deleteButton.title = "Delete line item";
+      deleteButton.onclick = () => {
+        if (confirm("Are you sure you want to delete this line item?")) {
+          row.remove();
+          this.updateProposalTotalFromManager();
+        }
+      };
+      deleteCell.appendChild(deleteButton);
 
       row.appendChild(descCell);
       row.appendChild(qtyCell);
       row.appendChild(priceCell);
       row.appendChild(totalCell);
+      row.appendChild(deleteCell);
+
+      // Add event listeners for quantity and price changes
+      const updateRowTotal = () => {
+        const quantity = parseFloat(quantityInput.value) || 0;
+        const unitPrice = parseFloat(unitPriceInput.value) || 0;
+        const rowTotal = quantity * unitPrice;
+        totalDisplay.textContent = `$${rowTotal.toFixed(2)}`;
+
+        // Update the overall total
+        this.updateProposalTotalFromManager();
+      };
+
+      quantityInput.addEventListener("input", updateRowTotal);
+      unitPriceInput.addEventListener("input", updateRowTotal);
 
       fragment.appendChild(row);
     });
@@ -804,10 +908,27 @@ export class ProposalManager {
         "px-4 py-3 text-sm text-right font-medium text-gray-900 dark:text-white";
       totalCell.textContent = `$${itemTotal.toFixed(2)}`;
 
+      // Create delete button cell
+      const deleteCell = document.createElement("td");
+      deleteCell.className = "px-4 py-3 text-center";
+      const deleteButton = document.createElement("button");
+      deleteButton.className =
+        "text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300";
+      deleteButton.innerHTML = '<i class="bx bx-trash"></i>';
+      deleteButton.title = "Delete line item";
+      deleteButton.onclick = () => {
+        if (confirm("Are you sure you want to delete this line item?")) {
+          row.remove();
+          this.updateProposalTotalFromManager();
+        }
+      };
+      deleteCell.appendChild(deleteButton);
+
       row.appendChild(descCell);
       row.appendChild(qtyCell);
       row.appendChild(priceCell);
       row.appendChild(totalCell);
+      row.appendChild(deleteCell);
 
       fragment.appendChild(row);
     });
@@ -826,6 +947,29 @@ export class ProposalManager {
 
     if (totalElement) totalElement.textContent = total.toFixed(2);
     if (totalFooterElement) totalFooterElement.textContent = total.toFixed(2);
+  }
+
+  private updateProposalTotalFromManager(): void {
+    const lineItemsContainer = document.getElementById("proposal-line-items");
+    if (!lineItemsContainer) return;
+
+    let total = 0;
+    const rows = lineItemsContainer.querySelectorAll("tr");
+
+    rows.forEach((row) => {
+      const quantityInput = row.querySelector(".quantity-input") as HTMLInputElement;
+      const unitPriceInput = row.querySelector(".unit-price-input") as HTMLInputElement;
+
+      if (quantityInput && unitPriceInput) {
+        const quantity = parseFloat(quantityInput.value) || 0;
+        const unitPrice = parseFloat(unitPriceInput.value) || 0;
+        const rowTotal = quantity * unitPrice;
+        total += rowTotal;
+      }
+    });
+
+    // Update total displays
+    this.updateTotalDisplay(total);
   }
 
   /**
@@ -850,77 +994,77 @@ export class ProposalManager {
     const lineItems: LineItem[] = [];
 
     // Base fire protection design service
-    // lineItems.push({
-    //   description: "Fire Protection System Design",
-    //   details: "Comprehensive fire sprinkler and alarm system design",
-    //   quantity: 1,
-    //   unitPrice: 2500.0,
-    // });
+    lineItems.push({
+      description: "Fire Protection System Design",
+      details: "Comprehensive fire sprinkler and alarm system design",
+      quantity: 1,
+      unitPrice: 2500.0,
+    });
 
-    // // Square footage based pricing
-    // if (project.sq_ft && project.sq_ft > 0) {
-    //   const sqFtRate = 0.75; // $0.75 per sq ft
-    //   lineItems.push({
-    //     description: "Design Services - Square Footage",
-    //     details: `${project.sq_ft.toLocaleString()} sq ft @ $${sqFtRate}/sq ft`,
-    //     quantity: project.sq_ft,
-    //     unitPrice: sqFtRate,
-    //   });
-    // }
+    // Square footage based pricing
+    if (project.sq_ft && project.sq_ft > 0) {
+      const sqFtRate = 0.75; // $0.75 per sq ft
+      lineItems.push({
+        description: "Design Services - Square Footage",
+        details: `${project.sq_ft.toLocaleString()} sq ft @ $${sqFtRate}/sq ft`,
+        quantity: project.sq_ft,
+        unitPrice: sqFtRate,
+      });
+    }
 
-    // // Construction type additions
-    // if (project.new_construction) {
-    //   lineItems.push({
-    //     description: "New Construction Services",
-    //     details: "Additional design requirements for new construction",
-    //     quantity: 1,
-    //     unitPrice: 1500.0,
-    //   });
-    // }
+    // Construction type additions
+    if (project.new_construction) {
+      lineItems.push({
+        description: "New Construction Services",
+        details: "Additional design requirements for new construction",
+        quantity: 1,
+        unitPrice: 1500.0,
+      });
+    }
 
-    // if (project.renovation) {
-    //   lineItems.push({
-    //     description: "Renovation Services",
-    //     details: "Existing system assessment and modification design",
-    //     quantity: 1,
-    //     unitPrice: 1200.0,
-    //   });
-    // }
+    if (project.renovation) {
+      lineItems.push({
+        description: "Renovation Services",
+        details: "Existing system assessment and modification design",
+        quantity: 1,
+        unitPrice: 1200.0,
+      });
+    }
 
-    // if (project.addition) {
-    //   lineItems.push({
-    //     description: "Addition Services",
-    //     details: "Integration with existing fire protection systems",
-    //     quantity: 1,
-    //     unitPrice: 1000.0,
-    //   });
-    // }
+    if (project.addition) {
+      lineItems.push({
+        description: "Addition Services",
+        details: "Integration with existing fire protection systems",
+        quantity: 1,
+        unitPrice: 1000.0,
+      });
+    }
 
-    // // Hydraulic calculations
-    // lineItems.push({
-    //   description: "Hydraulic Calculations",
-    //   details: "Complete hydraulic analysis and calculations",
-    //   quantity: 1,
-    //   unitPrice: 800.0,
-    // });
+    // Hydraulic calculations
+    lineItems.push({
+      description: "Hydraulic Calculations",
+      details: "Complete hydraulic analysis and calculations",
+      quantity: 1,
+      unitPrice: 800.0,
+    });
 
-    // // Project narrative and documentation
-    // lineItems.push({
-    //   description: "Project Documentation",
-    //   details: "Project narrative, NFPA 241 plan, and technical specifications",
-    //   quantity: 1,
-    //   unitPrice: 500.0,
-    // });
+    // Project narrative and documentation
+    lineItems.push({
+      description: "Project Documentation",
+      details: "Project narrative, NFPA 241 plan, and technical specifications",
+      quantity: 1,
+      unitPrice: 500.0,
+    });
 
-    // // Additional services based on project complexity
-    // if (project.description && project.description.length > 200) {
-    //   lineItems.push({
-    //     description: "Complex Project Management",
-    //     details: "Additional coordination for complex project requirements",
-    //     quantity: 1,
-    //     unitPrice: 750.0,
-    //   });
-    // }
+    // Additional services based on project complexity
+    if (project.description && project.description.length > 200) {
+      lineItems.push({
+        description: "Complex Project Management",
+        details: "Additional coordination for complex project requirements",
+        quantity: 1,
+        unitPrice: 750.0,
+      });
+    }
 
     return lineItems;
   }
@@ -929,20 +1073,10 @@ export class ProposalManager {
     console.log("Entering edit mode");
 
     const tbody = document.getElementById("proposal-line-items");
-    const editBtn = document.querySelector('button[onclick*="editProposal"]') as HTMLButtonElement;
 
     if (!tbody) return;
 
     tbody.classList.add("editing-mode");
-
-    // Update button text
-    if (editBtn) {
-      editBtn.innerHTML = this.getCheckIcon() + "Save Changes";
-      editBtn.className = editBtn.className.replace(
-        "bg-blue-600 hover:bg-blue-700",
-        "bg-green-600 hover:bg-green-700"
-      );
-    }
 
     // Convert each row to editable inputs
     const rows = tbody.querySelectorAll("tr");

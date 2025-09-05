@@ -3,16 +3,13 @@ import App from "../components/common/App.astro";
 import BoxIcon from "../components/common/BoxIcon.astro";
 import SectionContainer from "../components/common/SectionContainer.astro";
 import StaffCreationForm from "../components/form/StaffCreationForm.astro";
+
+// Get auth data directly since App component handles auth requirements
 import { checkAuth } from "../lib/auth";
+const { isAuth, currentUser, currentRole } = await checkAuth(Astro.cookies);
+
 import { supabase } from "../lib/supabase";
 import { supabaseAdmin } from "../lib/supabase-admin";
-
-// Check authentication and ensure user is Admin
-const { isAuth, session, user, role } = await checkAuth(Astro.cookies);
-
-if (!isAuth || role !== "Admin") {
-  return Astro.redirect("/login");
-}
 
 // Fetch all users for the admin panel
 let users: any[] = [];
@@ -75,7 +72,12 @@ const userCounts = {
 };
 ---
 
-<App title="User Management - CAPCo Fire Protection" description="Manage system users">
+<App
+  title="User Management - CAPCo Fire Protection"
+  description="Manage system users"
+  requireAuth={true}
+  requireRole="Admin"
+>
   <SectionContainer class="mx-auto max-w-7xl">
     <!-- Page Header -->
     <div class="mb-8">

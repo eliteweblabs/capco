@@ -1,15 +1,13 @@
 ---
-import { checkAuth } from "../../lib/auth";
 
-// Get current user for authentication and role
-const { isAuth, user, role } = await checkAuth(Astro.cookies);
 
 interface Props {
   projectId: number;
-  currentStatus: number;
+  projectStatus: number;
   statusLabel: string;
   statusColor?: string;
-  userRole?: string;
+  authorProfile?: any;
+  currentRole?: string;
   projectTitle?: string;
   clientEmail?: string;
   statuses?: any[]; // Accept statuses as props to avoid redundant API calls
@@ -17,17 +15,18 @@ interface Props {
 
 const { 
   projectId, 
-  currentStatus, 
   statusLabel, 
   statusColor = "blue",
-  userRole = role,
+  authorProfile,
+  projectStatus,
+  currentRole,
   projectTitle = "Project",
   clientEmail = "Client",
   statuses = []
 } = Astro.props;
 
 // Only show dropdown for Admin and Staff users
-const canChangeStatus = role === "Admin" || role === "Staff";
+const canChangeStatus = currentRole === "Admin" || currentRole === "Staff";
 
 // Use passed statuses or fetch as fallback (prefer passed data to avoid redundant API calls)
 let projectStatuses: any[] = [];
@@ -95,7 +94,7 @@ if (canChangeStatus) {
           
           
           {projectStatuses.filter((status: any) => {
-            if (role === "Admin" || role === "Staff") {
+            if (currentRole === "Admin" || currentRole === "Staff") {
               return status.admin_visible !== false;
             } else {
               return status.client_visible !== false;
@@ -105,7 +104,7 @@ if (canChangeStatus) {
             <button
               type="button"
               class={`group flex w-full items-center px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors
-                ${status.status_code === currentStatus 
+                ${status.status_code === projectStatus 
                   ? 'bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400' 
                   : 'text-gray-700 dark:text-gray-300'}`}
               data-status-code={status.status_code}
@@ -114,11 +113,11 @@ if (canChangeStatus) {
             >
               <div class="flex-1 text-left">
                 <div class="font-medium">{status.status_name}</div>
-                {status.status_code === currentStatus && (
+                {status.status_code === projectStatus && (
                   <div class="text-xs text-blue-600 dark:text-blue-400">Current Status</div>
                 )}
               </div>
-              {status.status_code === currentStatus && (
+              {status.status_code === projectStatus && (
                 <svg class="h-4 w-4 text-blue-600 dark:text-blue-400" fill="currentColor" viewBox="0 0 20 20">
                   <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
                 </svg>
@@ -142,7 +141,7 @@ if (canChangeStatus) {
   </div>
 )}
 
-<script define:vars={{projectId, userRole: role}}>
+<script define:vars={{projectId, currentRole: currentRole}}>
   document.addEventListener('DOMContentLoaded', function() {
     const dropdownButton = document.getElementById('status-dropdown-button');
     const dropdownMenu = document.getElementById('status-dropdown-menu');
@@ -248,7 +247,7 @@ if (canChangeStatus) {
           
           if (result.statusConfig) {
             // Get user role from authenticated user (server-side source of truth)
-            const currentUserRole = userRole || 'Client';
+            const currentUserRole = currentRole || 'Client';
             const projectTitle = dropdownButton.getAttribute('data-project-title') || 'Project';
             const clientEmail = dropdownButton.getAttribute('data-client-email') || 'Client';
             

@@ -1,14 +1,16 @@
 ---
 interface Props {
   projectId: string;
-  userRole: string;
-  userId: string;
-  userName: string;
+  authorProfile?: any;
+  projectStatus?: number;
+  currentRole?: string;
+  userId?: string;
+  userName?: string;
 }
 
 import BoxIcon from "../common/BoxIcon.astro";
 
-const { projectId, userRole, userId, userName } = Astro.props;
+const { projectId, authorProfile, projectStatus, currentRole, userId, userName } = Astro.props;
 ---
 
 <div id="discussion-container" data-project-id={projectId}>
@@ -41,7 +43,7 @@ const { projectId, userRole, userId, userName } = Astro.props;
     </div>
     
     {/* Admin/Staff Only Toggles */}
-    {(userRole === "Admin" || userRole === "Staff") && (
+    {(currentRole === "Admin" || currentRole === "Staff") && (
       <div class="mt-3 flex flex-wrap gap-6 border-t border-gray-200 pt-3 dark:border-gray-600">
         <!-- Internal Only Toggle -->
         <label class="flex items-center gap-3 cursor-pointer">
@@ -85,11 +87,11 @@ const { projectId, userRole, userId, userName } = Astro.props;
   </div>
 </div>
 
-<script define:vars={{ projectId, userRole, userId, userName }}>
+<script define:vars={{ projectId, currentRole, userId, userName }}>
   // Discussion functionality
   let discussions = [];
   let currentProjectId = projectId;
-  let currentUserRole = userRole;
+  let currentUserRole = currentRole;
   let currentUserId = userId;
   let currentUserName = userName;
   let mentionableUsers = [];

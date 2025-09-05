@@ -12,7 +12,7 @@ export const POST: APIRoute = async ({ request }) => {
       });
     }
 
-    console.log("API: Fetching invoice with ID:", id);
+    // console.log("API: Fetching invoice with ID:", id);
 
     // Get invoice with project data
     if (!supabase) {
@@ -37,7 +37,7 @@ export const POST: APIRoute = async ({ request }) => {
       .eq("id", id)
       .single();
 
-    console.log("API: Invoice query result:", { invoice, invoiceError });
+    // console.log("API: Invoice query result:", { invoice, invoiceError });
 
     if (invoiceError) {
       return new Response(
@@ -53,14 +53,20 @@ export const POST: APIRoute = async ({ request }) => {
       );
     }
 
-    // Get line items
-    const { data: lineItems, error: lineItemsError } = await supabase
-      .from("invoice_line_items")
-      .select("*")
-      .eq("invoice_id", id)
-      .order("sort_order", { ascending: true });
+    // Get catalog item IDs and fetch the actual catalog items
+    const catalogItemIds = invoice?.catalog_item_ids || [];
+    let lineItems: any[] = [];
 
-    console.log("API: Line items query result:", { lineItems, lineItemsError });
+    if (catalogItemIds.length > 0) {
+      const { data: catalogItems, error: catalogError } = await supabase
+        .from("line_items_catalog")
+        .select("*")
+        .in("id", catalogItemIds);
+
+      if (!catalogError) {
+        lineItems = catalogItems || [];
+      }
+    }
 
     // Lookup client profile for name/email
     let client = null as null | { name: string | null; email: string | null };

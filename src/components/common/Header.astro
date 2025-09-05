@@ -5,17 +5,20 @@ import Logo from "./Logo.astro";
 import AuthIcon from "./AuthIcon.astro";
 // import LanguagePicker from "../LanguagePicker.astro";
 import Tooltip from "./Tooltip.astro";
-import SectionContainer from "./SectionContainer.astro";
+// import SectionContainer from "./SectionContainer.astro";
 // import NavLi from "./NavLi.astro";
 import ThemeToggle from "./ThemeToggle.astro";
-// const { currentLocale } = Astro;s
-// const i18n = getI18N({ currentLocale });
+
+interface Props {
+  isAuth: boolean;
+  currentUser: any;
+  currentRole: string | null;
+  session: any;
+}
 
 // console.log("📋 [HEADER] Header component loading...");
 
-// Check authentication
-import { checkAuth } from "../../lib/auth";
-const { isAuth, session, user, role } = await checkAuth(Astro.cookies);
+const { isAuth, currentUser, session, currentRole } = Astro.props;
 
 // Get current URL and determine page type
 const currentUrl = Astro.url.pathname;
@@ -149,7 +152,7 @@ function getVisibleNavItems(
   });
 }
 
-const visibleNavigation = getVisibleNavItems(navigation, isAuth, role, isBackend);
+const visibleNavigation = getVisibleNavItems(navigation, isAuth, currentRole, isBackend);
 ---
 
 <header
@@ -186,7 +189,7 @@ const visibleNavigation = getVisibleNavItems(navigation, isAuth, role, isBackend
       <!-- Admin Quick Actions -->
       <ThemeToggle />
       {
-        role === "Admin" && isBackend && (
+        currentRole === "Admin" && isBackend && (
           <>
             <Tooltip content="Global Activity Feed" id="global-activity-tooltip">
               <a
@@ -226,7 +229,7 @@ const visibleNavigation = getVisibleNavItems(navigation, isAuth, role, isBackend
 
       {/* <LanguagePicker /> */}
 
-      <AuthIcon />
+      <AuthIcon isAuth={isAuth} currentUser={currentUser} currentRole={currentRole} />
 
       {/* Mobile Menu Button (Hamburger) */}
       <button

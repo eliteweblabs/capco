@@ -95,11 +95,11 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       .order("uploaded_at", { ascending: false });
 
     // Apply RLS - Admins and Staff can see all files, Clients can only see their own projects
-    console.log("📡 [API] Role check:", {
-      userRole,
-      isAdmin: userRole === "Admin",
-      isStaff: userRole === "Staff",
-    });
+    // console.log("📡 [API] Role check:", {
+    //   userRole,
+    //   isAdmin: userRole === "Admin",
+    //   isStaff: userRole === "Staff",
+    // });
 
     if (userRole !== "Admin" && userRole !== "Staff") {
       // Check project permissions based on user role
@@ -117,12 +117,12 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         });
       }
 
-      console.log("📡 [API] Project found:", {
-        projectId,
-        authorId: project.author_id,
-        assignedToId: project.assigned_to_id,
-        hasAssignment: !!project.assigned_to_id,
-      });
+      // console.log("📡 [API] Project found:", {
+      //   projectId,
+      //   authorId: project.author_id,
+      //   assignedToId: project.assigned_to_id,
+      //   hasAssignment: !!project.assigned_to_id,
+      // });
 
       // Check access based on role
       let hasAccess = false;

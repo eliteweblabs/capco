@@ -1,20 +1,20 @@
 ---
 export interface Props {
-  role?: string;
+  currentRole?: string;
   projects?: any[];
   statuses?: any[];
   stat?: boolean;
 }
 
 import ProjectNavButton from "./ProjectNavButton.astro";
-import { getI18N } from "@/i18n";
+// import { getI18N } from "@/i18n";
 
 // Para cambiar idioma de textos
-const { currentLocale } = Astro;
-const i18n = getI18N({ currentLocale });
+// const { currentLocale } = Astro;
+// const i18n = getI18N({ currentLocale });
 
 // Get props
-const { role, projects = [], statuses = [], stat } = Astro.props;
+const { currentRole, projects = [], statuses = [], stat } = Astro.props;
 
 // Use provided data instead of fetching
 let project_statuses: any[] = statuses;
@@ -50,14 +50,14 @@ if (!projects || projects.length === 0) return;
     project_statuses.length > 0
       ? project_statuses
           .filter((status: any) => {
-            // Role-based filtering
-            if (role === "Admin" || role === "Staff") {
+            // currentRole-based filtering
+            if (currentRole === "Admin" || currentRole === "Staff") {
               return status.admin_visible !== false; // Show unless explicitly false
             }
-            if (role === "Client") {
+            if (currentRole === "Client") {
               return status.client_visible === true; // Show unless explicitly false
             }
-            return true; // Default for other roles
+            return true; // Default for other currentRoles
           })
           .map((status: any) => (
             <ProjectNavButton

@@ -1,19 +1,20 @@
 ---
 import BoxIcon from "./BoxIcon.astro";
 import SMSForm from "../form/SMSForm.astro";
+
+interface Props {
+  isAuth: boolean;
+  currentUser: any;
+  currentRole: string | null;
+}
+
 // Get current URL and determine page type (same logic as Header component)
 const currentUrl = Astro.url.pathname;
 import { isBackendPage } from "../../pages/api/backend-page-check";
 const isBackend = isBackendPage(currentUrl);
 
-import { checkAuth } from "../../lib/auth";
-
-// Get current user for authentication and role
-const authResult = await checkAuth(Astro.cookies);
-const { isAuth, user, role } = authResult;
-
 // Don't show on backend pages or SMS demo page
-const shouldShow = !currentUrl.startsWith("/sms-demo");
+// const shouldShow = !currentUrl.startsWith("/sms-demo");
 ---
 
 <!-- SMS Button (collapsed state) -->

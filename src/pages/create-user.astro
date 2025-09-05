@@ -3,18 +3,24 @@ import App from "../components/common/App.astro";
 import BoxIcon from "../components/common/BoxIcon.astro";
 import SectionContainer from "../components/common/SectionContainer.astro";
 import StaffCreationForm from "../components/form/StaffCreationForm.astro";
-import { checkAuth } from "../lib/auth";
 
-try {
-  // Check authentication and ensure user is Admin
-  const { isAuth, session, user, role } = await checkAuth(Astro.cookies);
+interface Props {
+  isAuth: boolean;
+  currentUser: any;
+  currentRole: string | null;
+}
 
-  if (!isAuth || role !== "Admin") {
-    return Astro.redirect("/login");
-  }
-} catch (error) {
-  console.error("Error in create-staff page:", error);
+// Auth props will be passed from App component
+const { isAuth, currentUser, currentRole } = Astro.props;
+
+// Redirect to login if not authenticated
+if (!isAuth || !currentUser) {
   return Astro.redirect("/login");
+}
+
+// Only allow admins to access this page
+if (currentRole !== "Admin") {
+  return Astro.redirect("/dashboard");
 }
 ---
 

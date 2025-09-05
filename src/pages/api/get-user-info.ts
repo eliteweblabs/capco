@@ -6,9 +6,9 @@ import { supabaseAdmin } from "../../lib/supabase-admin";
 export const POST: APIRoute = async ({ request, cookies }) => {
   try {
     // Check authentication
-    const { isAuth, user } = await checkAuth(cookies);
+    const { isAuth, currentUser } = await checkAuth(cookies);
 
-    if (!isAuth || !user) {
+    if (!isAuth || !currentUser) {
       return new Response(
         JSON.stringify({
           success: false,
@@ -142,9 +142,9 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 export const GET: APIRoute = async ({ url, cookies }) => {
   try {
     // Check authentication
-    const { isAuth, user } = await checkAuth(cookies);
+    const { isAuth, currentUser } = await checkAuth(cookies);
 
-    if (!isAuth || !user) {
+    if (!isAuth || !currentUser) {
       return new Response(
         JSON.stringify({
           success: false,

@@ -20,15 +20,17 @@ interface Props {
     profiles?: any;
     assigned_profiles?: any;
   };
-  role?: string;
+  authorProfile?: any;
+  projectStatus?: number;
+  currentRole?: string;
   user?: any;
   statuses?: any;
 }
 
-const { project, role, user, statuses } = Astro.props;
+const { project, authorProfile, projectStatus, currentRole, user, statuses } = Astro.props;
 
 // return if user is staff and project is not assigned to them
-// if (role === "Staff" && project.assigned_to_id !== user?.id) {
+// if (currentRole === "Staff" && project.assigned_to_id !== user?.id) {
 //   return;
 // }
 
@@ -92,7 +94,7 @@ if (project.profiles) {
     <div class="items-start justify-between md:flex">
       <div class="flex-none md:flex-1">
         {
-          role !== "Client" &&
+          currentRole !== "Client" &&
             (projectAuthorProfile?.company_name || projectAuthorProfile?.email) && (
               <>
                 <h3
@@ -144,7 +146,7 @@ if (project.profiles) {
         }
 
         {
-          role !== "Client" &&
+          currentRole !== "Client" &&
             (project.assigned_profiles ? (
               <span class="flex items-center gap-1">
                 <BoxIcon name="user" />

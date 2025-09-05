@@ -2,23 +2,15 @@
 import BoxIcon from "./BoxIcon.astro";
 import Tooltip from "./Tooltip.astro";
 
-// Check authentication
-import { checkAuth } from "../../lib/auth";
-const { isAuth, session, user, role } = await checkAuth(Astro.cookies);
-
-// Get user profile data if authenticated
-let userProfile = null;
-if (isAuth && user) {
-  const { supabase } = await import("../../lib/supabase");
-  if (supabase) {
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("company_name, role")
-      .eq("id", user.id)
-      .single();
-    userProfile = profile;
-  }
+interface Props {
+  isAuth: boolean;
+  currentUser: any;
+  currentRole: string | null;
 }
+
+const { isAuth, currentUser, currentRole } = Astro.props;
+
+const userProfile = currentUser?.profile || null;
 
 ---
   {
@@ -56,13 +48,13 @@ if (isAuth && user) {
               </div>
               <div class="ml-3">
                 <p class="text-sm font-medium text-gray-900 dark:text-white">
-                  {userProfile?.company_name || user?.email?.split("@")[0] || "User"}
+                  {userProfile?.company_name || currentUser?.email?.split("@")[0] || "User"}
                 </p>
                 <p class="text-xs text-gray-500 dark:text-gray-400">
-                  {user?.email}
+                  {currentUser?.email}
                 </p>
                 <p class="text-xs text-blue-600 dark:text-blue-400 font-medium">
-                  {role || "User"}
+                  {currentRole || "User"}
                 </p>
               </div>
             </div>
@@ -112,7 +104,7 @@ if (isAuth && user) {
         <div
           aria-label="btn-profile"
           id="profile-btn"
-          class="size-8 overflow-hidden rounded-full"
+          class="size-8"
         >
           <BoxIcon name="log-in" class="text-gray-700 dark:text-gray-300 bx-md" />
         </div>
