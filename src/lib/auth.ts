@@ -1,11 +1,21 @@
+import type { User } from "@supabase/supabase-js";
 import { clearAuthCookies } from "./auth-cookies";
 import { supabase } from "./supabase";
+
+export interface ExtendedUser extends User {
+  profile?: any;
+  company_name?: string | null;
+  display_name?: string | null;
+}
 
 export interface AuthResult {
   isAuth: boolean;
   session: any;
-  user: any;
+  user: ExtendedUser | null;
   role: string | null;
+  profile: any;
+  company_name: string | null;
+  display_name: string | null;
 }
 
 export async function checkAuth(cookies: any): Promise<AuthResult> {
@@ -22,7 +32,7 @@ export async function checkAuth(cookies: any): Promise<AuthResult> {
 
   let isAuth = false;
   let session = null;
-  let user = null;
+  let user: ExtendedUser | null = null;
   let role = null;
 
   if (accessToken && refreshToken && supabase) {
@@ -42,7 +52,7 @@ export async function checkAuth(cookies: any): Promise<AuthResult> {
 
       if (!session.error) {
         isAuth = true;
-        user = session.data.user;
+        user = session.data.user as ExtendedUser;
         // console.log("🔐 [AUTH] User authenticated:", {
         //   userId: user?.id,
         //   userEmail: user?.email,
@@ -72,11 +82,10 @@ export async function checkAuth(cookies: any): Promise<AuthResult> {
             user.company_name = profile.company_name;
             user.display_name =
               profile.company_name ||
-              profile.name ||
               user.user_metadata?.full_name ||
               user.email?.split("@")[0] ||
               "Unknown User";
-            console.log("🔐 [AUTH] User role set:", role);
+            // console.log("🔐 [AUTH] User role set:", role);
           } else {
             console.warn("🔐 [AUTH] Failed to get user profile:", profileError);
           }
@@ -95,7 +104,15 @@ export async function checkAuth(cookies: any): Promise<AuthResult> {
     // console.log("🔐 [AUTH] No tokens or Supabase not configured");
   }
 
-  const result = { isAuth, session, user, role };
+  const result = {
+    isAuth,
+    session,
+    user,
+    role,
+    profile: user?.profile || null,
+    company_name: user?.company_name || null,
+    display_name: user?.display_name || null,
+  };
   // console.log("🔐 [AUTH] Authentication check complete:", {
   //   isAuth,
   //   hasUser: !!user,

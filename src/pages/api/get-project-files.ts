@@ -3,9 +3,9 @@ import { supabase } from "../../lib/supabase";
 
 export const POST: APIRoute = async ({ request, cookies }) => {
   try {
-    console.log("🚨 [API] get-project-files API called at:", new Date().toISOString());
+    // console.log("🚨 [API] get-project-files API called at:", new Date().toISOString());
     const { projectId } = await request.json();
-    console.log("Project ID:", projectId);
+    // console.log("Project ID:", projectId);
 
     if (!projectId) {
       return new Response(JSON.stringify({ error: "Project ID is required" }), {
@@ -25,10 +25,10 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     const accessToken = cookies.get("sb-access-token")?.value;
     const refreshToken = cookies.get("sb-refresh-token")?.value;
 
-    console.log("📡 [API] Auth check:", {
-      hasAccessToken: !!accessToken,
-      hasRefreshToken: !!refreshToken,
-    });
+    // console.log("📡 [API] Auth check:", {
+    //   hasAccessToken: !!accessToken,
+    //   hasRefreshToken: !!refreshToken,
+    // });
 
     if (accessToken && refreshToken) {
       await supabase.auth.setSession({
@@ -43,7 +43,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       error: userError,
     } = await supabase.auth.getUser();
 
-    console.log("User auth result:", { user: !!user, error: userError });
+    // console.log("User auth result:", { user: !!user, error: userError });
 
     if (userError || !user) {
       console.log("No authenticated user, returning demo response");
@@ -76,15 +76,15 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       // Keep default role
     }
 
-    console.log("📡 [API] User role check:", {
-      userId: user.id,
-      userRole,
-      profileRole: profile?.role,
-      hasProfile: !!profile,
-      profileError: !!profileError,
-    });
+    // console.log("📡 [API] User role check:", {
+    //   userId: user.id,
+    //   userRole,
+    //   profileRole: profile?.role,
+    //   hasProfile: !!profile,
+    //   profileError: !!profileError,
+    // });
 
-    console.log("📡 [API] Project access check for projectId:", projectId);
+    // console.log("📡 [API] Project access check for projectId:", projectId);
 
     // Fetch files for the project
     let query = supabase
@@ -130,11 +130,11 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       if (userRole === "Client") {
         // Clients can only access their own projects
         hasAccess = project.author_id === user.id;
-        console.log("📡 [API] Client access check:", {
-          authorId: project.author_id,
-          userId: user.id,
-          hasAccess,
-        });
+        // console.log("📡 [API] Client access check:", {
+        //   authorId: project.author_id,
+        //   userId: user.id,
+        //   hasAccess,
+        // });
       }
 
       if (!hasAccess) {
@@ -151,37 +151,37 @@ export const POST: APIRoute = async ({ request, cookies }) => {
           headers: { "Content-Type": "application/json" },
         });
       } else {
-        console.log("✅ [API] Access granted for user:", {
-          userId: user.id,
-          userRole,
-          projectAuthorId: project.author_id,
-          projectAssignedToId: project.assigned_to_id,
-        });
+        // console.log("✅ [API] Access granted for user:", {
+        //   userId: user.id,
+        //   userRole,
+        //   projectAuthorId: project.author_id,
+        //   projectAssignedToId: project.assigned_to_id,
+        // });
       }
     }
 
     const { data: files, error } = await query;
 
-    console.log("Files fetch result:", {
-      filesCount: files?.length || 0,
-      error,
-      projectId,
-      userRole,
-      query:
-        "SELECT * FROM files WHERE project_id = ? AND status = 'active' ORDER BY uploaded_at DESC",
-    });
+    // console.log("Files fetch result:", {
+    //   filesCount: files?.length || 0,
+    //   error,
+    //   projectId,
+    //   userRole,
+    //   query:
+    //     "SELECT * FROM files WHERE project_id = ? AND status = 'active' ORDER BY uploaded_at DESC",
+    // });
 
     // Log individual files for debugging
     if (files && files.length > 0) {
-      console.log(
-        "Files found:",
-        files.map((f) => ({
-          id: f.id,
-          file_name: f.file_name,
-          status: f.status,
-          project_id: f.project_id,
-        }))
-      );
+      // console.log(
+      //   "Files found:",
+      //   files.map((f) => ({
+      //     id: f.id,
+      //     file_name: f.file_name,
+      //     status: f.status,
+      //     project_id: f.project_id,
+      //   }))
+      // );
     } else {
       console.log("No files found for project:", projectId);
     }

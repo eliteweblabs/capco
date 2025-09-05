@@ -142,9 +142,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     console.log("📊 [UPDATE-STATUS] Fetching status config for status_code:", newStatus);
     let { data: statusConfig, error: statusError } = await supabase
       .from("project_statuses")
-      .select(
-        "status_name, toast_admin, toast_client, est_time, redirect_url, redirect_delay, redirect_show_countdown"
-      )
+      .select("status_name, toast_admin, toast_client, est_time, redirect")
       .eq("status_code", newStatus)
       .single();
 
@@ -156,9 +154,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       );
       const stringResult = await supabase
         .from("project_statuses")
-        .select(
-          "status_name, toast_admin, toast_client, est_time, redirect_url, redirect_delay, redirect_show_countdown"
-        )
+        .select("status_name, toast_admin, toast_client, est_time, redirect")
         .eq("status_code", newStatus.toString())
         .single();
 
@@ -172,6 +168,16 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       newStatus,
     });
 
+    if (statusConfig) {
+      console.log("📊 [UPDATE-STATUS] Status config details:", {
+        status_name: statusConfig.status_name,
+        toast_admin: statusConfig.toast_admin,
+        toast_client: statusConfig.toast_client,
+        est_time: statusConfig.est_time,
+        redirect: statusConfig.redirect,
+      });
+    }
+
     // Log status name now that statusConfig is available
     console.log(
       "📊 [UPDATE-STATUS] Status name:",
@@ -181,6 +187,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     // Send email notifications for status change
     let notificationMessage = "";
     console.log("📊 [UPDATE-STATUS] Sending email notifications...");
+    console.log("📊 [UPDATE-STATUS] About to call email-delivery API...");
 
     try {
       // Use the current request origin instead of environment variable
@@ -205,12 +212,16 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         }),
       });
 
+      console.log("📧 [UPDATE-STATUS] Email response status:", emailResponse.status);
+      console.log("📧 [UPDATE-STATUS] Email response ok:", emailResponse.ok);
+
       if (emailResponse.ok) {
         const emailResult = await emailResponse.json();
         console.log("📧 [UPDATE-STATUS] Email notifications sent successfully:", emailResult);
       } else {
         const errorText = await emailResponse.text();
         console.error("📧 [UPDATE-STATUS] Failed to send email notifications:", errorText);
+        console.error("📧 [UPDATE-STATUS] Email response status:", emailResponse.status);
       }
     } catch (emailError) {
       console.error("📊 [UPDATE-STATUS] Error sending email notifications:", emailError);
@@ -286,7 +297,8 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         const toastData = prepareToastData(
           updatedProject,
           session.session.user,
-          statusConfig.status_name
+          statusConfig.status_name,
+          statusConfig.est_time
         );
 
         const toastMessage = getToastMessage(statusConfig, userRole, toastData);
@@ -322,9 +334,11 @@ export const POST: APIRoute = async ({ request, cookies }) => {
               toast_admin: statusConfig.toast_admin,
               toast_client: statusConfig.toast_client,
               est_time: statusConfig.est_time,
-              redirect_url: statusConfig.redirect_url,
-              redirect_delay: statusConfig.redirect_delay,
-              redirect_show_countdown: statusConfig.redirect_show_countdown,
+              redirect_url:
+                statusConfig.redirect?.replace("{{PROJECT_ID}}", projectId) ||
+                "/project/" + projectId + "/documents",
+              redirect_delay: 3, // Hardcoded 3 seconds
+              redirect_show_countdown: true, // Always show countdown if placeholder exists
             }
           : null,
       }),

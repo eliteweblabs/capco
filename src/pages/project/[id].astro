@@ -61,12 +61,10 @@ async function getUserInfoServer(userId: string) {
     // Computed fields for easy access
     display_name:
       profile?.company_name ||
-      profile?.name ||
       authUser.user.user_metadata?.full_name ||
       authUser.user.email?.split("@")[0] ||
       "Unknown User",
     company_name: profile?.company_name || null,
-    name: profile?.name || null,
     role: profile?.role || "Unknown",
   };
 
@@ -86,13 +84,13 @@ const validTabs = [
 ];
 const defaultTab = validTabs.includes(tabParam || "") ? tabParam : "project-form";
 
-console.log("🌐 [PROJECT] Project ID:", id);
-console.log("🌐 [PROJECT] Authentication check:", { isAuth, hasUser: !!user, role });
-console.log("🌐 [PROJECT] Request URL:", Astro.url.href);
-console.log("🌐 [PROJECT] Cookies:", {
-  hasAccessToken: !!Astro.cookies.get("sb-access-token")?.value,
-  hasRefreshToken: !!Astro.cookies.get("sb-refresh-token")?.value,
-});
+// console.log("🌐 [PROJECT] Project ID:", id);
+// console.log("🌐 [PROJECT] Authentication check:", { isAuth, hasUser: !!user, role });
+// console.log("🌐 [PROJECT] Request URL:", Astro.url.href);
+// console.log("🌐 [PROJECT] Cookies:", {
+//   hasAccessToken: !!Astro.cookies.get("sb-access-token")?.value,
+//   hasRefreshToken: !!Astro.cookies.get("sb-refresh-token")?.value,
+// });
 
 // Redirect if not authenticated
 if (!isAuth) {
@@ -100,7 +98,7 @@ if (!isAuth) {
   return Astro.redirect("/login");
 }
 
-console.log("🌐 [PROJECT] User authenticated:", { userId: user?.id, userEmail: user?.email, role });
+// console.log("🌐 [PROJECT] User authenticated:", { userId: user?.id, userEmail: user?.email, role });
 
 // Fetch project data and project author profile - RLS will handle authorization
 let project = null;
@@ -121,18 +119,18 @@ if (supabase && user) {
     return Astro.redirect("/dashboard");
   } else {
     project = projectData;
-    console.log("🌐 [PROJECT] Project loaded:", project.title);
+    // console.log("🌐 [PROJECT] Project loaded:", project.title);
 
     // Get project author's profile data (not current user's profile)
     if (project.author_id) {
       try {
         projectAuthorProfile = await getUserInfoServer(project.author_id);
-        console.log(
-          "🌐 [PROJECT] Project author profile loaded:",
-          projectAuthorProfile?.company_name,
-          "Email:",
-          projectAuthorProfile?.email
-        );
+        // console.log(
+        //   "🌐 [PROJECT] Project author profile loaded:",
+        //   projectAuthorProfile?.company_name,
+        //   "Email:",
+        //   projectAuthorProfile?.email
+        // );
       } catch (error) {
         console.error("Error fetching project author profile:", error);
       }
@@ -142,7 +140,7 @@ if (supabase && user) {
     if (project.assigned_to_id) {
       const { data: assignedProfileData, error: assignedProfileError } = await supabase
         .from("profiles")
-        .select("id, name, company_name")
+        .select("id, company_name")
         .eq("id", project.assigned_to_id)
         .single();
 
@@ -150,8 +148,8 @@ if (supabase && user) {
         console.error("Error fetching assigned user profile:", assignedProfileError);
       } else {
         // Add assigned user name to the project data
-        project.assigned_to_name = assignedProfileData.company_name || assignedProfileData.name;
-        console.log("🌐 [PROJECT] Assigned user profile loaded:", project.assigned_to_name);
+        project.assigned_to_name = assignedProfileData.company_name || assignedProfileData.id;
+        // console.log("🌐 [PROJECT] Assigned user profile loaded:", project.assigned_to_name);
       }
     } else {
       project.assigned_to_name = null;
@@ -173,10 +171,10 @@ if (supabase && user) {
       const statusesResult = await statusesResponse.json();
       if (statusesResult.success) {
         statusLabels = statusesResult.statuses || {};
-        console.log("🌐 [PROJECT] Status labels loaded:", Object.keys(statusLabels).length);
-        console.log("🌐 [PROJECT] Status labels object:", statusLabels);
-        console.log("🌐 [PROJECT] Current project status:", project?.status);
-        console.log("🌐 [PROJECT] Status label for current status:", statusLabels[project?.status]);
+        // console.log("🌐 [PROJECT] Status labels loaded:", Object.keys(statusLabels).length);
+        // console.log("🌐 [PROJECT] Status labels object:", statusLabels);
+        // console.log("🌐 [PROJECT] Current project status:", project?.status);
+        // console.log("🌐 [PROJECT] Status label for current status:", statusLabels[project?.status]);
       }
     }
   } catch (error) {
@@ -191,20 +189,20 @@ if (!project) {
 }
 
 // Add debug logging for project data and Hero props
-console.log("🌐 [PROJECT] Project data loaded:", {
-  hasProject: !!project,
-  projectId: project?.id,
-  projectStatus: project?.status,
-  projectTitle: project?.title || project?.address,
-  hasAuthorProfile: !!projectAuthorProfile,
-});
+// console.log("🌐 [PROJECT] Project data loaded:", {
+//   hasProject: !!project,
+//   projectId: project?.id,
+//   projectStatus: project?.status,
+//   projectTitle: project?.title || project?.address,
+//   hasAuthorProfile: !!projectAuthorProfile,
+// });
 
-console.log("🌐 [PROJECT] Hero component props being passed:", {
-  statusLabel: project?.status ? (statusLabels[project.status] || `Status ${project.status}`) : undefined,
-  projectId: project?.id,
-  userRole: role || "Client",
-  hasProject: !!project,
-});
+// console.log("🌐 [PROJECT] Hero component props being passed:", {
+//   statusLabel: project?.status ? (statusLabels[project.status] || `Status ${project.status}`) : undefined,
+//   projectId: project?.id,
+//   userRole: role || "Client",
+//   hasProject: !!project,
+// });
 
 // Get status color based on status code
 function getStatusColor(status: number): string {
@@ -220,20 +218,20 @@ function getStatusColor(status: number): string {
 <App title={i18n.SEO_TITLE} description={i18n.SEO_DESCRIPTION}>
   <script>
     // Client-side debugging
-    console.log("🌐 [PROJECT-CLIENT] Page loaded");
-    console.log(
-      "🌐 [PROJECT-CLIENT] Project ID from URL:",
-      window.location.pathname.split("/").pop()
-    );
-    console.log(
-      "🌐 [PROJECT-CLIENT] Current tab:",
-      new URLSearchParams(window.location.search).get("tab")
-    );
+    // console.log("🌐 [PROJECT-CLIENT] Page loaded");
+    // console.log(
+    //   "🌐 [PROJECT-CLIENT] Project ID from URL:",
+    //   window.location.pathname.split("/").pop()
+    // );
+    // console.log(
+    //   "🌐 [PROJECT-CLIENT] Current tab:",
+    //   new URLSearchParams(window.location.search).get("tab")
+    // );
   </script>
   <Hero
     title={project?.address || project?.title || "Untitled Project"}
     description={`<span class="inline-flex items-center"><i class="bx bx-user mr-2 text-gray-500"></i>${
-      projectAuthorProfile?.company_name || projectAuthorProfile?.name || "Unknown Author"
+      projectAuthorProfile?.company_name || "Unknown Author"
     }</span>`}
     statusLabel={project?.status
       ? (statusLabels[project.status]?.status_name || `Status ${project.status}`)
@@ -370,7 +368,7 @@ function getStatusColor(status: number): string {
           projectId={id ?? ""} 
           userRole={role || "Client"} 
           userId={user?.id || ""} 
-          userName={user?.user_metadata?.name || user?.email || "Unknown User"} 
+          userName={user?.user_metadata?.company_name || user?.email || "Unknown User"} 
         />
       </div>
 
@@ -522,7 +520,7 @@ window.PROJECT_USER_ROLE = userRole;</script>
     ];
     const initialTab = validTabs.includes(tabFromUrl || "") ? tabFromUrl! : "project-form";
 
-    console.log("📋 [Tabs] Initializing with tab:", initialTab);
+    // console.log("📋 [Tabs] Initializing with tab:", initialTab);
 
     // Switch to the initial tab
     switchTab(initialTab);

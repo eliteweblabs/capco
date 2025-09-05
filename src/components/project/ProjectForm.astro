@@ -47,37 +47,37 @@ const buttonGroups = getFilteredButtonGroups(role, isNewProject, projectStatus);
 const formActions = getFilteredFormActions(role, isNewProject, projectStatus);
 
 // Debug logging
-console.log("📝 [ProjectForm] Debug info:", {
-  role,
-  isNewProject,
-  projectStatus,
-  formFieldsCount: formFields.length,
-  buttonGroupsCount: buttonGroups.length,
-  formActionsCount: formActions.length,
-  formFields: formFields.map((f) => ({
-    id: f.id,
-    name: f.name,
-    allow: f.allow,
-  })),
-  buttonGroups: buttonGroups.map((g) => ({
-    id: g.id,
-    name: g.name,
-    allow: g.allow,
-  })),
-  formActions: formActions.map((a) => ({
-    id: a.id,
-    label: a.label,
-    allow: a.allow,
-  })),
-});
+// console.log("📝 [ProjectForm] Debug info:", {
+//   role,
+//   isNewProject,
+//   projectStatus,
+//   formFieldsCount: formFields.length,
+//   buttonGroupsCount: buttonGroups.length,
+//   formActionsCount: formActions.length,
+//   formFields: formFields.map((f) => ({
+//     id: f.id,
+//     name: f.name,
+//     allow: f.allow,
+//   })),
+//   buttonGroups: buttonGroups.map((g) => ({
+//     id: g.id,
+//     name: g.name,
+//     allow: g.allow,
+//   })),
+//   formActions: formActions.map((a) => ({
+//     id: a.id,
+//     label: a.label,
+//     allow: a.allow,
+//   })),
+// });
 
 // Check specifically for the existing client select field
 const existingClientField = formFields.find((f) => f.id === "existing-client-select");
-console.log(
-  existingClientField
-    ? "⚠️ [ProjectForm] Found existing-client-select field"
-    : "✅ [ProjectForm] existing-client-select field correctly filtered out"
-);
+// console.log(
+//   existingClientField
+//     ? "⚠️ [ProjectForm] Found existing-client-select field"
+//     : "✅ [ProjectForm] existing-client-select field correctly filtered out"
+// );
 
 // Debug new client fields specifically
 const newClientFieldsInForm = formFields.filter(
@@ -87,7 +87,7 @@ const newClientFieldsInForm = formFields.filter(
     field.name === "company_name" ||
     field.name === "email"
 );
-console.log("New client fields found:", newClientFieldsInForm.length, newClientFieldsInForm);
+// console.log("New client fields found:", newClientFieldsInForm.length, newClientFieldsInForm);
 ---
 
 <form
@@ -202,7 +202,7 @@ console.log("New client fields found:", newClientFieldsInForm.length, newClientF
     formFields
       .filter((field) => field.type === "component" && field.component === "StaffSelect")
       .map((field) => {
-        console.log("🧑‍💼 [ProjectForm] Rendering StaffSelect field:", field);
+        // console.log("🧑‍💼 [ProjectForm] Rendering StaffSelect field:", field);
         return (
           <div class="relative">
             <StaffSelect
@@ -375,7 +375,7 @@ console.log("New client fields found:", newClientFieldsInForm.length, newClientF
         const projectData = JSON.parse(projectDataAttr);
         // Make project data available globally
         (window as any).currentProjectData = projectData;
-        console.log("Project data loaded:", projectData);
+        // console.log("Project data loaded:", projectData);
       } catch (error) {
         console.error("Error parsing project data:", error);
       }
@@ -389,7 +389,7 @@ console.log("New client fields found:", newClientFieldsInForm.length, newClientF
     // Form submission handler
     async function handleFormSubmit(event: Event) {
       event.preventDefault();
-      console.log("📝 [ProjectForm] Form submission started");
+      // console.log("📝 [ProjectForm] Form submission started");
 
       const form = event.target as HTMLFormElement;
       const formData = new FormData(form);
@@ -422,7 +422,7 @@ console.log("New client fields found:", newClientFieldsInForm.length, newClientF
         }
       }
 
-      console.log("📝 [ProjectForm] Form data:", projectData);
+      // console.log("📝 [ProjectForm] Form data:", projectData);
 
       try {
         const submitBtn = form.querySelector('button[type="submit"]') as HTMLButtonElement;
@@ -434,7 +434,7 @@ console.log("New client fields found:", newClientFieldsInForm.length, newClientF
         let response;
         if (isNewProject) {
           // Create new project
-          console.log("📝 [ProjectForm] Creating new project");
+          // console.log("📝 [ProjectForm] Creating new project");
           response = await fetch("/api/create-project", {
             method: "POST",
             headers: {
@@ -444,7 +444,7 @@ console.log("New client fields found:", newClientFieldsInForm.length, newClientF
           });
         } else {
           // Update existing project
-          console.log("📝 [ProjectForm] Updating existing project:", projectId);
+          // console.log("📝 [ProjectForm] Updating existing project:", projectId);
           response = await fetch(`/api/update-project/${projectId}`, {
             method: "PUT",
             headers: {
@@ -455,18 +455,18 @@ console.log("New client fields found:", newClientFieldsInForm.length, newClientF
         }
 
         const result = await response.json();
-        console.log("📝 [ProjectForm] API response:", result);
-        console.log("📝 [ProjectForm] Response status:", response.status);
-        console.log("📝 [ProjectForm] Response ok:", response.ok);
+        // console.log("📝 [ProjectForm] API response:", result);
+        // console.log("📝 [ProjectForm] Response status:", response.status);
+        // console.log("📝 [ProjectForm] Response ok:", response.ok);
 
         if (result.success) {
           if (isNewProject) {
             // For new projects, update status to 10 (Project Created) to trigger database-driven notifications
-            console.log("📝 [ProjectForm] Updating status to 10 for new project");
-            console.log("📝 [ProjectForm] About to make fetch call to test endpoint");
+            // console.log("📝 [ProjectForm] Updating status to 10 for new project");
+            // console.log("📝 [ProjectForm] About to make fetch call to test endpoint");
             try {
-              console.log("📝 [ProjectForm] Making fetch call now...");
-              const statusResponse = await fetch("/api/test-update-status", {
+              // console.log("📝 [ProjectForm] Making fetch call now...");
+              const statusResponse = await fetch("/api/update-status", {
                 method: "POST",
                 headers: {
                   "Content-Type": "application/json",
@@ -478,12 +478,12 @@ console.log("New client fields found:", newClientFieldsInForm.length, newClientF
                 }),
               });
 
-              console.log("📝 [ProjectForm] Fetch call completed, status:", statusResponse.status);
+              // console.log("📝 [ProjectForm] Fetch call completed, status:", statusResponse.status);
               const statusResult = await statusResponse.json();
-              console.log("📝 [ProjectForm] Response parsed successfully");
-              console.log("📝 [ProjectForm] Status update response:", statusResult);
-              console.log("📝 [ProjectForm] Status update response status:", statusResponse.status);
-              console.log("📝 [ProjectForm] Status update response ok:", statusResponse.ok);
+              // console.log("📝 [ProjectForm] Response parsed successfully");
+              // console.log("📝 [ProjectForm] Status update response:", statusResult);
+              // console.log("📝 [ProjectForm] Status update response status:", statusResponse.status);
+              // console.log("📝 [ProjectForm] Status update response ok:", statusResponse.ok);
 
               // Store response in localStorage for debugging
               localStorage.setItem(
@@ -531,7 +531,7 @@ console.log("New client fields found:", newClientFieldsInForm.length, newClientF
                 // No redirect configured, just refresh
                 window.location.reload();
               }
-            } catch (statusError) {
+            } catch (statusError: any) {
               console.error("📝 [ProjectForm] Status update failed:", statusError);
               console.error("📝 [ProjectForm] Status update error details:", statusError);
 
@@ -539,7 +539,7 @@ console.log("New client fields found:", newClientFieldsInForm.length, newClientF
               localStorage.setItem(
                 "projectFormError",
                 JSON.stringify({
-                  error: statusError.message || statusError,
+                  error: statusError?.message || statusError,
                   timestamp: new Date().toISOString(),
                   projectId: result.project.id,
                 })
@@ -588,12 +588,12 @@ console.log("New client fields found:", newClientFieldsInForm.length, newClientF
     // Note: Delete button is handled by the action button system below
     if (!isNewProject) {
       const deleteBtn = document.getElementById("delete-project");
-      console.log("Delete button setup:", {
-        deleteBtn: !!deleteBtn,
-        projectId,
-        isNewProject,
-        formId: form.getAttribute("data-project-id"),
-      });
+      // console.log("Delete button setup:", {
+      //   deleteBtn: !!deleteBtn,
+      //   projectId,
+      //   isNewProject,
+      //   formId: form.getAttribute("data-project-id"),
+      // });
     }
 
     // Handle other action buttons
@@ -622,8 +622,16 @@ console.log("New client fields found:", newClientFieldsInForm.length, newClientF
   });
 
   // Delete project function
+  let isDeleting = false; // Flag to prevent multiple delete operations
+
   function deleteProject(projectId: string) {
-    console.log("deleteProject called with projectId:", projectId, "type:", typeof projectId);
+    // console.log("deleteProject called with projectId:", projectId, "type:", typeof projectId);
+
+    // Prevent multiple delete operations
+    if (isDeleting) {
+      console.log("Delete operation already in progress, ignoring request");
+      return;
+    }
 
     // Validate project ID
     if (!projectId || projectId.startsWith("new-project-")) {
@@ -656,6 +664,9 @@ console.log("New client fields found:", newClientFieldsInForm.length, newClientF
           {
             label: "Delete",
             action: () => {
+              // Set deleting flag to prevent multiple operations
+              isDeleting = true;
+
               // Show loading state
               const deleteBtn = document.getElementById("delete-project") as HTMLButtonElement;
               if (deleteBtn) {
@@ -691,6 +702,9 @@ console.log("New client fields found:", newClientFieldsInForm.length, newClientF
                     });
                   }
 
+                  // Reset deleting flag
+                  isDeleting = false;
+
                   // Redirect to dashboard after a short delay
                   setTimeout(() => {
                     window.location.href = "/dashboard";
@@ -709,7 +723,8 @@ console.log("New client fields found:", newClientFieldsInForm.length, newClientF
                     });
                   }
 
-                  // Reset button state
+                  // Reset deleting flag and button state
+                  isDeleting = false;
                   if (deleteBtn) {
                     deleteBtn.disabled = false;
                     deleteBtn.innerHTML = '<i class="bx bx-trash mr-1"></i>Delete Project';
@@ -815,9 +830,9 @@ console.log("New client fields found:", newClientFieldsInForm.length, newClientF
       formValues[key] = value;
     }
 
-    console.log("📝 [ProjectForm] Raw form data collected:", formValues);
-    console.log("📝 [ProjectForm] assigned_to_id value:", formValues.assigned_to_id);
-    console.log("📝 [ProjectForm] All form field names:", Object.keys(formValues));
+    // console.log("📝 [ProjectForm] Raw form data collected:", formValues);
+    // console.log("📝 [ProjectForm] assigned_to_id value:", formValues.assigned_to_id);
+    // console.log("📝 [ProjectForm] All form field names:", Object.keys(formValues));
 
     // The API will handle author_id logic based on user role
     // For admin/staff: author_id comes from form (new client or existing client select)
@@ -825,13 +840,13 @@ console.log("New client fields found:", newClientFieldsInForm.length, newClientF
 
     // Collect toggle button values
     const toggleButtons = form.querySelectorAll(".toggle-button.bg-blue-500");
-    console.log("📝 [ProjectForm] Found toggle buttons:", toggleButtons.length);
+    // console.log("📝 [ProjectForm] Found toggle buttons:", toggleButtons.length);
     toggleButtons.forEach((button) => {
       const group = button.getAttribute("data-group");
       const value = button.getAttribute("data-value");
       const type = button.getAttribute("data-type");
 
-      console.log("📝 [ProjectForm] Toggle button:", { group, value, type });
+      // console.log("📝 [ProjectForm] Toggle button:", { group, value, type });
 
       if (group && value) {
         if (type === "multi-select") {
@@ -855,15 +870,15 @@ console.log("New client fields found:", newClientFieldsInForm.length, newClientF
       const unitsOptions = unitsSlider.getAttribute("data-values")?.split(",") || [];
       const sliderValue = parseInt(unitsSlider.value);
       formValues.units = unitsOptions[sliderValue] || "1";
-      console.log("📝 [ProjectForm] Units slider value:", {
-        sliderValue,
-        unitsValue: formValues.units,
-      });
+      // console.log("📝 [ProjectForm] Units slider value:", {
+      //   sliderValue,
+      //   unitsValue: formValues.units,
+      // });
     } else {
       console.log("📝 [ProjectForm] Units slider not found");
     }
 
-    console.log("Form data:", formValues);
+    // console.log("Form data:", formValues);
 
     // Determine API endpoint based on new/existing project
     const endpoint = isNewProject ? "/api/create-project" : `/api/update-project/${projectId}`;
@@ -944,8 +959,8 @@ console.log("New client fields found:", newClientFieldsInForm.length, newClientF
           console.log("🔍 [ProjectForm] New project created, setting initial status to 10...");
 
           try {
-            console.log("🔍 [ProjectForm] About to call update-status API...");
-            console.log("🔍 [ProjectForm] Project ID:", result.id);
+            // console.log("🔍 [ProjectForm] About to call update-status API...");
+            // console.log("🔍 [ProjectForm] Project ID:", result.id);
 
             // Call update-status API to set initial status and trigger notifications
             const statusResponse = await fetch("/api/update-status", {
@@ -962,7 +977,7 @@ console.log("New client fields found:", newClientFieldsInForm.length, newClientF
 
             if (statusResponse.ok) {
               const statusResult = await statusResponse.json();
-              console.log("🔍 [ProjectForm] Status update successful:", statusResult);
+              // console.log("🔍 [ProjectForm] Status update successful:", statusResult);
             } else {
               const errorText = await statusResponse.text();
               console.error("🔍 [ProjectForm] Status update failed:", errorText);

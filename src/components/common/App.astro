@@ -2,10 +2,6 @@
 interface Props {
   title?: string;
   description?: string;
-  user?: {
-    id: string;
-    email: string;
-  };
 }
 
 import { checkAuth } from "../../lib/auth";
@@ -50,7 +46,7 @@ const lang = getLangFromUrl(Astro.url);
 
     <link rel="manifest" href="/manifest.json" />
     <meta name="theme-color" content="#000000" />
-    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="Fire Pro" />
     <meta name="generator" content={Astro.generator} />
@@ -104,22 +100,22 @@ const lang = getLangFromUrl(Astro.url);
 
     <!-- Inject environment variables for client-side use FIRST -->
     <script
-      set:html={`window.SUPABASE_URL = "${import.meta.env.SUPABASE_URL || ""}"; window.SUPABASE_ANON_KEY = "${(import.meta.env.SUPABASE_ANON_KEY || "").replace(/\s/g, "")}"; window.GOOGLE_MAPS_API_KEY = "${import.meta.env.GOOGLE_MAPS_API_KEY || ""}"; window.STRIPE_PUBLISHABLE_KEY = "${import.meta.env.PUBLIC_STRIPE_PUBLISHABLE_KEY || ""}"; ${user ? `window.USER_DATA = ${JSON.stringify(user)};` : ""} console.log("Environment variables loaded:", { SUPABASE_URL: window.SUPABASE_URL ? "Set" : "Missing", SUPABASE_ANON_KEY: window.SUPABASE_ANON_KEY ? "Set" : "Missing", GOOGLE_MAPS_API_KEY: window.GOOGLE_MAPS_API_KEY ? "Set" : "Missing", STRIPE_PUBLISHABLE_KEY: window.STRIPE_PUBLISHABLE_KEY ? "Set" : "Missing" });`}
+      set:html={`window.SUPABASE_URL = "${import.meta.env.SUPABASE_URL || ""}"; window.SUPABASE_ANON_KEY = "${(import.meta.env.SUPABASE_ANON_KEY || "").replace(/\s/g, "")}"; window.GOOGLE_MAPS_API_KEY = "${import.meta.env.GOOGLE_MAPS_API_KEY || ""}"; window.STRIPE_PUBLISHABLE_KEY = "${import.meta.env.PUBLIC_STRIPE_PUBLISHABLE_KEY || ""}"; ${user ? `window.USER_DATA = ${JSON.stringify(user)};` : ""}`}
     />
 
     <!-- Google Maps Places API - Load only if API key is available -->
     <script>
       // Wait for environment variables to be loaded, then load Google Maps
       function loadGoogleMaps() {
-        console.log("🔍 [GoogleMaps] Checking for API key...");
-        console.log(
-          "🔍 [GoogleMaps] window.GOOGLE_MAPS_API_KEY:",
-          (window as any).GOOGLE_MAPS_API_KEY ? "Present" : "Missing"
-        );
-        console.log(
-          "🔍 [GoogleMaps] API key length:",
-          (window as any).GOOGLE_MAPS_API_KEY ? (window as any).GOOGLE_MAPS_API_KEY.length : 0
-        );
+        // console.log("🔍 [GoogleMaps] Checking for API key...");
+        // console.log(
+        //   "🔍 [GoogleMaps] window.GOOGLE_MAPS_API_KEY:",
+        //   (window as any).GOOGLE_MAPS_API_KEY ? "Present" : "Missing"
+        // );
+        // console.log(
+        //   "🔍 [GoogleMaps] API key length:",
+        //   (window as any).GOOGLE_MAPS_API_KEY ? (window as any).GOOGLE_MAPS_API_KEY.length : 0
+        // );
 
         if (
           (window as any).GOOGLE_MAPS_API_KEY &&
@@ -143,7 +139,7 @@ const lang = getLangFromUrl(Astro.url);
           };
 
           script.onload = function () {
-            console.log("✅ [GoogleMaps] Google Maps API loaded successfully");
+            // console.log("✅ [GoogleMaps] Google Maps API loaded successfully");
             // Dispatch custom event for components to listen to
             window.dispatchEvent(new CustomEvent("googleMapsLoaded"));
           };
@@ -153,22 +149,62 @@ const lang = getLangFromUrl(Astro.url);
           console.warn(
             "❌ [GoogleMaps] Google Maps API key not found. Maps functionality will be disabled."
           );
-          console.log("🔍 [GoogleMaps] Available environment variables:", {
-            SUPABASE_URL: (window as any).SUPABASE_URL ? "Set" : "Missing",
-            SUPABASE_ANON_KEY: (window as any).SUPABASE_ANON_KEY ? "Set" : "Missing",
-            GOOGLE_MAPS_API_KEY: (window as any).GOOGLE_MAPS_API_KEY ? "Set" : "Missing",
-          });
+          // console.log("🔍 [GoogleMaps] Available environment variables:", {
+          //   SUPABASE_URL: (window as any).SUPABASE_URL ? "Set" : "Missing",
+          //   SUPABASE_ANON_KEY: (window as any).SUPABASE_ANON_KEY ? "Set" : "Missing",
+          //   GOOGLE_MAPS_API_KEY: (window as any).GOOGLE_MAPS_API_KEY ? "Set" : "Missing",
+          // });
         }
       }
 
       // Try to load immediately, and also on DOMContentLoaded as fallback
       loadGoogleMaps();
       document.addEventListener("DOMContentLoaded", loadGoogleMaps);
+
+      // Hide preloader when page is fully loaded
+      function hidePreloader() {
+        const preloader = document.getElementById("preloader");
+        if (preloader) {
+          preloader.style.opacity = "0";
+          setTimeout(() => {
+            preloader.style.display = "none";
+          }, 300); // Match the transition duration
+        }
+      }
+
+      // Global function to hide preloader (can be called by components)
+      (window as any).hidePreloader = hidePreloader;
+
+      // Hide preloader when everything is loaded
+      if (document.readyState === "complete") {
+        hidePreloader();
+      } else {
+        window.addEventListener("load", hidePreloader);
+      }
+
+      // Also hide preloader after a maximum delay to prevent it from staying forever
+      setTimeout(() => {
+        hidePreloader();
+      }, 5000); // 5 second maximum
     </script>
   </head>
   <body
     class="h-min-screen bg-hub-background dark:bg-hub-background-dark md:flex md:justify-center"
   >
+    <!-- Preloader -->
+    <div
+      id="preloader"
+      class="fixed inset-0 z-50 flex items-center justify-center bg-white transition-opacity duration-300 dark:bg-gray-900"
+    >
+      <div class="text-center">
+        <div
+          class="inline-block h-12 w-12 animate-spin rounded-full border-4 border-solid border-blue-600 border-r-transparent motion-reduce:animate-[spin_1.5s_linear_infinite]"
+        >
+        </div>
+        <p class="mt-4 text-lg font-medium text-gray-900 dark:text-white">Loading...</p>
+      </div>
+    </div>
+
     <main class="section relative mx-auto w-full max-w-[2000px]">
       <Header />
       <slot />
@@ -178,7 +214,15 @@ const lang = getLangFromUrl(Astro.url);
     <SimpleToast />
     <ToastAlerts />
     <div id="sticky-container" class="fixed bottom-6 right-6 z-40">
-      {!isAuth ? <StickySMS /> : <HttpChatWidget user={user} role={role || ""} />}
+      {
+        !isAuth ? (
+          <StickySMS />
+        ) : (
+          user && (
+            <HttpChatWidget user={{ id: user.id, email: user.email || "" }} role={role || ""} />
+          )
+        )
+      }
     </div>
     <!-- <ChatWidget user={user} role={role || ""} /> -->
 

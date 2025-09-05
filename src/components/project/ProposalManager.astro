@@ -19,18 +19,55 @@ const canManageProposals = role === "Admin" || role === "Staff";
 // Check if there's already an invoice for this project
 let existingInvoice = null;
 try {
-  const { data: invoice, error } = await supabase
+  console.log("🔍 [ProposalManager] Checking for existing invoice for project:", projectId);
+
+  if (!supabase) {
+    console.error("❌ [ProposalManager] Database not configured");
+    return;
+  }
+
+  const { data: invoices, error } = await supabase
     .from("invoices")
-    .select("*")
+    .select(`
+      *,
+      invoice_line_items (
+        id,
+        description,
+        quantity,
+        unit_price,
+        total_price,
+        sort_order
+      )
+    `)
     .eq("project_id", parseInt(projectId))
-    .eq("type", "proposal")
-    .single();
+    .eq("status", "proposal")
+    .order("created_at", { ascending: false })
+    .limit(1);
   
-  if (!error && invoice) {
-    existingInvoice = invoice;
+  console.log("🔍 [ProposalManager] Invoice query result:", { invoices, error });
+  
+  if (!error && invoices && invoices.length > 0) {
+    existingInvoice = invoices[0]; // Get the most recent proposal
+    console.log("✅ [ProposalManager] Found existing invoice:", existingInvoice);
+    console.log("🔍 [ProposalManager] Invoice line_items:", existingInvoice.invoice_line_items);
+    console.log("🔍 [ProposalManager] Invoice line_items length:", existingInvoice.invoice_line_items?.length);
+    console.log("🔍 [ProposalManager] Invoice line_items type:", typeof existingInvoice.invoice_line_items);
+    
+    // Let's also check if there are line items directly
+    if (existingInvoice.id) {
+      console.log("🔍 [ProposalManager] Checking for line items directly for invoice ID:", existingInvoice.id);
+      const { data: directLineItems, error: lineItemsError } = await supabase
+        .from("invoice_line_items")
+        .select("*")
+        .eq("invoice_id", existingInvoice.id);
+      
+      console.log("🔍 [ProposalManager] Direct line items query:", { directLineItems, lineItemsError });
+    }
+  } else {
+    console.log("❌ [ProposalManager] No existing invoice found:", error);
   }
 } catch (error) {
-  console.log("No existing proposal invoice found for project:", projectId);
+  console.log("❌ [ProposalManager] Error checking for existing invoice:", error);
 }
 
 const hasExistingInvoice = !!existingInvoice;
@@ -141,17 +178,18 @@ const hasExistingInvoice = !!existingInvoice;
       <div class="rounded-lg bg-gray-50 p-4 dark:bg-gray-700">
         <h3 class="mb-2 font-semibold text-gray-900 dark:text-white">Project Information</h3>
         <div class="space-y-1 text-sm">
-          <p><strong>Address:</strong> <span id="proposal-address">-</span></p>
-          <p><strong>Square Footage:</strong> <span id="proposal-sq-ft">-</span> sq ft</p>
-          <p><strong>Construction Type:</strong> <span id="proposal-construction-type">-</span></p>
+          <p><strong>Address:</strong> <span id="proposal-address">{project.address}</span></p>
+          <p><strong>Square Footage:</strong> <span id="proposal-sq-ft">{project.sq_ft}</span> sq ft</p>
+          <p><strong>Construction Type:</strong> <span id="proposal-construction-type">{project.new_construction ? "New Construction" :  "Existing"}</span></p>
         </div>
       </div>
       <div class="rounded-lg bg-gray-50 p-4 dark:bg-gray-700">
         <h3 class="mb-2 font-semibold text-gray-900 dark:text-white">Contact Information</h3>
         <div class="space-y-1 text-sm">
-          <p><strong>Client:</strong> <span id="proposal-client-name">-</span></p>
-          <p><strong>Email:</strong> <span id="proposal-client-email">-</span></p>
-          <p><strong>Phone:</strong> <span id="proposal-client-phone">-</span></p>
+          
+          <p><strong>Client:</strong> <span id="proposal-client-name">{projectAuthor.company_name}</span></p>
+          <p><strong>Email:</strong> <span id="proposal-client-email">{projectAuthor.email}</span></p>
+          <p><strong>Phone:</strong> <span id="proposal-client-phone">{projectAuthor.phone}</span></p>
         </div>
       </div>
     </div>
@@ -190,6 +228,46 @@ const hasExistingInvoice = !!existingInvoice;
             class="divide-y divide-gray-200 bg-white dark:divide-gray-600 dark:bg-gray-800"
           >
             <!-- Line items will be inserted here dynamically -->
+            {
+              existingInvoice?.invoice_line_items?.map((item: any) => (
+                <tr class="proposal-line-item-row" data-item-id={item.id}>
+                  <td class="px-6 py-4 text-sm text-gray-900 dark:text-white">
+                    <div class="font-medium">{item.description}</div>
+                  </td>
+                  <td class="px-6 py-4 text-sm text-gray-900 dark:text-white">
+                    <input
+                      type="number"
+                      class="quantity-input w-20 px-2 py-1 border border-gray-300 rounded text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                      value={item.quantity}
+                      min="1"
+                      data-item-id={item.id}
+                    />
+                  </td>
+                  <td class="px-6 py-4 text-sm text-gray-900 dark:text-white">
+                    <input
+                      type="number"
+                      class="unit-price-input w-24 px-2 py-1 border border-gray-300 rounded text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                      value={item.unit_price}
+                      min="0"
+                      step="0.01"
+                      data-item-id={item.id}
+                    />
+                  </td>
+                  <td class="px-6 py-4 text-sm text-gray-900 dark:text-white">
+                    <span class="total-display font-semibold text-green-600">${item.total_price.toFixed(2)}</span>
+                  </td>
+                  <td class="px-6 py-4 text-sm text-gray-900 dark:text-white">
+                    <button
+                      type="button"
+                      class="remove-item-btn text-red-600 hover:text-red-800"
+                      data-item-id={item.id}
+                    >
+                      <i class="bx bx-trash"></i>
+                    </button>
+                  </td>
+                </tr>
+              ))
+            }
           </tbody>
           <tfoot class="bg-gray-50 dark:bg-gray-700">
             <tr>
@@ -316,9 +394,14 @@ const hasExistingInvoice = !!existingInvoice;
       initializeProposalManager(projectId, project, projectAuthor);
       
       // If there's an existing invoice, load it automatically
+      console.log("🔍 [Client] Checking if should load existing invoice:", { hasExistingInvoice, existingInvoice, proposalManager: !!window.proposalManager });
       if (hasExistingInvoice && existingInvoice && window.proposalManager) {
-        console.log("Loading existing proposal invoice:", existingInvoice);
-        window.proposalManager.loadExistingInvoice(existingInvoice);
+        console.log("✅ [Client] Loading existing proposal invoice:", existingInvoice);
+        window.proposalManager.loadExistingInvoice(existingInvoice).catch(error => {
+          console.error("❌ [Client] Error loading existing invoice:", error);
+        });
+      } else {
+        console.log("❌ [Client] Not loading existing invoice - missing data or manager");
       }
     }
 
@@ -335,12 +418,176 @@ const hasExistingInvoice = !!existingInvoice;
 
     // Initialize subject editing functionality
     (window as any).initializeSubjectEditing();
+    
+    // Initialize existing line items
+    initializeExistingLineItems();
+    
+    // Calculate initial total
+    updateProposalTotal();
+
+    // Initialize existing line items with event listeners
+    function initializeExistingLineItems() {
+      const lineItemsContainer = document.getElementById("proposal-line-items");
+      if (!lineItemsContainer) return;
+
+      // Add event listeners to existing line items
+      const existingRows = lineItemsContainer.querySelectorAll(".proposal-line-item-row");
+      existingRows.forEach((row) => {
+        const quantityInput = row.querySelector(".quantity-input");
+        const unitPriceInput = row.querySelector(".unit-price-input");
+        const removeBtn = row.querySelector(".remove-item-btn");
+
+        const updateTotal = () => {
+          const quantity = parseFloat(quantityInput.value) || 0;
+          const unitPrice = parseFloat(unitPriceInput.value) || 0;
+          const total = quantity * unitPrice;
+          row.querySelector(".total-display").textContent = `$${total.toFixed(2)}`;
+          updateProposalTotal();
+        };
+
+        if (quantityInput) quantityInput.addEventListener("input", updateTotal);
+        if (unitPriceInput) unitPriceInput.addEventListener("input", updateTotal);
+        if (removeBtn) {
+          removeBtn.addEventListener("click", async () => {
+            const itemId = removeBtn.dataset.itemId;
+            if (itemId) {
+              // Delete from database
+              try {
+                const response = await fetch("/api/delete-line-item", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ itemId }),
+                });
+                
+                if (response.ok) {
+                  row.remove();
+                  updateProposalTotal();
+                } else {
+                  console.error("Failed to delete line item");
+                }
+              } catch (error) {
+                console.error("Error deleting line item:", error);
+              }
+            } else {
+              // Just remove from DOM (new unsaved item)
+              row.remove();
+              updateProposalTotal();
+            }
+          });
+        }
+      });
+    }
+
+    // Update proposal total
+    function updateProposalTotal() {
+      const lineItemsContainer = document.getElementById("proposal-line-items");
+      if (!lineItemsContainer) return;
+
+      let total = 0;
+      const rows = lineItemsContainer.querySelectorAll("tr");
+      
+      rows.forEach((row) => {
+        const quantityInput = row.querySelector(".quantity-input");
+        const unitPriceInput = row.querySelector(".unit-price-input");
+        
+        if (quantityInput && unitPriceInput) {
+          const quantity = parseFloat(quantityInput.value) || 0;
+          const unitPrice = parseFloat(unitPriceInput.value) || 0;
+          const rowTotal = quantity * unitPrice;
+          total += rowTotal;
+          
+          // Update individual row total
+          const totalDisplay = row.querySelector(".total-display");
+          if (totalDisplay) {
+            totalDisplay.textContent = `$${rowTotal.toFixed(2)}`;
+          }
+        }
+      });
+
+      // Update total display in header
+      const totalElement = document.getElementById("proposal-total");
+      if (totalElement) {
+        totalElement.textContent = total.toFixed(2);
+      }
+      
+      // Update total display in footer
+      const tfootTotal = document.getElementById("proposal-total-footer");
+      if (tfootTotal) {
+        tfootTotal.textContent = total.toFixed(2);
+      }
+    }
 
     // Proposal line item selector callback
     (window as any).onProposalLineItemSelected = function (item: any) {
       console.log("Proposal line item selected:", item);
-      // Add logic to handle selected catalog item for proposals
-      // This would integrate with the proposal manager to add the item
+      
+      // Add the item to the proposal line items
+      const lineItemsContainer = document.getElementById("proposal-line-items");
+      if (lineItemsContainer) {
+        const newItem = document.createElement("tr");
+        newItem.className = "proposal-line-item-row";
+        newItem.innerHTML = `
+          <td class="px-6 py-4 text-sm text-gray-900 dark:text-white">
+            <div class="font-medium">${item.name}</div>
+            <div class="text-xs text-gray-500">${item.description}</div>
+          </td>
+          <td class="px-6 py-4 text-sm text-gray-900 dark:text-white">
+            <input
+              type="number"
+              class="quantity-input w-20 px-2 py-1 border border-gray-300 rounded text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+              value="1"
+              min="1"
+              data-item-id="${item.id}"
+            />
+          </td>
+          <td class="px-6 py-4 text-sm text-gray-900 dark:text-white">
+            <input
+              type="number"
+              class="unit-price-input w-24 px-2 py-1 border border-gray-300 rounded text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+              value="${item.unit_price}"
+              min="0"
+              step="0.01"
+              data-item-id="${item.id}"
+            />
+          </td>
+          <td class="px-6 py-4 text-sm text-gray-900 dark:text-white">
+            <span class="total-display font-semibold text-green-600">$${parseFloat(item.unit_price).toFixed(2)}</span>
+          </td>
+          <td class="px-6 py-4 text-sm text-gray-900 dark:text-white">
+            <button
+              type="button"
+              class="remove-item-btn text-red-600 hover:text-red-800"
+              data-item-id="${item.id}"
+            >
+              <i class="bx bx-trash"></i>
+            </button>
+          </td>
+        `;
+        
+        lineItemsContainer.appendChild(newItem);
+        
+        // Add event listeners for the new item
+        const quantityInput = newItem.querySelector(".quantity-input");
+        const unitPriceInput = newItem.querySelector(".unit-price-input");
+        const removeBtn = newItem.querySelector(".remove-item-btn");
+        
+        const updateTotal = () => {
+          const quantity = parseFloat(quantityInput.value) || 0;
+          const unitPrice = parseFloat(unitPriceInput.value) || 0;
+          const total = quantity * unitPrice;
+          newItem.querySelector(".total-display").textContent = `$${total.toFixed(2)}`;
+          updateProposalTotal();
+        };
+        
+        quantityInput.addEventListener("input", updateTotal);
+        unitPriceInput.addEventListener("input", updateTotal);
+        removeBtn.addEventListener("click", () => {
+          newItem.remove();
+          updateProposalTotal();
+        });
+        
+        updateProposalTotal();
+      }
     };
   });
 </script>

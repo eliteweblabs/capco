@@ -120,11 +120,11 @@ const { user, role } = Astro.props;
   // Initialize chat widget
   function initializeChat() {
     if (isInitialized) {
-      console.log("🔔 [HTTP-CHAT] Chat widget already initialized, skipping");
+      // console.log("🔔 [HTTP-CHAT] Chat widget already initialized, skipping");
       return;
     }
 
-    console.log("🔔 [HTTP-CHAT] Initializing HTTP chat widget");
+    // console.log("🔔 [HTTP-CHAT] Initializing HTTP chat widget");
 
     // Check if user is Admin/Staff
     const chatWidget = document.getElementById("chat-widget");
@@ -137,17 +137,17 @@ const { user, role } = Astro.props;
     const userId = chatWidget.dataset.userId || "unknown";
     const userName = chatWidget.dataset.userName || "Unknown User";
 
-    console.log("🔔 [HTTP-CHAT] User role:", userRole);
-    console.log("🔔 [HTTP-CHAT] User ID:", userId);
-    console.log("🔔 [HTTP-CHAT] User name:", userName);
+    // console.log("🔔 [HTTP-CHAT] User role:", userRole);
+    // console.log("🔔 [HTTP-CHAT] User ID:", userId);
+    // console.log("🔔 [HTTP-CHAT] User name:", userName);
 
     if (userRole !== "Admin" && userRole !== "Staff") {
-      console.log("🔔 [HTTP-CHAT] User not Admin/Staff, hiding chat widget");
+      // console.log("🔔 [HTTP-CHAT] User not Admin/Staff, hiding chat widget");
       chatWidget.classList.add("hidden");
       return;
     }
 
-    console.log("🔔 [HTTP-CHAT] User is Admin/Staff, showing chat widget");
+    // console.log("🔔 [HTTP-CHAT] User is Admin/Staff, showing chat widget");
 
     // Get current user info
     currentUser = {
@@ -156,7 +156,7 @@ const { user, role } = Astro.props;
       role: userRole,
     };
 
-    console.log("🔔 [HTTP-CHAT] Current user:", currentUser);
+    // console.log("🔔 [HTTP-CHAT] Current user:", currentUser);
 
     // Setup event listeners
     setupChatEvents();
@@ -171,7 +171,7 @@ const { user, role } = Astro.props;
     startHeartbeat();
 
     isInitialized = true;
-    console.log("🔔 [HTTP-CHAT] HTTP chat widget initialization complete");
+    // console.log("🔔 [HTTP-CHAT] HTTP chat widget initialization complete");
   }
 
   // Setup chat event listeners
@@ -234,7 +234,7 @@ const { user, role } = Astro.props;
   // Join chat
   async function joinChat() {
     try {
-      console.log("🔔 [HTTP-CHAT] Joining chat...");
+      // console.log("🔔 [HTTP-CHAT] Joining chat...");
 
       const response = await fetch("/api/chat", {
         method: "POST",
@@ -254,12 +254,12 @@ const { user, role } = Astro.props;
       }
 
       const data = await response.json();
-      console.log("🔔 [HTTP-CHAT] Join response:", data);
+      // console.log("🔔 [HTTP-CHAT] Join response:", data);
 
       if (data.success) {
         // Load chat history
         if (data.chatHistory && data.chatHistory.length > 0) {
-          console.log("🔔 [HTTP-CHAT] Loading chat history:", data.chatHistory.length, "messages");
+          // console.log("🔔 [HTTP-CHAT] Loading chat history:", data.chatHistory.length, "messages");
           loadChatHistory(data.chatHistory);
         }
 
@@ -269,7 +269,7 @@ const { user, role } = Astro.props;
           updateOnlineCount();
         }
 
-        console.log("🔔 [HTTP-CHAT] Successfully joined chat");
+        // console.log("🔔 [HTTP-CHAT] Successfully joined chat");
       }
     } catch (error) {
       console.error("🔔 [HTTP-CHAT] Error joining chat:", error);
@@ -284,7 +284,7 @@ const { user, role } = Astro.props;
     if (!message) return;
 
     try {
-      console.log("🔔 [HTTP-CHAT] Sending message:", message);
+      // console.log("🔔 [HTTP-CHAT] Sending message:", message);
 
       const response = await fetch("/api/chat", {
         method: "POST",
@@ -305,7 +305,7 @@ const { user, role } = Astro.props;
       }
 
       const data = await response.json();
-      console.log("🔔 [HTTP-CHAT] Message response:", data);
+      // console.log("🔔 [HTTP-CHAT] Message response:", data);
 
       if (data.success && data.message) {
         // Add message to chat
@@ -322,7 +322,7 @@ const { user, role } = Astro.props;
         const sendBtn = document.getElementById("chat-send") as HTMLButtonElement;
         sendBtn.disabled = true;
 
-        console.log("🔔 [HTTP-CHAT] Message sent successfully");
+        // console.log("🔔 [HTTP-CHAT] Message sent successfully");
       }
     } catch (error) {
       console.error("🔔 [HTTP-CHAT] Error sending message:", error);
@@ -342,7 +342,7 @@ const { user, role } = Astro.props;
       addMessage(msg);
     });
 
-    console.log("🔔 [HTTP-CHAT] Chat history loaded:", messages.length, "messages");
+    // console.log("🔔 [HTTP-CHAT] Chat history loaded:", messages.length, "messages");
   }
 
   // Add message to chat
@@ -500,13 +500,13 @@ const { user, role } = Astro.props;
 
   // Initialize when DOM is ready
   document.addEventListener("DOMContentLoaded", () => {
-    console.log("🔔 [HTTP-CHAT] DOM Content Loaded");
+    // console.log("🔔 [HTTP-CHAT] DOM Content Loaded");
     setTimeout(initializeChat, 1000);
   });
 
   // Also initialize when window loads (fallback)
   window.addEventListener("load", () => {
-    console.log("🔔 [HTTP-CHAT] Window Loaded");
+    // console.log("🔔 [HTTP-CHAT] Window Loaded");
     if (!isInitialized) {
       setTimeout(initializeChat, 500);
     }
@@ -543,7 +543,7 @@ const { user, role } = Astro.props;
       const expires = new Date();
       expires.setTime(expires.getTime() + 24 * 60 * 60 * 1000); // 24 hours
       document.cookie = `chatOpen=${isOpen}; expires=${expires.toUTCString()}; path=/`;
-      console.log("🔔 [HTTP-CHAT] Chat state saved to cookie:", isOpen);
+      // console.log("🔔 [HTTP-CHAT] Chat state saved to cookie:", isOpen);
     } catch (error) {
       console.error("🔔 [HTTP-CHAT] Error saving chat state to cookie:", error);
     }
@@ -556,7 +556,7 @@ const { user, role } = Astro.props;
 
       if (chatOpenCookie) {
         const isOpen = chatOpenCookie.split("=")[1] === "true";
-        console.log("🔔 [HTTP-CHAT] Chat state from cookie:", isOpen);
+        // console.log("🔔 [HTTP-CHAT] Chat state from cookie:", isOpen);
 
         if (isOpen) {
           const chatPanel = document.getElementById("chat-panel");

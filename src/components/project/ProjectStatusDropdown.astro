@@ -34,7 +34,7 @@ let projectStatuses: any[] = [];
 if (canChangeStatus) {
   if (statuses && statuses.length > 0) {
     projectStatuses = statuses;
-    console.log("🔄 [STATUS-DROPDOWN] Using passed statuses:", projectStatuses.length);
+    // console.log("🔄 [STATUS-DROPDOWN] Using passed statuses:", projectStatuses.length);
   } else {
     // Fallback to API call if statuses not provided
     try {
@@ -49,7 +49,7 @@ if (canChangeStatus) {
         const result = await statusResponse.json();
         if (result.success) {
           projectStatuses = Object.values(result.statuses || {});
-          console.log("🔄 [STATUS-DROPDOWN] Fetched statuses via API:", projectStatuses.length);
+          // console.log("🔄 [STATUS-DROPDOWN] Fetched statuses via API:", projectStatuses.length);
         }
       }
     } catch (error) {
@@ -142,7 +142,7 @@ if (canChangeStatus) {
   </div>
 )}
 
-<script define:vars={{projectId}}>
+<script define:vars={{projectId, userRole: role}}>
   document.addEventListener('DOMContentLoaded', function() {
     const dropdownButton = document.getElementById('status-dropdown-button');
     const dropdownMenu = document.getElementById('status-dropdown-menu');
@@ -213,19 +213,19 @@ if (canChangeStatus) {
           Updating...
         `;
 
-        console.log("🔔 [STATUS-DROPDOWN] Updating project status:", {
-          projectId,
-          newStatus,
-          statusName
-        });
+        // console.log("🔔 [STATUS-DROPDOWN] Updating project status:", {
+        //   projectId,
+        //   newStatus,
+        //   statusName
+        // });
 
         // Make API call to update status using update-status endpoint
         const requestBody = {
           projectId: projectId,
           status: newStatus
         };
-        
-        console.log("🔔 [STATUS-DROPDOWN] Making API call to /api/update-status with body:", requestBody);
+
+        // console.log("🔔 [STATUS-DROPDOWN] Making API call to /api/update-status with body:", requestBody);
         
         const response = await fetch('/api/update-status', {
           method: 'POST',
@@ -235,20 +235,20 @@ if (canChangeStatus) {
           body: JSON.stringify(requestBody)
         });
 
-        console.log("🔔 [STATUS-DROPDOWN] API response status:", response.status);
+        // console.log("🔔 [STATUS-DROPDOWN] API response status:", response.status);
 
         if (response.ok) {
           const result = await response.json();
-          console.log("🔔 [STATUS-DROPDOWN] API response result:", result);
+              // console.log("🔔 [STATUS-DROPDOWN] API response result:", result);
           
           // Show success toast notification if status config is available
-          console.log("🔔 [STATUS-DROPDOWN] Checking for statusConfig:", !!result.statusConfig);
-          console.log("🔔 [STATUS-DROPDOWN] Available result:", Object.keys(result || {}));
-          console.log("🔔 [STATUS-DROPDOWN] StatusConfig details:", result.statusConfig);
+          // console.log("🔔 [STATUS-DROPDOWN] Checking for statusConfig:", !!result.statusConfig);
+          // console.log("🔔 [STATUS-DROPDOWN] Available result:", Object.keys(result || {}));
+          // console.log("🔔 [STATUS-DROPDOWN] StatusConfig details:", result.statusConfig);
           
           if (result.statusConfig) {
-            // Get user role and project data from data attributes
-            const userRole = '${role}' || 'Client';
+            // Get user role from authenticated user (server-side source of truth)
+            const currentUserRole = userRole || 'Client';
             const projectTitle = dropdownButton.getAttribute('data-project-title') || 'Project';
             const clientEmail = dropdownButton.getAttribute('data-client-email') || 'Client';
             
@@ -257,7 +257,7 @@ if (canChangeStatus) {
             
             // Determine which toast message to show based on user role
             let toastMessage = '';
-            if (userRole === 'Admin' || userRole === 'Staff') {
+            if (currentUserRole === 'Admin' || currentUserRole === 'Staff') {
               toastMessage = result.statusConfig.toast_admin || '';
             } else {
               toastMessage = result.statusConfig.toast_client || '';
@@ -270,40 +270,19 @@ if (canChangeStatus) {
               .replace(/{{EST_TIME}}/g, estTime);
             
             if (toastMessage) {
-              console.log("🔔 [STATUS-DROPDOWN] Attempting to show toast:", toastMessage);
-              console.log("🔔 [STATUS-DROPDOWN] window.showSuccess available:", typeof window.showSuccess);
-              console.log("🔔 [STATUS-DROPDOWN] Available window functions:", {
-                showSuccess: typeof window.showSuccess,
-                showError: typeof window.showError,
-                simpleToastManager: typeof window.simpleToastManager,
-                toastAlertManager: typeof window.toastAlertManager
-              });
+              // console.log("🔔 [STATUS-DROPDOWN] Attempting to show toast:", toastMessage);
+              // console.log("🔔 [STATUS-DROPDOWN] window.showSuccess available:", typeof window.showSuccess);
+              // console.log("🔔 [STATUS-DROPDOWN] Available window functions:", {
+              //   showSuccess: typeof window.showSuccess,
+              //   showError: typeof window.showError,
+              //   simpleToastManager: typeof window.simpleToastManager,
+              //   toastAlertManager: typeof window.toastAlertManager
+              // });
               
               if (window.showSuccess) {
-                console.log("🔔 [STATUS-DROPDOWN] Calling window.showSuccess");
+                // console.log("🔔 [STATUS-DROPDOWN] Calling window.showSuccess");
                 window.showSuccess('Status Updated', toastMessage, 5000);
-              } else {
-                console.log(`🔔 [Status Updated] ${toastMessage}`);
-                
-                // Try direct toast managers as fallback
-                if (window.simpleToastManager) {
-                  console.log("🔔 [STATUS-DROPDOWN] Using simpleToastManager fallback");
-                window.simpleToastManager.show({
-                    type: "success",
-                    title: "Status Updated",
-                    message: toastMessage,
-                    duration: 5000
-                  });
-                } else if (window.toastAlertManager) {
-                  console.log("🔔 [STATUS-DROPDOWN] Using toastAlertManager fallback");
-                  window.toastAlertManager.show({
-                    type: "success",
-                    title: "Status Updated",
-                    message: toastMessage,
-                    duration: 5000
-                  });
-                }
-              }
+              } 
             }
           }
           
@@ -361,17 +340,17 @@ if (canChangeStatus) {
               checkmarkSvg.innerHTML = '<path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>';
               button.appendChild(checkmarkSvg);
               
-              console.log("🔔 [STATUS-DROPDOWN] Added checkmark to status button:", {
-                statusCode: buttonStatusCode,
-                newStatus,
-                buttonText: button.querySelector('.font-medium')?.textContent
-              });
+              // console.log("🔔 [STATUS-DROPDOWN] Added checkmark to status button:", {
+              //   statusCode: buttonStatusCode,
+              //   newStatus,
+              //   buttonText: button.querySelector('.font-medium')?.textContent
+              // });
             }
           });
           
           // Show success message
-          console.log("🔔 [STATUS-DROPDOWN] Status updated successfully to:", statusName);
-          console.log("🔔 [STATUS-DROPDOWN] Email notifications should have been triggered");
+          // console.log("🔔 [STATUS-DROPDOWN] Status updated successfully to:", statusName);
+          // console.log("🔔 [STATUS-DROPDOWN] Email notifications should have been triggered");
         } else {
           const errorData = await response.json();
           throw new Error(errorData.error || 'Failed to update status');

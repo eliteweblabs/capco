@@ -59,24 +59,23 @@ Tier I Fire Alarm Design
 1. Fire Alarm Design
 2. Fire Alarm Narrative`;
 
-    // Create invoice
-    console.log("Creating invoice with data:", {
+    // Create invoice with proposal data if provided
+    const invoiceData = {
       project_id: parseInt(projectId),
-      status: "draft",
+      status: projectData?.status || "draft",
+      subject: projectData?.subject || null,
+      invoice_date: projectData?.date || new Date().toISOString().split("T")[0],
+      notes: projectData?.notes || null,
       tax_rate: 0.0,
       created_by: user.id,
-      due_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
-    });
+      due_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split("T")[0], // 30 days from now
+    };
+
+    console.log("Creating invoice with data:", invoiceData);
 
     const { data: invoice, error: invoiceError } = await supabase
       .from("invoices")
-      .insert({
-        project_id: parseInt(projectId),
-        status: "draft",
-        tax_rate: 0.0,
-        created_by: user.id,
-        due_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split("T")[0], // 30 days from now
-      })
+      .insert(invoiceData)
       .select()
       .single();
 
@@ -95,24 +94,30 @@ Tier I Fire Alarm Design
       );
     }
 
-    // Create initial line item with standardized description
-    console.log("Creating line item with data:", {
-      invoice_id: invoice.id,
-      description: standardDescription,
-      quantity: 1.0,
-      unit_price: 500.0,
-      total_price: 500.0,
-      sort_order: 1,
-    });
+    // Create line items from proposal data or use default
+    const lineItems = projectData?.line_items || [
+      {
+        description: standardDescription,
+        quantity: 1.0,
+        unit_price: 500.0,
+        total_price: 500.0,
+      },
+    ];
 
-    const { error: lineItemError } = await supabase.from("invoice_line_items").insert({
+    console.log("Creating line items:", lineItems);
+
+    const lineItemInserts = lineItems.map((item, index) => ({
       invoice_id: invoice.id,
-      description: standardDescription,
-      quantity: 1.0,
-      unit_price: 500.0, // Default price for initial line item
-      total_price: 500.0,
-      sort_order: 1,
-    });
+      description: item.description,
+      quantity: item.quantity || 1.0,
+      unit_price: item.price || item.unit_price || 0.0,
+      total_price: (item.quantity || 1.0) * (item.price || item.unit_price || 0.0),
+      sort_order: index + 1,
+    }));
+
+    const { error: lineItemError } = await supabase
+      .from("invoice_line_items")
+      .insert(lineItemInserts);
 
     if (lineItemError) {
       console.error("Error creating line item:", lineItemError);

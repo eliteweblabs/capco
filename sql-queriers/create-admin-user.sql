@@ -14,7 +14,7 @@ WHERE id = (
 
 -- Option 2: If profile doesn't exist, create it
 -- Replace these values with actual admin details
-INSERT INTO profiles (id, name, role)
+INSERT INTO profiles (id, company_name, role)
 VALUES (
   (SELECT id FROM auth.users WHERE email = 'your-email@example.com'),
   'Admin User',
@@ -22,7 +22,7 @@ VALUES (
 )
 ON CONFLICT (id) DO UPDATE SET
   role = 'Admin',
-  name = COALESCE(EXCLUDED.name, profiles.name);
+  company_name = COALESCE(EXCLUDED.company_name, profiles.company_name);
 
 -- Option 3: Create admin user via Supabase Auth (if user doesn't exist)
 -- This would need to be done in your application or Supabase dashboard
@@ -30,7 +30,7 @@ ON CONFLICT (id) DO UPDATE SET
 -- Verify the admin user was created/updated
 SELECT 
   u.email,
-  p.name,
+  p.company_name,
   p.role,
   'Admin user ready' as status
 FROM auth.users u

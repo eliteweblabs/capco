@@ -23,13 +23,13 @@ export const POST: APIRoute = async ({ request }) => {
 
     const body = await request.json();
     const { action, userId, userName, userRole, message } = body;
-    console.log("🔔 [CHAT-API] Request data:", {
-      action,
-      userId,
-      userName,
-      userRole,
-      message: message ? message.substring(0, 50) + "..." : "N/A",
-    });
+    // console.log("🔔 [CHAT-API] Request data:", {
+    //   action,
+    //   userId,
+    //   userName,
+    //   userRole,
+    //   message: message ? message.substring(0, 50) + "..." : "N/A",
+    // });
 
     switch (action) {
       case "join":

@@ -54,15 +54,22 @@ export function showNotification(options: NotificationOptions): void {
   if (options.redirect) {
     const delay = options.redirect.delay || 0;
     const showCountdown = options.redirect.showCountdown !== false; // Default to true
-    
+
     if (showCountdown && delay > 0) {
       // Add countdown to message
       processedOptions.message = options.message.replace(
         /{{COUNTDOWN}}/g,
         `<span class="countdown-timer" data-duration="${delay}">${delay}</span>`
       );
+      console.log("🔔 [CENTRALIZED] Countdown replacement:", {
+        original: options.message,
+        replaced: processedOptions.message,
+        delay: delay,
+        hasCountdownPlaceholder: options.message.includes("{{COUNTDOWN}}"),
+        placeholderCount: (options.message.match(/{{COUNTDOWN}}/g) || []).length,
+      });
     }
-    
+
     // Schedule redirect
     if (delay > 0) {
       setTimeout(() => {
@@ -108,7 +115,9 @@ export function showNotification(options: NotificationOptions): void {
 
   // Final fallback to console logging
   const logLevel = processedOptions.type === "error" ? "error" : "log";
-  console[logLevel](`🔔 [${processedOptions.type.toUpperCase()}] ${processedOptions.title}: ${processedOptions.message}`);
+  console[logLevel](
+    `🔔 [${processedOptions.type.toUpperCase()}] ${processedOptions.title}: ${processedOptions.message}`
+  );
 }
 
 /**
@@ -178,7 +187,9 @@ export function replaceToastPlaceholders(message: string, data: ToastMessageData
     "{{PROJECT_ADDRESS}}": `<strong>${data.projectAddress || "N/A"}</strong>`,
     "{{STATUS_NAME}}": `<strong>${data.statusName || "Status Update"}</strong>`,
     "{{EST_TIME}}": `<strong>${data.estTime || "2-3 business days"}</strong>`, // From status configuration
-    "{{COUNTDOWN}}": data.countdown ? `<span class="countdown-timer" data-duration="${data.countdown}">${data.countdown}</span>` : '',
+    "{{COUNTDOWN}}": data.countdown
+      ? `<span class="countdown-timer" data-duration="${data.countdown}">${data.countdown}</span>`
+      : "",
   };
 
   // Replace each placeholder
@@ -278,10 +289,10 @@ export const showToast = showNotification;
  * This should be called after toast messages are displayed
  */
 export function initializeCountdownTimers(): void {
-  const countdownElements = document.querySelectorAll('.countdown-timer');
-  
+  const countdownElements = document.querySelectorAll(".countdown-timer");
+
   countdownElements.forEach((element) => {
-    const duration = parseInt(element.getAttribute('data-duration') || '0');
+    const duration = parseInt(element.getAttribute("data-duration") || "0");
     if (duration > 0) {
       startCountdown(element as HTMLElement, duration);
     }
@@ -295,20 +306,20 @@ export function initializeCountdownTimers(): void {
  */
 function startCountdown(element: HTMLElement, duration: number): void {
   let remaining = duration;
-  
+
   const updateCountdown = () => {
     element.textContent = remaining.toString();
-    
+
     if (remaining <= 0) {
       // Countdown finished
-      element.textContent = '0';
+      element.textContent = "0";
       return;
     }
-    
+
     remaining--;
     setTimeout(updateCountdown, 1000);
   };
-  
+
   // Start the countdown
   updateCountdown();
 }

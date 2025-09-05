@@ -3,7 +3,7 @@ import { checkAuth } from "../../../lib/auth";
 import { supabase } from "../../../lib/supabase";
 
 export const GET: APIRoute = async ({ params, cookies }) => {
-  console.log("📡 [GET-PROJECT-ID] API route called for project:", params.id);
+  // console.log("📡 [GET-PROJECT-ID] API route called for project:", params.id);
 
   try {
     const projectId = params.id;
@@ -38,7 +38,7 @@ export const GET: APIRoute = async ({ params, cookies }) => {
       );
     }
 
-    console.log("📡 [GET-PROJECT-ID] User authenticated:", { userId: user.id, role });
+    // console.log("📡 [GET-PROJECT-ID] User authenticated:", { userId: user.id, role });
 
     if (!supabase) {
       return new Response(
@@ -88,7 +88,7 @@ export const GET: APIRoute = async ({ params, cookies }) => {
       );
     }
 
-    console.log("📡 [GET-PROJECT-ID] Project found:", project.title);
+    // console.log("📡 [GET-PROJECT-ID] Project found:", project.title);
 
     // Get project author's profile data
     let projectAuthor = null;
@@ -103,7 +103,7 @@ export const GET: APIRoute = async ({ params, cookies }) => {
         console.error("📡 [GET-PROJECT-ID] Error fetching author profile:", authorError);
       } else {
         projectAuthor = authorProfile;
-        console.log("📡 [GET-PROJECT-ID] Author profile loaded:", projectAuthor.company_name);
+        // console.log("📡 [GET-PROJECT-ID] Author profile loaded:", projectAuthor.company_name);
       }
     }
 
@@ -111,7 +111,7 @@ export const GET: APIRoute = async ({ params, cookies }) => {
     if (project.assigned_to_id) {
       const { data: assignedProfile, error: assignedError } = await supabase
         .from("profiles")
-        .select("id, name, company_name")
+        .select("id, company_name")
         .eq("id", project.assigned_to_id)
         .single();
 
@@ -119,14 +119,14 @@ export const GET: APIRoute = async ({ params, cookies }) => {
         console.error("📡 [GET-PROJECT-ID] Error fetching assigned user profile:", assignedError);
       } else {
         // Add assigned user name to the project data
-        project.assigned_to_name = assignedProfile.company_name || assignedProfile.name;
-        console.log("📡 [GET-PROJECT-ID] Assigned user profile loaded:", project.assigned_to_name);
+        project.assigned_to_name = assignedProfile.company_name || assignedProfile.id;
+        // console.log("📡 [GET-PROJECT-ID] Assigned user profile loaded:", project.assigned_to_name);
       }
     } else {
       project.assigned_to_name = null;
     }
 
-    console.log("📡 [GET-PROJECT-ID] Returning project data successfully");
+    // console.log("📡 [GET-PROJECT-ID] Returning project data successfully");
 
     return new Response(
       JSON.stringify({
