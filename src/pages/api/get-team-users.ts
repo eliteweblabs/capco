@@ -2,10 +2,10 @@ import type { APIRoute } from "astro";
 import { supabase } from "../../lib/supabase";
 
 export const GET: APIRoute = async ({ request, cookies }) => {
-  console.log("📡 [API] GET /api/get-staff-users called");
+  // console.log("📡 [API] GET /api/get-staff-users called");
 
   try {
-    console.log("📡 [API] Checking Supabase configuration...");
+    // console.log("📡 [API] Checking Supabase configuration...");
 
     if (!supabase) {
       console.log("📡 [API] Supabase not configured, returning demo staff users");
@@ -57,7 +57,7 @@ export const GET: APIRoute = async ({ request, cookies }) => {
       // );
     }
 
-    console.log("📡 [API] Getting current user...");
+    // console.log("📡 [API] Getting current user...");
 
     if (!supabase) {
       return new Response(JSON.stringify({ error: "Database not configured" }), {
@@ -70,10 +70,10 @@ export const GET: APIRoute = async ({ request, cookies }) => {
     const accessToken = cookies.get("sb-access-token")?.value;
     const refreshToken = cookies.get("sb-refresh-token")?.value;
 
-    console.log("📡 [API] Auth check:", {
-      hasAccessToken: !!accessToken,
-      hasRefreshToken: !!refreshToken,
-    });
+    // console.log("📡 [API] Auth check:", {
+    //   hasAccessToken: !!accessToken,
+    //   hasRefreshToken: !!refreshToken,
+    // });
 
     if (accessToken && refreshToken) {
       await supabase.auth.setSession({
@@ -88,13 +88,13 @@ export const GET: APIRoute = async ({ request, cookies }) => {
       error: userError,
     } = await supabase.auth.getUser();
 
-    console.log("📡 [API] User auth result:", {
-      hasUser: !!user,
-      userId: user?.id || null,
-      userEmail: user?.email || null,
-      hasError: !!userError,
-      errorMessage: userError?.message || null,
-    });
+    // console.log("📡 [API] User auth result:", {
+    //   hasUser: !!user,
+    //   userId: user?.id || null,
+    //   userEmail: user?.email || null,
+    //   hasError: !!userError,
+    //   errorMessage: userError?.message || null,
+    // });
 
     if (userError || !user) {
       console.log("📡 [API] No authenticated user, returning demo staff users");
@@ -122,7 +122,7 @@ export const GET: APIRoute = async ({ request, cookies }) => {
       );
     }
 
-    console.log("📡 [API] Getting user profile for role...");
+    // console.log("📡 [API] Getting user profile for role...");
 
     // Get user profile to check permissions
     const { data: profile } = await supabase
@@ -132,7 +132,7 @@ export const GET: APIRoute = async ({ request, cookies }) => {
       .single();
 
     const userRole = profile?.role;
-    console.log("📡 [API] User role:", userRole);
+    // console.log("📡 [API] User role:", userRole);
 
     // Only admins and staff can view staff list
     if (userRole !== "Admin" && userRole !== "Staff") {
@@ -158,14 +158,14 @@ export const GET: APIRoute = async ({ request, cookies }) => {
     }
 
     // Fetch staff users from database
-    console.log("📡 [API] Fetching staff users from database...");
+    // console.log("📡 [API] Fetching staff users from database...");
     const { data: staffUsers, error } = await supabase
       .from("profiles")
       .select("id, company_name, phone, role, created_at")
       .neq("role", "Client")
       .order("company_name", { ascending: true });
 
-    console.log("📡 [API] Staff users query result:", { staffUsers, error });
+    // console.log("📡 [API] Staff users query result:", { staffUsers, error });
 
     // Try direct SQL query to bypass RLS
     const { data: directStaffUsers, error: directError } = await supabase.rpc(
@@ -173,10 +173,10 @@ export const GET: APIRoute = async ({ request, cookies }) => {
       {}
     );
 
-    console.log("📡 [API] Direct SQL staff users result:", {
-      directStaffUsers,
-      directError,
-    });
+    // console.log("📡 [API] Direct SQL staff users result:", {
+    //   directStaffUsers,
+    //   directError,
+    // });
 
     // Try a simpler approach - get all profiles and filter in JavaScript
     const { data: allProfiles, error: allProfilesError } = await supabase
@@ -217,9 +217,9 @@ export const GET: APIRoute = async ({ request, cookies }) => {
       : "No staff members found";
 
     if (!staffUsers || staffUsers.length === 0) {
-      console.log(
-        "📡 [API] No staff users found with regular query, trying alternative approach..."
-      );
+      // console.log(
+      //   "📡 [API] No staff users found with regular query, trying alternative approach..."
+      // );
 
       if (staffUsersFromAll && staffUsersFromAll.length > 0) {
         finalStaffUsers = staffUsersFromAll;

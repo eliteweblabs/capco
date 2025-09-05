@@ -1,6 +1,6 @@
 import { supabase } from "./supabase";
-import { getApiBaseUrl } from "./url-utils";
 import { supabaseAdmin } from "./supabase-admin";
+import { getApiBaseUrl } from "./url-utils";
 
 // Function to send status change notifications
 export async function sendStatusChangeNotifications(
@@ -10,11 +10,11 @@ export async function sendStatusChangeNotifications(
   context: string = "API",
   request?: Request
 ) {
-  console.log(`🔔 [${context}] sendStatusChangeNotifications called with:`, {
-    projectId,
-    newStatus,
-    hasProjectData: !!projectData,
-  });
+  // console.log(`🔔 [${context}] sendStatusChangeNotifications called with:`, {
+  //   projectId,
+  //   newStatus,
+  //   hasProjectData: !!projectData,
+  // });
 
   try {
     if (!supabase || !supabaseAdmin) {
@@ -23,7 +23,7 @@ export async function sendStatusChangeNotifications(
     }
 
     // Get status configuration from project_statuses table
-    console.log(`🔔 [${context}] Fetching status configuration for status:`, newStatus);
+    // console.log(`🔔 [${context}] Fetching status configuration for status:`, newStatus);
     const { data: statusConfig, error: statusError } = await supabase
       .from("project_statuses")
       .select(
@@ -32,18 +32,18 @@ export async function sendStatusChangeNotifications(
       .eq("status_code", newStatus)
       .single();
 
-    console.log(`🔔 [${context}] Status configuration result:`, {
-      hasData: !!statusConfig,
-      error: statusError,
-      statusCode: newStatus,
-      config: statusConfig
-        ? {
-            notify: statusConfig.notify,
-            hasEmailContent: !!statusConfig.email_content,
-            hasButtonText: !!statusConfig.button_text,
-          }
-        : null,
-    });
+    // console.log(`🔔 [${context}] Status configuration result:`, {
+    //   hasData: !!statusConfig,
+    //   error: statusError,
+    //   statusCode: newStatus,
+    //   config: statusConfig
+    //     ? {
+    //         notify: statusConfig.notify,
+    //         hasEmailContent: !!statusConfig.email_content,
+    //         hasButtonText: !!statusConfig.button_text,
+    //       }
+    //     : null,
+    // });
 
     if (statusError || !statusConfig) {
       console.log(`🔔 [${context}] No status configuration found for status ${newStatus}`);
@@ -51,7 +51,7 @@ export async function sendStatusChangeNotifications(
     }
 
     // Get project details
-    console.log(`🔔 [${context}] Fetching project details for ID:`, projectId);
+    // console.log(`🔔 [${context}] Fetching project details for ID:`, projectId);
     const { data: projectDetails, error: projectDetailsError } = await supabase
       .from("projects")
       .select("title, address, author_id, assigned_to_id")
@@ -205,11 +205,14 @@ async function sendEmailNotifications(
   usersToNotify: any[],
   projectDetails: any,
   statusConfig: any,
-  context: string
+  context: string,
+  request?: Request
 ) {
-  console.log(`🔔 [${context}] Sending email notifications to ${usersToNotify.length} users`);
+  // console.log(`🔔 [${context}] Sending email notifications to ${usersToNotify.length} users`);
 
-  const baseUrl = request ? getApiBaseUrl(request) : (import.meta.env.SITE_URL || "http://localhost:4321");
+  const baseUrl = request
+    ? getApiBaseUrl(request)
+    : import.meta.env.SITE_URL || "http://localhost:4321";
 
   try {
     const emailResponse = await fetch(`${baseUrl}/api/email-delivery`, {

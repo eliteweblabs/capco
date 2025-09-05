@@ -50,8 +50,8 @@ import Tooltip from "./Tooltip.astro";
   </div>
 </div> -->
 <div id="toggle-theme" class="text-black dark:text-white">
-  <BoxIcon name="sun" id="moon-icon" class="hidden size-4 dark:block" />
-  <BoxIcon name="moon" id="sun-icon" class="block size-4 dark:hidden" />
+  <BoxIcon name="sun" id="moon-icon" class="bx-md hidden dark:block" />
+  <BoxIcon name="moon" id="sun-icon" class="bx-md block dark:hidden" />
 </div>
 
 <!-- Theme initialization script - runs immediately to prevent flash -->
@@ -61,19 +61,19 @@ import Tooltip from "./Tooltip.astro";
     const storageKey = "theme";
     const htmlElement = document.documentElement;
 
-    console.log("🎨 [THEME] Theme manager initializing...");
+    // console.log("🎨 [THEME] Theme manager initializing...");
 
     function applyTheme(theme: string) {
       if (theme === "dark") {
         htmlElement.classList.remove("light");
         htmlElement.classList.add("dark");
         localStorage.setItem(storageKey, "dark");
-        console.log("🎨 [THEME] Applied dark theme");
+        // console.log("🎨 [THEME] Applied dark theme");
       } else {
         htmlElement.classList.remove("dark");
         htmlElement.classList.add("light");
         localStorage.setItem(storageKey, "light");
-        console.log("🎨 [THEME] Applied light theme");
+        // console.log("🎨 [THEME] Applied light theme");
       }
     }
 
@@ -87,20 +87,20 @@ import Tooltip from "./Tooltip.astro";
 
       if (savedTheme) {
         currentTheme = savedTheme;
-        console.log("🎨 [THEME] Using saved theme:", currentTheme);
+        // console.log("🎨 [THEME] Using saved theme:", currentTheme);
       } else {
         currentTheme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
-        console.log("🎨 [THEME] Using system preference:", currentTheme);
+        // console.log("🎨 [THEME] Using system preference:", currentTheme);
       }
 
       applyTheme(currentTheme);
-      console.log("🎨 [THEME] Initial theme applied:", currentTheme);
+      // console.log("🎨 [THEME] Initial theme applied:", currentTheme);
     }
 
     function toggle() {
       const newTheme = getCurrentTheme() === "dark" ? "light" : "dark";
       applyTheme(newTheme);
-      console.log("🎨 [THEME] Theme toggled to:", newTheme);
+      // console.log("🎨 [THEME] Theme toggled to:", newTheme);
     }
 
     // Initialize immediately
@@ -118,14 +118,14 @@ import Tooltip from "./Tooltip.astro";
   document.addEventListener("DOMContentLoaded", function () {
     const themeToggle = document.getElementById("toggle-theme");
 
-    console.log("🎨 [THEME] Setting up theme toggle button");
+    // console.log("🎨 [THEME] Setting up theme toggle button");
 
     // Theme toggle button click handler
     if (themeToggle) {
       themeToggle.addEventListener("click", () => {
         window.ThemeManager.toggle();
       });
-      console.log("🎨 [THEME] Theme toggle button connected");
+      // console.log("🎨 [THEME] Theme toggle button connected");
     } else {
       console.warn("🎨 [THEME] Theme toggle button not found");
     }
@@ -136,10 +136,10 @@ import Tooltip from "./Tooltip.astro";
       // Only apply system change if user hasn't set a manual preference
       if (!currentSavedTheme) {
         window.ThemeManager.applyTheme(event.matches ? "dark" : "light");
-        console.log(
-          "🎨 [THEME] Applied system preference change:",
-          event.matches ? "dark" : "light"
-        );
+        // console.log(
+        //   "🎨 [THEME] Applied system preference change:",
+        //   event.matches ? "dark" : "light"
+        // );
       }
     });
   });

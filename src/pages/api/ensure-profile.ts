@@ -36,11 +36,12 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     // Check if profile exists
     const { data: existingProfile, error: checkError } = await supabase
       .from("profiles")
-      .select("id, name, email, role")
+      .select("id, company_name, email, role")
       .eq("id", user.id)
       .single();
 
-    if (checkError && checkError.code !== 'PGRST116') { // PGRST116 = no rows returned
+    if (checkError && checkError.code !== "PGRST116") {
+      // PGRST116 = no rows returned
       console.error("Error checking profile:", checkError);
       return new Response(
         JSON.stringify({
@@ -71,16 +72,16 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
     // Create profile if it doesn't exist
     console.log("🔔 [PROFILE] Creating profile for user:", user.id);
-    
+
     const { data: newProfile, error: createError } = await supabase
       .from("profiles")
       .insert({
         id: user.id,
-        name: user.user_metadata?.full_name || user.email?.split('@')[0] || 'Unknown User',
+        company_name: user.user_metadata?.full_name || user.email?.split("@")[0] || "Unknown User",
         email: user.email,
-        role: 'Admin', // Default to Admin for now
+        role: "Admin", // Default to Admin for now
       })
-      .select("id, name, email, role")
+      .select("id, company_name, email, role")
       .single();
 
     if (createError) {

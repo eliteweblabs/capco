@@ -61,11 +61,12 @@ export const GET: APIRoute = async ({ url, cookies }) => {
       });
     }
 
-    // Default: get popular items
-    const { data: items, error } = await supabase
-      .from("invoice_line_items")
-      .select("*")
-      .limit(limit);
+    // Default: get popular items from catalog
+    const { data: items, error } = await supabase.rpc("search_catalog_items", {
+      p_search_term: null,
+      p_category: null,
+      p_limit: limit,
+    });
 
     if (error) {
       console.error("Error fetching popular catalog items:", error);

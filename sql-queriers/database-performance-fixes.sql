@@ -116,7 +116,7 @@ STABLE
 AS $$
   SELECT 
     p.id,
-    COALESCE(p.company_name, p.name, 'Unknown User') as display_name,
+    COALESCE(p.company_name, CONCAT(p.first_name, ' ', p.last_name), 'Unknown User') as display_name,
     p.company_name,
     p.role
   FROM profiles p

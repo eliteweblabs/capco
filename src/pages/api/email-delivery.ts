@@ -58,6 +58,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     const isStatusUpdateEmail = emailType === "update_status";
     const isClientCommentEmail = emailType === "client_comment";
     const isEmergencySmsEmail = emailType === "emergency_sms";
+    const isTestEmail = emailType === "test";
 
     console.log("📧 [EMAIL-DELIVERY] Email type:", emailType);
 
@@ -304,6 +305,9 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     } else if (isRegistrationEmail) {
       // Use project details from request body for registration emails
       projectDetails = body.projectDetails || { title: projectId, address: "Registration" };
+    } else if (isTestEmail) {
+      // Use project details from request body for test emails
+      projectDetails = body.projectDetails || { title: "Test Project", address: "Test Address" };
     } else {
       // For other email types (client comments, emergency SMS), no project details needed
       console.log("📧 [EMAIL-DELIVERY] No project details needed for this email type:", emailType);
@@ -433,6 +437,21 @@ export const POST: APIRoute = async ({ request, cookies }) => {
             "You have been assigned to a new project. Please review the project details and take appropriate action.";
           buttonText = "View Project";
           buttonLink = `${getApiBaseUrl(request)}/project/${projectId}`;
+        } else if (isTestEmail) {
+          // Test Email Configuration
+          emailSubject = custom_subject || "Test Email from CAPCo Fire Protection";
+          emailContent =
+            email_content ||
+            "This is a test email to verify the email system is working correctly.";
+
+          // Button logic for test emails
+          const hasTestButton = body.button_text && body.button_text.trim() !== "";
+          if (hasTestButton) {
+            buttonText = body.button_text.trim();
+            buttonLink = body.button_link || "#";
+          } else {
+            shouldShowButton = false;
+          }
         } else if (isClientCommentEmail) {
           // Client Comment Email Configuration
           emailSubject =
@@ -579,12 +598,13 @@ export const POST: APIRoute = async ({ request, cookies }) => {
           subject: emailSubject,
           html: emailHtml,
           text: personalizedContent,
-          // Add proper content type and custom headers
+          // Add proper content type and custom headers (only if values exist)
           headers: {
             "Content-Type": "text/html; charset=UTF-8",
-            "X-Project-ID": projectId,
-            "X-Project-Status": newStatus.toString(),
-            "X-User-Email": user.email,
+            // ...(projectId && { "X-Project-ID": projectId }),
+            // ...(newStatus !== null &&
+            //   newStatus !== undefined && { "X-Project-Status": newStatus.toString() }),
+            // ...(user.email && { "X-User-Email": user.email }),
           },
         };
 

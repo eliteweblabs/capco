@@ -21,7 +21,6 @@ if (role !== "Admin") {
 <App
   title="Email Test - CAPCo Fire Protection"
   description="Test email sending functionality using Resend."
-  user={user}
 >
   <SectionContainer class="px-6 py-16">
     <div class="mx-auto max-w-2xl">
@@ -285,8 +284,6 @@ if (role !== "Admin") {
       showInfo: typeof window.showInfo,
     });
 
-    
-
     const emailTestForm = document.getElementById("email-test-form") as HTMLFormElement;
     const sendEmailBtn = document.getElementById("send-email-btn") as HTMLButtonElement;
     const statusEmailTestForm = document.getElementById(
@@ -312,13 +309,41 @@ if (role !== "Admin") {
       sendEmailBtn.textContent = "Sending...";
 
       try {
-        const response = await fetch("/api/test-email", {
+        // Call the email-delivery API directly
+        const response = await fetch("/api/email-delivery", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
           },
           credentials: "include", // Include cookies
-          body: JSON.stringify({ to, subject, body, buttonText }),
+          body: JSON.stringify({
+            projectId: "test-project",
+            emailType: "test", // Add test email type
+            usersToNotify: [
+              {
+                email: to,
+                first_name: "Test",
+                last_name: "User",
+                company_name: "Test Company",
+              },
+            ],
+            projectDetails: {
+              title: "Test Project",
+              address: "Test Address",
+              est_time: "2-3 business days",
+              profiles: [
+                {
+                  email: to,
+                  first_name: "Test",
+                  last_name: "User",
+                  company_name: "Test Company",
+                },
+              ],
+            },
+            email_content: body,
+            button_text: buttonText || "Access Your Dashboard",
+            custom_subject: subject, // Use the subject from the form
+          }),
         });
 
         const result = await response.json();
@@ -354,7 +379,7 @@ if (role !== "Admin") {
               console.log("🔧 [DEBUG] Calling window.showSuccess (fallback)");
               window.showSuccess(
                 "Email Sent Successfully",
-                `Test email sent to ${to}. Email ID: ${result.emailId}`,
+                `Test email sent to ${to}. Email Type: test`,
                 8000
               );
             } else {

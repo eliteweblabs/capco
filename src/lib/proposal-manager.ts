@@ -68,17 +68,123 @@ export class ProposalManager {
     // Update button states based on project status
     this.updateProposalButtonStates(this.project.status);
 
+    // Save the proposal as an invoice in the database
+    this.saveProposalAsInvoice();
+
     console.log("Proposal generated successfully");
+  }
+
+  /**
+   * Save the proposal as an invoice in the database
+   */
+  private async saveProposalAsInvoice(): Promise<void> {
+    try {
+      console.log("Saving proposal as invoice for project:", this.projectId);
+
+      // Get the proposal data
+      const proposalData = this.getProposalData();
+
+      // Create invoice from proposal data
+      const response = await fetch("/api/create-invoice", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          projectId: this.projectId,
+          projectData: proposalData,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        console.log("Proposal saved as invoice successfully:", data);
+      } else {
+        console.error("Failed to save proposal as invoice:", data.error);
+        if ((window as any).showError) {
+          (window as any).showError("Error", data.error || "Failed to save proposal");
+        }
+      }
+    } catch (error) {
+      console.error("Error saving proposal as invoice:", error);
+      if ((window as any).showError) {
+        (window as any).showError("Error", "Failed to save proposal");
+      }
+    }
+  }
+
+  /**
+   * Get the current proposal data for saving
+   */
+  private getProposalData(): any {
+    // Get proposal title
+    const titleElement = document.getElementById("proposal-title") as HTMLInputElement;
+    const title = titleElement?.value || `Proposal for ${this.project.address}`;
+
+    // Get proposal date
+    const dateElement = document.getElementById("proposal-date") as HTMLInputElement;
+    const date = dateElement?.value || new Date().toISOString().split("T")[0];
+
+    // Get proposal subject
+    const subjectElement = document.getElementById("proposal-subject") as HTMLInputElement;
+    const subject = subjectElement?.value || "Fire Protection System Proposal";
+
+    // Get line items
+    const lineItems = this.getLineItemsData();
+
+    // Get notes
+    const notesElement = document.getElementById("proposal-notes");
+    const notes = notesElement?.textContent || this.project.notes || this.project.description || "";
+
+    return {
+      title,
+      date,
+      subject,
+      status: "proposal", // Set status to "proposal" for proposal invoices
+      line_items: lineItems,
+      notes,
+    };
+  }
+
+  /**
+   * Get line items data from the proposal table
+   */
+  private getLineItemsData(): any[] {
+    const tbody = document.getElementById("proposal-line-items");
+    if (!tbody) return [];
+
+    const rows = tbody.querySelectorAll("tr");
+    const lineItems: any[] = [];
+
+    rows.forEach((row) => {
+      const cells = row.querySelectorAll("td");
+      if (cells.length >= 3) {
+        const description = cells[0]?.textContent?.trim() || "";
+        const quantity = cells[1]?.textContent?.trim() || "1";
+        const price = cells[2]?.textContent?.trim() || "0";
+
+        if (description) {
+          lineItems.push({
+            description,
+            quantity: parseFloat(quantity) || 1,
+            price: parseFloat(price.replace(/[$,]/g, "")) || 0,
+          });
+        }
+      }
+    });
+
+    return lineItems;
   }
 
   /**
    * Load existing invoice data into the proposal
    */
-  loadExistingInvoice(invoice: any): void {
-    console.log("Loading existing invoice into proposal:", invoice);
+  async loadExistingInvoice(invoice: any): Promise<void> {
+    console.log("🔄 [PROPOSAL-MANAGER] Loading existing invoice into proposal:", invoice);
 
     if (!invoice) {
-      console.error("No invoice data provided");
+      console.error("❌ [PROPOSAL-MANAGER] No invoice data provided");
       return;
     }
 
@@ -86,24 +192,48 @@ export class ProposalManager {
     const placeholder = document.getElementById("proposal-placeholder");
     const content = document.getElementById("proposal-content");
 
-    if (placeholder) placeholder.classList.add("hidden");
-    if (content) content.classList.remove("hidden");
+    console.log("🔄 [PROPOSAL-MANAGER] DOM elements:", {
+      placeholder: !!placeholder,
+      content: !!content,
+    });
+
+    if (placeholder) {
+      placeholder.classList.add("hidden");
+      console.log("✅ [PROPOSAL-MANAGER] Hidden placeholder");
+    }
+    if (content) {
+      content.classList.remove("hidden");
+      console.log("✅ [PROPOSAL-MANAGER] Showed content");
+    }
+
+    console.log("🔄 [PROPOSAL-MANAGER] Starting to populate proposal with invoice data");
 
     // Populate proposal header with invoice data
     this.populateHeaderFromInvoice(invoice);
+    console.log("✅ [PROPOSAL-MANAGER] Header populated");
 
     // Populate project and client information
     this.populateProjectInfo();
     this.populateClientInfo();
+    console.log("✅ [PROPOSAL-MANAGER] Project and client info populated");
 
     // Populate line items from invoice data
-    this.populateLineItemsFromInvoice(invoice);
+    await this.populateLineItemsFromInvoice(invoice);
+    console.log("✅ [PROPOSAL-MANAGER] Line items populated");
 
     // Populate notes section
     this.populateNotes();
+    console.log("✅ [PROPOSAL-MANAGER] Notes populated");
+
+    console.log("🎉 [PROPOSAL-MANAGER] Proposal loading complete!");
 
     // Update button states based on project status
     this.updateProposalButtonStates(this.project.status);
+
+    // Hide preloader if it's still showing
+    if ((window as any).hidePreloader) {
+      (window as any).hidePreloader();
+    }
 
     console.log("Existing invoice loaded successfully");
   }
@@ -526,9 +656,50 @@ export class ProposalManager {
     }, 100);
   }
 
-  private populateLineItemsFromInvoice(invoice: any): void {
+  private async populateLineItemsFromInvoice(invoice: any): Promise<void> {
     const tbody = document.getElementById("proposal-line-items");
-    if (!tbody || !invoice.line_items) return;
+    if (!tbody) return;
+
+    // Get line items from the invoice_line_items relationship
+    let lineItems = invoice.invoice_line_items || [];
+    console.log("🔄 [PROPOSAL-MANAGER] Populating line items:", lineItems);
+    console.log("🔄 [PROPOSAL-MANAGER] Invoice data:", invoice);
+    console.log("🔄 [PROPOSAL-MANAGER] Invoice line_items property:", invoice.invoice_line_items);
+    console.log("🔄 [PROPOSAL-MANAGER] Invoice keys:", Object.keys(invoice));
+    console.log(
+      "🔄 [PROPOSAL-MANAGER] Invoice line_items type:",
+      typeof invoice.invoice_line_items
+    );
+    console.log(
+      "🔄 [PROPOSAL-MANAGER] Invoice line_items length:",
+      invoice.invoice_line_items?.length
+    );
+
+    // If no line items from relationship, try direct query
+    if (lineItems.length === 0 && invoice.id) {
+      console.log(
+        "🔄 [PROPOSAL-MANAGER] No line items from relationship, trying direct query for invoice ID:",
+        invoice.id
+      );
+      try {
+        const response = await fetch(`/api/get-invoice-line-items?invoiceId=${invoice.id}`, {
+          credentials: "include",
+        });
+        if (response.ok) {
+          const data = await response.json();
+          lineItems = data.lineItems || [];
+          console.log("🔄 [PROPOSAL-MANAGER] Direct query result:", lineItems);
+        }
+      } catch (error) {
+        console.error("❌ [PROPOSAL-MANAGER] Error fetching line items directly:", error);
+      }
+    }
+
+    if (lineItems.length === 0) {
+      console.log("❌ [PROPOSAL-MANAGER] No line items found in invoice");
+      console.log("❌ [PROPOSAL-MANAGER] Invoice structure:", JSON.stringify(invoice, null, 2));
+      return;
+    }
 
     // Clear existing content
     tbody.innerHTML = "";
@@ -537,10 +708,7 @@ export class ProposalManager {
     const fragment = document.createDocumentFragment();
     let total = 0;
 
-    // Parse line items from invoice
-    const lineItems =
-      typeof invoice.line_items === "string" ? JSON.parse(invoice.line_items) : invoice.line_items;
-
+    // Use line items from the invoice_line_items relationship
     lineItems.forEach((item: any) => {
       const row = document.createElement("tr");
       row.className = "hover:bg-gray-50 dark:hover:bg-gray-700";
@@ -682,77 +850,77 @@ export class ProposalManager {
     const lineItems: LineItem[] = [];
 
     // Base fire protection design service
-    lineItems.push({
-      description: "Fire Protection System Design",
-      details: "Comprehensive fire sprinkler and alarm system design",
-      quantity: 1,
-      unitPrice: 2500.0,
-    });
+    // lineItems.push({
+    //   description: "Fire Protection System Design",
+    //   details: "Comprehensive fire sprinkler and alarm system design",
+    //   quantity: 1,
+    //   unitPrice: 2500.0,
+    // });
 
-    // Square footage based pricing
-    if (project.sq_ft && project.sq_ft > 0) {
-      const sqFtRate = 0.75; // $0.75 per sq ft
-      lineItems.push({
-        description: "Design Services - Square Footage",
-        details: `${project.sq_ft.toLocaleString()} sq ft @ $${sqFtRate}/sq ft`,
-        quantity: project.sq_ft,
-        unitPrice: sqFtRate,
-      });
-    }
+    // // Square footage based pricing
+    // if (project.sq_ft && project.sq_ft > 0) {
+    //   const sqFtRate = 0.75; // $0.75 per sq ft
+    //   lineItems.push({
+    //     description: "Design Services - Square Footage",
+    //     details: `${project.sq_ft.toLocaleString()} sq ft @ $${sqFtRate}/sq ft`,
+    //     quantity: project.sq_ft,
+    //     unitPrice: sqFtRate,
+    //   });
+    // }
 
-    // Construction type additions
-    if (project.new_construction) {
-      lineItems.push({
-        description: "New Construction Services",
-        details: "Additional design requirements for new construction",
-        quantity: 1,
-        unitPrice: 1500.0,
-      });
-    }
+    // // Construction type additions
+    // if (project.new_construction) {
+    //   lineItems.push({
+    //     description: "New Construction Services",
+    //     details: "Additional design requirements for new construction",
+    //     quantity: 1,
+    //     unitPrice: 1500.0,
+    //   });
+    // }
 
-    if (project.renovation) {
-      lineItems.push({
-        description: "Renovation Services",
-        details: "Existing system assessment and modification design",
-        quantity: 1,
-        unitPrice: 1200.0,
-      });
-    }
+    // if (project.renovation) {
+    //   lineItems.push({
+    //     description: "Renovation Services",
+    //     details: "Existing system assessment and modification design",
+    //     quantity: 1,
+    //     unitPrice: 1200.0,
+    //   });
+    // }
 
-    if (project.addition) {
-      lineItems.push({
-        description: "Addition Services",
-        details: "Integration with existing fire protection systems",
-        quantity: 1,
-        unitPrice: 1000.0,
-      });
-    }
+    // if (project.addition) {
+    //   lineItems.push({
+    //     description: "Addition Services",
+    //     details: "Integration with existing fire protection systems",
+    //     quantity: 1,
+    //     unitPrice: 1000.0,
+    //   });
+    // }
 
-    // Hydraulic calculations
-    lineItems.push({
-      description: "Hydraulic Calculations",
-      details: "Complete hydraulic analysis and calculations",
-      quantity: 1,
-      unitPrice: 800.0,
-    });
+    // // Hydraulic calculations
+    // lineItems.push({
+    //   description: "Hydraulic Calculations",
+    //   details: "Complete hydraulic analysis and calculations",
+    //   quantity: 1,
+    //   unitPrice: 800.0,
+    // });
 
-    // Project narrative and documentation
-    lineItems.push({
-      description: "Project Documentation",
-      details: "Project narrative, NFPA 241 plan, and technical specifications",
-      quantity: 1,
-      unitPrice: 500.0,
-    });
+    // // Project narrative and documentation
+    // lineItems.push({
+    //   description: "Project Documentation",
+    //   details: "Project narrative, NFPA 241 plan, and technical specifications",
+    //   quantity: 1,
+    //   unitPrice: 500.0,
+    // });
 
-    // Additional services based on project complexity
-    if (project.description && project.description.length > 200) {
-      lineItems.push({
-        description: "Complex Project Management",
-        details: "Additional coordination for complex project requirements",
-        quantity: 1,
-        unitPrice: 750.0,
-      });
-    }
+    // // Additional services based on project complexity
+    // if (project.description && project.description.length > 200) {
+    //   lineItems.push({
+    //     description: "Complex Project Management",
+    //     details: "Additional coordination for complex project requirements",
+    //     quantity: 1,
+    //     unitPrice: 750.0,
+    //   });
+    // }
 
     return lineItems;
   }
@@ -868,9 +1036,61 @@ export class ProposalManager {
     if (totalElement) totalElement.textContent = total.toFixed(2);
     if (totalFooterElement) totalFooterElement.textContent = total.toFixed(2);
 
+    // Save changes to database
+    this.saveLineItemsToDatabase();
+
     // Show success message
     if ((window as any).showSuccess) {
       (window as any).showSuccess("Proposal Updated", "Your changes have been saved successfully!");
+    }
+  }
+
+  /**
+   * Save line items to the database
+   */
+  private async saveLineItemsToDatabase(): Promise<void> {
+    try {
+      console.log("💾 [PROPOSAL-MANAGER] Saving line items to database");
+
+      // Get the current invoice ID from the loaded invoice
+      const tbody = document.getElementById("proposal-line-items");
+      if (!tbody) {
+        console.error("❌ [PROPOSAL-MANAGER] No line items table found");
+        return;
+      }
+
+      // Get line items data
+      const lineItems = this.getLineItemsData();
+      console.log("💾 [PROPOSAL-MANAGER] Line items to save:", lineItems);
+
+      // We need to get the invoice ID - let's get it from the existing invoice
+      // For now, we'll need to make an API call to update the line items
+      const response = await fetch("/api/update-invoice-line-items", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          projectId: this.projectId,
+          lineItems: lineItems,
+        }),
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        console.log("✅ [PROPOSAL-MANAGER] Line items saved successfully");
+      } else {
+        console.error("❌ [PROPOSAL-MANAGER] Failed to save line items:", result.error);
+        if ((window as any).showError) {
+          (window as any).showError("Save Failed", result.error || "Failed to save line items");
+        }
+      }
+    } catch (error) {
+      console.error("❌ [PROPOSAL-MANAGER] Error saving line items:", error);
+      if ((window as any).showError) {
+        (window as any).showError("Save Failed", "Failed to save line items");
+      }
     }
   }
 

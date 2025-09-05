@@ -101,27 +101,6 @@ export class GlobalServices {
     };
   }
 
-  // Notification System - DEPRECATED: Use centralized notifications instead
-  // This is kept for backward compatibility but should not be used
-  showNotification(options: NotificationOptions) {
-    console.warn(
-      "🌐 [GLOBAL] DEPRECATED: showNotification called. Use centralized notifications instead."
-    );
-    // Forward to centralized system if available
-    if (typeof window !== "undefined" && (window as any).showNotification) {
-      (window as any).showNotification(options);
-    } else {
-      console.log("🌐 [GLOBAL] Fallback notification:", options);
-    }
-  }
-
-  hideNotification(id?: string) {
-    console.warn(
-      "🌐 [GLOBAL] DEPRECATED: hideNotification called. Use centralized notifications instead."
-    );
-    // No-op for now
-  }
-
   // User Management - Used by project-service.ts
   async getCurrentUser() {
     try {
@@ -201,8 +180,7 @@ export class GlobalServices {
 export const globalServices = GlobalServices.getInstance();
 
 // Export convenience functions for direct use
-export const showNotification = (options: NotificationOptions) =>
-  globalServices.showNotification(options);
+// showNotification removed - use centralized notifications from App.astro
 
 export const emit = globalServices.emit.bind(globalServices);
 export const on = globalServices.on.bind(globalServices);

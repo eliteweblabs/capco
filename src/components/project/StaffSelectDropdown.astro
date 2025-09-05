@@ -36,14 +36,14 @@ const {
 } = Astro.props;
 
 // Debug logging for StaffSelectDropdown (after props are destructured)
-console.log("🧑‍💼 [STAFF-SELECT] StaffSelectDropdown props:", {
-  role,
-  canAssignStaff,
-  projectId,
-  variant,
-  value,
-  address,
-});
+// console.log("🧑‍💼 [STAFF-SELECT] StaffSelectDropdown props:", {
+//   role,
+//   canAssignStaff,
+//   projectId,
+//   variant,
+//   value,
+//   address,
+// });
 ---
 
 {canAssignStaff ? (
@@ -152,7 +152,7 @@ console.log("🧑‍💼 [STAFF-SELECT] StaffSelectDropdown props:", {
 
     // Function to handle staff selection
     function selectStaff(staffId, staffName) {
-      console.log("🧑‍💼 [STAFF-SELECT] Staff selected:", { staffId, staffName });
+      // console.log("🧑‍💼 [STAFF-SELECT] Staff selected:", { staffId, staffName });
       
       // Update button text
       selectedTextElement.textContent = staffName;
@@ -198,12 +198,12 @@ console.log("🧑‍💼 [STAFF-SELECT] StaffSelectDropdown props:", {
     // Function to update staff assignment and send notifications
     async function updateStaffAssignment(staffId, staffName) {
       try {
-        console.log("🧑‍💼 [STAFF-SELECT] Updating staff assignment:", { staffId, staffName, projectId });
+        // console.log("🧑‍💼 [STAFF-SELECT] Updating staff assignment:", { staffId, staffName, projectId });
 
-        // Update project assignment
-        console.log("🧑‍💼 [STAFF-SELECT] Making API call to update project assignment...");
-        console.log("🧑‍💼 [STAFF-SELECT] API URL:", `/api/update-project/${projectId}`);
-        console.log("🧑‍💼 [STAFF-SELECT] Request payload:", { assigned_to_id: staffId || null });
+        // // Update project assignment
+        // console.log("🧑‍💼 [STAFF-SELECT] Making API call to update project assignment...");
+        // console.log("🧑‍💼 [STAFF-SELECT] API URL:", `/api/update-project/${projectId}`);
+        // console.log("🧑‍💼 [STAFF-SELECT] Request payload:", { assigned_to_id: staffId || null });
         
         const response = await fetch(`/api/update-project/${projectId}`, {
           method: "PUT",
@@ -215,7 +215,7 @@ console.log("🧑‍💼 [STAFF-SELECT] StaffSelectDropdown props:", {
           }),
         });
         
-        console.log("🧑‍💼 [STAFF-SELECT] API response received:", response.status, response.statusText);
+        // console.log("🧑‍💼 [STAFF-SELECT] API response received:", response.status, response.statusText);
 
         if (!response.ok) {
           const errorData = await response.json();
@@ -223,7 +223,7 @@ console.log("🧑‍💼 [STAFF-SELECT] StaffSelectDropdown props:", {
         }
 
         const result = await response.json();
-        console.log("🧑‍💼 [STAFF-SELECT] Assignment updated successfully:", result);
+        // console.log("🧑‍💼 [STAFF-SELECT] Assignment updated successfully:", result);
 
         // Show success toast immediately (don't wait for email)
         if (typeof window !== "undefined" && window.showSuccess) {
@@ -237,10 +237,10 @@ console.log("🧑‍💼 [STAFF-SELECT] StaffSelectDropdown props:", {
         }
 
         // Send staff assignment email notification in the background (only for assignments, not unassignments)
-        console.log("🧑‍💼 [STAFF-SELECT] Checking if should send email:", { staffId, shouldSend: !!staffId });
+        // console.log("🧑‍💼 [STAFF-SELECT] Checking if should send email:", { staffId, shouldSend: !!staffId });
         if (staffId) {
           try {
-            console.log("🧑‍💼 [STAFF-SELECT] Sending assignment notification email...");
+            // console.log("🧑‍💼 [STAFF-SELECT] Sending assignment notification email...");
             
             // Prepare users to notify - notify admins, staff, and the assigned staff member
             const usersToNotify = [
@@ -249,14 +249,14 @@ console.log("🧑‍💼 [STAFF-SELECT] StaffSelectDropdown props:", {
               { id: staffId }     // Notify the assigned staff member
             ];
 
-            console.log("🧑‍💼 [STAFF-SELECT] Email request payload:", {
-              projectId: projectId,
-              emailType: "staff_assignment",
-              usersToNotify: usersToNotify,
-              newStatus: null,
-              assigned_to_id: staffId,
-              assigned_to_name: staffName
-            });
+            // console.log("🧑‍💼 [STAFF-SELECT] Email request payload:", {
+            //   projectId: projectId,
+            //   emailType: "staff_assignment",
+            //   usersToNotify: usersToNotify,
+            //   newStatus: null,
+            //   assigned_to_id: staffId,
+            //   assigned_to_name: staffName
+            // });
 
             const emailResponse = await fetch("/api/email-delivery", {
               method: "POST",
@@ -275,11 +275,11 @@ console.log("🧑‍💼 [STAFF-SELECT] StaffSelectDropdown props:", {
               }),
             });
 
-            console.log("🧑‍💼 [STAFF-SELECT] Email API response status:", emailResponse.status);
+            // console.log("🧑‍💼 [STAFF-SELECT] Email API response status:", emailResponse.status);
 
             if (emailResponse.ok) {
               const emailResult = await emailResponse.json();
-              console.log("🧑‍💼 [STAFF-SELECT] Email notification sent successfully:", emailResult);
+              // console.log("🧑‍💼 [STAFF-SELECT] Email notification sent successfully:", emailResult);
             } else {
               const errorText = await emailResponse.text();
               console.error("🧑‍💼 [STAFF-SELECT] Email API failed:", {
@@ -313,20 +313,20 @@ console.log("🧑‍💼 [STAFF-SELECT] StaffSelectDropdown props:", {
     if (errorElement) errorElement.classList.add("hidden");
 
     try {
-      console.log("🧑‍💼 [STAFF-SELECT] Fetching staff members...");
+      // console.log("🧑‍💼 [STAFF-SELECT] Fetching staff members...");
 
       // Fetch staff members from API
       const response = await fetch("/api/get-team-users");
       const result = await response.json();
 
       if (result.success && result.staffUsers) {
-        console.log(`🧑‍💼 [STAFF-SELECT] Loaded ${result.staffUsers.length} staff members`);
+        // console.log(`🧑‍💼 [STAFF-SELECT] Loaded ${result.staffUsers.length} staff members`);
 
         // Store current value to preserve it
         const currentValue = value; // Use the Astro prop value instead of DOM value
-        console.log("🧑‍💼 [STAFF-SELECT] Initial value:", currentValue);
-        console.log("🧑‍💼 [STAFF-SELECT] Props value:", value);
-        console.log("🧑‍💼 [STAFF-SELECT] Project ID:", projectId);
+        // console.log("🧑‍💼 [STAFF-SELECT] Initial value:", currentValue);
+        // console.log("🧑‍💼 [STAFF-SELECT] Props value:", value);
+        // console.log("🧑‍💼 [STAFF-SELECT] Project ID:", projectId);
 
         // Clear existing options
         optionsContainer.innerHTML = "";
@@ -371,13 +371,13 @@ console.log("🧑‍💼 [STAFF-SELECT] StaffSelectDropdown props:", {
           if (selectedStaff) {
             selectedTextElement.textContent = selectedStaff.company_name;
           }
-          console.log("🧑‍💼 [STAFF-SELECT] Restored value:", currentValue);
+          // console.log("🧑‍💼 [STAFF-SELECT] Restored value:", currentValue);
         } else {
           selectedTextElement.textContent = "Unassigned";
-          console.log("🧑‍💼 [STAFF-SELECT] No value to restore");
+          // console.log("🧑‍💼 [STAFF-SELECT] No value to restore");
         }
 
-        console.log("🧑‍💼 [STAFF-SELECT] Staff options populated successfully");
+        // console.log("🧑‍💼 [STAFF-SELECT] Staff options populated successfully");
       } else {
         console.error("🧑‍💼 [STAFF-SELECT] Failed to load staff:", result.error);
         if (errorElement) {
