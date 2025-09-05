@@ -1,6 +1,5 @@
 ---
 import BoxIcon from "../common/BoxIcon.astro";
-import LineItemSelector from "../form/LineItemSelector.astro";
 import PaymentForm from "./PaymentForm.astro";
 import { supabase } from "../../lib/supabase";
 import DigitalSignature from "./DigitalSignature.astro";
@@ -226,8 +225,63 @@ const hasExistingInvoice = !!existingInvoice;
             id="proposal-line-items"
             class="divide-y divide-gray-200 bg-white dark:divide-gray-600 dark:bg-gray-800"
           >
-            <!-- Line items will be inserted here dynamically -->
-            <!-- Line items will be loaded dynamically via JavaScript -->
+            <!-- Default empty line item row -->
+            <tr class="hover:bg-gray-50 dark:hover:bg-gray-700">
+              <td class="px-4 py-3 text-sm text-gray-900 dark:text-white">
+                <div class="relative">
+                  <input
+                    type="text"
+                    id="line-item-description"
+                    class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                    placeholder="Enter line item description..."
+                    autocomplete="off"
+                  />
+                  <!-- Autocomplete dropdown -->
+                  <div id="autocomplete-dropdown" class="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg dark:bg-gray-700 dark:border-gray-600 hidden">
+                    <!-- Suggestions will be populated here -->
+                  </div>
+                </div>
+                <input
+                  type="text"
+                  id="line-item-details"
+                  class="w-full mt-2 px-3 py-1 text-sm border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                  placeholder="Details (optional)"
+                />
+              </td>
+              <td class="px-4 py-3 text-sm text-right text-gray-900 dark:text-white">
+                <input
+                  type="number"
+                  id="line-item-quantity"
+                  class="w-20 px-2 py-1 text-right border border-gray-300 rounded dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+                  value="1"
+                  min="0"
+                  step="0.01"
+                />
+              </td>
+              <td class="px-4 py-3 text-sm text-right text-gray-900 dark:text-white">
+                <input
+                  type="number"
+                  id="line-item-unit-price"
+                  class="w-24 px-2 py-1 text-right border border-gray-300 rounded dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+                  value="0"
+                  min="0"
+                  step="0.01"
+                />
+              </td>
+              <td class="px-4 py-3 text-sm text-right font-medium text-gray-900 dark:text-white">
+                <span id="line-item-total">$0.00</span>
+              </td>
+              <td class="px-4 py-3 text-center">
+                <button
+                  type="button"
+                  id="add-line-item-btn"
+                  class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800"
+                >
+                  Add
+                </button>
+              </td>
+            </tr>
+            <!-- Additional line items will be loaded dynamically via JavaScript -->
           </tbody>
           <tfoot class="bg-gray-50 dark:bg-gray-700">
             <tr>
@@ -245,11 +299,6 @@ const hasExistingInvoice = !!existingInvoice;
         </table>
       </div>
 
-      <!-- Line Item Selector for Proposals -->
-      <div class="mt-6" id="proposal-line-item-selector-container" style="display: none;">
-        <h3 class="mb-3 text-lg font-semibold text-gray-900 dark:text-white">Add Line Items</h3>
-        <LineItemSelector onItemAdded="onProposalLineItemSelected" showAddToInvoice={false} />
-      </div>
     </div>
 
     <!-- Notes Section -->
@@ -267,14 +316,6 @@ const hasExistingInvoice = !!existingInvoice;
       canManageProposals && projectStatus === 20 && (
         <div class="flex justify-between">
           <div class="flex gap-2">
-            <button
-              id="show-proposal-selector-btn"
-              onclick="toggleProposalSelector()"
-              class="inline-flex items-center rounded-lg bg-green-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-green-700"
-            >
-              <BoxIcon name="plus" class="mr-2 h-4 w-4" />
-              Add Line Items
-            </button>
           </div>
 
           <div class="flex gap-2">
@@ -313,7 +354,7 @@ const hasExistingInvoice = !!existingInvoice;
 <DigitalSignature id="proposal-signature" required={true} width={300} height={280} placeholder="Proposal Signature" />
           
 )}
-          {projectStatus === 20 && currentRole === "Client" && (
+          {projectStatus === 20 && currentRole === "Admin" && (
 
         <div class="mt-8 rounded-lg border border-gray-200 bg-white p-6 dark:border-gray-700 dark:bg-gray-800">
           <div class="mb-6">
@@ -426,6 +467,9 @@ const hasExistingInvoice = !!existingInvoice;
     
     // Calculate initial total
     updateProposalTotal();
+    
+    // Initialize autocomplete functionality
+    initializeAutocomplete();
 
     // Initialize existing line items with event listeners
     function initializeExistingLineItems() {
@@ -480,80 +524,253 @@ const hasExistingInvoice = !!existingInvoice;
       });
     }
 
+    // Autocomplete functionality
+    function initializeAutocomplete() {
+      const descriptionInput = document.getElementById("line-item-description") as HTMLInputElement;
+      const dropdown = document.getElementById("autocomplete-dropdown") as HTMLDivElement;
+      const quantityInput = document.getElementById("line-item-quantity") as HTMLInputElement;
+      const unitPriceInput = document.getElementById("line-item-unit-price") as HTMLInputElement;
+      const totalDisplay = document.getElementById("line-item-total") as HTMLSpanElement;
+      const addButton = document.getElementById("add-line-item-btn") as HTMLButtonElement;
 
-    // Proposal line item selector callback
-    (window as any).onProposalLineItemSelected = function (item: any) {
-      console.log("Proposal line item selected:", item);
-      
-      // Add the item to the proposal line items
-      const lineItemsContainer = document.getElementById("proposal-line-items");
-      if (lineItemsContainer) {
-        const newItem = document.createElement("tr");
-        newItem.className = "proposal-line-item-row";
-        newItem.innerHTML = `
-          <td class="px-6 py-4 text-sm text-gray-900 dark:text-white">
+      if (!descriptionInput || !dropdown || !addButton) return;
+
+      let currentSuggestions: any[] = [];
+      let selectedIndex = -1;
+
+      // Search for catalog items
+      async function searchCatalogItems(query: string) {
+        if (query.length < 2) {
+          dropdown.classList.add("hidden");
+          return;
+        }
+
+        try {
+          const response = await fetch(`/api/line-items-catalog?search=${encodeURIComponent(query)}&limit=5`);
+          if (response.ok) {
+            const items = await response.json();
+            currentSuggestions = items;
+            displaySuggestions(items);
+          }
+        } catch (error) {
+          console.error("Error searching catalog items:", error);
+        }
+      }
+
+      // Display suggestions in dropdown
+      function displaySuggestions(items: any[]) {
+        if (items.length === 0) {
+          dropdown.classList.add("hidden");
+          return;
+        }
+
+        dropdown.innerHTML = "";
+        items.forEach((item, index) => {
+          const suggestion = document.createElement("div");
+          suggestion.className = `px-3 py-2 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 ${
+            index === selectedIndex ? "bg-gray-100 dark:bg-gray-600" : ""
+          }`;
+          suggestion.innerHTML = `
             <div class="font-medium">${item.name}</div>
-            <div class="text-xs text-gray-500">${item.description}</div>
-          </td>
-          <td class="px-6 py-4 text-sm text-gray-900 dark:text-white">
-            <input
-              type="number"
-              class="quantity-input w-20 px-2 py-1 border border-gray-300 rounded text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-              value="1"
-              min="1"
-              data-item-id="${item.id}"
-            />
-          </td>
-          <td class="px-6 py-4 text-sm text-gray-900 dark:text-white">
-            <input
-              type="number"
-              class="unit-price-input w-24 px-2 py-1 border border-gray-300 rounded text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-              value="${item.unit_price}"
-              min="1"
-              step="1"
-              data-item-id="${item.id}"
-            />
-          </td>
-          <td class="px-6 py-4 text-sm text-gray-900 dark:text-white">
-            <span class="total-display font-semibold text-green-600">$${parseFloat(item.unit_price).toFixed(2)}</span>
-          </td>
-          <td class="px-6 py-4 text-sm text-gray-900 dark:text-white">
-            <button
-              type="button"
-              class="remove-item-btn text-red-600 hover:text-red-800"
-              data-item-id="${item.id}"
-            >
-              <i class="bx bx-trash"></i>
-            </button>
-          </td>
-        `;
-        
-        lineItemsContainer.appendChild(newItem);
-        
-        // Add event listeners for the new item
-        const quantityInput = newItem.querySelector(".quantity-input") as HTMLInputElement;
-        const unitPriceInput = newItem.querySelector(".unit-price-input") as HTMLInputElement;
-        const removeBtn = newItem.querySelector(".remove-item-btn") as HTMLButtonElement;
-        
-        const updateTotal = () => {
-          const quantity = parseFloat(quantityInput?.value) || 0;
-          const unitPrice = parseFloat(unitPriceInput?.value) || 0;
-          const total = quantity * unitPrice;
-          const totalDisplay = newItem.querySelector(".total-display") as HTMLSpanElement;
-          if (totalDisplay) totalDisplay.textContent = `$${total.toFixed(2)}`;
-          updateProposalTotal();
-        };
-        
-        quantityInput.addEventListener("input", updateTotal);
-        unitPriceInput.addEventListener("input", updateTotal);
-        removeBtn.addEventListener("click", () => {
-          newItem.remove();
-          updateProposalTotal();
+            <div class="text-sm text-gray-500">${item.description || ""}</div>
+            <div class="text-sm font-semibold text-green-600">$${item.unit_price}</div>
+          `;
+          suggestion.onclick = () => selectSuggestion(item);
+          dropdown.appendChild(suggestion);
         });
-        
+        dropdown.classList.remove("hidden");
+      }
+
+      // Select a suggestion
+      function selectSuggestion(item: any) {
+        descriptionInput.value = item.name;
+        if (item.description) {
+          const detailsInput = document.getElementById("line-item-details") as HTMLInputElement;
+          if (detailsInput) detailsInput.value = item.description;
+        }
+        unitPriceInput.value = item.unit_price.toString();
+        updateLineItemTotal();
+        dropdown.classList.add("hidden");
+        currentSuggestions = [];
+        selectedIndex = -1;
+      }
+
+      // Update line item total
+      function updateLineItemTotal() {
+        const quantity = parseFloat(quantityInput.value) || 0;
+        const unitPrice = parseFloat(unitPriceInput.value) || 0;
+        const total = quantity * unitPrice;
+        totalDisplay.textContent = `$${total.toFixed(2)}`;
+      }
+
+      // Add line item to proposal
+      async function addLineItem() {
+        const description = descriptionInput.value.trim();
+        const details = (document.getElementById("line-item-details") as HTMLInputElement)?.value.trim() || "";
+        const quantity = parseFloat(quantityInput.value) || 0;
+        const unitPrice = parseFloat(unitPriceInput.value) || 0;
+
+        if (!description) {
+          alert("Please enter a description for the line item");
+          return;
+        }
+
+        if (quantity <= 0) {
+          alert("Please enter a valid quantity");
+          return;
+        }
+
+        if (unitPrice < 0) {
+          alert("Please enter a valid unit price");
+          return;
+        }
+
+        // Check if this is a new item (not from catalog)
+        const isNewItem = !currentSuggestions.some(item => item.name === description);
+
+        // If it's a new item, save it to the catalog first
+        if (isNewItem) {
+          try {
+            const response = await fetch("/api/line-items-catalog", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                name: description,
+                description: details,
+                unit_price: unitPrice,
+                category: "General"
+              })
+            });
+
+            if (!response.ok) {
+              console.error("Failed to save new catalog item");
+            }
+          } catch (error) {
+            console.error("Error saving new catalog item:", error);
+          }
+        }
+
+        // Add the line item to the proposal
+        const lineItemsContainer = document.getElementById("proposal-line-items");
+        if (lineItemsContainer) {
+          const newRow = document.createElement("tr");
+          newRow.className = "hover:bg-gray-50 dark:hover:bg-gray-700";
+          newRow.innerHTML = `
+            <td class="px-4 py-3 text-sm text-gray-900 dark:text-white">
+              <div class="font-medium">${description}</div>
+              ${details ? `<div class="text-xs text-gray-500">${details}</div>` : ""}
+            </td>
+            <td class="px-4 py-3 text-sm text-right text-gray-900 dark:text-white">
+              <input
+                type="number"
+                class="quantity-input w-20 px-2 py-1 text-right border border-gray-300 rounded dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+                value="${quantity}"
+                min="0"
+                step="0.01"
+              />
+            </td>
+            <td class="px-4 py-3 text-sm text-right text-gray-900 dark:text-white">
+              <input
+                type="number"
+                class="unit-price-input w-24 px-2 py-1 text-right border border-gray-300 rounded dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+                value="${unitPrice}"
+                min="0"
+                step="0.01"
+              />
+            </td>
+            <td class="px-4 py-3 text-sm text-right font-medium text-gray-900 dark:text-white">
+              <span class="total-display">$${(quantity * unitPrice).toFixed(2)}</span>
+            </td>
+            <td class="px-4 py-3 text-center">
+              <button
+                type="button"
+                class="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300"
+                onclick="this.closest('tr').remove(); updateProposalTotal();"
+              >
+                <i class="bx bx-trash"></i>
+              </button>
+            </td>
+          `;
+
+          // Insert before the last row (the input row)
+          const inputRow = lineItemsContainer.querySelector("tr:last-child");
+          if (inputRow) {
+            lineItemsContainer.insertBefore(newRow, inputRow);
+          } else {
+            lineItemsContainer.appendChild(newRow);
+          }
+
+          // Add event listeners to the new row
+          const newQuantityInput = newRow.querySelector(".quantity-input") as HTMLInputElement;
+          const newUnitPriceInput = newRow.querySelector(".unit-price-input") as HTMLInputElement;
+          const newTotalDisplay = newRow.querySelector(".total-display") as HTMLSpanElement;
+
+          const updateNewRowTotal = () => {
+            const qty = parseFloat(newQuantityInput.value) || 0;
+            const price = parseFloat(newUnitPriceInput.value) || 0;
+            const total = qty * price;
+            newTotalDisplay.textContent = `$${total.toFixed(2)}`;
+            updateProposalTotal();
+          };
+
+          newQuantityInput.addEventListener("input", updateNewRowTotal);
+          newUnitPriceInput.addEventListener("input", updateNewRowTotal);
+        }
+
+        // Clear the input fields
+        descriptionInput.value = "";
+        (document.getElementById("line-item-details") as HTMLInputElement).value = "";
+        quantityInput.value = "1";
+        unitPriceInput.value = "0";
+        totalDisplay.textContent = "$0.00";
+        dropdown.classList.add("hidden");
+
+        // Update proposal total
         updateProposalTotal();
       }
-    };
+
+      // Event listeners
+      descriptionInput.addEventListener("input", (e) => {
+        const query = (e.target as HTMLInputElement).value;
+        searchCatalogItems(query);
+      });
+
+      descriptionInput.addEventListener("keydown", (e) => {
+        if (e.key === "ArrowDown") {
+          e.preventDefault();
+          selectedIndex = Math.min(selectedIndex + 1, currentSuggestions.length - 1);
+          displaySuggestions(currentSuggestions);
+        } else if (e.key === "ArrowUp") {
+          e.preventDefault();
+          selectedIndex = Math.max(selectedIndex - 1, -1);
+          displaySuggestions(currentSuggestions);
+        } else if (e.key === "Enter") {
+          e.preventDefault();
+          if (selectedIndex >= 0 && currentSuggestions[selectedIndex]) {
+            selectSuggestion(currentSuggestions[selectedIndex]);
+          } else {
+            addLineItem();
+          }
+        } else if (e.key === "Escape") {
+          dropdown.classList.add("hidden");
+          selectedIndex = -1;
+        }
+      });
+
+      quantityInput.addEventListener("input", updateLineItemTotal);
+      unitPriceInput.addEventListener("input", updateLineItemTotal);
+      addButton.addEventListener("click", addLineItem);
+
+      // Hide dropdown when clicking outside
+      document.addEventListener("click", (e) => {
+        if (!descriptionInput.contains(e.target as Node) && !dropdown.contains(e.target as Node)) {
+          dropdown.classList.add("hidden");
+          selectedIndex = -1;
+        }
+      });
+    }
+
+
   });
 </script>
 
