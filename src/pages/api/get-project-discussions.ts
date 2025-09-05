@@ -5,7 +5,7 @@ import { supabaseAdmin } from "../../lib/supabase-admin";
 
 // // Server-side function to get user info directly from database
 
-async function getUserInfoServer(userId: string) {
+async function getAuthorInfoServer(userId: string) {
   // Get user metadata from auth.users table
   if (!supabaseAdmin) {
     return null;
@@ -62,9 +62,9 @@ async function getUserInfoServer(userId: string) {
 export const GET: APIRoute = async ({ url, cookies }) => {
   try {
     // Check authentication to get user role for filtering
-    const { role } = await checkAuth(cookies);
-    const isClient = role === "Client";
-    // console.log("📡 [GET-DISCUSSIONS] User role:", role, "isClient:", isClient);
+    const { currentRole } = await checkAuth(cookies);
+    const isClient = currentRole === "Client";
+    // console.log("📡 [GET-DISCUSSIONS] User role:", currentRole, "isClient:", isClient);
 
     const projectId = url.searchParams.get("projectId");
 
@@ -151,7 +151,7 @@ export const GET: APIRoute = async ({ url, cookies }) => {
       );
     }
 
-    // Get author profiles using getUserInfoServer (same as add-discussion.ts)
+    // Get author profiles using getAuthorInfoServer (same as add-discussion.ts)
     const authorIds = [...new Set(discussions?.map((d) => d.author_id) || [])];
     let authorProfiles: any = {};
 
@@ -160,7 +160,7 @@ export const GET: APIRoute = async ({ url, cookies }) => {
 
       for (const authorId of authorIds) {
         try {
-          const userInfo = await getUserInfoServer(authorId);
+          const userInfo = await getAuthorInfoServer(authorId);
           if (userInfo) {
             authorProfiles[authorId] = userInfo;
             // console.log(`🔔 [DISCUSSIONS] Profile for ${authorId}:`, {

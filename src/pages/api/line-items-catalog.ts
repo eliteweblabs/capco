@@ -25,51 +25,56 @@ export const GET: APIRoute = async ({ url, cookies }) => {
     const searchTerm = searchParams.get("search") || "";
     const category = searchParams.get("category") || "";
     const limit = parseInt(searchParams.get("limit") || "20");
+    const ids = searchParams.get("ids") || "";
 
-    // Check cache first
-    const cacheKey = `catalog-items-${searchTerm}-${category}-${limit}`;
+    // Check cache first (but not for specific IDs)
+    const cacheKey = `catalog-items-${searchTerm}-${category}-${limit}-${ids}`;
     const cached = apiCache.get(cacheKey);
-    if (cached) {
+    if (cached && !ids) {
       return new Response(JSON.stringify({ success: true, items: cached, cached: true }), {
         status: 200,
         headers: { "Content-Type": "application/json" },
       });
     }
 
-    // Use the search function if search term or category is provided
-    if (searchTerm || category) {
-      const { data: items, error } = await supabase.rpc("search_catalog_items", {
-        p_search_term: searchTerm || null,
-        p_category: category || null,
-        p_limit: limit,
-      });
+    // Build query conditions
+    let query = supabase.from("line_items_catalog").select("*");
 
-      if (error) {
-        console.error("Error searching catalog items:", error);
-        return new Response(JSON.stringify({ error: "Failed to search catalog items" }), {
-          status: 500,
+    // If specific IDs are requested, fetch those items
+    if (ids) {
+      const idArray = ids
+        .split(",")
+        .map((id) => parseInt(id.trim()))
+        .filter((id) => !isNaN(id));
+      if (idArray.length > 0) {
+        query = query.in("id", idArray);
+      } else {
+        return new Response(JSON.stringify({ success: true, items: [] }), {
+          status: 200,
           headers: { "Content-Type": "application/json" },
         });
       }
+    } else {
+      // Add search conditions for general queries
+      if (searchTerm) {
+        query = query.or(`name.ilike.%${searchTerm}%,description.ilike.%${searchTerm}%`);
+      }
 
-      // Cache results for 5 minutes
-      apiCache.set(cacheKey, items, 5);
+      if (category) {
+        query = query.eq("category", category);
+      }
 
-      return new Response(JSON.stringify({ success: true, items: items || [] }), {
-        status: 200,
-        headers: { "Content-Type": "application/json" },
-      });
+      // Only show active items for general queries
+      query = query.eq("is_active", true);
+
+      // Add limit and ordering for general queries
+      query = query.limit(limit).order("name", { ascending: true });
     }
 
-    // Default: get popular items from catalog
-    const { data: items, error } = await supabase.rpc("search_catalog_items", {
-      p_search_term: null,
-      p_category: null,
-      p_limit: limit,
-    });
+    const { data: items, error } = await query;
 
     if (error) {
-      console.error("Error fetching popular catalog items:", error);
+      console.error("Error fetching catalog items:", error);
       return new Response(JSON.stringify({ error: "Failed to fetch catalog items" }), {
         status: 500,
         headers: { "Content-Type": "application/json" },
@@ -95,8 +100,8 @@ export const GET: APIRoute = async ({ url, cookies }) => {
 // POST: Create new catalog item
 export const POST: APIRoute = async ({ request, cookies }) => {
   try {
-    const { isAuth, user } = await checkAuth(cookies);
-    if (!isAuth || !user) {
+    const { isAuth, currentUser } = await checkAuth(cookies);
+    if (!isAuth || !currentUser) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 401,
         headers: { "Content-Type": "application/json" },
@@ -129,7 +134,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         description: description.trim(),
         unit_price: parseFloat(unit_price),
         category: category?.trim() || null,
-        created_by: user.id,
+        created_by: currentUser.id,
       })
       .select()
       .single();
@@ -164,8 +169,8 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 // PUT: Update existing catalog item (Admin only)
 export const PUT: APIRoute = async ({ request, cookies }) => {
   try {
-    const { isAuth, role, user } = await checkAuth(cookies);
-    if (!isAuth || !user || !["Admin", "Staff"].includes(role)) {
+    const { isAuth, currentRole, currentUser } = await checkAuth(cookies);
+    if (!isAuth || !currentUser || !["Admin", "Staff"].includes(currentRole)) {
       return new Response(JSON.stringify({ error: "Admin access required" }), {
         status: 403,
         headers: { "Content-Type": "application/json" },

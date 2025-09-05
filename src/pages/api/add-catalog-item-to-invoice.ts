@@ -4,8 +4,8 @@ import { supabase } from "../../lib/supabase";
 
 export const POST: APIRoute = async ({ request, cookies }) => {
   try {
-    const { isAuth, user } = await checkAuth(cookies);
-    if (!isAuth || !user) {
+    const { isAuth, currentUser } = await checkAuth(cookies);
+    if (!isAuth || !currentUser) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 401,
         headers: { "Content-Type": "application/json" },
@@ -55,7 +55,8 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     }
 
     // Check if user has access to this invoice
-    const hasAccess = invoice.created_by === user.id || invoice.projects?.author_id === user.id;
+    const hasAccess =
+      invoice.created_by === currentUser.id || invoice.projects?.[0]?.author_id === currentUser.id;
 
     if (!hasAccess) {
       return new Response(JSON.stringify({ error: "Access denied" }), {
@@ -64,20 +65,64 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       });
     }
 
-    // Use the database function to create the line item
-    const { data: lineItemId, error } = await supabase.rpc("create_line_item_from_catalog", {
-      p_invoice_id: parseInt(invoice_id),
-      p_catalog_item_id: parseInt(catalog_item_id),
-      p_quantity: parseFloat(quantity),
-      p_custom_description: custom_description || null,
-    });
+    // Get the catalog item details
+    const { data: catalogItem, error: catalogError } = await supabase
+      .from("line_items_catalog")
+      .select("*")
+      .eq("id", parseInt(catalog_item_id))
+      .single();
 
-    if (error) {
-      console.error("Error creating line item from catalog:", error);
+    if (catalogError || !catalogItem) {
+      console.error("❌ [ADD-CATALOG-ITEM] Error fetching catalog item:", catalogError);
       return new Response(
         JSON.stringify({
-          error: "Failed to add catalog item to invoice",
-          details: error.message,
+          success: false,
+          error: "Catalog item not found",
+        }),
+        {
+          status: 404,
+          headers: { "Content-Type": "application/json" },
+        }
+      );
+    }
+
+    // Get current invoice to update its catalog_item_ids
+    const { data: currentInvoice, error: invoiceFetchError } = await supabase
+      .from("invoices")
+      .select("catalog_item_ids")
+      .eq("id", parseInt(invoice_id))
+      .single();
+
+    if (invoiceFetchError || !currentInvoice) {
+      console.error("❌ [ADD-CATALOG-ITEM] Error fetching invoice:", invoiceFetchError);
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: "Invoice not found",
+        }),
+        {
+          status: 404,
+          headers: { "Content-Type": "application/json" },
+        }
+      );
+    }
+
+    // Update invoice with new catalog item ID
+    const currentCatalogIds = currentInvoice.catalog_item_ids || [];
+    const updatedCatalogIds = [...currentCatalogIds, parseInt(catalog_item_id)];
+
+    const { error: updateError } = await supabase
+      .from("invoices")
+      .update({ catalog_item_ids: updatedCatalogIds })
+      .eq("id", parseInt(invoice_id));
+
+    if (updateError) {
+      console.error("❌ [ADD-CATALOG-ITEM] Error updating invoice:", updateError);
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: "Failed to add line item to invoice",
+          details: updateError.message,
         }),
         {
           status: 500,
@@ -86,36 +131,13 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       );
     }
 
-    // Fetch the created line item to return it
-    const { data: createdItem, error: fetchError } = await supabase
-      .from("invoice_line_items")
-      .select(
-        `
-        *,
-        line_items_catalog (
-          name,
-          category
-        )
-      `
-      )
-      .eq("id", lineItemId)
-      .single();
-
-    if (fetchError) {
-      console.error("Error fetching created line item:", fetchError);
-      // Item was created successfully, just return basic info
-      return new Response(
-        JSON.stringify({
-          success: true,
-          line_item_id: lineItemId,
-          message: "Line item added successfully",
-        }),
-        {
-          status: 201,
-          headers: { "Content-Type": "application/json" },
-        }
-      );
-    }
+    const createdItem = {
+      id: catalogItem.id,
+      name: catalogItem.name,
+      description: custom_description || catalogItem.description,
+      unit_price: catalogItem.unit_price,
+      category: catalogItem.category,
+    };
 
     return new Response(
       JSON.stringify({

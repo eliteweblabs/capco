@@ -12,6 +12,7 @@ export interface ProjectField {
   allowEmpty?: boolean; // Whether empty strings are allowed
   category: "core" | "optional" | "new"; // Core = always exists, Optional = may not exist, New = experimental
   description?: string;
+  step?: number;
 }
 
 export const PROJECT_UPDATE_FIELDS: ProjectField[] = [
@@ -45,6 +46,7 @@ export const PROJECT_UPDATE_FIELDS: ProjectField[] = [
     type: "number",
     category: "core",
     description: "Square footage",
+    step: 100,
   },
   {
     name: "new_construction",

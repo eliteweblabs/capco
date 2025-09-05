@@ -106,7 +106,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         updated_at: new Date().toISOString(),
       })
       .eq("id", projectId)
-      .select()
+      .select("id, status, author_id, title, address")
       .single();
 
     if (updateError) {

@@ -106,28 +106,25 @@ Tier I Fire Alarm Design
 
     console.log("Creating line items:", lineItems);
 
-    const lineItemInserts = lineItems.map((item, index) => ({
-      invoice_id: invoice.id,
-      description: item.description,
-      quantity: item.quantity || 1.0,
-      unit_price: item.price || item.unit_price || 0.0,
-      total_price: (item.quantity || 1.0) * (item.price || item.unit_price || 0.0),
-      sort_order: index + 1,
-    }));
+    // For now, create empty catalog_item_ids array
+    // Line items will be added via the catalog system
+    const catalogItemIds: number[] = [];
 
-    const { error: lineItemError } = await supabase
-      .from("invoice_line_items")
-      .insert(lineItemInserts);
+    // Update the invoice with empty catalog_item_ids
+    const { error: updateError } = await supabase
+      .from("invoices")
+      .update({ catalog_item_ids: catalogItemIds })
+      .eq("id", invoice.id);
 
-    if (lineItemError) {
-      console.error("Error creating line item:", lineItemError);
-      // Delete the invoice if line item creation fails
+    if (updateError) {
+      console.error("Error updating invoice with line items:", updateError);
+      // Delete the invoice if line item update fails
       await supabase.from("invoices").delete().eq("id", invoice.id);
       return new Response(
         JSON.stringify({
-          error: "Failed to create invoice line item",
-          details: lineItemError.message,
-          code: lineItemError.code,
+          error: "Failed to create invoice line items",
+          details: updateError.message,
+          code: updateError.code,
         }),
         {
           status: 500,

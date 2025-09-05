@@ -104,10 +104,10 @@ export const DELETE: APIRoute = async ({ request, cookies }) => {
       });
     }
 
-    console.log("Project found:", project);
+    // console.log("Project found:", project);
 
     // Check user's role and permissions
-    console.log("Looking up user profile:", user.id);
+    // console.log("Looking up user profile:", user.id);
     const { data: profile, error: profileError } = await supabase
       .from("profiles")
       .select("role")
@@ -118,16 +118,14 @@ export const DELETE: APIRoute = async ({ request, cookies }) => {
       console.error("Profile lookup error:", profileError);
     }
 
-    const isAdmin = profile?.role === "Admin";
-    const isAuthor = project.author_id === user.id;
+    const canDelete = profile?.role === "Admin" || profile?.role === "Staff";
 
     console.log("User role:", profile?.role);
-    console.log("Is admin:", isAdmin);
-    console.log("Is author:", isAuthor);
+    console.log("Is admin:", canDelete);
     console.log("Project author:", project.author_id);
     console.log("Current user:", user.id);
 
-    if (!isAdmin && !isAuthor) {
+    if (!canDelete) {
       console.error("Unauthorized to delete this project");
       return new Response(JSON.stringify({ error: "Unauthorized to delete this project" }), {
         status: 403,

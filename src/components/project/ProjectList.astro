@@ -1,16 +1,19 @@
 ---
-import { checkAuth } from "../../lib/auth";
-const { isAuth, session, user, role } = await checkAuth(Astro.cookies);
-
 import { getI18N } from "@/i18n";
 import NoDataCard from "./NoDataCard.astro";
 import ProjectListItem from "./ProjectListItem.astro";
-// get projects from supabase
+
+interface Props {
+  projects: any[];
+  statuses: any[];
+  currentUser: any;
+  currentRole: string | null;
+}
 
 const { currentLocale } = Astro;
 const i18n = getI18N({ currentLocale });
 
-const { projects, statuses } = Astro.props;
+const { projects, statuses, currentUser, currentRole } = Astro.props;
 if (!projects || projects.length === 0) return;
 ---
 
@@ -19,7 +22,12 @@ if (!projects || projects.length === 0) return;
   {
     projects.length > 0 ? (
       projects.map((project: any) => (
-        <ProjectListItem project={project} role={role || ""} user={user} statuses={statuses} />
+        <ProjectListItem
+          project={project}
+          currentRole={currentRole || ""}
+          user={currentUser}
+          statuses={statuses}
+        />
       ))
     ) : (
       <NoDataCard

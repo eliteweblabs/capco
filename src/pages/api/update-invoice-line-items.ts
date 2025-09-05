@@ -62,36 +62,20 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
     console.log("Found proposal invoice:", invoice.id);
 
-    // Delete existing line items
-    const { error: deleteError } = await supabase
-      .from("invoice_line_items")
-      .delete()
-      .eq("invoice_id", invoice.id);
+    // Extract catalog item IDs from line items
+    const catalogItemIds = lineItems
+      .map((item: any) => item.catalog_item_id || item.id)
+      .filter((id: any) => id && !isNaN(parseInt(id)))
+      .map((id: any) => parseInt(id));
 
-    if (deleteError) {
-      console.error("Error deleting existing line items:", deleteError);
-      return new Response(JSON.stringify({ error: "Failed to delete existing line items" }), {
-        status: 500,
-        headers: { "Content-Type": "application/json" },
-      });
-    }
+    // Update invoice with catalog item IDs
+    const { error: updateError } = await supabase
+      .from("invoices")
+      .update({ catalog_item_ids: catalogItemIds })
+      .eq("id", invoice.id);
 
-    // Insert new line items
-    const lineItemInserts = lineItems.map((item: any, index: number) => ({
-      invoice_id: invoice.id,
-      description: item.description,
-      quantity: item.quantity || 1,
-      unit_price: item.price || item.unit_price || 0,
-      total_price: (item.quantity || 1) * (item.price || item.unit_price || 0),
-      sort_order: index + 1,
-    }));
-
-    const { error: insertError } = await supabase
-      .from("invoice_line_items")
-      .insert(lineItemInserts);
-
-    if (insertError) {
-      console.error("Error inserting new line items:", insertError);
+    if (updateError) {
+      console.error("Error updating line items:", updateError);
       return new Response(JSON.stringify({ error: "Failed to save line items" }), {
         status: 500,
         headers: { "Content-Type": "application/json" },

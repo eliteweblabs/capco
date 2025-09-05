@@ -1,13 +1,6 @@
 ---
 // Staff Select Component - for assigning projects to staff members
 // Only visible to admin users
-import { checkAuth } from "../../lib/auth";
-
-// Get current user for authentication and role
-const { isAuth, user, role } = await checkAuth(Astro.cookies);
-
-// Only show select for admin and staff users
-const canAssignStaff = role === "Admin" || role === "Staff";
 
 interface Props {
   id?: string;
@@ -18,9 +11,15 @@ interface Props {
   placeholder?: string;
   projectId?: string;
   autoSave?: boolean;
-  variant?: "default" | "hero";
   address?: string;
+  currentRole?: string;
 }
+
+// Auth props will be passed from parent component
+const { currentRole } = Astro.props;
+
+// Only show select for admin and staff users
+const canAssignStaff = currentRole === "Admin" || currentRole === "Staff";
 
 const {
   id = "staff-select",
@@ -31,7 +30,6 @@ const {
   placeholder = "Select team member...",
   projectId = "",
   autoSave = false,
-  variant = "default",
   address = "",
 } = Astro.props;
 
@@ -234,6 +232,13 @@ const {
               : "Project unassigned",
             3000
           );
+        }
+
+        // Redirect to dashboard if assignment was made (staff member loses access)
+        if (staffId && typeof window !== "undefined") {
+          setTimeout(() => {
+            window.location.href = "/dashboard";
+          }, 1500); // Wait 1.5 seconds to show the toast first
         }
 
         // Send staff assignment email notification in the background (only for assignments, not unassignments)

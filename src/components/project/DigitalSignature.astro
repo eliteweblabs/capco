@@ -20,7 +20,10 @@ const {
 
 <div class="digital-signature-container">
   <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
-    Digital Signature {required && <span class="text-red-500">*</span>}
+    Digital Signature {required && <span class="text-red-500">*</span>}{
+      width && <span class="text-gray-500">Width: {width}px</span>
+    }
+    {height && <span class="text-gray-500">Height: {height}px</span>}
   </label>
 
   <div
@@ -29,311 +32,314 @@ const {
     <!-- Canvas for signature -->
     <canvas
       id={id}
-      width={width}
-      height={height}
+      width=`{width}px`
+      height=`{height}px`
       class="signature-canvas block h-full w-full cursor-crosshair"
-      style={`width: ${width}px; height: ${height}px;`}></canvas>
-
-    <!-- Placeholder text (shows when empty) -->
-    <div
-      class="signature-placeholder pointer-events-none absolute inset-0 flex items-center justify-center"
+      style={`width: ${width}px; height: ${height}px;`}
     >
-      <span class="text-sm font-medium text-gray-400 dark:text-gray-500">
-        {placeholder}
-      </span>
-    </div>
+      <!-- Placeholder text (shows when empty) -->
+      <div
+        class="signature-placeholder pointer-events-none absolute inset-0 flex items-center justify-center"
+      >
+        <span class="text-sm font-medium text-gray-400 dark:text-gray-500">
+          {placeholder}
+        </span>
+      </div>
 
-    <!-- Signature controls -->
-    <div class="absolute bottom-2 right-2 flex gap-2">
-      <button
-        type="button"
-        class="signature-clear rounded bg-red-500 px-3 py-1 text-xs text-white transition-colors hover:bg-red-600"
-        data-signature-id={id}
-      >
-        <BoxIcon name="trash" class="mr-1" />
-        Clear
-      </button>
-      <button
-        type="button"
-        class="signature-save rounded bg-green-500 px-3 py-1 text-xs text-white transition-colors hover:bg-green-600"
-        data-signature-id={id}
-      >
-        <BoxIcon name="save" class="mr-1" />
-        Save
-      </button>
+      <!-- Signature controls -->
+      <div class="absolute bottom-2 right-2 flex gap-2">
+        <button
+          type="button"
+          class="signature-clear rounded bg-red-500 px-3 py-1 text-xs text-white transition-colors hover:bg-red-600"
+          data-signature-id={id}
+        >
+          <BoxIcon name="trash" class="mr-1" />
+          Clear
+        </button>
+        <button
+          type="button"
+          class="signature-save rounded bg-green-500 px-3 py-1 text-xs text-white transition-colors hover:bg-green-600"
+          data-signature-id={id}
+        >
+          <BoxIcon name="save" class="mr-1" />
+          Save
+        </button>
+      </div>
+    </canvas>
+
+    <!-- Hidden input to store signature data -->
+    <input type="hidden" id={`${id}-data`} name={`${id}-data`} class="signature-data" />
+
+    <!-- Signature status -->
+    <div class="signature-status mt-2 text-sm">
+      <span class="signature-empty text-gray-500">No signature captured</span>
+      <span class="signature-saved hidden text-green-600">✓ Signature saved</span>
     </div>
   </div>
 
-  <!-- Hidden input to store signature data -->
-  <input type="hidden" id={`${id}-data`} name={`${id}-data`} class="signature-data" />
+  <script>
+    import SignaturePad from "signature_pad";
 
-  <!-- Signature status -->
-  <div class="signature-status mt-2 text-sm">
-    <span class="signature-empty text-gray-500">No signature captured</span>
-    <span class="signature-saved hidden text-green-600">✓ Signature saved</span>
-  </div>
-</div>
+    class DigitalSignatureManager {
+      private signaturePads: Map<string, any> = new Map();
 
-<script>
-  import SignaturePad from "signature_pad";
+      constructor() {
+        this.initializeSignatures();
+      }
 
-  class DigitalSignatureManager {
-    private signaturePads: Map<string, any> = new Map();
+      initializeSignatures() {
+        const canvases = document.querySelectorAll(".signature-canvas");
 
-    constructor() {
-      this.initializeSignatures();
-    }
-
-    initializeSignatures() {
-      const canvases = document.querySelectorAll(".signature-canvas");
-
-      canvases.forEach((canvas) => {
-        this.setupSignaturePad(canvas as HTMLCanvasElement);
-      });
-    }
-
-    setupSignaturePad(canvas: HTMLCanvasElement) {
-      const signaturePad = new SignaturePad(canvas, {
-        backgroundColor: "rgba(255, 255, 255, 0)",
-        penColor: "rgb(0, 0, 0)",
-        velocityFilterWeight: 0.7,
-        minWidth: 0.5,
-        maxWidth: 2.5,
-        throttle: 16,
-        minDistance: 5,
-      });
-
-      const canvasId = canvas.id;
-      this.signaturePads.set(canvasId, signaturePad);
-
-      // Get related elements
-      const container = canvas.closest(".digital-signature-container");
-      const placeholder = container?.querySelector(".signature-placeholder") as HTMLElement | null;
-      const hiddenInput = container?.querySelector(".signature-data") as HTMLInputElement | null;
-      const clearBtn = container?.querySelector(".signature-clear") as HTMLElement | null;
-      const saveBtn = container?.querySelector(".signature-save") as HTMLElement | null;
-      const statusEmpty = container?.querySelector(".signature-empty") as HTMLElement | null;
-      const statusSaved = container?.querySelector(".signature-saved") as HTMLElement | null;
-
-      // Handle signature events
-      signaturePad.addEventListener("beginStroke", () => {
-        this.hideSignatureStatus(statusEmpty, statusSaved);
-        if (placeholder) placeholder.style.display = "none";
-      });
-
-      signaturePad.addEventListener("endStroke", () => {
-        this.updateSignatureData(signaturePad, hiddenInput, statusEmpty, statusSaved);
-      });
-
-      // Handle clear button
-      clearBtn?.addEventListener("click", () => {
-        this.clearSignature(signaturePad, hiddenInput, placeholder, statusEmpty, statusSaved);
-      });
-
-      // Handle save button
-      saveBtn?.addEventListener("click", () => {
-        this.saveSignature(signaturePad, hiddenInput, statusEmpty, statusSaved);
-      });
-
-      // Handle canvas resize
-      window.addEventListener("resize", () => {
-        this.resizeCanvas(canvas, signaturePad);
-      });
-
-      // Initial resize
-      this.resizeCanvas(canvas, signaturePad);
-    }
-
-    updateSignatureData(
-      signaturePad: any,
-      hiddenInput: HTMLInputElement | null,
-      statusEmpty: HTMLElement | null,
-      statusSaved: HTMLElement | null
-    ) {
-      if (!signaturePad.isEmpty()) {
-        const signatureData = signaturePad.toDataURL("image/png");
-        if (hiddenInput) {
-          hiddenInput.value = signatureData;
-        }
-        this.showSignatureStatus(statusSaved, statusEmpty);
-
-        // Emit custom event for form validation
-        const event = new CustomEvent("signatureUpdated", {
-          detail: { data: signatureData, isEmpty: false },
+        canvases.forEach((canvas) => {
+          this.setupSignaturePad(canvas as HTMLCanvasElement);
         });
-        document.dispatchEvent(event);
-      } else {
+      }
+
+      setupSignaturePad(canvas: HTMLCanvasElement) {
+        const signaturePad = new SignaturePad(canvas, {
+          backgroundColor: "rgba(255, 255, 255, 0)",
+          penColor: "rgb(0, 0, 0)",
+          velocityFilterWeight: 0.7,
+          minWidth: 0.5,
+          maxWidth: 2.5,
+          throttle: 16,
+          minDistance: 5,
+        });
+
+        const canvasId = canvas.id;
+        this.signaturePads.set(canvasId, signaturePad);
+
+        // Get related elements
+        const container = canvas.closest(".digital-signature-container");
+        const placeholder = container?.querySelector(
+          ".signature-placeholder"
+        ) as HTMLElement | null;
+        const hiddenInput = container?.querySelector(".signature-data") as HTMLInputElement | null;
+        const clearBtn = container?.querySelector(".signature-clear") as HTMLElement | null;
+        const saveBtn = container?.querySelector(".signature-save") as HTMLElement | null;
+        const statusEmpty = container?.querySelector(".signature-empty") as HTMLElement | null;
+        const statusSaved = container?.querySelector(".signature-saved") as HTMLElement | null;
+
+        // Handle signature events
+        signaturePad.addEventListener("beginStroke", () => {
+          this.hideSignatureStatus(statusEmpty, statusSaved);
+          if (placeholder) placeholder.style.display = "none";
+        });
+
+        signaturePad.addEventListener("endStroke", () => {
+          this.updateSignatureData(signaturePad, hiddenInput, statusEmpty, statusSaved);
+        });
+
+        // Handle clear button
+        clearBtn?.addEventListener("click", () => {
+          this.clearSignature(signaturePad, hiddenInput, placeholder, statusEmpty, statusSaved);
+        });
+
+        // Handle save button
+        saveBtn?.addEventListener("click", () => {
+          this.saveSignature(signaturePad, hiddenInput, statusEmpty, statusSaved);
+        });
+
+        // Handle canvas resize
+        window.addEventListener("resize", () => {
+          this.resizeCanvas(canvas, signaturePad);
+        });
+
+        // Initial resize
+        this.resizeCanvas(canvas, signaturePad);
+      }
+
+      updateSignatureData(
+        signaturePad: any,
+        hiddenInput: HTMLInputElement | null,
+        statusEmpty: HTMLElement | null,
+        statusSaved: HTMLElement | null
+      ) {
+        if (!signaturePad.isEmpty()) {
+          const signatureData = signaturePad.toDataURL("image/png");
+          if (hiddenInput) {
+            hiddenInput.value = signatureData;
+          }
+          this.showSignatureStatus(statusSaved, statusEmpty);
+
+          // Emit custom event for form validation
+          const event = new CustomEvent("signatureUpdated", {
+            detail: { data: signatureData, isEmpty: false },
+          });
+          document.dispatchEvent(event);
+        } else {
+          if (hiddenInput) {
+            hiddenInput.value = "";
+          }
+          this.showSignatureStatus(statusEmpty, statusSaved);
+
+          // Emit custom event for form validation
+          const event = new CustomEvent("signatureUpdated", {
+            detail: { data: null, isEmpty: true },
+          });
+          document.dispatchEvent(event);
+        }
+      }
+
+      clearSignature(
+        signaturePad: any,
+        hiddenInput: HTMLInputElement | null,
+        placeholder: HTMLElement | null,
+        statusEmpty: HTMLElement | null,
+        statusSaved: HTMLElement | null
+      ) {
+        signaturePad.clear();
         if (hiddenInput) {
           hiddenInput.value = "";
         }
+        if (placeholder) {
+          placeholder.style.display = "flex";
+        }
         this.showSignatureStatus(statusEmpty, statusSaved);
 
-        // Emit custom event for form validation
-        const event = new CustomEvent("signatureUpdated", {
-          detail: { data: null, isEmpty: true },
-        });
-        document.dispatchEvent(event);
-      }
-    }
-
-    clearSignature(
-      signaturePad: any,
-      hiddenInput: HTMLInputElement | null,
-      placeholder: HTMLElement | null,
-      statusEmpty: HTMLElement | null,
-      statusSaved: HTMLElement | null
-    ) {
-      signaturePad.clear();
-      if (hiddenInput) {
-        hiddenInput.value = "";
-      }
-      if (placeholder) {
-        placeholder.style.display = "flex";
-      }
-      this.showSignatureStatus(statusEmpty, statusSaved);
-
-      // Emit custom event
-      const event = new CustomEvent("signatureCleared");
-      document.dispatchEvent(event);
-    }
-
-    saveSignature(
-      signaturePad: any,
-      hiddenInput: HTMLInputElement | null,
-      statusEmpty: HTMLElement | null,
-      statusSaved: HTMLElement | null
-    ) {
-      if (!signaturePad.isEmpty()) {
-        const signatureData = signaturePad.toDataURL("image/png");
-        if (hiddenInput) {
-          hiddenInput.value = signatureData;
-        }
-        this.showSignatureStatus(statusSaved, statusEmpty);
-
         // Emit custom event
-        const event = new CustomEvent("signatureSaved", {
-          detail: { data: signatureData },
-        });
+        const event = new CustomEvent("signatureCleared");
         document.dispatchEvent(event);
-
-        // Show success notification
-        if (window.showSuccess) {
-          window.showSuccess(
-            "Signature Saved",
-            "Digital signature has been captured successfully.",
-            3000
-          );
-        } else {
-          console.log("🔔 [Signature Saved] Digital signature has been captured successfully.");
-        }
-      } else {
-        // Show error notification
-        if (window.showError) {
-          window.showError("No Signature", "Please provide a signature before saving.", 0);
-        } else {
-          console.error("🔔 [No Signature] Please provide a signature before saving.");
-        }
-      }
-    }
-
-    resizeCanvas(canvas: HTMLCanvasElement, signaturePad: any) {
-      const container = canvas.parentElement;
-      if (!container) return;
-
-      const containerWidth = container.clientWidth;
-      const ratio = Math.max(window.devicePixelRatio || 1, 1);
-
-      // Get the original dimensions
-      const originalWidth = parseInt(canvas.getAttribute("width") || "400");
-      const originalHeight = parseInt(canvas.getAttribute("height") || "200");
-
-      // Scale to fit container while maintaining aspect ratio
-      const scale = Math.min(containerWidth / originalWidth, 1);
-      const scaledWidth = originalWidth * scale;
-      const scaledHeight = originalHeight * scale;
-
-      canvas.width = scaledWidth * ratio;
-      canvas.height = scaledHeight * ratio;
-      canvas.style.width = scaledWidth + "px";
-      canvas.style.height = scaledHeight + "px";
-
-      const context = canvas.getContext("2d");
-      if (context) {
-        context.scale(ratio, ratio);
       }
 
-      signaturePad.clear();
-    }
+      saveSignature(
+        signaturePad: any,
+        hiddenInput: HTMLInputElement | null,
+        statusEmpty: HTMLElement | null,
+        statusSaved: HTMLElement | null
+      ) {
+        if (!signaturePad.isEmpty()) {
+          const signatureData = signaturePad.toDataURL("image/png");
+          if (hiddenInput) {
+            hiddenInput.value = signatureData;
+          }
+          this.showSignatureStatus(statusSaved, statusEmpty);
 
-    showSignatureStatus(show: HTMLElement | null, hide: HTMLElement | null) {
-      if (show) show.classList.remove("hidden");
-      if (hide) hide.classList.add("hidden");
-    }
+          // Emit custom event
+          const event = new CustomEvent("signatureSaved", {
+            detail: { data: signatureData },
+          });
+          document.dispatchEvent(event);
 
-    hideSignatureStatus(statusEmpty: HTMLElement | null, statusSaved: HTMLElement | null) {
-      if (statusEmpty) statusEmpty.classList.add("hidden");
-      if (statusSaved) statusSaved.classList.add("hidden");
-    }
+          // Show success notification
+          if (window.showSuccess) {
+            window.showSuccess(
+              "Signature Saved",
+              "Digital signature has been captured successfully.",
+              3000
+            );
+          } else {
+            console.log("🔔 [Signature Saved] Digital signature has been captured successfully.");
+          }
+        } else {
+          // Show error notification
+          if (window.showError) {
+            window.showError("No Signature", "Please provide a signature before saving.", 0);
+          } else {
+            console.error("🔔 [No Signature] Please provide a signature before saving.");
+          }
+        }
+      }
 
-    // Public methods for external access
-    getSignatureData(canvasId: string) {
-      const signaturePad = this.signaturePads.get(canvasId);
-      return signaturePad && !signaturePad.isEmpty() ? signaturePad.toDataURL("image/png") : null;
-    }
+      resizeCanvas(canvas: HTMLCanvasElement, signaturePad: any) {
+        const container = canvas.parentElement;
+        if (!container) return;
 
-    isSignatureEmpty(canvasId: string) {
-      const signaturePad = this.signaturePads.get(canvasId);
-      return !signaturePad || signaturePad.isEmpty();
-    }
+        const containerWidth = container.clientWidth;
+        const ratio = Math.max(window.devicePixelRatio || 1, 1);
 
-    clearSignatureById(canvasId: string) {
-      const signaturePad = this.signaturePads.get(canvasId);
-      if (signaturePad) {
+        // Get the original dimensions
+        const originalWidth = parseInt(canvas.getAttribute("width") || "400");
+        const originalHeight = parseInt(canvas.getAttribute("height") || "200");
+
+        // Scale to fit container while maintaining aspect ratio
+        const scale = Math.min(containerWidth / originalWidth, 1);
+        const scaledWidth = originalWidth * scale;
+        const scaledHeight = originalHeight * scale;
+
+        canvas.width = scaledWidth * ratio;
+        canvas.height = scaledHeight * ratio;
+        canvas.style.width = scaledWidth + "px";
+        canvas.style.height = scaledHeight + "px";
+
+        const context = canvas.getContext("2d");
+        if (context) {
+          context.scale(ratio, ratio);
+        }
+
         signaturePad.clear();
       }
+
+      showSignatureStatus(show: HTMLElement | null, hide: HTMLElement | null) {
+        if (show) show.classList.remove("hidden");
+        if (hide) hide.classList.add("hidden");
+      }
+
+      hideSignatureStatus(statusEmpty: HTMLElement | null, statusSaved: HTMLElement | null) {
+        if (statusEmpty) statusEmpty.classList.add("hidden");
+        if (statusSaved) statusSaved.classList.add("hidden");
+      }
+
+      // Public methods for external access
+      getSignatureData(canvasId: string) {
+        const signaturePad = this.signaturePads.get(canvasId);
+        return signaturePad && !signaturePad.isEmpty() ? signaturePad.toDataURL("image/png") : null;
+      }
+
+      isSignatureEmpty(canvasId: string) {
+        const signaturePad = this.signaturePads.get(canvasId);
+        return !signaturePad || signaturePad.isEmpty();
+      }
+
+      clearSignatureById(canvasId: string) {
+        const signaturePad = this.signaturePads.get(canvasId);
+        if (signaturePad) {
+          signaturePad.clear();
+        }
+      }
+
+      getAllSignatures() {
+        const signatures: { [key: string]: string | null } = {};
+        this.signaturePads.forEach((pad, canvasId) => {
+          signatures[canvasId] = pad.isEmpty() ? null : pad.toDataURL("image/png");
+        });
+        return signatures;
+      }
     }
 
-    getAllSignatures() {
-      const signatures: { [key: string]: string | null } = {};
-      this.signaturePads.forEach((pad, canvasId) => {
-        signatures[canvasId] = pad.isEmpty() ? null : pad.toDataURL("image/png");
-      });
-      return signatures;
+    // Initialize when DOM is ready
+    document.addEventListener("DOMContentLoaded", () => {
+      if (!window.digitalSignatureManager) {
+        window.digitalSignatureManager = new DigitalSignatureManager();
+      }
+    });
+
+    // Make manager globally accessible
+    declare global {
+      interface Window {
+        digitalSignatureManager: DigitalSignatureManager;
+      }
     }
-  }
+  </script>
 
-  // Initialize when DOM is ready
-  document.addEventListener("DOMContentLoaded", () => {
-    if (!window.digitalSignatureManager) {
-      window.digitalSignatureManager = new DigitalSignatureManager();
-    }
-  });
-
-  // Make manager globally accessible
-  declare global {
-    interface Window {
-      digitalSignatureManager: DigitalSignatureManager;
-    }
-  }
-</script>
-
-<style>
-  .signature-canvas {
-    touch-action: none;
-  }
-
-  .signature-placeholder {
-    transition: opacity 0.2s ease;
-  }
-
-  .digital-signature-container:hover .signature-placeholder {
-    opacity: 0.7;
-  }
-
-  @media (max-width: 640px) {
+  <style>
     .signature-canvas {
-      width: 100% !important;
-      height: 150px !important;
+      touch-action: none;
     }
-  }
-</style>
+
+    .signature-placeholder {
+      transition: opacity 0.2s ease;
+    }
+
+    .digital-signature-container:hover .signature-placeholder {
+      opacity: 0.7;
+    }
+
+    @media (max-width: 640px) {
+      .signature-canvas {
+        width: 100% !important;
+        height: 150px !important;
+      }
+    }
+  </style>
+</div>

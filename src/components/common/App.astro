@@ -2,10 +2,22 @@
 interface Props {
   title?: string;
   description?: string;
+  requireAuth?: boolean;
+  requireRole?: string;
+  redirectTo?: string;
 }
 
 import { checkAuth } from "../../lib/auth";
-const { isAuth, session, user, role } = await checkAuth(Astro.cookies);
+const { isAuth, session, currentUser, currentRole } = await checkAuth(Astro.cookies);
+
+// Handle auth requirements
+const { requireAuth = false, requireRole, redirectTo = "/login" } = Astro.props;
+if (requireAuth && !isAuth) {
+  return Astro.redirect(redirectTo);
+}
+if (requireRole && currentRole !== requireRole) {
+  return Astro.redirect(redirectTo);
+}
 
 import { getI18N } from "../../i18n";
 const { currentLocale } = Astro;
@@ -100,7 +112,7 @@ const lang = getLangFromUrl(Astro.url);
 
     <!-- Inject environment variables for client-side use FIRST -->
     <script
-      set:html={`window.SUPABASE_URL = "${import.meta.env.SUPABASE_URL || ""}"; window.SUPABASE_ANON_KEY = "${(import.meta.env.SUPABASE_ANON_KEY || "").replace(/\s/g, "")}"; window.GOOGLE_MAPS_API_KEY = "${import.meta.env.GOOGLE_MAPS_API_KEY || ""}"; window.STRIPE_PUBLISHABLE_KEY = "${import.meta.env.PUBLIC_STRIPE_PUBLISHABLE_KEY || ""}"; ${user ? `window.USER_DATA = ${JSON.stringify(user)};` : ""}`}
+      set:html={`window.SUPABASE_URL = "${import.meta.env.SUPABASE_URL || ""}"; window.SUPABASE_ANON_KEY = "${(import.meta.env.SUPABASE_ANON_KEY || "").replace(/\s/g, "")}"; window.GOOGLE_MAPS_API_KEY = "${import.meta.env.GOOGLE_MAPS_API_KEY || ""}"; window.STRIPE_PUBLISHABLE_KEY = "${import.meta.env.PUBLIC_STRIPE_PUBLISHABLE_KEY || ""}"; ${currentUser ? `window.USER_DATA = ${JSON.stringify(currentUser)};` : ""}`}
     />
 
     <!-- Google Maps Places API - Load only if API key is available -->
@@ -206,7 +218,12 @@ const lang = getLangFromUrl(Astro.url);
     </div>
 
     <main class="section relative mx-auto w-full max-w-[2000px]">
-      <Header />
+      <Header
+        isAuth={isAuth}
+        currentUser={currentUser}
+        currentRole={currentRole}
+        session={session}
+      />
       <slot />
       <Footer />
     </main>
@@ -216,15 +233,22 @@ const lang = getLangFromUrl(Astro.url);
     <div id="sticky-container" class="fixed bottom-6 right-6 z-40">
       {
         !isAuth ? (
-          <StickySMS />
+          <StickySMS isAuth={isAuth} currentUser={currentUser} currentRole={currentRole} />
         ) : (
-          user && (
-            <HttpChatWidget user={{ id: user.id, email: user.email || "" }} role={role || ""} />
+          currentUser && (
+            <HttpChatWidget
+              currentUser={{
+                id: currentUser.id,
+                email: currentUser.email || "",
+                company_name: currentUser.company_name || currentUser.display_name || "User",
+              }}
+              currentRole={currentRole || ""}
+            />
           )
         )
       }
     </div>
-    <!-- <ChatWidget user={user} role={role || ""} /> -->
+    <!-- <ChatWidget user={user} currentRole={currentRole || ""} /> -->
 
     <!-- Flowbite removed - not being used -->
 
@@ -373,7 +397,7 @@ const lang = getLangFromUrl(Astro.url);
           if ((window as any).showSuccess) {
             (window as any).showSuccess(successTitle, successMessage, 6000);
           } else {
-            console.log(`🔔 [${successTitle}] ${successMessage}`);
+            console.error(`🔔 [${successTitle}] ${successMessage}`);
           }
 
           // Clean up URL parameters
@@ -402,13 +426,13 @@ const lang = getLangFromUrl(Astro.url);
       (window as any).showInfo = showInfo;
       (window as any).showStatusToast = showStatusToast;
 
-      console.log("🔔 [APP] Centralized notification system exposed to window object");
-      console.log("🔔 [APP] Window functions available:", {
-        showSuccess: typeof (window as any).showSuccess,
-        showError: typeof (window as any).showError,
-        showWarning: typeof (window as any).showWarning,
-        showInfo: typeof (window as any).showInfo,
-      });
+      // console.log("🔔 [APP] Centralized notification system exposed to window object");
+      // console.log("🔔 [APP] Window functions available:", {
+      //   showSuccess: typeof (window as any).showSuccess,
+      //   showError: typeof (window as any).showError,
+      //   showWarning: typeof (window as any).showWarning,
+      //   showInfo: typeof (window as any).showInfo,
+      // });
     </script>
   </body>
 </html>

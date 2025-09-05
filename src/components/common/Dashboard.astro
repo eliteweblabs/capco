@@ -4,10 +4,10 @@ import ProjectForm from "../project/ProjectForm.astro";
 import ProjectList from "../project/ProjectList.astro";
 import ProjectSearch from "../project/ProjectSearch.astro";
 
-const { role, projects, statuses } = Astro.props;
+const { currentRole, projects, statuses, currentUser } = Astro.props;
 
 // Debug logging
-console.log("Dashboard role:", projects);
+// console.log("Dashboard role:", projects);
 ---
 
 <!-- Dashboard Container -->
@@ -17,14 +17,14 @@ console.log("Dashboard role:", projects);
       <!-- Projects List - 2/3 width on lg+ screens -->
       <div class="w-full lg:w-2/3">
         <ProjectSearch projects={projects} />
-        <ProjectList projects={projects} statuses={statuses} />
+        <ProjectList projects={projects} statuses={statuses} currentUser={currentUser} currentRole={currentRole} />
       </div>
       <!-- Project Form - 1/3 width on lg+ screens -->
       <div id="new-project" class="w-full lg:w-1/3 lg:top-20 overflow-y-scroll no-scrollbar">
         <div class="px-4 pb-6">
           <h2 class="text-2xl font-bold text-center uppercase text-gray-900 dark:text-white mb-8">Create a new project</h2>
 
-          <ProjectForm role={role} isNewProject={true} projectId="" />
+          <ProjectForm currentRole={currentRole} isNewProject={true} projectId="" />
         </div>
       </div>
     </>
@@ -33,7 +33,7 @@ console.log("Dashboard role:", projects);
     <div id="new-project" class="w-full">
       <div class="px-4 pb-6 max-w-2xl mx-auto">
         <h2 class="text-2xl font-bold text-center uppercase text-gray-900 dark:text-white mb-8">Create a new project</h2>
-        <ProjectForm role={role} isNewProject={true} projectId="" />
+        <ProjectForm currentRole={role} isNewProject={true} projectId="" />
       </div>
     </div>
   )}

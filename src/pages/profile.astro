@@ -3,35 +3,16 @@ import App from "../components/common/App.astro";
 import SectionContainer from "../components/common/SectionContainer.astro";
 import BoxIcon from "../components/common/BoxIcon.astro";
 
-// Check authentication
+// Get auth data directly since App component handles auth requirements
 import { checkAuth } from "../lib/auth";
-const { isAuth, user, role } = await checkAuth(Astro.cookies);
-
-if (!isAuth) {
-  return Astro.redirect("/login");
-}
-
-// Get user profile data
-let userProfile = null;
-if (user) {
-  const { supabase } = await import("../lib/supabase");
-  if (supabase) {
-    const { data: profile, error } = await supabase
-      .from("profiles")
-      .select("company_name, first_name, last_name, role, phone")
-      .eq("id", user.id)
-      .single();
-
-    if (!error && profile) {
-      userProfile = profile;
-    }
-  }
-}
+const { isAuth, currentUser, currentRole } = await checkAuth(Astro.cookies);
+const userProfile = currentUser?.profile || null;
 ---
 
 <App
   title="My Profile - CAPCo Fire Protection"
   description="Manage your profile and account settings."
+  requireAuth={true}
 >
   <SectionContainer class="px-6 py-16">
     <div class="mx-auto max-w-2xl">
@@ -141,7 +122,7 @@ if (user) {
               type="email"
               id="email"
               name="email"
-              value={user?.email || ""}
+              value={userProfile?.email || ""}
               readonly
               class="w-full rounded-md border border-gray-300 bg-gray-50 px-3 py-2 text-sm text-gray-500 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-400"
             />

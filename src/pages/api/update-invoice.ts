@@ -34,63 +34,30 @@ export const POST: APIRoute = async ({ request }) => {
       );
     }
 
-    // Update or create line items
+    // Update catalog item IDs
     if (lineItems && lineItems.length > 0) {
-      for (let i = 0; i < lineItems.length; i++) {
-        const item = lineItems[i];
-        const totalPrice = (item.quantity || 0) * (item.unit_price || 0);
+      const catalogItemIds = lineItems
+        .map((item: any) => item.catalog_item_id || item.id)
+        .filter((id: any) => id && !isNaN(parseInt(id)))
+        .map((id: any) => parseInt(id));
 
-        if (item.id) {
-          // Update existing line item
-          const { error: updateError } = await supabase
-            .from("invoice_line_items")
-            .update({
-              description: item.description,
-              quantity: item.quantity,
-              unit_price: item.unit_price,
-              total_price: totalPrice,
-              sort_order: i + 1,
-            })
-            .eq("id", item.id);
+      const { error: lineItemsError } = await supabase
+        .from("invoices")
+        .update({ catalog_item_ids: catalogItemIds })
+        .eq("id", invoiceId);
 
-          if (updateError) {
-            console.error("Error updating line item:", updateError);
-            return new Response(
-              JSON.stringify({
-                error: "Failed to update line item",
-                details: updateError.message,
-              }),
-              {
-                status: 500,
-                headers: { "Content-Type": "application/json" },
-              }
-            );
+      if (lineItemsError) {
+        console.error("Error updating line items:", lineItemsError);
+        return new Response(
+          JSON.stringify({
+            error: "Failed to update line items",
+            details: lineItemsError.message,
+          }),
+          {
+            status: 500,
+            headers: { "Content-Type": "application/json" },
           }
-        } else {
-          // Create new line item
-          const { error: createError } = await supabase.from("invoice_line_items").insert({
-            invoice_id: invoiceId,
-            description: item.description,
-            quantity: item.quantity,
-            unit_price: item.unit_price,
-            total_price: totalPrice,
-            sort_order: i + 1,
-          });
-
-          if (createError) {
-            console.error("Error creating line item:", createError);
-            return new Response(
-              JSON.stringify({
-                error: "Failed to create line item",
-                details: createError.message,
-              }),
-              {
-                status: 500,
-                headers: { "Content-Type": "application/json" },
-              }
-            );
-          }
-        }
+        );
       }
     }
 

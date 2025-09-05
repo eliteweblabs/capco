@@ -6,34 +6,34 @@ import SectionContainer from "../common/SectionContainer.astro";
 interface Props {
   projectId: string;
   fileType?: string;
-  role?: string;
-  projectAuthorEmail?: string;
-  status?: number;
+  authorProfile?: any;
+  projectStatus?: number;
+  currentRole?: string;
 }
 
-const user = await globalServices.getCurrentUser();
+const currentUser = await globalServices.getCurrentUser();
 
-const { projectId, fileType = "media", role, projectAuthorEmail, status } = Astro.props;
-console.log("🔔 [PDF-UPLOAD] Component props:", {
-  projectId,
-  fileType,
-  role,
-  projectAuthorEmail,
-  status,
-});
+const { projectId, fileType = "media", authorProfile, projectStatus, currentRole } = Astro.props;
+// console.log("🔔 [PDF-UPLOAD] Component props:", {
+//   projectId,
+//   fileType,
+//   role,
+//   projectAuthorEmail,
+//   status,
+// });
 
 // Debug button condition
-console.log("🔔 [PDF-UPLOAD] Button condition check:", {
-  role,
-  isClient: role === "Client",
-  status,
-});
+// console.log("🔔 [PDF-UPLOAD] Button condition check:", {
+//   role,
+//   isClient: role === "Client",
+//   status,
+// });
 ---
 
   <div class="rounded-lg bg-white p-6 shadow-md dark:bg-gray-800">
 
 
-    { status === 10 || status === 20 || status === 30 || status === 40 || status === 50 ? (
+    { projectStatus === 10 || projectStatus === 20 || projectStatus === 30 || projectStatus === 40 || projectStatus === 50 ? (
           <!-- Upload Header -->
     <div class="mb-6" id="upload-header">
       <h3 class="mb-2 flex items-center text-lg font-semibold text-gray-900 dark:text-white">
@@ -142,7 +142,7 @@ console.log("🔔 [PDF-UPLOAD] Button condition check:", {
 
     <!-- All Documents Uploaded Button (Clients Only) -->
     {
-      status === 10 ? (
+      projectStatus === 10 ? (
         <div class="mt-6 border-t border-gray-200 pt-6 dark:border-gray-700">
           <div class="text-center">
             <button
@@ -158,7 +158,7 @@ console.log("🔔 [PDF-UPLOAD] Button condition check:", {
     }
   </div>
 
-<script define:vars={{ projectId, fileType, projectAuthorEmail, role, user, status }}>
+<script define:vars={{ projectId, fileType, authorProfile, currentRole, currentUser, projectStatus }}>
   class PDFUpload {
     constructor() {
       this.projectId = projectId;
@@ -169,7 +169,7 @@ console.log("🔔 [PDF-UPLOAD] Button condition check:", {
       this.initialized = false;
       this.isFileDialogOpen = false; // Flag to prevent multiple file dialogs
       // console.log("📱 [PDF-UPLOAD] Mobile detection:", this.isMobile);
-      this.status = status;
+      this.status = projectStatus;
       this.uploadedFiles = [];
       this.init();
     }
@@ -876,11 +876,11 @@ console.log("🔔 [PDF-UPLOAD] Button condition check:", {
         "📁 [PDF-UPLOAD] Handling status-based visibility. Status:",
         this.status,
         "Role:",
-        role
+        currentRole
       );
 
       // Hide "All Documents Uploaded" button for clients if status is > 10
-      if (this.allDocumentsUploadedBtn && role === "Client" && this.status > 10) {
+      if (this.allDocumentsUploadedBtn && currentRole === "Client" && this.status > 10) {
         console.log("📁 [PDF-UPLOAD] Hiding 'All Documents Uploaded' button - status > 10");
         this.allDocumentsUploadedBtn.style.display = "none";
       }

@@ -7,10 +7,14 @@ export const POST: APIRoute = async ({ request, cookies }) => {
   console.log("🔔 [UPDATE-DISCUSSION] API endpoint called");
   try {
     // Check authentication
-    const { isAuth, user, role } = await checkAuth(cookies);
-    console.log("🔔 [UPDATE-DISCUSSION] Auth check result:", { isAuth, hasUser: !!user, role });
+    const { isAuth, currentUser, role } = await checkAuth(cookies);
+    console.log("🔔 [UPDATE-DISCUSSION] Auth check result:", {
+      isAuth,
+      hasUser: !!currentUser,
+      role,
+    });
 
-    if (!isAuth || !user) {
+    if (!isAuth || !currentUser) {
       return new Response(JSON.stringify({ success: false, error: "Authentication required" }), {
         status: 401,
         headers: { "Content-Type": "application/json" },
@@ -55,7 +59,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       discussionId: discussionIdNum,
       mark_completed,
       userRole: role,
-      userId: user.id,
+      userId: currentUser.id,
     });
 
     // First, check if the discussion exists and get its current state

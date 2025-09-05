@@ -1,27 +1,13 @@
 ---
 import App from "../components/common/App.astro";
 import SectionContainer from "../components/common/SectionContainer.astro";
-
-// Check if user is authenticated
-import { checkAuth } from "../lib/auth";
-const authResult = await checkAuth(Astro.cookies);
-const { isAuth, user, role } = authResult;
-
-// Redirect to login if not authenticated
-if (!isAuth || !user) {
-  return Astro.redirect("/login");
-}
-
-// Only allow admins to access this page
-if (role !== "Admin") {
-  return Astro.redirect("/dashboard");
-}
 ---
 
 <App
   title="Email Test Simple - CAPCo Fire Protection"
   description="Simple email test page."
-  user={user}
+  requireAuth={true}
+  requireRole="Admin"
 >
   <SectionContainer class="px-6 py-16">
     <div class="mx-auto max-w-2xl">

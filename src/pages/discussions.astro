@@ -8,15 +8,16 @@ import { getI18N } from "../i18n";
 const { currentLocale } = Astro;
 const i18n = getI18N({ currentLocale });
 
-// Check authentication
-import { checkAuth } from "../lib/auth";
 import { supabase } from "../lib/supabase";
 import { supabaseAdmin } from "../lib/supabase-admin";
 
 
+// Get auth data directly since App component handles auth requirements
+import { checkAuth } from "../lib/auth";
+const { isAuth, currentUser, currentRole } = await checkAuth(Astro.cookies);
 
 // Server-side function to get user info directly from database
-async function getUserInfoServer(userId: string) {
+async function getAuthorInfoServer(userId: string) {
   // Get user metadata from auth.users table
   if (!supabase || !supabaseAdmin) {
     console.error("Database not configured");
@@ -57,7 +58,7 @@ async function getUserInfoServer(userId: string) {
   return userInfo;
 }
 
-const { isAuth, session, user, role } = await checkAuth(Astro.cookies);
+// Auth data comes from props (already set up above)
 
 // Redirect if not authenticated
 if (!isAuth) {
@@ -90,7 +91,7 @@ if (supabase) {
       error = "Failed to load discussions";
     } else {
       // console.log("🔍 [DISCUSSIONS] Loaded discussions data:", discussionsData?.map(d => ({ id: d.id, mark_completed: d.mark_completed })));
-      // Get author profiles using getUserInfoServer function
+      // Get author profiles using getAuthorInfoServer function
       const authorIds = [...new Set(discussionsData?.map(d => d.author_id) || [])];
       let authorProfiles: any = {};
       
@@ -98,7 +99,7 @@ if (supabase) {
         try {
           const userPromises = authorIds.map(async (authorId) => {
             try {
-              const userInfo = await getUserInfoServer(authorId);
+              const userInfo = await getAuthorInfoServer(authorId);
               return { id: authorId, userInfo };
             } catch (error) {
               console.error(`Failed to fetch user info for ${authorId}:`, error);
@@ -172,7 +173,7 @@ function getAuthorName(profile: any): string {
 }
 ---
 
-<App title="Global Discussions - CAPCo Fire Protection" description="View all project discussions and comments across all projects.">
+<App title="Global Discussions - CAPCo Fire Protection" description="View all project discussions and comments across all projects." requireAuth={true}>
   <!-- Header Section -->
   <div class="py-16 px-6 bg-gradient-to-r from-red-50 to-orange-50 dark:from-red-900/20 dark:to-orange-900/20">
     <div class="max-w-6xl mx-auto text-center">
@@ -266,7 +267,7 @@ function getAuthorName(profile: any): string {
                   </div>
                 </div>
                 <div class="flex items-center space-x-2">
-                  {(role === "Admin" || role === "Staff") && discussion.internal && (
+                  {(currentRole === "Admin" || currentRole === "Staff") && discussion.internal && (
                     <div class="inline-flex items-center px-2 py-1 bg-orange-100 dark:bg-orange-900/30 text-orange-800 dark:text-orange-300 text-xs font-medium rounded-full" title="Internal Comment - Only visible to Admin and Staff">
                       <BoxIcon name="lock-alt" class="w-3 h-3 mr-1" />
                       Internal
@@ -291,7 +292,7 @@ function getAuthorName(profile: any): string {
               </div>
               
               <!-- Admin/Staff Only: Mark Completed Toggle -->
-              {(role === "Admin" || role === "Staff") && (
+              {(currentRole === "Admin" || currentRole === "Staff") && (
                 <div class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
                   <div class="flex items-center justify-between">
                     <label class="flex items-center gap-3 cursor-pointer">
@@ -323,7 +324,7 @@ function getAuthorName(profile: any): string {
               )}
               
               <!-- For non-Admin/Staff users, show just the link -->
-              {!(role === "Admin" || role === "Staff") && (
+              {!(currentRole === "Admin" || currentRole === "Staff") && (
                 <div class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
                   <a 
                     href={`/project/${discussion.project_id}?tab=discussion`}
