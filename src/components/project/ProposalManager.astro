@@ -66,6 +66,8 @@ try {
 const hasExistingInvoice = !!existingInvoice;
 ---
 
+{projectStatus !== 20 && ( <style>#content-proposal {pointer-events: none; #add-row-btn, .add-line-item-btn, .delete-line-item-btn {display: none;}}</style>)}
+
 <div class="rounded-lg border border-gray-200 bg-white p-6 dark:border-gray-700 dark:bg-gray-800">
   <!-- Initial state: No proposal generated -->
   <div id="proposal-placeholder" class={hasExistingInvoice ? "hidden" : "py-8 text-center"}>
@@ -289,35 +291,29 @@ const hasExistingInvoice = !!existingInvoice;
         </div>
       )
     }
-    
-    <!-- Payment Section for Proposal (50% Deposit) -->
+ 
+ 
+    {projectStatus === 30 && currentRole === "Client" && (
 
+      <div class="mt-8 rounded-lg border border-gray-200 bg-white p-6 dark:border-gray-700 dark:bg-gray-800">
+        <div class="mb-6">
+          <h3 class="mb-2 text-lg font-medium text-gray-900 dark:text-white">Proposal Payment - 50% Deposit</h3>
+          <p class="text-gray-500 dark:text-gray-400">
+            Pay 50% deposit to approve this proposal and begin work.
+          </p>
+        </div>   <!-- Import PaymentForm component -->
+        <DigitalSignature id="proposal-signature" required={true} width={1200} height={580} placeholder="Proposal Signature" />  
 
-              {projectStatus === 20 && currentRole === "Admin" && (
+        <PaymentForm 
+          invoiceId={parseInt(projectId)} 
+          amount={0}
+          currency="usd"
+          paymentType="deposit"
+          clientProfile={authorProfile}
+        />
+      </div>
+    )}
 
-<DigitalSignature id="proposal-signature" required={true} width={300} height={280} placeholder="Proposal Signature" />
-          
-)}
-          {projectStatus === 20 && currentRole === "Admin" && (
-
-        <div class="mt-8 rounded-lg border border-gray-200 bg-white p-6 dark:border-gray-700 dark:bg-gray-800">
-          <div class="mb-6">
-            <h3 class="mb-2 text-lg font-medium text-gray-900 dark:text-white">Proposal Payment - 50% Deposit</h3>
-            <p class="text-gray-500 dark:text-gray-400">
-              Pay 50% deposit to approve this proposal and begin work.
-            </p>
-          </div>   <!-- Import PaymentForm component -->
-          <PaymentForm 
-            invoiceId={parseInt(projectId)} 
-            amount={0}
-            currency="usd"
-            paymentType="deposit"
-            clientProfile={authorProfile}
-          />
-        </div>
-
-        )}
-  
   </div>
 </div>
 
@@ -1342,15 +1338,15 @@ const hasExistingInvoice = !!existingInvoice;
                 searchInput.value = newSubject;
                 hiddenInput.value = newSubject;
                 hideDropdown();
-                showToast(data.isNew ? "New subject created!" : "Subject selected!", "success");
+                window.showSuccess("Success", data.isNew ? "New subject created!" : "Subject selected!");
                 loadSubjects("");
               } else {
                 console.error("Failed to create subject:", data.error);
-                showToast("Failed to create subject", "error");
+                window.showError("Error", "Failed to create subject");
               }
             } catch (error) {
               console.error("Error creating subject:", error);
-              showToast("Failed to create subject", "error");
+              window.showError("Error", "Failed to create subject");
             }
           }
         });
@@ -1386,7 +1382,7 @@ const hasExistingInvoice = !!existingInvoice;
       const newSubject = hiddenInput ? hiddenInput.value.trim() : "";
 
       if (!newSubject) {
-        showToast("Please select or enter a subject", "error");
+        window.showError("Error", "Please select or enter a subject");
         return;
       }
 
@@ -1413,11 +1409,11 @@ const hasExistingInvoice = !!existingInvoice;
           displayDiv.classList.remove("hidden");
 
           // Show success message
-          showToast("Proposal subject updated successfully!", "success");
+          window.showSuccess("Success", "Proposal subject updated successfully!");
         } else {
           // Check if it's a migration required error
           if (data.migration_required) {
-            showToast("Database column 'subject' not found in invoices table", "error");
+            window.showError("Database Error", "Database column 'subject' not found in invoices table");
             console.error("Column missing:", data.details);
           } else {
             throw new Error(data.error || "Failed to update subject");
@@ -1425,7 +1421,7 @@ const hasExistingInvoice = !!existingInvoice;
         }
       } catch (error) {
         console.error("Error updating proposal subject:", error);
-        showToast("Failed to update proposal subject", "error");
+        window.showError("Error", "Failed to update proposal subject");
       }
     });
 
@@ -1437,73 +1433,23 @@ const hasExistingInvoice = !!existingInvoice;
   }
 
   // Toggle proposal line item selector
-  function toggleProposalSelector() {
-    const container = document.getElementById("proposal-line-item-selector-container");
-    const btn = document.getElementById("show-proposal-selector-btn");
+  // function toggleProposalSelector() {
+  //   const container = document.getElementById("proposal-line-item-selector-container");
+  //   const btn = document.getElementById("show-proposal-selector-btn");
 
-    if (!container || !btn) return;
+  //   if (!container || !btn) return;
 
-    if (container.style.display === "none") {
-      container.style.display = "block";
-      btn.innerHTML = '<i class="bx bx-minus mr-2 h-4 w-4"></i>Hide Line Items';
-    } else {
-      container.style.display = "none";
-      btn.innerHTML = '<i class="bx bx-plus mr-2 h-4 w-4"></i>Add Line Items';
-    }
-  }
+  //   if (container.style.display === "none") {
+  //     container.style.display = "block";
+  //     btn.innerHTML = '<i class="bx bx-minus mr-2 h-4 w-4"></i>Hide Line Items';
+  //   } else {
+  //     container.style.display = "none";
+  //     btn.innerHTML = '<i class="bx bx-plus mr-2 h-4 w-4"></i>Add Line Items';
+  //   }
+  // }
 
-  // Mobile-friendly toast notification function
-  function showToast(message, type = "info") {
-    const toast = document.createElement("div");
-
-    // Mobile-first responsive positioning
-    toast.className = `fixed z-50 transition-all duration-300 rounded-lg text-white shadow-lg
-          top-4 left-4 right-4 mx-auto max-w-sm
-          sm:top-4 sm:right-4 sm:left-auto sm:mx-0 sm:max-w-none sm:w-auto
-          px-4 py-3 text-sm font-medium
-          ${type === "success" ? "bg-green-600" : type === "error" ? "bg-red-600" : "bg-blue-600"}`;
-
-    // Add icon based on type
-    const icons = {
-      success: "✓",
-      error: "✕",
-      info: "ℹ",
-    };
-
-    toast.innerHTML = `
-          <div class="flex items-center space-x-2">
-            <span class="flex-shrink-0 text-lg font-bold">${icons[type] || icons.info}</span>
-            <span class="flex-1">${message}</span>
-          </div>
-        `;
-
-    document.body.appendChild(toast);
-
-    // Auto-dismiss after 4 seconds (longer for mobile users to read)
-    setTimeout(() => {
-      toast.style.opacity = "0";
-      toast.style.transform = "translateY(-10px)";
-      setTimeout(() => {
-        if (document.body.contains(toast)) {
-          document.body.removeChild(toast);
-        }
-      }, 300);
-    }, 4000);
-
-    // Allow manual dismiss by tapping
-    toast.addEventListener("click", () => {
-      toast.style.opacity = "0";
-      toast.style.transform = "translateY(-10px)";
-      setTimeout(() => {
-        if (document.body.contains(toast)) {
-          document.body.removeChild(toast);
-        }
-      }, 300);
-    });
-  }
 
   // Make functions globally available
   window.initializeSubjectEditing = initializeSubjectEditing;
-  window.toggleProposalSelector = toggleProposalSelector;
-  window.showToast = showToast;
+  // window.toggleProposalSelector = toggleProposalSelector;
 </script>

@@ -216,7 +216,7 @@ export class ProposalManager {
           </button>
           <button
             type="button"
-            class="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300"
+            class="delete-line-item-btn text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300"
             onclick="this.closest('tr').remove(); updateProposalTotal();"
             title="Delete line item"
           >
@@ -554,6 +554,7 @@ export class ProposalManager {
         headers: {
           "Content-Type": "application/json",
         },
+        credentials: "include", // Include cookies for authentication
         body: JSON.stringify({
           projectId: this.projectId,
           status: 30, // Proposal Shipped
@@ -1452,7 +1453,7 @@ export class ProposalManager {
     const addRowBtn = document.createElement("tr");
     addRowBtn.innerHTML = `
       <td colspan="4" class="px-4 py-3 text-center border-t border-gray-200 dark:border-gray-600">
-        <button 
+        <button id="add-row-btn"
           type="button"
           onclick="window.proposalManager?.addProposalRow()"
           class="inline-flex items-center px-3 py-2 text-sm font-medium text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded transition-colors dark:text-blue-400 dark:hover:text-blue-300 dark:hover:bg-blue-900/20"

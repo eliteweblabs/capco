@@ -3,7 +3,8 @@ import App from "../components/common/App.astro";
 import { checkAuth } from "../lib/auth";
 
 // Check authentication
-const { isAuth, session, currentUser, role } = await checkAuth(Astro.cookies);
+const { isAuth, session, currentUser, currentRole } = await checkAuth(Astro.cookies);
+const role = currentRole;
 
 if (!isAuth) {
   return Astro.redirect("/login");
@@ -179,7 +180,7 @@ if (!isAuth) {
     <div class="mt-6 rounded-lg bg-blue-50 p-4 dark:bg-blue-900/20">
       <h3 class="text-sm font-medium text-blue-800 dark:text-blue-200">Current User Info</h3>
       <p class="text-sm text-blue-600 dark:text-blue-300">
-        Role: {role} | Email: {user?.email} | ID: {user?.id}
+        Role: {role} | Email: {currentUser?.email} | ID: {currentUser?.id}
       </p>
     </div>
   </div>
@@ -195,7 +196,7 @@ if (!isAuth) {
     info: console.info,
   };
 
-  function addToConsole(type, args) {
+  function addToConsole(type: string, args: any[]) {
     const timestamp = new Date().toLocaleTimeString();
     const message = Array.from(args)
       .map((arg) => (typeof arg === "object" ? JSON.stringify(arg, null, 2) : String(arg)))
@@ -209,11 +210,11 @@ if (!isAuth) {
     };
 
     const div = document.createElement("div");
-    div.className = colors[type] || "text-green-400";
+    div.className = (colors as any)[type] || "text-green-400";
     div.innerHTML = `<span class="text-gray-500">[${timestamp}]</span> <span class="text-purple-400">[${type.toUpperCase()}]</span> ${message}`;
 
-    consoleOutput.appendChild(div);
-    consoleOutput.scrollTop = consoleOutput.scrollHeight;
+    consoleOutput?.appendChild(div);
+    if (consoleOutput) consoleOutput.scrollTop = consoleOutput.scrollHeight;
   }
 
   // Override console methods
@@ -238,13 +239,16 @@ if (!isAuth) {
   };
 
   // Clear console button
-  document.getElementById("clear-console").addEventListener("click", () => {
-    consoleOutput.innerHTML = "";
-  });
+  const clearConsoleBtn = document.getElementById("clear-console");
+  if (clearConsoleBtn) {
+    clearConsoleBtn.addEventListener("click", () => {
+      if (consoleOutput) consoleOutput.innerHTML = "";
+    });
+  }
 
   // Load clients for admin/staff users
   async function loadClients() {
-    const userRole = '{role}';
+    const userRole = '{role}' as string;
     if (userRole === 'Client') return;
 
     try {
@@ -258,7 +262,7 @@ if (!isAuth) {
         const select = document.getElementById('author-select');
         if (select) {
           select.innerHTML = '<option value="">Select a client...</option>';
-          clients.forEach(client => {
+          clients.forEach((client: any) => {
             const displayName = client.company_name || `${client.first_name} ${client.last_name}`;
             const option = document.createElement('option');
             option.value = client.id;
@@ -281,7 +285,8 @@ if (!isAuth) {
   
   if (newClientToggle && existingSection && newSection) {
     newClientToggle.addEventListener('change', (e) => {
-      if (e.target.checked) {
+      const target = e.target as HTMLInputElement;
+      if (target?.checked) {
         existingSection.classList.add('hidden');
         newSection.classList.remove('hidden');
         console.log("🧪 [DEBUG] Switched to new client mode");
@@ -294,13 +299,16 @@ if (!isAuth) {
   }
 
   // Form submission
-  document.getElementById("test-project-form").addEventListener("submit", async (e) => {
-    e.preventDefault();
+  const testForm = document.getElementById("test-project-form");
+  if (testForm) {
+    testForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
 
-    console.log("🧪 [DEBUG] Starting test project creation...");
+      console.log("🧪 [DEBUG] Starting test project creation...");
 
-    const formData = new FormData(e.target);
-    const userRole = '{role}';
+      const form = e.target as HTMLFormElement;
+      const formData = new FormData(form);
+    const userRole = '{role}' as string;
     
     // Build project data based on user role
     const projectData = {
@@ -313,22 +321,23 @@ if (!isAuth) {
 
     // Add client/author data for admin/staff
     if (userRole !== 'Client') {
-      const isNewClient = document.getElementById('new-client-toggle')?.checked;
+      const newClientToggle = document.getElementById('new-client-toggle') as HTMLInputElement;
+      const isNewClient = newClientToggle?.checked;
       
       if (isNewClient) {
         // Creating new client
-        projectData.new_client = 'on';
-        projectData.first_name = formData.get("first_name");
-        projectData.last_name = formData.get("last_name");
-        projectData.email = formData.get("email");
-        projectData.company_name = formData.get("company_name");
+        (projectData as any).new_client = 'on';
+        (projectData as any).first_name = formData.get("first_name");
+        (projectData as any).last_name = formData.get("last_name");
+        (projectData as any).email = formData.get("email");
+        (projectData as any).company_name = formData.get("company_name");
         console.log("🧪 [DEBUG] Creating project with NEW client");
       } else {
         // Using existing client
-        projectData.author_id = formData.get("author_id");
-        console.log("🧪 [DEBUG] Creating project for EXISTING client:", projectData.author_id);
+        (projectData as any).author_id = formData.get("author_id");
+        console.log("🧪 [DEBUG] Creating project for EXISTING client:", (projectData as any).author_id);
         
-        if (!projectData.author_id) {
+        if (!(projectData as any).author_id) {
           console.error("🧪 [DEBUG] ❌ No client selected!");
           return;
         }
@@ -374,6 +383,7 @@ if (!isAuth) {
                headers: {
                  "Content-Type": "application/json",
                },
+               credentials: "include", // Include cookies for authentication
                body: JSON.stringify({
                  projectId: result.id,
                  status: 10, // Fixed: API expects 'status', not 'newStatus'
@@ -406,15 +416,16 @@ if (!isAuth) {
           hint: result.hint,
         });
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("🧪 [DEBUG] ❌ Network or parsing error:", error);
       console.error("🧪 [DEBUG] Error details:", {
-        name: error.name,
-        message: error.message,
-        stack: error.stack,
+        name: error?.name,
+        message: error?.message,
+        stack: error?.stack,
       });
     }
-  });
+    });
+  }
 
   console.log("🧪 [DEBUG] Debug page loaded and ready!");
   

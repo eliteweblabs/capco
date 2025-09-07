@@ -8,10 +8,13 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     console.log("Download API called with:", { filePath, fileName, projectId });
 
     if (!filePath || !fileName || !projectId) {
-      return new Response(JSON.stringify({ error: "File path, name, and project ID are required" }), {
-        status: 400,
-        headers: { "Content-Type": "application/json" },
-      });
+      return new Response(
+        JSON.stringify({ error: "File path, name, and project ID are required" }),
+        {
+          status: 400,
+          headers: { "Content-Type": "application/json" },
+        }
+      );
     }
 
     // Set up session from cookies

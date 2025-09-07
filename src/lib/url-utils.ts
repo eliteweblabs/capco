@@ -72,7 +72,7 @@ export function getApiBaseUrl(request?: Request): string {
  */
 export function buildUrl(path: string, request?: Request): string {
   const baseUrl = getBaseUrl(request);
-  return `${baseUrl}${path.startsWith('/') ? path : `/${path}`}`;
+  return `${baseUrl}${path.startsWith("/") ? path : `/${path}`}`;
 }
 
 /**
@@ -80,5 +80,5 @@ export function buildUrl(path: string, request?: Request): string {
  */
 export function buildApiUrl(path: string, request?: Request): string {
   const baseUrl = getApiBaseUrl(request);
-  return `${baseUrl}${path.startsWith('/') ? path : `/${path}`}`;
+  return `${baseUrl}${path.startsWith("/") ? path : `/${path}`}`;
 }

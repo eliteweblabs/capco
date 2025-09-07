@@ -55,12 +55,14 @@ Your application needs a storage bucket named `project-documents` for file uploa
 ### Issue: "Bucket not found" error
 
 **Solution:**
+
 - Ensure bucket name is exactly `project-documents` (case-sensitive)
 - Check that bucket was created successfully in Storage dashboard
 
 ### Issue: "Permission denied" error
 
 **Solution:**
+
 - Run the SQL script to create storage policies
 - Ensure user is authenticated
 - Check RLS policies are properly configured
@@ -68,12 +70,14 @@ Your application needs a storage bucket named `project-documents` for file uploa
 ### Issue: "File type not allowed" error
 
 **Solution:**
+
 - Update bucket MIME type settings
 - Check file type validation in upload API
 
 ### Issue: "Storage access error"
 
 **Solution:**
+
 - Verify Supabase environment variables are set
 - Check that storage policies allow authenticated access
 - Ensure user has proper role permissions

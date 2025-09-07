@@ -1,6 +1,7 @@
 # Disable Supabase Authentication Emails
 
 ## 🎯 Goal
+
 Disable Supabase's built-in authentication emails and handle them with Resend instead.
 
 ## 🛠 Steps to Configure
@@ -11,7 +12,7 @@ Disable Supabase's built-in authentication emails and handle them with Resend in
 2. **Navigate to Authentication → Settings**
 3. **Email Settings Section:**
    - ✅ **Disable "Enable email confirmations"**
-   - ✅ **Disable "Enable email change confirmations"** 
+   - ✅ **Disable "Enable email change confirmations"**
    - ✅ **Disable "Enable password recovery emails"**
 
 ### 2. Alternative: Custom SMTP (Optional)

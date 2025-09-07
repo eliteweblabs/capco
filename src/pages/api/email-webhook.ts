@@ -1,3 +1,7 @@
+// src/pages/api/email-webhook.ts
+// This file is used to handle email webhooks from the email provider
+// It is used to create a new project from an email
+
 import type { APIRoute } from "astro";
 import { supabase } from "../../lib/supabase";
 

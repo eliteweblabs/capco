@@ -9,10 +9,10 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     const { password, accessToken, refreshToken } = await request.json();
 
     if (!password || !accessToken) {
-      return new Response(
-        JSON.stringify({ error: "Password and access token are required" }),
-        { status: 400, headers: { "Content-Type": "application/json" } }
-      );
+      return new Response(JSON.stringify({ error: "Password and access token are required" }), {
+        status: 400,
+        headers: { "Content-Type": "application/json" },
+      });
     }
 
     if (password.length < 6) {
@@ -24,21 +24,24 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
     if (!supabaseAdmin || !supabase) {
       console.error("Supabase clients not available");
-      return new Response(
-        JSON.stringify({ error: "Server configuration error" }),
-        { status: 500, headers: { "Content-Type": "application/json" } }
-      );
+      return new Response(JSON.stringify({ error: "Server configuration error" }), {
+        status: 500,
+        headers: { "Content-Type": "application/json" },
+      });
     }
 
     // Get user from the access token
-    const { data: { user }, error: userError } = await supabaseAdmin.auth.getUser(accessToken);
+    const {
+      data: { user },
+      error: userError,
+    } = await supabaseAdmin.auth.getUser(accessToken);
 
     if (userError || !user) {
       console.error("Error getting user from token:", userError);
-      return new Response(
-        JSON.stringify({ error: "Invalid or expired reset link" }),
-        { status: 400, headers: { "Content-Type": "application/json" } }
-      );
+      return new Response(JSON.stringify({ error: "Invalid or expired reset link" }), {
+        status: 400,
+        headers: { "Content-Type": "application/json" },
+      });
     }
 
     // Update the user's password using admin client
@@ -48,10 +51,10 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
     if (updateError) {
       console.error("Error updating password:", updateError);
-      return new Response(
-        JSON.stringify({ error: "Failed to update password" }),
-        { status: 500, headers: { "Content-Type": "application/json" } }
-      );
+      return new Response(JSON.stringify({ error: "Failed to update password" }), {
+        status: 500,
+        headers: { "Content-Type": "application/json" },
+      });
     }
 
     // Create a fresh session using the new password
@@ -62,10 +65,10 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
     if (signInError) {
       console.error("Error creating fresh session:", signInError);
-      return new Response(
-        JSON.stringify({ error: "Failed to create session with new password" }),
-        { status: 500, headers: { "Content-Type": "application/json" } }
-      );
+      return new Response(JSON.stringify({ error: "Failed to create session with new password" }), {
+        status: 500,
+        headers: { "Content-Type": "application/json" },
+      });
     }
 
     // Ensure user profile exists
@@ -78,18 +81,17 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     setAuthCookies(cookies, access_token, refresh_token);
 
     return new Response(
-      JSON.stringify({ 
+      JSON.stringify({
         message: "Password updated successfully and session created",
-        user: signInData.user 
+        user: signInData.user,
       }),
       { status: 200, headers: { "Content-Type": "application/json" } }
     );
-
   } catch (error) {
     console.error("Reset password error:", error);
-    return new Response(
-      JSON.stringify({ error: "Internal server error" }),
-      { status: 500, headers: { "Content-Type": "application/json" } }
-    );
+    return new Response(JSON.stringify({ error: "Internal server error" }), {
+      status: 500,
+      headers: { "Content-Type": "application/json" },
+    });
   }
 };

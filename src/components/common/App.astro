@@ -119,16 +119,6 @@ const lang = getLangFromUrl(Astro.url);
     <script>
       // Wait for environment variables to be loaded, then load Google Maps
       function loadGoogleMaps() {
-        // console.log("🔍 [GoogleMaps] Checking for API key...");
-        // console.log(
-        //   "🔍 [GoogleMaps] window.GOOGLE_MAPS_API_KEY:",
-        //   (window as any).GOOGLE_MAPS_API_KEY ? "Present" : "Missing"
-        // );
-        // console.log(
-        //   "🔍 [GoogleMaps] API key length:",
-        //   (window as any).GOOGLE_MAPS_API_KEY ? (window as any).GOOGLE_MAPS_API_KEY.length : 0
-        // );
-
         if (
           (window as any).GOOGLE_MAPS_API_KEY &&
           (window as any).GOOGLE_MAPS_API_KEY.trim() !== ""
@@ -161,11 +151,6 @@ const lang = getLangFromUrl(Astro.url);
           console.warn(
             "❌ [GoogleMaps] Google Maps API key not found. Maps functionality will be disabled."
           );
-          // console.log("🔍 [GoogleMaps] Available environment variables:", {
-          //   SUPABASE_URL: (window as any).SUPABASE_URL ? "Set" : "Missing",
-          //   SUPABASE_ANON_KEY: (window as any).SUPABASE_ANON_KEY ? "Set" : "Missing",
-          //   GOOGLE_MAPS_API_KEY: (window as any).GOOGLE_MAPS_API_KEY ? "Set" : "Missing",
-          // });
         }
       }
 
@@ -240,7 +225,7 @@ const lang = getLangFromUrl(Astro.url);
               currentUser={{
                 id: currentUser.id,
                 email: currentUser.email || "",
-                company_name: currentUser.company_name || currentUser.display_name || "User",
+                company_name: currentUser.company_name || "User",
               }}
               currentRole={currentRole || ""}
             />
@@ -248,19 +233,6 @@ const lang = getLangFromUrl(Astro.url);
         )
       }
     </div>
-    <!-- <ChatWidget user={user} currentRole={currentRole || ""} /> -->
-
-    <!-- Flowbite removed - not being used -->
-
-    <!-- Inject session tokens for client-side Supabase auth -->
-    <script
-      set:html={`
-        const accessToken = "${Astro.cookies.get("sb-access-token")?.value || ""}";
-        const refreshToken = "${Astro.cookies.get("sb-refresh-token")?.value || ""}";
-        if (accessToken) window.SUPABASE_ACCESS_TOKEN = accessToken;
-        if (refreshToken) window.SUPABASE_REFRESH_TOKEN = refreshToken;
-      `}
-    />
 
     <!-- Global URL Parameter Toast Handler -->
     <script>
@@ -410,21 +382,19 @@ const lang = getLangFromUrl(Astro.url);
     <!-- Expose centralized notification system to window object -->
     <script>
       import {
-        showNotification,
+        showToast,
         showSuccess,
         showError,
         showWarning,
         showInfo,
-        showStatusToast,
-      } from "../../lib/centralized-notifications";
+      } from "../../lib/simple-toast";
 
-      // Make centralized notifications available globally
-      (window as any).showNotification = showNotification;
+      // Make toast utilities available globally
+      (window as any).showToast = showToast;
       (window as any).showSuccess = showSuccess;
       (window as any).showError = showError;
       (window as any).showWarning = showWarning;
       (window as any).showInfo = showInfo;
-      (window as any).showStatusToast = showStatusToast;
 
       // console.log("🔔 [APP] Centralized notification system exposed to window object");
       // console.log("🔔 [APP] Window functions available:", {

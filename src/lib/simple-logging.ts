@@ -17,7 +17,7 @@ export class SimpleProjectLogger {
   static async addLogEntry(
     projectId: number,
     action: string,
-    userEmail: string,
+    currrentUserId: string,
     details: string,
     oldValue?: any,
     newValue?: any
@@ -32,7 +32,7 @@ export class SimpleProjectLogger {
       const logEntry: SimpleLogEntry = {
         timestamp: new Date().toISOString(),
         action,
-        user: userEmail,
+        user: currrentUserId,
         details,
         old_value: oldValue,
         new_value: newValue,
@@ -127,11 +127,11 @@ export class SimpleProjectLogger {
   /**
    * Convenience methods for common actions
    */
-  static async logProjectCreation(projectId: number, userEmail: string, projectData: any) {
+  static async logProjectCreation(projectId: number, currrentUserId: string, projectData: any) {
     return await this.addLogEntry(
       projectId,
       "project_created",
-      userEmail,
+      currrentUserId,
       "Project was created",
       null,
       projectData
@@ -140,7 +140,7 @@ export class SimpleProjectLogger {
 
   static async logStatusChange(
     projectId: number,
-    userEmail: string,
+    currrentUserId: string,
     oldStatus: number,
     newStatus: number
   ) {
@@ -152,7 +152,7 @@ export class SimpleProjectLogger {
     return await this.addLogEntry(
       projectId,
       "status_change",
-      userEmail,
+      currrentUserId,
       `Status changed from "${oldStatusName}" to "${newStatusName}"`,
       { status: oldStatus, name: oldStatusName },
       { status: newStatus, name: newStatusName }
@@ -239,7 +239,7 @@ export class SimpleProjectLogger {
 
   static async logProjectUpdate(
     projectId: number,
-    userEmail: string,
+    currrentUserId: string,
     details: string,
     oldData?: any,
     newData?: any
@@ -247,7 +247,7 @@ export class SimpleProjectLogger {
     return await this.addLogEntry(
       projectId,
       "project_updated",
-      userEmail,
+      currrentUserId,
       details,
       oldData,
       newData
@@ -257,13 +257,18 @@ export class SimpleProjectLogger {
   /**
    * Enhanced project update logging with granular change detection
    */
-  static async logProjectChanges(projectId: number, userEmail: string, oldData: any, newData: any) {
+  static async logProjectChanges(
+    projectId: number,
+    currrentUserId: string,
+    oldData: any,
+    newData: any
+  ) {
     // Detect status changes
     if (oldData.status !== newData.status) {
       console.log(
         `📝 [LOGGING] Status change detected for project ${projectId}: ${oldData.status} -> ${newData.status}`
       );
-      await this.logStatusChange(projectId, userEmail, oldData.status, newData.status);
+      await this.logStatusChange(projectId, currrentUserId, oldData.status, newData.status);
     }
 
     // Detect assignment changes
@@ -283,7 +288,7 @@ export class SimpleProjectLogger {
       await this.addLogEntry(
         projectId,
         "assignment_changed",
-        userEmail,
+        currrentUserId,
         `Project assignment changed from ${oldAssignment} to ${newAssignment}`,
         { id: oldData.assigned_to_id, name: oldAssignment },
         { id: newData.assigned_to_id, name: newAssignment }
@@ -307,7 +312,7 @@ export class SimpleProjectLogger {
       await this.addLogEntry(
         projectId,
         "metadata_updated",
-        userEmail,
+        currrentUserId,
         `Project metadata updated: ${changedFieldsList}`,
         oldData,
         newData
@@ -328,7 +333,7 @@ export class SimpleProjectLogger {
       await this.addLogEntry(
         projectId,
         "configuration_updated",
-        userEmail,
+        currrentUserId,
         `Project configuration updated: ${changedConfigList}`,
         oldData,
         newData
@@ -338,18 +343,18 @@ export class SimpleProjectLogger {
     return true;
   }
 
-  static async logFileUpload(projectId: number, userEmail: string, fileName: string) {
+  static async logFileUpload(projectId: number, currrentUserId: string, fileName: string) {
     return await this.addLogEntry(
       projectId,
       "file_uploaded",
-      userEmail,
+      currrentUserId,
       `File uploaded: ${fileName}`,
       null,
       { fileName }
     );
   }
 
-  static async logComment(projectId: number, userEmail: string, comment: string) {
-    return await this.addLogEntry(projectId, "comment_added", userEmail, comment);
+  static async logComment(projectId: number, currrentUserId: string, comment: string) {
+    return await this.addLogEntry(projectId, "comment_added", currrentUserId, comment);
   }
 }

@@ -33,10 +33,10 @@ export interface UserInfo {
  */
 export async function getUserInfo(userId: string): Promise<UserInfo> {
   try {
-    const response = await fetch('/api/get-user-info', {
-      method: 'POST',
+    const response = await fetch("/api/get-user-info", {
+      method: "POST",
       headers: {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
       },
       body: JSON.stringify({ userId }),
     });
@@ -46,14 +46,14 @@ export async function getUserInfo(userId: string): Promise<UserInfo> {
     }
 
     const data = await response.json();
-    
+
     if (!data.success) {
-      throw new Error(data.error || 'Failed to fetch user info');
+      throw new Error(data.error || "Failed to fetch user info");
     }
 
     return data.user;
   } catch (error) {
-    console.error('Error fetching user info:', error);
+    console.error("Error fetching user info:", error);
     throw error;
   }
 }
@@ -72,14 +72,14 @@ export async function getUserInfoGET(userId: string): Promise<UserInfo> {
     }
 
     const data = await response.json();
-    
+
     if (!data.success) {
-      throw new Error(data.error || 'Failed to fetch user info');
+      throw new Error(data.error || "Failed to fetch user info");
     }
 
     return data.user;
   } catch (error) {
-    console.error('Error fetching user info:', error);
+    console.error("Error fetching user info:", error);
     throw error;
   }
 }
@@ -117,7 +117,7 @@ export function getUserRole(userInfo: UserInfo): string {
  * @returns boolean - True if user is admin
  */
 export function isAdmin(userInfo: UserInfo): boolean {
-  return userInfo.role === 'Admin';
+  return userInfo.role === "Admin";
 }
 
 /**
@@ -126,7 +126,7 @@ export function isAdmin(userInfo: UserInfo): boolean {
  * @returns boolean - True if user is staff
  */
 export function isStaff(userInfo: UserInfo): boolean {
-  return userInfo.role === 'Staff';
+  return userInfo.role === "Staff";
 }
 
 /**
@@ -135,7 +135,7 @@ export function isStaff(userInfo: UserInfo): boolean {
  * @returns boolean - True if user is client
  */
 export function isClient(userInfo: UserInfo): boolean {
-  return userInfo.role === 'Client';
+  return userInfo.role === "Client";
 }
 
 /**
@@ -145,11 +145,11 @@ export function isClient(userInfo: UserInfo): boolean {
  */
 export async function getMultipleUsersInfo(userIds: string[]): Promise<UserInfo[]> {
   try {
-    const userPromises = userIds.map(id => getUserInfo(id));
+    const userPromises = userIds.map((id) => getUserInfo(id));
     const users = await Promise.all(userPromises);
     return users;
   } catch (error) {
-    console.error('Error fetching multiple users info:', error);
+    console.error("Error fetching multiple users info:", error);
     throw error;
   }
 }
@@ -165,7 +165,7 @@ export class UserInfoCache {
     const cached = this.cache.get(userId);
     const now = Date.now();
 
-    if (cached && (now - cached.timestamp) < this.TTL) {
+    if (cached && now - cached.timestamp < this.TTL) {
       return cached.data;
     }
 

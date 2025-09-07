@@ -367,7 +367,7 @@ The system is now ready for production use with robust security, real-time commu
     {
       "catalog_item_id": 123,
       "quantity": 5,
-      "unit_price": 150.00,
+      "unit_price": 150.0,
       "description": "Fire Alarm System",
       "details": "Complete installation"
     }

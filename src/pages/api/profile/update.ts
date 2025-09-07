@@ -7,17 +7,17 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
     // Validate input
     if (!companyName || companyName.trim().length === 0) {
-      return new Response(
-        JSON.stringify({ error: "Company name is required" }),
-        { status: 400, headers: { "Content-Type": "application/json" } }
-      );
+      return new Response(JSON.stringify({ error: "Company name is required" }), {
+        status: 400,
+        headers: { "Content-Type": "application/json" },
+      });
     }
 
     if (!supabase) {
-      return new Response(
-        JSON.stringify({ error: "Supabase not configured" }),
-        { status: 500, headers: { "Content-Type": "application/json" } }
-      );
+      return new Response(JSON.stringify({ error: "Supabase not configured" }), {
+        status: 500,
+        headers: { "Content-Type": "application/json" },
+      });
     }
 
     // Get the current user
@@ -25,10 +25,10 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     const refreshToken = cookies.get("sb-refresh-token");
 
     if (!accessToken || !refreshToken) {
-      return new Response(
-        JSON.stringify({ error: "Not authenticated" }),
-        { status: 401, headers: { "Content-Type": "application/json" } }
-      );
+      return new Response(JSON.stringify({ error: "Not authenticated" }), {
+        status: 401,
+        headers: { "Content-Type": "application/json" },
+      });
     }
 
     // Set session to get current user
@@ -38,10 +38,10 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     });
 
     if (sessionError || !sessionData.session) {
-      return new Response(
-        JSON.stringify({ error: "Invalid session" }),
-        { status: 401, headers: { "Content-Type": "application/json" } }
-      );
+      return new Response(JSON.stringify({ error: "Invalid session" }), {
+        status: 401,
+        headers: { "Content-Type": "application/json" },
+      });
     }
 
     const userId = sessionData.session.user.id;
@@ -62,25 +62,24 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
     if (updateError) {
       console.error("Profile update error:", updateError);
-      return new Response(
-        JSON.stringify({ error: "Failed to update profile" }),
-        { status: 500, headers: { "Content-Type": "application/json" } }
-      );
+      return new Response(JSON.stringify({ error: "Failed to update profile" }), {
+        status: 500,
+        headers: { "Content-Type": "application/json" },
+      });
     }
 
     return new Response(
-      JSON.stringify({ 
+      JSON.stringify({
         message: "Profile updated successfully",
-        profile: profile 
+        profile: profile,
       }),
       { status: 200, headers: { "Content-Type": "application/json" } }
     );
-
   } catch (error) {
     console.error("Profile update error:", error);
-    return new Response(
-      JSON.stringify({ error: "Internal server error" }),
-      { status: 500, headers: { "Content-Type": "application/json" } }
-    );
+    return new Response(JSON.stringify({ error: "Internal server error" }), {
+      status: 500,
+      headers: { "Content-Type": "application/json" },
+    });
   }
 };

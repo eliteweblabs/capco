@@ -219,7 +219,7 @@ const existingClientField = formFields.find((f) => f.id === "existing-client-sel
               value={project?.[field.name] || ""}
               projectId={project?.id?.toString() || ""}
               autoSave={true}
-              currentRole={currentRole}
+              currentRole={currentRole || ""}
             />
           </div>
         );
@@ -479,8 +479,8 @@ const existingClientField = formFields.find((f) => f.id === "existing-client-sel
                 method: "POST",
                 headers: {
                   "Content-Type": "application/json",
-                  Cookie: `sb-access-token=${document.cookie.match(/sb-access-token=([^;]+)/)?.[1] || ""}; sb-refresh-token=${document.cookie.match(/sb-refresh-token=([^;]+)/)?.[1] || ""}`,
                 },
+                credentials: "include", // Include cookies for authentication
                 body: JSON.stringify({
                   projectId: result.project.id,
                   status: 10, // Project Created
