@@ -411,7 +411,7 @@ export class ProposalManager {
   /**
    * Save current proposal data to the database
    */
-  async saveCurrentProposalData(): Promise<void> {
+  async saveCurrentProposalData(suppressToast: boolean = false): Promise<void> {
     try {
       console.log("💾 [PROPOSAL-MANAGER] Saving current proposal data");
 
@@ -506,8 +506,8 @@ export class ProposalManager {
 
       if (result.success) {
         console.log("✅ [PROPOSAL-MANAGER] Proposal data saved successfully");
-        // Show success message
-        if ((window as any).showSuccess) {
+        // Show success message only if not suppressed (e.g., when sending proposal)
+        if (!suppressToast && (window as any).showSuccess) {
           (window as any).showSuccess(
             "Proposal Saved",
             "Your proposal has been saved successfully!"
@@ -545,8 +545,8 @@ export class ProposalManager {
     }
 
     try {
-      // First, save the current proposal data to the database
-      await this.saveCurrentProposalData();
+      // First, save the current proposal data to the database (suppress toast)
+      await this.saveCurrentProposalData(true);
 
       // Then update project status to 30 (Proposal Shipped)
       const response = await fetch("/api/update-status", {
@@ -1241,7 +1241,7 @@ export class ProposalManager {
     this.addRowButton(tbody);
   }
 
-  private saveProposalChanges(): void {
+  private saveProposalChanges(suppressToast: boolean = false): void {
     console.log("Saving proposal changes");
 
     const tbody = document.getElementById("proposal-line-items");
@@ -1318,8 +1318,8 @@ export class ProposalManager {
     // Save changes to database
     this.saveLineItemsToDatabase();
 
-    // Show success message
-    if ((window as any).showSuccess) {
+    // Show success message only if not suppressed (e.g., when sending proposal)
+    if (!suppressToast && (window as any).showSuccess) {
       (window as any).showSuccess("Proposal Updated", "Your changes have been saved successfully!");
     }
   }

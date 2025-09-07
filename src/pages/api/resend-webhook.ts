@@ -1,6 +1,5 @@
 import type { APIRoute } from "astro";
 import crypto from "crypto";
-import { supabase } from "../../lib/supabase";
 
 export const POST: APIRoute = async ({ request }) => {
   console.log("📧 [RESEND-WEBHOOK] Webhook received");
@@ -91,105 +90,69 @@ export const POST: APIRoute = async ({ request }) => {
 // Handle email opened events
 async function handleEmailOpened(data: any) {
   try {
-    const { email, created_at, email_id } = data;
-    console.log("📧 [RESEND-WEBHOOK] Processing email opened event:", {
-      email,
-      email_id,
-      created_at,
-    });
+    const { email } = data;
+    console.log("📧 [RESEND-WEBHOOK] Processing email opened event:", { email });
 
-    // Get project ID from email headers (set in email-delivery.ts)
+    // Get project ID from email headers
     const projectId = data.headers?.["X-Project-ID"] || data.headers?.["x-project-id"];
     const currentStatus = data.headers?.["X-Project-Status"] || data.headers?.["x-project-status"];
+    const authorId = data.headers?.["X-Author-ID"] || data.headers?.["x-author-id"];
 
-    if (!projectId) {
-      console.log("📧 [RESEND-WEBHOOK] No project ID found in email headers for:", email);
+    if (!projectId || !currentStatus || !authorId) {
+      console.log(
+        "📧 [RESEND-WEBHOOK] No project ID or status or author ID found in email headers for:",
+        email
+      );
       return;
     }
 
-    if (!supabase) {
-      console.error("❌ [RESEND-WEBHOOK] Supabase client not initialized");
-      return;
-    }
-
-    // Get project details
-    const { data: project, error: projectError } = await supabase
-      .from("projects")
-      .select("id, status, title, address")
-      .eq("id", projectId)
-      .single();
-
-    if (projectError || !project) {
-      console.log("📧 [RESEND-WEBHOOK] Project not found for ID:", projectId);
-      return;
-    }
-
-    console.log("📧 [RESEND-WEBHOOK] Found project:", {
-      id: project.id,
-      title: project.title,
-      address: project.address,
-      currentStatus: project.status,
-      emailStatus: currentStatus,
-    });
-
-    // Update project status based on current status
-    let newStatus = project.status;
-    let statusUpdateReason = "";
-
-    switch (project.status) {
-      case 30: // Proposal Shipped
-        newStatus = 40; // Proposal Viewed
-        statusUpdateReason = "Proposal email opened";
+    // Determine next status based on current status (email opened)
+    // let nextStatus: number;
+    let nextStatus: number;
+    switch (parseInt(currentStatus)) {
+      case 30: // Proposal Sent
+        nextStatus = 40; // Proposal Viewed
         break;
-      case 70: // Deposit Invoice Shipped
-        newStatus = 80; // Deposit Invoice Viewed
-        statusUpdateReason = "Deposit invoice email opened";
+      case 70: // Invoice Sent
+        nextStatus = 80; // Invoice Viewed
         break;
-      case 110: // Submittals Shipped
-        newStatus = 120; // Submittals Viewed
-        statusUpdateReason = "Submittals email opened";
+      case 110: // Submittals Sent
+        nextStatus = 120; // Submittals Viewed
         break;
-      case 150: // Final Invoice Shipped
-        newStatus = 160; // Final Invoice Viewed
-        statusUpdateReason = "Final invoice email opened";
+      case 150: // Final Invoice Sent
+        nextStatus = 160; // Final Invoice Viewed
         break;
-      case 200: // Final Deliverables Shipped
-        newStatus = 210; // Final Deliverables Viewed
-        statusUpdateReason = "Final deliverables email opened";
+      case 200: // Final Deliverables Sent
+        nextStatus = 210; // Final Deliverables Viewed
         break;
       default:
-        console.log("📧 [RESEND-WEBHOOK] No status update needed for status:", project.status);
+        console.log("📧 [RESEND-WEBHOOK] No status update needed for status:", currentStatus);
         return;
     }
 
-    // Only update if status actually changed
-    if (newStatus === project.status) {
-      console.log("📧 [RESEND-WEBHOOK] Status already at target:", project.status);
-      return;
-    }
+    console.log("📧 [RESEND-WEBHOOK] Updating status from", currentStatus, "to", nextStatus);
 
-    // Update project status
-    const { error: updateError } = await supabase
-      .from("projects")
-      .update({
-        status: newStatus,
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", project.id);
+    // Call update-status API to handle the status update and all notifications
+    const updateResponse = await fetch(
+      `${import.meta.env.SITE_URL || "http://localhost:4321"}/api/update-status`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          projectId: projectId,
+          status: nextStatus, // Pass the next status to update to
+          currentUserId: authorId,
+          oldStatus: parseInt(currentStatus),
+        }),
+      }
+    );
 
-    if (updateError) {
-      console.error("📧 [RESEND-WEBHOOK] Error updating project status:", updateError);
+    if (updateResponse.ok) {
+      console.log("📧 [RESEND-WEBHOOK] ✅ Status update triggered successfully");
     } else {
-      console.log("📧 [RESEND-WEBHOOK] ✅ Project status updated successfully:", {
-        projectId: project.id,
-        projectTitle: project.title,
-        projectAddress: project.address,
-        oldStatus: project.status,
-        newStatus,
-        reason: statusUpdateReason,
-        email,
-        timestamp: new Date().toISOString(),
-      });
+      console.error("📧 [RESEND-WEBHOOK] ❌ Status update failed:", await updateResponse.text());
     }
   } catch (error) {
     console.error("📧 [RESEND-WEBHOOK] Error handling email opened:", error);
@@ -210,3 +173,38 @@ async function handleEmailClicked(data: any) {
     console.error("📧 [RESEND-WEBHOOK] Error handling email clicked:", error);
   }
 }
+
+// GET endpoint for testing webhook functionality
+export const GET: APIRoute = async ({ request }) => {
+  console.log("🧪 [RESEND-WEBHOOK] GET test endpoint called");
+
+  // Simulate an email.opened event with correct webhook data structure
+  const testEvent = {
+    type: "email.opened",
+    created_at: new Date().toISOString(),
+    data: {
+      email: "test@eliteweblabs.com",
+      headers: {
+        "X-Project-ID": "303",
+        "X-Project-Status": "30",
+        "X-Author-ID": "039566a7-1890-4603-b636-9b3248437eba",
+      },
+    },
+  };
+
+  console.log("🧪 [RESEND-WEBHOOK] Simulating email.opened event:", testEvent);
+
+  // Call the handleEmailOpened function with test data
+  await handleEmailOpened(testEvent.data);
+
+  return new Response(
+    JSON.stringify({
+      message: "Test webhook event processed",
+      event: testEvent,
+    }),
+    {
+      status: 200,
+      headers: { "Content-Type": "application/json" },
+    }
+  );
+};

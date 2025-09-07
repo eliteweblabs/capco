@@ -119,13 +119,18 @@ if (supabase) {
         .from("profiles")
         .select("id, company_name")
         .eq("id", project.assigned_to_id)
-        .single();
+        .maybeSingle();
 
       if (assignedProfileError) {
         console.error("Error fetching assigned user profile:", assignedProfileError);
-      } else {
+        project.assigned_to_name = null;
+      } else if (assignedProfileData) {
         // Add assigned user name to the project data
         project.assigned_to_name = assignedProfileData.company_name || assignedProfileData.id;
+      } else {
+        // Profile not found for assigned user ID
+        console.log("No profile found for assigned user ID:", project.assigned_to_id);
+        project.assigned_to_name = null;
       }
     } else {
       project.assigned_to_name = null;

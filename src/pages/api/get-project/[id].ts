@@ -113,14 +113,22 @@ export const GET: APIRoute = async ({ params, cookies }) => {
         .from("profiles")
         .select("id, company_name")
         .eq("id", project.assigned_to_id)
-        .single();
+        .maybeSingle();
 
       if (assignedError) {
         console.error("📡 [GET-PROJECT-ID] Error fetching assigned user profile:", assignedError);
-      } else {
+        project.assigned_to_name = null;
+      } else if (assignedProfile) {
         // Add assigned user name to the project data
         project.assigned_to_name = assignedProfile.company_name || assignedProfile.id;
         // console.log("📡 [GET-PROJECT-ID] Assigned user profile loaded:", project.assigned_to_name);
+      } else {
+        // Profile not found for assigned user ID
+        console.log(
+          "📡 [GET-PROJECT-ID] No profile found for assigned user ID:",
+          project.assigned_to_id
+        );
+        project.assigned_to_name = null;
       }
     } else {
       project.assigned_to_name = null;
