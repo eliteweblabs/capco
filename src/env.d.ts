@@ -6,11 +6,11 @@ interface ImportMetaEnv {
   readonly SUPABASE_URL: string;
   readonly SUPABASE_ANON_KEY: string;
   readonly SUPABASE_SERVICE_ROLE_KEY?: string;
-  
+
   // Supabase - Client-side (optional, fallback to above)
   readonly PUBLIC_SUPABASE_URL?: string;
   readonly PUBLIC_SUPABASE_ANON_KEY?: string;
-  
+
   // Email configuration
   readonly EMAIL_PROVIDER?: string;
   readonly EMAIL_API_KEY?: string;
@@ -30,7 +30,7 @@ interface ImportMeta {
 declare namespace App {
   interface Locals {
     email?: string;
-    user?: import('@supabase/supabase-js').User;
+    user?: import("@supabase/supabase-js").User;
     role?: string;
   }
 }

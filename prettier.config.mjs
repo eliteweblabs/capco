@@ -11,6 +11,7 @@ export default {
       files: "*.astro",
       options: {
         parser: "astro",
+        plugins: ["prettier-plugin-astro"],
       },
     },
   ],

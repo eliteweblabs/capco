@@ -12,13 +12,13 @@ Run this query in your Supabase SQL editor to check the current setup:
 
 ```sql
 -- Check that est_time column exists and has values
-SELECT 
+SELECT
   code,
   name,
   est_time,
   LEFT(toast_admin, 50) || '...' as toast_admin_preview,
   LEFT(toast_client, 50) || '...' as toast_client_preview
-FROM project_statuses 
+FROM project_statuses
 WHERE est_time IS NOT NULL
 ORDER BY code;
 ```
@@ -38,10 +38,12 @@ ORDER BY code;
 ### 4. Expected Results
 
 **For Status 20 (Documents Submitted):**
+
 - **Admin/Staff Message**: "Documents submitted for [Project Title] by [Client Email] - generating proposal"
 - **Client Message**: "We have received your project documents and will begin preparing a proposal of services. We will notify you at [Client Email] in [EST_TIME]."
 
 **Example with EST_TIME replacement:**
+
 - **Before**: "We will notify you at client@example.com in {{EST_TIME}}."
 - **After**: "We will notify you at client@example.com in 3-5 business days."
 
@@ -79,14 +81,17 @@ console.log("Toast message:", toastMessage);
 ## Common Issues
 
 ### 1. EST_TIME Not Replaced
+
 **Cause**: Status config not being passed correctly
 **Solution**: Check that `result.statusConfig.est_time` exists in the API response
 
 ### 2. Wrong EST_TIME Value
+
 **Cause**: Database has incorrect values
 **Solution**: Update the `est_time` values in the `project_statuses` table
 
 ### 3. No Toast Message
+
 **Cause**: Toast system not working
 **Solution**: Check that `window.showSuccess` is available
 
@@ -96,15 +101,15 @@ If you need to update your database with test values:
 
 ```sql
 -- Update status 20 with your example message
-UPDATE project_statuses 
-SET 
+UPDATE project_statuses
+SET
   toast_client = 'We have received your project documents and will begin preparing a proposal of services. We will notify you at {{CLIENT_EMAIL}} in {{EST_TIME}}.',
   est_time = '3-5 business days'
 WHERE code = 20;
 
 -- Update other statuses as needed
-UPDATE project_statuses 
-SET 
+UPDATE project_statuses
+SET
   toast_client = 'Your proposal is ready! We will follow up in {{EST_TIME}} if we don\'t hear from you.',
   est_time = '2-3 business days'
 WHERE code = 30;
@@ -116,6 +121,6 @@ WHERE code = 30;
 ✅ **API**: Returns `est_time` in status config  
 ✅ **Components**: Pass `est_time` to toast system  
 ✅ **Placeholders**: `{{EST_TIME}}` gets replaced correctly  
-✅ **Messages**: Toast notifications show with correct time estimates  
+✅ **Messages**: Toast notifications show with correct time estimates
 
 If all these are working, your EST_TIME placeholder system is fully functional!

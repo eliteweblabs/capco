@@ -175,7 +175,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
           description: description?.trim() || null,
           category: category?.trim() || "General",
           usage_count: 1,
-          created_by: user.id,
+          created_by: currentUser.id,
         })
         .select()
         .single();

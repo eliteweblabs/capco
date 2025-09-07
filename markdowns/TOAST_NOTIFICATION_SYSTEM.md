@@ -27,6 +27,7 @@ The system supports the following placeholders in toast messages:
 ### 1. Database Setup
 
 Run the `add-toast-messages.sql` script to:
+
 - Add the new toast message columns
 - Populate default messages for all status codes
 - Configure role-specific messaging
@@ -36,6 +37,7 @@ Run the `add-toast-messages.sql` script to:
 **File**: `src/lib/toast-message-utils.ts`
 
 Key functions:
+
 - `replaceToastPlaceholders()` - Replaces placeholders with actual data
 - `getToastMessage()` - Gets appropriate message based on user role
 - `prepareToastData()` - Prepares data for placeholder replacement
@@ -45,6 +47,7 @@ Key functions:
 **File**: `src/pages/api/update-status.ts`
 
 The API now returns status configuration including toast messages:
+
 ```json
 {
   "success": true,
@@ -82,8 +85,8 @@ The API now returns status configuration including toast messages:
 ```sql
 -- Status 20 (Generating Proposal) - Documents submitted
 -- Using EST_TIME placeholder for dynamic time estimates
-UPDATE project_statuses 
-SET 
+UPDATE project_statuses
+SET
   toast_admin = 'Documents submitted for {{PROJECT_TITLE}} by {{CLIENT_EMAIL}} - generating proposal',
   toast_client = 'We have received your project documents and will begin preparing a proposal of services. We will notify you at {{CLIENT_EMAIL}} in {{EST_TIME}}.',
   est_time = '3-5 business days'
@@ -108,26 +111,26 @@ WHERE code = 20;
 ```javascript
 // Get toast message from API response
 if (result.statusConfig) {
-  const userRole = dropdownButton.getAttribute('data-user-role');
-  const projectTitle = dropdownButton.getAttribute('data-project-title');
-  const clientEmail = dropdownButton.getAttribute('data-client-email');
-  
+  const userRole = dropdownButton.getAttribute("data-user-role");
+  const projectTitle = dropdownButton.getAttribute("data-project-title");
+  const clientEmail = dropdownButton.getAttribute("data-client-email");
+
   // Determine which message to show
-  let toastMessage = '';
-  if (userRole === 'Admin' || userRole === 'Staff') {
-    toastMessage = result.statusConfig.toast_admin || '';
+  let toastMessage = "";
+  if (userRole === "Admin" || userRole === "Staff") {
+    toastMessage = result.statusConfig.toast_admin || "";
   } else {
-    toastMessage = result.statusConfig.toast_client || '';
+    toastMessage = result.statusConfig.toast_client || "";
   }
-  
+
   // Replace placeholders
   toastMessage = toastMessage
     .replace(/{{PROJECT_TITLE}}/g, projectTitle)
     .replace(/{{CLIENT_EMAIL}}/g, clientEmail);
-  
+
   // Show notification using centralized system
   if (window.showSuccess) {
-    window.showSuccess('Status Updated', toastMessage, 5000);
+    window.showSuccess("Status Updated", toastMessage, 5000);
   } else {
     console.log(`🔔 [Status Updated] ${toastMessage}`);
   }

@@ -19,6 +19,7 @@ This project uses Google Maps Places API for address autocomplete functionality.
 
 3. **Add to Environment Variables:**
    Add the API key to your `.env` file:
+
    ```
    GOOGLE_MAPS_API_KEY=your_api_key_here
    ```
@@ -40,10 +41,12 @@ This project uses Google Maps Places API for address autocomplete functionality.
 ## Component Usage
 
 The address field is automatically rendered as a Google Maps Autocomplete component when:
+
 - The field type is "component"
 - The component name is "GoogleAddressAutocomplete"
 
 Example configuration in `project-form-config.ts`:
+
 ```typescript
 {
   id: "address-input",

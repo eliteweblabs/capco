@@ -88,7 +88,7 @@ export const GET: APIRoute = async ({ cookies, url }) => {
           profilesMap.set(profile.id, {
             id: profile.id,
             name: profile.name,
-            display_name: profile.company_name || profile.name || "Unknown User",
+            display_name: profile.company_name || "Unknown User",
             role: profile.role,
           });
         });

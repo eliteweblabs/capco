@@ -92,7 +92,11 @@ export const POST: APIRoute = async ({ request }) => {
 async function handleEmailOpened(data: any) {
   try {
     const { email, created_at, email_id } = data;
-    console.log("📧 [RESEND-WEBHOOK] Processing email opened event:", { email, email_id, created_at });
+    console.log("📧 [RESEND-WEBHOOK] Processing email opened event:", {
+      email,
+      email_id,
+      created_at,
+    });
 
     // Get project ID from email headers (set in email-delivery.ts)
     const projectId = data.headers?.["X-Project-ID"] || data.headers?.["x-project-id"];
@@ -100,6 +104,11 @@ async function handleEmailOpened(data: any) {
 
     if (!projectId) {
       console.log("📧 [RESEND-WEBHOOK] No project ID found in email headers for:", email);
+      return;
+    }
+
+    if (!supabase) {
+      console.error("❌ [RESEND-WEBHOOK] Supabase client not initialized");
       return;
     }
 
@@ -120,7 +129,7 @@ async function handleEmailOpened(data: any) {
       title: project.title,
       address: project.address,
       currentStatus: project.status,
-      emailStatus: currentStatus
+      emailStatus: currentStatus,
     });
 
     // Update project status based on current status
@@ -179,7 +188,7 @@ async function handleEmailOpened(data: any) {
         newStatus,
         reason: statusUpdateReason,
         email,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       });
     }
   } catch (error) {

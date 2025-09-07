@@ -24,15 +24,17 @@ const {
   </label>
 
   <div
-    class="relative rounded-lg border-2 border-dashed border-gray-300 bg-white dark:border-gray-600 dark:bg-gray-800"
+    class="signature-container relative rounded-lg border-2 border-dashed border-gray-300 bg-white dark:border-gray-600 dark:bg-gray-800"
+    data-max-width={width}
+    data-max-height={height}
   >
     <!-- Canvas for signature -->
     <canvas
       id={id}
-      width=`{width}px`
-      height=`{height}px`
-      class="signature-canvas block h-full w-full cursor-crosshair"
-      style={`width: ${width}px; height: ${height}px;`}
+      class="signature-canvas block w-full cursor-crosshair"
+      data-max-width={width}
+      data-max-height={height}
+      data-aspect-ratio={width / height}
     >
       <!-- Placeholder text (shows when empty) -->
       <div
@@ -75,7 +77,34 @@ const {
   </div>
 
   <script>
-    import SignaturePad from "signature_pad";
+    // Load SignaturePad from CDN
+    let SignaturePad: any = null;
+
+    async function loadSignaturePad() {
+      if (SignaturePad) return SignaturePad;
+
+      try {
+        const script = document.createElement("script");
+        script.src =
+          "https://cdn.jsdelivr.net/npm/signature_pad@4.1.7/dist/signature_pad.umd.min.js";
+        script.onload = () => {
+          SignaturePad = (window as any).SignaturePad;
+          console.log("✅ SignaturePad loaded successfully");
+        };
+        document.head.appendChild(script);
+
+        // Wait for script to load
+        return new Promise((resolve) => {
+          script.onload = () => {
+            SignaturePad = (window as any).SignaturePad;
+            resolve(SignaturePad);
+          };
+        });
+      } catch (error) {
+        console.error("❌ Failed to load SignaturePad:", error);
+        return null;
+      }
+    }
 
     class DigitalSignatureManager {
       private signaturePads: Map<string, any> = new Map();
@@ -84,7 +113,15 @@ const {
         this.initializeSignatures();
       }
 
-      initializeSignatures() {
+      async initializeSignatures() {
+        // Wait for SignaturePad to load
+        await loadSignaturePad();
+
+        if (!SignaturePad) {
+          console.error("❌ SignaturePad not available");
+          return;
+        }
+
         const canvases = document.querySelectorAll(".signature-canvas");
 
         canvases.forEach((canvas) => {
@@ -93,6 +130,21 @@ const {
       }
 
       setupSignaturePad(canvas: HTMLCanvasElement) {
+        const maxWidth = canvas.getAttribute("data-max-width") || "400";
+        const maxHeight = canvas.getAttribute("data-max-height") || "200";
+        const aspectRatio = canvas.getAttribute("data-aspect-ratio") || "2";
+
+        console.log(
+          "🎨 [DigitalSignature] Setting up responsive canvas:",
+          canvas.id,
+          "Max dimensions:",
+          maxWidth,
+          "x",
+          maxHeight,
+          "Aspect ratio:",
+          aspectRatio
+        );
+
         const signaturePad = new SignaturePad(canvas, {
           backgroundColor: "rgba(255, 255, 255, 0)",
           penColor: "rgb(0, 0, 0)",
@@ -102,6 +154,8 @@ const {
           throttle: 16,
           minDistance: 5,
         });
+
+        console.log("✅ [DigitalSignature] SignaturePad created for canvas:", canvas.id);
 
         const canvasId = canvas.id;
         this.signaturePads.set(canvasId, signaturePad);
@@ -141,6 +195,14 @@ const {
         window.addEventListener("resize", () => {
           this.resizeCanvas(canvas, signaturePad);
         });
+
+        // Use ResizeObserver for more responsive resizing
+        if (window.ResizeObserver && container) {
+          const resizeObserver = new ResizeObserver(() => {
+            this.resizeCanvas(canvas, signaturePad);
+          });
+          resizeObserver.observe(container);
+        }
 
         // Initial resize
         this.resizeCanvas(canvas, signaturePad);
@@ -245,26 +307,52 @@ const {
         const containerWidth = container.clientWidth;
         const ratio = Math.max(window.devicePixelRatio || 1, 1);
 
-        // Get the original dimensions
-        const originalWidth = parseInt(canvas.getAttribute("width") || "400");
-        const originalHeight = parseInt(canvas.getAttribute("height") || "200");
+        // Get the maximum dimensions and aspect ratio from data attributes
+        const maxWidth = parseInt(canvas.getAttribute("data-max-width") || "400");
+        const maxHeight = parseInt(canvas.getAttribute("data-max-height") || "200");
+        const aspectRatio = parseFloat(canvas.getAttribute("data-aspect-ratio") || "2");
 
-        // Scale to fit container while maintaining aspect ratio
-        const scale = Math.min(containerWidth / originalWidth, 1);
-        const scaledWidth = originalWidth * scale;
-        const scaledHeight = originalHeight * scale;
+        // Calculate responsive dimensions
+        // Use container width but respect max dimensions and aspect ratio
+        const availableWidth = Math.min(containerWidth - 4, maxWidth); // -4 for border
+        const calculatedHeight = availableWidth / aspectRatio;
+        const availableHeight = Math.min(calculatedHeight, maxHeight);
 
-        canvas.width = scaledWidth * ratio;
-        canvas.height = scaledHeight * ratio;
-        canvas.style.width = scaledWidth + "px";
-        canvas.style.height = scaledHeight + "px";
+        // Final dimensions
+        const displayWidth = availableWidth;
+        const displayHeight = availableHeight;
+
+        console.log("📐 [DigitalSignature] Responsive canvas resize:", {
+          containerWidth,
+          maxWidth,
+          maxHeight,
+          aspectRatio,
+          availableWidth,
+          availableHeight,
+          displayWidth,
+          displayHeight,
+          ratio,
+        });
+
+        // Set canvas internal dimensions (for drawing resolution)
+        canvas.width = displayWidth * ratio;
+        canvas.height = displayHeight * ratio;
+
+        // Set canvas display dimensions (for CSS)
+        canvas.style.width = displayWidth + "px";
+        canvas.style.height = displayHeight + "px";
 
         const context = canvas.getContext("2d");
         if (context) {
           context.scale(ratio, ratio);
         }
 
-        signaturePad.clear();
+        // Clear and redraw if there was content
+        if (signaturePad && !signaturePad.isEmpty()) {
+          const data = signaturePad.toDataURL();
+          signaturePad.clear();
+          signaturePad.fromDataURL(data);
+        }
       }
 
       showSignatureStatus(show: HTMLElement | null, hide: HTMLElement | null) {
@@ -305,9 +393,11 @@ const {
     }
 
     // Initialize when DOM is ready
-    document.addEventListener("DOMContentLoaded", () => {
+    document.addEventListener("DOMContentLoaded", async () => {
       if (!window.digitalSignatureManager) {
         window.digitalSignatureManager = new DigitalSignatureManager();
+        // Wait for initialization to complete
+        await window.digitalSignatureManager.initializeSignatures();
       }
     });
 
@@ -322,6 +412,8 @@ const {
   <style>
     .signature-canvas {
       touch-action: none;
+      display: block;
+      border-radius: 0.5rem;
     }
 
     .signature-placeholder {
@@ -332,10 +424,42 @@ const {
       opacity: 0.7;
     }
 
+    /* Responsive signature container */
+    .signature-container {
+      width: 100%;
+      max-width: 100%;
+      position: relative;
+    }
+
+    /* Responsive canvas sizing */
+    .signature-canvas {
+      width: 100% !important;
+      height: auto !important;
+      min-height: 150px;
+      max-height: 400px;
+    }
+
+    /* Maintain aspect ratio on larger screens */
+    @media (min-width: 640px) {
+      .signature-canvas {
+        min-height: 200px;
+        max-height: 500px;
+      }
+    }
+
+    /* Mobile optimizations */
     @media (max-width: 640px) {
       .signature-canvas {
-        width: 100% !important;
-        height: 150px !important;
+        min-height: 120px;
+        max-height: 250px;
+      }
+    }
+
+    /* Very small screens */
+    @media (max-width: 480px) {
+      .signature-canvas {
+        min-height: 100px;
+        max-height: 200px;
       }
     }
   </style>

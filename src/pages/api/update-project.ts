@@ -1,10 +1,7 @@
 import type { APIRoute } from "astro";
-import { readFileSync } from "fs";
-import { join } from "path";
 import { buildUpdateData } from "../../lib/project-fields-config";
+import { SimpleProjectLogger } from "../../lib/simple-logging";
 import { supabase } from "../../lib/supabase";
-import { supabaseAdmin } from "../../lib/supabase-admin";
-import { getApiBaseUrl } from "../../lib/url-utils";
 
 export const POST: APIRoute = async ({ request }) => {
   try {
@@ -76,37 +73,6 @@ export const POST: APIRoute = async ({ request }) => {
     }
 
     // Check if this is a status change and get the old status
-    let oldStatus = null;
-    let isStatusChange = false;
-
-    if (updateFields.status !== undefined) {
-      console.log("🔔 [UPDATE-PROJECT] Checking for status change...");
-      console.log("🔔 [UPDATE-PROJECT] Status field received:", updateFields.status);
-      const { data: currentProject, error: currentProjectError } = await supabase
-        .from("projects")
-        .select("status")
-        .eq("id", projectId)
-        .single();
-
-      console.log("🔔 [UPDATE-PROJECT] Current project status check:", {
-        hasData: !!currentProject,
-        error: currentProjectError,
-        currentStatus: currentProject?.status,
-        newStatus: updateFields.status,
-        projectId,
-      });
-
-      if (currentProject && currentProject.status !== updateFields.status) {
-        oldStatus = currentProject.status;
-        isStatusChange = true;
-        console.log("🔔 [UPDATE-PROJECT] Status change detected:", {
-          oldStatus,
-          newStatus: updateFields.status,
-        });
-      } else {
-        console.log("🔔 [UPDATE-PROJECT] No status change - same status or no current project");
-      }
-    }
 
     // Build update data using the template configuration
     const {
@@ -184,48 +150,18 @@ export const POST: APIRoute = async ({ request }) => {
       } else {
         console.log("New fields updated successfully");
         finalData = newFieldsData;
+        await SimpleProjectLogger.logProjectChanges(projectId, user.id, finalData, newFieldsData);
       }
     }
 
     const data = finalData;
 
-    // Handle status change notifications
-    console.log("🔔 [UPDATE-PROJECT] Status change check:", {
-      isStatusChange,
-      newStatus: updateFields.status,
-      oldStatus,
-    });
-
-    if (isStatusChange && updateFields.status !== undefined) {
-      console.log("🔔 [UPDATE-PROJECT] Calling sendStatusChangeNotifications...");
-      console.log("🔔 [UPDATE-PROJECT] Status change details:", {
-        projectId,
-        newStatus: updateFields.status,
-        oldStatus,
-        isStatusChange,
-      });
-      try {
-        await sendStatusChangeNotifications(projectId, updateFields.status, data, "UPDATE-PROJECT", request);
-        console.log("🔔 [UPDATE-PROJECT] sendStatusChangeNotifications completed successfully");
-      } catch (notificationError) {
-        console.error("Status change notification error:", notificationError);
-        // Don't fail the update if notifications fail
-      }
-    } else {
-      console.log("🔔 [UPDATE-PROJECT] No status change detected, skipping notifications");
-      console.log("🔔 [UPDATE-PROJECT] Status change check details:", {
-        isStatusChange,
-        hasStatusField: updateFields.status !== undefined,
-        newStatus: updateFields.status,
-        oldStatus,
-      });
-    }
-
+    // Return success response
     return new Response(
       JSON.stringify({
         success: true,
         project: data,
-        message: `Project ${updateFields.status ? `status updated to ${updateFields.status}` : "updated successfully"}`,
+        message: "Project updated successfully",
       }),
       {
         status: 200,
@@ -245,238 +181,3 @@ export const POST: APIRoute = async ({ request }) => {
     );
   }
 };
-
-// Function to send status change notifications
-async function sendStatusChangeNotifications(
-  projectId: string,
-  newStatus: number,
-  projectData: any
-) {
-  try {
-    if (!supabase || !supabaseAdmin) {
-      console.error("Supabase clients not available for notifications");
-      return;
-    }
-
-    // Get status configuration from project_statuses table
-    const { data: statusConfig, error: statusError } = await supabase
-      .from("project_statuses")
-      .select("notify, email_content, button_text, est_time")
-      .eq("status_code", newStatus)
-      .single();
-
-    console.log("🔔 [UPDATE-PROJECT] Status configuration query:", {
-      statusCode: newStatus,
-      hasConfig: !!statusConfig,
-      error: statusError,
-      config: statusConfig,
-    });
-
-    if (statusError || !statusConfig) {
-      console.log(`🔔 [UPDATE-PROJECT] No status configuration found for status ${newStatus}`);
-      console.log("🔔 [UPDATE-PROJECT] This means no email will be sent for this status change");
-      return;
-    }
-
-    console.log("🔔 [UPDATE-PROJECT] Status configuration found:", statusConfig);
-
-    const { notify, email_content, button_text, est_time } = statusConfig;
-
-    // Get project details for email
-    console.log("🔔 [UPDATE-PROJECT] Fetching project details for ID:", projectId);
-    const { data: projectDetails, error: projectDetailsError } = await supabase
-      .from("projects")
-      .select("title, address, author_id")
-      .eq("id", projectId)
-      .single();
-
-    console.log("🔔 [UPDATE-PROJECT] Project details query result:", {
-      hasData: !!projectDetails,
-      error: projectDetailsError,
-      projectId,
-      projectDetails: projectDetails
-        ? {
-            title: projectDetails.title,
-            address: projectDetails.address,
-            author_id: projectDetails.author_id,
-          }
-        : null,
-    });
-
-    if (!projectDetails) {
-      console.error("Project details not found for notifications");
-      return;
-    }
-
-    // Get author profile separately
-    console.log("🔔 [UPDATE-PROJECT] Fetching author profile for ID:", projectDetails.author_id);
-    const { data: authorProfile, error: authorProfileError } = await supabase
-      .from("profiles")
-      .select("company_name")
-      .eq("id", projectDetails.author_id)
-      .single();
-
-    // Get user email from auth system
-    const { data: userData, error: userError } = await supabaseAdmin!.auth.admin.getUserById(
-      projectDetails.author_id
-    );
-
-    console.log("🔔 [UPDATE-PROJECT] Author profile and user query result:", {
-      hasProfile: !!authorProfile,
-      profileError: authorProfileError,
-      hasUserData: !!userData,
-      userError: userError,
-      authorId: projectDetails.author_id,
-      userEmail: userData?.user?.email,
-      companyName: authorProfile?.company_name,
-    });
-
-    if (!authorProfile || !userData?.user?.email) {
-      console.error("Author profile or email not found for notifications");
-      return;
-    }
-
-    // Create a user object with the available data
-    const userInfo = {
-      email: userData.user.email,
-      company_name: authorProfile.company_name,
-      first_name: userData.user.user_metadata?.full_name?.split(" ")[0] || "",
-      last_name: userData.user.user_metadata?.full_name?.split(" ").slice(1).join(" ") || "",
-    };
-
-    // Get all users to notify
-    const usersToNotify: Array<{
-      email: string;
-      first_name?: string;
-      last_name?: string;
-      company_name?: string;
-    }> = [];
-
-    if (notify.includes("admin")) {
-      // Get all admin users
-      const { data: adminUsers } = await supabase
-        .from("profiles")
-        .select("email, first_name, last_name, company_name")
-        .eq("role", "Admin");
-
-      if (adminUsers) {
-        usersToNotify.push(...adminUsers);
-      }
-    }
-
-    // Staff notifications are handled by the StaffSelect component
-
-    if (notify.includes("client") || notify.includes("author")) {
-      // Add the project owner/client
-      usersToNotify.push(userInfo);
-    }
-
-    // Read email template
-    const templatePath = join(process.cwd(), "src", "emails", "template.html");
-    let emailTemplate = "";
-    try {
-      emailTemplate = readFileSync(templatePath, "utf-8");
-    } catch (error) {
-      console.error("Error reading email template:", error);
-      return;
-    }
-
-    console.log(
-      "🔔 [UPDATE-PROJECT] Users to notify:",
-      usersToNotify.map((u) => ({
-        email: u.email,
-        name: u.first_name || u.company_name,
-      }))
-    );
-
-    // Send emails to each user
-    for (const user of usersToNotify) {
-      try {
-        // Determine if this user should get a magic link button
-        const isClient = user.email === userInfo.email;
-        const shouldShowButton = isClient; // Only show button for clients
-
-        let magicLink = "";
-        if (shouldShowButton) {
-          // Generate magic link only for clients
-          const { data: magicLinkData, error: magicLinkError } =
-            await supabaseAdmin!.auth.admin.generateLink({
-              type: "magiclink",
-              email: user.email,
-              options: {
-                redirectTo: `${getApiBaseUrl(request)}/project/${projectId}`,
-              },
-            });
-
-          if (magicLinkError) {
-            console.error(`Magic link generation error for ${user.email}:`, magicLinkError);
-            continue;
-          }
-          magicLink = magicLinkData.properties.action_link;
-        }
-
-        // Prepare email content
-        const personalizedContent = email_content
-          .replace(/{{PROJECT_TITLE}}/g, `<strong>${projectDetails.title || "Project"}</strong>`)
-          .replace(/{{PROJECT_ADDRESS}}/g, `<strong>${projectDetails.address || "N/A"}</strong>`)
-          .replace(/{{ADDRESS}}/g, `<strong>${projectDetails.address || "N/A"}</strong>`)
-          .replace(/{{EST_TIME}}/g, `<strong>${est_time || "2-3 business days"}</strong>`)
-          .replace(
-            /{{CLIENT_NAME}}/g,
-            `<strong>${`${user.first_name || ""} ${user.last_name || ""}`.trim() ||
-              user.company_name ||
-              "Client"}</strong>`
-          )
-          .replace(/{{CLIENT_EMAIL}}/g, `<strong>${user.email}</strong>`)
-          // Replace any remaining {{PLACEHOLDER}} with empty string
-          .replace(/\{\{[^}]+\}\}/g, "");
-
-        // Replace template variables
-        let emailHtml = emailTemplate.replace("{{CONTENT}}", personalizedContent);
-
-        if (shouldShowButton) {
-          // For clients: Include magic link button
-          emailHtml = emailHtml.replace("{{BUTTON_TEXT}}", button_text || "View Project");
-          emailHtml = emailHtml.replace("{{BUTTON_LINK}}", magicLink);
-        } else {
-          // For admin/staff: Remove button, just show content
-          emailHtml = emailHtml.replace(/<a[^>]*{{BUTTON_TEXT}}[^>]*>.*?<\/a>/g, "");
-          emailHtml = emailHtml.replace("{{BUTTON_TEXT}}", "");
-          emailHtml = emailHtml.replace("{{BUTTON_LINK}}", "");
-        }
-
-        // Use centralized email delivery system
-        const emailResponse = await fetch(`${getApiBaseUrl(request)}/api/email-delivery`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            projectId,
-            newStatus,
-            usersToNotify: [user],
-            projectDetails: {
-              title: projectDetails.title || "Project",
-              address: projectDetails.address || "N/A",
-              est_time: est_time || "2-3 business days",
-              profiles: [user],
-            },
-            email_content: personalizedContent,
-            button_text: shouldShowButton ? button_text || "View Project" : "",
-          }),
-        });
-
-        if (!emailResponse.ok) {
-          console.error(`Failed to send email to ${user.email}:`, await emailResponse.text());
-        } else {
-          console.log(`Status change notification sent to ${user.email}`);
-        }
-      } catch (userError) {
-        console.error(`Error sending notification to ${user.email}:`, userError);
-      }
-    }
-  } catch (error) {
-    console.error("Error in sendStatusChangeNotifications:", error);
-    throw error;
-  }
-}

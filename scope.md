@@ -269,3 +269,8 @@ all emails deliver through email-delivery.ts except for the authentication ones 
 - **After #3**: Dashboard (~2 queries), Project Page (~1-2 queries)
 - **After #4**: Dashboard (~1 query), Project Page (~1-2 queries)
 - **Total Expected Improvement**: ~60-70% reduction in database queries across main pages
+
+notes
+
+client:visible is for <script>
+User rules are always capitalized Admin, Client, Staff

@@ -41,9 +41,7 @@ export const GET: APIRoute = async ({ request }) => {
     // Fetch all project statuses from database (excluding status 0)
     const { data: statuses, error } = await supabase
       .from("project_statuses")
-      .select(
-        "status_code, status_name, client_visible, admin_visible, notify, email_content, button_text, button_link, est_time, project_action"
-      )
+      .select("status_code, status_name, client_visible, admin_visible")
       .neq("status_code", 0)
       .order("status_code");
 
@@ -69,12 +67,6 @@ export const GET: APIRoute = async ({ request }) => {
           status_code: status.status_code,
           admin_visible: status.admin_visible,
           client_visible: status.client_visible,
-          notify: status.notify,
-          email_content: status.email_content,
-          button_text: status.button_text,
-          button_link: status.button_link,
-          est_time: status.est_time,
-          project_action: status.project_action,
         };
         return acc;
       },
@@ -85,12 +77,6 @@ export const GET: APIRoute = async ({ request }) => {
           status_code: number;
           client_visible: boolean;
           admin_visible: boolean;
-          notify: any;
-          email_content: any;
-          button_text: any;
-          button_link: any;
-          est_time: any;
-          project_action: any;
         }
       >
     );

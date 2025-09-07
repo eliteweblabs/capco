@@ -22,6 +22,7 @@ Then run:
 ```
 
 This will:
+
 - Add a `log` JSONB column to the `projects` table
 - Create an index for efficient querying
 - Initialize with an empty array `[]`
@@ -30,8 +31,8 @@ This will:
 
 ```sql
 -- Check if column was added
-SELECT column_name, data_type 
-FROM information_schema.columns 
+SELECT column_name, data_type
+FROM information_schema.columns
 WHERE table_name = 'projects' AND column_name = 'log';
 
 -- Check a project's log
@@ -49,7 +50,7 @@ Each project's `log` column contains a JSON array of log entries:
   {
     "timestamp": "2024-01-15T10:30:00Z",
     "action": "project_created",
-    "user": "john@example.com", 
+    "user": "john@example.com",
     "details": "Project was created",
     "old_value": null,
     "new_value": {...}
@@ -58,7 +59,7 @@ Each project's `log` column contains a JSON array of log entries:
     "timestamp": "2024-01-15T11:15:00Z",
     "action": "status_change",
     "user": "jane@example.com",
-    "details": "Status changed from 10 to 20", 
+    "details": "Status changed from 10 to 20",
     "old_value": 10,
     "new_value": 20
   }
@@ -78,22 +79,13 @@ Each project's `log` column contains a JSON array of log entries:
 ### In Your APIs
 
 ```typescript
-import { SimpleProjectLogger } from '../lib/simple-logging';
+import { SimpleProjectLogger } from "../lib/simple-logging";
 
 // Log project creation
-await SimpleProjectLogger.logProjectCreation(
-  projectId, 
-  userEmail, 
-  projectData
-);
+await SimpleProjectLogger.logProjectCreation(projectId, userEmail, projectData);
 
 // Log status change
-await SimpleProjectLogger.logStatusChange(
-  projectId,
-  userEmail, 
-  oldStatus,
-  newStatus
-);
+await SimpleProjectLogger.logStatusChange(projectId, userEmail, oldStatus, newStatus);
 
 // Log general update
 await SimpleProjectLogger.logProjectUpdate(
@@ -105,18 +97,10 @@ await SimpleProjectLogger.logProjectUpdate(
 );
 
 // Log file upload
-await SimpleProjectLogger.logFileUpload(
-  projectId,
-  userEmail,
-  fileName
-);
+await SimpleProjectLogger.logFileUpload(projectId, userEmail, fileName);
 
 // Log comment
-await SimpleProjectLogger.logComment(
-  projectId,
-  userEmail,
-  "Client approved the proposal"
-);
+await SimpleProjectLogger.logComment(projectId, userEmail, "Client approved the proposal");
 ```
 
 ### Get Project Log
@@ -142,32 +126,35 @@ The `SimpleProjectLog.astro` component displays the activity log:
 ## 🔍 Viewing Logs
 
 ### In the UI
+
 1. Go to any project page (`/project/[id]`)
 2. Click the "Activity Log" tab
 3. View all project activities in a timeline
 
 ### Via API
+
 ```bash
 # Get project log via API
 curl "http://localhost:4323/api/get-simple-project-log?projectId=1"
 ```
 
 ### Direct Database Query
+
 ```sql
 -- View recent activity for all projects
-SELECT 
+SELECT
   id,
   address,
   jsonb_array_length(log) as log_entries,
   log->-1 as latest_activity
-FROM projects 
+FROM projects
 WHERE jsonb_array_length(log) > 0
 ORDER BY (log->-1->>'timestamp')::timestamp DESC;
 
 -- View specific project's log
-SELECT 
+SELECT
   jsonb_array_elements(log) as activity
-FROM projects 
+FROM projects
 WHERE id = 1
 ORDER BY (jsonb_array_elements(log)->>'timestamp')::timestamp DESC;
 ```
@@ -175,13 +162,15 @@ ORDER BY (jsonb_array_elements(log)->>'timestamp')::timestamp DESC;
 ## ✅ Advantages of Simple Logging
 
 ### **vs Complex Logging System:**
+
 - ✅ **Simple**: Just one column, no separate tables
-- ✅ **Fast**: No JOINs needed, all data in one place  
+- ✅ **Fast**: No JOINs needed, all data in one place
 - ✅ **Easy**: No triggers, RLS policies, or complex setup
 - ✅ **Flexible**: JSON can store any data structure
 - ✅ **Portable**: Easy to export/import project history
 
 ### **Trade-offs:**
+
 - ❌ Slightly less efficient for large logs (but JSONB is quite fast)
 - ❌ No automatic logging (must call manually)
 - ❌ Less normalized (but simpler)
@@ -191,7 +180,7 @@ ORDER BY (jsonb_array_elements(log)->>'timestamp')::timestamp DESC;
 The simple logging system is now **active and ready**:
 
 - ✅ Database column added
-- ✅ Logging service implemented  
+- ✅ Logging service implemented
 - ✅ APIs updated to log changes
 - ✅ UI component integrated
 - ✅ Project creation/updates logged automatically

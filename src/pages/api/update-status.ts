@@ -1,7 +1,40 @@
+// {
+//   project: {
+//     id: 155,
+//     status: 20,
+//     author_id: 'd566a533-9da8-46c9-b1b4-d4e8dae1e8bc',
+//     title: 'New School Fire Protection',
+//     address: '4536 Washington Avenue, Porter Square, Weymouth, MA'
+//   },
+//   statusConfig: {
+//     id: 2,
+//     status_code: 20,
+//     status_name: 'Generating Proposal',
+//     email_content: "We are currently generating a detailed proposal for <b>{{CLIENT_NAME}}'s</b> new project at <b>{{PROJECT_ADDRESS}}<b> based on the specifications provided.",
+//     est_time: '3-5 business days',
+//     created_at: '2025-08-06T21:53:31.889053+00:00',
+//     updated_at: '2025-08-06T21:53:31.889053+00:00',
+//     notify: [ 'Admin', 'Client' ],
+//     admin_visible: true,
+//     active: null,
+//     client_visible: true,
+//     button_text: 'Project Dashboard',
+//     email_subject: '{{PROJECT_ADDRESS}} > Proposal is Being Generated',
+//     toast_admin: 'Project documents successfully uploaded. Email sent to {{CLIENT_EMAIL}} notifying them that they will receive a proposal in {{EST_TIME}}.',
+//     toast_client: 'We have received your project documents and will begin preparing a proposal of services. We will notify you at <b>{{CLIENT_EMAIL}}</b> in {{EST_TIME}}.',
+//     button_link: '/dashboard',
+//     project_action: null,
+//     toast_auto_redirect: '/dashboard',
+//     admin_email_content: null,
+//     admin_email_subject: null
+//   },
+//   newStatus: 20
+// }
+
 import type { APIRoute } from "astro";
 import { SimpleProjectLogger } from "../../lib/simple-logging";
 import { supabase } from "../../lib/supabase";
-import { getToastMessage, prepareToastData } from "../../lib/toast-message-utils";
+import { supabaseAdmin } from "../../lib/supabase-admin";
 
 export const OPTIONS: APIRoute = async () => {
   return new Response(null, {
@@ -15,35 +48,12 @@ export const OPTIONS: APIRoute = async () => {
   });
 };
 
-export const POST: APIRoute = async ({ request, cookies }) => {
-  console.log("📊 [UPDATE-STATUS] ==========================================");
-  console.log("📊 [UPDATE-STATUS] API route called!");
-  console.log("📊 [UPDATE-STATUS] Timestamp:", new Date().toISOString());
-  console.log("📊 [UPDATE-STATUS] Request method:", request.method);
-  console.log("📊 [UPDATE-STATUS] Request URL:", request.url);
-  console.log("📊 [UPDATE-STATUS] Has cookies:", !!cookies);
-  console.log("📊 [UPDATE-STATUS] Has access token:", !!cookies.get("sb-access-token")?.value);
-  console.log("📊 [UPDATE-STATUS] Has refresh token:", !!cookies.get("sb-refresh-token")?.value);
-  console.log("📊 [UPDATE-STATUS] ==========================================");
-
-  // Also log to a file for debugging
-  const fs = await import("fs");
-  const logEntry = `[${new Date().toISOString()}] UPDATE-STATUS API called\n`;
-  fs.appendFileSync("/tmp/astro-debug.log", logEntry);
-
-  // Log more details to a separate file
-  const detailedLogEntry = `[${new Date().toISOString()}] UPDATE-STATUS API called with cookies: ${!!cookies}, access token: ${!!cookies.get("sb-access-token")?.value}, refresh token: ${!!cookies.get("sb-refresh-token")?.value}\n`;
-  fs.appendFileSync("/tmp/astro-detailed.log", detailedLogEntry);
-
+export const POST: APIRoute = async ({ request }) => {
   try {
     const body = await request.json();
-    console.log("📊 [UPDATE-STATUS] Received request body:", JSON.stringify(body, null, 2));
-
-    const { projectId, status: newStatus } = body;
-    console.log("📊 [UPDATE-STATUS] Extracted parameters:", { projectId, newStatus });
+    const { projectId, status: newStatus, currentUserId, oldStatus } = body;
 
     if (!projectId || newStatus === undefined) {
-      console.log("📊 [UPDATE-STATUS] Missing required parameters:", { projectId, newStatus });
       return new Response(JSON.stringify({ error: "Project ID and new status are required" }), {
         status: 400,
         headers: { "Content-Type": "application/json" },
@@ -51,52 +61,13 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     }
 
     if (!supabase) {
-      console.log("📊 [UPDATE-STATUS] Supabase client not available");
       return new Response(JSON.stringify({ error: "Database connection not available" }), {
         status: 500,
         headers: { "Content-Type": "application/json" },
       });
     }
 
-    // Get user from session using tokens
-    const accessToken = cookies.get("sb-access-token")?.value;
-    const refreshToken = cookies.get("sb-refresh-token")?.value;
-
-    console.log("📊 [UPDATE-STATUS] Authentication check:", {
-      hasAccessToken: !!accessToken,
-      hasRefreshToken: !!refreshToken,
-      accessTokenLength: accessToken?.length || 0,
-      refreshTokenLength: refreshToken?.length || 0,
-    });
-
-    if (!accessToken || !refreshToken) {
-      console.log("📊 [UPDATE-STATUS] Missing authentication tokens");
-      return new Response(JSON.stringify({ error: "Not authenticated" }), {
-        status: 401,
-        headers: { "Content-Type": "application/json" },
-      });
-    }
-
-    // Set session
-    console.log("📊 [UPDATE-STATUS] Setting up session...");
-    const { data: session, error: sessionError } = await supabase.auth.setSession({
-      access_token: accessToken,
-      refresh_token: refreshToken,
-    });
-
-    if (sessionError || !session.session?.user) {
-      console.log("📊 [UPDATE-STATUS] Session error:", sessionError);
-      console.log("📊 [UPDATE-STATUS] Session data:", session);
-      return new Response(JSON.stringify({ error: "Invalid session" }), {
-        status: 401,
-        headers: { "Content-Type": "application/json" },
-      });
-    }
-
-    console.log("📊 [UPDATE-STATUS] User authenticated successfully:", {
-      userId: session.session.user.id,
-      userEmail: session.session.user.email,
-    });
+    console.log("📊 [UPDATE-STATUS] Updating project status:", { projectId, newStatus });
 
     // Update project status
     const { data: updatedProject, error: updateError } = await supabase
@@ -106,7 +77,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         updated_at: new Date().toISOString(),
       })
       .eq("id", projectId)
-      .select("id, status, author_id, title, address")
+      .select("id, status, author_id, address")
       .single();
 
     if (updateError) {
@@ -117,244 +88,254 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       });
     }
 
-    console.log("📊 [UPDATE-STATUS] Project status updated successfully:", {
-      projectId,
-      oldStatus: updatedProject.status,
-      newStatus,
-    });
-
-    // Log the status change activity
-    try {
-      console.log("📊 [UPDATE-STATUS] Logging status change activity...");
-      await SimpleProjectLogger.logStatusChange(
-        projectId,
-        session.session.user.email || "unknown",
-        updatedProject.status,
-        newStatus
-      );
-      console.log("📊 [UPDATE-STATUS] Status change activity logged successfully");
-    } catch (logError) {
-      console.error("📊 [UPDATE-STATUS] Error logging status change activity:", logError);
-      // Don't fail the request if logging fails
+    // Log the status change if currentUserId is provided
+    if (currentUserId) {
+      try {
+        console.log("📊 [UPDATE-STATUS] Logging status change for user:", currentUserId);
+        await SimpleProjectLogger.logStatusChange(projectId, currentUserId, oldStatus, newStatus);
+        console.log("📊 [UPDATE-STATUS] Status change logged successfully");
+      } catch (logError) {
+        console.error("📊 [UPDATE-STATUS] Failed to log status change:", logError);
+        // Don't fail the entire request if logging fails
+      }
+    } else {
+      console.log("📊 [UPDATE-STATUS] No currentUserId provided, skipping logging");
     }
 
-    // Get status configuration and send notifications
-    console.log("📊 [UPDATE-STATUS] Fetching status config for status_code:", newStatus);
-    let { data: statusConfig, error: statusError } = await supabase
-      .from("project_statuses")
-      .select("status_name, toast_admin, toast_client, est_time, redirect")
-      .eq("status_code", newStatus)
-      .single();
+    // Get status data after successful update
+    const baseUrl = new URL(request.url).origin;
+    const statusDataResponse = await fetch(`${baseUrl}/api/get-project-status-data`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ status_code: newStatus }),
+    });
 
-    // If not found with number, try with string
-    if (!statusConfig && statusError) {
-      console.log(
-        "📊 [UPDATE-STATUS] Not found with number, trying with string:",
-        newStatus.toString()
-      );
-      const stringResult = await supabase
-        .from("project_statuses")
-        .select("status_name, toast_admin, toast_client, est_time, redirect")
-        .eq("status_code", newStatus.toString())
+    if (statusDataResponse.ok) {
+      const statusData = await statusDataResponse.json();
+      console.log("📊 [UPDATE-STATUS] Status data retrieved:", statusData);
+
+      // Merge project data with status config for placeholder replacement
+      const mergedData = {
+        project: updatedProject,
+        statusConfig: statusData.statusConfig,
+        newStatus: newStatus,
+      };
+
+      console.log("📊 [UPDATE-STATUS] Merged data for placeholder replacement:", mergedData);
+
+      // Get client profile data for placeholders
+      const { data: profile, error: profileError } = await supabase
+        .from("profiles")
+        .select("id, company_name, first_name, last_name, phone, role")
+        .eq("id", updatedProject.author_id)
         .single();
 
-      statusConfig = stringResult.data;
-      statusError = stringResult.error;
-    }
+      if (profileError) {
+        console.error("📊 [UPDATE-STATUS] Profile error:", profileError);
+        return new Response(JSON.stringify({ error: profileError.message }), {
+          status: 500,
+          headers: { "Content-Type": "application/json" },
+        });
+      }
 
-    console.log("📊 [UPDATE-STATUS] Status config query result:", {
-      statusConfig,
-      statusError,
-      newStatus,
-    });
+      // Get client email from auth.users using admin client
+      if (!supabaseAdmin) {
+        console.error("📊 [UPDATE-STATUS] Supabase admin client not available");
+        return new Response(JSON.stringify({ error: "Admin client not available" }), {
+          status: 500,
+          headers: { "Content-Type": "application/json" },
+        });
+      }
 
-    if (statusConfig) {
-      console.log("📊 [UPDATE-STATUS] Status config details:", {
-        status_name: statusConfig.status_name,
-        toast_admin: statusConfig.toast_admin,
-        toast_client: statusConfig.toast_client,
-        est_time: statusConfig.est_time,
-        redirect: statusConfig.redirect,
-      });
-    }
+      const { data: authData, error: authError } = await supabaseAdmin.auth.admin.getUserById(
+        updatedProject.author_id
+      );
 
-    // Log status name now that statusConfig is available
-    console.log(
-      "📊 [UPDATE-STATUS] Status name:",
-      statusConfig?.status_name || `Status ${newStatus}`
-    );
+      if (authError || !authData.user) {
+        console.error("📊 [UPDATE-STATUS] Auth error:", authError);
+        return new Response(JSON.stringify({ error: "Failed to get client email" }), {
+          status: 500,
+          headers: { "Content-Type": "application/json" },
+        });
+      }
 
-    // Send email notifications for status change
-    let notificationMessage = "";
-    console.log("📊 [UPDATE-STATUS] Sending email notifications...");
-    console.log("📊 [UPDATE-STATUS] About to call email-delivery API...");
+      const clientEmail = authData.user.email || "";
 
-    try {
-      // Use the current request origin instead of environment variable
-      const baseUrl = new URL(request.url).origin;
-      console.log("📊 [UPDATE-STATUS] Base URL for email delivery:", baseUrl);
-      console.log("📊 [UPDATE-STATUS] Full email delivery URL:", `${baseUrl}/api/email-delivery`);
+      // Prepare placeholder data
+      const placeholderData = {
+        projectAddress: updatedProject.address,
+        clientName: profile.company_name,
+        clientEmail: clientEmail,
+        statusName: statusData.statusConfig.status_name,
+        estTime: statusData.statusConfig.est_time,
+      };
 
-      const emailResponse = await fetch(`${baseUrl}/api/email-delivery`, {
+      console.log("📊 [UPDATE-STATUS] Placeholder data prepared:", placeholderData);
+
+      // Call placeholder replacement API
+      const placeholderResponse = await fetch(`${baseUrl}/api/replace-placeholders`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          projectId,
-          newStatus,
-          emailType: "update_status",
-          usersToNotify: [
-            { role: "Admin" },
-            { role: "Staff" },
-            { id: updatedProject.author_id }, // Project owner
-          ],
-        }),
+        body: JSON.stringify({ mergedData, placeholderData }),
       });
 
-      console.log("📧 [UPDATE-STATUS] Email response status:", emailResponse.status);
-      console.log("📧 [UPDATE-STATUS] Email response ok:", emailResponse.ok);
+      if (placeholderResponse.ok) {
+        const placeholderResult = await placeholderResponse.json();
+        console.log("📊 [UPDATE-STATUS] Placeholders replaced:", placeholderResult);
 
-      if (emailResponse.ok) {
-        const emailResult = await emailResponse.json();
-        console.log("📧 [UPDATE-STATUS] Email notifications sent successfully:", emailResult);
-      } else {
-        const errorText = await emailResponse.text();
-        console.error("📧 [UPDATE-STATUS] Failed to send email notifications:", errorText);
-        console.error("📧 [UPDATE-STATUS] Email response status:", emailResponse.status);
-      }
-    } catch (emailError) {
-      console.error("📊 [UPDATE-STATUS] Error sending email notifications:", emailError);
-      // Don't fail the request if email notifications fail
-    }
+        // Return both admin and client toast data - let client decide which to use
+        const toastData = {
+          admin: {
+            message:
+              placeholderResult.processedMessages.toast_admin || "Status updated successfully",
+            redirect: statusData.statusConfig.toast_auto_redirect_admin || "",
+          },
+          client: {
+            message:
+              placeholderResult.processedMessages.toast_client || "Status updated successfully",
+            redirect: statusData.statusConfig.toast_auto_redirect_client || "",
+          },
+        };
 
-    // Get toast message for UI feedback
-    console.log("📊 [UPDATE-STATUS] Getting toast message configuration...");
-    console.log("📊 [UPDATE-STATUS] Notification parameters:", {
-      projectId,
-      newStatus,
-      hasUpdatedProject: !!updatedProject,
-      projectTitle: updatedProject?.title,
-      projectAddress: updatedProject?.address,
-    });
+        console.log("📊 [UPDATE-STATUS] Toast data prepared:", toastData);
 
-    // Get toast message configuration
-    try {
-      // Log email notification activity
-      try {
-        console.log("📊 [UPDATE-STATUS] Logging email notification activity...");
-        await SimpleProjectLogger.addLogEntry(
-          projectId,
-          "EMAIL_NOTIFICATION",
-          session.session.user.email || "unknown",
-          `Status change notification sent for status: ${statusConfig?.status_name || `Status ${newStatus}`}`,
-          null,
-          newStatus
-        );
-        console.log("📊 [UPDATE-STATUS] Email notification activity logged successfully");
-      } catch (emailLogError) {
-        console.error(
-          "📊 [UPDATE-STATUS] Error logging email notification activity:",
-          emailLogError
-        );
-        // Don't fail the request if logging fails
-      }
-
-      // Use status config for message if available
-      if (statusConfig) {
-        console.log("📊 [UPDATE-STATUS] Status config found:", {
-          toast_admin: statusConfig.toast_admin,
-          toast_client: statusConfig.toast_client,
-          est_time: statusConfig.est_time,
+        // Get admin and staff emails using reusable API
+        console.log("📊 [UPDATE-STATUS] Fetching admin and staff emails...");
+        const adminStaffResponse = await fetch(`${baseUrl}/api/get-user-emails-by-role`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ roles: ["Admin", "Staff"] }),
         });
 
-        // Get user role from the current session instead of headers
-        const accessToken = cookies.get("sb-access-token")?.value;
-        const refreshToken = cookies.get("sb-refresh-token")?.value;
-
-        let userRole = "Client"; // Default
-
-        if (accessToken && refreshToken) {
-          const { data: session } = await supabase.auth.setSession({
-            access_token: accessToken,
-            refresh_token: refreshToken,
-          });
-
-          if (session.session?.user) {
-            const { data: profile } = await supabase
-              .from("profiles")
-              .select("role")
-              .eq("id", session.session.user.id)
-              .single();
-
-            userRole = profile?.role || "Client";
-          }
-        }
-
-        console.log("📊 [UPDATE-STATUS] User role determined:", userRole);
-
-        // Use the proper toast message system from database
-        const toastData = prepareToastData(
-          updatedProject,
-          session.session.user,
-          statusConfig.status_name,
-          statusConfig.est_time
-        );
-
-        const toastMessage = getToastMessage(statusConfig, userRole, toastData);
-
-        console.log("📊 [UPDATE-STATUS] Database-driven toast message:", toastMessage);
-
-        if (toastMessage) {
-          notificationMessage = toastMessage;
-          console.log("📊 [UPDATE-STATUS] Final notification message:", notificationMessage);
+        let adminStaffEmails = [];
+        if (adminStaffResponse.ok) {
+          const adminStaffData = await adminStaffResponse.json();
+          adminStaffEmails = adminStaffData.emails || [];
+          console.log("📊 [UPDATE-STATUS] Admin/Staff emails:", adminStaffEmails);
         } else {
-          console.log("📊 [UPDATE-STATUS] No toast message found for role:", userRole);
+          console.error("📊 [UPDATE-STATUS] Failed to fetch admin/staff emails");
         }
-      } else {
-        console.log("📊 [UPDATE-STATUS] No status config found for status:", newStatus);
-      }
-    } catch (emailError) {
-      console.error("📊 [UPDATE-STATUS] Error sending status change notifications:", emailError);
-      console.error(
-        "📊 [UPDATE-STATUS] Error details:",
-        emailError instanceof Error ? emailError.stack : "No stack trace"
-      );
-      // Don't fail the request if email notifications fail
-    }
 
-    return new Response(
-      JSON.stringify({
-        success: true,
-        project: updatedProject,
-        message: notificationMessage,
-        statusConfig: statusConfig
-          ? {
-              name: statusConfig.status_name,
-              toast_admin: statusConfig.toast_admin,
-              toast_client: statusConfig.toast_client,
-              est_time: statusConfig.est_time,
-              redirect_url:
-                statusConfig.redirect?.replace("{{PROJECT_ID}}", projectId) ||
-                "/project/" + projectId + "/documents",
-              redirect_delay: 3, // Hardcoded 3 seconds
-              redirect_show_countdown: true, // Always show countdown if placeholder exists
-            }
-          : null,
-      }),
-      {
-        status: 200,
-        headers: {
-          "Content-Type": "application/json",
-          "Access-Control-Allow-Origin": "*",
-          "Access-Control-Allow-Methods": "POST, OPTIONS",
-          "Access-Control-Allow-Headers": "Content-Type",
-          "Access-Control-Allow-Credentials": "true",
-        },
+        // Send client email using original email delivery API
+        console.log("📊 [UPDATE-STATUS] Sending client email...");
+        const clientEmailResponse = await fetch(`${baseUrl}/api/email-delivery`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            usersToNotify: [clientEmail], // Use resolved client email
+            emailType: "update_status",
+            emailSubject: placeholderResult.processedMessages.client_email_subject,
+            emailContent: placeholderResult.processedMessages.client_email_content,
+            buttonLink: statusData.statusConfig.button_link,
+            buttonText: statusData.statusConfig.button_text,
+          }),
+        });
+
+        if (clientEmailResponse.ok) {
+          const clientEmailResult = await clientEmailResponse.json();
+          console.log("📊 [UPDATE-STATUS] Client email sent:", clientEmailResult);
+        } else {
+          console.error("📊 [UPDATE-STATUS] Failed to send client email");
+        }
+
+        // Send admin emails using original email delivery API
+        console.log("📊 [UPDATE-STATUS] Sending admin emails...");
+        const adminEmailResponse = await fetch(`${baseUrl}/api/email-delivery`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            usersToNotify: adminStaffEmails, // Use resolved admin/staff emails
+            emailType: "update_status",
+            emailSubject: placeholderResult.processedMessages.admin_email_subject,
+            emailContent: placeholderResult.processedMessages.admin_email_content,
+            buttonLink: statusData.statusConfig.button_link,
+            buttonText: statusData.statusConfig.button_text,
+          }),
+        });
+
+        if (adminEmailResponse.ok) {
+          const adminEmailResult = await adminEmailResponse.json();
+          console.log("📊 [UPDATE-STATUS] Admin emails sent:", adminEmailResult);
+        } else {
+          console.error("📊 [UPDATE-STATUS] Failed to send admin emails");
+        }
+
+        return new Response(
+          JSON.stringify({
+            success: true,
+            project: updatedProject,
+            newStatus: newStatus,
+            statusConfig: statusData.statusConfig,
+            mergedData: placeholderResult.mergedData,
+            placeholderData: placeholderResult.placeholderData,
+            processedMessages: placeholderResult.processedMessages,
+            toastData: toastData,
+            clientEmail: clientEmail,
+            clientProfile: profile,
+          }),
+          {
+            status: 200,
+            headers: {
+              "Content-Type": "application/json",
+              "Access-Control-Allow-Origin": "*",
+              "Access-Control-Allow-Methods": "POST, OPTIONS",
+              "Access-Control-Allow-Headers": "Content-Type",
+              "Access-Control-Allow-Credentials": "true",
+            },
+          }
+        );
+      } else {
+        console.error("📊 [UPDATE-STATUS] Failed to replace placeholders");
+        return new Response(
+          JSON.stringify({
+            success: true,
+            project: updatedProject,
+            newStatus: newStatus,
+            statusConfig: statusData.statusConfig,
+            mergedData: mergedData,
+          }),
+          {
+            status: 200,
+            headers: {
+              "Content-Type": "application/json",
+              "Access-Control-Allow-Origin": "*",
+              "Access-Control-Allow-Methods": "POST, OPTIONS",
+              "Access-Control-Allow-Headers": "Content-Type",
+              "Access-Control-Allow-Credentials": "true",
+            },
+          }
+        );
       }
-    );
+    } else {
+      console.error("📊 [UPDATE-STATUS] Failed to get status data");
+      return new Response(
+        JSON.stringify({
+          success: true,
+          project: updatedProject,
+          newStatus: newStatus,
+        }),
+        {
+          status: 200,
+          headers: {
+            "Content-Type": "application/json",
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Methods": "POST, OPTIONS",
+            "Access-Control-Allow-Headers": "Content-Type",
+            "Access-Control-Allow-Credentials": "true",
+          },
+        }
+      );
+    }
   } catch (error) {
-    console.error("📊 [UPDATE-STATUS] Catch block error:", error);
+    console.error("📊 [UPDATE-STATUS] Error:", error);
     return new Response(JSON.stringify({ error: "Internal server error" }), {
       status: 500,
       headers: { "Content-Type": "application/json" },

@@ -9,7 +9,9 @@ This guide helps migrate from the old `globalServices.showNotification` system t
 ### 1. Form Components
 
 #### AuthForm.astro
+
 **Replace:**
+
 ```javascript
 globalServices.showNotification({
   type: "error",
@@ -18,7 +20,9 @@ globalServices.showNotification({
   duration: 5000,
 });
 ```
+
 **With:**
+
 ```javascript
 if (window.showError) {
   window.showError("Login Failed", "Invalid email or password.", 5000);
@@ -28,7 +32,9 @@ if (window.showError) {
 ```
 
 #### RegisterForm.astro
+
 **Replace:**
+
 ```javascript
 globalServices.showNotification({
   type: "success",
@@ -37,10 +43,16 @@ globalServices.showNotification({
   duration: 5000,
 });
 ```
+
 **With:**
+
 ```javascript
 if (window.showSuccess) {
-  window.showSuccess("Registration Successful", "Please check your email to verify your account.", 5000);
+  window.showSuccess(
+    "Registration Successful",
+    "Please check your email to verify your account.",
+    5000
+  );
 } else {
   console.log("🔔 [Registration Successful] Please check your email to verify your account.");
 }
@@ -49,7 +61,9 @@ if (window.showSuccess) {
 ### 2. Profile Management
 
 #### profile.astro
+
 **Replace:**
+
 ```javascript
 globalServices.showNotification({
   type: "success",
@@ -58,7 +72,9 @@ globalServices.showNotification({
   duration: 5000,
 });
 ```
+
 **With:**
+
 ```javascript
 if (window.showSuccess) {
   window.showSuccess("Profile Updated", "Your profile has been updated successfully.", 5000);
@@ -70,7 +86,9 @@ if (window.showSuccess) {
 ### 3. Password Reset
 
 #### reset-password.astro
+
 **Replace:**
+
 ```javascript
 globalServices.showNotification({
   type: "success",
@@ -79,7 +97,9 @@ globalServices.showNotification({
   duration: 5000,
 });
 ```
+
 **With:**
+
 ```javascript
 if (window.showSuccess) {
   window.showSuccess("Password Reset", "Password reset email sent successfully.", 5000);
@@ -91,8 +111,11 @@ if (window.showSuccess) {
 ### 4. PDF Pages
 
 #### pdf/project-agreement.astro
+
 #### pdf/affidavit.astro
+
 **Replace:**
+
 ```javascript
 window.globalServices.showNotification({
   type: "success",
@@ -101,7 +124,9 @@ window.globalServices.showNotification({
   duration: 5000,
 });
 ```
+
 **With:**
+
 ```javascript
 if (window.showSuccess) {
   window.showSuccess("PDF Generated", "PDF has been generated successfully.", 5000);
@@ -113,7 +138,9 @@ if (window.showSuccess) {
 ### 5. SMS Form
 
 #### SMSForm.astro
+
 **Replace:**
+
 ```javascript
 window.globalServices.showNotification({
   type: "success",
@@ -122,7 +149,9 @@ window.globalServices.showNotification({
   duration: 5000,
 });
 ```
+
 **With:**
+
 ```javascript
 if (window.showSuccess) {
   window.showSuccess("SMS Sent", "Your message has been sent successfully.", 5000);
@@ -134,7 +163,9 @@ if (window.showSuccess) {
 ### 6. Digital Signature
 
 #### DigitalSignature.astro
+
 **Replace:**
+
 ```javascript
 (window as any).globalServices.showNotification({
   type: "success",
@@ -143,7 +174,9 @@ if (window.showSuccess) {
   duration: 5000,
 });
 ```
+
 **With:**
+
 ```javascript
 if (window.showSuccess) {
   window.showSuccess("Signature Applied", "Digital signature has been applied successfully.", 5000);
@@ -155,7 +188,9 @@ if (window.showSuccess) {
 ### 7. Email Test Page
 
 #### email-test.astro
+
 **Replace:**
+
 ```javascript
 globalServices.showNotification({
   type: "success",
@@ -164,7 +199,9 @@ globalServices.showNotification({
   duration: 5000,
 });
 ```
+
 **With:**
+
 ```javascript
 if (window.showSuccess) {
   window.showSuccess("Email Sent", "Test email sent successfully.", 5000);
@@ -176,7 +213,9 @@ if (window.showSuccess) {
 ## Migration Patterns
 
 ### Success Notifications
+
 **Old:**
+
 ```javascript
 globalServices.showNotification({
   type: "success",
@@ -185,7 +224,9 @@ globalServices.showNotification({
   duration: 5000,
 });
 ```
+
 **New:**
+
 ```javascript
 if (window.showSuccess) {
   window.showSuccess("Title", "Message", 5000);
@@ -195,7 +236,9 @@ if (window.showSuccess) {
 ```
 
 ### Error Notifications
+
 **Old:**
+
 ```javascript
 globalServices.showNotification({
   type: "error",
@@ -204,7 +247,9 @@ globalServices.showNotification({
   duration: 0,
 });
 ```
+
 **New:**
+
 ```javascript
 if (window.showError) {
   window.showError("Error Title", "Error message", 0);
@@ -214,7 +259,9 @@ if (window.showError) {
 ```
 
 ### Warning Notifications
+
 **Old:**
+
 ```javascript
 globalServices.showNotification({
   type: "warning",
@@ -223,7 +270,9 @@ globalServices.showNotification({
   duration: 5000,
 });
 ```
+
 **New:**
+
 ```javascript
 if (window.showWarning) {
   window.showWarning("Warning Title", "Warning message", 5000);
@@ -233,7 +282,9 @@ if (window.showWarning) {
 ```
 
 ### Info Notifications
+
 **Old:**
+
 ```javascript
 globalServices.showNotification({
   type: "info",
@@ -242,7 +293,9 @@ globalServices.showNotification({
   duration: 5000,
 });
 ```
+
 **New:**
+
 ```javascript
 if (window.showInfo) {
   window.showInfo("Info Title", "Info message", 5000);
@@ -272,6 +325,7 @@ if (window.showInfo) {
 ## Rollback Plan
 
 If issues arise, you can temporarily revert by:
+
 1. Keeping the old global services system
 2. Using the fallback mechanism in centralized notifications
 3. Gradually migrating components back

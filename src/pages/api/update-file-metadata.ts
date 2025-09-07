@@ -121,10 +121,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       updateData.comments = comments || null;
     }
 
-    const { error: updateError } = await supabase
-      .from("files")
-      .update(updateData)
-      .eq("id", fileId);
+    const { error: updateError } = await supabase.from("files").update(updateData).eq("id", fileId);
 
     if (updateError) {
       console.error("Error updating file metadata:", updateError);

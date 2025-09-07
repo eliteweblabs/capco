@@ -7,18 +7,18 @@ export const POST: APIRoute = async ({ request }) => {
     const { email } = await request.json();
 
     if (!email) {
-      return new Response(
-        JSON.stringify({ error: "Email is required" }),
-        { status: 400, headers: { "Content-Type": "application/json" } }
-      );
+      return new Response(JSON.stringify({ error: "Email is required" }), {
+        status: 400,
+        headers: { "Content-Type": "application/json" },
+      });
     }
 
     if (!supabaseAdmin) {
       console.error("Supabase admin client not available");
-      return new Response(
-        JSON.stringify({ error: "Server configuration error" }),
-        { status: 500, headers: { "Content-Type": "application/json" } }
-      );
+      return new Response(JSON.stringify({ error: "Server configuration error" }), {
+        status: 500,
+        headers: { "Content-Type": "application/json" },
+      });
     }
 
     // Send password reset email using Supabase Auth
@@ -30,17 +30,17 @@ export const POST: APIRoute = async ({ request }) => {
     // Always return success to prevent email enumeration attacks
     // Supabase will only send an email if the user exists, but won't reveal this information
     return new Response(
-      JSON.stringify({ 
-        message: "If an account with that email exists, you will receive a password reset link shortly." 
+      JSON.stringify({
+        message:
+          "If an account with that email exists, you will receive a password reset link shortly.",
       }),
       { status: 200, headers: { "Content-Type": "application/json" } }
     );
-
   } catch (error) {
     console.error("Forgot password error:", error);
-    return new Response(
-      JSON.stringify({ error: "Internal server error" }),
-      { status: 500, headers: { "Content-Type": "application/json" } }
-    );
+    return new Response(JSON.stringify({ error: "Internal server error" }), {
+      status: 500,
+      headers: { "Content-Type": "application/json" },
+    });
   }
 };

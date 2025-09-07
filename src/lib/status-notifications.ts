@@ -6,9 +6,7 @@ import { getApiBaseUrl } from "./url-utils";
 export async function sendStatusChangeNotifications(
   projectId: string,
   newStatus: number,
-  projectData: any,
-  context: string = "API",
-  request?: Request
+  context: string = "API"
 ) {
   // console.log(`🔔 [${context}] sendStatusChangeNotifications called with:`, {
   //   projectId,
@@ -252,7 +250,7 @@ async function sendToastNotifications(
   console.log(`🔔 [${context}] Sending toast notifications to ${usersToNotify.length} users`);
 
   // Import toast notification utilities
-  const { showSuccess, showInfo } = await import("./centralized-notifications");
+  const { toast } = await import("./toast-utils");
 
   // For now, just log that toast notifications would be sent
   // You can implement the actual toast logic here or call a separate toast service
