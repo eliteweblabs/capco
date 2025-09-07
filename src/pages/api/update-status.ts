@@ -229,11 +229,14 @@ export const POST: APIRoute = async ({ request }) => {
           },
           body: JSON.stringify({
             usersToNotify: [clientEmail], // Use resolved client email
-            emailType: "update_status",
             emailSubject: placeholderResult.processedMessages.client_email_subject,
             emailContent: placeholderResult.processedMessages.client_email_content,
             buttonLink: statusData.statusConfig.button_link,
             buttonText: statusData.statusConfig.button_text,
+            projectId: projectId,
+            newStatus: newStatus,
+            authorId: updatedProject.author_id,
+            includeResendHeaders: true, // Only include webhook headers for client emails
           }),
         });
 
@@ -253,7 +256,6 @@ export const POST: APIRoute = async ({ request }) => {
           },
           body: JSON.stringify({
             usersToNotify: adminStaffEmails, // Use resolved admin/staff emails
-            emailType: "update_status",
             emailSubject: placeholderResult.processedMessages.admin_email_subject,
             emailContent: placeholderResult.processedMessages.admin_email_content,
             buttonLink: statusData.statusConfig.button_link,

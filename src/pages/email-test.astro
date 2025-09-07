@@ -2,14 +2,9 @@
 import App from "../components/common/App.astro";
 import SectionContainer from "../components/common/SectionContainer.astro";
 
-interface Props {
-  isAuth: boolean;
-  currentUser: any;
-  currentRole: string | null;
-}
-
-// Auth props will be passed from App component
-const { isAuth, currentUser, currentRole } = Astro.props;
+// Get auth data directly since App component handles auth requirements
+import { checkAuth } from "../lib/auth";
+const { isAuth, currentUser, currentRole } = await checkAuth(Astro.cookies);
 
 // Redirect to login if not authenticated
 if (!isAuth || !currentUser) {
@@ -321,32 +316,27 @@ if (currentRole !== "Admin") {
           },
           credentials: "include", // Include cookies
           body: JSON.stringify({
-            projectId: "test-project",
+            projectId: "303", // Test project ID for webhook tracking
+            projectStatus: "20", // Test project status for webhook tracking
             emailType: "test", // Add test email type
-            usersToNotify: [
-              {
-                email: to,
-                first_name: "Test",
-                last_name: "User",
-                company_name: "Test Company",
-              },
-            ],
-            projectDetails: {
-              title: "Test Project",
-              address: "Test Address",
-              est_time: "2-3 business days",
-              profiles: [
-                {
-                  email: to,
-                  first_name: "Test",
-                  last_name: "User",
-                  company_name: "Test Company",
-                },
-              ],
-            },
-            email_content: body,
-            button_text: buttonText || "Access Your Dashboard",
-            custom_subject: subject, // Use the subject from the form
+            usersToNotify: [to],
+            // projectDetails: {
+            //   title: "Test Project",
+            //   address: "Test Address",
+            //   est_time: "2-3 business days",
+            //   profiles: [
+            //     {
+            //       email: to,
+            //       first_name: "Test",
+            //       last_name: "User",
+            //       company_name: "Test Company",
+            //     },
+            //   ],
+            // },
+            buttonLink: "/dashboard",
+            buttonText: "Access Your Dashboard",
+            emailContent: body,
+            emailSubject: subject, // Use the subject from the form
           }),
         });
 

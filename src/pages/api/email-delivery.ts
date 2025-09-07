@@ -1,3 +1,6 @@
+// do not change this page is formatting whatsoever
+// if the email doesn't send change the formatting of the data that's being sent to this API
+
 import type { APIRoute } from "astro";
 import { readFileSync } from "fs";
 import { join } from "path";
@@ -41,21 +44,22 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     // buttonText: button_text,
     // buttonLink: button_link,
 
-    const { usersToNotify, emailType, emailSubject, emailContent, buttonLink, buttonText } = body;
+    const {
+      usersToNotify,
+      emailType,
+      emailSubject,
+      emailContent,
+      buttonLink = `${import.meta.env.SITE_URL || "http://localhost:4321"}/dashboard`,
+      buttonText = "Access Your Dashboard",
+      projectId,
+      newStatus,
+      authorId,
+      includeResendHeaders = false,
+    } = body;
 
     console.log("📧 [EMAIL-DELIVERY] Parameter validation:");
-
     console.log("  - emailType:", emailType);
     console.log("  - usersToNotify count:", usersToNotify?.length || 0);
-
-    // Determine email type flags
-    // const isRegistrationEmail = emailType === "registration";
-    // const isStaffAssignmentEmail = emailType === "staff_assignment";
-    // const isStatusUpdateEmail = emailType === "update_status";
-    // const isClientCommentEmail = emailType === "client_comment";
-    // const isEmergencySmsEmail = emailType === "emergency_sms";
-    // const isTestEmail = emailType === "test";
-
     console.log("📧 [EMAIL-DELIVERY] Email type:", emailType);
 
     // Simple validation - just need projectId and usersToNotify
@@ -128,15 +132,39 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     // Send emails to each user
     for (let i = 0; i < usersToNotify.length; i++) {
       const userEmail = usersToNotify[i];
-
+      let emailHtml: string;
       try {
         // // Replace template variables
-        let emailHtml = emailTemplate.replace("{{CONTENT}}", emailContent);
+        emailHtml = emailTemplate.replace("{{CONTENT}}", emailContent);
+
+        // Override buttonLink with magic link for authentication
+        let finalButtonLink = buttonLink;
+        if (buttonLink && buttonLink.includes("/dashboard")) {
+          try {
+            const { data: magicLinkData, error: magicLinkError } =
+              await supabaseAdmin.auth.admin.generateLink({
+                type: "magiclink",
+                email: userEmail,
+                options: {
+                  redirectTo: `${import.meta.env.SITE_URL || "http://localhost:4321"}${buttonLink}`,
+                },
+              });
+
+            if (magicLinkError) {
+              console.error("📧 [EMAIL-DELIVERY] Error generating magic link:", magicLinkError);
+            } else {
+              finalButtonLink = magicLinkData.properties.action_link;
+              console.log("📧 [EMAIL-DELIVERY] Generated magic link for:", userEmail);
+            }
+          } catch (error) {
+            console.error("📧 [EMAIL-DELIVERY] Error generating magic link:", error);
+          }
+        }
 
         // Apply button configuration
-        if (buttonText && buttonLink) {
+        if (buttonText && finalButtonLink) {
           emailHtml = emailHtml.replace("{{BUTTON_TEXT}}", buttonText);
-          emailHtml = emailHtml.replace("{{BUTTON_LINK}}", buttonLink);
+          emailHtml = emailHtml.replace("{{BUTTON_LINK}}", finalButtonLink);
         } else {
           // Remove button section entirely
           emailHtml = emailHtml.replace(
@@ -147,14 +175,12 @@ export const POST: APIRoute = async ({ request, cookies }) => {
           emailHtml = emailHtml.replace("{{BUTTON_LINK}}", "");
         }
 
-        // // Send email via Resend
-
         // // Validate from field
         const validFromName = fromName && fromName.trim() !== "" ? fromName.trim() : "CAPCo";
         const validFromEmail =
           fromEmail && fromEmail.trim() !== "" ? fromEmail.trim() : "noreply@capcofire.com";
 
-        // // Email subject was already set in the consolidated configuration above
+        // Email subject was already set in the consolidated configuration above
 
         const emailPayload = {
           from: `${validFromName} <${validFromEmail}>`,
@@ -165,10 +191,9 @@ export const POST: APIRoute = async ({ request, cookies }) => {
           // Add proper content type and custom headers (only if values exist)
           headers: {
             "Content-Type": "text/html; charset=UTF-8",
-            // ...(projectId && { "X-Project-ID": projectId }),
-            // ...(newStatus !== null &&
-            //   newStatus !== undefined && { "X-Project-Status": newStatus.toString() }),
-            // ...(user.email && { "X-User-Email": user.email }),
+            ...(includeResendHeaders && projectId && { "X-Project-ID": projectId }),
+            ...(includeResendHeaders && newStatus && { "X-Project-Status": newStatus }),
+            ...(includeResendHeaders && authorId && { "X-Author-ID": authorId }),
           },
         };
 
