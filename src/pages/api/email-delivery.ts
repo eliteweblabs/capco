@@ -63,7 +63,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     console.log("📧 [EMAIL-DELIVERY] Email type:", emailType);
 
     // Simple validation - just need projectId and usersToNotify
-    if (!usersToNotify) {
+    if (!usersToNotify || !emailContent || !emailSubject) {
       console.error("📧 [EMAIL-DELIVERY] Missing required parameters");
       return new Response(
         JSON.stringify({

@@ -3,6 +3,7 @@ import BoxIcon from "../common/BoxIcon.astro";
 import PaymentForm from "./PaymentForm.astro";
 import { supabase } from "../../lib/supabase";
 import DigitalSignature from "./DigitalSignature.astro";
+import ActionButton from "../common/ActionButton.astro";
 
 interface Props {
   projectId: string;
@@ -11,7 +12,7 @@ interface Props {
   projectStatus?: number;
   currentRole?: string;
 }
-const { projectId, project, authorProfile, projectStatus, currentRole } = Astro.props;
+const { projectId, project, authorProfile, projectStatus = 0, currentRole } = Astro.props;
 
 // Only show to Admin/Staff users
 const canManageProposals = currentRole === "Admin" || currentRole === "Staff";
@@ -66,7 +67,7 @@ try {
 const hasExistingInvoice = !!existingInvoice;
 ---
 
-{projectStatus !== 20 && ( <style>#content-proposal {pointer-events: none; #add-row-btn, .add-line-item-btn, .delete-line-item-btn {display: none;}}</style>)}
+{projectStatus !== 20 && ( <style>#proposal-content {pointer-events: none; #add-row-btn, .add-line-item-btn, .delete-line-item-btn {display: none;}}</style>)}
 
 <div class="rounded-lg border border-gray-200 bg-white p-6 dark:border-gray-700 dark:bg-gray-800">
   <!-- Initial state: No proposal generated -->
@@ -104,13 +105,13 @@ const hasExistingInvoice = !!existingInvoice;
     <!-- Proposal Header -->
     <div class="mb-6 flex items-start justify-between">
       <div class="flex-1">
-        <h1 class="text-3xl font-bold text-gray-900 dark:text-white">Project Proposal</h1>
+        <!-- <h1 class="text-3xl font-bold text-gray-900 dark:text-white">Project Proposal</h1> -->
 
         <!-- Editable Subject Line -->
         <div class="mt-3">
           <div id="proposal-subject-display" class="cursor-pointer">
             <p
-              class="text-lg font-medium text-gray-800 transition-colors hover:text-blue-600 dark:text-gray-200 dark:hover:text-blue-400"
+              class="text-2xl font-medium text-gray-800 transition-colors hover:text-blue-600 dark:text-gray-200 dark:hover:text-blue-400"
             >
               <span id="proposal-subject-text">Fire Protection Services Proposal</span>
               <button
@@ -192,34 +193,37 @@ const hasExistingInvoice = !!existingInvoice;
     <!-- Line Items Table -->
     <div class="mb-6">
       <h3 class="mb-4 text-lg font-semibold text-gray-900 dark:text-white">Services & Pricing</h3>
-      <div class="overflow-hidden rounded-lg border border-gray-200 dark:border-gray-600">
-        <table class="w-full">
+      
+      <!-- Desktop Table View -->
+      <div class="hidden overflow-x-auto md:block">
+        <div class="min-w-full overflow-hidden rounded-lg border border-gray-200 dark:border-gray-600">
+          <table class="w-full min-w-[600px]">
           <thead class="bg-gray-50 dark:bg-gray-700">
             <tr>
               <th
-                class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-300"
+                  class="px-3 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-300 sm:px-4"
               >
                 Description
               </th>
               <th
-                class="px-4 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-300"
+                  class="px-2 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-300 sm:px-4"
               >
-                Quantity
+                  Qty
               </th>
               <th
-                class="px-4 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-300"
+                  class="px-2 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-300 sm:px-4"
               >
                 Unit Price
               </th>
               <th
-                class="px-4 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-300"
+                  class="px-2 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-300 sm:px-4"
               >
                 Total
               </th>
-              <th
-                class="px-4 py-3 text-center text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-300"
-              >
-                Actions
+                <th
+                  class="px-2 py-3 text-center text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-300 sm:px-4"
+                >
+                  Actions
               </th>
             </tr>
           </thead>
@@ -227,22 +231,40 @@ const hasExistingInvoice = !!existingInvoice;
             id="proposal-line-items"
             class="divide-y divide-gray-200 bg-white dark:divide-gray-600 dark:bg-gray-800"
           >
-            <!-- All line items will be generated dynamically via JavaScript -->
+              <!-- All line items will be generated dynamically via JavaScript -->
           </tbody>
           <tfoot class="bg-gray-50 dark:bg-gray-700">
             <tr>
               <td
-                colspan="4"
-                class="px-4 py-3 text-right font-semibold text-gray-900 dark:text-white"
+                  colspan="4"
+                  class="px-3 py-3 text-right font-semibold text-gray-900 dark:text-white sm:px-4"
               >
                 Total:
               </td>
-              <td class="px-4 py-3 text-right font-bold text-green-600 dark:text-green-400">
+                <td class="px-2 py-3 text-right font-bold text-green-600 dark:text-green-400 sm:px-4">
                 $<span id="proposal-total-footer">0.00</span>
               </td>
             </tr>
           </tfoot>
         </table>
+        </div>
+      </div>
+
+      <!-- Mobile Card View -->
+      <div class="block space-y-4 md:hidden">
+        <div id="proposal-line-items-mobile" class="space-y-4">
+          <!-- Mobile line items will be generated dynamically via JavaScript -->
+      </div>
+        
+        <!-- Mobile Total -->
+        <div class="rounded-lg border border-gray-200 bg-gray-50 p-4 dark:border-gray-600 dark:bg-gray-700">
+          <div class="flex justify-between items-center">
+            <span class="text-lg font-semibold text-gray-900 dark:text-white">Total:</span>
+            <span class="text-xl font-bold text-green-600 dark:text-green-400">
+              $<span id="proposal-total-mobile">0.00</span>
+            </span>
+          </div>
+        </div>
       </div>
 
     </div>
@@ -291,31 +313,58 @@ const hasExistingInvoice = !!existingInvoice;
         </div>
       )
     }
+    
  
- 
-    {projectStatus === 30 && currentRole === "Client" && (
-
-      <div class="mt-8 rounded-lg border border-gray-200 bg-white p-6 dark:border-gray-700 dark:bg-gray-800">
-        <div class="mb-6">
-          <h3 class="mb-2 text-lg font-medium text-gray-900 dark:text-white">Proposal Payment - 50% Deposit</h3>
-          <p class="text-gray-500 dark:text-gray-400">
-            Pay 50% deposit to approve this proposal and begin work.
-          </p>
-        </div>   <!-- Import PaymentForm component -->
-        <DigitalSignature id="proposal-signature" required={true} width={1200} height={580} placeholder="Proposal Signature" />  
-
-        <PaymentForm 
-          invoiceId={parseInt(projectId)} 
-          amount={0}
-          currency="usd"
-          paymentType="deposit"
-          clientProfile={authorProfile}
-        />
-      </div>
-    )}
-
   </div>
 </div>
+
+
+
+{projectStatus >= 30 && currentRole === "Client" && projectStatus < 50 && (
+
+
+        <div class="mt-8 rounded-lg border border-gray-200 bg-white p-6 dark:border-gray-700 dark:bg-gray-800">
+          <div class="mb-6">
+            {/* <h3 class="mb-2 text-lg font-medium text-gray-900 dark:text-white">Proposal Payment - 50% Deposit</h3> */}
+            <p class="text-gray-500 dark:text-gray-400">
+              Sign Contract &amp; Submit 50% deposit to approve this proposal and begin work.
+            </p>
+          </div>
+          
+  <!-- Placeholder Buttons -->
+  <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+    <ActionButton onclick="window.switchTab('discussion')" variant="primary" size="md" loadingText="Signing Contract...">
+      To Request Edits Leave a Comment
+    </ActionButton>
+
+    {/* <button onclick="window.switchTab('discussion')" 
+      class="flex h-32 w-full items-center justify-center rounded-lg border border-gray-300 bg-white px-4 py-6 text-center font-medium text-gray-700 shadow-sm hover:bg-gray-50 hover:border-gray-400 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700 dark:hover:border-gray-500"
+    >
+      <div class="text-center">
+        <BoxIcon name="message-rounded-dots" class="mx-auto mb-2 h-8 w-8 text-gray-500 dark:text-gray-400" />
+        <p class="text-sm font-medium">To Request Edits Leave a Comment</p>
+        </div>
+    </button> */}
+    
+
+    <ActionButton onclick="window.switchTab('contract')" variant="primary" size="md" loadingText="Signing Contract...">
+      Sign Contract
+    </ActionButton>
+
+    {/* <button onclick="window.switchTab('contract')" 
+      class="flex h-32 w-full items-center justify-center rounded-lg border border-gray-300 bg-white px-4 py-6 text-center font-medium text-gray-700 shadow-sm hover:bg-gray-50 hover:border-gray-400 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700 dark:hover:border-gray-500"
+    >
+      <div class="text-center">
+        <BoxIcon name="file-text" class="mx-auto mb-2 h-8 w-8 text-gray-500 dark:text-gray-400" />
+        <p class="text-sm font-medium">Sign Contract</p>
+  </div>
+    </button> */}
+</div>
+
+  
+</div>
+)}
+
 
 <script>
   import { initializeProposalManager } from "../../lib/proposal-manager";
@@ -387,41 +436,69 @@ const hasExistingInvoice = !!existingInvoice;
 
     // Update proposal total function
     function updateProposalTotal() {
-      const lineItemsContainer = document.getElementById("proposal-line-items");
-      if (!lineItemsContainer) return;
-
       let total = 0;
-      const rows = lineItemsContainer.querySelectorAll("tr");
       
-      rows.forEach((row) => {
-        // Check for both old and new class names to support existing rows
-        const quantityInput = row.querySelector(".quantity-input, .line-item-quantity") as HTMLInputElement;
-        const unitPriceInput = row.querySelector(".unit-price-input, .line-item-unit-price") as HTMLInputElement;
+      // Update desktop table view
+      const lineItemsContainer = document.getElementById("proposal-line-items");
+      if (lineItemsContainer) {
+        const rows = lineItemsContainer.querySelectorAll("tr");
         
-        if (quantityInput && unitPriceInput) {
-          const quantity = parseFloat(quantityInput.value) || 0;
-          const unitPrice = parseFloat(unitPriceInput.value) || 0;
-          const rowTotal = quantity * unitPrice;
-          total += rowTotal;
+        rows.forEach((row) => {
+          // Check for both old and new class names to support existing rows
+          const quantityInput = row.querySelector(".quantity-input, .line-item-quantity") as HTMLInputElement;
+          const unitPriceInput = row.querySelector(".unit-price-input, .line-item-unit-price") as HTMLInputElement;
           
-          // Update individual row total (check for both old and new class names)
-          const totalDisplay = row.querySelector(".total-display, .line-item-total");
-          if (totalDisplay) {
-            totalDisplay.textContent = `$${rowTotal.toFixed(2)}`;
+          if (quantityInput && unitPriceInput) {
+            const quantity = parseFloat(quantityInput.value) || 0;
+            const unitPrice = parseFloat(unitPriceInput.value) || 0;
+            const rowTotal = quantity * unitPrice;
+            total += rowTotal;
+            
+            // Update individual row total (check for both old and new class names)
+            const totalDisplay = row.querySelector(".total-display, .line-item-total");
+            if (totalDisplay) {
+              totalDisplay.textContent = `$${rowTotal.toFixed(2)}`;
+            }
           }
-        }
-      });
+        });
 
-      // Update total display in header
+        // Update desktop footer total
+        const tfootTotal = document.getElementById("proposal-total-footer");
+        if (tfootTotal) {
+          tfootTotal.textContent = total.toFixed(2);
+        }
+      }
+      
+      // Update mobile card view
+      const mobileContainer = document.getElementById("proposal-line-items-mobile");
+      if (mobileContainer) {
+        const cards = mobileContainer.querySelectorAll(".rounded-lg");
+        
+        cards.forEach((card) => {
+          const quantityInput = card.querySelector(".line-item-quantity") as HTMLInputElement;
+          const unitPriceInput = card.querySelector(".line-item-unit-price") as HTMLInputElement;
+          const totalSpan = card.querySelector(".line-item-total");
+          
+          if (quantityInput && unitPriceInput && totalSpan) {
+            const quantity = parseFloat(quantityInput.value) || 0;
+            const unitPrice = parseFloat(unitPriceInput.value) || 0;
+            const rowTotal = quantity * unitPrice;
+            
+            totalSpan.textContent = `$${rowTotal.toFixed(2)}`;
+          }
+        });
+        
+        // Update mobile total
+        const mobileTotal = document.getElementById("proposal-total-mobile");
+        if (mobileTotal) {
+          mobileTotal.textContent = total.toFixed(2);
+        }
+      }
+
+      // Update total display in header (if exists)
       const totalElement = document.getElementById("proposal-total");
       if (totalElement) {
         totalElement.textContent = total.toFixed(2);
-      }
-      
-      // Update total display in footer
-      const tfootTotal = document.getElementById("proposal-total-footer");
-      if (tfootTotal) {
-        tfootTotal.textContent = total.toFixed(2);
       }
     }
 
@@ -476,11 +553,9 @@ const hasExistingInvoice = !!existingInvoice;
 
     // Generate initial empty row function
     function generateInitialEmptyRow() {
+      // Desktop table view
       const lineItemsContainer = document.getElementById("proposal-line-items");
-      if (!lineItemsContainer) return;
-
-      // Only add initial row if there are no existing rows
-      if (lineItemsContainer.querySelectorAll("tr").length === 0) {
+      if (lineItemsContainer && lineItemsContainer.querySelectorAll("tr").length === 0) {
         const initialRow = createLineItemRow({
           description: "",
           details: "",
@@ -489,9 +564,21 @@ const hasExistingInvoice = !!existingInvoice;
         });
         lineItemsContainer.appendChild(initialRow);
       }
+
+      // Mobile card view
+      const mobileContainer = document.getElementById("proposal-line-items-mobile");
+      if (mobileContainer && mobileContainer.querySelectorAll(".rounded-lg").length === 0) {
+        const initialCard = createMobileLineItemCard({
+          description: "",
+          details: "",
+          quantity: 1,
+          unitPrice: 0
+        });
+        mobileContainer.appendChild(initialCard);
+      }
     }
 
-    // Create a line item row with consistent structure
+    // Create a line item row with consistent structure (Desktop)
     function createLineItemRow(item: any = {}) {
       const row = document.createElement("tr");
       row.className = "hover:bg-gray-50 dark:hover:bg-gray-700 line-item-row";
@@ -566,6 +653,90 @@ const hasExistingInvoice = !!existingInvoice;
       `;
       
       return row;
+    }
+
+    // Create a mobile line item card
+    function createMobileLineItemCard(item: any = {}) {
+      const card = document.createElement("div");
+      card.className = "rounded-lg border border-gray-200 bg-white p-4 dark:border-gray-600 dark:bg-gray-800";
+      
+      const currentTotal = (item.quantity || 0) * (item.unitPrice || 0);
+      
+      card.innerHTML = `
+        <div class="space-y-3">
+          <!-- Description -->
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Description</label>
+            <input
+              type="text"
+              class="line-item-description w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+              placeholder="Enter line item description..."
+              value="${item.description || ""}"
+              autocomplete="off"
+            />
+            <input
+              type="text"
+              class="line-item-details w-full mt-2 px-3 py-1 text-sm border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+              placeholder="Details (optional)"
+              value="${item.details || ""}"
+            />
+          </div>
+          
+          <!-- Quantity and Unit Price Row -->
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Quantity</label>
+              <input
+                type="number"
+                class="line-item-quantity w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                value="${item.quantity || 1}"
+                min="0"
+                step="1"
+                oninput="updateRowTotalDirect(this)"
+                onchange="updateRowTotalDirect(this)"
+              />
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Unit Price</label>
+              <input
+                type="number"
+                class="line-item-unit-price w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                value="${item.unitPrice || 0}"
+                min="0"
+                step="1"
+                oninput="updateRowTotalDirect(this)"
+                onchange="updateRowTotalDirect(this)"
+              />
+            </div>
+          </div>
+          
+          <!-- Total and Actions Row -->
+          <div class="flex justify-between items-center pt-2 border-t border-gray-200 dark:border-gray-600">
+            <div>
+              <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Total: </span>
+              <span class="text-lg font-bold text-green-600 dark:text-green-400 line-item-total">$${currentTotal.toFixed(2)}</span>
+            </div>
+            <div class="flex gap-2">
+              <button
+                type="button"
+                class="add-line-item-btn px-3 py-1 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800"
+              >
+                Add
+              </button>
+              <button
+                type="button"
+                class="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 p-1"
+                onclick="this.closest('.rounded-lg').remove(); updateProposalTotal();"
+                title="Delete line item"
+              >
+                <i class="bx bx-trash text-lg"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+      `;
+      
+      return card;
     }
 
     // Initialize existing line items with event listeners
@@ -668,9 +839,18 @@ const hasExistingInvoice = !!existingInvoice;
       document.addEventListener('click', (e) => {
         const target = e.target;
         if (target && target instanceof HTMLElement && target.classList && target.classList.contains('add-line-item-btn')) {
+          // Check if it's from desktop table row
           const row = target.closest('.line-item-row');
           if (row) {
             addLineItemFromRow(row as HTMLElement);
+            return;
+          }
+          
+          // Check if it's from mobile card
+          const card = target.closest('.rounded-lg');
+          if (card) {
+            addLineItemFromCard(card as HTMLElement);
+            return;
           }
         }
       });
@@ -818,7 +998,7 @@ const hasExistingInvoice = !!existingInvoice;
         }
       }
 
-      // Add the line item to the proposal
+      // Add the line item to the proposal (Desktop)
       const lineItemsContainer = document.getElementById("proposal-line-items");
       if (lineItemsContainer) {
         // Create new row using the consistent function
@@ -838,6 +1018,26 @@ const hasExistingInvoice = !!existingInvoice;
         }
       }
 
+      // Add the line item to the mobile view
+      const mobileContainer = document.getElementById("proposal-line-items-mobile");
+      if (mobileContainer) {
+        // Create new card using the mobile function
+        const newCard = createMobileLineItemCard({
+          description: description,
+          details: details,
+          quantity: quantity,
+          unitPrice: unitPrice
+        });
+
+        // Insert before the last card (the input card)
+        const inputCard = mobileContainer.querySelector(".rounded-lg:last-child");
+        if (inputCard) {
+          mobileContainer.insertBefore(newCard, inputCard);
+        } else {
+          mobileContainer.appendChild(newCard);
+        }
+      }
+
       // Clear the input fields
       descriptionInput.value = "";
       if (detailsInput) detailsInput.value = "";
@@ -846,6 +1046,111 @@ const hasExistingInvoice = !!existingInvoice;
       if (dropdown) dropdown.classList.add("hidden");
 
       // Update proposal total
+      updateProposalTotal();
+    }
+
+    // Add line item from a mobile card
+    async function addLineItemFromCard(card: HTMLElement) {
+      const descriptionInput = card.querySelector('.line-item-description') as HTMLInputElement;
+      const detailsInput = card.querySelector('.line-item-details') as HTMLInputElement;
+      const quantityInput = card.querySelector('.line-item-quantity') as HTMLInputElement;
+      const unitPriceInput = card.querySelector('.line-item-unit-price') as HTMLInputElement;
+
+      if (!descriptionInput || !quantityInput || !unitPriceInput) return;
+
+      const description = descriptionInput.value.trim();
+      const details = detailsInput?.value.trim() || "";
+      const quantity = parseFloat(quantityInput.value) || 0;
+      const unitPrice = parseFloat(unitPriceInput.value) || 0;
+
+      if (!description) {
+        alert("Please enter a description for the line item");
+        return;
+      }
+
+      if (quantity <= 0) {
+        alert("Please enter a valid quantity");
+        return;
+      }
+
+      if (unitPrice < 0) {
+        alert("Please enter a valid unit price");
+        return;
+      }
+
+      // Check if this is a new item (not from catalog)
+      const isNewItem = !globalCatalogItems.some(item => item.name === description);
+
+      // If it's a new item, save it to the catalog first
+      if (isNewItem) {
+        try {
+          const response = await fetch("/api/line-items-catalog", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            credentials: 'include',
+            body: JSON.stringify({
+              name: description,
+              description: details,
+              unit_price: unitPrice,
+              category: "General"
+            })
+          });
+
+          if (!response.ok) {
+            console.error("Failed to save new catalog item");
+          }
+        } catch (error) {
+          console.error("Error saving new catalog item:", error);
+        }
+      }
+
+      // Add the line item to the desktop view
+      const lineItemsContainer = document.getElementById("proposal-line-items");
+      if (lineItemsContainer) {
+        // Create new row using the consistent function
+        const newRow = createLineItemRow({
+          description: description,
+          details: details,
+          quantity: quantity,
+          unitPrice: unitPrice
+        });
+
+        // Insert before the last row (the input row)
+        const inputRow = lineItemsContainer.querySelector("tr:last-child");
+        if (inputRow) {
+          lineItemsContainer.insertBefore(newRow, inputRow);
+        } else {
+          lineItemsContainer.appendChild(newRow);
+        }
+      }
+
+      // Add the line item to the mobile view
+      const mobileContainer = document.getElementById("proposal-line-items-mobile");
+      if (mobileContainer) {
+        // Create new card using the mobile function
+        const newCard = createMobileLineItemCard({
+          description: description,
+          details: details,
+          quantity: quantity,
+          unitPrice: unitPrice
+        });
+
+        // Insert before the last card (the input card)
+        const inputCard = mobileContainer.querySelector(".rounded-lg:last-child");
+        if (inputCard) {
+          mobileContainer.insertBefore(newCard, inputCard);
+        } else {
+          mobileContainer.appendChild(newCard);
+        }
+      }
+
+      // Clear the input fields
+      descriptionInput.value = "";
+      if (detailsInput) detailsInput.value = "";
+      quantityInput.value = "1";
+      unitPriceInput.value = "0";
+
+      // Update totals
       updateProposalTotal();
     }
 

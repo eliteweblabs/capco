@@ -1,8 +1,8 @@
 import type { APIRoute } from "astro";
 import { checkAuth } from "../../lib/auth";
 import { supabase } from "../../lib/supabase";
-import { getApiBaseUrl } from "../../lib/url-utils";
 import { supabaseAdmin } from "../../lib/supabase-admin";
+import { getApiBaseUrl } from "../../lib/url-utils";
 
 export const GET: APIRoute = async ({ cookies }) => {
   console.log("=== CREATE STAFF GET TEST ===");
@@ -408,18 +408,11 @@ Click the button below to access your account and set up your password.`;
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            // projectId: "new-user-creation",
-            // newStatus: 0,
-            usersToNotify: [
-              {
-                email: email,
-                first_name: first_name.trim(),
-                last_name: last_name.trim(),
-              },
-            ],
-            email_content: welcomeContent,
-            button_text: "Access Your Account",
-            custom_subject: `Welcome to CAPCo Fire Protection - ${displayName}`,
+            usersToNotify: [email], // Array of email strings
+            emailSubject: `Welcome to CAPCo Fire Protection - ${displayName}`,
+            emailContent: welcomeContent,
+            buttonText: "Access Your Account",
+            buttonLink: "/dashboard",
           }),
         });
 

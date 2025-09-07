@@ -1,5 +1,6 @@
 import type { APIRoute } from "astro";
 import { supabase } from "../../lib/supabase";
+import { supabaseAdmin } from "../../lib/supabase-admin";
 
 export const GET: APIRoute = async ({ cookies, url }) => {
   try {
@@ -56,33 +57,101 @@ export const GET: APIRoute = async ({ cookies, url }) => {
       });
     }
 
-    // Get all profiles and filter (using correct column names: first_name, last_name, company_name)
-    const { data: allProfiles, error: allProfilesError } = await supabase
+    // Get current user's role to determine what users they can mention
+    const { data: currentUserProfile, error: currentUserError } = await supabase
       .from("profiles")
-      .select("id, company_name, role, first_name, last_name");
+      .select("role")
+      .eq("id", user.id)
+      .single();
 
-    if (allProfilesError) {
-      return new Response(JSON.stringify({ success: false, error: "Failed to fetch users" }), {
-        status: 500,
-        headers: { "Content-Type": "application/json" },
-      });
+    if (currentUserError) {
+      return new Response(
+        JSON.stringify({ success: false, error: "Failed to fetch user profile" }),
+        {
+          status: 500,
+          headers: { "Content-Type": "application/json" },
+        }
+      );
     }
 
-    // Filter for mentionable users (Admin, Staff, or project author)
-    const users =
-      allProfiles?.filter(
-        (profile) =>
-          profile.role === "Admin" || profile.role === "Staff" || profile.id === project.author_id
-      ) || [];
+    const currentUserRole = currentUserProfile?.role;
 
-    const mentionableUsers = users.map((user) => ({
-      id: user.id,
-      name:
-        user.first_name && user.last_name
-          ? `${user.first_name} ${user.last_name}`
-          : user.company_name || "Unknown User",
-      role: user.role,
-    }));
+    let users = [];
+
+    // If user is a client, they can only mention themselves (project author)
+    if (currentUserRole === "Client") {
+      const { data: clientProfile, error: clientError } = await supabase
+        .from("profiles")
+        .select("id, company_name, role, first_name, last_name")
+        .eq("id", project.author_id)
+        .single();
+
+      if (clientError || !clientProfile) {
+        return new Response(JSON.stringify({ success: true, users: [] }), {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        });
+      }
+
+      users = [clientProfile];
+    } else {
+      // For Admin/Staff, get all mentionable users (Admin, Staff, or project author)
+      const { data: allProfiles, error: allProfilesError } = await supabase
+        .from("profiles")
+        .select("id, company_name, role, first_name, last_name");
+
+      if (allProfilesError) {
+        return new Response(JSON.stringify({ success: false, error: "Failed to fetch users" }), {
+          status: 500,
+          headers: { "Content-Type": "application/json" },
+        });
+      }
+
+      users =
+        allProfiles?.filter(
+          (profile) =>
+            profile.role === "Admin" || profile.role === "Staff" || profile.id === project.author_id
+        ) || [];
+    }
+
+    // Get emails for all mentionable users from auth.users table
+    const mentionableUsers = await Promise.all(
+      users.map(async (user) => {
+        let email = "";
+        if (!supabaseAdmin) {
+          console.error("❌ [GET-MENTIONABLE-USERS] Supabase admin client not available");
+          return {
+            id: user.id,
+            name:
+              user.first_name && user.last_name
+                ? `${user.first_name} ${user.last_name}`
+                : user.company_name || "Unknown User",
+            role: user.role,
+            email: "Admin client unavailable",
+          };
+        }
+        try {
+          const { data: authUser, error: authError } = await supabaseAdmin.auth.admin.getUserById(
+            user.id
+          );
+          if (!authError && authUser.user) {
+            email = authUser.user.email || "";
+          }
+        } catch (error) {
+          console.error(`Error fetching email for user ${user.id}:`, error);
+        }
+
+        return {
+          id: user.id,
+          name:
+            user.first_name && user.last_name
+              ? `${user.first_name} ${user.last_name}`
+              : user.company_name || "Unknown User",
+          role: user.role,
+          email: email,
+        };
+      })
+    );
 
     return new Response(JSON.stringify({ success: true, users: mentionableUsers }), {
       status: 200,

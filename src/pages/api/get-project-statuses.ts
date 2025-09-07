@@ -20,30 +20,60 @@ export const GET: APIRoute = async ({ request }) => {
     // Get user role from headers
     const userRole = request.headers.get("role") || "Client";
 
-    // Check cache first (statuses don't change often)
-    const cacheKey = `project-statuses-${userRole}`;
-    const cachedStatuses = apiCache.get(cacheKey);
+    // Check for cache-busting parameter
+    const url = new URL(request.url);
+    const forceRefresh = url.searchParams.get("refresh") === "true";
 
-    if (cachedStatuses) {
-      return new Response(
-        JSON.stringify({
-          success: true,
-          statuses: cachedStatuses,
-          cached: true,
-        }),
-        {
-          status: 200,
-          headers: { "Content-Type": "application/json" },
-        }
-      );
+    // Define cache key for later use
+    const cacheKey = `project-statuses-${userRole}`;
+
+    // Check cache first (statuses don't change often) - unless force refresh
+    if (!forceRefresh) {
+      const cachedStatuses = apiCache.get(cacheKey);
+
+      if (cachedStatuses) {
+        return new Response(
+          JSON.stringify({
+            success: true,
+            statuses: cachedStatuses,
+            cached: true,
+          }),
+          {
+            status: 200,
+            headers: { "Content-Type": "application/json" },
+          }
+        );
+      }
     }
 
     // Fetch all project statuses from database (excluding status 0)
-    const { data: statuses, error } = await supabase
+    console.log("🔍 [GET-PROJECT-STATUSES] Fetching statuses from database...");
+
+    // Try with project_action first, fallback to without it if column doesn't exist
+    let { data: statuses, error } = await supabase
       .from("project_statuses")
-      .select("status_code, status_name, client_visible, admin_visible")
+      .select("status_code, status_name, client_visible, admin_visible, project_action")
       .neq("status_code", 0)
       .order("status_code");
+
+    // If project_action column doesn't exist, try without it
+    if (error && error.message.includes("project_action")) {
+      console.log(
+        "🔍 [GET-PROJECT-STATUSES] project_action column not found, trying without it..."
+      );
+      const fallbackResult = await supabase
+        .from("project_statuses")
+        .select("status_code, status_name, client_visible, admin_visible")
+        .neq("status_code", 0)
+        .order("status_code");
+
+      // Add project_action: null to each status for consistency
+      statuses =
+        fallbackResult.data?.map((status) => ({ ...status, project_action: null })) || null;
+      error = fallbackResult.error;
+    }
+
+    console.log("🔍 [GET-PROJECT-STATUSES] Database response:", { statuses, error });
 
     if (error) {
       console.error("Error fetching project statuses:", error);
@@ -60,13 +90,19 @@ export const GET: APIRoute = async ({ request }) => {
     }
 
     // Convert array to object with status_code as key (no filtering - return all statuses)
-    const statusesObject = statuses.reduce(
+    console.log("🔍 [GET-PROJECT-STATUSES] Converting statuses to object...");
+    const statusesObject = (statuses || []).reduce(
       (acc, status) => {
+        console.log(`🔍 [GET-PROJECT-STATUSES] Processing status ${status.status_code}:`, {
+          status_name: status.status_name,
+          project_action: status.project_action || null,
+        });
         acc[status.status_code] = {
           status_name: status.status_name,
           status_code: status.status_code,
           admin_visible: status.admin_visible,
           client_visible: status.client_visible,
+          project_action: status.project_action || null,
         };
         return acc;
       },
@@ -77,9 +113,12 @@ export const GET: APIRoute = async ({ request }) => {
           status_code: number;
           client_visible: boolean;
           admin_visible: boolean;
+          project_action: string | null;
         }
       >
     );
+
+    console.log("🔍 [GET-PROJECT-STATUSES] Final statusesObject:", statusesObject);
 
     // Cache the result for 10 minutes (statuses rarely change)
     apiCache.set(cacheKey, statusesObject, 10);
@@ -88,7 +127,7 @@ export const GET: APIRoute = async ({ request }) => {
       JSON.stringify({
         success: true,
         statuses: statusesObject,
-        count: statuses.length,
+        count: statuses?.length || 0,
       }),
       {
         status: 200,
