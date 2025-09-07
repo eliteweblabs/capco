@@ -9,6 +9,7 @@ import SimpleProjectLog from "../../components/project/SimpleProjectLog.astro";
 import ProposalManager from "../../components/project/ProposalManager.astro";
 import PaymentForm from "../../components/project/PaymentForm.astro";
 import Discussions from "../../components/project/Discussions.astro";
+import DigitalSignature from "../../components/project/DigitalSignature.astro";
 import { getI18N } from "@/i18n";
 import { supabase } from "../../lib/supabase";
 import { supabaseAdmin } from "../../lib/supabase-admin";
@@ -79,6 +80,7 @@ const validTabs = [
   "documents",
   "proposal",
   "contract",
+  "deposit",
   "deliverables",
   "final-invoice",
   "activity-log",
@@ -166,6 +168,10 @@ if (!project) {
   return Astro.redirect("/dashboard");
 }
 
+// Standardize project ID - use project.id when available, fallback to URL param
+// This ensures we always use the authoritative database ID when possible
+const projectId = project?.id?.toString() || id || "";
+
 // Get status color based on status code
 function getStatusColor(status: number): string {
   if (status <= 50) return "blue"; // Early stages
@@ -195,7 +201,7 @@ function getStatusColor(status: number): string {
       ? (statusLabels[project.status]?.status_name || `Status ${project.status}`)
       : undefined}
     statusColor={project?.status ? getStatusColor(project.status) : undefined}
-    projectId={project?.id}
+    projectId={projectId}
     projectStatus={project?.status}
     currentRole={currentRole || "Client"}
     project={project}
@@ -282,6 +288,14 @@ function getStatusColor(status: number): string {
         Contract
       </button>
       <button
+        id="tab-deposit"
+        class="tab-button relative mt-2 w-auto rounded-full px-4 py-2 text-sm font-medium text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
+        onclick="switchTab('deposit')"
+      >
+        <BoxIcon name="credit-card" class="mr-2 inline h-4 w-4" />
+        Deposit
+      </button>
+      <button
         id="tab-deliverables"
         class="tab-button relative mt-2 w-auto rounded-full px-4 py-2 text-sm font-medium text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
         onclick="switchTab('deliverables')"
@@ -321,7 +335,7 @@ function getStatusColor(status: number): string {
       >
         <ProjectForm
           project={project}
-          projectId={id ?? ""}
+          projectId={projectId}
           isNewProject={false}
           currentRole={currentRole}
           projectStatus={project?.status}
@@ -334,7 +348,7 @@ function getStatusColor(status: number): string {
         class="tab-content hidden rounded-lg border border-gray-200 bg-white p-6 dark:border-gray-700 dark:bg-gray-800"
       >
         <Discussions 
-          projectId={id ?? ""} 
+          projectId={projectId} 
           currentRole={currentRole || "Client"} 
           userId={currentUser?.id || ""} 
           userName={currentUser?.company_name || currentUser?.email || "Unknown User"} 
@@ -344,7 +358,7 @@ function getStatusColor(status: number): string {
       <!-- Documents Tab -->
       <div id="content-documents" class="tab-content hidden">
         <PDFUpload
-          projectId={id ?? ""}
+          projectId={projectId}
           fileType="media"
           currentRole={currentRole || undefined}
           projectStatus={project?.status}
@@ -354,7 +368,7 @@ function getStatusColor(status: number): string {
       <!-- Proposal Tab -->
       <div id="content-proposal" class="tab-content hidden">
         <ProposalManager 
-          projectId={id ?? ""} 
+          projectId={projectId} 
           project={project} 
           authorProfile={projectAuthorProfile} 
           currentRole={currentRole || undefined}
@@ -385,7 +399,7 @@ function getStatusColor(status: number): string {
         
 
               
-      {projectStatus >= 30 && currentRole === "Client" && projectStatus < 50 && (
+      {project?.status >= 30 && currentRole === "Client" && project?.status < 50 && (
 
 
       <div class="mt-8 rounded-lg border border-gray-200 bg-white p-6 dark:border-gray-700 dark:bg-gray-800">
@@ -406,7 +420,7 @@ function getStatusColor(status: number): string {
           amount={0}
           currency="usd"
           paymentType="deposit"
-          clientProfile={authorProfile}
+          clientProfile={projectAuthorProfile}
         />
 
         
@@ -435,6 +449,152 @@ function getStatusColor(status: number): string {
               <p class="text-xs text-gray-500 dark:text-gray-400">View current contract</p>
             </div>
           </button>
+        </div>
+      </div>
+
+      <!-- Deposit Tab -->
+      <div
+        id="content-deposit"
+        class="tab-content hidden rounded-lg border border-gray-200 bg-white p-6 dark:border-gray-700 dark:bg-gray-800"
+      >
+        <div class="mb-6">
+          <h3 class="mb-2 text-lg font-medium text-gray-900 dark:text-white">Deposit Payment</h3>
+          <p class="text-gray-500 dark:text-gray-400">
+            Secure your project with a deposit payment. This ensures we can begin work on your fire protection system.
+          </p>
+        </div>
+        
+        <!-- Deposit Payment Form -->
+        <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
+          <!-- Payment Information -->
+          <div class="space-y-4">
+            <div class="rounded-lg border border-gray-200 bg-gray-50 p-4 dark:border-gray-600 dark:bg-gray-700">
+              <h4 class="mb-2 font-medium text-gray-900 dark:text-white">Payment Details</h4>
+              <div class="space-y-2 text-sm">
+                <div class="flex justify-between">
+                  <span class="text-gray-600 dark:text-gray-400">Project Total:</span>
+                  <span class="font-medium text-gray-900 dark:text-white">$0.00</span>
+                </div>
+                <div class="flex justify-between">
+                  <span class="text-gray-600 dark:text-gray-400">Deposit (50%):</span>
+                  <span class="font-medium text-green-600 dark:text-green-400">$0.00</span>
+                </div>
+                <hr class="border-gray-200 dark:border-gray-600" />
+                <div class="flex justify-between">
+                  <span class="font-medium text-gray-900 dark:text-white">Amount Due:</span>
+                  <span class="font-bold text-lg text-green-600 dark:text-green-400">$0.00</span>
+                </div>
+              </div>
+            </div>
+            
+            <!-- Payment Methods -->
+            <div class="space-y-3">
+              <h4 class="font-medium text-gray-900 dark:text-white">Payment Methods</h4>
+              <div class="space-y-2">
+                <label class="flex items-center space-x-3">
+                  <input type="radio" name="payment-method" value="card" class="text-blue-600 focus:ring-blue-500" checked />
+                  <BoxIcon name="credit-card" class="h-5 w-5 text-gray-400" />
+                  <span class="text-sm text-gray-700 dark:text-gray-300">Credit/Debit Card</span>
+                </label>
+                <label class="flex items-center space-x-3">
+                  <input type="radio" name="payment-method" value="bank" class="text-blue-600 focus:ring-blue-500" />
+                  <BoxIcon name="bank" class="h-5 w-5 text-gray-400" />
+                  <span class="text-sm text-gray-700 dark:text-gray-300">Bank Transfer</span>
+                </label>
+                <label class="flex items-center space-x-3">
+                  <input type="radio" name="payment-method" value="check" class="text-blue-600 focus:ring-blue-500" />
+                  <BoxIcon name="file-text" class="h-5 w-5 text-gray-400" />
+                  <span class="text-sm text-gray-700 dark:text-gray-300">Check</span>
+                </label>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Payment Form -->
+          <div class="space-y-4">
+            <div class="rounded-lg border border-gray-200 bg-white p-4 dark:border-gray-600 dark:bg-gray-800">
+              <h4 class="mb-4 font-medium text-gray-900 dark:text-white">Payment Information</h4>
+              
+              <!-- Card Payment Form (shown by default) -->
+              <div id="card-payment-form" class="space-y-4">
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Card Number</label>
+                  <input 
+                    type="text" 
+                    placeholder="1234 5678 9012 3456"
+                    class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                  />
+                </div>
+                
+                <div class="grid grid-cols-2 gap-4">
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Expiry Date</label>
+                    <input 
+                      type="text" 
+                      placeholder="MM/YY"
+                      class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                    />
+                  </div>
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">CVV</label>
+                    <input 
+                      type="text" 
+                      placeholder="123"
+                      class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                    />
+                  </div>
+                </div>
+                
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Cardholder Name</label>
+                  <input 
+                    type="text" 
+                    placeholder="John Doe"
+                    class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                  />
+                </div>
+              </div>
+              
+              <!-- Bank Transfer Form (hidden by default) -->
+              <div id="bank-payment-form" class="space-y-4 hidden">
+                <div class="text-sm text-gray-600 dark:text-gray-400">
+                  <p class="mb-2">Please transfer the deposit amount to:</p>
+                  <div class="bg-gray-50 dark:bg-gray-700 p-3 rounded-md">
+                    <p><strong>Bank:</strong> Your Bank Name</p>
+                    <p><strong>Account:</strong> 1234567890</p>
+                    <p><strong>Routing:</strong> 987654321</p>
+                    <p><strong>Reference:</strong> Project #{projectId}</p>
+                  </div>
+                </div>
+              </div>
+              
+              <!-- Check Payment Form (hidden by default) -->
+              <div id="check-payment-form" class="space-y-4 hidden">
+                <div class="text-sm text-gray-600 dark:text-gray-400">
+                  <p class="mb-2">Please mail your check to:</p>
+                  <div class="bg-gray-50 dark:bg-gray-700 p-3 rounded-md">
+                    <p><strong>Company Name</strong></p>
+                    <p>123 Business Street</p>
+                    <p>City, State 12345</p>
+                    <p class="mt-2"><strong>Memo:</strong> Project #{projectId}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <!-- Payment Button -->
+            <button 
+              class="w-full bg-green-600 text-white py-3 px-4 rounded-md font-medium hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-colors"
+              onclick="processDepositPayment()"
+            >
+              <BoxIcon name="credit-card" class="mr-2 inline h-5 w-5" />
+              Pay Deposit - $0.00
+            </button>
+            
+            <p class="text-xs text-gray-500 dark:text-gray-400 text-center">
+              Secure payment processing powered by Stripe
+            </p>
+          </div>
         </div>
       </div>
 
@@ -477,7 +637,7 @@ function getStatusColor(status: number): string {
       {currentRole === "Admin" || currentRole === "Staff" ? (
       <!-- Activity Log Tab -->
       <div id="content-activity-log" class="tab-content hidden">
-        <SimpleProjectLog projectId={parseInt(id ?? "0")} />
+        <SimpleProjectLog projectId={projectId} />
       </div>
       ) : (
         ""
@@ -625,6 +785,7 @@ window.CURRENT_USER_DATA = currentUserData;</script>
       "documents",
       "proposal",
       "contract",
+      "deposit",
       "deliverables",
       "final-invoice",
       "activity-log",
@@ -637,4 +798,74 @@ window.CURRENT_USER_DATA = currentUserData;</script>
 
   // Make switchTab globally available for other components
   (window as any).switchTab = switchTab;
+
+  // Payment method switching functionality
+  document.addEventListener("DOMContentLoaded", function() {
+    const paymentMethodRadios = document.querySelectorAll('input[name="payment-method"]');
+    const cardForm = document.getElementById('card-payment-form');
+    const bankForm = document.getElementById('bank-payment-form');
+    const checkForm = document.getElementById('check-payment-form');
+
+    paymentMethodRadios.forEach(radio => {
+      radio.addEventListener('change', function(this: HTMLInputElement) {
+        // Hide all forms
+        if (cardForm) cardForm.classList.add('hidden');
+        if (bankForm) bankForm.classList.add('hidden');
+        if (checkForm) checkForm.classList.add('hidden');
+
+        // Show selected form
+        if (this.value === 'card' && cardForm) {
+          cardForm.classList.remove('hidden');
+        } else if (this.value === 'bank' && bankForm) {
+          bankForm.classList.remove('hidden');
+        } else if (this.value === 'check' && checkForm) {
+          checkForm.classList.remove('hidden');
+        }
+      });
+    });
+  });
+
+  // Payment processing function
+  function processDepositPayment() {
+    const selectedMethodElement = document.querySelector('input[name="payment-method"]:checked') as HTMLInputElement;
+    const selectedMethod = selectedMethodElement?.value;
+    
+    if (!selectedMethod) {
+      alert('Please select a payment method');
+      return;
+    }
+
+    // Get the amount (this would come from the proposal total in a real implementation)
+    const amount = 0.00; // Placeholder - should be calculated from proposal
+    
+    console.log('Processing deposit payment:', {
+      method: selectedMethod,
+      amount: amount,
+      projectId: (window as any).PROJECT_DATA?.id
+    });
+
+    // Show loading state
+    const button = document.querySelector('button[onclick="processDepositPayment()"]') as HTMLButtonElement;
+    if (button) {
+      const originalText = button.innerHTML;
+      button.innerHTML = '<BoxIcon name="loader" class="mr-2 inline h-5 w-5 animate-spin" />Processing...';
+      button.disabled = true;
+
+      // Simulate payment processing
+      setTimeout(() => {
+        button.innerHTML = originalText;
+        button.disabled = false;
+        
+        // Show success message
+        if ((window as any).showSuccess) {
+          (window as any).showSuccess('Deposit payment processed successfully!');
+        } else {
+          alert('Deposit payment processed successfully!');
+        }
+      }, 2000);
+    }
+  }
+
+  // Make payment function globally available
+  (window as any).processDepositPayment = processDepositPayment;
 </script>

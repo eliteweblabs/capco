@@ -287,3 +287,4 @@ Placeholders
 {{STATUS_NAME}}
 {{BUTTON_LINK}}
 {{BUTTON_TEXT}}
+{{CONTRACT_URL}}

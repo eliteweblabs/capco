@@ -2,7 +2,7 @@
 import BoxIcon from "../common/BoxIcon.astro";
 
 export interface Props {
-  projectId: number;
+  projectId: string;
 }
 
 const { projectId } = Astro.props;
@@ -89,7 +89,9 @@ const { projectId } = Astro.props;
       try {
         this.showLoading();
 
-        const response = await fetch(`/api/get-simple-project-log?projectId=${this.projectId}`);
+        const response = await fetch(
+          `/api/get-simple-project-log?projectId=${parseInt(this.projectId)}`
+        );
         const data = await response.json();
 
         if (!response.ok) {
