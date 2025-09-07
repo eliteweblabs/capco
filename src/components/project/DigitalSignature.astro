@@ -198,8 +198,19 @@ const {
 
         // Use ResizeObserver for more responsive resizing
         if (window.ResizeObserver && container) {
+          let resizeTimeout: number | null = null;
           const resizeObserver = new ResizeObserver(() => {
-            this.resizeCanvas(canvas, signaturePad);
+            // Debounce resize events to prevent loops
+            if (resizeTimeout) {
+              clearTimeout(resizeTimeout);
+            }
+            resizeTimeout = window.setTimeout(() => {
+              try {
+                this.resizeCanvas(canvas, signaturePad);
+              } catch (error) {
+                console.warn("ResizeObserver resize error:", error);
+              }
+            }, 16); // ~60fps
           });
           resizeObserver.observe(container);
         }

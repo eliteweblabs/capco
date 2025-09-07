@@ -161,31 +161,11 @@ You're now signed in and ready to start creating projects. Click the button belo
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          projectId: "new-user-registration",
-          newStatus: 0,
-          emailType: "registration",
-          usersToNotify: [
-            {
-              email: email,
-              first_name: firstName,
-              last_name: lastName,
-            },
-          ],
-          projectDetails: {
-            title: "Welcome to CAPCo Fire Protection",
-            address: "Account Registration",
-            est_time: "immediate",
-            profiles: [
-              {
-                email: email,
-                first_name: firstName,
-                last_name: lastName,
-              },
-            ],
-          },
-          email_content: welcomeContent,
-          button_text: "Access Your Dashboard",
-          custom_subject: `Welcome to CAPCo Fire Protection - ${displayName}`,
+          usersToNotify: [email], // Array of email strings
+          emailSubject: `Welcome to CAPCo Fire Protection - ${displayName}`,
+          emailContent: welcomeContent,
+          buttonText: "Access Your Dashboard",
+          buttonLink: "/dashboard",
         }),
       });
 

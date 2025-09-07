@@ -111,7 +111,7 @@ async function handleEmailOpened(data: any) {
     let nextStatus: number;
     switch (parseInt(currentStatus)) {
       case 30: // Proposal Sent
-        nextStatus = 40; // Proposal Viewed
+        nextStatus = 35; // Proposal Email Opened
         break;
       case 70: // Invoice Sent
         nextStatus = 80; // Invoice Viewed

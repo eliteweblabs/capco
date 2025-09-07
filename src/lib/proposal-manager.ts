@@ -235,6 +235,98 @@ export class ProposalManager {
   }
 
   /**
+   * Create a mobile line item card
+   */
+  private createMobileLineItemCard(item: any = {}): HTMLDivElement {
+    const card = document.createElement("div");
+    card.className =
+      "rounded-lg border border-gray-200 bg-white p-4 dark:border-gray-600 dark:bg-gray-800";
+
+    const currentTotal = (item.quantity || 0) * (item.unitPrice || 0);
+
+    card.innerHTML = `
+      <div class="space-y-3">
+        <!-- Description -->
+        <div>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Description</label>
+          <input
+            type="text"
+            class="line-item-description w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+            placeholder="Enter line item description..."
+            value="${item.description || ""}"
+            autocomplete="off"
+          />
+          <input
+            type="text"
+            class="line-item-details w-full mt-2 px-3 py-1 text-sm border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+            placeholder="Details (optional)"
+            value="${item.details || ""}"
+          />
+        </div>
+        
+        <!-- Quantity and Unit Price Row -->
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Quantity</label>
+            <input
+              type="number"
+              class="line-item-quantity w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+              value="${item.quantity || 1}"
+              min="0"
+              step="1"
+              oninput="updateRowTotalDirect(this)"
+              onchange="updateRowTotalDirect(this)"
+            />
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Unit Price</label>
+            <input
+              type="number"
+              class="line-item-unit-price w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+              value="${item.unitPrice || 0}"
+              min="0"
+              step="1"
+              oninput="updateRowTotalDirect(this)"
+              onchange="updateRowTotalDirect(this)"
+            />
+          </div>
+        </div>
+        
+        <!-- Total and Actions Row -->
+        <div class="flex justify-between items-center pt-2 border-t border-gray-200 dark:border-gray-600">
+          <div>
+            <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Total: </span>
+            <span class="text-lg font-bold text-green-600 dark:text-green-400 line-item-total">$${currentTotal.toFixed(2)}</span>
+          </div>
+          <div class="flex gap-2">
+            <button
+              type="button"
+              class="add-line-item-btn px-3 py-1 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800"
+            >
+              Add
+            </button>
+            <button
+              type="button"
+              class="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 p-1"
+              onclick="this.closest('.rounded-lg').remove(); updateProposalTotal();"
+              title="Delete line item"
+            >
+              <i class="bx bx-trash text-lg"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+    `;
+
+    // Store catalog_item_id as a data attribute for reference
+    if (item.catalog_item_id) {
+      card.setAttribute("data-catalog-item-id", item.catalog_item_id.toString());
+    }
+
+    return card;
+  }
+
+  /**
    * Get line items data from the proposal table
    */
   private getLineItemsData(): any[] {
@@ -947,6 +1039,8 @@ export class ProposalManager {
 
   private async populateLineItemsFromInvoice(invoice: any): Promise<void> {
     const tbody = document.getElementById("proposal-line-items");
+    const mobileContainer = document.getElementById("proposal-line-items-mobile");
+
     if (!tbody) return;
 
     // Get line item data from the catalog_line_items JSONB field
@@ -966,9 +1060,13 @@ export class ProposalManager {
 
     // Clear existing content
     tbody.innerHTML = "";
+    if (mobileContainer) {
+      mobileContainer.innerHTML = "";
+    }
 
     // Optimize: Use DocumentFragment for better performance
     const fragment = document.createDocumentFragment();
+    const mobileFragment = document.createDocumentFragment();
     let total = 0;
 
     // Use line items from the catalog and create interactive rows
@@ -978,7 +1076,7 @@ export class ProposalManager {
       console.log("🔍 [PROPOSAL-MANAGER] Unit price value:", item.unit_price);
       console.log("🔍 [PROPOSAL-MANAGER] Quantity value:", item.quantity);
 
-      // Create row using the stored data (preserves original pricing)
+      // Create desktop row using the stored data (preserves original pricing)
       const row = this.createLineItemRow({
         description: item.description || "Line Item",
         details: item.details || "",
@@ -987,14 +1085,29 @@ export class ProposalManager {
         catalog_item_id: item.catalog_item_id, // Store the catalog item ID for reference
       });
 
+      // Create mobile card using the same data
+      const mobileCard = this.createMobileLineItemCard({
+        description: item.description || "Line Item",
+        details: item.details || "",
+        quantity: item.quantity || 1,
+        unitPrice: item.unit_price || 0,
+        catalog_item_id: item.catalog_item_id,
+      });
+
       const itemTotal = (item.quantity || 1) * (item.unit_price || 0);
       total += itemTotal;
 
       fragment.appendChild(row);
+      if (mobileContainer) {
+        mobileFragment.appendChild(mobileCard);
+      }
     });
 
     // Single DOM update
     tbody.appendChild(fragment);
+    if (mobileContainer) {
+      mobileContainer.appendChild(mobileFragment);
+    }
 
     // Update totals
     this.updateTotalDisplay(total);
@@ -1002,10 +1115,12 @@ export class ProposalManager {
 
   private populateLineItems(lineItems: LineItem[]): void {
     const tbody = document.getElementById("proposal-line-items");
+    const mobileContainer = document.getElementById("proposal-line-items-mobile");
     if (!tbody) return;
 
     // Optimize: Use DocumentFragment for better performance
     const fragment = document.createDocumentFragment();
+    const mobileFragment = document.createDocumentFragment();
     let total = 0;
 
     lineItems.forEach((item) => {
@@ -1067,11 +1182,27 @@ export class ProposalManager {
       row.appendChild(deleteCell);
 
       fragment.appendChild(row);
+
+      // Create mobile card for the same item
+      if (mobileContainer) {
+        const mobileCard = this.createMobileLineItemCard({
+          description: item.description,
+          details: item.details,
+          quantity: item.quantity,
+          unitPrice: item.unitPrice,
+        });
+        mobileFragment.appendChild(mobileCard);
+      }
     });
 
     // Single DOM update
     tbody.innerHTML = "";
     tbody.appendChild(fragment);
+
+    if (mobileContainer) {
+      mobileContainer.innerHTML = "";
+      mobileContainer.appendChild(mobileFragment);
+    }
 
     // Update totals
     this.updateTotalDisplay(total);
@@ -1080,9 +1211,11 @@ export class ProposalManager {
   private updateTotalDisplay(total: number): void {
     const totalElement = document.getElementById("proposal-total");
     const totalFooterElement = document.getElementById("proposal-total-footer");
+    const mobileTotalElement = document.getElementById("proposal-total-mobile");
 
     if (totalElement) totalElement.textContent = total.toFixed(2);
     if (totalFooterElement) totalFooterElement.textContent = total.toFixed(2);
+    if (mobileTotalElement) mobileTotalElement.textContent = total.toFixed(2);
   }
 
   private updateProposalTotalFromManager(): void {

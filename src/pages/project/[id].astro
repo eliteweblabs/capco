@@ -12,6 +12,7 @@ import Discussions from "../../components/project/Discussions.astro";
 import { getI18N } from "@/i18n";
 import { supabase } from "../../lib/supabase";
 import { supabaseAdmin } from "../../lib/supabase-admin";
+import "../../lib/refresh-manager.ts";
 
 const { currentLocale } = Astro;
 const i18n = getI18N({ currentLocale });
@@ -77,6 +78,7 @@ const validTabs = [
   "discussion",
   "documents",
   "proposal",
+  "contract",
   "deliverables",
   "final-invoice",
   "activity-log",
@@ -200,7 +202,11 @@ function getStatusColor(status: number): string {
     statuses={Object.values(statusLabels)}
     authorProfile={projectAuthorProfile}
   />
-  <SectionContainer>
+  <SectionContainer 
+    data-project-id={id}
+    data-project-status={project?.status}
+    data-current-user-id={currentUser?.id}
+  >
     <div class="flex items-center justify-between">
       <a
         href="/dashboard"
@@ -266,6 +272,14 @@ function getStatusColor(status: number): string {
       >
         <BoxIcon name="grid" class="mr-2 inline h-4 w-4" />
         Proposal
+      </button>
+      <button
+        id="tab-contract"
+        class="tab-button relative mt-2 w-auto rounded-full px-4 py-2 text-sm font-medium text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
+        onclick="switchTab('contract')"
+      >
+        <BoxIcon name="file-text" class="mr-2 inline h-4 w-4" />
+        Contract
       </button>
       <button
         id="tab-deliverables"
@@ -348,6 +362,82 @@ function getStatusColor(status: number): string {
         />
       </div>
 
+      <!-- Contract Tab -->
+      <div
+        id="content-contract"
+        class="tab-content hidden rounded-lg border border-gray-200 bg-white p-6 dark:border-gray-700 dark:bg-gray-800"
+      >
+        <div class="mb-6">
+          <h3 class="mb-2 text-lg font-medium text-gray-900 dark:text-white">Contract</h3>
+          <p class="text-gray-500 dark:text-gray-400">
+            It is a long established fact that a reader will be distracted by the readable content of a page when looking at its layout. The point of using Lorem Ipsum is that it has a more-or-less normal distribution of letters, as opposed to using 'Content here, content here', making it look like readable English. Many desktop publishing packages and web page editors now use Lorem Ipsum as their default model text, and a search for 'lorem ipsum' will uncover many web sites still in their infancy. Various versions have evolved over the years, sometimes by accident, sometimes on purpose.
+          </p>
+          <p class="text-gray-500 dark:text-gray-400">
+            It is a long established fact that a reader will be distracted by the readable content of a page when looking at its layout. The point of using Lorem Ipsum is that it has a more-or-less normal distribution of letters, as opposed to using 'Content here, content here', making it look like readable English. Many desktop publishing packages and web page editors now use Lorem Ipsum as their default model text, and a search for 'lorem ipsum' will uncover many web sites still in their infancy. Various versions have evolved over the years, sometimes by accident, sometimes on purpose.
+          </p>
+          <p class="text-gray-500 dark:text-gray-400">
+            It is a long established fact that a reader will be distracted by the readable content of a page when looking at its layout. The point of using Lorem Ipsum is that it has a more-or-less normal distribution of letters, as opposed to using 'Content here, content here', making it look like readable English. Many desktop publishing packages and web page editors now use Lorem Ipsum as their default model text, and a search for 'lorem ipsum' will uncover many web sites still in their infancy. Various versions have evolved over the years, sometimes by accident, sometimes on purpose.
+          </p>
+          <p class="text-gray-500 dark:text-gray-400">
+            It is a long established fact that a reader will be distracted by the readable content of a page when looking at its layout. The point of using Lorem Ipsum is that it has a more-or-less normal distribution of letters, as opposed to using 'Content here, content here', making it look like readable English. Many desktop publishing packages and web page editors now use Lorem Ipsum as their default model text, and a search for 'lorem ipsum' will uncover many web sites still in their infancy. Various versions have evolved over the years, sometimes by accident, sometimes on purpose.
+          </p>
+        </div>
+        
+
+              
+      {projectStatus >= 30 && currentRole === "Client" && projectStatus < 50 && (
+
+
+      <div class="mt-8 rounded-lg border border-gray-200 bg-white p-6 dark:border-gray-700 dark:bg-gray-800">
+        <div class="mb-6">
+          <h3 class="mb-2 text-lg font-medium text-gray-900 dark:text-white">Proposal Payment - 50% Deposit</h3>
+          <p class="text-gray-500 dark:text-gray-400">
+            Pay 50% deposit to approve this proposal and begin work.
+          </p>
+          <button onclick="window.switchTab('discussion')" class="inline-flex items-center rounded-lg bg-green-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-green-700">To Request Edits Leave a Comment</button>
+        </div>  
+        
+        
+        <!-- Import PaymentForm component -->
+        <DigitalSignature id="proposal-signature" required={true} width={1200} height={580} placeholder="Proposal Signature" />  
+
+        <PaymentForm 
+          invoiceId={parseInt(projectId)} 
+          amount={0}
+          currency="usd"
+          paymentType="deposit"
+          clientProfile={authorProfile}
+        />
+
+        
+      </div>
+      )}
+
+
+        <!-- Placeholder Buttons -->
+        <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <button
+            class="flex h-32 w-full items-center justify-center rounded-lg border-2 border-dashed border-gray-300 bg-gray-50 px-4 py-6 text-center hover:border-gray-400 hover:bg-gray-100 dark:border-gray-600 dark:bg-gray-700 dark:hover:border-gray-500 dark:hover:bg-gray-600"
+          >
+            <div class="text-center">
+              <BoxIcon name="upload" class="mx-auto mb-2 h-8 w-8 text-gray-400" />
+              <p class="text-sm font-medium text-gray-900 dark:text-white">Upload Contract</p>
+              <p class="text-xs text-gray-500 dark:text-gray-400">Click to upload contract file</p>
+            </div>
+          </button>
+          
+          <button
+            class="flex h-32 w-full items-center justify-center rounded-lg border-2 border-dashed border-gray-300 bg-gray-50 px-4 py-6 text-center hover:border-gray-400 hover:bg-gray-100 dark:border-gray-600 dark:bg-gray-700 dark:hover:border-gray-500 dark:hover:bg-gray-600"
+          >
+            <div class="text-center">
+              <BoxIcon name="file-text" class="mx-auto mb-2 h-8 w-8 text-gray-400" />
+              <p class="text-sm font-medium text-gray-900 dark:text-white">View Contract</p>
+              <p class="text-xs text-gray-500 dark:text-gray-400">View current contract</p>
+            </div>
+          </button>
+        </div>
+      </div>
+
       <!-- Deliverables Tab -->
       <div
         id="content-deliverables"
@@ -396,8 +486,10 @@ function getStatusColor(status: number): string {
   </SectionContainer>
 </App>
 
-<script define:vars={{ userRole: currentRole }}>
-window.PROJECT_USER_ROLE = userRole;</script>
+<script define:vars={{ userRole: currentRole, projectData: project, currentUserData: currentUser }}>
+window.PROJECT_USER_ROLE = userRole;
+window.PROJECT_DATA = projectData;
+window.CURRENT_USER_DATA = currentUserData;</script>
 
 <script>
   // Tab switching functionality
@@ -445,6 +537,69 @@ window.PROJECT_USER_ROLE = userRole;</script>
       });
     }
 
+    // Check if client is viewing proposal tab and update status if needed
+    console.log("📋 [PROPOSAL-VIEW] Tab switched to:", tabName);
+    console.log("📋 [PROPOSAL-VIEW] User role:", (window as any).PROJECT_USER_ROLE);
+    
+    if (tabName === "proposal" && (window as any).PROJECT_USER_ROLE === "Client") {
+      const currentStatus = (window as any).PROJECT_DATA?.status || 0;
+      const currentUserId = (window as any).CURRENT_USER_DATA?.id;
+      const projectId = (window as any).PROJECT_DATA?.id;
+      
+      console.log("📋 [PROPOSAL-VIEW] Client viewing proposal tab, current status:", currentStatus);
+      console.log("📋 [PROPOSAL-VIEW] Project data:", { projectId, currentUserId });
+      
+      // Update status to 40 (Proposal Viewed) if status is between 30-40
+      if (currentStatus >= 20 && currentStatus < 40) {
+        console.log("📋 [PROPOSAL-VIEW] Updating status from", currentStatus, "to 40 (Proposal Viewed)");
+        
+        if (currentUserId && projectId) {
+          // Call update-status API
+          fetch('/api/update-status', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            credentials: 'include',
+            body: JSON.stringify({
+              projectId: projectId,
+              status: 40,
+              currentUserId: currentUserId,
+              oldStatus: currentStatus
+            })
+          })
+          .then(response => response.json())
+          .then(data => {
+            if (data.success) {
+              console.log("✅ [PROPOSAL-VIEW] Status updated to 40 successfully");
+              // Update the project data for future checks
+              (window as any).PROJECT_DATA.status = 40;
+              
+              // Update UI elements using RefreshManager
+              if ((window as any).refreshManager) {
+                (window as any).refreshManager.updateField('status', 40);
+                (window as any).refreshManager.updateField('status_name', 'Proposal Viewed');
+              }
+              
+              // Show toast notification if available
+              if (data.message && (window as any).showSuccess) {
+                (window as any).showSuccess("Proposal Viewed", data.message);
+              }
+            } else {
+              console.error("❌ [PROPOSAL-VIEW] Failed to update status:", data.error);
+            }
+          })
+          .catch(error => {
+            console.error("❌ [PROPOSAL-VIEW] Error updating status:", error);
+          });
+        } else {
+          console.error("❌ [PROPOSAL-VIEW] Missing required data attributes:", { currentUserId, projectId });
+        }
+      } else {
+        console.log("📋 [PROPOSAL-VIEW] No status update needed, current status:", currentStatus);
+      }
+    }
+
     // Update URL with tab parameter (without page reload)
     const currentUrl = new URL(window.location.href);
     if (tabName === "project-form") {
@@ -469,6 +624,7 @@ window.PROJECT_USER_ROLE = userRole;</script>
       "discussion",
       "documents",
       "proposal",
+      "contract",
       "deliverables",
       "final-invoice",
       "activity-log",

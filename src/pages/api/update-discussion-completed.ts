@@ -22,12 +22,13 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     }
 
     // Only Admin and Staff can update discussion status
-    if (role !== "Admin" && role !== "Staff") {
-      return new Response(JSON.stringify({ success: false, error: "Insufficient permissions" }), {
-        status: 403,
-        headers: { "Content-Type": "application/json" },
-      });
-    }
+    // COMMENTED OUT: Allow any authenticated user to update discussion status
+    // if (role !== "Admin" && role !== "Staff") {
+    //   return new Response(JSON.stringify({ success: false, error: "Insufficient permissions" }), {
+    //     status: 403,
+    //     headers: { "Content-Type": "application/json" },
+    //   });
+    // }
 
     const body = await request.json();
     console.log("🔔 [UPDATE-DISCUSSION] Request body:", body);

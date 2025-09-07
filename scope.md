@@ -274,3 +274,16 @@ notes
 
 client:visible is for <script>
 User rules are always capitalized Admin, Client, Staff
+
+Placeholders
+
+{{PROJECT_TITLE}}
+{{PROJECT_ADDRESS}}
+{{PROJECT_LINK}}
+{{ADDRESS}}
+{{CLIENT_NAME}}
+{{CLIENT_EMAIL}}
+{{EST_TIME}}
+{{STATUS_NAME}}
+{{BUTTON_LINK}}
+{{BUTTON_TEXT}}

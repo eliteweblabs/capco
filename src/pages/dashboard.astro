@@ -6,6 +6,7 @@ import DashboardComponent from "../components/common/Dashboard.astro";
 import SectionContainer from "../components/common/SectionContainer.astro";
 import ProjectNav from "../components/project/ProjectNav.astro";
 import Hero from "../components/common/Hero.astro";
+import "../lib/refresh-manager.ts";
 
 // Get auth data directly since App component handles auth requirements
 import { checkAuth } from "../lib/auth";
@@ -75,26 +76,32 @@ try {
     console.error("Failed to fetch projects:", projectsResponse.status);
   }
 
-  // Fetch statuses
-  const statusesResponse = await (fetch as any)(`${Astro.url.origin}/api/get-project-statuses`, {
-    method: "GET",
-    headers: {
-      "Content-Type": "application/json",
-      currentRole: currentRole || "Client",
-    },
-  });
+  // Fetch statuses (with cache-busting to get fresh data with project_action field)
+  const statusesResponse = await (fetch as any)(
+    `${Astro.url.origin}/api/get-project-statuses?refresh=true`,
+    {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        currentRole: currentRole || "Client",
+      },
+    }
+  );
 
   if (statusesResponse.ok) {
     const statusesResult = await statusesResponse.json();
+    console.log("🏗️ [DASHBOARD] Statuses API response:", statusesResult);
     if (statusesResult.success) {
-      // console.log(
-      //   "🏗️ [DASHBOARD] Statuses fetched:",
-      //   Object.keys(statusesResult.statuses || {}).length
-      // );
+      console.log(
+        "🏗️ [DASHBOARD] Statuses fetched:",
+        Object.keys(statusesResult.statuses || {}).length
+      );
       // Convert to array format for existing components
       project_statuses = Object.values(statusesResult.statuses || {});
       // Keep object format for project actions (make it global for script)
       project_statuses_object = statusesResult.statuses || {};
+      console.log("🏗️ [DASHBOARD] project_statuses_object:", project_statuses_object);
+      console.log("🏗️ [DASHBOARD] Status 40 config:", project_statuses_object[40]);
 
       // console.log("🏗️ [DASHBOARD] project_statuses array length:", project_statuses.length);
       // console.log(
@@ -104,9 +111,17 @@ try {
       // console.log("🏗️ [DASHBOARD] Status 10 config:", project_statuses_object[10]);
     } else {
       console.error("Statuses API returned error:", statusesResult.error);
+      console.error(
+        "🏗️ [DASHBOARD] project_statuses_object will remain empty:",
+        project_statuses_object
+      );
     }
   } else {
     console.error("Failed to fetch statuses:", statusesResponse.status);
+    console.error(
+      "🏗️ [DASHBOARD] project_statuses_object will remain empty:",
+      project_statuses_object
+    );
   }
 } catch (error) {
   console.error("Error fetching data:", error);
@@ -151,7 +166,6 @@ try {
     console.log("🔔 [PROJECT-ACTIONS] Initializing project action notifications...");
     console.log("🔔 [PROJECT-ACTIONS] Current user currentRole:", currentRole);
     console.log("🔔 [PROJECT-ACTIONS] Projects data:", projects);
-    console.log("🔔 [PROJECT-ACTIONS] Project statuses data:", project_statuses_object);
 
     // Only run for clients
     if (currentRole !== "Client") {
@@ -164,61 +178,148 @@ try {
       return;
     }
 
-    if (!project_statuses_object || typeof project_statuses_object !== "object") {
-      console.log("🔔 [PROJECT-ACTIONS] No project statuses found");
-      return;
-    }
-
-    console.log("🔔 [PROJECT-ACTIONS] Processing projects:", projects.length);
-    console.log("🔔 [PROJECT-ACTIONS] Available statuses:", Object.keys(project_statuses_object));
-
-    // Check each project for action notifications
-    for (let index = 0; index < projects.length; index++) {
-      const project = projects[index];
-      const projectStatus = project.status;
-      const statusConfig = project_statuses_object[projectStatus];
-
-      console.log(`🔔 [PROJECT-ACTIONS] Checking project ${index + 1}:`, {
-        id: project.id,
-        title: project.title,
-        status: projectStatus,
-        hasStatusConfig: !!statusConfig,
+    // Fetch project statuses directly from API
+    console.log("🔔 [PROJECT-ACTIONS] Fetching project statuses from API...");
+    try {
+      const statusesResponse = await fetch(`/api/get-project-statuses?refresh=true`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          currentRole: currentRole || "Client",
+        },
       });
 
-      if (statusConfig && statusConfig.project_action) {
-        console.log(
-          `🔔 [PROJECT-ACTIONS] Found project action for project "${project.title}":`,
-          statusConfig.project_action
-        );
-
-        // Replace placeholders in the project action message using centralized API
-        const actionMessage = await replacePlaceholders(
-          statusConfig.project_action,
-          project,
-          statusConfig
-        );
-
-        console.log(
-          `🔔 [PROJECT-ACTIONS] Showing toast for project "${project.title}":`,
-          actionMessage
-        );
-
-        // Show dismissible toast notification
-        if (window.showInfo) {
-          console.log("🔔 [PROJECT-ACTIONS] Toast system available, showing notification...");
-          window.showInfo("Project Action Required", actionMessage, -1); // -1 = persistent, no auto-dismiss
-        } else {
-          console.error("🔔 [PROJECT-ACTIONS] Toast system not available");
-          console.error(
-            "🔔 [PROJECT-ACTIONS] Available window methods:",
-            Object.keys(window).filter((key) => key.includes("show"))
-          );
-        }
-      } else {
-        console.log(`🔔 [PROJECT-ACTIONS] No project action for project "${project.title}"`);
+      if (!statusesResponse.ok) {
+        console.error("🔔 [PROJECT-ACTIONS] Failed to fetch statuses:", statusesResponse.status);
+        return;
       }
+
+      const statusesResult = await statusesResponse.json();
+      console.log("🔔 [PROJECT-ACTIONS] Statuses API response:", statusesResult);
+
+      if (!statusesResult.success) {
+        console.error("🔔 [PROJECT-ACTIONS] Statuses API returned error:", statusesResult.error);
+        return;
+      }
+
+      const project_statuses_object = statusesResult.statuses || {};
+      console.log("🔔 [PROJECT-ACTIONS] Project statuses data:", project_statuses_object);
+      console.log("🔔 [PROJECT-ACTIONS] Status 40 config:", project_statuses_object[40]);
+
+      if (!project_statuses_object || typeof project_statuses_object !== "object") {
+        console.log("🔔 [PROJECT-ACTIONS] No project statuses found");
+        return;
+      }
+
+      console.log("🔔 [PROJECT-ACTIONS] Processing projects:", projects.length);
+      console.log("🔔 [PROJECT-ACTIONS] Available statuses:", Object.keys(project_statuses_object));
+
+      // Check each project for action notifications
+      for (let index = 0; index < projects.length; index++) {
+        const project = projects[index];
+        const projectStatus = project.status;
+        const statusConfig = project_statuses_object[projectStatus];
+
+        console.log(`🔔 [PROJECT-ACTIONS] Checking project ${index + 1}:`, {
+          id: project.id,
+          title: project.title,
+          status: projectStatus,
+          hasStatusConfig: !!statusConfig,
+          statusConfig: statusConfig,
+        });
+
+        if (statusConfig && statusConfig.project_action) {
+          console.log(
+            `🔔 [PROJECT-ACTIONS] Found project action for project "${project.title}":`,
+            statusConfig.project_action
+          );
+
+          // Replace placeholders in the project action message using local replacement
+          const actionMessage = replacePlaceholdersLocal(
+            statusConfig.project_action,
+            project,
+            statusConfig
+          );
+
+          console.log(
+            `🔔 [PROJECT-ACTIONS] Showing toast for project "${project.title}":`,
+            actionMessage
+          );
+
+          // Show dismissible toast notification
+          if (window.showInfo) {
+            console.log("🔔 [PROJECT-ACTIONS] Toast system available, showing notification...");
+            window.showInfo("Project Action Required", actionMessage, -1); // -1 = persistent, no auto-dismiss
+          } else {
+            console.error("🔔 [PROJECT-ACTIONS] Toast system not available");
+            console.error(
+              "🔔 [PROJECT-ACTIONS] Available window methods:",
+              Object.keys(window).filter((key) => key.includes("show"))
+            );
+          }
+        } else {
+          console.log(`🔔 [PROJECT-ACTIONS] No project action for project "${project.title}"`);
+        }
+      }
+    } catch (error) {
+      console.error("🔔 [PROJECT-ACTIONS] Error fetching project statuses:", error);
     }
   });
+
+  // Function to replace placeholders in project action messages using local replacement
+  function replacePlaceholdersLocal(message, project, statusConfig) {
+    if (!message) return "";
+
+    console.log("🔄 [PLACEHOLDER-LOCAL] Original message:", message);
+
+    // Get client name from currentUser data - use company_name consistently
+    const clientName = currentUser?.company_name || "Client";
+
+    // Handle PROJECT_LINK with optional query parameters
+    const baseProjectLink = `${window.location.origin}/project/${project.id}`;
+    let processedMessage = message.replace(/{{PROJECT_LINK(\?[^}]*)?}}/g, (match, queryParams) => {
+      const fullUrl = baseProjectLink + (queryParams || "");
+
+      // Extract tab parameter for display text
+      let displayText = "View Project";
+      if (queryParams) {
+        const tabMatch = queryParams.match(/[?&]tab=([^&]*)/);
+        if (tabMatch && tabMatch[1]) {
+          const tabName = tabMatch[1]
+            .replace(/([a-z])([A-Z])/g, "$1 $2")
+            .replace(/[-_]/g, " ")
+            .split(" ")
+            .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+            .join(" ");
+          displayText = `Go to ${tabName}`;
+        }
+      }
+
+      const linkHtml = `<a href="${fullUrl}" style="color: #3b82f6; text-decoration: underline; font-weight: 500;">${displayText}</a>`;
+      console.log("🔄 [PLACEHOLDER-LOCAL] Replaced PROJECT_LINK:", {
+        original: match,
+        url: fullUrl,
+        displayText,
+        linkHtml,
+      });
+      return linkHtml;
+    });
+
+    // Replace other placeholders
+    processedMessage = processedMessage
+      .replace(/{{PROJECT_TITLE}}/g, project.title || "Project")
+      .replace(/{{PROJECT_ADDRESS}}/g, project.address || "N/A")
+      .replace(/{{ADDRESS}}/g, project.address || "N/A")
+      .replace(/{{CLIENT_NAME}}/g, clientName)
+      .replace(/{{CLIENT_EMAIL}}/g, currentUser?.email || "")
+      .replace(/{{EST_TIME}}/g, statusConfig?.est_time || "2-3 business days")
+      .replace(/{{STATUS_NAME}}/g, statusConfig?.status_name || "Status Update")
+      // Replace any remaining {{PLACEHOLDER}} with empty string
+      .replace(/\{\{[^}]+\}\}/g, "");
+
+    console.log("🔄 [PLACEHOLDER-LOCAL] Final processed message:", processedMessage);
+    return processedMessage;
+  }
 
   // Function to replace placeholders in project action messages using centralized API
   async function replacePlaceholders(message, project, statusConfig) {
