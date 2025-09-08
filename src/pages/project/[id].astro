@@ -3,16 +3,18 @@ import App from "../../components/common/App.astro";
 import SectionContainer from "../../components/common/SectionContainer.astro";
 import Hero from "../../components/common/Hero.astro";
 import BoxIcon from "../../components/common/BoxIcon.astro";
-import ProjectForm from "../../components/project/ProjectForm.astro";
-import PDFUpload from "../../components/project/PDFUpload.astro";
-import SimpleProjectLog from "../../components/project/SimpleProjectLog.astro";
-import ProposalManager from "../../components/project/ProposalManager.astro";
-import PaymentForm from "../../components/project/PaymentForm.astro";
+import TabDocuments from "../../components/project/TabDocuments.astro";
 import Discussions from "../../components/project/Discussions.astro";
-import DigitalSignature from "../../components/project/DigitalSignature.astro";
+import TabProjectForm from "../../components/project/TabProjectForm.astro";
+import TabProposal from "../../components/project/TabProposal.astro";
+import TabContract from "../../components/project/TabContract.astro";
+import TabDeposit from "../../components/project/TabDeposit.astro";
+import TabFinalInvoice from "../../components/project/TabFinalInvoice.astro";
+import TabActivityLog from "../../components/project/TabActivityLog.astro";
+import TabDeliverables from "../../components/project/TabDeliverables.astro";
 import { getI18N } from "@/i18n";
 import { supabase } from "../../lib/supabase";
-import { supabaseAdmin } from "../../lib/supabase-admin";
+// import { supabaseAdmin } from "../../lib/supabase-admin";
 import "../../lib/refresh-manager.ts";
 
 const { currentLocale } = Astro;
@@ -23,54 +25,42 @@ const { id } = Astro.params;
 
 // Get auth data directly since App component handles auth requirements
 import { checkAuth } from "../../lib/auth";
-const { isAuth, currentUser, currentRole } = await checkAuth(Astro.cookies);
+const {
+  isAuth = false,
+  currentUser = undefined,
+  currentRole = undefined,
+} = await checkAuth(Astro.cookies);
 
-// Server-side function to get author info directly from database
+// Server-side function to get author info via API
 async function getAuthorInfoServer(userId: string) {
-  if (!supabaseAdmin) {
-    console.error("Supabase Admin not available");
+  try {
+    const response = await fetch(`${Astro.url.origin}/api/get-user-info`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Cookie: Astro.request.headers.get("cookie") || "",
+      },
+      body: JSON.stringify({ userId }),
+    });
+
+    if (!response.ok) {
+      console.error("Failed to fetch user info:", response.status, response.statusText);
+      return null;
+    }
+
+    const data = await response.json();
+
+    if (!data.success || !data.user) {
+      console.error("API returned error:", data.error);
+      return null;
+    }
+
+    return data.user;
+  } catch (error) {
+    console.error("Error calling get-user-info API:", error);
     return null;
   }
-
-  const { data: authUser, error: authError } = await supabaseAdmin.auth.admin.getUserById(userId);
-
-  if (authError || !authUser.user) {
-    console.error("Error fetching auth user:", authError);
-    return null;
-  }
-
-  if (!supabase) {
-    console.error("Supabase not available");
-    return null;
-  }
-
-  // Get user profile from profiles table
-  const { data: profile, error: profileError } = await supabase
-    .from("profiles")
-    .select("*")
-    .eq("id", userId)
-    .single();
-
-  // Combine auth user data with profile data
-  const userInfo = {
-    id: authUser.user.id,
-    email: authUser.user.email,
-    profile: profile || null,
-    display_name:
-      profile?.company_name ||
-      authUser.user.user_metadata?.full_name ||
-      authUser.user.email?.split("@")[0] ||
-      "Unknown User",
-    company_name: profile?.company_name || null,
-    first_name: profile?.first_name || null,
-    last_name: profile?.last_name || null,
-    phone: profile?.phone || null,
-    role: profile?.role || "Unknown",
-  };
-
-  return userInfo;
 }
-
 
 // Get the tab parameter from URL query string
 const tabParam = Astro.url.searchParams.get("tab");
@@ -87,10 +77,12 @@ const validTabs = [
 ];
 const defaultTab = validTabs.includes(tabParam || "") ? tabParam : "project-form";
 
-
 // Fetch project data and project author profile - RLS will handle authorization
 let project = null;
-let projectAuthorProfile = null;
+let authorProfile = null;
+let invoiceData = null;
+let totalAmount = 0;
+let invoiceId = "0";
 let statusLabels: Record<number, { status_name: string; [key: string]: any }> = {};
 
 if (supabase) {
@@ -111,7 +103,11 @@ if (supabase) {
     // Get project author's profile data (not current user's profile)
     if (project.author_id) {
       try {
-        projectAuthorProfile = await getAuthorInfoServer(project.author_id);
+        authorProfile = await getAuthorInfoServer(project.author_id);
+        console.log("🔍 [PROJECT] Fetched authorProfile:", authorProfile);
+        console.log("🔍 [PROJECT] authorProfile.user_metadata:", authorProfile?.user_metadata);
+        console.log("🔍 [PROJECT] first_name:", authorProfile?.user_metadata?.first_name);
+        console.log("🔍 [PROJECT] last_name:", authorProfile?.user_metadata?.last_name);
       } catch (error) {
         console.error("Error fetching project author profile:", error);
       }
@@ -139,6 +135,65 @@ if (supabase) {
     } else {
       project.assigned_to_name = null;
     }
+
+    // Fetch invoice data and calculate total amount
+    // Query the invoices table by project ID to get the proper invoice ID
+    const { data: invoice, error: invoiceError } = await supabase
+      .from("invoices")
+      .select("id, catalog_line_items, status, project_id")
+      .eq("project_id", project.id)
+      .single();
+
+    console.log("🔍 [PROJECT] Invoice query result:", {
+      invoice,
+      invoiceError,
+      projectId: project.id,
+      hasInvoice: !!invoice,
+    });
+    if (!invoiceError && invoice) {
+      invoiceId = invoice.id.toString();
+      invoiceData = invoice;
+
+      // Calculate total by looping through catalog line items
+      if (invoice.catalog_line_items && Array.isArray(invoice.catalog_line_items)) {
+        totalAmount = invoice.catalog_line_items.reduce((sum: number, item: any) => {
+          const quantity = parseFloat(item.quantity) || 0;
+          const unitPrice = parseFloat(item.unit_price) || 0;
+          const itemTotal = quantity * unitPrice;
+          console.log("🔍 [PROJECT] Line item calculation:", {
+            name: item.name,
+            quantity,
+            unitPrice,
+            itemTotal,
+            runningSum: sum + itemTotal,
+          });
+          return sum + itemTotal;
+        }, 0);
+
+        // Convert to cents for Stripe (multiply by 100)
+        totalAmount = Math.round(totalAmount * 100);
+
+        console.log("🔍 [PROJECT] Total amount calculated:", {
+          totalAmount,
+          lineItemsCount: invoice.catalog_line_items.length,
+          invoiceId: invoice.id,
+        });
+      }
+    } else {
+      // No invoice found for this project
+      invoiceId = "0";
+      console.log("❌ [PROJECT] No invoice found for project:", {
+        projectId: project.id,
+        invoiceError: invoiceError?.message,
+        invoiceErrorCode: invoiceError?.code,
+        invoiceErrorDetails: invoiceError?.details,
+      });
+    }
+
+    // Fallback to hardcoded amount if no invoice data found
+    if (totalAmount === 0) {
+      totalAmount = 2000;
+    }
   }
 
   // Fetch status labels using API
@@ -162,6 +217,10 @@ if (supabase) {
     console.error("Error fetching status labels:", error);
   }
 }
+
+// Calculate projectStatus and projectStatusLabel
+const projectStatus = project?.status || 0;
+const projectStatusLabel = statusLabels[projectStatus]?.status_name || "Unknown Status";
 
 // Safety check - if no project was found, redirect to dashboard
 if (!project) {
@@ -189,40 +248,29 @@ function getStatusColor(status: number): string {
     description={`<div class="space-y-1">
       <div class="inline-flex items-center">
         <i class="bx bx-user mr-2 text-gray-500"></i>
-        <span class="font-medium">${projectAuthorProfile?.company_name || "Unknown Author"}</span>
+        <span class="font-medium">${authorProfile?.company_name || "Unknown Author"}</span>
       </div>
       <div class="text-sm text-gray-600 dark:text-gray-400">
-        ${projectAuthorProfile?.first_name || projectAuthorProfile?.last_name ? 
-          `<br/>${projectAuthorProfile?.first_name || ""} ${projectAuthorProfile?.last_name || ""}` : ""}
-        ${projectAuthorProfile?.phone ? `<br/>${projectAuthorProfile.phone}` : ""}
+        ${
+          authorProfile?.profile?.first_name || authorProfile?.profile?.last_name
+            ? `<br/>${authorProfile?.profile?.first_name || ""} ${authorProfile?.profile?.last_name || ""}`
+            : ""
+        }
+        ${authorProfile?.user_metadata?.phone || authorProfile?.phone ? `<br/>${authorProfile?.user_metadata?.phone || authorProfile?.phone}` : ""}
       </div>
     </div>`}
-    statusLabel={project?.status
-      ? (statusLabels[project.status]?.status_name || `Status ${project.status}`)
+    statusLabel={projectStatusLabel
+      ? statusLabels[project.status]?.status_name || `Status ${project.status}`
       : undefined}
-    statusColor={project?.status ? getStatusColor(project.status) : undefined}
+    statusColor={projectStatus ? getStatusColor(project.status) : undefined}
     projectId={projectId}
-    projectStatus={project?.status}
+    projectStatus={projectStatus}
     currentRole={currentRole || "Client"}
     project={project}
     statuses={Object.values(statusLabels)}
-    authorProfile={projectAuthorProfile}
+    authorProfile={authorProfile}
   />
-  <SectionContainer 
-    data-project-id={id}
-    data-project-status={project?.status}
-    data-current-user-id={currentUser?.id}
-  >
-    <div class="flex items-center justify-between">
-      <a
-        href="/dashboard"
-        class="inline-flex items-center rounded-lg bg-gray-500 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-gray-600"
-      >
-        <BoxIcon name="arrow-back" class="mr-2" />
-        Back to Projects
-      </a>
-    </div>
-
+  <SectionContainer>
     <!-- Tab Navigation -->
     <nav
       id="project-tab-nav"
@@ -245,7 +293,9 @@ function getStatusColor(status: number): string {
       >
         <BoxIcon name="message-rounded-dots" class="mr-2 inline h-4 w-4" />
         Discussion
-        <span class="incomplete-comments-count absolute -right-2 -top-2 flex h-5 w-5 items-center justify-center rounded-full border border-blue-500 bg-white text-xs font-medium text-blue-500 hidden">
+        <span
+          class="incomplete-comments-count absolute -right-2 -top-2 h-5 w-5 items-center justify-center rounded-full border border-blue-500 bg-white text-xs font-medium text-blue-500 hidden"
+        >
           0
         </span>
       </button>
@@ -311,349 +361,130 @@ function getStatusColor(status: number): string {
         <BoxIcon name="receipt" class="mr-2 inline h-4 w-4" />
         Final Invoice
       </button>
-      {currentRole === "Admin" || currentRole === "Staff" ? (
-
-      <button
-        id="tab-activity-log"
-        class="tab-button relative mt-2 w-auto rounded-full px-4 py-2 text-sm font-medium text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
-        onclick="switchTab('activity-log')"
-      >
-        <BoxIcon name="history" class="mr-2 inline h-4 w-4" />
-        Activity Log
-      </button>
-      ) : (
-        ""
-      )}
+      {
+        currentRole === "Admin" || currentRole === "Staff" ? (
+          <button
+            id="tab-activity-log"
+            class="tab-button relative mt-2 w-auto rounded-full px-4 py-2 text-sm font-medium text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
+            onclick="switchTab('activity-log')"
+          >
+            <BoxIcon name="history" class="mr-2 inline h-4 w-4" />
+            Activity Log
+          </button>
+        ) : (
+          ""
+        )
+      }
     </nav>
 
     <!-- Tab Content -->
     <div class="grid grid-cols-1 gap-6 lg:grid-cols-1">
       <!-- Project Form Tab -->
-      <div
-        id="content-project-form"
-        class="tab-content rounded-lg border border-gray-200 bg-white p-6 dark:border-gray-700 dark:bg-gray-800"
-      >
-        <ProjectForm
-          project={project}
-          projectId={projectId}
-          isNewProject={false}
-          currentRole={currentRole}
-          projectStatus={project?.status}
-        />
-      </div>
+      <TabProjectForm
+        project={project}
+        currentRole={currentRole || undefined}
+        projectId={projectId}
+        projectStatus={projectStatus}
+        projectStatusLabel={projectStatusLabel}
+        authorProfile={authorProfile}
+      />
 
       <!-- Discussion Tab -->
       <div
         id="content-discussion"
         class="tab-content hidden rounded-lg border border-gray-200 bg-white p-6 dark:border-gray-700 dark:bg-gray-800"
       >
-        <Discussions 
-          projectId={projectId} 
-          currentRole={currentRole || "Client"} 
-          userId={currentUser?.id || ""} 
-          userName={currentUser?.company_name || currentUser?.email || "Unknown User"} 
+        <Discussions
+          project={project}
+          currentRole={currentRole || undefined}
+          projectId={projectId}
+          projectStatus={projectStatus}
+          projectStatusLabel={projectStatusLabel}
+          authorProfile={authorProfile}
         />
       </div>
 
       <!-- Documents Tab -->
-      <div id="content-documents" class="tab-content hidden">
-        <PDFUpload
-          projectId={projectId}
-          fileType="media"
-          currentRole={currentRole || undefined}
-          projectStatus={project?.status}
-        />
-      </div>
+      <TabDocuments
+        project={project}
+        currentRole={currentRole || undefined}
+        projectId={projectId}
+        projectStatus={projectStatus}
+        projectStatusLabel={projectStatusLabel}
+        authorProfile={authorProfile}
+        fileType="media"
+      />
 
       <!-- Proposal Tab -->
-      <div id="content-proposal" class="tab-content hidden">
-        <ProposalManager 
-          projectId={projectId} 
-          project={project} 
-          authorProfile={projectAuthorProfile} 
-          currentRole={currentRole || undefined}
-          projectStatus={project?.status}
-        />
-      </div>
+      <TabProposal
+        project={project}
+        currentRole={currentRole || undefined}
+        projectId={projectId}
+        projectStatus={projectStatus}
+        projectStatusLabel={projectStatusLabel}
+        authorProfile={authorProfile}
+        currentUser={currentUser}
+      />
 
       <!-- Contract Tab -->
-      <div
-        id="content-contract"
-        class="tab-content hidden rounded-lg border border-gray-200 bg-white p-6 dark:border-gray-700 dark:bg-gray-800"
-      >
-        <div class="mb-6">
-          <h3 class="mb-2 text-lg font-medium text-gray-900 dark:text-white">Contract</h3>
-          <p class="text-gray-500 dark:text-gray-400">
-            It is a long established fact that a reader will be distracted by the readable content of a page when looking at its layout. The point of using Lorem Ipsum is that it has a more-or-less normal distribution of letters, as opposed to using 'Content here, content here', making it look like readable English. Many desktop publishing packages and web page editors now use Lorem Ipsum as their default model text, and a search for 'lorem ipsum' will uncover many web sites still in their infancy. Various versions have evolved over the years, sometimes by accident, sometimes on purpose.
-          </p>
-          <p class="text-gray-500 dark:text-gray-400">
-            It is a long established fact that a reader will be distracted by the readable content of a page when looking at its layout. The point of using Lorem Ipsum is that it has a more-or-less normal distribution of letters, as opposed to using 'Content here, content here', making it look like readable English. Many desktop publishing packages and web page editors now use Lorem Ipsum as their default model text, and a search for 'lorem ipsum' will uncover many web sites still in their infancy. Various versions have evolved over the years, sometimes by accident, sometimes on purpose.
-          </p>
-          <p class="text-gray-500 dark:text-gray-400">
-            It is a long established fact that a reader will be distracted by the readable content of a page when looking at its layout. The point of using Lorem Ipsum is that it has a more-or-less normal distribution of letters, as opposed to using 'Content here, content here', making it look like readable English. Many desktop publishing packages and web page editors now use Lorem Ipsum as their default model text, and a search for 'lorem ipsum' will uncover many web sites still in their infancy. Various versions have evolved over the years, sometimes by accident, sometimes on purpose.
-          </p>
-          <p class="text-gray-500 dark:text-gray-400">
-            It is a long established fact that a reader will be distracted by the readable content of a page when looking at its layout. The point of using Lorem Ipsum is that it has a more-or-less normal distribution of letters, as opposed to using 'Content here, content here', making it look like readable English. Many desktop publishing packages and web page editors now use Lorem Ipsum as their default model text, and a search for 'lorem ipsum' will uncover many web sites still in their infancy. Various versions have evolved over the years, sometimes by accident, sometimes on purpose.
-          </p>
-        </div>
-        
-
-              
-      {project?.status >= 30 && currentRole === "Client" && project?.status < 50 && (
-
-
-      <div class="mt-8 rounded-lg border border-gray-200 bg-white p-6 dark:border-gray-700 dark:bg-gray-800">
-        <div class="mb-6">
-          <h3 class="mb-2 text-lg font-medium text-gray-900 dark:text-white">Proposal Payment - 50% Deposit</h3>
-          <p class="text-gray-500 dark:text-gray-400">
-            Pay 50% deposit to approve this proposal and begin work.
-          </p>
-          <button onclick="window.switchTab('discussion')" class="inline-flex items-center rounded-lg bg-green-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-green-700">To Request Edits Leave a Comment</button>
-        </div>  
-        
-        
-        <!-- Import PaymentForm component -->
-        <DigitalSignature id="proposal-signature" required={true} width={1200} height={580} placeholder="Proposal Signature" />  
-
-        <PaymentForm 
-          invoiceId={parseInt(projectId)} 
-          amount={0}
-          currency="usd"
-          paymentType="deposit"
-          clientProfile={projectAuthorProfile}
-        />
-
-        
-      </div>
-      )}
-
-
-        <!-- Placeholder Buttons -->
-        <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <button
-            class="flex h-32 w-full items-center justify-center rounded-lg border-2 border-dashed border-gray-300 bg-gray-50 px-4 py-6 text-center hover:border-gray-400 hover:bg-gray-100 dark:border-gray-600 dark:bg-gray-700 dark:hover:border-gray-500 dark:hover:bg-gray-600"
-          >
-            <div class="text-center">
-              <BoxIcon name="upload" class="mx-auto mb-2 h-8 w-8 text-gray-400" />
-              <p class="text-sm font-medium text-gray-900 dark:text-white">Upload Contract</p>
-              <p class="text-xs text-gray-500 dark:text-gray-400">Click to upload contract file</p>
-            </div>
-          </button>
-          
-          <button
-            class="flex h-32 w-full items-center justify-center rounded-lg border-2 border-dashed border-gray-300 bg-gray-50 px-4 py-6 text-center hover:border-gray-400 hover:bg-gray-100 dark:border-gray-600 dark:bg-gray-700 dark:hover:border-gray-500 dark:hover:bg-gray-600"
-          >
-            <div class="text-center">
-              <BoxIcon name="file-text" class="mx-auto mb-2 h-8 w-8 text-gray-400" />
-              <p class="text-sm font-medium text-gray-900 dark:text-white">View Contract</p>
-              <p class="text-xs text-gray-500 dark:text-gray-400">View current contract</p>
-            </div>
-          </button>
-        </div>
-      </div>
+      <TabContract
+        project={project}
+        currentRole={currentRole || undefined}
+        projectId={projectId}
+        projectStatus={projectStatus}
+        projectStatusLabel={projectStatusLabel}
+        authorProfile={authorProfile}
+      />
 
       <!-- Deposit Tab -->
-      <div
-        id="content-deposit"
-        class="tab-content hidden rounded-lg border border-gray-200 bg-white p-6 dark:border-gray-700 dark:bg-gray-800"
-      >
-        <div class="mb-6">
-          <h3 class="mb-2 text-lg font-medium text-gray-900 dark:text-white">Deposit Payment</h3>
-          <p class="text-gray-500 dark:text-gray-400">
-            Secure your project with a deposit payment. This ensures we can begin work on your fire protection system.
-          </p>
-        </div>
-        
-        <!-- Deposit Payment Form -->
-        <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
-          <!-- Payment Information -->
-          <div class="space-y-4">
-            <div class="rounded-lg border border-gray-200 bg-gray-50 p-4 dark:border-gray-600 dark:bg-gray-700">
-              <h4 class="mb-2 font-medium text-gray-900 dark:text-white">Payment Details</h4>
-              <div class="space-y-2 text-sm">
-                <div class="flex justify-between">
-                  <span class="text-gray-600 dark:text-gray-400">Project Total:</span>
-                  <span class="font-medium text-gray-900 dark:text-white">$0.00</span>
-                </div>
-                <div class="flex justify-between">
-                  <span class="text-gray-600 dark:text-gray-400">Deposit (50%):</span>
-                  <span class="font-medium text-green-600 dark:text-green-400">$0.00</span>
-                </div>
-                <hr class="border-gray-200 dark:border-gray-600" />
-                <div class="flex justify-between">
-                  <span class="font-medium text-gray-900 dark:text-white">Amount Due:</span>
-                  <span class="font-bold text-lg text-green-600 dark:text-green-400">$0.00</span>
-                </div>
-              </div>
-            </div>
-            
-            <!-- Payment Methods -->
-            <div class="space-y-3">
-              <h4 class="font-medium text-gray-900 dark:text-white">Payment Methods</h4>
-              <div class="space-y-2">
-                <label class="flex items-center space-x-3">
-                  <input type="radio" name="payment-method" value="card" class="text-blue-600 focus:ring-blue-500" checked />
-                  <BoxIcon name="credit-card" class="h-5 w-5 text-gray-400" />
-                  <span class="text-sm text-gray-700 dark:text-gray-300">Credit/Debit Card</span>
-                </label>
-                <label class="flex items-center space-x-3">
-                  <input type="radio" name="payment-method" value="bank" class="text-blue-600 focus:ring-blue-500" />
-                  <BoxIcon name="bank" class="h-5 w-5 text-gray-400" />
-                  <span class="text-sm text-gray-700 dark:text-gray-300">Bank Transfer</span>
-                </label>
-                <label class="flex items-center space-x-3">
-                  <input type="radio" name="payment-method" value="check" class="text-blue-600 focus:ring-blue-500" />
-                  <BoxIcon name="file-text" class="h-5 w-5 text-gray-400" />
-                  <span class="text-sm text-gray-700 dark:text-gray-300">Check</span>
-                </label>
-              </div>
-            </div>
-          </div>
-          
-          <!-- Payment Form -->
-          <div class="space-y-4">
-            <div class="rounded-lg border border-gray-200 bg-white p-4 dark:border-gray-600 dark:bg-gray-800">
-              <h4 class="mb-4 font-medium text-gray-900 dark:text-white">Payment Information</h4>
-              
-              <!-- Card Payment Form (shown by default) -->
-              <div id="card-payment-form" class="space-y-4">
-                <div>
-                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Card Number</label>
-                  <input 
-                    type="text" 
-                    placeholder="1234 5678 9012 3456"
-                    class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                  />
-                </div>
-                
-                <div class="grid grid-cols-2 gap-4">
-                  <div>
-                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Expiry Date</label>
-                    <input 
-                      type="text" 
-                      placeholder="MM/YY"
-                      class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                    />
-                  </div>
-                  <div>
-                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">CVV</label>
-                    <input 
-                      type="text" 
-                      placeholder="123"
-                      class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                    />
-                  </div>
-                </div>
-                
-                <div>
-                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Cardholder Name</label>
-                  <input 
-                    type="text" 
-                    placeholder="John Doe"
-                    class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                  />
-                </div>
-              </div>
-              
-              <!-- Bank Transfer Form (hidden by default) -->
-              <div id="bank-payment-form" class="space-y-4 hidden">
-                <div class="text-sm text-gray-600 dark:text-gray-400">
-                  <p class="mb-2">Please transfer the deposit amount to:</p>
-                  <div class="bg-gray-50 dark:bg-gray-700 p-3 rounded-md">
-                    <p><strong>Bank:</strong> Your Bank Name</p>
-                    <p><strong>Account:</strong> 1234567890</p>
-                    <p><strong>Routing:</strong> 987654321</p>
-                    <p><strong>Reference:</strong> Project #{projectId}</p>
-                  </div>
-                </div>
-              </div>
-              
-              <!-- Check Payment Form (hidden by default) -->
-              <div id="check-payment-form" class="space-y-4 hidden">
-                <div class="text-sm text-gray-600 dark:text-gray-400">
-                  <p class="mb-2">Please mail your check to:</p>
-                  <div class="bg-gray-50 dark:bg-gray-700 p-3 rounded-md">
-                    <p><strong>Company Name</strong></p>
-                    <p>123 Business Street</p>
-                    <p>City, State 12345</p>
-                    <p class="mt-2"><strong>Memo:</strong> Project #{projectId}</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-            
-            <!-- Payment Button -->
-            <button 
-              class="w-full bg-green-600 text-white py-3 px-4 rounded-md font-medium hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-colors"
-              onclick="processDepositPayment()"
-            >
-              <BoxIcon name="credit-card" class="mr-2 inline h-5 w-5" />
-              Pay Deposit - $0.00
-            </button>
-            
-            <p class="text-xs text-gray-500 dark:text-gray-400 text-center">
-              Secure payment processing powered by Stripe
-            </p>
-          </div>
-        </div>
-      </div>
+      <TabDeposit
+        project={project}
+        currentRole={currentRole || undefined}
+        projectId={projectId}
+        projectStatus={projectStatus}
+        projectStatusLabel={projectStatusLabel}
+        authorProfile={authorProfile}
+        invoiceId={invoiceId || "0"}
+        totalAmount={totalAmount}
+      />
 
       <!-- Deliverables Tab -->
-      <div
-        id="content-deliverables"
-        class="tab-content hidden rounded-lg border border-gray-200 bg-white p-6 dark:border-gray-700 dark:bg-gray-800"
-      >
-        <div class="py-8 text-center">
-          <BoxIcon name="package" class="mx-auto mb-4 h-12 w-12 text-gray-400" />
-          <h3 class="mb-2 text-lg font-medium text-gray-900 dark:text-white">Deliverables</h3>
-          <p class="text-gray-500 dark:text-gray-400">
-            Final project deliverables will be displayed here.
-          </p>
-        </div>
-      </div>
+      <TabDeliverables
+        project={project}
+        currentRole={currentRole || undefined}
+        projectId={projectId}
+        projectStatus={projectStatus}
+        projectStatusLabel={projectStatusLabel}
+        authorProfile={authorProfile}
+      />
 
       <!-- Final Invoice Tab -->
-      <div
-        id="content-final-invoice"
-        class="tab-content hidden rounded-lg border border-gray-200 bg-white p-6 dark:border-gray-700 dark:bg-gray-800"
-      >
-        <div class="mb-6">
-          <h3 class="mb-2 text-lg font-medium text-gray-900 dark:text-white">Final Invoice - Balance Due</h3>
-          <p class="text-gray-500 dark:text-gray-400">
-            Pay the remaining balance for your project.
-          </p>
-        </div>
-        
-        <!-- Payment Form for Final Invoice (Balance) -->
-        <PaymentForm 
-          invoiceId={parseInt(id ?? "0")} 
-          amount={2000}
-          currency="usd"
-          paymentType="balance"
-          clientProfile={projectAuthorProfile}
-        />
-      </div>
+      <TabFinalInvoice
+        project={project}
+        currentRole={currentRole || undefined}
+        projectId={projectId}
+        projectStatus={projectStatus}
+        projectStatusLabel={projectStatusLabel}
+        authorProfile={authorProfile}
+        invoiceData={invoiceData}
+        totalAmount={totalAmount}
+      />
 
-      {currentRole === "Admin" || currentRole === "Staff" ? (
-      <!-- Activity Log Tab -->
-      <div id="content-activity-log" class="tab-content hidden">
-        <SimpleProjectLog projectId={projectId} />
-      </div>
-      ) : (
-        ""
-      )}
+      <TabActivityLog currentRole={currentRole || undefined} projectId={projectId} />
     </div>
   </SectionContainer>
 </App>
 
-<script define:vars={{ userRole: currentRole, projectData: project, currentUserData: currentUser }}>
-window.PROJECT_USER_ROLE = userRole;
-window.PROJECT_DATA = projectData;
-window.CURRENT_USER_DATA = currentUserData;</script>
-
-<script>
+<script
+  type="module"
+  define:vars={{ userRole: currentRole, projectData: project, currentUserData: authorProfile }}
+>
   // Tab switching functionality
-  function switchTab(tabName: string) {
+  function switchTab(tabName) {
+    // Parse tab name and parameters (e.g., "discussion&new=true")
+    const [baseTabName, ...paramParts] = tabName.split("&");
+    const params = new URLSearchParams(paramParts.join("&"));
+
     // Hide all tab contents
     const tabContents = document.querySelectorAll(".tab-content");
     tabContents.forEach((content) => {
@@ -673,13 +504,13 @@ window.CURRENT_USER_DATA = currentUserData;</script>
     });
 
     // Show selected tab content
-    const selectedContent = document.getElementById(`content-${tabName}`);
+    const selectedContent = document.getElementById(`content-${baseTabName}`);
     if (selectedContent) {
       selectedContent.classList.remove("hidden");
     }
 
     // Add active class to selected tab button
-    const selectedButton = document.getElementById(`tab-${tabName}`);
+    const selectedButton = document.getElementById(`tab-${baseTabName}`);
     if (selectedButton) {
       selectedButton.classList.remove(
         "text-gray-500",
@@ -697,76 +528,144 @@ window.CURRENT_USER_DATA = currentUserData;</script>
       });
     }
 
+    // Handle tab-specific actions based on parameters
+    if (baseTabName === "discussion" && params.get("new") === "true") {
+      // Auto-trigger new comment form after a short delay to ensure tab is visible
+      setTimeout(() => {
+        if (window.toggleCommentForm) {
+          window.toggleCommentForm();
+        }
+      }, 100);
+    }
+
     // Check if client is viewing proposal tab and update status if needed
     console.log("📋 [PROPOSAL-VIEW] Tab switched to:", tabName);
-    console.log("📋 [PROPOSAL-VIEW] User role:", (window as any).PROJECT_USER_ROLE);
-    
-    if (tabName === "proposal" && (window as any).PROJECT_USER_ROLE === "Client") {
-      const currentStatus = (window as any).PROJECT_DATA?.status || 0;
-      const currentUserId = (window as any).CURRENT_USER_DATA?.id;
-      const projectId = (window as any).PROJECT_DATA?.id;
-      
-      console.log("📋 [PROPOSAL-VIEW] Client viewing proposal tab, current status:", currentStatus);
-      console.log("📋 [PROPOSAL-VIEW] Project data:", { projectId, currentUserId });
-      
-      // Update status to 40 (Proposal Viewed) if status is between 30-40
-      if (currentStatus >= 20 && currentStatus < 40) {
-        console.log("📋 [PROPOSAL-VIEW] Updating status from", currentStatus, "to 40 (Proposal Viewed)");
-        
-        if (currentUserId && projectId) {
-          // Call update-status API
-          fetch('/api/update-status', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            credentials: 'include',
-            body: JSON.stringify({
-              projectId: projectId,
-              status: 40,
-              currentUserId: currentUserId,
-              oldStatus: currentStatus
-            })
-          })
-          .then(response => response.json())
-          .then(data => {
-            if (data.success) {
-              console.log("✅ [PROPOSAL-VIEW] Status updated to 40 successfully");
-              // Update the project data for future checks
-              (window as any).PROJECT_DATA.status = 40;
-              
-              // Update UI elements using RefreshManager
-              if ((window as any).refreshManager) {
-                (window as any).refreshManager.updateField('status', 40);
-                (window as any).refreshManager.updateField('status_name', 'Proposal Viewed');
-              }
-              
-              // Show toast notification if available
-              if (data.message && (window as any).showSuccess) {
-                (window as any).showSuccess("Proposal Viewed", data.message);
-              }
-            } else {
-              console.error("❌ [PROPOSAL-VIEW] Failed to update status:", data.error);
+    console.log("📋 [PROPOSAL-VIEW] User role:", userRole);
+
+    const currentStatus = projectData?.status || 0;
+    const currentUserId = currentUserData?.id;
+    const projectId = projectData?.id;
+    const hasExistingProposal = projectData?.invoice_id && projectData.invoice_id !== "0";
+    let nextStatus = 0;
+    // Viewed Update Tabs
+
+    console.log("📋 [PROPOSAL-VIEW] Client viewing proposal tab, current status:", currentStatus);
+    console.log("📋 [PROPOSAL-VIEW] Project data:", { projectId, currentUserId });
+
+    if (
+      tabName === "proposal" &&
+      userRole === "Client" &&
+      currentStatus >= 20 &&
+      currentStatus < 40 &&
+      currentUserId &&
+      projectId &&
+      hasExistingProposal
+    ) {
+      console.log(
+        "📋 [PROPOSAL-VIEW] Updating status from",
+        currentStatus,
+        "to 40 (Proposal Viewed)"
+      );
+      nextStatus = 40;
+    } else if (
+      tabName === "deposit" &&
+      userRole === "Client" &&
+      currentStatus >= 55 &&
+      currentStatus < 65 &&
+      currentUserId &&
+      projectId &&
+      hasExistingProposal
+    ) {
+      console.log(
+        "📋 [PROPOSAL-VIEW] Updating status from",
+        currentStatus,
+        "to 65 (Deposit Viewed)"
+      );
+      nextStatus = 65;
+    } else if (
+      tabName === "final-invoice" &&
+      userRole === "Client" &&
+      currentStatus >= 150 &&
+      currentStatus < 160 &&
+      currentUserId &&
+      projectId &&
+      hasExistingProposal
+    ) {
+      console.log(
+        "📋 [PROPOSAL-VIEW] Updating status from",
+        currentStatus,
+        "to 160 (Final Invoice Viewed)"
+      );
+      nextStatus = 160;
+    } else if (
+      tabName === "final-invoice" &&
+      userRole === "Client" &&
+      currentStatus >= 200 &&
+      currentStatus < 210 &&
+      currentUserId &&
+      projectId &&
+      hasExistingProposal
+    ) {
+      console.log(
+        "📋 [PROPOSAL-VIEW] Updating status from",
+        currentStatus,
+        "to 220 (Final Deliverables Viewed)"
+      );
+      nextStatus = 210;
+    }
+
+    // Update status to 40 (Proposal Viewed) if status is between 30-40
+
+    if (nextStatus !== 0) {
+      // Call update-status API
+      fetch("/api/update-status", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
+        body: JSON.stringify({
+          projectId: projectId,
+          status: nextStatus,
+          currentUserId: currentUserId,
+          oldStatus: currentStatus,
+        }),
+      })
+        .then((response) => response.json())
+        .then((data) => {
+          if (data.success) {
+            console.log("✅ [PROPOSAL-VIEW] Status updated to 40 successfully");
+            // Update the project data for future checks
+            projectData.status = nextStatus;
+
+            // Update UI elements using RefreshManager
+            if (window.refreshManager) {
+              window.refreshManager.updateField("status", nextStatus);
+              window.refreshManager.updateField("status_name", "Status Updated");
             }
-          })
-          .catch(error => {
-            console.error("❌ [PROPOSAL-VIEW] Error updating status:", error);
-          });
-        } else {
-          console.error("❌ [PROPOSAL-VIEW] Missing required data attributes:", { currentUserId, projectId });
-        }
-      } else {
-        console.log("📋 [PROPOSAL-VIEW] No status update needed, current status:", currentStatus);
-      }
+
+            // Show toast notification if available
+            if (data.message && window.showSuccess) {
+              window.showSuccess("Proposal Viewed", data.message);
+            }
+          } else {
+            console.error("❌ [PROPOSAL-VIEW] Failed to update status:", data.error);
+          }
+        })
+        .catch((error) => {
+          console.error("❌ [PROPOSAL-VIEW] Error updating status:", error);
+        });
+    } else {
+      console.log("📋 [PROPOSAL-VIEW] No status update needed, current status:", currentStatus);
     }
 
     // Update URL with tab parameter (without page reload)
     const currentUrl = new URL(window.location.href);
-    if (tabName === "project-form") {
+    if (baseTabName === "project-form") {
       // Remove tab parameter for default tab
       currentUrl.searchParams.delete("tab");
     } else {
-      // Add or update tab parameter
+      // Add or update tab parameter with any additional parameters
       currentUrl.searchParams.set("tab", tabName);
     }
 
@@ -790,36 +689,44 @@ window.CURRENT_USER_DATA = currentUserData;</script>
       "final-invoice",
       "activity-log",
     ];
-    const initialTab = validTabs.includes(tabFromUrl || "") ? tabFromUrl! : "project-form";
+
+    // Parse tab name and parameters
+    let initialTab = "project-form";
+    if (tabFromUrl) {
+      const [baseTabName] = tabFromUrl.split("&");
+      if (validTabs.includes(baseTabName)) {
+        initialTab = tabFromUrl; // Keep full parameter string for processing
+      }
+    }
 
     // Switch to the initial tab
     switchTab(initialTab);
   });
 
   // Make switchTab globally available for other components
-  (window as any).switchTab = switchTab;
+  window.switchTab = switchTab;
 
   // Payment method switching functionality
-  document.addEventListener("DOMContentLoaded", function() {
+  document.addEventListener("DOMContentLoaded", function () {
     const paymentMethodRadios = document.querySelectorAll('input[name="payment-method"]');
-    const cardForm = document.getElementById('card-payment-form');
-    const bankForm = document.getElementById('bank-payment-form');
-    const checkForm = document.getElementById('check-payment-form');
+    const cardForm = document.getElementById("card-payment-form");
+    const bankForm = document.getElementById("bank-payment-form");
+    const checkForm = document.getElementById("check-payment-form");
 
-    paymentMethodRadios.forEach(radio => {
-      radio.addEventListener('change', function(this: HTMLInputElement) {
+    paymentMethodRadios.forEach((radio) => {
+      radio.addEventListener("change", function () {
         // Hide all forms
-        if (cardForm) cardForm.classList.add('hidden');
-        if (bankForm) bankForm.classList.add('hidden');
-        if (checkForm) checkForm.classList.add('hidden');
+        if (cardForm) cardForm.classList.add("hidden");
+        if (bankForm) bankForm.classList.add("hidden");
+        if (checkForm) checkForm.classList.add("hidden");
 
         // Show selected form
-        if (this.value === 'card' && cardForm) {
-          cardForm.classList.remove('hidden');
-        } else if (this.value === 'bank' && bankForm) {
-          bankForm.classList.remove('hidden');
-        } else if (this.value === 'check' && checkForm) {
-          checkForm.classList.remove('hidden');
+        if (this.value === "card" && cardForm) {
+          cardForm.classList.remove("hidden");
+        } else if (this.value === "bank" && bankForm) {
+          bankForm.classList.remove("hidden");
+        } else if (this.value === "check" && checkForm) {
+          checkForm.classList.remove("hidden");
         }
       });
     });
@@ -827,45 +734,46 @@ window.CURRENT_USER_DATA = currentUserData;</script>
 
   // Payment processing function
   function processDepositPayment() {
-    const selectedMethodElement = document.querySelector('input[name="payment-method"]:checked') as HTMLInputElement;
+    const selectedMethodElement = document.querySelector('input[name="payment-method"]:checked');
     const selectedMethod = selectedMethodElement?.value;
-    
+
     if (!selectedMethod) {
-      alert('Please select a payment method');
+      alert("Please select a payment method");
       return;
     }
 
     // Get the amount (this would come from the proposal total in a real implementation)
-    const amount = 0.00; // Placeholder - should be calculated from proposal
-    
-    console.log('Processing deposit payment:', {
+    const amount = 0.0; // Placeholder - should be calculated from proposal
+
+    console.log("Processing deposit payment:", {
       method: selectedMethod,
       amount: amount,
-      projectId: (window as any).PROJECT_DATA?.id
+      projectId: projectData?.id,
     });
 
     // Show loading state
-    const button = document.querySelector('button[onclick="processDepositPayment()"]') as HTMLButtonElement;
+    const button = document.querySelector('button[onclick="processDepositPayment()"]');
     if (button) {
       const originalText = button.innerHTML;
-      button.innerHTML = '<BoxIcon name="loader" class="mr-2 inline h-5 w-5 animate-spin" />Processing...';
+      button.innerHTML =
+        '<BoxIcon name="loader" class="mr-2 inline h-5 w-5 animate-spin" />Processing...';
       button.disabled = true;
 
       // Simulate payment processing
       setTimeout(() => {
         button.innerHTML = originalText;
         button.disabled = false;
-        
+
         // Show success message
-        if ((window as any).showSuccess) {
-          (window as any).showSuccess('Deposit payment processed successfully!');
+        if (window.showSuccess) {
+          window.showSuccess("Deposit payment processed successfully!");
         } else {
-          alert('Deposit payment processed successfully!');
+          alert("Deposit payment processed successfully!");
         }
       }, 2000);
     }
   }
 
   // Make payment function globally available
-  (window as any).processDepositPayment = processDepositPayment;
+  window.processDepositPayment = processDepositPayment;
 </script>

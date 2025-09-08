@@ -96,8 +96,8 @@ export const PROJECT_UPDATE_FIELDS: ProjectField[] = [
   {
     name: "architect",
     type: "string",
-    category: "new",
-    allowEmpty: false,
+    category: "optional",
+    allowEmpty: true,
     description: "Project architect",
   },
   {

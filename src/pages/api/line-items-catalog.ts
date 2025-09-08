@@ -3,6 +3,18 @@ import { apiCache } from "../../lib/api-cache";
 import { checkAuth } from "../../lib/auth";
 import { supabase } from "../../lib/supabase";
 
+export const OPTIONS: APIRoute = async () => {
+  return new Response(null, {
+    status: 200,
+    headers: {
+      "Access-Control-Allow-Origin": "*",
+      "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+      "Access-Control-Allow-Headers": "Content-Type",
+      "Access-Control-Allow-Credentials": "true",
+    },
+  });
+};
+
 // GET: Search and retrieve catalog items
 export const GET: APIRoute = async ({ url, cookies }) => {
   try {
@@ -26,6 +38,7 @@ export const GET: APIRoute = async ({ url, cookies }) => {
     const category = searchParams.get("category") || "";
     const limit = parseInt(searchParams.get("limit") || "20");
     const ids = searchParams.get("ids") || "";
+    const id = searchParams.get("id") || "";
 
     // Check cache first (but not for specific IDs)
     const cacheKey = `catalog-items-${searchTerm}-${category}-${limit}-${ids}`;
@@ -40,8 +53,20 @@ export const GET: APIRoute = async ({ url, cookies }) => {
     // Build query conditions
     let query = supabase.from("line_items_catalog").select("*");
 
+    // If specific ID is requested, fetch that single item
+    if (id) {
+      const itemId = parseInt(id.trim());
+      if (!isNaN(itemId)) {
+        query = query.eq("id", itemId);
+      } else {
+        return new Response(JSON.stringify({ success: false, error: "Invalid ID format" }), {
+          status: 400,
+          headers: { "Content-Type": "application/json" },
+        });
+      }
+    }
     // If specific IDs are requested, fetch those items
-    if (ids) {
+    else if (ids) {
       const idArray = ids
         .split(",")
         .map((id) => parseInt(id.trim()))
@@ -82,7 +107,18 @@ export const GET: APIRoute = async ({ url, cookies }) => {
     }
 
     // Cache results for 10 minutes (popular items change less frequently)
-    apiCache.set(cacheKey, items, 10);
+    if (!id) {
+      apiCache.set(cacheKey, items, 10);
+    }
+
+    // For single item queries, return the item directly
+    if (id) {
+      const item = items && items.length > 0 ? items[0] : null;
+      return new Response(JSON.stringify({ success: true, item: item }), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
 
     return new Response(JSON.stringify({ success: true, items: items || [] }), {
       status: 200,
@@ -115,7 +151,39 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       });
     }
 
-    const { name, description, unit_price, category } = await request.json();
+    // Test database connection and table existence
+    try {
+      const { data: testData, error: testError } = await supabase
+        .from("line_items_catalog")
+        .select("id")
+        .limit(1);
+
+      if (testError) {
+        console.error("🔍 [LINE-ITEMS-CATALOG] Database test failed:", testError);
+        return new Response(
+          JSON.stringify({ error: "Database table not accessible", details: testError.message }),
+          {
+            status: 500,
+            headers: { "Content-Type": "application/json" },
+          }
+        );
+      }
+      console.log("🔍 [LINE-ITEMS-CATALOG] Database connection test successful");
+    } catch (testError) {
+      console.error("🔍 [LINE-ITEMS-CATALOG] Database connection test error:", testError);
+      return new Response(
+        JSON.stringify({ error: "Database connection failed", details: testError.message }),
+        {
+          status: 500,
+          headers: { "Content-Type": "application/json" },
+        }
+      );
+    }
+
+    const requestBody = await request.json();
+    console.log("🔍 [LINE-ITEMS-CATALOG] Received request body:", requestBody);
+
+    const { name, description, unit_price, category } = requestBody;
 
     if (!name || !description || unit_price === undefined) {
       return new Response(
@@ -126,6 +194,14 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         }
       );
     }
+
+    console.log("🔍 [LINE-ITEMS-CATALOG] Creating catalog item with data:", {
+      name: name.trim(),
+      description: description.trim(),
+      unit_price: parseFloat(unit_price),
+      category: category?.trim() || null,
+      created_by: currentUser.id,
+    });
 
     const { data: newItem, error } = await supabase
       .from("line_items_catalog")

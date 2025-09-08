@@ -67,7 +67,7 @@ export const POST: APIRoute = async ({ request }) => {
       });
     }
 
-    console.log("📊 [UPDATE-STATUS] Updating project status:", { projectId, newStatus });
+    // console.log("📊 [UPDATE-STATUS] Updating project status:", { projectId, newStatus });
 
     // Update project status
     const { data: updatedProject, error: updateError } = await supabase
@@ -77,7 +77,7 @@ export const POST: APIRoute = async ({ request }) => {
         updated_at: new Date().toISOString(),
       })
       .eq("id", projectId)
-      .select("id, status, author_id, address")
+      .select("id, status, author_id, address, contract_pdf_url, proposal_signature")
       .single();
 
     if (updateError) {
@@ -91,15 +91,15 @@ export const POST: APIRoute = async ({ request }) => {
     // Log the status change if currentUserId is provided
     if (currentUserId) {
       try {
-        console.log("📊 [UPDATE-STATUS] Logging status change for user:", currentUserId);
+        // console.log("📊 [UPDATE-STATUS] Logging status change for user:", currentUserId);
         await SimpleProjectLogger.logStatusChange(projectId, currentUserId, oldStatus, newStatus);
-        console.log("📊 [UPDATE-STATUS] Status change logged successfully");
+        // console.log("📊 [UPDATE-STATUS] Status change logged successfully");
       } catch (logError) {
         console.error("📊 [UPDATE-STATUS] Failed to log status change:", logError);
         // Don't fail the entire request if logging fails
       }
     } else {
-      console.log("📊 [UPDATE-STATUS] No currentUserId provided, skipping logging");
+      // console.log("📊 [UPDATE-STATUS] No currentUserId provided, skipping logging");
     }
 
     // Get status data after successful update
@@ -114,7 +114,7 @@ export const POST: APIRoute = async ({ request }) => {
 
     if (statusDataResponse.ok) {
       const statusData = await statusDataResponse.json();
-      console.log("📊 [UPDATE-STATUS] Status data retrieved:", statusData);
+      // console.log("📊 [UPDATE-STATUS] Status data retrieved:", statusData);
 
       // Merge project data with status config for placeholder replacement
       const mergedData = {
@@ -123,12 +123,12 @@ export const POST: APIRoute = async ({ request }) => {
         newStatus: newStatus,
       };
 
-      console.log("📊 [UPDATE-STATUS] Merged data for placeholder replacement:", mergedData);
+      // console.log("📊 [UPDATE-STATUS] Merged data for placeholder replacement:", mergedData);
 
       // Get client profile data for placeholders
       const { data: profile, error: profileError } = await supabase
         .from("profiles")
-        .select("id, company_name, first_name, last_name, phone, role")
+        .select("id, company_name, first_name, last_name, role")
         .eq("id", updatedProject.author_id)
         .single();
 
@@ -163,16 +163,36 @@ export const POST: APIRoute = async ({ request }) => {
 
       const clientEmail = authData.user.email || "";
 
+      // Get contract URL from project data (if available)
+      let contractUrl = "";
+      console.log("📄 [UPDATE-STATUS] Checking for contract URL:", {
+        hasContractPdfUrl: !!updatedProject.contract_pdf_url,
+        hasProposalSignature: !!updatedProject.proposal_signature,
+        contractPdfUrl: updatedProject.contract_pdf_url,
+      });
+
+      if (updatedProject.contract_pdf_url) {
+        contractUrl = updatedProject.contract_pdf_url;
+        console.log("📄 [UPDATE-STATUS] Using contract PDF URL:", contractUrl);
+      } else if (updatedProject.proposal_signature) {
+        // If we have a signature but no PDF URL, we can generate a placeholder
+        // or fetch the PDF URL from storage
+        console.log("📄 [UPDATE-STATUS] Project has signature but no contract PDF URL");
+      }
+
       // Prepare placeholder data
       const placeholderData = {
+        projectId: updatedProject.id,
+        siteUrl: baseUrl,
         projectAddress: updatedProject.address,
         clientName: profile.company_name,
         clientEmail: clientEmail,
         statusName: statusData.statusConfig.status_name,
         estTime: statusData.statusConfig.est_time,
+        contractUrl: contractUrl,
       };
 
-      console.log("📊 [UPDATE-STATUS] Placeholder data prepared:", placeholderData);
+      // console.log("📊 [UPDATE-STATUS] Placeholder data prepared:", placeholderData);
 
       // Call placeholder replacement API
       const placeholderResponse = await fetch(`${baseUrl}/api/replace-placeholders`, {
@@ -185,26 +205,60 @@ export const POST: APIRoute = async ({ request }) => {
 
       if (placeholderResponse.ok) {
         const placeholderResult = await placeholderResponse.json();
-        console.log("📊 [UPDATE-STATUS] Placeholders replaced:", placeholderResult);
+        // console.log("📊 [UPDATE-STATUS] Placeholders replaced:", placeholderResult);
 
-        // Return both admin and client toast data - let client decide which to use
-        const toastData = {
+        // Process redirect URLs to replace placeholders
+        const processRedirectUrl = (url: string) => {
+          if (!url) return undefined;
+          return url.replace(/\{\{PROJECT_ID\}\}/g, updatedProject.id.toString());
+        };
+
+        // Return unified notification data for both admin and client
+        const notificationData = {
           admin: {
+            type: "success",
+            title: "Status Updated",
             message:
               placeholderResult.processedMessages.toast_admin || "Status updated successfully",
-            redirect: statusData.statusConfig.toast_auto_redirect_admin || "",
+            duration: 5000, // 5 seconds
+            redirect: statusData.statusConfig.toast_auto_redirect_admin
+              ? {
+                  url: processRedirectUrl(statusData.statusConfig.toast_auto_redirect_admin),
+                  delay: 3, // 3 seconds delay
+                  showCountdown: true,
+                }
+              : undefined,
           },
           client: {
+            type: "success",
+            title: "Status Updated",
             message:
               placeholderResult.processedMessages.toast_client || "Status updated successfully",
-            redirect: statusData.statusConfig.toast_auto_redirect_client || "",
+            duration: 5000, // 5 seconds
+            redirect: statusData.statusConfig.toast_auto_redirect_client
+              ? {
+                  url: processRedirectUrl(statusData.statusConfig.toast_auto_redirect_client),
+                  delay: 3, // 3 seconds delay
+                  showCountdown: true,
+                }
+              : undefined,
           },
         };
 
-        console.log("📊 [UPDATE-STATUS] Toast data prepared:", toastData);
+        console.log("📊 [UPDATE-STATUS] Notification data prepared:", {
+          adminRedirect: statusData.statusConfig.toast_auto_redirect_admin,
+          clientRedirect: statusData.statusConfig.toast_auto_redirect_client,
+          projectId: updatedProject.id,
+          notificationData,
+        });
+
+        console.log("📊 [UPDATE-STATUS] About to fetch admin and staff emails...");
+        console.log(
+          "📊 [UPDATE-STATUS] Final notification data:",
+          JSON.stringify(notificationData, null, 2)
+        );
 
         // Get admin and staff emails using reusable API
-        console.log("📊 [UPDATE-STATUS] Fetching admin and staff emails...");
         const adminStaffResponse = await fetch(`${baseUrl}/api/get-user-emails-by-role`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -215,13 +269,13 @@ export const POST: APIRoute = async ({ request }) => {
         if (adminStaffResponse.ok) {
           const adminStaffData = await adminStaffResponse.json();
           adminStaffEmails = adminStaffData.emails || [];
-          console.log("📊 [UPDATE-STATUS] Admin/Staff emails:", adminStaffEmails);
+          // console.log("📊 [UPDATE-STATUS] Admin/Staff emails:", adminStaffEmails);
         } else {
           console.error("📊 [UPDATE-STATUS] Failed to fetch admin/staff emails");
         }
 
         // Send client email using original email delivery API
-        console.log("📊 [UPDATE-STATUS] Sending client email...");
+        // console.log("📊 [UPDATE-STATUS] Sending client email...");
         const clientEmailResponse = await fetch(`${baseUrl}/api/email-delivery`, {
           method: "POST",
           headers: {
@@ -242,13 +296,13 @@ export const POST: APIRoute = async ({ request }) => {
 
         if (clientEmailResponse.ok) {
           const clientEmailResult = await clientEmailResponse.json();
-          console.log("📊 [UPDATE-STATUS] Client email sent:", clientEmailResult);
+          // console.log("📊 [UPDATE-STATUS] Client email sent:", clientEmailResult);
         } else {
           console.error("📊 [UPDATE-STATUS] Failed to send client email");
         }
 
         // Send admin emails using original email delivery API
-        console.log("📊 [UPDATE-STATUS] Sending admin emails...");
+        // console.log("📊 [UPDATE-STATUS] Sending admin emails...");
         const adminEmailResponse = await fetch(`${baseUrl}/api/email-delivery`, {
           method: "POST",
           headers: {
@@ -265,7 +319,7 @@ export const POST: APIRoute = async ({ request }) => {
 
         if (adminEmailResponse.ok) {
           const adminEmailResult = await adminEmailResponse.json();
-          console.log("📊 [UPDATE-STATUS] Admin emails sent:", adminEmailResult);
+          // console.log("📊 [UPDATE-STATUS] Admin emails sent:", adminEmailResult);
         } else {
           console.error("📊 [UPDATE-STATUS] Failed to send admin emails");
         }
@@ -279,7 +333,7 @@ export const POST: APIRoute = async ({ request }) => {
             mergedData: placeholderResult.mergedData,
             placeholderData: placeholderResult.placeholderData,
             processedMessages: placeholderResult.processedMessages,
-            toastData: toastData,
+            notificationData: notificationData,
             clientEmail: clientEmail,
             clientProfile: profile,
           }),

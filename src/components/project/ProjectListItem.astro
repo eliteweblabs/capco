@@ -20,19 +20,18 @@ interface Props {
     profiles?: any;
     assigned_profiles?: any;
   };
-  authorProfile?: any;
   projectStatus?: number;
   currentRole?: string;
   user?: any;
   statuses?: any;
 }
 
-const { project, authorProfile, projectStatus, currentRole, user, statuses } = Astro.props;
+const { project, projectStatus, currentRole, user, statuses } = Astro.props;
 
 // return if user is staff and project is not assigned to them
-// if (currentRole === "Staff" && project.assigned_to_id !== user?.id) {
-//   return;
-// }
+if (currentRole === "Staff" && project.assigned_to_id !== user?.id) {
+  return;
+}
 
 // Function to limit description to 200 words
 function limitDescription(text: string, wordLimit: number = 50): string {
@@ -73,10 +72,10 @@ if (statuses && statuses.length > 0) {
 }
 
 // Use author profile data from the project query (no additional DB call needed)
-let projectAuthorProfile: any = null;
+let authorProfile: any = null;
 if (project.profiles) {
-  projectAuthorProfile = project.profiles;
-  console.log("🌐 [PROJECT] Using pre-loaded author profile:", projectAuthorProfile?.company_name);
+  authorProfile = project.profiles;
+  console.log("🌐 [PROJECT] Using pre-loaded author profile:", authorProfile?.company_name);
 } else {
   console.warn("🌐 [PROJECT] No author profile data available for project:", project.id);
 }
@@ -94,20 +93,17 @@ if (project.profiles) {
     <div class="items-start justify-between md:flex">
       <div class="flex-none md:flex-1">
         {
-          currentRole !== "Client" &&
-            (projectAuthorProfile?.company_name || projectAuthorProfile?.email) && (
-              <>
-                <h3
-                  class="inline-block text-lg font-semibold text-gray-900 dark:text-white"
-                  data-searchable
-                >
-                  {projectAuthorProfile?.company_name ||
-                    projectAuthorProfile?.name ||
-                    "Unknown Author"}
-                </h3>
-                <span class="text-gray-500 dark:text-gray-400">|</span>
-              </>
-            )
+          currentRole !== "Client" && (authorProfile?.company_name || authorProfile?.email) && (
+            <>
+              <h3
+                class="inline-block text-lg font-semibold text-gray-900 dark:text-white"
+                data-searchable
+              >
+                {authorProfile?.company_name || authorProfile?.name || "Unknown Author"}
+              </h3>
+              <span class="text-gray-500 dark:text-gray-400">|</span>
+            </>
+          )
         }
         <h3
           class="inline-flex text-lg font-semibold text-gray-900 dark:text-white"
@@ -125,7 +121,7 @@ if (project.profiles) {
         </p>
         <div class="mt-4 flex items-center gap-4 text-sm text-gray-500 dark:text-gray-400"></div>
       </div>
-      <div class="md:ml-4">
+      <div class="md:ml-4 relative">
         <span
           class={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${statusColor}`}
           data-refresh="status_name"
@@ -135,11 +131,8 @@ if (project.profiles) {
         </span>
         {
           project.comment_count > 0 && (
-            <div
-              class="relative inline-flex items-center justify-center"
-              title={`${project.comment_count || 0} comments`}
-            >
-              <BoxIcon name="message-rounded" class="text-blue-500 dark:text-blue-400" />
+            <div class="absolute -right-1 -top-1" title={`${project.comment_count || 0} comments`}>
+              <BoxIcon name="message-rounded-dots" class="bx-md text-blue-500 dark:text-blue-400" />
               <span class="absolute -right-1 -top-1 inline-flex h-5 w-5 min-w-[1.25rem] items-center justify-center rounded-full bg-red-500 text-xs font-bold text-white">
                 {project.comment_count > 99 ? "99+" : project.comment_count}
               </span>

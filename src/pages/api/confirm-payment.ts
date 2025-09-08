@@ -4,7 +4,8 @@ import { supabase } from "../../lib/supabase";
 
 export const POST: APIRoute = async ({ request }) => {
   try {
-    const { paymentIntentId, invoiceId } = await request.json();
+    const { paymentIntentId, invoiceId, projectId, projectStatus, authorProfile } =
+      await request.json();
 
     if (!paymentIntentId || !invoiceId) {
       return new Response(
@@ -18,11 +19,26 @@ export const POST: APIRoute = async ({ request }) => {
       );
     }
 
+    if (!stripe) {
+      console.error("Stripe not configured");
+      return new Response(JSON.stringify({ error: "Stripe not configured" }), {
+        status: 500,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
     // Retrieve the payment intent to confirm it was successful
     const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
 
     if (paymentIntent.status === "succeeded") {
       // Update invoice status to paid
+      if (!supabase) {
+        console.error("Supabase not configured");
+        return new Response(JSON.stringify({ error: "Supabase not configured" }), {
+          status: 500,
+          headers: { "Content-Type": "application/json" },
+        });
+      }
+
       const { error: updateError } = await supabase
         .from("invoices")
         .update({
@@ -49,14 +65,6 @@ export const POST: APIRoute = async ({ request }) => {
       if (invoice?.project_id) {
         // Update project status based on invoice type
         // You can customize this logic based on your workflow
-        const { error: projectUpdateError } = await supabase
-          .from("projects")
-          .update({ status: 90 }) // "Deposit Invoice Paid" status
-          .eq("id", invoice.project_id);
-
-        if (projectUpdateError) {
-          console.error("Error updating project status:", projectUpdateError);
-        }
       }
 
       return new Response(

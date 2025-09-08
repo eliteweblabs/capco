@@ -12,13 +12,12 @@ import ToggleButton from "../form/ToggleButton.astro";
 import UnitSlider from "../form/UnitSlider.astro";
 import StaffSelect from "./StaffSelectDropdown.astro";
 import GoogleAddressAutocomplete from "../form/GoogleAddressAutocomplete.astro";
-// import DeleteProject from "../form/DeleteProject.astro";
 import IsNewOrExistingClient from "./IsNewOrExistingClient.astro";
 
 interface Props {
   project?: any;
   projectId?: string | null;
-  authorProfile?: any;
+  currentUser?: any;
   currentRole?: string | null; // Add role prop to control field visibility
   isNewProject?: boolean; // Add flag to indicate if this is a new project
   projectStatus?: number | null; // Add project status for status-based field visibility
@@ -27,7 +26,7 @@ interface Props {
 const {
   project = {},
   projectId = "",
-  authorProfile,
+  currentUser = {},
   currentRole,
   isNewProject = true,
   projectStatus = null,
@@ -37,16 +36,15 @@ const {
 const formId = isNewProject ? `new-project-${Date.now()}` : projectId || "";
 
 // Use currentRole prop if provided, otherwise use authenticated role
-const effectiveRole = currentRole || currentRole;
 
 // Filter fields based on user role and project status
-const formFields = getFilteredFormFields(effectiveRole, isNewProject, projectStatus);
+const formFields = getFilteredFormFields(currentRole, isNewProject, projectStatus);
 
 // Get filtered button groups based on user role and project status
-const buttonGroups = getFilteredButtonGroups(effectiveRole, isNewProject, projectStatus);
+const buttonGroups = getFilteredButtonGroups(currentRole, isNewProject, projectStatus);
 
 // Get filtered form actions based on user role and project status
-const formActions = getFilteredFormActions(effectiveRole, isNewProject, projectStatus);
+const formActions = getFilteredFormActions(currentRole, isNewProject, projectStatus);
 
 // Debug logging
 // console.log("📝 [ProjectForm] Debug info:", {
@@ -74,7 +72,7 @@ const formActions = getFilteredFormActions(effectiveRole, isNewProject, projectS
 // });
 
 // Check specifically for the existing client select field
-const existingClientField = formFields.find((f) => f.id === "existing-client-select");
+// const existingClientField = formFields.find((f) => f.id === "existing-client-select");
 // console.log(
 //   existingClientField
 //     ? "⚠️ [ProjectForm] Found existing-client-select field"
@@ -102,7 +100,7 @@ const existingClientField = formFields.find((f) => f.id === "existing-client-sel
 >
   <!-- New Client Toggle (Top of Form) -->
   {
-    isNewProject && (effectiveRole === "Admin" || effectiveRole === "Staff") ? (
+    isNewProject && (currentRole === "Admin" || currentRole === "Staff") ? (
       <IsNewOrExistingClient />
     ) : (
       ""
@@ -361,10 +359,11 @@ const existingClientField = formFields.find((f) => f.id === "existing-client-sel
 </form>
 
 <script>
-  // Extend Window interface for toast manager
+  // Extend Window interface for notification manager
   declare global {
     interface Window {
-      toastAlertManager?: any;
+      showModal?: any;
+      hideNotification?: any;
       currentProjectData?: any;
     }
   }
@@ -484,6 +483,7 @@ const existingClientField = formFields.find((f) => f.id === "existing-client-sel
                 body: JSON.stringify({
                   projectId: result.project.id,
                   status: 10, // Project Created
+                  oldStatus: projectData.status,
                 }),
               });
 
@@ -645,25 +645,25 @@ const existingClientField = formFields.find((f) => f.id === "existing-client-sel
     // Validate project ID
     if (!projectId || projectId.startsWith("new-project-")) {
       console.error("Invalid project ID for deletion:", projectId);
-      if ((window as any).toastAlertManager) {
-        (window as any).toastAlertManager.show({
-          type: "error",
-          title: "Delete Failed",
-          message: "Cannot delete a new project that hasn't been saved yet.",
-          duration: 5000,
-        });
+      if ((window as any).showModal) {
+        (window as any).showModal(
+          "error",
+          "Delete Failed",
+          "Cannot delete a new project that hasn't been saved yet.",
+          5000
+        );
       }
       return;
     }
 
-    // Show confirmation toast with action buttons
-    if ((window as any).toastAlertManager) {
-      (window as any).toastAlertManager.show({
-        type: "warning",
-        title: "Delete Project",
-        message: "Are you sure you want to delete this project? This action cannot be undone.",
-        duration: 0, // Don't auto-dismiss
-        actions: [
+    // Show confirmation modal with action buttons
+    if ((window as any).showModal) {
+      (window as any).showModal(
+        "warning",
+        "Delete Project",
+        "Are you sure you want to delete this project? This action cannot be undone.",
+        0, // No auto-hide for confirmation
+        [
           {
             label: "Cancel",
             action: () => {
@@ -701,14 +701,14 @@ const existingClientField = formFields.find((f) => f.id === "existing-client-sel
                     throw new Error(data.error || "Failed to delete project");
                   }
 
-                  // Show success toast
-                  if ((window as any).toastAlertManager) {
-                    (window as any).toastAlertManager.show({
-                      type: "success",
-                      title: "Project Deleted!",
-                      message: data.message || "Project has been deleted successfully.",
-                      duration: 3000,
-                    });
+                  // Show success modal
+                  if ((window as any).showModal) {
+                    (window as any).showModal(
+                      "success",
+                      "Project Deleted!",
+                      data.message || "Project has been deleted successfully.",
+                      3000
+                    );
                   }
 
                   // Reset deleting flag
@@ -722,14 +722,14 @@ const existingClientField = formFields.find((f) => f.id === "existing-client-sel
                 .catch((error) => {
                   console.error("Error deleting project:", error);
 
-                  // Show error toast with specific error message
-                  if ((window as any).toastAlertManager) {
-                    (window as any).toastAlertManager.show({
-                      type: "error",
-                      title: "Delete Failed",
-                      message: error.message || "Failed to delete project. Please try again.",
-                      duration: 5000,
-                    });
+                  // Show error modal with specific error message
+                  if ((window as any).showModal) {
+                    (window as any).showModal(
+                      "error",
+                      "Delete Failed",
+                      error.message || "Failed to delete project. Please try again.",
+                      5000
+                    );
                   }
 
                   // Reset deleting flag and button state
@@ -741,25 +741,20 @@ const existingClientField = formFields.find((f) => f.id === "existing-client-sel
                 });
             },
           },
-        ],
-      });
+        ]
+      );
     }
   }
 
-  // Show toast notification
-  function showToast(
+  // Show notification modal
+  function showNotification(
     type: "success" | "error" | "warning" | "info",
     title: string,
     message: string,
     duration: number = 4000
   ) {
-    if ((window as any).toastAlertManager) {
-      (window as any).toastAlertManager.show({
-        type,
-        title,
-        message,
-        duration,
-      });
+    if ((window as any).showModal) {
+      (window as any).showModal(type, title, message, duration);
     }
   }
 

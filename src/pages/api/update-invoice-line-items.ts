@@ -3,9 +3,9 @@ import { supabase } from "../../lib/supabase";
 
 export const POST: APIRoute = async ({ request, cookies }) => {
   try {
-    const { projectId, lineItems, subject } = await request.json();
+    const { projectId, lineItems, subject, notes } = await request.json();
 
-    console.log("📝 [API] Received request:", { projectId, lineItems, subject });
+    console.log("📝 [API] Received request:", { projectId, lineItems, subject, notes });
 
     if (!projectId || !lineItems) {
       return new Response(JSON.stringify({ error: "Project ID and line items are required" }), {
@@ -69,8 +69,8 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       catalog_item_id: item.catalog_item_id || item.id,
       quantity: item.quantity || 1,
       unit_price: item.price || item.unit_price || 0,
+      name: item.name || "",
       description: item.description || "",
-      details: item.details || "",
     }));
 
     console.log("📝 [API] Line items received:", lineItems);
@@ -89,6 +89,9 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     const updateData: any = { catalog_line_items: lineItemsData };
     if (subject) {
       updateData.subject = subject;
+    }
+    if (notes !== undefined) {
+      updateData.proposal_notes = notes;
     }
 
     console.log("📝 [API] About to update invoice with data:", JSON.stringify(updateData, null, 2));

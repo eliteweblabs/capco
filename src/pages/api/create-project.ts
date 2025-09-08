@@ -175,7 +175,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       title: body.address || body.title,
       address: body.address?.replace(/, USA$/, "") || body.address,
       description: body.description,
-      architect: body.architect && body.architect.trim() !== "" ? parseInt(body.architect) : null,
+      architect: body.architect && body.architect.trim() !== "" ? body.architect.trim() : null,
       sq_ft: body.sq_ft && body.sq_ft.trim() !== "" ? parseInt(body.sq_ft) : null,
       new_construction: body.new_construction === "on" || body.new_construction === true,
       units: body.units && body.units.trim() !== "" ? parseInt(body.units) : null,

@@ -23,7 +23,7 @@ export interface UserInfo {
   } | null;
   display_name: string;
   role: string;
-  company: string | null;
+  company_name: string | null;
 }
 
 /**
@@ -99,7 +99,7 @@ export function getDisplayName(userInfo: UserInfo): string {
  * @returns string | null - Company name or null
  */
 export function getCompanyName(userInfo: UserInfo): string | null {
-  return userInfo.company;
+  return userInfo.company_name;
 }
 
 /**

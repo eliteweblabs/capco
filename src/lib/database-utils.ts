@@ -75,7 +75,7 @@ export async function getProfileData(userId: string): Promise<ProfileData | null
   // Get profile data from profiles table
   const { data: profileData, error: profileError } = await supabase
     .from("profiles")
-    .select("id, company_name, first_name, last_name, phone, role")
+    .select("id, company_name, first_name, last_name, role")
     .eq("id", userId)
     .single();
 

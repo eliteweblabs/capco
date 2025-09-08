@@ -1,5 +1,6 @@
 import type { APIRoute } from "astro";
 import { supabase } from "../../lib/supabase";
+import { supabaseAdmin } from "../../lib/supabase-admin";
 
 export const GET: APIRoute = async ({ request, cookies }) => {
   // console.log("📡 [API] GET /api/get-staff-users called");
@@ -161,7 +162,7 @@ export const GET: APIRoute = async ({ request, cookies }) => {
     // console.log("📡 [API] Fetching staff users from database...");
     const { data: staffUsers, error } = await supabase
       .from("profiles")
-      .select("id, company_name, phone, role, created_at")
+      .select("id, company_name, role, created_at")
       .neq("role", "Client")
       .order("company_name", { ascending: true });
 
@@ -181,16 +182,46 @@ export const GET: APIRoute = async ({ request, cookies }) => {
     // Try a simpler approach - get all profiles and filter in JavaScript
     const { data: allProfiles, error: allProfilesError } = await supabase
       .from("profiles")
-      .select("id, company_name, phone, role, created_at");
+      .select("id, company_name, role, created_at");
 
-    // Filter for staff users and convert phone to string
-    const staffUsersFromAll =
-      allProfiles
-        ?.filter((p) => p.role === "Staff")
-        .map((p) => ({
-          ...p,
-          phone: p.phone ? p.phone.toString() : null,
-        })) || [];
+    // Filter for staff users and get phone from auth
+    const staffUsersFromAll = [];
+    if (allProfiles) {
+      for (const profile of allProfiles.filter((p) => p.role === "Staff")) {
+        try {
+          if (!supabaseAdmin) {
+            console.error("📡 [API] Supabase admin client not available");
+            return new Response(
+              JSON.stringify({
+                success: false,
+                error: "Admin client not available",
+              }),
+              {
+                status: 500,
+                headers: { "Content-Type": "application/json" },
+              }
+            );
+          }
+
+          // Get phone from auth user metadata
+          const { data: authUser, error: authError } = await supabaseAdmin.auth.admin.getUserById(
+            profile.id
+          );
+          const phone = authUser?.user?.user_metadata?.phone || null;
+
+          staffUsersFromAll.push({
+            ...profile,
+            phone: phone,
+          });
+        } catch (authError) {
+          console.error(`Error fetching auth data for user ${profile.id}:`, authError);
+          staffUsersFromAll.push({
+            ...profile,
+            phone: null,
+          });
+        }
+      }
+    }
 
     // console.log("📡 [API] Staff users from all profiles:", staffUsersFromAll);
 

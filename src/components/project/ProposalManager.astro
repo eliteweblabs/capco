@@ -1,18 +1,9 @@
 ---
 import BoxIcon from "../common/BoxIcon.astro";
-import PaymentForm from "./PaymentForm.astro";
 import { supabase } from "../../lib/supabase";
-import DigitalSignature from "./DigitalSignature.astro";
 import ActionButton from "../common/ActionButton.astro";
 
-interface Props {
-  projectId: string;
-  project: any;
-  authorProfile?: any;
-  projectStatus?: number;
-  currentRole?: string;
-}
-const { projectId, project, authorProfile, projectStatus = 0, currentRole } = Astro.props;
+const { projectId, project, authorProfile, projectStatus = 0, currentRole, projectStatusLabel, currentUser } = Astro.props;
 
 // Only show to Admin/Staff users
 const canManageProposals = currentRole === "Admin" || currentRole === "Staff";
@@ -50,10 +41,16 @@ try {
     // Let's also check if there are line items directly
     if (existingInvoice.id) {
       // console.log("🔍 [ProposalManager] Checking for line items directly for invoice ID:", existingInvoice.id);
+      let catalogItemIds = [];
+      if (existingInvoice.catalog_line_items) {
+        for (let i = 0; i < existingInvoice.catalog_line_items.length; i++) {
+          catalogItemIds.push(existingInvoice.catalog_line_items[i].catalog_item_id);
+        }
+      }
       const { data: directLineItems, error: lineItemsError } = await supabase
         .from("line_items_catalog")
         .select("*")
-        .in("id", existingInvoice.catalog_line_items?.map((item: any) => item.catalog_item_id) || []);
+        .in("id", catalogItemIds);
       
       // console.log("🔍 [ProposalManager] Direct line items query:", { directLineItems, lineItemsError });
     }
@@ -64,31 +61,35 @@ try {
   console.log("❌ [ProposalManager] Error checking for existing invoice:", error);
 }
 
-const hasExistingInvoice = !!existingInvoice;
+const hasExistingProposal = !!existingInvoice;
 ---
 
-{projectStatus !== 20 && ( <style>#proposal-content {pointer-events: none; #add-row-btn, .add-line-item-btn, .delete-line-item-btn {display: none;}}</style>)}
+{projectStatus !== 20 && ( <style>#proposal-content {pointer-events: none; .add-line-item-btn, .delete-line-item-btn {display: none;}}</style>)}
 
-<div class="rounded-lg border border-gray-200 bg-white p-6 dark:border-gray-700 dark:bg-gray-800">
   <!-- Initial state: No proposal generated -->
-  <div id="proposal-placeholder" class={hasExistingInvoice ? "hidden" : "py-8 text-center"}>
-    <BoxIcon name="file-pdf" class="mx-auto mb-4 h-12 w-12 text-gray-400" />
-    <h3 class="mb-2 text-lg font-medium text-gray-900 dark:text-white">Proposal</h3>
+  <div id="proposal-placeholder" class={hasExistingProposal ? "hidden" : "py-8 text-center"}>
+    <BoxIcon name="upload" class="bx-lg mx-auto mb-4 text-gray-700 dark:text-gray-300" />
     <p class="mb-4 text-gray-500 dark:text-gray-400">
-      {
-        canManageProposals ? (
+      {canManageProposals && (
           <span
             set:html={`Generate a project proposal for <b>${authorProfile?.company_name || 'Client'}</b> for <b>${project.address}</b> based on the project form data.`}
           />
-        ) : (   
+        )}
+        
+        {projectStatus < 20 && currentRole === "Client" && (
+          <span
+            set:html={`Upload your project documents first.`}
+          />
+      )}
+        
+        {projectStatus >= 20 && currentRole === "Client" && (
           <span
             set:html={`Your project proposal is being generated.<br>You will be notified at <b>${authorProfile?.email}</b> when it is ready.`}
           />
-        )
-      }
+      )}
     </p>
-    {
-      canManageProposals && (
+    { 
+      canManageProposals && !hasExistingProposal && projectStatus === 20 && (
         <button
           onclick={`buildProposal('${projectId}')`}
           class="inline-flex items-center rounded-lg bg-green-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-green-700"
@@ -101,7 +102,7 @@ const hasExistingInvoice = !!existingInvoice;
   </div>
 
   <!-- Generated proposal content (hidden initially) -->
-  <div id="proposal-content" class={hasExistingInvoice ? "" : "hidden"}>
+  <div id="proposal-content" class={hasExistingProposal ? "" : "hidden"}>
     <!-- Proposal Header -->
     <div class="mb-6 flex items-start justify-between">
       <div class="flex-1">
@@ -194,8 +195,8 @@ const hasExistingInvoice = !!existingInvoice;
     <div class="mb-6">
       <h3 class="mb-4 text-lg font-semibold text-gray-900 dark:text-white">Services & Pricing</h3>
       
-      <!-- Desktop Table View -->
-      <div class="hidden overflow-x-auto md:block">
+      <!-- Table View -->
+      <div class="overflow-x-auto">
         <div class="min-w-full overflow-hidden rounded-lg border border-gray-200 dark:border-gray-600">
           <table class="w-full min-w-[600px]">
           <thead class="bg-gray-50 dark:bg-gray-700">
@@ -250,22 +251,7 @@ const hasExistingInvoice = !!existingInvoice;
         </div>
       </div>
 
-      <!-- Mobile Card View -->
-      <div class="block space-y-4 md:hidden">
-        <div id="proposal-line-items-mobile" class="space-y-4">
-          <!-- Mobile line items will be generated dynamically via JavaScript -->
-      </div>
-        
-        <!-- Mobile Total -->
-        <div class="rounded-lg border border-gray-200 bg-gray-50 p-4 dark:border-gray-600 dark:bg-gray-700">
-          <div class="flex justify-between items-center">
-            <span class="text-lg font-semibold text-gray-900 dark:text-white">Total:</span>
-            <span class="text-xl font-bold text-green-600 dark:text-green-400">
-              $<span id="proposal-total-mobile">0.00</span>
-            </span>
-          </div>
-        </div>
-      </div>
+
 
     </div>
 
@@ -273,9 +259,11 @@ const hasExistingInvoice = !!existingInvoice;
     <div class="mb-6">
       <h3 class="mb-3 text-lg font-semibold text-gray-900 dark:text-white">Notes</h3>
       <div class="rounded-lg border border-gray-200 bg-gray-50 p-4 dark:border-gray-600 dark:bg-gray-700">
-        <div id="proposal-notes" class="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">
-          <!-- Notes will be populated here -->
-        </div>
+        <textarea 
+          id="proposal-notes" 
+          class="w-full h-32 text-sm text-gray-700 dark:text-gray-300 bg-transparent border-none resize-none focus:outline-none focus:ring-0"
+          placeholder="Add any additional notes or comments for this proposal..."
+        ></textarea>
       </div>
     </div>
 
@@ -302,75 +290,85 @@ const hasExistingInvoice = !!existingInvoice;
               <BoxIcon name="send" class="mr-2 h-4 w-4" />
               Send Proposal
             </button>
-            <button
+            {/* <button
               onclick="convertToInvoice()"
               class="inline-flex items-center rounded-lg bg-green-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-green-700"
             >
               <BoxIcon name="receipt" class="mr-2 h-4 w-4" />
               Convert to Invoice
-            </button>
+            </button> */}
           </div>
         </div>
       )
     }
     
  
-  </div>
 </div>
 
 
 
-{projectStatus >= 30 && currentRole === "Client" && projectStatus < 50 && (
-
-
+{projectStatus >= 30 && currentRole === "Client" && projectStatus < 50 && hasExistingProposal && (
         <div class="mt-8 rounded-lg border border-gray-200 bg-white p-6 dark:border-gray-700 dark:bg-gray-800">
           <div class="mb-6">
-            {/* <h3 class="mb-2 text-lg font-medium text-gray-900 dark:text-white">Proposal Payment - 50% Deposit</h3> */}
             <p class="text-gray-500 dark:text-gray-400">
               Sign Contract &amp; Submit 50% deposit to approve this proposal and begin work.
             </p>
           </div>
           
-  <!-- Placeholder Buttons -->
   <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
     <ActionButton onclick="window.switchTab('discussion')" variant="primary" size="md" loadingText="Signing Contract...">
       To Request Edits Leave a Comment
     </ActionButton>
 
-    {/* <button onclick="window.switchTab('discussion')" 
-      class="flex h-32 w-full items-center justify-center rounded-lg border border-gray-300 bg-white px-4 py-6 text-center font-medium text-gray-700 shadow-sm hover:bg-gray-50 hover:border-gray-400 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700 dark:hover:border-gray-500"
-    >
-      <div class="text-center">
-        <BoxIcon name="message-rounded-dots" class="mx-auto mb-2 h-8 w-8 text-gray-500 dark:text-gray-400" />
-        <p class="text-sm font-medium">To Request Edits Leave a Comment</p>
-        </div>
-    </button> */}
     
 
-    <ActionButton onclick="window.switchTab('contract')" variant="primary" size="md" loadingText="Signing Contract...">
-      Sign Contract
+    <ActionButton 
+      variant="primary" 
+      size="md" 
+      loadingText="Accepting Proposal..."
+      onclick="acceptProposal()"
+    >
+      Accept Proposal
     </ActionButton>
 
-    {/* <button onclick="window.switchTab('contract')" 
-      class="flex h-32 w-full items-center justify-center rounded-lg border border-gray-300 bg-white px-4 py-6 text-center font-medium text-gray-700 shadow-sm hover:bg-gray-50 hover:border-gray-400 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700 dark:hover:border-gray-500"
-    >
-      <div class="text-center">
-        <BoxIcon name="file-text" class="mx-auto mb-2 h-8 w-8 text-gray-500 dark:text-gray-400" />
-        <p class="text-sm font-medium">Sign Contract</p>
   </div>
-    </button> */}
-</div>
-
-  
 </div>
 )}
 
 
-<script>
-  import { initializeProposalManager } from "../../lib/proposal-manager";
+<script type="module" define:vars={{ projectId, project, authorProfile, existingInvoice, hasExistingProposal, projectStatus }}>
+  // Inline proposal manager initialization to avoid import issues
+  async function initializeProposalManager(projectId, project, projectAuthor) {
+    console.log("🔧 [PROPOSAL-MANAGER] Initializing proposal manager for project:", projectId);
+    
+    try {
+      // Import the ProposalManager class
+      const { ProposalManager } = await import('/src/lib/proposal-manager.ts');
+      
+      // Create a new instance
+      window.proposalManager = new ProposalManager(projectId, project, projectAuthor);
+      
+      console.log("✅ [PROPOSAL-MANAGER] ProposalManager initialized successfully");
+    } catch (error) {
+      console.error("❌ [PROPOSAL-MANAGER] Failed to initialize ProposalManager:", error);
+      
+      // Fallback to placeholder if import fails
+      window.proposalManager = {
+        projectId,
+        project,
+        projectAuthor,
+        buildProposal: () => {
+          console.error("❌ [PROPOSAL-MANAGER] ProposalManager not properly initialized");
+        },
+        loadExistingInvoice: async (invoice) => {
+          console.log("🔧 [PROPOSAL-MANAGER] Placeholder loadExistingInvoice called");
+        }
+      };
+    }
+  }
 
   // Define the updateRowTotalDirect function globally first
-  function updateRowTotalDirect(inputElement: HTMLInputElement) {
+  function updateRowTotalDirect(inputElement) {
     console.log("🔍 [DIRECT] updateRowTotalDirect called with input:", inputElement, "value:", inputElement.value);
     const row = inputElement.closest('tr');
     if (!row) {
@@ -379,20 +377,20 @@ const hasExistingInvoice = !!existingInvoice;
     }
 
     // Use the input element that triggered the event as the primary source
-    let qtyInput: HTMLInputElement;
-    let priceInput: HTMLInputElement;
+    let qtyInput;
+    let priceInput;
     
     // Determine which input triggered the event and use it directly
     if (inputElement.getAttribute('data-field') === 'quantity' || inputElement.classList.contains('line-item-quantity')) {
       qtyInput = inputElement;
-      priceInput = row.querySelector('input[data-field="unitPrice"], .line-item-unit-price') as HTMLInputElement;
+      priceInput = row.querySelector('input[data-field="unitPrice"], .line-item-unit-price') ;
     } else if (inputElement.getAttribute('data-field') === 'unitPrice' || inputElement.classList.contains('line-item-unit-price')) {
       priceInput = inputElement;
-      qtyInput = row.querySelector('input[data-field="quantity"], .line-item-quantity') as HTMLInputElement;
+      qtyInput = row.querySelector('input[data-field="quantity"], .line-item-quantity') ;
     } else {
       // Fallback to querying
-      qtyInput = row.querySelector('input[data-field="quantity"], .line-item-quantity') as HTMLInputElement;
-      priceInput = row.querySelector('input[data-field="unitPrice"], .line-item-unit-price') as HTMLInputElement;
+      qtyInput = row.querySelector('input[data-field="quantity"], .line-item-quantity') ;
+      priceInput = row.querySelector('input[data-field="unitPrice"], .line-item-unit-price') ;
     }
 
     const totalSpan = row.querySelector('.row-total, .line-item-total');
@@ -415,8 +413,8 @@ const hasExistingInvoice = !!existingInvoice;
       totalSpan.textContent = `$${total.toFixed(2)}`;
 
       // Update grand total
-      if ((window as any).updateProposalTotal) {
-        (window as any).updateProposalTotal();
+      if (window.updateProposalTotal) {
+        window.updateProposalTotal();
       }
     } else {
       console.log("❌ [DIRECT] Missing required elements for total calculation");
@@ -424,16 +422,11 @@ const hasExistingInvoice = !!existingInvoice;
   }
 
   // Make it available globally immediately
-  (window as any).updateRowTotalDirect = updateRowTotalDirect;
+  window.updateRowTotalDirect = updateRowTotalDirect;
 
-  document.addEventListener("DOMContentLoaded", () => {
+  document.addEventListener("DOMContentLoaded", async () => {
     // Get component data from the global variables set by define:vars
-    const projectId = window.PROPOSAL_PROJECT_ID;
-    const project = window.PROPOSAL_PROJECT_DATA;
-    const authorProfile = window.PROPOSAL_PROJECT_AUTHOR;
-    const existingInvoice = window.PROPOSAL_EXISTING_INVOICE;
-    const hasExistingInvoice = window.PROPOSAL_HAS_EXISTING_INVOICE;
-
+  
     // Update proposal total function
     function updateProposalTotal() {
       let total = 0;
@@ -445,8 +438,8 @@ const hasExistingInvoice = !!existingInvoice;
         
         rows.forEach((row) => {
           // Check for both old and new class names to support existing rows
-          const quantityInput = row.querySelector(".quantity-input, .line-item-quantity") as HTMLInputElement;
-          const unitPriceInput = row.querySelector(".unit-price-input, .line-item-unit-price") as HTMLInputElement;
+          const quantityInput = row.querySelector(".quantity-input, .line-item-quantity") ;
+          const unitPriceInput = row.querySelector(".unit-price-input, .line-item-unit-price") ;
           
           if (quantityInput && unitPriceInput) {
             const quantity = parseFloat(quantityInput.value) || 0;
@@ -475,8 +468,8 @@ const hasExistingInvoice = !!existingInvoice;
         const cards = mobileContainer.querySelectorAll(".rounded-lg");
         
         cards.forEach((card) => {
-          const quantityInput = card.querySelector(".line-item-quantity") as HTMLInputElement;
-          const unitPriceInput = card.querySelector(".line-item-unit-price") as HTMLInputElement;
+          const quantityInput = card.querySelector(".line-item-quantity") ;
+          const unitPriceInput = card.querySelector(".line-item-unit-price") ;
           const totalSpan = card.querySelector(".line-item-total");
           
           if (quantityInput && unitPriceInput && totalSpan) {
@@ -488,11 +481,7 @@ const hasExistingInvoice = !!existingInvoice;
           }
         });
         
-        // Update mobile total
-        const mobileTotal = document.getElementById("proposal-total-mobile");
-        if (mobileTotal) {
-          mobileTotal.textContent = total.toFixed(2);
-        }
+        // Note: Mobile total update removed for simplification
       }
 
       // Update total display in header (if exists)
@@ -503,16 +492,16 @@ const hasExistingInvoice = !!existingInvoice;
     }
 
     // Make updateProposalTotal available globally
-    (window as any).updateProposalTotal = updateProposalTotal;
+    window.updateProposalTotal = updateProposalTotal;
 
 
     // Initialize the global proposal manager
     if (projectId && project) {
-      initializeProposalManager(projectId, project, authorProfile);
+      await initializeProposalManager(projectId, project, authorProfile);
       
       // If there's an existing invoice, load it automatically
-      // console.log("🔍 [Client] Checking if should load existing invoice:", { hasExistingInvoice, existingInvoice, proposalManager: !!window.proposalManager });
-      if (hasExistingInvoice && existingInvoice && window.proposalManager) {
+      // console.log("🔍 [Client] Checking if should load existing invoice:", { hasExistingProposal, existingInvoice, proposalManager: !!window.proposalManager });
+      if (hasExistingProposal && existingInvoice && window.proposalManager) {
         // console.log("✅ [Client] Loading existing proposal invoice:", existingInvoice);
         window.proposalManager.loadExistingInvoice(existingInvoice).then(() => {
           // Recalculate total after loading existing invoice to ensure interactive elements work
@@ -529,7 +518,7 @@ const hasExistingInvoice = !!existingInvoice;
     window.buildProposal = (id) => window.proposalManager?.buildProposal();
     window.regenerateProposal = () => window.proposalManager?.regenerateProposal();
     window.sendProposal = () => window.proposalManager?.sendProposal();
-    window.convertToInvoice = () => window.proposalManager?.convertToInvoice();
+    // window.convertToInvoice = () => window.proposalManager?.convertToInvoice();
     window.updateRowTotal = (index) => window.proposalManager?.updateRowTotal(index);
     window.addProposalRow = () => window.proposalManager?.addProposalRow();
     window.deleteProposalRow = (index) => window.proposalManager?.deleteProposalRow(index);
@@ -537,7 +526,7 @@ const hasExistingInvoice = !!existingInvoice;
     // toggleProposalSelector will be defined in the define:vars script below
 
     // Initialize subject editing functionality
-    (window as any).initializeSubjectEditing();
+    window.initializeSubjectEditing();
 
     // Initialize existing line items
     initializeExistingLineItems();
@@ -557,31 +546,23 @@ const hasExistingInvoice = !!existingInvoice;
       const lineItemsContainer = document.getElementById("proposal-line-items");
       if (lineItemsContainer && lineItemsContainer.querySelectorAll("tr").length === 0) {
         const initialRow = createLineItemRow({
+          name: "",
           description: "",
-          details: "",
           quantity: 1,
           unitPrice: 0
         });
         lineItemsContainer.appendChild(initialRow);
       }
 
-      // Mobile card view
-      const mobileContainer = document.getElementById("proposal-line-items-mobile");
-      if (mobileContainer && mobileContainer.querySelectorAll(".rounded-lg").length === 0) {
-        const initialCard = createMobileLineItemCard({
-          description: "",
-          details: "",
-          quantity: 1,
-          unitPrice: 0
-        });
-        mobileContainer.appendChild(initialCard);
-      }
+      // Note: Mobile card view removed for simplification
     }
 
     // Create a line item row with consistent structure (Desktop)
-    function createLineItemRow(item: any = {}) {
+    function createLineItemRow(item = {}) {
       const row = document.createElement("tr");
       row.className = "hover:bg-gray-50 dark:hover:bg-gray-700 line-item-row";
+      row.setAttribute("data-catalog-item-id", item.catalog_item_id || "");
+      row.setAttribute("data-edited", "false"); // Track if row has been edited
       
       const currentTotal = (item.quantity || 0) * (item.unitPrice || 0);
       
@@ -590,9 +571,9 @@ const hasExistingInvoice = !!existingInvoice;
           <div class="">
             <input
               type="text"
-              class="line-item-description w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+              class="line-item-name w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
               placeholder="Enter line item description..."
-              value="${item.description || ""}"
+              value="${item.name || ""}"
               autocomplete="off"
             />
             <!-- Autocomplete dropdown -->
@@ -602,9 +583,9 @@ const hasExistingInvoice = !!existingInvoice;
           </div>
           <input
             type="text"
-            class="line-item-details w-full mt-2 px-3 py-1 text-sm border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-            placeholder="Details (optional)"
-            value="${item.details || ""}"
+            class="line-item-description w-full mt-2 px-3 py-1 text-sm border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+            placeholder="Description (optional)"
+              value="${item.description || ""}"
           />
         </td>
         <td class="px-4 py-3 text-sm text-right text-gray-900 dark:text-white">
@@ -636,12 +617,6 @@ const hasExistingInvoice = !!existingInvoice;
           <div class="flex gap-2 justify-center">
             <button
               type="button"
-              class="add-line-item-btn px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800"
-            >
-              Add
-            </button>
-            <button
-              type="button"
               class="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300"
               onclick="this.closest('tr').remove(); updateProposalTotal();"
               title="Delete line item"
@@ -652,92 +627,20 @@ const hasExistingInvoice = !!existingInvoice;
         </td>
       `;
       
+      // Add event listeners to mark row as edited when inputs change
+      const inputs = row.querySelectorAll('input');
+      console.log(`🔍 [PROPOSAL-MANAGER] Adding edit listeners to ${inputs.length} inputs for row with catalog ID: ${item.catalog_item_id}`);
+      inputs.forEach((input, inputIndex) => {
+        input.addEventListener('input', () => {
+          row.setAttribute("data-edited", "true");
+          console.log(`🔍 [PROPOSAL-MANAGER] Row marked as edited (input ${inputIndex})`);
+        });
+      });
+      
       return row;
     }
 
-    // Create a mobile line item card
-    function createMobileLineItemCard(item: any = {}) {
-      const card = document.createElement("div");
-      card.className = "rounded-lg border border-gray-200 bg-white p-4 dark:border-gray-600 dark:bg-gray-800";
-      
-      const currentTotal = (item.quantity || 0) * (item.unitPrice || 0);
-      
-      card.innerHTML = `
-        <div class="space-y-3">
-          <!-- Description -->
-          <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Description</label>
-            <input
-              type="text"
-              class="line-item-description w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-              placeholder="Enter line item description..."
-              value="${item.description || ""}"
-              autocomplete="off"
-            />
-            <input
-              type="text"
-              class="line-item-details w-full mt-2 px-3 py-1 text-sm border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-              placeholder="Details (optional)"
-              value="${item.details || ""}"
-            />
-          </div>
-          
-          <!-- Quantity and Unit Price Row -->
-          <div class="grid grid-cols-2 gap-3">
-            <div>
-              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Quantity</label>
-              <input
-                type="number"
-                class="line-item-quantity w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                value="${item.quantity || 1}"
-                min="0"
-                step="1"
-                oninput="updateRowTotalDirect(this)"
-                onchange="updateRowTotalDirect(this)"
-              />
-            </div>
-            <div>
-              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Unit Price</label>
-              <input
-                type="number"
-                class="line-item-unit-price w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                value="${item.unitPrice || 0}"
-                min="0"
-                step="1"
-                oninput="updateRowTotalDirect(this)"
-                onchange="updateRowTotalDirect(this)"
-              />
-            </div>
-          </div>
-          
-          <!-- Total and Actions Row -->
-          <div class="flex justify-between items-center pt-2 border-t border-gray-200 dark:border-gray-600">
-            <div>
-              <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Total: </span>
-              <span class="text-lg font-bold text-green-600 dark:text-green-400 line-item-total">$${currentTotal.toFixed(2)}</span>
-            </div>
-            <div class="flex gap-2">
-              <button
-                type="button"
-                class="add-line-item-btn px-3 py-1 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800"
-              >
-                Add
-              </button>
-              <button
-                type="button"
-                class="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 p-1"
-                onclick="this.closest('.rounded-lg').remove(); updateProposalTotal();"
-                title="Delete line item"
-              >
-                <i class="bx bx-trash text-lg"></i>
-              </button>
-            </div>
-          </div>
-        </div>
-      `;
-      
-      return card;
-    }
+    // Note: Mobile card creation function removed for simplification
 
     // Initialize existing line items with event listeners
     function initializeExistingLineItems() {
@@ -747,15 +650,15 @@ const hasExistingInvoice = !!existingInvoice;
       // Add event listeners to existing line items
       const existingRows = lineItemsContainer.querySelectorAll(".proposal-line-item-row");
       existingRows.forEach((row) => {
-        const quantityInput = row.querySelector(".quantity-input, .line-item-quantity") as HTMLInputElement;
-        const unitPriceInput = row.querySelector(".unit-price-input, .line-item-unit-price") as HTMLInputElement;
-        const removeBtn = row.querySelector(".remove-item-btn") as HTMLButtonElement;
+        const quantityInput = row.querySelector(".quantity-input, .line-item-quantity") ;
+        const unitPriceInput = row.querySelector(".unit-price-input, .line-item-unit-price") ;
+        const removeBtn = row.querySelector(".remove-item-btn") ;
         
         const updateTotal = () => {
           const quantity = parseFloat(quantityInput?.value) || 0;
           const unitPrice = parseFloat(unitPriceInput?.value) || 0;
           const total = quantity * unitPrice;
-          const totalDisplay = row.querySelector(".total-display, .line-item-total") as HTMLSpanElement;
+          const totalDisplay = row.querySelector(".total-display, .line-item-total") ;
           if (totalDisplay) {
             totalDisplay.textContent = `$${total.toFixed(2)}`;
           }
@@ -812,12 +715,12 @@ const hasExistingInvoice = !!existingInvoice;
       console.log("🔍 [AUTOCOMPLETE] Found", lineItemRows.length, "line item rows");
       
       lineItemRows.forEach((row, index) => {
-        const descriptionInput = row.querySelector('.line-item-description') as HTMLInputElement;
-        const dropdown = row.querySelector('.autocomplete-dropdown') as HTMLDivElement;
-        const quantityInput = row.querySelector('.line-item-quantity') as HTMLInputElement;
-        const unitPriceInput = row.querySelector('.line-item-unit-price') as HTMLInputElement;
-        const totalDisplay = row.querySelector('.line-item-total') as HTMLSpanElement;
-        const addButton = row.querySelector('.add-line-item-btn') as HTMLButtonElement;
+        const descriptionInput = row.querySelector('.line-item-name') ;
+        const dropdown = row.querySelector('.autocomplete-dropdown') ;
+        const quantityInput = row.querySelector('.line-item-quantity') ;
+        const unitPriceInput = row.querySelector('.line-item-unit-price') ;
+        const totalDisplay = row.querySelector('.line-item-total') ;
+        const addButton = row.querySelector('.add-line-item-btn') ;
 
         if (descriptionInput && dropdown && addButton) {
           console.log("🔍 [AUTOCOMPLETE] Setting up autocomplete for row", index);
@@ -827,7 +730,7 @@ const hasExistingInvoice = !!existingInvoice;
     }
 
     // Setup autocomplete for a specific row (simplified - just for the initial row)
-    function setupAutocompleteForRow(row: Element, descriptionInput: HTMLInputElement, dropdown: HTMLDivElement, quantityInput: HTMLInputElement, unitPriceInput: HTMLInputElement, totalDisplay: HTMLSpanElement, addButton: HTMLButtonElement) {
+    function setupAutocompleteForRow(row, descriptionInput, dropdown, quantityInput, unitPriceInput, totalDisplay, addButton) {
       // The autocomplete functionality is now handled by event delegation
       // This function is kept for compatibility but the real work is done in setupEventDelegation
       console.log("🔍 [AUTOCOMPLETE] Setting up row (delegated to event handlers)");
@@ -835,25 +738,7 @@ const hasExistingInvoice = !!existingInvoice;
 
     // Set up event delegation for dynamically added rows
     function setupEventDelegation() {
-      // Listen for clicks on add buttons
-      document.addEventListener('click', (e) => {
-        const target = e.target;
-        if (target && target instanceof HTMLElement && target.classList && target.classList.contains('add-line-item-btn')) {
-          // Check if it's from desktop table row
-          const row = target.closest('.line-item-row');
-          if (row) {
-            addLineItemFromRow(row as HTMLElement);
-            return;
-          }
-          
-          // Check if it's from mobile card
-          const card = target.closest('.rounded-lg');
-          if (card) {
-            addLineItemFromCard(card as HTMLElement);
-            return;
-          }
-        }
-      });
+      // Note: Add buttons removed from individual rows/cards - only using the main "Add Line Item" button
 
       // Listen for focus events on description inputs
       document.addEventListener('focus', (e) => {
@@ -862,7 +747,7 @@ const hasExistingInvoice = !!existingInvoice;
         
         // Check for both new class names and existing data attributes
         const isDescriptionField = (target && target instanceof HTMLElement && 
-          (target.classList?.contains('line-item-description') || 
+          (target.classList?.contains('line-item-name') || 
            target.getAttribute('data-field') === 'description'));
            
         if (isDescriptionField) {
@@ -870,7 +755,7 @@ const hasExistingInvoice = !!existingInvoice;
           const row = target.closest('tr');
           if (row) {
             // Look for existing dropdown or create one
-            let dropdown = row.querySelector('.autocomplete-dropdown') as HTMLDivElement;
+            let dropdown = row.querySelector('.autocomplete-dropdown') ;
             if (!dropdown) {
               // Create dropdown for rows that don't have one
               const inputContainer = target.closest('td');
@@ -901,17 +786,17 @@ const hasExistingInvoice = !!existingInvoice;
         
         // Check for both new class names and existing data attributes
         const isDescriptionField = (target && target instanceof HTMLElement && 
-          (target.classList?.contains('line-item-description') || 
+          (target.classList?.contains('line-item-name') || 
            target.getAttribute('data-field') === 'description'));
            
         if (isDescriptionField) {
           console.log("🔍 [AUTOCOMPLETE] Input on description field detected:", target);
           const row = target.closest('tr');
           if (row) {
-            const dropdown = row.querySelector('.autocomplete-dropdown') as HTMLDivElement;
+            const dropdown = row.querySelector('.autocomplete-dropdown') ;
             if (dropdown) {
               console.log("🔍 [AUTOCOMPLETE] Filtering catalog items for dropdown");
-              filterCatalogItemsForRow(dropdown, (target as HTMLInputElement).value);
+              filterCatalogItemsForRow(dropdown, (target ).value);
             } else {
               console.log("❌ [AUTOCOMPLETE] No dropdown found in row for input");
             }
@@ -924,11 +809,11 @@ const hasExistingInvoice = !!existingInvoice;
 
       // Hide dropdown when clicking outside
       document.addEventListener('click', (e) => {
-        const target = e.target as HTMLElement;
+        const target = e.target;
         if (target && target instanceof HTMLElement) {
           // Check if click is outside any autocomplete dropdown
           const isInsideDropdown = target.closest('.autocomplete-dropdown');
-          const isDescriptionInput = target.classList?.contains('line-item-description') || 
+          const isDescriptionInput = target.classList?.contains('line-item-name') || 
                                    target.getAttribute('data-field') === 'description';
           
           if (!isInsideDropdown && !isDescriptionInput) {
@@ -942,223 +827,16 @@ const hasExistingInvoice = !!existingInvoice;
       });
     }
 
-    // Add line item from a specific row
-    async function addLineItemFromRow(row: HTMLElement) {
-      const descriptionInput = row.querySelector('.line-item-description') as HTMLInputElement;
-      const detailsInput = row.querySelector('.line-item-details') as HTMLInputElement;
-      const quantityInput = row.querySelector('.line-item-quantity') as HTMLInputElement;
-      const unitPriceInput = row.querySelector('.line-item-unit-price') as HTMLInputElement;
-      const dropdown = row.querySelector('.autocomplete-dropdown') as HTMLDivElement;
+    // Note: addNewLineItem function moved to second script block for global access
 
-      if (!descriptionInput || !quantityInput || !unitPriceInput) return;
-
-      const description = descriptionInput.value.trim();
-      const details = detailsInput?.value.trim() || "";
-      const quantity = parseFloat(quantityInput.value) || 0;
-      const unitPrice = parseFloat(unitPriceInput.value) || 0;
-
-      if (!description) {
-        alert("Please enter a description for the line item");
-        return;
-      }
-
-      if (quantity <= 0) {
-        alert("Please enter a valid quantity");
-        return;
-      }
-
-      if (unitPrice < 0) {
-        alert("Please enter a valid unit price");
-        return;
-      }
-
-      // Check if this is a new item (not from catalog)
-      const isNewItem = !globalCatalogItems.some(item => item.name === description);
-
-      // If it's a new item, save it to the catalog first
-      if (isNewItem) {
-        try {
-          const response = await fetch("/api/line-items-catalog", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            credentials: 'include',
-            body: JSON.stringify({
-              name: description,
-              description: details,
-              unit_price: unitPrice,
-              category: "General"
-            })
-          });
-
-          if (!response.ok) {
-            console.error("Failed to save new catalog item");
-          }
-        } catch (error) {
-          console.error("Error saving new catalog item:", error);
-        }
-      }
-
-      // Add the line item to the proposal (Desktop)
-      const lineItemsContainer = document.getElementById("proposal-line-items");
-      if (lineItemsContainer) {
-        // Create new row using the consistent function
-        const newRow = createLineItemRow({
-          description: description,
-          details: details,
-          quantity: quantity,
-          unitPrice: unitPrice
-        });
-
-        // Insert before the last row (the input row)
-        const inputRow = lineItemsContainer.querySelector("tr:last-child");
-        if (inputRow) {
-          lineItemsContainer.insertBefore(newRow, inputRow);
-        } else {
-          lineItemsContainer.appendChild(newRow);
-        }
-      }
-
-      // Add the line item to the mobile view
-      const mobileContainer = document.getElementById("proposal-line-items-mobile");
-      if (mobileContainer) {
-        // Create new card using the mobile function
-        const newCard = createMobileLineItemCard({
-          description: description,
-          details: details,
-          quantity: quantity,
-          unitPrice: unitPrice
-        });
-
-        // Insert before the last card (the input card)
-        const inputCard = mobileContainer.querySelector(".rounded-lg:last-child");
-        if (inputCard) {
-          mobileContainer.insertBefore(newCard, inputCard);
-        } else {
-          mobileContainer.appendChild(newCard);
-        }
-      }
-
-      // Clear the input fields
-      descriptionInput.value = "";
-      if (detailsInput) detailsInput.value = "";
-      quantityInput.value = "1";
-      unitPriceInput.value = "0";
-      if (dropdown) dropdown.classList.add("hidden");
-
-      // Update proposal total
-      updateProposalTotal();
-    }
-
-    // Add line item from a mobile card
-    async function addLineItemFromCard(card: HTMLElement) {
-      const descriptionInput = card.querySelector('.line-item-description') as HTMLInputElement;
-      const detailsInput = card.querySelector('.line-item-details') as HTMLInputElement;
-      const quantityInput = card.querySelector('.line-item-quantity') as HTMLInputElement;
-      const unitPriceInput = card.querySelector('.line-item-unit-price') as HTMLInputElement;
-
-      if (!descriptionInput || !quantityInput || !unitPriceInput) return;
-
-      const description = descriptionInput.value.trim();
-      const details = detailsInput?.value.trim() || "";
-      const quantity = parseFloat(quantityInput.value) || 0;
-      const unitPrice = parseFloat(unitPriceInput.value) || 0;
-
-      if (!description) {
-        alert("Please enter a description for the line item");
-        return;
-      }
-
-      if (quantity <= 0) {
-        alert("Please enter a valid quantity");
-        return;
-      }
-
-      if (unitPrice < 0) {
-        alert("Please enter a valid unit price");
-        return;
-      }
-
-      // Check if this is a new item (not from catalog)
-      const isNewItem = !globalCatalogItems.some(item => item.name === description);
-
-      // If it's a new item, save it to the catalog first
-      if (isNewItem) {
-        try {
-          const response = await fetch("/api/line-items-catalog", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            credentials: 'include',
-            body: JSON.stringify({
-              name: description,
-              description: details,
-              unit_price: unitPrice,
-              category: "General"
-            })
-          });
-
-          if (!response.ok) {
-            console.error("Failed to save new catalog item");
-          }
-        } catch (error) {
-          console.error("Error saving new catalog item:", error);
-        }
-      }
-
-      // Add the line item to the desktop view
-      const lineItemsContainer = document.getElementById("proposal-line-items");
-      if (lineItemsContainer) {
-        // Create new row using the consistent function
-        const newRow = createLineItemRow({
-          description: description,
-          details: details,
-          quantity: quantity,
-          unitPrice: unitPrice
-        });
-
-        // Insert before the last row (the input row)
-        const inputRow = lineItemsContainer.querySelector("tr:last-child");
-        if (inputRow) {
-          lineItemsContainer.insertBefore(newRow, inputRow);
-        } else {
-          lineItemsContainer.appendChild(newRow);
-        }
-      }
-
-      // Add the line item to the mobile view
-      const mobileContainer = document.getElementById("proposal-line-items-mobile");
-      if (mobileContainer) {
-        // Create new card using the mobile function
-        const newCard = createMobileLineItemCard({
-          description: description,
-          details: details,
-          quantity: quantity,
-          unitPrice: unitPrice
-        });
-
-        // Insert before the last card (the input card)
-        const inputCard = mobileContainer.querySelector(".rounded-lg:last-child");
-        if (inputCard) {
-          mobileContainer.insertBefore(newCard, inputCard);
-        } else {
-          mobileContainer.appendChild(newCard);
-        }
-      }
-
-      // Clear the input fields
-      descriptionInput.value = "";
-      if (detailsInput) detailsInput.value = "";
-      quantityInput.value = "1";
-      unitPriceInput.value = "0";
-
-      // Update totals
-      updateProposalTotal();
-    }
+    // Note: addLineItemFromRow and addLineItemFromCard functions removed
+    // Line items are now only added via the main "Add Line Item" button
 
     // Global variables for catalog items (shared across all rows)
-    let globalCatalogItems: any[] = [];
+    let globalCatalogItems = [];
 
     // Load all catalog items (shared function)
-    async function loadAllCatalogItemsForRow(dropdown: HTMLDivElement) {
+    async function loadAllCatalogItemsForRow(dropdown) {
       console.log("🔍 [AUTOCOMPLETE] loadAllCatalogItemsForRow called");
       if (globalCatalogItems.length === 0) {
         console.log("🔍 [AUTOCOMPLETE] Loading catalog items from API");
@@ -1182,7 +860,7 @@ const hasExistingInvoice = !!existingInvoice;
     }
 
     // Filter catalog items for a specific row
-    function filterCatalogItemsForRow(dropdown: HTMLDivElement, query: string) {
+    function filterCatalogItemsForRow(dropdown, query) {
       if (!query || query.length === 0) {
         displaySuggestionsForRow(dropdown, globalCatalogItems);
         return;
@@ -1190,14 +868,14 @@ const hasExistingInvoice = !!existingInvoice;
 
       const filteredItems = globalCatalogItems.filter(item => 
         item.name.toLowerCase().includes(query.toLowerCase()) ||
-        (item.description && item.description.toLowerCase().includes(query.toLowerCase()))
+        (item.name && item.name.toLowerCase().includes(query.toLowerCase()))
       );
       
       displaySuggestionsForRow(dropdown, filteredItems);
     }
 
     // Display suggestions for a specific row
-    function displaySuggestionsForRow(dropdown: HTMLDivElement, items: any[]) {
+    function displaySuggestionsForRow(dropdown, items) {
       console.log("🔍 [AUTOCOMPLETE] displaySuggestionsForRow called with", items.length, "items");
       if (items.length === 0) {
         console.log("🔍 [AUTOCOMPLETE] No items to display, hiding dropdown");
@@ -1226,32 +904,32 @@ const hasExistingInvoice = !!existingInvoice;
     }
 
     // Select suggestion for a specific row
-    function selectSuggestionForRow(dropdown: HTMLDivElement, item: any) {
+    function selectSuggestionForRow(dropdown, item) {
       const row = dropdown.closest('tr');
       if (row) {
         console.log("🔍 [AUTOCOMPLETE] Selecting suggestion for row:", item);
         
         // Try to find inputs using both new class names and existing data attributes
-        const descriptionInput = row.querySelector('.line-item-description, input[data-field="description"]') as HTMLInputElement;
-        const detailsInput = row.querySelector('.line-item-details, input[data-field="details"]') as HTMLInputElement;
-        const unitPriceInput = row.querySelector('.line-item-unit-price, input[data-field="unitPrice"]') as HTMLInputElement;
-        const quantityInput = row.querySelector('.line-item-quantity, input[data-field="quantity"]') as HTMLInputElement;
+        const nameInput = row.querySelector('.line-item-name, input[data-field="name"]') ;
+        const descriptionInput = row.querySelector('.line-item-description, input[data-field="description"]') ;
+        const unitPriceInput = row.querySelector('.line-item-unit-price, input[data-field="unitPrice"]') ;
+        const quantityInput = row.querySelector('.line-item-quantity, input[data-field="quantity"]') ;
         
         console.log("🔍 [AUTOCOMPLETE] Found inputs:", {
+          name: !!nameInput,
           description: !!descriptionInput,
-          details: !!detailsInput,
           unitPrice: !!unitPriceInput,
           quantity: !!quantityInput
         });
 
-        if (descriptionInput) {
-          descriptionInput.value = item.name;
-          console.log("🔍 [AUTOCOMPLETE] Set description to:", item.name);
+        if (nameInput) {
+          nameInput.value = item.name;
+          console.log("🔍 [AUTOCOMPLETE] Set name to:", item.name);
         }
         
-        if (detailsInput && item.description) {
-          detailsInput.value = item.description;
-          console.log("🔍 [AUTOCOMPLETE] Set details to:", item.description);
+        if (descriptionInput && item.description) {
+          descriptionInput.value = item.description;
+          console.log("🔍 [AUTOCOMPLETE] Set description to:", item.description);
         }
         
         if (unitPriceInput) {
@@ -1260,7 +938,7 @@ const hasExistingInvoice = !!existingInvoice;
         }
         
         // Update total - try to find total display using both methods
-        const totalDisplay = row.querySelector('.line-item-total, .total-display') as HTMLSpanElement;
+        const totalDisplay = row.querySelector('.line-item-total, .total-display') ;
         if (quantityInput && totalDisplay) {
           const quantity = parseFloat(quantityInput.value) || 0;
           const unitPrice = parseFloat(unitPriceInput?.value || "0") || 0;
@@ -1287,13 +965,35 @@ const hasExistingInvoice = !!existingInvoice;
   });
 </script>
 
-<script define:vars={{ projectId, project, authorProfile, existingInvoice, hasExistingInvoice }}>
+<script define:vars={{ projectId, project, authorProfile, existingInvoice, hasExistingProposal, projectStatus }}>
   // Make data available globally for the proposal functions
-  window.PROPOSAL_PROJECT_ID = projectId;
-  window.PROPOSAL_PROJECT_DATA = project;
-  window.PROPOSAL_PROJECT_AUTHOR = authorProfile;
-  window.PROPOSAL_EXISTING_INVOICE = existingInvoice;
-  window.PROPOSAL_HAS_EXISTING_INVOICE = hasExistingInvoice;
+ 
+
+  // Add new line item function
+  function addNewLineItem() {
+    console.log("➕ [PROPOSAL-MANAGER] Adding new line item");
+    
+    // Create new row for desktop view
+    const lineItemsContainer = document.getElementById("proposal-line-items");
+    if (lineItemsContainer) {
+      const newRow = createLineItemRow({
+        name: "",
+        description: "",
+        quantity: 1,
+        unitPrice: 0
+      });
+      
+      // Add the new row to the table
+      lineItemsContainer.appendChild(newRow);
+      console.log("✅ [PROPOSAL-MANAGER] Added new row to desktop table");
+    }
+    
+    // Note: Mobile card creation removed for simplification
+    
+    // Update proposal total
+    updateProposalTotal();
+  }
+  window.PROPOSAL_HAS_EXISTING_INVOICE = hasExistingProposal;
 
   // Subject editing functionality
   function initializeSubjectEditing() {
@@ -1754,7 +1454,101 @@ const hasExistingInvoice = !!existingInvoice;
   // }
 
 
+  // Accept Proposal function
+  async function acceptProposal() {
+    const button = document.querySelector('[onclick="acceptProposal()"]');
+    if (!button) return;
+    
+    const originalText = button.innerHTML;
+    
+    try {
+      // Show loading state
+      button.disabled = true;
+      button.innerHTML = `
+        <svg class="animate-spin h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24">
+          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+        </svg>
+        Accepting Proposal...
+      `;
+
+      console.log("🔔 [PROPOSAL-MANAGER] Accepting proposal for project:", projectId);
+
+      // Get current user ID and project status from the page context
+      // const currentUserId = document.querySelector('[data-current-user-id]')?.getAttribute('data-current-user-id');
+      // const oldStatus = document.querySelector('[data-project-status]')?.getAttribute('data-project-status');
+      
+      // Make API call to update status to 45 (Proposal Accepted)
+      const requestBody = {
+        projectId: parseInt(projectId),
+        status: 45,
+        currentUserId: authorProfile.id,
+        oldStatus: projectStatus ? parseInt(projectStatus.toString()) : null
+      };
+
+      console.log("🔔 [PROPOSAL-MANAGER] Making API call to /api/update-status with body:", requestBody);
+      
+
+      const response = await fetch('/api/update-status', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(requestBody),
+      });
+
+      const result = await response.json();
+
+      if (response.ok && result.success) {
+        console.log("✅ [PROPOSAL-MANAGER] Proposal accepted successfully");
+        
+        // Show success message
+        // if (typeof window.showSuccess === 'function') {
+        //   window.showSuccess(
+        //     "Proposal Accepted",
+        //     "The proposal has been accepted successfully!"
+        //   );
+        // }
+        
+        // Refresh the page to show updated status
+        // setTimeout(() => {
+        //   window.location.reload();
+        // }, 1500);
+      } else {
+        console.error("❌ [PROPOSAL-MANAGER] Failed to accept proposal:", result.error);
+        
+        // Show error message
+        if (typeof window.showError === 'function') {
+          window.showError(
+            "Error",
+            result.error || "Failed to accept proposal. Please try again."
+          );
+        }
+        
+        // Restore button
+        button.disabled = false;
+        button.innerHTML = originalText;
+      }
+    } catch (error) {
+      console.error("❌ [PROPOSAL-MANAGER] Error accepting proposal:", error);
+      
+      // Show error message
+      if (typeof window.showError === 'function') {
+        window.showError(
+          "Error",
+          "An error occurred while accepting the proposal. Please try again."
+        );
+      }
+      
+      // Restore button
+      button.disabled = false;
+      button.innerHTML = originalText;
+    }
+  }
+
   // Make functions globally available
   window.initializeSubjectEditing = initializeSubjectEditing;
+  window.addNewLineItem = addNewLineItem;
+  window.acceptProposal = acceptProposal;
   // window.toggleProposalSelector = toggleProposalSelector;
 </script>

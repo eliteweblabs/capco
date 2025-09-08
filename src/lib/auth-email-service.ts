@@ -1,3 +1,7 @@
+// src/lib/auth-email-service.ts
+// this file is not in use..
+// register API uses email delivery instead
+
 // Custom authentication email service using Resend
 import { readFileSync } from "fs";
 import { join } from "path";

@@ -1,13 +1,83 @@
 ---
 interface Props {
-  invoiceId: number;
+  authorProfile?: any;
+  currentRole?: string;
+  project: any;
+  projectId: string;
+  projectStatus?: number;
+  projectStatusLabel?: string;
+
+  invoiceId: number | null;
   amount: number;
   currency?: string;
   paymentType?: "deposit" | "balance";
-  clientProfile?: any;
 }
 
-const { invoiceId, amount, currency = "usd", paymentType = "deposit", clientProfile } = Astro.props;
+const {
+  invoiceId,
+  amount,
+  currency = "usd",
+  paymentType = "deposit",
+  authorProfile,
+  currentRole,
+  project,
+  projectId,
+  projectStatus,
+  projectStatusLabel,
+} = Astro.props;
+
+// Debug logging for PaymentForm props
+const renderId = Math.random().toString(36).substr(2, 9);
+console.log(
+  "🔍 [PAYMENT-FORM] Component rendered at:",
+  new Date().toISOString(),
+  "Render ID:",
+  renderId
+);
+console.log("🔍 [PAYMENT-FORM] Received props:", {
+  renderId,
+  invoiceId,
+  invoiceIdType: typeof invoiceId,
+  amount,
+  currency,
+  paymentType,
+  projectId,
+  projectStatus,
+  currentRole,
+});
+console.log("🔍 [PAYMENT-FORM] Received authorProfile:", authorProfile);
+console.log("🔍 [PAYMENT-FORM] authorProfile.user_metadata:", authorProfile?.user_metadata);
+console.log("🔍 [PAYMENT-FORM] first_name:", authorProfile?.user_metadata?.first_name);
+console.log("🔍 [PAYMENT-FORM] last_name:", authorProfile?.user_metadata?.last_name);
+
+// Debug underscore issue
+console.log("🔍 [PAYMENT-FORM] Checking underscore access:");
+console.log("🔍 [PAYMENT-FORM] authorProfile['user_metadata']:", authorProfile?.["user_metadata"]);
+console.log(
+  "🔍 [PAYMENT-FORM] authorProfile['user_metadata']['first_name']:",
+  authorProfile?.["user_metadata"]?.["first_name"]
+);
+console.log(
+  "🔍 [PAYMENT-FORM] authorProfile['user_metadata']['last_name']:",
+  authorProfile?.["user_metadata"]?.["last_name"]
+);
+
+// Debug the actual values being used in the form
+const firstNameValue =
+  authorProfile?.user_metadata?.first_name ||
+  authorProfile?.["user_metadata"]?.["first_name"] ||
+  authorProfile?.profile?.name?.split(" ")[0] ||
+  authorProfile?.display_name?.split(" ")[0] ||
+  "";
+const lastNameValue =
+  authorProfile?.user_metadata?.last_name ||
+  authorProfile?.["user_metadata"]?.["last_name"] ||
+  authorProfile?.profile?.name?.split(" ").slice(1).join(" ") ||
+  authorProfile?.display_name?.split(" ").slice(1).join(" ") ||
+  "";
+
+console.log("🔍 [PAYMENT-FORM] Computed firstNameValue:", firstNameValue);
+console.log("🔍 [PAYMENT-FORM] Computed lastNameValue:", lastNameValue);
 
 // Stripe publishable key will be injected via window object by App.astro
 // This matches the pattern used for Google Maps API key
@@ -64,7 +134,7 @@ const { invoiceId, amount, currency = "usd", paymentType = "deposit", clientProf
             id="first-name"
             name="firstName"
             required
-            value={clientProfile?.first_name || ""}
+            value={firstNameValue}
             class="w-full rounded-md border border-gray-300 p-3 focus:border-blue-500 focus:ring-blue-500"
             placeholder="John"
           />
@@ -79,7 +149,7 @@ const { invoiceId, amount, currency = "usd", paymentType = "deposit", clientProf
             id="last-name"
             name="lastName"
             required
-            value={clientProfile?.last_name || ""}
+            value={lastNameValue}
             class="w-full rounded-md border border-gray-300 p-3 focus:border-blue-500 focus:ring-blue-500"
             placeholder="Smith"
           />
@@ -95,7 +165,7 @@ const { invoiceId, amount, currency = "usd", paymentType = "deposit", clientProf
           id="email"
           name="email"
           required
-          value={clientProfile?.email || ""}
+          value={authorProfile?.email || ""}
           class="w-full rounded-md border border-gray-300 p-3 focus:border-blue-500 focus:ring-blue-500"
           placeholder="john.smith@company.com"
         />
@@ -109,7 +179,7 @@ const { invoiceId, amount, currency = "usd", paymentType = "deposit", clientProf
           type="text"
           id="company-name"
           name="companyName"
-          value={clientProfile?.company_name || ""}
+          value={authorProfile?.company_name || ""}
           class="w-full rounded-md border border-gray-300 p-3 focus:border-blue-500 focus:ring-blue-500"
           placeholder="ABC Fire Protection"
         />
@@ -294,7 +364,20 @@ const { invoiceId, amount, currency = "usd", paymentType = "deposit", clientProf
   </div>
 </div>
 
-<script define:vars={{ invoiceId, amount, currency, paymentType, clientProfile }}>
+<script
+  define:vars={{
+    invoiceId,
+    amount,
+    currency,
+    paymentType,
+    authorProfile,
+    currentRole,
+    project,
+    projectId,
+    projectStatus,
+    projectStatusLabel,
+  }}
+>
   (async () => {
     // Load Stripe from CDN if not already loaded
     if (!window.Stripe) {
@@ -454,6 +537,16 @@ const { invoiceId, amount, currency = "usd", paymentType = "deposit", clientProf
         field.addEventListener("change", validateForm);
       });
 
+      // Debug: Check form values after DOM loads
+      const firstNameField = document.getElementById("first-name");
+      const lastNameField = document.getElementById("last-name");
+      console.log("🔍 [PAYMENT-FORM] Form values after DOM load:", {
+        firstName: firstNameField?.value,
+        lastName: lastNameField?.value,
+        firstNameElement: firstNameField,
+        lastNameElement: lastNameField,
+      });
+
       // Initial validation
       validateForm();
     });
@@ -472,7 +565,24 @@ const { invoiceId, amount, currency = "usd", paymentType = "deposit", clientProf
 
     // Create payment intent when form loads
     async function createPaymentIntent(paymentMethod = null) {
+      // BLOCK ALL API CALLS IF NO VALID ID
+      if (!invoiceId || invoiceId <= 0) {
+        console.error(
+          "🚫 [PAYMENT-FORM] BLOCKING createPaymentIntent - Invalid project ID:",
+          invoiceId
+        );
+        return;
+      }
+
       try {
+        console.log("🔍 [PAYMENT-FORM] Debug values:", {
+          invoiceId,
+          projectId,
+          paymentType,
+          invoiceIdType: typeof invoiceId,
+          projectIdType: typeof projectId,
+        });
+
         // Collect billing details if form is filled
         const billingDetails = {
           name: document.getElementById("cardholder-name")?.value || "",
@@ -486,16 +596,27 @@ const { invoiceId, amount, currency = "usd", paymentType = "deposit", clientProf
           },
         };
 
+        // Validate that we have a valid ID
+        if (!invoiceId || invoiceId <= 0) {
+          console.error("🚫 [PAYMENT-FORM] BLOCKING API CALL - Invalid project ID:", invoiceId);
+          throw new Error(`Invalid project ID: ${invoiceId}. Expected a positive number.`);
+        }
+
+        console.log("🔍 [PAYMENT-FORM] Creating payment intent with ID:", invoiceId);
         const response = await fetch("/api/create-payment-intent", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            projectId: invoiceId, // Using invoiceId as projectId for now
+            invoiceId: invoiceId, // Using invoiceId as projectId since we're passing project ID as invoiceId
             paymentType: paymentType,
+            projectId: projectId,
+            projectStatus: projectStatus,
+            authorProfile: authorProfile,
             paymentMethod: paymentMethod,
             billingDetails: billingDetails.email ? billingDetails : null,
+            amount: amount, // Send the amount from PaymentForm
           }),
         });
 
@@ -535,6 +656,14 @@ const { invoiceId, amount, currency = "usd", paymentType = "deposit", clientProf
 
     // Handle payment submission
     async function handlePayment(paymentMethod = null) {
+      // Validate we have a valid ID before proceeding
+      if (!invoiceId || invoiceId <= 0) {
+        showError(
+          `Cannot process payment: Invalid project ID (${invoiceId}). Please refresh the page.`
+        );
+        return;
+      }
+
       if (!clientSecret) {
         await createPaymentIntent(paymentMethod);
       }
@@ -592,23 +721,77 @@ const { invoiceId, amount, currency = "usd", paymentType = "deposit", clientProf
     // Confirm payment with backend
     async function confirmPayment() {
       try {
+        console.log("🔍 [PAYMENT-FORM] Confirming payment with:", {
+          paymentIntentId,
+          invoiceId,
+          projectId,
+          projectStatus,
+          authorProfileId: authorProfile?.id,
+        });
+
         const response = await fetch("/api/confirm-payment", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            paymentIntentId,
-            invoiceId,
+            x,
           }),
         });
 
+        console.log("🔍 [PAYMENT-FORM] Confirm payment response status:", response.status);
         const data = await response.json();
+        console.log("🔍 [PAYMENT-FORM] Confirm payment response data:", data);
 
         if (data.success) {
+          const newStatus = paymentType === "deposit" ? 70 : 170;
+
+          try {
+            const statusResponse = await fetch("/api/update-status", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              credentials: "include", // Include cookies for authentication
+              body: JSON.stringify({
+                projectId: projectId,
+                status: newStatus,
+                oldStatus: projectStatus,
+                currentUserId: authorProfile.id,
+              }),
+            });
+
+            const statusData = await statusResponse.json();
+
+            if (statusResponse.ok && statusData.success) {
+              // Update button to show success state
+              //   agreeBtn.innerHTML = `
+              //   <BoxIcon name="check" class="mr-2 inline h-5 w-5" />
+              // `;
+              //   agreeBtn.classList.remove("bg-green-600", "hover:bg-green-700");
+              //   agreeBtn.classList.add("bg-green-500");
+              // Optionally redirect or refresh after a delay
+              // setTimeout(() => {
+              //   window.location.reload();
+              // }, 2000);
+            } else {
+              throw new Error(statusData.error || "Failed to update project status");
+            }
+          } catch (error) {
+            console.error("❌ [PAYMENT-FORM] Error updating project status:", error);
+            showError(
+              "Status Update Failed",
+              "Payment was successful but failed to update project status. Please contact support."
+            );
+          }
+
           showSuccess();
         } else {
-          showError(data.error || "Failed to confirm payment");
+          console.error("❌ [PAYMENT-FORM] Payment confirmation failed:", data.error);
+          showError(
+            "Payment Failed",
+            data.error || "Payment confirmation failed. Please try again."
+          );
         }
       } catch (error) {
         console.error("Error confirming payment:", error);
@@ -647,8 +830,22 @@ const { invoiceId, amount, currency = "usd", paymentType = "deposit", clientProf
       }
     }
 
-    // Initialize payment intent
-    createPaymentIntent();
+    // Initialize payment intent only if we have a valid ID
+    console.log("🔍 [PAYMENT-FORM] Checking invoice ID:", {
+      invoiceId,
+      type: typeof invoiceId,
+      isValid: invoiceId && !isNaN(invoiceId) && invoiceId > 0,
+    });
+
+    if (invoiceId && !isNaN(invoiceId) && invoiceId > 0) {
+      console.log("🔍 [PAYMENT-FORM] Creating payment intent with ID:", invoiceId);
+      createPaymentIntent();
+    } else {
+      console.log(
+        "🔍 [PAYMENT-FORM] Skipping payment intent creation - no valid invoice ID:",
+        invoiceId
+      );
+    }
 
     // Handle form submission
     submitButton?.addEventListener("click", (e) => {

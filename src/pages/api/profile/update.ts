@@ -1,9 +1,18 @@
 import type { APIRoute } from "astro";
+import { getCarrierInfo } from "../../../lib/sms-carriers";
 import { supabase } from "../../../lib/supabase";
+
+// Helper function to get gateway domain from carrier key
+function getCarrierGateway(carrierKey: string | null): string | null {
+  if (!carrierKey) return null;
+  const carrier = getCarrierInfo(carrierKey);
+  return carrier?.gateway || null;
+}
 
 export const POST: APIRoute = async ({ request, cookies }) => {
   try {
-    const { companyName, firstName, lastName, phone } = await request.json();
+    const { companyName, firstName, lastName, phone, smsAlerts, mobileCarrier } =
+      await request.json();
 
     // Validate input
     if (!companyName || companyName.trim().length === 0) {
@@ -54,6 +63,8 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         first_name: firstName.trim(),
         last_name: lastName?.trim() || null,
         phone: phone?.trim() || null,
+        sms_alerts: smsAlerts,
+        mobile_carrier: smsAlerts ? getCarrierGateway(mobileCarrier?.trim() || null) : null,
         updated_at: new Date().toISOString(),
       })
       .eq("id", userId)
@@ -66,6 +77,34 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         status: 500,
         headers: { "Content-Type": "application/json" },
       });
+    }
+
+    // Update phone and SMS preferences in auth user metadata
+    const authUpdateData: any = {};
+
+    if (phone !== undefined) {
+      authUpdateData.phone = phone?.trim() || null;
+    }
+
+    if (smsAlerts !== undefined) {
+      authUpdateData.sms_alerts = smsAlerts;
+    }
+
+    if (mobileCarrier !== undefined) {
+      // Convert carrier key to gateway domain
+      const gatewayDomain = getCarrierGateway(mobileCarrier?.trim());
+      authUpdateData.mobile_carrier = gatewayDomain;
+    }
+
+    if (Object.keys(authUpdateData).length > 0) {
+      const { error: authUpdateError } = await supabase.auth.updateUser({
+        data: authUpdateData,
+      });
+
+      if (authUpdateError) {
+        console.error("Auth update error:", authUpdateError);
+        // Don't fail the entire request if auth update fails
+      }
     }
 
     return new Response(

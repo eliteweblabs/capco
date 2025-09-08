@@ -180,20 +180,23 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         const validFromEmail =
           fromEmail && fromEmail.trim() !== "" ? fromEmail.trim() : "noreply@capcofire.com";
 
-        // Email subject was already set in the consolidated configuration above
+        // Strip HTML from email subject line
+        const cleanSubject = emailSubject.replace(/<[^>]*>/g, "").trim();
 
         const emailPayload = {
           from: `${validFromName} <${validFromEmail}>`,
           to: userEmail,
-          subject: emailSubject,
+          subject: cleanSubject,
           html: emailHtml,
           text: emailContent,
           // Add proper content type and custom headers (only if values exist)
           headers: {
             "Content-Type": "text/html; charset=UTF-8",
-            ...(includeResendHeaders && projectId && { "X-Project-ID": projectId }),
-            ...(includeResendHeaders && newStatus && { "X-Project-Status": newStatus }),
-            ...(includeResendHeaders && authorId && { "X-Author-ID": authorId }),
+            ...(includeResendHeaders && projectId && { "X-Project-ID": String(projectId) }),
+            ...(includeResendHeaders &&
+              newStatus !== undefined &&
+              newStatus !== null && { "X-Project-Status": String(newStatus) }),
+            ...(includeResendHeaders && authorId && { "X-Author-ID": String(authorId) }),
           },
         };
 

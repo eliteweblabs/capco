@@ -7,36 +7,52 @@ interface Props {
   height?: number;
   placeholder?: string;
   required?: boolean;
+  authorProfile?: any;
+  currentRole?: string;
+  project: any;
+  projectId: string;
+  projectStatus?: number;
+  projectStatusLabel?: string;
 }
-
 const {
   id = "signature-canvas",
   width = 400,
   height = 200,
   placeholder = "Sign here...",
   required = false,
+  authorProfile,
+  currentRole,
+  project,
+  projectId,
+  projectStatus,
+  projectStatusLabel,
 } = Astro.props;
+
+const newStatus = 50;
 ---
 
-<div class="digital-signature-container">
-  <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
-    Digital Signature {required && <span class="text-red-500">*</span>}
-  </label>
+<div class="">
+  <div class="digital-signature-containe mb-6">
+    <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
+      Digital Signature {required && <span class="text-red-500">*</span>}
+    </label>
 
-  <div
-    class="signature-container relative rounded-lg border-2 border-dashed border-gray-300 bg-white dark:border-gray-600 dark:bg-gray-800"
-    data-max-width={width}
-    data-max-height={height}
-  >
-    <!-- Canvas for signature -->
-    <canvas
-      id={id}
-      class="signature-canvas block w-full cursor-crosshair"
+    <div
+      class="signature-container relative bg-white dark:border-gray-600 dark:bg-gray-800"
       data-max-width={width}
       data-max-height={height}
-      data-aspect-ratio={width / height}
     >
-      <!-- Placeholder text (shows when empty) -->
+      <!-- Canvas for signature -->
+      <canvas
+        id={id}
+        class="signature-canvas block w-full cursor-crosshair rounded-lg border-2 border-dashed border-gray-300"
+        data-max-width={width}
+        data-max-height={height}
+        data-aspect-ratio={width / height}
+      >
+        <!-- Placeholder text (shows when empty) -->
+      </canvas>
+
       <div
         class="signature-placeholder pointer-events-none absolute inset-0 flex items-center justify-center"
       >
@@ -44,9 +60,8 @@ const {
           {placeholder}
         </span>
       </div>
-
       <!-- Signature controls -->
-      <div class="absolute bottom-2 right-2 flex gap-2">
+      <div class="mt-3 flex gap-2 justify-end">
         <button
           type="button"
           class="signature-clear rounded bg-red-500 px-3 py-1 text-xs text-white transition-colors hover:bg-red-600"
@@ -55,30 +70,37 @@ const {
           <BoxIcon name="trash" class="mr-1" />
           Clear
         </button>
-        <button
-          type="button"
-          class="signature-save rounded bg-green-500 px-3 py-1 text-xs text-white transition-colors hover:bg-green-600"
-          data-signature-id={id}
-        >
-          <BoxIcon name="save" class="mr-1" />
-          Save
-        </button>
       </div>
-    </canvas>
 
-    <!-- Hidden input to store signature data -->
-    <input type="hidden" id={`${id}-data`} name={`${id}-data`} class="signature-data" />
+      <!-- Hidden input to store signature data -->
+      <input type="hidden" id={`${id}-data`} name={`${id}-data`} class="signature-data" />
 
-    <!-- Signature status -->
-    <div class="signature-status mt-2 text-sm">
-      <span class="signature-empty text-gray-500">No signature captured</span>
-      <span class="signature-saved hidden text-green-600">✓ Signature saved</span>
+      <!-- Signature status -->
+      <div class="signature-status mt-2 text-sm">
+        <span class="signature-empty text-gray-500"></span>
+      </div>
+
+      <!-- Agreement button -->
+      <div class="mt-4">
+        <p class="mt-2 text-xs text-gray-500 dark:text-gray-400 text-center">
+          Please sign above before agreeing to the contract terms
+        </p>
+      </div>
     </div>
+    <button
+      type="button"
+      id="agree-contract-btn"
+      class="mt-6 w-full rounded-lg bg-green-600 px-4 py-3 text-white font-medium transition-colors hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 disabled:bg-gray-400 disabled:cursor-not-allowed"
+      disabled
+    >
+      <BoxIcon name="check" class="mr-2 inline h-5 w-5" />
+      I Agree to the Contract Terms
+    </button>
   </div>
 
-  <script>
+  <script define:vars={{ newStatus, projectId, project, currentRole, authorProfile }}>
     // Load SignaturePad from CDN
-    let SignaturePad: any = null;
+    let SignaturePad;
 
     async function loadSignaturePad() {
       if (SignaturePad) return SignaturePad;
@@ -88,7 +110,7 @@ const {
         script.src =
           "https://cdn.jsdelivr.net/npm/signature_pad@4.1.7/dist/signature_pad.umd.min.js";
         script.onload = () => {
-          SignaturePad = (window as any).SignaturePad;
+          SignaturePad = window.SignaturePad;
           console.log("✅ SignaturePad loaded successfully");
         };
         document.head.appendChild(script);
@@ -96,7 +118,7 @@ const {
         // Wait for script to load
         return new Promise((resolve) => {
           script.onload = () => {
-            SignaturePad = (window as any).SignaturePad;
+            SignaturePad = window.SignaturePad;
             resolve(SignaturePad);
           };
         });
@@ -107,9 +129,8 @@ const {
     }
 
     class DigitalSignatureManager {
-      private signaturePads: Map<string, any> = new Map();
-
       constructor() {
+        this.signaturePads = new Map();
         this.initializeSignatures();
       }
 
@@ -125,11 +146,11 @@ const {
         const canvases = document.querySelectorAll(".signature-canvas");
 
         canvases.forEach((canvas) => {
-          this.setupSignaturePad(canvas as HTMLCanvasElement);
+          this.setupSignaturePad(canvas);
         });
       }
 
-      setupSignaturePad(canvas: HTMLCanvasElement) {
+      setupSignaturePad(canvas) {
         const maxWidth = canvas.getAttribute("data-max-width") || "400";
         const maxHeight = canvas.getAttribute("data-max-height") || "200";
         const aspectRatio = canvas.getAttribute("data-aspect-ratio") || "2";
@@ -162,34 +183,31 @@ const {
 
         // Get related elements
         const container = canvas.closest(".digital-signature-container");
-        const placeholder = container?.querySelector(
-          ".signature-placeholder"
-        ) as HTMLElement | null;
-        const hiddenInput = container?.querySelector(".signature-data") as HTMLInputElement | null;
-        const clearBtn = container?.querySelector(".signature-clear") as HTMLElement | null;
-        const saveBtn = container?.querySelector(".signature-save") as HTMLElement | null;
-        const statusEmpty = container?.querySelector(".signature-empty") as HTMLElement | null;
-        const statusSaved = container?.querySelector(".signature-saved") as HTMLElement | null;
+        const placeholder = container?.querySelector(".signature-placeholder") || null;
+        const hiddenInput = container?.querySelector(".signature-data") || null;
+        const clearBtn = container?.querySelector(".signature-clear") || null;
+        // const saveBtn = container?.querySelector(".signature-save") || null;
+        const statusEmpty = container?.querySelector(".signature-empty") || null;
 
         // Handle signature events
         signaturePad.addEventListener("beginStroke", () => {
-          this.hideSignatureStatus(statusEmpty, statusSaved);
+          this.hideSignatureStatus(statusEmpty);
           if (placeholder) placeholder.style.display = "none";
         });
 
         signaturePad.addEventListener("endStroke", () => {
-          this.updateSignatureData(signaturePad, hiddenInput, statusEmpty, statusSaved);
+          this.updateSignatureData(signaturePad, hiddenInput, statusEmpty);
         });
 
         // Handle clear button
         clearBtn?.addEventListener("click", () => {
-          this.clearSignature(signaturePad, hiddenInput, placeholder, statusEmpty, statusSaved);
+          this.clearSignature(signaturePad, hiddenInput, placeholder, statusEmpty);
         });
 
         // Handle save button
-        saveBtn?.addEventListener("click", () => {
-          this.saveSignature(signaturePad, hiddenInput, statusEmpty, statusSaved);
-        });
+        // saveBtn?.addEventListener("click", () => {
+        //   this.saveSignature(signaturePad, hiddenInput, statusEmpty);
+        // });
 
         // Handle canvas resize
         window.addEventListener("resize", () => {
@@ -198,7 +216,7 @@ const {
 
         // Use ResizeObserver for more responsive resizing
         if (window.ResizeObserver && container) {
-          let resizeTimeout: number | null = null;
+          let resizeTimeout = null;
           const resizeObserver = new ResizeObserver(() => {
             // Debounce resize events to prevent loops
             if (resizeTimeout) {
@@ -217,20 +235,179 @@ const {
 
         // Initial resize
         this.resizeCanvas(canvas, signaturePad);
+
+        // Setup agree button functionality
+        this.setupAgreeButton(canvas.id, signaturePad);
       }
 
-      updateSignatureData(
-        signaturePad: any,
-        hiddenInput: HTMLInputElement | null,
-        statusEmpty: HTMLElement | null,
-        statusSaved: HTMLElement | null
-      ) {
+      setupAgreeButton(signatureId, pad) {
+        const agreeBtn = document.getElementById("agree-contract-btn");
+        if (!agreeBtn) return;
+
+        // Enable/disable button based on signature status
+        const updateButtonState = () => {
+          if (pad && !pad.isEmpty()) {
+            agreeBtn.disabled = false;
+            agreeBtn.classList.remove("bg-gray-400", "cursor-not-allowed");
+            agreeBtn.classList.add("bg-green-600", "hover:bg-green-700");
+          } else {
+            agreeBtn.disabled = true;
+            agreeBtn.classList.add("bg-gray-400", "cursor-not-allowed");
+            agreeBtn.classList.remove("bg-green-600", "hover:bg-green-700");
+          }
+        };
+
+        // Update button state when signature changes
+        pad.addEventListener("endStroke", updateButtonState);
+        pad.addEventListener("clear", updateButtonState);
+
+        // Handle agree button click
+        agreeBtn.addEventListener("click", async () => {
+          await this.handleAgreement(signatureId);
+        });
+
+        // Initial button state
+        updateButtonState();
+      }
+
+      async handleAgreement(signatureId) {
+        const agreeBtn = document.getElementById("agree-contract-btn");
+        if (!agreeBtn) return;
+
+        // Get signature data from the signature pad
+        const signaturePad = this.signaturePads.get(signatureId);
+        if (!signaturePad || signaturePad.isEmpty()) {
+          console.error("❌ [DigitalSignature] No signature found");
+          if (window.showError) {
+            window.showError(
+              "No Signature",
+              "Please provide a signature before agreeing to the contract."
+            );
+          }
+          return;
+        }
+
+        const signatureData = signaturePad.toDataURL("image/png");
+
+        if (!project || !authorProfile) {
+          console.error("❌ [DigitalSignature] Missing project or user data");
+          if (window.showError) {
+            window.showError(
+              "Error",
+              "Unable to process agreement. Please refresh the page and try again."
+            );
+          }
+          return;
+        }
+
+        // Set loading state
+        const originalText = agreeBtn.innerHTML;
+        agreeBtn.disabled = true;
+        agreeBtn.innerHTML = `
+          <svg class="animate-spin mr-2 inline h-5 w-5" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+          </svg>
+          Processing Agreement...
+        `;
+
+        // right here we need to save the signature to the project database using the project ID in the proposal_signatures column
+        // also save the timestamp to signed_at column
+        const response = await fetch("/api/save-signature", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            projectId: projectId,
+            signature: signatureData,
+            signed_at: new Date().toISOString(),
+          }),
+        });
+
+        const data = await response.json();
+
+        if (response.ok && data.success) {
+          console.log("✅ [DigitalSignature] Signature saved successfully");
+
+          try {
+            // Call update-status API to set status to 55
+            const response = await fetch("/api/update-status", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                projectId: project.id,
+                status: `${newStatus}`,
+                currentUserId: authorProfile.id,
+                oldStatus: project.status,
+              }),
+            });
+
+            const data = await response.json();
+
+            if (response.ok && data.success) {
+              console.log("✅ [DigitalSignature] Contract agreement processed successfully");
+
+              // Update button to show success state
+              agreeBtn.innerHTML = `
+    <BoxIcon name="check" class="mr-2 inline h-5 w-5" />
+    Contract Agreed ✓
+  `;
+              agreeBtn.classList.remove("bg-green-600", "hover:bg-green-700");
+              agreeBtn.classList.add("bg-green-500");
+
+              // Show notification immediately for instant feedback
+              if (data.notificationData && window.showModal) {
+                const notification = data.notificationData.client || data.notificationData.admin;
+                if (notification) {
+                  window.showModal(
+                    notification.type,
+                    notification.title,
+                    notification.message,
+                    notification.duration,
+                    notification.redirect
+                  );
+                }
+              } else {
+                // Fallback to reload if notification system not available
+                setTimeout(() => {
+                  window.location.reload();
+                }, 2000);
+              }
+            } else {
+              throw new Error(data.error || "Failed to process agreement");
+            }
+          } catch (error) {
+            console.error("❌ [DigitalSignature] Error processing agreement:", error);
+
+            // Show error message
+            if (window.showError) {
+              window.showError(
+                "Agreement Failed",
+                "There was an error processing your agreement. Please try again.",
+                5000
+              );
+            }
+
+            // Reset button state
+            agreeBtn.disabled = false;
+            agreeBtn.innerHTML = originalText;
+          }
+        } else {
+          throw new Error(data.error || "Failed to save signature");
+        }
+      }
+
+      updateSignatureData(signaturePad, hiddenInput, statusEmpty) {
         if (!signaturePad.isEmpty()) {
           const signatureData = signaturePad.toDataURL("image/png");
           if (hiddenInput) {
             hiddenInput.value = signatureData;
           }
-          this.showSignatureStatus(statusSaved, statusEmpty);
+          // Hide the "No signature captured" message when signature is present
+          if (statusEmpty) statusEmpty.classList.add("hidden");
 
           // Emit custom event for form validation
           const event = new CustomEvent("signatureUpdated", {
@@ -241,7 +418,8 @@ const {
           if (hiddenInput) {
             hiddenInput.value = "";
           }
-          this.showSignatureStatus(statusEmpty, statusSaved);
+          // Show the "No signature captured" message when signature is empty
+          if (statusEmpty) statusEmpty.classList.remove("hidden");
 
           // Emit custom event for form validation
           const event = new CustomEvent("signatureUpdated", {
@@ -251,13 +429,7 @@ const {
         }
       }
 
-      clearSignature(
-        signaturePad: any,
-        hiddenInput: HTMLInputElement | null,
-        placeholder: HTMLElement | null,
-        statusEmpty: HTMLElement | null,
-        statusSaved: HTMLElement | null
-      ) {
+      clearSignature(signaturePad, hiddenInput, placeholder, statusEmpty) {
         signaturePad.clear();
         if (hiddenInput) {
           hiddenInput.value = "";
@@ -265,42 +437,29 @@ const {
         if (placeholder) {
           placeholder.style.display = "flex";
         }
-        this.showSignatureStatus(statusEmpty, statusSaved);
+        // Show the "No signature captured" message
+        if (statusEmpty) statusEmpty.classList.remove("hidden");
 
         // Emit custom event
         const event = new CustomEvent("signatureCleared");
         document.dispatchEvent(event);
       }
 
-      saveSignature(
-        signaturePad: any,
-        hiddenInput: HTMLInputElement | null,
-        statusEmpty: HTMLElement | null,
-        statusSaved: HTMLElement | null
-      ) {
+      saveSignature(signaturePad, hiddenInput, statusEmpty) {
         if (!signaturePad.isEmpty()) {
           const signatureData = signaturePad.toDataURL("image/png");
           if (hiddenInput) {
             hiddenInput.value = signatureData;
           }
-          this.showSignatureStatus(statusSaved, statusEmpty);
+          // Don't show "signature saved" status - just leave it there
+          // Hide the "No signature captured" message
+          if (statusEmpty) statusEmpty.classList.add("hidden");
 
           // Emit custom event
           const event = new CustomEvent("signatureSaved", {
             detail: { data: signatureData },
           });
           document.dispatchEvent(event);
-
-          // Show success notification
-          if (window.showSuccess) {
-            window.showSuccess(
-              "Signature Saved",
-              "Digital signature has been captured successfully.",
-              3000
-            );
-          } else {
-            console.log("🔔 [Signature Saved] Digital signature has been captured successfully.");
-          }
         } else {
           // Show error notification
           if (window.showError) {
@@ -311,7 +470,7 @@ const {
         }
       }
 
-      resizeCanvas(canvas: HTMLCanvasElement, signaturePad: any) {
+      resizeCanvas(canvas, signaturePad) {
         const container = canvas.parentElement;
         if (!container) return;
 
@@ -366,28 +525,28 @@ const {
         }
       }
 
-      showSignatureStatus(show: HTMLElement | null, hide: HTMLElement | null) {
+      showSignatureStatus(show, hide) {
         if (show) show.classList.remove("hidden");
         if (hide) hide.classList.add("hidden");
       }
 
-      hideSignatureStatus(statusEmpty: HTMLElement | null, statusSaved: HTMLElement | null) {
+      hideSignatureStatus(statusEmpty, statusSaved) {
         if (statusEmpty) statusEmpty.classList.add("hidden");
         if (statusSaved) statusSaved.classList.add("hidden");
       }
 
       // Public methods for external access
-      getSignatureData(canvasId: string) {
+      getSignatureData(canvasId) {
         const signaturePad = this.signaturePads.get(canvasId);
         return signaturePad && !signaturePad.isEmpty() ? signaturePad.toDataURL("image/png") : null;
       }
 
-      isSignatureEmpty(canvasId: string) {
+      isSignatureEmpty(canvasId) {
         const signaturePad = this.signaturePads.get(canvasId);
         return !signaturePad || signaturePad.isEmpty();
       }
 
-      clearSignatureById(canvasId: string) {
+      clearSignatureById(canvasId) {
         const signaturePad = this.signaturePads.get(canvasId);
         if (signaturePad) {
           signaturePad.clear();
@@ -395,7 +554,7 @@ const {
       }
 
       getAllSignatures() {
-        const signatures: { [key: string]: string | null } = {};
+        const signatures = {};
         this.signaturePads.forEach((pad, canvasId) => {
           signatures[canvasId] = pad.isEmpty() ? null : pad.toDataURL("image/png");
         });
@@ -413,11 +572,7 @@ const {
     });
 
     // Make manager globally accessible
-    declare global {
-      interface Window {
-        digitalSignatureManager: DigitalSignatureManager;
-      }
-    }
+    window.digitalSignatureManager = null;
   </script>
 
   <style>

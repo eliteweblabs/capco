@@ -80,7 +80,7 @@ export const PUT: APIRoute = async ({ request, cookies, params }) => {
     const updateData: any = {
       address: body.address?.replace(/, USA$/, "") || body.address,
       // Don't update owner for existing projects (field is hidden)
-      architect: body.architect && body.architect.trim() !== "" ? parseInt(body.architect) : null,
+      architect: body.architect && body.architect.trim() !== "" ? body.architect.trim() : null,
       sq_ft: body.sq_ft && body.sq_ft.trim() !== "" ? parseInt(body.sq_ft) : null,
       description: body.description,
       new_construction: body.new_construction === "on" || body.new_construction === true,

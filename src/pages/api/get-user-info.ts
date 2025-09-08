@@ -108,7 +108,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         authUser.user.email?.split("@")[0] ||
         "Unknown User",
       role: profile?.role || "Unknown",
-      company: profile?.company_name || null,
+      company_name: profile?.company_name || null,
     };
 
     console.log("🔔 [USER-INFO] Fetched user info for:", userId);
@@ -243,7 +243,7 @@ export const GET: APIRoute = async ({ url, cookies }) => {
         authUser.user.email?.split("@")[0] ||
         "Unknown User",
       role: profile?.role || "Unknown",
-      company: profile?.company_name || null,
+      company_name: profile?.company_name || null,
     };
 
     console.log("🔔 [USER-INFO] Fetched user info for:", userId);

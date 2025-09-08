@@ -2,7 +2,48 @@
 // RegisterForm component for registration
 ---
 
-<div class="mx-auto my-12 w-full max-w-lg px-6">
+<div class="mx-auto my-12 w-full max-w-lg">
+  <form action="/api/auth/signin" method="post" class="mt-6 flex w-full flex-col gap-2">
+    <button
+      value="google"
+      name="provider"
+      class="mt-2 flex w-full items-center justify-center gap-2 rounded-md border border-zinc-300 p-1.5 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 dark:border-zinc-100 dark:bg-zinc-100 dark:text-zinc-900 dark:focus:ring-offset-zinc-900"
+      type="submit"
+    >
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        class="h-5 w-auto"
+        preserveAspectRatio="xMidYMid"
+        viewBox="0 0 256 262"
+      >
+        <path
+          fill="#4285F4"
+          d="M255.878 133.451c0-10.734-.871-18.567-2.756-26.69H130.55v48.448h71.947c-1.45 12.04-9.283 30.172-26.69 42.356l-.244 1.622 38.755 30.023 2.685.268c24.659-22.774 38.875-56.282 38.875-96.027"
+        ></path>
+        <path
+          fill="#34A853"
+          d="M130.55 261.1c35.248 0 64.839-11.605 86.453-31.622l-41.196-31.913c-11.024 7.688-25.82 13.055-45.257 13.055-34.523 0-63.824-22.773-74.269-54.25l-1.531.13-40.298 31.187-.527 1.465C35.393 231.798 79.49 261.1 130.55 261.1"
+        ></path>
+        <path
+          fill="#FBBC05"
+          d="M56.281 156.37c-2.756-8.123-4.351-16.827-4.351-25.82 0-8.994 1.595-17.697 4.206-25.82l-.073-1.73L15.26 71.312l-1.335.635C5.077 89.644 0 109.517 0 130.55s5.077 40.905 13.925 58.602l42.356-32.782"
+        ></path>
+        <path
+          fill="#EB4335"
+          d="M130.55 50.479c24.514 0 41.05 10.589 50.479 19.438l36.844-35.974C195.245 12.91 165.798 0 130.55 0 79.49 0 35.393 29.301 13.925 71.947l42.211 32.783c10.59-31.477 39.891-54.251 74.414-54.251"
+        ></path>
+      </svg>
+      Sign up with Google
+    </button>
+  </form>
+</div>
+
+<hr class="mt-8 h-0 border-t border-zinc-300 dark:border-zinc-600" />
+<p class="-mt-2.5 text-center text-xs text-zinc-500 dark:text-zinc-400">
+  <span class="bg-zinc-50 px-4 dark:bg-zinc-900">Or</span>
+</p>
+
+<div class="mx-auto my-12 w-full max-w-lg">
   <form action="/api/auth/register" method="post" class="grid w-full grid-cols-1 gap-3">
     <!-- Name Fields -->
     <div class="grid grid-cols-2 gap-3">
@@ -100,9 +141,68 @@
       </div>
     </div>
 
+    <!-- SMS Alerts Section (hidden by default, shown when phone is entered) -->
+    <div
+      id="register-sms-section"
+      class="mt-4 rounded-lg border border-gray-200 bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-800"
+      style="display: none;"
+    >
+      <h3 class="mb-3 text-sm font-medium text-gray-900 dark:text-white">SMS Notifications</h3>
+
+      <!-- SMS Alerts Toggle -->
+      <div class="mb-4">
+        <label class="flex items-center">
+          <input
+            type="checkbox"
+            id="register-sms-alerts"
+            name="sms_alerts"
+            class="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700"
+          />
+          <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">
+            Get SMS alerts for project updates
+          </span>
+        </label>
+        <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+          Receive text message notifications when your project status changes
+        </p>
+      </div>
+
+      <!-- Carrier Selection (shown when SMS alerts is enabled) -->
+      <div id="register-carrier-selection" class="hidden">
+        <label
+          for="register-mobile-carrier"
+          class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300"
+        >
+          Mobile Carrier
+        </label>
+        <select
+          id="register-mobile-carrier"
+          name="mobile_carrier"
+          class="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-60 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:focus:border-blue-400"
+        >
+          <option value="">Select your carrier</option>
+          <option value="att">AT&T</option>
+          <option value="verizon">Verizon</option>
+          <option value="spectrum">Spectrum</option>
+          <option value="tmobile">T-Mobile</option>
+          <option value="sprint">Sprint</option>
+          <option value="boost">Boost Mobile</option>
+          <option value="cricket">Cricket Wireless</option>
+          <option value="metropcs">MetroPCS</option>
+          <option value="uscellular">U.S. Cellular</option>
+          <option value="virgin">Virgin Mobile</option>
+          <option value="other">Other</option>
+        </select>
+        <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+          Required for SMS delivery. We'll use your phone number with your carrier's email-to-SMS
+          gateway.
+        </p>
+      </div>
+    </div>
+
     <!-- Password -->
-    <div class="grid grid-cols-1 gap-2">
-      <div class="group relative z-0 mb-5 w-full">
+    <div class="grid grid-cols-1 gap-2 mb-4">
+      <div class="group relative z-0 w-full">
         <input
           id="register_password"
           type="password"
@@ -130,53 +230,59 @@
       Create Account
     </button>
   </form>
-
-  <hr class="mt-8 h-0 border-t border-zinc-300 dark:border-zinc-600" />
-  <p class="-mt-2.5 text-center text-xs text-zinc-500 dark:text-zinc-400">
-    <span class="bg-zinc-50 px-4 dark:bg-zinc-900">Or</span>
-  </p>
-
-  <form action="/api/auth/signin" method="post" class="mt-6 flex w-full flex-col gap-2">
-    <button
-      value="google"
-      name="provider"
-      class="mt-2 flex w-full items-center justify-center gap-2 rounded-md border border-zinc-300 p-1.5 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 dark:border-zinc-100 dark:bg-zinc-100 dark:text-zinc-900 dark:focus:ring-offset-zinc-900"
-      type="submit"
-    >
-      <svg
-        xmlns="http://www.w3.org/2000/svg"
-        class="h-5 w-auto"
-        preserveAspectRatio="xMidYMid"
-        viewBox="0 0 256 262"
-      >
-        <path
-          fill="#4285F4"
-          d="M255.878 133.451c0-10.734-.871-18.567-2.756-26.69H130.55v48.448h71.947c-1.45 12.04-9.283 30.172-26.69 42.356l-.244 1.622 38.755 30.023 2.685.268c24.659-22.774 38.875-56.282 38.875-96.027"
-        ></path>
-        <path
-          fill="#34A853"
-          d="M130.55 261.1c35.248 0 64.839-11.605 86.453-31.622l-41.196-31.913c-11.024 7.688-25.82 13.055-45.257 13.055-34.523 0-63.824-22.773-74.269-54.25l-1.531.13-40.298 31.187-.527 1.465C35.393 231.798 79.49 261.1 130.55 261.1"
-        ></path>
-        <path
-          fill="#FBBC05"
-          d="M56.281 156.37c-2.756-8.123-4.351-16.827-4.351-25.82 0-8.994 1.595-17.697 4.206-25.82l-.073-1.73L15.26 71.312l-1.335.635C5.077 89.644 0 109.517 0 130.55s5.077 40.905 13.925 58.602l42.356-32.782"
-        ></path>
-        <path
-          fill="#EB4335"
-          d="M130.55 50.479c24.514 0 41.05 10.589 50.479 19.438l36.844-35.974C195.245 12.91 165.798 0 130.55 0 79.49 0 35.393 29.301 13.925 71.947l42.211 32.783c10.59-31.477 39.891-54.251 74.414-54.251"
-        ></path>
-      </svg>
-      Sign up with Google
-    </button>
-  </form>
 </div>
 
 <script>
   // Handle form submission with client-side validation feedback
   document.addEventListener("DOMContentLoaded", () => {
+    // SMS Alerts Toggle Functionality
+    const smsAlertsCheckbox = document.getElementById("register-sms-alerts") as HTMLInputElement;
+    const carrierSelection = document.getElementById(
+      "register-carrier-selection"
+    ) as HTMLDivElement;
+    const phoneInput = document.getElementById("phone") as HTMLInputElement;
+    const smsSection = document.getElementById("register-sms-section") as HTMLDivElement;
+
+    // Show/hide carrier selection based on SMS alerts toggle
+    function toggleCarrierSelection() {
+      if (smsAlertsCheckbox && carrierSelection) {
+        if (smsAlertsCheckbox.checked) {
+          carrierSelection.classList.remove("hidden");
+        } else {
+          carrierSelection.classList.add("hidden");
+        }
+      }
+    }
+
+    // Show/hide SMS section based on phone number
+    function toggleSmsSection() {
+      if (smsSection && phoneInput) {
+        const phoneValue = phoneInput.value.trim();
+        if (phoneValue && phoneValue.length >= 10) {
+          smsSection.style.display = "block";
+        } else {
+          smsSection.style.display = "none";
+          // Also uncheck SMS alerts if phone is removed
+          if (smsAlertsCheckbox) {
+            smsAlertsCheckbox.checked = false;
+            toggleCarrierSelection();
+          }
+        }
+      }
+    }
+
+    // Initialize visibility
+    toggleCarrierSelection();
+    toggleSmsSection();
+
+    // Add event listeners
+    smsAlertsCheckbox?.addEventListener("change", toggleCarrierSelection);
+    phoneInput?.addEventListener("input", toggleSmsSection);
+
     const registerForm = document.querySelector('form[action="/api/auth/register"]');
     if (registerForm) {
       registerForm.addEventListener("submit", async (e) => {
+        // Only prevent default for the registration form, not Google sign-in
         e.preventDefault(); // Prevent default form submission
         const firstName = (
           registerForm.querySelector("#first_name") as HTMLInputElement
@@ -192,6 +298,11 @@
         )?.value?.trim();
         const password = (registerForm.querySelector("#register_password") as HTMLInputElement)
           ?.value;
+        const phone = (registerForm.querySelector("#phone") as HTMLInputElement)?.value?.trim();
+        const smsAlerts = smsAlertsCheckbox.checked;
+        const mobileCarrier = (
+          registerForm.querySelector("#register-mobile-carrier") as HTMLSelectElement
+        )?.value?.trim();
 
         // Check required fields
         if (!firstName || !lastName || !companyName || !email || !password) {
@@ -263,6 +374,26 @@
         // Submit form data via fetch
         try {
           const formData = new FormData(registerForm as HTMLFormElement);
+
+          // Ensure SMS fields are included in FormData
+          if (smsAlerts) {
+            formData.set("sms_alerts", "on");
+          } else {
+            formData.delete("sms_alerts"); // Remove if unchecked
+          }
+
+          if (mobileCarrier) {
+            formData.set("mobile_carrier", mobileCarrier);
+          }
+
+          console.log("🔐 [REGISTER-FORM] FormData contents:", {
+            smsAlerts,
+            mobileCarrier,
+            hasSmsAlerts: formData.has("sms_alerts"),
+            smsAlertsValue: formData.get("sms_alerts"),
+            mobileCarrierValue: formData.get("mobile_carrier"),
+          });
+
           const response = await fetch("/api/auth/register", {
             method: "POST",
             body: formData,
