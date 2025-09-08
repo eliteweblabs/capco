@@ -256,18 +256,39 @@ if (canChangeStatus) {
             console.log("🔔 [STATUS-DROPDOWN] Updated data-project-status to:", newStatus);
           }
           
-          // Show success toast notification using toastData from API
-          if (result.toastData && window.showSuccess) {
+          // Show success notification using notificationData from API
+          if (result.notificationData && window.showModal) {
             // Determine user role from the current user context
-            // For now, we'll check if the user has admin/staff privileges by looking at the URL or other indicators
-            // This is a simplified approach - in a real app you might get this from a user context
+            const isAdminOrStaff = window.location.pathname.includes('/admin') || 
+                                 document.querySelector('[data-user-role="Admin"]') || 
+                                 document.querySelector('[data-user-role="Staff"]');
+            
+            const notification = isAdminOrStaff ? result.notificationData.admin : result.notificationData.client;
+            
+            console.log("🔔 [STATUS-DROPDOWN] Showing modal:", { 
+              message: notification.message,
+              redirect: notification.redirect,
+              userType: isAdminOrStaff ? 'admin' : 'client'
+            });
+
+            if (notification) {
+              window.showModal(
+                notification.type,
+                notification.title,
+                notification.message,
+                notification.duration,
+                notification.redirect
+              );
+            }
+          } else if (result.toastData && window.showSuccess) {
+            // Fallback to old toast system for backward compatibility
             const isAdminOrStaff = window.location.pathname.includes('/admin') || 
                                  document.querySelector('[data-user-role="Admin"]') || 
                                  document.querySelector('[data-user-role="Staff"]');
             
             const toastInfo = isAdminOrStaff ? result.toastData.admin : result.toastData.client;
             
-            console.log("🔔 [STATUS-DROPDOWN] Showing toast:", { 
+            console.log("🔔 [STATUS-DROPDOWN] Showing fallback toast:", { 
               message: toastInfo.message,
               redirect: toastInfo.redirect,
               userType: isAdminOrStaff ? 'admin' : 'client'

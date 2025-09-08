@@ -274,6 +274,16 @@ const newStatus = 50;
         const agreeBtn = document.getElementById("agree-contract-btn");
         if (!agreeBtn) return;
 
+        //  const notification = data.notificationData.client || data.notificationData.admin;
+        if (window.showModal) {
+          window.showModal(
+            "info",
+            "Generating Contract...",
+            "Please wait while we generate a PDF copy of the contract for your records.",
+            0
+          );
+        }
+
         // Get signature data from the signature pad
         const signaturePad = this.signaturePads.get(signatureId);
         if (!signaturePad || signaturePad.isEmpty()) {
@@ -329,6 +339,38 @@ const newStatus = 50;
 
         if (response.ok && data.success) {
           console.log("✅ [DigitalSignature] Signature saved successfully");
+
+          // Generate PDF with signature after successful signature save
+          try {
+            console.log("📄 [DigitalSignature] Generating contract PDF with signature...");
+
+            const pdfResponse = await fetch("/api/generate-contract-pdf", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                projectId: projectId,
+                signature: signatureData,
+                signedAt: new Date().toISOString(),
+              }),
+            });
+
+            const pdfData = await pdfResponse.json();
+
+            if (pdfResponse.ok && pdfData.success) {
+              console.log(
+                "✅ [DigitalSignature] Contract PDF generated successfully:",
+                pdfData.contractUrl
+              );
+            } else {
+              console.warn("⚠️ [DigitalSignature] PDF generation failed:", pdfData.error);
+              // Don't fail the entire process if PDF generation fails
+            }
+          } catch (pdfError) {
+            console.error("❌ [DigitalSignature] PDF generation error:", pdfError);
+            // Don't fail the entire process if PDF generation fails
+          }
 
           try {
             // Call update-status API to set status to 55

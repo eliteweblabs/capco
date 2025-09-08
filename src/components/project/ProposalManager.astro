@@ -1502,18 +1502,24 @@ const hasExistingProposal = !!existingInvoice;
       if (response.ok && result.success) {
         console.log("✅ [PROPOSAL-MANAGER] Proposal accepted successfully");
         
-        // Show success message
-        // if (typeof window.showSuccess === 'function') {
-        //   window.showSuccess(
-        //     "Proposal Accepted",
-        //     "The proposal has been accepted successfully!"
-        //   );
-        // }
-        
-        // Refresh the page to show updated status
-        // setTimeout(() => {
-        //   window.location.reload();
-        // }, 1500);
+        // Show notification using new modal system
+        if (result.notificationData && window.showModal) {
+          const notification = result.notificationData.client || result.notificationData.admin;
+          if (notification) {
+            window.showModal(
+              notification.type,
+              notification.title,
+              notification.message,
+              notification.duration,
+              notification.redirect
+            );
+          }
+        } else {
+          // Fallback to page reload if no notification system
+          setTimeout(() => {
+            window.location.reload();
+          }, 1500);
+        }
       } else {
         console.error("❌ [PROPOSAL-MANAGER] Failed to accept proposal:", result.error);
         
