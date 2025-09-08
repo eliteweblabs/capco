@@ -60,5 +60,5 @@ export function replacePlaceholders(message: string, data: PlaceholderData): str
   }
 
   console.log("🔄 [PLACEHOLDER-UTILS] Final result:", result);
-  return result;
+  return "<b>" + result + "</b>";
 }

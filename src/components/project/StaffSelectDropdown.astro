@@ -231,27 +231,43 @@ const {
           // Optionally include redirect - set to true if you want automatic redirect
           const shouldRedirect = false; // Change to true to enable redirect
           
-          if (shouldRedirect) {
-            // Use the unified notification manager directly for redirect functionality
-            const unifiedNotificationManager = window.unifiedNotificationManager;
-            if (unifiedNotificationManager) {
-              const modalId = unifiedNotificationManager.show({
-                type: "success",
-                title: "Assignment Updated",
-                message: staffId 
-                  ? `Project assigned to ${staffName}` 
-                  : "Project unassigned",
-                duration: 3000,
-                redirect: {
-                  url: "/project/" + projectId,
-                  delay: 3,
-                  showCountdown: true,
-                }
-              });
-              // console.log("🧑‍💼 [STAFF-SELECT] Modal ID returned:", modalId);
+          // Always use unifiedNotificationManager.show() for consistency
+          const unifiedNotificationManager = window.unifiedNotificationManager;
+          if (unifiedNotificationManager) {
+            const modalOptions = {
+              type: "success",
+              title: "Assignment Updated",
+              message: staffId 
+                ? `Project assigned to ${staffName}` 
+                : "Project unassigned",
+              duration: 3000
+            };
+            
+            // Add redirect if enabled
+            if (shouldRedirect) {
+              // Determine redirect URL based on project status
+              // For status 45 (contract signing), redirect to contract tab
+              const currentStatus = projectStatus || 0;
+              let redirectUrlTemplate = "/project/{{PROJECT_ID}}";
+              
+              if (currentStatus === 45) {
+                redirectUrlTemplate = "/project/{{PROJECT_ID}}?tab=contract";
+              }
+              
+              // Process redirect URL template - replace {{PROJECT_ID}} with actual project ID
+              const processedRedirectUrl = redirectUrlTemplate.replace(/\{\{PROJECT_ID\}\}/g, projectId);
+              
+              modalOptions.redirect = {
+                url: processedRedirectUrl,
+                delay: 3,
+                showCountdown: true,
+              };
             }
+            
+            const modalId = unifiedNotificationManager.show(modalOptions);
+            // console.log("🧑‍💼 [STAFF-SELECT] Modal ID returned:", modalId);
           } else {
-            // No redirect - use simple modal
+            // Fallback to simple modal if unifiedNotificationManager not available
             const modalId = window.showModal(
               "success",
               "Assignment Updated",
