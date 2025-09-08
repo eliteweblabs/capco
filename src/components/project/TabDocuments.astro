@@ -1,169 +1,172 @@
 ---
 import BoxIcon from "../common/BoxIcon.astro";
-import { globalServices } from "../../lib/global-services";
-import SectionContainer from "../common/SectionContainer.astro";
 
 interface Props {
-  projectId: string;
-  fileType?: string;
   authorProfile?: any;
-  projectStatus?: number;
   currentRole?: string;
+  project: any;
+  projectId: string;
+  projectStatus?: number;
+  projectStatusLabel?: string;
+
+  fileType?: string;
 }
 
-const currentUser = await globalServices.getCurrentUser();
-
-const { projectId, fileType = "media", authorProfile, projectStatus, currentRole } = Astro.props;
-// console.log("🔔 [PDF-UPLOAD] Component props:", {
-//   projectId,
-//   fileType,
-//   role,
-//   projectAuthorEmail,
-//   status,
-// });
-
-// Debug button condition
-// console.log("🔔 [PDF-UPLOAD] Button condition check:", {
-//   role,
-//   isClient: role === "Client",
-//   status,
-// });
+const {
+  project,
+  currentRole,
+  projectId,
+  authorProfile,
+  projectStatus,
+  fileType = "media",
+  projectStatusLabel,
+} = Astro.props;
 ---
 
-  <div class="rounded-lg bg-white p-6 shadow-md dark:bg-gray-800">
-
-
-    { projectStatus === 10 || projectStatus === 20 || projectStatus === 30 || projectStatus === 40 || projectStatus === 50 ? (
-          <!-- Upload Header -->
-    <div class="mb-6" id="upload-header">
-      <h3 class="mb-2 flex items-center text-lg font-semibold text-gray-900 dark:text-white">
+<div
+  id="content-documents"
+  class="tab-content hidden rounded-lg bg-white p-6 shadow-md dark:bg-gray-800"
+>
+  {
+    projectStatus === 10 ||
+    projectStatus === 20 ||
+    projectStatus === 30 ||
+    projectStatus === 40 ||
+    projectStatus === 50 ? (
+      <>
+        <div class="mb-6" id="upload-header">
+          {/* <h3 class="mb-2 flex items-center text-lg font-semibold text-gray-900 dark:text-white">
         <BoxIcon name="cloud-upload" class="mr-2" />
         Document Upload
-      </h3>
-      <p class="text-sm text-gray-600 dark:text-gray-400">
-        Upload PDFs and any other project documents you have
-      </p>
-    </div>
-    <!-- Upload Area -->
-    <div
-      id="upload-dropzone"
-      class="cursor-pointer touch-manipulation rounded-lg border-2 border-dashed border-gray-300 p-8 text-center transition-colors hover:border-blue-400 dark:border-gray-600 dark:hover:border-blue-500"
-      style="min-height: 120px; -webkit-tap-highlight-color: transparent;"
-    >
-      <div class="space-y-4">
-        <BoxIcon name="cloud-upload" class="mx-auto h-12 w-12 text-gray-400" />
-        <div>
-          <p class="font-medium text-gray-600 dark:text-gray-300">
-            Drop files here or click to browse
-          </p>
-          <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-            Supports PDF, images, CAD files, and documents (max 10MB each)
+      </h3> */}
+          <p class="text-sm text-gray-600 dark:text-gray-400">
+            Upload supports PDF, images, CAD files, and documents (max 10MB each)
           </p>
         </div>
-        <button
-          id="browse-files-btn"
-          class="inline-flex touch-manipulation items-center rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700"
-          style="-webkit-tap-highlight-color: transparent; min-height: 44px;"
-        >
-          <BoxIcon name="folder-open" class="mr-2 h-4 w-4" />
-          Browse Files
-        </button>
-      </div>
-    </div>
-  ) : null}
-
-    <!-- Hidden file input -->
-    <input
-      type="file"
-      id="file-input"
-      multiple
-      accept=".pdf,.png,.jpg,.jpeg,.gif,.webp,.dwg,.doc,.docx,.xls,.xlsx,.txt"
-      class="hidden"
-      capture="environment"
-    />
-
-    <!-- Upload Progress -->
-    <div id="upload-progress" class="mt-4 hidden">
-      <div class="h-2 rounded-full bg-gray-200 dark:bg-gray-700">
         <div
-          id="progress-bar"
-          class="h-2 rounded-full bg-blue-600 transition-all duration-300"
-          style="width: 0%"
+          id="upload-dropzone"
+          class="hidden cursor-pointer touch-manipulation rounded-lg border-2 border-dashed border-gray-300 p-8 text-center transition-colors hover:border-blue-400 dark:border-gray-600 dark:hover:border-blue-500 md:block"
+          style="min-height: 120px; -webkit-tap-highlight-color: transparent;"
         >
-        </div>
-      </div>
-      <p
-        id="upload-status"
-        class="mt-2 max-w-full truncate text-sm text-gray-600 dark:text-gray-400"
-      >
-        Uploading...
-      </p>
-    </div>
-
-    <!-- File List -->
-    <div id="uploaded-files" class="mt-6 hidden">
-      <div class="mb-3 flex items-center justify-between">
-        <h4 class="text-md flex items-center font-medium text-gray-900 dark:text-white">
-          <BoxIcon name="file" class="mr-2" />
-          Uploaded Files
-        </h4>
-        <div class="flex items-center space-x-3">
-          <button
-            id="download-all-btn"
-            class="flex items-center text-sm font-medium text-green-600 hover:text-green-800"
-          >
-            <BoxIcon name="download" class="mr-1 h-4 w-4" />
-            Download All
-          </button>
-          <button
-            id="refresh-files-btn"
-            class="flex items-center text-sm font-medium text-blue-600 hover:text-blue-800"
-          >
-            <BoxIcon name="refresh" class="mr-1 h-4 w-4" />
-            Refresh
-          </button>
-        </div>
-      </div>
-      <div id="file-list" class="space-y-2"></div>
-      <div id="no-files-message" class="hidden">
-        <div class="text-center py-8">
-          <BoxIcon name="file" class="mx-auto h-12 w-12 text-gray-400 mb-4" />
-          <p class="text-gray-500 dark:text-gray-400 text-sm">
-            No files have been uploaded yet.
-          </p>
-          <p class="text-gray-400 dark:text-gray-500 text-xs mt-1">
-            Upload your project documents to get started.
-          </p>
-        </div>
-      </div>
-    </div>
-
-   
-
-    <!-- All Documents Uploaded Button (Clients Only) -->
-    {
-      projectStatus === 10 ? (
-        <div class="mt-6 border-t border-gray-200 pt-6 dark:border-gray-700">
-          <div class="text-center">
+          <div class="space-y-4">
+            <BoxIcon name="cloud-upload" class="mx-auto h-12 w-12 text-gray-400" />
+            <div>
+              <p class="font-medium text-gray-600 dark:text-gray-300">
+                Drop files here or click to browse
+              </p>
+              <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                Upload supports PDF, images, CAD files, and documents (max 10MB each)
+              </p>
+            </div>
             <button
-              id="all-documents-uploaded-btn"
-              class="inline-flex items-center rounded-lg bg-green-600 px-6 py-3 text-sm font-medium text-white transition-colors hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
+              id="browse-files-btn"
+              class="inline-flex touch-manipulation items-center rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700"
+              style="-webkit-tap-highlight-color: transparent; min-height: 44px;"
             >
-              All Documents Uploaded
-              <BoxIcon name="right-arrow-circle" class="mr-2 h-5 w-5" />
+              <BoxIcon name="folder-open" class="mr-2 h-4 w-4" />
+              Browse Files
             </button>
           </div>
         </div>
-      ) : null
-    }
+
+        <div class="block md:hidden">
+          <button
+            id="mobile-browse-files-btn"
+            class="w-full touch-manipulation items-center rounded-lg bg-blue-600 px-4 py-3 text-sm font-medium text-white transition-colors hover:bg-blue-700"
+            style="-webkit-tap-highlight-color: transparent; min-height: 44px;"
+          >
+            <BoxIcon name="folder-open" class="mr-2 h-4 w-4" />
+            Browse Files
+          </button>
+        </div>
+      </>
+    ) : null
+  }
+
+  <!-- Hidden file input -->
+  <input
+    type="file"
+    id="file-input"
+    multiple
+    accept=".pdf,.png,.jpg,.jpeg,.gif,.webp,.dwg,.doc,.docx,.xls,.xlsx,.txt"
+    class="hidden"
+    capture="environment"
+  />
+
+  <!-- Upload Progress -->
+  <div id="upload-progress" class="mt-4 hidden">
+    <div class="h-2 rounded-full bg-gray-200 dark:bg-gray-700">
+      <div
+        id="progress-bar"
+        class="h-2 rounded-full bg-blue-600 transition-all duration-300"
+        style="width: 0%"
+      >
+      </div>
+    </div>
+    <p id="upload-status" class="mt-2 max-w-full truncate text-sm text-gray-600 dark:text-gray-400">
+      Uploading...
+    </p>
   </div>
 
-<script define:vars={{ projectId, fileType, authorProfile, currentRole, currentUser, projectStatus }}>
+  <!-- File List -->
+  <div id="uploaded-files" class="mt-6 hidden">
+    <div class="mb-3 flex items-center justify-between">
+      <h4 class="text-md flex items-center font-medium text-gray-900 dark:text-white">
+        <BoxIcon name="file" class="mr-2" />
+        Uploaded Files
+      </h4>
+      <div class="flex items-center space-x-3">
+        <button
+          id="download-all-btn"
+          class="flex items-center text-sm font-medium text-green-600 hover:text-green-800"
+        >
+          <BoxIcon name="download" class="mr-1 h-4 w-4" />
+          Download All
+        </button>
+        <button
+          id="refresh-files-btn"
+          class="flex items-center text-sm font-medium text-blue-600 hover:text-blue-800"
+        >
+          <BoxIcon name="refresh" class="mr-1 h-4 w-4" />
+          Refresh
+        </button>
+      </div>
+    </div>
+    <div id="file-list" class="space-y-2"></div>
+    <div id="no-files-message" class="hidden">
+      <div class="text-center py-8">
+        <BoxIcon name="file" class="bx-lg mx-auto h-12 w-12 text-gray-400 mb-4" />
+        <p class="text-gray-500 dark:text-gray-400 text-sm">No files have been uploaded yet.</p>
+        <p class="text-gray-400 dark:text-gray-500 text-xs mt-1">
+          Upload your project documents to get started.
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- All Documents Uploaded Button (Clients Only) -->
+  {
+    projectStatus === 10 ? (
+      <div class="mt-6 border-t border-gray-200 pt-6 dark:border-gray-700">
+        <div class="text-center">
+          <button
+            id="all-documents-uploaded-btn"
+            class="inline-flex items-center rounded-lg bg-green-600 px-6 py-3 text-sm font-medium text-white transition-colors hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
+          >
+            Finished Uploading Documents
+            <BoxIcon name="check" class="ml-2 bx-sm" />
+          </button>
+        </div>
+      </div>
+    ) : null
+  }
+</div>
+
+<script define:vars={{ projectId, fileType, authorProfile, currentRole, projectStatus }}>
   class PDFUpload {
     constructor() {
       this.projectId = projectId;
       this.fileType = fileType;
-      this.currentUser = currentUser;
       this.projectStatus = projectStatus;
       this.currentRole = currentRole;
       this.isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
@@ -186,7 +189,7 @@ const { projectId, fileType = "media", authorProfile, projectStatus, currentRole
 
       this.isFileDialogOpen = true;
       // console.log("📁 [PDF-UPLOAD] Opening file dialog");
-      
+
       // Use setTimeout to ensure the flag is set before opening the dialog
       setTimeout(() => {
         if (this.fileInput) {
@@ -223,6 +226,7 @@ const { projectId, fileType = "media", authorProfile, projectStatus, currentRole
       this.dropzone = document.getElementById("upload-dropzone");
       this.fileInput = document.getElementById("file-input");
       this.browseBtn = document.getElementById("browse-files-btn");
+      this.mobileBrowseBtn = document.getElementById("mobile-browse-files-btn");
       this.progressContainer = document.getElementById("upload-progress");
       this.progressBar = document.getElementById("progress-bar");
       this.uploadStatus = document.getElementById("upload-status");
@@ -318,6 +322,20 @@ const { projectId, fileType = "media", authorProfile, projectStatus, currentRole
 
         // Mobile touch events for browse button
         this.browseBtn.addEventListener("touchstart", (e) => {
+          e.preventDefault();
+          this.openFileDialog();
+        });
+      }
+
+      // Mobile browse button click (only if it exists)
+      if (this.mobileBrowseBtn) {
+        this.mobileBrowseBtn.addEventListener("click", (e) => {
+          e.preventDefault();
+          this.openFileDialog();
+        });
+
+        // Mobile touch events for mobile browse button
+        this.mobileBrowseBtn.addEventListener("touchstart", (e) => {
           e.preventDefault();
           this.openFileDialog();
         });
@@ -497,12 +515,11 @@ const { projectId, fileType = "media", authorProfile, projectStatus, currentRole
       console.log("📁 [PDF-UPLOAD] Upload successful:", result);
       const uploadedFile = result.files[0];
 
-      this.addFileToList(uploadedFile);
+      // Don't add to list immediately - refreshFileList() will show all files
       this.uploadedFiles.push(uploadedFile);
 
       // Refresh the file list to show all files
       this.refreshFileList();
-
     }
 
     addFileToList(file) {
@@ -569,7 +586,7 @@ const { projectId, fileType = "media", authorProfile, projectStatus, currentRole
               </button>
             `
             }
-            <button class="p-2 text-red-600 hover:text-red-800 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors" onclick="this.closest('.file-item').remove()" title="Delete file">
+            <button class="p-2 text-red-600 hover:text-red-800 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors" onclick="window.pdfUploadDocuments.deleteFile('${file.id}', this.closest('.file-item'))" title="Delete file">
               <svg class="h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
                 <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
               </svg>
@@ -679,9 +696,6 @@ const { projectId, fileType = "media", authorProfile, projectStatus, currentRole
       }
     }
 
-  
-    
-
     async loadExistingFiles() {
       await this.refreshFileList();
     }
@@ -694,7 +708,7 @@ const { projectId, fileType = "media", authorProfile, projectStatus, currentRole
         console.log("📁 [PDF-UPLOAD] Fetching files for project:", this.projectId);
         const requestBody = { projectId: this.projectId };
         console.log("📁 [PDF-UPLOAD] Request body:", requestBody);
-        
+
         const response = await fetch("/api/get-project-files", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -702,12 +716,12 @@ const { projectId, fileType = "media", authorProfile, projectStatus, currentRole
         });
 
         console.log("📁 [PDF-UPLOAD] API response status:", response.status);
-        
+
         if (response.ok) {
           const result = await response.json();
           console.log("📁 [PDF-UPLOAD] Files result:", result);
           console.log("📁 [PDF-UPLOAD] Files count:", result.files?.length || 0);
-          
+
           if (result.files && result.files.length > 0) {
             result.files.forEach((file) => this.addFileToList(file));
             this.filesContainer.classList.remove("hidden");
@@ -727,7 +741,7 @@ const { projectId, fileType = "media", authorProfile, projectStatus, currentRole
             error: errorData,
             projectId: this.projectId,
           });
-          
+
           if (response.status === 403) {
             console.error("📁 [PDF-UPLOAD] Access denied - check user permissions");
           }
@@ -912,9 +926,9 @@ const { projectId, fileType = "media", authorProfile, projectStatus, currentRole
           projectIdProp: projectId,
           thisProjectId: this.projectId,
           typeof: typeof this.projectId,
-          stringified: JSON.stringify(this.projectId)
+          stringified: JSON.stringify(this.projectId),
         });
-        
+
         console.log("🔔 [PDF-UPLOAD] Calling /api/update-status with:", {
           projectId: this.projectId,
           status: 20,
@@ -945,21 +959,21 @@ const { projectId, fileType = "media", authorProfile, projectStatus, currentRole
 
         if (result.success) {
           console.log("📊 [PDF-UPLOAD] Status updated successfully:", result);
-          
+
           // Show success toast notification using toastData from API
           if (result.toastData && window.showSuccess) {
             // Determine user role from the current user context
-            const isAdminOrStaff = this.currentRole === 'Admin' || this.currentRole === 'Staff';
+            const isAdminOrStaff = this.currentRole === "Admin" || this.currentRole === "Staff";
             const toastInfo = isAdminOrStaff ? result.toastData.admin : result.toastData.client;
-            
-            console.log("🔔 [PDF-UPLOAD] Showing toast:", { 
+
+            console.log("🔔 [PDF-UPLOAD] Showing toast:", {
               message: toastInfo.message,
               redirect: toastInfo.redirect,
-              userType: isAdminOrStaff ? 'admin' : 'client'
+              userType: isAdminOrStaff ? "admin" : "client",
             });
-            
-            window.showSuccess('Status Updated', toastInfo.message, 5000);
-            
+
+            window.showSuccess("Status Updated", toastInfo.message, 5000);
+
             // Handle auto-redirect if specified
             if (toastInfo.redirect) {
               console.log("🔔 [PDF-UPLOAD] Auto-redirecting to:", toastInfo.redirect);
@@ -1072,11 +1086,87 @@ const { projectId, fileType = "media", authorProfile, projectStatus, currentRole
         <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zm-1 1v5h5v10H6V3h7z"/>
       </svg>`;
     }
+
+    async deleteFile(fileId, fileItem) {
+      try {
+        console.log("🗑️ [PDF-UPLOAD] Deleting file:", fileId);
+
+        // Show loading state
+        const deleteBtn = fileItem.querySelector('button[title="Delete file"]');
+        if (deleteBtn) {
+          deleteBtn.disabled = true;
+          deleteBtn.innerHTML =
+            '<svg class="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>';
+        }
+
+        const response = await fetch("/api/delete-media-file", {
+          method: "DELETE",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ fileId }),
+        });
+
+        if (response.ok) {
+          const result = await response.json();
+          console.log("✅ [PDF-UPLOAD] File deleted successfully:", result);
+
+          // Remove the file item from DOM
+          fileItem.remove();
+
+          // Check if there are any files left
+          const remainingFiles = this.fileList.querySelectorAll(".file-item");
+          if (remainingFiles.length === 0) {
+            this.filesContainer.classList.add("hidden");
+            this.noFilesMessage.classList.remove("hidden");
+          }
+
+          // Show success message
+          if (window.showSuccess) {
+            window.showSuccess("File Deleted", "File has been successfully deleted.");
+          }
+        } else {
+          const errorData = await response.json().catch(() => ({ error: "Unknown error" }));
+          console.error("❌ [PDF-UPLOAD] Delete failed:", errorData);
+
+          // Reset button state
+          if (deleteBtn) {
+            deleteBtn.disabled = false;
+            deleteBtn.innerHTML =
+              '<svg class="h-4 w-4" fill="currentColor" viewBox="0 0 24 24"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>';
+          }
+
+          // Show error message
+          if (window.showError) {
+            window.showError(
+              "Delete Failed",
+              errorData.error || "Failed to delete file. Please try again."
+            );
+          }
+        }
+      } catch (error) {
+        console.error("❌ [PDF-UPLOAD] Delete error:", error);
+
+        // Reset button state
+        const deleteBtn = fileItem.querySelector('button[title="Delete file"]');
+        if (deleteBtn) {
+          deleteBtn.disabled = false;
+          deleteBtn.innerHTML =
+            '<svg class="h-4 w-4" fill="currentColor" viewBox="0 0 24 24"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>';
+        }
+
+        // Show error message
+        if (window.showError) {
+          window.showError(
+            "Delete Failed",
+            "An error occurred while deleting the file. Please try again."
+          );
+        }
+      }
+    }
   }
 
   // Initialize the PDF upload component
   document.addEventListener("DOMContentLoaded", () => {
-    console.log("📁 [PDF-UPLOAD] Initializing PDFUpload component");
-    new PDFUpload();
+    console.log("📁 [PDF-UPLOAD] Initializing PDFUpload component for Documents");
+    window.pdfUploadDocuments = new PDFUpload();
   });
 </script>

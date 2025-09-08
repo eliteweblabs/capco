@@ -41,14 +41,10 @@ export async function ensureUserProfile(user: User): Promise<void> {
 
     // Priority: display_name > full_name > constructed name > OAuth name > email > fallback
 
-    const phone = user.user_metadata?.phone || "";
-
     console.log("Creating profile for user:", user.id, "with enhanced data:", {
       company_name: companyName,
       firstName,
       lastName,
-      companyName,
-      phone: phone ? "provided" : "not provided",
     });
 
     const { data: newProfile, error: createError } = await supabase
@@ -56,7 +52,6 @@ export async function ensureUserProfile(user: User): Promise<void> {
       .insert({
         id: user.id,
         company_name: companyName, // Use display_name as the main company_name field
-        phone: phone,
         role: "Client",
         first_name: firstName,
         last_name: lastName,

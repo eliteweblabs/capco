@@ -329,7 +329,7 @@ export const FORM_ACTIONS: FormActionConfig[] = [
     label: "Save Project",
     icon: "bx-save",
     cssClass:
-      "px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors",
+      "w-full md:w-auto px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors mt-6",
     allow: ["Admin", "Staff", "Client"], // All roles can save
     // No status restriction - can save project at any status
     // displayOnNew undefined - shows on both new and existing projects
@@ -340,7 +340,7 @@ export const FORM_ACTIONS: FormActionConfig[] = [
     label: "Delete Project",
     icon: "bx-trash",
     cssClass:
-      "px-4 py-2 bg-red-600 text-white text-sm font-medium rounded-lg hover:bg-red-700 transition-colors",
+      "w-full md:w-auto px-4 py-2 bg-red-600 text-white text-sm font-medium rounded-lg hover:bg-red-700 transition-colors mt-6",
     action: "deleteProject",
     allow: ["Admin", "Staff"], // Only admin and staff can delete
     hideAtStatus: [0], // Only show when specs are received (status 10)
@@ -352,24 +352,24 @@ export const FORM_ACTIONS: FormActionConfig[] = [
     icon: "bx-file-pdf",
     tab: "proposal",
     cssClass:
-      "px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 transition-colors",
+      "w-full md:w-auto px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 transition-colors mt-6",
     action: "buildProposal",
     allow: ["Admin", "Staff"], // Only admin and staff can build proposals
     hideAtStatus: [
       0, 10, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170, 180, 190, 200,
     ], // Only show when specs are received (status 10)
   },
-  {
-    id: "view-documents",
-    type: "button",
-    label: "View Documents",
-    icon: "bx-file",
-    tab: "documents",
-    cssClass:
-      "px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors",
-    allow: ["Admin", "Staff", "Client"], // All roles can view documents
-    hideAtStatus: [0], // Hide on new projects
-  },
+  // {
+  //   id: "view-documents",
+  //   type: "button",
+  //   label: "View Documents",
+  //   icon: "bx-file",
+  //   tab: "documents",
+  //   cssClass:
+  //     "px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors",
+  //   allow: ["Admin", "Staff", "Client"], // All roles can view documents
+  //   hideAtStatus: [0], // Hide on new projects
+  // },
   {
     id: "view-deliverables",
     type: "button",

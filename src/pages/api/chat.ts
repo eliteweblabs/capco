@@ -8,6 +8,14 @@ const activeConnections = new Map<
   { userId: string; userName: string; userRole: string; lastSeen: Date }
 >();
 
+// CORS headers helper
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+  "Access-Control-Allow-Headers": "Content-Type",
+  "Access-Control-Allow-Credentials": "true",
+};
+
 export const POST: APIRoute = async ({ request }) => {
   try {
     // console.log("🔔 [CHAT-API] ===== CHAT API CALLED =====");
@@ -17,7 +25,7 @@ export const POST: APIRoute = async ({ request }) => {
       console.error("🔔 [CHAT-API] Supabase client is null - database connection not available");
       return new Response(JSON.stringify({ error: "Database connection not available" }), {
         status: 500,
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...corsHeaders },
       });
     }
 
@@ -47,7 +55,7 @@ export const POST: APIRoute = async ({ request }) => {
           );
           return new Response(JSON.stringify({ error: "Database connection not available" }), {
             status: 500,
-            headers: { "Content-Type": "application/json" },
+            headers: { "Content-Type": "application/json", ...corsHeaders },
           });
         }
         // Get recent chat history using admin client
@@ -61,7 +69,7 @@ export const POST: APIRoute = async ({ request }) => {
           console.error("❌ [CHAT-API] Error fetching chat history:", historyError);
           return new Response(JSON.stringify({ error: "Failed to fetch chat history" }), {
             status: 500,
-            headers: { "Content-Type": "application/json" },
+            headers: { "Content-Type": "application/json", ...corsHeaders },
           });
         }
 
@@ -82,7 +90,7 @@ export const POST: APIRoute = async ({ request }) => {
           }),
           {
             status: 200,
-            headers: { "Content-Type": "application/json" },
+            headers: { "Content-Type": "application/json", ...corsHeaders },
           }
         );
 
@@ -95,7 +103,7 @@ export const POST: APIRoute = async ({ request }) => {
           );
           return new Response(JSON.stringify({ error: "Database connection not available" }), {
             status: 500,
-            headers: { "Content-Type": "application/json" },
+            headers: { "Content-Type": "application/json", ...corsHeaders },
           });
         }
         // Save message to database using admin client to bypass RLS
@@ -121,7 +129,7 @@ export const POST: APIRoute = async ({ request }) => {
             JSON.stringify({ error: "Failed to save message", details: messageError.message }),
             {
               status: 500,
-              headers: { "Content-Type": "application/json" },
+              headers: { "Content-Type": "application/json", ...corsHeaders },
             }
           );
         }
@@ -143,7 +151,7 @@ export const POST: APIRoute = async ({ request }) => {
           }),
           {
             status: 200,
-            headers: { "Content-Type": "application/json" },
+            headers: { "Content-Type": "application/json", ...corsHeaders },
           }
         );
 
@@ -162,7 +170,7 @@ export const POST: APIRoute = async ({ request }) => {
           }),
           {
             status: 200,
-            headers: { "Content-Type": "application/json" },
+            headers: { "Content-Type": "application/json", ...corsHeaders },
           }
         );
 
@@ -174,7 +182,7 @@ export const POST: APIRoute = async ({ request }) => {
           );
           return new Response(JSON.stringify({ error: "Database connection not available" }), {
             status: 500,
-            headers: { "Content-Type": "application/json" },
+            headers: { "Content-Type": "application/json", ...corsHeaders },
           });
         }
 
@@ -188,7 +196,7 @@ export const POST: APIRoute = async ({ request }) => {
           console.error("❌ [CHAT-API] Error fetching recent messages:", recentError);
           return new Response(JSON.stringify({ error: "Failed to fetch messages" }), {
             status: 500,
-            headers: { "Content-Type": "application/json" },
+            headers: { "Content-Type": "application/json", ...corsHeaders },
           });
         }
 
@@ -200,21 +208,40 @@ export const POST: APIRoute = async ({ request }) => {
           }),
           {
             status: 200,
-            headers: { "Content-Type": "application/json" },
+            headers: { "Content-Type": "application/json", ...corsHeaders },
           }
         );
 
       default:
         return new Response(JSON.stringify({ error: "Invalid action" }), {
           status: 400,
-          headers: { "Content-Type": "application/json" },
+          headers: { "Content-Type": "application/json", ...corsHeaders },
         });
     }
   } catch (error) {
     console.error("❌ [CHAT-API] Error:", error);
     return new Response(JSON.stringify({ error: "Internal server error" }), {
       status: 500,
-      headers: { "Content-Type": "application/json" },
+      headers: { 
+        "Content-Type": "application/json",
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Methods": "POST, OPTIONS",
+        "Access-Control-Allow-Headers": "Content-Type",
+        "Access-Control-Allow-Credentials": "true",
+      },
     });
   }
+};
+
+// CORS preflight handler
+export const OPTIONS: APIRoute = async () => {
+  return new Response(null, {
+    status: 200,
+    headers: {
+      "Access-Control-Allow-Origin": "*",
+      "Access-Control-Allow-Methods": "POST, OPTIONS",
+      "Access-Control-Allow-Headers": "Content-Type",
+      "Access-Control-Allow-Credentials": "true",
+    },
+  });
 };

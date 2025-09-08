@@ -1,0 +1,91 @@
+---
+import PaymentForm from "./PaymentForm.astro";
+
+interface Props {
+  project?: any;
+  currentRole?: string;
+  projectId: string;
+  authorProfile?: any;
+  projectStatus?: number;
+  currentUser?: any;
+  projectStatusLabel?: string;
+  invoiceId?: string;
+  totalAmount?: number;
+}
+
+const {
+  project,
+  currentRole,
+  projectId,
+  authorProfile,
+  projectStatus = 0,
+  projectStatusLabel,
+  invoiceId,
+  totalAmount = 0,
+} = Astro.props;
+
+// Debug logging
+console.log("🔍 [TAB-DEPOSIT] Debug values:", {
+  projectId,
+  authorProfile,
+  projectIdType: typeof projectId,
+  parsedProjectId: parseInt(projectId),
+  projectStatus,
+  projectStatusType: typeof projectStatus,
+  currentRole,
+  currentRoleType: typeof currentRole,
+  totalAmount,
+  totalAmountType: typeof totalAmount,
+  condition1: projectStatus >= 30,
+  condition2: currentRole === "Client",
+  condition3: projectStatus < 50,
+  fullCondition: projectStatus >= 30 && currentRole === "Client" && projectStatus < 50,
+});
+
+// Log PaymentForm props
+console.log("🔍 [TAB-DEPOSIT] PaymentForm props:", {
+  invoiceId: parseInt(invoiceId ?? "0"),
+  amount: totalAmount,
+  currency: "usd",
+  paymentType: "deposit",
+});
+---
+
+<div
+  id="content-deposit"
+  class="tab-content hidden rounded-lg bg-white p-6 shadow-md dark:bg-gray-800"
+>
+  <div class="mb-6">
+    <h3 class="mb-2 text-lg font-medium text-gray-900 dark:text-white">Deposit Payment</h3>
+
+    {
+      currentRole === "Client" && projectStatus < 55 ? (
+        <p class="text-gray-500 dark:text-gray-400">
+          Deposit payment will be available after contract is signed.
+        </p>
+      ) : projectStatus >= 55 && currentRole === "Client" ? (
+        <p class="text-gray-500 dark:text-gray-400">
+          Secure your project with a deposit payment. This ensures we can begin work on your fire
+          protection system.
+        </p>
+      ) : null
+    }
+  </div>
+
+  {
+    projectStatus >= 50 && projectStatus < 70 && currentRole === "Client" && (
+      <PaymentForm
+        invoiceId={invoiceId && invoiceId !== "0" ? parseInt(invoiceId) : null}
+        amount={totalAmount}
+        currency="usd"
+        paymentType="deposit"
+        authorProfile={authorProfile}
+        currentRole={currentRole}
+        project={project}
+        projectId={projectId}
+        projectStatus={projectStatus}
+        projectStatusLabel={projectStatusLabel}
+      />
+    )
+  }
+</div>

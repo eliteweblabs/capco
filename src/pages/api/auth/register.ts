@@ -1,7 +1,15 @@
 import type { APIRoute } from "astro";
 import { setAuthCookies } from "../../../lib/auth-cookies";
+import { getCarrierInfo } from "../../../lib/sms-carriers";
 import { supabase } from "../../../lib/supabase";
 import { supabaseAdmin } from "../../../lib/supabase-admin";
+
+// Helper function to get gateway domain from carrier key
+function getCarrierGateway(carrierKey: string | null): string | null {
+  if (!carrierKey) return null;
+  const carrier = getCarrierInfo(carrierKey);
+  return carrier?.gateway || null;
+}
 
 export const POST: APIRoute = async ({ request, redirect, cookies }) => {
   console.log("🔐 [REGISTER] Registration API called");
@@ -19,12 +27,17 @@ export const POST: APIRoute = async ({ request, redirect, cookies }) => {
   const lastName = formData.get("last_name")?.toString();
   const companyName = formData.get("company_name")?.toString();
   const phone = formData.get("phone")?.toString();
+  const smsAlerts = formData.get("sms_alerts") === "on"; // Checkbox returns "on" when checked
+  const mobileCarrier = formData.get("mobile_carrier")?.toString();
 
   console.log("🔐 [REGISTER] Form data:", {
     email,
     firstName,
     lastName,
     companyName,
+    phone,
+    smsAlerts,
+    mobileCarrier,
     hasPassword: !!password,
   });
 
@@ -62,6 +75,8 @@ export const POST: APIRoute = async ({ request, redirect, cookies }) => {
         full_name: `${firstName} ${lastName}`,
         company_name: companyName,
         phone: phone || null,
+        sms_alerts: smsAlerts,
+        mobile_carrier: smsAlerts ? getCarrierGateway(mobileCarrier || null) : null,
       },
     },
   });
@@ -111,6 +126,16 @@ export const POST: APIRoute = async ({ request, redirect, cookies }) => {
   // Create profile in the profiles table if user was created successfully
   if (data.user) {
     console.log("Attempting to create profile for user:", data.user.id);
+    console.log("🔐 [REGISTER] Profile data being inserted:", {
+      id: data.user.id,
+      company_name: companyName,
+      first_name: firstName,
+      last_name: lastName,
+      phone: phone || null,
+      sms_alerts: smsAlerts,
+      mobile_carrier: smsAlerts ? getCarrierGateway(mobileCarrier || null) : null,
+      role: "Client",
+    });
 
     // Use admin client to bypass RLS policies during registration
     const { error: profileError } = await supabaseAdmin.from("profiles").insert({
@@ -119,6 +144,8 @@ export const POST: APIRoute = async ({ request, redirect, cookies }) => {
       first_name: firstName,
       last_name: lastName,
       phone: phone || null,
+      sms_alerts: smsAlerts,
+      mobile_carrier: smsAlerts ? getCarrierGateway(mobileCarrier || null) : null,
       role: "Client",
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
@@ -140,15 +167,18 @@ export const POST: APIRoute = async ({ request, redirect, cookies }) => {
 
     // Send welcome email to the new user
     const displayName = companyName || `${firstName} ${lastName}`;
-    const welcomeContent = `Welcome to CAPCo Fire Protection! Your account has been created successfully:<br>
+    const welcomeContent = `<p>Welcome to CAPCo Fire Protection! Your account has been created successfully:<br></p>
 
-<b>Company Name:</b> ${displayName}
-<b>Email:</b> ${email}
-<b>First Name:</b> ${firstName}
-<b>Last Name:</b> ${lastName}
+<b>Company Name:</b> ${displayName}<br>
+<b>Email:</b> ${email}<br>
+<b>First Name:</b> ${firstName}<br>
+<b>Last Name:</b> ${lastName}<br>
 <b>Phone:</b> ${phone || "Not provided"}<br>
+<b>SMS Alerts:</b> ${smsAlerts ? "Enabled" : "Disabled"}<br>
+<b>Mobile Carrier:</b> ${mobileCarrier || "Not provided"}<br>
+        <b>Registration Date:</b> ${new Date().toLocaleDateString()}<br><br>
 
-You're now signed in and ready to start creating projects. Click the button below to access your dashboard.`;
+<p>You're now signed in and ready to start creating projects. Click the button below to access your dashboard.</p><br><br>`;
 
     // Get the base URL for the email API call
     const baseUrl = import.meta.env.DEV ? "http://localhost:4321" : "https://capcofire.com";
@@ -162,7 +192,7 @@ You're now signed in and ready to start creating projects. Click the button belo
         },
         body: JSON.stringify({
           usersToNotify: [email], // Array of email strings
-          emailSubject: `Welcome to CAPCo Fire Protection - ${displayName}`,
+          emailSubject: `Welcome to CAPCo Fire Protection > ${displayName}`,
           emailContent: welcomeContent,
           buttonText: "Access Your Dashboard",
           buttonLink: "/dashboard",
@@ -199,17 +229,16 @@ You're now signed in and ready to start creating projects. Click the button belo
         console.log("📧 [REGISTER] Found admin users:", adminUsers?.length || 0);
 
         // Prepare admin notification email content
-        const adminEmailContent = `A new user has registered on the platform:<br>
+        const adminEmailContent = `<p>New Account Created:<br></p>
 
-<b>Company Name:</b> ${displayName}
-<b>Email:</b> ${email}
-<b>First Name:</b> ${firstName}
-<b>Last Name:</b> ${lastName}
-<b>Phone:</b> ${phone || "Not provided"}<br>
-
-Registration Date: ${new Date().toLocaleDateString()}<br>
-
-The user has been automatically assigned the "Client" role and can now access the platform.`;
+        <b>Company Name:</b> ${displayName}<br>
+        <b>Email:</b> ${email}<br>
+        <b>First Name:</b> ${firstName}<br>
+        <b>Last Name:</b> ${lastName}<br>
+        <b>Phone:</b> ${phone || "Not provided"}<br>
+        <b>SMS Alerts:</b> ${smsAlerts ? "Enabled" : "Disabled"}<br>
+        <b>Mobile Carrier:</b> ${mobileCarrier || "Not provided"}<br>
+        <b>Registration Date:</b> ${new Date().toLocaleDateString()}<br><br>`;
 
         // Send notification to all admin users
         for (const admin of adminUsers || []) {
@@ -233,31 +262,11 @@ The user has been automatically assigned the "Client" role and can now access th
                 "Content-Type": "application/json",
               },
               body: JSON.stringify({
-                projectId: "new-user-registration-admin",
-                newStatus: 0,
-                emailType: "registration",
-                usersToNotify: [
-                  {
-                    email: adminEmail,
-                    first_name: admin.first_name,
-                    last_name: admin.last_name,
-                  },
-                ],
-                projectDetails: {
-                  title: "New User Registration",
-                  address: "System Notification",
-                  est_time: "immediate",
-                  profiles: [
-                    {
-                      email: adminEmail,
-                      first_name: admin.first_name,
-                      last_name: admin.last_name,
-                    },
-                  ],
-                },
-                email_content: adminEmailContent,
-                button_text: "View All Users",
-                custom_subject: `New User Registration: ${displayName}`,
+                usersToNotify: [adminEmail], // Array of email strings
+                emailSubject: `New User Registration on CAPCo Fire Protection > ${displayName}`,
+                emailContent: adminEmailContent,
+                buttonText: "Access Your Dashboard",
+                buttonLink: "/dashboard",
               }),
             });
 

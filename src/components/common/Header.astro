@@ -72,7 +72,7 @@ const navigation: NavItem[] = [
     isPrimary: currentUrl.startsWith("/dashboard#new-project"),
   },
   {
-    label: "Email Testing",
+    label: "Email Test",
     href: "/email-test",
     roles: ["Admin"],
     pageType: "backend",
@@ -84,13 +84,13 @@ const navigation: NavItem[] = [
   //   roles: ["Admin", "Staff"],
   //   type: "backend",
   // },
-  {
-    label: "PDF Editor",
-    href: "/pdf-editor",
-    roles: ["Admin"],
-    pageType: "backend",
-    isPrimary: currentUrl.startsWith("/pdf-editor"),
-  },
+  // {
+  //   label: "PDF Editor",
+  //   href: "/pdf-editor",
+  //   roles: ["Admin"],
+  //   pageType: "backend",
+  //   isPrimary: currentUrl.startsWith("/pdf-editor"),
+  // },
   {
     label: "Discussions",
     href: "/discussions",
@@ -162,6 +162,17 @@ const visibleNavigation = getVisibleNavItems(navigation, isAuth, currentRole, is
   <div class="flex items-center justify-between">
     <Logo />
 
+    {
+      isAuth && isBackend && currentUrl !== "/dashboard" && (
+        <a
+          href="/dashboard"
+          class="inline-flex items-center rounded-lg bg-gray-500 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-gray-600"
+        >
+          <BoxIcon name="arrow-back" class="mr-2" />
+          Back to Projects
+        </a>
+      )
+    }
     <!-- Navigation (Desktop) -->
     <nav class="hidden items-center space-x-8 md:flex">
       {
@@ -282,7 +293,7 @@ const visibleNavigation = getVisibleNavItems(navigation, isAuth, currentRole, is
   // console.log("📋 [HEADER] Header script execution started");
   // console.log("📋 [HEADER] Session data:", session);
 
-  const profileBtn = document.getElementById("profile-btn");
+  // const profileBtn = document.getElementById("profile-btn");
   const userAvatar = document.getElementById("user-avatar");
   const fallbackIcon = userAvatar?.nextElementSibling;
   const profileDropdown = document.getElementById("profile-dropdown");
@@ -343,31 +354,31 @@ const visibleNavigation = getVisibleNavItems(navigation, isAuth, currentRole, is
   updateProfileButton(session);
 
   // Toggle dropdown (only if profile button exists - when authenticated)
-  if (profileBtn) {
-    profileBtn.addEventListener("click", (e) => {
-      // console.log("📋 [HEADER] Profile button clicked");
-      e.stopPropagation();
-      if (profileDropdown) {
-        profileDropdown.classList.toggle("hidden");
-        // console.log("📋 [HEADER] Dropdown toggled");
-      }
-    });
-  }
+  // if (profileBtn) {
+  //   profileBtn.addEventListener("click", (e) => {
+  //     // console.log("📋 [HEADER] Profile button clicked");
+  //     e.stopPropagation();
+  //     if (profileDropdown) {
+  //       profileDropdown.classList.toggle("hidden");
+  //       // console.log("📋 [HEADER] Dropdown toggled");
+  //     }
+  //   });
+  // }
 
   // Close dropdown when clicking outside
-  document.addEventListener("click", (e) => {
-    if (profileDropdown && !profileBtn?.contains(e.target) && !profileDropdown.contains(e.target)) {
-      // console.log("📋 [HEADER] Document clicked, closing dropdown");
-      profileDropdown.classList.add("hidden");
-    }
-  });
+  // document.addEventListener("click", (e) => {
+  //   if (profileDropdown && !profileBtn?.contains(e.target) && !profileDropdown.contains(e.target)) {
+  //     // console.log("📋 [HEADER] Document clicked, closing dropdown");
+  //     profileDropdown.classList.add("hidden");
+  //   }
+  // });
 
   // Prevent dropdown from closing when clicking inside it
-  if (profileDropdown) {
-    profileDropdown.addEventListener("click", (e) => {
-      e.stopPropagation();
-    });
-  }
+  // if (profileDropdown) {
+  //   profileDropdown.addEventListener("click", (e) => {
+  //     e.stopPropagation();
+  //   });
+  // }
 
   // Mobile menu toggle functionality
   function toggleMobileMenu() {

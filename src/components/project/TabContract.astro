@@ -1,0 +1,126 @@
+---
+import DigitalSignature from "./DigitalSignature.astro";
+
+interface Props {
+  authorProfile?: any;
+  currentRole?: string;
+  project: any;
+  projectId: string;
+  projectStatus?: number;
+  projectStatusLabel?: string;
+  invoiceId?: string;
+}
+
+const {
+  project,
+  currentRole,
+  projectId,
+  authorProfile,
+  projectStatus = 0,
+  projectStatusLabel,
+  invoiceId,
+} = Astro.props;
+
+// Debug logging
+console.log("🔍 [TAB-CONTRACT] Props received:", {
+  currentRole,
+  projectStatus,
+  projectStatusType: typeof projectStatus,
+  projectStatusLabel,
+  projectId,
+});
+
+console.log("🔍 [TAB-CONTRACT] Debug values:", {
+  projectId,
+  projectStatus,
+  projectStatusLabel,
+  invoiceId,
+  currentRole,
+});
+---
+
+<div
+  id="content-contract"
+  class="tab-content hidden rounded-lg bg-white p-6 shadow-md dark:bg-gray-800"
+>
+  <div class="mb-6">
+    <h3 class="mb-2 text-lg font-medium text-gray-900 dark:text-white">
+      Digital Contract &amp; Signature
+    </h3>
+
+    {
+      currentRole === "Client" && Number(projectStatus) < 45 && (
+        <p class="text-gray-500 dark:text-gray-400">
+          Contract will be available after proposal is accepted.
+        </p>
+      )
+    }
+    {
+      Number(projectStatus) === 45 && currentRole === "Client" && (
+        <p class="text-gray-500 dark:text-gray-400">Please sign the contract to begin work.</p>
+      )
+    }
+  </div>
+
+  {
+    Number(projectStatus) === 45 && currentRole === "Client" && (
+      <div class="mb-6">
+        <h3 class="mb-2 text-lg font-medium text-gray-900 dark:text-white">Contract</h3>
+        <p class="text-gray-500 dark:text-gray-400">
+          It is a long established fact that a reader will be distracted by the readable content of
+          a page when looking at its layout. The point of using Lorem Ipsum is that it has a
+          more-or-less normal distribution of letters, as opposed to using 'Content here, content
+          here', making it look like readable English. Many desktop publishing packages and web page
+          editors now use Lorem Ipsum as their default model text, and a search for 'lorem ipsum'
+          will uncover many web sites still in their infancy. Various versions have evolved over the
+          years, sometimes by accident, sometimes on purpose.
+        </p>
+        <p class="text-gray-500 dark:text-gray-400">
+          It is a long established fact that a reader will be distracted by the readable content of
+          a page when looking at its layout. The point of using Lorem Ipsum is that it has a
+          more-or-less normal distribution of letters, as opposed to using 'Content here, content
+          here', making it look like readable English. Many desktop publishing packages and web page
+          editors now use Lorem Ipsum as their default model text, and a search for 'lorem ipsum'
+          will uncover many web sites still in their infancy. Various versions have evolved over the
+          years, sometimes by accident, sometimes on purpose.
+        </p>
+        <p class="text-gray-500 dark:text-gray-400">
+          It is a long established fact that a reader will be distracted by the readable content of
+          a page when looking at its layout. The point of using Lorem Ipsum is that it has a
+          more-or-less normal distribution of letters, as opposed to using 'Content here, content
+          here', making it look like readable English. Many desktop publishing packages and web page
+          editors now use Lorem Ipsum as their default model text, and a search for 'lorem ipsum'
+          will uncover many web sites still in their infancy. Various versions have evolved over the
+          years, sometimes by accident, sometimes on purpose.
+        </p>
+        <p class="text-gray-500 dark:text-gray-400">
+          It is a long established fact that a reader will be distracted by the readable content of
+          a page when looking at its layout. The point of using Lorem Ipsum is that it has a
+          more-or-less normal distribution of letters, as opposed to using 'Content here, content
+          here', making it look like readable English. Many desktop publishing packages and web page
+          editors now use Lorem Ipsum as their default model text, and a search for 'lorem ipsum'
+          will uncover many web sites still in their infancy. Various versions have evolved over the
+          years, sometimes by accident, sometimes on purpose.
+        </p>
+      </div>
+    )
+  }
+
+  {
+    projectStatus >= 45 && currentRole === "Client" && projectStatus < 55 && (
+      <DigitalSignature
+        id="proposal-signature"
+        required={true}
+        width={1200}
+        height={580}
+        placeholder="Proposal Signature"
+        project={project}
+        projectId={projectId}
+        authorProfile={authorProfile}
+        currentRole={currentRole}
+        projectStatus={projectStatus}
+        projectStatusLabel={projectStatusLabel}
+      />
+    )
+  }
+</div>

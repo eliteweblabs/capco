@@ -4,8 +4,8 @@
  */
 
 export interface LineItem {
+  name: string;
   description: string;
-  details?: string;
   quantity: number;
   unitPrice: number;
 }
@@ -137,8 +137,8 @@ export class ProposalManager {
     const lineItems = this.getLineItemsData();
 
     // Get notes
-    const notesElement = document.getElementById("proposal-notes");
-    const notes = notesElement?.textContent || this.project.notes || this.project.description || "";
+    const notesElement = document.getElementById("proposal-notes") as HTMLTextAreaElement;
+    const notes = notesElement?.value || "";
 
     return {
       title,
@@ -164,9 +164,9 @@ export class ProposalManager {
         <div class="relative">
           <input
             type="text"
-            class="line-item-description w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-            placeholder="Enter line item description..."
-            value="${item.description || ""}"
+            class="line-item-name w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+            placeholder="Enter line item name..."
+            value="${item.name || ""}"
             autocomplete="off"
           />
           <!-- Autocomplete dropdown -->
@@ -176,9 +176,9 @@ export class ProposalManager {
         </div>
         <input
           type="text"
-          class="line-item-details w-full mt-2 px-3 py-1 text-sm border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-          placeholder="Details (optional)"
-          value="${item.details || ""}"
+          class="line-item-description w-full mt-2 px-3 py-1 text-sm border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+          placeholder="Description (optional)"
+          value="${item.description || ""}"
         />
       </td>
       <td class="px-4 py-3 text-sm text-right text-gray-900 dark:text-white">
@@ -210,12 +210,6 @@ export class ProposalManager {
         <div class="flex gap-2 justify-center">
           <button
             type="button"
-            class="add-line-item-btn px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800"
-          >
-            Add
-          </button>
-          <button
-            type="button"
             class="delete-line-item-btn text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300"
             onclick="this.closest('tr').remove(); updateProposalTotal();"
             title="Delete line item"
@@ -235,98 +229,6 @@ export class ProposalManager {
   }
 
   /**
-   * Create a mobile line item card
-   */
-  private createMobileLineItemCard(item: any = {}): HTMLDivElement {
-    const card = document.createElement("div");
-    card.className =
-      "rounded-lg border border-gray-200 bg-white p-4 dark:border-gray-600 dark:bg-gray-800";
-
-    const currentTotal = (item.quantity || 0) * (item.unitPrice || 0);
-
-    card.innerHTML = `
-      <div class="space-y-3">
-        <!-- Description -->
-        <div>
-          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Description</label>
-          <input
-            type="text"
-            class="line-item-description w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-            placeholder="Enter line item description..."
-            value="${item.description || ""}"
-            autocomplete="off"
-          />
-          <input
-            type="text"
-            class="line-item-details w-full mt-2 px-3 py-1 text-sm border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-            placeholder="Details (optional)"
-            value="${item.details || ""}"
-          />
-        </div>
-        
-        <!-- Quantity and Unit Price Row -->
-        <div class="grid grid-cols-2 gap-3">
-          <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Quantity</label>
-            <input
-              type="number"
-              class="line-item-quantity w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-              value="${item.quantity || 1}"
-              min="0"
-              step="1"
-              oninput="updateRowTotalDirect(this)"
-              onchange="updateRowTotalDirect(this)"
-            />
-          </div>
-          <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Unit Price</label>
-            <input
-              type="number"
-              class="line-item-unit-price w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-              value="${item.unitPrice || 0}"
-              min="0"
-              step="1"
-              oninput="updateRowTotalDirect(this)"
-              onchange="updateRowTotalDirect(this)"
-            />
-          </div>
-        </div>
-        
-        <!-- Total and Actions Row -->
-        <div class="flex justify-between items-center pt-2 border-t border-gray-200 dark:border-gray-600">
-          <div>
-            <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Total: </span>
-            <span class="text-lg font-bold text-green-600 dark:text-green-400 line-item-total">$${currentTotal.toFixed(2)}</span>
-          </div>
-          <div class="flex gap-2">
-            <button
-              type="button"
-              class="add-line-item-btn px-3 py-1 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800"
-            >
-              Add
-            </button>
-            <button
-              type="button"
-              class="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 p-1"
-              onclick="this.closest('.rounded-lg').remove(); updateProposalTotal();"
-              title="Delete line item"
-            >
-              <i class="bx bx-trash text-lg"></i>
-            </button>
-          </div>
-        </div>
-      </div>
-    `;
-
-    // Store catalog_item_id as a data attribute for reference
-    if (item.catalog_item_id) {
-      card.setAttribute("data-catalog-item-id", item.catalog_item_id.toString());
-    }
-
-    return card;
-  }
-
-  /**
    * Get line items data from the proposal table
    */
   private getLineItemsData(): any[] {
@@ -339,70 +241,78 @@ export class ProposalManager {
     console.log("🔍 [PROPOSAL-MANAGER] Getting line items data from", rows.length, "rows");
 
     rows.forEach((row, index) => {
-      const cells = row.querySelectorAll("td");
-      if (cells.length >= 3) {
-        // Look for input elements using the unified class names
-        const descInput = row.querySelector(".line-item-description") as HTMLInputElement;
-        const detailsInput = row.querySelector(".line-item-details") as HTMLInputElement;
-        const qtyInput = row.querySelector(".line-item-quantity") as HTMLInputElement;
-        const priceInput = row.querySelector(".line-item-unit-price") as HTMLInputElement;
+      // Get all input elements in this row
+      const inputs = row.querySelectorAll("input");
 
-        console.log(`🔍 [PROPOSAL-MANAGER] Row ${index}:`, {
-          descInput: !!descInput,
-          detailsInput: !!detailsInput,
-          qtyInput: !!qtyInput,
-          priceInput: !!priceInput,
-        });
-
-        let description = "";
-        let details = "";
-        let quantity = 1;
-        let price = 0;
-
-        if (descInput) {
-          // Get values from inputs
-          description = descInput.value?.trim() || "";
-          details = detailsInput?.value?.trim() || "";
-          quantity = parseFloat(qtyInput?.value || "1") || 1;
-          price = parseFloat(priceInput?.value || "0") || 0;
-
-          console.log(`🔍 [PROPOSAL-MANAGER] Row ${index} values:`, {
-            description,
-            details,
-            quantity,
-            price,
-          });
-        } else {
-          // Fallback: try to get from text content (display mode)
-          description = cells[0]?.textContent?.trim() || "";
-          quantity = parseFloat(cells[1]?.textContent?.trim() || "1") || 1;
-          price = parseFloat(cells[2]?.textContent?.replace(/[$,]/g, "") || "0") || 0;
-
-          console.log(`🔍 [PROPOSAL-MANAGER] Row ${index} fallback values:`, {
-            description,
-            quantity,
-            price,
-          });
-        }
-
-        // Only add items with a description
-        if (description) {
-          // Get catalog_item_id from the row's data attribute if it exists
-          const catalogItemId = row.getAttribute("data-catalog-item-id");
-
-          lineItems.push({
-            description,
-            details,
-            quantity,
-            price,
-            catalog_item_id: catalogItemId ? parseInt(catalogItemId) : undefined,
-          });
-        }
+      if (inputs.length === 0) {
+        console.log(`ℹ️ [PROPOSAL-MANAGER] Row ${index} has no inputs, skipping`);
+        return;
       }
+
+      console.log(`🔍 [PROPOSAL-MANAGER] Row ${index} has ${inputs.length} inputs`);
+
+      // Extract values from inputs - simple approach
+      let name = "";
+      let description = "";
+      let quantity = 1;
+      let price = 0;
+      let catalogItemId = null;
+
+      inputs.forEach((input) => {
+        const value = input.value.trim();
+        const className = input.className;
+
+        if (className.includes("line-item-name")) {
+          name = value;
+        } else if (className.includes("line-item-description")) {
+          description = value;
+        } else if (className.includes("line-item-quantity")) {
+          quantity = parseFloat(value) || 1;
+        } else if (className.includes("line-item-unit-price")) {
+          price = parseFloat(value) || 0;
+        }
+      });
+
+      // Get catalog item ID and edited flag from the row element
+      catalogItemId = row.getAttribute("data-catalog-item-id");
+      const isEdited = row.getAttribute("data-edited") === "true";
+      const editedAttribute = row.getAttribute("data-edited");
+
+      console.log(`🔍 [PROPOSAL-MANAGER] Row ${index} extracted values:`, {
+        name: name.substring(0, 50) + (name.length > 50 ? "..." : ""),
+        description: description.substring(0, 30) + (description.length > 30 ? "..." : ""),
+        quantity,
+        price,
+        hasCatalogId: !!catalogItemId,
+        isEdited: isEdited,
+        editedAttribute: editedAttribute,
+        rowHTML: row.outerHTML.substring(0, 200) + "...",
+      });
+
+      // Add all rows, even with blank names
+      lineItems.push({
+        name: name || "", // Allow blank names
+        description: description || "",
+        quantity: quantity,
+        unitPrice: price,
+        price: price, // Keep both for compatibility
+        catalog_item_id: catalogItemId ? parseInt(catalogItemId) : undefined,
+        isEdited: isEdited,
+      });
+
+      console.log(`✅ [PROPOSAL-MANAGER] Added row ${index} to line items`);
     });
 
     console.log("🔍 [PROPOSAL-MANAGER] Final line items:", lineItems);
     return lineItems;
+  }
+
+  /**
+   * Check if an invoice has meaningful line items
+   */
+  private hasMeaningfulLineItems(invoice: any): boolean {
+    const catalogLineItems = invoice.catalog_line_items || [];
+    return catalogLineItems.length > 0;
   }
 
   /**
@@ -415,6 +325,10 @@ export class ProposalManager {
       console.error("❌ [PROPOSAL-MANAGER] No invoice data provided");
       return;
     }
+
+    // Check if invoice has meaningful line items
+    const hasLineItems = this.hasMeaningfulLineItems(invoice);
+    console.log("🔄 [PROPOSAL-MANAGER] Invoice has meaningful line items:", hasLineItems);
 
     // Hide placeholder and show proposal content
     const placeholder = document.getElementById("proposal-placeholder");
@@ -450,7 +364,7 @@ export class ProposalManager {
     console.log("✅ [PROPOSAL-MANAGER] Line items populated");
 
     // Populate notes section
-    this.populateNotes();
+    this.populateNotesFromInvoice(invoice);
     console.log("✅ [PROPOSAL-MANAGER] Notes populated");
 
     console.log("🎉 [PROPOSAL-MANAGER] Proposal loading complete!");
@@ -504,34 +418,89 @@ export class ProposalManager {
    * Save current proposal data to the database
    */
   async saveCurrentProposalData(suppressToast: boolean = false): Promise<void> {
+    // Show loading modal
+    if ((window as any).showModal) {
+      (window as any).showModal(
+        "info",
+        "Saving Proposal",
+        "Please wait while we save your proposal changes...",
+        0 // No auto-hide
+      );
+    }
+
     try {
       console.log("💾 [PROPOSAL-MANAGER] Saving current proposal data");
 
       // Get line items data
       const lineItems = this.getLineItemsData();
       console.log("💾 [PROPOSAL-MANAGER] Line items to save:", lineItems);
+      console.log("💾 [PROPOSAL-MANAGER] Total line items count:", lineItems.length);
 
       // Get proposal subject
       const subjectElement = document.getElementById("proposal-subject") as HTMLInputElement;
       const subject = subjectElement?.value || "";
+
+      // Get proposal notes
+      const notesElement = document.getElementById("proposal-notes") as HTMLTextAreaElement;
+      const notes = notesElement?.value || "";
 
       // For each line item, we need to either:
       // 1. Use existing catalog_item_id if it's from the catalog
       // 2. Create a new catalog item and get its ID
       const processedLineItems = [];
 
+      console.log("🔄 [PROPOSAL-MANAGER] Processing", lineItems.length, "line items...");
+
       for (const item of lineItems) {
-        if (item.catalog_item_id) {
-          // Item already has a catalog ID, use it
+        console.log("🔄 [PROPOSAL-MANAGER] Processing item:", {
+          description:
+            item.description?.substring(0, 50) + (item.description?.length > 50 ? "..." : ""),
+          hasCatalogId: !!item.catalog_item_id,
+          catalogId: item.catalog_item_id,
+        });
+
+        const currentUnitPrice = item.unitPrice || item.price || 0;
+        const currentName = item.name;
+        const currentDescription = item.description;
+
+        console.log("🔍 [PROPOSAL-MANAGER] Processing item with values:", {
+          catalog_item_id: item.catalog_item_id,
+          currentName: currentName,
+          currentDescription: currentDescription,
+          currentUnitPrice: currentUnitPrice,
+          hasCatalogId: !!item.catalog_item_id,
+        });
+
+        console.log("🔍 [PROPOSAL-MANAGER] Decision logic:", {
+          hasCatalogId: !!item.catalog_item_id,
+          isEdited: item.isEdited,
+          willReuse: !!(item.catalog_item_id && !item.isEdited),
+        });
+
+        if (item.catalog_item_id && !item.isEdited) {
+          // Item exists in catalog and hasn't been edited - reuse existing catalog item
+          console.log(
+            "✅ [PROPOSAL-MANAGER] Using existing catalog item (not edited):",
+            item.catalog_item_id
+          );
           processedLineItems.push({
             catalog_item_id: item.catalog_item_id,
-            description: item.description,
-            details: item.details,
+            name: currentName,
+            description: currentDescription,
             quantity: item.quantity,
-            unit_price: item.price,
+            unit_price: currentUnitPrice,
           });
         } else {
-          // New item, save to catalog first
+          // New item or edited item - create new catalog item
+          const reason = item.catalog_item_id ? "edited" : "new";
+          console.log(`🔄 [PROPOSAL-MANAGER] Creating catalog item (${reason}):`, {
+            hasCatalogId: !!item.catalog_item_id,
+            isEdited: item.isEdited,
+            name: currentName,
+            description: currentDescription,
+            unit_price: currentUnitPrice,
+          });
+
           try {
             const catalogResponse = await fetch("/api/line-items-catalog", {
               method: "POST",
@@ -539,9 +508,9 @@ export class ProposalManager {
                 "Content-Type": "application/json",
               },
               body: JSON.stringify({
-                name: item.description,
-                description: item.details,
-                unit_price: item.price,
+                name: currentName,
+                description: currentDescription || currentName,
+                unit_price: currentUnitPrice,
                 category: "General",
               }),
             });
@@ -551,35 +520,41 @@ export class ProposalManager {
             if (catalogResult.success && catalogResult.item) {
               processedLineItems.push({
                 catalog_item_id: catalogResult.item.id,
-                description: item.description,
-                details: item.details,
+                name: currentName,
+                description: currentDescription,
                 quantity: item.quantity,
-                unit_price: item.price,
+                unit_price: currentUnitPrice,
               });
-              console.log("✅ [PROPOSAL-MANAGER] Created new catalog item:", catalogResult.item.id);
+              console.log(
+                `✅ [PROPOSAL-MANAGER] Created ${reason} catalog item:`,
+                catalogResult.item.id
+              );
             } else {
               console.error(
                 "❌ [PROPOSAL-MANAGER] Failed to create catalog item:",
                 catalogResult.error
               );
-              // Still add the item without catalog_item_id for now
               processedLineItems.push({
-                ...item,
-                unit_price: item.price,
+                name: currentName,
+                description: currentDescription,
+                quantity: item.quantity,
+                unit_price: currentUnitPrice,
               });
             }
           } catch (catalogError) {
             console.error("❌ [PROPOSAL-MANAGER] Error creating catalog item:", catalogError);
-            // Still add the item without catalog_item_id for now
             processedLineItems.push({
-              ...item,
-              unit_price: item.price,
+              name: currentName,
+              description: currentDescription,
+              quantity: item.quantity,
+              unit_price: currentUnitPrice,
             });
           }
         }
       }
 
       console.log("💾 [PROPOSAL-MANAGER] Processed line items:", processedLineItems);
+      console.log("💾 [PROPOSAL-MANAGER] Final processed count:", processedLineItems.length);
 
       // Update line items in database
       const response = await fetch("/api/update-invoice-line-items", {
@@ -591,6 +566,7 @@ export class ProposalManager {
           projectId: this.projectId,
           lineItems: processedLineItems,
           subject: subject,
+          notes: notes,
         }),
       });
 
@@ -602,7 +578,7 @@ export class ProposalManager {
         if (!suppressToast && (window as any).showSuccess) {
           (window as any).showSuccess(
             "Proposal Saved",
-            "Your proposal has been saved successfully!"
+            "Proposal for <b>" + this.project.address + "</b> has been saved successfully!"
           );
         }
       } else {
@@ -616,6 +592,11 @@ export class ProposalManager {
       if ((window as any).showError) {
         (window as any).showError("Save Failed", "An error occurred while saving the proposal");
       }
+    } finally {
+      // Hide loading modal only if not suppressed (i.e., not called from sendProposal)
+      if (!suppressToast && (window as any).hideNotification) {
+        (window as any).hideNotification();
+      }
     }
   }
 
@@ -628,12 +609,14 @@ export class ProposalManager {
       return;
     }
 
-    // Show loading state
-    const sendBtn = document.getElementById("send-proposal-btn") as HTMLButtonElement;
-    if (sendBtn) {
-      const originalText = sendBtn.innerHTML;
-      sendBtn.innerHTML = this.getLoadingSpinner() + "Sending...";
-      sendBtn.disabled = true;
+    // Show loading modal
+    if ((window as any).showModal) {
+      (window as any).showModal(
+        "info",
+        "Sending Proposal",
+        "Please wait while we send your proposal...",
+        0 // No auto-hide
+      );
     }
 
     try {
@@ -656,69 +639,65 @@ export class ProposalManager {
       const data = await response.json();
 
       if (data.success) {
-        // The update-status API should trigger database-driven toast messages
-        // No need for hardcoded notifications - let the status system handle it
-
-        // Check if there's a redirect configuration from the database
-        if (data.statusConfig?.redirect_url) {
-          const delay = data.statusConfig.redirect_delay || 0;
-          const showCountdown = data.statusConfig.redirect_show_countdown !== false;
-
-          if (delay > 0 && showCountdown) {
-            // Show countdown and redirect after delay
-            if ((window as any).showNotification) {
-              (window as any).showNotification({
-                type: "success",
-                title: "Proposal Sent",
-                message:
-                  data.message ||
-                  "Proposal sent successfully! Redirecting in {{COUNTDOWN}} seconds...",
-                redirect: {
-                  url: data.statusConfig.redirect_url,
-                  delay: delay,
-                  showCountdown: true,
-                },
-              });
-            } else {
-              // Fallback: redirect after delay
-              setTimeout(() => {
-                window.location.href = data.statusConfig.redirect_url;
-              }, delay * 1000);
-            }
-          } else {
-            // Immediate redirect
-            window.location.href = data.statusConfig.redirect_url;
+        // The update-status API should trigger database-driven notifications
+        // Add a small delay to ensure notifications have time to show
+        setTimeout(() => {
+          if ((window as any).hideNotification) {
+            (window as any).hideNotification();
           }
-        } else {
-          // No redirect configured, just refresh the page
-          window.location.reload();
-        }
-
-        // Update send button to show success state
-        if (sendBtn) {
-          sendBtn.innerHTML = this.getCheckIcon() + "Proposal Sent";
-          sendBtn.className = sendBtn.className.replace(
-            "bg-purple-600 hover:bg-purple-700",
-            "bg-green-600 hover:bg-green-700"
-          );
-          sendBtn.disabled = true;
-        }
+        }, 500); // 500ms delay to allow notification to appear
+        // // Check if there's a redirect configuration from the database
+        // if (data.statusConfig?.redirect_url) {
+        //   const delay = data.statusConfig.redirect_delay || 0;
+        //   const showCountdown = data.statusConfig.redirect_show_countdown !== false;
+        //   if (delay > 0 && showCountdown) {
+        //     // Show countdown and redirect after delay
+        //     if ((window as any).showNotification) {
+        //       (window as any).showNotification({
+        //         type: "success",
+        //         title: "Proposal Sent",
+        //         message:
+        //           data.message ||
+        //           "Proposal sent successfully! Redirecting in {{COUNTDOWN}} seconds...",
+        //         redirect: {
+        //           url: data.statusConfig.redirect_url,
+        //           delay: delay,
+        //           showCountdown: true,
+        //         },
+        //       });
+        //     } else {
+        //       // Fallback: redirect after delay
+        //       setTimeout(() => {
+        //         window.location.href = data.statusConfig.redirect_url;
+        //       }, delay * 1000);
+        //     }
+        //   } else {
+        //     // Immediate redirect
+        //     window.location.href = data.statusConfig.redirect_url;
+        //   }
+        // } else {
+        //   // No redirect configured, just refresh the page
+        //   window.location.reload();
+        // }
+        // Success state is handled by the loading overlay and toast notifications
       } else {
         console.error("Failed to send proposal:", data.error);
+        // Hide modal immediately on error
+        if ((window as any).hideNotification) {
+          (window as any).hideNotification();
+        }
         if ((window as any).showError) {
           (window as any).showError("Error", data.error || "Failed to send proposal");
         }
       }
     } catch (error) {
       console.error("Error sending proposal:", error);
+      // Hide modal immediately on error
+      if ((window as any).hideNotification) {
+        (window as any).hideNotification();
+      }
       if ((window as any).showError) {
         (window as any).showError("Error", "Failed to send proposal");
-      }
-    } finally {
-      // Reset button state if there was an error
-      if (sendBtn && !sendBtn.disabled) {
-        sendBtn.innerHTML = this.getSendIcon() + "Send Proposal";
-        sendBtn.disabled = false;
       }
     }
   }
@@ -726,69 +705,69 @@ export class ProposalManager {
   /**
    * Convert proposal to invoice
    */
-  async convertToInvoice(): Promise<void> {
-    if (!this.projectId) {
-      console.error("Project ID not available");
-      return;
-    }
+  // async convertToInvoice(): Promise<void> {
+  //   if (!this.projectId) {
+  //     console.error("Project ID not available");
+  //     return;
+  //   }
 
-    // Show loading state
-    const convertBtn = document.querySelector(
-      'button[onclick="convertToInvoice()"]'
-    ) as HTMLButtonElement;
-    if (convertBtn) {
-      const originalText = convertBtn.innerHTML;
-      convertBtn.innerHTML = this.getLoadingSpinner() + "Converting...";
-      convertBtn.disabled = true;
-    }
+  //   // Show loading state
+  //   const convertBtn = document.querySelector(
+  //     'button[onclick="convertToInvoice()"]'
+  //   ) as HTMLButtonElement;
+  //   if (convertBtn) {
+  //     const originalText = convertBtn.innerHTML;
+  //     convertBtn.innerHTML = this.getLoadingSpinner() + "Converting...";
+  //     convertBtn.disabled = true;
+  //   }
 
-    try {
-      // Create invoice from proposal data
-      const response = await fetch("/api/create-invoice", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          projectId: this.projectId,
-          projectData: this.project,
-        }),
-      });
+  //   try {
+  //     // Create invoice from proposal data
+  //     const response = await fetch("/api/create-invoice", {
+  //       method: "POST",
+  //       headers: {
+  //         "Content-Type": "application/json",
+  //       },
+  //       body: JSON.stringify({
+  //         projectId: this.projectId,
+  //         projectData: this.project,
+  //       }),
+  //     });
 
-      const data = await response.json();
+  //     const data = await response.json();
 
-      if (data.success) {
-        // Show success message
-        if ((window as any).showSuccess) {
-          (window as any).showSuccess(
-            "Invoice Created",
-            "Proposal has been converted to an invoice successfully!"
-          );
-        }
+  //     if (data.success) {
+  //       // Show success message
+  //       if ((window as any).showSuccess) {
+  //         (window as any).showSuccess(
+  //           "Invoice Created",
+  //           "Proposal has been converted to an invoice successfully!"
+  //         );
+  //       }
 
-        // Redirect to invoice page
-        setTimeout(() => {
-          window.location.href = `/invoice/${data.invoice.id}`;
-        }, 1500);
-      } else {
-        console.error("Failed to create invoice:", data.error);
-        if ((window as any).showError) {
-          (window as any).showError("Error", data.error || "Failed to create invoice");
-        }
-      }
-    } catch (error) {
-      console.error("Error creating invoice:", error);
-      if ((window as any).showError) {
-        (window as any).showError("Error", "Failed to create invoice");
-      }
-    } finally {
-      // Reset button state
-      if (convertBtn) {
-        convertBtn.innerHTML = this.getInvoiceIcon() + "Convert to Invoice";
-        convertBtn.disabled = false;
-      }
-    }
-  }
+  //       // Redirect to invoice page
+  //       setTimeout(() => {
+  //         window.location.href = `/invoice/${data.invoice.id}`;
+  //       }, 1500);
+  //     } else {
+  //       console.error("Failed to create invoice:", data.error);
+  //       if ((window as any).showError) {
+  //         (window as any).showError("Error", data.error || "Failed to create invoice");
+  //       }
+  //     }
+  //   } catch (error) {
+  //     console.error("Error creating invoice:", error);
+  //     if ((window as any).showError) {
+  //       (window as any).showError("Error", "Failed to create invoice");
+  //     }
+  //   } finally {
+  //     // Reset button state
+  //     if (convertBtn) {
+  //       convertBtn.innerHTML = this.getInvoiceIcon() + "Convert to Invoice";
+  //       convertBtn.disabled = false;
+  //     }
+  //   }
+  // }
 
   /**
    * Add a new line item row in edit mode
@@ -804,8 +783,8 @@ export class ProposalManager {
     const newRow = document.createElement("tr");
     newRow.className = "hover:bg-gray-50 dark:hover:bg-gray-700";
     newRow.innerHTML = this.getEditableRowHTML(rowIndex, {
+      name: "",
       description: "",
-      details: "",
       quantity: 1,
       unitPrice: 0,
     });
@@ -999,19 +978,20 @@ export class ProposalManager {
   }
 
   private populateNotes(): void {
-    const notesElement = document.getElementById("proposal-notes");
+    const notesElement = document.getElementById("proposal-notes") as HTMLTextAreaElement;
     if (!notesElement) return;
 
-    // Get notes from project data or use default
-    const notes = this.project.notes || this.project.description || "";
+    // Start with blank textarea - notes will be saved to database separately
+    notesElement.value = "";
+  }
 
-    if (notes) {
-      notesElement.textContent = notes;
-      notesElement.style.display = "block";
-    } else {
-      // Hide notes section if no notes available
-      notesElement.style.display = "none";
-    }
+  private populateNotesFromInvoice(invoice: any): void {
+    const notesElement = document.getElementById("proposal-notes") as HTMLTextAreaElement;
+    if (!notesElement) return;
+
+    // Load notes from invoice data if available
+    const notes = invoice.proposal_notes || "";
+    notesElement.value = notes;
   }
 
   private populateHeaderFromInvoice(invoice: any): void {
@@ -1039,7 +1019,6 @@ export class ProposalManager {
 
   private async populateLineItemsFromInvoice(invoice: any): Promise<void> {
     const tbody = document.getElementById("proposal-line-items");
-    const mobileContainer = document.getElementById("proposal-line-items-mobile");
 
     if (!tbody) return;
 
@@ -1049,8 +1028,43 @@ export class ProposalManager {
     console.log("🔄 [PROPOSAL-MANAGER] Invoice data:", invoice);
 
     if (catalogLineItems.length === 0) {
-      console.log("❌ [PROPOSAL-MANAGER] No catalog line items found in invoice");
-      console.log("❌ [PROPOSAL-MANAGER] Invoice structure:", JSON.stringify(invoice, null, 2));
+      console.log(
+        "🔄 [PROPOSAL-MANAGER] No catalog line items found in invoice, falling back to generateLineItemsFromProject"
+      );
+      console.log("🔄 [PROPOSAL-MANAGER] Invoice structure:", JSON.stringify(invoice, null, 2));
+
+      // Fall back to generating line items from project data
+      const generatedLineItems = this.generateLineItemsFromProject(this.project);
+      console.log("🔄 [PROPOSAL-MANAGER] Generated line items from project:", generatedLineItems);
+
+      // Use the generated line items
+      const lineItems = generatedLineItems;
+      console.log("🔄 [PROPOSAL-MANAGER] Using generated line items:", lineItems);
+
+      // Clear existing content
+      tbody.innerHTML = "";
+
+      // Optimize: Use DocumentFragment for better performance
+      const fragment = document.createDocumentFragment();
+
+      let total = 0;
+
+      // Use generated line items and create interactive rows
+      lineItems.forEach((item: any) => {
+        console.log("🔍 [PROPOSAL-MANAGER] Processing generated line item:", item);
+
+        const row = this.createLineItemRow(item);
+        fragment.appendChild(row);
+        total += item.quantity * item.unitPrice;
+      });
+
+      // Append all rows at once
+      tbody.appendChild(fragment);
+
+      // Update total
+      this.updateProposalTotalFromManager();
+
+      console.log("✅ [PROPOSAL-MANAGER] Generated line items populated successfully");
       return;
     }
 
@@ -1060,13 +1074,10 @@ export class ProposalManager {
 
     // Clear existing content
     tbody.innerHTML = "";
-    if (mobileContainer) {
-      mobileContainer.innerHTML = "";
-    }
 
     // Optimize: Use DocumentFragment for better performance
     const fragment = document.createDocumentFragment();
-    const mobileFragment = document.createDocumentFragment();
+
     let total = 0;
 
     // Use line items from the catalog and create interactive rows
@@ -1075,39 +1086,27 @@ export class ProposalManager {
       console.log("🔍 [PROPOSAL-MANAGER] Item keys:", Object.keys(item));
       console.log("🔍 [PROPOSAL-MANAGER] Unit price value:", item.unit_price);
       console.log("🔍 [PROPOSAL-MANAGER] Quantity value:", item.quantity);
+      console.log("🔍 [PROPOSAL-MANAGER] Catalog item ID:", item.catalog_item_id);
+      console.log("🔍 [PROPOSAL-MANAGER] Full item data:", JSON.stringify(item, null, 2));
 
       // Create desktop row using the stored data (preserves original pricing)
+      // Handle both old and new field names for backward compatibility
       const row = this.createLineItemRow({
-        description: item.description || "Line Item",
-        details: item.details || "",
+        name: item.name || item.description || "Missing Name", // Use name first, fallback to description for old data
+        description: item.description || "", // Use description field
         quantity: item.quantity || 1,
         unitPrice: item.unit_price || 0,
         catalog_item_id: item.catalog_item_id, // Store the catalog item ID for reference
-      });
-
-      // Create mobile card using the same data
-      const mobileCard = this.createMobileLineItemCard({
-        description: item.description || "Line Item",
-        details: item.details || "",
-        quantity: item.quantity || 1,
-        unitPrice: item.unit_price || 0,
-        catalog_item_id: item.catalog_item_id,
       });
 
       const itemTotal = (item.quantity || 1) * (item.unit_price || 0);
       total += itemTotal;
 
       fragment.appendChild(row);
-      if (mobileContainer) {
-        mobileFragment.appendChild(mobileCard);
-      }
     });
 
     // Single DOM update
     tbody.appendChild(fragment);
-    if (mobileContainer) {
-      mobileContainer.appendChild(mobileFragment);
-    }
 
     // Update totals
     this.updateTotalDisplay(total);
@@ -1115,12 +1114,12 @@ export class ProposalManager {
 
   private populateLineItems(lineItems: LineItem[]): void {
     const tbody = document.getElementById("proposal-line-items");
-    const mobileContainer = document.getElementById("proposal-line-items-mobile");
+
     if (!tbody) return;
 
     // Optimize: Use DocumentFragment for better performance
     const fragment = document.createDocumentFragment();
-    const mobileFragment = document.createDocumentFragment();
+
     let total = 0;
 
     lineItems.forEach((item) => {
@@ -1139,11 +1138,11 @@ export class ProposalManager {
       descDiv.textContent = item.description;
       descCell.appendChild(descDiv);
 
-      if (item.details) {
-        const detailsDiv = document.createElement("div");
-        detailsDiv.className = "text-xs text-gray-500 dark:text-gray-400";
-        detailsDiv.textContent = item.details;
-        descCell.appendChild(detailsDiv);
+      if (item.description) {
+        const descriptionDiv = document.createElement("div");
+        descriptionDiv.className = "text-xs text-gray-500 dark:text-gray-400";
+        descriptionDiv.textContent = item.description;
+        descCell.appendChild(descriptionDiv);
       }
 
       const qtyCell = document.createElement("td");
@@ -1182,27 +1181,11 @@ export class ProposalManager {
       row.appendChild(deleteCell);
 
       fragment.appendChild(row);
-
-      // Create mobile card for the same item
-      if (mobileContainer) {
-        const mobileCard = this.createMobileLineItemCard({
-          description: item.description,
-          details: item.details,
-          quantity: item.quantity,
-          unitPrice: item.unitPrice,
-        });
-        mobileFragment.appendChild(mobileCard);
-      }
     });
 
     // Single DOM update
     tbody.innerHTML = "";
     tbody.appendChild(fragment);
-
-    if (mobileContainer) {
-      mobileContainer.innerHTML = "";
-      mobileContainer.appendChild(mobileFragment);
-    }
 
     // Update totals
     this.updateTotalDisplay(total);
@@ -1211,11 +1194,9 @@ export class ProposalManager {
   private updateTotalDisplay(total: number): void {
     const totalElement = document.getElementById("proposal-total");
     const totalFooterElement = document.getElementById("proposal-total-footer");
-    const mobileTotalElement = document.getElementById("proposal-total-mobile");
 
     if (totalElement) totalElement.textContent = total.toFixed(2);
     if (totalFooterElement) totalFooterElement.textContent = total.toFixed(2);
-    if (mobileTotalElement) mobileTotalElement.textContent = total.toFixed(2);
   }
 
   private updateProposalTotalFromManager(): void {
@@ -1264,8 +1245,8 @@ export class ProposalManager {
 
     // Base fire protection design service
     lineItems.push({
-      description: "Fire Protection System Design",
-      details: "Comprehensive fire sprinkler and alarm system design",
+      name: "Fire Protection System Design",
+      description: "Comprehensive fire sprinkler and alarm system design",
       quantity: 1,
       unitPrice: 2500.0,
     });
@@ -1274,8 +1255,8 @@ export class ProposalManager {
     if (project.sq_ft && project.sq_ft > 0) {
       const sqFtRate = 0.75; // $0.75 per sq ft
       lineItems.push({
-        description: "Design Services - Square Footage",
-        details: `${project.sq_ft.toLocaleString()} sq ft @ $${sqFtRate}/sq ft`,
+        name: "Design Services - Square Footage",
+        description: `${project.sq_ft.toLocaleString()} sq ft @ $${sqFtRate}/sq ft`,
         quantity: project.sq_ft,
         unitPrice: sqFtRate,
       });
@@ -1284,8 +1265,8 @@ export class ProposalManager {
     // Construction type additions
     if (project.new_construction) {
       lineItems.push({
-        description: "New Construction Services",
-        details: "Additional design requirements for new construction",
+        name: "New Construction Services",
+        description: "Additional design requirements for new construction",
         quantity: 1,
         unitPrice: 1500.0,
       });
@@ -1293,8 +1274,8 @@ export class ProposalManager {
 
     if (project.renovation) {
       lineItems.push({
-        description: "Renovation Services",
-        details: "Existing system assessment and modification design",
+        name: "Renovation Services",
+        description: "Existing system assessment and modification design",
         quantity: 1,
         unitPrice: 1200.0,
       });
@@ -1302,8 +1283,8 @@ export class ProposalManager {
 
     if (project.addition) {
       lineItems.push({
-        description: "Addition Services",
-        details: "Integration with existing fire protection systems",
+        name: "Addition Services",
+        description: "Integration with existing fire protection systems",
         quantity: 1,
         unitPrice: 1000.0,
       });
@@ -1311,16 +1292,34 @@ export class ProposalManager {
 
     // Hydraulic calculations
     lineItems.push({
-      description: "Hydraulic Calculations",
-      details: "Complete hydraulic analysis and calculations",
+      name: "Hydraulic Calculations",
+      description: "Complete hydraulic analysis and calculations",
       quantity: 1,
       unitPrice: 800.0,
     });
 
+    // loop thru project documents and add to line items
+    if (project.requested_docs && project.requested_docs.length > 0) {
+      let docsName = "";
+      let docsDescription = "";
+      project.requested_docs.forEach((document: any) => {
+        docsName += document + ", ";
+        // docsDescription += document.description + ", ";
+      });
+
+      lineItems.push({
+        name: docsName,
+        description: docsDescription,
+
+        quantity: 1,
+        unitPrice: 0,
+      });
+    }
+
     // Project narrative and documentation
     lineItems.push({
-      description: "Project Documentation",
-      details: "Project narrative, NFPA 241 plan, and technical specifications",
+      name: "Project Documentation",
+      description: "Project narrative, NFPA 241 plan, and technical specifications",
       quantity: 1,
       unitPrice: 500.0,
     });
@@ -1328,8 +1327,8 @@ export class ProposalManager {
     // Additional services based on project complexity
     if (project.description && project.description.length > 200) {
       lineItems.push({
-        description: "Complex Project Management",
-        details: "Additional coordination for complex project requirements",
+        name: "Complex Project Management",
+        description: "Additional coordination for complex project requirements",
         quantity: 1,
         unitPrice: 750.0,
       });
@@ -1355,16 +1354,16 @@ export class ProposalManager {
 
       // Extract current values
       const descDiv = cells[0].querySelector(".font-medium");
-      const detailsDiv = cells[0].querySelector(".text-xs");
-      const currentDesc = descDiv?.textContent || "";
-      const currentDetails = detailsDiv?.textContent || "";
+      const descriptionDiv = cells[0].querySelector(".text-xs");
+      const currentName = descDiv?.textContent || "";
+      const currentDescription = descriptionDiv?.textContent || "";
       const currentQty = parseFloat(cells[1].textContent?.trim() || "1") || 1;
       const currentPrice = parseFloat(cells[2].textContent?.replace("$", "").trim() || "0") || 0;
 
       // Replace with editable inputs
       row.innerHTML = this.getEditableRowHTML(index, {
-        description: currentDesc,
-        details: currentDetails,
+        name: currentName,
+        description: currentDescription,
         quantity: currentQty,
         unitPrice: currentPrice,
       });
@@ -1407,11 +1406,11 @@ export class ProposalManager {
       if (cells.length !== 5) return;
 
       // Get values from inputs - look for both data attributes and class names
-      const descInput = row.querySelector(
-        'input[data-field="description"], .line-item-description'
+      const nameInput = row.querySelector(
+        'input[data-field="name"], .line-item-name'
       ) as HTMLInputElement;
-      const detailsInput = row.querySelector(
-        'input[data-field="details"], .line-item-details'
+      const descriptionInput = row.querySelector(
+        'input[data-field="description"], .line-item-description'
       ) as HTMLInputElement;
       const qtyInput = row.querySelector(
         'input[data-field="quantity"], .line-item-quantity'
@@ -1420,10 +1419,10 @@ export class ProposalManager {
         'input[data-field="unitPrice"], .line-item-unit-price'
       ) as HTMLInputElement;
 
-      if (!descInput || !qtyInput || !priceInput) return;
+      if (!nameInput || !qtyInput || !priceInput) return;
 
-      const description = descInput.value || "Untitled Item";
-      const details = detailsInput ? detailsInput.value : "";
+      const name = nameInput.value || "Untitled Item";
+      const description = descriptionInput ? descriptionInput.value : "";
       const quantity = parseFloat(qtyInput.value) || 1;
       const unitPrice = parseFloat(priceInput.value) || 0;
       const itemTotal = quantity * unitPrice;
@@ -1432,8 +1431,8 @@ export class ProposalManager {
 
       // Update cells with display format
       cells[0].innerHTML = `
-        <div class="font-medium">${description}</div>
-        ${details ? `<div class="text-xs text-gray-500 dark:text-gray-400">${details}</div>` : ""}
+        <div class="font-medium">${name}</div>
+        ${description ? `<div class="text-xs text-gray-500 dark:text-gray-400">${description}</div>` : ""}
       `;
       cells[1].innerHTML = `<span class="text-sm text-gray-900 dark:text-white">${quantity}</span>`;
       cells[2].innerHTML = `<span class="text-sm text-gray-900 dark:text-white">$${unitPrice.toFixed(2)}</span>`;
@@ -1609,17 +1608,17 @@ export class ProposalManager {
         <div class="space-y-2">
           <input 
             type="text" 
-            value="${item.description || ""}" 
+            value="${item.name || ""}" 
             class="w-full px-2 py-1 text-sm border rounded focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-            data-field="description"
+            data-field="name"
             data-row="${index}"
           />
           <input 
             type="text" 
-            value="${item.details || ""}" 
-            placeholder="Details (optional)"
+            value="${item.description || ""}" 
+            placeholder="Description (optional)"
             class="w-full px-2 py-1 text-xs border rounded focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-400"
-            data-field="details"
+            data-field="description"
             data-row="${index}"
           />
         </div>
@@ -1655,13 +1654,7 @@ export class ProposalManager {
       </td>
       <td class="px-4 py-3 text-sm text-center">
         <div class="flex items-center justify-center space-x-2">
-          <button 
-            type="button"
-            class="add-line-item-btn px-3 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700 transition-colors"
-            title="Add line item"
-          >
-            Add
-          </button>
+        
           <button 
             type="button"
             onclick="window.proposalManager?.deleteProposalRow(${index})"
@@ -1712,7 +1705,7 @@ declare global {
     editProposal?: (id: any) => void;
     regenerateProposal?: () => void;
     sendProposal?: () => void;
-    convertToInvoice?: () => void;
+    // convertToInvoice?: () => void;
     updateRowTotal?: (index: any) => void;
     addProposalRow?: () => void;
     deleteProposalRow?: (index: any) => void;

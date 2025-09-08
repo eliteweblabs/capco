@@ -47,7 +47,7 @@ export const GET: APIRoute = async ({ request }) => {
     }
 
     // Fetch all project statuses from database (excluding status 0)
-    console.log("🔍 [GET-PROJECT-STATUSES] Fetching statuses from database...");
+    // console.log("🔍 [GET-PROJECT-STATUSES] Fetching statuses from database...");
 
     // Try with project_action first, fallback to without it if column doesn't exist
     let { data: statuses, error } = await supabase
@@ -73,7 +73,7 @@ export const GET: APIRoute = async ({ request }) => {
       error = fallbackResult.error;
     }
 
-    console.log("🔍 [GET-PROJECT-STATUSES] Database response:", { statuses, error });
+    // console.log("🔍 [GET-PROJECT-STATUSES] Database response:", { statuses, error });
 
     if (error) {
       console.error("Error fetching project statuses:", error);
@@ -90,13 +90,13 @@ export const GET: APIRoute = async ({ request }) => {
     }
 
     // Convert array to object with status_code as key (no filtering - return all statuses)
-    console.log("🔍 [GET-PROJECT-STATUSES] Converting statuses to object...");
+    // console.log("🔍 [GET-PROJECT-STATUSES] Converting statuses to object...");
     const statusesObject = (statuses || []).reduce(
       (acc, status) => {
-        console.log(`🔍 [GET-PROJECT-STATUSES] Processing status ${status.status_code}:`, {
-          status_name: status.status_name,
-          project_action: status.project_action || null,
-        });
+        // console.log(`🔍 [GET-PROJECT-STATUSES] Processing status ${status.status_code}:`, {
+        //   status_name: status.status_name,
+        //   project_action: status.project_action || null,
+        // });
         acc[status.status_code] = {
           status_name: status.status_name,
           status_code: status.status_code,
@@ -118,7 +118,7 @@ export const GET: APIRoute = async ({ request }) => {
       >
     );
 
-    console.log("🔍 [GET-PROJECT-STATUSES] Final statusesObject:", statusesObject);
+    // console.log("🔍 [GET-PROJECT-STATUSES] Final statusesObject:", statusesObject);
 
     // Cache the result for 10 minutes (statuses rarely change)
     apiCache.set(cacheKey, statusesObject, 10);

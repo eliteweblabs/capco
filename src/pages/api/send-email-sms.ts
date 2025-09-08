@@ -86,8 +86,8 @@ export const POST: APIRoute = async ({ request }) => {
       },
       body: JSON.stringify({
         emailType: "emergency_sms",
-        custom_subject: "CAPCo Website Contact",
-        email_content: emailContent,
+        emailSubject: "CAPCo Website Contact",
+        emailContent: emailContent,
         usersToNotify: smsRecipients.map((email) => ({ email })), // Send to all SMS gateways
       }),
     });

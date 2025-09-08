@@ -1,41 +1,17 @@
 import type { APIRoute } from "astro";
+import { sendSmsViaEmail, sendProjectStatusSms, validatePhoneNumber } from "../../lib/sms-utils";
+import { supabase } from "../../lib/supabase";
 
-export const POST: APIRoute = async ({ request }) => {
-  console.log("📱 [SEND-SMS] API called");
+export const POST: APIRoute = async ({ request, cookies }) => {
+  console.log("📱 [SEND-SMS] SMS API called");
 
   try {
-    const body = await request.json();
-    const { phone, message } = body;
-
-    console.log("📱 [SEND-SMS] Request data:", {
-      phone,
-      message: message?.substring(0, 50) + "...",
-    });
-
-    if (!phone || !message) {
+    if (!supabase) {
+      console.error("📱 [SEND-SMS] Supabase not configured");
       return new Response(
         JSON.stringify({
           success: false,
-          error: "Phone number and message are required",
-        }),
-        {
-          status: 400,
-          headers: { "Content-Type": "application/json" },
-        }
-      );
-    }
-
-    // Get Bird.com/Messagebird API credentials from environment
-    const messagebirdAccessKey = import.meta.env.MESSAGEBIRD_ACCESS_KEY;
-    const messagebirdOriginator = import.meta.env.MESSAGEBIRD_ORIGINATOR;
-    const birdApiUrl = import.meta.env.BIRD_API_URL || "https://rest.messagebird.com";
-
-    if (!messagebirdAccessKey) {
-      console.error("📱 [SEND-SMS] Messagebird access key not configured");
-      return new Response(
-        JSON.stringify({
-          success: false,
-          error: "SMS service not configured",
+          error: "Database not configured",
         }),
         {
           status: 500,
@@ -44,69 +20,172 @@ export const POST: APIRoute = async ({ request }) => {
       );
     }
 
-    // Prepare Messagebird API request
-    const messagebirdPayload = {
-      recipients: [phone],
-      body: message,
-      originator: messagebirdOriginator || "CAPCo",
-      // Add any additional Messagebird specific parameters here
-    };
+    // Get the current user session
+    const accessToken = cookies.get("sb-access-token");
+    const refreshToken = cookies.get("sb-refresh-token");
 
-    console.log("📱 [SEND-SMS] Sending to Messagebird API:", {
-      recipients: [phone],
-      messageLength: message.length,
-      originator: messagebirdOriginator,
-    });
-
-    // Send SMS via Messagebird API
-    const response = await fetch(`${birdApiUrl}/messages`, {
-      method: "POST",
-      headers: {
-        Authorization: `AccessKey ${messagebirdAccessKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(messagebirdPayload),
-    });
-
-    const responseData = await response.json();
-
-    if (!response.ok) {
-      console.error("📱 [SEND-SMS] Messagebird API error:", responseData);
+    if (!accessToken || !refreshToken) {
       return new Response(
         JSON.stringify({
           success: false,
-          error: `SMS delivery failed: ${responseData.message || response.statusText}`,
-          details: responseData,
+          error: "Not authenticated",
         }),
         {
-          status: response.status,
+          status: 401,
           headers: { "Content-Type": "application/json" },
         }
       );
     }
 
-    console.log("📱 [SEND-SMS] SMS sent successfully:", responseData);
+    // Set session to get current user
+    const { data: sessionData, error: sessionError } = await supabase.auth.setSession({
+      access_token: accessToken.value,
+      refresh_token: refreshToken.value,
+    });
 
-    return new Response(
-      JSON.stringify({
-        success: true,
-        messageId: responseData.id || responseData.messageId,
-        status: responseData.status,
-        to: phone,
-        message: "SMS sent successfully",
-      }),
-      {
-        status: 200,
-        headers: { "Content-Type": "application/json" },
+    if (sessionError || !sessionData.session) {
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: "Invalid session",
+        }),
+        {
+          status: 401,
+          headers: { "Content-Type": "application/json" },
+        }
+      );
+    }
+
+    const currentUser = sessionData.session.user;
+    const userRole = currentUser.user_metadata?.role || "Client";
+
+    // Only allow Admin/Staff to send SMS
+    if (userRole !== "Admin" && userRole !== "Staff") {
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: "Unauthorized - Admin/Staff access required",
+        }),
+        {
+          status: 403,
+          headers: { "Content-Type": "application/json" },
+        }
+      );
+    }
+
+    const body = await request.json();
+    const { 
+      phoneNumber, 
+      carrier, 
+      message, 
+      projectId, 
+      projectTitle, 
+      newStatus, 
+      projectAddress 
+    } = body;
+
+    // Validate required fields
+    if (!phoneNumber || !carrier || !message) {
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: "Missing required fields: phoneNumber, carrier, message",
+        }),
+        {
+          status: 400,
+          headers: { "Content-Type": "application/json" },
+        }
+      );
+    }
+
+    // Validate phone number
+    const phoneValidation = validatePhoneNumber(phoneNumber);
+    if (!phoneValidation.valid) {
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: phoneValidation.error,
+        }),
+        {
+          status: 400,
+          headers: { "Content-Type": "application/json" },
+        }
+      );
+    }
+
+    // Send SMS
+    let result;
+    if (projectId && projectTitle && newStatus) {
+      // Send project status SMS
+      result = await sendProjectStatusSms(
+        phoneValidation.cleaned!,
+        carrier,
+        projectTitle,
+        newStatus,
+        projectAddress
+      );
+    } else {
+      // Send custom SMS
+      result = await sendSmsViaEmail({
+        to: phoneValidation.cleaned!,
+        carrier,
+        message,
+        subject: "CAPCo Fire Protection"
+      });
+    }
+
+    if (result.success) {
+      console.log("📱 [SEND-SMS] SMS sent successfully:", result.emailAddress);
+      
+      // Log SMS activity to database (optional)
+      try {
+        await supabase.from("activity_log").insert({
+          user_id: currentUser.id,
+          action: "sms_sent",
+          details: {
+            phone_number: phoneValidation.cleaned,
+            carrier,
+            message_length: message.length,
+            email_address: result.emailAddress
+          },
+          created_at: new Date().toISOString()
+        });
+      } catch (logError) {
+        console.error("📱 [SEND-SMS] Failed to log SMS activity:", logError);
+        // Don't fail the request if logging fails
       }
-    );
+
+      return new Response(
+        JSON.stringify({
+          success: true,
+          message: "SMS sent successfully",
+          emailAddress: result.emailAddress,
+        }),
+        {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        }
+      );
+    } else {
+      console.error("📱 [SEND-SMS] Failed to send SMS:", result.error);
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: result.error || "Failed to send SMS",
+        }),
+        {
+          status: 500,
+          headers: { "Content-Type": "application/json" },
+        }
+      );
+    }
+
   } catch (error) {
-    console.error("📱 [SEND-SMS] Error:", error);
+    console.error("📱 [SEND-SMS] Unexpected error:", error);
     return new Response(
       JSON.stringify({
         success: false,
         error: "Internal server error",
-        details: error instanceof Error ? error.message : "Unknown error",
       }),
       {
         status: 500,
@@ -114,17 +193,4 @@ export const POST: APIRoute = async ({ request }) => {
       }
     );
   }
-};
-
-// CORS preflight handler
-export const OPTIONS: APIRoute = async () => {
-  return new Response(null, {
-    status: 200,
-    headers: {
-      "Access-Control-Allow-Origin": "*",
-      "Access-Control-Allow-Methods": "POST, OPTIONS",
-      "Access-Control-Allow-Headers": "Content-Type",
-      "Access-Control-Allow-Credentials": "true",
-    },
-  });
 };

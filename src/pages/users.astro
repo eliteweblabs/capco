@@ -37,11 +37,13 @@ try {
               return {
                 ...profile,
                 email: authUser?.user?.email || "No email found",
+                phone: authUser?.user?.user_metadata?.phone || null,
               };
             } else {
               return {
                 ...profile,
                 email: "Admin client unavailable",
+                phone: null,
               };
             }
           } catch (authError) {
@@ -49,6 +51,7 @@ try {
             return {
               ...profile,
               email: "Email unavailable",
+              phone: null,
             };
           }
         })
@@ -479,11 +482,11 @@ const userCounts = {
     initializeUserManagement();
 
     // Test toast system on page load
-    console.log("🔔 [USERS] Testing toast system availability:", {
+    console.log("🔔 [USERS] Testing notification system availability:", {
       showSuccess: typeof window.showSuccess,
       showError: typeof window.showError,
-      simpleToastManager: typeof (window as any).simpleToastManager,
-      toastAlertManager: typeof (window as any).toastAlertManager,
+      showModal: typeof (window as any).showModal,
+      hideNotification: typeof (window as any).hideNotification,
     });
   });
 
@@ -596,13 +599,13 @@ const userCounts = {
         !userData.email?.trim() ||
         !userData.role
       ) {
-        if ((window as any).toastAlertManager) {
-          (window as any).toastAlertManager.show({
-            type: "error",
-            title: "Validation Error",
-            message: "Please fill in all required fields.",
-            duration: 5000,
-          });
+        if ((window as any).showModal) {
+          (window as any).showModal(
+            "error",
+            "Validation Error",
+            "Please fill in all required fields.",
+            5000
+          );
         } else if (window.showError) {
           window.showError("Validation Error", "Please fill in all required fields.", 5000);
         }
@@ -612,13 +615,13 @@ const userCounts = {
       // Validate email format
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       if (!emailRegex.test(userData.email)) {
-        if ((window as any).toastAlertManager) {
-          (window as any).toastAlertManager.show({
-            type: "error",
-            title: "Validation Error",
-            message: "Please enter a valid email address.",
-            duration: 5000,
-          });
+        if ((window as any).showModal) {
+          (window as any).showModal(
+            "error",
+            "Validation Error",
+            "Please enter a valid email address.",
+            5000
+          );
         } else if (window.showError) {
           window.showError("Validation Error", "Please enter a valid email address.", 5000);
         }
@@ -643,9 +646,14 @@ const userCounts = {
         const result = await response.json();
 
         if (response.ok && result.success) {
-          // Show toast notification if provided by API
-          if (result.notification && (window as any).toastAlertManager) {
-            (window as any).toastAlertManager.show(result.notification);
+          // Show notification if provided by API
+          if (result.notification && (window as any).showModal) {
+            (window as any).showModal(
+              result.notification.type,
+              result.notification.title,
+              result.notification.message,
+              result.notification.duration || 5000
+            );
           } else if (window.showSuccess) {
             // Fallback to simple toast
             window.showSuccess(
@@ -695,14 +703,9 @@ const userCounts = {
             errorMessage = "You don't have permission to create users.";
           }
 
-          // Show error toast notification
-          if ((window as any).toastAlertManager) {
-            (window as any).toastAlertManager.show({
-              type: "error",
-              title: errorTitle,
-              message: errorMessage,
-              duration: errorDuration,
-            });
+          // Show error notification
+          if ((window as any).showModal) {
+            (window as any).showModal("error", errorTitle, errorMessage, errorDuration);
           } else if (window.showError) {
             // Fallback to simple toast
             window.showError(errorTitle, errorMessage, errorDuration);
@@ -710,13 +713,13 @@ const userCounts = {
         }
       } catch (error) {
         console.error("Create user error:", error);
-        if ((window as any).toastAlertManager) {
-          (window as any).toastAlertManager.show({
-            type: "error",
-            title: "Network Error",
-            message: "Network error. Please check your connection and try again.",
-            duration: 5000,
-          });
+        if ((window as any).showModal) {
+          (window as any).showModal(
+            "error",
+            "Network Error",
+            "Network error. Please check your connection and try again.",
+            5000
+          );
         } else if (window.showError) {
           window.showError(
             "Network Error",

@@ -288,3 +288,9 @@ Placeholders
 {{BUTTON_LINK}}
 {{BUTTON_TEXT}}
 {{CONTRACT_URL}}
+
+projectStatus = ALWAYS THE NUMERICAL VALUE
+projectStatusLabel = THE status_name column corresponding to projectStatus
+
+Do not put variables on the window object
+Do not use data attributes whenever possible

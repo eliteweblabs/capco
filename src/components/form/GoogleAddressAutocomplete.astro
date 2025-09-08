@@ -64,12 +64,34 @@ const {
 
       console.log("🗺️ [GoogleAutocomplete] Initializing for input:", id);
 
-      // Create autocomplete instance
-      const autocomplete = new google.maps.places.Autocomplete(input, {
+      // Detect browser for Firefox-specific handling
+      const isFirefox = navigator.userAgent.toLowerCase().indexOf("firefox") > -1;
+      console.log("🗺️ [GoogleAutocomplete] Browser detected:", isFirefox ? "Firefox" : "Other");
+
+      // Create autocomplete instance with location bias
+      const autocompleteOptions = {
         types: ["address"],
         componentRestrictions: { country: "us" }, // Restrict to US addresses
         fields: ["formatted_address", "address_components", "geometry"],
-      });
+      };
+
+      // Add location bias - use different approach for Firefox
+      if (isFirefox) {
+        // Firefox sometimes ignores bounds, so use strictBounds instead
+        autocompleteOptions.strictBounds = true;
+        autocompleteOptions.bounds = new google.maps.LatLngBounds(
+          new google.maps.LatLng(42.0, -71.5), // Southwest corner (roughly Boston area)
+          new google.maps.LatLng(42.5, -70.5) // Northeast corner (roughly Boston area)
+        );
+      } else {
+        // Standard bounds for other browsers
+        autocompleteOptions.bounds = new google.maps.LatLngBounds(
+          new google.maps.LatLng(42.0, -71.5), // Southwest corner (roughly Boston area)
+          new google.maps.LatLng(42.5, -70.5) // Northeast corner (roughly Boston area)
+        );
+      }
+
+      const autocomplete = new google.maps.places.Autocomplete(input, autocompleteOptions);
 
       // Handle place selection
       autocomplete.addListener("place_changed", function () {

@@ -113,14 +113,14 @@ async function handleEmailOpened(data: any) {
       case 30: // Proposal Sent
         nextStatus = 35; // Proposal Email Opened
         break;
-      case 70: // Invoice Sent
-        nextStatus = 80; // Invoice Viewed
+      case 55: // Invoice Sent
+        nextStatus = 60; // Invoice Viewed
         break;
       case 110: // Submittals Sent
-        nextStatus = 120; // Submittals Viewed
+        nextStatus = 115; // Submittals Viewed
         break;
       case 150: // Final Invoice Sent
-        nextStatus = 160; // Final Invoice Viewed
+        nextStatus = 155; // Final Invoice Viewed
         break;
       case 200: // Final Deliverables Sent
         nextStatus = 210; // Final Deliverables Viewed

@@ -32,12 +32,49 @@ export const POST: APIRoute = async ({ request }) => {
     // Replace placeholders in toast messages
     const replacePlaceholders = (message: string, data: any) => {
       if (!message) return null;
-      return message
-        .replace(/\{\{PROJECT_ADDRESS\}\}/g, data.projectAddress || "")
-        .replace(/\{\{CLIENT_NAME\}\}/g, data.clientName || "")
-        .replace(/\{\{CLIENT_EMAIL\}\}/g, data.clientEmail || "")
-        .replace(/\{\{STATUS_NAME\}\}/g, data.statusName || "")
-        .replace(/\{\{EST_TIME\}\}/g, data.estTime || "");
+
+      let processedMessage = message;
+
+      // Handle PROJECT_LINK with optional query parameters - extract to button on new line
+      const baseProjectLink = `${data.siteUrl || "http://localhost:4321"}/project/${data.projectId}`;
+      processedMessage = processedMessage.replace(
+        /{{PROJECT_LINK(\?[^}]*)?}}/g,
+        (match, queryParams) => {
+          const fullUrl = baseProjectLink + (queryParams || "");
+
+          // Extract tab parameter for display text
+          let displayText = "View Project";
+          if (queryParams) {
+            const tabMatch = queryParams.match(/[?&]tab=([^&]*)/);
+            if (tabMatch && tabMatch[1]) {
+              const tabName = tabMatch[1]
+                .replace(/([a-z])([A-Z])/g, "$1 $2")
+                .replace(/[-_]/g, " ")
+                .split(" ")
+                .map((word: string) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+                .join(" ");
+              displayText = `Go to ${tabName}`;
+            }
+          }
+
+          // Return button on new line
+          return `<br><br><a href="${fullUrl}" style="display: inline-block; background-color: #3b82f6; color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: 600; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.1); transition: background-color 0.2s;">${displayText}</a>`;
+        }
+      );
+
+      // Replace other placeholders
+      processedMessage = processedMessage
+        .replace(/\{\{PROJECT_ADDRESS\}\}/g, "<b>" + (data.projectAddress || "") + "</b>")
+        .replace(/\{\{ADDRESS\}\}/g, "<b>" + (data.projectAddress || "") + "</b>")
+        .replace(/\{\{CLIENT_NAME\}\}/g, "<b>" + (data.clientName || "") + "</b>")
+        .replace(/\{\{CLIENT_EMAIL\}\}/g, "<b>" + (data.clientEmail || "") + "</b>")
+        .replace(/\{\{STATUS_NAME\}\}/g, "<b>" + (data.statusName || "") + "</b>")
+        .replace(/\{\{EST_TIME\}\}/g, "<b>" + (data.estTime || "") + "</b>")
+        .replace(/\{\{CONTRACT_URL\}\}/g, data.contractUrl || "")
+        // Replace any remaining {{PLACEHOLDER}} with empty string
+        .replace(/\{\{[^}]+\}\}/g, "");
+
+      return processedMessage;
     };
 
     const processedMessages = {
@@ -59,6 +96,7 @@ export const POST: APIRoute = async ({ request }) => {
         mergedData.statusConfig.client_email_content,
         placeholderData
       ),
+      project_action: replacePlaceholders(mergedData.statusConfig.project_action, placeholderData),
     };
 
     console.log("🔄 [REPLACE-PLACEHOLDERS] Processed messages:", processedMessages);
