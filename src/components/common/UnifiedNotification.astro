@@ -39,22 +39,35 @@
     }
 
     show(options: NotificationOptions): string {
+      // console.log("🔔 [UNIFIED-NOTIFICATION] show() called with options:", options);
+
+      // Hide any existing modals with duration === 0 before showing new one
+      this.hidePersistentModals();
+
       const id = crypto.randomUUID();
       const fullNotification = { ...options, id };
 
+      // console.log("🔔 [UNIFIED-NOTIFICATION] Creating notification with ID:", id);
       this.notifications.set(id, fullNotification);
       this.render(fullNotification);
 
       // Handle auto-hide
       if (options.duration !== undefined && options.duration > 0) {
+        // console.log(
+        //   "🔔 [UNIFIED-NOTIFICATION] Setting auto-hide timer for",
+        //   options.duration,
+        //   "ms"
+        // );
         setTimeout(() => this.hide(id), options.duration);
       }
 
       // Handle redirect
       if (options.redirect) {
+        // console.log("🔔 [UNIFIED-NOTIFICATION] Setting up redirect:", options.redirect);
         this.setupRedirect(id, options.redirect);
       }
 
+      // console.log("🔔 [UNIFIED-NOTIFICATION] show() returning ID:", id);
       return id;
     }
 
@@ -127,6 +140,28 @@
     private clearAllRedirectTimers() {
       this.redirectTimers.forEach((timer) => clearInterval(timer));
       this.redirectTimers.clear();
+    }
+
+    private hidePersistentModals() {
+      // Find and hide any notifications with duration === 0 (persistent modals)
+      const persistentModals = Array.from(this.notifications.entries()).filter(
+        ([_, notification]) => notification.duration === 0
+      );
+
+      if (persistentModals.length > 0) {
+        // console.log(
+        //   `🔔 [UNIFIED-NOTIFICATION] Found ${persistentModals.length} persistent modal(s), hiding them before showing new modal`
+        // );
+        persistentModals.forEach(([id, notification]) => {
+          // console.log(
+          //   "🔔 [UNIFIED-NOTIFICATION] Hiding persistent modal:",
+          //   id,
+          //   "Title:",
+          //   notification.title
+          // );
+          this.hide(id);
+        });
+      }
     }
 
     private startProgressBar(notificationId: string, duration: number) {
@@ -215,7 +250,7 @@
               <div class="text-center">
                 <h3 class="text-2xl font-bold text-gray-900 dark:text-white mb-4">${notification.title}</h3>
                 <div class="notification-message text-lg text-gray-600 dark:text-gray-400 mb-8 leading-relaxed">${notification.message}</div>
-                ${notification.actions ? this.renderActions(notification.actions, notification.id) : ""}
+                ${notification.actions && Array.isArray(notification.actions) ? this.renderActions(notification.actions, notification.id) : ""}
               </div>
             </div>
             <button 
@@ -235,7 +270,7 @@
         if (notification.duration && notification.duration > 0) {
           // Small delay to ensure DOM is rendered
           setTimeout(() => {
-            this.startProgressBar(notification.id, notification.duration);
+            this.startProgressBar(notification.id, notification.duration!);
           }, 50);
         }
       } else {
@@ -253,7 +288,7 @@
           <div class="ms-3 text-sm font-normal flex-1">
             ${notification.title ? `<div class="font-semibold text-gray-900 dark:text-white mb-1">${notification.title}</div>` : ""}
             <div class="notification-message">${notification.message}</div>
-            ${notification.actions ? this.renderActions(notification.actions, notification.id) : ""}
+            ${notification.actions && Array.isArray(notification.actions) ? this.renderActions(notification.actions, notification.id) : ""}
           </div>
           <button 
             type="button" 
@@ -276,6 +311,12 @@
       actions: Array<{ label: string; action: () => void; primary?: boolean }>,
       notificationId: string
     ) {
+      // Ensure actions is an array before calling map
+      if (!Array.isArray(actions)) {
+        console.warn("🔔 [UNIFIED-NOTIFICATION] Actions is not an array:", actions);
+        return "";
+      }
+
       return `
         <div class="flex gap-2 mt-3">
           ${actions
@@ -327,13 +368,24 @@
     duration?: number,
     actions?: Array<{ label: string; action: () => void; primary?: boolean }>
   ) => {
-    return unifiedNotificationManager.show({
+    // console.log("🔔 [UNIFIED-NOTIFICATION] showModal called with:", {
+    //   type,
+    //   title,
+    //   message,
+    //   duration,
+    //   actions,
+    // });
+
+    const result = unifiedNotificationManager.show({
       type: type as any,
       title,
       message,
       duration: duration || 5000, // Default 5 seconds
       actions,
     });
+
+    // console.log("🔔 [UNIFIED-NOTIFICATION] showModal returning ID:", result);
+    return result;
   };
 
   // For backward compatibility - shows as small toast
@@ -351,7 +403,15 @@
     unifiedNotificationManager.hide(id);
   };
 
-  console.log("🔔 [UNIFIED-NOTIFICATION] Unified notification system initialized");
+  // console.log("🔔 [UNIFIED-NOTIFICATION] Unified notification system initialized");
+  // console.log(
+  //   "🔔 [UNIFIED-NOTIFICATION] window.showModal available:",
+  //   typeof (window as any).showModal
+  // );
+  // console.log(
+  //   "🔔 [UNIFIED-NOTIFICATION] window.showSuccess available:",
+  //   typeof (window as any).showSuccess
+  // );
 </script>
 
 <style>

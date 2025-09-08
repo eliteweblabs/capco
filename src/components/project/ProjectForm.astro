@@ -506,8 +506,21 @@ const formActions = getFilteredFormActions(currentRole, isNewProject, projectSta
                 })
               );
 
-              if (statusResult.success && statusResult.statusConfig?.redirect_url) {
-                // Use database-driven redirect
+              // Show notification using new modal system
+              if (statusResult.success && statusResult.notificationData && window.showModal) {
+                const notification =
+                  statusResult.notificationData.client || statusResult.notificationData.admin;
+                if (notification) {
+                  window.showModal(
+                    notification.type,
+                    notification.title,
+                    notification.message,
+                    notification.duration,
+                    notification.redirect
+                  );
+                }
+              } else if (statusResult.success && statusResult.statusConfig?.redirect_url) {
+                // Fallback to old system for backward compatibility
                 const delay = statusResult.statusConfig.redirect_delay || 0;
                 const showCountdown = statusResult.statusConfig.redirect_show_countdown !== false;
 
@@ -982,6 +995,21 @@ const formActions = getFilteredFormActions(currentRole, isNewProject, projectSta
             if (statusResponse.ok) {
               const statusResult = await statusResponse.json();
               // console.log("🔍 [ProjectForm] Status update successful:", statusResult);
+
+              // Show notification using new modal system
+              if (statusResult.notificationData && window.showModal) {
+                const notification =
+                  statusResult.notificationData.client || statusResult.notificationData.admin;
+                if (notification) {
+                  window.showModal(
+                    notification.type,
+                    notification.title,
+                    notification.message,
+                    notification.duration,
+                    notification.redirect
+                  );
+                }
+              }
             } else {
               const errorText = await statusResponse.text();
               console.error("🔍 [ProjectForm] Status update failed:", errorText);

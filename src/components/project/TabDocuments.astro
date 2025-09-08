@@ -960,13 +960,35 @@ const {
         if (result.success) {
           console.log("📊 [PDF-UPLOAD] Status updated successfully:", result);
 
-          // Show success toast notification using toastData from API
-          if (result.toastData && window.showSuccess) {
+          // Show success notification using notificationData from API
+          if (result.notificationData && window.showModal) {
             // Determine user role from the current user context
+            const isAdminOrStaff = this.currentRole === "Admin" || this.currentRole === "Staff";
+            const notification = isAdminOrStaff
+              ? result.notificationData.admin
+              : result.notificationData.client;
+
+            console.log("🔔 [PDF-UPLOAD] Showing modal:", {
+              message: notification.message,
+              redirect: notification.redirect,
+              userType: isAdminOrStaff ? "admin" : "client",
+            });
+
+            if (notification) {
+              window.showModal(
+                notification.type,
+                notification.title,
+                notification.message,
+                notification.duration,
+                notification.redirect
+              );
+            }
+          } else if (result.toastData && window.showSuccess) {
+            // Fallback to old toast system for backward compatibility
             const isAdminOrStaff = this.currentRole === "Admin" || this.currentRole === "Staff";
             const toastInfo = isAdminOrStaff ? result.toastData.admin : result.toastData.client;
 
-            console.log("🔔 [PDF-UPLOAD] Showing toast:", {
+            console.log("🔔 [PDF-UPLOAD] Showing fallback toast:", {
               message: toastInfo.message,
               redirect: toastInfo.redirect,
               userType: isAdminOrStaff ? "admin" : "client",

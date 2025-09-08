@@ -306,8 +306,9 @@
 
         // Check required fields
         if (!firstName || !lastName || !companyName || !email || !password) {
-          if (window.showError) {
-            window.showError(
+          if (window.showModal) {
+            window.showModal(
+              "error",
               "Validation Error",
               "Please fill in all required fields (marked with *).",
               5000
@@ -322,8 +323,9 @@
 
         // Validate name fields
         if (firstName.length < 2 || lastName.length < 2) {
-          if (window.showError) {
-            window.showError(
+          if (window.showModal) {
+            window.showModal(
+              "error",
               "Validation Error",
               "First and last names must be at least 2 characters long.",
               5000
@@ -338,8 +340,9 @@
 
         // Validate company name
         if (companyName.length < 2) {
-          if (window.showError) {
-            window.showError(
+          if (window.showModal) {
+            window.showModal(
+              "error",
               "Validation Error",
               "Company name must be at least 2 characters long.",
               5000
@@ -352,8 +355,9 @@
 
         // Validate password
         if (password.length < 6) {
-          if (window.showError) {
-            window.showError(
+          if (window.showModal) {
+            window.showModal(
+              "error",
               "Validation Error",
               "Password must be at least 6 characters long.",
               5000
@@ -365,8 +369,13 @@
         }
 
         // Show loading notification
-        if (window.showInfo) {
-          window.showInfo("Creating Account...", "Please wait while we set up your account.", 3000);
+        if (window.showModal) {
+          window.showModal(
+            "info",
+            "Creating Account...",
+            "Please wait while we set up your account.",
+            0
+          );
         } else {
           console.log("🔔 [Creating Account...] Please wait while we set up your account.");
         }
@@ -403,8 +412,9 @@
 
           if (result.success === false) {
             // Show error notification
-            if (window.showError) {
-              window.showError(
+            if (window.showModal) {
+              window.showModal(
+                "error",
                 "Registration Failed",
                 result.error || "Failed to create account. Please try again.",
                 5000
@@ -420,12 +430,14 @@
             const emailStatus = result.emailStatus || {};
             const notification = result.notification || {};
 
-            if (window.showSuccess) {
-              window.showSuccess(
+            if (window.showModal) {
+              window.showModal(
+                "success",
                 notification.title || "Account Created!",
                 notification.message ||
                   "Welcome! You're now signed in and ready to create projects.",
-                notification.duration || 3000
+                notification.duration || 5000,
+                notification.redirect
               );
             } else {
               console.log("🔔 [Account Created!]", notification.message);
@@ -464,8 +476,9 @@
           }
         } catch (error) {
           console.error("Registration error:", error);
-          if (window.showError) {
-            window.showError(
+          if (window.showModal) {
+            window.showModal(
+              "error",
               "Registration Failed",
               "An unexpected error occurred. Please try again.",
               5000

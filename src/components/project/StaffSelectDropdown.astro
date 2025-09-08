@@ -222,24 +222,74 @@ const {
 
         const result = await response.json();
         // console.log("🧑‍💼 [STAFF-SELECT] Assignment updated successfully:", result);
+        
+        // Show success modal immediately (don't wait for email)
 
-        // Show success toast immediately (don't wait for email)
-        if (typeof window !== "undefined" && window.showSuccess) {
-          window.showSuccess(
-            "Assignment Updated",
-            staffId 
-              ? `Project assigned to ${staffName}` 
-              : "Project unassigned",
-            3000
-          );
-        }
-
-        // Redirect to dashboard if assignment was made (staff member loses access)
-        if (staffId && typeof window !== "undefined") {
+        if (typeof window !== "undefined" && window.showModal) {
+          // console.log("🧑‍💼 [STAFF-SELECT] Calling window.showModal...");
+          
+          // Optionally include redirect - set to true if you want automatic redirect
+          const shouldRedirect = false; // Change to true to enable redirect
+          
+          if (shouldRedirect) {
+            // Use the unified notification manager directly for redirect functionality
+            const unifiedNotificationManager = window.unifiedNotificationManager;
+            if (unifiedNotificationManager) {
+              const modalId = unifiedNotificationManager.show({
+                type: "success",
+                title: "Assignment Updated",
+                message: staffId 
+                  ? `Project assigned to ${staffName}` 
+                  : "Project unassigned",
+                duration: 3000,
+                redirect: {
+                  url: "/project/" + projectId,
+                  delay: 3,
+                  showCountdown: true,
+                }
+              });
+              // console.log("🧑‍💼 [STAFF-SELECT] Modal ID returned:", modalId);
+            }
+          } else {
+            // No redirect - use simple modal
+            const modalId = window.showModal(
+              "success",
+              "Assignment Updated",
+              staffId 
+                ? `Project assigned to ${staffName}` 
+                : "Project unassigned",
+              3000
+            );
+            // console.log("🧑‍💼 [STAFF-SELECT] Modal ID returned:", modalId);
+          }
+      
+        } else {
+          // console.warn("🧑‍💼 [STAFF-SELECT] No notification system available!");
+          
+          // Try to wait a bit and check again (in case of timing issues)
           setTimeout(() => {
-            window.location.href = "/dashboard";
-          }, 1500); // Wait 1.5 seconds to show the toast first
+            // console.log("🧑‍💼 [STAFF-SELECT] Retrying modal system check after delay...");
+            if (typeof window !== "undefined" && window.showModal) {
+              // console.log("🧑‍💼 [STAFF-SELECT] Modal system now available, showing notification...");
+              window.showModal(
+                "success",
+                "Assignment Updated",
+                staffId 
+                  ? `Project assigned to ${staffName}` 
+                  : "Project unassigned",
+                3000
+              );
+            } else {
+              // console.warn("🧑‍💼 [STAFF-SELECT] Modal system still not available after delay");
+              // Show a simple alert as last resort
+              alert(staffId 
+                ? `Project assigned to ${staffName}` 
+                : "Project unassigned");
+            }
+          }, 1000); // Wait 1 second
         }
+
+        // Note: No automatic redirect - staff assignment works without page refresh
 
         // Send staff assignment email notification in the background (only for assignments, not unassignments)
         // console.log("🧑‍💼 [STAFF-SELECT] Checking if should send email:", { staffId, shouldSend: !!staffId });
@@ -248,7 +298,7 @@ const {
             // console.log("🧑‍💼 [STAFF-SELECT] Sending assignment notification email...");
             
             // Send staff assignment email using dedicated API
-            console.log("🧑‍💼 [STAFF-SELECT] Sending staff assignment email...");
+            // console.log("🧑‍💼 [STAFF-SELECT] Sending staff assignment email...");
             
             const emailResponse = await fetch("/api/staff-assignment-email", {
               method: "POST",

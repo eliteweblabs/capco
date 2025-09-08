@@ -67,6 +67,8 @@ export const POST: APIRoute = async ({ request }) => {
       });
     }
 
+    // this used to use toast_auto_redirect_admin and toast_auto_redirect_client
+
     // console.log("📊 [UPDATE-STATUS] Updating project status:", { projectId, newStatus });
 
     // Update project status
@@ -77,7 +79,7 @@ export const POST: APIRoute = async ({ request }) => {
         updated_at: new Date().toISOString(),
       })
       .eq("id", projectId)
-      .select("id, status, author_id, address, contract_pdf_url, proposal_signature")
+      .select("id, status, author_id, address, proposal_signature")
       .single();
 
     if (updateError) {
@@ -163,23 +165,6 @@ export const POST: APIRoute = async ({ request }) => {
 
       const clientEmail = authData.user.email || "";
 
-      // Get contract URL from project data (if available)
-      let contractUrl = "";
-      console.log("📄 [UPDATE-STATUS] Checking for contract URL:", {
-        hasContractPdfUrl: !!updatedProject.contract_pdf_url,
-        hasProposalSignature: !!updatedProject.proposal_signature,
-        contractPdfUrl: updatedProject.contract_pdf_url,
-      });
-
-      if (updatedProject.contract_pdf_url) {
-        contractUrl = updatedProject.contract_pdf_url;
-        console.log("📄 [UPDATE-STATUS] Using contract PDF URL:", contractUrl);
-      } else if (updatedProject.proposal_signature) {
-        // If we have a signature but no PDF URL, we can generate a placeholder
-        // or fetch the PDF URL from storage
-        console.log("📄 [UPDATE-STATUS] Project has signature but no contract PDF URL");
-      }
-
       // Prepare placeholder data
       const placeholderData = {
         projectId: updatedProject.id,
@@ -189,7 +174,6 @@ export const POST: APIRoute = async ({ request }) => {
         clientEmail: clientEmail,
         statusName: statusData.statusConfig.status_name,
         estTime: statusData.statusConfig.est_time,
-        contractUrl: contractUrl,
       };
 
       // console.log("📊 [UPDATE-STATUS] Placeholder data prepared:", placeholderData);

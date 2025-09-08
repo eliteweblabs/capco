@@ -644,8 +644,20 @@ function getStatusColor(status: number): string {
               window.refreshManager.updateField("status_name", "Status Updated");
             }
 
-            // Show toast notification if available
-            if (data.message && window.showSuccess) {
+            // Show notification using new modal system
+            if (data.notificationData && window.showModal) {
+              const notification = data.notificationData.client || data.notificationData.admin;
+              if (notification) {
+                window.showModal(
+                  notification.type,
+                  notification.title,
+                  notification.message,
+                  notification.duration,
+                  notification.redirect
+                );
+              }
+            } else if (data.message && window.showSuccess) {
+              // Fallback to old toast system
               window.showSuccess("Proposal Viewed", data.message);
             }
           } else {

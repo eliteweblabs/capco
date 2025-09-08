@@ -343,7 +343,7 @@ export const POST: APIRoute = async ({ request, redirect, cookies }) => {
         type: "success",
         title: "Account Created!",
         message: `Welcome! ${emailStatus.welcomeEmailSent ? "Check your email for welcome instructions." : "You're now signed in and ready to create projects."}`,
-        duration: 5000,
+        duration: 2000,
       },
     }),
     {

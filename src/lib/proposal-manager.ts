@@ -37,7 +37,7 @@ export class ProposalManager {
    * Build and display the proposal
    */
   buildProposal(): void {
-    console.log("Building proposal for project:", this.projectId);
+    // console.log("Building proposal for project:", this.projectId);
 
     if (!this.project) {
       console.error("Project data not available");
@@ -74,7 +74,7 @@ export class ProposalManager {
     // Make proposal editable by default
     this.enterEditMode();
 
-    console.log("Proposal generated successfully");
+    // console.log("Proposal generated successfully");
   }
 
   /**
@@ -82,7 +82,7 @@ export class ProposalManager {
    */
   private async saveProposalAsInvoice(): Promise<void> {
     try {
-      console.log("Saving proposal as invoice for project:", this.projectId);
+      // console.log("Saving proposal as invoice for project:", this.projectId);
 
       // Get the proposal data
       const proposalData = this.getProposalData();
@@ -102,7 +102,7 @@ export class ProposalManager {
       const data = await response.json();
 
       if (data.success) {
-        console.log("Proposal saved as invoice successfully:", data);
+        // console.log("Proposal saved as invoice successfully:", data);
       } else {
         console.error("Failed to save proposal as invoice:", data.error);
         if ((window as any).showError) {
@@ -238,18 +238,18 @@ export class ProposalManager {
     const rows = tbody.querySelectorAll("tr");
     const lineItems: any[] = [];
 
-    console.log("🔍 [PROPOSAL-MANAGER] Getting line items data from", rows.length, "rows");
+    // console.log("🔍 [PROPOSAL-MANAGER] Getting line items data from", rows.length, "rows");
 
     rows.forEach((row, index) => {
       // Get all input elements in this row
       const inputs = row.querySelectorAll("input");
 
       if (inputs.length === 0) {
-        console.log(`ℹ️ [PROPOSAL-MANAGER] Row ${index} has no inputs, skipping`);
+        // console.log(`ℹ️ [PROPOSAL-MANAGER] Row ${index} has no inputs, skipping`);
         return;
       }
 
-      console.log(`🔍 [PROPOSAL-MANAGER] Row ${index} has ${inputs.length} inputs`);
+      // console.log(`🔍 [PROPOSAL-MANAGER] Row ${index} has ${inputs.length} inputs`);
 
       // Extract values from inputs - simple approach
       let name = "";
@@ -278,16 +278,16 @@ export class ProposalManager {
       const isEdited = row.getAttribute("data-edited") === "true";
       const editedAttribute = row.getAttribute("data-edited");
 
-      console.log(`🔍 [PROPOSAL-MANAGER] Row ${index} extracted values:`, {
-        name: name.substring(0, 50) + (name.length > 50 ? "..." : ""),
-        description: description.substring(0, 30) + (description.length > 30 ? "..." : ""),
-        quantity,
-        price,
-        hasCatalogId: !!catalogItemId,
-        isEdited: isEdited,
-        editedAttribute: editedAttribute,
-        rowHTML: row.outerHTML.substring(0, 200) + "...",
-      });
+      // console.log(`🔍 [PROPOSAL-MANAGER] Row ${index} extracted values:`, {
+      //   name: name.substring(0, 50) + (name.length > 50 ? "..." : ""),
+      //   description: description.substring(0, 30) + (description.length > 30 ? "..." : ""),
+      //   quantity,
+      //   price,
+      //   hasCatalogId: !!catalogItemId,
+      //   isEdited: isEdited,
+      //   editedAttribute: editedAttribute,
+      //   rowHTML: row.outerHTML.substring(0, 200) + "...",
+      // });
 
       // Add all rows, even with blank names
       lineItems.push({
@@ -300,10 +300,10 @@ export class ProposalManager {
         isEdited: isEdited,
       });
 
-      console.log(`✅ [PROPOSAL-MANAGER] Added row ${index} to line items`);
+      // console.log(`✅ [PROPOSAL-MANAGER] Added row ${index} to line items`);
     });
 
-    console.log("🔍 [PROPOSAL-MANAGER] Final line items:", lineItems);
+    // console.log("🔍 [PROPOSAL-MANAGER] Final line items:", lineItems);
     return lineItems;
   }
 
@@ -319,7 +319,7 @@ export class ProposalManager {
    * Load existing invoice data into the proposal
    */
   async loadExistingInvoice(invoice: any): Promise<void> {
-    console.log("🔄 [PROPOSAL-MANAGER] Loading existing invoice into proposal:", invoice);
+    // console.log("🔄 [PROPOSAL-MANAGER] Loading existing invoice into proposal:", invoice);
 
     if (!invoice) {
       console.error("❌ [PROPOSAL-MANAGER] No invoice data provided");
@@ -328,46 +328,46 @@ export class ProposalManager {
 
     // Check if invoice has meaningful line items
     const hasLineItems = this.hasMeaningfulLineItems(invoice);
-    console.log("🔄 [PROPOSAL-MANAGER] Invoice has meaningful line items:", hasLineItems);
+    // console.log("🔄 [PROPOSAL-MANAGER] Invoice has meaningful line items:", hasLineItems);
 
     // Hide placeholder and show proposal content
     const placeholder = document.getElementById("proposal-placeholder");
     const content = document.getElementById("proposal-content");
 
-    console.log("🔄 [PROPOSAL-MANAGER] DOM elements:", {
-      placeholder: !!placeholder,
-      content: !!content,
-    });
+    // console.log("🔄 [PROPOSAL-MANAGER] DOM elements:", {
+    //   placeholder: !!placeholder,
+    //   content: !!content,
+    // });
 
     if (placeholder) {
       placeholder.classList.add("hidden");
-      console.log("✅ [PROPOSAL-MANAGER] Hidden placeholder");
+      // console.log("✅ [PROPOSAL-MANAGER] Hidden placeholder");
     }
     if (content) {
       content.classList.remove("hidden");
-      console.log("✅ [PROPOSAL-MANAGER] Showed content");
+      // console.log("✅ [PROPOSAL-MANAGER] Showed content");
     }
 
-    console.log("🔄 [PROPOSAL-MANAGER] Starting to populate proposal with invoice data");
+    // console.log("🔄 [PROPOSAL-MANAGER] Starting to populate proposal with invoice data");
 
     // Populate proposal header with invoice data
     this.populateHeaderFromInvoice(invoice);
-    console.log("✅ [PROPOSAL-MANAGER] Header populated");
+    // console.log("✅ [PROPOSAL-MANAGER] Header populated");
 
     // Populate project and client information
     this.populateProjectInfo();
     this.populateClientInfo();
-    console.log("✅ [PROPOSAL-MANAGER] Project and client info populated");
+    // console.log("✅ [PROPOSAL-MANAGER] Project and client info populated");
 
     // Populate line items from invoice data
     await this.populateLineItemsFromInvoice(invoice);
-    console.log("✅ [PROPOSAL-MANAGER] Line items populated");
+    // console.log("✅ [PROPOSAL-MANAGER] Line items populated");
 
     // Populate notes section
     this.populateNotesFromInvoice(invoice);
-    console.log("✅ [PROPOSAL-MANAGER] Notes populated");
+    // console.log("✅ [PROPOSAL-MANAGER] Notes populated");
 
-    console.log("🎉 [PROPOSAL-MANAGER] Proposal loading complete!");
+    // console.log("🎉 [PROPOSAL-MANAGER] Proposal loading complete!");
 
     // Update button states based on project status
     this.updateProposalButtonStates(this.project.status);
@@ -380,7 +380,7 @@ export class ProposalManager {
     // Make proposal editable by default
     this.enterEditMode();
 
-    console.log("Existing invoice loaded successfully");
+    // console.log("Existing invoice loaded successfully");
   }
 
   /**
@@ -433,7 +433,7 @@ export class ProposalManager {
 
       // Get line items data
       const lineItems = this.getLineItemsData();
-      console.log("💾 [PROPOSAL-MANAGER] Line items to save:", lineItems);
+      // console.log("💾 [PROPOSAL-MANAGER] Line items to save:", lineItems);
       console.log("💾 [PROPOSAL-MANAGER] Total line items count:", lineItems.length);
 
       // Get proposal subject
@@ -639,13 +639,26 @@ export class ProposalManager {
       const data = await response.json();
 
       if (data.success) {
-        // The update-status API should trigger database-driven notifications
-        // Add a small delay to ensure notifications have time to show
-        setTimeout(() => {
-          if ((window as any).hideNotification) {
-            (window as any).hideNotification();
+        // Show notification using new modal system
+        if (data.notificationData && (window as any).showModal) {
+          const notification = data.notificationData.client || data.notificationData.admin;
+          if (notification) {
+            (window as any).showModal(
+              notification.type,
+              notification.title,
+              notification.message,
+              notification.duration,
+              notification.redirect
+            );
           }
-        }, 500); // 500ms delay to allow notification to appear
+        } else {
+          // Fallback: Add a small delay to ensure notifications have time to show
+          setTimeout(() => {
+            if ((window as any).hideNotification) {
+              (window as any).hideNotification();
+            }
+          }, 500); // 500ms delay to allow notification to appear
+        }
         // // Check if there's a redirect configuration from the database
         // if (data.statusConfig?.redirect_url) {
         //   const delay = data.statusConfig.redirect_delay || 0;
@@ -1472,7 +1485,7 @@ export class ProposalManager {
 
       // Get line items data
       const lineItems = this.getLineItemsData();
-      console.log("💾 [PROPOSAL-MANAGER] Line items to save:", lineItems);
+      // console.log("💾 [PROPOSAL-MANAGER] Line items to save:", lineItems);
 
       // We need to get the invoice ID - let's get it from the existing invoice
       // For now, we'll need to make an API call to update the line items
