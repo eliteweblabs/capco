@@ -1,429 +1,174 @@
 ---
-interface Props {
+export interface Props {
   id: string;
   title: string;
-  options: Array<{ value: string; label: string; disabled?: boolean }>;
+  options: Array<{ value: string; label: string }>;
   selectedValue?: string;
+  theme?: 'default' | 'blue' | 'green' | 'orange' | 'purple';
   placeholder?: string;
-  onSelect?: string; // Function name to call when item is selected
+  disabled?: boolean;
+  onSelect?: (value: string, label: string) => void;
+  onCancel?: () => void;
 }
 
 const {
   id,
   title,
-  options = [],
-  selectedValue = "",
-  placeholder = "Select an option...",
-  onSelect = "handleSlotMachineSelect",
+  options,
+  selectedValue,
+  theme = 'default',
+  placeholder = 'Select an option',
+  disabled = false,
+  onSelect,
+  onCancel
 } = Astro.props;
 
-// Find the index of the selected value
-const selectedIndex = options.findIndex((option) => option.value === selectedValue);
-const initialIndex = selectedIndex >= 0 ? selectedIndex : Math.floor(options.length / 2);
+// Theme colors
+const themeColors = {
+  default: {
+    primary: 'bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600',
+    selected: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200',
+    button: 'bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600'
+  },
+  blue: {
+    primary: 'bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600',
+    selected: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200',
+    button: 'bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600'
+  },
+  green: {
+    primary: 'bg-green-600 hover:bg-green-700 dark:bg-green-500 dark:hover:bg-green-600',
+    selected: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200',
+    button: 'bg-green-600 hover:bg-green-700 dark:bg-green-500 dark:hover:bg-green-600'
+  },
+  orange: {
+    primary: 'bg-orange-600 hover:bg-orange-700 dark:bg-orange-500 dark:hover:bg-orange-600',
+    selected: 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200',
+    button: 'bg-orange-600 hover:bg-orange-700 dark:bg-orange-500 dark:hover:bg-orange-600'
+  },
+  purple: {
+    primary: 'bg-purple-600 hover:bg-purple-700 dark:bg-purple-500 dark:hover:bg-purple-600',
+    selected: 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200',
+    button: 'bg-purple-600 hover:bg-purple-700 dark:bg-purple-500 dark:hover:bg-purple-600'
+  }
+};
+
+const colors = themeColors[theme];
 ---
 
-<div id={`${id}-slot-machine`} class="slot-machine-picker">
-  <div class="slot-machine-header">
-    <h3 class="text-lg font-semibold text-gray-900 dark:text-white">{title}</h3>
-    <button
-      id={`${id}-close-btn`}
-      class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
-      aria-label="Close picker"
-    >
-      <i class="bx bx-x text-2xl"></i>
-    </button>
-  </div>
+<div class="slot-machine-picker-wrapper">
+  <!-- Trigger Button -->
+  <button
+    id={`${id}-trigger`}
+    class={`w-full px-4 py-2 text-sm font-medium text-white rounded-md transition-colors ${colors.button} ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
+    {disabled}
+  >
+    {selectedValue ? options.find(opt => opt.value === selectedValue)?.label || placeholder : placeholder}
+  </button>
 
-  <div class="slot-machine-container">
-    <!-- Selection indicator -->
-    <div class="selection-indicator"></div>
-
-    <!-- Wheel container -->
-    <div id={`${id}-wheel`} class="slot-machine-wheel" data-selected-index={initialIndex}>
-      {
-        options.map((option, index) => (
-          <div
-            class={`slot-machine-item ${option.disabled ? "disabled" : ""} ${option.value === selectedValue ? "selected" : ""}`}
-            data-value={option.value}
-            data-index={index}
-          >
-            {option.label}
-          </div>
-        ))
-      }
-    </div>
-  </div>
-
-  <div class="slot-machine-footer">
-    <button
-      id={`${id}-cancel-btn`}
-      class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-700"
-    >
-      Cancel
-    </button>
-    <button
-      id={`${id}-confirm-btn`}
-      class="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600"
-    >
-      Select
-    </button>
-  </div>
+  <!-- Hidden input for form integration -->
+  <input
+    type="hidden"
+    id={`${id}-value`}
+    name={id}
+    value={selectedValue || ''}
+  />
 </div>
 
-<style>
-  .slot-machine-picker {
-    @apply bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-sm mx-auto;
-    height: 400px;
-    display: flex;
-    flex-direction: column;
-  }
+<script>
+  import { showSlotMachinePicker } from '../../lib/slot-machine-utils';
 
-  .slot-machine-header {
-    @apply flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700;
-  }
-
-  .slot-machine-container {
-    @apply flex-1 relative overflow-hidden;
-    height: 280px;
-  }
-
-
-  .slot-machine-wheel {
-    @apply absolute inset-0 overflow-y-auto;
-    scroll-behavior: smooth;
-    scrollbar-width: none;
-    -ms-overflow-style: none;
-  }
-
-  .slot-machine-wheel::-webkit-scrollbar {
-    display: none;
-  }
-
-  .slot-machine-item {
-    @apply flex items-center justify-center h-12 text-center text-gray-900 dark:text-white font-medium cursor-pointer transition-all duration-200;
-    min-height: 48px;
-    padding: 12px 16px;
-    user-select: none;
-    -webkit-user-select: none;
-    -moz-user-select: none;
-    -ms-user-select: none;
-  }
-
-  .slot-machine-item:hover {
-    @apply bg-gray-50 dark:bg-gray-700;
-  }
-
-  .slot-machine-item.selected {
-    @apply bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400;
-  }
-
-  .slot-machine-item.disabled {
-    @apply text-gray-400 dark:text-gray-600 cursor-not-allowed;
-  }
-
-  .slot-machine-item.disabled:hover {
-    @apply bg-transparent;
-  }
-
-  .slot-machine-footer {
-    @apply flex items-center justify-end gap-3 p-4 border-t border-gray-200 dark:border-gray-700;
-  }
-
-  /* Smooth scrolling animation */
-  .slot-machine-wheel.smooth-scroll {
-    scroll-behavior: smooth;
-  }
-
-  /* Mobile optimizations */
-  @media (max-width: 640px) {
-    .slot-machine-picker {
-      @apply max-w-full mx-4;
-      height: 350px;
+  // Get the theme colors for this instance
+  const themeColors = {
+    default: {
+      primary: 'bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600',
+      selected: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200',
+      button: 'bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600'
+    },
+    blue: {
+      primary: 'bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600',
+      selected: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200',
+      button: 'bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600'
+    },
+    green: {
+      primary: 'bg-green-600 hover:bg-green-700 dark:bg-green-500 dark:hover:bg-green-600',
+      selected: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200',
+      button: 'bg-green-600 hover:bg-green-700 dark:bg-green-500 dark:hover:bg-green-600'
+    },
+    orange: {
+      primary: 'bg-orange-600 hover:bg-orange-700 dark:bg-orange-500 dark:hover:bg-orange-600',
+      selected: 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200',
+      button: 'bg-orange-600 hover:bg-orange-700 dark:bg-orange-500 dark:hover:bg-orange-600'
+    },
+    purple: {
+      primary: 'bg-purple-600 hover:bg-purple-700 dark:bg-purple-500 dark:hover:bg-purple-600',
+      selected: 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200',
+      button: 'bg-purple-600 hover:bg-purple-700 dark:bg-purple-500 dark:hover:bg-purple-600'
     }
+  };
 
-    .slot-machine-container {
-      height: 230px;
-    }
+  document.addEventListener('DOMContentLoaded', function() {
+    const trigger = document.getElementById('${id}-trigger');
+    const hiddenInput = document.getElementById('${id}-value');
+    
+    if (!trigger) return;
 
-    .slot-machine-item {
-      @apply text-base;
-    }
-  }
-</style>
+    trigger.addEventListener('click', async () => {
+      if (trigger.disabled) return;
 
-<script define:vars={{ id, options, selectedValue, onSelect }}>
-  class SlotMachinePicker {
-    constructor() {
-      this.id = id;
-      this.wheel = document.getElementById(`${id}-wheel`);
-      this.selectedIndex = parseInt(this.wheel?.dataset.selectedIndex || "0");
-      this.isDragging = false;
-      this.startY = 0;
-      this.currentY = 0;
-      this.velocity = 0;
-      this.lastY = 0;
-      this.lastTime = 0;
-      this.animationId = null;
-
-      this.init();
-    }
-
-    init() {
-      if (!this.wheel) return;
-
-      // Set initial position
-      console.log(
-        "🎰 [SLOT-MACHINE-PICKER] Initial setup - selectedIndex:",
-        this.selectedIndex,
-        "options length:",
-        options.length
-      );
-      this.scrollToIndex(this.selectedIndex, false);
-
-      // Add event listeners
-      this.addEventListeners();
-
-      // Add touch support for mobile
-      this.addTouchSupport();
-
-      // Add keyboard support
-      this.addKeyboardSupport();
-
-      // Add click listeners to items
-      this.addItemClickListeners();
-    }
-
-    addEventListeners() {
-      const closeBtn = document.getElementById(`${id}-close-btn`);
-      const cancelBtn = document.getElementById(`${id}-cancel-btn`);
-      const confirmBtn = document.getElementById(`${id}-confirm-btn`);
-
-      closeBtn?.addEventListener("click", () => this.close());
-      cancelBtn?.addEventListener("click", () => this.close());
-      confirmBtn?.addEventListener("click", () => this.confirmSelection());
-
-      // Mouse wheel support
-      this.wheel.addEventListener(
-        "wheel",
-        (e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          this.handleWheel(e.deltaY);
-        },
-        { passive: false }
-      );
-    }
-
-    addTouchSupport() {
-      this.wheel.addEventListener("touchstart", (e) => {
-        this.isDragging = true;
-        this.startY = e.touches[0].clientY;
-        this.currentY = this.startY;
-        this.lastY = this.startY;
-        this.lastTime = Date.now();
-        this.velocity = 0;
-
-        if (this.animationId) {
-          cancelAnimationFrame(this.animationId);
-        }
-      });
-
-      this.wheel.addEventListener("touchmove", (e) => {
-        if (!this.isDragging) return;
-
-        e.preventDefault();
-        this.currentY = e.touches[0].clientY;
-        const deltaY = this.currentY - this.lastY;
-        const deltaTime = Date.now() - this.lastTime;
-
-        if (deltaTime > 0) {
-          this.velocity = deltaY / deltaTime;
-        }
-
-        this.wheel.scrollTop -= deltaY;
-        this.lastY = this.currentY;
-        this.lastTime = Date.now();
-      });
-
-      this.wheel.addEventListener("touchend", () => {
-        if (!this.isDragging) return;
-
-        this.isDragging = false;
-        this.snapToNearest();
-      });
-    }
-
-    addItemClickListeners() {
-      const items = this.wheel?.querySelectorAll(".slot-machine-item");
-      console.log("🎰 [SLOT-MACHINE-PICKER] Found items:", items?.length);
-      items?.forEach((item, index) => {
-        console.log(
-          `🎰 [SLOT-MACHINE-PICKER] Adding click listener to item ${index}:`,
-          item.textContent
-        );
-        item.addEventListener("click", () => {
-          console.log(`🎰 [SLOT-MACHINE-PICKER] Item ${index} clicked:`, item.textContent);
-          this.scrollToIndex(index);
+      try {
+        const result = await showSlotMachinePicker({
+          id: '${id}',
+          title: '${title}',
+          options: ${JSON.stringify(options)},
+          selectedValue: '${selectedValue || ''}',
+          onSelect: (value, label) => {
+            // Update the hidden input
+            if (hiddenInput) {
+              hiddenInput.value = value;
+            }
+            
+            // Update the button text
+            trigger.textContent = label;
+            
+            // Call the onSelect callback if provided
+            if (typeof window['${id}_onSelect'] === 'function') {
+              window['${id}_onSelect'](value, label);
+            }
+          }
         });
-      });
-    }
 
-    addKeyboardSupport() {
-      document.addEventListener("keydown", (e) => {
-        if (e.key === "ArrowUp") {
-          e.preventDefault();
-          this.handleWheel(-48); // Move up one item
-        } else if (e.key === "ArrowDown") {
-          e.preventDefault();
-          this.handleWheel(48); // Move down one item
-        } else if (e.key === "Enter") {
-          e.preventDefault();
-          this.confirmSelection();
-        } else if (e.key === "Escape") {
-          e.preventDefault();
-          this.close();
+        // Handle the result
+        if (result.value) {
+          if (hiddenInput) {
+            hiddenInput.value = result.value;
+          }
+          trigger.textContent = result.label;
+          
+          // Call the onSelect callback if provided
+          if (typeof window['${id}_onSelect'] === 'function') {
+            window['${id}_onSelect'](result.value, result.label);
+          }
+        } else {
+          // Handle cancel
+          if (typeof window['${id}_onCancel'] === 'function') {
+            window['${id}_onCancel']();
+          }
         }
-      });
-    }
-
-    handleWheel(deltaY) {
-      if (!this.wheel) return;
-
-      console.log(
-        "🎰 [SLOT-MACHINE-PICKER] Wheel event - deltaY:",
-        deltaY,
-        "current scroll:",
-        this.wheel.scrollTop
-      );
-
-      const itemHeight = 48; // Height of each item
-      // Make scrolling more responsive - use actual deltaY for better control
-      const scrollAmount = deltaY * 0.5;
-
-      this.wheel.scrollTop += scrollAmount;
-      console.log("🎰 [SLOT-MACHINE-PICKER] New scroll position:", this.wheel.scrollTop);
-
-      // Use requestAnimationFrame for smoother animation
-      requestAnimationFrame(() => {
-        this.snapToNearest();
-      });
-    }
-
-    snapToNearest() {
-      if (!this.wheel) return;
-
-      const itemHeight = 48;
-      const currentScroll = this.wheel.scrollTop;
-      const nearestIndex = Math.round(currentScroll / itemHeight);
-
-      console.log(
-        "🎰 [SLOT-MACHINE-PICKER] Snap to nearest - currentScroll:",
-        currentScroll,
-        "nearestIndex:",
-        nearestIndex,
-        "difference:",
-        Math.abs(currentScroll - nearestIndex * itemHeight)
-      );
-
-      // Only snap if we're not already at the correct position
-      if (Math.abs(currentScroll - nearestIndex * itemHeight) > 5) {
-        console.log("🎰 [SLOT-MACHINE-PICKER] Snapping to index:", nearestIndex);
-        this.scrollToIndex(nearestIndex);
-      } else {
-        console.log("🎰 [SLOT-MACHINE-PICKER] Already at correct position, no snap needed");
+      } catch (error) {
+        console.error('Slot machine picker error:', error);
       }
-    }
+    });
+  });
 
-    scrollToIndex(index, smooth = true) {
-      if (index < 0 || index >= options.length) {
-        console.log(
-          "🎰 [SLOT-MACHINE-PICKER] Invalid scrollToIndex call - index:",
-          index,
-          "options length:",
-          options.length
-        );
-        return;
-      }
-
-      const itemHeight = 48;
-      const targetScroll = index * itemHeight;
-
-      console.log(
-        "🎰 [SLOT-MACHINE-PICKER] Scrolling to index:",
-        index,
-        "target scroll:",
-        targetScroll,
-        "current scroll:",
-        this.wheel.scrollTop
-      );
-
-      this.wheel.scrollTop = targetScroll;
-      this.selectedIndex = index;
-
-      console.log(
-        "🎰 [SLOT-MACHINE-PICKER] After scroll - new scrollTop:",
-        this.wheel.scrollTop,
-        "selectedIndex:",
-        this.selectedIndex
-      );
-
-      // Update visual selection
-      this.updateSelection();
-    }
-
-    updateSelection() {
-      const items = this.wheel.querySelectorAll(".slot-machine-item");
-      console.log(
-        "🎰 [SLOT-MACHINE-PICKER] Updating selection - selectedIndex:",
-        this.selectedIndex,
-        "items found:",
-        items.length
-      );
-      items.forEach((item, index) => {
-        const isSelected = index === this.selectedIndex;
-        item.classList.toggle("selected", isSelected);
-        console.log(
-          `🎰 [SLOT-MACHINE-PICKER] Item ${index} (${item.textContent}) - selected:`,
-          isSelected
-        );
-      });
-    }
-
-    getSelectedValue() {
-      const selectedItem = this.wheel.querySelector(".slot-machine-item.selected");
-      return selectedItem?.dataset.value || "";
-    }
-
-    getSelectedLabel() {
-      const selectedItem = this.wheel.querySelector(".slot-machine-item.selected");
-      return selectedItem?.textContent || "";
-    }
-
-    confirmSelection() {
-      const value = this.getSelectedValue();
-      const label = this.getSelectedLabel();
-
-      // Call the global function if it exists
-      if (typeof window[onSelect] === "function") {
-        window[onSelect](value, label, this.id);
-      }
-
-      this.close();
-    }
-
-    close() {
-      // Find and close the modal
-      const modal = this.wheel.closest(".modal-overlay") || this.wheel.closest('[role="dialog"]');
-      if (modal) {
-        modal.remove();
-      }
-    }
-  }
-
-  // Initialize when DOM is ready
-  if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", () => new SlotMachinePicker());
-  } else {
-    new SlotMachinePicker();
+  // Expose callbacks to global scope for external access
+  if (typeof window !== 'undefined') {
+    window['${id}_onSelect'] = ${onSelect ? `(${onSelect.toString()})` : 'null'};
+    window['${id}_onCancel'] = ${onCancel ? `(${onCancel.toString()})` : 'null'};
   }
 </script>
+
+<style>
+  .slot-machine-picker-wrapper {
+    width: 100%;
+  }
+</style>
