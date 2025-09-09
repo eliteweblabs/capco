@@ -1,5 +1,4 @@
 import type { APIRoute } from "astro";
-import { getApiBaseUrl } from "../../lib/url-utils";
 
 export const POST: APIRoute = async ({ request }) => {
   try {
@@ -58,13 +57,21 @@ export const POST: APIRoute = async ({ request }) => {
     }
 
     // Format the message with context - put contact info first to avoid truncation
+    // Keep it simple for SMS gateways
     let emailContent = `CAPCo Contact`;
 
     if (contactInfo) {
       emailContent += ` from ${contactInfo}`;
     }
 
-    emailContent += `:\n\n${message}\n\nCAPCo Website`;
+    emailContent += `: ${message}`;
+
+    // Ensure content is not too long for SMS (most carriers have 160-320 character limits)
+    if (emailContent.length > 300) {
+      console.warn("📱 [SMS-API] Content is long for SMS:", emailContent.length, "characters");
+      // Truncate if too long
+      emailContent = emailContent.substring(0, 300) + "...";
+    }
 
     // Debug: Log the full email content being sent
     console.log("📱 [SMS-API] Full email content being sent:");
@@ -74,51 +81,93 @@ export const POST: APIRoute = async ({ request }) => {
       emailContent.substring(0, 200) + (emailContent.length > 200 ? "..." : "")
     );
 
-    // Use the existing email delivery system
-    const baseUrl = getApiBaseUrl(request);
-    console.log("📱 [SMS] Using base URL for email delivery:", baseUrl);
-    console.log("📱 [SMS] Sending to recipients:", smsRecipients);
+    // Send SMS directly via Resend API (no email delivery system)
+    console.log("📱 [SMS-API] Sending SMS directly via Resend API to:", smsRecipients);
 
-    const emailPayload = {
-      emailType: "emergency_sms",
-      emailSubject: "CAPCo Website Contact",
-      emailContent: emailContent,
-      usersToNotify: smsRecipients.map((email) => ({ email })), // Send to all SMS gateways
-    };
+    // Get email configuration from environment
+    const emailApiKey = import.meta.env.EMAIL_API_KEY;
+    const fromEmail = import.meta.env.FROM_EMAIL || "noreply@capcofire.com";
+    const fromName = import.meta.env.FROM_NAME || "CAPCo";
 
-    console.log("📱 [SMS-API] Email delivery payload:", JSON.stringify(emailPayload, null, 2));
+    if (!emailApiKey) {
+      console.error("📱 [SMS-API] EMAIL_API_KEY not configured");
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: "Email service not configured",
+          totalSent: 0,
+          totalFailed: smsRecipients.length,
+        }),
+        {
+          status: 500,
+          headers: { "Content-Type": "application/json" },
+        }
+      );
+    }
 
-    const emailResponse = await fetch(`${baseUrl}/api/email-delivery`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(emailPayload),
-    });
+    const sentEmails = [];
+    const failedEmails = [];
 
-    console.log("📱 [SMS-API] Email delivery response status:", emailResponse.status);
-    console.log("📱 [SMS-API] Email delivery response ok:", emailResponse.ok);
+    // Send to each SMS gateway
+    for (const smsEmail of smsRecipients) {
+      try {
+        console.log(`📱 [SMS-API] Sending to SMS gateway: ${smsEmail}`);
 
-    const emailResult = await emailResponse.json();
-    console.log("📱 [SMS-API] Email delivery result:", JSON.stringify(emailResult, null, 2));
+        const emailPayload = {
+          from: `${fromName} <${fromEmail}>`,
+          to: smsEmail,
+          subject: "CAPCo Contact",
+          text: emailContent, // Plain text only for SMS gateways
+        };
 
-    if (emailResult.success) {
-      console.log("📱 [SMS-API] SMS sent successfully to:", smsRecipients);
-      console.log("📱 [SMS-API] Email delivery results:", {
-        totalSent: emailResult.totalSent,
-        totalFailed: emailResult.totalFailed,
-        sentEmails: emailResult.sentEmails,
-        failedEmails: emailResult.failedEmails,
-      });
+        console.log("📱 [SMS-API] SMS payload:", {
+          to: smsEmail,
+          subject: emailPayload.subject,
+          contentLength: emailContent.length,
+        });
 
+        const response = await fetch("https://api.resend.com/emails", {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${emailApiKey}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(emailPayload),
+        });
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error(`📱 [SMS-API] Failed to send to ${smsEmail}:`, response.status, errorText);
+          failedEmails.push({ email: smsEmail, error: errorText });
+        } else {
+          const responseData = await response.json();
+          console.log(`📱 [SMS-API] Successfully sent to ${smsEmail}:`, responseData);
+          sentEmails.push(smsEmail);
+        }
+      } catch (error) {
+        console.error(`📱 [SMS-API] Error sending to ${smsEmail}:`, error);
+        failedEmails.push({
+          email: smsEmail,
+          error: error instanceof Error ? error.message : "Unknown error",
+        });
+      }
+    }
+
+    console.log("📱 [SMS-API] SMS sending completed:");
+    console.log("  - Sent:", sentEmails.length);
+    console.log("  - Failed:", failedEmails.length);
+    console.log("  - Sent emails:", sentEmails);
+    console.log("  - Failed emails:", failedEmails);
+
+    if (sentEmails.length > 0) {
       return new Response(
         JSON.stringify({
           success: true,
           message: `Message sent successfully to CAPCo Fire, Someone will respond to you shortly.`,
-          totalSent: emailResult.totalSent || 0,
-          totalFailed: emailResult.totalFailed || 0,
-          sentEmails: emailResult.sentEmails || [],
-          failedEmails: emailResult.failedEmails || [],
+          totalSent: sentEmails.length,
+          totalFailed: failedEmails.length,
+          sentEmails: sentEmails,
+          failedEmails: failedEmails,
         }),
         {
           status: 200,
@@ -126,13 +175,14 @@ export const POST: APIRoute = async ({ request }) => {
         }
       );
     } else {
-      console.error("📱 [SMS-API] Failed to send SMS:", emailResult.error);
       return new Response(
         JSON.stringify({
           success: false,
-          error: "Failed to send SMS: " + emailResult.error,
+          error: "Failed to send SMS to any recipients",
           totalSent: 0,
-          totalFailed: smsRecipients.length,
+          totalFailed: failedEmails.length,
+          sentEmails: [],
+          failedEmails: failedEmails,
         }),
         {
           status: 500,
