@@ -7,11 +7,6 @@ export interface Props {
 }
 
 import ProjectNavButton from "./ProjectNavButton.astro";
-// import { getI18N } from "@/i18n";
-
-// Para cambiar idioma de textos
-// const { currentLocale } = Astro;
-// const i18n = getI18N({ currentLocale });
 
 // Get props
 const { currentRole, projects = [], statuses = [], stat } = Astro.props;
@@ -23,10 +18,23 @@ let statusCounts: Record<string, number> = {};
 // Calculate status counts from provided projects
 if (projects && projects.length > 0) {
   statusCounts = {};
-  projects.forEach((project) => {
-    const status = project.status?.toString() || "10";
-    statusCounts[status] = (statusCounts[status] || 0) + 1;
-  });
+
+  if (currentRole === "Client") {
+    // For clients, count by client_status_name (deduplicated)
+    projects.forEach((project) => {
+      const statusInfo = project_statuses.find((s: any) => s.status_code === project.status);
+      if (statusInfo && statusInfo.client_status_name) {
+        const clientStatusName = statusInfo.client_status_name;
+        statusCounts[clientStatusName] = (statusCounts[clientStatusName] || 0) + 1;
+      }
+    });
+  } else {
+    // For admins/staff, count by status number
+    projects.forEach((project) => {
+      const status = project.status?.toString() || "10";
+      statusCounts[status] = (statusCounts[status] || 0) + 1;
+    });
+  }
 }
 
 if (!projects || projects.length === 0) return;
@@ -48,364 +56,194 @@ if (!projects || projects.length === 0) return;
 
   {
     project_statuses.length > 0
-      ? project_statuses
-          .filter((status: any) => {
-            // currentRole-based filtering
-            if (currentRole === "Admin" || currentRole === "Staff") {
-              return status.admin_visible !== false; // Show unless explicitly false
-            }
-            if (currentRole === "Client") {
-              return status.client_visible === true; // Show unless explicitly false
-            }
-            return true; // Default for other currentRoles
-          })
-          .map((status: any) => (
-            <ProjectNavButton
-              label={status.status_name}
-              data-project-status-filter={status.status_code}
-              data-count={(statusCounts[status.status_code] || 0).toString()}
-            >
-              {status.status_name}
-            </ProjectNavButton>
-          ))
+      ? (() => {
+          if (currentRole === "Client") {
+            // Client navigation: deduplicate by client_status_name and use slugs
+            const clientStatuses = project_statuses
+              .filter(
+                (status: any) =>
+                  status.client_status_name && status.client_status_name.trim() !== ""
+              )
+              .reduce((acc: any[], status: any) => {
+                // Check if this client_status_name already exists
+                const existing = acc.find(
+                  (s) => s.client_status_name === status.client_status_name
+                );
+                if (!existing) {
+                  acc.push(status);
+                }
+                return acc;
+              }, []);
+
+            return clientStatuses.map((status: any) => {
+              // Create slug from client_status_name
+              const slug = status.client_status_name
+                .toLowerCase()
+                .replace(/[^a-z0-9\s-]/g, "")
+                .replace(/\s+/g, "-")
+                .trim();
+
+              // Debug logging removed for performance
+
+              return (
+                <ProjectNavButton
+                  label={status.client_status_name}
+                  data-project-status-filter={slug}
+                  data-count={(statusCounts[status.client_status_name] || 0).toString()}
+                >
+                  {status.client_status_name}
+                </ProjectNavButton>
+              );
+            });
+          } else {
+            // Admin/Staff navigation: use status numbers
+            return project_statuses.map((status: any) => {
+              // Debug logging removed for performance
+
+              return (
+                <ProjectNavButton
+                  label={status.admin_status_name}
+                  data-project-status-filter={status.status_code}
+                  data-count={(statusCounts[status.status_code] || 0).toString()}
+                >
+                  {status.admin_status_name}
+                </ProjectNavButton>
+              );
+            });
+          }
+        })()
       : ""
   }
 </nav>
 
-<script>
-  // Project status filtering functionality
+<script define:vars={{ currentRole }}>
   document.addEventListener("DOMContentLoaded", function () {
     const subNav = document.getElementById("project-nav");
     const projectList = document.getElementById("project-list");
 
     if (!subNav || !projectList) return;
 
-    // Get statuses data from data attribute
     const project_statuses = JSON.parse(subNav.dataset.statuses || "[]");
-
-    // Check if event listeners are already attached to prevent duplicates
-    if (subNav.hasAttribute("data-listeners-attached")) {
-      console.log("🔔 [ProjectNav] Event listeners already attached, skipping");
-      return;
-    }
-
-    // Mark as having listeners attached
-    subNav.setAttribute("data-listeners-attached", "true");
-
-    // Get all filter buttons
+    const projectItems = projectList.querySelectorAll("[data-project-status]");
     const filterButtons = subNav.querySelectorAll("[data-project-status-filter]");
     const allStatusesButton = subNav.querySelector("#all-statuses");
 
-    // Get all project items
-    const projectItems = projectList.querySelectorAll("[data-project-status]");
-
-    // Add click event listeners to filter buttons
-    filterButtons.forEach((button) => {
-      button.addEventListener("click", function (this: HTMLButtonElement) {
-        const filterValue = this.getAttribute("data-project-status-filter");
-        filterProjectsByStatus(filterValue);
-        updateActiveButton(this);
-
-        // Center the active button in the navigation
-        this.scrollIntoView({
-          behavior: "smooth",
-          block: "nearest",
-          inline: "center",
-        });
+    // Simple API call function
+    async function callAPI(action, statusFilter, projectItems) {
+      const response = await fetch("/api/filter-projects", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action,
+          statusFilter,
+          currentRole,
+          projectStatuses: project_statuses,
+          projectItems: Array.from(projectItems).map((item) => ({
+            status: item.getAttribute("data-project-status"),
+          })),
+        }),
       });
-    });
-
-    // Add click event listener to "All Statuses" button
-    if (allStatusesButton) {
-      allStatusesButton.addEventListener("click", function (this: HTMLButtonElement) {
-        filterProjectsByStatus("all");
-        updateActiveButton(this);
-
-        // Center the active button in the navigation
-        this.scrollIntoView({
-          behavior: "smooth",
-          block: "nearest",
-          inline: "center",
-        });
-      });
+      return await response.json();
     }
 
-    // Filter projects based on status
-    function filterProjectsByStatus(statusFilter: string | null) {
+    // Filter projects
+    async function filterProjects(statusFilter) {
+      const result = await callAPI("filter", statusFilter, projectItems);
+      if (!result.success) return;
+
+      // Recreate the shouldShow function locally
+      const shouldShow = (projectStatus) => {
+        if (statusFilter === "all") {
+          return true;
+        }
+        return projectStatus === statusFilter;
+      };
+
       let visibleCount = 0;
-
-      projectItems.forEach((item: Element) => {
+      projectItems.forEach((item) => {
         const projectStatus = item.getAttribute("data-project-status");
+        const shouldShowItem = shouldShow(projectStatus);
 
-        if (statusFilter === "all" || statusFilter === projectStatus) {
-          // Show project (but check if it's hidden by search)
-          if (!(item as HTMLElement).classList.contains("hidden")) {
-            (item as HTMLElement).style.display = "block";
-            (item as HTMLElement).style.opacity = "1";
-            visibleCount++;
-          }
+        if (shouldShowItem && !item.classList.contains("hidden")) {
+          item.style.display = "block";
+          item.style.opacity = "1";
+          visibleCount++;
         } else {
-          // Hide project
-          (item as HTMLElement).style.display = "none";
-          (item as HTMLElement).style.opacity = "0";
+          item.style.display = "none";
+          item.style.opacity = "0";
         }
       });
 
-      // Show/hide "no projects" message - get fresh references each time
+      // Show/hide no projects message
       const noProjectsMessage = document.getElementById("no-projects-message");
       const noProjectsText = document.getElementById("no-projects-text");
-
-      // console.log("🔍 [ProjectNav] Filtering projects:", {
-      //   statusFilter,
-      //   visibleCount,
-      //   totalProjects: projectItems.length,
-      //   hasNoProjectsMessage: !!noProjectsMessage,
-      //   hasNoProjectsText: !!noProjectsText,
-      // });
-
       if (noProjectsMessage && noProjectsText) {
         if (visibleCount === 0) {
-          // Show "no projects" message with specific status name
-          let statusName = "this status";
-          if (statusFilter !== "all") {
-            // Get status name from the statuses data
-            const statusData = project_statuses.find(
-              (status: any) => status.status_code.toString() === statusFilter
-            );
-            if (statusData) {
-              statusName = statusData.status_name;
-            } else {
-              // Fallback: try to get from button text
-              const statusButton = subNav?.querySelector(
-                `[data-project-status-filter="${statusFilter}"]`
-              );
-              if (statusButton) {
-                statusName = statusButton.textContent?.trim() || "this status";
-              }
-            }
-          }
-
-          const messageText = `No projects currently at ${statusName}.`;
-          // console.log("🔍 [ProjectNav] Setting no projects message:", messageText);
-
-          // Force update by clearing and setting text content
-          noProjectsText.textContent = "";
-          noProjectsText.textContent = messageText;
-
-          // Force visibility update
-          noProjectsMessage.classList.add("hidden");
-          noProjectsMessage.offsetHeight; // Force reflow
+          noProjectsText.textContent = `No projects currently at ${result.statusName}.`;
           noProjectsMessage.classList.remove("hidden");
         } else {
-          // Hide "no projects" message
-          // console.log("🔍 [ProjectNav] Hiding no projects message");
           noProjectsMessage.classList.add("hidden");
         }
-      } else {
-        console.warn("🔍 [ProjectNav] No projects message elements not found:", {
-          noProjectsMessage: !!noProjectsMessage,
-          noProjectsText: !!noProjectsText,
-        });
       }
     }
 
-    // Update active button styling
-    function updateActiveButton(activeButton: Element) {
-      if (!subNav) return;
-
-      // Remove active class from all buttons
-      const allButtons = subNav.querySelectorAll("button");
-      allButtons.forEach((btn) => {
+    // Update active button
+    function updateActiveButton(activeButton) {
+      subNav.querySelectorAll("button").forEach((btn) => {
         btn.classList.remove("bg-blue-500", "text-white", "border-blue-500");
         btn.classList.add("text-hub-inactive");
       });
-
-      // Add active class to clicked button
       activeButton.classList.remove("text-hub-inactive");
       activeButton.classList.add("bg-blue-500", "text-white", "border-blue-500");
     }
 
-    // Function to update count bubbles - only changes during search, not status filtering
-    function updateCountBubblesForSearch() {
-      // console.log("🔢 [ProjectNav] updateCountBubblesForSearch called");
-      const projectsList = document.getElementById("project-list");
-      if (!projectsList || !subNav) {
-        console.log("❌ [ProjectNav] Missing projectsList or subNav");
-        return;
+    // Update URL
+    function updateURL(statusFilter) {
+      const url = new URL(window.location.href);
+      if (statusFilter === "all") {
+        url.searchParams.delete("status");
+      } else {
+        url.searchParams.set("status", statusFilter);
       }
-
-      // Only count projects that are not hidden by search (ignore status filter)
-      const searchVisibleProjects = projectsList.querySelectorAll(
-        "[data-project-status]:not(.hidden)"
-      );
-      // console.log("🔢 [ProjectNav] Found", searchVisibleProjects.length, "search-visible projects");
-      const statusCounts: Record<string, number> = {};
-
-      // Count search-visible projects by status
-      searchVisibleProjects.forEach((project: Element) => {
-        const htmlProject = project as HTMLElement;
-        const status = htmlProject.dataset.projectStatus || "10";
-        statusCounts[status] = (statusCounts[status] || 0) + 1;
-      });
-
-      // Update each nav button's count
-      const navButtons = subNav?.querySelectorAll("button") || [];
-      navButtons.forEach((button) => {
-        const htmlButton = button as HTMLButtonElement;
-        const statusFilter = htmlButton.dataset.projectStatusFilter;
-        const isAllStatuses = htmlButton.id === "all-statuses";
-
-        let count = 0;
-        if (isAllStatuses) {
-          count = searchVisibleProjects.length;
-        } else if (statusFilter) {
-          count = statusCounts[statusFilter] || 0;
-        }
-
-        // Update the count display
-        const countSpan = htmlButton.querySelector("span.absolute");
-        if (countSpan) {
-          countSpan.textContent = count.toString();
-          // Hide if count is 0
-          if (count === 0) {
-            (countSpan as HTMLElement).style.display = "none";
-          } else {
-            (countSpan as HTMLElement).style.display = "flex";
-          }
-        }
-      });
+      window.history.pushState({}, "", url.toString());
     }
 
-    // Function to restore original count bubbles (when search is cleared)
-    function restoreOriginalCountBubbles() {
-      const projectsList = document.getElementById("project-list");
-      if (!projectsList || !subNav) return;
-
-      // Count all projects by status (ignore all filters)
-      const allProjects = projectsList.querySelectorAll("[data-project-status]");
-      const statusCounts: Record<string, number> = {};
-
-      allProjects.forEach((project: Element) => {
-        const htmlProject = project as HTMLElement;
-        const status = htmlProject.dataset.projectStatus || "10";
-        statusCounts[status] = (statusCounts[status] || 0) + 1;
+    // Button click handlers
+    filterButtons.forEach((button) => {
+      button.addEventListener("click", function () {
+        const filterValue = this.getAttribute("data-project-status-filter");
+        filterProjects(filterValue);
+        updateActiveButton(this);
+        updateURL(filterValue);
+        this.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" });
       });
-
-      // Update each nav button's count back to original values
-      const navButtons = subNav?.querySelectorAll("button") || [];
-      navButtons.forEach((button) => {
-        const htmlButton = button as HTMLButtonElement;
-        const statusFilter = htmlButton.dataset.projectStatusFilter;
-        const isAllStatuses = htmlButton.id === "all-statuses";
-
-        let count = 0;
-        if (isAllStatuses) {
-          count = allProjects.length;
-        } else if (statusFilter) {
-          count = statusCounts[statusFilter] || 0;
-        }
-
-        // Update the count display
-        const countSpan = htmlButton.querySelector("span.absolute");
-        if (countSpan) {
-          countSpan.textContent = count.toString();
-          // Hide if count is 0
-          if (count === 0) {
-            (countSpan as HTMLElement).style.display = "none";
-          } else {
-            (countSpan as HTMLElement).style.display = "flex";
-          }
-        }
-      });
-    }
-
-    // Make functions globally available for search component
-    if (typeof window !== "undefined") {
-      (window as any).updateCountBubblesForSearch = updateCountBubblesForSearch;
-      (window as any).restoreOriginalCountBubbles = restoreOriginalCountBubbles;
-    }
-
-    // Update counts when page loads
-    restoreOriginalCountBubbles();
-
-    // Listen for project list changes to update counts
-    const observer = new MutationObserver(() => {
-      restoreOriginalCountBubbles();
     });
 
-    const projectsList = document.getElementById("project-list");
-    if (projectsList) {
-      observer.observe(projectsList, {
-        childList: true,
-        subtree: true,
-        attributes: true,
-        attributeFilter: ["style", "class"],
+    if (allStatusesButton) {
+      allStatusesButton.addEventListener("click", function () {
+        filterProjects("all");
+        updateActiveButton(this);
+        updateURL("all");
+        this.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" });
       });
     }
 
-    // Function to handle search state and disable nav when searching
-    function handleSearchState() {
-      const searchInput = document.getElementById("project-search");
-      if (!searchInput || !subNav) return;
-
-      const hasSearchValue =
-        (searchInput as HTMLInputElement).value &&
-        (searchInput as HTMLInputElement).value.trim().length > 0;
-      const navButtons = subNav.querySelectorAll("button");
-
-      if (hasSearchValue) {
-        // Disable navigation when searching
-        navButtons.forEach((button) => {
-          button.disabled = true;
-          button.style.opacity = "0.5";
-          button.style.cursor = "not-allowed";
-          button.setAttribute("title", "Status filters are disabled while searching");
-        });
-      } else {
-        // Re-enable navigation when not searching
-        navButtons.forEach((button) => {
-          button.disabled = false;
-          button.style.opacity = "1";
-          button.style.cursor = "pointer";
-          button.removeAttribute("title");
-        });
+    // Initial filter from URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const statusParam = urlParams.get("status");
+    if (statusParam) {
+      const targetButton = subNav.querySelector(`[data-project-status-filter="${statusParam}"]`);
+      if (targetButton) {
+        updateActiveButton(targetButton);
+        filterProjects(statusParam);
+        return;
       }
     }
 
-    // Monitor search input changes
-    function setupSearchMonitoring() {
-      const searchInput = document.getElementById("project-search");
-      if (searchInput) {
-        // Check on input change
-        searchInput.addEventListener("input", handleSearchState);
-
-        // Check on focus/blur
-        searchInput.addEventListener("focus", handleSearchState);
-        searchInput.addEventListener("blur", handleSearchState);
-
-        // Initial check
-        handleSearchState();
-      }
-
-      // Also check periodically in case search is updated by other components
-      setInterval(handleSearchState, 500);
+    // Default to all
+    if (allStatusesButton) {
+      updateActiveButton(allStatusesButton);
+      filterProjects("all");
     }
-
-    // Handle initial filter on page load
-    function handleInitialFilter() {
-      if (!subNav) return;
-
-      // Always default to "All Statuses" on page load
-      if (allStatusesButton) {
-        updateActiveButton(allStatusesButton);
-        filterProjectsByStatus("all");
-      }
-    }
-
-    // Initialize search monitoring
-    setupSearchMonitoring();
-
-    // Initialize filter on page load
-    handleInitialFilter();
   });
 </script>

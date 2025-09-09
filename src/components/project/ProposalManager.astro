@@ -64,28 +64,34 @@ try {
 const hasExistingProposal = !!existingInvoice;
 ---
 
-{projectStatus !== 20 && ( <style>#proposal-content {pointer-events: none; .add-line-item-btn, .delete-line-item-btn {display: none;}}</style>)}
+<div>
+{projectStatus !== 20 && (
+  <style>
+    #proposal-content {pointer-events: none;}
+    .add-line-item-btn, .delete-line-item-btn {display: none;}
+  </style>
+)}
 
   <!-- Initial state: No proposal generated -->
   <div id="proposal-placeholder" class={hasExistingProposal ? "hidden" : "py-8 text-center"}>
     <BoxIcon name="upload" class="bx-lg mx-auto mb-4 text-gray-700 dark:text-gray-300" />
     <p class="mb-4 text-gray-500 dark:text-gray-400">
       {canManageProposals && (
-          <span
-            set:html={`Generate a project proposal for <b>${authorProfile?.company_name || 'Client'}</b> for <b>${project.address}</b> based on the project form data.`}
-          />
-        )}
-        
-        {projectStatus < 20 && currentRole === "Client" && (
-          <span
-            set:html={`Upload your project documents first.`}
-          />
+        <span
+          set:html={`Generate a project proposal for <b>${authorProfile?.company_name || 'Client'}</b> for <b>${project.address}</b> based on the project form data.`}
+        />
       )}
         
-        {projectStatus >= 20 && currentRole === "Client" && (
-          <span
-            set:html={`Your project proposal is being generated.<br>You will be notified at <b>${authorProfile?.email}</b> when it is ready.`}
-          />
+      {projectStatus < 20 && currentRole === "Client" && (
+        <span
+          set:html={`Upload your project documents first.`}
+        />
+      )}
+        
+      {projectStatus >= 20 && currentRole === "Client" && (
+        <span
+          set:html={`Your project proposal is being generated.<br>You will be notified at <b>${authorProfile?.email}</b> when it is ready.`}
+        />
       )}
     </p>
     { 
@@ -170,6 +176,7 @@ const hasExistingProposal = !!existingInvoice;
       </div>
     </div>
 
+
     <!-- Project Details -->
     <div class="mb-6 grid grid-cols-1 gap-6 md:grid-cols-2">
       <div class="rounded-lg bg-gray-50 p-4 dark:bg-gray-700">
@@ -250,9 +257,6 @@ const hasExistingProposal = !!existingInvoice;
         </table>
         </div>
       </div>
-
-
-
     </div>
 
     <!-- Notes Section -->
@@ -271,9 +275,7 @@ const hasExistingProposal = !!existingInvoice;
     {
       canManageProposals && projectStatus === 20 && (
         <div class="flex justify-between">
-          <div class="flex gap-2">
-          </div>
-
+        
           <div class="flex gap-2">
             <button
               onclick="saveProposal()"
@@ -290,13 +292,6 @@ const hasExistingProposal = !!existingInvoice;
               <BoxIcon name="send" class="mr-2 h-4 w-4" />
               Send Proposal
             </button>
-            {/* <button
-              onclick="convertToInvoice()"
-              class="inline-flex items-center rounded-lg bg-green-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-green-700"
-            >
-              <BoxIcon name="receipt" class="mr-2 h-4 w-4" />
-              Convert to Invoice
-            </button> */}
           </div>
         </div>
       )
@@ -334,15 +329,16 @@ const hasExistingProposal = !!existingInvoice;
   </div>
 </div>
 )}
+</div>
 
 
 <script type="module" define:vars={{ projectId, project, authorProfile, existingInvoice, hasExistingProposal, projectStatus }}>
-  // Inline proposal manager initialization to avoid import issues
+  // Inline proposal manager initialization
   async function initializeProposalManager(projectId, project, projectAuthor) {
     console.log("🔧 [PROPOSAL-MANAGER] Initializing proposal manager for project:", projectId);
     
     try {
-      // Import the ProposalManager class
+      // Dynamic import with absolute path that Astro can resolve
       const { ProposalManager } = await import('/src/lib/proposal-manager.ts');
       
       // Create a new instance
@@ -518,7 +514,6 @@ const hasExistingProposal = !!existingInvoice;
     window.buildProposal = (id) => window.proposalManager?.buildProposal();
     window.regenerateProposal = () => window.proposalManager?.regenerateProposal();
     window.sendProposal = () => window.proposalManager?.sendProposal();
-    // window.convertToInvoice = () => window.proposalManager?.convertToInvoice();
     window.updateRowTotal = (index) => window.proposalManager?.updateRowTotal(index);
     window.addProposalRow = () => window.proposalManager?.addProposalRow();
     window.deleteProposalRow = (index) => window.proposalManager?.deleteProposalRow(index);

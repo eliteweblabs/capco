@@ -1,5 +1,6 @@
 import type { APIRoute } from "astro";
 import { supabase } from "../../lib/supabase";
+import { supabaseAdmin } from "../../lib/supabase-admin";
 
 export const DELETE: APIRoute = async ({ request, cookies }) => {
   try {
@@ -136,8 +137,8 @@ export const DELETE: APIRoute = async ({ request, cookies }) => {
     // Delete associated files first (cascade delete)
     console.log("Deleting associated files...");
 
-    // Get all files associated with this project
-    const { data: projectFiles, error: filesQueryError } = await supabase
+    // Get all files associated with this project using admin client
+    const { data: projectFiles, error: filesQueryError } = await supabaseAdmin
       .from("files")
       .select("file_path")
       .eq("project_id", projectIdNum);
@@ -164,8 +165,8 @@ export const DELETE: APIRoute = async ({ request, cookies }) => {
       }
     }
 
-    // Delete file records from database
-    const { error: filesDeleteError } = await supabase
+    // Delete file records from database using admin client
+    const { error: filesDeleteError } = await supabaseAdmin
       .from("files")
       .delete()
       .eq("project_id", projectIdNum);
@@ -176,9 +177,9 @@ export const DELETE: APIRoute = async ({ request, cookies }) => {
       console.log("File records deleted from database successfully");
     }
 
-    // Delete the project
+    // Delete the project using admin client to bypass RLS
     console.log("Deleting project...");
-    const { error: deleteError } = await supabase.from("projects").delete().eq("id", projectIdNum);
+    const { error: deleteError } = await supabaseAdmin.from("projects").delete().eq("id", projectIdNum);
 
     if (deleteError) {
       console.error("Failed to delete project:", deleteError);

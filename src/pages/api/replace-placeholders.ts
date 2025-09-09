@@ -78,8 +78,8 @@ export const POST: APIRoute = async ({ request }) => {
     };
 
     const processedMessages = {
-      toast_admin: replacePlaceholders(mergedData.statusConfig.toast_admin, placeholderData),
-      toast_client: replacePlaceholders(mergedData.statusConfig.toast_client, placeholderData),
+      modal_admin: replacePlaceholders(mergedData.statusConfig.modal_admin, placeholderData),
+      modal_client: replacePlaceholders(mergedData.statusConfig.modal_client, placeholderData),
       admin_email_subject: replacePlaceholders(
         mergedData.statusConfig.admin_email_subject,
         placeholderData

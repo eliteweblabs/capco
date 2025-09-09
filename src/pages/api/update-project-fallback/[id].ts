@@ -1,16 +1,9 @@
 import type { APIRoute } from "astro";
 import { SimpleProjectLogger } from "../../../lib/simple-logging";
 import { supabase } from "../../../lib/supabase";
-import { FALLBACK_MODE, mockProjects } from "../../../lib/supabase-fallback";
 
 export const PUT: APIRoute = async ({ request, cookies, params }) => {
   const projectId = params.id;
-  console.log(
-    "🔧 [UPDATE-PROJECT] API called with projectId:",
-    projectId,
-    "fallback mode:",
-    FALLBACK_MODE
-  );
 
   try {
     const body = await request.json();
@@ -20,41 +13,6 @@ export const PUT: APIRoute = async ({ request, cookies, params }) => {
       return new Response(JSON.stringify({ error: "Project ID required" }), {
         status: 400,
       });
-    }
-
-    // Use fallback mode if enabled
-    if (FALLBACK_MODE) {
-      console.log("🔧 [UPDATE-PROJECT] Using fallback mode - simulating update");
-
-      // Simulate finding the project
-      const mockProject = mockProjects.find((p) => p.id === parseInt(projectId));
-      if (!mockProject) {
-        return new Response(JSON.stringify({ error: "Project not found" }), {
-          status: 404,
-        });
-      }
-
-      // Simulate updating the project
-      const updatedProject = {
-        ...mockProject,
-        ...body,
-        updated_at: new Date().toISOString(),
-      };
-
-      console.log("🔧 [UPDATE-PROJECT] Simulated update:", updatedProject);
-
-      // Simulate success response
-      return new Response(
-        JSON.stringify({
-          ...updatedProject,
-          fallback: true,
-          message: "Project updated successfully (fallback mode)",
-        }),
-        {
-          status: 200,
-          headers: { "Content-Type": "application/json" },
-        }
-      );
     }
 
     // Normal Supabase logic (existing code)

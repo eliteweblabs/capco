@@ -28,6 +28,8 @@ interface Props {
 
 const { project, projectStatus, currentRole, user, statuses } = Astro.props;
 
+// Debug logging removed for performance
+
 // return if user is staff and project is not assigned to them
 if (currentRole === "Staff" && project.assigned_to_id !== user?.id) {
   return;
@@ -44,12 +46,30 @@ function limitDescription(text: string, wordLimit: number = 50): string {
 // Get project status info from passed statuses or fallback to default
 let statusName = `Status ${project.status}`;
 let statusColor = "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300";
+let statusInfo: any = null;
 
 // Use passed statuses data if available, otherwise fall back to API call
 if (statuses && statuses.length > 0) {
-  const statusInfo = statuses.find((status: any) => status.status_code === project.status);
+  statusInfo = statuses.find((status: any) => status.status_code === project.status);
   if (statusInfo) {
-    statusName = statusInfo.status_name;
+    console.log("🔍 [PROJECT-LIST-ITEM] Status info for project", project.id, ":", {
+      status_code: statusInfo.status_code,
+      admin_status_name: statusInfo.admin_status_name,
+      client_status_name: statusInfo.client_status_name,
+      currentRole: currentRole,
+    });
+
+    // For clients, use client_status_name if available, otherwise use admin_status_name
+    if (currentRole === "Client" && statusInfo.client_status_name) {
+      statusName = statusInfo.client_status_name;
+      console.log(
+        "🔍 [PROJECT-LIST-ITEM] Using client_status_name:",
+        statusInfo.client_status_name
+      );
+    } else {
+      statusName = statusInfo.admin_status_name;
+      console.log("🔍 [PROJECT-LIST-ITEM] Using admin_status_name:", statusInfo.admin_status_name);
+    }
 
     // Set status color based on status code ranges
     if (project.status <= 30) {
@@ -75,90 +95,117 @@ if (statuses && statuses.length > 0) {
 let authorProfile: any = null;
 if (project.profiles) {
   authorProfile = project.profiles;
-  console.log("🌐 [PROJECT] Using pre-loaded author profile:", authorProfile?.company_name);
-} else {
-  console.warn("🌐 [PROJECT] No author profile data available for project:", project.id);
 }
 ---
 
-<a
-  href={`/project/${project.id}`}
+<div
+  class="mb-4 rounded-lg border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-700 dark:bg-gray-800"
   data-project-status={project.status}
   data-project-id={project.id}
-  class="text-sky-600 hover:text-sky-500 dark:text-sky-400 dark:hover:text-sky-300"
 >
-  <div
-    class="mb-4 rounded-lg border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-700 dark:bg-gray-800"
-  >
-    <div class="items-start justify-between md:flex">
-      <div class="flex-none md:flex-1">
-        {
-          currentRole !== "Client" && (authorProfile?.company_name || authorProfile?.email) && (
-            <>
-              <h3
-                class="inline-block text-lg font-semibold text-gray-900 dark:text-white"
-                data-searchable
+  <div class="items-start justify-between md:flex">
+    <a
+      href={`/project/${project.id}`}
+      class="flex-none md:flex-1 hover:opacity-80 transition-opacity"
+    >
+      {
+        currentRole !== "Client" && (authorProfile?.company_name || authorProfile?.email) && (
+          <>
+            <h3
+              class="inline-block text-lg font-semibold text-gray-900 dark:text-white"
+              data-searchable
+            >
+              {authorProfile?.company_name || authorProfile?.name || "Unknown Author"}
+            </h3>
+            <span class="text-gray-500 dark:text-gray-400">|</span>
+          </>
+        )
+      }
+      <h3
+        class="inline-flex text-lg font-semibold text-gray-900 dark:text-white"
+        data-project-address
+        data-searchable
+      >
+        {project.address}
+      </h3>
+      <p
+        class="mt-2 text-sm text-gray-600 dark:text-gray-300"
+        data-project-description
+        title={project.description}
+      >
+        {limitDescription(project.description)}
+      </p>
+      <div class="mt-4 flex items-center gap-4 text-sm text-gray-500 dark:text-gray-400"></div>
+    </a>
+    <div class="md:ml-4 relative">
+      {
+        (() => {
+          // For clients, make status label clickable if client_status_tab exists
+          if (currentRole === "Client" && statusInfo && statusInfo.client_status_tab) {
+            const tabUrl = `/project/${project.id}?tab=${statusInfo.client_status_tab}`;
+            return (
+              <a
+                href={tabUrl}
+                class={`inline-flex items-center rounded-full px-2.5 py-0.5 text-md mb-4 font-large ${statusColor} hover:opacity-80 transition-opacity cursor-pointer`}
+                data-refresh="status_name"
+                data-project-id={project.id}
+                title={`Go to ${statusInfo.client_status_tab} tab`}
               >
-                {authorProfile?.company_name || authorProfile?.name || "Unknown Author"}
-              </h3>
-              <span class="text-gray-500 dark:text-gray-400">|</span>
-            </>
-          )
-        }
-        <h3
-          class="inline-flex text-lg font-semibold text-gray-900 dark:text-white"
-          data-project-address
-          data-searchable
-        >
-          {project.address}
-        </h3>
-        <p
-          class="mt-2 text-sm text-gray-600 dark:text-gray-300"
-          data-project-description
-          title={project.description}
-        >
-          {limitDescription(project.description)}
-        </p>
-        <div class="mt-4 flex items-center gap-4 text-sm text-gray-500 dark:text-gray-400"></div>
-      </div>
-      <div class="md:ml-4 relative">
-        <span
-          class={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${statusColor}`}
-          data-refresh="status_name"
-          data-project-id={project.id}
-        >
-          {statusName}
-        </span>
-        {
-          project.comment_count > 0 && (
-            <div class="absolute -right-1 -top-1" title={`${project.comment_count || 0} comments`}>
-              <BoxIcon name="message-rounded-dots" class="bx-md text-blue-500 dark:text-blue-400" />
-              <span class="absolute -right-1 -top-1 inline-flex h-5 w-5 min-w-[1.25rem] items-center justify-center rounded-full bg-red-500 text-xs font-bold text-white">
-                {project.comment_count > 99 ? "99+" : project.comment_count}
+                {statusName}
+              </a>
+            );
+          } else {
+            // For admins or when no client_status_tab, keep as regular span
+            return (
+              <span
+                class={`inline-flex items-center rounded-full px-2.5 py-0.5 mb-4 text-md font-large ${statusColor}`}
+                data-refresh="status_name"
+                data-project-id={project.id}
+              >
+                {statusName}
               </span>
-            </div>
-          )
-        }
+            );
+          }
+        })()
+      }
+      {
+        project.comment_count > 0 && (
+          <a
+            href={`/project/${project.id}?tab=discussion`}
+            class="absolute -right-1 -top-1 hover:opacity-80 transition-opacity cursor-pointer"
+            title={`${project.comment_count || 0} comments - Go to discussions`}
+          >
+            <BoxIcon name="message-rounded-dots" class="bx-md text-blue-500 dark:text-blue-400" />
+            <span class="absolute -right-1 -top-1 inline-flex h-5 w-5 min-w-[1.25rem] items-center justify-center rounded-full bg-red-500 text-xs font-bold text-white">
+              {project.comment_count > 99 ? "99+" : project.comment_count}
+            </span>
+          </a>
+        )
+      }
 
-        {
-          currentRole !== "Client" &&
-            (project.assigned_profiles ? (
-              <span class="flex items-center gap-1">
-                <BoxIcon name="user" />
-                <span data-searchable>
-                  {project.assigned_profiles.company_name ||
-                    project.assigned_profiles.name ||
-                    "Assigned User"}
-                </span>
+      {
+        currentRole !== "Client" &&
+          (project.assigned_profiles ? (
+            <span class="flex items-center gap-1">
+              <BoxIcon name="user" />
+              <span data-searchable>
+                {project.assigned_profiles.company_name ||
+                  project.assigned_profiles.name ||
+                  "Assigned User"}
               </span>
-            ) : (
-              <span class="flex items-center gap-1">
-                <BoxIcon name="user" />
-                <span data-searchable>Unassigned</span>
-              </span>
-            ))
-        }
+            </span>
+          ) : (
+            <span class="flex items-center gap-1">
+              <BoxIcon name="user" />
+              <span data-searchable>Unassigned</span>
+            </span>
+          ))
+      }
 
+      <a
+        href={`/project/${project.id}`}
+        class="hover:opacity-80 transition-opacity cursor-pointer mb-4"
+      >
         <span class="flex items-center gap-1">
           <BoxIcon name="area" />
           {project.sq_ft ? project.sq_ft.toLocaleString() : 0} sq ft
@@ -167,35 +214,34 @@ if (project.profiles) {
           <BoxIcon name="building" />
           {project.new_construction ? "New Construction" : "Existing"}
         </span>
-
-        <span class="flex items-center gap-1">
-          Updated: {new Date(project.updated_at).toLocaleDateString()}
-          {
-            new Date(project.updated_at).toLocaleTimeString([], {
-              hour: "2-digit",
-              minute: "2-digit",
-              hour12: true,
-            })
-          }</span
-        >
-        <span class="flex items-center gap-1">
-          Created: {new Date(project.created_at).toLocaleDateString()}
-          {
-            new Date(project.created_at).toLocaleTimeString([], {
-              hour: "2-digit",
-              minute: "2-digit",
-              hour12: true,
-            })
-          }</span
-        >
-      </div>
+      </a>
+      <span class="flex items-center gap-1">
+        Updated: {new Date(project.updated_at).toLocaleDateString()}
+        {
+          new Date(project.updated_at).toLocaleTimeString([], {
+            hour: "2-digit",
+            minute: "2-digit",
+            hour12: true,
+          })
+        }</span
+      >
+      <span class="flex items-center gap-1">
+        Created: {new Date(project.created_at).toLocaleDateString()}
+        {
+          new Date(project.created_at).toLocaleTimeString([], {
+            hour: "2-digit",
+            minute: "2-digit",
+            hour12: true,
+          })
+        }</span
+      >
     </div>
-    <!-- <div class="mt-4 flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
+  </div>
+  <!-- <div class="mt-4 flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
      
       <div class="flex items-center gap-4">
       
        
       </div>
     </div> -->
-  </div>
-</a>
+</div>

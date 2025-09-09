@@ -34,21 +34,29 @@ export class RefreshManager {
    * Update a specific field across all elements with matching data-refresh attribute
    */
   public updateField(fieldName: string, newValue: any, projectId?: string | number): void {
-    console.log(`🔄 [REFRESH-MANAGER] Updating field '${fieldName}' to:`, newValue, projectId ? `for project ${projectId}` : '');
+    console.log(
+      `🔄 [REFRESH-MANAGER] Updating field '${fieldName}' to:`,
+      newValue,
+      projectId ? `for project ${projectId}` : ""
+    );
 
     // Find all elements with matching data-refresh attribute
     let elements: NodeListOf<Element>;
-    
+
     if (projectId) {
       // If projectId is specified, only update elements for that specific project
-      elements = document.querySelectorAll(`[data-refresh="${fieldName}"][data-project-id="${projectId}"]`);
+      elements = document.querySelectorAll(
+        `[data-refresh="${fieldName}"][data-project-id="${projectId}"]`
+      );
     } else {
       // Update all elements with matching data-refresh attribute
       elements = document.querySelectorAll(`[data-refresh="${fieldName}"]`);
     }
 
     if (elements.length === 0) {
-      console.log(`🔄 [REFRESH-MANAGER] No elements found with data-refresh="${fieldName}"${projectId ? ` for project ${projectId}` : ''}`);
+      console.log(
+        `🔄 [REFRESH-MANAGER] No elements found with data-refresh="${fieldName}"${projectId ? ` for project ${projectId}` : ""}`
+      );
       return;
     }
 
@@ -121,8 +129,8 @@ export class RefreshManager {
       element.classList.add(`status-${value}`);
     });
 
-    // Status name - update text content
-    this.registerCallback("status_name", (value: string) => {
+    // Admin status name - update text content
+    this.registerCallback("admin_status_name", (value: string) => {
       const element = this as any;
       element.textContent = value;
     });

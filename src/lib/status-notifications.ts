@@ -25,7 +25,7 @@ export async function sendStatusChangeNotifications(
     const { data: statusConfig, error: statusError } = await supabase
       .from("project_statuses")
       .select(
-        "notify, email_content, button_text, button_link, toast_admin, toast_client, status_name, est_time"
+        "notify, email_content, button_text, button_link, modal_admin, modal_client, admin_status_name, est_time"
       )
       .eq("status_code", newStatus)
       .single();
@@ -81,9 +81,9 @@ export async function sendStatusChangeNotifications(
       );
     }
 
-    // Send toast notifications if configured
-    if (statusConfig.toast_admin || statusConfig.toast_client) {
-      await sendToastNotifications(
+    // Send modal notifications if configured
+    if (statusConfig.modal_admin || statusConfig.modal_client) {
+      await sendModalNotifications(
         projectId,
         newStatus,
         usersToNotify,
@@ -238,8 +238,8 @@ async function sendEmailNotifications(
   }
 }
 
-// Helper function to send toast notifications
-async function sendToastNotifications(
+// Helper function to send modal notifications
+async function sendModalNotifications(
   projectId: string,
   newStatus: number,
   usersToNotify: any[],
@@ -253,12 +253,12 @@ async function sendToastNotifications(
   // const { toast } = await import("./toast-utils");
 
   // For now, just log that toast notifications would be sent
-  // You can implement the actual toast logic here or call a separate toast service
-  console.log(`🔔 [${context}] Toast notifications would be sent for status ${newStatus}`);
+  // You can implement the actual modal logic here or call a separate modal service
+  console.log(`🔔 [${context}] Modal notifications would be sent for status ${newStatus}`);
 
   // Example implementation:
   // usersToNotify.forEach(user => {
-  //   const message = user.role === "Admin" ? statusConfig.toast_admin : statusConfig.toast_client;
-  //   // Send toast notification to user
+  //   const message = user.role === "Admin" ? statusConfig.modal_admin : statusConfig.modal_client;
+  //   // Send modal notification to user
   // });
 }

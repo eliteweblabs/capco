@@ -11,10 +11,10 @@ import TabContract from "../../components/project/TabContract.astro";
 import TabDeposit from "../../components/project/TabDeposit.astro";
 import TabFinalInvoice from "../../components/project/TabFinalInvoice.astro";
 import TabActivityLog from "../../components/project/TabActivityLog.astro";
-import TabDeliverables from "../../components/project/TabDeliverables.astro";
+import TabFinalDocuments from "../../components/project/TabFinalDocuments.astro";
 import { getI18N } from "@/i18n";
 import { supabase } from "../../lib/supabase";
-// import { supabaseAdmin } from "../../lib/supabase-admin";
+import { supabaseAdmin } from "../../lib/supabase-admin";
 import "../../lib/refresh-manager.ts";
 
 const { currentLocale } = Astro;
@@ -22,6 +22,8 @@ const i18n = getI18N({ currentLocale });
 
 // Get the project ID from the URL parameter
 const { id } = Astro.params;
+
+console.log("🚀 [PROJECT] Front matter starting execution for project ID:", id);
 
 // Get auth data directly since App component handles auth requirements
 import { checkAuth } from "../../lib/auth";
@@ -31,36 +33,7 @@ const {
   currentRole = undefined,
 } = await checkAuth(Astro.cookies);
 
-// Server-side function to get author info via API
-async function getAuthorInfoServer(userId: string) {
-  try {
-    const response = await fetch(`${Astro.url.origin}/api/get-user-info`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Cookie: Astro.request.headers.get("cookie") || "",
-      },
-      body: JSON.stringify({ userId }),
-    });
-
-    if (!response.ok) {
-      console.error("Failed to fetch user info:", response.status, response.statusText);
-      return null;
-    }
-
-    const data = await response.json();
-
-    if (!data.success || !data.user) {
-      console.error("API returned error:", data.error);
-      return null;
-    }
-
-    return data.user;
-  } catch (error) {
-    console.error("Error calling get-user-info API:", error);
-    return null;
-  }
-}
+// Removed getAuthorInfoServer function - using direct database queries for better performance
 
 // Get the tab parameter from URL query string
 const tabParam = Astro.url.searchParams.get("tab");
@@ -85,142 +58,197 @@ let totalAmount = 0;
 let invoiceId = "0";
 let statusLabels: Record<number, { status_name: string; [key: string]: any }> = {};
 
+console.log("🚀 [PROJECT] About to start database queries, supabase available:", !!supabase);
+
 if (supabase) {
-  // Get project data
-  const { data: projectData, error: projectError } = await supabase
-    .from("projects")
-    .select("*")
-    .eq("id", id)
-    .single();
+  // OPTIMIZED: Run all database queries in parallel for much faster loading
+  const [projectResult, invoiceResult, statusesResult] = await Promise.all([
+    // 1. Get project data
+    supabase.from("projects").select("*").eq("id", id).single(),
 
-  if (projectError) {
-    console.error("Error fetching project:", projectError);
-    console.log("🌐 [PROJECT] Project not found or no access, redirecting to dashboard");
-    return Astro.redirect("/dashboard");
-  } else {
-    project = projectData;
-
-    // Get project author's profile data (not current user's profile)
-    if (project.author_id) {
-      try {
-        authorProfile = await getAuthorInfoServer(project.author_id);
-        console.log("🔍 [PROJECT] Fetched authorProfile:", authorProfile);
-        console.log("🔍 [PROJECT] authorProfile.user_metadata:", authorProfile?.user_metadata);
-        console.log("🔍 [PROJECT] first_name:", authorProfile?.user_metadata?.first_name);
-        console.log("🔍 [PROJECT] last_name:", authorProfile?.user_metadata?.last_name);
-      } catch (error) {
-        console.error("Error fetching project author profile:", error);
-      }
-    }
-
-    // Get assigned user's profile data if project has an assigned user
-    if (project.assigned_to_id) {
-      const { data: assignedProfileData, error: assignedProfileError } = await supabase
-        .from("profiles")
-        .select("id, company_name")
-        .eq("id", project.assigned_to_id)
-        .maybeSingle();
-
-      if (assignedProfileError) {
-        console.error("Error fetching assigned user profile:", assignedProfileError);
-        project.assigned_to_name = null;
-      } else if (assignedProfileData) {
-        // Add assigned user name to the project data
-        project.assigned_to_name = assignedProfileData.company_name || assignedProfileData.id;
-      } else {
-        // Profile not found for assigned user ID
-        console.log("No profile found for assigned user ID:", project.assigned_to_id);
-        project.assigned_to_name = null;
-      }
-    } else {
-      project.assigned_to_name = null;
-    }
-
-    // Fetch invoice data and calculate total amount
-    // Query the invoices table by project ID to get the proper invoice ID
-    const { data: invoice, error: invoiceError } = await supabase
+    // 2. Get invoice data (parallel with project query)
+    supabase
       .from("invoices")
       .select("id, catalog_line_items, status, project_id")
-      .eq("project_id", project.id)
-      .single();
+      .eq("project_id", id)
+      .single(),
 
-    console.log("🔍 [PROJECT] Invoice query result:", {
-      invoice,
-      invoiceError,
-      projectId: project.id,
-      hasInvoice: !!invoice,
-    });
-    if (!invoiceError && invoice) {
-      invoiceId = invoice.id.toString();
-      invoiceData = invoice;
+    // 3. Get status labels (parallel with other queries)
+    supabase
+      .from("project_statuses")
+      .select("status_code, admin_status_name, client_status_name")
+      .order("status_code"),
+  ]);
 
-      // Calculate total by looping through catalog line items
-      if (invoice.catalog_line_items && Array.isArray(invoice.catalog_line_items)) {
-        totalAmount = invoice.catalog_line_items.reduce((sum: number, item: any) => {
-          const quantity = parseFloat(item.quantity) || 0;
-          const unitPrice = parseFloat(item.unit_price) || 0;
-          const itemTotal = quantity * unitPrice;
-          console.log("🔍 [PROJECT] Line item calculation:", {
-            name: item.name,
-            quantity,
-            unitPrice,
-            itemTotal,
-            runningSum: sum + itemTotal,
-          });
-          return sum + itemTotal;
-        }, 0);
-
-        // Convert to cents for Stripe (multiply by 100)
-        totalAmount = Math.round(totalAmount * 100);
-
-        console.log("🔍 [PROJECT] Total amount calculated:", {
-          totalAmount,
-          lineItemsCount: invoice.catalog_line_items.length,
-          invoiceId: invoice.id,
-        });
-      }
-    } else {
-      // No invoice found for this project
-      invoiceId = "0";
-      console.log("❌ [PROJECT] No invoice found for project:", {
-        projectId: project.id,
-        invoiceError: invoiceError?.message,
-        invoiceErrorCode: invoiceError?.code,
-        invoiceErrorDetails: invoiceError?.details,
-      });
-    }
-
-    // Fallback to hardcoded amount if no invoice data found
-    if (totalAmount === 0) {
-      totalAmount = 2000;
-    }
+  // Check project query result
+  if (projectResult.error) {
+    console.error("Error fetching project:", projectResult.error);
+    console.log("🌐 [PROJECT] Project not found or no access, redirecting to dashboard");
+    return Astro.redirect("/dashboard");
   }
 
-  // Fetch status labels using API
-  try {
-    const statusesResponse = await fetch(`${Astro.url.origin}/api/get-project-statuses`, {
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-        "X-User-Role": "Client", // Default role for status fetching
-        Cookie: `sb-access-token=${Astro.cookies.get("sb-access-token")?.value}; sb-refresh-token=${Astro.cookies.get("sb-refresh-token")?.value}`,
+  project = projectResult.data;
+
+  console.log("🔍 [PROJECT] Project data loaded:", {
+    id: project.id,
+    title: project.title,
+    author_id: project.author_id,
+    assigned_to_id: project.assigned_to_id,
+    hasAuthorId: !!project.author_id,
+  });
+
+  // Process invoice data
+  if (!invoiceResult.error && invoiceResult.data) {
+    invoiceId = invoiceResult.data.id.toString();
+    invoiceData = invoiceResult.data;
+
+    // Calculate total by looping through catalog line items
+    if (
+      invoiceResult.data.catalog_line_items &&
+      Array.isArray(invoiceResult.data.catalog_line_items)
+    ) {
+      totalAmount = invoiceResult.data.catalog_line_items.reduce((sum: number, item: any) => {
+        const quantity = parseFloat(item.quantity) || 0;
+        const unitPrice = parseFloat(item.unit_price) || 0;
+        return sum + quantity * unitPrice;
+      }, 0);
+
+      // Convert to cents for Stripe (multiply by 100)
+      totalAmount = Math.round(totalAmount * 100);
+    }
+  } else {
+    // No invoice found for this project
+    invoiceId = "0";
+  }
+
+  // Fallback to hardcoded amount if no invoice data found
+  if (totalAmount === 0) {
+    totalAmount = 2000;
+  }
+
+  // Process status labels
+  if (!statusesResult.error && statusesResult.data) {
+    statusLabels = statusesResult.data.reduce(
+      (acc, status) => {
+        acc[status.status_code] = {
+          status_name: status.admin_status_name || `Status ${status.status_code}`,
+          admin_status_name: status.admin_status_name,
+          client_status_name: status.client_status_name,
+        };
+        return acc;
       },
+      {} as Record<number, any>
+    );
+  }
+
+  // OPTIMIZED: Get author and assigned user profiles in parallel (only if needed)
+  console.log("🔍 [PROJECT] Setting up profile queries:", {
+    hasAuthorId: !!project.author_id,
+    authorId: project.author_id,
+    hasAssignedId: !!project.assigned_to_id,
+    assignedId: project.assigned_to_id,
+  });
+
+  if (project.author_id || project.assigned_to_id) {
+    const profileQueries = [];
+
+    if (project.author_id) {
+      console.log("🔍 [PROJECT] Adding author profile query for:", project.author_id);
+      profileQueries.push(
+        supabase
+          .from("profiles")
+          .select("id, company_name, role")
+          .eq("id", project.author_id)
+          .maybeSingle()
+      );
+    }
+
+    if (project.assigned_to_id) {
+      profileQueries.push(
+        supabase
+          .from("profiles")
+          .select("id, company_name, role")
+          .eq("id", project.assigned_to_id)
+          .maybeSingle()
+      );
+    }
+
+    const profileResults = await Promise.all(profileQueries);
+
+    // Process author profile
+    console.log("🔍 [PROJECT] Processing author profile:", {
+      hasAuthorId: !!project.author_id,
+      authorId: project.author_id,
+      profileResultsLength: profileResults.length,
+      profileResults: profileResults,
     });
 
-    if (statusesResponse.ok) {
-      const statusesResult = await statusesResponse.json();
-      if (statusesResult.success) {
-        statusLabels = statusesResult.statuses || {};
+    if (project.author_id && profileResults[0]) {
+      const profileData = profileResults[0].data;
+      const profileError = profileResults[0].error;
+
+      console.log("🔍 [PROJECT] Profile data:", {
+        profileData,
+        profileError,
+        hasData: !!profileData,
+        hasError: !!profileError,
+      });
+
+      if (profileData && !profileError) {
+        // Get email from auth system
+        let authorEmail = "";
+        if (supabaseAdmin) {
+          try {
+            const { data: authData, error: authError } = await supabaseAdmin.auth.admin.getUserById(
+              project.author_id
+            );
+            if (!authError && authData.user) {
+              authorEmail = authData.user.email || "";
+            }
+          } catch (error) {
+            console.error("Error fetching author email:", error);
+          }
+        }
+
+        authorProfile = {
+          id: profileData.id,
+          display_name: profileData.company_name || "Unknown User",
+          role: profileData.role || "Unknown",
+          company_name: profileData.company_name,
+          email: authorEmail,
+          profile: profileData,
+        };
+      } else {
+        authorProfile = {
+          id: project.author_id,
+          display_name: "Unknown User",
+          role: "Unknown",
+          company_name: null,
+          email: "",
+          profile: null,
+        };
       }
     }
-  } catch (error) {
-    console.error("Error fetching status labels:", error);
+
+    // Process assigned user profile
+    if (project.assigned_to_id) {
+      const assignedIndex = project.author_id ? 1 : 0;
+      const assignedResult = profileResults[assignedIndex];
+
+      if (assignedResult?.data) {
+        project.assigned_to_name = assignedResult.data.company_name || assignedResult.data.id;
+      } else {
+        project.assigned_to_name = null;
+      }
+    }
   }
 }
 
+// Status labels are now fetched in parallel queries above - no duplicate query needed
+
 // Calculate projectStatus and projectStatusLabel
 const projectStatus = project?.status || 0;
-const projectStatusLabel = statusLabels[projectStatus]?.status_name || "Unknown Status";
+const projectStatusLabel = statusLabels?.[projectStatus]?.status_name || "Unknown Status";
 
 // Safety check - if no project was found, redirect to dashboard
 if (!project) {
@@ -251,24 +279,45 @@ function getStatusColor(status: number): string {
         <span class="font-medium">${authorProfile?.company_name || "Unknown Author"}</span>
       </div>
       <div class="text-sm text-gray-600 dark:text-gray-400">
-        ${
-          authorProfile?.profile?.first_name || authorProfile?.profile?.last_name
-            ? `<br/>${authorProfile?.profile?.first_name || ""} ${authorProfile?.profile?.last_name || ""}`
-            : ""
-        }
-        ${authorProfile?.user_metadata?.phone || authorProfile?.phone ? `<br/>${authorProfile?.user_metadata?.phone || authorProfile?.phone}` : ""}
+        ${authorProfile?.display_name ? `<br/>${authorProfile.display_name}` : ""}
       </div>
     </div>`}
     statusLabel={projectStatusLabel
-      ? statusLabels[project.status]?.status_name || `Status ${project.status}`
+      ? (() => {
+          const statusInfo = statusLabels?.[project.status];
+          console.log("🔍 [PROJECT-PAGE] Status info for project", project.id, ":", {
+            status_code: project.status,
+            statusInfo: statusInfo,
+            currentRole: currentRole,
+          });
+
+          if (statusInfo) {
+            // For clients, use client_status_name if available, otherwise use admin_status_name
+            if (currentRole === "Client" && statusInfo.client_status_name) {
+              console.log(
+                "🔍 [PROJECT-PAGE] Using client_status_name:",
+                statusInfo.client_status_name
+              );
+              return statusInfo.client_status_name;
+            } else {
+              console.log(
+                "🔍 [PROJECT-PAGE] Using admin_status_name:",
+                statusInfo.admin_status_name
+              );
+              return statusInfo.admin_status_name;
+            }
+          }
+          return `Status ${project.status}`;
+        })()
       : undefined}
     statusColor={projectStatus ? getStatusColor(project.status) : undefined}
     projectId={projectId}
     projectStatus={projectStatus}
     currentRole={currentRole || "Client"}
     project={project}
-    statuses={Object.values(statusLabels)}
+    statuses={Object.values(statusLabels || {})}
     authorProfile={authorProfile}
+    server:defer
   />
   <SectionContainer>
     <!-- Tab Navigation -->
@@ -390,19 +439,16 @@ function getStatusColor(status: number): string {
       />
 
       <!-- Discussion Tab -->
-      <div
-        id="content-discussion"
-        class="tab-content hidden rounded-lg border border-gray-200 bg-white p-6 dark:border-gray-700 dark:bg-gray-800"
-      >
-        <Discussions
-          project={project}
-          currentRole={currentRole || undefined}
-          projectId={projectId}
-          projectStatus={projectStatus}
-          projectStatusLabel={projectStatusLabel}
-          authorProfile={authorProfile}
-        />
-      </div>
+
+      <Discussions
+        project={project}
+        currentRole={currentRole || undefined}
+        projectId={projectId}
+        projectStatus={projectStatus}
+        projectStatusLabel={projectStatusLabel}
+        authorProfile={authorProfile}
+        client:load={defaultTab === "discussion"}
+      />
 
       <!-- Documents Tab -->
       <TabDocuments
@@ -413,6 +459,7 @@ function getStatusColor(status: number): string {
         projectStatusLabel={projectStatusLabel}
         authorProfile={authorProfile}
         fileType="media"
+        client:visible
       />
 
       <!-- Proposal Tab -->
@@ -424,6 +471,7 @@ function getStatusColor(status: number): string {
         projectStatusLabel={projectStatusLabel}
         authorProfile={authorProfile}
         currentUser={currentUser}
+        client:visible
       />
 
       <!-- Contract Tab -->
@@ -434,6 +482,7 @@ function getStatusColor(status: number): string {
         projectStatus={projectStatus}
         projectStatusLabel={projectStatusLabel}
         authorProfile={authorProfile}
+        client:visible
       />
 
       <!-- Deposit Tab -->
@@ -446,16 +495,18 @@ function getStatusColor(status: number): string {
         authorProfile={authorProfile}
         invoiceId={invoiceId || "0"}
         totalAmount={totalAmount}
+        client:visible
       />
 
       <!-- Deliverables Tab -->
-      <TabDeliverables
+      <TabFinalDocuments
         project={project}
         currentRole={currentRole || undefined}
         projectId={projectId}
         projectStatus={projectStatus}
         projectStatusLabel={projectStatusLabel}
         authorProfile={authorProfile}
+        client:visible
       />
 
       <!-- Final Invoice Tab -->
@@ -468,6 +519,7 @@ function getStatusColor(status: number): string {
         authorProfile={authorProfile}
         invoiceData={invoiceData}
         totalAmount={totalAmount}
+        client:visible
       />
 
       <TabActivityLog currentRole={currentRole || undefined} projectId={projectId} />
@@ -494,7 +546,7 @@ function getStatusColor(status: number): string {
     // Remove active class from all tab buttons
     const tabButtons = document.querySelectorAll(".tab-button");
     tabButtons.forEach((button) => {
-      button.classList.remove("active", "bg-red-500", "text-white", "border-red-500");
+      button.classList.remove("active", "bg-gray-500", "text-white", "border-black");
       button.classList.add(
         "text-gray-500",
         "hover:text-gray-700",
@@ -518,7 +570,7 @@ function getStatusColor(status: number): string {
         "dark:text-gray-400",
         "dark:hover:text-gray-300"
       );
-      selectedButton.classList.add("active", "bg-red-500", "text-white", "border-red-500");
+      selectedButton.classList.add("active", "bg-gray-500", "text-white", "border-black");
 
       // Center the active button in the navigation
       selectedButton.scrollIntoView({
