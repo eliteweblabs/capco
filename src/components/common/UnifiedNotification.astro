@@ -214,6 +214,15 @@
 
       const config = typeConfig[notification.type];
 
+      // Add error handling for invalid notification types
+      if (!config) {
+        console.error("🔔 [UNIFIED-NOTIFICATION] Invalid notification type:", notification.type);
+        console.error("🔔 [UNIFIED-NOTIFICATION] Available types:", Object.keys(typeConfig));
+        // Fallback to info type
+        const fallbackConfig = typeConfig.info;
+        return this.render({ ...notification, type: "info" });
+      }
+
       const element = document.createElement("div");
       element.id = `unified-notification-${notification.id}`;
       element.setAttribute("role", "alert");
@@ -229,16 +238,16 @@
               notification.duration && notification.duration > 0
                 ? `
               <div class="absolute top-0 left-0 w-full h-1 bg-gray-200 dark:bg-gray-700">
-                <div id="progress-bar-${notification.id}" class="h-full ${config.progressColor}" style="width: 0%; animation: progress-bar-fill ${notification.duration}ms linear forwards;"></div>
+                <div id="progress-bar-${notification.id}" class="h-full ${config?.progressColor || "bg-blue-500"}" style="width: 0%; animation: progress-bar-fill ${notification.duration}ms linear forwards;"></div>
               </div>
             `
                 : ""
             }
             <div class="p-8">
               <div class="flex items-center justify-center mb-6">
-                <div class="inline-flex items-center justify-center w-16 h-16 ${config.iconBg} rounded-full">
-                  ${config.icon}
-                  <span class="sr-only">${config.label}</span>
+                <div class="inline-flex items-center justify-center w-16 h-16 ${config?.iconBg || "text-blue-500 bg-blue-100 dark:bg-blue-800 dark:text-blue-200"} rounded-full">
+                  ${config?.icon || ""}
+                  <span class="sr-only">${config?.label || "Notification"}</span>
                 </div>
               </div>
               <div class="text-center">
@@ -338,13 +347,20 @@
       | Array<{ label: string; action: () => void; primary?: boolean }>
       | { url: string; delay?: number; showCountdown?: boolean }
   ) => {
-    // console.log("🔔 [UNIFIED-NOTIFICATION] showModal called with:", {
-    //   type,
-    //   title,
-    //   message,
-    //   duration,
-    //   redirectOrActions,
-    // });
+    console.log("🔔 [UNIFIED-NOTIFICATION] showModal called with:", {
+      type,
+      title,
+      message,
+      duration,
+      redirectOrActions,
+    });
+
+    // Validate notification type
+    const validTypes = ["success", "error", "warning", "info"];
+    if (!validTypes.includes(type)) {
+      console.warn("🔔 [UNIFIED-NOTIFICATION] Invalid notification type:", type, "falling back to 'info'");
+      type = "info";
+    }
 
     // Check if the 5th parameter is a redirect object or actions array
     const isRedirect =
@@ -363,9 +379,20 @@
         : undefined,
     });
 
-    // console.log("🔔 [UNIFIED-NOTIFICATION] showModal returning ID:", result);
+    console.log("🔔 [UNIFIED-NOTIFICATION] showModal returning ID:", result);
     return result;
   };
+
+  // Ensure showModal is always available with fallback
+  if (!(window as any).showModal) {
+    console.warn("🔔 [UNIFIED-NOTIFICATION] showModal not properly initialized, creating fallback");
+    (window as any).showModal = (type: string, title: string, message: string) => {
+      console.error("🔔 [UNIFIED-NOTIFICATION] Fallback showModal called - notification system not ready");
+      alert(`${title}: ${message}`);
+    };
+  }
+
+  console.log("🔔 [UNIFIED-NOTIFICATION] Notification system initialized successfully");
 </script>
 
 <style>

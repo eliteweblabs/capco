@@ -50,12 +50,12 @@ function generateStatusSlug(statusName: string, currentRole: string, slugify: bo
 import { filteredStatusObj } from "../../pages/api/process-client-status";
 
 // Debug: Check if the status exists in the statuses object
-console.log("🔍 [PROJECT-LIST-ITEM] Project status:", project.status);
-console.log("🔍 [PROJECT-LIST-ITEM] Available statuses:", Object.keys(projectStatusesObject || {}));
-console.log(
-  "🔍 [PROJECT-LIST-ITEM] Status object for this project:",
-  projectStatusesObject?.[project.status]
-);
+// console.log("🔍 [PROJECT-LIST-ITEM] Project status:", project.status);
+// console.log("🔍 [PROJECT-LIST-ITEM] Available statuses:", Object.keys(projectStatusesObject || {}));
+// console.log(
+//   "🔍 [PROJECT-LIST-ITEM] Status object for this project:",
+//   projectStatusesObject?.[project.status]
+// );
 
 const filteredStatus = filteredStatusObj(projectStatusesObject?.[project.status], currentRole);
 
@@ -65,7 +65,7 @@ const statusUrl = filteredStatus.status_tab || null;
 const statusSlug = generateStatusSlug(filteredStatus.status_name, currentRole, true);
 const statusName = generateStatusSlug(filteredStatus.status_name, currentRole, false);
 
-console.log("🔍 [PROJECT-LIST-ITEM] Status URL:", projectStatusesObject[project.status]);
+// console.log("🔍 [PROJECT-LIST-ITEM] Status URL:", projectStatusesObject[project.status]);
 
 const statusSlugOrId = currentRole && currentRole === "Client" ? statusSlug : project.status;
 // Debug logging removed for performance
@@ -79,8 +79,7 @@ function limitDescription(text: string, wordLimit: number = 50): string {
 }
 
 // Get project status info from passed statuses or fallback to default
-// let statusName = `Status ${.status}`;
-let statusColor = "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300";
+// Status color is now provided by the get-project-statuses API
 
 // Use author profile data from the project query (no additional DB call needed)
 let authorProfile: any = null;
@@ -134,10 +133,14 @@ if (project.profiles) {
           // For clients, make status label clickable if client_status_tab exists
           if (currentRole === "Client" && statusUrl) {
             const tabUrl = `/project/${project.id}?tab=${statusUrl}`;
+            // Get status color from API data
+            const statusColor = projectStatusesObject?.[project.status]?.status_color || "gray";
+            const statusColorClasses = `bg-${statusColor}-100 text-${statusColor}-800 dark:bg-${statusColor}-700 dark:text-${statusColor}-300`;
+
             return (
               <a
                 href={tabUrl}
-                class={`inline-flex items-center rounded-full px-2.5 py-0.5 text-md mb-4 font-large ${statusColor} hover:opacity-80 transition-opacity cursor-pointer`}
+                class={`inline-flex items-center rounded-full px-2.5 py-0.5 text-md mb-4 font-large ${statusColorClasses} hover:opacity-80 transition-opacity cursor-pointer`}
                 data-refresh="status_name"
                 data-project-id={project.id}
                 title={`Go to ${statusName} tab`}
@@ -147,9 +150,13 @@ if (project.profiles) {
             );
           } else {
             // For admins or when no client_status_tab, keep as regular span
+            // Get status color from API data
+            const statusColor = projectStatusesObject?.[project.status]?.status_color || "gray";
+            const statusColorClasses = `bg-${statusColor}-100 text-${statusColor}-800 dark:bg-${statusColor}-700 dark:text-${statusColor}-300`;
+
             return (
               <span
-                class={`inline-flex items-center rounded-full px-2.5 py-0.5 mb-4 text-md font-large ${statusColor}`}
+                class={`inline-flex items-center rounded-full px-2.5 py-0.5 mb-4 text-md font-large ${statusColorClasses}`}
                 data-refresh="status_name"
                 data-project-id={project.id}
               >

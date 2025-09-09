@@ -289,15 +289,7 @@ if (!project) {
 // This ensures we always use the authoritative database ID when possible
 const projectId = project?.id?.toString() || id || "";
 
-// Get status color based on status code
-function getStatusColor(status: number): string {
-  if (status <= 50) return "blue"; // Early stages
-  if (status <= 100) return "yellow"; // Invoice stages
-  if (status <= 140) return "purple"; // Submittals
-  if (status <= 180) return "orange"; // Final invoice
-  if (status <= 220) return "green"; // Deliverables and complete
-  return "gray"; // Unknown
-}
+// Status color is now provided by the get-project-statuses API
 ---
 
 <App title={i18n.SEO_TITLE} description={i18n.SEO_DESCRIPTION} requireAuth={true}>
@@ -313,14 +305,15 @@ function getStatusColor(status: number): string {
       </div>
     </div>`}
     statusLabel={statusLabel}
-    statusColor={projectStatus ? getStatusColor(project.status) : undefined}
+    statusColor={projectStatus && statuses[project.status]?.status_color
+      ? statuses[project.status].status_color
+      : undefined}
     projectId={projectId}
     projectStatus={projectStatus}
     currentRole={currentRole || "Client"}
     project={project}
     statuses={statuses}
     authorProfile={authorProfile}
-    server:defer
   />
   <SectionContainer>
     <!-- Tab Navigation -->
