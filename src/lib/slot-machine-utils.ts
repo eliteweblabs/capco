@@ -271,7 +271,7 @@ export function showSlotMachinePicker(
     let velocity = 0;
     let lastY = 0;
     let lastTime = 0;
-    let snapTimeout: number | null = null;
+    let snapTimeout: ReturnType<typeof setTimeout> | null = null;
 
     // Set initial position
     console.log(
