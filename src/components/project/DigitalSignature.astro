@@ -105,22 +105,40 @@ const newStatus = 50;
     async function loadSignaturePad() {
       if (SignaturePad) return SignaturePad;
 
+      // Check if already loaded
+      if (window.SignaturePad) {
+        SignaturePad = window.SignaturePad;
+        console.log("✅ SignaturePad already loaded");
+        return SignaturePad;
+      }
+
       try {
         const script = document.createElement("script");
         script.src =
           "https://cdn.jsdelivr.net/npm/signature_pad@4.1.7/dist/signature_pad.umd.min.js";
-        script.onload = () => {
-          SignaturePad = window.SignaturePad;
-          console.log("✅ SignaturePad loaded successfully");
-        };
+        script.async = true;
+        script.defer = true;
+
         document.head.appendChild(script);
 
         // Wait for script to load
-        return new Promise((resolve) => {
+        return new Promise((resolve, reject) => {
           script.onload = () => {
             SignaturePad = window.SignaturePad;
+            console.log("✅ SignaturePad loaded successfully");
             resolve(SignaturePad);
           };
+          script.onerror = () => {
+            console.error("❌ Failed to load SignaturePad script");
+            reject(new Error("Failed to load SignaturePad"));
+          };
+
+          // Timeout after 10 seconds
+          setTimeout(() => {
+            if (!SignaturePad) {
+              reject(new Error("SignaturePad loading timeout"));
+            }
+          }, 10000);
         });
       } catch (error) {
         console.error("❌ Failed to load SignaturePad:", error);
@@ -144,10 +162,66 @@ const newStatus = 50;
         }
 
         const canvases = document.querySelectorAll(".signature-canvas");
+        console.log("🎨 [DigitalSignature] Found", canvases.length, "signature canvases");
 
-        canvases.forEach((canvas) => {
+        canvases.forEach((canvas, index) => {
+          console.log(
+            "🎨 [DigitalSignature] Setting up canvas",
+            index + 1,
+            "of",
+            canvases.length,
+            ":",
+            canvas.id
+          );
           this.setupSignaturePad(canvas);
         });
+      }
+
+      initializeCanvas(canvas, maxWidth, maxHeight, aspectRatio) {
+        const container = canvas.parentElement;
+        if (!container) {
+          console.warn("🎨 [DigitalSignature] No container found for canvas:", canvas.id);
+          return;
+        }
+
+        const containerWidth = container.clientWidth;
+        const ratio = Math.max(window.devicePixelRatio || 1, 1);
+
+        // Calculate responsive dimensions
+        const availableWidth = Math.min(containerWidth - 4, maxWidth); // -4 for border
+        const calculatedHeight = availableWidth / aspectRatio;
+        const availableHeight = Math.min(calculatedHeight, maxHeight);
+
+        // Final dimensions
+        const displayWidth = availableWidth;
+        const displayHeight = availableHeight;
+
+        console.log("📐 [DigitalSignature] Initializing canvas dimensions:", {
+          containerWidth,
+          maxWidth,
+          maxHeight,
+          aspectRatio,
+          availableWidth,
+          availableHeight,
+          displayWidth,
+          displayHeight,
+          ratio,
+        });
+
+        // Set canvas internal dimensions (for drawing resolution)
+        canvas.width = displayWidth * ratio;
+        canvas.height = displayHeight * ratio;
+
+        // Set canvas display dimensions (for CSS)
+        canvas.style.width = displayWidth + "px";
+        canvas.style.height = displayHeight + "px";
+
+        const context = canvas.getContext("2d");
+        if (context) {
+          context.scale(ratio, ratio);
+          // Clear the canvas
+          context.clearRect(0, 0, displayWidth, displayHeight);
+        }
       }
 
       setupSignaturePad(canvas) {
@@ -164,6 +238,14 @@ const newStatus = 50;
           maxHeight,
           "Aspect ratio:",
           aspectRatio
+        );
+
+        // Ensure canvas has proper dimensions before creating SignaturePad
+        this.initializeCanvas(
+          canvas,
+          parseInt(maxWidth),
+          parseInt(maxHeight),
+          parseFloat(aspectRatio)
         );
 
         const signaturePad = new SignaturePad(canvas, {
@@ -608,9 +690,20 @@ const newStatus = 50;
 
     // Initialize when DOM is ready
     document.addEventListener("DOMContentLoaded", async () => {
+      console.log(
+        "🎨 [DigitalSignature] DOMContentLoaded - initializing digital signature manager"
+      );
+
       if (!window.digitalSignatureManager) {
+        console.log("🎨 [DigitalSignature] Creating new DigitalSignatureManager");
         window.digitalSignatureManager = new DigitalSignatureManager();
         // Wait for initialization to complete
+        await window.digitalSignatureManager.initializeSignatures();
+        console.log("🎨 [DigitalSignature] DigitalSignatureManager initialization complete");
+      } else {
+        console.log(
+          "🎨 [DigitalSignature] DigitalSignatureManager already exists, reinitializing signatures"
+        );
         await window.digitalSignatureManager.initializeSignatures();
       }
     });
