@@ -53,16 +53,20 @@ const defaultTab = validTabs.includes(tabParam || "") ? tabParam : "project-form
 // Fetch project data and project author profile - RLS will handle authorization
 let project = null;
 let authorProfile = null;
-let invoiceData = null;
+// let invoiceData = null;
 let totalAmount = 0;
 let invoiceId = "0";
 let statusLabels: Record<number, { status_name: string; [key: string]: any }> = {};
+let statusesResult: any = null;
+let statuses: any[] = [];
 
 console.log("🚀 [PROJECT] About to start database queries, supabase available:", !!supabase);
+console.log("🚀 [PROJECT] Supabase object:", supabase);
+console.log("🚀 [PROJECT] SupabaseAdmin object:", supabaseAdmin);
 
 if (supabase) {
   // OPTIMIZED: Run all database queries in parallel for much faster loading
-  const [projectResult, invoiceResult, statusesResult] = await Promise.all([
+  const [projectResult, invoiceResult, statusesResultData] = await Promise.all([
     // 1. Get project data
     supabase.from("projects").select("*").eq("id", id).single(),
 
@@ -76,9 +80,23 @@ if (supabase) {
     // 3. Get status labels (parallel with other queries)
     supabase
       .from("project_statuses")
-      .select("status_code, admin_status_name, client_status_name")
+      .select(
+        "status_code, admin_status_name, client_status_name, project_action, client_status_tab"
+      )
       .order("status_code"),
   ]);
+
+  // Assign the statuses result
+  statusesResult = statusesResultData;
+
+  console.log("🔍 [PROJECT-PAGE] Database query results:", {
+    statusesResult: statusesResult,
+    statusesError: statusesResult?.error,
+    statusesData: statusesResult?.data,
+    statusesLength: statusesResult?.data?.length || 0,
+  });
+
+  statuses = statusesResult?.data || [];
 
   // Check project query result
   if (projectResult.error) {
@@ -100,7 +118,7 @@ if (supabase) {
   // Process invoice data
   if (!invoiceResult.error && invoiceResult.data) {
     invoiceId = invoiceResult.data.id.toString();
-    invoiceData = invoiceResult.data;
+    // invoiceData = invoiceResult.data;
 
     // Calculate total by looping through catalog line items
     if (
@@ -127,19 +145,21 @@ if (supabase) {
   }
 
   // Process status labels
-  if (!statusesResult.error && statusesResult.data) {
-    statusLabels = statusesResult.data.reduce(
-      (acc, status) => {
-        acc[status.status_code] = {
-          status_name: status.admin_status_name || `Status ${status.status_code}`,
-          admin_status_name: status.admin_status_name,
-          client_status_name: status.client_status_name,
-        };
-        return acc;
-      },
-      {} as Record<number, any>
-    );
-  }
+  // if (!statusesResult.error && statusesResult.data) {
+  //   statusLabels = statusesResult.data.reduce(
+  //     (acc: Record<number, any>, status: any) => {
+  //       acc[status.status_code] = {
+  //         status_code: status.status_code,
+  //         admin_status_name: status.admin_status_name,
+  //         project_action: status.project_action,
+  //         client_status_name: status.client_status_name,
+  //         client_status_tab: status.client_status_tab,
+  //       };
+  //       return acc;
+  //     },
+  //     {} as Record<number, any>
+  //   );
+  // }
 
   // OPTIMIZED: Get author and assigned user profiles in parallel (only if needed)
   console.log("🔍 [PROJECT] Setting up profile queries:", {
@@ -242,13 +262,23 @@ if (supabase) {
       }
     }
   }
+} else {
+  console.error("🚀 [PROJECT] Supabase not available - cannot fetch data");
+  console.error("🚀 [PROJECT] This will cause the page to fail");
 }
 
 // Status labels are now fetched in parallel queries above - no duplicate query needed
 
 // Calculate projectStatus and projectStatusLabel
 const projectStatus = project?.status || 0;
-const projectStatusLabel = statusLabels?.[projectStatus]?.status_name || "Unknown Status";
+const statusLabel = (() => {
+  const statusInfo = statuses.find((s) => s.status_code === projectStatus);
+  if (!statusInfo) return "Unknown Status";
+
+  return currentRole === "Client" && statusInfo?.client_status_name
+    ? statusInfo.client_status_name
+    : statusInfo?.admin_status_name || "Unknown Status";
+})();
 
 // Safety check - if no project was found, redirect to dashboard
 if (!project) {
@@ -282,40 +312,13 @@ function getStatusColor(status: number): string {
         ${authorProfile?.display_name ? `<br/>${authorProfile.display_name}` : ""}
       </div>
     </div>`}
-    statusLabel={projectStatusLabel
-      ? (() => {
-          const statusInfo = statusLabels?.[project.status];
-          console.log("🔍 [PROJECT-PAGE] Status info for project", project.id, ":", {
-            status_code: project.status,
-            statusInfo: statusInfo,
-            currentRole: currentRole,
-          });
-
-          if (statusInfo) {
-            // For clients, use client_status_name if available, otherwise use admin_status_name
-            if (currentRole === "Client" && statusInfo.client_status_name) {
-              console.log(
-                "🔍 [PROJECT-PAGE] Using client_status_name:",
-                statusInfo.client_status_name
-              );
-              return statusInfo.client_status_name;
-            } else {
-              console.log(
-                "🔍 [PROJECT-PAGE] Using admin_status_name:",
-                statusInfo.admin_status_name
-              );
-              return statusInfo.admin_status_name;
-            }
-          }
-          return `Status ${project.status}`;
-        })()
-      : undefined}
+    statusLabel={statusLabel}
     statusColor={projectStatus ? getStatusColor(project.status) : undefined}
     projectId={projectId}
     projectStatus={projectStatus}
     currentRole={currentRole || "Client"}
     project={project}
-    statuses={Object.values(statusLabels || {})}
+    statuses={statuses}
     authorProfile={authorProfile}
     server:defer
   />
@@ -434,7 +437,7 @@ function getStatusColor(status: number): string {
         currentRole={currentRole || undefined}
         projectId={projectId}
         projectStatus={projectStatus}
-        projectStatusLabel={projectStatusLabel}
+        projectStatusLabel={statusLabel}
         authorProfile={authorProfile}
       />
 
@@ -445,7 +448,7 @@ function getStatusColor(status: number): string {
         currentRole={currentRole || undefined}
         projectId={projectId}
         projectStatus={projectStatus}
-        projectStatusLabel={projectStatusLabel}
+        projectStatusLabel={statusLabel}
         authorProfile={authorProfile}
         supabaseUrl={import.meta.env.PUBLIC_SUPABASE_URL}
         client:load={defaultTab === "discussion"}
@@ -457,7 +460,7 @@ function getStatusColor(status: number): string {
         currentRole={currentRole || undefined}
         projectId={projectId}
         projectStatus={projectStatus}
-        projectStatusLabel={projectStatusLabel}
+        projectStatusLabel={statusLabel}
         authorProfile={authorProfile}
         fileType="media"
         client:visible
@@ -469,7 +472,7 @@ function getStatusColor(status: number): string {
         currentRole={currentRole || undefined}
         projectId={projectId}
         projectStatus={projectStatus}
-        projectStatusLabel={projectStatusLabel}
+        projectStatusLabel={statusLabel}
         authorProfile={authorProfile}
         currentUser={currentUser}
         client:visible
@@ -481,7 +484,7 @@ function getStatusColor(status: number): string {
         currentRole={currentRole || undefined}
         projectId={projectId}
         projectStatus={projectStatus}
-        projectStatusLabel={projectStatusLabel}
+        projectStatusLabel={statusLabel}
         authorProfile={authorProfile}
         client:visible
       />
@@ -492,7 +495,7 @@ function getStatusColor(status: number): string {
         currentRole={currentRole || undefined}
         projectId={projectId}
         projectStatus={projectStatus}
-        projectStatusLabel={projectStatusLabel}
+        projectStatusLabel={statusLabel}
         authorProfile={authorProfile}
         invoiceId={invoiceId || "0"}
         totalAmount={totalAmount}
@@ -505,7 +508,7 @@ function getStatusColor(status: number): string {
         currentRole={currentRole || undefined}
         projectId={projectId}
         projectStatus={projectStatus}
-        projectStatusLabel={projectStatusLabel}
+        projectStatusLabel={statusLabel}
         authorProfile={authorProfile}
         client:visible
       />
@@ -516,7 +519,7 @@ function getStatusColor(status: number): string {
         currentRole={currentRole || undefined}
         projectId={projectId}
         projectStatus={projectStatus}
-        projectStatusLabel={projectStatusLabel}
+        projectStatusLabel={statusLabel}
         authorProfile={authorProfile}
         invoiceId={invoiceId || "0"}
         totalAmount={totalAmount}
@@ -530,7 +533,13 @@ function getStatusColor(status: number): string {
 
 <script
   type="module"
-  define:vars={{ userRole: currentRole, projectData: project, currentUserData: authorProfile }}
+  define:vars={{
+    userRole: currentRole,
+    projectData: project,
+    currentUserData: authorProfile,
+    projectStatus: projectStatus,
+    projectStatusLabel: statusLabel,
+  }}
 >
   // Tab switching functionality
   function switchTab(tabName) {

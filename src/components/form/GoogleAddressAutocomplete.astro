@@ -64,6 +64,88 @@ const {
 
       console.log("🗺️ [GoogleAutocomplete] Initializing for input:", id);
 
+      // Check if PlaceAutocompleteElement is available (new API)
+      if (window.google?.maps?.places?.PlaceAutocompleteElement) {
+        console.log("🗺️ [GoogleAutocomplete] Using new PlaceAutocompleteElement API");
+
+        // Create the new PlaceAutocompleteElement
+        const autocompleteElement = new google.maps.places.PlaceAutocompleteElement();
+
+        // Configure the element
+        autocompleteElement.setAttribute("placeholder", input.placeholder || "Enter address...");
+        autocompleteElement.setAttribute("data-google-autocomplete", "true");
+
+        // Apply the same styling as the original input
+        autocompleteElement.className = input.className;
+        autocompleteElement.id = input.id;
+        autocompleteElement.name = input.name;
+        autocompleteElement.value = input.value;
+        autocompleteElement.required = input.required;
+
+        // Replace the original input with the new element
+        input.parentNode?.replaceChild(autocompleteElement, input);
+
+        // Update references
+        const newInput = autocompleteElement;
+
+        // Handle place selection with new API
+        autocompleteElement.addEventListener("gmp-placeselect", (event) => {
+          const place = event.place;
+
+          if (!place.formattedAddress) {
+            console.log("🗺️ [GoogleAutocomplete] No address details available");
+            return;
+          }
+
+          console.log("🗺️ [GoogleAutocomplete] Place selected:", place.formattedAddress);
+
+          // Update the input value
+          newInput.value = place.formattedAddress;
+
+          // Trigger change event for form handling
+          newInput.dispatchEvent(new Event("change", { bubbles: true }));
+
+          // Store additional data if needed
+          newInput.dataset.placeData = JSON.stringify({
+            formatted_address: place.formattedAddress,
+            lat: place.location?.lat(),
+            lng: place.location?.lng(),
+            address_components: place.addressComponents,
+          });
+        });
+
+        // Show loading indicator while typing
+        newInput.addEventListener("input", function () {
+          if (this.value.length > 2) {
+            loadingIndicator?.classList.remove("hidden");
+          } else {
+            loadingIndicator?.classList.add("hidden");
+          }
+        });
+
+        // Hide loading indicator when autocomplete dropdown appears
+        newInput.addEventListener("keydown", function (event) {
+          // Prevent form submission when Enter is pressed
+          if (event.key === "Enter") {
+            event.preventDefault();
+            return;
+          }
+
+          setTimeout(() => {
+            loadingIndicator?.classList.add("hidden");
+          }, 100);
+        });
+
+        console.log(
+          "🗺️ [GoogleAutocomplete] Successfully initialized with PlaceAutocompleteElement for:",
+          id
+        );
+        return;
+      }
+
+      // Fallback to legacy Autocomplete API
+      console.log("🗺️ [GoogleAutocomplete] Using legacy Autocomplete API");
+
       // Create autocomplete instance with location bias
       const autocompleteOptions = {
         types: ["address"],
