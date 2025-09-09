@@ -29,7 +29,7 @@ export const POST: APIRoute = async ({ request }) => {
 
     console.log("🔄 [REPLACE-PLACEHOLDERS] Received data:", { mergedData, placeholderData });
 
-    // Replace placeholders in toast messages
+    // Replace placeholders in modal messages
     const replacePlaceholders = (message: string, data: any) => {
       if (!message) return null;
 

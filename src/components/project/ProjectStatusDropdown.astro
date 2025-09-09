@@ -274,61 +274,12 @@ if (canChangeStatus) {
                 notification.redirect
               );
             }
-          } else if (result.toastData && window.showSuccess) {
-            // Fallback to old toast system for backward compatibility
-            const isAdminOrStaff = window.location.pathname.includes('/admin') || 
-                                 document.querySelector('[data-user-role="Admin"]') || 
-                                 document.querySelector('[data-user-role="Staff"]');
-            
-            const toastInfo = isAdminOrStaff ? result.toastData.admin : result.toastData.client;
-            
-            console.log("🔔 [STATUS-DROPDOWN] Showing fallback toast:", { 
-              message: toastInfo.message,
-              redirect: toastInfo.redirect,
-              userType: isAdminOrStaff ? 'admin' : 'client'
-            });
-            
-            window.showSuccess('Status Updated', toastInfo.message, 5000);
-            
-            // Handle auto-redirect if specified
-            if (toastInfo.redirect) {
-              console.log("🔔 [STATUS-DROPDOWN] Auto-redirect to:", toastInfo.redirect);
-              setTimeout(() => {
-                window.location.href = toastInfo.redirect;
-              }, 3000); // 3 second delay
-            }
+          
           }
           console.log("🔔 [STATUS-DROPDOWN] Checking for statusConfig:", !!result.statusConfig);
           console.log("🔔 [STATUS-DROPDOWN] Available result:", Object.keys(result || {}));
           console.log("🔔 [STATUS-DROPDOWN] StatusConfig details:", result.statusConfig);
           
-          // if (result.statusConfig) {
-            // Get user role from authenticated user (server-side source of truth)
-
-            // Determine which toast message to show based on user role
-            
-            // Replace placeholders in the message
-            // toastMessage = toastMessage
-            //   .replace(/{{PROJECT_TITLE}}/g, projectTitle)
-            //   .replace(/{{CLIENT_EMAIL}}/g, clientEmail)
-            //   .replace(/{{EST_TIME}}/g, estTime);
-            
-            // if (toastMessage) {
-            //   console.log("🔔 [STATUS-DROPDOWN] Attempting to show toast:", toastMessage);
-            //   console.log("🔔 [STATUS-DROPDOWN] window.showSuccess available:", typeof window.showSuccess);
-            //   console.log("🔔 [STATUS-DROPDOWN] Available window functions:", {
-            //     showSuccess: typeof window.showSuccess,
-            //     showError: typeof window.showError,
-            //     simpleToastManager: typeof window.simpleToastManager,
-            //     toastAlertManager: typeof window.toastAlertManager
-            //   });
-              
-            //   if (window.showSuccess) {
-            //     console.log("🔔 [STATUS-DROPDOWN] Calling window.showSuccess");
-            //     window.showSuccess('Status Updated', toastMessage, 5000);
-            //   } 
-            // }
-          // }
           
           // Update the button text to show new status
           if (dropdownButton) {

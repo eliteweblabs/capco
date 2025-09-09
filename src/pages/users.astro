@@ -161,15 +161,6 @@ const userCounts = {
             <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
               <div class="flex items-center gap-4">
                 <h2 class="text-lg font-semibold text-gray-900 dark:text-white">All Users</h2>
-                <!-- Test Toast Button (remove after testing) -->
-                <button
-                  type="button"
-                  onclick="testToastSystem()"
-                  class="rounded bg-gray-100 px-2 py-1 text-xs text-gray-600 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-400 dark:hover:bg-gray-600"
-                  title="Test toast notifications"
-                >
-                  Test Toast
-                </button>
               </div>
 
               <div class="flex flex-col gap-2 sm:flex-row sm:items-center">
@@ -480,14 +471,6 @@ const userCounts = {
     if (roleFilter) (roleFilter as HTMLSelectElement).value = "";
 
     initializeUserManagement();
-
-    // Test toast system on page load
-    console.log("🔔 [USERS] Testing notification system availability:", {
-      showSuccess: typeof window.showSuccess,
-      showError: typeof window.showError,
-      showModal: typeof (window as any).showModal,
-      hideNotification: typeof (window as any).hideNotification,
-    });
   });
 
   function initializeUserManagement() {
@@ -606,8 +589,8 @@ const userCounts = {
             "Please fill in all required fields.",
             5000
           );
-        } else if (window.showError) {
-          window.showError("Validation Error", "Please fill in all required fields.", 5000);
+        } else if (window.showModal) {
+          window.showModal("Validation Error", "Please fill in all required fields.", "error");
         }
         return;
       }
@@ -622,8 +605,8 @@ const userCounts = {
             "Please enter a valid email address.",
             5000
           );
-        } else if (window.showError) {
-          window.showError("Validation Error", "Please enter a valid email address.", 5000);
+        } else if (window.showModal) {
+          window.showModal("Validation Error", "Please enter a valid email address.", "error");
         }
         return;
       }
@@ -649,17 +632,10 @@ const userCounts = {
           // Show notification if provided by API
           if (result.notification && (window as any).showModal) {
             (window as any).showModal(
-              result.notification.type,
               result.notification.title,
               result.notification.message,
+              result.notification.type,
               result.notification.duration || 5000
-            );
-          } else if (window.showSuccess) {
-            // Fallback to simple toast
-            window.showSuccess(
-              "User Created",
-              `${userData.first_name} ${userData.last_name} has been created successfully!`,
-              3000
             );
           }
 
@@ -705,26 +681,26 @@ const userCounts = {
 
           // Show error notification
           if ((window as any).showModal) {
-            (window as any).showModal("error", errorTitle, errorMessage, errorDuration);
-          } else if (window.showError) {
-            // Fallback to simple toast
-            window.showError(errorTitle, errorMessage, errorDuration);
+            (window as any).showModal(errorTitle, errorMessage, "error", errorDuration);
+          } else if (window.showModal) {
+            // Fallback to modal
+            window.showModal(errorTitle, errorMessage, "error");
           }
         }
       } catch (error) {
         console.error("Create user error:", error);
         if ((window as any).showModal) {
           (window as any).showModal(
-            "error",
             "Network Error",
             "Network error. Please check your connection and try again.",
+            "error",
             5000
           );
-        } else if (window.showError) {
-          window.showError(
+        } else if (window.showModal) {
+          window.showModal(
             "Network Error",
             "Network error. Please check your connection and try again.",
-            5000
+            "error"
           );
         }
       } finally {
@@ -832,25 +808,6 @@ const userCounts = {
     modal?.classList.add("flex");
   };
 
-  // Test toast system function
-  (window as any).testToastSystem = function () {
-    console.log("🔔 [TEST] Testing toast system...");
-
-    if (window.showSuccess) {
-      window.showSuccess("Toast Test", "Success toast is working! 🎉", 3000);
-    } else {
-      console.log("❌ window.showSuccess not available");
-    }
-
-    setTimeout(() => {
-      if (window.showError) {
-        window.showError("Toast Test", "Error toast is working! ⚠️", 3000);
-      } else {
-        console.log("❌ window.showError not available");
-      }
-    }, 500);
-  };
-
   async function executeDeleteUser() {
     if (!deleteUserId) return;
 
@@ -865,8 +822,8 @@ const userCounts = {
 
       if (response.ok) {
         // Show success message
-        if (window.showSuccess) {
-          window.showSuccess("User Deleted", "User has been successfully deleted.", 3000);
+        if (window.showModal) {
+          window.showModal("User Deleted", "User has been successfully deleted.", "success", 3000);
         }
 
         // Remove user from DOM
@@ -891,11 +848,11 @@ const userCounts = {
       }
     } catch (error) {
       console.error("Delete user error:", error);
-      if (window.showError) {
-        window.showError(
+      if (window.showModal) {
+        window.showModal(
           "Delete Failed",
           (error as Error).message || "Failed to delete user",
-          5000
+          "error"
         );
       }
     } finally {

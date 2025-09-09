@@ -389,9 +389,7 @@ const lang = getLangFromUrl(Astro.url);
       }
     </div>
 
-    <!-- Global URL Parameter Toast Handler -->
     <script>
-      // Handle URL parameters and show appropriate toast notifications globally
       document.addEventListener("DOMContentLoaded", () => {
         const currentUrl = new URL(window.location.href);
         const errorParam = currentUrl.searchParams.get("error");
@@ -477,8 +475,8 @@ const lang = getLangFromUrl(Astro.url);
           }
 
           // Use centralized notification system
-          if ((window as any).showError) {
-            (window as any).showError(errorTitle, errorMessage, 0); // Keep error messages until manually dismissed
+          if ((window as any).showModal) {
+            (window as any).showModal(errorTitle, errorMessage, "error");
           } else {
             console.error(`🔔 [${errorTitle}] ${errorMessage}`);
           }
@@ -521,8 +519,8 @@ const lang = getLangFromUrl(Astro.url);
           }
 
           // Use centralized notification system
-          if ((window as any).showSuccess) {
-            (window as any).showSuccess(successTitle, successMessage, 6000);
+          if ((window as any).showModal) {
+            (window as any).showModal(successTitle, successMessage, "success");
           } else {
             console.error(`🔔 [${successTitle}] ${successMessage}`);
           }
@@ -536,27 +534,12 @@ const lang = getLangFromUrl(Astro.url);
 
     <!-- Expose centralized notification system to window object -->
     <script>
-      import {
-        showToast,
-        showSuccess,
-        showError,
-        showWarning,
-        showInfo,
-      } from "../../lib/simple-toast";
-
-      // Make toast utilities available globally
-      (window as any).showToast = showToast;
-      (window as any).showSuccess = showSuccess;
-      (window as any).showError = showError;
-      (window as any).showWarning = showWarning;
-      (window as any).showInfo = showInfo;
+      // showModal is already available globally from UnifiedNotification component
+      // No import needed - the function is exposed by the UnifiedNotificationManager
 
       // console.log("🔔 [APP] Centralized notification system exposed to window object");
       // console.log("🔔 [APP] Window functions available:", {
-      //   showSuccess: typeof (window as any).showSuccess,
-      //   showError: typeof (window as any).showError,
-      //   showWarning: typeof (window as any).showWarning,
-      //   showInfo: typeof (window as any).showInfo,
+      //   showModal: typeof (window as any).showModal,
       // });
 
       // Suppress ResizeObserver loop warnings (they're usually harmless)

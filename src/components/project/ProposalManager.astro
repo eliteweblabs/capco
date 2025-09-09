@@ -1342,11 +1342,11 @@ const hasExistingProposal = !!existingInvoice;
                 loadSubjects("");
               } else {
                 console.error("Failed to create subject:", data.error);
-                window.showError("Error", "Failed to create subject");
+                window.showModal("Error", "Failed to create subject", "error");
               }
             } catch (error) {
               console.error("Error creating subject:", error);
-              window.showError("Error", "Failed to create subject");
+              window.showModal("Error", "Failed to create subject", "error");
             }
           }
         });
@@ -1382,7 +1382,7 @@ const hasExistingProposal = !!existingInvoice;
       const newSubject = hiddenInput ? hiddenInput.value.trim() : "";
 
       if (!newSubject) {
-        window.showError("Error", "Please select or enter a subject");
+        window.showModal("Error", "Please select or enter a subject", "error");
         return;
       }
 
@@ -1413,7 +1413,7 @@ const hasExistingProposal = !!existingInvoice;
         } else {
           // Check if it's a migration required error
           if (data.migration_required) {
-            window.showError("Database Error", "Database column 'subject' not found in invoices table");
+            window.showModal("Database Error", "Database column 'subject' not found in invoices table", "error");
             console.error("Column missing:", data.details);
           } else {
             throw new Error(data.error || "Failed to update subject");
@@ -1421,7 +1421,7 @@ const hasExistingProposal = !!existingInvoice;
         }
       } catch (error) {
         console.error("Error updating proposal subject:", error);
-        window.showError("Error", "Failed to update proposal subject");
+        window.showModal("Error", "Failed to update proposal subject", "error");
       }
     });
 
@@ -1519,10 +1519,11 @@ const hasExistingProposal = !!existingInvoice;
         console.error("❌ [PROPOSAL-MANAGER] Failed to accept proposal:", result.error);
         
         // Show error message
-        if (typeof window.showError === 'function') {
-          window.showError(
+        if (typeof window.showModal === 'function') {
+          window.showModal(
             "Error",
-            result.error || "Failed to accept proposal. Please try again."
+            result.error || "Failed to accept proposal. Please try again.",
+            "error"
           );
         }
         
@@ -1534,10 +1535,11 @@ const hasExistingProposal = !!existingInvoice;
       console.error("❌ [PROPOSAL-MANAGER] Error accepting proposal:", error);
       
       // Show error message
-      if (typeof window.showError === 'function') {
-        window.showError(
+      if (typeof window.showModal === 'function') {
+        window.showModal(
           "Error",
-          "An error occurred while accepting the proposal. Please try again."
+          "An error occurred while accepting the proposal. Please try again.",
+          "error"
         );
       }
       

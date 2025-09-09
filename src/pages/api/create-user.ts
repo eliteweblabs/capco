@@ -7,12 +7,12 @@ import { getApiBaseUrl } from "../../lib/url-utils";
 export const GET: APIRoute = async ({ cookies }) => {
   console.log("=== CREATE STAFF GET TEST ===");
   try {
-    const { isAuth, role } = await checkAuth(cookies);
+    const { isAuth, currentRole } = await checkAuth(cookies);
     return new Response(
       JSON.stringify({
         success: true,
         message: "Create staff endpoint is accessible",
-        auth: { isAuth, role },
+        auth: { isAuth, role: currentRole },
         supabaseConfigured: !!supabase,
       }),
       {
@@ -77,11 +77,11 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
     console.log("3. Checking authentication...");
     // Check authentication and ensure user is Admin
-    const { isAuth, role } = await checkAuth(cookies);
-    console.log("4. Auth result:", { isAuth, role });
+    const { isAuth, currentRole } = await checkAuth(cookies);
+    console.log("4. Auth result:", { isAuth, role: currentRole });
 
-    if (!isAuth || role !== "Admin") {
-      console.log("5. AUTH FAILED - User not authorized:", { isAuth, role });
+    if (!isAuth || currentRole !== "Admin") {
+      console.log("5. AUTH FAILED - User not authorized:", { isAuth, role: currentRole });
       return new Response(
         JSON.stringify({
           success: false,
@@ -443,7 +443,7 @@ Click the button below to access your account and set up your password.`;
           last_name: last_name.trim(),
           role: staffRole,
         },
-        // Add notification data for client-side toast
+        // Add notification data for client-side modal
         notification: {
           type: "success",
           title: "User Created Successfully",

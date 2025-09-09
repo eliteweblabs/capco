@@ -35,7 +35,14 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     }
 
     const body = await request.json();
-    let { projectId, message, internal = false, sms_alert = false, parent_id = null } = body;
+    let {
+      projectId,
+      message,
+      internal = false,
+      sms_alert = false,
+      parent_id = null,
+      imagePaths = [],
+    } = body;
 
     // Force internal = false for clients (only Admin/Staff can create internal comments)
     const isClient = currentRole === "Client";
@@ -98,6 +105,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         internal: internal,
         sms_alert: sms_alert,
         parent_id: parent_id,
+        image_paths: imagePaths,
       })
       .select(
         `
@@ -108,7 +116,8 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         internal,
         sms_alert,
         project_id,
-        parent_id
+        parent_id,
+        image_paths
       `
       )
       .single();
