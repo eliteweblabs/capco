@@ -11,7 +11,7 @@ const canManageProposals = currentRole === "Admin" || currentRole === "Staff";
 // Check if there's already an invoice for this project
 let existingInvoice = null;
 try {
-  console.log("🔍 [ProposalManager] Checking for existing invoice for project:", projectId);
+  // console.log("🔍 [ProposalManager] Checking for existing invoice for project:", projectId);
 
   if (!supabase) {
     console.error("❌ [ProposalManager] Database not configured");
@@ -335,7 +335,7 @@ const hasExistingProposal = !!existingInvoice;
 <script type="module" define:vars={{ projectId, project, authorProfile, existingInvoice, hasExistingProposal, projectStatus }}>
   // Inline proposal manager initialization
   async function initializeProposalManager(projectId, project, projectAuthor) {
-    console.log("🔧 [PROPOSAL-MANAGER] Initializing proposal manager for project:", projectId);
+    // console.log("🔧 [PROPOSAL-MANAGER] Initializing proposal manager for project:", projectId);
     
     try {
       // Dynamic import with absolute path that Astro can resolve
@@ -344,7 +344,7 @@ const hasExistingProposal = !!existingInvoice;
       // Create a new instance
       window.proposalManager = new ProposalManager(projectId, project, projectAuthor);
       
-      console.log("✅ [PROPOSAL-MANAGER] ProposalManager initialized successfully");
+      // console.log("✅ [PROPOSAL-MANAGER] ProposalManager initialized successfully");
     } catch (error) {
       console.error("❌ [PROPOSAL-MANAGER] Failed to initialize ProposalManager:", error);
       
@@ -365,7 +365,7 @@ const hasExistingProposal = !!existingInvoice;
 
   // Define the updateRowTotalDirect function globally first
   function updateRowTotalDirect(inputElement) {
-    console.log("🔍 [DIRECT] updateRowTotalDirect called with input:", inputElement, "value:", inputElement.value);
+    // console.log("🔍 [DIRECT] updateRowTotalDirect called with input:", inputElement, "value:", inputElement.value);
     const row = inputElement.closest('tr');
     if (!row) {
       console.log("❌ [DIRECT] No row found for input element");
@@ -391,21 +391,21 @@ const hasExistingProposal = !!existingInvoice;
 
     const totalSpan = row.querySelector('.row-total, .line-item-total');
 
-    console.log("🔍 [DIRECT] Found elements:", {
-      qtyInput: !!qtyInput,
-      priceInput: !!priceInput,
-      totalSpan: !!totalSpan,
-      qtyValue: qtyInput?.value,
-      priceValue: priceInput?.value,
-      triggeredBy: inputElement.getAttribute('data-field') || inputElement.className
-    });
+    // console.log("🔍 [DIRECT] Found elements:", {
+    //   qtyInput: !!qtyInput,
+    //   priceInput: !!priceInput,
+    //   totalSpan: !!totalSpan,
+    //   qtyValue: qtyInput?.value,
+    //   priceValue: priceInput?.value,
+    //   triggeredBy: inputElement.getAttribute('data-field') || inputElement.className
+    // });
 
     if (qtyInput && priceInput && totalSpan) {
       const quantity = parseFloat(qtyInput.value) || 0;
       const unitPrice = parseFloat(priceInput.value) || 0;
       const total = quantity * unitPrice;
 
-      console.log("🔍 [DIRECT] Calculating total:", { quantity, unitPrice, total });
+      // console.log("🔍 [DIRECT] Calculating total:", { quantity, unitPrice, total });
       totalSpan.textContent = `$${total.toFixed(2)}`;
 
       // Update grand total
@@ -624,11 +624,11 @@ const hasExistingProposal = !!existingInvoice;
       
       // Add event listeners to mark row as edited when inputs change
       const inputs = row.querySelectorAll('input');
-      console.log(`🔍 [PROPOSAL-MANAGER] Adding edit listeners to ${inputs.length} inputs for row with catalog ID: ${item.catalog_item_id}`);
+      // console.log(`🔍 [PROPOSAL-MANAGER] Adding edit listeners to ${inputs.length} inputs for row with catalog ID: ${item.catalog_item_id}`);
       inputs.forEach((input, inputIndex) => {
         input.addEventListener('input', () => {
           row.setAttribute("data-edited", "true");
-          console.log(`🔍 [PROPOSAL-MANAGER] Row marked as edited (input ${inputIndex})`);
+          // console.log(`🔍 [PROPOSAL-MANAGER] Row marked as edited (input ${inputIndex})`);
         });
       });
       
@@ -695,7 +695,7 @@ const hasExistingProposal = !!existingInvoice;
 
     // Autocomplete functionality
     function initializeAutocomplete() {
-      console.log("🔍 [AUTOCOMPLETE] Initializing autocomplete for all line item rows");
+      // console.log("🔍 [AUTOCOMPLETE] Initializing autocomplete for all line item rows");
       
       // Initialize autocomplete for existing rows
       initializeAutocompleteForRows();
@@ -707,7 +707,7 @@ const hasExistingProposal = !!existingInvoice;
     // Initialize autocomplete for specific rows
     function initializeAutocompleteForRows() {
       const lineItemRows = document.querySelectorAll('.line-item-row');
-      console.log("🔍 [AUTOCOMPLETE] Found", lineItemRows.length, "line item rows");
+      // console.log("🔍 [AUTOCOMPLETE] Found", lineItemRows.length, "line item rows");
       
       lineItemRows.forEach((row, index) => {
         const descriptionInput = row.querySelector('.line-item-name') ;
@@ -718,7 +718,7 @@ const hasExistingProposal = !!existingInvoice;
         const addButton = row.querySelector('.add-line-item-btn') ;
 
         if (descriptionInput && dropdown && addButton) {
-          console.log("🔍 [AUTOCOMPLETE] Setting up autocomplete for row", index);
+          // console.log("🔍 [AUTOCOMPLETE] Setting up autocomplete for row", index);
           setupAutocompleteForRow(row, descriptionInput, dropdown, quantityInput, unitPriceInput, totalDisplay, addButton);
         }
       });
@@ -728,7 +728,7 @@ const hasExistingProposal = !!existingInvoice;
     function setupAutocompleteForRow(row, descriptionInput, dropdown, quantityInput, unitPriceInput, totalDisplay, addButton) {
       // The autocomplete functionality is now handled by event delegation
       // This function is kept for compatibility but the real work is done in setupEventDelegation
-      console.log("🔍 [AUTOCOMPLETE] Setting up row (delegated to event handlers)");
+      // console.log("🔍 [AUTOCOMPLETE] Setting up row (delegated to event handlers)");
     }
 
     // Set up event delegation for dynamically added rows
@@ -738,7 +738,7 @@ const hasExistingProposal = !!existingInvoice;
       // Listen for focus events on description inputs
       document.addEventListener('focus', (e) => {
         const target = e.target;
-        console.log("🔍 [AUTOCOMPLETE] Focus event triggered on:", target);
+        // console.log("🔍 [AUTOCOMPLETE] Focus event triggered on:", target);
         
         // Check for both new class names and existing data attributes
         const isDescriptionField = (target && target instanceof HTMLElement && 
@@ -746,7 +746,7 @@ const hasExistingProposal = !!existingInvoice;
            target.getAttribute('data-field') === 'description'));
            
         if (isDescriptionField) {
-          console.log("🔍 [AUTOCOMPLETE] Focus on description field detected");
+          // console.log("🔍 [AUTOCOMPLETE] Focus on description field detected");
           const row = target.closest('tr');
           if (row) {
             // Look for existing dropdown or create one
@@ -759,18 +759,18 @@ const hasExistingProposal = !!existingInvoice;
                 dropdown.className = 'autocomplete-dropdown overflow-y-auto absolute z-50 w-66 h-80 mt-1 bg-white border border-gray-300 rounded-md shadow-lg dark:bg-gray-700 dark:border-gray-600 hidden';
                 // inputContainer.style.position = 'relative';
                 inputContainer.appendChild(dropdown);
-                console.log("🔍 [AUTOCOMPLETE] Created dropdown for row");
+                // console.log("🔍 [AUTOCOMPLETE] Created dropdown for row");
               }
             }
             
             if (dropdown) {
-              console.log("🔍 [AUTOCOMPLETE] Loading catalog items for dropdown");
+              // console.log("🔍 [AUTOCOMPLETE] Loading catalog items for dropdown");
               loadAllCatalogItemsForRow(dropdown);
             } else {
-              console.log("❌ [AUTOCOMPLETE] Could not create or find dropdown");
+              // console.log("❌ [AUTOCOMPLETE] Could not create or find dropdown");
             }
           } else {
-            console.log("❌ [AUTOCOMPLETE] No row found");
+            // console.log("❌ [AUTOCOMPLETE] No row found");
           }
         }
       }, true);
