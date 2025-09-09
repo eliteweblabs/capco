@@ -74,7 +74,7 @@ export function showSlotMachinePicker(
         box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
         max-width: 24rem;
         margin: 0 auto;
-        height: 400px;
+        height: 420px;
         display: flex;
         flex-direction: column;
       }
@@ -113,7 +113,7 @@ export function showSlotMachinePicker(
         -ms-overflow-style: none;
         height: 100%;
         max-height: 280px;
-        padding: 140px 0;
+        padding: 0;
         box-sizing: border-box;
       }
 
@@ -255,13 +255,23 @@ export function showSlotMachinePicker(
     const confirmBtn = document.getElementById(`${config.id}-confirm-btn`);
     const modal = document.getElementById(`${config.id}-modal`);
 
+    // Find the initial selected index based on selectedValue, or default to middle
     let selectedIndex = Math.floor(config.options.length / 2);
+    if (config.selectedValue !== undefined) {
+      const foundIndex = config.options.findIndex(
+        (option) => option.value === config.selectedValue
+      );
+      if (foundIndex !== -1) {
+        selectedIndex = foundIndex;
+      }
+    }
     let isDragging = false;
     let startY = 0;
     let currentY = 0;
     let velocity = 0;
     let lastY = 0;
     let lastTime = 0;
+    let snapTimeout: number | null = null;
 
     // Set initial position
     console.log(
@@ -270,18 +280,31 @@ export function showSlotMachinePicker(
       "options length:",
       config.options.length
     );
-    
+
     // Debug wheel container dimensions
     if (wheel) {
       console.log("🎰 [SLOT-MACHINE] Wheel container dimensions:", {
         scrollHeight: wheel.scrollHeight,
         clientHeight: wheel.clientHeight,
         offsetHeight: wheel.offsetHeight,
-        scrollTop: wheel.scrollTop
+        scrollTop: wheel.scrollTop,
       });
     }
-    
-    scrollToIndex(selectedIndex, false);
+
+    // Wait for DOM to be fully rendered, then set initial position
+    setTimeout(() => {
+      console.log("🎰 [SLOT-MACHINE] Setting initial position for index:", selectedIndex);
+      scrollToIndex(selectedIndex, false);
+
+      // Double-check after a short delay to ensure it's centered
+      setTimeout(() => {
+        if (wheel) {
+          console.log("🎰 [SLOT-MACHINE] Final scroll position:", wheel.scrollTop);
+          // Force update selection to ensure the correct item is highlighted
+          updateSelection();
+        }
+      }, 50);
+    }, 150);
 
     // Add event listeners
     closeBtn?.addEventListener("click", closeModal);
@@ -327,6 +350,19 @@ export function showSlotMachinePicker(
     wheel?.addEventListener(
       "wheel",
       (e) => {
+        console.log("🎰 [SLOT-MACHINE] Wheel event detected - deltaY:", e.deltaY);
+        e.preventDefault();
+        e.stopPropagation();
+        handleWheel(e.deltaY);
+      },
+      { passive: false }
+    );
+
+    // Also add wheel support to the modal container
+    modal?.addEventListener(
+      "wheel",
+      (e) => {
+        console.log("🎰 [SLOT-MACHINE] Modal wheel event detected - deltaY:", e.deltaY);
         e.preventDefault();
         e.stopPropagation();
         handleWheel(e.deltaY);
@@ -366,7 +402,8 @@ export function showSlotMachinePicker(
     wheel?.addEventListener("touchend", () => {
       if (!isDragging) return;
       isDragging = false;
-      snapToNearest();
+      // Remove snapping for now to test basic scrolling
+      // snapToNearest();
     });
 
     function handleWheel(deltaY: number) {
@@ -379,27 +416,36 @@ export function showSlotMachinePicker(
         wheel.scrollTop
       );
 
-      const itemHeight = 48;
-      // Make scrolling more responsive - use actual deltaY for better control
-      const scrollAmount = deltaY * 0.5;
+      // Smoother scrolling with less aggressive snapping
+      const scrollAmount = deltaY * 1.5; // Reduced for smoother scrolling
+      const newScroll = wheel.scrollTop + scrollAmount;
 
-      wheel.scrollTop += scrollAmount;
+      wheel.scrollTop = newScroll;
       console.log("🎰 [SLOT-MACHINE] New scroll position:", wheel.scrollTop);
 
-      // Use requestAnimationFrame for smoother animation
-      requestAnimationFrame(() => {
+      // Clear any existing snap timeout to prevent multiple snaps
+      if (snapTimeout) {
+        clearTimeout(snapTimeout);
+      }
+
+      // Snap to nearest item after a longer delay to reduce twitchiness
+      snapTimeout = setTimeout(() => {
         snapToNearest();
-      });
+      }, 500);
     }
 
     function snapToNearest() {
       if (!wheel) return;
 
       const itemHeight = 48;
-      const padding = 140; // Top padding of the wheel
+      const visibleHeight = 280; // Height of the visible area
+      const centerOffset = (visibleHeight - itemHeight) / 2; // Center the item in the visible area
       const currentScroll = wheel.scrollTop;
-      const adjustedScroll = currentScroll - padding;
-      const nearestIndex = Math.round(adjustedScroll / itemHeight);
+      const adjustedScroll = currentScroll + centerOffset;
+      const nearestIndex = Math.max(
+        0,
+        Math.min(config.options.length - 1, Math.round(adjustedScroll / itemHeight))
+      );
 
       console.log(
         "🎰 [SLOT-MACHINE] Snap to nearest - currentScroll:",
@@ -435,25 +481,37 @@ export function showSlotMachinePicker(
       }
 
       const itemHeight = 48;
-      const padding = 140; // Top padding of the wheel
-      const targetScroll = (index * itemHeight) + padding;
+      const visibleHeight = 280; // Height of the visible area
+      const centerOffset = (visibleHeight - itemHeight) / 2; // Center the item in the visible area
+      const targetScroll = index * itemHeight - centerOffset;
+
+      // Ensure we don't scroll beyond bounds
+      const maxScroll = Math.max(0, (config.options.length - 1) * itemHeight - centerOffset);
+      const clampedScroll = Math.max(0, Math.min(targetScroll, maxScroll));
 
       console.log(
         "🎰 [SLOT-MACHINE] Scrolling to index:",
         index,
         "target scroll:",
         targetScroll,
+        "clamped scroll:",
+        clampedScroll,
         "current scroll:",
         wheel.scrollTop
       );
 
-      wheel.scrollTop = targetScroll;
-      
+      wheel.scrollTop = clampedScroll;
+
       // Check if scroll actually changed
       setTimeout(() => {
-        console.log("🎰 [SLOT-MACHINE] After scroll (delayed) - new scrollTop:", wheel.scrollTop, "expected:", targetScroll);
+        console.log(
+          "🎰 [SLOT-MACHINE] After scroll (delayed) - new scrollTop:",
+          wheel.scrollTop,
+          "expected:",
+          targetScroll
+        );
       }, 10);
-      
+
       selectedIndex = index;
 
       console.log(
