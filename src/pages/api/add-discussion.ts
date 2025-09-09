@@ -94,6 +94,9 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       message: message.trim(),
       internal: internal,
       sms_alert: sms_alert,
+      image_paths: imagePaths,
+      image_paths_type: typeof imagePaths,
+      image_paths_length: Array.isArray(imagePaths) ? imagePaths.length : "not array",
     });
 
     const { data: discussion, error } = await supabase

@@ -147,6 +147,18 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         "application/x-autocad", // Alternative DWG MIME type
         "application/autocad", // Another alternative DWG MIME type
       ];
+    } else if (fileType === "discussion-images") {
+      // Allow image files for discussion comments
+      allowedTypes = [
+        "image/jpeg",
+        "image/jpg",
+        "image/png",
+        "image/gif",
+        "image/webp",
+        "image/bmp",
+        "image/tiff",
+        "image/svg+xml",
+      ];
     } else {
       // Default to PDF only for backward compatibility
       allowedTypes = ["application/pdf"];
@@ -248,13 +260,26 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         // Generate unique file path
         const timestamp = Date.now();
         const fileName = `${timestamp}-${file.name.replace(/[^a-zA-Z0-9.-]/g, "_")}`;
-        const filePath = `${fileType === "media" ? "project-media" : "project-documents"}/${projectId}/${fileName}`;
 
-        console.log(`Uploading to path: ${filePath}`);
+        // Determine bucket and path based on file type
+        let bucket = "project-documents";
+        let pathPrefix = "project-documents";
+
+        if (fileType === "media") {
+          bucket = "project-media";
+          pathPrefix = "project-media";
+        } else if (fileType === "discussion-images") {
+          bucket = "project-documents";
+          pathPrefix = "discussion-images";
+        }
+
+        const filePath = `${pathPrefix}/${projectId}/${fileName}`;
+
+        console.log(`Uploading to bucket: ${bucket}, path: ${filePath}`);
 
         // Upload to Supabase Storage
         const { data: uploadData, error: uploadError } = await supabase.storage
-          .from("project-documents")
+          .from(bucket)
           .upload(filePath, file, {
             contentType: file.type,
             upsert: false,

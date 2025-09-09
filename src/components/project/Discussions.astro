@@ -341,7 +341,7 @@ const placeholder =
                       src="${getImageUrl(imagePath)}" 
                       alt="Discussion image"
                       class="max-w-xs max-h-48 object-cover rounded-lg border border-gray-300 dark:border-gray-600 cursor-pointer hover:opacity-90 transition-opacity"
-                      onclick="openImageModal('${getImageUrl(imagePath)}')"
+                      onclick="console.log('🖼️ [DISCUSSION] Image clicked:', '${getImageUrl(imagePath)}'); openImageModal('${getImageUrl(imagePath)}')"
                     />
                     <div class="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-10 transition-all rounded-lg flex items-center justify-center">
                       <i class="bx bx-zoom-in text-white opacity-0 group-hover:opacity-100 transition-opacity text-2xl"></i>
@@ -626,17 +626,25 @@ const placeholder =
 
     // Image URL helper function
     function getImageUrl(imagePath) {
+      console.log("🖼️ [DISCUSSION] getImageUrl called with:", imagePath);
+      console.log("🖼️ [DISCUSSION] supabaseUrl:", supabaseUrl);
+
       // If it's already a full URL, return as is
       if (imagePath.startsWith("http")) {
+        console.log("🖼️ [DISCUSSION] Already full URL, returning:", imagePath);
         return imagePath;
       }
       // Otherwise, construct the Supabase storage URL
       const baseUrl = supabaseUrl || "https://your-project.supabase.co";
-      return `${baseUrl}/storage/v1/object/public/project-documents/${imagePath}`;
+      const fullUrl = `${baseUrl}/storage/v1/object/public/project-documents/${imagePath}`;
+      console.log("🖼️ [DISCUSSION] Constructed URL:", fullUrl);
+      return fullUrl;
     }
 
     // Image modal functionality
     function openImageModal(imageUrl) {
+      console.log("🖼️ [DISCUSSION] openImageModal called with:", imageUrl);
+
       // Create modal overlay
       const modal = document.createElement("div");
       modal.className =
@@ -714,29 +722,48 @@ const placeholder =
       try {
         // Upload images first if any
         let uploadedImagePaths = [];
+        let uploadErrors = [];
+
         if (selectedImages.length > 0) {
           console.log("📸 Uploading", selectedImages.length, "images");
 
           for (const image of selectedImages) {
-            const formData = new FormData();
-            formData.append("file", image);
-            formData.append("projectId", currentProjectId);
-            formData.append("fileType", "discussion-images");
-            formData.append("fileTitle", `Discussion Image - ${image.name}`);
+            try {
+              const formData = new FormData();
+              formData.append("file", image);
+              formData.append("projectId", currentProjectId);
+              formData.append("fileType", "discussion-images");
+              formData.append("fileTitle", `Discussion Image - ${image.name}`);
 
-            const uploadResponse = await fetch("/api/upload", {
-              method: "POST",
-              body: formData,
-            });
+              const uploadResponse = await fetch("/api/upload", {
+                method: "POST",
+                body: formData,
+              });
 
-            const uploadResult = await uploadResponse.json();
+              const uploadResult = await uploadResponse.json();
 
-            if (uploadResult.success) {
-              uploadedImagePaths.push(uploadResult.filePath);
-              console.log("✅ Image uploaded:", image.name);
-            } else {
-              console.error("❌ Failed to upload image:", image.name, uploadResult.error);
-              throw new Error(`Failed to upload image: ${image.name}`);
+              if (uploadResult.success && uploadResult.files && uploadResult.files.length > 0) {
+                uploadedImagePaths.push(uploadResult.files[0].path);
+                console.log("✅ Image uploaded:", image.name, "Path:", uploadResult.files[0].path);
+              } else {
+                console.error("❌ Failed to upload image:", image.name, uploadResult.error);
+                uploadErrors.push(`${image.name}: ${uploadResult.error || "Unknown error"}`);
+              }
+            } catch (uploadError) {
+              console.error("❌ Upload error for image:", image.name, uploadError);
+              uploadErrors.push(`${image.name}: ${uploadError.message}`);
+            }
+          }
+
+          // Show warning if some images failed to upload
+          if (uploadErrors.length > 0) {
+            console.warn("⚠️ Some images failed to upload:", uploadErrors);
+            if (window.showModal) {
+              window.showModal(
+                "warning",
+                "Image Upload Issues",
+                `Some images failed to upload: ${uploadErrors.join(", ")}. The comment will be posted without these images.`
+              );
             }
           }
         }
@@ -776,11 +803,19 @@ const placeholder =
           }
         } else {
           console.error("Failed to submit comment:", data.error);
-          alert("Failed to submit comment: " + data.error);
+          if (window.showModal) {
+            window.showModal("error", "Comment Failed", `Failed to submit comment: ${data.error}`);
+          } else {
+            alert("Failed to submit comment: " + data.error);
+          }
         }
       } catch (error) {
         console.error("Error submitting comment:", error);
-        alert("Error submitting comment: " + error.message);
+        if (window.showModal) {
+          window.showModal("error", "Comment Error", `Error submitting comment: ${error.message}`);
+        } else {
+          alert("Error submitting comment: " + error.message);
+        }
       } finally {
         // Reset loading state
         if (submitBtn) {

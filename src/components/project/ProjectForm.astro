@@ -47,29 +47,28 @@ const buttonGroups = getFilteredButtonGroups(currentRole, isNewProject, projectS
 const formActions = getFilteredFormActions(currentRole, isNewProject, projectStatus);
 
 // Debug logging
-// console.log("📝 [ProjectForm] Debug info:", {
-//   role,
-//   isNewProject,
-//   projectStatus,
-//   formFieldsCount: formFields.length,
-//   buttonGroupsCount: buttonGroups.length,
-//   formActionsCount: formActions.length,
-//   formFields: formFields.map((f) => ({
-//     id: f.id,
-//     name: f.name,
-//     allow: f.allow,
-//   })),
-//   buttonGroups: buttonGroups.map((g) => ({
-//     id: g.id,
-//     name: g.name,
-//     allow: g.allow,
-//   })),
-//   formActions: formActions.map((a) => ({
-//     id: a.id,
-//     label: a.label,
-//     allow: a.allow,
-//   })),
-// });
+console.log("📝 [ProjectForm] Debug info:", {
+  isNewProject,
+  projectStatus,
+  formFieldsCount: formFields.length,
+  buttonGroupsCount: buttonGroups.length,
+  formActionsCount: formActions.length,
+  formFields: formFields.map((f) => ({
+    id: f.id,
+    name: f.name,
+    allow: f.allow,
+  })),
+  buttonGroups: buttonGroups.map((g) => ({
+    id: g.id,
+    name: g.name,
+    allow: g.allow,
+  })),
+  formActions: formActions.map((a) => ({
+    id: a.id,
+    label: a.label,
+    allow: a.allow,
+  })),
+});
 
 // Check specifically for the existing client select field
 // const existingClientField = formFields.find((f) => f.id === "existing-client-select");
@@ -109,22 +108,29 @@ const formActions = getFilteredFormActions(currentRole, isNewProject, projectSta
 
   <!-- Google Address Autocomplete Field -->
   {
-    formFields
-      .filter(
+    ((projectStatus) => {
+      const googleFields = formFields.filter(
         (field) => field.type === "component" && field.component === "GoogleAddressAutocomplete"
-      )
-      .map((field) => (
-        <div class="relative">
-          <GoogleAddressAutocomplete
-            id={`${field.id}`}
-            name={field.name}
-            label={field.label}
-            value={project?.[field.name] || ""}
-            placeholder={field.componentProps?.placeholder || "Enter address..."}
-            required={field.componentProps?.required || field.required || false}
-          />
-        </div>
-      ))
+      );
+      console.log("🔍 [ProjectForm] GoogleAddressAutocomplete fields:", {
+        projectStatus,
+        googleFieldsCount: googleFields.length,
+        googleFields: googleFields.map((f) => ({ id: f.id, hideAtStatus: f.hideAtStatus })),
+      });
+      return googleFields;
+    })().map((field) => (
+      <div class="relative">
+        <GoogleAddressAutocomplete
+          id={`${field.id}`}
+          name={field.name}
+          label={field.label}
+          value={project?.[field.name] || ""}
+          placeholder={field.componentProps?.placeholder || "Enter address..."}
+          required={field.componentProps?.required || field.required || false}
+          projectStatus={projectStatus || 0}
+        />
+      </div>
+    ))
   }
 
   <!-- Other Core Fields Grid -->
