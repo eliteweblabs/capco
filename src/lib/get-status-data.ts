@@ -61,8 +61,8 @@ export async function getStatusData(
     return null;
   }
   console.log("🔍 [GET-STATUS-DATA] ✅ Status config retrieved:", {
-    toast_admin: statusConfig.toast_admin,
-    toast_client: statusConfig.toast_client,
+    modal_admin: statusConfig.modal_admin,
+    modal_client: statusConfig.modal_client,
     notify: statusConfig.notify,
     admin_email_subject: statusConfig.admin_email_subject,
     admin_email_content: statusConfig.admin_email_content,

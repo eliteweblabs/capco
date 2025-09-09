@@ -41,9 +41,6 @@
     show(options: NotificationOptions): string {
       // console.log("🔔 [UNIFIED-NOTIFICATION] show() called with options:", options);
 
-      // Hide any existing modals with duration === 0 before showing new one
-      this.hidePersistentModals();
-
       const id = crypto.randomUUID();
       const fullNotification = { ...options, id };
 
@@ -51,14 +48,48 @@
       this.notifications.set(id, fullNotification);
       this.render(fullNotification);
 
-      // Handle auto-hide
+      // Handle auto-hide with CSS animation (after element is rendered)
       if (options.duration !== undefined && options.duration > 0) {
-        // console.log(
-        //   "🔔 [UNIFIED-NOTIFICATION] Setting auto-hide timer for",
-        //   options.duration,
-        //   "ms"
-        // );
-        setTimeout(() => this.hide(id), options.duration);
+        // Use setTimeout to ensure DOM is ready and CSS is applied
+        setTimeout(() => {
+          const element = document.getElementById(`unified-notification-${id}`);
+          if (element) {
+            console.log(
+              "🎬 Setting up CSS animation for modal:",
+              id,
+              "duration:",
+              options.duration
+            );
+            // Apply animation directly to style attribute
+            element.style.animation = `modal-auto-hide-fade ${options.duration}ms linear forwards`;
+            element.style.opacity = "1"; // Ensure starting opacity
+
+            // Listen for animation end to hide the modal
+            element.addEventListener(
+              "animationend",
+              (e) => {
+                console.log("🎬 Animation ended:", e.animationName, "Expected: progress-bar-fill");
+                if (e.animationName === "progress-bar-fill") {
+                  console.log("🎬 Hiding modal after animation");
+                  this.hide(id);
+                } else {
+                  console.log("🎬 Animation name mismatch, hiding anyway");
+                  this.hide(id);
+                }
+              },
+              { once: true }
+            );
+
+            // Fallback: hide after duration + small buffer
+            setTimeout(
+              () => {
+                console.log("🎬 Fallback: hiding modal after timeout");
+                this.hide(id);
+              },
+              (options.duration || 5000) + 100
+            );
+          }
+        }, 100);
       }
 
       // Handle redirect
@@ -80,6 +111,7 @@
 
         this.notifications.delete(id);
         this.clearRedirectTimer(id);
+        // this.cleanupGlobalActions(id);
 
         const element = document.getElementById(`unified-notification-${id}`);
         if (element) {
@@ -90,6 +122,7 @@
         // Hide all notifications
         this.notifications.clear();
         this.clearAllRedirectTimers();
+        // this.cleanupAllGlobalActions();
         this.container.innerHTML = "";
       }
     }
@@ -115,18 +148,18 @@
 
         countdown--;
         if (countdown < 0) {
+          // Clear the timer and redirect
+          this.clearRedirectTimer(id);
           window.location.href = redirect.url;
         }
       };
 
-      // Update message every second
-      const timer = setInterval(updateMessage, 1000);
-      this.redirectTimers.set(id, timer);
-
-      // Final redirect
-      setTimeout(() => {
-        window.location.href = redirect.url;
-      }, delay * 1000);
+      // Single timer that handles both countdown and redirect
+      // Use Promise.resolve().then() to make timer non-blocking
+      Promise.resolve().then(() => {
+        const timer = setInterval(updateMessage, 1000);
+        this.redirectTimers.set(id, timer);
+      });
     }
 
     private clearRedirectTimer(id: string) {
@@ -140,43 +173,6 @@
     private clearAllRedirectTimers() {
       this.redirectTimers.forEach((timer) => clearInterval(timer));
       this.redirectTimers.clear();
-    }
-
-    private hidePersistentModals() {
-      // Find and hide any notifications with duration === 0 (persistent modals)
-      const persistentModals = Array.from(this.notifications.entries()).filter(
-        ([_, notification]) => notification.duration === 0
-      );
-
-      if (persistentModals.length > 0) {
-        // console.log(
-        //   `🔔 [UNIFIED-NOTIFICATION] Found ${persistentModals.length} persistent modal(s), hiding them before showing new modal`
-        // );
-        persistentModals.forEach(([id, notification]) => {
-          // console.log(
-          //   "🔔 [UNIFIED-NOTIFICATION] Hiding persistent modal:",
-          //   id,
-          //   "Title:",
-          //   notification.title
-          // );
-          this.hide(id);
-        });
-      }
-    }
-
-    private startProgressBar(notificationId: string, duration: number) {
-      const progressBar = document.getElementById(`progress-bar-${notificationId}`);
-      if (!progressBar) return;
-
-      // Start the progress bar animation - fill up from 0% to 100%
-      progressBar.style.transition = `width ${duration}ms linear`;
-      progressBar.style.width = "0%";
-
-      // Force a reflow to start the animation
-      progressBar.offsetHeight;
-
-      // Animate to 100% (filling up from left to right)
-      progressBar.style.width = "100%";
     }
 
     private render(notification: NotificationOptions & { id: string }) {
@@ -235,7 +231,7 @@
               notification.duration && notification.duration > 0
                 ? `
               <div class="absolute top-0 left-0 w-full h-1 bg-gray-200 dark:bg-gray-700">
-                <div id="progress-bar-${notification.id}" class="h-full ${config.progressColor} transition-all duration-100 ease-linear" style="width: 0%"></div>
+                <div id="progress-bar-${notification.id}" class="h-full ${config.progressColor}" style="width: 0%; animation: progress-bar-fill ${notification.duration}ms linear forwards;"></div>
               </div>
             `
                 : ""
@@ -266,13 +262,7 @@
           </div>
         `;
 
-        // Start progress bar animation if duration is set
-        if (notification.duration && notification.duration > 0) {
-          // Small delay to ensure DOM is rendered
-          setTimeout(() => {
-            this.startProgressBar(notification.id, notification.duration!);
-          }, 50);
-        }
+        // Progress bar animation is now handled by CSS
       } else {
         // Toast mode (small notification)
         element.className = `
@@ -305,6 +295,26 @@
       }
 
       this.container.appendChild(element);
+
+      // Add event listeners for action buttons
+      if (notification.actions && Array.isArray(notification.actions)) {
+        notification.actions.forEach((action, index) => {
+          const button = element.querySelector(
+            `[data-action-index="${index}"]`
+          ) as HTMLButtonElement;
+          if (button) {
+            button.addEventListener("click", () => {
+              try {
+                action.action();
+                // Hide the notification after action is executed
+                this.hide(notification.id);
+              } catch (error) {
+                console.error("Error executing action:", error);
+              }
+            });
+          }
+        });
+      }
     }
 
     private renderActions(
@@ -321,12 +331,6 @@
         <div class="flex gap-2 mt-3">
           ${actions
             .map((action, index) => {
-              const actionId = crypto.randomUUID();
-              // Store the action globally for onclick access
-              (window as any).unifiedNotificationActions =
-                (window as any).unifiedNotificationActions || {};
-              (window as any).unifiedNotificationActions[actionId] = action.action;
-
               // Primary button styling for first action or explicitly marked primary
               const isPrimary = action.primary || index === 0;
               const buttonClasses = isPrimary
@@ -336,7 +340,8 @@
               return `
                 <button 
                   class="${buttonClasses}"
-                  onclick="(window.unifiedNotificationActions?.['${actionId}'] || (() => {}))(); return false;"
+                  data-action-index="${index}"
+                  data-notification-id="${notificationId}"
                 >
                   ${action.label}
                 </button>
@@ -353,7 +358,6 @@
 
   // Make it globally accessible
   (window as any).unifiedNotificationManager = unifiedNotificationManager;
-  (window as any).unifiedNotificationActions = {};
 
   // Convenience functions for backward compatibility and ease of use
   (window as any).showNotification = (options: NotificationOptions) => {
@@ -366,22 +370,33 @@
     title: string,
     message: string,
     duration?: number,
-    actions?: Array<{ label: string; action: () => void; primary?: boolean }>
+    redirectOrActions?:
+      | Array<{ label: string; action: () => void; primary?: boolean }>
+      | { url: string; delay?: number; showCountdown?: boolean }
   ) => {
     // console.log("🔔 [UNIFIED-NOTIFICATION] showModal called with:", {
     //   type,
     //   title,
     //   message,
     //   duration,
-    //   actions,
+    //   redirectOrActions,
     // });
+
+    // Check if the 5th parameter is a redirect object or actions array
+    const isRedirect =
+      redirectOrActions && typeof redirectOrActions === "object" && "url" in redirectOrActions;
 
     const result = unifiedNotificationManager.show({
       type: type as any,
       title,
       message,
       duration: duration || 5000, // Default 5 seconds
-      actions,
+      actions: isRedirect
+        ? undefined
+        : (redirectOrActions as Array<{ label: string; action: () => void; primary?: boolean }>),
+      redirect: isRedirect
+        ? (redirectOrActions as { url: string; delay?: number; showCountdown?: boolean })
+        : undefined,
     });
 
     // console.log("🔔 [UNIFIED-NOTIFICATION] showModal returning ID:", result);
@@ -454,5 +469,43 @@
 
   .animate-fade-out {
     animation: fade-out 0.3s ease-out;
+  }
+
+  /* CSS-based modal auto-hide animation */
+  .modal-auto-hide {
+    animation: modal-fade-out var(--modal-duration, 3000ms) linear forwards;
+  }
+
+  @keyframes modal-fade-out {
+    0% {
+      opacity: 1;
+    }
+    100% {
+      opacity: 0;
+    }
+  }
+
+  @keyframes modal-auto-hide-fade {
+    0% {
+      opacity: 1 !important;
+    }
+    100% {
+      opacity: 0 !important;
+    }
+  }
+
+  /* CSS-based progress bar animation */
+  .progress-bar-animation {
+    width: 0%;
+    animation: progress-bar-fill var(--progress-duration, 3000ms) linear forwards;
+  }
+
+  @keyframes progress-bar-fill {
+    0% {
+      width: 0%;
+    }
+    100% {
+      width: 100%;
+    }
   }
 </style>

@@ -31,7 +31,7 @@ export const GET: APIRoute = async ({ url, cookies }) => {
     // Fetch email content from project_statuses table
     const { data: statusData, error: statusError } = await supabase
       .from("project_statuses")
-      .select("notify, email_content, button_text, status_name")
+      .select("notify, email_content, button_text, admin_status_name")
       .eq("status_code", statusNumber)
       .single();
 
@@ -59,7 +59,7 @@ export const GET: APIRoute = async ({ url, cookies }) => {
       role: string;
     }> = [];
 
-    const { notify, email_content, button_text, status_name } = statusData;
+    const { notify, email_content, button_text, admin_status_name } = statusData;
 
     if (notify.includes("admin")) {
       // Get all admin users
@@ -88,7 +88,7 @@ export const GET: APIRoute = async ({ url, cookies }) => {
     // Return the email content and user list
     const response = {
       status_code: statusNumber,
-      status_name,
+      admin_status_name,
       notify,
       email_content,
       button_text,
@@ -97,7 +97,7 @@ export const GET: APIRoute = async ({ url, cookies }) => {
     };
 
     console.log(`📧 [GET-STATUS-EMAIL] Retrieved email content for status ${statusNumber}:`, {
-      status_name,
+      admin_status_name,
       notify,
       total_users: usersToNotify.length,
     });

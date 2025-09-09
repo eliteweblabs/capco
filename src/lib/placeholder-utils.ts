@@ -2,12 +2,36 @@
  * Simple placeholder replacement utility
  */
 
+/**
+ * Get the base URL from environment or current location
+ */
+function getBaseUrl(): string {
+  // Try to get from Astro environment variables first
+  if (typeof import.meta !== "undefined" && import.meta.env) {
+    if (import.meta.env.SITE_URL) {
+      return import.meta.env.SITE_URL;
+    }
+    if (import.meta.env.PUBLIC_SITE_URL) {
+      return import.meta.env.PUBLIC_SITE_URL;
+    }
+  }
+
+  // Fallback to current location if in browser
+  if (typeof window !== "undefined") {
+    return window.location.origin;
+  }
+
+  // Default fallback
+  return "https://yourwebsite.com";
+}
+
 export interface PlaceholderData {
   projectAddress?: string;
   clientName?: string;
   clientEmail?: string;
   statusName?: string;
   estTime?: string;
+  baseUrl?: string;
 }
 
 /**
@@ -26,6 +50,14 @@ export function replacePlaceholders(message: string, data: PlaceholderData): str
   let result = message;
 
   // Replace placeholders
+  // Get base URL from data or environment
+  const baseUrl = data.baseUrl || getBaseUrl();
+  if (baseUrl) {
+    console.log(`🔄 [PLACEHOLDER-UTILS] Replacing {{BASE_URL}} with: ${baseUrl}`);
+    result = result.replace(/\{\{BASE_URL\}\}/g, baseUrl);
+  } else {
+    console.log("🔄 [PLACEHOLDER-UTILS] ⚠️ No baseUrl available");
+  }
   if (data.projectAddress) {
     console.log(
       `🔄 [PLACEHOLDER-UTILS] Replacing {{PROJECT_ADDRESS}} with: ${data.projectAddress}`

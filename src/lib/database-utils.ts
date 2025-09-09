@@ -25,9 +25,9 @@ export interface ProfileData {
 }
 
 export interface StatusConfig {
-  toast_admin?: string;
-  toast_client?: string;
-  toast_auto_redirect?: boolean;
+  modal_admin?: string;
+  modal_client?: string;
+  modal_auto_redirect?: boolean;
   admin_email_subject?: string;
   admin_email_content?: string;
   client_email_subject?: string;
@@ -122,7 +122,7 @@ export async function getStatusConfig(statusId: number): Promise<StatusConfig | 
   const { data, error } = await supabase
     .from("project_statuses")
     .select(
-      "toast_admin, toast_client, toast_auto_redirect, admin_email_subject, admin_email_content, client_email_subject, client_email_content, button_text, button_link, notify"
+      "modal_admin, modal_client, modal_auto_redirect, admin_email_subject, admin_email_content, client_email_subject, client_email_content, button_text, button_link, notify"
     )
     .eq("status_code", statusId)
     .single();
@@ -133,8 +133,8 @@ export async function getStatusConfig(statusId: number): Promise<StatusConfig | 
   }
 
   console.log("🗄️ [DATABASE-UTILS] ✅ Status config retrieved:", {
-    toast_admin: data.toast_admin,
-    toast_client: data.toast_client,
+    modal_admin: data.modal_admin,
+    modal_client: data.modal_client,
     notify: data.notify,
     admin_email_subject: data.admin_email_subject,
     admin_email_content: data.admin_email_content

@@ -49,31 +49,43 @@ export const GET: APIRoute = async ({ request }) => {
     // Fetch all project statuses from database (excluding status 0)
     // console.log("🔍 [GET-PROJECT-STATUSES] Fetching statuses from database...");
 
-    // Try with project_action first, fallback to without it if column doesn't exist
+    // Try with project_action, client_status_name, and client_status_tab first, fallback to without them if columns don't exist
     let { data: statuses, error } = await supabase
       .from("project_statuses")
-      .select("status_code, status_name, client_visible, admin_visible, project_action")
+      .select(
+        "status_code, admin_status_name, project_action, client_status_name, client_status_tab"
+      )
       .neq("status_code", 0)
       .order("status_code");
 
-    // If project_action column doesn't exist, try without it
-    if (error && error.message.includes("project_action")) {
+    // If project_action, client_status_name, or client_status_tab columns don't exist, try without them
+    if (
+      error &&
+      (error.message.includes("project_action") ||
+        error.message.includes("client_status_name") ||
+        error.message.includes("client_status_tab"))
+    ) {
       console.log(
-        "🔍 [GET-PROJECT-STATUSES] project_action column not found, trying without it..."
+        "🔍 [GET-PROJECT-STATUSES] project_action, client_status_name, or client_status_tab column not found, trying without them..."
       );
       const fallbackResult = await supabase
         .from("project_statuses")
-        .select("status_code, status_name, client_visible, admin_visible")
+        .select("status_code, admin_status_name")
         .neq("status_code", 0)
         .order("status_code");
 
-      // Add project_action: null to each status for consistency
+      // Add project_action, client_status_name, and client_status_tab: null to each status for consistency
       statuses =
-        fallbackResult.data?.map((status) => ({ ...status, project_action: null })) || null;
+        fallbackResult.data?.map((status) => ({
+          ...status,
+          project_action: null,
+          client_status_name: null,
+          client_status_tab: null,
+        })) || null;
       error = fallbackResult.error;
     }
 
-    // console.log("🔍 [GET-PROJECT-STATUSES] Database response:", { statuses, error });
+    console.log("🔍 [GET-PROJECT-STATUSES] Database response:", { statuses, error });
 
     if (error) {
       console.error("Error fetching project statuses:", error);
@@ -93,32 +105,34 @@ export const GET: APIRoute = async ({ request }) => {
     // console.log("🔍 [GET-PROJECT-STATUSES] Converting statuses to object...");
     const statusesObject = (statuses || []).reduce(
       (acc, status) => {
-        // console.log(`🔍 [GET-PROJECT-STATUSES] Processing status ${status.status_code}:`, {
-        //   status_name: status.status_name,
-        //   project_action: status.project_action || null,
-        // });
-        acc[status.status_code] = {
-          status_name: status.status_name,
-          status_code: status.status_code,
-          admin_visible: status.admin_visible,
-          client_visible: status.client_visible,
+        console.log(`🔍 [GET-PROJECT-STATUSES] Processing status ${status.status_code}:`, {
+          admin_status_name: status.admin_status_name,
           project_action: status.project_action || null,
+          client_status_name: status.client_status_name || null,
+          client_status_tab: status.client_status_tab || null,
+        });
+        acc[status.status_code] = {
+          admin_status_name: status.admin_status_name,
+          status_code: status.status_code,
+          project_action: status.project_action || null,
+          client_status_name: status.client_status_name || null,
+          client_status_tab: status.client_status_tab || null,
         };
         return acc;
       },
       {} as Record<
         number,
         {
-          status_name: string;
+          admin_status_name: string;
           status_code: number;
-          client_visible: boolean;
-          admin_visible: boolean;
           project_action: string | null;
+          client_status_name: string | null;
+          client_status_tab: string | null;
         }
       >
     );
 
-    // console.log("🔍 [GET-PROJECT-STATUSES] Final statusesObject:", statusesObject);
+    console.log("🔍 [GET-PROJECT-STATUSES] Final statusesObject:", statusesObject);
 
     // Cache the result for 10 minutes (statuses rarely change)
     apiCache.set(cacheKey, statusesObject, 10);

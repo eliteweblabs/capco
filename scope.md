@@ -77,6 +77,96 @@ SUPABASE_URL=<supabase_project_url>
 
 ## Database Schema
 
+| table_name       | column_name                | data_type                   | character_maximum_length | is_nullable | column_default                               | ordinal_position | key_type                   |
+| ---------------- | -------------------------- | --------------------------- | ------------------------ | ----------- | -------------------------------------------- | ---------------- | -------------------------- |
+| files            | id                         | integer                     | null                     | NO          | nextval('files_id_seq'::regclass)            | 1                | PRIMARY KEY                |
+| files            | project_id                 | integer                     | null                     | YES         | null                                         | 2                | FOREIGN KEY -> projects.id |
+| files            | author_id                  | uuid                        | null                     | YES         | null                                         | 3                |                            |
+| files            | file_name                  | text                        | null                     | YES         | null                                         | 6                |                            |
+| files            | file_path                  | text                        | null                     | YES         | null                                         | 7                |                            |
+| files            | file_type                  | text                        | null                     | YES         | null                                         | 8                |                            |
+| files            | file_size                  | bigint                      | null                     | YES         | null                                         | 9                |                            |
+| files            | uploaded_at                | timestamp without time zone | null                     | YES         | now()                                        | 10               |                            |
+| files            | status                     | text                        | null                     | YES         | 'active'::text                               | 11               |                            |
+| files            | comments                   | text                        | null                     | YES         | null                                         | 12               |                            |
+| files            | title                      | text                        | null                     | YES         | null                                         | 13               |                            |
+| files            | updated_at                 | timestamp with time zone    | null                     | YES         | null                                         | 14               |                            |
+| invoices         | id                         | bigint                      | null                     | NO          | null                                         | 1                | PRIMARY KEY                |
+| invoices         | created_at                 | timestamp with time zone    | null                     | NO          | now()                                        | 2                |                            |
+| invoices         | updated_at                 | timestamp with time zone    | null                     | YES         | now()                                        | 3                |                            |
+| invoices         | project_id                 | bigint                      | null                     | NO          | null                                         | 4                | FOREIGN KEY -> projects.id |
+| invoices         | created_by                 | uuid                        | null                     | YES         | auth.uid()                                   | 5                |                            |
+| invoices         | subject                    | text                        | null                     | YES         | null                                         | 6                |                            |
+| invoices         | status                     | text                        | null                     | NO          | 'draft'::text                                | 7                |                            |
+| invoices         | invoice_date               | date                        | null                     | NO          | CURRENT_DATE                                 | 8                |                            |
+| invoices         | due_date                   | date                        | null                     | YES         | null                                         | 9                |                            |
+| invoices         | sent_at                    | timestamp with time zone    | null                     | YES         | null                                         | 10               |                            |
+| invoices         | subtotal                   | numeric                     | null                     | YES         | 0                                            | 11               |                            |
+| invoices         | tax_rate                   | numeric                     | null                     | YES         | 0                                            | 12               |                            |
+| invoices         | tax_amount                 | numeric                     | null                     | YES         | 0                                            | 13               |                            |
+| invoices         | discount_amount            | numeric                     | null                     | YES         | 0                                            | 14               |                            |
+| invoices         | total_amount               | numeric                     | null                     | YES         | 0                                            | 15               |                            |
+| invoices         | payment_terms              | text                        | null                     | YES         | '30 days'::text                              | 16               |                            |
+| invoices         | notes                      | text                        | null                     | YES         | null                                         | 17               |                            |
+| invoices         | proposal_signature         | text                        | null                     | YES         | null                                         | 18               |                            |
+| invoices         | signed_at                  | timestamp with time zone    | null                     | YES         | null                                         | 19               |                            |
+| invoices         | catalog_line_items         | jsonb                       | null                     | YES         | null                                         | 20               |                            |
+| invoices         | proposal_notes             | text                        | null                     | YES         | null                                         | 21               |                            |
+| profiles         | id                         | uuid                        | null                     | NO          | null                                         | 1                | PRIMARY KEY                |
+| profiles         | company_name               | text                        | null                     | YES         | null                                         | 2                |                            |
+| profiles         | role                       | text                        | null                     | YES         | 'Client'::text                               | 4                |                            |
+| profiles         | created_at                 | timestamp with time zone    | null                     | YES         | now()                                        | 5                |                            |
+| profiles         | updated_at                 | timestamp with time zone    | null                     | YES         | now()                                        | 6                |                            |
+| profiles         | first_name                 | text                        | null                     | YES         | null                                         | 7                |                            |
+| profiles         | last_name                  | text                        | null                     | YES         | null                                         | 8                |                            |
+| profiles         | mobile_carrier             | text                        | null                     | YES         | null                                         | 9                |                            |
+| profiles         | avatar_url                 | text                        | null                     | YES         | null                                         | 10               |                            |
+| profiles         | sms_alerts                 | boolean                     | null                     | YES         | null                                         | 11               |                            |
+| project_statuses | id                         | integer                     | null                     | NO          | nextval('project_statuses_id_seq'::regclass) | 1                | PRIMARY KEY                |
+| project_statuses | status_code                | integer                     | null                     | NO          | null                                         | 2                |                            |
+| project_statuses | admin_status_name          | character varying           | 100                      | NO          | null                                         | 3                |                            |
+| project_statuses | client_email_content       | text                        | null                     | YES         | null                                         | 4                |                            |
+| project_statuses | est_time                   | character varying           | 50                       | YES         | null                                         | 5                |                            |
+| project_statuses | created_at                 | timestamp with time zone    | null                     | YES         | now()                                        | 6                |                            |
+| project_statuses | updated_at                 | timestamp with time zone    | null                     | YES         | now()                                        | 7                |                            |
+| project_statuses | admin_visible              | boolean                     | null                     | YES         | null                                         | 14               |                            |
+| project_statuses | client_visible             | boolean                     | null                     | YES         | null                                         | 16               |                            |
+| project_statuses | button_text                | text                        | null                     | YES         | null                                         | 17               |                            |
+| project_statuses | client_email_subject       | text                        | null                     | YES         | null                                         | 18               |                            |
+| project_statuses | toast_admin                | text                        | null                     | YES         | null                                         | 19               |                            |
+| project_statuses | toast_client               | text                        | null                     | YES         | null                                         | 20               |                            |
+| project_statuses | button_link                | text                        | null                     | YES         | '/dashboard'::text                           | 21               |                            |
+| project_statuses | project_action             | text                        | null                     | YES         | null                                         | 22               |                            |
+| project_statuses | toast_auto_redirect_client | text                        | null                     | YES         | '/dashboard'::text                           | 24               |                            |
+| project_statuses | admin_email_content        | text                        | null                     | YES         | null                                         | 25               |                            |
+| project_statuses | admin_email_subject        | text                        | null                     | YES         | null                                         | 26               |                            |
+| project_statuses | toast_auto_redirect_admin  | text                        | null                     | YES         | '/dashboard'::text                           | 27               |                            |
+| project_statuses | client_status_name         | text                        | null                     | YES         | null                                         | 28               |                            |
+| project_statuses | client_status_tab          | text                        | null                     | YES         | null                                         | 29               |                            |
+| projects         | id                         | integer                     | null                     | NO          | nextval('projects_id_seq'::regclass)         | 1                | PRIMARY KEY                |
+| projects         | author_id                  | uuid                        | null                     | YES         | null                                         | 2                |                            |
+| projects         | description                | text                        | null                     | YES         | null                                         | 3                |                            |
+| projects         | address                    | text                        | null                     | YES         | null                                         | 4                |                            |
+| projects         | created_at                 | timestamp with time zone    | null                     | YES         | null                                         | 5                |                            |
+| projects         | sq_ft                      | integer                     | null                     | YES         | 0                                            | 6                |                            |
+| projects         | new_construction           | boolean                     | null                     | YES         | null                                         | 7                |                            |
+| projects         | status                     | integer                     | null                     | YES         | null                                         | 8                |                            |
+| projects         | title                      | text                        | null                     | YES         | null                                         | 9                |                            |
+| projects         | building                   | jsonb                       | null                     | YES         | null                                         | 10               |                            |
+| projects         | project                    | jsonb                       | null                     | YES         | null                                         | 11               |                            |
+| projects         | service                    | jsonb                       | null                     | YES         | null                                         | 12               |                            |
+| projects         | requested_docs             | jsonb                       | null                     | YES         | null                                         | 13               |                            |
+| projects         | assigned_to_id             | uuid                        | null                     | YES         | null                                         | 14               |                            |
+| projects         | updated_at                 | timestamp with time zone    | null                     | YES         | null                                         | 15               |                            |
+| projects         | units                      | integer                     | null                     | YES         | 1                                            | 16               |                            |
+| projects         | architect                  | text                        | null                     | YES         | null                                         | 17               |                            |
+| projects         | featured                   | boolean                     | null                     | YES         | null                                         | 18               |                            |
+| projects         | log                        | jsonb                       | null                     | YES         | '[]'::jsonb                                  | 19               |                            |
+| projects         | subject                    | text                        | null                     | YES         | null                                         | 21               |                            |
+| projects         | proposal_signature         | text                        | null                     | YES         | null                                         | 22               |                            |
+| projects         | signed_at                  | timestamp with time zone    | null                     | YES         | null                                         | 23               |                            |
+| projects         | contract_pdf_url           | text                        | null                     | YES         | null                                         | 24               |                            |
+
 ### Tables Structure
 
 **Note:** Run this SQL in Supabase to get the current schema:
@@ -127,68 +217,63 @@ ORDER BY table_name, ordinal_position;
 
 ### Current Database Schema
 
-| table_name   | column_name      | data_type                   | is_nullable | column_default                       | description                    |
-| ------------ | ---------------- | --------------------------- | ----------- | ------------------------------------ | ------------------------------ |
-| **files**    | id               | integer                     | NO          | nextval('files_id_seq'::regclass)    | Primary key                    |
-| files        | project_id       | integer                     | YES         | null                                 | FK to projects.id              |
-| files        | author_id        | uuid                        | YES         | null                                 | FK to auth.users.id            |
-| files        | name             | text                        | YES         | null                                 | Original filename              |
-| files        | type             | integer                     | YES         | null                                 | File type code                 |
-| files        | file_name        | text                        | YES         | null                                 | Stored filename                |
-| files        | file_path        | text                        | YES         | null                                 | Storage path                   |
-| files        | file_type        | text                        | YES         | null                                 | MIME type                      |
-| files        | file_size        | bigint                      | YES         | null                                 | Size in bytes                  |
-| files        | uploaded_at      | timestamp without time zone | YES         | now()                                | Upload timestamp               |
-| files        | status           | text                        | YES         | 'active'::text                       | File status                    |
-| **profiles** | id               | uuid                        | NO          | null                                 | FK to auth.users.id            |
-| profiles     | name             | text                        | YES         | null                                 | Display name                   |
-| profiles     | phone            | text                        | YES         | null                                 | Phone number                   |
-| profiles     | role             | text                        | YES         | 'Client'::text                       | User role (Admin/Staff/Client) |
-| profiles     | created_at       | timestamp with time zone    | YES         | now()                                | Creation timestamp             |
-| profiles     | updated_at       | timestamp with time zone    | YES         | now()                                | Last update timestamp          |
-| **projects** | id               | integer                     | NO          | nextval('projects_id_seq'::regclass) | Primary key                    |
-| projects     | author_id        | uuid                        | YES         | null                                 | FK to auth.users.id (client)   |
-| projects     | assigned_to_id   | uuid                        | YES         | null                                 | FK to profiles.id (staff)      |
-| projects     | title            | text                        | YES         | null                                 | Project title                  |
-| projects     | description      | text                        | YES         | null                                 | Project description            |
-| projects     | address          | text                        | YES         | null                                 | Project address                |
-| projects     | status           | integer                     | YES         | 10                                   | Workflow status (10-220)       |
-| projects     | sq_ft            | integer                     | YES         | null                                 | Square footage                 |
-| projects     | new_construction | boolean                     | YES         | false                                | Construction type              |
-| projects     | building         | jsonb                       | YES         | null                                 | Building form data             |
-| projects     | project          | jsonb                       | YES         | null                                 | Project form data              |
-| projects     | service          | jsonb                       | YES         | null                                 | Service form data              |
-| projects     | requested_docs   | jsonb                       | YES         | null                                 | Requested documents            |
-| projects     | feature          | boolean                     | YES         | false                                | Featured on public page        |
-| projects     | created_at       | timestamp with time zone    | YES         | now()                                | Creation timestamp             |
-| projects     | updated_at       | timestamp with time zone    | YES         | now()                                | Last update timestamp          |
+**Run this SQL in Supabase to get the complete current schema:**
 
-### Project Status Workflow
+```sql
+-- Get complete table structure with all columns, types, and constraints
+SELECT
+    t.table_name,
+    c.column_name,
+    c.data_type,
+    c.character_maximum_length,
+    c.is_nullable,
+    c.column_default,
+    c.ordinal_position,
+    CASE
+        WHEN pk.column_name IS NOT NULL THEN 'PRIMARY KEY'
+        WHEN fk.column_name IS NOT NULL THEN 'FOREIGN KEY -> ' || fk.foreign_table_name || '.' || fk.foreign_column_name
+        ELSE ''
+    END as key_type
+FROM information_schema.tables t
+JOIN information_schema.columns c ON t.table_name = c.table_name
+LEFT JOIN (
+    SELECT ku.table_name, ku.column_name
+    FROM information_schema.table_constraints tc
+    JOIN information_schema.key_column_usage ku ON tc.constraint_name = ku.constraint_name
+    WHERE tc.constraint_type = 'PRIMARY KEY'
+) pk ON c.table_name = pk.table_name AND c.column_name = pk.column_name
+LEFT JOIN (
+    SELECT
+        ku.table_name,
+        ku.column_name,
+        ccu.table_name AS foreign_table_name,
+        ccu.column_name AS foreign_column_name
+    FROM information_schema.table_constraints tc
+    JOIN information_schema.key_column_usage ku ON tc.constraint_name = ku.constraint_name
+    JOIN information_schema.constraint_column_usage ccu ON tc.constraint_name = ccu.constraint_name
+    WHERE tc.constraint_type = 'FOREIGN KEY'
+) fk ON c.table_name = fk.table_name AND c.column_name = fk.column_name
+WHERE t.table_schema = 'public'
+    AND t.table_type = 'BASE TABLE'
+    AND t.table_name IN ('users', 'projects', 'files', 'profiles', 'project_statuses', 'invoices', 'invoice_line_items', 'discussions')
+ORDER BY t.table_name, c.ordinal_position;
+```
 
-| Status Code | Status Name                   | Description                      |
-| ----------- | ----------------------------- | -------------------------------- |
-| 10          | Specs Received                | Initial project submission       |
-| 20          | Generating Proposal           | Creating project proposal        |
-| 30          | Proposal Shipped              | Proposal sent to client          |
-| 40          | Proposal Viewed               | Client has viewed proposal       |
-| 50          | Proposal Signed Off           | Client approved proposal         |
-| 60          | Generating Deposit Invoice    | Creating initial invoice         |
-| 70          | Deposit Invoice Shipped       | Invoice sent to client           |
-| 80          | Deposit Invoice Viewed        | Client has viewed invoice        |
-| 90          | Deposit Invoice Paid          | Payment received                 |
-| 100         | Generating Submittals         | Creating project submittals      |
-| 110         | Submittals Shipped            | Submittals sent for review       |
-| 120         | Submittals Viewed             | Submittals under review          |
-| 130         | Submittals Signed Off         | Submittals approved              |
-| 140         | Generating Final Invoice      | Creating final invoice           |
-| 150         | Final Invoice Shipped         | Final invoice sent               |
-| 160         | Final Invoice Viewed          | Client has viewed final invoice  |
-| 170         | Final Invoice Paid            | Final payment received           |
-| 180         | Generating Final Deliverables | Creating final deliverables      |
-| 190         | Stamping Final Deliverables   | Official stamping process        |
-| 200         | Final Deliverables Shipped    | Deliverables sent to client      |
-| 210         | Final Deliverables Viewed     | Client has received deliverables |
-| 220         | Project Complete              | Project fully completed          |
+**Alternative simpler query for just the main tables:**
+
+```sql
+-- Simple version - just column names and types
+SELECT
+    table_name,
+    column_name,
+    data_type,
+    is_nullable,
+    column_default
+FROM information_schema.columns
+WHERE table_schema = 'public'
+    AND table_name IN ('users', 'projects', 'files', 'profiles', 'project_statuses', 'invoices', 'invoice_line_items', 'discussions')
+ORDER BY table_name, ordinal_position;
+```
 
 ### Row Level Security (RLS) Policies
 
@@ -279,7 +364,6 @@ Placeholders
 
 {{PROJECT_TITLE}}
 {{PROJECT_ADDRESS}}
-{{PROJECT_LINK}}
 {{ADDRESS}}
 {{CLIENT_NAME}}
 {{CLIENT_EMAIL}}
@@ -288,6 +372,7 @@ Placeholders
 {{BUTTON_LINK}}
 {{BUTTON_TEXT}}
 {{CONTRACT_URL}}
+{{BASE_URL}}
 
 projectStatus = ALWAYS THE NUMERICAL VALUE
 projectStatusLabel = THE status_name column corresponding to projectStatus

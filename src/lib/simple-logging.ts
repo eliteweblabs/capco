@@ -168,12 +168,12 @@ export class SimpleProjectLogger {
       if (supabase) {
         const { data: statuses, error } = await supabase
           .from("project_statuses")
-          .select("status_code, status_name");
+          .select("status_code, admin_status_name");
 
         if (!error && statuses) {
           const statusNames: Record<number, string> = {};
           statuses.forEach((status: any) => {
-            statusNames[status.status_code] = status.status_name;
+            statusNames[status.status_code] = status.admin_status_name;
           });
           return statusNames;
         }

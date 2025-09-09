@@ -20,11 +20,11 @@
 //     client_visible: true,
 //     button_text: 'Project Dashboard',
 //     email_subject: '{{PROJECT_ADDRESS}} > Proposal is Being Generated',
-//     toast_admin: 'Project documents successfully uploaded. Email sent to {{CLIENT_EMAIL}} notifying them that they will receive a proposal in {{EST_TIME}}.',
-//     toast_client: 'We have received your project documents and will begin preparing a proposal of services. We will notify you at <b>{{CLIENT_EMAIL}}</b> in {{EST_TIME}}.',
+//     modal_admin: 'Project documents successfully uploaded. Email sent to {{CLIENT_EMAIL}} notifying them that they will receive a proposal in {{EST_TIME}}.',
+//     modal_client: 'We have received your project documents and will begin preparing a proposal of services. We will notify you at <b>{{CLIENT_EMAIL}}</b> in {{EST_TIME}}.',
 //     button_link: '/dashboard',
 //     project_action: null,
-//     toast_auto_redirect: '/dashboard',
+//     modal_auto_redirect: '/dashboard',
 //     admin_email_content: null,
 //     admin_email_subject: null
 //   },
@@ -67,7 +67,7 @@ export const POST: APIRoute = async ({ request }) => {
       });
     }
 
-    // this used to use toast_auto_redirect_admin and toast_auto_redirect_client
+    // this used to use modal_auto_redirect_admin and modal_auto_redirect_client
 
     // console.log("📊 [UPDATE-STATUS] Updating project status:", { projectId, newStatus });
 
@@ -172,7 +172,7 @@ export const POST: APIRoute = async ({ request }) => {
         projectAddress: updatedProject.address,
         clientName: profile.company_name,
         clientEmail: clientEmail,
-        statusName: statusData.statusConfig.status_name,
+        statusName: statusData.statusConfig.admin_status_name,
         estTime: statusData.statusConfig.est_time,
       };
 
@@ -203,11 +203,11 @@ export const POST: APIRoute = async ({ request }) => {
             type: "success",
             title: "Status Updated",
             message:
-              placeholderResult.processedMessages.toast_admin || "Status updated successfully",
+              placeholderResult.processedMessages.modal_admin || "Status updated successfully",
             duration: 5000, // 5 seconds
-            redirect: statusData.statusConfig.toast_auto_redirect_admin
+            redirect: statusData.statusConfig.modal_auto_redirect_admin
               ? {
-                  url: processRedirectUrl(statusData.statusConfig.toast_auto_redirect_admin),
+                  url: processRedirectUrl(statusData.statusConfig.modal_auto_redirect_admin),
                   delay: 3, // 3 seconds delay
                   showCountdown: true,
                 }
@@ -217,11 +217,11 @@ export const POST: APIRoute = async ({ request }) => {
             type: "success",
             title: "Status Updated",
             message:
-              placeholderResult.processedMessages.toast_client || "Status updated successfully",
+              placeholderResult.processedMessages.modal_client || "Status updated successfully",
             duration: 5000, // 5 seconds
-            redirect: statusData.statusConfig.toast_auto_redirect_client
+            redirect: statusData.statusConfig.modal_auto_redirect_client
               ? {
-                  url: processRedirectUrl(statusData.statusConfig.toast_auto_redirect_client),
+                  url: processRedirectUrl(statusData.statusConfig.modal_auto_redirect_client),
                   delay: 3, // 3 seconds delay
                   showCountdown: true,
                 }
@@ -230,8 +230,8 @@ export const POST: APIRoute = async ({ request }) => {
         };
 
         console.log("📊 [UPDATE-STATUS] Notification data prepared:", {
-          adminRedirect: statusData.statusConfig.toast_auto_redirect_admin,
-          clientRedirect: statusData.statusConfig.toast_auto_redirect_client,
+          adminRedirect: statusData.statusConfig.modal_auto_redirect_admin,
+          clientRedirect: statusData.statusConfig.modal_auto_redirect_client,
           projectId: updatedProject.id,
           notificationData,
         });

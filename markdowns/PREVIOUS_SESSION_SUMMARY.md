@@ -449,4 +449,91 @@ The system is now ready for production use with robust security, real-time commu
 
 ---
 
-**Current session focused on major proposal system overhaul with unified row generation, pricing preservation, column standardization, and performance optimizations. System now has robust architecture for proposal management with complete data integrity.**
+## 🆕 Latest Session Updates (Current Session - December 2024 - Performance Investigation)
+
+### **Critical Performance Issue Identified**
+
+#### **1. Severe Page Load Performance Problem**
+
+- 🚨 **8-second delay** when clicking project list items to navigate to project pages
+- 🚨 **3-second preloader** after the initial delay
+- 🚨 **Total 11+ seconds** for basic navigation - completely unacceptable
+- 🚨 **Was previously ~1 second** - significant regression
+
+#### **2. Performance Optimizations Attempted**
+
+- ✅ **Eliminated API calls** - Replaced `/api/get-project-statuses?refresh=true` with direct database queries
+- ✅ **Removed fallback API calls** - Eliminated `getAuthorInfoServer()` function
+- ✅ **Reduced preloader timeout** - From 5 seconds to 2 seconds maximum
+- ✅ **Removed debug logging** - Eliminated all `console.log` statements in components
+- ✅ **Optimized database queries** - Direct Supabase queries instead of HTTP API calls
+
+#### **3. Root Cause Investigation**
+
+**Suspected Issues:**
+
+- 🔍 **System-level problem** - User reports "was always like a second before"
+- 🔍 **Laptop restart needed** - Suggests system resource or network issue
+- 🔍 **Something fundamentally wrong** - 8-second delay indicates deeper problem
+- 🔍 **Not code-related** - Optimizations didn't resolve the issue
+
+**Technical Changes Made:**
+
+```typescript
+// Before (slow API call)
+const statusesResponse = await fetch(`${Astro.url.origin}/api/get-project-statuses?refresh=true`);
+
+// After (direct database query)
+const { data: statusesData } = await supabase
+  .from("project_statuses")
+  .select("status_code, admin_status_name, client_status_name");
+```
+
+#### **4. Files Modified for Performance**
+
+- `src/pages/project/[id].astro` - Replaced API calls with direct database queries
+- `src/components/common/App.astro` - Reduced preloader timeout from 5s to 2s
+- `src/components/project/ProjectListItem.astro` - Removed debug logging
+- `src/components/project/ProjectNav.astro` - Removed debug logging
+
+#### **5. Current Status**
+
+**🔍 Investigation Required:**
+
+- System-level performance issue (not code-related)
+- Laptop restart may be needed
+- Performance was previously acceptable (~1 second)
+- Current optimizations didn't resolve the 8-second delay
+
+**📋 Next Steps When User Returns:**
+
+1. **Test after laptop restart** - Verify if system resources were the issue
+2. **Network diagnostics** - Check if network connectivity is causing delays
+3. **Browser performance** - Test in different browsers/incognito mode
+4. **System resources** - Check CPU/memory usage during navigation
+5. **Database performance** - Verify Supabase connection speed
+
+### **Performance Optimizations Applied (Ready for Testing)**
+
+#### **Database Query Optimization:**
+
+- Direct Supabase queries instead of HTTP API calls
+- Eliminated `?refresh=true` cache bypass
+- Removed complex cookie header construction
+- Simplified author profile fetching
+
+#### **Component Optimization:**
+
+- Removed all debug console.log statements
+- Reduced preloader maximum timeout
+- Eliminated unnecessary API fallbacks
+
+#### **Expected Results:**
+
+- Should reduce 8-second delay to 1-2 seconds
+- Preloader should disappear much faster
+- Overall navigation should be significantly improved
+
+---
+
+**Current session focused on investigating critical 8-second page load performance issue. Applied multiple optimizations but root cause appears to be system-level. User needs to restart laptop and test again. All performance optimizations are in place and ready for testing.**

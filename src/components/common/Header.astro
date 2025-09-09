@@ -156,7 +156,8 @@ const visibleNavigation = getVisibleNavItems(navigation, isAuth, currentRole, is
 ---
 
 <header
-  class="section sticky top-0 z-10 mx-auto border-b border-gray-200 bg-hub-background p-6 dark:border-gray-700 dark:bg-hub-background-dark"
+  class="section sticky top-0 z-50 mx-auto border-b border-gray-200 bg-hub-background p-6 dark:border-gray-700 dark:bg-hub-background-dark"
+  style="position: -webkit-sticky !important; position: sticky !important; transform: translateZ(0) !important; backface-visibility: hidden !important; will-change: transform !important;"
 >
   <!-- <SectionContainer> -->
   <div class="flex items-center justify-between">
@@ -476,8 +477,17 @@ const visibleNavigation = getVisibleNavItems(navigation, isAuth, currentRole, is
       // Force re-apply positioning with !important
       header.style.setProperty("position", "sticky", "important");
       header.style.setProperty("top", "0", "important");
-      header.style.setProperty("z-index", "10", "important");
+      header.style.setProperty("z-index", "50", "important"); // Increased z-index
       header.style.setProperty("transform", "translateZ(0)", "important"); // Force hardware acceleration
+      header.style.setProperty("backface-visibility", "hidden", "important"); // Prevent flickering
+      header.style.setProperty("will-change", "transform", "important"); // Optimize for transforms
+
+      // Additional Safari-specific fixes
+      header.style.setProperty("position", "-webkit-sticky", "important"); // Webkit fallback
+      header.style.setProperty("position", "sticky", "important");
+
+      // Force a reflow to ensure styles are applied
+      header.offsetHeight;
     }
   }
 
@@ -493,8 +503,18 @@ const visibleNavigation = getVisibleNavItems(navigation, isAuth, currentRole, is
   window.addEventListener("focus", fixHeaderPosition);
   window.addEventListener("blur", fixHeaderPosition);
 
-  // Periodic check to ensure positioning stays correct (every 3 seconds)
-  setInterval(fixHeaderPosition, 3000);
+  // Additional Safari mobile specific events
+  window.addEventListener("touchstart", fixHeaderPosition);
+  window.addEventListener("touchend", fixHeaderPosition);
+  window.addEventListener("touchmove", fixHeaderPosition);
+  document.addEventListener("visibilitychange", fixHeaderPosition);
+  window.addEventListener("pageshow", fixHeaderPosition);
+  window.addEventListener("pagehide", fixHeaderPosition);
+
+  // More aggressive periodic check for homepage (every 1 second)
+  const isHomepage = window.location.pathname === "/" || window.location.pathname === "/index.html";
+  const checkInterval = isHomepage ? 1000 : 3000;
+  setInterval(fixHeaderPosition, checkInterval);
 
   // Use MutationObserver to catch DOM changes that might reset positioning
   const headerObserver = new MutationObserver((mutations) => {

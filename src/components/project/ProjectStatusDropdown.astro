@@ -1,5 +1,5 @@
 ---
-
+import BoxIcon from "../common/BoxIcon.astro";
 
 interface Props {
   projectId: string;
@@ -94,17 +94,11 @@ if (canChangeStatus) {
           </div>
           
           
-          {projectStatuses.filter((status: any) => {
-            if (currentRole === "Admin" || currentRole === "Staff") {
-              return status.admin_visible !== false;
-            } else {
-              return status.client_visible !== false;
-            }
-          })
+          {projectStatuses
           .map((status: any) => (
             <button
               type="button"
-              class={`group flex w-full items-center px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors
+              class={`group flex w-full items-center px-4 py-2 text-md hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors
                 ${status.status_code === projectStatus 
                   ? 'bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400' 
                   : 'text-gray-700 dark:text-gray-300'}`}
@@ -131,13 +125,13 @@ if (canChangeStatus) {
   </div>
 ) : (
   <!-- Non-admin users see static status badge -->
-  <div class="ml-4 flex-shrink-0">
+  <div class="flex-shrink-0">
     <span
-      class={`inline-flex items-center rounded-full px-3 py-1 text-sm font-medium 
+      class={`inline-flex items-center rounded-full px-3 py-1 text-lg font-large 
         bg-${statusColor}-100 text-${statusColor}-800 
         dark:bg-${statusColor}-900/30 dark:text-${statusColor}-400`}
       data-refresh="status_name"
-    >
+    ><BoxIcon name="dots-horizontal" class="bx-md" />
       {statusLabel}
     </span>
   </div>
