@@ -176,14 +176,8 @@ console.log('🔽 [STATUS-DROPDOWN] Final processed statuses:', {
 )}
 
 <script define:vars={{projectId, projectStatus, currentRole}}>
-  document.addEventListener('DOMContentLoaded', function() {
-    console.log('🔽 [STATUS-DROPDOWN] DOMContentLoaded - initializing dropdown');
-    
-    // Clean up any existing listeners first
-    const existingButton = document.getElementById('status-dropdown-button');
-    if (existingButton) {
-      existingButton.replaceWith(existingButton.cloneNode(true));
-    }
+  function initializeStatusDropdown() {
+    console.log('🔽 [STATUS-DROPDOWN] Initializing dropdown');
     
     const dropdownButton = document.getElementById('status-dropdown-button');
     const dropdownMenu = document.getElementById('status-dropdown-menu');
@@ -464,7 +458,15 @@ console.log('🔽 [STATUS-DROPDOWN] Final processed statuses:', {
         }
       }
     }
-  });
+  }
+
+  // Try to initialize immediately if DOM is ready
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initializeStatusDropdown);
+  } else {
+    // DOM is already ready
+    initializeStatusDropdown();
+  }
 </script>
 
 <style>

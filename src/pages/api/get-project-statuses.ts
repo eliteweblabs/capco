@@ -100,15 +100,27 @@ export const GET: APIRoute = async ({ request }) => {
       );
     }
 
+    // Helper function to get status color based on status code
+    const getStatusColor = (statusCode: number): string => {
+      if (statusCode <= 50) return "blue"; // Early stages
+      if (statusCode <= 100) return "yellow"; // Invoice stages
+      if (statusCode <= 140) return "purple"; // Submittals
+      if (statusCode <= 180) return "orange"; // Final invoice
+      if (statusCode <= 220) return "green"; // Deliverables and complete
+      return "gray"; // Default fallback
+    };
+
     // Convert array to object with status_code as key (no filtering - return all statuses)
     // console.log("🔍 [GET-PROJECT-STATUSES] Converting statuses to object...");
     const statusesObject = (statuses || []).reduce(
       (acc, status) => {
+        const statusColor = getStatusColor(status.status_code);
         console.log(`🔍 [GET-PROJECT-STATUSES] Processing status ${status.status_code}:`, {
           admin_status_name: status.admin_status_name,
           project_action: status.project_action || null,
           client_status_name: status.client_status_name || null,
           client_status_tab: status.client_status_tab || null,
+          status_color: statusColor,
         });
         acc[status.status_code] = {
           admin_status_name: status.admin_status_name,
@@ -116,6 +128,7 @@ export const GET: APIRoute = async ({ request }) => {
           project_action: status.project_action || null,
           client_status_name: status.client_status_name || null,
           client_status_tab: status.client_status_tab || null,
+          status_color: statusColor,
         };
         return acc;
       },
@@ -127,6 +140,7 @@ export const GET: APIRoute = async ({ request }) => {
           project_action: string | null;
           client_status_name: string | null;
           client_status_tab: string | null;
+          status_color: string;
         }
       >
     );

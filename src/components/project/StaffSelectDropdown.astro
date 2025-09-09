@@ -119,7 +119,7 @@ const {
 )}
 
 <script define:vars={{ id, projectId, autoSave, value, address }}>
-  document.addEventListener("DOMContentLoaded", async () => {
+  async function initializeStaffSelect() {
     const buttonElement = document.getElementById(`${id}-button`);
     const menuElement = document.getElementById(`${id}-menu`);
     const selectedTextElement = document.getElementById(`${id}-selected-text`);
@@ -452,5 +452,13 @@ const {
     // Selection is now handled by the updateStaffAssignment function
     // which is called from the selectStaff function when dropdown options are clicked
     
-  });
+  }
+
+  // Try to initialize immediately if DOM is ready
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initializeStaffSelect);
+  } else {
+    // DOM is already ready
+    initializeStaffSelect();
+  }
 </script>

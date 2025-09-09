@@ -157,26 +157,60 @@ console.log("📝 [ProjectForm] Debug info:", {
                 {field.label}
                 {field.required ? " *" : ""}
               </label>
-              <input
-                type={field.type === "number" ? "number" : "text"}
-                id={`${field.id}`}
-                name={field.name}
-                value={project?.[field.name] || ""}
-                class={`w-full rounded-md border border-gray-300 px-3 py-2.5 text-sm text-gray-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 dark:border-gray-600 dark:text-white dark:focus:border-blue-400 dark:focus:ring-blue-400 ${
-                  isReadOnly
-                    ? "cursor-not-allowed bg-gray-100 dark:bg-gray-800"
-                    : "bg-white dark:bg-gray-700"
-                }`}
-                placeholder={field.placeholder || ""}
-                required={field.required}
-                min={field.min}
-                max={field.max}
-                step={field.step}
-                readonly={isReadOnly}
-                data-field={field.dataField}
-                data-project-id={formId}
-                data-project-data={JSON.stringify(project || {})}
-              />
+              {field.name === "sq_ft" ? (
+                <div class="relative">
+                  <input
+                    type={field.type === "number" ? "number" : "text"}
+                    inputmode={field.type === "number" ? "numeric" : "text"}
+                    pattern={field.type === "number" ? "[0-9]*" : undefined}
+                    id={`${field.id}`}
+                    name={field.name}
+                    value={project?.[field.name] || ""}
+                    class={`w-full rounded-md border border-gray-300 px-3 py-2.5 pr-12 text-sm text-gray-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 dark:border-gray-600 dark:text-white dark:focus:border-blue-400 dark:focus:ring-blue-400 ${
+                      isReadOnly
+                        ? "cursor-not-allowed bg-gray-100 dark:bg-gray-800"
+                        : "bg-white dark:bg-gray-700"
+                    }`}
+                    placeholder={field.placeholder || ""}
+                    required={field.required}
+                    min={field.min}
+                    max={field.max}
+                    step={field.step}
+                    readonly={isReadOnly}
+                    data-field={field.dataField}
+                    data-project-id={formId}
+                    data-project-data={JSON.stringify(project || {})}
+                  />
+                  <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                    <span class="text-gray-500 dark:text-gray-400 text-sm font-medium">
+                      ft<sup>2</sup>
+                    </span>
+                  </div>
+                </div>
+              ) : (
+                <input
+                  type={field.type === "number" ? "number" : "text"}
+                  inputmode={field.type === "number" ? "numeric" : "text"}
+                  pattern={field.type === "number" ? "[0-9]*" : undefined}
+                  id={`${field.id}`}
+                  name={field.name}
+                  value={project?.[field.name] || ""}
+                  class={`w-full rounded-md border border-gray-300 px-3 py-2.5 text-sm text-gray-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 dark:border-gray-600 dark:text-white dark:focus:border-blue-400 dark:focus:ring-blue-400 ${
+                    isReadOnly
+                      ? "cursor-not-allowed bg-gray-100 dark:bg-gray-800"
+                      : "bg-white dark:bg-gray-700"
+                  }`}
+                  placeholder={field.placeholder || ""}
+                  required={field.required}
+                  min={field.min}
+                  max={field.max}
+                  step={field.step}
+                  readonly={isReadOnly}
+                  data-field={field.dataField}
+                  data-project-id={formId}
+                  data-project-data={JSON.stringify(project || {})}
+                />
+              )}
             </div>
           );
         })
