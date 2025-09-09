@@ -288,10 +288,11 @@ const newStatus = 50;
         const signaturePad = this.signaturePads.get(signatureId);
         if (!signaturePad || signaturePad.isEmpty()) {
           console.error("❌ [DigitalSignature] No signature found");
-          if (window.showError) {
-            window.showError(
+          if (window.showModal) {
+            window.showModal(
               "No Signature",
-              "Please provide a signature before agreeing to the contract."
+              "Please provide a signature before agreeing to the contract.",
+              "error"
             );
           }
           return;
@@ -301,10 +302,11 @@ const newStatus = 50;
 
         if (!project || !authorProfile) {
           console.error("❌ [DigitalSignature] Missing project or user data");
-          if (window.showError) {
-            window.showError(
+          if (window.showModal) {
+            window.showModal(
               "Error",
-              "Unable to process agreement. Please refresh the page and try again."
+              "Unable to process agreement. Please refresh the page and try again.",
+              "error"
             );
           }
           return;
@@ -425,11 +427,11 @@ const newStatus = 50;
             console.error("❌ [DigitalSignature] Error processing agreement:", error);
 
             // Show error message
-            if (window.showError) {
-              window.showError(
+            if (window.showModal) {
+              window.showModal(
                 "Agreement Failed",
                 "There was an error processing your agreement. Please try again.",
-                5000
+                "error"
               );
             }
 
@@ -504,8 +506,8 @@ const newStatus = 50;
           document.dispatchEvent(event);
         } else {
           // Show error notification
-          if (window.showError) {
-            window.showError("No Signature", "Please provide a signature before saving.", 0);
+          if (window.showModal) {
+            window.showModal("No Signature", "Please provide a signature before saving.", "error");
           } else {
             console.error("🔔 [No Signature] Please provide a signature before saving.");
           }

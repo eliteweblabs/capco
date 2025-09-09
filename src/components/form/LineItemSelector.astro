@@ -684,21 +684,16 @@ const { invoiceId, onItemAdded = "onLineItemAdded", showAddToInvoice = true } = 
     }
 
     showMessage(message, type = "info") {
-      // Create a simple toast notification
-      const toast = document.createElement("div");
-      toast.className = `fixed top-4 right-4 px-4 py-2 rounded-lg text-white z-50 transition-all duration-300 ${
-        type === "success" ? "bg-green-600" : type === "error" ? "bg-red-600" : "bg-blue-600"
-      }`;
-      toast.textContent = message;
-
-      document.body.appendChild(toast);
-
-      setTimeout(() => {
-        toast.style.opacity = "0";
-        setTimeout(() => {
-          document.body.removeChild(toast);
-        }, 300);
-      }, 3000);
+      // Use the centralized modal system
+      if (window.showModal) {
+        window.showModal(
+          type === "success" ? "Success" : type === "error" ? "Error" : "Info",
+          message,
+          type
+        );
+      } else {
+        console.log(`🔔 [${type.toUpperCase()}] ${message}`);
+      }
     }
 
     escapeHtml(text) {

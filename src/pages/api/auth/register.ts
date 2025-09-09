@@ -326,7 +326,7 @@ export const POST: APIRoute = async ({ request, redirect, cookies }) => {
     }
   }
 
-  // Return success response with email status for toast notifications
+  // Return success response with email status for modal notifications
   return new Response(
     JSON.stringify({
       success: true,

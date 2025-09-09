@@ -105,14 +105,14 @@ export class ProposalManager {
         // console.log("Proposal saved as invoice successfully:", data);
       } else {
         console.error("Failed to save proposal as invoice:", data.error);
-        if ((window as any).showError) {
-          (window as any).showError("Error", data.error || "Failed to save proposal");
+        if ((window as any).showModal) {
+          (window as any).showModal("Error", data.error || "Failed to save proposal", "error");
         }
       }
     } catch (error) {
       console.error("Error saving proposal as invoice:", error);
-      if ((window as any).showError) {
-        (window as any).showError("Error", "Failed to save proposal");
+      if ((window as any).showModal) {
+        (window as any).showModal("Error", "Failed to save proposal", "error");
       }
     }
   }
@@ -417,7 +417,7 @@ export class ProposalManager {
   /**
    * Save current proposal data to the database
    */
-  async saveCurrentProposalData(suppressToast: boolean = false): Promise<void> {
+  async saveCurrentProposalData(suppressModal: boolean = false): Promise<void> {
     // Show loading modal
     if ((window as any).showModal) {
       (window as any).showModal(
@@ -575,7 +575,7 @@ export class ProposalManager {
       if (result.success) {
         console.log("✅ [PROPOSAL-MANAGER] Proposal data saved successfully");
         // Show success message only if not suppressed (e.g., when sending proposal)
-        if (!suppressToast && (window as any).showSuccess) {
+        if (!suppressModal && (window as any).showSuccess) {
           (window as any).showSuccess(
             "Proposal Saved",
             "Proposal for <b>" + this.project.address + "</b> has been saved successfully!"
@@ -583,18 +583,26 @@ export class ProposalManager {
         }
       } else {
         console.error("❌ [PROPOSAL-MANAGER] Failed to save proposal data:", result.error);
-        if ((window as any).showError) {
-          (window as any).showError("Save Failed", result.error || "Failed to save proposal");
+        if ((window as any).showModal) {
+          (window as any).showModal(
+            "Save Failed",
+            result.error || "Failed to save proposal",
+            "error"
+          );
         }
       }
     } catch (error) {
       console.error("❌ [PROPOSAL-MANAGER] Error saving proposal data:", error);
-      if ((window as any).showError) {
-        (window as any).showError("Save Failed", "An error occurred while saving the proposal");
+      if ((window as any).showModal) {
+        (window as any).showModal(
+          "Save Failed",
+          "An error occurred while saving the proposal",
+          "error"
+        );
       }
     } finally {
       // Hide loading modal only if not suppressed (i.e., not called from sendProposal)
-      if (!suppressToast && (window as any).hideNotification) {
+      if (!suppressModal && (window as any).hideNotification) {
         (window as any).hideNotification();
       }
     }
@@ -620,7 +628,7 @@ export class ProposalManager {
     }
 
     try {
-      // First, save the current proposal data to the database (suppress toast)
+      // First, save the current proposal data to the database (suppress modal)
       await this.saveCurrentProposalData(true);
 
       // Then update project status to 30 (Proposal Shipped)
@@ -692,15 +700,15 @@ export class ProposalManager {
         //   // No redirect configured, just refresh the page
         //   window.location.reload();
         // }
-        // Success state is handled by the loading overlay and toast notifications
+        // Success state is handled by the loading overlay and notifications
       } else {
         console.error("Failed to send proposal:", data.error);
         // Hide modal immediately on error
         if ((window as any).hideNotification) {
           (window as any).hideNotification();
         }
-        if ((window as any).showError) {
-          (window as any).showError("Error", data.error || "Failed to send proposal");
+        if ((window as any).showModal) {
+          (window as any).showModal("Error", data.error || "Failed to send proposal", "error");
         }
       }
     } catch (error) {
@@ -709,8 +717,8 @@ export class ProposalManager {
       if ((window as any).hideNotification) {
         (window as any).hideNotification();
       }
-      if ((window as any).showError) {
-        (window as any).showError("Error", "Failed to send proposal");
+      if ((window as any).showModal) {
+        (window as any).showModal("Error", "Failed to send proposal", "error");
       }
     }
   }
@@ -1386,7 +1394,7 @@ export class ProposalManager {
     this.addRowButton(tbody);
   }
 
-  private saveProposalChanges(suppressToast: boolean = false): void {
+  private saveProposalChanges(suppressModal: boolean = false): void {
     console.log("Saving proposal changes");
 
     const tbody = document.getElementById("proposal-line-items");
@@ -1464,7 +1472,7 @@ export class ProposalManager {
     this.saveLineItemsToDatabase();
 
     // Show success message only if not suppressed (e.g., when sending proposal)
-    if (!suppressToast && (window as any).showSuccess) {
+    if (!suppressModal && (window as any).showSuccess) {
       (window as any).showSuccess("Proposal Updated", "Your changes have been saved successfully!");
     }
   }
@@ -1506,14 +1514,18 @@ export class ProposalManager {
         console.log("✅ [PROPOSAL-MANAGER] Line items saved successfully");
       } else {
         console.error("❌ [PROPOSAL-MANAGER] Failed to save line items:", result.error);
-        if ((window as any).showError) {
-          (window as any).showError("Save Failed", result.error || "Failed to save line items");
+        if ((window as any).showModal) {
+          (window as any).showModal(
+            "Save Failed",
+            result.error || "Failed to save line items",
+            "error"
+          );
         }
       }
     } catch (error) {
       console.error("❌ [PROPOSAL-MANAGER] Error saving line items:", error);
-      if ((window as any).showError) {
-        (window as any).showError("Save Failed", "Failed to save line items");
+      if ((window as any).showModal) {
+        (window as any).showModal("Save Failed", "Failed to save line items", "error");
       }
     }
   }

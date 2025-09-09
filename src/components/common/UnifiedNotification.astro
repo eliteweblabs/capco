@@ -1,6 +1,5 @@
 ---
-// Unified Notification System - Replaces both SimpleToast and ToastAlerts
-// Supports simple toasts, modal-like notifications, redirects, and custom actions
+// Unified Notification System -
 ---
 
 <div
@@ -15,7 +14,6 @@
     title: string;
     message: string;
     duration?: number; // 0 = no auto-hide, >0 = auto-hide after ms
-    showAsToast?: boolean; // If true, shows as small toast (default: false = full-screen modal)
     redirect?: {
       url: string;
       delay?: number; // Delay in seconds before redirect
@@ -215,20 +213,17 @@
       };
 
       const config = typeConfig[notification.type];
-      const showAsToast = notification.showAsToast || false;
 
       const element = document.createElement("div");
       element.id = `unified-notification-${notification.id}`;
       element.setAttribute("role", "alert");
 
-      // Default to full-screen modal unless explicitly requested as toast
-      if (!showAsToast) {
-        element.className = `
+      element.className = `
           fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm
           transform transition-all duration-300 ease-in-out animate-fade-in
         `.trim();
 
-        element.innerHTML = `
+      element.innerHTML = `
           <div class="rounded-xl bg-white shadow-2xl dark:bg-gray-800 max-w-md w-full mx-4 relative overflow-hidden">
             ${
               notification.duration && notification.duration > 0
@@ -264,38 +259,6 @@
             </button>
           </div>
         `;
-
-        // Progress bar animation is now handled by CSS
-      } else {
-        // Toast mode (small notification)
-        element.className = `
-          border flex items-center w-full max-w-lg p-4 text-gray-500 bg-white rounded-lg shadow-sm 
-          dark:text-gray-400 dark:bg-gray-800 transform transition-all duration-300 ease-in-out animate-slide-in
-        `.trim();
-
-        element.innerHTML = `
-          <div class="inline-flex items-center justify-center shrink-0 w-8 h-8 ${config.iconBg} rounded-lg">
-            ${config.icon}
-            <span class="sr-only">${config.label}</span>
-          </div>
-          <div class="ms-3 text-sm font-normal flex-1">
-            ${notification.title ? `<div class="font-semibold text-gray-900 dark:text-white mb-1">${notification.title}</div>` : ""}
-            <div class="notification-message">${notification.message}</div>
-            ${notification.actions && Array.isArray(notification.actions) ? this.renderActions(notification.actions, notification.id) : ""}
-          </div>
-          <button 
-            type="button" 
-            class="ms-auto -mx-1.5 -my-1.5 bg-white text-gray-400 hover:text-gray-900 rounded-lg focus:ring-2 focus:ring-gray-300 p-1.5 hover:bg-gray-100 inline-flex items-center justify-center h-8 w-8 dark:text-gray-500 dark:hover:text-white dark:bg-gray-800 dark:hover:bg-gray-700" 
-            aria-label="Close"
-            onclick="unifiedNotificationManager.hide('${notification.id}')"
-          >
-            <span class="sr-only">Close</span>
-            <svg class="w-3 h-3" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 14 14">
-              <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m1 1 6 6m0 0 6 6M7 7l6-6M7 7l-6 6"/>
-            </svg>
-          </button>
-        `;
-      }
 
       this.container.appendChild(element);
 
@@ -356,9 +319,6 @@
     }
   }
 
-  // Global unified notification manager
-  const unifiedNotificationManager = new UnifiedNotificationManager();
-
   // Make it globally accessible
   (window as any).unifiedNotificationManager = unifiedNotificationManager;
 
@@ -405,31 +365,6 @@
     // console.log("🔔 [UNIFIED-NOTIFICATION] showModal returning ID:", result);
     return result;
   };
-
-  // For backward compatibility - shows as small toast
-  (window as any).showToast = (type: string, title: string, message: string, duration?: number) => {
-    return unifiedNotificationManager.show({
-      type: type as any,
-      title,
-      message,
-      duration: duration || 5000,
-      showAsToast: true, // Explicitly request toast mode
-    });
-  };
-
-  (window as any).hideNotification = (id?: string) => {
-    unifiedNotificationManager.hide(id);
-  };
-
-  // console.log("🔔 [UNIFIED-NOTIFICATION] Unified notification system initialized");
-  // console.log(
-  //   "🔔 [UNIFIED-NOTIFICATION] window.showModal available:",
-  //   typeof (window as any).showModal
-  // );
-  // console.log(
-  //   "🔔 [UNIFIED-NOTIFICATION] window.showSuccess available:",
-  //   typeof (window as any).showSuccess
-  // );
 </script>
 
 <style>

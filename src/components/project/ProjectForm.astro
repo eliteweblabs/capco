@@ -590,10 +590,11 @@ const formActions = getFilteredFormActions(currentRole, isNewProject, projectSta
         }
       } catch (error) {
         console.error("📝 [ProjectForm] Error saving project:", error);
-        if ((window as any).showError) {
-          (window as any).showError(
+        if ((window as any).showModal) {
+          (window as any).showModal(
             "Error",
-            error instanceof Error ? error.message : "Failed to save project"
+            error instanceof Error ? error.message : "Failed to save project",
+            "error"
           );
         }
       } finally {
@@ -679,9 +680,7 @@ const formActions = getFilteredFormActions(currentRole, isNewProject, projectSta
         [
           {
             label: "Cancel",
-            action: () => {
-              // Just close the toast, do nothing
-            },
+            action: () => {},
           },
           {
             label: "Delete",
@@ -958,9 +957,8 @@ const formActions = getFilteredFormActions(currentRole, isNewProject, projectSta
             errorMessage = "Please fill in all required fields.";
           }
 
-          // Show error toast using centralized system
-          if ((window as any).showError) {
-            (window as any).showError(errorTitle, errorMessage, errorDuration);
+          if ((window as any).showModal) {
+            (window as any).showModal(errorTitle, errorMessage, "error");
           }
 
           throw new Error(errorMessage);
@@ -969,7 +967,6 @@ const formActions = getFilteredFormActions(currentRole, isNewProject, projectSta
         console.log("Project saved successfully:", result);
 
         // Success is indicated by the redirect and project save
-        // No need for hardcoded toast messages - let the database-driven system handle notifications
 
         // For new projects, set initial status to 10 and trigger email notifications
         if (isNewProject && result.id) {
@@ -1018,7 +1015,6 @@ const formActions = getFilteredFormActions(currentRole, isNewProject, projectSta
             console.error("🔍 [ProjectForm] Error calling update-status API:", statusError);
           }
 
-          // The update-status API call above should trigger database-driven toast messages
           // No need for hardcoded notifications - let the status system handle it
         }
 
@@ -1028,11 +1024,11 @@ const formActions = getFilteredFormActions(currentRole, isNewProject, projectSta
         console.error("Error saving project:", error);
 
         // Only show generic error if we haven't already shown a specific error
-        if ((window as any).showError && !error.message.includes("Failed to save project")) {
-          (window as any).showError(
+        if ((window as any).showModal && !error.message.includes("Failed to save project")) {
+          (window as any).showModal(
             "Network Error",
             "Network error. Please check your connection and try again.",
-            5000
+            "error"
           );
         }
       })

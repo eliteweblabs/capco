@@ -1,5 +1,5 @@
 /**
- * Simple database utility for toast data
+ * Simple database utility for data
  */
 
 import { createClient } from "@supabase/supabase-js";

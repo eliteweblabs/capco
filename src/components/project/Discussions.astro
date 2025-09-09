@@ -6,11 +6,13 @@ interface Props {
   projectId: string;
   projectStatus?: number;
   projectStatusLabel?: string;
+  supabaseUrl?: string;
 }
 
 import BoxIcon from "../common/BoxIcon.astro";
 
-const { projectId, authorProfile, projectStatus, currentRole, projectStatusLabel } = Astro.props;
+const { projectId, authorProfile, projectStatus, currentRole, projectStatusLabel, supabaseUrl } =
+  Astro.props;
 
 const placeholder =
   currentRole === "Admin" || currentRole === "Staff"
@@ -52,6 +54,33 @@ const placeholder =
         </div>
       </div>
 
+      {/* Image Upload Section */}
+      <div class="mt-3">
+        <div class="flex items-center justify-between">
+          <label
+            class="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400 cursor-pointer hover:text-gray-800 dark:hover:text-gray-200"
+          >
+            <BoxIcon name="image-add" class="h-4 w-4" />
+            <span>Add Images</span>
+            <input type="file" id="comment-images" accept="image/*" multiple class="hidden" />
+          </label>
+          <button
+            type="button"
+            id="clear-images-btn"
+            class="text-xs text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-200 hidden"
+          >
+            Clear All
+          </button>
+        </div>
+
+        {/* Image Preview Area */}
+        <div id="image-preview-container" class="mt-2 hidden">
+          <div id="image-previews" class="flex flex-wrap gap-2">
+            <!-- Image previews will be added here -->
+          </div>
+        </div>
+      </div>
+
       {/* Admin/Staff Only Toggles */}
       {
         (currentRole === "Admin" || currentRole === "Staff") && (
@@ -88,7 +117,7 @@ const placeholder =
     </div>
   </div>
 
-  <script define:vars={{ projectId, authorProfile, currentRole }}>
+  <script define:vars={{ projectId, authorProfile, currentRole, supabaseUrl }}>
     // Discussion functionality
     let discussions = [];
     let currentProjectId = projectId;
@@ -97,6 +126,7 @@ const placeholder =
     let currentUserName = authorProfile.company_name;
     let mentionableUsers = [];
     let currentMentionStart = -1;
+    let selectedImages = [];
 
     // console.log("🔔 [DISCUSSION] Initial userRole:", currentUserRole);
 
@@ -298,6 +328,32 @@ const placeholder =
           
           <div class="mt-3">
             <p class="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">${highlightMentions(comment.message)}</p>
+            
+            ${
+              comment.image_paths && comment.image_paths.length > 0
+                ? `
+              <div class="mt-3 flex flex-wrap gap-2">
+                ${comment.image_paths
+                  .map(
+                    (imagePath) => `
+                  <div class="relative group">
+                    <img 
+                      src="${getImageUrl(imagePath)}" 
+                      alt="Discussion image"
+                      class="max-w-xs max-h-48 object-cover rounded-lg border border-gray-300 dark:border-gray-600 cursor-pointer hover:opacity-90 transition-opacity"
+                      onclick="openImageModal('${getImageUrl(imagePath)}')"
+                    />
+                    <div class="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-10 transition-all rounded-lg flex items-center justify-center">
+                      <i class="bx bx-zoom-in text-white opacity-0 group-hover:opacity-100 transition-opacity text-2xl"></i>
+                    </div>
+                  </div>
+                `
+                  )
+                  .join("")}
+              </div>
+            `
+                : ""
+            }
           </div>
           
           ${
@@ -368,6 +424,7 @@ const placeholder =
           const internalToggle = document.getElementById("internal-toggle");
           if (textarea) textarea.value = "";
           if (internalToggle) internalToggle.checked = false;
+          clearAllImages();
         }
       }
     }
@@ -472,6 +529,159 @@ const placeholder =
       }
     }
 
+    // Image upload functionality
+    function handleImageUpload(event) {
+      const files = Array.from(event.target.files);
+      const maxImages = 5;
+      const maxSize = 5 * 1024 * 1024; // 5MB per image
+
+      // Validate files
+      const validFiles = files.filter((file) => {
+        if (!file.type.startsWith("image/")) {
+          console.warn("Skipping non-image file:", file.name);
+          return false;
+        }
+        if (file.size > maxSize) {
+          console.warn("Skipping large file:", file.name, "Size:", file.size);
+          if (window.showModal) {
+            window.showModal(
+              "warning",
+              "File Too Large",
+              `${file.name} is too large. Maximum size is 5MB.`
+            );
+          }
+          return false;
+        }
+        return true;
+      });
+
+      // Check total image limit
+      if (selectedImages.length + validFiles.length > maxImages) {
+        if (window.showModal) {
+          window.showModal("warning", "Too Many Images", `Maximum ${maxImages} images allowed.`);
+        }
+        return;
+      }
+
+      // Add valid files to selected images
+      validFiles.forEach((file) => {
+        selectedImages.push(file);
+      });
+
+      updateImagePreviews();
+    }
+
+    function updateImagePreviews() {
+      const container = document.getElementById("image-preview-container");
+      const previews = document.getElementById("image-previews");
+      const clearBtn = document.getElementById("clear-images-btn");
+
+      if (!container || !previews) return;
+
+      if (selectedImages.length === 0) {
+        container.classList.add("hidden");
+        if (clearBtn) clearBtn.classList.add("hidden");
+        return;
+      }
+
+      container.classList.remove("hidden");
+      if (clearBtn) clearBtn.classList.remove("hidden");
+
+      previews.innerHTML = selectedImages
+        .map(
+          (file, index) => `
+        <div class="relative group">
+          <img 
+            src="${URL.createObjectURL(file)}" 
+            alt="${file.name}"
+            class="w-20 h-20 object-cover rounded-lg border border-gray-300 dark:border-gray-600"
+          />
+          <button
+            type="button"
+            onclick="removeImage(${index})"
+            class="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center text-xs hover:bg-red-600 opacity-0 group-hover:opacity-100 transition-opacity"
+          >
+            ×
+          </button>
+          <div class="absolute bottom-0 left-0 right-0 bg-black bg-opacity-50 text-white text-xs p-1 rounded-b-lg truncate">
+            ${file.name}
+          </div>
+        </div>
+      `
+        )
+        .join("");
+    }
+
+    function removeImage(index) {
+      selectedImages.splice(index, 1);
+      updateImagePreviews();
+    }
+
+    function clearAllImages() {
+      selectedImages = [];
+      updateImagePreviews();
+      const fileInput = document.getElementById("comment-images");
+      if (fileInput) fileInput.value = "";
+    }
+
+    // Image URL helper function
+    function getImageUrl(imagePath) {
+      // If it's already a full URL, return as is
+      if (imagePath.startsWith("http")) {
+        return imagePath;
+      }
+      // Otherwise, construct the Supabase storage URL
+      const baseUrl = supabaseUrl || "https://your-project.supabase.co";
+      return `${baseUrl}/storage/v1/object/public/project-documents/${imagePath}`;
+    }
+
+    // Image modal functionality
+    function openImageModal(imageUrl) {
+      // Create modal overlay
+      const modal = document.createElement("div");
+      modal.className =
+        "fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50";
+      modal.innerHTML = `
+        <div class="relative max-w-4xl max-h-full p-4">
+          <button 
+            onclick="this.closest('.fixed').remove()"
+            class="absolute top-2 right-2 text-white text-2xl hover:text-gray-300 z-10"
+          >
+            ×
+          </button>
+          <img 
+            src="${imageUrl}" 
+            alt="Discussion image"
+            class="max-w-full max-h-full object-contain rounded-lg"
+          />
+        </div>
+      `;
+
+      // Close on background click
+      modal.addEventListener("click", (e) => {
+        if (e.target === modal) {
+          modal.remove();
+        }
+      });
+
+      // Close on escape key
+      const handleEscape = (e) => {
+        if (e.key === "Escape") {
+          modal.remove();
+          document.removeEventListener("keydown", handleEscape);
+        }
+      };
+      document.addEventListener("keydown", handleEscape);
+
+      document.body.appendChild(modal);
+    }
+
+    // Make image functions globally available
+    window.removeImage = removeImage;
+    window.clearAllImages = clearAllImages;
+    window.getImageUrl = getImageUrl;
+    window.openImageModal = openImageModal;
+
     // Make functions globally available
     window.toggleCommentForm = toggleCommentForm;
     window.cancelReply = cancelReply;
@@ -484,8 +694,8 @@ const placeholder =
       const isInternal = internalToggle?.checked || false;
       const submitBtn = document.getElementById("submit-comment-btn");
 
-      if (!message) {
-        alert("Please enter a comment message");
+      if (!message && selectedImages.length === 0) {
+        alert("Please enter a comment message or add images");
         return;
       }
 
@@ -497,11 +707,41 @@ const placeholder =
           <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
           <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
         </svg>
-        Posting...
+        ${selectedImages.length > 0 ? "Uploading..." : "Posting..."}
       `;
       }
 
       try {
+        // Upload images first if any
+        let uploadedImagePaths = [];
+        if (selectedImages.length > 0) {
+          console.log("📸 Uploading", selectedImages.length, "images");
+
+          for (const image of selectedImages) {
+            const formData = new FormData();
+            formData.append("file", image);
+            formData.append("projectId", currentProjectId);
+            formData.append("fileType", "discussion-images");
+            formData.append("fileTitle", `Discussion Image - ${image.name}`);
+
+            const uploadResponse = await fetch("/api/upload", {
+              method: "POST",
+              body: formData,
+            });
+
+            const uploadResult = await uploadResponse.json();
+
+            if (uploadResult.success) {
+              uploadedImagePaths.push(uploadResult.filePath);
+              console.log("✅ Image uploaded:", image.name);
+            } else {
+              console.error("❌ Failed to upload image:", image.name, uploadResult.error);
+              throw new Error(`Failed to upload image: ${image.name}`);
+            }
+          }
+        }
+
+        // Submit discussion with image paths
         const response = await fetch("/api/add-discussion", {
           method: "POST",
           headers: {
@@ -509,18 +749,20 @@ const placeholder =
           },
           body: JSON.stringify({
             projectId: currentProjectId,
-            message: message,
+            message: message || "",
             internal: isInternal,
+            imagePaths: uploadedImagePaths,
           }),
         });
 
         const data = await response.json();
 
         if (data.success) {
-          console.log("✅ Comment submitted successfully");
+          console.log("✅ Comment with images submitted successfully");
           // Clear form and hide it
           messageInput.value = "";
           if (internalToggle) internalToggle.checked = false;
+          clearAllImages();
           toggleCommentForm();
           // Reload discussions
           await loadDiscussions(currentProjectId);
@@ -529,7 +771,7 @@ const placeholder =
             window.showModal(
               "success",
               "Comment posted",
-              "Your comment has been added to the discussion"
+              `Your comment has been added to the discussion${uploadedImagePaths.length > 0 ? ` with ${uploadedImagePaths.length} image(s)` : ""}`
             );
           }
         } else {
@@ -538,7 +780,7 @@ const placeholder =
         }
       } catch (error) {
         console.error("Error submitting comment:", error);
-        alert("Error submitting comment");
+        alert("Error submitting comment: " + error.message);
       } finally {
         // Reset loading state
         if (submitBtn) {
@@ -760,6 +1002,18 @@ const placeholder =
       if (submitCommentBtn) {
         submitCommentBtn.removeEventListener("click", submitComment);
         submitCommentBtn.addEventListener("click", submitComment);
+      }
+
+      // Add image upload functionality
+      const imageInput = document.getElementById("comment-images");
+      const clearImagesBtn = document.getElementById("clear-images-btn");
+
+      if (imageInput) {
+        imageInput.addEventListener("change", handleImageUpload);
+      }
+
+      if (clearImagesBtn) {
+        clearImagesBtn.addEventListener("click", clearAllImages);
       }
 
       // Add mention functionality to textarea
@@ -985,8 +1239,8 @@ const placeholder =
             toggle.checked = !isCompleted;
           }
           // Show error notification
-          if (window.showError) {
-            window.showError("Update Failed", "Failed to update discussion status");
+          if (window.showModal) {
+            window.showModal("Update Failed", "Failed to update discussion status", "error");
           }
         }
       } catch (error) {
@@ -997,8 +1251,8 @@ const placeholder =
           toggle.checked = !isCompleted;
         }
         // Show error notification
-        if (window.showError) {
-          window.showError("Update Failed", "Error updating discussion status");
+        if (window.showModal) {
+          window.showModal("Update Failed", "Error updating discussion status", "error");
         }
       }
     }

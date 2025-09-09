@@ -122,7 +122,8 @@ export const GET: APIRoute = async ({ url, cookies }) => {
         project_id,
         internal,
         mark_completed,
-        parent_id
+        parent_id,
+        image_paths
       `
       )
       .eq("project_id", projectIdInt);

@@ -325,20 +325,27 @@ const {
           hideDropdown();
 
           // Show success message
-          showToast(
-            data.isNew ? "New subject created and selected!" : "Subject selected!",
-            "success"
-          );
+          if (window.showModal) {
+            window.showModal(
+              "Success",
+              data.isNew ? "New subject created and selected!" : "Subject selected!",
+              "success"
+            );
+          }
 
           // Refresh the list
           loadSubjects("");
         } else {
           console.error("Failed to create subject:", data.error);
-          showToast("Failed to create subject", "error");
+          if (window.showModal) {
+            window.showModal("Error", "Failed to create subject", "error");
+          }
         }
       } catch (error) {
         console.error("Error creating subject:", error);
-        showToast("Failed to create subject", "error");
+        if (window.showModal) {
+          window.showModal("Error", "Failed to create subject", "error");
+        }
       }
     }
 
@@ -389,56 +396,6 @@ const {
       toggleClearButton();
       searchInput.focus();
       loadSubjects("");
-    }
-
-    // Mobile-friendly toast notification
-    function showToast(message, type = "info") {
-      const toast = document.createElement("div");
-
-      // Mobile-first responsive positioning
-      toast.className = `fixed z-50 transition-all duration-300 rounded-lg text-white shadow-lg
-        top-4 left-4 right-4 mx-auto max-w-sm
-        sm:top-4 sm:right-4 sm:left-auto sm:mx-0 sm:max-w-none sm:w-auto
-        px-4 py-3 text-sm font-medium
-        ${type === "success" ? "bg-green-600" : type === "error" ? "bg-red-600" : "bg-blue-600"}`;
-
-      // Add icon based on type
-      const icons = {
-        success: "✓",
-        error: "✕",
-        info: "ℹ",
-      };
-
-      toast.innerHTML = `
-        <div class="flex items-center space-x-2">
-          <span class="flex-shrink-0 text-lg font-bold">${icons[type] || icons.info}</span>
-          <span class="flex-1">${message}</span>
-        </div>
-      `;
-
-      document.body.appendChild(toast);
-
-      // Auto-dismiss after 4 seconds (longer for mobile users to read)
-      setTimeout(() => {
-        toast.style.opacity = "0";
-        toast.style.transform = "translateY(-10px)";
-        setTimeout(() => {
-          if (document.body.contains(toast)) {
-            document.body.removeChild(toast);
-          }
-        }, 300);
-      }, 4000);
-
-      // Allow manual dismiss by tapping
-      toast.addEventListener("click", () => {
-        toast.style.opacity = "0";
-        toast.style.transform = "translateY(-10px)";
-        setTimeout(() => {
-          if (document.body.contains(toast)) {
-            document.body.removeChild(toast);
-          }
-        }, 300);
-      });
     }
 
     // Event listeners

@@ -247,12 +247,8 @@ async function sendModalNotifications(
   statusConfig: any,
   context: string
 ) {
-  console.log(`🔔 [${context}] Sending toast notifications to ${usersToNotify.length} users`);
+  console.log(`🔔 [${context}] Sending notifications to ${usersToNotify.length} users`);
 
-  // Import toast notification utilities
-  // const { toast } = await import("./toast-utils");
-
-  // For now, just log that toast notifications would be sent
   // You can implement the actual modal logic here or call a separate modal service
   console.log(`🔔 [${context}] Modal notifications would be sent for status ${newStatus}`);
 

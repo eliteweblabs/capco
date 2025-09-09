@@ -160,9 +160,7 @@ const {
       this.fileType = fileType;
       this.projectStatus = projectStatus;
       this.currentRole = currentRole;
-      this.isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
-        navigator.userAgent
-      );
+      this.isMobile = window.innerWidth <= 768;
       this.initialized = false;
       this.isFileDialogOpen = false; // Flag to prevent multiple file dialogs
       // console.log("📱 [PDF-UPLOAD] Mobile detection:", this.isMobile);
@@ -859,10 +857,9 @@ const {
 
     showError(message) {
       // Use centralized notification system
-      if (typeof window !== "undefined" && window.showError) {
-        window.showError("Upload Error", message, 5000);
+      if (typeof window !== "undefined" && window.showModal) {
+        window.showModal("Upload Error", message, "error");
       } else {
-        // Fallback to console log if toast system not available
         console.error("❌ Error:", message);
       }
     }
@@ -879,9 +876,7 @@ const {
         console.log("🔔 [PDF-UPLOAD] Calling window.showSuccess");
         window.showSuccess("Success", message, 5000);
       } else {
-        // Fallback to console log if toast system not available
         console.log("✅ Success:", message);
-        console.log("🔔 [PDF-UPLOAD] Toast system not available, using console fallback");
       }
     }
 
@@ -987,26 +982,6 @@ const {
                 notification.duration,
                 notification.redirect
               );
-            }
-          } else if (result.toastData && window.showSuccess) {
-            // Fallback to old toast system for backward compatibility
-            const isAdminOrStaff = this.currentRole === "Admin" || this.currentRole === "Staff";
-            const toastInfo = isAdminOrStaff ? result.toastData.admin : result.toastData.client;
-
-            console.log("🔔 [PDF-UPLOAD] Showing fallback toast:", {
-              message: toastInfo.message,
-              redirect: toastInfo.redirect,
-              userType: isAdminOrStaff ? "admin" : "client",
-            });
-
-            window.showSuccess("Status Updated", toastInfo.message, 5000);
-
-            // Handle auto-redirect if specified
-            if (toastInfo.redirect) {
-              console.log("🔔 [PDF-UPLOAD] Auto-redirecting to:", toastInfo.redirect);
-              setTimeout(() => {
-                window.location.href = toastInfo.redirect;
-              }, 2000);
             }
           }
 
@@ -1162,10 +1137,11 @@ const {
           }
 
           // Show error message
-          if (window.showError) {
-            window.showError(
+          if (window.showModal) {
+            window.showModal(
               "Delete Failed",
-              errorData.error || "Failed to delete file. Please try again."
+              errorData.error || "Failed to delete file. Please try again.",
+              "error"
             );
           }
         }
@@ -1181,10 +1157,11 @@ const {
         }
 
         // Show error message
-        if (window.showError) {
-          window.showError(
+        if (window.showModal) {
+          window.showModal(
             "Delete Failed",
-            "An error occurred while deleting the file. Please try again."
+            "An error occurred while deleting the file. Please try again.",
+            "error"
           );
         }
       }
