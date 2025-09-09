@@ -139,7 +139,17 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
         // Override buttonLink with magic link for authentication
         let finalButtonLink = buttonLink;
-        if (buttonLink && buttonLink.includes("/dashboard")) {
+
+        // Skip magic link generation for SMS gateway emails (they don't need authentication)
+        const isSmsGateway =
+          userEmail.includes("@vtext.com") ||
+          userEmail.includes("@txt.att.net") ||
+          userEmail.includes("@messaging.sprintpcs.com") ||
+          userEmail.includes("@tmomail.net") ||
+          userEmail.includes("@smsmyboostmobile.com") ||
+          userEmail.includes("@sms.cricketwireless.net");
+
+        if (buttonLink && buttonLink.includes("/dashboard") && !isSmsGateway) {
           try {
             const { data: magicLinkData, error: magicLinkError } =
               await supabaseAdmin.auth.admin.generateLink({
@@ -159,6 +169,11 @@ export const POST: APIRoute = async ({ request, cookies }) => {
           } catch (error) {
             console.error("📧 [EMAIL-DELIVERY] Error generating magic link:", error);
           }
+        } else if (isSmsGateway) {
+          console.log(
+            "📧 [EMAIL-DELIVERY] Skipping magic link generation for SMS gateway:",
+            userEmail
+          );
         }
 
         // Apply button configuration

@@ -164,32 +164,57 @@ const { compact = false } = Astro.props;
       updateContactCharCount(); // Initial call
     }
 
+    // Helper function to scroll to top on mobile before showing modal
+    function scrollToTopOnMobile() {
+      // Check if device is mobile (screen width < 768px)
+      if (window.innerWidth < 768) {
+        console.log("📱 [SMS-FORM] Scrolling to top on mobile device");
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+    }
+
+    // Helper function to show modal with mobile scroll
+    function showModalWithScroll(type: string, title: string, message: string, duration?: number) {
+      scrollToTopOnMobile();
+      if ((window as any).showModal) {
+        (window as any).showModal(type, title, message, duration);
+      } else {
+        console.error(`🔔 [${title}] ${message}`);
+      }
+    }
+
     // Form submission handling
     if (form) {
       form.addEventListener("submit", async (e) => {
         e.preventDefault();
         const message = (form.querySelector("#message") as HTMLTextAreaElement)?.value;
 
+        // Check if modal notification function is available
+        console.log("📱 [SMS-FORM] Modal notification function available:", {
+          showModal: typeof (window as any).showModal
+        });
+
         // Client-side validation - only check message since phone/carrier are hardcoded
         if (!message || message.trim().length === 0) {
-          if (window.showError) {
-            window.showError("Message Required", "Please enter a message to send.", 5000);
-          } else {
-            console.error("🔔 [Message Required] Please enter a message to send.");
-          }
+          showModalWithScroll("error", "Message Required", "Please enter a message to send.", 5000);
           return;
         }
 
-        // Show loading notification
-        if (window.showInfo) {
-          window.showInfo("Sending Message...", "Please wait while we send your message to CAPCo.", 5000);
-        } else {
-          console.log("🔔 [Sending Message...] Please wait while we send your message to CAPCo.");
-        }
+        // Show loading notification as modal
+        showModalWithScroll("info", "Sending Message...", "Please wait while we send your message to CAPCo.", 0); // 0 = no auto-hide
 
         try {
           // Create FormData from the form
           const formData = new FormData(form as HTMLFormElement);
+          
+          console.log("📱 [SMS-FORM] Submitting form with data:", {
+            message: formData.get("message"),
+            contactInfo: formData.get("contact_info"),
+            phone1: formData.get("phone1"),
+            carrier1: formData.get("carrier1"),
+            phone2: formData.get("phone2"),
+            carrier2: formData.get("carrier2")
+          });
           
           // Make the API call
           const response = await fetch("/api/send-email-sms", {
@@ -197,35 +222,36 @@ const { compact = false } = Astro.props;
             body: formData,
           });
 
+          console.log("📱 [SMS-FORM] API response status:", response.status);
+          console.log("📱 [SMS-FORM] API response ok:", response.ok);
+
           if (response.ok) {
-            // Success
-            if (window.showSuccess) {
-              window.showSuccess("Message Sent!", "Your message has been sent to CAPCo successfully.", 5000);
-            } else {
-              console.log("🔔 [Message Sent!] Your message has been sent to CAPCo successfully.");
-            }
-            (form as HTMLFormElement).reset();
+            const result = await response.json();
+            console.log("📱 [SMS-FORM] API success result:", result);
             
-            // Dispatch custom event to close the SMS panel
-            const closeEvent = new CustomEvent('smsFormSubmitted');
-            document.dispatchEvent(closeEvent);
+            // Check if emails were actually sent successfully
+            if (result.totalSent && result.totalSent > 0) {
+              // Success - emails were actually sent
+              showModalWithScroll("success", "Message Sent!", "Your message has been sent to CAPCo successfully.", 5000);
+              (form as HTMLFormElement).reset();
+              
+              // Dispatch custom event to close the SMS panel
+              const closeEvent = new CustomEvent('smsFormSubmitted');
+              document.dispatchEvent(closeEvent);
+            } else {
+              // No emails were sent - show error modal
+              console.error("🔔 [SMS Error] No emails were sent:", result);
+              showModalWithScroll("error", "Send Failed", "Failed to send message. No emails were delivered.", 5000);
+            }
           } else {
             // Error
             const errorText = await response.text();
             console.error("🔔 [SMS Error] API response:", response.status, errorText);
-            if (window.showError) {
-              window.showError("Send Failed", "Failed to send message. Please try again.", 5000);
-            } else {
-              console.error("🔔 [Send Failed] Failed to send message. Please try again.");
-            }
+            showModalWithScroll("error", "Send Failed", "Failed to send message. Please try again.", 5000);
           }
         } catch (error) {
           console.error("🔔 [SMS Error] Network error:", error);
-          if (window.showError) {
-            window.showError("Network Error", "Failed to send message. Please check your connection.", 5000);
-          } else {
-            console.error("🔔 [Network Error] Failed to send message. Please check your connection.");
-          }
+          showModalWithScroll("error", "Network Error", "Failed to send message. Please check your connection.", 5000);
         }
       });
     }
