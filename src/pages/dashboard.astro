@@ -209,36 +209,36 @@ try {
 
         console.log(`🔔 [PROJECT-ACTIONS] Showing for project "${project.title}":`, actionMessage);
 
-        // Show dismissible modal notification
-        if (window.showModal) {
-          console.log("🔔 [PROJECT-ACTIONS] Notification system available, showing modal...");
-          window.showModal("info", "Project Action Required", actionMessage, 8000); // 8 seconds with progress bar
-        } else {
-          console.error(
-            "🔔 [PROJECT-ACTIONS] Notification system not available, retrying in 1 second..."
-          );
+        // Show dismissible modal notification with proper initialization check
+        const showNotificationWithRetry = (retryCount = 0) => {
+          if (window.showModal && window.unifiedNotificationManager) {
+            console.log("🔔 [PROJECT-ACTIONS] Notification system available, showing modal...");
+            window.showModal("info", "Project Action Required", actionMessage, 8000); // 8 seconds with progress bar
+          } else if (retryCount < 5) {
+            console.log(
+              `🔔 [PROJECT-ACTIONS] Notification system not ready, retrying in ${(retryCount + 1) * 500}ms... (attempt ${retryCount + 1}/5)`
+            );
+            setTimeout(
+              () => {
+                showNotificationWithRetry(retryCount + 1);
+              },
+              (retryCount + 1) * 500
+            );
+          } else {
+            console.error(
+              "🔔 [PROJECT-ACTIONS] Notification system failed to initialize after 5 attempts"
+            );
+            console.error(
+              "🔔 [PROJECT-ACTIONS] Available window methods:",
+              Object.keys(window).filter((key) => key.includes("show"))
+            );
 
-          // Retry after a short delay to allow notification system to initialize
-          setTimeout(() => {
-            if (window.showModal) {
-              console.log(
-                "🔔 [PROJECT-ACTIONS] Notification system now available, showing modal..."
-              );
-              window.showModal("info", "Project Action Required", actionMessage, 8000);
-            } else {
-              console.error(
-                "🔔 [PROJECT-ACTIONS] Notification system still not available after retry"
-              );
-              console.error(
-                "🔔 [PROJECT-ACTIONS] Available window methods:",
-                Object.keys(window).filter((key) => key.includes("show"))
-              );
+            // Fallback to alert if notification system fails
+            alert(`Project Action Required: ${actionMessage}`);
+          }
+        };
 
-              // Fallback to alert if notification system fails
-              alert(`Project Action Required: ${actionMessage}`);
-            }
-          }, 1000);
-        }
+        showNotificationWithRetry();
       } else {
         console.log(`🔔 [PROJECT-ACTIONS] No project action for project "${project.title}"`);
       }
