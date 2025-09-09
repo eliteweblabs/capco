@@ -20,6 +20,8 @@ export const POST: APIRoute = async ({ request, cookies }) => {
   fs.appendFileSync("/tmp/astro-email.log", logEntry);
 
   try {
+    console.log("📧 [EMAIL-DELIVERY] Starting email delivery process");
+
     if (!supabase || !supabaseAdmin) {
       console.error("📧 [EMAIL-DELIVERY] Database clients not available");
       return new Response(
@@ -123,24 +125,28 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       }
     } catch (templateError) {
       console.error("📧 [EMAIL-DELIVERY] Template loading error:", templateError);
+      console.error("📧 [EMAIL-DELIVERY] Template error details:", {
+        message: templateError instanceof Error ? templateError.message : "Unknown error",
+        stack: templateError instanceof Error ? templateError.stack : undefined,
+      });
       throw templateError;
     }
 
     const sentEmails = [];
     const failedEmails = [];
 
-    // Send emails to each user
-    for (let i = 0; i < usersToNotify.length; i++) {
-      const userEmail = usersToNotify[i];
-      let emailHtml: string;
-      try {
-        // // Replace template variables
-        emailHtml = emailTemplate.replace("{{CONTENT}}", emailContent);
+    console.log("📧 [EMAIL-DELIVERY] About to send emails to:", usersToNotify.length, "recipients");
+    console.log("📧 [EMAIL-DELIVERY] Recipients:", usersToNotify);
 
-        // Override buttonLink with magic link for authentication
-        let finalButtonLink = buttonLink;
+    try {
+      // Send emails to each user
+      for (let i = 0; i < usersToNotify.length; i++) {
+        const userEmail = usersToNotify[i];
+        console.log(
+          `📧 [EMAIL-DELIVERY] Processing email ${i + 1}/${usersToNotify.length}: ${userEmail}`
+        );
 
-        // Skip magic link generation for SMS gateway emails (they don't need authentication)
+        // Check if this is an SMS gateway email
         const isSmsGateway =
           userEmail.includes("@vtext.com") ||
           userEmail.includes("@txt.att.net") ||
@@ -149,97 +155,172 @@ export const POST: APIRoute = async ({ request, cookies }) => {
           userEmail.includes("@smsmyboostmobile.com") ||
           userEmail.includes("@sms.cricketwireless.net");
 
-        if (buttonLink && buttonLink.includes("/dashboard") && !isSmsGateway) {
-          try {
-            const { data: magicLinkData, error: magicLinkError } =
-              await supabaseAdmin.auth.admin.generateLink({
-                type: "magiclink",
-                email: userEmail,
-                options: {
-                  redirectTo: `${import.meta.env.SITE_URL || "http://localhost:4321"}${buttonLink}`,
-                },
-              });
+        console.log(`📧 [EMAIL-DELIVERY] Is SMS gateway: ${isSmsGateway} for ${userEmail}`);
 
-            if (magicLinkError) {
-              console.error("📧 [EMAIL-DELIVERY] Error generating magic link:", magicLinkError);
-            } else {
-              finalButtonLink = magicLinkData.properties.action_link;
-              console.log("📧 [EMAIL-DELIVERY] Generated magic link for:", userEmail);
-            }
-          } catch (error) {
-            console.error("📧 [EMAIL-DELIVERY] Error generating magic link:", error);
+        let emailHtml: string;
+        try {
+          // For SMS gateways, skip HTML template processing
+          if (isSmsGateway) {
+            emailHtml = ""; // No HTML needed for SMS gateways
+          } else {
+            // Replace template variables for regular emails
+            emailHtml = emailTemplate.replace("{{CONTENT}}", emailContent);
           }
-        } else if (isSmsGateway) {
-          console.log(
-            "📧 [EMAIL-DELIVERY] Skipping magic link generation for SMS gateway:",
-            userEmail
+
+          // Override buttonLink with magic link for authentication
+          let finalButtonLink = buttonLink;
+
+          if (buttonLink && buttonLink.includes("/dashboard") && !isSmsGateway) {
+            try {
+              const { data: magicLinkData, error: magicLinkError } =
+                await supabaseAdmin.auth.admin.generateLink({
+                  type: "magiclink",
+                  email: userEmail,
+                  options: {
+                    redirectTo: `${import.meta.env.SITE_URL || "http://localhost:4321"}${buttonLink}`,
+                  },
+                });
+
+              if (magicLinkError) {
+                console.error("📧 [EMAIL-DELIVERY] Error generating magic link:", magicLinkError);
+              } else {
+                finalButtonLink = magicLinkData.properties.action_link;
+                console.log("📧 [EMAIL-DELIVERY] Generated magic link for:", userEmail);
+              }
+            } catch (error) {
+              console.error("📧 [EMAIL-DELIVERY] Error generating magic link:", error);
+            }
+          } else if (isSmsGateway) {
+            console.log(
+              "📧 [EMAIL-DELIVERY] Skipping magic link generation for SMS gateway:",
+              userEmail
+            );
+          }
+
+          // Apply button configuration (skip for SMS gateways)
+          if (!isSmsGateway) {
+            if (buttonText && finalButtonLink) {
+              emailHtml = emailHtml.replace("{{BUTTON_TEXT}}", buttonText);
+              emailHtml = emailHtml.replace("{{BUTTON_LINK}}", finalButtonLink);
+            } else {
+              // Remove button section entirely
+              emailHtml = emailHtml.replace(
+                /<!-- Call to Action Button -->[\s\S]*?<!-- \/Call to Action Button -->/g,
+                ""
+              );
+              emailHtml = emailHtml.replace("{{BUTTON_TEXT}}", "");
+              emailHtml = emailHtml.replace("{{BUTTON_LINK}}", "");
+            }
+          }
+
+          // // Validate from field
+          const validFromName = fromName && fromName.trim() !== "" ? fromName.trim() : "CAPCo";
+          const validFromEmail =
+            fromEmail && fromEmail.trim() !== "" ? fromEmail.trim() : "noreply@capcofire.com";
+
+          // Strip HTML from email subject line
+          const cleanSubject = emailSubject.replace(/<[^>]*>/g, "").trim();
+
+          // For SMS gateways, send only plain text (no HTML)
+          const emailPayload = isSmsGateway
+            ? {
+                from: `${validFromName} <${validFromEmail}>`,
+                to: userEmail,
+                subject: cleanSubject,
+                text: emailContent, // Only text for SMS gateways
+                // No HTML for SMS gateways
+              }
+            : {
+                from: `${validFromName} <${validFromEmail}>`,
+                to: userEmail,
+                subject: cleanSubject,
+                html: emailHtml,
+                text: emailContent,
+                // Add proper content type and custom headers (only if values exist)
+                headers: {
+                  "Content-Type": "text/html; charset=UTF-8",
+                  ...(includeResendHeaders && projectId && { "X-Project-ID": String(projectId) }),
+                  ...(includeResendHeaders &&
+                    newStatus !== undefined &&
+                    newStatus !== null && { "X-Project-Status": String(newStatus) }),
+                  ...(includeResendHeaders && authorId && { "X-Author-ID": String(authorId) }),
+                },
+              };
+
+          // Debug logging for SMS gateways
+          if (isSmsGateway) {
+            console.log("📧 [EMAIL-DELIVERY] Sending SMS gateway email:", {
+              to: userEmail,
+              subject: cleanSubject,
+              contentLength: emailContent.length,
+              payloadKeys: Object.keys(emailPayload),
+            });
+          }
+
+          const response = await fetch("https://api.resend.com/emails", {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${emailApiKey}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify(emailPayload),
+          });
+
+          if (!response.ok) {
+            const errorText = await response.text();
+            console.error(`📧 [EMAIL-DELIVERY] Response status:`, response.status);
+            console.error(`📧 [EMAIL-DELIVERY] Error response:`, errorText);
+            console.error(
+              `📧 [EMAIL-DELIVERY] Email payload that failed:`,
+              JSON.stringify(emailPayload, null, 2)
+            );
+            failedEmails.push({ email: userEmail, error: errorText });
+          } else {
+            const responseData = await response.json();
+            console.log(
+              `📧 [EMAIL-DELIVERY] Email sent successfully to ${userEmail}:`,
+              responseData
+            );
+            sentEmails.push(userEmail);
+          }
+        } catch (userError) {
+          console.error(
+            `📧 [EMAIL-DELIVERY] Error sending notification to ${userEmail}:`,
+            userError
           );
+          console.error(`📧 [EMAIL-DELIVERY] Error details:`, {
+            message: userError instanceof Error ? userError.message : "Unknown error",
+            stack: userError instanceof Error ? userError.stack : undefined,
+            userEmail,
+            isSmsGateway,
+          });
+          failedEmails.push({
+            email: userEmail,
+            error: userError instanceof Error ? userError.message : "Unknown error",
+          });
         }
-
-        // Apply button configuration
-        if (buttonText && finalButtonLink) {
-          emailHtml = emailHtml.replace("{{BUTTON_TEXT}}", buttonText);
-          emailHtml = emailHtml.replace("{{BUTTON_LINK}}", finalButtonLink);
-        } else {
-          // Remove button section entirely
-          emailHtml = emailHtml.replace(
-            /<!-- Call to Action Button -->[\s\S]*?<!-- \/Call to Action Button -->/g,
-            ""
-          );
-          emailHtml = emailHtml.replace("{{BUTTON_TEXT}}", "");
-          emailHtml = emailHtml.replace("{{BUTTON_LINK}}", "");
-        }
-
-        // // Validate from field
-        const validFromName = fromName && fromName.trim() !== "" ? fromName.trim() : "CAPCo";
-        const validFromEmail =
-          fromEmail && fromEmail.trim() !== "" ? fromEmail.trim() : "noreply@capcofire.com";
-
-        // Strip HTML from email subject line
-        const cleanSubject = emailSubject.replace(/<[^>]*>/g, "").trim();
-
-        const emailPayload = {
-          from: `${validFromName} <${validFromEmail}>`,
-          to: userEmail,
-          subject: cleanSubject,
-          html: emailHtml,
-          text: emailContent,
-          // Add proper content type and custom headers (only if values exist)
-          headers: {
-            "Content-Type": "text/html; charset=UTF-8",
-            ...(includeResendHeaders && projectId && { "X-Project-ID": String(projectId) }),
-            ...(includeResendHeaders &&
-              newStatus !== undefined &&
-              newStatus !== null && { "X-Project-Status": String(newStatus) }),
-            ...(includeResendHeaders && authorId && { "X-Author-ID": String(authorId) }),
-          },
-        };
-
-        const response = await fetch("https://api.resend.com/emails", {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${emailApiKey}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(emailPayload),
-        });
-
-        if (!response.ok) {
-          const errorText = await response.text();
-          console.error(`📧 [EMAIL-DELIVERY] Response status:`, response.status);
-          failedEmails.push({ email: userEmail, error: errorText });
-        } else {
-          const responseData = await response.json();
-          console.log(`📧 [EMAIL-DELIVERY] Email sent successfully to ${userEmail}:`, responseData);
-          sentEmails.push(userEmail);
-        }
-      } catch (userError) {
-        console.error(`📧 [EMAIL-DELIVERY] Error sending notification to ${userEmail}:`, userError);
-        failedEmails.push({
-          email: userEmail,
-          error: userError instanceof Error ? userError.message : "Unknown error",
-        });
       }
+    } catch (emailSendingError) {
+      console.error("📧 [EMAIL-DELIVERY] Error in email sending process:", emailSendingError);
+      console.error("📧 [EMAIL-DELIVERY] Email sending error details:", {
+        message: emailSendingError instanceof Error ? emailSendingError.message : "Unknown error",
+        stack: emailSendingError instanceof Error ? emailSendingError.stack : undefined,
+      });
+
+      // If we have a critical error, return failure
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: "Failed to send email notifications",
+          details: emailSendingError instanceof Error ? emailSendingError.message : "Unknown error",
+          totalSent: 0,
+          totalFailed: usersToNotify.length,
+        }),
+        {
+          status: 500,
+          headers: { "Content-Type": "application/json" },
+        }
+      );
     }
 
     console.log("📧 [EMAIL-DELIVERY] Email delivery completed:");
