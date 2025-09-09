@@ -65,24 +65,23 @@ export const GET: APIRoute = async ({ request }) => {
         error.message.includes("client_status_name") ||
         error.message.includes("client_status_tab"))
     ) {
-      console.log(
-        "🔍 [GET-PROJECT-STATUSES] project_action, client_status_name, or client_status_tab column not found, trying without them..."
-      );
-      const fallbackResult = await supabase
-        .from("project_statuses")
-        .select("status_code, admin_status_name")
-        .neq("status_code", 0)
-        .order("status_code");
-
-      // Add project_action, client_status_name, and client_status_tab: null to each status for consistency
-      statuses =
-        fallbackResult.data?.map((status) => ({
-          ...status,
-          project_action: null,
-          client_status_name: null,
-          client_status_tab: null,
-        })) || null;
-      error = fallbackResult.error;
+      // console.log(
+      //   "🔍 [GET-PROJECT-STATUSES] project_action, client_status_name, or client_status_tab column not found, trying without them..."
+      // );
+      // const fallbackResult = await supabase
+      //   .from("project_statuses")
+      //   .select("status_code, admin_status_name")
+      //   .neq("status_code", 0)
+      //   .order("status_code");
+      // // Add project_action, client_status_name, and client_status_tab: null to each status for consistency
+      // statuses =
+      //   fallbackResult.data?.map((status) => ({
+      //     ...status,
+      //     project_action: null,
+      //     client_status_name: null,
+      //     client_status_tab: null,
+      //   })) || null;
+      // error = fallbackResult.error;
     }
 
     console.log("🔍 [GET-PROJECT-STATUSES] Database response:", { statuses, error });

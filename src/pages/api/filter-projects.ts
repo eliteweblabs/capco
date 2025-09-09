@@ -18,48 +18,41 @@ export const POST: APIRoute = async ({ request }) => {
       );
     }
 
-    // Filtering logic
-    const shouldShow = (projectStatus: string) => {
+    // Filtering logic - now handles slugs directly
+    const shouldShow = (projectStatusSlug: string) => {
       if (statusFilter === "all") {
         return true;
       }
-
-      if (currentRole === "Client") {
-        // For clients, match by client_status_name slug
-        const statusInfo = projectStatuses.find((s: any) => s.status_code == projectStatus);
-        if (statusInfo && statusInfo.client_status_name) {
-          const projectSlug = statusInfo.client_status_name
-            .toLowerCase()
-            .replace(/[^a-z0-9\s-]/g, "")
-            .replace(/\s+/g, "-")
-            .trim();
-          return projectSlug === statusFilter;
-        }
-      } else {
-        // For admins/staff, match by status number
-        return statusFilter === projectStatus;
-      }
-
-      return false;
+      // Direct slug comparison since we're now passing slugs
+      return projectStatusSlug === statusFilter;
     };
 
-    // Count logic for bubbles
+    // Count logic for bubbles - now uses slugs
     const getStatusCounts = (projects: any[]) => {
       const statusCounts: Record<string, number> = {};
 
       projects.forEach((project) => {
         const projectStatus = project.status?.toString() || "10";
+        const statusInfo = projectStatuses.find((s: any) => s.status_code == projectStatus);
 
-        if (currentRole === "Client") {
-          // For clients, count by client_status_name
-          const statusInfo = projectStatuses.find((s: any) => s.status_code == projectStatus);
-          if (statusInfo && statusInfo.client_status_name) {
-            const clientStatusName = statusInfo.client_status_name;
-            statusCounts[clientStatusName] = (statusCounts[clientStatusName] || 0) + 1;
+        if (statusInfo) {
+          let statusName = "";
+
+          // Use client_status_name for clients, admin_status_name for admins
+          if (currentRole === "Client" && statusInfo.client_status_name) {
+            statusName = statusInfo.client_status_name;
+          } else {
+            statusName = statusInfo.admin_status_name || statusInfo.status_name || "";
           }
-        } else {
-          // For admins/staff, count by status number
-          statusCounts[projectStatus] = (statusCounts[projectStatus] || 0) + 1;
+
+          // Generate slug from status name
+          const slug = statusName
+            .toLowerCase()
+            .replace(/[^a-z0-9\s-]/g, "")
+            .replace(/\s+/g, "-")
+            .trim();
+
+          statusCounts[slug] = (statusCounts[slug] || 0) + 1;
         }
       });
 

@@ -79,27 +79,46 @@ export const POST: APIRoute = async ({ request }) => {
     console.log("📱 [SMS] Using base URL for email delivery:", baseUrl);
     console.log("📱 [SMS] Sending to recipients:", smsRecipients);
 
+    const emailPayload = {
+      emailType: "emergency_sms",
+      emailSubject: "CAPCo Website Contact",
+      emailContent: emailContent,
+      usersToNotify: smsRecipients.map((email) => ({ email })), // Send to all SMS gateways
+    };
+
+    console.log("📱 [SMS-API] Email delivery payload:", JSON.stringify(emailPayload, null, 2));
+
     const emailResponse = await fetch(`${baseUrl}/api/email-delivery`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({
-        emailType: "emergency_sms",
-        emailSubject: "CAPCo Website Contact",
-        emailContent: emailContent,
-        usersToNotify: smsRecipients.map((email) => ({ email })), // Send to all SMS gateways
-      }),
+      body: JSON.stringify(emailPayload),
     });
 
+    console.log("📱 [SMS-API] Email delivery response status:", emailResponse.status);
+    console.log("📱 [SMS-API] Email delivery response ok:", emailResponse.ok);
+
     const emailResult = await emailResponse.json();
+    console.log("📱 [SMS-API] Email delivery result:", JSON.stringify(emailResult, null, 2));
 
     if (emailResult.success) {
       console.log("📱 [SMS-API] SMS sent successfully to:", smsRecipients);
+      console.log("📱 [SMS-API] Email delivery results:", {
+        totalSent: emailResult.totalSent,
+        totalFailed: emailResult.totalFailed,
+        sentEmails: emailResult.sentEmails,
+        failedEmails: emailResult.failedEmails,
+      });
+
       return new Response(
         JSON.stringify({
           success: true,
           message: `Message sent successfully to CAPCo Fire, Someone will respond to you shortly.`,
+          totalSent: emailResult.totalSent || 0,
+          totalFailed: emailResult.totalFailed || 0,
+          sentEmails: emailResult.sentEmails || [],
+          failedEmails: emailResult.failedEmails || [],
         }),
         {
           status: 200,
@@ -112,6 +131,8 @@ export const POST: APIRoute = async ({ request }) => {
         JSON.stringify({
           success: false,
           error: "Failed to send SMS: " + emailResult.error,
+          totalSent: 0,
+          totalFailed: smsRecipients.length,
         }),
         {
           status: 500,
@@ -125,6 +146,8 @@ export const POST: APIRoute = async ({ request }) => {
       JSON.stringify({
         success: false,
         error: "Internal server error",
+        totalSent: 0,
+        totalFailed: 0,
       }),
       {
         status: 500,

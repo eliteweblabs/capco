@@ -20,20 +20,55 @@ interface Props {
     profiles?: any;
     assigned_profiles?: any;
   };
-  projectStatus?: number;
+  projectStatusesObject?: any;
   currentRole?: string;
   user?: any;
   statuses?: any;
 }
 
-const { project, projectStatus, currentRole, user, statuses } = Astro.props;
-
-// Debug logging removed for performance
+const { project, projectStatusesObject, currentRole = "Client", user } = Astro.props;
 
 // return if user is staff and project is not assigned to them
 if (currentRole === "Staff" && project.assigned_to_id !== user?.id) {
-  return;
+  return null;
 }
+
+// Function to generate slug from status name
+function generateStatusSlug(statusName: string, currentRole: string, slugify: boolean): string {
+  // Generate slug from status name
+  const slug = slugify
+    ? statusName
+        .toLowerCase()
+        .replace(/[^a-z0-9\s-]/g, "")
+        .replace(/\s+/g, "-")
+        .trim()
+    : statusName;
+
+  return slug;
+}
+
+import { filteredStatusObj } from "../../pages/api/process-client-status";
+
+// Debug: Check if the status exists in the statuses object
+console.log("🔍 [PROJECT-LIST-ITEM] Project status:", project.status);
+console.log("🔍 [PROJECT-LIST-ITEM] Available statuses:", Object.keys(projectStatusesObject || {}));
+console.log(
+  "🔍 [PROJECT-LIST-ITEM] Status object for this project:",
+  projectStatusesObject?.[project.status]
+);
+
+const filteredStatus = filteredStatusObj(projectStatusesObject?.[project.status], currentRole);
+
+const statusUrl = filteredStatus.status_tab || null;
+// Generate the status slug for this project
+// Default to "Client" if currentRole is empty or undefined
+const statusSlug = generateStatusSlug(filteredStatus.status_name, currentRole, true);
+const statusName = generateStatusSlug(filteredStatus.status_name, currentRole, false);
+
+console.log("🔍 [PROJECT-LIST-ITEM] Status URL:", projectStatusesObject[project.status]);
+
+const statusSlugOrId = currentRole && currentRole === "Client" ? statusSlug : project.status;
+// Debug logging removed for performance
 
 // Function to limit description to 200 words
 function limitDescription(text: string, wordLimit: number = 50): string {
@@ -44,52 +79,8 @@ function limitDescription(text: string, wordLimit: number = 50): string {
 }
 
 // Get project status info from passed statuses or fallback to default
-let statusName = `Status ${project.status}`;
+// let statusName = `Status ${.status}`;
 let statusColor = "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300";
-let statusInfo: any = null;
-
-// Use passed statuses data if available, otherwise fall back to API call
-if (statuses && statuses.length > 0) {
-  statusInfo = statuses.find((status: any) => status.status_code === project.status);
-  if (statusInfo) {
-    console.log("🔍 [PROJECT-LIST-ITEM] Status info for project", project.id, ":", {
-      status_code: statusInfo.status_code,
-      admin_status_name: statusInfo.admin_status_name,
-      client_status_name: statusInfo.client_status_name,
-      currentRole: currentRole,
-    });
-
-    // For clients, use client_status_name if available, otherwise use admin_status_name
-    if (currentRole === "Client" && statusInfo.client_status_name) {
-      statusName = statusInfo.client_status_name;
-      console.log(
-        "🔍 [PROJECT-LIST-ITEM] Using client_status_name:",
-        statusInfo.client_status_name
-      );
-    } else {
-      statusName = statusInfo.admin_status_name;
-      console.log("🔍 [PROJECT-LIST-ITEM] Using admin_status_name:", statusInfo.admin_status_name);
-    }
-
-    // Set status color based on status code ranges
-    if (project.status <= 30) {
-      statusColor = "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300"; // Early stages
-    } else if (project.status <= 100) {
-      statusColor = "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300"; // In progress
-    } else if (project.status <= 200) {
-      statusColor = "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300"; // Completing
-    } else if (project.status === 220) {
-      statusColor = "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300"; // Complete
-    } else {
-      statusColor = "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300"; // Default
-    }
-  }
-} else {
-  console.warn("🔄 [PROJECT-LIST-ITEM] No statuses provided for project:", project.id);
-  // Fallback to default status display
-  statusName = `Status ${project.status}`;
-  statusColor = "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300";
-}
 
 // Use author profile data from the project query (no additional DB call needed)
 let authorProfile: any = null;
@@ -100,7 +91,7 @@ if (project.profiles) {
 
 <div
   class="mb-4 rounded-lg border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-700 dark:bg-gray-800"
-  data-project-status={project.status}
+  data-project-status={statusSlugOrId}
   data-project-id={project.id}
 >
   <div class="items-start justify-between md:flex">
@@ -141,15 +132,15 @@ if (project.profiles) {
       {
         (() => {
           // For clients, make status label clickable if client_status_tab exists
-          if (currentRole === "Client" && statusInfo && statusInfo.client_status_tab) {
-            const tabUrl = `/project/${project.id}?tab=${statusInfo.client_status_tab}`;
+          if (currentRole === "Client" && statusUrl) {
+            const tabUrl = `/project/${project.id}?tab=${statusUrl}`;
             return (
               <a
                 href={tabUrl}
                 class={`inline-flex items-center rounded-full px-2.5 py-0.5 text-md mb-4 font-large ${statusColor} hover:opacity-80 transition-opacity cursor-pointer`}
                 data-refresh="status_name"
                 data-project-id={project.id}
-                title={`Go to ${statusInfo.client_status_tab} tab`}
+                title={`Go to ${statusName} tab`}
               >
                 {statusName}
               </a>
@@ -237,11 +228,4 @@ if (project.profiles) {
       >
     </div>
   </div>
-  <!-- <div class="mt-4 flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
-     
-      <div class="flex items-center gap-4">
-      
-       
-      </div>
-    </div> -->
 </div>

@@ -3,13 +3,12 @@ export interface Props {
   currentRole?: string;
   projects?: any[];
   statuses?: any[];
-  stat?: boolean;
 }
 
 import ProjectNavButton from "./ProjectNavButton.astro";
 
 // Get props
-const { currentRole, projects = [], statuses = [], stat } = Astro.props;
+const { currentRole, projects = [], statuses = [] } = Astro.props;
 
 // Use provided data instead of fetching
 let project_statuses: any[] = statuses;
@@ -152,17 +151,17 @@ if (!projects || projects.length === 0) return;
       if (!result.success) return;
 
       // Recreate the shouldShow function locally
-      const shouldShow = (projectStatus) => {
+      const shouldShow = (projectStatusSlug) => {
         if (statusFilter === "all") {
           return true;
         }
-        return projectStatus === statusFilter;
+        return projectStatusSlug === statusFilter;
       };
 
       let visibleCount = 0;
       projectItems.forEach((item) => {
-        const projectStatus = item.getAttribute("data-project-status");
-        const shouldShowItem = shouldShow(projectStatus);
+        const projectStatusSlug = item.getAttribute("data-project-status");
+        const shouldShowItem = shouldShow(projectStatusSlug);
 
         if (shouldShowItem && !item.classList.contains("hidden")) {
           item.style.display = "block";
@@ -245,5 +244,13 @@ if (!projects || projects.length === 0) return;
       updateActiveButton(allStatusesButton);
       filterProjects("all");
     }
+
+    // Trigger scroll into view for the active button after page load
+    setTimeout(() => {
+      const activeButton = subNav.querySelector(".bg-hub-primary, .bg-blue-600");
+      if (activeButton) {
+        activeButton.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" });
+      }
+    }, 100);
   });
 </script>
