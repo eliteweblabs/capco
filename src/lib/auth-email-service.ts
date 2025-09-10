@@ -118,7 +118,7 @@ export class AuthEmailService {
     // Set default variables
     const variables = {
       TITLE: template.subject,
-      DASHBOARD_LINK: `https://capcofire.com/dashboard`,
+      DASHBOARD_LINK: `${process.env.BASE_URL || "https://capcofire.com"}/dashboard`,
       REGISTRATION_DATE: new Date().toLocaleDateString(),
       ...options.variables,
     };
