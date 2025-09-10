@@ -165,11 +165,11 @@ const { currentUser, currentRole } = Astro.props;
     // Check if chat should be open from cookie
     checkChatStateFromCookie();
 
-    // Join chat
-    joinChat();
+    // Join chat (disabled - API not working)
+    // joinChat();
 
-    // Start heartbeat
-    startHeartbeat();
+    // Start heartbeat (disabled - API not working)
+    // startHeartbeat();
 
     isInitialized = true;
     // console.log("🔔 [HTTP-CHAT] HTTP chat widget initialization complete");
@@ -277,57 +277,35 @@ const { currentUser, currentRole } = Astro.props;
     }
   }
 
-  // Send message
+  // Send message (disabled - API not working)
   async function sendMessage() {
     const input = document.getElementById("chat-input") as HTMLInputElement;
     const message = input.value.trim();
 
     if (!message) return;
 
-    try {
-      // console.log("🔔 [HTTP-CHAT] Sending message:", message);
+    // Create a local message object instead of sending to API
+    const localMessage = {
+      id: Date.now(),
+      userId: currentUser.id,
+      userName: currentUser.name,
+      userRole: currentUser.role,
+      message: message,
+      timestamp: new Date().toISOString(),
+      isLocal: true,
+    };
 
-      const response = await fetch("/api/chat", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          action: "message",
-          userId: currentUser.id,
-          userName: currentUser.name,
-          userRole: currentUser.role,
-          message: message,
-        }),
-      });
+    // Add message to chat locally
+    addMessage(localMessage);
 
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const data = await response.json();
-      // console.log("🔔 [HTTP-CHAT] Message response:", data);
-
-      if (data.success && data.message) {
-        // Add message to chat
-        addMessage(data.message);
-
-        // Update online users
-        if (data.onlineUsers) {
-          onlineUsers = data.onlineUsers;
-          updateOnlineCount();
-        }
-
-        // Clear input
-        input.value = "";
-        const sendBtn = document.getElementById("chat-send") as HTMLButtonElement;
-        sendBtn.disabled = true;
-
-        // console.log("🔔 [HTTP-CHAT] Message sent successfully");
-      }
-    } catch (error) {
-      console.error("🔔 [HTTP-CHAT] Error sending message:", error);
+    // Clear input
+    input.value = "";
+    const sendBtn = document.getElementById("chat-send") as HTMLButtonElement;
+    if (sendBtn) {
+      sendBtn.disabled = true;
     }
+
+    console.log("🔔 [HTTP-CHAT] Message added locally (API disabled)");
   }
 
   // Load chat history

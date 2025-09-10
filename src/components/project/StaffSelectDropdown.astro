@@ -1,6 +1,4 @@
 ---
-import SlotMachinePicker from "../common/SlotMachinePicker.astro";
-
 // Staff Select Component - for assigning projects to staff members
 // Only visible to admin users
 
@@ -38,14 +36,31 @@ const {
 
 {canAssignStaff ? (
   <div class="ml-4 flex-shrink-0">
-    <SlotMachinePicker
-      id={id}
-      title="Assign Team Member"
-      options={[]}
-      selectedValue={value}
-      theme="blue"
-      placeholder={placeholder}
-    />
+    <div class="space-y-2">
+      <label for={id} class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+        {label}
+        {required && <span class="ml-1 text-red-500">*</span>}
+      </label>
+
+      <select
+        id={id}
+        name={company_name}
+        value={value}
+        required={required}
+        class="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 dark:focus:border-blue-400"
+      >
+        <option value="">{placeholder}</option>
+        <!-- Options will be populated by JavaScript -->
+      </select>
+
+      <div id={`${id}-loading`} class="hidden">
+        <p class="text-sm text-gray-500 dark:text-gray-400">Loading staff members...</p>
+      </div>
+
+      <div id={`${id}-error`} class="hidden">
+        <p class="text-sm text-red-600 dark:text-red-400">Failed to load staff members</p>
+      </div>
+    </div>
   </div>
 ) : (
   <div class="space-y-2">
