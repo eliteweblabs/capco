@@ -36,7 +36,7 @@ export const POST: APIRoute = async ({ request }) => {
       let processedMessage = message;
 
       // Handle PROJECT_LINK with optional query parameters - extract to button on new line
-      const baseProjectLink = `https://capcofire.com/project/${data.projectId}`;
+      const baseProjectLink = `${data.siteUrl || "https://capcofire.com"}/project/${data.projectId}`;
       processedMessage = processedMessage.replace(
         /{{PROJECT_LINK(\?[^}]*)?}}/g,
         (match, queryParams) => {

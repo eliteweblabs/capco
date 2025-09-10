@@ -25,7 +25,12 @@ export function getBaseUrl(request?: Request): string {
     return process.env.BASE_URL;
   }
 
-  // Always return production URL
+  // Development fallback
+  if (!import.meta.env.PROD) {
+    return "http://localhost:4321";
+  }
+
+  // Production fallback
   return "https://capcofire.com";
 }
 
@@ -51,7 +56,12 @@ export function getApiBaseUrl(request?: Request): string {
     return process.env.BASE_URL;
   }
 
-  // Always return production URL
+  // Development fallback
+  if (!import.meta.env.PROD) {
+    return "http://localhost:4321";
+  }
+
+  // Production fallback
   return "https://capcofire.com";
 }
 

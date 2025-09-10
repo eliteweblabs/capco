@@ -66,7 +66,7 @@ export const POST: APIRoute = async ({ request, redirect, cookies }) => {
     email,
     password,
     options: {
-      emailRedirectTo: "https://capcofire.com/api/auth/verify",
+      emailRedirectTo: `${import.meta.env.SITE_URL || "https://capcofire.com"}/api/auth/verify`,
       data: {
         first_name: firstName,
         last_name: lastName,
@@ -179,7 +179,7 @@ export const POST: APIRoute = async ({ request, redirect, cookies }) => {
 <p>You're now signed in and ready to start creating projects. Click the button below to access your dashboard.</p><br><br>`;
 
     // Get the base URL for the email API call
-    const baseUrl = "https://capcofire.com";
+    const baseUrl = import.meta.env.SITE_URL || "https://capcofire.com";
 
     try {
       // Send welcome email using the email delivery API
