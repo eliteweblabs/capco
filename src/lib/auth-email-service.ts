@@ -42,24 +42,26 @@ export class AuthEmailService {
 
       // Extract individual templates (this is a simple implementation)
       // In production, you might want to use a proper template engine
+
+      // {{USER_NAME}} is in the welcome template
       this.templates = {
         welcome: {
-          subject: "Welcome to CAPCo Fire Protection - <strong>{{USER_NAME}}</strong>",
+          subject: "Welcome to CAPCo Fire Protection → {{USER_NAME}}",
           html: templateContent,
           text: "Welcome to CAPCo Fire Protection! Your account has been created successfully.",
         },
         "email-confirmation": {
-          subject: "Confirm Your Email Address - CAPCo Fire Protection",
+          subject: "CAPCo Fire Protection → Confirm Your Email Address",
           html: templateContent,
           text: "Please confirm your email address to complete your account setup.",
         },
         "password-reset": {
-          subject: "Reset Your Password - CAPCo Fire Protection",
+          subject: "CAPCo Fire Protection → Reset Your Password",
           html: templateContent,
           text: "We received a request to reset your password. Use the provided link to reset it.",
         },
         "magic-link": {
-          subject: "Sign In to CAPCo Fire Protection",
+          subject: "CAPCo Fire Protection → Sign In",
           html: templateContent,
           text: "Click the provided link to sign in to your account.",
         },
@@ -116,7 +118,7 @@ export class AuthEmailService {
     // Set default variables
     const variables = {
       TITLE: template.subject,
-      DASHBOARD_LINK: `${process.env.BASE_URL || "http://localhost:4321"}/dashboard`,
+      DASHBOARD_LINK: `https://capcofire.com/dashboard`,
       REGISTRATION_DATE: new Date().toLocaleDateString(),
       ...options.variables,
     };

@@ -210,7 +210,7 @@ async function sendEmailNotifications(
 
   const baseUrl = request
     ? getApiBaseUrl(request)
-    : import.meta.env.SITE_URL || "http://localhost:4321";
+    : "https://capcofire.com";
 
   try {
     const emailResponse = await fetch(`${baseUrl}/api/email-delivery`, {
