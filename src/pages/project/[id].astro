@@ -1,7 +1,7 @@
 ---
 import App from "../../components/common/App.astro";
 import SectionContainer from "../../components/common/SectionContainer.astro";
-import Hero from "../../components/common/Hero.astro";
+import HeroProject from "../../components/common/HeroProject.astro";
 import BoxIcon from "../../components/common/BoxIcon.astro";
 import TabDocuments from "../../components/project/TabDocuments.astro";
 import Discussions from "../../components/project/Discussions.astro";
@@ -16,6 +16,7 @@ import { getI18N } from "@/i18n";
 import { supabase } from "../../lib/supabase";
 import { supabaseAdmin } from "../../lib/supabase-admin";
 import "../../lib/refresh-manager.ts";
+import { filteredStatusObj } from "../../pages/api/process-client-status";
 
 const { currentLocale } = Astro;
 const i18n = getI18N({ currentLocale });
@@ -27,11 +28,7 @@ console.log("🚀 [PROJECT] Front matter starting execution for project ID:", id
 
 // Get auth data directly since App component handles auth requirements
 import { checkAuth } from "../../lib/auth";
-const {
-  isAuth = false,
-  currentUser = undefined,
-  currentRole = undefined,
-} = await checkAuth(Astro.cookies);
+const { currentUser = undefined, currentRole = "Client" } = await checkAuth(Astro.cookies);
 
 // Removed getAuthorInfoServer function - using direct database queries for better performance
 
@@ -56,9 +53,19 @@ let authorProfile = null;
 // let invoiceData = null;
 let totalAmount = 0;
 let invoiceId = "0";
-let statusLabels: Record<number, { status_name: string; [key: string]: any }> = {};
 let statusesResult: any = null;
 let statuses: any[] = [];
+
+// Status-related variables (will be defined after data fetching)
+let projectId = "";
+let currentStatusObj: any = {};
+let currentStatusTab: string | null = null;
+let currentStatusSlug: string | null = null;
+let currentStatusName: string | null = null;
+let currentStatusInt = 0;
+let currentStatusColor = "gray";
+let currentStatusProjectAction: string | null = null;
+let statusesObject: any = {};
 
 console.log("🚀 [PROJECT] About to start database queries, supabase available:", !!supabase);
 console.log("🚀 [PROJECT] Supabase object:", supabase);
@@ -96,16 +103,41 @@ if (supabase) {
     statusesLength: statusesResult?.data?.length || 0,
   });
 
-  statuses = statusesResult?.data || [];
+  project = projectResult.data;
+  projectId = project?.id?.toString() || id || "";
 
+  // Convert statuses array to object for easier lookup
+  statusesObject = (statusesResult?.data || []).reduce((acc: any, status: any) => {
+    acc[status.status_code] = status;
+    return acc;
+  }, {});
+
+  currentStatusObj = filteredStatusObj(statusesObject[project.status], currentRole || "Client");
+  currentStatusTab = currentStatusObj.status_tab || null;
+  currentStatusSlug = currentStatusObj.status_slug || null;
+  currentStatusName = currentStatusObj.status_name || null;
+  currentStatusInt = project.status || 0;
+  currentStatusColor = currentStatusObj.status_color || "gray";
+  currentStatusProjectAction = currentStatusObj.project_action || null;
+
+  // Define variables for component props
+
+  // Convert statusesObject back to array for components that expect it
+  statuses = Object.values(statusesObject);
+
+  console.log("🔍 [PROJECT] Current status object:", currentStatusObj);
+  console.log("🔍 [PROJECT] Current status tab:", currentStatusTab);
+  console.log("🔍 [PROJECT] Current status slug:", currentStatusSlug);
+  console.log("🔍 [PROJECT] Current status name:", currentStatusName);
+  console.log("🔍 [PROJECT] Current status int:", currentStatusInt);
+  console.log("🔍 [PROJECT] Current status color:", currentStatusColor);
+  console.log("🔍 [PROJECT] Current status project action:", currentStatusProjectAction);
   // Check project query result
   if (projectResult.error) {
     console.error("Error fetching project:", projectResult.error);
     console.log("🌐 [PROJECT] Project not found or no access, redirecting to dashboard");
     return Astro.redirect("/dashboard");
   }
-
-  project = projectResult.data;
 
   console.log("🔍 [PROJECT] Project data loaded:", {
     id: project.id,
@@ -143,23 +175,6 @@ if (supabase) {
   if (totalAmount === 0) {
     totalAmount = 2000;
   }
-
-  // Process status labels
-  // if (!statusesResult.error && statusesResult.data) {
-  //   statusLabels = statusesResult.data.reduce(
-  //     (acc: Record<number, any>, status: any) => {
-  //       acc[status.status_code] = {
-  //         status_code: status.status_code,
-  //         admin_status_name: status.admin_status_name,
-  //         project_action: status.project_action,
-  //         client_status_name: status.client_status_name,
-  //         client_status_tab: status.client_status_tab,
-  //       };
-  //       return acc;
-  //     },
-  //     {} as Record<number, any>
-  //   );
-  // }
 
   // OPTIMIZED: Get author and assigned user profiles in parallel (only if needed)
   console.log("🔍 [PROJECT] Setting up profile queries:", {
@@ -212,6 +227,7 @@ if (supabase) {
         profileError,
         hasData: !!profileData,
         hasError: !!profileError,
+        currentRole,
       });
 
       if (profileData && !profileError) {
@@ -267,33 +283,14 @@ if (supabase) {
   console.error("🚀 [PROJECT] This will cause the page to fail");
 }
 
-// Status labels are now fetched in parallel queries above - no duplicate query needed
-
-// Calculate projectStatus and projectStatusLabel
-const projectStatus = project?.status || 0;
-const statusLabel = (() => {
-  const statusInfo = statuses.find((s) => s.status_code === projectStatus);
-  if (!statusInfo) return "Unknown Status";
-
-  return currentRole === "Client" && statusInfo?.client_status_name
-    ? statusInfo.client_status_name
-    : statusInfo?.admin_status_name || "Unknown Status";
-})();
-
 // Safety check - if no project was found, redirect to dashboard
 if (!project) {
   return Astro.redirect("/dashboard");
 }
-
-// Standardize project ID - use project.id when available, fallback to URL param
-// This ensures we always use the authoritative database ID when possible
-const projectId = project?.id?.toString() || id || "";
-
-// Status color is now provided by the get-project-statuses API
 ---
 
 <App title={i18n.SEO_TITLE} description={i18n.SEO_DESCRIPTION} requireAuth={true}>
-  <Hero
+  <HeroProject
     title={project?.address || project?.title || "Untitled Project"}
     description={`<div class="space-y-1">
       <div class="inline-flex items-center">
@@ -304,16 +301,15 @@ const projectId = project?.id?.toString() || id || "";
         ${authorProfile?.display_name ? `<br/>${authorProfile.display_name}` : ""}
       </div>
     </div>`}
-    statusLabel={statusLabel}
-    statusColor={projectStatus && statuses[project.status]?.status_color
-      ? statuses[project.status].status_color
-      : undefined}
+    statusColor={currentStatusColor}
     projectId={projectId}
-    projectStatus={projectStatus}
+    currentStatusInt={currentStatusInt.toString()}
+    currentStatusName={currentStatusName || undefined}
     currentRole={currentRole || "Client"}
     project={project}
-    statuses={statuses}
+    statuses={statusesObject}
     authorProfile={authorProfile}
+    currentStatusTab={currentStatusTab || undefined}
   />
   <SectionContainer>
     <!-- Tab Navigation -->
@@ -429,8 +425,8 @@ const projectId = project?.id?.toString() || id || "";
         project={project}
         currentRole={currentRole || undefined}
         projectId={projectId}
-        projectStatus={projectStatus}
-        projectStatusLabel={statusLabel}
+        projectStatus={currentStatusInt}
+        projectStatusLabel={currentStatusName || undefined}
         authorProfile={authorProfile}
       />
 
@@ -440,8 +436,8 @@ const projectId = project?.id?.toString() || id || "";
         project={project}
         currentRole={currentRole || undefined}
         projectId={projectId}
-        projectStatus={projectStatus}
-        projectStatusLabel={statusLabel}
+        projectStatus={currentStatusInt}
+        projectStatusLabel={currentStatusName || undefined}
         authorProfile={authorProfile}
         supabaseUrl={import.meta.env.PUBLIC_SUPABASE_URL}
         client:load={defaultTab === "discussion"}
@@ -452,8 +448,8 @@ const projectId = project?.id?.toString() || id || "";
         project={project}
         currentRole={currentRole || undefined}
         projectId={projectId}
-        projectStatus={projectStatus}
-        projectStatusLabel={statusLabel}
+        projectStatus={currentStatusInt}
+        projectStatusLabel={currentStatusName || undefined}
         authorProfile={authorProfile}
         fileType="media"
         client:visible
@@ -464,8 +460,8 @@ const projectId = project?.id?.toString() || id || "";
         project={project}
         currentRole={currentRole || undefined}
         projectId={projectId}
-        projectStatus={projectStatus}
-        projectStatusLabel={statusLabel}
+        projectStatus={currentStatusInt}
+        projectStatusLabel={currentStatusName || undefined}
         authorProfile={authorProfile}
         currentUser={currentUser}
         client:visible
@@ -476,8 +472,8 @@ const projectId = project?.id?.toString() || id || "";
         project={project}
         currentRole={currentRole || undefined}
         projectId={projectId}
-        projectStatus={projectStatus}
-        projectStatusLabel={statusLabel}
+        projectStatus={currentStatusInt}
+        projectStatusLabel={currentStatusName || undefined}
         authorProfile={authorProfile}
         client:visible
       />
@@ -487,8 +483,8 @@ const projectId = project?.id?.toString() || id || "";
         project={project}
         currentRole={currentRole || undefined}
         projectId={projectId}
-        projectStatus={projectStatus}
-        projectStatusLabel={statusLabel}
+        projectStatus={currentStatusInt}
+        projectStatusLabel={currentStatusName || undefined}
         authorProfile={authorProfile}
         invoiceId={invoiceId || "0"}
         totalAmount={totalAmount}
@@ -500,8 +496,8 @@ const projectId = project?.id?.toString() || id || "";
         project={project}
         currentRole={currentRole || undefined}
         projectId={projectId}
-        projectStatus={projectStatus}
-        projectStatusLabel={statusLabel}
+        projectStatus={currentStatusInt}
+        projectStatusLabel={currentStatusName || undefined}
         authorProfile={authorProfile}
         client:visible
       />
@@ -511,8 +507,8 @@ const projectId = project?.id?.toString() || id || "";
         project={project}
         currentRole={currentRole || undefined}
         projectId={projectId}
-        projectStatus={projectStatus}
-        projectStatusLabel={statusLabel}
+        projectStatus={currentStatusInt}
+        projectStatusLabel={currentStatusName || undefined}
         authorProfile={authorProfile}
         invoiceId={invoiceId || "0"}
         totalAmount={totalAmount}
@@ -530,8 +526,8 @@ const projectId = project?.id?.toString() || id || "";
     userRole: currentRole,
     projectData: project,
     currentUserData: authorProfile,
-    projectStatus: projectStatus,
-    projectStatusLabel: statusLabel,
+    currentStatusInt: currentStatusInt.toString(),
+    currentStatusName: currentStatusName,
   }}
 >
   // Tab switching functionality

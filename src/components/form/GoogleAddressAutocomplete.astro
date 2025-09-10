@@ -8,7 +8,6 @@ interface Props {
   required?: boolean;
   class?: string;
   projectStatus?: number;
-  fontSize?: string;
 }
 
 const {
@@ -20,7 +19,6 @@ const {
   required = false,
   class: className = "",
   projectStatus = 0,
-  fontSize = "16px",
 } = Astro.props;
 
 // Only render for projects with status 0 (new projects)
@@ -42,7 +40,6 @@ if (projectStatus !== 0) {
     placeholder={placeholder}
     required={required}
     data-google-autocomplete
-    class="w-full rounded-md border border-gray-300 text-md text-gray-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 dark:border-gray-600 dark:text-white dark:focus:border-blue-400 dark:focus:ring-blue-400 bg-white dark:bg-gray-700"
   />
   <!-- Loading indicator -->
   <div id={`${id}-loading`} class="absolute right-3 top-8 hidden">
@@ -58,7 +55,7 @@ if (projectStatus !== 0) {
   </div>
 </div>
 
-<script define:vars={{ id, fontSize }}>
+<script define:vars={{ id }}>
   document.addEventListener("DOMContentLoaded", function () {
     // Initialize Google Maps Autocomplete when the API is ready
     function initializeAutocomplete() {
@@ -116,13 +113,6 @@ if (projectStatus !== 0) {
           // Configure the element
           autocompleteElement.setAttribute("placeholder", input.placeholder || "Enter address...");
           autocompleteElement.setAttribute("data-google-autocomplete", "true");
-
-          // Set color scheme to prevent system theme following
-          autocompleteElement.style.colorScheme = "none";
-
-          // Set font size and other styling properties
-          autocompleteElement.style.fontSize = `${fontSize}`; // Configurable font size
-          autocompleteElement.style.fontFamily = "inherit"; // Use the same font as the rest of the form
 
           console.log("🗺️ [GoogleAutocomplete] New API attributes set:", {
             locationBias: bostonBounds,
@@ -224,11 +214,6 @@ if (projectStatus !== 0) {
 </script>
 
 <style>
-  /* Set CSS custom property for font size */
-  :root {
-    --google-autocomplete-font-size: ${fontSize};
-  }
-
   /* Override Google PlaceAutocompleteElement styles to match other inputs */
   gmp-places-autocomplete {
     display: block !important;
@@ -240,11 +225,7 @@ if (projectStatus !== 0) {
     border: 1px solid #d1d5db !important;
     border-radius: 6px !important;
     padding: 8px 12px !important;
-    font-size: var(
-      --google-autocomplete-font-size,
-      16px
-    ) !important; /* Configurable font size with fallback */
-    font-family: inherit !important; /* Use the same font as the rest of the form */
+    font-size: 14px !important;
     width: 100% !important;
     box-shadow: none !important;
     outline: none !important;
@@ -260,20 +241,22 @@ if (projectStatus !== 0) {
     box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1) !important;
   }
 
-  /* Dark mode styles - using explicit dark class instead of system preference */
-  .dark gmp-places-autocomplete input {
-    background-color: #374151 !important;
-    color: #f9fafb !important;
-    border-color: #4b5563 !important;
-  }
+  /* Dark mode styles */
+  @media (prefers-color-scheme: dark) {
+    gmp-places-autocomplete input {
+      background-color: #374151 !important;
+      color: #f9fafb !important;
+      border-color: #4b5563 !important;
+    }
 
-  .dark gmp-places-autocomplete input::placeholder {
-    color: #9ca3af !important;
-  }
+    gmp-places-autocomplete input::placeholder {
+      color: #9ca3af !important;
+    }
 
-  .dark gmp-places-autocomplete input:focus {
-    border-color: #60a5fa !important;
-    box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.1) !important;
+    gmp-places-autocomplete input:focus {
+      border-color: #60a5fa !important;
+      box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.1) !important;
+    }
   }
 
   /* Style the Google autocomplete dropdown */
@@ -312,26 +295,28 @@ if (projectStatus !== 0) {
     color: #2563eb;
   }
 
-  /* Dark mode styles - using explicit dark class instead of system preference */
-  .dark .pac-container {
-    background-color: #374151;
-    border-color: #4b5563;
-  }
+  /* Dark mode styles */
+  @media (prefers-color-scheme: dark) {
+    .pac-container {
+      background-color: #374151;
+      border-color: #4b5563;
+    }
 
-  .dark .pac-item {
-    border-bottom-color: #4b5563;
-    color: #f9fafb;
-  }
+    .pac-item {
+      border-bottom-color: #4b5563;
+      color: #f9fafb;
+    }
 
-  .dark .pac-item:hover {
-    background-color: #4b5563;
-  }
+    .pac-item:hover {
+      background-color: #4b5563;
+    }
 
-  .dark .pac-item-query {
-    color: #f9fafb;
-  }
+    .pac-item-query {
+      color: #f9fafb;
+    }
 
-  .dark .pac-matched {
-    color: #60a5fa;
+    .pac-matched {
+      color: #60a5fa;
+    }
   }
 </style>

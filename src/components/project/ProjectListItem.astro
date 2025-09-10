@@ -24,50 +24,31 @@ interface Props {
   currentRole?: string;
   user?: any;
   statuses?: any;
+  currentStatusName?: string;
+  currentStatusInt?: string;
+  currentStatusSlug?: string;
+  currentStatusTab?: string;
 }
 
-const { project, projectStatusesObject, currentRole = "Client", user } = Astro.props;
+const {
+  project,
+  projectStatusesObject,
+  currentRole = "Client",
+  user,
+  currentStatusName,
+  currentStatusInt,
+  currentStatusSlug,
+  currentStatusTab,
+} = Astro.props;
 
 // return if user is staff and project is not assigned to them
 if (currentRole === "Staff" && project.assigned_to_id !== user?.id) {
   return null;
 }
 
-// Function to generate slug from status name
-function generateStatusSlug(statusName: string, currentRole: string, slugify: boolean): string {
-  // Generate slug from status name
-  const slug = slugify
-    ? statusName
-        .toLowerCase()
-        .replace(/[^a-z0-9\s-]/g, "")
-        .replace(/\s+/g, "-")
-        .trim()
-    : statusName;
-
-  return slug;
-}
-
-import { filteredStatusObj } from "../../pages/api/process-client-status";
-
-// Debug: Check if the status exists in the statuses object
-// console.log("🔍 [PROJECT-LIST-ITEM] Project status:", project.status);
-// console.log("🔍 [PROJECT-LIST-ITEM] Available statuses:", Object.keys(projectStatusesObject || {}));
-// console.log(
-//   "🔍 [PROJECT-LIST-ITEM] Status object for this project:",
-//   projectStatusesObject?.[project.status]
-// );
-
-const filteredStatus = filteredStatusObj(projectStatusesObject?.[project.status], currentRole);
-
-const statusUrl = filteredStatus.status_tab || null;
-// Generate the status slug for this project
-// Default to "Client" if currentRole is empty or undefined
-const statusSlug = generateStatusSlug(filteredStatus.status_name, currentRole, true);
-const statusName = generateStatusSlug(filteredStatus.status_name, currentRole, false);
-
 // console.log("🔍 [PROJECT-LIST-ITEM] Status URL:", projectStatusesObject[project.status]);
 
-const statusSlugOrId = currentRole && currentRole === "Client" ? statusSlug : project.status;
+const statusSlugOrId = currentRole && currentRole === "Client" ? currentStatusSlug : project.status;
 // Debug logging removed for performance
 
 // Function to limit description to 200 words
@@ -131,8 +112,8 @@ if (project.profiles) {
       {
         (() => {
           // For clients, make status label clickable if client_status_tab exists
-          if (currentRole === "Client" && statusUrl) {
-            const tabUrl = `/project/${project.id}?tab=${statusUrl}`;
+          if (currentRole === "Client" && currentStatusTab) {
+            const tabUrl = `/project/${project.id}?tab=${currentStatusTab}`;
             // Get status color from API data
             const statusColor = projectStatusesObject?.[project.status]?.status_color || "gray";
             const statusColorClasses = `bg-${statusColor}-100 text-${statusColor}-800 dark:bg-${statusColor}-700 dark:text-${statusColor}-300`;
@@ -143,9 +124,9 @@ if (project.profiles) {
                 class={`inline-flex items-center rounded-full px-2.5 py-0.5 text-md mb-4 font-large ${statusColorClasses} hover:opacity-80 transition-opacity cursor-pointer`}
                 data-refresh="status_name"
                 data-project-id={project.id}
-                title={`Go to ${statusName} tab`}
+                title={`Go to ${currentStatusName} tab`}
               >
-                {statusName}
+                {currentStatusName}
               </a>
             );
           } else {
@@ -160,7 +141,7 @@ if (project.profiles) {
                 data-refresh="status_name"
                 data-project-id={project.id}
               >
-                {statusName}
+                {currentStatusName}
               </span>
             );
           }

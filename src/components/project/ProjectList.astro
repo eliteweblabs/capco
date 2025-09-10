@@ -8,23 +8,29 @@ interface Props {
   statuses: any[];
   currentUser: any;
   currentRole: string | null;
+  currentStatusName: string;
+  currentStatusInt: string;
+  currentStatusSlug: string;
+  statusesObject: any;
 }
 
 const { currentLocale } = Astro;
 const i18n = getI18N({ currentLocale });
 
-const { projects, statuses, currentUser, currentRole } = Astro.props;
+const {
+  projects,
+  statusesObject,
+  currentUser,
+  currentRole,
+  currentStatusName,
+  currentStatusInt,
+  currentStatusSlug,
+} = Astro.props;
 
-// Convert statuses array to object for ProjectListItem
-const statusesObject = statuses.reduce(
-  (acc, status) => {
-    acc[status.status_code] = status;
-    return acc;
-  },
-  {} as Record<number, any>
-);
 if (!projects || projects.length === 0) return;
 ---
+
+top it
 
 <!-- Project List-->
 <div id="project-list">
@@ -36,6 +42,9 @@ if (!projects || projects.length === 0) return;
           currentRole={currentRole || ""}
           user={currentUser}
           projectStatusesObject={statusesObject}
+          currentStatusName={currentStatusName}
+          currentStatusInt={currentStatusInt}
+          currentStatusSlug={currentStatusSlug}
         />
       ))
     ) : (

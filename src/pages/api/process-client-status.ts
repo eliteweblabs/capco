@@ -12,12 +12,29 @@ export const filteredStatusObj = (statusObj: any, role: string) => {
     };
   }
 
+  // Function to generate slug from status name
+  function generateStatusSlug(statusName: string): string {
+    // Generate slug from status name
+    const slug = statusName
+      .toLowerCase()
+      .replace(/[^a-z0-9\s-]/g, "")
+      .replace(/\s+/g, "-")
+      .trim();
+
+    return slug;
+  }
+  // Generate the status slug for this project
+  // Default to "Client" if currentRole is empty or undefined
+  // const statusTab = statusObj.status_tab || null;
+  filteredStatusObj.status_tab = statusObj.client_status_tab;
+
   // Use client_status_name for clients, admin_status_name for admins
   if (role === "Client" && statusObj.client_status_name) {
     filteredStatusObj.status_name = statusObj.client_status_name;
-    filteredStatusObj.status_tab = statusObj.client_status_tab;
+    filteredStatusObj.status_slug = generateStatusSlug(statusObj.client_status_name);
   } else if (statusObj.admin_status_name) {
-    filteredStatusObj.status_name = statusObj.admin_status_name || "";
+    filteredStatusObj.status_name = statusObj.admin_status_name;
+    filteredStatusObj.status_slug = generateStatusSlug(statusObj.admin_status_name);
   }
 
   return filteredStatusObj;
