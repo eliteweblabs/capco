@@ -167,7 +167,7 @@ export const POST: APIRoute = async ({ request, redirect, cookies }) => {
 
     // Send welcome email to the new user
     const displayName = companyName || `${firstName} ${lastName}`;
-    const welcomeContent = `<p>Welcome to CAPCo Fire Protection! Your account has been created successfully:<br></p>
+    const welcomeContent = `<p>Welcome to CAPCo Fire Protection!<br></p>
 
 <b>Company Name:</b> ${displayName}<br>
 <b>Email:</b> ${email}<br>
