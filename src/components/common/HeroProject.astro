@@ -1,5 +1,4 @@
 ---
-import StaffSelect from "../project/StaffSelectDropdown.astro";
 import SectionContainer from "./SectionContainer.astro";
 import SlotMachineModal from "../form/SlotMachineModal.astro";
 
@@ -37,17 +36,40 @@ const statusOptions = Object.values(statuses).map((status: any) => ({
   label: status.admin_status_name || "",
 }));
 
+// Fetch staff data for staff selection
+let staffOptions = [];
+if (currentRole === "Admin" || currentRole === "Staff") {
+  try {
+    const staffResponse = await fetch(`${Astro.url.origin}/api/get-team-users`);
+    if (staffResponse.ok) {
+      const staffData = await staffResponse.json();
+      if (staffData.success && staffData.staffUsers) {
+        staffOptions = [
+          { value: "", label: "Unassigned" },
+          ...staffData.staffUsers.map((staff: any) => ({
+            value: staff.id,
+            label: staff.company_name || staff.name || "Unknown Staff",
+          })),
+        ];
+      }
+    }
+  } catch (error) {
+    console.error("Failed to fetch staff data:", error);
+    staffOptions = [{ value: "", label: "Unassigned" }];
+  }
+}
+
 // Debug logging for HeroProject component props
-console.log("🎯 [HERO-PROJECT] HeroProject component props:", {
-  currentStatusTab,
-  title,
-  currentStatusName,
-  projectId,
-  currentRole,
-  hasProject: !!project,
-  showStatusAndStaff: !!(currentStatusName && projectId),
-  isAdminOrStaff: currentRole === "Admin" || currentRole === "Staff",
-});
+// console.log("🎯 [HERO-PROJECT] HeroProject component props:", {
+//   currentStatusTab,
+//   title,
+//   currentStatusName,
+//   projectId,
+//   currentRole,
+//   hasProject: !!project,
+//   showStatusAndStaff: !!(currentStatusName && projectId),
+//   isAdminOrStaff: currentRole === "Admin" || currentRole === "Staff",
+// });
 ---
 
 <SectionContainer>
@@ -86,15 +108,23 @@ console.log("🎯 [HERO-PROJECT] HeroProject component props:", {
               placeholder="Choose status"
             />
 
-            <StaffSelect
-              id="staff-select-picker"
-              projectId={projectId?.toString() || ""}
-              value={project?.assigned_to_id || ""}
-              autoSave={true}
-              currentRole={currentRole}
-              placeholder="Assign staff..."
-              address={project?.address || ""}
-            />
+            {(currentRole === "Admin" || currentRole === "Staff") && (
+              <SlotMachineModal
+                label={(() => {
+                  if (!project?.assigned_to_id) return "Unassigned";
+                  const assignedStaff = staffOptions.find(
+                    (staff) => staff.value === project.assigned_to_id
+                  );
+                  return assignedStaff?.label || "Unknown Staff";
+                })()}
+                id="assign-staff"
+                title="Assign Staff Member"
+                options={staffOptions}
+                selectedValue={project?.assigned_to_id || ""}
+                theme="green"
+                placeholder="Assign staff..."
+              />
+            )}
           </div>
         ) : (
           <a
