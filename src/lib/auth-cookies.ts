@@ -2,7 +2,7 @@ import type { AstroCookies } from "astro";
 
 export function setAuthCookies(cookies: AstroCookies, accessToken: string, refreshToken: string) {
   // Determine if we're in development or production
-  const isDev = import.meta.env.DEV;
+  const isDev = !import.meta.env.PROD;
 
   // Set access token cookie
   cookies.set("sb-access-token", accessToken, {

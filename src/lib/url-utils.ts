@@ -26,7 +26,7 @@ export function getBaseUrl(request?: Request): string {
   }
 
   // Development fallback
-  if (import.meta.env.DEV) {
+  if (!import.meta.env.PROD) {
     return "http://localhost:4321";
   }
 
@@ -58,7 +58,7 @@ export function getApiBaseUrl(request?: Request): string {
   }
 
   // Development fallback
-  if (import.meta.env.DEV) {
+  if (!import.meta.env.PROD) {
     return "http://localhost:4321";
   }
 
