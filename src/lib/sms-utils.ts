@@ -43,11 +43,11 @@ export async function sendSmsViaEmail(
     // Get carrier info for logging
     const carrierInfo = getCarrierInfo(carrierKey);
 
-    // console.log(`📱 [SMS] Sending SMS to ${smsMessage.to} via ${carrierInfo?.name}:`, {
-//       emailAddress,
-//       messageLength: smsMessage.message.length,
-//       subject: smsMessage.subject || "SMS Message",
-//     });
+    console.log(`📱 [SMS] Sending SMS to ${smsMessage.to} via ${carrierInfo?.name}:`, {
+      emailAddress,
+      messageLength: smsMessage.message.length,
+      subject: smsMessage.subject || "SMS Message",
+    });
 
     // Here you would integrate with your email service (Resend, SendGrid, etc.)
     // For now, we'll return the email address that would be used

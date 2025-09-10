@@ -111,7 +111,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       company_name: profile?.company_name || null,
     };
 
-    // console.log("🔔 [USER-INFO] Fetched user info for:", userId);
+    console.log("🔔 [USER-INFO] Fetched user info for:", userId);
 
     return new Response(
       JSON.stringify({
@@ -246,7 +246,7 @@ export const GET: APIRoute = async ({ url, cookies }) => {
       company_name: profile?.company_name || null,
     };
 
-    // console.log("🔔 [USER-INFO] Fetched user info for:", userId);
+    console.log("🔔 [USER-INFO] Fetched user info for:", userId);
 
     return new Response(
       JSON.stringify({

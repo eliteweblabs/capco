@@ -3,7 +3,7 @@ import { supabase } from "../../lib/supabase";
 
 export const DELETE: APIRoute = async ({ request, cookies }) => {
   try {
-    // console.log("Delete media file API called");
+    console.log("Delete media file API called");
     const { fileId } = await request.json();
 
     if (!fileId) {
@@ -24,10 +24,10 @@ export const DELETE: APIRoute = async ({ request, cookies }) => {
     const accessToken = cookies.get("sb-access-token")?.value;
     const refreshToken = cookies.get("sb-refresh-token")?.value;
 
-    // console.log("📡 [API] Auth check:", {
-//       hasAccessToken: !!accessToken,
-//       hasRefreshToken: !!refreshToken,
-//     });
+    console.log("📡 [API] Auth check:", {
+      hasAccessToken: !!accessToken,
+      hasRefreshToken: !!refreshToken,
+    });
 
     if (accessToken && refreshToken) {
       await supabase.auth.setSession({
@@ -96,7 +96,7 @@ export const DELETE: APIRoute = async ({ request, cookies }) => {
       }
     }
 
-    // console.log(`Deleting file: ${file.file_name} (ID: ${fileId})`);
+    console.log(`Deleting file: ${file.file_name} (ID: ${fileId})`);
 
     // Delete from storage first
     if (file.file_path) {
@@ -108,7 +108,7 @@ export const DELETE: APIRoute = async ({ request, cookies }) => {
         console.error("Error deleting from storage:", storageError);
         // Continue with database deletion even if storage deletion fails
       } else {
-        // console.log("File deleted from storage successfully");
+        console.log("File deleted from storage successfully");
       }
     }
 
@@ -129,7 +129,7 @@ export const DELETE: APIRoute = async ({ request, cookies }) => {
       );
     }
 
-    // console.log("File deleted from database successfully");
+    console.log("File deleted from database successfully");
 
     return new Response(
       JSON.stringify({

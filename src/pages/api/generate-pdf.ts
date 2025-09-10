@@ -104,7 +104,7 @@ export const POST: APIRoute = async ({ request }) => {
         if (uploadError) {
           console.error("Error uploading PDF to Supabase:", uploadError);
         } else {
-          // console.log("PDF uploaded to Supabase:", uploadData);
+          console.log("PDF uploaded to Supabase:", uploadData);
 
           // Log the PDF generation in the database
           const { error: logError } = await supabase.from("pdf_documents").insert({

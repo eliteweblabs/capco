@@ -5,7 +5,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
   try {
     const { projectId, lineItems, subject, notes } = await request.json();
 
-    // console.log("📝 [API] Received request:", { projectId, lineItems, subject, notes });
+    console.log("📝 [API] Received request:", { projectId, lineItems, subject, notes });
 
     if (!projectId || !lineItems) {
       return new Response(JSON.stringify({ error: "Project ID and line items are required" }), {
@@ -62,7 +62,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       });
     }
 
-    // console.log("Found proposal invoice:", invoice.id);
+    console.log("Found proposal invoice:", invoice.id);
 
     // Store complete line item data as JSONB array to preserve pricing
     const lineItemsData = lineItems.map((item: any) => ({
@@ -73,18 +73,18 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       description: item.description || "",
     }));
 
-    // console.log("📝 [API] Line items received:", lineItems);
-    // console.log("📝 [API] Processed line items data:", lineItemsData);
+    console.log("📝 [API] Line items received:", lineItems);
+    console.log("📝 [API] Processed line items data:", lineItemsData);
 
     // Update invoice with complete catalog line items data and subject
-    // console.log(
-//       "📝 [API] Updating invoice",
-//       invoice.id,
-//       "with catalog_line_items:",
-//       lineItemsData,
-//       "and subject:",
-//       subject
-//     );
+    console.log(
+      "📝 [API] Updating invoice",
+      invoice.id,
+      "with catalog_line_items:",
+      lineItemsData,
+      "and subject:",
+      subject
+    );
 
     const updateData: any = { catalog_line_items: lineItemsData };
     if (subject) {
@@ -94,7 +94,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       updateData.proposal_notes = notes;
     }
 
-    // console.log("📝 [API] About to update invoice with data:", JSON.stringify(updateData, null, 2));
+    console.log("📝 [API] About to update invoice with data:", JSON.stringify(updateData, null, 2));
 
     const { error: updateError } = await supabase
       .from("invoices")
@@ -118,7 +118,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       );
     }
 
-    // console.log("✅ [API] Successfully updated line items for invoice:", invoice.id);
+    console.log("✅ [API] Successfully updated line items for invoice:", invoice.id);
 
     // Verify the update by reading back the data
     const { data: updatedInvoice, error: verifyError } = await supabase
@@ -130,12 +130,12 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     if (verifyError) {
       console.error("❌ [API] Error verifying update:", verifyError);
     } else {
-      // console.log(
-//         "✅ [API] Verified update - catalog_line_items:",
-//         updatedInvoice.catalog_line_items,
-//         "subject:",
-//         updatedInvoice.subject
-//       );
+      console.log(
+        "✅ [API] Verified update - catalog_line_items:",
+        updatedInvoice.catalog_line_items,
+        "subject:",
+        updatedInvoice.subject
+      );
     }
 
     return new Response(

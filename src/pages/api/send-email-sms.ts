@@ -10,14 +10,14 @@ export const POST: APIRoute = async ({ request }) => {
     const message = formData.get("message") as string;
     const contactInfo = formData.get("contact_info") as string;
 
-    // console.log("📱 [SMS-API] SMS request received:", {
-//       phone1: phone1 ? "***" + phone1.slice(-4) : "none",
-//       carrier1,
-//       phone2: phone2 ? "***" + phone2.slice(-4) : "none",
-//       carrier2,
-//       messageLength: message?.length || 0,
-//       hasContactInfo: !!contactInfo,
-//     });
+    console.log("📱 [SMS-API] SMS request received:", {
+      phone1: phone1 ? "***" + phone1.slice(-4) : "none",
+      carrier1,
+      phone2: phone2 ? "***" + phone2.slice(-4) : "none",
+      carrier2,
+      messageLength: message?.length || 0,
+      hasContactInfo: !!contactInfo,
+    });
 
     if (!message) {
       return new Response(
@@ -74,15 +74,15 @@ export const POST: APIRoute = async ({ request }) => {
     }
 
     // Debug: Log the full email content being sent
-    // console.log("📱 [SMS-API] Full email content being sent:");
-    // console.log("📱 [SMS-API] Content length:", emailContent.length);
-    // console.log(
-//       "📱 [SMS-API] Content preview:",
-//       emailContent.substring(0, 200) + (emailContent.length > 200 ? "..." : "")
-//     );
+    console.log("📱 [SMS-API] Full email content being sent:");
+    console.log("📱 [SMS-API] Content length:", emailContent.length);
+    console.log(
+      "📱 [SMS-API] Content preview:",
+      emailContent.substring(0, 200) + (emailContent.length > 200 ? "..." : "")
+    );
 
     // Send SMS directly via Resend API (no email delivery system)
-    // console.log("📱 [SMS-API] Sending SMS directly via Resend API to:", smsRecipients);
+    console.log("📱 [SMS-API] Sending SMS directly via Resend API to:", smsRecipients);
 
     // Get email configuration from environment
     const emailApiKey = import.meta.env.EMAIL_API_KEY;
@@ -111,7 +111,7 @@ export const POST: APIRoute = async ({ request }) => {
     // Send to each SMS gateway
     for (const smsEmail of smsRecipients) {
       try {
-        // console.log(`📱 [SMS-API] Sending to SMS gateway: ${smsEmail}`);
+        console.log(`📱 [SMS-API] Sending to SMS gateway: ${smsEmail}`);
 
         const emailPayload = {
           from: `${fromName} <${fromEmail}>`,
@@ -120,11 +120,11 @@ export const POST: APIRoute = async ({ request }) => {
           text: emailContent, // Plain text only for SMS gateways
         };
 
-        // console.log("📱 [SMS-API] SMS payload:", {
-//           to: smsEmail,
-//           subject: emailPayload.subject,
-//           contentLength: emailContent.length,
-//         });
+        console.log("📱 [SMS-API] SMS payload:", {
+          to: smsEmail,
+          subject: emailPayload.subject,
+          contentLength: emailContent.length,
+        });
 
         const response = await fetch("https://api.resend.com/emails", {
           method: "POST",
@@ -141,7 +141,7 @@ export const POST: APIRoute = async ({ request }) => {
           failedEmails.push({ email: smsEmail, error: errorText });
         } else {
           const responseData = await response.json();
-          // console.log(`📱 [SMS-API] Successfully sent to ${smsEmail}:`, responseData);
+          console.log(`📱 [SMS-API] Successfully sent to ${smsEmail}:`, responseData);
           sentEmails.push(smsEmail);
         }
       } catch (error) {
@@ -153,11 +153,11 @@ export const POST: APIRoute = async ({ request }) => {
       }
     }
 
-    // console.log("📱 [SMS-API] SMS sending completed:");
-    // console.log("  - Sent:", sentEmails.length);
-    // console.log("  - Failed:", failedEmails.length);
-    // console.log("  - Sent emails:", sentEmails);
-    // console.log("  - Failed emails:", failedEmails);
+    console.log("📱 [SMS-API] SMS sending completed:");
+    console.log("  - Sent:", sentEmails.length);
+    console.log("  - Failed:", failedEmails.length);
+    console.log("  - Sent emails:", sentEmails);
+    console.log("  - Failed emails:", failedEmails);
 
     if (sentEmails.length > 0) {
       return new Response(

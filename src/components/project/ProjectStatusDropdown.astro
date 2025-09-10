@@ -36,26 +36,26 @@ if (projectStatus === undefined) {
 }
 
 // Debug logging for props
-// console.log('🔽 [STATUS-DROPDOWN] Component props:', {
-//   projectId,
-//   statusLabel,
-//   projectStatus,
-//   currentRole,
-//   statusesType: typeof statuses,
-//   statusesIsArray: Array.isArray(statuses),
-//   statusesLength: Array.isArray(statuses) ? statuses?.length : Object.keys(statuses || {}).length,
-//   sampleStatus: Array.isArray(statuses) ? statuses?.[0] : Object.values(statuses || {})?.[0], // Show first status structure
-//   statusesKeys: Object.keys(statuses || {})
-// });
+console.log('🔽 [STATUS-DROPDOWN] Component props:', {
+  projectId,
+  statusLabel,
+  projectStatus,
+  currentRole,
+  statusesType: typeof statuses,
+  statusesIsArray: Array.isArray(statuses),
+  statusesLength: Array.isArray(statuses) ? statuses?.length : Object.keys(statuses || {}).length,
+  sampleStatus: Array.isArray(statuses) ? statuses?.[0] : Object.values(statuses || {})?.[0], // Show first status structure
+  statusesKeys: Object.keys(statuses || {})
+});
 
 // Check if user can change status (Admin or Staff only)
 const canChangeStatus = currentRole === "Admin" || currentRole === "Staff";
 
-// console.log('🔽 [STATUS-DROPDOWN] Permission check:', {
-//   currentRole,
-//   canChangeStatus,
-//   willShowDropdown: canChangeStatus
-// });
+console.log('🔽 [STATUS-DROPDOWN] Permission check:', {
+  currentRole,
+  canChangeStatus,
+  willShowDropdown: canChangeStatus
+});
 
 // Process statuses only if user can change status
 let projectStatuses: any[] = [];
@@ -68,12 +68,12 @@ if (canChangeStatus) {
       client_status_name: status.client_status_name,
       client_status_tab: status.client_status_tab
     }));
-    // // console.log("🔄 [STATUS-DROPDOWN] Using passed statuses:", projectStatuses.length);
+    // console.log("🔄 [STATUS-DROPDOWN] Using passed statuses:", projectStatuses.length);
   }
 }
 
 // Debug the final processed statuses
-// // console.log('🔽 [STATUS-DROPDOWN] Final processed statuses:', {
+// console.log('🔽 [STATUS-DROPDOWN] Final processed statuses:', {
 //   count: projectStatuses.length,
 //   sampleStatus: projectStatuses[0],
 //   currentProjectStatus: projectStatus,
@@ -118,24 +118,24 @@ if (canChangeStatus) {
 
 <script define:vars={{projectId, projectStatus, currentRole, statusLabel, projectTitle, clientEmail}}>
   function initializeStatusDropdown() {
-    // console.log('🔽 [STATUS-DROPDOWN] Initializing slot machine picker');
-    // console.log('🔽 [STATUS-DROPDOWN] Current role:', currentRole);
-    // console.log('🔽 [STATUS-DROPDOWN] Project ID:', projectId);
-    // console.log('🔽 [STATUS-DROPDOWN] Project status:', projectStatus);
+    console.log('🔽 [STATUS-DROPDOWN] Initializing slot machine picker');
+    console.log('🔽 [STATUS-DROPDOWN] Current role:', currentRole);
+    console.log('🔽 [STATUS-DROPDOWN] Project ID:', projectId);
+    console.log('🔽 [STATUS-DROPDOWN] Project status:', projectStatus);
     
     const dropdownButton = document.getElementById('status-dropdown-button');
     const currentProjectId = projectId;
-    // console.log('🔽 [STATUS-DROPDOWN] Button found:', !!dropdownButton);
+    console.log('🔽 [STATUS-DROPDOWN] Button found:', !!dropdownButton);
     
     if (!dropdownButton) {
-      // console.log('🔽 [STATUS-DROPDOWN] No dropdown button found - user may not have permission to change status');
+      console.log('🔽 [STATUS-DROPDOWN] No dropdown button found - user may not have permission to change status');
       return;
     }
 
     // Set up slot machine picker trigger
     dropdownButton.addEventListener('click', function(e) {
       e.stopPropagation();
-      // console.log('🔽 [STATUS-DROPDOWN] Button clicked - opening status picker modal');
+      console.log('🔽 [STATUS-DROPDOWN] Button clicked - opening status picker modal');
       
       // Get data from button attributes
       const statusesData = JSON.parse(dropdownButton.getAttribute('data-statuses') || '[]');
@@ -146,11 +146,11 @@ if (canChangeStatus) {
     });
 
     async function changeProjectStatus(projectId, newStatus, statusName) {
-      // console.log('🔽 [STATUS-DROPDOWN] changeProjectStatus called with:', {
-//           projectId,
-//           newStatus,
-//           statusName
-//         });
+      console.log('🔽 [STATUS-DROPDOWN] changeProjectStatus called with:', {
+          projectId,
+          newStatus,
+          statusName
+        });
 
       try {
         // Get current user ID and old status from the page context
@@ -165,7 +165,7 @@ if (canChangeStatus) {
           oldStatus: oldStatus ? parseInt(oldStatus) : null
         };
 
-        // console.log("🔔 [STATUS-DROPDOWN] Making API call to /api/update-status with body:", requestBody);
+        console.log("🔔 [STATUS-DROPDOWN] Making API call to /api/update-status with body:", requestBody);
         
         const response = await fetch('/api/update-status', {
           method: 'POST',
@@ -183,7 +183,7 @@ if (canChangeStatus) {
           const projectStatusElement = document.querySelector('[data-project-status]');
           if (projectStatusElement) {
             projectStatusElement.setAttribute('data-project-status', newStatus.toString());
-            // console.log("🔔 [STATUS-DROPDOWN] Updated data-project-status to:", newStatus);
+            console.log("🔔 [STATUS-DROPDOWN] Updated data-project-status to:", newStatus);
           }
           
           // Show success notification using notificationData from API
@@ -218,7 +218,7 @@ if (canChangeStatus) {
             `;
           }
           
-          // console.log("🔔 [STATUS-DROPDOWN] Status updated successfully to:", statusName);
+          console.log("🔔 [STATUS-DROPDOWN] Status updated successfully to:", statusName);
         } else {
           const errorData = await response.json();
           console.error("🔔 [STATUS-DROPDOWN] API error response:", errorData);

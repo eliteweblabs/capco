@@ -4,15 +4,15 @@ import { supabase } from "../../lib/supabase";
 import { supabaseAdmin } from "../../lib/supabase-admin";
 
 export const POST: APIRoute = async ({ request, cookies }) => {
-  // console.log("🔔 [UPDATE-DISCUSSION] API endpoint called");
+  console.log("🔔 [UPDATE-DISCUSSION] API endpoint called");
   try {
     // Check authentication
     const { isAuth, currentUser, role } = await checkAuth(cookies);
-    // console.log("🔔 [UPDATE-DISCUSSION] Auth check result:", {
-//       isAuth,
-//       hasUser: !!currentUser,
-//       role,
-//     });
+    console.log("🔔 [UPDATE-DISCUSSION] Auth check result:", {
+      isAuth,
+      hasUser: !!currentUser,
+      role,
+    });
 
     if (!isAuth || !currentUser) {
       return new Response(JSON.stringify({ success: false, error: "Authentication required" }), {
@@ -31,17 +31,17 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     // }
 
     const body = await request.json();
-    // console.log("🔔 [UPDATE-DISCUSSION] Request body:", body);
+    console.log("🔔 [UPDATE-DISCUSSION] Request body:", body);
     const { discussionId, mark_completed } = body;
 
     // Ensure discussionId is a number
     const discussionIdNum = parseInt(discussionId, 10);
-    // console.log(
-//       "🔔 [UPDATE-DISCUSSION] Parsed discussionId:",
-//       discussionIdNum,
-//       "Original:",
-//       discussionId
-//     );
+    console.log(
+      "🔔 [UPDATE-DISCUSSION] Parsed discussionId:",
+      discussionIdNum,
+      "Original:",
+      discussionId
+    );
 
     if (isNaN(discussionIdNum) || mark_completed === undefined) {
       return new Response(
@@ -56,20 +56,20 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       );
     }
 
-    // console.log("🔔 [UPDATE-DISCUSSION] Updating discussion:", {
-//       discussionId: discussionIdNum,
-//       mark_completed,
-//       userRole: role,
-//       userId: currentUser.id,
-//     });
+    console.log("🔔 [UPDATE-DISCUSSION] Updating discussion:", {
+      discussionId: discussionIdNum,
+      mark_completed,
+      userRole: role,
+      userId: currentUser.id,
+    });
 
     // First, check if the discussion exists and get its current state
-    // console.log(
-//       "🔍 [UPDATE-DISCUSSION] Looking for discussion with ID:",
-//       discussionIdNum,
-//       "Type:",
-//       typeof discussionIdNum
-//     );
+    console.log(
+      "🔍 [UPDATE-DISCUSSION] Looking for discussion with ID:",
+      discussionIdNum,
+      "Type:",
+      typeof discussionIdNum
+    );
     const { data: existingDiscussion, error: fetchError } = await supabase
       .from("discussion")
       .select("id, mark_completed")
@@ -87,7 +87,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       );
     }
 
-    // console.log("🔍 [UPDATE-DISCUSSION] Found existing discussion:", existingDiscussion);
+    console.log("🔍 [UPDATE-DISCUSSION] Found existing discussion:", existingDiscussion);
 
     // Update the discussion using admin client to bypass RLS
     const { data: updateResult, error } = await supabaseAdmin
@@ -113,7 +113,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       );
     }
 
-    // console.log("✅ [UPDATE-DISCUSSION] Discussion updated successfully:", updateResult);
+    console.log("✅ [UPDATE-DISCUSSION] Discussion updated successfully:", updateResult);
 
     return new Response(
       JSON.stringify({

@@ -79,7 +79,7 @@ const {
   // Function to update project staff assignment
   async function updateProjectStaff(projectId, staffId, staffName) {
     try {
-      // console.log("🧑‍💼 [STAFF-SELECT] Updating project staff:", { projectId, staffId, staffName });
+      console.log("🧑‍💼 [STAFF-SELECT] Updating project staff:", { projectId, staffId, staffName });
 
       const response = await fetch("/api/update-project", {
               method: "POST",
@@ -95,7 +95,7 @@ const {
       const result = await response.json();
 
       if (result.success) {
-        // console.log("🧑‍💼 [STAFF-SELECT] Staff assignment updated successfully");
+        console.log("🧑‍💼 [STAFF-SELECT] Staff assignment updated successfully");
         
         // Show success notification
         if (typeof window.showModal === 'function') {
@@ -122,14 +122,14 @@ const {
   // Function to load staff members and populate the slot machine picker
   async function loadStaffMembers() {
     try {
-      // console.log("🧑‍💼 [STAFF-SELECT] Fetching staff members...");
+      console.log("🧑‍💼 [STAFF-SELECT] Fetching staff members...");
 
       // Fetch staff members from API
       const response = await fetch("/api/get-team-users");
       const result = await response.json();
 
       if (result.success && result.staffUsers) {
-        // console.log(`🧑‍💼 [STAFF-SELECT] Loaded ${result.staffUsers.length} staff members`);
+        console.log(`🧑‍💼 [STAFF-SELECT] Loaded ${result.staffUsers.length} staff members`);
 
         // Create options array for slot machine picker
         const options = [
@@ -158,7 +158,7 @@ const {
           }
         }
 
-        // console.log("🧑‍💼 [STAFF-SELECT] Staff options populated successfully");
+        console.log("🧑‍💼 [STAFF-SELECT] Staff options populated successfully");
       } else {
         console.error("🧑‍💼 [STAFF-SELECT] Failed to load staff:", result.error);
       }
@@ -176,10 +176,11 @@ const {
 
   // Set up the selection callback for the slot machine picker
   window[`${id}_onSelect`] = function(selectedValue, selectedLabel) {
-    // console.log("🧑‍💼 [STAFF-SELECT] Staff selected:", selectedValue, selectedLabel);
+    console.log("🧑‍💼 [STAFF-SELECT] Staff selected:", selectedValue, selectedLabel);
     
     // Auto-save if enabled
     if (autoSave && projectId) {
       updateProjectStaff(projectId, selectedValue, selectedLabel);
     }
   };
+</script>

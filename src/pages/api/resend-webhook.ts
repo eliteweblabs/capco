@@ -24,7 +24,7 @@ function checkRateLimit(projectId: string, eventType: string): boolean {
   ).length;
 
   if (recentWebhooks >= MAX_WEBHOOKS_PER_MINUTE) {
-// // console.log(
+    console.log(
       `🚫 [RESEND-WEBHOOK] Rate limit exceeded for project ${projectId}: ${recentWebhooks} webhooks in last minute`
     );
     return false;
@@ -36,12 +36,12 @@ function checkRateLimit(projectId: string, eventType: string): boolean {
 }
 
 export const POST: APIRoute = async ({ request }) => {
-// // console.log("📧 [RESEND-WEBHOOK] Webhook received");
-// // console.log("📧 [RESEND-WEBHOOK] Headers:", Object.fromEntries(request.headers.entries()));
+  console.log("📧 [RESEND-WEBHOOK] Webhook received");
+  console.log("📧 [RESEND-WEBHOOK] Headers:", Object.fromEntries(request.headers.entries()));
 
   // Check if webhooks are disabled via environment variable
   if (import.meta.env.DISABLE_WEBHOOKS === "true" || import.meta.env.DISABLE_WEBHOOKS === "1") {
-// // console.log("📧 [RESEND-WEBHOOK] Webhooks disabled via environment variable");
+    console.log("📧 [RESEND-WEBHOOK] Webhooks disabled via environment variable");
     return new Response(JSON.stringify({ success: true, message: "Webhooks disabled" }), {
       status: 200,
       headers: { "Content-Type": "application/json" },
@@ -52,14 +52,14 @@ export const POST: APIRoute = async ({ request }) => {
   const signature = request.headers.get("resend-signature");
   const webhookSecret = import.meta.env.RESEND_WEBHOOK_SECRET;
 
-// // console.log("📧 [RESEND-WEBHOOK] Signature verification:", {
+  console.log("📧 [RESEND-WEBHOOK] Signature verification:", {
     hasSignature: !!signature,
     hasSecret: !!webhookSecret,
     signatureLength: signature?.length || 0,
   });
 
   if (!signature || !webhookSecret) {
-// // console.log("📧 [RESEND-WEBHOOK] Missing signature or secret");
+    console.log("📧 [RESEND-WEBHOOK] Missing signature or secret");
     return new Response(JSON.stringify({ error: "Unauthorized" }), {
       status: 401,
       headers: { "Content-Type": "application/json" },
@@ -68,7 +68,7 @@ export const POST: APIRoute = async ({ request }) => {
 
   try {
     const body = await request.json();
-// // console.log("📧 [RESEND-WEBHOOK] Webhook body:", JSON.stringify(body, null, 2));
+    console.log("📧 [RESEND-WEBHOOK] Webhook body:", JSON.stringify(body, null, 2));
 
     // Verify webhook signature using HMAC
     const bodyString = JSON.stringify(body);
@@ -77,14 +77,14 @@ export const POST: APIRoute = async ({ request }) => {
       .update(bodyString)
       .digest("hex");
 
-// // console.log("📧 [RESEND-WEBHOOK] Signature comparison:", {
+    console.log("📧 [RESEND-WEBHOOK] Signature comparison:", {
       received: signature,
       expected: expectedSignature,
       matches: signature === expectedSignature,
     });
 
     if (signature !== expectedSignature) {
-// // console.log("📧 [RESEND-WEBHOOK] Invalid signature");
+      console.log("📧 [RESEND-WEBHOOK] Invalid signature");
       return new Response(JSON.stringify({ error: "Invalid signature" }), {
         status: 401,
         headers: { "Content-Type": "application/json" },
@@ -96,15 +96,15 @@ export const POST: APIRoute = async ({ request }) => {
 
     switch (type) {
       case "email.delivered":
-// // console.log("📧 [RESEND-WEBHOOK] Email delivered:", data.email);
+        console.log("📧 [RESEND-WEBHOOK] Email delivered:", data.email);
         break;
 
       case "email.opened":
-// // console.log("📧 [RESEND-WEBHOOK] Email opened:", data.email);
+        console.log("📧 [RESEND-WEBHOOK] Email opened:", data.email);
         // Check rate limit before processing
         const projectId = data.headers?.["X-Project-ID"] || data.headers?.["x-project-id"];
         if (projectId && !checkRateLimit(projectId, "email.opened")) {
-// // console.log("🚫 [RESEND-WEBHOOK] Rate limit exceeded for email.opened, skipping");
+          console.log("🚫 [RESEND-WEBHOOK] Rate limit exceeded for email.opened, skipping");
           return new Response(JSON.stringify({ success: true, message: "Rate limited" }), {
             status: 200,
             headers: { "Content-Type": "application/json" },
@@ -114,11 +114,11 @@ export const POST: APIRoute = async ({ request }) => {
         break;
 
       case "email.clicked":
-// // console.log("📧 [RESEND-WEBHOOK] Email clicked:", data.email);
+        console.log("📧 [RESEND-WEBHOOK] Email clicked:", data.email);
         // Check rate limit before processing
         const clickedProjectId = data.headers?.["X-Project-ID"] || data.headers?.["x-project-id"];
         if (clickedProjectId && !checkRateLimit(clickedProjectId, "email.clicked")) {
-// // console.log("🚫 [RESEND-WEBHOOK] Rate limit exceeded for email.clicked, skipping");
+          console.log("🚫 [RESEND-WEBHOOK] Rate limit exceeded for email.clicked, skipping");
           return new Response(JSON.stringify({ success: true, message: "Rate limited" }), {
             status: 200,
             headers: { "Content-Type": "application/json" },
@@ -128,11 +128,11 @@ export const POST: APIRoute = async ({ request }) => {
         break;
 
       case "email.bounced":
-// // console.log("📧 [RESEND-WEBHOOK] Email bounced:", data.email);
+        console.log("📧 [RESEND-WEBHOOK] Email bounced:", data.email);
         break;
 
       default:
-// // console.log("📧 [RESEND-WEBHOOK] Unknown event type:", type);
+        console.log("📧 [RESEND-WEBHOOK] Unknown event type:", type);
     }
 
     return new Response(JSON.stringify({ success: true }), {
@@ -152,7 +152,7 @@ export const POST: APIRoute = async ({ request }) => {
 async function handleEmailOpened(data: any) {
   try {
     const { email } = data;
-// // console.log("📧 [RESEND-WEBHOOK] Processing email opened event:", { email });
+    console.log("📧 [RESEND-WEBHOOK] Processing email opened event:", { email });
 
     // Get project ID from email headers
     const projectId = data.headers?.["X-Project-ID"] || data.headers?.["x-project-id"];
@@ -160,7 +160,7 @@ async function handleEmailOpened(data: any) {
     const authorId = data.headers?.["X-Author-ID"] || data.headers?.["x-author-id"];
 
     if (!projectId || !currentStatus || !authorId) {
-// // console.log(
+      console.log(
         "📧 [RESEND-WEBHOOK] No project ID or status or author ID found in email headers for:",
         email
       );
@@ -187,11 +187,11 @@ async function handleEmailOpened(data: any) {
         nextStatus = 210; // Final Deliverables Viewed
         break;
       default:
-// // console.log("📧 [RESEND-WEBHOOK] No status update needed for status:", currentStatus);
+        console.log("📧 [RESEND-WEBHOOK] No status update needed for status:", currentStatus);
         return;
     }
 
-// // console.log("📧 [RESEND-WEBHOOK] Updating status from", currentStatus, "to", nextStatus);
+    console.log("📧 [RESEND-WEBHOOK] Updating status from", currentStatus, "to", nextStatus);
 
     // Call update-status API with timeout and error handling
     const controller = new AbortController();
@@ -218,7 +218,7 @@ async function handleEmailOpened(data: any) {
       clearTimeout(timeoutId);
 
       if (updateResponse.ok) {
-// // console.log("📧 [RESEND-WEBHOOK] ✅ Status update triggered successfully");
+        console.log("📧 [RESEND-WEBHOOK] ✅ Status update triggered successfully");
       } else {
         const errorText = await updateResponse.text();
         console.error("📧 [RESEND-WEBHOOK] ❌ Status update failed:", errorText);
@@ -245,7 +245,7 @@ async function handleEmailClicked(data: any) {
 
     // If it's a magic link, you might want to track that separately
     if (url.includes("/project/")) {
-// // console.log("📧 [RESEND-WEBHOOK] Magic link clicked:", { email, url });
+      console.log("📧 [RESEND-WEBHOOK] Magic link clicked:", { email, url });
       // You could update a "last_accessed" timestamp here
     }
   } catch (error) {
@@ -255,7 +255,7 @@ async function handleEmailClicked(data: any) {
 
 // GET endpoint for testing webhook functionality
 export const GET: APIRoute = async ({ request }) => {
-// // console.log("🧪 [RESEND-WEBHOOK] GET test endpoint called");
+  console.log("🧪 [RESEND-WEBHOOK] GET test endpoint called");
 
   // Simulate an email.opened event with correct webhook data structure
   const testEvent = {
@@ -271,7 +271,7 @@ export const GET: APIRoute = async ({ request }) => {
     },
   };
 
-// // console.log("🧪 [RESEND-WEBHOOK] Simulating email.opened event:", testEvent);
+  console.log("🧪 [RESEND-WEBHOOK] Simulating email.opened event:", testEvent);
 
   // Call the handleEmailOpened function with test data
   await handleEmailOpened(testEvent.data);

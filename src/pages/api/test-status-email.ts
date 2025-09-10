@@ -138,7 +138,7 @@ export const POST: APIRoute = async ({ request }) => {
 
     // Check if email delivery was successful
     if (emailResponse.ok && emailResult.success) {
-      // console.log("🔔 [TEST-STATUS-EMAIL] Status email test successful");
+      console.log("🔔 [TEST-STATUS-EMAIL] Status email test successful");
 
       return new Response(
         JSON.stringify({

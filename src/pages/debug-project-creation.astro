@@ -252,12 +252,12 @@ if (!isAuth) {
     if (userRole === 'Client') return;
 
     try {
-      // console.log("🧪 [DEBUG] Loading clients for admin/staff user...");
+      console.log("🧪 [DEBUG] Loading clients for admin/staff user...");
       const response = await fetch('/api/get-clients');
       
       if (response.ok) {
         const clients = await response.json();
-        // console.log("🧪 [DEBUG] Loaded clients:", clients);
+        console.log("🧪 [DEBUG] Loaded clients:", clients);
         
         const select = document.getElementById('author-select');
         if (select) {
@@ -289,11 +289,11 @@ if (!isAuth) {
       if (target?.checked) {
         existingSection.classList.add('hidden');
         newSection.classList.remove('hidden');
-        // console.log("🧪 [DEBUG] Switched to new client mode");
+        console.log("🧪 [DEBUG] Switched to new client mode");
       } else {
         existingSection.classList.remove('hidden');
         newSection.classList.add('hidden');
-        // console.log("🧪 [DEBUG] Switched to existing client mode");
+        console.log("🧪 [DEBUG] Switched to existing client mode");
       }
     });
   }
@@ -304,7 +304,7 @@ if (!isAuth) {
     testForm.addEventListener("submit", async (e) => {
       e.preventDefault();
 
-      // console.log("🧪 [DEBUG] Starting test project creation...");
+      console.log("🧪 [DEBUG] Starting test project creation...");
 
       const form = e.target as HTMLFormElement;
       const formData = new FormData(form);
@@ -331,11 +331,11 @@ if (!isAuth) {
         (projectData as any).last_name = formData.get("last_name");
         (projectData as any).email = formData.get("email");
         (projectData as any).company_name = formData.get("company_name");
-        // console.log("🧪 [DEBUG] Creating project with NEW client");
+        console.log("🧪 [DEBUG] Creating project with NEW client");
       } else {
         // Using existing client
         (projectData as any).author_id = formData.get("author_id");
-        // console.log("🧪 [DEBUG] Creating project for EXISTING client:", (projectData as any).author_id);
+        console.log("🧪 [DEBUG] Creating project for EXISTING client:", (projectData as any).author_id);
         
         if (!(projectData as any).author_id) {
           console.error("🧪 [DEBUG] ❌ No client selected!");
@@ -343,13 +343,13 @@ if (!isAuth) {
         }
       }
     } else {
-      // console.log("🧪 [DEBUG] Client user - will be set as author automatically");
+      console.log("🧪 [DEBUG] Client user - will be set as author automatically");
     }
 
-    // console.log("🧪 [DEBUG] Final project data:", projectData);
+    console.log("🧪 [DEBUG] Final project data:", projectData);
 
     try {
-      // console.log("🧪 [DEBUG] Sending request to /api/create-project...");
+      console.log("🧪 [DEBUG] Sending request to /api/create-project...");
 
       const response = await fetch("/api/create-project", {
         method: "POST",
@@ -359,24 +359,24 @@ if (!isAuth) {
         body: JSON.stringify(projectData),
       });
 
-      // console.log("🧪 [DEBUG] Response status:", response.status);
-      // console.log("🧪 [DEBUG] Response headers:", Object.fromEntries(response.headers.entries()));
+      console.log("🧪 [DEBUG] Response status:", response.status);
+      console.log("🧪 [DEBUG] Response headers:", Object.fromEntries(response.headers.entries()));
 
       const result = await response.json();
 
       if (response.ok) {
-        // console.log("🧪 [DEBUG] ✅ Project created successfully:", result);
-        // console.log("🧪 [DEBUG] Project ID:", result.id);
-        // console.log("🧪 [DEBUG] Project Status:", result.status);
+        console.log("🧪 [DEBUG] ✅ Project created successfully:", result);
+        console.log("🧪 [DEBUG] Project ID:", result.id);
+        console.log("🧪 [DEBUG] Project Status:", result.status);
 
         if (result.status === 0) {
-          // console.log(
-//             "🧪 [DEBUG] ✅ Status is correctly set to 0! Now calling update-status API..."
-//           );
+          console.log(
+            "🧪 [DEBUG] ✅ Status is correctly set to 0! Now calling update-status API..."
+          );
 
           // Call update-status API to set status to 10 and trigger emails
           try {
-            // console.log("🧪 [DEBUG] Calling /api/update-status to set status to 10...");
+            console.log("🧪 [DEBUG] Calling /api/update-status to set status to 10...");
 
                          const statusResponse = await fetch("/api/update-status", {
                method: "POST",
@@ -390,12 +390,12 @@ if (!isAuth) {
                }),
              });
 
-            // console.log("🧪 [DEBUG] Status update response status:", statusResponse.status);
+            console.log("🧪 [DEBUG] Status update response status:", statusResponse.status);
 
             if (statusResponse.ok) {
               const statusResult = await statusResponse.json();
-              // console.log("🧪 [DEBUG] ✅ Status updated successfully:", statusResult);
-              // console.log('🧪 [DEBUG] ✅ Emails should now be sent for "Specs Received" status!');
+              console.log("🧪 [DEBUG] ✅ Status updated successfully:", statusResult);
+              console.log('🧪 [DEBUG] ✅ Emails should now be sent for "Specs Received" status!');
             } else {
               const statusError = await statusResponse.text();
               console.error("🧪 [DEBUG] ❌ Status update failed:", statusError);
@@ -427,7 +427,7 @@ if (!isAuth) {
     });
   }
 
-  // console.log("🧪 [DEBUG] Debug page loaded and ready!");
+  console.log("🧪 [DEBUG] Debug page loaded and ready!");
   
   // Load clients on page load for admin/staff users
   loadClients();

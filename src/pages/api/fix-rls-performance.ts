@@ -2,7 +2,7 @@ import type { APIRoute } from "astro";
 import { supabaseAdmin } from "../../lib/supabase-admin";
 
 export const POST: APIRoute = async () => {
-  // console.log("🔧 [RLS-FIX] Attempting to fix project_statuses RLS performance...");
+  console.log("🔧 [RLS-FIX] Attempting to fix project_statuses RLS performance...");
 
   try {
     if (!supabaseAdmin) {
@@ -36,7 +36,7 @@ export const POST: APIRoute = async () => {
       );
     }
 
-    // console.log("🔧 [RLS-FIX] RLS disabled successfully");
+    console.log("🔧 [RLS-FIX] RLS disabled successfully");
 
     return new Response(
       JSON.stringify({

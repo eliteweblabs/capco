@@ -3,7 +3,7 @@ import { checkAuth } from "../../../lib/auth";
 import { supabase } from "../../../lib/supabase";
 
 export const GET: APIRoute = async ({ params, cookies }) => {
-  // // console.log("📡 [GET-PROJECT-ID] API route called for project:", params.id);
+  // console.log("📡 [GET-PROJECT-ID] API route called for project:", params.id);
 
   try {
     const projectId = params.id;
@@ -25,7 +25,7 @@ export const GET: APIRoute = async ({ params, cookies }) => {
     const { isAuth, currentUser, role } = await checkAuth(cookies);
 
     if (!isAuth || !user) {
-      // console.log("📡 [GET-PROJECT-ID] User not authenticated");
+      console.log("📡 [GET-PROJECT-ID] User not authenticated");
       return new Response(
         JSON.stringify({
           success: false,
@@ -38,7 +38,7 @@ export const GET: APIRoute = async ({ params, cookies }) => {
       );
     }
 
-    // // console.log("📡 [GET-PROJECT-ID] User authenticated:", { userId: user.id, role });
+    // console.log("📡 [GET-PROJECT-ID] User authenticated:", { userId: user.id, role });
 
     if (!supabase) {
       return new Response(
@@ -88,7 +88,7 @@ export const GET: APIRoute = async ({ params, cookies }) => {
       );
     }
 
-    // // console.log("📡 [GET-PROJECT-ID] Project found:", project.title);
+    // console.log("📡 [GET-PROJECT-ID] Project found:", project.title);
 
     // Get project author's profile data
     let projectAuthor = null;
@@ -103,7 +103,7 @@ export const GET: APIRoute = async ({ params, cookies }) => {
         console.error("📡 [GET-PROJECT-ID] Error fetching author profile:", authorError);
       } else {
         projectAuthor = authorProfile;
-        // // console.log("📡 [GET-PROJECT-ID] Author profile loaded:", projectAuthor.company_name);
+        // console.log("📡 [GET-PROJECT-ID] Author profile loaded:", projectAuthor.company_name);
       }
     }
 
@@ -121,20 +121,20 @@ export const GET: APIRoute = async ({ params, cookies }) => {
       } else if (assignedProfile) {
         // Add assigned user name to the project data
         project.assigned_to_name = assignedProfile.company_name || assignedProfile.id;
-        // // console.log("📡 [GET-PROJECT-ID] Assigned user profile loaded:", project.assigned_to_name);
+        // console.log("📡 [GET-PROJECT-ID] Assigned user profile loaded:", project.assigned_to_name);
       } else {
         // Profile not found for assigned user ID
-        // console.log(
-//           "📡 [GET-PROJECT-ID] No profile found for assigned user ID:",
-//           project.assigned_to_id
-//         );
+        console.log(
+          "📡 [GET-PROJECT-ID] No profile found for assigned user ID:",
+          project.assigned_to_id
+        );
         project.assigned_to_name = null;
       }
     } else {
       project.assigned_to_name = null;
     }
 
-    // // console.log("📡 [GET-PROJECT-ID] Returning project data successfully");
+    // console.log("📡 [GET-PROJECT-ID] Returning project data successfully");
 
     return new Response(
       JSON.stringify({

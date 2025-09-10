@@ -92,7 +92,7 @@ export const GET: APIRoute = async ({ cookies, url }) => {
             role: profile.role,
           });
         });
-        // console.log(`✅ [ACTIVITY-FEED] Fetched ${profiles.length} user profiles efficiently`);
+        console.log(`✅ [ACTIVITY-FEED] Fetched ${profiles.length} user profiles efficiently`);
       } else {
         console.error("Error fetching activity feed profiles:", profilesError);
       }

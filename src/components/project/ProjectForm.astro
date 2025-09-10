@@ -47,32 +47,32 @@ const buttonGroups = getFilteredButtonGroups(currentRole, isNewProject, projectS
 const formActions = getFilteredFormActions(currentRole, isNewProject, projectStatus);
 
 // Debug logging
-// console.log("📝 [ProjectForm] Debug info:", {
-//   isNewProject,
-//   projectStatus,
-//   formFieldsCount: formFields.length,
-//   buttonGroupsCount: buttonGroups.length,
-//   formActionsCount: formActions.length,
-//   formFields: formFields.map((f) => ({
-//     id: f.id,
-//     name: f.name,
-//     allow: f.allow,
-//   })),
-//   buttonGroups: buttonGroups.map((g) => ({
-//     id: g.id,
-//     name: g.name,
-//     allow: g.allow,
-//   })),
-//   formActions: formActions.map((a) => ({
-//     id: a.id,
-//     label: a.label,
-//     allow: a.allow,
-//   })),
-// });
+console.log("📝 [ProjectForm] Debug info:", {
+  isNewProject,
+  projectStatus,
+  formFieldsCount: formFields.length,
+  buttonGroupsCount: buttonGroups.length,
+  formActionsCount: formActions.length,
+  formFields: formFields.map((f) => ({
+    id: f.id,
+    name: f.name,
+    allow: f.allow,
+  })),
+  buttonGroups: buttonGroups.map((g) => ({
+    id: g.id,
+    name: g.name,
+    allow: g.allow,
+  })),
+  formActions: formActions.map((a) => ({
+    id: a.id,
+    label: a.label,
+    allow: a.allow,
+  })),
+});
 
 // Check specifically for the existing client select field
 // const existingClientField = formFields.find((f) => f.id === "existing-client-select");
-// // console.log(
+// console.log(
 //   existingClientField
 //     ? "⚠️ [ProjectForm] Found existing-client-select field"
 //     : "✅ [ProjectForm] existing-client-select field correctly filtered out"
@@ -86,7 +86,7 @@ const formActions = getFilteredFormActions(currentRole, isNewProject, projectSta
 //     field.name === "company_name" ||
 //     field.name === "email"
 // );
-// // console.log("New client fields found:", newClientFieldsInForm.length, newClientFieldsInForm);
+// console.log("New client fields found:", newClientFieldsInForm.length, newClientFieldsInForm);
 ---
 
 <form
@@ -112,11 +112,11 @@ const formActions = getFilteredFormActions(currentRole, isNewProject, projectSta
       const googleFields = formFields.filter(
         (field) => field.type === "component" && field.component === "GoogleAddressAutocomplete"
       );
-      // console.log("🔍 [ProjectForm] GoogleAddressAutocomplete fields:", {
-//         projectStatus,
-//         googleFieldsCount: googleFields.length,
-//         googleFields: googleFields.map((f) => ({ id: f.id, hideAtStatus: f.hideAtStatus })),
-//       });
+      console.log("🔍 [ProjectForm] GoogleAddressAutocomplete fields:", {
+        projectStatus,
+        googleFieldsCount: googleFields.length,
+        googleFields: googleFields.map((f) => ({ id: f.id, hideAtStatus: f.hideAtStatus })),
+      });
       return googleFields;
     })().map((field) => (
       <div class="relative">
@@ -241,7 +241,7 @@ const formActions = getFilteredFormActions(currentRole, isNewProject, projectSta
     formFields
       .filter((field) => field.type === "component" && field.component === "StaffSelect")
       .map((field) => {
-        // // console.log("🧑‍💼 [ProjectForm] Rendering StaffSelect field:", field);
+        // console.log("🧑‍💼 [ProjectForm] Rendering StaffSelect field:", field);
         return (
           <div class="relative">
             <StaffSelect
@@ -416,7 +416,7 @@ const formActions = getFilteredFormActions(currentRole, isNewProject, projectSta
         const projectData = JSON.parse(projectDataAttr);
         // Make project data available globally
         (window as any).currentProjectData = projectData;
-        // // console.log("Project data loaded:", projectData);
+        // console.log("Project data loaded:", projectData);
       } catch (error) {
         console.error("Error parsing project data:", error);
       }
@@ -430,7 +430,7 @@ const formActions = getFilteredFormActions(currentRole, isNewProject, projectSta
     // Form submission handler
     async function handleFormSubmit(event: Event) {
       event.preventDefault();
-      // // console.log("📝 [ProjectForm] Form submission started");
+      // console.log("📝 [ProjectForm] Form submission started");
 
       const form = event.target as HTMLFormElement;
       const formData = new FormData(form);
@@ -463,7 +463,7 @@ const formActions = getFilteredFormActions(currentRole, isNewProject, projectSta
         }
       }
 
-      // // console.log("📝 [ProjectForm] Form data:", projectData);
+      // console.log("📝 [ProjectForm] Form data:", projectData);
 
       try {
         const submitBtn = form.querySelector('button[type="submit"]') as HTMLButtonElement;
@@ -475,7 +475,7 @@ const formActions = getFilteredFormActions(currentRole, isNewProject, projectSta
         let response;
         if (isNewProject) {
           // Create new project
-          // // console.log("📝 [ProjectForm] Creating new project");
+          // console.log("📝 [ProjectForm] Creating new project");
           response = await fetch("/api/create-project", {
             method: "POST",
             headers: {
@@ -485,7 +485,7 @@ const formActions = getFilteredFormActions(currentRole, isNewProject, projectSta
           });
         } else {
           // Update existing project
-          // // console.log("📝 [ProjectForm] Updating existing project:", projectId);
+          // console.log("📝 [ProjectForm] Updating existing project:", projectId);
           response = await fetch(`/api/update-project/${projectId}`, {
             method: "PUT",
             headers: {
@@ -496,17 +496,17 @@ const formActions = getFilteredFormActions(currentRole, isNewProject, projectSta
         }
 
         const result = await response.json();
-        // // console.log("📝 [ProjectForm] API response:", result);
-        // // console.log("📝 [ProjectForm] Response status:", response.status);
-        // // console.log("📝 [ProjectForm] Response ok:", response.ok);
+        // console.log("📝 [ProjectForm] API response:", result);
+        // console.log("📝 [ProjectForm] Response status:", response.status);
+        // console.log("📝 [ProjectForm] Response ok:", response.ok);
 
         if (result.success) {
           if (isNewProject) {
             // For new projects, update status to 10 (Project Created) to trigger database-driven notifications
-            // // console.log("📝 [ProjectForm] Updating status to 10 for new project");
-            // // console.log("📝 [ProjectForm] About to make fetch call to test endpoint");
+            // console.log("📝 [ProjectForm] Updating status to 10 for new project");
+            // console.log("📝 [ProjectForm] About to make fetch call to test endpoint");
             try {
-              // // console.log("📝 [ProjectForm] Making fetch call now...");
+              // console.log("📝 [ProjectForm] Making fetch call now...");
               const statusResponse = await fetch("/api/update-status", {
                 method: "POST",
                 headers: {
@@ -520,12 +520,12 @@ const formActions = getFilteredFormActions(currentRole, isNewProject, projectSta
                 }),
               });
 
-              // // console.log("📝 [ProjectForm] Fetch call completed, status:", statusResponse.status);
+              // console.log("📝 [ProjectForm] Fetch call completed, status:", statusResponse.status);
               const statusResult = await statusResponse.json();
-              // // console.log("📝 [ProjectForm] Response parsed successfully");
-              // // console.log("📝 [ProjectForm] Status update response:", statusResult);
-              // // console.log("📝 [ProjectForm] Status update response status:", statusResponse.status);
-              // // console.log("📝 [ProjectForm] Status update response ok:", statusResponse.ok);
+              // console.log("📝 [ProjectForm] Response parsed successfully");
+              // console.log("📝 [ProjectForm] Status update response:", statusResult);
+              // console.log("📝 [ProjectForm] Status update response status:", statusResponse.status);
+              // console.log("📝 [ProjectForm] Status update response ok:", statusResponse.ok);
 
               // Store response in localStorage for debugging
               localStorage.setItem(
@@ -644,7 +644,7 @@ const formActions = getFilteredFormActions(currentRole, isNewProject, projectSta
     // Note: Delete button is handled by the action button system below
     if (!isNewProject) {
       const deleteBtn = document.getElementById("delete-project");
-      // // console.log("Delete button setup:", {
+      // console.log("Delete button setup:", {
       //   deleteBtn: !!deleteBtn,
       //   projectId,
       //   isNewProject,
@@ -681,11 +681,11 @@ const formActions = getFilteredFormActions(currentRole, isNewProject, projectSta
   let isDeleting = false; // Flag to prevent multiple delete operations
 
   function deleteProject(projectId: string) {
-    // // console.log("deleteProject called with projectId:", projectId, "type:", typeof projectId);
+    // console.log("deleteProject called with projectId:", projectId, "type:", typeof projectId);
 
     // Prevent multiple delete operations
     if (isDeleting) {
-      // console.log("Delete operation already in progress, ignoring request");
+      console.log("Delete operation already in progress, ignoring request");
       return;
     }
 
@@ -729,7 +729,7 @@ const formActions = getFilteredFormActions(currentRole, isNewProject, projectSta
               }
 
               // Make API call to delete project
-              // console.log("Sending delete request for project:", projectId);
+              console.log("Sending delete request for project:", projectId);
               fetch(`/api/delete-project`, {
                 method: "DELETE",
                 headers: {
@@ -738,9 +738,9 @@ const formActions = getFilteredFormActions(currentRole, isNewProject, projectSta
                 body: JSON.stringify({ projectId }),
               })
                 .then(async (response) => {
-                  // console.log("Delete response status:", response.status);
+                  console.log("Delete response status:", response.status);
                   const data = await response.json();
-                  // console.log("Delete response data:", data);
+                  console.log("Delete response data:", data);
 
                   if (!response.ok) {
                     throw new Error(data.error || "Failed to delete project");
@@ -818,14 +818,14 @@ const formActions = getFilteredFormActions(currentRole, isNewProject, projectSta
         }
         break;
       default:
-        // console.log(`Action ${action} not implemented`);
+        console.log(`Action ${action} not implemented`);
     }
   }
 
   // Form submission handler
   function handleFormSubmit(event: Event) {
     event.preventDefault();
-    // console.log("Form submission started");
+    console.log("Form submission started");
 
     // Remove required attribute and disable hidden fields to prevent validation errors
     const form = event.target as HTMLFormElement;
@@ -871,7 +871,7 @@ const formActions = getFilteredFormActions(currentRole, isNewProject, projectSta
     const projectId = form.getAttribute("data-project-id");
     const isNewProject = form.getAttribute("data-is-new-project") === "true";
 
-    // console.log("Form data:", { projectId, isNewProject });
+    console.log("Form data:", { projectId, isNewProject });
 
     // Collect form data
     const formValues: any = {};
@@ -879,9 +879,9 @@ const formActions = getFilteredFormActions(currentRole, isNewProject, projectSta
       formValues[key] = value;
     }
 
-    // // console.log("📝 [ProjectForm] Raw form data collected:", formValues);
-    // // console.log("📝 [ProjectForm] assigned_to_id value:", formValues.assigned_to_id);
-    // // console.log("📝 [ProjectForm] All form field names:", Object.keys(formValues));
+    // console.log("📝 [ProjectForm] Raw form data collected:", formValues);
+    // console.log("📝 [ProjectForm] assigned_to_id value:", formValues.assigned_to_id);
+    // console.log("📝 [ProjectForm] All form field names:", Object.keys(formValues));
 
     // The API will handle author_id logic based on user role
     // For admin/staff: author_id comes from form (new client or existing client select)
@@ -889,13 +889,13 @@ const formActions = getFilteredFormActions(currentRole, isNewProject, projectSta
 
     // Collect toggle button values
     const toggleButtons = form.querySelectorAll(".toggle-button.bg-blue-500");
-    // // console.log("📝 [ProjectForm] Found toggle buttons:", toggleButtons.length);
+    // console.log("📝 [ProjectForm] Found toggle buttons:", toggleButtons.length);
     toggleButtons.forEach((button) => {
       const group = button.getAttribute("data-group");
       const value = button.getAttribute("data-value");
       const type = button.getAttribute("data-type");
 
-      // // console.log("📝 [ProjectForm] Toggle button:", { group, value, type });
+      // console.log("📝 [ProjectForm] Toggle button:", { group, value, type });
 
       if (group && value) {
         if (type === "multi-select") {
@@ -919,15 +919,15 @@ const formActions = getFilteredFormActions(currentRole, isNewProject, projectSta
       const unitsOptions = unitsSlider.getAttribute("data-values")?.split(",") || [];
       const sliderValue = parseInt(unitsSlider.value);
       formValues.units = unitsOptions[sliderValue] || "1";
-      // // console.log("📝 [ProjectForm] Units slider value:", {
+      // console.log("📝 [ProjectForm] Units slider value:", {
       //   sliderValue,
       //   unitsValue: formValues.units,
       // });
     } else {
-      // console.log("📝 [ProjectForm] Units slider not found");
+      console.log("📝 [ProjectForm] Units slider not found");
     }
 
-    // // console.log("Form data:", formValues);
+    // console.log("Form data:", formValues);
 
     // Determine API endpoint based on new/existing project
     const endpoint = isNewProject ? "/api/create-project" : `/api/update-project/${projectId}`;
@@ -997,17 +997,17 @@ const formActions = getFilteredFormActions(currentRole, isNewProject, projectSta
           throw new Error(errorMessage);
         }
 
-        // console.log("Project saved successfully:", result);
+        console.log("Project saved successfully:", result);
 
         // Success is indicated by the redirect and project save
 
         // For new projects, set initial status to 10 and trigger email notifications
         if (isNewProject && result.id) {
-          // console.log("🔍 [ProjectForm] New project created, setting initial status to 10...");
+          console.log("🔍 [ProjectForm] New project created, setting initial status to 10...");
 
           try {
-            // // console.log("🔍 [ProjectForm] About to call update-status API...");
-            // // console.log("🔍 [ProjectForm] Project ID:", result.id);
+            // console.log("🔍 [ProjectForm] About to call update-status API...");
+            // console.log("🔍 [ProjectForm] Project ID:", result.id);
 
             // Call update-status API to set initial status and trigger notifications
             const statusResponse = await fetch("/api/update-status", {
@@ -1024,7 +1024,7 @@ const formActions = getFilteredFormActions(currentRole, isNewProject, projectSta
 
             if (statusResponse.ok) {
               const statusResult = await statusResponse.json();
-              // // console.log("🔍 [ProjectForm] Status update successful:", statusResult);
+              // console.log("🔍 [ProjectForm] Status update successful:", statusResult);
 
               // Show notification using new modal system
               if (statusResult.notificationData && window.showModal) {
@@ -1076,7 +1076,7 @@ const formActions = getFilteredFormActions(currentRole, isNewProject, projectSta
   function resetForm() {
     const form = document.querySelector('form[data-is-new-project="true"]');
     if (form) {
-      // console.log("🧹 [ProjectForm] Resetting form to clear cached values");
+      console.log("🧹 [ProjectForm] Resetting form to clear cached values");
 
       // Reset all form inputs
       const inputs = form.querySelectorAll("input, textarea, select");
@@ -1113,7 +1113,7 @@ const formActions = getFilteredFormActions(currentRole, isNewProject, projectSta
 
       // New client toggle reset is now handled by the NewOrExistingClient component
 
-      // console.log("🧹 [ProjectForm] Form reset completed");
+      console.log("🧹 [ProjectForm] Form reset completed");
     }
   }
 
@@ -1121,7 +1121,7 @@ const formActions = getFilteredFormActions(currentRole, isNewProject, projectSta
   document.addEventListener("DOMContentLoaded", function () {
     const form = document.querySelector('form[data-is-new-project="true"]');
     if (form) {
-      // console.log("🧹 [ProjectForm] Auto-resetting new project form");
+      console.log("🧹 [ProjectForm] Auto-resetting new project form");
       resetForm();
     }
   });

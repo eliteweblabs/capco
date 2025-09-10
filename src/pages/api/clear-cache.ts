@@ -13,11 +13,11 @@ export const POST: APIRoute = async ({ request }) => {
     // Get cache statistics before clearing (for logging)
     const stats = apiCache.getStats();
 
-    // console.log("🧹 [CLEAR-CACHE] Cache cleared successfully:", {
-//       previousCacheSize: stats.size,
-//       previousProfileCacheSize: stats.profileCacheSize,
-//       timestamp: new Date().toISOString(),
-//     });
+    console.log("🧹 [CLEAR-CACHE] Cache cleared successfully:", {
+      previousCacheSize: stats.size,
+      previousProfileCacheSize: stats.profileCacheSize,
+      timestamp: new Date().toISOString(),
+    });
 
     return new Response(
       JSON.stringify({
@@ -62,7 +62,7 @@ export const GET: APIRoute = async () => {
     // Get cache statistics
     const stats = apiCache.getStats();
 
-    // console.log("🧹 [CLEAR-CACHE] Cache cleared via GET request");
+    console.log("🧹 [CLEAR-CACHE] Cache cleared via GET request");
 
     return new Response(
       JSON.stringify({
