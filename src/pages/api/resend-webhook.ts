@@ -40,7 +40,7 @@ export const POST: APIRoute = async ({ request }) => {
   console.log("📧 [RESEND-WEBHOOK] Headers:", Object.fromEntries(request.headers.entries()));
 
   // Check if webhooks are disabled via environment variable
-  if (import.meta.env.DISABLE_WEBHOOKS === "true") {
+  if (import.meta.env.DISABLE_WEBHOOKS === "true" || import.meta.env.DISABLE_WEBHOOKS === "1") {
     console.log("📧 [RESEND-WEBHOOK] Webhooks disabled via environment variable");
     return new Response(JSON.stringify({ success: true, message: "Webhooks disabled" }), {
       status: 200,
