@@ -10,6 +10,8 @@ import "../lib/refresh-manager.ts";
 
 // Get auth data directly since App component handles auth requirements
 import { checkAuth } from "../lib/auth";
+import { supabase } from "../lib/supabase";
+import { supabaseAdmin } from "../lib/supabase-admin";
 const { isAuth, currentUser, currentRole } = await checkAuth(Astro.cookies);
 
 // Debug information
@@ -37,43 +39,82 @@ let project_statuses: any[] = [];
 let project_statuses_object: any = {};
 
 try {
-  // Fetch projects
-  const projectsResponse = await (fetch as any)(`${Astro.url.origin}/api/get-project`, {
-    method: "GET",
-    headers: {
-      "Content-Type": "application/json",
-    },
-  });
+  // Fetch projects directly from database to avoid DNS issues
+  if (supabase) {
+    console.log("🏗️ [DASHBOARD] Fetching projects directly from database");
 
-  if (projectsResponse.ok) {
-    const projectsResult = await projectsResponse.json();
-    console.log("🏗️ [DASHBOARD] API Response:", projectsResult);
-    if (projectsResult.success) {
-      const allProjects = projectsResult.projects || [];
-      console.log("🏗️ [DASHBOARD] Projects fetched:", allProjects.length);
+    if (!supabaseAdmin) {
+      console.error("🏗️ [DASHBOARD] SupabaseAdmin not available");
+      return;
+    }
+    // Use admin client to bypass RLS policies
+    const { data: allProjects, error } = (await supabaseAdmin)
+      ? await supabaseAdmin
+          .from("projects")
+          .select(
+            `
+          id,
+          title,
+          description,
+          address,
+          author_id,
+          status,
+          sq_ft,
+          new_construction,
+          created_at,
+          updated_at,
+          assigned_to_id
+        `
+          )
+          .order("updated_at", { ascending: false })
+      : await supabase
+          .from("projects")
+          .select(
+            `
+          id,
+          title,
+          description,
+          address,
+          author_id,
+          status,
+          sq_ft,
+          new_construction,
+          created_at,
+          updated_at,
+          assigned_to_id
+        `
+          )
+          .order("updated_at", { ascending: false });
+
+    if (error) {
+      console.error("🏗️ [DASHBOARD] Database error:", error);
+    } else {
+      console.log("🏗️ [DASHBOARD] Projects fetched:", allProjects?.length || 0);
       console.log("🏗️ [DASHBOARD] Current role:", currentRole);
       console.log("🏗️ [DASHBOARD] Current user ID:", currentUser?.id);
 
       // Filter projects based on user currentRole
       if (currentRole === "Admin") {
         // Admin sees all projects
-        projects = allProjects;
+        projects = allProjects || [];
         console.log("🏗️ [DASHBOARD] Admin - showing all projects:", projects.length);
       } else if (currentRole === "Staff") {
         // Staff only sees projects where they are assigned
-        projects = allProjects.filter((project: any) => project.assigned_to_id === currentUser?.id);
+        projects = (allProjects || []).filter(
+          (project: any) => project.assigned_to_id === currentUser?.id
+        );
         console.log("🏗️ [DASHBOARD] Staff - showing assigned projects:", projects.length);
       } else {
         // Clients only see projects they authored
-        projects = allProjects.filter((project: any) => project.author_id === currentUser?.id);
+        projects = (allProjects || []).filter(
+          (project: any) => project.author_id === currentUser?.id
+        );
         console.log("🏗️ [DASHBOARD] Client - showing authored projects:", projects.length);
         console.log("🏗️ [DASHBOARD] Client projects:", projects);
       }
-    } else {
-      console.error("Projects API returned error:", projectsResult.error);
     }
   } else {
-    console.error("Failed to fetch projects:", projectsResponse.status);
+    console.error("🏗️ [DASHBOARD] Supabase client not available");
   }
 
   // Fetch status labels directly in this page
