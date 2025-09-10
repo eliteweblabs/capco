@@ -262,15 +262,14 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         const fileName = `${timestamp}-${file.name.replace(/[^a-zA-Z0-9.-]/g, "_")}`;
 
         // Determine bucket and path based on file type
+        // Use project-documents bucket for all files, with subfolders for organization
         let bucket = "project-documents";
         let pathPrefix = "project-documents";
 
         if (fileType === "media") {
-          bucket = "project-media";
-          pathPrefix = "project-media";
+          pathPrefix = "project-documents/project-media";
         } else if (fileType === "discussion-images") {
-          bucket = "project-documents";
-          pathPrefix = "discussion-images";
+          pathPrefix = "project-documents/discussion-images";
         }
 
         const filePath = `${pathPrefix}/${projectId}/${fileName}`;
