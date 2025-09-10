@@ -19,9 +19,7 @@ export const POST: APIRoute = async ({ request, cookies, redirect }) => {
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider: provider as Provider,
       options: {
-        redirectTo: import.meta.env.PROD
-          ? "https://capcofire.com/api/auth/callback"
-          : "http://localhost:4321/api/auth/callback",
+        redirectTo: "https://capcofire.com/api/auth/callback",
         queryParams: {
           access_type: "offline",
           prompt: "consent",

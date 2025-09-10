@@ -25,14 +25,8 @@ export function getBaseUrl(request?: Request): string {
     return process.env.BASE_URL;
   }
 
-  // Development fallback
-  if (!import.meta.env.PROD) {
-    return "http://localhost:4321";
-  }
-
-  // Production fallback - this should be set in production
-  console.warn("No base URL configured, using localhost fallback");
-  return "http://localhost:4321";
+  // Always return production URL
+  return "https://capcofire.com";
 }
 
 /**
@@ -57,14 +51,8 @@ export function getApiBaseUrl(request?: Request): string {
     return process.env.BASE_URL;
   }
 
-  // Development fallback
-  if (!import.meta.env.PROD) {
-    return "http://localhost:4321";
-  }
-
-  // Production fallback
-  console.warn("No API base URL configured, using localhost fallback");
-  return "http://localhost:4321";
+  // Always return production URL
+  return "https://capcofire.com";
 }
 
 /**

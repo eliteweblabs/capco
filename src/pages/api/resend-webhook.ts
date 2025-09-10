@@ -199,7 +199,7 @@ async function handleEmailOpened(data: any) {
 
     try {
       const updateResponse = await fetch(
-        `${import.meta.env.SITE_URL || "http://localhost:4321"}/api/update-status`,
+        `https://capcofire.com/api/update-status`,
         {
           method: "POST",
           headers: {

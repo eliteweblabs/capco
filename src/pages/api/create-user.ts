@@ -409,7 +409,7 @@ Click the button below to access your account and set up your password.`;
           },
           body: JSON.stringify({
             usersToNotify: [email], // Array of email strings
-            emailSubject: `Welcome to CAPCo Fire Protection - ${displayName}`,
+            emailSubject: `Welcome to CAPCo Fire Protection → ${displayName}`,
             emailContent: welcomeContent,
             buttonText: "Access Your Account",
             buttonLink: "/dashboard",

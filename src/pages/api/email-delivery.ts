@@ -51,7 +51,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       emailType,
       emailSubject,
       emailContent,
-      buttonLink = `${import.meta.env.SITE_URL || "http://localhost:4321"}/dashboard`,
+      buttonLink = `https://capcofire.com/dashboard`,
       buttonText = "Access Your Dashboard",
       projectId,
       newStatus,
@@ -177,7 +177,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
                   type: "magiclink",
                   email: userEmail,
                   options: {
-                    redirectTo: `${import.meta.env.SITE_URL || "http://localhost:4321"}${buttonLink}`,
+                    redirectTo: `https://capcofire.com${buttonLink}`,
                   },
                 });
 
