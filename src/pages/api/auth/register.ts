@@ -31,15 +31,15 @@ export const POST: APIRoute = async ({ request, redirect, cookies }) => {
   const mobileCarrier = formData.get("mobile_carrier")?.toString();
 
   // console.log("🔐 [REGISTER] Form data:", {
-    email,
-    firstName,
-    lastName,
-    companyName,
-    phone,
-    smsAlerts,
-    mobileCarrier,
-    hasPassword: !!password,
-  });
+//     email,
+//     firstName,
+//     lastName,
+//     companyName,
+//     phone,
+//     smsAlerts,
+//     mobileCarrier,
+//     hasPassword: !!password,
+//   });
 
   if (!email || !password || !firstName || !lastName || !companyName) {
     return new Response("Email, password, first name, last name, and company name are required", {
@@ -82,11 +82,11 @@ export const POST: APIRoute = async ({ request, redirect, cookies }) => {
   });
 
   // console.log("🔐 [REGISTER] Supabase signUp result:", {
-    success: !!data.user,
-    userId: data.user?.id,
-    needsConfirmation: !data.user?.email_confirmed_at,
-    error: error?.message,
-  });
+//     success: !!data.user,
+//     userId: data.user?.id,
+//     needsConfirmation: !data.user?.email_confirmed_at,
+//     error: error?.message,
+//   });
 
   if (error) {
     console.error("Registration error:", error);
@@ -127,15 +127,15 @@ export const POST: APIRoute = async ({ request, redirect, cookies }) => {
   if (data.user) {
     // console.log("Attempting to create profile for user:", data.user.id);
     // console.log("🔐 [REGISTER] Profile data being inserted:", {
-      id: data.user.id,
-      company_name: companyName,
-      first_name: firstName,
-      last_name: lastName,
-      phone: phone || null,
-      sms_alerts: smsAlerts,
-      mobile_carrier: smsAlerts ? getCarrierGateway(mobileCarrier || null) : null,
-      role: "Client",
-    });
+//       id: data.user.id,
+//       company_name: companyName,
+//       first_name: firstName,
+//       last_name: lastName,
+//       phone: phone || null,
+//       sms_alerts: smsAlerts,
+//       mobile_carrier: smsAlerts ? getCarrierGateway(mobileCarrier || null) : null,
+//       role: "Client",
+//     });
 
     // Use admin client to bypass RLS policies during registration
     const { error: profileError } = await supabaseAdmin.from("profiles").insert({

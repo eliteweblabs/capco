@@ -266,8 +266,8 @@ export class SimpleProjectLogger {
     // Detect status changes
     if (oldData.status !== newData.status) {
       // console.log(
-        `📝 [LOGGING] Status change detected for project ${projectId}: ${oldData.status} -> ${newData.status}`
-      );
+//         `📝 [LOGGING] Status change detected for project ${projectId}: ${oldData.status} -> ${newData.status}`
+//       );
       await this.logStatusChange(projectId, currrentUserId, oldData.status, newData.status);
     }
 

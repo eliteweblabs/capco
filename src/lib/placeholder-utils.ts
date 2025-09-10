@@ -60,8 +60,8 @@ export function replacePlaceholders(message: string, data: PlaceholderData): str
   }
   if (data.projectAddress) {
     // console.log(
-      `🔄 [PLACEHOLDER-UTILS] Replacing {{PROJECT_ADDRESS}} with: ${data.projectAddress}`
-    );
+//       `🔄 [PLACEHOLDER-UTILS] Replacing {{PROJECT_ADDRESS}} with: ${data.projectAddress}`
+//     );
     result = result.replace(/\{\{PROJECT_ADDRESS\}\}/g, data.projectAddress);
   } else {
     // console.log("🔄 [PLACEHOLDER-UTILS] ⚠️ No projectAddress data available");

@@ -78,13 +78,13 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
     // Update invoice with complete catalog line items data and subject
     // console.log(
-      "📝 [API] Updating invoice",
-      invoice.id,
-      "with catalog_line_items:",
-      lineItemsData,
-      "and subject:",
-      subject
-    );
+//       "📝 [API] Updating invoice",
+//       invoice.id,
+//       "with catalog_line_items:",
+//       lineItemsData,
+//       "and subject:",
+//       subject
+//     );
 
     const updateData: any = { catalog_line_items: lineItemsData };
     if (subject) {
@@ -131,11 +131,11 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       console.error("❌ [API] Error verifying update:", verifyError);
     } else {
       // console.log(
-        "✅ [API] Verified update - catalog_line_items:",
-        updatedInvoice.catalog_line_items,
-        "subject:",
-        updatedInvoice.subject
-      );
+//         "✅ [API] Verified update - catalog_line_items:",
+//         updatedInvoice.catalog_line_items,
+//         "subject:",
+//         updatedInvoice.subject
+//       );
     }
 
     return new Response(

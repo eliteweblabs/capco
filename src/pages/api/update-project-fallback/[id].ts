@@ -118,9 +118,9 @@ export const PUT: APIRoute = async ({ request, cookies, params }) => {
     // console.log("🔧 [UPDATE-PROJECT] Executing database update...");
     const { data: projects, error } = await updateQuery.select();
     // console.log("🔧 [UPDATE-PROJECT] Database update completed:", {
-      projects: projects?.length,
-      error: error?.message,
-    });
+//       projects: projects?.length,
+//       error: error?.message,
+//     });
 
     if (error) {
       console.error("Error updating project:", error);

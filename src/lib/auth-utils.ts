@@ -42,10 +42,10 @@ export async function ensureUserProfile(user: User): Promise<void> {
     // Priority: display_name > full_name > constructed name > OAuth name > email > fallback
 
     // console.log("Creating profile for user:", user.id, "with enhanced data:", {
-      company_name: companyName,
-      firstName,
-      lastName,
-    });
+//       company_name: companyName,
+//       firstName,
+//       lastName,
+//     });
 
     const { data: newProfile, error: createError } = await supabase
       .from("profiles")

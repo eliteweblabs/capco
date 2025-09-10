@@ -61,15 +61,15 @@ export const GET: APIRoute = async () => {
       .limit(0);
 
     // console.log("🏗️ [FEATURED-PROJECTS] Featured query result:", {
-      projects: projects?.length,
-      error,
-    });
+//       projects: projects?.length,
+//       error,
+//     });
 
     // If no completed projects found, get any projects for demo
     if (!error && (!projects || projects.length === 0)) {
       // console.log(
-        "🏗️ [FEATURED-PROJECTS] No completed projects found, fetching any projects for demo..."
-      );
+//         "🏗️ [FEATURED-PROJECTS] No completed projects found, fetching any projects for demo..."
+//       );
 
       // const { data: fallbackProjects, error: fallbackError } = await supabase
       //   .from("projects")

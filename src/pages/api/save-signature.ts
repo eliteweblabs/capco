@@ -27,10 +27,10 @@ export const POST: APIRoute = async ({ request }) => {
     }
 
     // console.log("📝 [SAVE-SIGNATURE] Received request:", {
-      projectId,
-      signatureLength: signature?.length || 0,
-      signed_at,
-    });
+//       projectId,
+//       signatureLength: signature?.length || 0,
+//       signed_at,
+//     });
 
     // Validate projectId is a number
     const projectIdNum = parseInt(projectId);

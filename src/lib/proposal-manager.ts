@@ -453,36 +453,36 @@ export class ProposalManager {
 
       for (const item of lineItems) {
         // console.log("🔄 [PROPOSAL-MANAGER] Processing item:", {
-          description:
-            item.description?.substring(0, 50) + (item.description?.length > 50 ? "..." : ""),
-          hasCatalogId: !!item.catalog_item_id,
-          catalogId: item.catalog_item_id,
-        });
+//           description:
+//             item.description?.substring(0, 50) + (item.description?.length > 50 ? "..." : ""),
+//           hasCatalogId: !!item.catalog_item_id,
+//           catalogId: item.catalog_item_id,
+//         });
 
         const currentUnitPrice = item.unitPrice || item.price || 0;
         const currentName = item.name;
         const currentDescription = item.description;
 
         // console.log("🔍 [PROPOSAL-MANAGER] Processing item with values:", {
-          catalog_item_id: item.catalog_item_id,
-          currentName: currentName,
-          currentDescription: currentDescription,
-          currentUnitPrice: currentUnitPrice,
-          hasCatalogId: !!item.catalog_item_id,
-        });
+//           catalog_item_id: item.catalog_item_id,
+//           currentName: currentName,
+//           currentDescription: currentDescription,
+//           currentUnitPrice: currentUnitPrice,
+//           hasCatalogId: !!item.catalog_item_id,
+//         });
 
         // console.log("🔍 [PROPOSAL-MANAGER] Decision logic:", {
-          hasCatalogId: !!item.catalog_item_id,
-          isEdited: item.isEdited,
-          willReuse: !!(item.catalog_item_id && !item.isEdited),
-        });
+//           hasCatalogId: !!item.catalog_item_id,
+//           isEdited: item.isEdited,
+//           willReuse: !!(item.catalog_item_id && !item.isEdited),
+//         });
 
         if (item.catalog_item_id && !item.isEdited) {
           // Item exists in catalog and hasn't been edited - reuse existing catalog item
           // console.log(
-            "✅ [PROPOSAL-MANAGER] Using existing catalog item (not edited):",
-            item.catalog_item_id
-          );
+//             "✅ [PROPOSAL-MANAGER] Using existing catalog item (not edited):",
+//             item.catalog_item_id
+//           );
           processedLineItems.push({
             catalog_item_id: item.catalog_item_id,
             name: currentName,
@@ -494,12 +494,12 @@ export class ProposalManager {
           // New item or edited item - create new catalog item
           const reason = item.catalog_item_id ? "edited" : "new";
           // console.log(`🔄 [PROPOSAL-MANAGER] Creating catalog item (${reason}):`, {
-            hasCatalogId: !!item.catalog_item_id,
-            isEdited: item.isEdited,
-            name: currentName,
-            description: currentDescription,
-            unit_price: currentUnitPrice,
-          });
+//             hasCatalogId: !!item.catalog_item_id,
+//             isEdited: item.isEdited,
+//             name: currentName,
+//             description: currentDescription,
+//             unit_price: currentUnitPrice,
+//           });
 
           try {
             const catalogResponse = await fetch("/api/line-items-catalog", {
@@ -526,9 +526,9 @@ export class ProposalManager {
                 unit_price: currentUnitPrice,
               });
               // console.log(
-                `✅ [PROPOSAL-MANAGER] Created ${reason} catalog item:`,
-                catalogResult.item.id
-              );
+//                 `✅ [PROPOSAL-MANAGER] Created ${reason} catalog item:`,
+//                 catalogResult.item.id
+//               );
             } else {
               console.error(
                 "❌ [PROPOSAL-MANAGER] Failed to create catalog item:",
@@ -871,12 +871,12 @@ export class ProposalManager {
     const totalSpan = row.querySelector(".row-total, .line-item-total");
 
     // console.log("🔍 [PROPOSAL-MANAGER] Found elements:", {
-      qtyInput: !!qtyInput,
-      priceInput: !!priceInput,
-      totalSpan: !!totalSpan,
-      qtyValue: qtyInput?.value,
-      priceValue: priceInput?.value,
-    });
+//       qtyInput: !!qtyInput,
+//       priceInput: !!priceInput,
+//       totalSpan: !!totalSpan,
+//       qtyValue: qtyInput?.value,
+//       priceValue: priceInput?.value,
+//     });
 
     if (qtyInput && priceInput && totalSpan) {
       const quantity = parseFloat(qtyInput.value) || 0;
@@ -1050,8 +1050,8 @@ export class ProposalManager {
 
     if (catalogLineItems.length === 0) {
       // console.log(
-        "🔄 [PROPOSAL-MANAGER] No catalog line items found in invoice, falling back to generateLineItemsFromProject"
-      );
+//         "🔄 [PROPOSAL-MANAGER] No catalog line items found in invoice, falling back to generateLineItemsFromProject"
+//       );
       // console.log("🔄 [PROPOSAL-MANAGER] Invoice structure:", JSON.stringify(invoice, null, 2));
 
       // Fall back to generating line items from project data
