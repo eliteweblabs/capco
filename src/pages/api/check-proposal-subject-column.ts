@@ -4,10 +4,10 @@ import { supabase } from "../../lib/supabase";
 
 export const GET: APIRoute = async ({ cookies }) => {
   try {
-    const { isAuth, role } = await checkAuth(cookies);
+    const { isAuth, currentRole } = await checkAuth(cookies);
 
     // Only allow admin/staff to check database schema
-    if (!isAuth || !["Admin", "Staff"].includes(role)) {
+    if (!isAuth || !["Admin", "Staff"].includes(currentRole || "Client")) {
       return new Response(JSON.stringify({ error: "Admin access required" }), {
         status: 403,
         headers: { "Content-Type": "application/json" },

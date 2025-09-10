@@ -24,7 +24,7 @@ export const GET: APIRoute = async ({ params, cookies }) => {
     // Check authentication
     const { isAuth, currentUser, role } = await checkAuth(cookies);
 
-    if (!isAuth || !user) {
+    if (!isAuth || !currentUser) {
       console.log("📡 [GET-PROJECT-ID] User not authenticated");
       return new Response(
         JSON.stringify({
@@ -38,7 +38,7 @@ export const GET: APIRoute = async ({ params, cookies }) => {
       );
     }
 
-    // console.log("📡 [GET-PROJECT-ID] User authenticated:", { userId: user.id, role });
+    // console.log("📡 [GET-PROJECT-ID] User authenticated:", { userId: currentUser.id, role });
 
     if (!supabase) {
       return new Response(

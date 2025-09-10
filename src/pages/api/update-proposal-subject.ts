@@ -4,7 +4,7 @@ import { supabase } from "../../lib/supabase";
 
 export const POST: APIRoute = async ({ request, cookies }) => {
   try {
-    const { isAuth, currentUser, role } = await checkAuth(cookies);
+    const { isAuth, currentUser, currentRole } = await checkAuth(cookies);
     if (!isAuth || !currentUser) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 401,
@@ -51,7 +51,8 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     }
 
     // Check permissions - user must own the project or be admin/staff
-    const hasAccess = project.author_id === user.id || ["Admin", "Staff"].includes(role);
+    const hasAccess =
+      project.author_id === currentUser.id || ["Admin", "Staff"].includes(currentRole || "Client");
 
     if (!hasAccess) {
       return new Response(JSON.stringify({ error: "Access denied" }), {
@@ -105,7 +106,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
           subject: subject.trim() || null,
           status: "proposal",
           total_amount: 0.0,
-          created_by: user.id,
+          created_by: currentUser.id,
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
         })
