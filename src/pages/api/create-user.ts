@@ -4,46 +4,14 @@ import { supabase } from "../../lib/supabase";
 import { supabaseAdmin } from "../../lib/supabase-admin";
 import { getApiBaseUrl } from "../../lib/url-utils";
 
-export const GET: APIRoute = async ({ cookies }) => {
-  console.log("=== CREATE STAFF GET TEST ===");
-  try {
-    const { isAuth, currentRole } = await checkAuth(cookies);
-    return new Response(
-      JSON.stringify({
-        success: true,
-        message: "Create staff endpoint is accessible",
-        auth: { isAuth, role: currentRole },
-        supabaseConfigured: !!supabase,
-      }),
-      {
-        status: 200,
-        headers: { "Content-Type": "application/json" },
-      }
-    );
-  } catch (error) {
-    console.error("GET test error:", error);
-    return new Response(
-      JSON.stringify({
-        success: false,
-        error: "GET test failed",
-        details: error instanceof Error ? error.message : "Unknown error",
-      }),
-      {
-        status: 500,
-        headers: { "Content-Type": "application/json" },
-      }
-    );
-  }
-};
-
 export const POST: APIRoute = async ({ request, cookies }) => {
   console.log("=== CREATE STAFF API CALLED ===");
   console.log("Request headers:", Object.fromEntries(request.headers.entries()));
   try {
-    console.log("1. Starting create-user endpoint");
+    // console.log("1. Starting create-user endpoint");
 
     // Check if Supabase is configured
-    console.log("2. Checking Supabase configuration:", !!supabase);
+    // console.log("2. Checking Supabase configuration:", !!supabase);
     if (!supabase) {
       console.log("ERROR: Supabase not configured");
       return new Response(
@@ -59,7 +27,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     }
 
     // Ensure admin client is configured for user creation
-    console.log("2b. Checking Supabase admin configuration:", !!supabaseAdmin);
+    // console.log("2b. Checking Supabase admin configuration:", !!supabaseAdmin);
     if (!supabaseAdmin) {
       console.log("ERROR: Supabase admin client not configured");
       return new Response(
@@ -75,7 +43,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       );
     }
 
-    console.log("3. Checking authentication...");
+    // console.log("3. Checking authentication...");
     // Check authentication and ensure user is Admin
     const { isAuth, currentRole } = await checkAuth(cookies);
     console.log("4. Auth result:", { isAuth, role: currentRole });
@@ -100,16 +68,16 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
     try {
       body = await request.json();
-      console.log("6. Request body:", body);
+      // console.log("6. Request body:", body);
       ({ first_name, last_name, company_name, email, phone, role: staffRole } = body);
-      console.log("7. Extracted data:", {
-        first_name,
-        last_name,
-        company_name,
-        email,
-        phone,
-        staffRole,
-      });
+      // console.log("7. Extracted data:", {
+      //   first_name,
+      //   last_name,
+      //   company_name,
+      //   email,
+      //   phone,
+      //   staffRole,
+      // });
     } catch (parseError) {
       console.error("Request body parsing error:", parseError);
       return new Response(
@@ -126,7 +94,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     }
 
     // Validate required fields
-    console.log("8. Validating required fields...");
+    // console.log("8. Validating required fields...");
     if (!first_name?.trim() || !last_name?.trim() || !email?.trim() || !staffRole?.trim()) {
       console.log("ERROR: Missing required fields:", {
         first_name: !!first_name?.trim(),

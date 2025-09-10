@@ -1,0 +1,430 @@
+---
+// Import Manager Component for CSV imports
+---
+
+<div class="max-w-4xl mx-auto p-6">
+  <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg">
+    <div class="p-6 border-b border-gray-200 dark:border-gray-700">
+      <h2 class="text-2xl font-bold text-gray-900 dark:text-white">Import Data</h2>
+      <p class="text-gray-600 dark:text-gray-400 mt-2">Import users and projects from CSV files</p>
+    </div>
+
+    <div class="p-6 space-y-8">
+      <!-- User Import Section -->
+      <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-6">
+        <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Import Users</h3>
+
+        <div class="mb-4">
+          <h4 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            Required CSV Format:
+          </h4>
+          <div class="bg-gray-100 dark:bg-gray-700 p-3 rounded text-sm font-mono">
+            email,first_name,last_name,company_name,role,phone
+          </div>
+          <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+            Role must be: Admin, Staff, or Client (defaults to Client if not specified)
+          </p>
+        </div>
+
+        <form id="user-import-form" enctype="multipart/form-data" class="space-y-4">
+          <div>
+            <label
+              for="user-csv-file"
+              class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+            >
+              Select CSV File
+            </label>
+            <input
+              type="file"
+              id="user-csv-file"
+              name="csvFile"
+              accept=".csv"
+              required
+              class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 dark:file:bg-gray-700 dark:file:text-gray-300"
+            />
+          </div>
+
+          <button
+            type="submit"
+            id="user-import-btn"
+            class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            Import Users
+          </button>
+        </form>
+
+        <div id="user-import-results" class="mt-4 hidden">
+          <!-- Results will be displayed here -->
+        </div>
+      </div>
+
+      <!-- Project Import Section -->
+      <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-6">
+        <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Import Projects</h3>
+
+        <div class="mb-4">
+          <h4 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            Required CSV Format:
+          </h4>
+          <div class="bg-gray-100 dark:bg-gray-700 p-3 rounded text-sm font-mono">
+            email,title,address,status,sq_ft,new_construction
+          </div>
+          <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+            Email must match an existing user. Status defaults to 10, sq_ft defaults to 0,
+            new_construction defaults to false.
+          </p>
+        </div>
+
+        <form id="project-import-form" enctype="multipart/form-data" class="space-y-4">
+          <div>
+            <label
+              for="project-csv-file"
+              class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+            >
+              Select CSV File
+            </label>
+            <input
+              type="file"
+              id="project-csv-file"
+              name="csvFile"
+              accept=".csv"
+              required
+              class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-green-50 file:text-green-700 hover:file:bg-green-100 dark:file:bg-gray-700 dark:file:text-gray-300"
+            />
+          </div>
+
+          <button
+            type="submit"
+            id="project-import-btn"
+            class="w-full bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            Import Projects
+          </button>
+        </form>
+
+        <div id="project-import-results" class="mt-4 hidden">
+          <!-- Results will be displayed here -->
+        </div>
+      </div>
+
+      <!-- Combined Import Section -->
+      <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-6">
+        <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+          Import Users & Projects (Combined)
+        </h3>
+
+        <div class="mb-4">
+          <h4 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            Required CSV Format:
+          </h4>
+          <div class="bg-gray-100 dark:bg-gray-700 p-3 rounded text-sm font-mono">
+            email,first_name,last_name,company_name,role,phone,title,address,status,sq_ft,new_construction
+          </div>
+          <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+            This will create users and their associated projects in one step.
+          </p>
+        </div>
+
+        <form id="combined-import-form" enctype="multipart/form-data" class="space-y-4">
+          <div>
+            <label
+              for="combined-csv-file"
+              class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+            >
+              Select CSV File
+            </label>
+            <input
+              type="file"
+              id="combined-csv-file"
+              name="csvFile"
+              accept=".csv"
+              required
+              class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-purple-50 file:text-purple-700 hover:file:bg-purple-100 dark:file:bg-gray-700 dark:file:text-gray-300"
+            />
+          </div>
+
+          <button
+            type="submit"
+            id="combined-import-btn"
+            class="w-full bg-purple-600 hover:bg-purple-700 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            Import Users & Projects
+          </button>
+        </form>
+
+        <div id="combined-import-results" class="mt-4 hidden">
+          <!-- Results will be displayed here -->
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // User Import Handler
+  document.getElementById("user-import-form")?.addEventListener("submit", async (e) => {
+    e.preventDefault();
+
+    const form = e.target as HTMLFormElement;
+    const formData = new FormData(form);
+    const button = document.getElementById("user-import-btn") as HTMLButtonElement;
+    const resultsDiv = document.getElementById("user-import-results") as HTMLDivElement;
+
+    button.disabled = true;
+    button.textContent = "Importing...";
+    resultsDiv.classList.add("hidden");
+
+    try {
+      const response = await fetch("/api/import-users", {
+        method: "POST",
+        body: formData,
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        resultsDiv.innerHTML = `
+          <div class="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-4">
+            <div class="flex">
+              <div class="flex-shrink-0">
+                <svg class="h-5 w-5 text-green-400" viewBox="0 0 20 20" fill="currentColor">
+                  <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+                </svg>
+              </div>
+              <div class="ml-3">
+                <h3 class="text-sm font-medium text-green-800 dark:text-green-200">
+                  Import Successful
+                </h3>
+                <div class="mt-2 text-sm text-green-700 dark:text-green-300">
+                  <p>${result.message}</p>
+                  ${
+                    result.results.errors.length > 0
+                      ? `
+                    <div class="mt-2">
+                      <p class="font-medium">Errors:</p>
+                      <ul class="list-disc list-inside">
+                        ${result.results.errors.map((error: string) => `<li>${error}</li>`).join("")}
+                      </ul>
+                    </div>
+                  `
+                      : ""
+                  }
+                </div>
+              </div>
+            </div>
+          </div>
+        `;
+      } else {
+        resultsDiv.innerHTML = `
+          <div class="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
+            <div class="flex">
+              <div class="flex-shrink-0">
+                <svg class="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+                  <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
+                </svg>
+              </div>
+              <div class="ml-3">
+                <h3 class="text-sm font-medium text-red-800 dark:text-red-200">
+                  Import Failed
+                </h3>
+                <div class="mt-2 text-sm text-red-700 dark:text-red-300">
+                  <p>${result.error}</p>
+                  ${
+                    result.details
+                      ? `
+                    <div class="mt-2">
+                      <p class="font-medium">Details:</p>
+                      <ul class="list-disc list-inside">
+                        ${Array.isArray(result.details) ? result.details.map((detail: string) => `<li>${detail}</li>`).join("") : `<li>${result.details}</li>`}
+                      </ul>
+                    </div>
+                  `
+                      : ""
+                  }
+                </div>
+              </div>
+            </div>
+          </div>
+        `;
+      }
+
+      resultsDiv.classList.remove("hidden");
+    } catch (error) {
+      resultsDiv.innerHTML = `
+        <div class="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
+          <div class="flex">
+            <div class="flex-shrink-0">
+              <svg class="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
+              </svg>
+            </div>
+            <div class="ml-3">
+              <h3 class="text-sm font-medium text-red-800 dark:text-red-200">
+                Import Error
+              </h3>
+              <div class="mt-2 text-sm text-red-700 dark:text-red-300">
+                <p>Network error occurred during import.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+      resultsDiv.classList.remove("hidden");
+    } finally {
+      button.disabled = false;
+      button.textContent = "Import Users";
+    }
+  });
+
+  // Project Import Handler
+  document.getElementById("project-import-form")?.addEventListener("submit", async (e) => {
+    e.preventDefault();
+
+    const form = e.target as HTMLFormElement;
+    const formData = new FormData(form);
+    const button = document.getElementById("project-import-btn") as HTMLButtonElement;
+    const resultsDiv = document.getElementById("project-import-results") as HTMLDivElement;
+
+    button.disabled = true;
+    button.textContent = "Importing...";
+    resultsDiv.classList.add("hidden");
+
+    try {
+      const response = await fetch("/api/import-projects", {
+        method: "POST",
+        body: formData,
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        resultsDiv.innerHTML = `
+          <div class="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-4">
+            <div class="flex">
+              <div class="flex-shrink-0">
+                <svg class="h-5 w-5 text-green-400" viewBox="0 0 20 20" fill="currentColor">
+                  <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+                </svg>
+              </div>
+              <div class="ml-3">
+                <h3 class="text-sm font-medium text-green-800 dark:text-green-200">
+                  Import Successful
+                </h3>
+                <div class="mt-2 text-sm text-green-700 dark:text-green-300">
+                  <p>${result.message}</p>
+                  ${
+                    result.results.errors.length > 0
+                      ? `
+                    <div class="mt-2">
+                      <p class="font-medium">Errors:</p>
+                      <ul class="list-disc list-inside">
+                        ${result.results.errors.map((error: string) => `<li>${error}</li>`).join("")}
+                      </ul>
+                    </div>
+                  `
+                      : ""
+                  }
+                </div>
+              </div>
+            </div>
+          </div>
+        `;
+      } else {
+        resultsDiv.innerHTML = `
+          <div class="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
+            <div class="flex">
+              <div class="flex-shrink-0">
+                <svg class="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+                  <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
+              </svg>
+            </div>
+            <div class="ml-3">
+              <h3 class="text-sm font-medium text-red-800 dark:text-red-200">
+                Import Failed
+              </h3>
+              <div class="mt-2 text-sm text-red-700 dark:text-red-300">
+                <p>${result.error}</p>
+                ${
+                  result.details
+                    ? `
+                  <div class="mt-2">
+                    <p class="font-medium">Details:</p>
+                    <ul class="list-disc list-inside">
+                      ${Array.isArray(result.details) ? result.details.map((detail: string) => `<li>${detail}</li>`).join("") : `<li>${result.details}</li>`}
+                    </ul>
+                  </div>
+                `
+                    : ""
+                }
+              </div>
+            </div>
+          </div>
+        `;
+      }
+
+      resultsDiv.classList.remove("hidden");
+    } catch (error) {
+      resultsDiv.innerHTML = `
+        <div class="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
+          <div class="flex">
+            <div class="flex-shrink-0">
+              <svg class="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
+              </svg>
+            </div>
+            <div class="ml-3">
+              <h3 class="text-sm font-medium text-red-800 dark:text-red-200">
+                Import Error
+              </h3>
+              <div class="mt-2 text-sm text-red-700 dark:text-red-300">
+                <p>Network error occurred during import.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+      resultsDiv.classList.remove("hidden");
+    } finally {
+      button.disabled = false;
+      button.textContent = "Import Projects";
+    }
+  });
+
+  // Combined Import Handler (placeholder - will need separate API endpoint)
+  document.getElementById("combined-import-form")?.addEventListener("submit", async (e) => {
+    e.preventDefault();
+
+    const button = document.getElementById("combined-import-btn") as HTMLButtonElement;
+    const resultsDiv = document.getElementById("combined-import-results") as HTMLDivElement;
+
+    button.disabled = true;
+    button.textContent = "Importing...";
+    resultsDiv.classList.add("hidden");
+
+    // For now, show a message that this feature is coming soon
+    setTimeout(() => {
+      resultsDiv.innerHTML = `
+        <div class="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4">
+          <div class="flex">
+            <div class="flex-shrink-0">
+              <svg class="h-5 w-5 text-yellow-400" viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+              </svg>
+            </div>
+            <div class="ml-3">
+              <h3 class="text-sm font-medium text-yellow-800 dark:text-yellow-200">
+                Coming Soon
+              </h3>
+              <div class="mt-2 text-sm text-yellow-700 dark:text-yellow-300">
+                <p>Combined import feature is under development. Please use separate user and project imports for now.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+      resultsDiv.classList.remove("hidden");
+      button.disabled = false;
+      button.textContent = "Import Users & Projects";
+    }, 1000);
+  });
+</script>
