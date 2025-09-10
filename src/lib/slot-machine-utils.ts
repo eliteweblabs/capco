@@ -281,32 +281,32 @@ export function showSlotMachinePicker(
     let snapTimeout: ReturnType<typeof setTimeout> | null = null;
 
     // Set initial position
-    // console.log(
-//       "🎰 [SLOT-MACHINE] Initial setup - selectedIndex:",
-//       selectedIndex,
-//       "options length:",
-//       config.options.length
-//     );
+    console.log(
+      "🎰 [SLOT-MACHINE] Initial setup - selectedIndex:",
+      selectedIndex,
+      "options length:",
+      config.options.length
+    );
 
     // Debug wheel container dimensions
     if (wheel) {
-      // console.log("🎰 [SLOT-MACHINE] Wheel container dimensions:", {
-//         scrollHeight: wheel.scrollHeight,
-//         clientHeight: wheel.clientHeight,
-//         offsetHeight: wheel.offsetHeight,
-//         scrollTop: wheel.scrollTop,
-//       });
+      console.log("🎰 [SLOT-MACHINE] Wheel container dimensions:", {
+        scrollHeight: wheel.scrollHeight,
+        clientHeight: wheel.clientHeight,
+        offsetHeight: wheel.offsetHeight,
+        scrollTop: wheel.scrollTop,
+      });
     }
 
     // Wait for DOM to be fully rendered, then set initial position
     setTimeout(() => {
-      // console.log("🎰 [SLOT-MACHINE] Setting initial position for index:", selectedIndex);
+      console.log("🎰 [SLOT-MACHINE] Setting initial position for index:", selectedIndex);
       scrollToIndex(selectedIndex, false);
 
       // Double-check after a short delay to ensure it's centered
       setTimeout(() => {
         if (wheel) {
-          // console.log("🎰 [SLOT-MACHINE] Final scroll position:", wheel.scrollTop);
+          console.log("🎰 [SLOT-MACHINE] Final scroll position:", wheel.scrollTop);
           // Force update selection to ensure the correct item is highlighted
           updateSelection();
         }
@@ -320,11 +320,11 @@ export function showSlotMachinePicker(
 
     // Add click listeners to items
     const items = wheel?.querySelectorAll(".slot-machine-item");
-    // console.log("🎰 [SLOT-MACHINE] Found items:", items?.length);
+    console.log("🎰 [SLOT-MACHINE] Found items:", items?.length);
     items?.forEach((item, index) => {
-      // console.log(`🎰 [SLOT-MACHINE] Adding click listener to item ${index}:`, item.textContent);
+      console.log(`🎰 [SLOT-MACHINE] Adding click listener to item ${index}:`, item.textContent);
       item.addEventListener("click", () => {
-        // console.log(`🎰 [SLOT-MACHINE] Item ${index} clicked:`, item.textContent);
+        console.log(`🎰 [SLOT-MACHINE] Item ${index} clicked:`, item.textContent);
         scrollToIndex(index);
       });
     });
@@ -357,7 +357,7 @@ export function showSlotMachinePicker(
     wheel?.addEventListener(
       "wheel",
       (e) => {
-        // console.log("🎰 [SLOT-MACHINE] Wheel event detected - deltaY:", e.deltaY);
+        console.log("🎰 [SLOT-MACHINE] Wheel event detected - deltaY:", e.deltaY);
         e.preventDefault();
         e.stopPropagation();
         handleWheel(e.deltaY);
@@ -369,7 +369,7 @@ export function showSlotMachinePicker(
     modal?.addEventListener(
       "wheel",
       (e) => {
-        // console.log("🎰 [SLOT-MACHINE] Modal wheel event detected - deltaY:", e.deltaY);
+        console.log("🎰 [SLOT-MACHINE] Modal wheel event detected - deltaY:", e.deltaY);
         e.preventDefault();
         e.stopPropagation();
         handleWheel(e.deltaY);
@@ -381,7 +381,7 @@ export function showSlotMachinePicker(
     wheel?.addEventListener(
       "touchstart",
       (e) => {
-        // console.log("🎰 [SLOT-MACHINE] Touch start detected");
+        console.log("🎰 [SLOT-MACHINE] Touch start detected");
         isDragging = true;
         startY = e.touches[0].clientY;
         currentY = startY;
@@ -420,7 +420,7 @@ export function showSlotMachinePicker(
         lastY = currentY;
         lastTime = Date.now();
 
-        // console.log("🎰 [SLOT-MACHINE] Touch move - deltaY:", deltaY, "velocity:", velocity);
+        console.log("🎰 [SLOT-MACHINE] Touch move - deltaY:", deltaY, "velocity:", velocity);
       },
       { passive: false }
     );
@@ -429,7 +429,7 @@ export function showSlotMachinePicker(
       "touchend",
       () => {
         if (!isDragging) return;
-        // console.log("🎰 [SLOT-MACHINE] Touch end - velocity:", velocity);
+        console.log("🎰 [SLOT-MACHINE] Touch end - velocity:", velocity);
 
         isDragging = false;
 
@@ -470,19 +470,19 @@ export function showSlotMachinePicker(
     function handleWheel(deltaY: number) {
       if (!wheel) return;
 
-      // console.log(
-//         "🎰 [SLOT-MACHINE] Wheel event - deltaY:",
-//         deltaY,
-//         "current scroll:",
-//         wheel.scrollTop
-//       );
+      console.log(
+        "🎰 [SLOT-MACHINE] Wheel event - deltaY:",
+        deltaY,
+        "current scroll:",
+        wheel.scrollTop
+      );
 
       // Smoother scrolling with less aggressive snapping
       const scrollAmount = deltaY * 1.5; // Reduced for smoother scrolling
       const newScroll = wheel.scrollTop + scrollAmount;
 
       wheel.scrollTop = newScroll;
-      // console.log("🎰 [SLOT-MACHINE] New scroll position:", wheel.scrollTop);
+      console.log("🎰 [SLOT-MACHINE] New scroll position:", wheel.scrollTop);
 
       // Clear any existing snap timeout to prevent multiple snaps
       if (snapTimeout) {
@@ -508,36 +508,36 @@ export function showSlotMachinePicker(
         Math.min(config.options.length - 1, Math.round(adjustedScroll / itemHeight))
       );
 
-      // console.log(
-//         "🎰 [SLOT-MACHINE] Snap to nearest - currentScroll:",
-//         currentScroll,
-//         "adjustedScroll:",
-//         adjustedScroll,
-//         "nearestIndex:",
-//         nearestIndex,
-//         "difference:",
-//         Math.abs(adjustedScroll - nearestIndex * itemHeight)
-//       );
+      console.log(
+        "🎰 [SLOT-MACHINE] Snap to nearest - currentScroll:",
+        currentScroll,
+        "adjustedScroll:",
+        adjustedScroll,
+        "nearestIndex:",
+        nearestIndex,
+        "difference:",
+        Math.abs(adjustedScroll - nearestIndex * itemHeight)
+      );
 
       // Only snap if we're not already at the correct position
       if (Math.abs(adjustedScroll - nearestIndex * itemHeight) > 5) {
-        // console.log("🎰 [SLOT-MACHINE] Snapping to index:", nearestIndex);
+        console.log("🎰 [SLOT-MACHINE] Snapping to index:", nearestIndex);
         scrollToIndex(nearestIndex);
       } else {
-        // console.log("🎰 [SLOT-MACHINE] Already at correct position, no snap needed");
+        console.log("🎰 [SLOT-MACHINE] Already at correct position, no snap needed");
       }
     }
 
     function scrollToIndex(index: number, smooth = true) {
       if (!wheel || index < 0 || index >= config.options.length) {
-        // console.log(
-//           "🎰 [SLOT-MACHINE] Invalid scrollToIndex call - index:",
-//           index,
-//           "wheel:",
-//           !!wheel,
-//           "options length:",
-//           config.options.length
-//         );
+        console.log(
+          "🎰 [SLOT-MACHINE] Invalid scrollToIndex call - index:",
+          index,
+          "wheel:",
+          !!wheel,
+          "options length:",
+          config.options.length
+        );
         return;
       }
 
@@ -550,56 +550,56 @@ export function showSlotMachinePicker(
       const maxScroll = Math.max(0, (config.options.length - 1) * itemHeight - centerOffset);
       const clampedScroll = Math.max(0, Math.min(targetScroll, maxScroll));
 
-      // console.log(
-//         "🎰 [SLOT-MACHINE] Scrolling to index:",
-//         index,
-//         "target scroll:",
-//         targetScroll,
-//         "clamped scroll:",
-//         clampedScroll,
-//         "current scroll:",
-//         wheel.scrollTop
-//       );
+      console.log(
+        "🎰 [SLOT-MACHINE] Scrolling to index:",
+        index,
+        "target scroll:",
+        targetScroll,
+        "clamped scroll:",
+        clampedScroll,
+        "current scroll:",
+        wheel.scrollTop
+      );
 
       wheel.scrollTop = clampedScroll;
 
       // Check if scroll actually changed
       setTimeout(() => {
-        // console.log(
-//           "🎰 [SLOT-MACHINE] After scroll (delayed) - new scrollTop:",
-//           wheel.scrollTop,
-//           "expected:",
-//           targetScroll
-//         );
+        console.log(
+          "🎰 [SLOT-MACHINE] After scroll (delayed) - new scrollTop:",
+          wheel.scrollTop,
+          "expected:",
+          targetScroll
+        );
       }, 10);
 
       selectedIndex = index;
 
-      // console.log(
-//         "🎰 [SLOT-MACHINE] After scroll - new scrollTop:",
-//         wheel.scrollTop,
-//         "selectedIndex:",
-//         selectedIndex
-//       );
+      console.log(
+        "🎰 [SLOT-MACHINE] After scroll - new scrollTop:",
+        wheel.scrollTop,
+        "selectedIndex:",
+        selectedIndex
+      );
 
       updateSelection();
     }
 
     function updateSelection() {
       const items = wheel?.querySelectorAll(".slot-machine-item");
-      // console.log(
-//         "🎰 [SLOT-MACHINE] Updating selection - selectedIndex:",
-//         selectedIndex,
-//         "items found:",
-//         items?.length
-//       );
+      console.log(
+        "🎰 [SLOT-MACHINE] Updating selection - selectedIndex:",
+        selectedIndex,
+        "items found:",
+        items?.length
+      );
       items?.forEach((item, index) => {
         const isSelected = index === selectedIndex;
         item.classList.toggle("selected", isSelected);
-        // console.log(
-//           `🎰 [SLOT-MACHINE] Item ${index} (${item.textContent}) - selected:`,
-//           isSelected
-//         );
+        console.log(
+          `🎰 [SLOT-MACHINE] Item ${index} (${item.textContent}) - selected:`,
+          isSelected
+        );
       });
     }
 
@@ -653,7 +653,7 @@ export function showStatusPicker(projectId: string, currentStatus: string) {
     options: statusOptions,
     selectedValue: currentStatus,
     onSelect: (value, label) => {
-      // console.log("Selected status:", value, label);
+      console.log("Selected status:", value, label);
       // Handle status change here
     },
   });

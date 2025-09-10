@@ -163,7 +163,7 @@ const {
       this.isMobile = window.innerWidth <= 768;
       this.initialized = false;
       this.isFileDialogOpen = false; // Flag to prevent multiple file dialogs
-      // // console.log("📱 [PDF-UPLOAD] Mobile detection:", this.isMobile);
+      // console.log("📱 [PDF-UPLOAD] Mobile detection:", this.isMobile);
       this.status = projectStatus;
       this.uploadedFiles = [];
       this.init();
@@ -172,12 +172,12 @@ const {
     openFileDialog() {
       // Prevent multiple file dialogs from opening
       if (this.isFileDialogOpen) {
-        // // console.log("📁 [PDF-UPLOAD] File dialog already open, ignoring click");
+        // console.log("📁 [PDF-UPLOAD] File dialog already open, ignoring click");
         return;
       }
 
       this.isFileDialogOpen = true;
-      // // console.log("📁 [PDF-UPLOAD] Opening file dialog");
+      // console.log("📁 [PDF-UPLOAD] Opening file dialog");
 
       // Use setTimeout to ensure the flag is set before opening the dialog
       setTimeout(() => {
@@ -192,11 +192,11 @@ const {
 
     init() {
       if (this.initialized) {
-        // // console.log("📱 [PDF-UPLOAD] Already initialized, skipping...");
+        // console.log("📱 [PDF-UPLOAD] Already initialized, skipping...");
         return;
       }
 
-      // // console.log(
+      // console.log(
       //   "📁 [PDF-UPLOAD] Initializing with projectId:",
       //   this.projectId,
       //   "status:",
@@ -208,7 +208,7 @@ const {
       this.loadExistingFiles();
       this.handleStatusBasedVisibility();
       this.initialized = true;
-      // // console.log("📱 [PDF-UPLOAD] Initialization complete");
+      // console.log("📱 [PDF-UPLOAD] Initialization complete");
     }
 
     setupElements() {
@@ -248,7 +248,7 @@ const {
       mobileFileInput.style.color = "transparent";
 
       mobileFileInput.addEventListener("change", (e) => {
-        // console.log("📱 [PDF-UPLOAD] Mobile file input change event triggered");
+        console.log("📱 [PDF-UPLOAD] Mobile file input change event triggered");
         this.handleFiles(e.target.files);
       });
 
@@ -259,20 +259,20 @@ const {
     setupEventListeners() {
       // Check if event listeners are already attached
       if (this.fileInput._hasEventListeners) {
-        // console.log("📱 [PDF-UPLOAD] Event listeners already attached, skipping...");
+        console.log("📱 [PDF-UPLOAD] Event listeners already attached, skipping...");
         return;
       }
 
       // File input change
       this.fileInput.addEventListener("change", (e) => {
-        // // console.log("📁 [PDF-UPLOAD] File input change event triggered:", e.target.files);
+        // console.log("📁 [PDF-UPLOAD] File input change event triggered:", e.target.files);
         this.isFileDialogOpen = false; // Reset flag when files are selected
         this.handleFiles(e.target.files);
       });
 
       // File input cancel (when user cancels the file dialog)
       this.fileInput.addEventListener("cancel", () => {
-        // // console.log("📁 [PDF-UPLOAD] File dialog cancelled");
+        // console.log("📁 [PDF-UPLOAD] File dialog cancelled");
         this.isFileDialogOpen = false;
       });
 
@@ -280,7 +280,7 @@ const {
       if (this.isMobile) {
         // Add additional mobile-specific event listeners
         this.fileInput.addEventListener("input", (e) => {
-          // // console.log("📱 [PDF-UPLOAD] File input input event triggered (mobile)");
+          // console.log("📱 [PDF-UPLOAD] File input input event triggered (mobile)");
           this.handleFiles(e.target.files);
         });
 
@@ -301,7 +301,7 @@ const {
         if (mobileInput) {
           mobileInput.remove();
         }
-        // console.log("📱 [PDF-UPLOAD] Cleanup completed");
+        console.log("📱 [PDF-UPLOAD] Cleanup completed");
       };
 
       // Browse button click (only if it exists)
@@ -444,17 +444,17 @@ const {
     }
 
     async handleFiles(files) {
-      // // console.log("📁 [PDF-UPLOAD] handleFiles called with:", files);
-      // // console.log("📱 [PDF-UPLOAD] Mobile device:", this.isMobile);
-      // // console.log("📱 [PDF-UPLOAD] User agent:", navigator.userAgent);
+      // console.log("📁 [PDF-UPLOAD] handleFiles called with:", files);
+      // console.log("📱 [PDF-UPLOAD] Mobile device:", this.isMobile);
+      // console.log("📱 [PDF-UPLOAD] User agent:", navigator.userAgent);
 
       if (!files || files.length === 0) {
-        // console.log("📁 [PDF-UPLOAD] No files provided");
+        console.log("📁 [PDF-UPLOAD] No files provided");
         return;
       }
 
       const fileArray = Array.from(files);
-      // // console.log(
+      // console.log(
       //   "📁 [PDF-UPLOAD] File array:",
       //   fileArray.map((f) => ({ name: f.name, size: f.size, type: f.type }))
       // );
@@ -474,12 +474,12 @@ const {
     }
 
     async uploadFile(file, index, total) {
-      // console.log("📁 [PDF-UPLOAD] uploadFile called:", {
-//         file: file.name,
-//         index,
-//         total,
-//         projectId: this.projectId,
-//       });
+      console.log("📁 [PDF-UPLOAD] uploadFile called:", {
+        file: file.name,
+        index,
+        total,
+        projectId: this.projectId,
+      });
 
       const formData = new FormData();
       formData.append("file", file);
@@ -499,13 +499,13 @@ const {
 
       this.updateProgress((index / total) * 100, `Uploading ${file.name}...`);
 
-      // console.log("📁 [PDF-UPLOAD] Sending upload request to /api/upload");
+      console.log("📁 [PDF-UPLOAD] Sending upload request to /api/upload");
       const response = await fetch("/api/upload", {
         method: "POST",
         body: formData,
       });
 
-      // console.log("📁 [PDF-UPLOAD] Upload response status:", response.status);
+      console.log("📁 [PDF-UPLOAD] Upload response status:", response.status);
 
       if (!response.ok) {
         const error = await response.json();
@@ -514,7 +514,7 @@ const {
       }
 
       const result = await response.json();
-      // console.log("📁 [PDF-UPLOAD] Upload successful:", result);
+      console.log("📁 [PDF-UPLOAD] Upload successful:", result);
       const uploadedFile = result.files[0];
 
       // Don't add to list immediately - refreshFileList() will show all files
@@ -708,9 +708,9 @@ const {
       this.fileList.innerHTML = "";
 
       try {
-        // console.log("📁 [PDF-UPLOAD] Fetching files for project:", this.projectId);
+        console.log("📁 [PDF-UPLOAD] Fetching files for project:", this.projectId);
         const requestBody = { projectId: this.projectId };
-        // console.log("📁 [PDF-UPLOAD] Request body:", requestBody);
+        console.log("📁 [PDF-UPLOAD] Request body:", requestBody);
 
         const response = await fetch("/api/get-project-files", {
           method: "POST",
@@ -718,22 +718,22 @@ const {
           body: JSON.stringify(requestBody),
         });
 
-        // console.log("📁 [PDF-UPLOAD] API response status:", response.status);
+        console.log("📁 [PDF-UPLOAD] API response status:", response.status);
 
         if (response.ok) {
           const result = await response.json();
-          // console.log("📁 [PDF-UPLOAD] Files result:", result);
-          // console.log("📁 [PDF-UPLOAD] Files count:", result.files?.length || 0);
+          console.log("📁 [PDF-UPLOAD] Files result:", result);
+          console.log("📁 [PDF-UPLOAD] Files count:", result.files?.length || 0);
 
           if (result.files && result.files.length > 0) {
             result.files.forEach((file) => this.addFileToList(file));
             this.filesContainer.classList.remove("hidden");
             this.noFilesMessage.classList.add("hidden");
-            // console.log("📁 [PDF-UPLOAD] Showing file list, hiding no-files message");
+            console.log("📁 [PDF-UPLOAD] Showing file list, hiding no-files message");
           } else {
             this.filesContainer.classList.remove("hidden");
             this.noFilesMessage.classList.remove("hidden");
-            // console.log("📁 [PDF-UPLOAD] Showing no-files message, hiding file list");
+            console.log("📁 [PDF-UPLOAD] Showing no-files message, hiding file list");
           }
         } else {
           // Handle error responses
@@ -865,18 +865,18 @@ const {
     }
 
     showSuccess(message) {
-      // console.log("🔔 [PDF-UPLOAD] showSuccess called with:", message);
-      // console.log(
-//         "🔔 [PDF-UPLOAD] window.showSuccess available:",
-//         typeof window !== "undefined" && window.showSuccess
-//       );
+      console.log("🔔 [PDF-UPLOAD] showSuccess called with:", message);
+      console.log(
+        "🔔 [PDF-UPLOAD] window.showSuccess available:",
+        typeof window !== "undefined" && window.showSuccess
+      );
 
       // Use centralized notification system
       if (typeof window !== "undefined" && window.showSuccess) {
-        // console.log("🔔 [PDF-UPLOAD] Calling window.showSuccess");
+        console.log("🔔 [PDF-UPLOAD] Calling window.showSuccess");
         window.showSuccess("Success", message, 5000);
       } else {
-        // console.log("✅ Success:", message);
+        console.log("✅ Success:", message);
       }
     }
 
@@ -889,16 +889,16 @@ const {
     }
 
     handleStatusBasedVisibility() {
-      // console.log(
-//         "📁 [PDF-UPLOAD] Handling status-based visibility. Status:",
-//         this.status,
-//         "Role:",
-//         currentRole
-//       );
+      console.log(
+        "📁 [PDF-UPLOAD] Handling status-based visibility. Status:",
+        this.status,
+        "Role:",
+        currentRole
+      );
 
       // Hide "All Documents Uploaded" button for clients if status is > 10
       if (this.allDocumentsUploadedBtn && currentRole === "Client" && this.status > 10) {
-        // console.log("📁 [PDF-UPLOAD] Hiding 'All Documents Uploaded' button - status > 10");
+        console.log("📁 [PDF-UPLOAD] Hiding 'All Documents Uploaded' button - status > 10");
         this.allDocumentsUploadedBtn.style.display = "none";
       }
 
@@ -922,19 +922,19 @@ const {
         `;
 
         // Call the update-status API to change status
-        // console.log("🔔 [PDF-UPLOAD] Debug projectId:", {
-//           projectIdProp: projectId,
-//           thisProjectId: this.projectId,
-//           typeof: typeof this.projectId,
-//           stringified: JSON.stringify(this.projectId),
-//         });
+        console.log("🔔 [PDF-UPLOAD] Debug projectId:", {
+          projectIdProp: projectId,
+          thisProjectId: this.projectId,
+          typeof: typeof this.projectId,
+          stringified: JSON.stringify(this.projectId),
+        });
 
-        // console.log("🔔 [PDF-UPLOAD] Calling /api/update-status with:", {
-//           projectId: this.projectId,
-//           status: 20,
-//           currentUserId: this.currentUser?.id,
-//           oldStatus: this.projectStatus,
-//         });
+        console.log("🔔 [PDF-UPLOAD] Calling /api/update-status with:", {
+          projectId: this.projectId,
+          status: 20,
+          currentUserId: this.currentUser?.id,
+          oldStatus: this.projectStatus,
+        });
 
         const response = await fetch("/api/update-status", {
           method: "POST",
@@ -948,7 +948,7 @@ const {
           }),
         });
 
-        // console.log("🔔 [PDF-UPLOAD] API response status:", response.status);
+        console.log("🔔 [PDF-UPLOAD] API response status:", response.status);
 
         if (!response.ok) {
           const error = await response.json();
@@ -958,7 +958,7 @@ const {
         const result = await response.json();
 
         if (result.success) {
-          // console.log("📊 [PDF-UPLOAD] Status updated successfully:", result);
+          console.log("📊 [PDF-UPLOAD] Status updated successfully:", result);
 
           // Show success notification using notificationData from API
           if (result.notificationData && window.showModal) {
@@ -968,11 +968,11 @@ const {
               ? result.notificationData.admin
               : result.notificationData.client;
 
-            // console.log("🔔 [PDF-UPLOAD] Showing modal:", {
-//               message: notification.message,
-//               redirect: notification.redirect,
-//               userType: isAdminOrStaff ? "admin" : "client",
-//             });
+            console.log("🔔 [PDF-UPLOAD] Showing modal:", {
+              message: notification.message,
+              redirect: notification.redirect,
+              userType: isAdminOrStaff ? "admin" : "client",
+            });
 
             if (notification) {
               window.showModal(
@@ -1091,7 +1091,7 @@ const {
 
     async deleteFile(fileId, fileItem) {
       try {
-        // console.log("🗑️ [PDF-UPLOAD] Deleting file:", fileId);
+        console.log("🗑️ [PDF-UPLOAD] Deleting file:", fileId);
 
         // Show loading state
         const deleteBtn = fileItem.querySelector('button[title="Delete file"]');
@@ -1109,7 +1109,7 @@ const {
 
         if (response.ok) {
           const result = await response.json();
-          // console.log("✅ [PDF-UPLOAD] File deleted successfully:", result);
+          console.log("✅ [PDF-UPLOAD] File deleted successfully:", result);
 
           // Remove the file item from DOM
           fileItem.remove();
@@ -1170,7 +1170,7 @@ const {
 
   // Initialize the PDF upload component
   document.addEventListener("DOMContentLoaded", () => {
-    // console.log("📁 [PDF-UPLOAD] Initializing PDFUpload component for Documents");
+    console.log("📁 [PDF-UPLOAD] Initializing PDFUpload component for Documents");
     window.pdfUploadDocuments = new PDFUpload();
   });
 </script>

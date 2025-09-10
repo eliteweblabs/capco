@@ -27,7 +27,7 @@ export const POST: APIRoute = async ({ request }) => {
       );
     }
 
-    // console.log("🔄 [REPLACE-PLACEHOLDERS] Received data:", { mergedData, placeholderData });
+    console.log("🔄 [REPLACE-PLACEHOLDERS] Received data:", { mergedData, placeholderData });
 
     // Replace placeholders in modal messages
     const replacePlaceholders = (message: string, data: any) => {
@@ -99,7 +99,7 @@ export const POST: APIRoute = async ({ request }) => {
       project_action: replacePlaceholders(mergedData.statusConfig.project_action, placeholderData),
     };
 
-    // console.log("🔄 [REPLACE-PLACEHOLDERS] Processed messages:", processedMessages);
+    console.log("🔄 [REPLACE-PLACEHOLDERS] Processed messages:", processedMessages);
 
     return new Response(
       JSON.stringify({

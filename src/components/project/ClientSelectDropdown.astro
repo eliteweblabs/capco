@@ -33,7 +33,7 @@ if (supabase) {
     // Apply role filter if specified
     if (currentRole) {
       profilesQuery = profilesQuery.eq("role", currentRole);
-      // console.log(`📋 [ClientSelect] Filtering by currentRole: ${currentRole}`);
+      console.log(`📋 [ClientSelect] Filtering by currentRole: ${currentRole}`);
     }
 
     const { data: profiles, error: profilesError } = await profilesQuery.order("company_name");
@@ -42,9 +42,9 @@ if (supabase) {
       console.error("Error fetching profiles:", profilesError);
       error = profilesError.message;
     } else if (profiles) {
-      // console.log(
-//         `📋 [ClientSelect] Loaded ${profiles.length} profiles${currentRole ? ` (filtered by currentRole: ${currentRole})` : ""}`
-//       );
+      console.log(
+        `📋 [ClientSelect] Loaded ${profiles.length} profiles${currentRole ? ` (filtered by currentRole: ${currentRole})` : ""}`
+      );
 
       // Use profiles without emails (Admin API requires service currentRole key)
       users = profiles.map((profile) => ({
@@ -52,7 +52,7 @@ if (supabase) {
         email: null,
       }));
       
-      // console.log(`📋 [ClientSelect] Using ${users.length} profiles without email lookup`);
+      console.log(`📋 [ClientSelect] Using ${users.length} profiles without email lookup`);
     } else {
       users = [];
     }
@@ -480,11 +480,11 @@ if (supabase) {
         if (!target) return;
 
         const selectedOption = target.options[target.selectedIndex];
-        // console.log("🔔 Client selected:", {
-//           id: target.value,
-//           name: selectedOption.text,
-//           element: target,
-//         });
+        console.log("🔔 Client selected:", {
+          id: target.value,
+          name: selectedOption.text,
+          element: target,
+        });
 
         // Trigger a custom event for other components to listen to
         const event = new CustomEvent("clientSelected", {

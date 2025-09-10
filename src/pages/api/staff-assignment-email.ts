@@ -2,21 +2,21 @@ import type { APIRoute } from "astro";
 import { getApiBaseUrl } from "../../lib/url-utils";
 
 export const POST: APIRoute = async ({ request }) => {
-  // console.log("🧑‍💼 [STAFF-ASSIGNMENT-EMAIL] API called");
+  console.log("🧑‍💼 [STAFF-ASSIGNMENT-EMAIL] API called");
 
   try {
     const body = await request.json();
     const { projectId, staffId, staffName, address } = body;
 
-    // console.log("🧑‍💼 [STAFF-ASSIGNMENT-EMAIL] Request data:", {
-//       projectId,
-//       staffId,
-//       staffName,
-//       address,
-//     });
+    console.log("🧑‍💼 [STAFF-ASSIGNMENT-EMAIL] Request data:", {
+      projectId,
+      staffId,
+      staffName,
+      address,
+    });
 
     // Get admin and staff emails using reusable API
-    // console.log("🧑‍💼 [STAFF-ASSIGNMENT-EMAIL] Fetching admin and staff emails...");
+    console.log("🧑‍💼 [STAFF-ASSIGNMENT-EMAIL] Fetching admin and staff emails...");
     const baseUrl = getApiBaseUrl(request);
 
     const adminStaffResponse = await fetch(`${baseUrl}/api/get-user-emails-by-role`, {
@@ -29,7 +29,7 @@ export const POST: APIRoute = async ({ request }) => {
     if (adminStaffResponse.ok) {
       const adminStaffData = await adminStaffResponse.json();
       adminStaffEmails = adminStaffData.emails || [];
-      // console.log("🧑‍💼 [STAFF-ASSIGNMENT-EMAIL] Admin/Staff emails:", adminStaffEmails);
+      console.log("🧑‍💼 [STAFF-ASSIGNMENT-EMAIL] Admin/Staff emails:", adminStaffEmails);
     } else {
       console.error("🧑‍💼 [STAFF-ASSIGNMENT-EMAIL] Failed to fetch admin/staff emails");
     }
@@ -46,7 +46,7 @@ export const POST: APIRoute = async ({ request }) => {
       if (staffResponse.ok) {
         const staffData = await staffResponse.json();
         staffEmail = staffData.emails?.[0] || null;
-        // console.log("🧑‍💼 [STAFF-ASSIGNMENT-EMAIL] Assigned staff email:", staffEmail);
+        console.log("🧑‍💼 [STAFF-ASSIGNMENT-EMAIL] Assigned staff email:", staffEmail);
       } else {
         console.error("🧑‍💼 [STAFF-ASSIGNMENT-EMAIL] Failed to fetch assigned staff email");
       }
@@ -58,7 +58,7 @@ export const POST: APIRoute = async ({ request }) => {
       allEmailsToNotify.push(staffEmail);
     }
 
-    // console.log("🧑‍💼 [STAFF-ASSIGNMENT-EMAIL] All emails to notify:", allEmailsToNotify);
+    console.log("🧑‍💼 [STAFF-ASSIGNMENT-EMAIL] All emails to notify:", allEmailsToNotify);
 
     // Send email using the email delivery API
     const emailResponse = await fetch(`${baseUrl}/api/email-delivery`, {
@@ -78,7 +78,7 @@ export const POST: APIRoute = async ({ request }) => {
 
     if (emailResponse.ok) {
       const emailResult = await emailResponse.json();
-      // console.log("🧑‍💼 [STAFF-ASSIGNMENT-EMAIL] Email sent successfully:", emailResult);
+      console.log("🧑‍💼 [STAFF-ASSIGNMENT-EMAIL] Email sent successfully:", emailResult);
 
       return new Response(
         JSON.stringify({

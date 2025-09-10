@@ -2,13 +2,13 @@ import type { APIRoute } from "astro";
 import { getApiBaseUrl } from "../../lib/url-utils";
 
 export const POST: APIRoute = async ({ request }) => {
-  // console.log("🧪 [TEST-EMAIL] Simple test endpoint called");
-  // console.log("🧪 [TEST-EMAIL] ==========================================");
-  // console.log("🧪 [TEST-EMAIL] Timestamp:", new Date().toISOString());
+  console.log("🧪 [TEST-EMAIL] Simple test endpoint called");
+  console.log("🧪 [TEST-EMAIL] ==========================================");
+  console.log("🧪 [TEST-EMAIL] Timestamp:", new Date().toISOString());
 
   try {
     const body = await request.json();
-    // console.log("🧪 [TEST-EMAIL] Request body:", JSON.stringify(body, null, 2));
+    console.log("🧪 [TEST-EMAIL] Request body:", JSON.stringify(body, null, 2));
 
     // Get environment variables for email
     const emailProvider = import.meta.env.EMAIL_PROVIDER;
@@ -16,11 +16,11 @@ export const POST: APIRoute = async ({ request }) => {
     const fromEmail = import.meta.env.FROM_EMAIL;
     const fromName = import.meta.env.FROM_NAME;
 
-    // console.log("🧪 [TEST-EMAIL] Environment variables:");
-    // console.log("  - EMAIL_PROVIDER:", emailProvider ? "Set" : "Missing");
-    // console.log("  - EMAIL_API_KEY:", emailApiKey ? "Set" : "Missing");
-    // console.log("  - FROM_EMAIL:", fromEmail);
-    // console.log("  - FROM_NAME:", fromName);
+    console.log("🧪 [TEST-EMAIL] Environment variables:");
+    console.log("  - EMAIL_PROVIDER:", emailProvider ? "Set" : "Missing");
+    console.log("  - EMAIL_API_KEY:", emailApiKey ? "Set" : "Missing");
+    console.log("  - FROM_EMAIL:", fromEmail);
+    console.log("  - FROM_NAME:", fromName);
 
     if (!emailProvider || !emailApiKey || !fromEmail) {
       console.error("🧪 [TEST-EMAIL] Email configuration not available");
@@ -43,7 +43,7 @@ export const POST: APIRoute = async ({ request }) => {
 
     // Try to send a test email using the email delivery API
     const baseUrl = getApiBaseUrl(request);
-    // console.log("🧪 [TEST-EMAIL] Calling email delivery API...");
+    console.log("🧪 [TEST-EMAIL] Calling email delivery API...");
 
     const emailResponse = await fetch(`${baseUrl}/api/email-delivery`, {
       method: "POST",
@@ -72,12 +72,12 @@ export const POST: APIRoute = async ({ request }) => {
       }),
     });
 
-    // console.log("🧪 [TEST-EMAIL] Email response status:", emailResponse.status);
-    // console.log("🧪 [TEST-EMAIL] Email response ok:", emailResponse.ok);
+    console.log("🧪 [TEST-EMAIL] Email response status:", emailResponse.status);
+    console.log("🧪 [TEST-EMAIL] Email response ok:", emailResponse.ok);
 
     if (emailResponse.ok) {
       const emailResult = await emailResponse.json();
-      // console.log("🧪 [TEST-EMAIL] Email delivery result:", emailResult);
+      console.log("🧪 [TEST-EMAIL] Email delivery result:", emailResult);
       return new Response(
         JSON.stringify({
           success: true,

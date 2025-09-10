@@ -8,7 +8,7 @@ export async function sendStatusChangeNotifications(
   newStatus: number,
   context: string = "API"
 ) {
-  // // console.log(`🔔 [${context}] sendStatusChangeNotifications called with:`, {
+  // console.log(`🔔 [${context}] sendStatusChangeNotifications called with:`, {
   //   projectId,
   //   newStatus,
   //   hasProjectData: !!projectData,
@@ -21,7 +21,7 @@ export async function sendStatusChangeNotifications(
     }
 
     // Get status configuration from project_statuses table
-    // // console.log(`🔔 [${context}] Fetching status configuration for status:`, newStatus);
+    // console.log(`🔔 [${context}] Fetching status configuration for status:`, newStatus);
     const { data: statusConfig, error: statusError } = await supabase
       .from("project_statuses")
       .select(
@@ -30,7 +30,7 @@ export async function sendStatusChangeNotifications(
       .eq("status_code", newStatus)
       .single();
 
-    // // console.log(`🔔 [${context}] Status configuration result:`, {
+    // console.log(`🔔 [${context}] Status configuration result:`, {
     //   hasData: !!statusConfig,
     //   error: statusError,
     //   statusCode: newStatus,
@@ -44,12 +44,12 @@ export async function sendStatusChangeNotifications(
     // });
 
     if (statusError || !statusConfig) {
-      // console.log(`🔔 [${context}] No status configuration found for status ${newStatus}`);
+      console.log(`🔔 [${context}] No status configuration found for status ${newStatus}`);
       return;
     }
 
     // Get project details
-    // // console.log(`🔔 [${context}] Fetching project details for ID:`, projectId);
+    // console.log(`🔔 [${context}] Fetching project details for ID:`, projectId);
     const { data: projectDetails, error: projectDetailsError } = await supabase
       .from("projects")
       .select("title, address, author_id, assigned_to_id")
@@ -65,7 +65,7 @@ export async function sendStatusChangeNotifications(
     const usersToNotify = await getUsersToNotify(statusConfig.notify, projectDetails, context);
 
     if (usersToNotify.length === 0) {
-      // console.log(`🔔 [${context}] No users to notify for status ${newStatus}`);
+      console.log(`🔔 [${context}] No users to notify for status ${newStatus}`);
       return;
     }
 
@@ -136,7 +136,7 @@ async function getAdminUsers(context: string) {
     .eq("role", "Admin");
 
   if (adminError || !adminUsers) {
-    // console.log(`🔔 [${context}] No admin users found`);
+    console.log(`🔔 [${context}] No admin users found`);
     return [];
   }
 
@@ -206,7 +206,7 @@ async function sendEmailNotifications(
   context: string,
   request?: Request
 ) {
-  // // console.log(`🔔 [${context}] Sending email notifications to ${usersToNotify.length} users`);
+  // console.log(`🔔 [${context}] Sending email notifications to ${usersToNotify.length} users`);
 
   const baseUrl = request
     ? getApiBaseUrl(request)
@@ -228,7 +228,7 @@ async function sendEmailNotifications(
 
     if (emailResponse.ok) {
       const emailResult = await emailResponse.json();
-      // console.log(`📧 [${context}] Email notifications sent successfully:`, emailResult);
+      console.log(`📧 [${context}] Email notifications sent successfully:`, emailResult);
     } else {
       const errorText = await emailResponse.text();
       console.error(`📧 [${context}] Email notifications failed:`, errorText);
@@ -247,10 +247,10 @@ async function sendModalNotifications(
   statusConfig: any,
   context: string
 ) {
-  // console.log(`🔔 [${context}] Sending notifications to ${usersToNotify.length} users`);
+  console.log(`🔔 [${context}] Sending notifications to ${usersToNotify.length} users`);
 
   // You can implement the actual modal logic here or call a separate modal service
-  // console.log(`🔔 [${context}] Modal notifications would be sent for status ${newStatus}`);
+  console.log(`🔔 [${context}] Modal notifications would be sent for status ${newStatus}`);
 
   // Example implementation:
   // usersToNotify.forEach(user => {

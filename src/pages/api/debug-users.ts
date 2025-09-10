@@ -4,7 +4,7 @@
 
 // export const GET: APIRoute = async ({ request, cookies }) => {
 //   try {
-//     // console.log("🔍 [DEBUG-USERS] Debug API called");
+//     console.log("🔍 [DEBUG-USERS] Debug API called");
 
 //     if (!supabase || !supabaseAdmin) {
 //       return new Response(JSON.stringify({ error: "Database not configured" }), {

@@ -16,10 +16,10 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     const accessToken = cookies.get("sb-access-token")?.value;
     const refreshToken = cookies.get("sb-refresh-token")?.value;
 
-    // console.log("📡 [API] Auth check:", {
-//       hasAccessToken: !!accessToken,
-//       hasRefreshToken: !!refreshToken,
-//     });
+    console.log("📡 [API] Auth check:", {
+      hasAccessToken: !!accessToken,
+      hasRefreshToken: !!refreshToken,
+    });
 
     if (!supabase) {
       return new Response(JSON.stringify({ error: "Database connection not available" }), {
@@ -72,7 +72,7 @@ Tier I Fire Alarm Design
       due_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split("T")[0], // 30 days from now
     };
 
-    // console.log("Creating invoice with data:", invoiceData);
+    console.log("Creating invoice with data:", invoiceData);
 
     const { data: invoice, error: invoiceError } = await supabase
       .from("invoices")
@@ -105,7 +105,7 @@ Tier I Fire Alarm Design
       },
     ];
 
-    // console.log("Creating line items:", lineItems);
+    console.log("Creating line items:", lineItems);
 
     // Initialize empty catalog_line_items array
     // Line items will be added via the catalog system

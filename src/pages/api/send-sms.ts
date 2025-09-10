@@ -3,7 +3,7 @@ import { sendSmsViaEmail, sendProjectStatusSms, validatePhoneNumber } from "../.
 import { supabase } from "../../lib/supabase";
 
 export const POST: APIRoute = async ({ request, cookies }) => {
-  // console.log("📱 [SEND-SMS] SMS API called");
+  console.log("📱 [SEND-SMS] SMS API called");
 
   try {
     if (!supabase) {
@@ -135,7 +135,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     }
 
     if (result.success) {
-      // console.log("📱 [SEND-SMS] SMS sent successfully:", result.emailAddress);
+      console.log("📱 [SEND-SMS] SMS sent successfully:", result.emailAddress);
       
       // Log SMS activity to database (optional)
       try {
@@ -193,3 +193,4 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       }
     );
   }
+};

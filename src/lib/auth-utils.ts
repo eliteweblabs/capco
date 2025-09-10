@@ -24,7 +24,7 @@ export async function ensureUserProfile(user: User): Promise<void> {
       .single();
 
     if (existingProfile) {
-      // console.log("Profile already exists for user:", user.id);
+      console.log("Profile already exists for user:", user.id);
       return;
     }
 
@@ -41,11 +41,11 @@ export async function ensureUserProfile(user: User): Promise<void> {
 
     // Priority: display_name > full_name > constructed name > OAuth name > email > fallback
 
-    // console.log("Creating profile for user:", user.id, "with enhanced data:", {
-//       company_name: companyName,
-//       firstName,
-//       lastName,
-//     });
+    console.log("Creating profile for user:", user.id, "with enhanced data:", {
+      company_name: companyName,
+      firstName,
+      lastName,
+    });
 
     const { data: newProfile, error: createError } = await supabase
       .from("profiles")
@@ -64,7 +64,7 @@ export async function ensureUserProfile(user: User): Promise<void> {
       return;
     }
 
-    // console.log("Profile created successfully:", newProfile);
+    console.log("Profile created successfully:", newProfile);
   } catch (error) {
     console.error("Unexpected error in ensureUserProfile:", error);
   }

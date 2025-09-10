@@ -5,7 +5,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
   try {
     const { filePath, fileName, projectId } = await request.json();
 
-    // console.log("Download API called with:", { filePath, fileName, projectId });
+    console.log("Download API called with:", { filePath, fileName, projectId });
 
     if (!filePath || !fileName || !projectId) {
       return new Response(
@@ -74,7 +74,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     }
 
     // Download file from Supabase Storage
-    // console.log("Attempting to download from storage:", filePath);
+    console.log("Attempting to download from storage:", filePath);
 
     // Extract the actual file path (remove bucket prefix if present)
     let actualFilePath = filePath;
@@ -82,7 +82,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       actualFilePath = filePath.replace("project-documents/", "");
     }
 
-    // console.log("Actual file path for download:", actualFilePath);
+    console.log("Actual file path for download:", actualFilePath);
 
     const { data: fileData, error: downloadError } = await supabase.storage
       .from("project-documents")

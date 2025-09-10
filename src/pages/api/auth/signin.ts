@@ -51,7 +51,7 @@ export const POST: APIRoute = async ({ request, cookies, redirect }) => {
 
   // Check if user has a profile, create one if not
   if (data.user) {
-    // console.log("Checking/creating profile for user:", data.user.id);
+    console.log("Checking/creating profile for user:", data.user.id);
     await ensureUserProfile(data.user);
   }
 

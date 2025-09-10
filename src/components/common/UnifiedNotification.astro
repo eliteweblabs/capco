@@ -37,7 +37,7 @@
     }
 
     show(options: NotificationOptions): string {
-      // // console.log("🔔 [UNIFIED-NOTIFICATION] show() called with options:", options);
+      // console.log("🔔 [UNIFIED-NOTIFICATION] show() called with options:", options);
 
       // Scroll to top before showing modal (fixes Safari positioning issues)
       window.scrollTo({ top: 0, behavior: "smooth" });
@@ -45,7 +45,7 @@
       const id = crypto.randomUUID();
       const fullNotification = { ...options, id };
 
-      // // console.log("🔔 [UNIFIED-NOTIFICATION] Creating notification with ID:", id);
+      // console.log("🔔 [UNIFIED-NOTIFICATION] Creating notification with ID:", id);
       this.notifications.set(id, fullNotification);
       this.render(fullNotification);
 
@@ -55,12 +55,12 @@
         setTimeout(() => {
           const element = document.getElementById(`unified-notification-${id}`);
           if (element) {
-            // console.log(
-//               "🎬 Setting up CSS animation for modal:",
-//               id,
-//               "duration:",
-//               options.duration
-//             );
+            console.log(
+              "🎬 Setting up CSS animation for modal:",
+              id,
+              "duration:",
+              options.duration
+            );
             // Apply animation directly to style attribute
             element.style.animation = `modal-auto-hide-fade ${options.duration}ms linear forwards`;
             element.style.opacity = "1"; // Ensure starting opacity
@@ -69,12 +69,12 @@
             element.addEventListener(
               "animationend",
               (e) => {
-                // console.log("🎬 Animation ended:", e.animationName, "Expected: progress-bar-fill");
+                console.log("🎬 Animation ended:", e.animationName, "Expected: progress-bar-fill");
                 if (e.animationName === "progress-bar-fill") {
-                  // console.log("🎬 Hiding modal after animation");
+                  console.log("🎬 Hiding modal after animation");
                   this.hide(id);
                 } else {
-                  // console.log("🎬 Animation name mismatch, hiding anyway");
+                  console.log("🎬 Animation name mismatch, hiding anyway");
                   this.hide(id);
                 }
               },
@@ -84,7 +84,7 @@
             // Fallback: hide after duration + small buffer
             setTimeout(
               () => {
-                // console.log("🎬 Fallback: hiding modal after timeout");
+                console.log("🎬 Fallback: hiding modal after timeout");
                 this.hide(id);
               },
               (options.duration || 5000) + 100
@@ -95,11 +95,11 @@
 
       // Handle redirect
       if (options.redirect) {
-        // // console.log("🔔 [UNIFIED-NOTIFICATION] Setting up redirect:", options.redirect);
+        // console.log("🔔 [UNIFIED-NOTIFICATION] Setting up redirect:", options.redirect);
         this.setupRedirect(id, options.redirect);
       }
 
-      // // console.log("🔔 [UNIFIED-NOTIFICATION] show() returning ID:", id);
+      // console.log("🔔 [UNIFIED-NOTIFICATION] show() returning ID:", id);
       return id;
     }
 
@@ -347,13 +347,13 @@
       | Array<{ label: string; action: () => void; primary?: boolean }>
       | { url: string; delay?: number; showCountdown?: boolean }
   ) => {
-    // console.log("🔔 [UNIFIED-NOTIFICATION] showModal called with:", {
-//       type,
-//       title,
-//       message,
-//       duration,
-//       redirectOrActions,
-//     });
+    console.log("🔔 [UNIFIED-NOTIFICATION] showModal called with:", {
+      type,
+      title,
+      message,
+      duration,
+      redirectOrActions,
+    });
 
     // Validate notification type
     const validTypes = ["success", "error", "warning", "info"];
@@ -379,7 +379,7 @@
         : undefined,
     });
 
-    // console.log("🔔 [UNIFIED-NOTIFICATION] showModal returning ID:", result);
+    console.log("🔔 [UNIFIED-NOTIFICATION] showModal returning ID:", result);
     return result;
   };
 
@@ -392,7 +392,7 @@
     };
   }
 
-  // console.log("🔔 [UNIFIED-NOTIFICATION] Notification system initialized successfully");
+  console.log("🔔 [UNIFIED-NOTIFICATION] Notification system initialized successfully");
 </script>
 
 <style>

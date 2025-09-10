@@ -12,7 +12,7 @@ export const POST: APIRoute = async ({ request }) => {
       });
     }
 
-    // // console.log("API: Fetching invoice with ID:", id);
+    // console.log("API: Fetching invoice with ID:", id);
 
     // Get invoice with project data
     if (!supabase) {
@@ -37,7 +37,7 @@ export const POST: APIRoute = async ({ request }) => {
       .eq("id", id)
       .single();
 
-    // // console.log("API: Invoice query result:", { invoice, invoiceError });
+    // console.log("API: Invoice query result:", { invoice, invoiceError });
 
     if (invoiceError) {
       return new Response(

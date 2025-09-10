@@ -26,11 +26,11 @@ export const POST: APIRoute = async ({ request }) => {
       });
     }
 
-    // console.log("📝 [SAVE-SIGNATURE] Received request:", {
-//       projectId,
-//       signatureLength: signature?.length || 0,
-//       signed_at,
-//     });
+    console.log("📝 [SAVE-SIGNATURE] Received request:", {
+      projectId,
+      signatureLength: signature?.length || 0,
+      signed_at,
+    });
 
     // Validate projectId is a number
     const projectIdNum = parseInt(projectId);
@@ -42,7 +42,7 @@ export const POST: APIRoute = async ({ request }) => {
       });
     }
 
-    // console.log("💾 [SAVE-SIGNATURE] Saving signature for project:", projectId);
+    console.log("💾 [SAVE-SIGNATURE] Saving signature for project:", projectId);
 
     // Create Supabase client
     const supabase = createClient(
@@ -54,7 +54,7 @@ export const POST: APIRoute = async ({ request }) => {
     let contractPdfUrl = null;
     try {
       contractPdfUrl = await generateContractPDF(projectId, signature, signed_at);
-      // console.log("✅ [SAVE-SIGNATURE] PDF generated successfully:", contractPdfUrl);
+      console.log("✅ [SAVE-SIGNATURE] PDF generated successfully:", contractPdfUrl);
     } catch (pdfError) {
       console.warn("⚠️ [SAVE-SIGNATURE] PDF generation failed, continuing without PDF:", pdfError);
     }
@@ -84,7 +84,7 @@ export const POST: APIRoute = async ({ request }) => {
       );
     }
 
-    // console.log("✅ [SAVE-SIGNATURE] Signature saved successfully:", data);
+    console.log("✅ [SAVE-SIGNATURE] Signature saved successfully:", data);
 
     return new Response(
       JSON.stringify({
@@ -112,7 +112,7 @@ async function generateContractPDF(
   signedAt: string
 ): Promise<string> {
   try {
-    // console.log("📄 [SAVE-SIGNATURE] Generating contract PDF for project:", projectId);
+    console.log("📄 [SAVE-SIGNATURE] Generating contract PDF for project:", projectId);
 
     // Launch Puppeteer
     const browser = await puppeteer.launch({
@@ -261,7 +261,7 @@ async function generateContractPDF(
     // Get public URL
     const { data: urlData } = supabase.storage.from("project-documents").getPublicUrl(fileName);
 
-    // console.log("✅ [SAVE-SIGNATURE] Contract PDF generated and uploaded:", urlData.publicUrl);
+    console.log("✅ [SAVE-SIGNATURE] Contract PDF generated and uploaded:", urlData.publicUrl);
     return urlData.publicUrl;
   } catch (error) {
     console.error("❌ [SAVE-SIGNATURE] PDF generation error:", error);

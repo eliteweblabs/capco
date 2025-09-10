@@ -3,9 +3,9 @@ import { supabase } from "../../lib/supabase";
 
 export const POST: APIRoute = async ({ request, cookies }) => {
   try {
-    // // console.log("🚨 [API] get-project-files API called at:", new Date().toISOString());
+    // console.log("🚨 [API] get-project-files API called at:", new Date().toISOString());
     const { projectId } = await request.json();
-    // // console.log("Project ID:", projectId);
+    // console.log("Project ID:", projectId);
 
     if (!projectId) {
       return new Response(JSON.stringify({ error: "Project ID is required" }), {
@@ -25,7 +25,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     const accessToken = cookies.get("sb-access-token")?.value;
     const refreshToken = cookies.get("sb-refresh-token")?.value;
 
-    // // console.log("📡 [API] Auth check:", {
+    // console.log("📡 [API] Auth check:", {
     //   hasAccessToken: !!accessToken,
     //   hasRefreshToken: !!refreshToken,
     // });
@@ -43,10 +43,10 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       error: userError,
     } = await supabase.auth.getUser();
 
-    // // console.log("User auth result:", { user: !!user, error: userError });
+    // console.log("User auth result:", { user: !!user, error: userError });
 
     if (userError || !user) {
-      // console.log("No authenticated user, returning demo response");
+      console.log("No authenticated user, returning demo response");
       // Return empty files array for demo purposes when not authenticated
       return new Response(
         JSON.stringify({
@@ -76,7 +76,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       // Keep default role
     }
 
-    // // console.log("📡 [API] User role check:", {
+    // console.log("📡 [API] User role check:", {
     //   userId: user.id,
     //   userRole,
     //   profileRole: profile?.role,
@@ -84,7 +84,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     //   profileError: !!profileError,
     // });
 
-    // // console.log("📡 [API] Project access check for projectId:", projectId);
+    // console.log("📡 [API] Project access check for projectId:", projectId);
 
     // Fetch files for the project
     let query = supabase
@@ -95,7 +95,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       .order("uploaded_at", { ascending: false });
 
     // Apply RLS - Admins and Staff can see all files, Clients can only see their own projects
-    // // console.log("📡 [API] Role check:", {
+    // console.log("📡 [API] Role check:", {
     //   userRole,
     //   isAdmin: userRole === "Admin",
     //   isStaff: userRole === "Staff",
@@ -110,14 +110,14 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         .single();
 
       if (projectError || !project) {
-        // console.log("🚨 [API] Project not found:", { projectId, error: projectError });
+        console.log("🚨 [API] Project not found:", { projectId, error: projectError });
         return new Response(JSON.stringify({ error: "Project not found" }), {
           status: 404,
           headers: { "Content-Type": "application/json" },
         });
       }
 
-      // // console.log("📡 [API] Project found:", {
+      // console.log("📡 [API] Project found:", {
       //   projectId,
       //   authorId: project.author_id,
       //   assignedToId: project.assigned_to_id,
@@ -130,7 +130,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       if (userRole === "Client") {
         // Clients can only access their own projects
         hasAccess = project.author_id === user.id;
-        // // console.log("📡 [API] Client access check:", {
+        // console.log("📡 [API] Client access check:", {
         //   authorId: project.author_id,
         //   userId: user.id,
         //   hasAccess,
@@ -138,20 +138,20 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       }
 
       if (!hasAccess) {
-        // console.log("🚨 [API] Access denied for user:", {
-//           userId: user.id,
-//           userRole,
-//           projectAuthorId: project.author_id,
-//           projectAssignedToId: project.assigned_to_id,
-//           isAssigned: project.assigned_to_id === user.id,
-//           isAuthor: project.author_id === user.id,
-//         });
+        console.log("🚨 [API] Access denied for user:", {
+          userId: user.id,
+          userRole,
+          projectAuthorId: project.author_id,
+          projectAssignedToId: project.assigned_to_id,
+          isAssigned: project.assigned_to_id === user.id,
+          isAuthor: project.author_id === user.id,
+        });
         return new Response(JSON.stringify({ error: "Access denied" }), {
           status: 403,
           headers: { "Content-Type": "application/json" },
         });
       } else {
-        // // console.log("✅ [API] Access granted for user:", {
+        // console.log("✅ [API] Access granted for user:", {
         //   userId: user.id,
         //   userRole,
         //   projectAuthorId: project.author_id,
@@ -162,7 +162,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
     const { data: files, error } = await query;
 
-    // // console.log("Files fetch result:", {
+    // console.log("Files fetch result:", {
     //   filesCount: files?.length || 0,
     //   error,
     //   projectId,
@@ -173,7 +173,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
     // Log individual files for debugging
     if (files && files.length > 0) {
-      // // console.log(
+      // console.log(
       //   "Files found:",
       //   files.map((f) => ({
       //     id: f.id,
@@ -183,7 +183,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       //   }))
       // );
     } else {
-      // console.log("No files found for project:", projectId);
+      console.log("No files found for project:", projectId);
     }
 
     if (error) {

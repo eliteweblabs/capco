@@ -2,13 +2,13 @@ import type { APIRoute } from "astro";
 import { getApiBaseUrl } from "../../lib/url-utils";
 
 export const POST: APIRoute = async ({ request }) => {
-  // console.log("🧪 [TEST-PDF-GENERATION] API route called!");
-  // console.log("🧪 [TEST-PDF-GENERATION] Request URL:", request.url);
-  // console.log("🧪 [TEST-PDF-GENERATION] Request method:", request.method);
+  console.log("🧪 [TEST-PDF-GENERATION] API route called!");
+  console.log("🧪 [TEST-PDF-GENERATION] Request URL:", request.url);
+  console.log("🧪 [TEST-PDF-GENERATION] Request method:", request.method);
 
   try {
     const body = await request.json();
-    // console.log("🧪 [TEST-PDF-GENERATION] Request body:", body);
+    console.log("🧪 [TEST-PDF-GENERATION] Request body:", body);
 
     const { projectId, signature } = body;
 
@@ -30,7 +30,7 @@ export const POST: APIRoute = async ({ request }) => {
       signature ||
       "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==";
 
-    // console.log("🧪 [TEST-PDF-GENERATION] Calling PDF generation API...");
+    console.log("🧪 [TEST-PDF-GENERATION] Calling PDF generation API...");
 
     // Call the PDF generation API
     const baseUrl = getApiBaseUrl(request);
@@ -46,11 +46,11 @@ export const POST: APIRoute = async ({ request }) => {
       }),
     });
 
-    // console.log("🧪 [TEST-PDF-GENERATION] PDF response status:", pdfResponse.status);
-    // console.log("🧪 [TEST-PDF-GENERATION] PDF response ok:", pdfResponse.ok);
+    console.log("🧪 [TEST-PDF-GENERATION] PDF response status:", pdfResponse.status);
+    console.log("🧪 [TEST-PDF-GENERATION] PDF response ok:", pdfResponse.ok);
 
     const pdfResult = await pdfResponse.json();
-    // console.log("🧪 [TEST-PDF-GENERATION] PDF generation result:", pdfResult);
+    console.log("🧪 [TEST-PDF-GENERATION] PDF generation result:", pdfResult);
 
     if (pdfResponse.ok) {
       return new Response(
@@ -94,7 +94,7 @@ export const POST: APIRoute = async ({ request }) => {
 };
 
 export const GET: APIRoute = async ({ request }) => {
-  // console.log("🧪 [TEST-PDF-GENERATION] GET endpoint called");
+  console.log("🧪 [TEST-PDF-GENERATION] GET endpoint called");
 
   return new Response(
     JSON.stringify({

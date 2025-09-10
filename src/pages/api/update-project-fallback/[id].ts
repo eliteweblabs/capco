@@ -7,7 +7,7 @@ export const PUT: APIRoute = async ({ request, cookies, params }) => {
 
   try {
     const body = await request.json();
-    // console.log("🔧 [UPDATE-PROJECT] Request body:", body);
+    console.log("🔧 [UPDATE-PROJECT] Request body:", body);
 
     if (!projectId) {
       return new Response(JSON.stringify({ error: "Project ID required" }), {
@@ -103,24 +103,24 @@ export const PUT: APIRoute = async ({ request, cookies, params }) => {
       updateData.status = body.status;
     }
 
-    // console.log("🔧 [UPDATE-PROJECT] Building update query for project:", projectId);
-    // console.log("🔧 [UPDATE-PROJECT] Update data:", updateData);
-    // console.log("🔧 [UPDATE-PROJECT] User role:", userRole);
+    console.log("🔧 [UPDATE-PROJECT] Building update query for project:", projectId);
+    console.log("🔧 [UPDATE-PROJECT] Update data:", updateData);
+    console.log("🔧 [UPDATE-PROJECT] User role:", userRole);
 
     let updateQuery = supabase!.from("projects").update(updateData).eq("id", projectId);
 
     // Only apply author_id filter for non-admin users
     if (userRole !== "admin") {
       updateQuery = updateQuery.eq("author_id", userId);
-      // console.log("🔧 [UPDATE-PROJECT] Added author_id filter for non-admin user:", userId);
+      console.log("🔧 [UPDATE-PROJECT] Added author_id filter for non-admin user:", userId);
     }
 
-    // console.log("🔧 [UPDATE-PROJECT] Executing database update...");
+    console.log("🔧 [UPDATE-PROJECT] Executing database update...");
     const { data: projects, error } = await updateQuery.select();
-    // console.log("🔧 [UPDATE-PROJECT] Database update completed:", {
-//       projects: projects?.length,
-//       error: error?.message,
-//     });
+    console.log("🔧 [UPDATE-PROJECT] Database update completed:", {
+      projects: projects?.length,
+      error: error?.message,
+    });
 
     if (error) {
       console.error("Error updating project:", error);
@@ -142,8 +142,8 @@ export const PUT: APIRoute = async ({ request, cookies, params }) => {
       const userEmail = session.session.user.email || "unknown";
       const newProjectData = { ...currentProject, ...updateData };
 
-      // console.log(`📝 [API] Logging project update for project ${projectId} by ${userEmail}`);
-      // console.log(`📝 [API] Status change: ${currentProject.status} -> ${newProjectData.status}`);
+      console.log(`📝 [API] Logging project update for project ${projectId} by ${userEmail}`);
+      console.log(`📝 [API] Status change: ${currentProject.status} -> ${newProjectData.status}`);
 
       await SimpleProjectLogger.logProjectChanges(
         parseInt(projectId),
@@ -152,7 +152,7 @@ export const PUT: APIRoute = async ({ request, cookies, params }) => {
         newProjectData
       );
 
-      // console.log(`📝 [API] Project update logged successfully`);
+      console.log(`📝 [API] Project update logged successfully`);
     } catch (logError) {
       console.error("📝 [API] Error logging project update:", logError);
       // Don't fail the request if logging fails

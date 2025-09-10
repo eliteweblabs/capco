@@ -37,26 +37,26 @@ export const POST: APIRoute = async ({ request }) => {
     const { projectId, invoiceId, paymentType, paymentMethod, billingDetails, amount } =
       await request.json();
 
-    // console.log("🔍 [CREATE-PAYMENT-INTENT] Received request:", {
-//       projectId,
-//       invoiceId,
-//       paymentType,
-//       paymentMethod,
-//       hasBillingDetails: !!billingDetails,
-//       amount,
-//     });
+    console.log("🔍 [CREATE-PAYMENT-INTENT] Received request:", {
+      projectId,
+      invoiceId,
+      paymentType,
+      paymentMethod,
+      hasBillingDetails: !!billingDetails,
+      amount,
+    });
 
     // Support both old invoice-based and new project-based payments
     // const id = invoiceId;
     // const isProjectPayment = !!projectId;
 
-    // console.log("🔍 [CREATE-PAYMENT-INTENT] Debug values:", {
-//       projectId,
-//       invoiceId,
-//       paymentType,
-//       paymentMethod,
-//       billingDetails,
-//     });
+    console.log("🔍 [CREATE-PAYMENT-INTENT] Debug values:", {
+      projectId,
+      invoiceId,
+      paymentType,
+      paymentMethod,
+      billingDetails,
+    });
 
     if (!invoiceId) {
       return new Response(JSON.stringify({ error: "Project ID or Invoice ID is required" }), {
@@ -119,12 +119,12 @@ export const POST: APIRoute = async ({ request }) => {
         projects: project,
       };
 
-      // console.log("🔍 [CREATE-PAYMENT-INTENT] Created project invoice object:", {
-//         invoiceId: invoice.id,
-//         projectId: invoice.project_id,
-//         totalAmount: invoice.total_amount,
-//         paymentType,
-//       });
+      console.log("🔍 [CREATE-PAYMENT-INTENT] Created project invoice object:", {
+        invoiceId: invoice.id,
+        projectId: invoice.project_id,
+        totalAmount: invoice.total_amount,
+        paymentType,
+      });
     } else {
       // Original invoice-based payment
       if (!supabase) {
@@ -197,7 +197,7 @@ export const POST: APIRoute = async ({ request }) => {
     //   });
     // }
 
-    // // console.log("🔍 [CREATE-PAYMENT-INTENT] Amount calculation:", {
+    // console.log("🔍 [CREATE-PAYMENT-INTENT] Amount calculation:", {
     //   paymentFormAmount: amount,
     //   invoiceTotalAmount: invoice.total_amount,
     //   finalTotalAmount: totalAmount,
@@ -220,12 +220,12 @@ export const POST: APIRoute = async ({ request }) => {
     }
 
     // Create payment intent
-    // console.log("🔍 [CREATE-PAYMENT-INTENT] About to call Stripe with:", {
-//       amount: amountInCents,
-//       currency: "usd",
-//       amountType: typeof amountInCents,
-//       amountIsInteger: Number.isInteger(amountInCents),
-//     });
+    console.log("🔍 [CREATE-PAYMENT-INTENT] About to call Stripe with:", {
+      amount: amountInCents,
+      currency: "usd",
+      amountType: typeof amountInCents,
+      amountIsInteger: Number.isInteger(amountInCents),
+    });
 
     const paymentIntent = await stripe.paymentIntents.create({
       amount: amountInCents,
