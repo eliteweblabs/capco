@@ -88,7 +88,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     }
 
     // Add the discussion
-    console.log("🔔 [DISCUSSION] Inserting discussion:", {
+// console.log("🔔 [DISCUSSION] Inserting discussion:", {
       project_id: projectIdInt,
       author_id: currentUser.id,
       message: message.trim(),
@@ -140,7 +140,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     }
 
     // Get the author profile using the server-side function
-    console.log("🔔 [DISCUSSION] Fetching user info for user:", currentUser.id);
+// console.log("🔔 [DISCUSSION] Fetching user info for user:", currentUser.id);
 
     const userInfo = {
       company_name: currentUser.company_name,
@@ -149,7 +149,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       email: currentUser.email,
       profile: currentUser.profile,
     };
-    console.log("🔔 [DISCUSSION] User info from currentUser:", userInfo);
+// console.log("🔔 [DISCUSSION] User info from currentUser:", userInfo);
 
     // Combine discussion with user info
     const discussionWithProfile = {
@@ -172,7 +172,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     }
 
     // Send email notification to all admins when a client posts a comment
-    console.log("📧 [ADD-DISCUSSION] Email notification check:", {
+// console.log("📧 [ADD-DISCUSSION] Email notification check:", {
       isClient,
       internal,
       shouldSendEmail: isClient && !internal,
@@ -189,7 +189,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     //
 
     // Send notifications for ALL comments (new logic)
-    console.log(
+// console.log(
       "📧 [ADD-DISCUSSION] Sending notifications for comment - always email Admin + Staff"
     );
 
@@ -217,7 +217,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         : `New ${commentType} from ${authorName}`;
 
       // Get admin and staff emails using reusable API
-      console.log("💬 [ADD-DISCUSSION] Fetching admin and staff emails...");
+// console.log("💬 [ADD-DISCUSSION] Fetching admin and staff emails...");
       const baseUrl = getApiBaseUrl(request);
       const adminStaffResponse = await fetch(`${baseUrl}/api/get-user-emails-by-role`, {
         method: "POST",
@@ -229,7 +229,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       if (adminStaffResponse.ok) {
         const adminStaffData = await adminStaffResponse.json();
         adminStaffEmails = adminStaffData.emails || [];
-        console.log("💬 [ADD-DISCUSSION] Admin/Staff emails:", adminStaffEmails);
+// console.log("💬 [ADD-DISCUSSION] Admin/Staff emails:", adminStaffEmails);
       } else {
         console.error("💬 [ADD-DISCUSSION] Failed to fetch admin/staff emails");
       }
@@ -246,7 +246,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         if (clientResponse.ok) {
           const clientData = await clientResponse.json();
           clientEmail = clientData.emails?.[0] || null;
-          console.log("💬 [ADD-DISCUSSION] Client email:", clientEmail);
+// console.log("💬 [ADD-DISCUSSION] Client email:", clientEmail);
         } else {
           console.error("💬 [ADD-DISCUSSION] Failed to fetch client email");
         }
@@ -270,10 +270,10 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       const button_link = `${getApiBaseUrl(request)}/project/${projectId}?tab=discussion`;
 
       // Send admin/staff emails
-      console.log("💬 [DISCUSSION] Using base URL for email delivery:", baseUrl);
+// console.log("💬 [DISCUSSION] Using base URL for email delivery:", baseUrl);
 
       if (adminStaffEmails.length > 0) {
-        console.log("💬 [DISCUSSION] Sending admin/staff emails...");
+// console.log("💬 [DISCUSSION] Sending admin/staff emails...");
         const adminEmailResponse = await fetch(`${baseUrl}/api/email-delivery`, {
           method: "POST",
           headers: {
@@ -291,7 +291,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
         if (adminEmailResponse.ok) {
           const adminEmailResult = await adminEmailResponse.json();
-          console.log("💬 [DISCUSSION] Admin/staff emails sent:", adminEmailResult);
+// console.log("💬 [DISCUSSION] Admin/staff emails sent:", adminEmailResult);
         } else {
           console.error("💬 [DISCUSSION] Failed to send admin/staff emails");
         }
@@ -299,7 +299,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
       // Send client email if not internal
       if (!internal && clientEmail) {
-        console.log("💬 [DISCUSSION] Sending client email...");
+// console.log("💬 [DISCUSSION] Sending client email...");
         const clientEmailResponse = await fetch(`${baseUrl}/api/email-delivery`, {
           method: "POST",
           headers: {
@@ -317,7 +317,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
         if (clientEmailResponse.ok) {
           const clientEmailResult = await clientEmailResponse.json();
-          console.log("💬 [DISCUSSION] Client email sent:", clientEmailResult);
+// console.log("💬 [DISCUSSION] Client email sent:", clientEmailResult);
         } else {
           console.error("💬 [DISCUSSION] Failed to send client email");
         }

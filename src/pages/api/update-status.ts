@@ -231,15 +231,15 @@ export const POST: APIRoute = async ({ request }) => {
           },
         };
 
-        console.log("📊 [UPDATE-STATUS] Notification data prepared:", {
+// console.log("📊 [UPDATE-STATUS] Notification data prepared:", {
           adminRedirect: statusData.statusConfig.modal_auto_redirect_admin,
           clientRedirect: statusData.statusConfig.modal_auto_redirect_client,
           projectId: updatedProject.id,
           notificationData,
         });
 
-        console.log("📊 [UPDATE-STATUS] About to fetch admin and staff emails...");
-        console.log(
+// console.log("📊 [UPDATE-STATUS] About to fetch admin and staff emails...");
+// console.log(
           "📊 [UPDATE-STATUS] Final notification data:",
           JSON.stringify(notificationData, null, 2)
         );
