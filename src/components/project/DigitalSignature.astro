@@ -185,7 +185,6 @@ const newStatus = 50;
         }
 
         const containerWidth = container.clientWidth;
-        const ratio = Math.max(window.devicePixelRatio || 1, 1);
 
         // Calculate responsive dimensions
         const availableWidth = Math.min(containerWidth - 4, maxWidth); // -4 for border
@@ -205,12 +204,11 @@ const newStatus = 50;
           availableHeight,
           displayWidth,
           displayHeight,
-          ratio,
         });
 
-        // Set canvas internal dimensions (for drawing resolution)
-        canvas.width = displayWidth * ratio;
-        canvas.height = displayHeight * ratio;
+        // Set canvas dimensions (1:1 pixel mapping to avoid coordinate issues)
+        canvas.width = displayWidth;
+        canvas.height = displayHeight;
 
         // Set canvas display dimensions (for CSS)
         canvas.style.width = displayWidth + "px";
@@ -218,7 +216,6 @@ const newStatus = 50;
 
         const context = canvas.getContext("2d");
         if (context) {
-          context.scale(ratio, ratio);
           // Clear the canvas
           context.clearRect(0, 0, displayWidth, displayHeight);
         }
@@ -601,7 +598,6 @@ const newStatus = 50;
         if (!container) return;
 
         const containerWidth = container.clientWidth;
-        const ratio = Math.max(window.devicePixelRatio || 1, 1);
 
         // Get the maximum dimensions and aspect ratio from data attributes
         const maxWidth = parseInt(canvas.getAttribute("data-max-width") || "400");
@@ -627,12 +623,11 @@ const newStatus = 50;
           availableHeight,
           displayWidth,
           displayHeight,
-          ratio,
         });
 
-        // Set canvas internal dimensions (for drawing resolution)
-        canvas.width = displayWidth * ratio;
-        canvas.height = displayHeight * ratio;
+        // Set canvas dimensions (1:1 pixel mapping to avoid coordinate issues)
+        canvas.width = displayWidth;
+        canvas.height = displayHeight;
 
         // Set canvas display dimensions (for CSS)
         canvas.style.width = displayWidth + "px";
@@ -640,7 +635,7 @@ const newStatus = 50;
 
         const context = canvas.getContext("2d");
         if (context) {
-          context.scale(ratio, ratio);
+          // No scaling needed with 1:1 mapping
         }
 
         // Clear and redraw if there was content

@@ -2,47 +2,60 @@
 import { getI18N } from "@/i18n";
 import NoDataCard from "./NoDataCard.astro";
 import ProjectListItem from "./ProjectListItem.astro";
+import { filteredStatusObj } from "../../pages/api/process-client-status";
 
 interface Props {
   projects: any[];
-  statuses: any[];
   currentUser: any;
   currentRole: string | null;
-  currentStatusName: string;
-  currentStatusInt: string;
-  currentStatusSlug: string;
   statusesObject: any;
 }
 
 const { currentLocale } = Astro;
 const i18n = getI18N({ currentLocale });
 
-const {
-  projects,
-  statusesObject,
-  currentUser,
-  currentRole,
-  currentStatusName,
-  currentStatusInt,
-  currentStatusSlug,
-} = Astro.props;
+const { projects, statusesObject, currentUser, currentRole } = Astro.props;
 
 if (!projects || projects.length === 0) return;
+
+// Process each project's status in the frontmatter
+const processedProjects = projects.map((project: any) => {
+  console.log("🔍 [PROJECT-LIST] Project ID:", project.id, "Status:", project.status);
+  console.log("🔍 [PROJECT-LIST] Available statuses:", Object.keys(statusesObject));
+  console.log(
+    "🔍 [PROJECT-LIST] Status object for",
+    project.status,
+    ":",
+    statusesObject[project.status]
+  );
+
+  const currentStatusObj = filteredStatusObj(
+    statusesObject[project.status],
+    currentRole || "Client"
+  );
+  return {
+    ...project,
+    currentStatusObj,
+    currentStatusName: currentStatusObj.status_name,
+    currentStatusInt: currentStatusObj.status_code,
+    currentStatusSlug: currentStatusObj.status_slug,
+  };
+});
 ---
 
 <!-- Project List-->
 <div id="project-list">
   {
     projects.length > 0 ? (
-      projects.map((project: any) => (
+      processedProjects.map((project: any) => (
         <ProjectListItem
           project={project}
           currentRole={currentRole || ""}
           user={currentUser}
           projectStatusesObject={statusesObject}
-          currentStatusName={currentStatusName}
-          currentStatusInt={currentStatusInt}
-          currentStatusSlug={currentStatusSlug}
+          currentStatusName={project.currentStatusName}
+          currentStatusInt={project.currentStatusInt}
+          currentStatusSlug={project.currentStatusSlug}
         />
       ))
     ) : (

@@ -68,7 +68,7 @@ const hasExistingProposal = !!existingInvoice;
 {projectStatus !== 20 && (
   <style>
     #proposal-content {pointer-events: none;}
-    .add-line-item-btn, .delete-line-item-btn {display: none;}
+     .delete-line-item-btn, #add-row-btn {display: none;}
   </style>
 )}
 
@@ -120,7 +120,7 @@ const hasExistingProposal = !!existingInvoice;
             <p
               class="text-2xl font-medium text-gray-800 transition-colors hover:text-blue-600 dark:text-gray-200 dark:hover:text-blue-400"
             >
-              <span id="proposal-subject-text">Fire Protection Services Proposal</span>
+              <span id="proposal-subject-text" class="inline-block animate-pulse bg-gray-200 dark:bg-gray-700 h-6 w-64 rounded"></span>
               <button
                 type="button"
                 id="edit-subject-btn"
@@ -161,9 +161,8 @@ const hasExistingProposal = !!existingInvoice;
           </div>
         </div>
 
-        <p class="mt-2 text-gray-600 dark:text-gray-400">
-          <span id="proposal-project-title">Project Title</span>
-        </p>
+       
+        
         <p class="text-sm text-gray-500 dark:text-gray-500">
           Generated on: <span id="proposal-date"></span>
         </p>
@@ -209,6 +208,11 @@ const hasExistingProposal = !!existingInvoice;
           <thead class="bg-gray-50 dark:bg-gray-700">
             <tr>
               <th
+              class="px-3 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-300 sm:px-4"
+          >
+            TITLE
+          </th>
+              <th
                   class="px-3 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-300 sm:px-4"
               >
                 Description
@@ -244,7 +248,7 @@ const hasExistingProposal = !!existingInvoice;
           <tfoot class="bg-gray-50 dark:bg-gray-700">
             <tr>
               <td
-                  colspan="4"
+                  colspan="5"
                   class="px-3 py-3 text-right font-semibold text-gray-900 dark:text-white sm:px-4"
               >
                 Total:
@@ -253,6 +257,16 @@ const hasExistingProposal = !!existingInvoice;
                 $<span id="proposal-total-footer">0.00</span>
               </td>
             </tr>
+            <tr>
+              <td class="px-2 py-3 text-right font-semibold text-gray-900 dark:text-white sm:px-4" colspan="5">
+                Total Due (50%):
+              </td>
+                <td class="px-2 py-3 text-right font-bold text-blue-600 dark:text-blue-400 sm:px-4">
+                $<span id="proposal-total-due-footer">0.00</span>
+              </td>
+            </tr>
+
+           
           </tfoot>
         </table>
         </div>
@@ -277,13 +291,7 @@ const hasExistingProposal = !!existingInvoice;
         <div class="flex justify-between">
         
           <div class="flex gap-2">
-            <button
-              onclick="saveProposal()"
-              class="inline-flex items-center rounded-lg bg-gray-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-gray-700"
-            >
-              <BoxIcon name="save" class="mr-2 h-4 w-4" />
-              Save Proposal
-            </button>
+      Proposal Saves Automatically
             <button
               id="send-proposal-btn"
               onclick="sendProposal()"
@@ -332,41 +340,872 @@ const hasExistingProposal = !!existingInvoice;
 </div>
 
 
-<script type="module" define:vars={{ projectId, project, authorProfile, existingInvoice, hasExistingProposal, projectStatus }}>
-  // Inline proposal manager initialization (temporarily disabled)
-  async function initializeProposalManager(projectId, project, projectAuthor) {
-    console.log("🔧 [PROPOSAL-MANAGER] ProposalManager initialization disabled to fix console errors");
-    
-    // Create a placeholder proposal manager for now
-    window.proposalManager = {
-      projectId,
-      project,
-      projectAuthor,
-      buildProposal: () => {
-        console.log("🔧 [PROPOSAL-MANAGER] Placeholder buildProposal called");
-      },
-      loadExistingInvoice: async (invoice) => {
-        console.log("🔧 [PROPOSAL-MANAGER] Placeholder loadExistingInvoice called");
-      },
-      regenerateProposal: () => {
-        console.log("🔧 [PROPOSAL-MANAGER] Placeholder regenerateProposal called");
-      },
-      sendProposal: () => {
-        console.log("🔧 [PROPOSAL-MANAGER] Placeholder sendProposal called");
-      },
-      updateRowTotal: (index) => {
-        console.log("🔧 [PROPOSAL-MANAGER] Placeholder updateRowTotal called");
-      },
-      addProposalRow: () => {
-        console.log("🔧 [PROPOSAL-MANAGER] Placeholder addProposalRow called");
-      },
-      deleteProposalRow: (index) => {
-        console.log("🔧 [PROPOSAL-MANAGER] Placeholder deleteProposalRow called");
-      },
-      saveCurrentProposalData: () => {
-        console.log("🔧 [PROPOSAL-MANAGER] Placeholder saveCurrentProposalData called");
+<script type="module" define:vars={{ projectId, project, authorProfile, existingInvoice, hasExistingProposal, projectStatus, currentUser }}>
+  // Define ProposalManager class directly in the script (following working pattern from PDF uploader)
+  class ProposalManager {
+    constructor(projectId, project, currentUser) {
+      console.log("🔧 [PROPOSAL-MANAGER] Constructor called with projectId:", projectId);
+      this.projectId = projectId;
+      this.project = project;
+      this.currentUser = currentUser;
+      console.log("🔧 [PROPOSAL-MANAGER] Constructor set this.projectId to:", this.projectId);
+      this.isEditMode = false;
+      this.cachedLineItems = null;
+      this.cachedTotal = null;
+      this.autocompleteInitialized = false;
+      this.invoiceId = null;
+      this.saveTimeout = null;
+      this.saveBuffer = 1000; // 1 second buffer
+    }
+
+    async buildProposal() {
+      console.log("🔧 [PROPOSAL-MANAGER] Building proposal for project:", this.projectId);
+
+      if (!this.project) {
+        console.error("Project data not available");
+        return;
       }
-    };
+
+      // Hide placeholder and show proposal content
+      const placeholder = document.getElementById("proposal-placeholder");
+      const content = document.getElementById("proposal-content");
+
+      if (placeholder) placeholder.style.display = "none";
+      if (content) content.style.display = "block";
+
+      // Get or create invoice ID
+      await this.ensureInvoiceExists();
+      
+      // Load data from database
+      await this.loadDataFromDatabase();
+
+      // Initialize proposal form with project data
+      this.initializeProposalForm();
+      
+      // Initialize autocomplete functionality
+      this.initializeAutocomplete();
+      
+      // Ensure totals are calculated after everything is loaded
+      setTimeout(() => {
+        updateProposalTotal();
+        console.log("🔧 [PROPOSAL-MANAGER] Updated totals after building proposal");
+      }, 100);
+    }
+
+    async ensureInvoiceExists() {
+      try {
+        console.log("🔍 [PROPOSAL-MANAGER] Ensuring invoice exists for project:", this.projectId);
+        
+        // Check if invoice already exists
+        const response = await fetch(`/api/get-project-invoice?projectId=${this.projectId}`);
+        const data = await response.json();
+        
+        if (data.success && data.invoice) {
+          this.invoiceId = parseInt(data.invoice.id);
+          console.log("✅ [PROPOSAL-MANAGER] Found existing invoice:", this.invoiceId);
+        } else {
+          // Create new invoice
+          const createResponse = await fetch("/api/create-invoice", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              projectId: this.projectId,
+              projectData: {
+                title: `Proposal for ${this.project.address}`,
+                date: new Date().toISOString().split("T")[0],
+                subject: "Fire Protection System Proposal",
+                status: "proposal"
+              }
+            })
+          });
+          
+          const createData = await createResponse.json();
+          if (createData.success) {
+            this.invoiceId = parseInt(createData.invoice.id);
+            console.log("✅ [PROPOSAL-MANAGER] Created new invoice:", this.invoiceId);
+          } else {
+            console.error("❌ [PROPOSAL-MANAGER] Failed to create invoice:", createData.error);
+          }
+        }
+    } catch (error) {
+        console.error("❌ [PROPOSAL-MANAGER] Error ensuring invoice exists:", error);
+      }
+    }
+
+    async loadDataFromDatabase() {
+      if (!this.invoiceId) {
+        console.log("❌ [PROPOSAL-MANAGER] No invoice ID, cannot load data");
+        return;
+      }
+      
+      try {
+        console.log("🔍 [PROPOSAL-MANAGER] Loading data from database for invoice:", this.invoiceId);
+        
+        const response = await fetch(`/api/get-invoice-details?id=${this.invoiceId}`);
+        const data = await response.json();
+        
+        if (data.success && data.invoice) {
+          const invoice = data.invoice;
+          
+          console.log("🔍 [PROPOSAL-MANAGER] Invoice data received:", {
+            id: invoice.id,
+            created_at: invoice.created_at,
+            subject: invoice.subject,
+            catalog_line_items: invoice.catalog_line_items?.length || 0
+          });
+          
+          // Load line items from catalog_line_items and convert field names
+          const dbLineItems = invoice.catalog_line_items || [];
+          this.cachedLineItems = dbLineItems.map(item => ({
+            name: item.name || "",
+            description: item.description || "",
+            quantity: item.quantity || 1,
+            unitPrice: item.unit_price || 0,  // Convert unit_price to unitPrice
+            catalog_item_id: item.catalog_item_id || null
+          }));
+          
+          // Load subject from invoice
+          const subjectTextElement = document.getElementById("proposal-subject-text");
+          const hiddenInput = document.getElementById("proposal-subject-dropdown-hidden");
+          
+          if (subjectTextElement) {
+            if (invoice.subject) {
+              // Replace skeleton with actual subject text
+              subjectTextElement.className = "text-2xl font-medium text-gray-800 dark:text-gray-200"; // Restore original styling
+              subjectTextElement.textContent = invoice.subject;
+              console.log("✅ [PROPOSAL-MANAGER] Loaded subject:", invoice.subject);
+            } else {
+              // No subject in database, show default
+              subjectTextElement.className = "text-2xl font-medium text-gray-800 dark:text-gray-200"; // Restore original styling
+              subjectTextElement.textContent = "Fire Protection Services Proposal";
+              console.log("✅ [PROPOSAL-MANAGER] No subject in database, using default");
+            }
+            
+            if (hiddenInput) {
+              hiddenInput.value = invoice.subject || "Fire Protection Services Proposal";
+            }
+          }
+          
+          // Load proposal date from invoice
+          const proposalDateElement = document.getElementById("proposal-date");
+          if (proposalDateElement) {
+            let dateToShow;
+            if (invoice.created_at) {
+              // Use invoice creation date
+              const invoiceDate = new Date(invoice.created_at);
+              dateToShow = invoiceDate.toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+              });
+              console.log("✅ [PROPOSAL-MANAGER] Using invoice creation date:", dateToShow);
+            } else {
+              // No date in database, use current time
+              const now = new Date();
+              dateToShow = now.toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+              });
+              console.log("✅ [PROPOSAL-MANAGER] No invoice date, using current date:", dateToShow);
+            }
+            proposalDateElement.textContent = dateToShow;
+          } else {
+            console.log("❌ [PROPOSAL-MANAGER] proposal-date element not found");
+          }
+          
+          // Load proposal notes from invoice
+          const notesElement = document.getElementById("proposal-notes");
+          if (notesElement) {
+            if (invoice.proposal_notes) {
+              notesElement.value = invoice.proposal_notes;
+              console.log("✅ [PROPOSAL-MANAGER] Loaded notes:", invoice.proposal_notes);
+            } else {
+              notesElement.value = "";
+              console.log("✅ [PROPOSAL-MANAGER] No notes in database, using empty string");
+            }
+          } else {
+            console.log("❌ [PROPOSAL-MANAGER] proposal-notes element not found");
+          }
+          
+          // If no line items, initialize with defaults
+          if (this.cachedLineItems.length === 0) {
+            this.initializeDefaultLineItems();
+            await this.saveToDatabase(); // Save the defaults
+          }
+          
+          console.log("✅ [PROPOSAL-MANAGER] Loaded line items:", this.cachedLineItems);
+        } else {
+          // Failed to load data, show default subject
+          const subjectTextElement = document.getElementById("proposal-subject-text");
+          const hiddenInput = document.getElementById("proposal-subject-dropdown-hidden");
+          
+          if (subjectTextElement) {
+            subjectTextElement.className = "text-2xl font-medium text-gray-800 dark:text-gray-200"; // Restore original styling
+            subjectTextElement.textContent = "Fire Protection Services Proposal";
+          }
+          
+          if (hiddenInput) {
+            hiddenInput.value = "Fire Protection Services Proposal";
+          }
+        }
+      } catch (error) {
+        console.error("❌ [PROPOSAL-MANAGER] Error loading data from database:", error);
+        
+        // On error, show default subject
+        const subjectTextElement = document.getElementById("proposal-subject-text");
+        const hiddenInput = document.getElementById("proposal-subject-dropdown-hidden");
+        
+        if (subjectTextElement) {
+          subjectTextElement.className = "text-2xl font-medium text-gray-800 dark:text-gray-200"; // Restore original styling
+          subjectTextElement.textContent = "Fire Protection Services Proposal";
+        }
+        
+        if (hiddenInput) {
+          hiddenInput.value = "Fire Protection Services Proposal";
+        }
+      }
+    }
+
+    initializeProposalForm() {
+      console.log("🔧 [PROPOSAL-MANAGER] Initializing proposal form...");
+      
+      // Set project details in the form
+
+      const projectAddress = document.getElementById("proposal-project-address");
+      const clientName = document.getElementById("proposal-client-name");
+      const proposalDate = document.getElementById("proposal-date");
+      
+      console.log("🔍 [PROPOSAL-MANAGER] Found elements:", {
+        
+
+        projectAddress: !!projectAddress,
+        clientName: !!clientName,
+        proposalDate: !!proposalDate
+      });
+
+
+      if (projectAddress) projectAddress.textContent = this.project.address || "Project Address";
+      if (clientName) clientName.textContent = this.projectAuthor?.company_name || "Client Name";
+      
+      // Date is now handled in loadDataFromDatabase()
+
+      // Render line items from cached data
+      this.renderLineItems();
+      updateProposalTotal();
+    }
+
+    initializeDefaultLineItems() {
+      // Add default line items for fire protection system
+      const lineItems = [
+        { name: "Fire Sprinkler System Design", description: "Complete fire sprinkler system design and engineering", quantity: 1, unitPrice: 2500 },
+        { name: "Fire Alarm System", description: "Fire detection and alarm system installation", quantity: 1, unitPrice: 1800 },
+        { name: "Fire Extinguisher Installation", description: "Fire extinguisher placement and installation", quantity: 6, unitPrice: 150 }
+      ];
+
+      this.cachedLineItems = lineItems;
+      this.renderLineItems();
+      updateProposalTotal();
+    }
+
+    renderLineItems() {
+      const tbody = document.getElementById("proposal-line-items");
+      if (!tbody || !this.cachedLineItems) {
+        console.log("❌ [PROPOSAL-MANAGER] Cannot render line items:", { tbody: !!tbody, cachedLineItems: !!this.cachedLineItems });
+        return;
+      }
+
+      tbody.innerHTML = "";
+      
+      // Render each line item
+      this.cachedLineItems.forEach((item, index) => {
+        console.log(`🔧 [PROPOSAL-MANAGER] Rendering item ${index}:`, {
+          name: item.name,
+          description: item.description,
+          quantity: item.quantity,
+          unitPrice: item.unitPrice
+        });
+        
+        const row = document.createElement("tr");
+        row.className = "hover:bg-gray-50 dark:hover:bg-gray-700 proposal-line-item-row";
+        row.innerHTML = `
+          <td class="px-4 py-3">
+            <input type="text" value="${item.name || ''}" class="w-full border rounded px-2 py-1 line-item-name" onchange="window.proposalManager.updateLineItem(${index}, 'name', this.value)">
+          </td>
+          <td class="px-4 py-3">
+            <input type="text" value="${item.description || ''}" class="w-full border rounded px-2 py-1 line-item-description" onchange="window.proposalManager.updateLineItem(${index}, 'description', this.value)">
+          </td>
+          <td class="px-4 py-3">
+            <input type="number" value="${item.quantity || 1}" class="w-20 border rounded px-2 py-1 line-item-quantity" data-row-index="${index}" data-field="quantity" onchange="window.proposalManager.updateLineItemFromInput(this)">
+          </td>
+          <td class="px-4 py-3">
+            <input type="number" value="${item.unitPrice || 0}" class="w-24 border rounded px-2 py-1 line-item-price" data-row-index="${index}" data-field="unitPrice" onchange="window.proposalManager.updateLineItemFromInput(this)">
+          </td>
+          <td class="px-4 py-3 text-right line-item-total">$${((item.quantity || 1) * (item.unitPrice || 0)).toFixed(2)}</td>
+          <td class="px-4 py-3 text-sm text-center">
+            <div class="flex items-center justify-center space-x-2">
+              <button 
+                type="button"
+                id="delete-btn-${index}"
+                onclick="window.proposalManager.confirmDelete(${index})"
+                class="p-1 text-red-600 hover:text-red-800 hover:bg-red-100 rounded transition-colors delete-btn"
+                title="Delete line item"
+                data-state="trash"
+              >
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                </svg>
+              </button>
+            </div>
+          </td>
+        `;
+        tbody.appendChild(row);
+      });
+      
+      // Add the "Add Line Item" button row
+      this.addRowButton(tbody);
+    }
+
+    addRowButton(tbody) {
+      const addRowBtn = document.createElement("tr");
+      addRowBtn.innerHTML = `
+        <td colspan="5" class="px-4 py-3 text-center border-t border-gray-200 dark:border-gray-600">
+          <button id="add-row-btn"
+            type="button"
+            onclick="window.proposalManager?.addProposalRow()"
+            class="inline-flex items-center px-3 py-2 text-sm font-medium text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded transition-colors dark:text-blue-400 dark:hover:text-blue-300 dark:hover:bg-blue-900/20"
+          >
+            <svg class="mr-2 w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+            </svg>
+            Add Line Item
+          </button>
+        </td>
+      `;
+      addRowBtn.id = "add-row-btn";
+      tbody.appendChild(addRowBtn);
+    }
+
+    updateLineItem(index, field, value) {
+      if (!this.cachedLineItems || !this.cachedLineItems[index]) return;
+      
+      if (field === 'quantity' || field === 'unitPrice') {
+        this.cachedLineItems[index][field] = parseFloat(value) || 0;
+      } else {
+        this.cachedLineItems[index][field] = value;
+      }
+      
+      console.log(`🔧 [PROPOSAL-MANAGER] Updated ${field} for item ${index}:`, value);
+      
+      // Update totals after a small delay to ensure DOM is ready
+      setTimeout(() => {
+        updateProposalTotal();
+        console.log("🔧 [PROPOSAL-MANAGER] Updated totals after line item change");
+      }, 50);
+      
+      // Schedule save to database with debounce
+      this.scheduleSave();
+    }
+
+    updateRowTotal(index) {
+      if (!this.cachedLineItems || !this.cachedLineItems[index]) return;
+      
+      const item = this.cachedLineItems[index];
+      const total = (item.quantity || 0) * (item.unitPrice || 0);
+      
+      // Find the total cell for this row and update it
+      const tbody = document.getElementById("proposal-line-items");
+      if (tbody && tbody.children[index]) {
+        const row = tbody.children[index];
+        const totalCell = row.querySelector('.line-item-total');
+        if (totalCell) {
+          totalCell.textContent = `$${total.toFixed(2)}`;
+        }
+      }
+    }
+
+    updateLineItemFromInput(inputElement) {
+      const rowIndex = parseInt(inputElement.getAttribute('data-row-index'));
+      const field = inputElement.getAttribute('data-field');
+      const value = inputElement.value;
+      
+      console.log("🔍 [PROPOSAL-MANAGER] updateLineItemFromInput:", { rowIndex, field, value });
+      
+      if (rowIndex !== null && field && this.cachedLineItems && this.cachedLineItems[rowIndex]) {
+        this.updateLineItem(rowIndex, field, value);
+      }
+    }
+
+    saveCurrentDOMValuesToCache() {
+      if (!this.cachedLineItems) return;
+      
+      const tbody = document.getElementById("proposal-line-items");
+      if (!tbody) return;
+      
+      const rows = tbody.querySelectorAll("tr");
+      
+      rows.forEach((row, index) => {
+        if (this.cachedLineItems[index]) {
+          // Get current values from DOM inputs
+          const nameInput = row.querySelector('.line-item-name');
+          const descriptionInput = row.querySelector('.line-item-description');
+          const quantityInput = row.querySelector('.line-item-quantity');
+          const priceInput = row.querySelector('.line-item-price');
+          
+          // Update cached data with current DOM values
+          if (nameInput) this.cachedLineItems[index].name = nameInput.value;
+          if (descriptionInput) this.cachedLineItems[index].description = descriptionInput.value;
+          if (quantityInput) this.cachedLineItems[index].quantity = parseFloat(quantityInput.value) || 0;
+          if (priceInput) this.cachedLineItems[index].unitPrice = parseFloat(priceInput.value) || 0;
+        }
+      });
+      
+      console.log("🔍 [PROPOSAL-MANAGER] Saved DOM values to cache:", this.cachedLineItems);
+    }
+
+
+    addProposalRow() {
+      console.log("➕ [PROPOSAL-MANAGER] Adding new line item");
+      
+      if (!this.cachedLineItems) this.cachedLineItems = [];
+      
+      this.cachedLineItems.push({
+        name: "New Item",
+        description: "Item description",
+        quantity: 1,
+        unitPrice: 0
+      });
+      
+      // Re-render the table to include the new row
+      this.renderLineItems();
+      
+      // Update totals after a small delay to ensure DOM is ready
+      setTimeout(() => {
+        updateProposalTotal();
+        console.log("🔧 [PROPOSAL-MANAGER] Updated totals after adding new row");
+      }, 100);
+      
+      // Schedule save to database
+      this.scheduleSave();
+    }
+
+    confirmDelete(index) {
+      const button = document.getElementById(`delete-btn-${index}`);
+      if (!button) return;
+      
+      const currentState = button.getAttribute('data-state');
+      
+      if (currentState === 'trash') {
+        // First click: Show question mark
+        button.innerHTML = '<span class="text-lg font-bold">?</span>';
+        button.setAttribute('data-state', 'confirm');
+        button.title = 'Click again to confirm deletion';
+        button.className = 'p-1 text-orange-600 hover:text-orange-800 hover:bg-orange-100 rounded transition-colors delete-btn';
+        
+        // Auto-revert after 3 seconds
+        setTimeout(() => {
+          if (button.getAttribute('data-state') === 'confirm') {
+            this.revertDeleteButton(index);
+          }
+        }, 3000);
+        
+      } else if (currentState === 'confirm') {
+        // Second click: Actually delete
+        this.deleteProposalRow(index);
+      }
+    }
+    
+    revertDeleteButton(index) {
+      const button = document.getElementById(`delete-btn-${index}`);
+      if (!button) return;
+      
+      button.innerHTML = `
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+        </svg>
+      `;
+      button.setAttribute('data-state', 'trash');
+      button.title = 'Delete line item';
+      button.className = 'p-1 text-red-600 hover:text-red-800 hover:bg-red-100 rounded transition-colors delete-btn';
+    }
+
+    deleteProposalRow(index) {
+      console.log("🗑️ [PROPOSAL-MANAGER] Deleting line item at index:", index);
+      console.log("🗑️ [PROPOSAL-MANAGER] Before deletion, cachedLineItems:", this.cachedLineItems);
+      
+      if (!this.cachedLineItems || !this.cachedLineItems[index]) {
+        console.log("❌ [PROPOSAL-MANAGER] Cannot delete - no item at index:", index);
+        return;
+      }
+      
+      // Delete the line item immediately
+      const deletedItem = this.cachedLineItems.splice(index, 1)[0];
+      console.log("🗑️ [PROPOSAL-MANAGER] Deleted item:", deletedItem);
+      console.log("🗑️ [PROPOSAL-MANAGER] After deletion, cachedLineItems:", this.cachedLineItems);
+      
+      this.renderLineItems();
+      updateProposalTotal();
+      
+      // Schedule save to database
+      this.scheduleSave();
+    }
+
+    updateRowTotal(index) {
+      console.log("🔍 [PROPOSAL-MANAGER] updateRowTotal called");
+      updateProposalTotal();
+    }
+
+    async loadExistingInvoice(invoice) {
+      console.log("🔧 [PROPOSAL-MANAGER] Loading existing invoice:", invoice);
+      
+      if (!invoice) {
+        console.log("❌ [PROPOSAL-MANAGER] No invoice data provided");
+        return;
+      }
+      
+      try {
+        // Set the invoice ID
+        this.invoiceId = parseInt(invoice.id);
+        console.log("✅ [PROPOSAL-MANAGER] Set invoice ID:", this.invoiceId);
+        
+        // Show the proposal content (hide placeholder)
+        const placeholder = document.getElementById("proposal-placeholder");
+        const content = document.getElementById("proposal-content");
+        
+        if (placeholder) placeholder.style.display = "none";
+        if (content) content.style.display = "block";
+        
+        // Load the line items from the database
+        await this.loadDataFromDatabase();
+        
+        // Initialize the proposal form to show the data
+        this.initializeProposalForm();
+        
+        // Initialize autocomplete functionality
+        this.initializeAutocomplete();
+        
+        // Ensure totals are calculated after everything is loaded
+        setTimeout(() => {
+          updateProposalTotal();
+          console.log("🔧 [PROPOSAL-MANAGER] Updated totals after loading existing invoice");
+        }, 100);
+        
+        console.log("✅ [PROPOSAL-MANAGER] Successfully loaded existing invoice and showed proposal");
+      } catch (error) {
+        console.error("❌ [PROPOSAL-MANAGER] Error loading existing invoice:", error);
+        throw error;
+      }
+    }
+
+    regenerateProposal() {
+      console.log("🔧 [PROPOSAL-MANAGER] Regenerating proposal");
+      this.buildProposal();
+    }
+
+    sendProposal() {
+      console.log("🔧 [PROPOSAL-MANAGER] Sending proposal");
+      // Implementation for sending proposal
+    }
+
+    scheduleSave() {
+      // Clear existing timeout
+      if (this.saveTimeout) {
+        clearTimeout(this.saveTimeout);
+      }
+      
+      // Set new timeout
+      this.saveTimeout = setTimeout(() => {
+        this.saveToDatabase();
+      }, this.saveBuffer);
+      
+      console.log("⏰ [PROPOSAL-MANAGER] Save scheduled in", this.saveBuffer, "ms");
+    }
+
+    async saveToDatabase() {
+      console.log("🔍 [PROPOSAL-MANAGER] saveToDatabase called with projectId:", this.projectId, "invoiceId:", this.invoiceId);
+      
+      if (!this.projectId) {
+        console.log("❌ [PROPOSAL-MANAGER] No project ID, cannot save");
+        return;
+      }
+      
+      if (!this.invoiceId) {
+        console.log("❌ [PROPOSAL-MANAGER] No invoice ID, cannot save. Ensuring invoice exists...");
+        await this.ensureInvoiceExists();
+        if (!this.invoiceId) {
+          console.log("❌ [PROPOSAL-MANAGER] Failed to create/get invoice ID");
+          return;
+        }
+      }
+      
+      try {
+        console.log("💾 [PROPOSAL-MANAGER] Saving to database...");
+        
+        const lineItems = this.getLineItemsDataForDatabase();
+        
+        // Get proposal notes
+        const notesElement = document.getElementById("proposal-notes");
+        const notes = notesElement?.value || "";
+        
+        console.log("🔍 [PROPOSAL-MANAGER] Sending data:", {
+          invoiceId: this.invoiceId,
+          lineItemsCount: lineItems?.length || 0,
+          lineItems: lineItems,
+          notes: notes
+        });
+        
+        const response = await fetch("/api/update-invoice-line-items", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            invoiceId: this.invoiceId,
+            lineItems: lineItems,
+            notes: notes
+          })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+          console.log("✅ [PROPOSAL-MANAGER] Saved successfully to database");
+        } else {
+          console.error("❌ [PROPOSAL-MANAGER] Failed to save:", data.error);
+        }
+      } catch (error) {
+        console.error("❌ [PROPOSAL-MANAGER] Error saving to database:", error);
+      }
+    }
+
+    
+
+    // Get line items data formatted for database storage
+    getLineItemsDataForDatabase() {
+      console.log("🔍 [PROPOSAL-MANAGER] getLineItemsDataForDatabase - cachedLineItems:", this.cachedLineItems);
+      
+      if (!this.cachedLineItems) {
+        console.log("❌ [PROPOSAL-MANAGER] No cachedLineItems found");
+        return [];
+      }
+      
+      const result = this.cachedLineItems.map(item => ({
+        name: item.name || "",
+        description: item.description || "",
+        unit_price: item.unitPrice || 0,  // Convert unitPrice to unit_price for database
+        quantity: item.quantity || 1,
+        catalog_item_id: item.catalog_item_id || null  // Include the ID as the key
+      }));
+      
+      console.log("🔍 [PROPOSAL-MANAGER] getLineItemsDataForDatabase - result:", result);
+      return result;
+    }
+
+    // Autocomplete functionality
+    initializeAutocomplete() {
+      console.log("🔍 [AUTOCOMPLETE] Initializing autocomplete for ProposalManager");
+      
+      // Only set up event delegation once
+      if (!this.autocompleteInitialized) {
+        this.setupEventDelegation();
+        this.autocompleteInitialized = true;
+      }
+    }
+
+    setupEventDelegation() {
+      // Handle focus events for autocomplete
+      document.addEventListener('focus', (e) => {
+        const target = e.target;
+        if (target && target.classList && target.classList.contains('line-item-name')) {
+          console.log("🔍 [AUTOCOMPLETE] Focus on description field detected");
+          const row = target.closest('tr');
+          if (row) {
+            // Look for existing dropdown or create one
+            let dropdown = row.querySelector('.autocomplete-dropdown');
+            if (!dropdown) {
+              // Create dropdown for rows that don't have one
+              const inputContainer = target.closest('td');
+              if (inputContainer) {
+                dropdown = document.createElement('div');
+                dropdown.className = 'autocomplete-dropdown overflow-y-auto absolute z-50 w-66 h-80 mt-1 bg-white border border-gray-300 rounded-md shadow-lg dark:bg-gray-700 dark:border-gray-600 hidden';
+                inputContainer.appendChild(dropdown);
+                console.log("🔍 [AUTOCOMPLETE] Created dropdown for row");
+              }
+            }
+          }
+        }
+      }, true);
+
+      // Handle input events for filtering
+      document.addEventListener('input', (e) => {
+        const target = e.target;
+        if (target && target.classList && target.classList.contains('line-item-name')) {
+          console.log("🔍 [AUTOCOMPLETE] Input on description field detected:", target);
+          const row = target.closest('tr');
+          if (row) {
+            const dropdown = row.querySelector('.autocomplete-dropdown');
+            if (dropdown) {
+              console.log("🔍 [AUTOCOMPLETE] Filtering catalog items for dropdown");
+              this.filterCatalogItemsForRow(dropdown, target.value);
+            } else {
+              console.log("❌ [AUTOCOMPLETE] No dropdown found in row for input");
+            }
+          }
+        }
+      });
+
+      // Hide dropdown when clicking outside
+      document.addEventListener('click', (e) => {
+        const target = e.target;
+        if (target && target instanceof HTMLElement) {
+          // Check if click is outside any autocomplete dropdown
+          const isInsideDropdown = target.closest('.autocomplete-dropdown');
+          const isDescriptionInput = target.classList?.contains('line-item-name');
+          
+          if (!isInsideDropdown && !isDescriptionInput) {
+            // Hide all dropdowns
+            const allDropdowns = document.querySelectorAll('.autocomplete-dropdown');
+            allDropdowns.forEach(dropdown => {
+              dropdown.classList.add('hidden');
+            });
+          }
+        }
+      });
+
+      // Handle notes field changes for automatic saving
+      document.addEventListener('input', (e) => {
+        const target = e.target;
+        if (target && target.id === 'proposal-notes') {
+          console.log("🔍 [PROPOSAL-MANAGER] Notes field changed, scheduling save");
+          if (window.proposalManager) {
+            window.proposalManager.scheduleSave();
+          }
+        }
+      });
+    }
+
+    async filterCatalogItemsForRow(dropdown, searchTerm) {
+      if (!searchTerm || searchTerm.length < 2) {
+        dropdown.classList.add("hidden");
+        return;
+      }
+
+      try {
+        const response = await fetch('/api/get-line-items-catalog');
+        const data = await response.json();
+        
+        if (data.success && data.items) {
+          const filteredItems = data.items.filter(item => 
+            item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            item.description.toLowerCase().includes(searchTerm.toLowerCase())
+          );
+          
+          this.displaySuggestionsForRow(dropdown, filteredItems);
+        }
+      } catch (error) {
+        console.error("Error fetching catalog items:", error);
+      }
+    }
+
+    displaySuggestionsForRow(dropdown, items) {
+      console.log("🔍 [AUTOCOMPLETE] displaySuggestionsForRow called with", items.length, "items");
+      if (items.length === 0) {
+        console.log("🔍 [AUTOCOMPLETE] No items to display, hiding dropdown");
+        dropdown.classList.add("hidden");
+        return;
+      }
+
+      dropdown.innerHTML = "";
+      items.forEach((item) => {
+        const suggestion = document.createElement("div");
+        suggestion.className = `px-3 py-2 cursor-pointer hover:bg-blue-50 dark:hover:bg-gray-600 border-b border-gray-100 dark:border-gray-600 last:border-b-0 transition-colors duration-150`;
+        suggestion.innerHTML = `
+          <div class="font-medium text-gray-900 dark:text-white">${item.name}</div>
+          <div class="text-sm text-gray-500 dark:text-gray-400">${item.description || ""}</div>
+          <div class="text-sm font-semibold text-green-600 dark:text-green-400">$${item.unit_price}</div>
+        `;
+        suggestion.onclick = (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          this.selectSuggestionForRow(dropdown, item);
+        };
+        dropdown.appendChild(suggestion);
+      });
+      console.log("🔍 [AUTOCOMPLETE] Showing dropdown with", items.length, "items");
+      dropdown.classList.remove("hidden");
+    }
+
+    selectSuggestionForRow(dropdown, item) {
+      const row = dropdown.closest('tr');
+      if (row) {
+        console.log("🔍 [AUTOCOMPLETE] Selecting suggestion for row:", item);
+        console.log("🔍 [AUTOCOMPLETE] Item structure:", {
+          name: item.name,
+          description: item.description,
+          unit_price: item.unit_price,
+          id: item.id
+        });
+        
+        // Find inputs in the row
+        const nameInput = row.querySelector('.line-item-name');
+        const descriptionInput = row.querySelector('.line-item-description');
+        const unitPriceInput = row.querySelector('.line-item-price');
+        const quantityInput = row.querySelector('.line-item-quantity');
+        
+        console.log("🔍 [AUTOCOMPLETE] Found inputs:", {
+          name: !!nameInput,
+          description: !!descriptionInput,
+          unitPrice: !!unitPriceInput,
+          quantity: !!quantityInput
+        });
+
+        if (nameInput) {
+          nameInput.value = item.name;
+          console.log("🔍 [AUTOCOMPLETE] Set name to:", item.name);
+        }
+        
+        if (descriptionInput) {
+          descriptionInput.value = item.description || "";
+          console.log("🔍 [AUTOCOMPLETE] Set description to:", item.description);
+        }
+        
+        if (unitPriceInput) {
+          unitPriceInput.value = item.unit_price || 0;
+          console.log("🔍 [AUTOCOMPLETE] Set unit price to:", item.unit_price);
+        }
+        
+        // Also update the cached line items data structure
+        const rowIndex = Array.from(row.parentNode.children).indexOf(row);
+        if (this.cachedLineItems && this.cachedLineItems[rowIndex]) {
+          this.cachedLineItems[rowIndex].name = item.name;
+          this.cachedLineItems[rowIndex].description = item.description || "";
+          this.cachedLineItems[rowIndex].unitPrice = item.unit_price || 0;
+          this.cachedLineItems[rowIndex].catalog_item_id = item.id; // Store the ID as the key
+          console.log("🔍 [AUTOCOMPLETE] Updated cached line item:", this.cachedLineItems[rowIndex]);
+        }
+        
+        if (quantityInput && quantityInput.value === "0") {
+          quantityInput.value = "1";
+          console.log("🔍 [AUTOCOMPLETE] Set quantity to 1");
+        }
+
+        // Hide dropdown
+        dropdown.classList.add("hidden");
+        
+        // Update the total for this row
+        this.updateRowTotal();
+        
+        console.log("✅ [AUTOCOMPLETE] Item selected and fields populated");
+      }
+    }
+  }
+
+  // Initialize the ProposalManager
+  async function initializeProposalManager(projectId, project, projectAuthor, projectStatus, currentUser) {
+    console.log("🔧 [PROPOSAL-MANAGER] Initializing ProposalManager for project:", projectId);
+    
+    // Create the proposal manager instance
+    window.proposalManager = new ProposalManager(projectId, project, projectAuthor, projectStatus, currentUser);
+    
+    console.log("✅ [PROPOSAL-MANAGER] ProposalManager initialized successfully");
   }
 
   // Define the updateRowTotalDirect function globally first
@@ -433,63 +1272,78 @@ const hasExistingProposal = !!existingInvoice;
     function updateProposalTotal() {
       let total = 0;
       
-      // Update desktop table view
-      const lineItemsContainer = document.getElementById("proposal-line-items");
-      if (lineItemsContainer) {
-        const rows = lineItemsContainer.querySelectorAll("tr");
+      // Use cachedLineItems from the proposal manager if available
+      if (window.proposalManager && window.proposalManager.cachedLineItems) {
+        console.log("🔍 [PROPOSAL-MANAGER] Calculating total from cachedLineItems:", window.proposalManager.cachedLineItems.length, "items");
         
-        rows.forEach((row) => {
-          // Check for both old and new class names to support existing rows
-          const quantityInput = row.querySelector(".quantity-input, .line-item-quantity") ;
-          const unitPriceInput = row.querySelector(".unit-price-input, .line-item-unit-price") ;
+        window.proposalManager.cachedLineItems.forEach((item, index) => {
+          const quantity = parseFloat(item.quantity) || 0;
+          const unitPrice = parseFloat(item.unitPrice) || 0;
+          const rowTotal = quantity * unitPrice;
+          total += rowTotal;
           
-          if (quantityInput && unitPriceInput) {
-            const quantity = parseFloat(quantityInput.value) || 0;
-            const unitPrice = parseFloat(unitPriceInput.value) || 0;
-            const rowTotal = quantity * unitPrice;
-            total += rowTotal;
-            
-            // Update individual row total (check for both old and new class names)
-            const totalDisplay = row.querySelector(".total-display, .line-item-total");
-            if (totalDisplay) {
-              totalDisplay.textContent = `$${rowTotal.toFixed(2)}`;
+          console.log(`🔍 [PROPOSAL-MANAGER] Item ${index}: qty=${quantity}, price=${unitPrice}, total=${rowTotal}`);
+          
+          // Update the row total display in the DOM
+          const tbody = document.getElementById("proposal-line-items");
+          if (tbody) {
+            const rows = tbody.querySelectorAll("tr");
+            if (rows[index]) {
+              const totalCell = rows[index].querySelector(".line-item-total");
+              if (totalCell) {
+                totalCell.textContent = `$${rowTotal.toFixed(2)}`;
+              }
             }
           }
         });
-
-        // Update desktop footer total
-        const tfootTotal = document.getElementById("proposal-total-footer");
-        if (tfootTotal) {
-          tfootTotal.textContent = total.toFixed(2);
+        
+        // Store the total in the proposal manager
+        window.proposalManager.cachedTotal = total;
+      } else {
+        // Fallback: calculate from DOM inputs
+        console.log("🔍 [PROPOSAL-MANAGER] Fallback: calculating total from DOM inputs");
+        const lineItemsContainer = document.getElementById("proposal-line-items");
+        if (lineItemsContainer) {
+          const rows = lineItemsContainer.querySelectorAll("tr");
+          
+          rows.forEach((row) => {
+            const quantityInput = row.querySelector(".line-item-quantity");
+            const unitPriceInput = row.querySelector(".line-item-price");
+            
+            if (quantityInput && unitPriceInput) {
+              const quantity = parseFloat(quantityInput.value) || 0;
+              const unitPrice = parseFloat(unitPriceInput.value) || 0;
+              const rowTotal = quantity * unitPrice;
+              total += rowTotal;
+              
+              const totalDisplay = row.querySelector(".line-item-total");
+              if (totalDisplay) {
+                totalDisplay.textContent = `$${rowTotal.toFixed(2)}`;
+              }
+            }
+          });
         }
       }
       
-      // Update mobile card view
-      const mobileContainer = document.getElementById("proposal-line-items-mobile");
-      if (mobileContainer) {
-        const cards = mobileContainer.querySelectorAll(".rounded-lg");
-        
-        cards.forEach((card) => {
-          const quantityInput = card.querySelector(".line-item-quantity") ;
-          const unitPriceInput = card.querySelector(".line-item-unit-price") ;
-          const totalSpan = card.querySelector(".line-item-total");
-          
-          if (quantityInput && unitPriceInput && totalSpan) {
-            const quantity = parseFloat(quantityInput.value) || 0;
-            const unitPrice = parseFloat(unitPriceInput.value) || 0;
-            const rowTotal = quantity * unitPrice;
-            
-            totalSpan.textContent = `$${rowTotal.toFixed(2)}`;
-          }
-        });
-        
-        // Note: Mobile total update removed for simplification
-      }
+      console.log("🔍 [PROPOSAL-MANAGER] Final calculated total:", total);
 
       // Update total display in header (if exists)
       const totalElement = document.getElementById("proposal-total");
       if (totalElement) {
         totalElement.textContent = total.toFixed(2);
+      }
+
+      // Update desktop footer total
+      const tfootTotal = document.getElementById("proposal-total-footer");
+      if (tfootTotal) {
+        tfootTotal.textContent = total.toFixed(2);
+      }
+      
+      // Update total due footer (1/2 of total)
+      const totalDueFooter = document.getElementById("proposal-total-due-footer");
+      if (totalDueFooter) {
+        const halfTotal = total / 2;
+        totalDueFooter.textContent = halfTotal.toFixed(2);
       }
     }
 
@@ -499,7 +1353,7 @@ const hasExistingProposal = !!existingInvoice;
 
     // Initialize the global proposal manager
     if (projectId && project) {
-      await initializeProposalManager(projectId, project, authorProfile);
+      await initializeProposalManager(projectId, project, authorProfile, projectStatus, currentUser);
       
       // If there's an existing invoice, load it automatically
       // console.log("🔍 [Client] Checking if should load existing invoice:", { hasExistingProposal, existingInvoice, proposalManager: !!window.proposalManager });
@@ -519,12 +1373,80 @@ const hasExistingProposal = !!existingInvoice;
     // Make wrapper functions available globally for onclick handlers
     window.buildProposal = (id) => window.proposalManager?.buildProposal();
     window.regenerateProposal = () => window.proposalManager?.regenerateProposal();
-    window.sendProposal = () => window.proposalManager?.sendProposal();
-    window.updateRowTotal = (index) => window.proposalManager?.updateRowTotal(index);
+    window.sendProposal = async () => {
+      console.log("🔧 [PROPOSAL-MANAGER] Send proposal button clicked");
+      
+      if (!projectId) {
+        console.error("Project ID not available");
+        return;
+      }
+
+      // Show loading modal
+      if (window.showModal) {
+        window.showModal(
+          "info",
+          "Sending Proposal",
+          "Please wait while we send your proposal...",
+          0 // No auto-hide
+        );
+      }
+
+      try {
+        // Update project status to 30 (Proposal Shipped)
+        const statusUpdateData = {
+          projectId: projectId,
+          status: 30, // Proposal Shipped
+          oldStatus: projectStatus,
+          currentUserId: currentUser?.id,
+        };
+        
+        console.log("🔧 [PROPOSAL-MANAGER] Sending status update:", statusUpdateData);
+        
+        const response = await fetch("/api/update-status", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          credentials: "include", // Include cookies for authentication
+          body: JSON.stringify(statusUpdateData),
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          console.log("✅ [PROPOSAL-MANAGER] Proposal sent successfully");
+          // Hide loading modal
+          if (window.hideNotification) {
+            window.hideNotification();
+          }
+          // Show success message
+          if (window.showModal) {
+            window.showModal("Success", "Proposal sent successfully!", "success");
+          }
+        } else {
+          console.error("Failed to send proposal:", data.error);
+          // Hide modal immediately on error
+          if (window.hideNotification) {
+            window.hideNotification();
+          }
+          if (window.showModal) {
+            window.showModal("Error", data.error || "Failed to send proposal", "error");
+          }
+        }
+      } catch (error) {
+        console.error("Error sending proposal:", error);
+        // Hide modal immediately on error
+        if (window.hideNotification) {
+          window.hideNotification();
+        }
+        if (window.showModal) {
+          window.showModal("Error", "Failed to send proposal", "error");
+        }
+      }
+    };
     window.addProposalRow = () => window.proposalManager?.addProposalRow();
     window.deleteProposalRow = (index) => window.proposalManager?.deleteProposalRow(index);
-    window.saveProposal = () => window.proposalManager?.saveCurrentProposalData();
-    // toggleProposalSelector will be defined in the define:vars script below
+    window.confirmDelete = (index) => window.proposalManager?.confirmDelete(index);
 
     // Initialize subject editing functionality
     window.initializeSubjectEditing();
@@ -535,8 +1457,6 @@ const hasExistingProposal = !!existingInvoice;
     // Calculate initial total
     updateProposalTotal();
     
-    // Initialize autocomplete functionality
-    initializeAutocomplete();
 
     // Generate initial empty row
     generateInitialEmptyRow();
@@ -555,7 +1475,6 @@ const hasExistingProposal = !!existingInvoice;
         lineItemsContainer.appendChild(initialRow);
       }
 
-      // Note: Mobile card view removed for simplification
     }
 
     // Create a line item row with consistent structure (Desktop)
@@ -641,7 +1560,6 @@ const hasExistingProposal = !!existingInvoice;
       return row;
     }
 
-    // Note: Mobile card creation function removed for simplification
 
     // Initialize existing line items with event listeners
     function initializeExistingLineItems() {
@@ -710,36 +1628,9 @@ const hasExistingProposal = !!existingInvoice;
       setupEventDelegation();
     }
 
-    // Initialize autocomplete for specific rows
-    function initializeAutocompleteForRows() {
-      const lineItemRows = document.querySelectorAll('.line-item-row');
-      // console.log("🔍 [AUTOCOMPLETE] Found", lineItemRows.length, "line item rows");
-      
-      lineItemRows.forEach((row, index) => {
-        const descriptionInput = row.querySelector('.line-item-name') ;
-        const dropdown = row.querySelector('.autocomplete-dropdown') ;
-        const quantityInput = row.querySelector('.line-item-quantity') ;
-        const unitPriceInput = row.querySelector('.line-item-unit-price') ;
-        const totalDisplay = row.querySelector('.line-item-total') ;
-        const addButton = row.querySelector('.add-line-item-btn') ;
-
-        if (descriptionInput && dropdown && addButton) {
-          // console.log("🔍 [AUTOCOMPLETE] Setting up autocomplete for row", index);
-          setupAutocompleteForRow(row, descriptionInput, dropdown, quantityInput, unitPriceInput, totalDisplay, addButton);
-        }
-      });
-    }
-
-    // Setup autocomplete for a specific row (simplified - just for the initial row)
-    function setupAutocompleteForRow(row, descriptionInput, dropdown, quantityInput, unitPriceInput, totalDisplay, addButton) {
-      // The autocomplete functionality is now handled by event delegation
-      // This function is kept for compatibility but the real work is done in setupEventDelegation
-      // console.log("🔍 [AUTOCOMPLETE] Setting up row (delegated to event handlers)");
-    }
 
     // Set up event delegation for dynamically added rows
     function setupEventDelegation() {
-      // Note: Add buttons removed from individual rows/cards - only using the main "Add Line Item" button
 
       // Listen for focus events on description inputs
       document.addEventListener('focus', (e) => {
@@ -828,10 +1719,7 @@ const hasExistingProposal = !!existingInvoice;
       });
     }
 
-    // Note: addNewLineItem function moved to second script block for global access
 
-    // Note: addLineItemFromRow and addLineItemFromCard functions removed
-    // Line items are now only added via the main "Add Line Item" button
 
     // Global variables for catalog items (shared across all rows)
     let globalCatalogItems = [];
@@ -989,7 +1877,6 @@ const hasExistingProposal = !!existingInvoice;
       console.log("✅ [PROPOSAL-MANAGER] Added new row to desktop table");
     }
     
-    // Note: Mobile card creation removed for simplification
     
     // Update proposal total
     updateProposalTotal();
@@ -1344,7 +2231,7 @@ const hasExistingProposal = !!existingInvoice;
                 searchInput.value = newSubject;
                 hiddenInput.value = newSubject;
                 hideDropdown();
-                window.showSuccess("Success", data.isNew ? "New subject created!" : "Subject selected!");
+                window.showModal("Success", data.isNew ? "New subject created!" : "Subject selected!", "success");
                 loadSubjects("");
               } else {
                 console.error("Failed to create subject:", data.error);
@@ -1415,7 +2302,7 @@ const hasExistingProposal = !!existingInvoice;
           displayDiv.classList.remove("hidden");
 
           // Show success message
-          window.showSuccess("Success", "Proposal subject updated successfully!");
+          window.showModal("Success", "Proposal subject updated successfully!", "success");
         } else {
           // Check if it's a migration required error
           if (data.migration_required) {
@@ -1559,5 +2446,4 @@ const hasExistingProposal = !!existingInvoice;
   window.initializeSubjectEditing = initializeSubjectEditing;
   window.addNewLineItem = addNewLineItem;
   window.acceptProposal = acceptProposal;
-  // window.toggleProposalSelector = toggleProposalSelector;
 </script>
