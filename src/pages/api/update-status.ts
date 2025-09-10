@@ -35,6 +35,7 @@ import type { APIRoute } from "astro";
 import { SimpleProjectLogger } from "../../lib/simple-logging";
 import { supabase } from "../../lib/supabase";
 import { supabaseAdmin } from "../../lib/supabase-admin";
+import { getApiBaseUrl } from "../../lib/url-utils";
 
 export const OPTIONS: APIRoute = async () => {
   return new Response(null, {
@@ -105,7 +106,8 @@ export const POST: APIRoute = async ({ request }) => {
     }
 
     // Get status data after successful update
-    const baseUrl = new URL(request.url).origin;
+    // Get base URL using the proper utility function
+    const baseUrl = getApiBaseUrl(request);
     const statusDataResponse = await fetch(`${baseUrl}/api/get-project-status-data`, {
       method: "POST",
       headers: {

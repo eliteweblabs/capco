@@ -1,9 +1,52 @@
 import type { APIRoute } from "astro";
 import crypto from "crypto";
 
+// In-memory cache to prevent duplicate webhook processing
+const webhookCache = new Map<string, number>();
+const WEBHOOK_CACHE_TTL = 60000; // 1 minute
+const MAX_WEBHOOKS_PER_MINUTE = 10; // Max 10 webhooks per minute per project
+
+// Rate limiting function
+function checkRateLimit(projectId: string, eventType: string): boolean {
+  const now = Date.now();
+  const key = `${projectId}-${eventType}`;
+
+  // Clean up old entries
+  for (const [cacheKey, timestamp] of webhookCache.entries()) {
+    if (now - timestamp > WEBHOOK_CACHE_TTL) {
+      webhookCache.delete(cacheKey);
+    }
+  }
+
+  // Check if we've exceeded the rate limit
+  const recentWebhooks = Array.from(webhookCache.entries()).filter(
+    ([k, timestamp]) => k.startsWith(projectId) && now - timestamp < WEBHOOK_CACHE_TTL
+  ).length;
+
+  if (recentWebhooks >= MAX_WEBHOOKS_PER_MINUTE) {
+    console.log(
+      `🚫 [RESEND-WEBHOOK] Rate limit exceeded for project ${projectId}: ${recentWebhooks} webhooks in last minute`
+    );
+    return false;
+  }
+
+  // Add this webhook to cache
+  webhookCache.set(key, now);
+  return true;
+}
+
 export const POST: APIRoute = async ({ request }) => {
   console.log("📧 [RESEND-WEBHOOK] Webhook received");
   console.log("📧 [RESEND-WEBHOOK] Headers:", Object.fromEntries(request.headers.entries()));
+
+  // Check if webhooks are disabled via environment variable
+  if (import.meta.env.DISABLE_WEBHOOKS === "true") {
+    console.log("📧 [RESEND-WEBHOOK] Webhooks disabled via environment variable");
+    return new Response(JSON.stringify({ success: true, message: "Webhooks disabled" }), {
+      status: 200,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
 
   // Verify webhook signature
   const signature = request.headers.get("resend-signature");
@@ -58,11 +101,29 @@ export const POST: APIRoute = async ({ request }) => {
 
       case "email.opened":
         console.log("📧 [RESEND-WEBHOOK] Email opened:", data.email);
+        // Check rate limit before processing
+        const projectId = data.headers?.["X-Project-ID"] || data.headers?.["x-project-id"];
+        if (projectId && !checkRateLimit(projectId, "email.opened")) {
+          console.log("🚫 [RESEND-WEBHOOK] Rate limit exceeded for email.opened, skipping");
+          return new Response(JSON.stringify({ success: true, message: "Rate limited" }), {
+            status: 200,
+            headers: { "Content-Type": "application/json" },
+          });
+        }
         await handleEmailOpened(data);
         break;
 
       case "email.clicked":
         console.log("📧 [RESEND-WEBHOOK] Email clicked:", data.email);
+        // Check rate limit before processing
+        const clickedProjectId = data.headers?.["X-Project-ID"] || data.headers?.["x-project-id"];
+        if (clickedProjectId && !checkRateLimit(clickedProjectId, "email.clicked")) {
+          console.log("🚫 [RESEND-WEBHOOK] Rate limit exceeded for email.clicked, skipping");
+          return new Response(JSON.stringify({ success: true, message: "Rate limited" }), {
+            status: 200,
+            headers: { "Content-Type": "application/json" },
+          });
+        }
         await handleEmailClicked(data);
         break;
 
@@ -132,27 +193,45 @@ async function handleEmailOpened(data: any) {
 
     console.log("📧 [RESEND-WEBHOOK] Updating status from", currentStatus, "to", nextStatus);
 
-    // Call update-status API to handle the status update and all notifications
-    const updateResponse = await fetch(
-      `${import.meta.env.SITE_URL || "http://localhost:4321"}/api/update-status`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          projectId: projectId,
-          status: nextStatus, // Pass the next status to update to
-          currentUserId: authorId,
-          oldStatus: parseInt(currentStatus),
-        }),
-      }
-    );
+    // Call update-status API with timeout and error handling
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
 
-    if (updateResponse.ok) {
-      console.log("📧 [RESEND-WEBHOOK] ✅ Status update triggered successfully");
-    } else {
-      console.error("📧 [RESEND-WEBHOOK] ❌ Status update failed:", await updateResponse.text());
+    try {
+      const updateResponse = await fetch(
+        `${import.meta.env.SITE_URL || "http://localhost:4321"}/api/update-status`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            projectId: projectId,
+            status: nextStatus, // Pass the next status to update to
+            currentUserId: authorId,
+            oldStatus: parseInt(currentStatus),
+          }),
+          signal: controller.signal,
+        }
+      );
+
+      clearTimeout(timeoutId);
+
+      if (updateResponse.ok) {
+        console.log("📧 [RESEND-WEBHOOK] ✅ Status update triggered successfully");
+      } else {
+        const errorText = await updateResponse.text();
+        console.error("📧 [RESEND-WEBHOOK] ❌ Status update failed:", errorText);
+        // Don't throw error - just log it to prevent webhook retries
+      }
+    } catch (fetchError) {
+      clearTimeout(timeoutId);
+      if (fetchError.name === "AbortError") {
+        console.error("📧 [RESEND-WEBHOOK] ❌ Status update timed out after 10 seconds");
+      } else {
+        console.error("📧 [RESEND-WEBHOOK] ❌ Status update network error:", fetchError.message);
+      }
+      // Don't throw error - just log it to prevent webhook retries
     }
   } catch (error) {
     console.error("📧 [RESEND-WEBHOOK] Error handling email opened:", error);
