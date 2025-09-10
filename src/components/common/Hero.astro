@@ -1,53 +1,19 @@
 ---
-import ProjectStatusDropdown from "../project/ProjectStatusDropdown.astro";
-import StaffSelect from "../project/StaffSelectDropdown.astro";
 import SectionContainer from "./SectionContainer.astro";
 
 interface Props {
   title: string;
   description: string;
-  statusLabel?: string;
-  statusColor?: string;
-  projectId?: string;
-  userRole?: string;
-  projectTitle?: string;
-  project?: any;
-  statuses?: any[]; // Accept statuses to pass to ProjectStatusDropdown
   authorProfile?: any;
-  projectStatus?: number;
   currentRole?: string;
 }
 
-const {
-  title,
-  description,
-  currentRole,
-  statusLabel,
-  statusColor = "blue",
-  projectId,
-  projectStatus,
-  userRole,
-  projectTitle,
-  authorProfile,
-  project,
-  statuses = [],
-} = Astro.props;
-
-// Debug logging for Hero component props
-// console.log("🎯 [HERO] Hero component props:", {
-//   title,
-//   statusLabel,
-//   projectId,
-//   userRole,
-//   hasProject: !!project,
-//   showStatusAndStaff: !!(statusLabel && projectId),
-//   isAdminOrStaff: userRole === "Admin" || userRole === "Staff",
-// });
+const { title, description, authorProfile, currentRole } = Astro.props;
 ---
 
 <SectionContainer>
-  <div class="relative mx-auto md:flex">
-    <div class="flex-none md:flex-1">
+  <div class="relative mx-auto">
+    <div class="flex-none">
       <h1
         class="text-2xl font-medium text-hub-title dark:text-hub-title-dark"
         id="page-title"
@@ -62,46 +28,19 @@ const {
       />
       {
         authorProfile?.email && (
-          <p class="text-sm text-gray-500 dark:text-gray-400">{authorProfile.email}</p>
+          <p class="text-sm text-gray-500 dark:text-gray-400 mt-2">{authorProfile.email}</p>
+        )
+      }
+      {
+        authorProfile?.name && (
+          <p class="text-sm text-gray-600 dark:text-gray-300 mt-1">{authorProfile.name}</p>
+        )
+      }
+      {
+        currentRole && (
+          <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">Role: {currentRole}</p>
         )
       }
     </div>
-    {
-      statusLabel && projectId ? (
-        <div class="my-4 ml-0 md:ml-4 flex flex-shrink-0 items-center gap-2 md:my-2">
-          <ProjectStatusDropdown
-            projectId={projectId || ""}
-            projectStatus={projectStatus ?? 0}
-            statusLabel={statusLabel}
-            statusColor={statusColor}
-            currentRole={currentRole}
-            projectTitle={projectTitle}
-            statuses={statuses}
-            data-refresh
-          />
-          {(currentRole === "Admin" || currentRole === "Staff") && (
-            <div class="relative inline-block text-left">
-              <StaffSelect
-                id="hero-staff-select"
-                projectId={projectId?.toString() || ""}
-                value={project?.assigned_to_id || ""}
-                autoSave={true}
-                currentRole={currentRole}
-                placeholder="Assign staff..."
-                address={project?.address || ""}
-              />
-            </div>
-          )}
-        </div>
-      ) : statusLabel ? (
-        <div class="ml-4 flex-shrink-0">
-          <span
-            class={`inline-flex items-center rounded-full px-3 py-1 text-sm font-medium bg-${statusColor}-100 text-${statusColor}-800 dark:bg-${statusColor}-900/30 dark:text-${statusColor}-400`}
-          >
-            {statusLabel}
-          </span>
-        </div>
-      ) : null
-    }
   </div>
 </SectionContainer>

@@ -2,7 +2,8 @@
  * Integration examples for using the Slot Machine Picker with existing components
  */
 
-import { showSlotMachinePicker, SlotMachineConfig } from "./slot-machine-utils";
+import type { SlotMachineConfig } from "./slot-machine-utils";
+import { showSlotMachinePicker } from "./slot-machine-utils";
 
 /**
  * Replace the existing status dropdown with a slot machine picker
@@ -39,8 +40,12 @@ export async function showStatusPickerModal(
 
         if (response.ok) {
           // Show success notification
-          if (window.showModal) {
-            window.showModal("success", "Status Updated", `Project status changed to: ${label}`);
+          if ((window as any).showModal) {
+            (window as any).showModal(
+              "success",
+              "Status Updated",
+              `Project status changed to: ${label}`
+            );
           }
 
           // Refresh the page or update the UI
@@ -50,8 +55,8 @@ export async function showStatusPickerModal(
         }
       } catch (error) {
         console.error("Error updating status:", error);
-        if (window.showModal) {
-          window.showModal(
+        if ((window as any).showModal) {
+          (window as any).showModal(
             "error",
             "Update Failed",
             "Failed to update project status. Please try again."
@@ -99,8 +104,12 @@ export async function showStaffPickerModal(
 
         if (response.ok) {
           // Show success notification
-          if (window.showModal) {
-            window.showModal("success", "Assignment Updated", `Project assigned to: ${label}`);
+          if ((window as any).showModal) {
+            (window as any).showModal(
+              "success",
+              "Assignment Updated",
+              `Project assigned to: ${label}`
+            );
           }
 
           // Refresh the page or update the UI
@@ -110,8 +119,8 @@ export async function showStaffPickerModal(
         }
       } catch (error) {
         console.error("Error updating assignment:", error);
-        if (window.showModal) {
-          window.showModal(
+        if ((window as any).showModal) {
+          (window as any).showModal(
             "error",
             "Update Failed",
             "Failed to update project assignment. Please try again."
@@ -215,26 +224,6 @@ export function replaceStatusDropdown() {
     onSelect: (value, label) => {
       console.log("Status selected:", value, label);
       // Handle status change here
-    },
-  });
-}
-
-/**
- * Example: Replace the staff select button
- */
-export function replaceStaffSelect() {
-  replaceDropdownWithSlotMachine("hero-staff-select-button", {
-    id: "staff-picker",
-    title: "Assign Staff Member",
-    options: [
-      { value: "1", label: "John Smith" },
-      { value: "2", label: "Sarah Johnson" },
-      { value: "3", label: "Mike Wilson" },
-      { value: "4", label: "Emily Davis" },
-    ],
-    onSelect: (value, label) => {
-      console.log("Staff selected:", value, label);
-      // Handle staff assignment here
     },
   });
 }
