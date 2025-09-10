@@ -120,18 +120,18 @@ if (canChangeStatus) {
           {projectStatuses
           .map((status: any) => {
             const isCurrentStatus = status.status_code === projectStatus;
-            console.log('🔽 [STATUS-DROPDOWN] Rendering status:', {
-              statusCode: status.status_code,
-              adminStatusName: status.admin_status_name,
-              projectStatus,
-              isCurrentStatus,
-              comparison: `${status.status_code} === ${projectStatus}`,
-              types: {
-                statusCode: typeof status.status_code,
-                projectStatus: typeof projectStatus
-              },
-              rawStatus: status
-            });
+            // console.log('🔽 [STATUS-DROPDOWN] Rendering status:', {
+            //   statusCode: status.status_code,
+            //   adminStatusName: status.admin_status_name,
+            //   projectStatus,
+            //   isCurrentStatus,
+            //   comparison: `${status.status_code} === ${projectStatus}`,
+            //   types: {
+            //     statusCode: typeof status.status_code,
+            //     projectStatus: typeof projectStatus
+            //   },
+            //   rawStatus: status
+            // });
             return (
             <button
               type="button"
@@ -177,19 +177,19 @@ if (canChangeStatus) {
 
 <script define:vars={{projectId, projectStatus, currentRole}}>
   function initializeStatusDropdown() {
-    console.log('🔽 [STATUS-DROPDOWN] Initializing dropdown');
+    // console.log('🔽 [STATUS-DROPDOWN] Initializing dropdown');
     
     const dropdownButton = document.getElementById('status-dropdown-button');
     const dropdownMenu = document.getElementById('status-dropdown-menu');
     const currentProjectId = projectId;
     
-    console.log('🔽 [STATUS-DROPDOWN] Elements found:', {
-      dropdownButton: !!dropdownButton,
-      dropdownMenu: !!dropdownMenu,
-      projectId: currentProjectId,
-      buttonVisible: dropdownButton ? window.getComputedStyle(dropdownButton).display !== 'none' : false,
-      buttonText: dropdownButton ? dropdownButton.textContent : 'N/A'
-    });
+    // console.log('🔽 [STATUS-DROPDOWN] Elements found:', {
+    //   dropdownButton: !!dropdownButton,
+    //   dropdownMenu: !!dropdownMenu,
+    //   projectId: currentProjectId,
+    //   buttonVisible: dropdownButton ? window.getComputedStyle(dropdownButton).display !== 'none' : false,
+    //   buttonText: dropdownButton ? dropdownButton.textContent : 'N/A'
+    // });
     
     if (!dropdownButton || !dropdownMenu) {
       console.error('🔽 [STATUS-DROPDOWN] Missing required elements - cannot initialize dropdown');
@@ -219,16 +219,16 @@ if (canChangeStatus) {
 
     // Handle status selection
     const statusButtons = dropdownMenu.querySelectorAll('[data-status-code]');
-    console.log('🔽 [STATUS-DROPDOWN] Found status buttons:', statusButtons.length);
+    // console.log('🔽 [STATUS-DROPDOWN] Found status buttons:', statusButtons.length);
     
     statusButtons.forEach((button, index) => {
       const statusCode = button.getAttribute('data-status-code');
       const statusName = button.getAttribute('data-status-name');
-      console.log(`🔽 [STATUS-DROPDOWN] Button ${index}:`, { statusCode, statusName });
+      // console.log(`🔽 [STATUS-DROPDOWN] Button ${index}:`, { statusCode, statusName });
       
       button.addEventListener('click', async function(e) {
         e.stopPropagation();
-        console.log('🔽 [STATUS-DROPDOWN] Status button clicked:', { statusCode, statusName });
+        // console.log('🔽 [STATUS-DROPDOWN] Status button clicked:', { statusCode, statusName });
         
         if (statusCode && statusName) {
           await changeProjectStatus(currentProjectId, parseInt(statusCode), statusName);
@@ -241,7 +241,7 @@ if (canChangeStatus) {
 
     function openDropdown() {
       if (dropdownMenu && dropdownButton) {
-        console.log('🔽 [STATUS-DROPDOWN] Opening dropdown');
+        // console.log('🔽 [STATUS-DROPDOWN] Opening dropdown');
         dropdownMenu.classList.remove('hidden');
         dropdownButton.setAttribute('aria-expanded', 'true');
       } else {
@@ -254,19 +254,19 @@ if (canChangeStatus) {
 
     function closeDropdown() {
       if (dropdownMenu && dropdownButton) {
-        console.log('🔽 [STATUS-DROPDOWN] Closing dropdown');
+        // console.log('🔽 [STATUS-DROPDOWN] Closing dropdown');
         dropdownMenu.classList.add('hidden');
         dropdownButton.setAttribute('aria-expanded', 'false');
       }
     }
 
     async function changeProjectStatus(projectId, newStatus, statusName) {
-      console.log('🔽 [STATUS-DROPDOWN] changeProjectStatus called with:', {
-        projectId,
-        newStatus,
-        statusName,
-        dropdownButton: !!dropdownButton
-      });
+      // console.log('🔽 [STATUS-DROPDOWN] changeProjectStatus called with:', {
+      //   projectId,
+      //   newStatus,
+      //   statusName,
+      //   dropdownButton: !!dropdownButton
+      // });
       
       if (!dropdownButton) {
         console.error('🔽 [STATUS-DROPDOWN] No dropdown button found');
@@ -286,22 +286,22 @@ if (canChangeStatus) {
           Updating...
         `;
 
-        console.log("🔔 [STATUS-DROPDOWN] Updating project status:", {
-          projectId,
-          newStatus,
-          statusName
-        });
+        // console.log("🔔 [STATUS-DROPDOWN] Updating project status:", {
+        //   projectId,
+        //   newStatus,
+        //   statusName
+        // });
 
         // Get current user ID and old status from the page context
         const currentUserId = document.querySelector('[data-current-user-id]')?.getAttribute('data-current-user-id');
         const oldStatus = document.querySelector('[data-project-status]')?.getAttribute('data-project-status');
         
-        console.log("🔔 [STATUS-DROPDOWN] Found page context:", {
-          currentUserId,
-          oldStatus,
-          projectId,
-          newStatus
-        });
+        // console.log("🔔 [STATUS-DROPDOWN] Found page context:", {
+        //   currentUserId,
+        //   oldStatus,
+        //   projectId,
+        //   newStatus
+        // });
         
         // Make API call to update status using update-status endpoint
         const requestBody = {
@@ -311,7 +311,7 @@ if (canChangeStatus) {
           oldStatus: oldStatus ? parseInt(oldStatus) : null
         };
 
-        console.log("🔔 [STATUS-DROPDOWN] Making API call to /api/update-status with body:", requestBody);
+        // console.log("🔔 [STATUS-DROPDOWN] Making API call to /api/update-status with body:", requestBody);
         
         const response = await fetch('/api/update-status', {
           method: 'POST',
@@ -322,12 +322,12 @@ if (canChangeStatus) {
           body: JSON.stringify(requestBody)
         });
 
-        console.log("🔔 [STATUS-DROPDOWN] API response status:", response.status);
+        // console.log("🔔 [STATUS-DROPDOWN] API response status:", response.status);
 
         if (response.ok) {
           const result = await response.json();
-          console.log("🔔 [STATUS-DROPDOWN] API response result:", result);
-          console.log("🔔 [STATUS-DROPDOWN] API response success:", result.success);
+          // console.log("🔔 [STATUS-DROPDOWN] API response result:", result);
+          // console.log("🔔 [STATUS-DROPDOWN] API response success:", result.success);
           
           // Update the data-project-status attribute to reflect the new status
           const projectStatusElement = document.querySelector('[data-project-status]');
@@ -345,11 +345,11 @@ if (canChangeStatus) {
             
             const notification = isAdminOrStaff ? result.notificationData.admin : result.notificationData.client;
             
-            console.log("🔔 [STATUS-DROPDOWN] Showing modal:", { 
-              message: notification.message,
-              redirect: notification.redirect,
-              userType: isAdminOrStaff ? 'admin' : 'client'
-            });
+            // console.log("🔔 [STATUS-DROPDOWN] Showing modal:", { 
+            //   message: notification.message,
+            //   redirect: notification.redirect,
+            //   userType: isAdminOrStaff ? 'admin' : 'client'
+            // });
 
             if (notification) {
               window.showModal(
@@ -362,9 +362,9 @@ if (canChangeStatus) {
             }
           
           }
-          console.log("🔔 [STATUS-DROPDOWN] Checking for statusConfig:", !!result.statusConfig);
-          console.log("🔔 [STATUS-DROPDOWN] Available result:", Object.keys(result || {}));
-          console.log("🔔 [STATUS-DROPDOWN] StatusConfig details:", result.statusConfig);
+          // console.log("🔔 [STATUS-DROPDOWN] Checking for statusConfig:", !!result.statusConfig);
+          // console.log("🔔 [STATUS-DROPDOWN] Available result:", Object.keys(result || {}));
+          // console.log("🔔 [STATUS-DROPDOWN] StatusConfig details:", result.statusConfig);
           
           
           // Update the button text to show new status
@@ -421,17 +421,17 @@ if (canChangeStatus) {
               checkmarkSvg.innerHTML = '<path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>';
               button.appendChild(checkmarkSvg);
               
-              console.log("🔔 [STATUS-DROPDOWN] Added checkmark to status button:", {
-                statusCode: buttonStatusCode,
-                newStatus,
-                buttonText: button.querySelector('.font-medium')?.textContent
-              });
+              // console.log("🔔 [STATUS-DROPDOWN] Added checkmark to status button:", {
+              //   statusCode: buttonStatusCode,
+              //   newStatus,
+              //   buttonText: button.querySelector('.font-medium')?.textContent
+              // });
             }
           });
           
           // Show success message
-          console.log("🔔 [STATUS-DROPDOWN] Status updated successfully to:", statusName);
-          console.log("🔔 [STATUS-DROPDOWN] Email notifications should have been triggered");
+          // console.log("🔔 [STATUS-DROPDOWN] Status updated successfully to:", statusName);
+          // console.log("🔔 [STATUS-DROPDOWN] Email notifications should have been triggered");
         } else {
           const errorData = await response.json();
           console.error("🔔 [STATUS-DROPDOWN] API error response:", errorData);

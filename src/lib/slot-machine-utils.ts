@@ -115,6 +115,10 @@ export function showSlotMachinePicker(
         max-height: 280px;
         padding: 0;
         box-sizing: border-box;
+        /* Enhanced touch support */
+        touch-action: pan-y;
+        -webkit-overflow-scrolling: touch;
+        overscroll-behavior: contain;
       }
 
       .slot-machine-wheel::-webkit-scrollbar {
@@ -137,6 +141,9 @@ export function showSlotMachinePicker(
         -webkit-user-select: none;
         -moz-user-select: none;
         -ms-user-select: none;
+        /* Enhanced touch support */
+        touch-action: manipulation;
+        -webkit-tap-highlight-color: transparent;
       }
 
       .dark .slot-machine-item {
@@ -370,41 +377,95 @@ export function showSlotMachinePicker(
       { passive: false }
     );
 
-    // Touch support
-    wheel?.addEventListener("touchstart", (e) => {
-      isDragging = true;
-      startY = e.touches[0].clientY;
-      currentY = startY;
-      lastY = startY;
-      lastTime = Date.now();
-      velocity = 0;
-    });
+    // Touch support with improved mobile drag functionality
+    wheel?.addEventListener(
+      "touchstart",
+      (e) => {
+        console.log("🎰 [SLOT-MACHINE] Touch start detected");
+        isDragging = true;
+        startY = e.touches[0].clientY;
+        currentY = startY;
+        lastY = startY;
+        lastTime = Date.now();
+        velocity = 0;
 
-    wheel?.addEventListener("touchmove", (e) => {
-      if (!isDragging) return;
+        // Clear any existing snap timeout
+        if (snapTimeout) {
+          clearTimeout(snapTimeout);
+        }
+      },
+      { passive: false }
+    );
 
-      e.preventDefault();
-      currentY = e.touches[0].clientY;
-      const deltaY = currentY - lastY;
-      const deltaTime = Date.now() - lastTime;
+    wheel?.addEventListener(
+      "touchmove",
+      (e) => {
+        if (!isDragging) return;
 
-      if (deltaTime > 0) {
-        velocity = deltaY / deltaTime;
-      }
+        e.preventDefault();
+        e.stopPropagation();
 
-      if (wheel) {
-        wheel.scrollTop -= deltaY;
-      }
-      lastY = currentY;
-      lastTime = Date.now();
-    });
+        currentY = e.touches[0].clientY;
+        const deltaY = currentY - lastY;
+        const deltaTime = Date.now() - lastTime;
 
-    wheel?.addEventListener("touchend", () => {
-      if (!isDragging) return;
-      isDragging = false;
-      // Remove snapping for now to test basic scrolling
-      // snapToNearest();
-    });
+        if (deltaTime > 0) {
+          velocity = deltaY / deltaTime;
+        }
+
+        if (wheel) {
+          // More responsive touch scrolling
+          wheel.scrollTop -= deltaY * 1.2; // Increased sensitivity
+        }
+        lastY = currentY;
+        lastTime = Date.now();
+
+        console.log("🎰 [SLOT-MACHINE] Touch move - deltaY:", deltaY, "velocity:", velocity);
+      },
+      { passive: false }
+    );
+
+    wheel?.addEventListener(
+      "touchend",
+      () => {
+        if (!isDragging) return;
+        console.log("🎰 [SLOT-MACHINE] Touch end - velocity:", velocity);
+
+        isDragging = false;
+
+        // Add momentum scrolling for better mobile experience
+        if (Math.abs(velocity) > 0.5) {
+          let momentum = velocity * 50; // Momentum multiplier
+          let momentumSteps = 0;
+          const maxMomentumSteps = 10;
+
+          const applyMomentum = () => {
+            if (momentumSteps >= maxMomentumSteps || Math.abs(momentum) < 1) {
+              // Apply final snap after momentum
+              setTimeout(() => {
+                snapToNearest();
+              }, 100);
+              return;
+            }
+
+            if (wheel) {
+              wheel.scrollTop -= momentum;
+              momentum *= 0.9; // Decay momentum
+              momentumSteps++;
+              requestAnimationFrame(applyMomentum);
+            }
+          };
+
+          requestAnimationFrame(applyMomentum);
+        } else {
+          // Direct snap for low velocity
+          setTimeout(() => {
+            snapToNearest();
+          }, 150);
+        }
+      },
+      { passive: false }
+    );
 
     function handleWheel(deltaY: number) {
       if (!wheel) return;

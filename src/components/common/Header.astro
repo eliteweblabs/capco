@@ -470,10 +470,40 @@ const visibleNavigation = getVisibleNavItems(navigation, isAuth, currentRole, is
     });
   }
 
+  // Virtual keyboard detection
+  let initialViewportHeight = window.innerHeight;
+  let isVirtualKeyboardOpen = false;
+
+  function detectVirtualKeyboard() {
+    const currentHeight = window.innerHeight;
+    const heightDifference = initialViewportHeight - currentHeight;
+
+    // If viewport height decreased by more than 150px, likely virtual keyboard is open
+    if (heightDifference > 150) {
+      if (!isVirtualKeyboardOpen) {
+        isVirtualKeyboardOpen = true;
+        console.log("📱 [HEADER] Virtual keyboard detected as OPEN");
+        document.body.classList.add("virtual-keyboard-open");
+      }
+    } else {
+      if (isVirtualKeyboardOpen) {
+        isVirtualKeyboardOpen = false;
+        console.log("📱 [HEADER] Virtual keyboard detected as CLOSED");
+        document.body.classList.remove("virtual-keyboard-open");
+      }
+    }
+  }
+
   // Safari 18 beta fix - ensure header stays fixed to top
   function fixHeaderPosition() {
     const header = document.querySelector("header");
     if (header) {
+      // Skip header fixes when virtual keyboard is open to prevent layout issues
+      if (isVirtualKeyboardOpen) {
+        console.log("📱 [HEADER] Skipping header fixes - virtual keyboard is open");
+        return;
+      }
+
       // Force re-apply positioning with !important
       header.style.setProperty("position", "sticky", "important");
       header.style.setProperty("top", "0", "important");
@@ -495,9 +525,17 @@ const visibleNavigation = getVisibleNavItems(navigation, isAuth, currentRole, is
   fixHeaderPosition();
 
   // Add multiple event listeners to catch Safari 18 beta resets
-  window.addEventListener("resize", fixHeaderPosition);
+  window.addEventListener("resize", () => {
+    detectVirtualKeyboard();
+    fixHeaderPosition();
+  });
   window.addEventListener("orientationchange", () => {
-    setTimeout(fixHeaderPosition, 100);
+    // Update initial height after orientation change
+    setTimeout(() => {
+      initialViewportHeight = window.innerHeight;
+      detectVirtualKeyboard();
+      fixHeaderPosition();
+    }, 100);
   });
   window.addEventListener("scroll", fixHeaderPosition);
   window.addEventListener("focus", fixHeaderPosition);
@@ -618,5 +656,23 @@ const visibleNavigation = getVisibleNavItems(navigation, isAuth, currentRole, is
     top: 0 !important;
     z-index: 10 !important;
     transform: translateZ(0) !important; /* Force hardware acceleration */
+  }
+
+  /* Virtual keyboard open state - prevent header interference */
+  .virtual-keyboard-open header {
+    position: relative !important;
+    top: auto !important;
+    transform: none !important;
+  }
+
+  /* Adjust sticky elements when virtual keyboard is open */
+  .virtual-keyboard-open #sticky-container {
+    bottom: 0.5rem !important;
+    transform: translateY(-50px) !important;
+  }
+
+  /* Prevent layout shifts when virtual keyboard opens/closes */
+  .virtual-keyboard-open {
+    overflow: hidden;
   }
 </style>
