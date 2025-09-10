@@ -117,30 +117,42 @@ try {
     console.error("🏗️ [DASHBOARD] Supabase client not available");
   }
 
-  // Fetch status labels directly in this page
+  // Fetch status labels directly from database to avoid DNS issues
   let statusLabels: Record<number, { status_name: string; [key: string]: any }> = {};
-  if (isAuth) {
+  if (isAuth && supabase) {
     try {
-      const statusesResponse = await fetch(
-        `${Astro.url.origin}/api/get-project-statuses?refresh=true`,
-        {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-            "X-User-Role": currentRole || "Client",
-            Cookie: `sb-access-token=${Astro.cookies.get("sb-access-token")?.value}; sb-refresh-token=${Astro.cookies.get("sb-refresh-token")?.value}`,
-          },
-        }
-      );
+      console.log("🏗️ [DASHBOARD] Fetching statuses directly from database");
 
-      if (statusesResponse.ok) {
-        const statusesResult = await statusesResponse.json();
-        if (statusesResult.success) {
-          statusLabels = statusesResult.statuses || {};
-        }
+      // Fetch project statuses directly from database
+      const { data: statusesData, error: statusesError } = supabaseAdmin
+        ? await supabaseAdmin
+            .from("project_statuses")
+            .select(
+              "status_code, admin_status_name, project_action, client_status_name, client_status_tab"
+            )
+            .neq("status_code", 0)
+            .order("status_code")
+        : await supabase
+            .from("project_statuses")
+            .select(
+              "status_code, admin_status_name, project_action, client_status_name, client_status_tab"
+            )
+            .neq("status_code", 0)
+            .order("status_code");
+
+      if (statusesError) {
+        console.error("🏗️ [DASHBOARD] Statuses database error:", statusesError);
+      } else {
+        // Convert array to object for easier lookup
+        statusLabels = (statusesData || []).reduce((acc: any, status: any) => {
+          acc[status.status_code] = status;
+          return acc;
+        }, {});
+
+        console.log("🏗️ [DASHBOARD] Statuses fetched:", statusesData?.length || 0);
       }
     } catch (error) {
-      console.error("Error fetching status labels:", error);
+      console.error("🏗️ [DASHBOARD] Error fetching statuses:", error);
     }
   }
 

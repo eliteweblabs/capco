@@ -4,26 +4,80 @@ console.log("🏗️ [PROJECTS] Projects showcase page loading...");
 import App from "../components/common/App.astro";
 import SectionContainer from "../components/common/SectionContainer.astro";
 import BoxIcon from "../components/common/BoxIcon.astro";
+import { supabase } from "../lib/supabase";
+import { supabaseAdmin } from "../lib/supabase-admin";
 
 // Para cambiar idioma de textos
 import { getI18N } from "../i18n";
 const { currentLocale } = Astro;
 const i18n = getI18N({ currentLocale });
 
-// Fetch featured projects from API
+// Fetch featured projects directly from database to avoid DNS issues
 let featuredProjects = [];
 let error = null;
 
 try {
-  const response = await fetch(`${Astro.url.origin}/api/get-featured-projects`);
-  const result = await response.json();
+  console.log("🏗️ [PROJECTS] Fetching featured projects directly from database");
   
-  if (result.success) {
-    featuredProjects = result.projects;
-    console.log(`🏗️ [PROJECTS] Loaded ${featuredProjects.length} featured projects`);
+  if (supabase) {
+    // Fetch projects for display (completed projects with status 220)
+    const { data: projects, error: dbError } = supabaseAdmin
+      ? await supabaseAdmin.from("projects").select(`
+          id,
+          address,
+          title,
+          description,
+          sq_ft,
+          new_construction,
+          status,
+          created_at,
+          updated_at,
+          featured
+        `)
+        .eq("status", 220) // Only completed projects
+        .not("address", "is", null) // Has address
+        .eq("featured", "yes") // Has featured
+        .order("updated_at", { ascending: false })
+        .limit(6)
+      : await supabase.from("projects").select(`
+          id,
+          address,
+          title,
+          description,
+          sq_ft,
+          new_construction,
+          status,
+          created_at,
+          updated_at,
+          featured
+        `)
+        .eq("status", 220) // Only completed projects
+        .not("address", "is", null) // Has address
+        .eq("featured", "yes") // Has featured
+        .order("updated_at", { ascending: false })
+        .limit(6);
+
+    if (dbError) {
+      error = "Failed to load projects from database";
+      console.error("🏗️ [PROJECTS] Database error:", dbError);
+    } else {
+      // Transform data to match expected format
+      featuredProjects = (projects || []).map((project: any) => ({
+        id: project.id,
+        title: project.title,
+        address: project.address,
+        description: project.description,
+        squareFootage: project.sq_ft,
+        isNewConstruction: project.new_construction,
+        completedAt: project.updated_at,
+        featured: project.featured
+      }));
+      
+      console.log(`🏗️ [PROJECTS] Loaded ${featuredProjects.length} featured projects`);
+    }
   } else {
-    error = result.error;
-    console.error("🏗️ [PROJECTS] Failed to load projects:", error);
+    error = "Database connection not available";
+    console.error("🏗️ [PROJECTS] Supabase client not available");
   }
 } catch (fetchError) {
   error = "Failed to connect to database";
