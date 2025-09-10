@@ -434,6 +434,37 @@ const formActions = getFilteredFormActions(currentRole, isNewProject, projectSta
     // Add form submission handler
     form.addEventListener("submit", handleFormSubmit);
 
+    // Add validation for square footage input to prevent non-numeric characters
+    const squareFootInput = form.querySelector('input[name="sq_ft"]') as HTMLInputElement;
+    if (squareFootInput) {
+      // Prevent non-numeric characters on keypress
+      squareFootInput.addEventListener("keypress", function (e) {
+        const char = String.fromCharCode(e.which);
+        if (!/[0-9]/.test(char) && e.which !== 8 && e.which !== 0) {
+          e.preventDefault();
+        }
+      });
+
+      // Prevent pasting non-numeric content
+      squareFootInput.addEventListener("paste", function (e) {
+        e.preventDefault();
+        const paste = (e.clipboardData || (window as any).clipboardData).getData("text");
+        const numericOnly = paste.replace(/[^0-9]/g, "");
+        if (numericOnly) {
+          squareFootInput.value = numericOnly;
+        }
+      });
+
+      // Remove any non-numeric characters on input
+      squareFootInput.addEventListener("input", function (e) {
+        const target = e.target as HTMLInputElement;
+        const numericOnly = target.value.replace(/[^0-9]/g, "");
+        if (target.value !== numericOnly) {
+          target.value = numericOnly;
+        }
+      });
+    }
+
     // Form submission handler
     async function handleFormSubmit(event: Event) {
       event.preventDefault();
