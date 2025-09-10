@@ -13,7 +13,7 @@ export const POST: APIRoute = async ({ request }) => {
       });
     }
 
-    console.log("📄 [GENERATE-CONTRACT-PDF] Starting PDF generation for project:", projectId);
+    // console.log("📄 [GENERATE-CONTRACT-PDF] Starting PDF generation for project:", projectId);
 
     // Get project data
     const { data: project, error: projectError } = await supabase
@@ -57,7 +57,7 @@ export const POST: APIRoute = async ({ request }) => {
       );
     }
 
-    console.log("✅ [GENERATE-CONTRACT-PDF] Contract PDF generated successfully:", contractUrl);
+    // console.log("✅ [GENERATE-CONTRACT-PDF] Contract PDF generated successfully:", contractUrl);
 
     return new Response(
       JSON.stringify({
@@ -86,7 +86,7 @@ async function generateContractPDF(
   signedAt: string
 ): Promise<string> {
   try {
-    console.log("📄 [GENERATE-CONTRACT-PDF] Generating contract PDF for project:", project.id);
+    // console.log("📄 [GENERATE-CONTRACT-PDF] Generating contract PDF for project:", project.id);
 
     // Launch Puppeteer
     const browser = await puppeteer.launch({
@@ -293,7 +293,7 @@ async function generateContractPDF(
       throw new Error("Failed to get public URL for PDF");
     }
 
-    console.log("✅ [GENERATE-CONTRACT-PDF] PDF saved to storage:", urlData.publicUrl);
+    // console.log("✅ [GENERATE-CONTRACT-PDF] PDF saved to storage:", urlData.publicUrl);
 
     // Log contract file in database
     const { error: dbError } = await supabase.from("files").insert({

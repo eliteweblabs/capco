@@ -4,11 +4,11 @@ import { supabase } from "../../lib/supabase";
 import { getApiBaseUrl } from "../../lib/url-utils";
 
 export const POST: APIRoute = async ({ request, cookies }) => {
-  console.log("📝 [CREATE-PROJECT] API route called!");
+  // console.log("📝 [CREATE-PROJECT] API route called!");
 
   try {
     const body = await request.json();
-    console.log("📝 [CREATE-PROJECT] Received request body:", JSON.stringify(body, null, 2));
+    // console.log("📝 [CREATE-PROJECT] Received request body:", JSON.stringify(body, null, 2));
 
     if (!supabase) {
       return new Response(JSON.stringify({ error: "Database connection not available" }), {
@@ -20,13 +20,13 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     const accessToken = cookies.get("sb-access-token")?.value;
     const refreshToken = cookies.get("sb-refresh-token")?.value;
 
-    console.log("📝 [CREATE-PROJECT] Auth check:", {
+    // console.log("📝 [CREATE-PROJECT] Auth check:", {
       hasAccessToken: !!accessToken,
       hasRefreshToken: !!refreshToken,
     });
 
     if (!accessToken || !refreshToken) {
-      console.log("📝 [CREATE-PROJECT] Missing auth tokens");
+      // console.log("📝 [CREATE-PROJECT] Missing auth tokens");
       return new Response(JSON.stringify({ error: "Not authenticated" }), {
         status: 401,
       });
@@ -39,14 +39,14 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     });
 
     if (sessionError || !session.session?.user) {
-      console.log("📝 [CREATE-PROJECT] Session error:", sessionError);
+      // console.log("📝 [CREATE-PROJECT] Session error:", sessionError);
       return new Response(JSON.stringify({ error: "Invalid session" }), {
         status: 401,
       });
     }
 
     const userId = session.session.user.id;
-    console.log("📝 [CREATE-PROJECT] User authenticated:", {
+    // console.log("📝 [CREATE-PROJECT] User authenticated:", {
       userId,
       userEmail: session.session.user.email,
     });
@@ -59,13 +59,13 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       .single();
 
     if (profileError) {
-      console.log("📝 [CREATE-PROJECT] Error fetching user profile:", profileError);
+      // console.log("📝 [CREATE-PROJECT] Error fetching user profile:", profileError);
       return new Response(JSON.stringify({ error: "Failed to get user profile" }), {
         status: 500,
       });
     }
 
-    console.log("📝 [CREATE-PROJECT] User profile:", userProfile);
+    // console.log("📝 [CREATE-PROJECT] User profile:", userProfile);
 
     let projectAuthorId: string;
 
@@ -73,7 +73,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     if (userProfile.role === "Client") {
       // If current user is a client, they are the project author
       projectAuthorId = userId;
-      console.log("📝 [CREATE-PROJECT] Client user - using their ID as author:", projectAuthorId);
+      // console.log("📝 [CREATE-PROJECT] Client user - using their ID as author:", projectAuthorId);
     } else {
       // If current user is admin/staff, handle new client creation or existing client
       if (body.new_client === "on") {
@@ -90,7 +90,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
           );
         }
 
-        console.log("📝 [CREATE-PROJECT] Creating new client using create-user endpoint");
+        // console.log("📝 [CREATE-PROJECT] Creating new client using create-user endpoint");
 
         try {
           // Call the create-user API to create the new client
@@ -126,7 +126,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
           // Use the created user's ID as the project author
           projectAuthorId = createUserResult.user.id;
-          console.log("📝 [CREATE-PROJECT] New client created successfully, ID:", projectAuthorId);
+          // console.log("📝 [CREATE-PROJECT] New client created successfully, ID:", projectAuthorId);
         } catch (error) {
           console.error("📝 [CREATE-PROJECT] Error calling create-user endpoint:", error);
           return new Response(
@@ -148,7 +148,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
           );
         }
         projectAuthorId = body.author_id;
-        console.log(
+        // console.log(
           "📝 [CREATE-PROJECT] Admin/Staff user - using existing client ID:",
           projectAuthorId
         );
@@ -159,7 +159,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     const buttonGroupFields = ["building", "project", "service", "requested_docs"];
 
     buttonGroupFields.forEach((fieldName) => {
-      console.log(`📝 [CREATE-PROJECT] Debug ${fieldName} field:`, {
+      // console.log(`📝 [CREATE-PROJECT] Debug ${fieldName} field:`, {
         value: body[fieldName],
         type: typeof body[fieldName],
         isArray: Array.isArray(body[fieldName]),
@@ -189,7 +189,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       updated_at: new Date().toISOString(), // Set initial update timestamp
     };
 
-    console.log(
+    // console.log(
       "📝 [CREATE-PROJECT] Inserting project data:",
       JSON.stringify(projectData, null, 2)
     );
@@ -197,7 +197,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     // SAFETY CHECK: Ensure project author is always a client
     // This prevents the issue where projects could be created with admin/staff authors
     // The check validates that the author_id corresponds to a user with role = 'Client'
-    console.log("📝 [CREATE-PROJECT] Safety check: Verifying project author role");
+    // console.log("📝 [CREATE-PROJECT] Safety check: Verifying project author role");
     const { data: authorProfile, error: authorCheckError } = await supabase
       .from("profiles")
       .select("role")
@@ -238,13 +238,13 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       );
     }
 
-    console.log("📝 [CREATE-PROJECT] ✅ Safety check passed - project author is a client:", {
+    // console.log("📝 [CREATE-PROJECT] ✅ Safety check passed - project author is a client:", {
       authorId: projectAuthorId,
       authorRole: authorProfile.role,
     });
 
     // Create project
-    console.log("📝 [CREATE-PROJECT] About to insert project into database");
+    // console.log("📝 [CREATE-PROJECT] About to insert project into database");
     const { data: projects, error } = await supabase
       .from("projects")
       .insert([projectData])
@@ -283,7 +283,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
     const project = projects[0];
 
-    console.log("📝 [CREATE-PROJECT] Project created successfully:", {
+    // console.log("📝 [CREATE-PROJECT] Project created successfully:", {
       id: project.id,
       author_id: project.author_id,
       title: project.title,
@@ -299,7 +299,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         projectId: project.id,
       });
     } else {
-      console.log(
+      // console.log(
         "📝 [CREATE-PROJECT] ✅ Project created with correct initial status:",
         project.status
       );
@@ -308,7 +308,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     // Note: Frontend should now call /api/update-status to set status from 0 -> 10
     // This will trigger proper email notifications for "Specs Received" status
 
-    console.log("📝 [CREATE-PROJECT] ==========================================");
+    // console.log("📝 [CREATE-PROJECT] ==========================================");
 
     // Log the project creation
     try {

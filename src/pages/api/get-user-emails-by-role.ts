@@ -3,13 +3,13 @@ import { supabase } from "../../lib/supabase";
 import { supabaseAdmin } from "../../lib/supabase-admin";
 
 export const POST: APIRoute = async ({ request }) => {
-  console.log("📧 [GET-USER-EMAILS-BY-ROLE] API called");
+  // console.log("📧 [GET-USER-EMAILS-BY-ROLE] API called");
 
   try {
     const body = await request.json();
     const { roles, userIds } = body;
 
-    console.log("📧 [GET-USER-EMAILS-BY-ROLE] Request data:", {
+    // console.log("📧 [GET-USER-EMAILS-BY-ROLE] Request data:", {
       roles: roles || [],
       userIds: userIds || [],
     });
@@ -18,7 +18,7 @@ export const POST: APIRoute = async ({ request }) => {
 
     // Get emails by roles
     if (roles && roles.length > 0) {
-      console.log("📧 [GET-USER-EMAILS-BY-ROLE] Fetching emails for roles:", roles);
+      // console.log("📧 [GET-USER-EMAILS-BY-ROLE] Fetching emails for roles:", roles);
 
       const { data: roleUsers, error: roleError } = await supabase
         .from("profiles")
@@ -34,13 +34,13 @@ export const POST: APIRoute = async ({ request }) => {
               user.id
             );
             if (authError || !authUser?.user?.email) {
-              console.log(
+              // console.log(
                 `📧 [GET-USER-EMAILS-BY-ROLE] No email found for ${user.role} user ${user.id}`
               );
               continue;
             }
             emails.push(authUser.user.email);
-            console.log(
+            // console.log(
               `📧 [GET-USER-EMAILS-BY-ROLE] Found ${user.role} email: ${authUser.user.email}`
             );
           } catch (error) {
@@ -55,18 +55,18 @@ export const POST: APIRoute = async ({ request }) => {
 
     // Get emails by specific user IDs
     if (userIds && userIds.length > 0) {
-      console.log("📧 [GET-USER-EMAILS-BY-ROLE] Fetching emails for user IDs:", userIds);
+      // console.log("📧 [GET-USER-EMAILS-BY-ROLE] Fetching emails for user IDs:", userIds);
 
       for (const userId of userIds) {
         try {
           const { data: authUser, error: authError } =
             await supabaseAdmin.auth.admin.getUserById(userId);
           if (authError || !authUser?.user?.email) {
-            console.log(`📧 [GET-USER-EMAILS-BY-ROLE] No email found for user ID ${userId}`);
+            // console.log(`📧 [GET-USER-EMAILS-BY-ROLE] No email found for user ID ${userId}`);
             continue;
           }
           emails.push(authUser.user.email);
-          console.log(
+          // console.log(
             `📧 [GET-USER-EMAILS-BY-ROLE] Found email for user ID ${userId}: ${authUser.user.email}`
           );
         } catch (error) {
@@ -81,7 +81,7 @@ export const POST: APIRoute = async ({ request }) => {
     // Remove duplicates
     const uniqueEmails = [...new Set(emails)];
 
-    console.log("📧 [GET-USER-EMAILS-BY-ROLE] Final unique emails:", uniqueEmails);
+    // console.log("📧 [GET-USER-EMAILS-BY-ROLE] Final unique emails:", uniqueEmails);
 
     return new Response(
       JSON.stringify({

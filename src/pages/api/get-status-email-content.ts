@@ -96,7 +96,7 @@ export const GET: APIRoute = async ({ url, cookies }) => {
       total_users: usersToNotify.length,
     };
 
-    console.log(`📧 [GET-STATUS-EMAIL] Retrieved email content for status ${statusNumber}:`, {
+    // console.log(`📧 [GET-STATUS-EMAIL] Retrieved email content for status ${statusNumber}:`, {
       admin_status_name,
       notify,
       total_users: usersToNotify.length,

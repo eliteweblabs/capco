@@ -3,10 +3,10 @@ import { SimpleProjectLogger } from "../../../lib/simple-logging";
 import { supabase } from "../../../lib/supabase";
 
 export const PUT: APIRoute = async ({ request, cookies, params }) => {
-  console.log("🔧 [UPDATE-PROJECT] API called with projectId:", params.id);
+  // console.log("🔧 [UPDATE-PROJECT] API called with projectId:", params.id);
   try {
     const body = await request.json();
-    console.log("🔧 [UPDATE-PROJECT] Request body:", body);
+    // console.log("🔧 [UPDATE-PROJECT] Request body:", body);
     const projectId = params.id;
 
     if (!projectId) {
@@ -101,18 +101,18 @@ export const PUT: APIRoute = async ({ request, cookies, params }) => {
     // Note: No complex setup needed for simple logging
 
     // Build update query
-    console.log("🔧 [UPDATE-PROJECT] Building update query for project:", projectId);
-    console.log("🔧 [UPDATE-PROJECT] Update data:", updateData);
-    console.log("🔧 [UPDATE-PROJECT] User role:", userRole);
+    // console.log("🔧 [UPDATE-PROJECT] Building update query for project:", projectId);
+    // console.log("🔧 [UPDATE-PROJECT] Update data:", updateData);
+    // console.log("🔧 [UPDATE-PROJECT] User role:", userRole);
 
     let updateQuery = supabase!.from("projects").update(updateData).eq("id", projectId);
 
     // No additional filters needed - only Admin and Staff can reach this point
     // Both Admin and Staff can update any project
 
-    console.log("🔧 [UPDATE-PROJECT] Executing database update...");
+    // console.log("🔧 [UPDATE-PROJECT] Executing database update...");
     const { data: projects, error } = await updateQuery.select();
-    console.log("🔧 [UPDATE-PROJECT] Database update completed:", {
+    // console.log("🔧 [UPDATE-PROJECT] Database update completed:", {
       projects: projects?.length,
       error: error?.message,
     });
@@ -139,8 +139,8 @@ export const PUT: APIRoute = async ({ request, cookies, params }) => {
       // Create the new project data by merging current project with updates
       const newProjectData = { ...currentProject, ...updateData };
 
-      console.log(`📝 [API] Logging project update for project ${projectId} by ${userEmail}`);
-      console.log(`📝 [API] Status change: ${currentProject.status} -> ${newProjectData.status}`);
+      // console.log(`📝 [API] Logging project update for project ${projectId} by ${userEmail}`);
+      // console.log(`📝 [API] Status change: ${currentProject.status} -> ${newProjectData.status}`);
 
       await SimpleProjectLogger.logProjectChanges(
         parseInt(projectId),
@@ -149,7 +149,7 @@ export const PUT: APIRoute = async ({ request, cookies, params }) => {
         newProjectData
       );
 
-      console.log(`📝 [API] Project update logged successfully`);
+      // console.log(`📝 [API] Project update logged successfully`);
     } catch (logError) {
       console.error("📝 [API] Error logging project update:", logError);
       // Don't fail the request if logging fails

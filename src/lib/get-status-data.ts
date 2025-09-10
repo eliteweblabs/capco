@@ -20,20 +20,20 @@ export async function getStatusData(
   projectId: number,
   newStatus: number
 ): Promise<StatusData | null> {
-  console.log("🔍 [GET-STATUS-DATA] ==========================================");
-  console.log(
+  // console.log("🔍 [GET-STATUS-DATA] ==========================================");
+  // console.log(
     `🔍 [GET-STATUS-DATA] Starting data collection for project ${projectId}, status ${newStatus}`
   );
-  console.log("🔍 [GET-STATUS-DATA] ==========================================");
+  // console.log("🔍 [GET-STATUS-DATA] ==========================================");
 
   // Get project data
-  console.log("🔍 [GET-STATUS-DATA] Step 1: Fetching project data...");
+  // console.log("🔍 [GET-STATUS-DATA] Step 1: Fetching project data...");
   const project = await getProjectData(projectId);
   if (!project) {
     console.error("🔍 [GET-STATUS-DATA] ❌ Failed to get project data");
     return null;
   }
-  console.log("🔍 [GET-STATUS-DATA] ✅ Project data retrieved:", {
+  // console.log("🔍 [GET-STATUS-DATA] ✅ Project data retrieved:", {
     id: project.id,
     address: project.address,
     author_id: project.author_id,
@@ -41,26 +41,26 @@ export async function getStatusData(
   });
 
   // Get profile data
-  console.log("🔍 [GET-STATUS-DATA] Step 2: Fetching profile data...");
+  // console.log("🔍 [GET-STATUS-DATA] Step 2: Fetching profile data...");
   const profile = await getProfileData(project.author_id);
   if (!profile) {
     console.error("🔍 [GET-STATUS-DATA] ❌ Failed to get profile data");
     return null;
   }
-  console.log("🔍 [GET-STATUS-DATA] ✅ Profile data retrieved:", {
+  // console.log("🔍 [GET-STATUS-DATA] ✅ Profile data retrieved:", {
     id: profile.id,
     company_name: profile.company_name,
     email: profile.email,
   });
 
   // Get status config
-  console.log("🔍 [GET-STATUS-DATA] Step 3: Fetching status config...");
+  // console.log("🔍 [GET-STATUS-DATA] Step 3: Fetching status config...");
   const statusConfig = await getStatusConfig(newStatus);
   if (!statusConfig) {
     console.error("🔍 [GET-STATUS-DATA] ❌ Failed to get status config");
     return null;
   }
-  console.log("🔍 [GET-STATUS-DATA] ✅ Status config retrieved:", {
+  // console.log("🔍 [GET-STATUS-DATA] ✅ Status config retrieved:", {
     modal_admin: statusConfig.modal_admin,
     modal_client: statusConfig.modal_client,
     notify: statusConfig.notify,
@@ -77,9 +77,9 @@ export async function getStatusData(
     newStatus,
   };
 
-  console.log("🔍 [GET-STATUS-DATA] ==========================================");
-  console.log("🔍 [GET-STATUS-DATA] ✅ All data successfully gathered!");
-  console.log("🔍 [GET-STATUS-DATA] ==========================================");
+  // console.log("🔍 [GET-STATUS-DATA] ==========================================");
+  // console.log("🔍 [GET-STATUS-DATA] ✅ All data successfully gathered!");
+  // console.log("🔍 [GET-STATUS-DATA] ==========================================");
 
   return result;
 }

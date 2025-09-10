@@ -8,11 +8,11 @@ import { supabase } from "../../lib/supabase";
 import { supabaseAdmin } from "../../lib/supabase-admin";
 
 export const POST: APIRoute = async ({ request, cookies }) => {
-  console.log("📧 little bit bigger API endpoint called");
-  console.log("📧 [EMAIL-DELIVERY] ==========================================");
-  console.log("📧 [EMAIL-DELIVERY] Timestamp:", new Date().toISOString());
-  console.log("📧 [EMAIL-DELIVERY] Request method:", request.method);
-  console.log("📧 [EMAIL-DELIVERY] Request URL:", request.url);
+  // console.log("📧 little bit bigger API endpoint called");
+  // console.log("📧 [EMAIL-DELIVERY] ==========================================");
+  // console.log("📧 [EMAIL-DELIVERY] Timestamp:", new Date().toISOString());
+  // console.log("📧 [EMAIL-DELIVERY] Request method:", request.method);
+  // console.log("📧 [EMAIL-DELIVERY] Request URL:", request.url);
 
   // Log to file for debugging
   const fs = await import("fs");
@@ -20,7 +20,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
   fs.appendFileSync("/tmp/astro-email.log", logEntry);
 
   try {
-    console.log("📧 [EMAIL-DELIVERY] Starting email delivery process");
+    // console.log("📧 [EMAIL-DELIVERY] Starting email delivery process");
 
     if (!supabase || !supabaseAdmin) {
       console.error("📧 [EMAIL-DELIVERY] Database clients not available");
@@ -37,7 +37,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     }
 
     const body = await request.json();
-    console.log("📧 [EMAIL-DELIVERY] Request body:", JSON.stringify(body, null, 2));
+    // console.log("📧 [EMAIL-DELIVERY] Request body:", JSON.stringify(body, null, 2));
 
     // emailType: "client_comment",
     // usersToNotify: usersToNotify,
@@ -59,10 +59,10 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       includeResendHeaders = false,
     } = body;
 
-    console.log("📧 [EMAIL-DELIVERY] Parameter validation:");
-    console.log("  - emailType:", emailType);
-    console.log("  - usersToNotify count:", usersToNotify?.length || 0);
-    console.log("📧 [EMAIL-DELIVERY] Email type:", emailType);
+    // console.log("📧 [EMAIL-DELIVERY] Parameter validation:");
+    // console.log("  - emailType:", emailType);
+    // console.log("  - usersToNotify count:", usersToNotify?.length || 0);
+    // console.log("📧 [EMAIL-DELIVERY] Email type:", emailType);
 
     // Simple validation - just need projectId and usersToNotify
     if (!usersToNotify || !emailContent || !emailSubject) {
@@ -80,7 +80,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     }
 
     // Resolve users to notify - convert role/id references to actual user objects with emails
-    console.log("📧 [EMAIL-DELIVERY] Resolving users to notify:", usersToNotify);
+    // console.log("📧 [EMAIL-DELIVERY] Resolving users to notify:", usersToNotify);
     // const resolvedUsers = [];
 
     // Get environment variables for email
@@ -89,11 +89,11 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     const fromEmail = import.meta.env.FROM_EMAIL;
     const fromName = import.meta.env.FROM_NAME;
 
-    console.log("📧 [EMAIL-DELIVERY] Environment variables:");
-    console.log("  - EMAIL_PROVIDER:", emailProvider ? "Set" : "Missing");
-    console.log("  - EMAIL_API_KEY:", emailApiKey ? "Set" : "Missing");
-    console.log("  - FROM_EMAIL:", fromEmail);
-    console.log("  - FROM_NAME:", fromName);
+    // console.log("📧 [EMAIL-DELIVERY] Environment variables:");
+    // console.log("  - EMAIL_PROVIDER:", emailProvider ? "Set" : "Missing");
+    // console.log("  - EMAIL_API_KEY:", emailApiKey ? "Set" : "Missing");
+    // console.log("  - FROM_EMAIL:", fromEmail);
+    // console.log("  - FROM_NAME:", fromName);
 
     if (!emailProvider || !emailApiKey || !fromEmail) {
       console.error("📧 [EMAIL-DELIVERY] Email configuration not available");
@@ -110,15 +110,15 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     }
 
     // Read email template
-    console.log("📧 [EMAIL-DELIVERY] Reading email template...");
+    // console.log("📧 [EMAIL-DELIVERY] Reading email template...");
 
     let emailTemplate: string;
     try {
       const templatePath = join(process.cwd(), "src", "templates-email", "template.html");
-      console.log("📧 [EMAIL-DELIVERY] Template path:", templatePath);
+      // console.log("📧 [EMAIL-DELIVERY] Template path:", templatePath);
 
       emailTemplate = readFileSync(templatePath, "utf-8");
-      console.log("📧 [EMAIL-DELIVERY] Email template loaded, length:", emailTemplate.length);
+      // console.log("📧 [EMAIL-DELIVERY] Email template loaded, length:", emailTemplate.length);
 
       if (!emailTemplate || emailTemplate.length === 0) {
         throw new Error("Email template is empty");
@@ -135,14 +135,14 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     const sentEmails = [];
     const failedEmails = [];
 
-    console.log("📧 [EMAIL-DELIVERY] About to send emails to:", usersToNotify.length, "recipients");
-    console.log("📧 [EMAIL-DELIVERY] Recipients:", usersToNotify);
+    // console.log("📧 [EMAIL-DELIVERY] About to send emails to:", usersToNotify.length, "recipients");
+    // console.log("📧 [EMAIL-DELIVERY] Recipients:", usersToNotify);
 
     try {
       // Send emails to each user
       for (let i = 0; i < usersToNotify.length; i++) {
         const userEmail = usersToNotify[i];
-        console.log(
+        // console.log(
           `📧 [EMAIL-DELIVERY] Processing email ${i + 1}/${usersToNotify.length}: ${userEmail}`
         );
 
@@ -155,7 +155,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
           userEmail.includes("@smsmyboostmobile.com") ||
           userEmail.includes("@sms.cricketwireless.net");
 
-        console.log(`📧 [EMAIL-DELIVERY] Is SMS gateway: ${isSmsGateway} for ${userEmail}`);
+        // console.log(`📧 [EMAIL-DELIVERY] Is SMS gateway: ${isSmsGateway} for ${userEmail}`);
 
         let emailHtml: string;
         try {
@@ -185,13 +185,13 @@ export const POST: APIRoute = async ({ request, cookies }) => {
                 console.error("📧 [EMAIL-DELIVERY] Error generating magic link:", magicLinkError);
               } else {
                 finalButtonLink = magicLinkData.properties.action_link;
-                console.log("📧 [EMAIL-DELIVERY] Generated magic link for:", userEmail);
+                // console.log("📧 [EMAIL-DELIVERY] Generated magic link for:", userEmail);
               }
             } catch (error) {
               console.error("📧 [EMAIL-DELIVERY] Error generating magic link:", error);
             }
           } else if (isSmsGateway) {
-            console.log(
+            // console.log(
               "📧 [EMAIL-DELIVERY] Skipping magic link generation for SMS gateway:",
               userEmail
             );
@@ -249,7 +249,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
           // Debug logging for SMS gateways
           if (isSmsGateway) {
-            console.log("📧 [EMAIL-DELIVERY] Sending SMS gateway email:", {
+            // console.log("📧 [EMAIL-DELIVERY] Sending SMS gateway email:", {
               to: userEmail,
               subject: cleanSubject,
               contentLength: emailContent.length,
@@ -277,7 +277,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
             failedEmails.push({ email: userEmail, error: errorText });
           } else {
             const responseData = await response.json();
-            console.log(
+            // console.log(
               `📧 [EMAIL-DELIVERY] Email sent successfully to ${userEmail}:`,
               responseData
             );
@@ -323,11 +323,11 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       );
     }
 
-    console.log("📧 [EMAIL-DELIVERY] Email delivery completed:");
-    console.log("  - Sent emails:", sentEmails);
-    console.log("  - Failed emails:", failedEmails);
-    console.log("  - Total sent:", sentEmails.length);
-    console.log("  - Total failed:", failedEmails.length);
+    // console.log("📧 [EMAIL-DELIVERY] Email delivery completed:");
+    // console.log("  - Sent emails:", sentEmails);
+    // console.log("  - Failed emails:", failedEmails);
+    // console.log("  - Total sent:", sentEmails.length);
+    // console.log("  - Total failed:", failedEmails.length);
 
     return new Response(
       JSON.stringify({

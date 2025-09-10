@@ -47,7 +47,7 @@ export const GET: APIRoute = async ({ request }) => {
     }
 
     // Fetch all project statuses from database (excluding status 0)
-    // console.log("🔍 [GET-PROJECT-STATUSES] Fetching statuses from database...");
+    // // console.log("🔍 [GET-PROJECT-STATUSES] Fetching statuses from database...");
 
     // Try with project_action, client_status_name, and client_status_tab first, fallback to without them if columns don't exist
     let { data: statuses, error } = await supabase
@@ -65,7 +65,7 @@ export const GET: APIRoute = async ({ request }) => {
         error.message.includes("client_status_name") ||
         error.message.includes("client_status_tab"))
     ) {
-      // console.log(
+      // // console.log(
       //   "🔍 [GET-PROJECT-STATUSES] project_action, client_status_name, or client_status_tab column not found, trying without them..."
       // );
       // const fallbackResult = await supabase
@@ -84,7 +84,7 @@ export const GET: APIRoute = async ({ request }) => {
       // error = fallbackResult.error;
     }
 
-    console.log("🔍 [GET-PROJECT-STATUSES] Database response:", { statuses, error });
+    // console.log("🔍 [GET-PROJECT-STATUSES] Database response:", { statuses, error });
 
     if (error) {
       console.error("Error fetching project statuses:", error);
@@ -111,11 +111,11 @@ export const GET: APIRoute = async ({ request }) => {
     };
 
     // Convert array to object with status_code as key (no filtering - return all statuses)
-    // console.log("🔍 [GET-PROJECT-STATUSES] Converting statuses to object...");
+    // // console.log("🔍 [GET-PROJECT-STATUSES] Converting statuses to object...");
     const statusesObject = (statuses || []).reduce(
       (acc, status) => {
         const statusColor = getStatusColor(status.status_code);
-        console.log(`🔍 [GET-PROJECT-STATUSES] Processing status ${status.status_code}:`, {
+        // console.log(`🔍 [GET-PROJECT-STATUSES] Processing status ${status.status_code}:`, {
           admin_status_name: status.admin_status_name,
           project_action: status.project_action || null,
           client_status_name: status.client_status_name || null,
@@ -145,7 +145,7 @@ export const GET: APIRoute = async ({ request }) => {
       >
     );
 
-    console.log("🔍 [GET-PROJECT-STATUSES] Final statusesObject:", statusesObject);
+    // console.log("🔍 [GET-PROJECT-STATUSES] Final statusesObject:", statusesObject);
 
     // Cache the result for 10 minutes (statuses rarely change)
     apiCache.set(cacheKey, statusesObject, 10);

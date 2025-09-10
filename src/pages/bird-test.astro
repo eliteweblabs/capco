@@ -316,7 +316,7 @@ const { isAuth, currentUser, currentRole } = await checkAuth(Astro.cookies);
       (window as any).SUPABASE_URL,
       (window as any).SUPABASE_ANON_KEY
     );
-    console.log("✅ [BIRD-TEST] Supabase client initialized with direct API implementation");
+    // console.log("✅ [BIRD-TEST] Supabase client initialized with direct API implementation");
   } else {
     console.error("❌ [BIRD-TEST] Supabase environment variables not found");
   }
@@ -380,7 +380,7 @@ const { isAuth, currentUser, currentRole } = await checkAuth(Astro.cookies);
       data: { user },
     } = await supabaseClient.auth.getUser();
 
-    console.log("📱 [BIRD-TEST] Auth check result:", {
+    // console.log("📱 [BIRD-TEST] Auth check result:", {
       hasUser: !!user,
       userId: user?.id,
       userPhone: user?.phone,
@@ -422,14 +422,14 @@ const { isAuth, currentUser, currentRole } = await checkAuth(Astro.cookies);
     // Format phone number to E.164 format
     const formattedPhone = formatPhoneNumber(phone);
     lastFormattedPhone = formattedPhone; // Store for verification
-    console.log("📱 [BIRD-TEST] Original phone:", phone, "Formatted phone:", formattedPhone);
+    // console.log("📱 [BIRD-TEST] Original phone:", phone, "Formatted phone:", formattedPhone);
 
     sendOtpBtn.disabled = true;
     sendOtpBtn.textContent = "Sending...";
 
     try {
       const supabaseClient = ensureSupabase();
-      console.log("📱 [BIRD-TEST] Sending OTP to:", formattedPhone);
+      // console.log("📱 [BIRD-TEST] Sending OTP to:", formattedPhone);
       const { error } = await supabaseClient.auth.signInWithOtp({
         phone: formattedPhone,
       });
@@ -438,7 +438,7 @@ const { isAuth, currentUser, currentRole } = await checkAuth(Astro.cookies);
         showStatus(authStatus, `Error: ${error.message}`, "error");
         console.error("📱 [BIRD-TEST] OTP sending error:", error);
       } else {
-        console.log("📱 [BIRD-TEST] OTP sent successfully to:", formattedPhone);
+        // console.log("📱 [BIRD-TEST] OTP sent successfully to:", formattedPhone);
         showStatus(authStatus, "OTP sent successfully! Check your phone.", "success");
         loginForm.classList.add("hidden");
         verifyForm.classList.remove("hidden");
@@ -465,8 +465,8 @@ const { isAuth, currentUser, currentRole } = await checkAuth(Astro.cookies);
 
     // Use the stored formatted phone number from sendOTP
     const formattedPhone = lastFormattedPhone || formatPhoneNumber(phone);
-    console.log("📱 [BIRD-TEST] Verifying OTP for formatted phone:", formattedPhone);
-    console.log(
+    // console.log("📱 [BIRD-TEST] Verifying OTP for formatted phone:", formattedPhone);
+    // console.log(
       "📱 [BIRD-TEST] Using stored phone:",
       lastFormattedPhone,
       "vs current input:",
@@ -478,7 +478,7 @@ const { isAuth, currentUser, currentRole } = await checkAuth(Astro.cookies);
 
     try {
       const supabaseClient = ensureSupabase();
-      console.log("📱 [BIRD-TEST] Verifying OTP with phone:", formattedPhone, "and token:", otp);
+      // console.log("📱 [BIRD-TEST] Verifying OTP with phone:", formattedPhone, "and token:", otp);
       const { data, error } = await supabaseClient.auth.verifyOtp({
         phone: formattedPhone,
         token: otp,
@@ -490,7 +490,7 @@ const { isAuth, currentUser, currentRole } = await checkAuth(Astro.cookies);
         console.error("📱 [BIRD-TEST] OTP verification error:", error);
       } else {
         currentUser = data.user;
-        console.log("📱 [BIRD-TEST] OTP verification successful! User data:", {
+        // console.log("📱 [BIRD-TEST] OTP verification successful! User data:", {
           id: data.user?.id,
           phone: data.user?.phone,
           email: data.user?.email,
@@ -521,7 +521,7 @@ const { isAuth, currentUser, currentRole } = await checkAuth(Astro.cookies);
 
     // Format phone number to E.164 format
     const formattedPhone = formatPhoneNumber(currentUser.phone);
-    console.log("📱 [BIRD-TEST] Sending SMS to formatted phone:", formattedPhone);
+    // console.log("📱 [BIRD-TEST] Sending SMS to formatted phone:", formattedPhone);
 
     sendSmsBtn.disabled = true;
     sendSmsBtn.textContent = "Sending...";
@@ -582,7 +582,7 @@ const { isAuth, currentUser, currentRole } = await checkAuth(Astro.cookies);
     otpInput.value = "";
     authStatus.innerHTML = "";
     lastFormattedPhone = null; // Clear stored phone number
-    console.log("📱 [BIRD-TEST] Cleared stored phone number");
+    // console.log("📱 [BIRD-TEST] Cleared stored phone number");
   }
 
   // Show status message using global toast functions

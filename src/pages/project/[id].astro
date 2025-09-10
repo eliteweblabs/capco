@@ -24,7 +24,7 @@ const i18n = getI18N({ currentLocale });
 // Get the project ID from the URL parameter
 const { id } = Astro.params;
 
-console.log("🚀 [PROJECT] Front matter starting execution for project ID:", id);
+// console.log("🚀 [PROJECT] Front matter starting execution for project ID:", id);
 
 // Get auth data directly since App component handles auth requirements
 import { checkAuth } from "../../lib/auth";
@@ -67,9 +67,9 @@ let currentStatusColor = "gray";
 let currentStatusProjectAction: string | null = null;
 let statusesObject: any = {};
 
-console.log("🚀 [PROJECT] About to start database queries, supabase available:", !!supabase);
-console.log("🚀 [PROJECT] Supabase object:", supabase);
-console.log("🚀 [PROJECT] SupabaseAdmin object:", supabaseAdmin);
+// console.log("🚀 [PROJECT] About to start database queries, supabase available:", !!supabase);
+// console.log("🚀 [PROJECT] Supabase object:", supabase);
+// console.log("🚀 [PROJECT] SupabaseAdmin object:", supabaseAdmin);
 
 if (supabase) {
   // OPTIMIZED: Run all database queries in parallel for much faster loading
@@ -96,7 +96,7 @@ if (supabase) {
   // Assign the statuses result
   statusesResult = statusesResultData;
 
-  console.log("🔍 [PROJECT-PAGE] Database query results:", {
+  // console.log("🔍 [PROJECT-PAGE] Database query results:", {
     statusesResult: statusesResult,
     statusesError: statusesResult?.error,
     statusesData: statusesResult?.data,
@@ -125,21 +125,21 @@ if (supabase) {
   // Convert statusesObject back to array for components that expect it
   statuses = Object.values(statusesObject);
 
-  console.log("🔍 [PROJECT] Current status object:", currentStatusObj);
-  console.log("🔍 [PROJECT] Current status tab:", currentStatusTab);
-  console.log("🔍 [PROJECT] Current status slug:", currentStatusSlug);
-  console.log("🔍 [PROJECT] Current status name:", currentStatusName);
-  console.log("🔍 [PROJECT] Current status int:", currentStatusInt);
-  console.log("🔍 [PROJECT] Current status color:", currentStatusColor);
-  console.log("🔍 [PROJECT] Current status project action:", currentStatusProjectAction);
+  // console.log("🔍 [PROJECT] Current status object:", currentStatusObj);
+  // console.log("🔍 [PROJECT] Current status tab:", currentStatusTab);
+  // console.log("🔍 [PROJECT] Current status slug:", currentStatusSlug);
+  // console.log("🔍 [PROJECT] Current status name:", currentStatusName);
+  // console.log("🔍 [PROJECT] Current status int:", currentStatusInt);
+  // console.log("🔍 [PROJECT] Current status color:", currentStatusColor);
+  // console.log("🔍 [PROJECT] Current status project action:", currentStatusProjectAction);
   // Check project query result
   if (projectResult.error) {
     console.error("Error fetching project:", projectResult.error);
-    console.log("🌐 [PROJECT] Project not found or no access, redirecting to dashboard");
+    // console.log("🌐 [PROJECT] Project not found or no access, redirecting to dashboard");
     return Astro.redirect("/dashboard");
   }
 
-  console.log("🔍 [PROJECT] Project data loaded:", {
+  // console.log("🔍 [PROJECT] Project data loaded:", {
     id: project.id,
     title: project.title,
     author_id: project.author_id,
@@ -177,7 +177,7 @@ if (supabase) {
   }
 
   // OPTIMIZED: Get author and assigned user profiles in parallel (only if needed)
-  console.log("🔍 [PROJECT] Setting up profile queries:", {
+  // console.log("🔍 [PROJECT] Setting up profile queries:", {
     hasAuthorId: !!project.author_id,
     authorId: project.author_id,
     hasAssignedId: !!project.assigned_to_id,
@@ -188,7 +188,7 @@ if (supabase) {
     const profileQueries = [];
 
     if (project.author_id) {
-      console.log("🔍 [PROJECT] Adding author profile query for:", project.author_id);
+      // console.log("🔍 [PROJECT] Adding author profile query for:", project.author_id);
       profileQueries.push(
         supabase
           .from("profiles")
@@ -211,7 +211,7 @@ if (supabase) {
     const profileResults = await Promise.all(profileQueries);
 
     // Process author profile
-    console.log("🔍 [PROJECT] Processing author profile:", {
+    // console.log("🔍 [PROJECT] Processing author profile:", {
       hasAuthorId: !!project.author_id,
       authorId: project.author_id,
       profileResultsLength: profileResults.length,
@@ -222,7 +222,7 @@ if (supabase) {
       const profileData = profileResults[0].data;
       const profileError = profileResults[0].error;
 
-      console.log("🔍 [PROJECT] Profile data:", {
+      // console.log("🔍 [PROJECT] Profile data:", {
         profileData,
         profileError,
         hasData: !!profileData,
@@ -590,8 +590,8 @@ if (!project) {
     }
 
     // Check if client is viewing proposal tab and update status if needed
-    console.log("📋 [PROPOSAL-VIEW] Tab switched to:", tabName);
-    console.log("📋 [PROPOSAL-VIEW] User role:", userRole);
+    // console.log("📋 [PROPOSAL-VIEW] Tab switched to:", tabName);
+    // console.log("📋 [PROPOSAL-VIEW] User role:", userRole);
 
     const currentStatus = projectData?.status || 0;
     const currentUserId = currentUserData?.id;
@@ -600,8 +600,8 @@ if (!project) {
     let nextStatus = 0;
     // Viewed Update Tabs
 
-    console.log("📋 [PROPOSAL-VIEW] Client viewing proposal tab, current status:", currentStatus);
-    console.log("📋 [PROPOSAL-VIEW] Project data:", { projectId, currentUserId });
+    // console.log("📋 [PROPOSAL-VIEW] Client viewing proposal tab, current status:", currentStatus);
+    // console.log("📋 [PROPOSAL-VIEW] Project data:", { projectId, currentUserId });
 
     if (
       tabName === "proposal" &&
@@ -612,7 +612,7 @@ if (!project) {
       projectId &&
       hasExistingProposal
     ) {
-      console.log(
+      // console.log(
         "📋 [PROPOSAL-VIEW] Updating status from",
         currentStatus,
         "to 40 (Proposal Viewed)"
@@ -627,7 +627,7 @@ if (!project) {
       projectId &&
       hasExistingProposal
     ) {
-      console.log(
+      // console.log(
         "📋 [PROPOSAL-VIEW] Updating status from",
         currentStatus,
         "to 65 (Deposit Viewed)"
@@ -642,7 +642,7 @@ if (!project) {
       projectId &&
       hasExistingProposal
     ) {
-      console.log(
+      // console.log(
         "📋 [PROPOSAL-VIEW] Updating status from",
         currentStatus,
         "to 160 (Final Invoice Viewed)"
@@ -657,7 +657,7 @@ if (!project) {
       projectId &&
       hasExistingProposal
     ) {
-      console.log(
+      // console.log(
         "📋 [PROPOSAL-VIEW] Updating status from",
         currentStatus,
         "to 220 (Final Deliverables Viewed)"
@@ -685,7 +685,7 @@ if (!project) {
         .then((response) => response.json())
         .then((data) => {
           if (data.success) {
-            console.log("✅ [PROPOSAL-VIEW] Status updated to 40 successfully");
+            // console.log("✅ [PROPOSAL-VIEW] Status updated to 40 successfully");
             // Update the project data for future checks
             projectData.status = nextStatus;
 
@@ -716,7 +716,7 @@ if (!project) {
           console.error("❌ [PROPOSAL-VIEW] Error updating status:", error);
         });
     } else {
-      console.log("📋 [PROPOSAL-VIEW] No status update needed, current status:", currentStatus);
+      // console.log("📋 [PROPOSAL-VIEW] No status update needed, current status:", currentStatus);
     }
 
     // Update URL with tab parameter (without page reload)
@@ -805,7 +805,7 @@ if (!project) {
     // Get the amount (this would come from the proposal total in a real implementation)
     const amount = 0.0; // Placeholder - should be calculated from proposal
 
-    console.log("Processing deposit payment:", {
+    // console.log("Processing deposit payment:", {
       method: selectedMethod,
       amount: amount,
       projectId: projectData?.id,
