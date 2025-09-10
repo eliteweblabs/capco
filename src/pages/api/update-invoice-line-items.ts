@@ -3,12 +3,12 @@ import { supabase } from "../../lib/supabase";
 
 export const POST: APIRoute = async ({ request, cookies }) => {
   try {
-    const { projectId, lineItems, subject, notes } = await request.json();
+    const { invoiceId, lineItems, subject, notes } = await request.json();
 
-    console.log("📝 [API] Received request:", { projectId, lineItems, subject, notes });
+    console.log("📝 [API] Received request:", { invoiceId, lineItems, subject, notes });
 
-    if (!projectId || !lineItems) {
-      return new Response(JSON.stringify({ error: "Project ID and line items are required" }), {
+    if (!invoiceId || !lineItems) {
+      return new Response(JSON.stringify({ error: "Invoice ID and line items are required" }), {
         status: 400,
         headers: { "Content-Type": "application/json" },
       });
@@ -44,25 +44,16 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       });
     }
 
-    // Find the most recent proposal invoice for this project
-    const { data: invoice, error: invoiceError } = await supabase
-      .from("invoices")
-      .select("id")
-      .eq("project_id", parseInt(projectId))
-      .eq("status", "proposal")
-      .order("created_at", { ascending: false })
-      .limit(1)
-      .single();
-
-    if (invoiceError || !invoice) {
-      console.error("Error finding proposal invoice:", invoiceError);
-      return new Response(JSON.stringify({ error: "Proposal invoice not found" }), {
-        status: 404,
+    // Ensure invoiceId is an integer
+    const invoiceIdInt = parseInt(invoiceId);
+    if (isNaN(invoiceIdInt)) {
+      return new Response(JSON.stringify({ error: "Invalid invoice ID" }), {
+        status: 400,
         headers: { "Content-Type": "application/json" },
       });
     }
 
-    console.log("Found proposal invoice:", invoice.id);
+    console.log("Using invoice ID:", invoiceIdInt);
 
     // Store complete line item data as JSONB array to preserve pricing
     const lineItemsData = lineItems.map((item: any) => ({
@@ -79,7 +70,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     // Update invoice with complete catalog line items data and subject
     console.log(
       "📝 [API] Updating invoice",
-      invoice.id,
+      invoiceIdInt,
       "with catalog_line_items:",
       lineItemsData,
       "and subject:",
@@ -99,12 +90,12 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     const { error: updateError } = await supabase
       .from("invoices")
       .update(updateData)
-      .eq("id", invoice.id);
+      .eq("id", invoiceIdInt);
 
     if (updateError) {
       console.error("❌ [API] Error updating line items:", updateError);
       console.error("❌ [API] Update data that failed:", updateData);
-      console.error("❌ [API] Invoice ID:", invoice.id);
+      console.error("❌ [API] Invoice ID:", invoiceIdInt);
       return new Response(
         JSON.stringify({
           error: "Failed to save line items",
@@ -118,13 +109,13 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       );
     }
 
-    console.log("✅ [API] Successfully updated line items for invoice:", invoice.id);
+    console.log("✅ [API] Successfully updated line items for invoice:", invoiceIdInt);
 
     // Verify the update by reading back the data
     const { data: updatedInvoice, error: verifyError } = await supabase
       .from("invoices")
       .select("catalog_line_items, subject")
-      .eq("id", invoice.id)
+      .eq("id", invoiceIdInt)
       .single();
 
     if (verifyError) {
@@ -142,7 +133,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       JSON.stringify({
         success: true,
         message: "Line items updated successfully",
-        invoiceId: invoice.id,
+        invoiceId: invoiceIdInt,
       }),
       {
         status: 200,
