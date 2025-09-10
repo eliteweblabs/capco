@@ -6,8 +6,8 @@ import { supabaseAdmin } from "../../lib/supabase-admin";
 export const GET: APIRoute = async ({ request, cookies }) => {
   try {
     // Check authentication to get user role for filtering
-    const { role } = await checkAuth(cookies);
-    const isClient = role === "Client";
+    const { currentRole } = await checkAuth(cookies);
+    const isClient = currentRole === "Client";
     if (!supabase) {
       return new Response(JSON.stringify({ error: "Database connection not available" }), {
         status: 500,
@@ -15,22 +15,24 @@ export const GET: APIRoute = async ({ request, cookies }) => {
     }
 
     // Fetch all projects - no role-based filtering
-// console.log("📡 [API] Fetching all projects");
+    // console.log("📡 [API] Fetching all projects");
 
     // First, get projects without JOINs to ensure basic functionality works
-// console.log("📡 [API] Fetching projects with basic query first...");
-// console.log("📡 [API] Using supabaseAdmin client:", !!supabaseAdmin);
-// console.log(
-      "📡 [API] Service role key available:",
-      !!import.meta.env.SUPABASE_SERVICE_ROLE_KEY
-    );
-// console.log("📡 [API] Supabase URL:", import.meta.env.SUPABASE_URL);
+    // console.log("📡 [API] Fetching projects with basic query first...");
+    // console.log("📡 [API] Using supabaseAdmin client:", !!supabaseAdmin);
+    // console.log(
+    //   "📡 [API] Service role key available:",
+    //   !!import.meta.env.SUPABASE_SERVICE_ROLE_KEY
+    // );
+    // console.log("📡 [API] Supabase URL:", import.meta.env.SUPABASE_URL);
+
+    let projects, error;
 
     if (!supabaseAdmin) {
       console.error("📡 [API] CRITICAL: supabaseAdmin is null - check SUPABASE_SERVICE_ROLE_KEY");
-// console.log("📡 [API] Falling back to regular supabase client");
+      // console.log("📡 [API] Falling back to regular supabase client");
       // Fallback to regular client if admin client is not available
-      const { data: projects, error } = await supabase
+      const result = await supabase
         .from("projects")
         .select(
           `
@@ -49,9 +51,11 @@ export const GET: APIRoute = async ({ request, cookies }) => {
         `
         )
         .order("updated_at", { ascending: false });
+      projects = result.data;
+      error = result.error;
     } else {
       // Use admin client to bypass RLS policies for project listing
-      const { data: projects, error } = await supabaseAdmin
+      const result = await supabaseAdmin
         .from("projects")
         .select(
           `
@@ -70,6 +74,8 @@ export const GET: APIRoute = async ({ request, cookies }) => {
         `
         )
         .order("updated_at", { ascending: false });
+      projects = result.data;
+      error = result.error;
     }
 
     if (error) {
@@ -81,14 +87,14 @@ export const GET: APIRoute = async ({ request, cookies }) => {
         hint: error.hint,
       });
     } else {
-// console.log("📡 [API] Successfully fetched projects:", projects?.length || 0);
+      // console.log("📡 [API] Successfully fetched projects:", projects?.length || 0);
       if (projects && projects.length > 0) {
-// console.log("📡 [API] Sample project:", {
-          id: projects[0].id,
-          title: projects[0].title,
-          author_id: projects[0].author_id,
-          status: projects[0].status,
-        });
+        // console.log("📡 [API] Sample project:", {
+        //   id: projects[0].id,
+        //   title: projects[0].title,
+        //   author_id: projects[0].author_id,
+        //   status: projects[0].status,
+        // });
       }
     }
 
@@ -106,7 +112,7 @@ export const GET: APIRoute = async ({ request, cookies }) => {
       );
     }
 
-// console.log("📡 [API] Projects fetched:", projects?.length || 0);
+    // console.log("📡 [API] Projects fetched:", projects?.length || 0);
 
     // Optimize: Batch fetch author profiles to eliminate N+1 queries
     if (projects && projects.length > 0) {
@@ -114,11 +120,11 @@ export const GET: APIRoute = async ({ request, cookies }) => {
       const uniqueAssignedIds = [...new Set(projects.map((p) => p.assigned_to_id).filter(Boolean))];
       const allUserIds = [...new Set([...uniqueAuthorIds, ...uniqueAssignedIds])];
 
-// console.log("📡 [API] Fetching profiles for users:", allUserIds.length);
+      // console.log("📡 [API] Fetching profiles for users:", allUserIds.length);
 
       let profilesMap = new Map();
       if (allUserIds.length > 0) {
-        const { data: profiles, error: profilesError } = await supabaseAdmin
+        const { data: profiles, error: profilesError } = await (supabaseAdmin || supabase)
           .from("profiles")
           .select("id, company_name, first_name, last_name")
           .in("id", allUserIds);
@@ -127,7 +133,7 @@ export const GET: APIRoute = async ({ request, cookies }) => {
           profiles.forEach((profile) => {
             profilesMap.set(profile.id, profile);
           });
-// console.log("📡 [API] Successfully fetched profiles:", profiles.length);
+          // console.log("📡 [API] Successfully fetched profiles:", profiles.length);
         } else {
           console.error("📡 [API] Error fetching profiles:", profilesError);
         }
@@ -150,7 +156,7 @@ export const GET: APIRoute = async ({ request, cookies }) => {
 
       try {
         // Use proper aggregation query to get counts directly
-        let countQuery = supabaseAdmin
+        let countQuery = (supabaseAdmin || supabase)
           .from("discussion")
           .select("project_id")
           .in("project_id", projectIds);
@@ -158,9 +164,9 @@ export const GET: APIRoute = async ({ request, cookies }) => {
         // For clients, exclude internal discussions (Admin/Staff see all)
         if (isClient) {
           countQuery = countQuery.eq("internal", false);
-// console.log("📡 [GET-PROJECT] Client filter applied - excluding internal discussions");
+          // console.log("📡 [GET-PROJECT] Client filter applied - excluding internal discussions");
         } else {
-// console.log("📡 [GET-PROJECT] Admin/Staff - showing all discussions");
+          // console.log("📡 [GET-PROJECT] Admin/Staff - showing all discussions");
         }
 
         // Execute the query to get all discussions
@@ -194,7 +200,7 @@ export const GET: APIRoute = async ({ request, cookies }) => {
             project.comment_count = countsByProject[project.id] || 0;
           });
 
-// console.log("📡 [GET-PROJECT] Comment counts added efficiently");
+          // console.log("📡 [GET-PROJECT] Comment counts added efficiently");
         } else {
           console.error("Error fetching discussion counts:", countError);
           // Set default comment count to 0 if there's an error
