@@ -1,6 +1,7 @@
 import type { APIRoute } from "astro";
 import { checkAuth } from "../../lib/auth";
 import { supabase } from "../../lib/supabase";
+import { supabaseAdmin } from "../../lib/supabase-admin";
 
 export const GET: APIRoute = async ({ request, cookies }) => {
   try {
@@ -18,30 +19,77 @@ export const GET: APIRoute = async ({ request, cookies }) => {
 
     // First, get projects without JOINs to ensure basic functionality works
     console.log("📡 [API] Fetching projects with basic query first...");
-    const { data: projects, error } = await supabase
-      .from("projects")
-      .select(
+    console.log("📡 [API] Using supabaseAdmin client:", !!supabaseAdmin);
+    console.log(
+      "📡 [API] Service role key available:",
+      !!import.meta.env.SUPABASE_SERVICE_ROLE_KEY
+    );
+    console.log("📡 [API] Supabase URL:", import.meta.env.SUPABASE_URL);
+
+    if (!supabaseAdmin) {
+      console.error("📡 [API] CRITICAL: supabaseAdmin is null - check SUPABASE_SERVICE_ROLE_KEY");
+      console.log("📡 [API] Falling back to regular supabase client");
+      // Fallback to regular client if admin client is not available
+      const { data: projects, error } = await supabase
+        .from("projects")
+        .select(
+          `
+          id,
+          title,
+          description,
+          address,
+          author_id,
+          status,
+          sq_ft,
+          new_construction,
+          created_at,
+          updated_at,
+          assigned_to_id
+          
         `
-        id,
-        title,
-        description,
-        address,
-        author_id,
-        status,
-        sq_ft,
-        new_construction,
-        created_at,
-        updated_at,
-        assigned_to_id
-        
-      `
-      )
-      .order("updated_at", { ascending: false });
+        )
+        .order("updated_at", { ascending: false });
+    } else {
+      // Use admin client to bypass RLS policies for project listing
+      const { data: projects, error } = await supabaseAdmin
+        .from("projects")
+        .select(
+          `
+          id,
+          title,
+          description,
+          address,
+          author_id,
+          status,
+          sq_ft,
+          new_construction,
+          created_at,
+          updated_at,
+          assigned_to_id
+          
+        `
+        )
+        .order("updated_at", { ascending: false });
+    }
 
     if (error) {
       console.error("📡 [API] Error fetching projects:", error);
+      console.error("📡 [API] Error details:", {
+        message: error.message,
+        code: error.code,
+        details: error.details,
+        hint: error.hint,
+      });
     } else {
       console.log("📡 [API] Successfully fetched projects:", projects?.length || 0);
+      if (projects && projects.length > 0) {
+        console.log("📡 [API] Sample project:", {
+          id: projects[0].id,
+          title: projects[0].title,
+          author_id: projects[0].author_id,
+          status: projects[0].status,
+        });
+      }
     }
 
     if (error) {
@@ -70,7 +118,7 @@ export const GET: APIRoute = async ({ request, cookies }) => {
 
       let profilesMap = new Map();
       if (allUserIds.length > 0) {
-        const { data: profiles, error: profilesError } = await supabase
+        const { data: profiles, error: profilesError } = await supabaseAdmin
           .from("profiles")
           .select("id, company_name, first_name, last_name")
           .in("id", allUserIds);
@@ -102,7 +150,7 @@ export const GET: APIRoute = async ({ request, cookies }) => {
 
       try {
         // Use proper aggregation query to get counts directly
-        let countQuery = supabase
+        let countQuery = supabaseAdmin
           .from("discussion")
           .select("project_id")
           .in("project_id", projectIds);

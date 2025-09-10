@@ -1,4 +1,5 @@
 import type { APIRoute } from "astro";
+import { getApiBaseUrl } from "../../lib/url-utils";
 
 export const POST: APIRoute = async ({ request }) => {
   console.log("🧪 [TEST-PDF-GENERATION] API route called!");
@@ -32,7 +33,7 @@ export const POST: APIRoute = async ({ request }) => {
     console.log("🧪 [TEST-PDF-GENERATION] Calling PDF generation API...");
 
     // Call the PDF generation API
-    const baseUrl = new URL(request.url).origin;
+    const baseUrl = getApiBaseUrl(request);
     const pdfResponse = await fetch(`${baseUrl}/api/generate-contract-pdf`, {
       method: "POST",
       headers: {
