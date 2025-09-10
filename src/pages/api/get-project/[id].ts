@@ -125,9 +125,9 @@ export const GET: APIRoute = async ({ params, cookies }) => {
       } else {
         // Profile not found for assigned user ID
         // console.log(
-          "📡 [GET-PROJECT-ID] No profile found for assigned user ID:",
-          project.assigned_to_id
-        );
+//           "📡 [GET-PROJECT-ID] No profile found for assigned user ID:",
+//           project.assigned_to_id
+//         );
         project.assigned_to_name = null;
       }
     } else {

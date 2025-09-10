@@ -116,12 +116,12 @@ export const GET: APIRoute = async ({ request }) => {
       (acc, status) => {
         const statusColor = getStatusColor(status.status_code);
         // console.log(`🔍 [GET-PROJECT-STATUSES] Processing status ${status.status_code}:`, {
-          admin_status_name: status.admin_status_name,
-          project_action: status.project_action || null,
-          client_status_name: status.client_status_name || null,
-          client_status_tab: status.client_status_tab || null,
-          status_color: statusColor,
-        });
+//           admin_status_name: status.admin_status_name,
+//           project_action: status.project_action || null,
+//           client_status_name: status.client_status_name || null,
+//           client_status_tab: status.client_status_tab || null,
+//           status_color: statusColor,
+//         });
         acc[status.status_code] = {
           admin_status_name: status.admin_status_name,
           status_code: status.status_code,

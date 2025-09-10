@@ -17,9 +17,9 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     const refreshToken = cookies.get("sb-refresh-token")?.value;
 
     // console.log("📡 [API] Auth check:", {
-      hasAccessToken: !!accessToken,
-      hasRefreshToken: !!refreshToken,
-    });
+//       hasAccessToken: !!accessToken,
+//       hasRefreshToken: !!refreshToken,
+//     });
 
     if (!supabase) {
       return new Response(JSON.stringify({ error: "Database connection not available" }), {

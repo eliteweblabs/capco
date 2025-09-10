@@ -18,10 +18,10 @@ export const GET: APIRoute = async ({ url, cookies, redirect }) => {
   const type = url.searchParams.get("type");
 
   // console.log("Verification params:", {
-    code: code ? "present" : "missing",
-    token_hash: token_hash ? "present" : "missing",
-    type,
-  });
+//     code: code ? "present" : "missing",
+//     token_hash: token_hash ? "present" : "missing",
+//     type,
+//   });
 
   if (!code && !token_hash) {
     // console.log("No verification code or token hash provided");

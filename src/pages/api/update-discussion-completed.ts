@@ -9,10 +9,10 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     // Check authentication
     const { isAuth, currentUser, role } = await checkAuth(cookies);
     // console.log("🔔 [UPDATE-DISCUSSION] Auth check result:", {
-      isAuth,
-      hasUser: !!currentUser,
-      role,
-    });
+//       isAuth,
+//       hasUser: !!currentUser,
+//       role,
+//     });
 
     if (!isAuth || !currentUser) {
       return new Response(JSON.stringify({ success: false, error: "Authentication required" }), {
@@ -37,11 +37,11 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     // Ensure discussionId is a number
     const discussionIdNum = parseInt(discussionId, 10);
     // console.log(
-      "🔔 [UPDATE-DISCUSSION] Parsed discussionId:",
-      discussionIdNum,
-      "Original:",
-      discussionId
-    );
+//       "🔔 [UPDATE-DISCUSSION] Parsed discussionId:",
+//       discussionIdNum,
+//       "Original:",
+//       discussionId
+//     );
 
     if (isNaN(discussionIdNum) || mark_completed === undefined) {
       return new Response(
@@ -57,19 +57,19 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     }
 
     // console.log("🔔 [UPDATE-DISCUSSION] Updating discussion:", {
-      discussionId: discussionIdNum,
-      mark_completed,
-      userRole: role,
-      userId: currentUser.id,
-    });
+//       discussionId: discussionIdNum,
+//       mark_completed,
+//       userRole: role,
+//       userId: currentUser.id,
+//     });
 
     // First, check if the discussion exists and get its current state
     // console.log(
-      "🔍 [UPDATE-DISCUSSION] Looking for discussion with ID:",
-      discussionIdNum,
-      "Type:",
-      typeof discussionIdNum
-    );
+//       "🔍 [UPDATE-DISCUSSION] Looking for discussion with ID:",
+//       discussionIdNum,
+//       "Type:",
+//       typeof discussionIdNum
+//     );
     const { data: existingDiscussion, error: fetchError } = await supabase
       .from("discussion")
       .select("id, mark_completed")

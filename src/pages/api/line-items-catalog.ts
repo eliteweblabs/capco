@@ -196,12 +196,12 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     }
 
     // console.log("🔍 [LINE-ITEMS-CATALOG] Creating catalog item with data:", {
-      name: name.trim(),
-      description: description.trim(),
-      unit_price: parseFloat(unit_price),
-      category: category?.trim() || null,
-      created_by: currentUser.id,
-    });
+//       name: name.trim(),
+//       description: description.trim(),
+//       unit_price: parseFloat(unit_price),
+//       category: category?.trim() || null,
+//       created_by: currentUser.id,
+//     });
 
     const { data: newItem, error } = await supabase
       .from("line_items_catalog")

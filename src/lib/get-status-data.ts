@@ -22,8 +22,8 @@ export async function getStatusData(
 ): Promise<StatusData | null> {
   // console.log("🔍 [GET-STATUS-DATA] ==========================================");
   // console.log(
-    `🔍 [GET-STATUS-DATA] Starting data collection for project ${projectId}, status ${newStatus}`
-  );
+//     `🔍 [GET-STATUS-DATA] Starting data collection for project ${projectId}, status ${newStatus}`
+//   );
   // console.log("🔍 [GET-STATUS-DATA] ==========================================");
 
   // Get project data
@@ -34,11 +34,11 @@ export async function getStatusData(
     return null;
   }
   // console.log("🔍 [GET-STATUS-DATA] ✅ Project data retrieved:", {
-    id: project.id,
-    address: project.address,
-    author_id: project.author_id,
-    status: project.status,
-  });
+//     id: project.id,
+//     address: project.address,
+//     author_id: project.author_id,
+//     status: project.status,
+//   });
 
   // Get profile data
   // console.log("🔍 [GET-STATUS-DATA] Step 2: Fetching profile data...");
@@ -48,10 +48,10 @@ export async function getStatusData(
     return null;
   }
   // console.log("🔍 [GET-STATUS-DATA] ✅ Profile data retrieved:", {
-    id: profile.id,
-    company_name: profile.company_name,
-    email: profile.email,
-  });
+//     id: profile.id,
+//     company_name: profile.company_name,
+//     email: profile.email,
+//   });
 
   // Get status config
   // console.log("🔍 [GET-STATUS-DATA] Step 3: Fetching status config...");
@@ -61,12 +61,12 @@ export async function getStatusData(
     return null;
   }
   // console.log("🔍 [GET-STATUS-DATA] ✅ Status config retrieved:", {
-    modal_admin: statusConfig.modal_admin,
-    modal_client: statusConfig.modal_client,
-    notify: statusConfig.notify,
-    admin_email_subject: statusConfig.admin_email_subject,
-    admin_email_content: statusConfig.admin_email_content,
-  });
+//     modal_admin: statusConfig.modal_admin,
+//     modal_client: statusConfig.modal_client,
+//     notify: statusConfig.notify,
+//     admin_email_subject: statusConfig.admin_email_subject,
+//     admin_email_content: statusConfig.admin_email_content,
+//   });
 
   const result = {
     project,

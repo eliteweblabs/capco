@@ -21,9 +21,9 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     const refreshToken = cookies.get("sb-refresh-token")?.value;
 
     // console.log("📝 [CREATE-PROJECT] Auth check:", {
-      hasAccessToken: !!accessToken,
-      hasRefreshToken: !!refreshToken,
-    });
+//       hasAccessToken: !!accessToken,
+//       hasRefreshToken: !!refreshToken,
+//     });
 
     if (!accessToken || !refreshToken) {
       // console.log("📝 [CREATE-PROJECT] Missing auth tokens");
@@ -47,9 +47,9 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
     const userId = session.session.user.id;
     // console.log("📝 [CREATE-PROJECT] User authenticated:", {
-      userId,
-      userEmail: session.session.user.email,
-    });
+//       userId,
+//       userEmail: session.session.user.email,
+//     });
 
     // Get user profile to determine role
     const { data: userProfile, error: profileError } = await supabase
@@ -149,9 +149,9 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         }
         projectAuthorId = body.author_id;
         // console.log(
-          "📝 [CREATE-PROJECT] Admin/Staff user - using existing client ID:",
-          projectAuthorId
-        );
+//           "📝 [CREATE-PROJECT] Admin/Staff user - using existing client ID:",
+//           projectAuthorId
+//         );
       }
     }
 
@@ -160,13 +160,13 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
     buttonGroupFields.forEach((fieldName) => {
       // console.log(`📝 [CREATE-PROJECT] Debug ${fieldName} field:`, {
-        value: body[fieldName],
-        type: typeof body[fieldName],
-        isArray: Array.isArray(body[fieldName]),
-        stringified: Array.isArray(body[fieldName])
-          ? JSON.stringify(body[fieldName])
-          : body[fieldName],
-      });
+//         value: body[fieldName],
+//         type: typeof body[fieldName],
+//         isArray: Array.isArray(body[fieldName]),
+//         stringified: Array.isArray(body[fieldName])
+//           ? JSON.stringify(body[fieldName])
+//           : body[fieldName],
+//       });
     });
 
     // Prepare project data - match the update-project API structure
@@ -190,9 +190,9 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     };
 
     // console.log(
-      "📝 [CREATE-PROJECT] Inserting project data:",
-      JSON.stringify(projectData, null, 2)
-    );
+//       "📝 [CREATE-PROJECT] Inserting project data:",
+//       JSON.stringify(projectData, null, 2)
+//     );
 
     // SAFETY CHECK: Ensure project author is always a client
     // This prevents the issue where projects could be created with admin/staff authors
@@ -239,9 +239,9 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     }
 
     // console.log("📝 [CREATE-PROJECT] ✅ Safety check passed - project author is a client:", {
-      authorId: projectAuthorId,
-      authorRole: authorProfile.role,
-    });
+//       authorId: projectAuthorId,
+//       authorRole: authorProfile.role,
+//     });
 
     // Create project
     // console.log("📝 [CREATE-PROJECT] About to insert project into database");
@@ -284,12 +284,12 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     const project = projects[0];
 
     // console.log("📝 [CREATE-PROJECT] Project created successfully:", {
-      id: project.id,
-      author_id: project.author_id,
-      title: project.title,
-      address: project.address,
-      status: project.status,
-    });
+//       id: project.id,
+//       author_id: project.author_id,
+//       title: project.title,
+//       address: project.address,
+//       status: project.status,
+//     });
 
     // Verify the project has the correct initial status
     if (project.status !== 0) {
@@ -300,9 +300,9 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       });
     } else {
       // console.log(
-        "📝 [CREATE-PROJECT] ✅ Project created with correct initial status:",
-        project.status
-      );
+//         "📝 [CREATE-PROJECT] ✅ Project created with correct initial status:",
+//         project.status
+//       );
     }
 
     // Note: Frontend should now call /api/update-status to set status from 0 -> 10

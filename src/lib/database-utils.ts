@@ -55,13 +55,13 @@ export async function getProjectData(projectId: number): Promise<ProjectData | n
   }
 
   // console.log("🗄️ [DATABASE-UTILS] ✅ Project data retrieved:", {
-    id: data.id,
-    address: data.address,
-    addressType: typeof data.address,
-    addressLength: data.address?.length,
-    author_id: data.author_id,
-    status: data.status,
-  });
+//     id: data.id,
+//     address: data.address,
+//     addressType: typeof data.address,
+//     addressLength: data.address?.length,
+//     author_id: data.author_id,
+//     status: data.status,
+//   });
 
   return data;
 }
@@ -104,11 +104,11 @@ export async function getProfileData(userId: string): Promise<ProfileData | null
   };
 
   // console.log("🗄️ [DATABASE-UTILS] ✅ Profile data retrieved (merged with auth):", {
-    id: result.id,
-    company_name: result.company_name,
-    email: result.email,
-    emailFromAuth: authData.user.email,
-  });
+//     id: result.id,
+//     company_name: result.company_name,
+//     email: result.email,
+//     emailFromAuth: authData.user.email,
+//   });
 
   return result;
 }
@@ -133,20 +133,20 @@ export async function getStatusConfig(statusId: number): Promise<StatusConfig | 
   }
 
   // console.log("🗄️ [DATABASE-UTILS] ✅ Status config retrieved:", {
-    modal_admin: data.modal_admin,
-    modal_client: data.modal_client,
-    notify: data.notify,
-    admin_email_subject: data.admin_email_subject,
-    admin_email_content: data.admin_email_content
-      ? `${data.admin_email_content.substring(0, 50)}...`
-      : null,
-    client_email_subject: data.client_email_subject,
-    client_email_content: data.client_email_content
-      ? `${data.client_email_content.substring(0, 50)}...`
-      : null,
-    button_text: data.button_text,
-    button_link: data.button_link,
-  });
+//     modal_admin: data.modal_admin,
+//     modal_client: data.modal_client,
+//     notify: data.notify,
+//     admin_email_subject: data.admin_email_subject,
+//     admin_email_content: data.admin_email_content
+//       ? `${data.admin_email_content.substring(0, 50)}...`
+//       : null,
+//     client_email_subject: data.client_email_subject,
+//     client_email_content: data.client_email_content
+//       ? `${data.client_email_content.substring(0, 50)}...`
+//       : null,
+//     button_text: data.button_text,
+//     button_link: data.button_link,
+//   });
 
   return data;
 }
@@ -162,12 +162,12 @@ export function preparePlaceholderData(
 ): PlaceholderData {
   // console.log("🗄️ [DATABASE-UTILS] Preparing placeholder data...");
   // console.log("🗄️ [DATABASE-UTILS] Profile data:", {
-    id: profile.id,
-    company_name: profile.company_name,
-    email: profile.email,
-    emailType: typeof profile.email,
-    emailLength: profile.email?.length,
-  });
+//     id: profile.id,
+//     company_name: profile.company_name,
+//     email: profile.email,
+//     emailType: typeof profile.email,
+//     emailLength: profile.email?.length,
+//   });
 
   const placeholderData = {
     projectAddress: project.address,

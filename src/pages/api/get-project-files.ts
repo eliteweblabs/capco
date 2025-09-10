@@ -139,13 +139,13 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
       if (!hasAccess) {
         // console.log("🚨 [API] Access denied for user:", {
-          userId: user.id,
-          userRole,
-          projectAuthorId: project.author_id,
-          projectAssignedToId: project.assigned_to_id,
-          isAssigned: project.assigned_to_id === user.id,
-          isAuthor: project.author_id === user.id,
-        });
+//           userId: user.id,
+//           userRole,
+//           projectAuthorId: project.author_id,
+//           projectAssignedToId: project.assigned_to_id,
+//           isAssigned: project.assigned_to_id === user.id,
+//           isAuthor: project.author_id === user.id,
+//         });
         return new Response(JSON.stringify({ error: "Access denied" }), {
           status: 403,
           headers: { "Content-Type": "application/json" },

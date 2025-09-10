@@ -35,10 +35,10 @@ export class RefreshManager {
    */
   public updateField(fieldName: string, newValue: any, projectId?: string | number): void {
     // console.log(
-      `🔄 [REFRESH-MANAGER] Updating field '${fieldName}' to:`,
-      newValue,
-      projectId ? `for project ${projectId}` : ""
-    );
+//       `🔄 [REFRESH-MANAGER] Updating field '${fieldName}' to:`,
+//       newValue,
+//       projectId ? `for project ${projectId}` : ""
+//     );
 
     // Find all elements with matching data-refresh attribute
     let elements: NodeListOf<Element>;
@@ -55,8 +55,8 @@ export class RefreshManager {
 
     if (elements.length === 0) {
       // console.log(
-        `🔄 [REFRESH-MANAGER] No elements found with data-refresh="${fieldName}"${projectId ? ` for project ${projectId}` : ""}`
-      );
+//         `🔄 [REFRESH-MANAGER] No elements found with data-refresh="${fieldName}"${projectId ? ` for project ${projectId}` : ""}`
+//       );
       return;
     }
 

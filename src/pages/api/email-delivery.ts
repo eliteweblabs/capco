@@ -143,8 +143,8 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       for (let i = 0; i < usersToNotify.length; i++) {
         const userEmail = usersToNotify[i];
         // console.log(
-          `📧 [EMAIL-DELIVERY] Processing email ${i + 1}/${usersToNotify.length}: ${userEmail}`
-        );
+//           `📧 [EMAIL-DELIVERY] Processing email ${i + 1}/${usersToNotify.length}: ${userEmail}`
+//         );
 
         // Check if this is an SMS gateway email
         const isSmsGateway =
@@ -192,9 +192,9 @@ export const POST: APIRoute = async ({ request, cookies }) => {
             }
           } else if (isSmsGateway) {
             // console.log(
-              "📧 [EMAIL-DELIVERY] Skipping magic link generation for SMS gateway:",
-              userEmail
-            );
+//               "📧 [EMAIL-DELIVERY] Skipping magic link generation for SMS gateway:",
+//               userEmail
+//             );
           }
 
           // Apply button configuration (skip for SMS gateways)
@@ -250,11 +250,11 @@ export const POST: APIRoute = async ({ request, cookies }) => {
           // Debug logging for SMS gateways
           if (isSmsGateway) {
             // console.log("📧 [EMAIL-DELIVERY] Sending SMS gateway email:", {
-              to: userEmail,
-              subject: cleanSubject,
-              contentLength: emailContent.length,
-              payloadKeys: Object.keys(emailPayload),
-            });
+//               to: userEmail,
+//               subject: cleanSubject,
+//               contentLength: emailContent.length,
+//               payloadKeys: Object.keys(emailPayload),
+//             });
           }
 
           const response = await fetch("https://api.resend.com/emails", {
@@ -278,9 +278,9 @@ export const POST: APIRoute = async ({ request, cookies }) => {
           } else {
             const responseData = await response.json();
             // console.log(
-              `📧 [EMAIL-DELIVERY] Email sent successfully to ${userEmail}:`,
-              responseData
-            );
+//               `📧 [EMAIL-DELIVERY] Email sent successfully to ${userEmail}:`,
+//               responseData
+//             );
             sentEmails.push(userEmail);
           }
         } catch (userError) {

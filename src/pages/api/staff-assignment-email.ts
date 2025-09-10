@@ -9,11 +9,11 @@ export const POST: APIRoute = async ({ request }) => {
     const { projectId, staffId, staffName, address } = body;
 
     // console.log("🧑‍💼 [STAFF-ASSIGNMENT-EMAIL] Request data:", {
-      projectId,
-      staffId,
-      staffName,
-      address,
-    });
+//       projectId,
+//       staffId,
+//       staffName,
+//       address,
+//     });
 
     // Get admin and staff emails using reusable API
     // console.log("🧑‍💼 [STAFF-ASSIGNMENT-EMAIL] Fetching admin and staff emails...");

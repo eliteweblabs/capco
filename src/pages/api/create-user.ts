@@ -103,13 +103,13 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       // console.log("6. Request body:", body);
       ({ first_name, last_name, company_name, email, phone, role: staffRole } = body);
       // console.log("7. Extracted data:", {
-        first_name,
-        last_name,
-        company_name,
-        email,
-        phone,
-        staffRole,
-      });
+//         first_name,
+//         last_name,
+//         company_name,
+//         email,
+//         phone,
+//         staffRole,
+//       });
     } catch (parseError) {
       console.error("Request body parsing error:", parseError);
       return new Response(
@@ -129,11 +129,11 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     // console.log("8. Validating required fields...");
     if (!first_name?.trim() || !last_name?.trim() || !email?.trim() || !staffRole?.trim()) {
       // console.log("ERROR: Missing required fields:", {
-        first_name: !!first_name?.trim(),
-        last_name: !!last_name?.trim(),
-        email: !!email?.trim(),
-        role: !!staffRole?.trim(),
-      });
+//         first_name: !!first_name?.trim(),
+//         last_name: !!last_name?.trim(),
+//         email: !!email?.trim(),
+//         role: !!staffRole?.trim(),
+//       });
       return new Response(
         JSON.stringify({
           success: false,
@@ -315,9 +315,9 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         console.error("📧 [CREATE-USER] Failed to fetch admin and staff users:", userError);
       } else {
         // console.log(
-          "📧 [CREATE-USER] Found admin and staff users:",
-          adminAndStaffUsers?.length || 0
-        );
+//           "📧 [CREATE-USER] Found admin and staff users:",
+//           adminAndStaffUsers?.length || 0
+//         );
 
         // Prepare email content with proper name formatting
         const displayName = company_name?.trim() || `${first_name.trim()} ${last_name.trim()}`;

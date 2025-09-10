@@ -14,10 +14,10 @@ export const POST: APIRoute = async ({ request }) => {
     const stats = apiCache.getStats();
 
     // console.log("🧹 [CLEAR-CACHE] Cache cleared successfully:", {
-      previousCacheSize: stats.size,
-      previousProfileCacheSize: stats.profileCacheSize,
-      timestamp: new Date().toISOString(),
-    });
+//       previousCacheSize: stats.size,
+//       previousProfileCacheSize: stats.profileCacheSize,
+//       timestamp: new Date().toISOString(),
+//     });
 
     return new Response(
       JSON.stringify({

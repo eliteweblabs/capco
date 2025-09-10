@@ -97,10 +97,10 @@ export const GET: APIRoute = async ({ url, cookies }) => {
     };
 
     // console.log(`📧 [GET-STATUS-EMAIL] Retrieved email content for status ${statusNumber}:`, {
-      admin_status_name,
-      notify,
-      total_users: usersToNotify.length,
-    });
+//       admin_status_name,
+//       notify,
+//       total_users: usersToNotify.length,
+//     });
 
     return new Response(JSON.stringify(response), {
       status: 200,

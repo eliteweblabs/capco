@@ -10,9 +10,9 @@ export const POST: APIRoute = async ({ request }) => {
     const { roles, userIds } = body;
 
     // console.log("📧 [GET-USER-EMAILS-BY-ROLE] Request data:", {
-      roles: roles || [],
-      userIds: userIds || [],
-    });
+//       roles: roles || [],
+//       userIds: userIds || [],
+//     });
 
     const emails = [];
 
@@ -35,14 +35,14 @@ export const POST: APIRoute = async ({ request }) => {
             );
             if (authError || !authUser?.user?.email) {
               // console.log(
-                `📧 [GET-USER-EMAILS-BY-ROLE] No email found for ${user.role} user ${user.id}`
-              );
+//                 `📧 [GET-USER-EMAILS-BY-ROLE] No email found for ${user.role} user ${user.id}`
+//               );
               continue;
             }
             emails.push(authUser.user.email);
             // console.log(
-              `📧 [GET-USER-EMAILS-BY-ROLE] Found ${user.role} email: ${authUser.user.email}`
-            );
+//               `📧 [GET-USER-EMAILS-BY-ROLE] Found ${user.role} email: ${authUser.user.email}`
+//             );
           } catch (error) {
             console.error(
               `📧 [GET-USER-EMAILS-BY-ROLE] Error getting email for user ${user.id}:`,
@@ -67,8 +67,8 @@ export const POST: APIRoute = async ({ request }) => {
           }
           emails.push(authUser.user.email);
           // console.log(
-            `📧 [GET-USER-EMAILS-BY-ROLE] Found email for user ID ${userId}: ${authUser.user.email}`
-          );
+//             `📧 [GET-USER-EMAILS-BY-ROLE] Found email for user ID ${userId}: ${authUser.user.email}`
+//           );
         } catch (error) {
           console.error(
             `📧 [GET-USER-EMAILS-BY-ROLE] Error getting email for user ID ${userId}:`,

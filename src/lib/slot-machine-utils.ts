@@ -282,20 +282,20 @@ export function showSlotMachinePicker(
 
     // Set initial position
     // console.log(
-      "🎰 [SLOT-MACHINE] Initial setup - selectedIndex:",
-      selectedIndex,
-      "options length:",
-      config.options.length
-    );
+//       "🎰 [SLOT-MACHINE] Initial setup - selectedIndex:",
+//       selectedIndex,
+//       "options length:",
+//       config.options.length
+//     );
 
     // Debug wheel container dimensions
     if (wheel) {
       // console.log("🎰 [SLOT-MACHINE] Wheel container dimensions:", {
-        scrollHeight: wheel.scrollHeight,
-        clientHeight: wheel.clientHeight,
-        offsetHeight: wheel.offsetHeight,
-        scrollTop: wheel.scrollTop,
-      });
+//         scrollHeight: wheel.scrollHeight,
+//         clientHeight: wheel.clientHeight,
+//         offsetHeight: wheel.offsetHeight,
+//         scrollTop: wheel.scrollTop,
+//       });
     }
 
     // Wait for DOM to be fully rendered, then set initial position
@@ -471,11 +471,11 @@ export function showSlotMachinePicker(
       if (!wheel) return;
 
       // console.log(
-        "🎰 [SLOT-MACHINE] Wheel event - deltaY:",
-        deltaY,
-        "current scroll:",
-        wheel.scrollTop
-      );
+//         "🎰 [SLOT-MACHINE] Wheel event - deltaY:",
+//         deltaY,
+//         "current scroll:",
+//         wheel.scrollTop
+//       );
 
       // Smoother scrolling with less aggressive snapping
       const scrollAmount = deltaY * 1.5; // Reduced for smoother scrolling
@@ -509,15 +509,15 @@ export function showSlotMachinePicker(
       );
 
       // console.log(
-        "🎰 [SLOT-MACHINE] Snap to nearest - currentScroll:",
-        currentScroll,
-        "adjustedScroll:",
-        adjustedScroll,
-        "nearestIndex:",
-        nearestIndex,
-        "difference:",
-        Math.abs(adjustedScroll - nearestIndex * itemHeight)
-      );
+//         "🎰 [SLOT-MACHINE] Snap to nearest - currentScroll:",
+//         currentScroll,
+//         "adjustedScroll:",
+//         adjustedScroll,
+//         "nearestIndex:",
+//         nearestIndex,
+//         "difference:",
+//         Math.abs(adjustedScroll - nearestIndex * itemHeight)
+//       );
 
       // Only snap if we're not already at the correct position
       if (Math.abs(adjustedScroll - nearestIndex * itemHeight) > 5) {
@@ -531,13 +531,13 @@ export function showSlotMachinePicker(
     function scrollToIndex(index: number, smooth = true) {
       if (!wheel || index < 0 || index >= config.options.length) {
         // console.log(
-          "🎰 [SLOT-MACHINE] Invalid scrollToIndex call - index:",
-          index,
-          "wheel:",
-          !!wheel,
-          "options length:",
-          config.options.length
-        );
+//           "🎰 [SLOT-MACHINE] Invalid scrollToIndex call - index:",
+//           index,
+//           "wheel:",
+//           !!wheel,
+//           "options length:",
+//           config.options.length
+//         );
         return;
       }
 
@@ -551,36 +551,36 @@ export function showSlotMachinePicker(
       const clampedScroll = Math.max(0, Math.min(targetScroll, maxScroll));
 
       // console.log(
-        "🎰 [SLOT-MACHINE] Scrolling to index:",
-        index,
-        "target scroll:",
-        targetScroll,
-        "clamped scroll:",
-        clampedScroll,
-        "current scroll:",
-        wheel.scrollTop
-      );
+//         "🎰 [SLOT-MACHINE] Scrolling to index:",
+//         index,
+//         "target scroll:",
+//         targetScroll,
+//         "clamped scroll:",
+//         clampedScroll,
+//         "current scroll:",
+//         wheel.scrollTop
+//       );
 
       wheel.scrollTop = clampedScroll;
 
       // Check if scroll actually changed
       setTimeout(() => {
         // console.log(
-          "🎰 [SLOT-MACHINE] After scroll (delayed) - new scrollTop:",
-          wheel.scrollTop,
-          "expected:",
-          targetScroll
-        );
+//           "🎰 [SLOT-MACHINE] After scroll (delayed) - new scrollTop:",
+//           wheel.scrollTop,
+//           "expected:",
+//           targetScroll
+//         );
       }, 10);
 
       selectedIndex = index;
 
       // console.log(
-        "🎰 [SLOT-MACHINE] After scroll - new scrollTop:",
-        wheel.scrollTop,
-        "selectedIndex:",
-        selectedIndex
-      );
+//         "🎰 [SLOT-MACHINE] After scroll - new scrollTop:",
+//         wheel.scrollTop,
+//         "selectedIndex:",
+//         selectedIndex
+//       );
 
       updateSelection();
     }
@@ -588,18 +588,18 @@ export function showSlotMachinePicker(
     function updateSelection() {
       const items = wheel?.querySelectorAll(".slot-machine-item");
       // console.log(
-        "🎰 [SLOT-MACHINE] Updating selection - selectedIndex:",
-        selectedIndex,
-        "items found:",
-        items?.length
-      );
+//         "🎰 [SLOT-MACHINE] Updating selection - selectedIndex:",
+//         selectedIndex,
+//         "items found:",
+//         items?.length
+//       );
       items?.forEach((item, index) => {
         const isSelected = index === selectedIndex;
         item.classList.toggle("selected", isSelected);
         // console.log(
-          `🎰 [SLOT-MACHINE] Item ${index} (${item.textContent}) - selected:`,
-          isSelected
-        );
+//           `🎰 [SLOT-MACHINE] Item ${index} (${item.textContent}) - selected:`,
+//           isSelected
+//         );
       });
     }
 
