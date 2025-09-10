@@ -4,11 +4,11 @@ import { supabase } from "../../lib/supabase";
 import { supabaseAdmin } from "../../lib/supabase-admin";
 
 export const POST: APIRoute = async ({ request, cookies }) => {
-  console.log("🔔 [UPDATE-DISCUSSION] API endpoint called");
+  // console.log("🔔 [UPDATE-DISCUSSION] API endpoint called");
   try {
     // Check authentication
     const { isAuth, currentUser, role } = await checkAuth(cookies);
-    console.log("🔔 [UPDATE-DISCUSSION] Auth check result:", {
+    // console.log("🔔 [UPDATE-DISCUSSION] Auth check result:", {
       isAuth,
       hasUser: !!currentUser,
       role,
@@ -31,12 +31,12 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     // }
 
     const body = await request.json();
-    console.log("🔔 [UPDATE-DISCUSSION] Request body:", body);
+    // console.log("🔔 [UPDATE-DISCUSSION] Request body:", body);
     const { discussionId, mark_completed } = body;
 
     // Ensure discussionId is a number
     const discussionIdNum = parseInt(discussionId, 10);
-    console.log(
+    // console.log(
       "🔔 [UPDATE-DISCUSSION] Parsed discussionId:",
       discussionIdNum,
       "Original:",
@@ -56,7 +56,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       );
     }
 
-    console.log("🔔 [UPDATE-DISCUSSION] Updating discussion:", {
+    // console.log("🔔 [UPDATE-DISCUSSION] Updating discussion:", {
       discussionId: discussionIdNum,
       mark_completed,
       userRole: role,
@@ -64,7 +64,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     });
 
     // First, check if the discussion exists and get its current state
-    console.log(
+    // console.log(
       "🔍 [UPDATE-DISCUSSION] Looking for discussion with ID:",
       discussionIdNum,
       "Type:",
@@ -87,7 +87,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       );
     }
 
-    console.log("🔍 [UPDATE-DISCUSSION] Found existing discussion:", existingDiscussion);
+    // console.log("🔍 [UPDATE-DISCUSSION] Found existing discussion:", existingDiscussion);
 
     // Update the discussion using admin client to bypass RLS
     const { data: updateResult, error } = await supabaseAdmin
@@ -113,7 +113,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       );
     }
 
-    console.log("✅ [UPDATE-DISCUSSION] Discussion updated successfully:", updateResult);
+    // console.log("✅ [UPDATE-DISCUSSION] Discussion updated successfully:", updateResult);
 
     return new Response(
       JSON.stringify({

@@ -1,5 +1,5 @@
 export const filteredStatusObj = (statusObj: any, role: string) => {
-  console.log("🔍 [PROJECT-LIST-ITEM] Status object:", statusObj);
+  // console.log("🔍 [PROJECT-LIST-ITEM] Status object:", statusObj);
   // const statusInfo = statuses[statusCode];
   let filteredStatusObj: any = {};
 

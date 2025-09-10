@@ -12,7 +12,7 @@ export const POST: APIRoute = async ({ request }) => {
       });
     }
 
-    console.log("Updating invoice:", { invoiceId, lineItems, notes });
+    // console.log("Updating invoice:", { invoiceId, lineItems, notes });
 
     // Update invoice notes
     const { error: invoiceError } = await supabase

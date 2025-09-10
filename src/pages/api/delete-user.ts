@@ -4,14 +4,14 @@ import { supabase } from "../../lib/supabase";
 import { supabaseAdmin } from "../../lib/supabase-admin";
 
 export const DELETE: APIRoute = async ({ request, cookies }) => {
-  console.log("🗑️ [DELETE-USER] API route called");
+  // console.log("🗑️ [DELETE-USER] API route called");
 
   try {
     // Check authentication and ensure user is Admin
     const { isAuth, currentUser, currentRole } = await checkAuth(cookies);
 
     if (!isAuth || currentRole !== "Admin") {
-      console.log("🗑️ [DELETE-USER] Unauthorized access attempt");
+      // console.log("🗑️ [DELETE-USER] Unauthorized access attempt");
       return new Response(
         JSON.stringify({
           success: false,
@@ -40,7 +40,7 @@ export const DELETE: APIRoute = async ({ request, cookies }) => {
       );
     }
 
-    console.log(`🗑️ [DELETE-USER] Admin ${currentUser?.email} attempting to delete user ${userId}`);
+    // console.log(`🗑️ [DELETE-USER] Admin ${currentUser?.email} attempting to delete user ${userId}`);
 
     // Prevent self-deletion
     if (userId === currentUser?.id) {
@@ -95,7 +95,7 @@ export const DELETE: APIRoute = async ({ request, cookies }) => {
       userToDelete.company_name ||
       "Unknown User";
 
-    console.log(`🗑️ [DELETE-USER] Deleting user: ${userName} (${userToDelete.role})`);
+    // console.log(`🗑️ [DELETE-USER] Deleting user: ${userName} (${userToDelete.role})`);
 
     // Check if user has any associated projects
     const { data: userProjects, error: projectsError } = await supabase
@@ -108,7 +108,7 @@ export const DELETE: APIRoute = async ({ request, cookies }) => {
     }
 
     if (userProjects && userProjects.length > 0) {
-      console.log(`🗑️ [DELETE-USER] User has ${userProjects.length} associated projects`);
+      // console.log(`🗑️ [DELETE-USER] User has ${userProjects.length} associated projects`);
       return new Response(
         JSON.stringify({
           success: false,
@@ -150,14 +150,14 @@ export const DELETE: APIRoute = async ({ request, cookies }) => {
         // This is not critical as the user won't be able to login anyway
         console.warn("🗑️ [DELETE-USER] Profile deleted but auth user deletion failed");
       } else {
-        console.log("🗑️ [DELETE-USER] Auth user deleted successfully");
+        // console.log("🗑️ [DELETE-USER] Auth user deleted successfully");
       }
     } catch (authError) {
       console.error("🗑️ [DELETE-USER] Auth deletion error:", authError);
       // Continue - profile deletion was successful
     }
 
-    console.log(`🗑️ [DELETE-USER] Successfully deleted user: ${userName}`);
+    // console.log(`🗑️ [DELETE-USER] Successfully deleted user: ${userName}`);
 
     return new Response(
       JSON.stringify({

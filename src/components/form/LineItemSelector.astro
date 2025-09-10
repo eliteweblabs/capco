@@ -229,7 +229,7 @@ const { invoiceId, onItemAdded = "onLineItemAdded", showAddToInvoice = true } = 
 <script define:vars={{ invoiceId, onItemAdded, showAddToInvoice }}>
   class LineItemSelector {
     constructor() {
-      console.log("🔍 [LINE-ITEM-SELECTOR] Constructor called with:", {
+      // console.log("🔍 [LINE-ITEM-SELECTOR] Constructor called with:", {
         invoiceId,
         onItemAdded,
         showAddToInvoice,
@@ -300,7 +300,7 @@ const { invoiceId, onItemAdded = "onLineItemAdded", showAddToInvoice = true } = 
     }
 
     async loadInitialItems() {
-      console.log("🔍 [LINE-ITEM-SELECTOR] Loading initial items...");
+      // console.log("🔍 [LINE-ITEM-SELECTOR] Loading initial items...");
       await this.searchItems("", "");
     }
 
@@ -337,12 +337,12 @@ const { invoiceId, onItemAdded = "onLineItemAdded", showAddToInvoice = true } = 
     }
 
     renderSearchResults(items) {
-      console.log("🔍 [LINE-ITEM-SELECTOR] Rendering search results:", items);
+      // console.log("🔍 [LINE-ITEM-SELECTOR] Rendering search results:", items);
       const resultsEl = document.getElementById("search-results");
       const emptyEl = document.getElementById("search-empty");
 
-      console.log("🔍 [LINE-ITEM-SELECTOR] Results element:", resultsEl);
-      console.log("🔍 [LINE-ITEM-SELECTOR] Empty element:", emptyEl);
+      // console.log("🔍 [LINE-ITEM-SELECTOR] Results element:", resultsEl);
+      // console.log("🔍 [LINE-ITEM-SELECTOR] Empty element:", emptyEl);
 
       if (!resultsEl) {
         console.error("🔍 [LINE-ITEM-SELECTOR] No search-results element found!");
@@ -350,13 +350,13 @@ const { invoiceId, onItemAdded = "onLineItemAdded", showAddToInvoice = true } = 
       }
 
       if (items.length === 0) {
-        console.log("🔍 [LINE-ITEM-SELECTOR] No items to render, showing empty state");
+        // console.log("🔍 [LINE-ITEM-SELECTOR] No items to render, showing empty state");
         resultsEl.innerHTML = "";
         emptyEl?.classList.remove("hidden");
         return;
       }
 
-      console.log("🔍 [LINE-ITEM-SELECTOR] Rendering", items.length, "items");
+      // console.log("🔍 [LINE-ITEM-SELECTOR] Rendering", items.length, "items");
       emptyEl?.classList.add("hidden");
 
       resultsEl.innerHTML = items
@@ -399,7 +399,7 @@ const { invoiceId, onItemAdded = "onLineItemAdded", showAddToInvoice = true } = 
 
       // Add click listeners to items and buttons
       const catalogItems = resultsEl.querySelectorAll(".catalog-item");
-      console.log(
+      // console.log(
         "🔍 [LINE-ITEM-SELECTOR] Found",
         catalogItems.length,
         "catalog items to attach listeners to"
@@ -407,7 +407,7 @@ const { invoiceId, onItemAdded = "onLineItemAdded", showAddToInvoice = true } = 
 
       catalogItems.forEach((itemEl, index) => {
         const addBtn = itemEl.querySelector(".add-item-btn");
-        console.log(`🔍 [LINE-ITEM-SELECTOR] Item ${index}:`, {
+        // console.log(`🔍 [LINE-ITEM-SELECTOR] Item ${index}:`, {
           hasAddBtn: !!addBtn,
           itemData: itemEl.dataset.item,
         });
@@ -416,7 +416,7 @@ const { invoiceId, onItemAdded = "onLineItemAdded", showAddToInvoice = true } = 
           addBtn.addEventListener("click", (e) => {
             e.stopPropagation();
             const item = JSON.parse(itemEl.dataset.item);
-            console.log("🔍 [LINE-ITEM-SELECTOR] Add button clicked for item:", item);
+            // console.log("🔍 [LINE-ITEM-SELECTOR] Add button clicked for item:", item);
 
             if (this.showAddToInvoice && this.invoiceId) {
               // Invoice mode - show modal for quantity/description
@@ -433,13 +433,13 @@ const { invoiceId, onItemAdded = "onLineItemAdded", showAddToInvoice = true } = 
     }
 
     showAddItemModal(item) {
-      console.log("🔍 [LINE-ITEM-SELECTOR] Showing add item modal for:", item);
+      // console.log("🔍 [LINE-ITEM-SELECTOR] Showing add item modal for:", item);
       this.selectedItem = item;
       const modal = document.getElementById("add-item-modal");
       const detailsEl = document.getElementById("modal-item-details");
 
-      console.log("🔍 [LINE-ITEM-SELECTOR] Modal element:", modal);
-      console.log("🔍 [LINE-ITEM-SELECTOR] Details element:", detailsEl);
+      // console.log("🔍 [LINE-ITEM-SELECTOR] Modal element:", modal);
+      // console.log("🔍 [LINE-ITEM-SELECTOR] Details element:", detailsEl);
 
       if (detailsEl) {
         detailsEl.innerHTML = `
@@ -456,7 +456,7 @@ const { invoiceId, onItemAdded = "onLineItemAdded", showAddToInvoice = true } = 
       document.getElementById("custom-description").value = "";
 
       modal?.classList.remove("hidden");
-      console.log("🔍 [LINE-ITEM-SELECTOR] Modal should now be visible");
+      // console.log("🔍 [LINE-ITEM-SELECTOR] Modal should now be visible");
     }
 
     closeModal() {
@@ -465,11 +465,11 @@ const { invoiceId, onItemAdded = "onLineItemAdded", showAddToInvoice = true } = 
     }
 
     addItemToProposal(item) {
-      console.log("🔍 [LINE-ITEM-SELECTOR] Adding item to proposal:", item);
+      // console.log("🔍 [LINE-ITEM-SELECTOR] Adding item to proposal:", item);
 
       // Call the callback function if provided
       if (typeof window[this.onItemAdded] === "function") {
-        console.log(
+        // console.log(
           "🔍 [LINE-ITEM-SELECTOR] Calling proposal callback function:",
           this.onItemAdded
         );
@@ -480,9 +480,9 @@ const { invoiceId, onItemAdded = "onLineItemAdded", showAddToInvoice = true } = 
     }
 
     async addItemToInvoice() {
-      console.log("🔍 [LINE-ITEM-SELECTOR] addItemToInvoice called");
-      console.log("🔍 [LINE-ITEM-SELECTOR] selectedItem:", this.selectedItem);
-      console.log("🔍 [LINE-ITEM-SELECTOR] invoiceId:", this.invoiceId);
+      // console.log("🔍 [LINE-ITEM-SELECTOR] addItemToInvoice called");
+      // console.log("🔍 [LINE-ITEM-SELECTOR] selectedItem:", this.selectedItem);
+      // console.log("🔍 [LINE-ITEM-SELECTOR] invoiceId:", this.invoiceId);
 
       if (!this.selectedItem || !this.invoiceId) {
         console.error("🔍 [LINE-ITEM-SELECTOR] Missing selectedItem or invoiceId");
@@ -492,7 +492,7 @@ const { invoiceId, onItemAdded = "onLineItemAdded", showAddToInvoice = true } = 
       const quantity = document.getElementById("item-quantity")?.value || 1;
       const customDescription = document.getElementById("custom-description")?.value.trim();
 
-      console.log("🔍 [LINE-ITEM-SELECTOR] Request data:", {
+      // console.log("🔍 [LINE-ITEM-SELECTOR] Request data:", {
         invoice_id: this.invoiceId,
         catalog_item_id: this.selectedItem.id,
         quantity: parseFloat(quantity),
@@ -513,19 +513,19 @@ const { invoiceId, onItemAdded = "onLineItemAdded", showAddToInvoice = true } = 
           }),
         });
 
-        console.log("🔍 [LINE-ITEM-SELECTOR] API response status:", response.status);
+        // console.log("🔍 [LINE-ITEM-SELECTOR] API response status:", response.status);
         const data = await response.json();
-        console.log("🔍 [LINE-ITEM-SELECTOR] API response data:", data);
+        // console.log("🔍 [LINE-ITEM-SELECTOR] API response data:", data);
 
         if (data.success) {
           this.closeModal();
 
           // Call the callback function if provided
           if (typeof window[this.onItemAdded] === "function") {
-            console.log("🔍 [LINE-ITEM-SELECTOR] Calling callback function:", this.onItemAdded);
+            // console.log("🔍 [LINE-ITEM-SELECTOR] Calling callback function:", this.onItemAdded);
             window[this.onItemAdded](data.line_item);
           } else {
-            console.log("🔍 [LINE-ITEM-SELECTOR] No callback function found:", this.onItemAdded);
+            // console.log("🔍 [LINE-ITEM-SELECTOR] No callback function found:", this.onItemAdded);
           }
 
           // Show success message
@@ -609,22 +609,22 @@ const { invoiceId, onItemAdded = "onLineItemAdded", showAddToInvoice = true } = 
 
         // Get existing line items from the current proposal
         const tbody = document.getElementById("proposal-line-items");
-        console.log("🔍 [LINE-ITEM-SELECTOR] Searching for existing items in tbody:", tbody);
+        // console.log("🔍 [LINE-ITEM-SELECTOR] Searching for existing items in tbody:", tbody);
 
         if (tbody) {
           const rows = tbody.querySelectorAll("tr");
-          console.log("🔍 [LINE-ITEM-SELECTOR] Found rows:", rows.length);
+          // console.log("🔍 [LINE-ITEM-SELECTOR] Found rows:", rows.length);
 
           rows.forEach((row, index) => {
             const cells = row.querySelectorAll("td");
-            console.log(`🔍 [LINE-ITEM-SELECTOR] Row ${index} has ${cells.length} cells`);
+            // console.log(`🔍 [LINE-ITEM-SELECTOR] Row ${index} has ${cells.length} cells`);
 
             if (cells.length >= 3) {
               const description = cells[0]?.textContent?.trim() || "";
               const quantity = cells[1]?.textContent?.trim() || "1";
               const price = cells[2]?.textContent?.trim() || "0";
 
-              console.log(
+              // console.log(
                 `🔍 [LINE-ITEM-SELECTOR] Row ${index}: "${description}", qty: ${quantity}, price: ${price}`
               );
 
@@ -643,15 +643,15 @@ const { invoiceId, onItemAdded = "onLineItemAdded", showAddToInvoice = true } = 
                   category: "existing",
                   is_existing: true,
                 });
-                console.log(`✅ [LINE-ITEM-SELECTOR] Added existing item: "${description}"`);
+                // console.log(`✅ [LINE-ITEM-SELECTOR] Added existing item: "${description}"`);
               }
             }
           });
         } else {
-          console.log("❌ [LINE-ITEM-SELECTOR] No tbody found with id 'proposal-line-items'");
+          // console.log("❌ [LINE-ITEM-SELECTOR] No tbody found with id 'proposal-line-items'");
         }
 
-        console.log(`🎯 [LINE-ITEM-SELECTOR] Total catalog items found: ${items.length}`);
+        // console.log(`🎯 [LINE-ITEM-SELECTOR] Total catalog items found: ${items.length}`);
         return { success: true, items: items };
       } catch (error) {
         console.error("Error searching existing line items:", error);
@@ -692,7 +692,7 @@ const { invoiceId, onItemAdded = "onLineItemAdded", showAddToInvoice = true } = 
           type
         );
       } else {
-        console.log(`🔔 [${type.toUpperCase()}] ${message}`);
+        // console.log(`🔔 [${type.toUpperCase()}] ${message}`);
       }
     }
 
@@ -716,11 +716,11 @@ const { invoiceId, onItemAdded = "onLineItemAdded", showAddToInvoice = true } = 
   // Initialize when DOM is loaded
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", () => {
-      console.log("🔍 [LINE-ITEM-SELECTOR] Initializing LineItemSelector on DOMContentLoaded");
+      // console.log("🔍 [LINE-ITEM-SELECTOR] Initializing LineItemSelector on DOMContentLoaded");
       new LineItemSelector();
     });
   } else {
-    console.log("🔍 [LINE-ITEM-SELECTOR] Initializing LineItemSelector immediately");
+    // console.log("🔍 [LINE-ITEM-SELECTOR] Initializing LineItemSelector immediately");
     new LineItemSelector();
   }
 </script>

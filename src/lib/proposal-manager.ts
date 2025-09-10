@@ -37,7 +37,7 @@ export class ProposalManager {
    * Build and display the proposal
    */
   buildProposal(): void {
-    // console.log("Building proposal for project:", this.projectId);
+    // // console.log("Building proposal for project:", this.projectId);
 
     if (!this.project) {
       console.error("Project data not available");
@@ -74,7 +74,7 @@ export class ProposalManager {
     // Make proposal editable by default
     this.enterEditMode();
 
-    // console.log("Proposal generated successfully");
+    // // console.log("Proposal generated successfully");
   }
 
   /**
@@ -82,7 +82,7 @@ export class ProposalManager {
    */
   private async saveProposalAsInvoice(): Promise<void> {
     try {
-      // console.log("Saving proposal as invoice for project:", this.projectId);
+      // // console.log("Saving proposal as invoice for project:", this.projectId);
 
       // Get the proposal data
       const proposalData = this.getProposalData();
@@ -102,7 +102,7 @@ export class ProposalManager {
       const data = await response.json();
 
       if (data.success) {
-        // console.log("Proposal saved as invoice successfully:", data);
+        // // console.log("Proposal saved as invoice successfully:", data);
       } else {
         console.error("Failed to save proposal as invoice:", data.error);
         if ((window as any).showModal) {
@@ -238,18 +238,18 @@ export class ProposalManager {
     const rows = tbody.querySelectorAll("tr");
     const lineItems: any[] = [];
 
-    // console.log("🔍 [PROPOSAL-MANAGER] Getting line items data from", rows.length, "rows");
+    // // console.log("🔍 [PROPOSAL-MANAGER] Getting line items data from", rows.length, "rows");
 
     rows.forEach((row, index) => {
       // Get all input elements in this row
       const inputs = row.querySelectorAll("input");
 
       if (inputs.length === 0) {
-        // console.log(`ℹ️ [PROPOSAL-MANAGER] Row ${index} has no inputs, skipping`);
+        // // console.log(`ℹ️ [PROPOSAL-MANAGER] Row ${index} has no inputs, skipping`);
         return;
       }
 
-      // console.log(`🔍 [PROPOSAL-MANAGER] Row ${index} has ${inputs.length} inputs`);
+      // // console.log(`🔍 [PROPOSAL-MANAGER] Row ${index} has ${inputs.length} inputs`);
 
       // Extract values from inputs - simple approach
       let name = "";
@@ -278,7 +278,7 @@ export class ProposalManager {
       const isEdited = row.getAttribute("data-edited") === "true";
       const editedAttribute = row.getAttribute("data-edited");
 
-      // console.log(`🔍 [PROPOSAL-MANAGER] Row ${index} extracted values:`, {
+      // // console.log(`🔍 [PROPOSAL-MANAGER] Row ${index} extracted values:`, {
       //   name: name.substring(0, 50) + (name.length > 50 ? "..." : ""),
       //   description: description.substring(0, 30) + (description.length > 30 ? "..." : ""),
       //   quantity,
@@ -300,10 +300,10 @@ export class ProposalManager {
         isEdited: isEdited,
       });
 
-      // console.log(`✅ [PROPOSAL-MANAGER] Added row ${index} to line items`);
+      // // console.log(`✅ [PROPOSAL-MANAGER] Added row ${index} to line items`);
     });
 
-    // console.log("🔍 [PROPOSAL-MANAGER] Final line items:", lineItems);
+    // // console.log("🔍 [PROPOSAL-MANAGER] Final line items:", lineItems);
     return lineItems;
   }
 
@@ -319,7 +319,7 @@ export class ProposalManager {
    * Load existing invoice data into the proposal
    */
   async loadExistingInvoice(invoice: any): Promise<void> {
-    // console.log("🔄 [PROPOSAL-MANAGER] Loading existing invoice into proposal:", invoice);
+    // // console.log("🔄 [PROPOSAL-MANAGER] Loading existing invoice into proposal:", invoice);
 
     if (!invoice) {
       console.error("❌ [PROPOSAL-MANAGER] No invoice data provided");
@@ -328,46 +328,46 @@ export class ProposalManager {
 
     // Check if invoice has meaningful line items
     const hasLineItems = this.hasMeaningfulLineItems(invoice);
-    // console.log("🔄 [PROPOSAL-MANAGER] Invoice has meaningful line items:", hasLineItems);
+    // // console.log("🔄 [PROPOSAL-MANAGER] Invoice has meaningful line items:", hasLineItems);
 
     // Hide placeholder and show proposal content
     const placeholder = document.getElementById("proposal-placeholder");
     const content = document.getElementById("proposal-content");
 
-    // console.log("🔄 [PROPOSAL-MANAGER] DOM elements:", {
+    // // console.log("🔄 [PROPOSAL-MANAGER] DOM elements:", {
     //   placeholder: !!placeholder,
     //   content: !!content,
     // });
 
     if (placeholder) {
       placeholder.classList.add("hidden");
-      // console.log("✅ [PROPOSAL-MANAGER] Hidden placeholder");
+      // // console.log("✅ [PROPOSAL-MANAGER] Hidden placeholder");
     }
     if (content) {
       content.classList.remove("hidden");
-      // console.log("✅ [PROPOSAL-MANAGER] Showed content");
+      // // console.log("✅ [PROPOSAL-MANAGER] Showed content");
     }
 
-    // console.log("🔄 [PROPOSAL-MANAGER] Starting to populate proposal with invoice data");
+    // // console.log("🔄 [PROPOSAL-MANAGER] Starting to populate proposal with invoice data");
 
     // Populate proposal header with invoice data
     this.populateHeaderFromInvoice(invoice);
-    // console.log("✅ [PROPOSAL-MANAGER] Header populated");
+    // // console.log("✅ [PROPOSAL-MANAGER] Header populated");
 
     // Populate project and client information
     this.populateProjectInfo();
     this.populateClientInfo();
-    // console.log("✅ [PROPOSAL-MANAGER] Project and client info populated");
+    // // console.log("✅ [PROPOSAL-MANAGER] Project and client info populated");
 
     // Populate line items from invoice data
     await this.populateLineItemsFromInvoice(invoice);
-    // console.log("✅ [PROPOSAL-MANAGER] Line items populated");
+    // // console.log("✅ [PROPOSAL-MANAGER] Line items populated");
 
     // Populate notes section
     this.populateNotesFromInvoice(invoice);
-    // console.log("✅ [PROPOSAL-MANAGER] Notes populated");
+    // // console.log("✅ [PROPOSAL-MANAGER] Notes populated");
 
-    // console.log("🎉 [PROPOSAL-MANAGER] Proposal loading complete!");
+    // // console.log("🎉 [PROPOSAL-MANAGER] Proposal loading complete!");
 
     // Update button states based on project status
     this.updateProposalButtonStates(this.project.status);
@@ -380,14 +380,14 @@ export class ProposalManager {
     // Make proposal editable by default
     this.enterEditMode();
 
-    // console.log("Existing invoice loaded successfully");
+    // // console.log("Existing invoice loaded successfully");
   }
 
   /**
    * Toggle between edit and view mode
    */
   editProposal(): void {
-    console.log("Editing proposal for project:", this.projectId);
+    // console.log("Editing proposal for project:", this.projectId);
 
     const tbody = document.getElementById("proposal-line-items");
     if (!tbody) {
@@ -429,12 +429,12 @@ export class ProposalManager {
     }
 
     try {
-      console.log("💾 [PROPOSAL-MANAGER] Saving current proposal data");
+      // console.log("💾 [PROPOSAL-MANAGER] Saving current proposal data");
 
       // Get line items data
       const lineItems = this.getLineItemsData();
-      // console.log("💾 [PROPOSAL-MANAGER] Line items to save:", lineItems);
-      console.log("💾 [PROPOSAL-MANAGER] Total line items count:", lineItems.length);
+      // // console.log("💾 [PROPOSAL-MANAGER] Line items to save:", lineItems);
+      // console.log("💾 [PROPOSAL-MANAGER] Total line items count:", lineItems.length);
 
       // Get proposal subject
       const subjectElement = document.getElementById("proposal-subject") as HTMLInputElement;
@@ -449,10 +449,10 @@ export class ProposalManager {
       // 2. Create a new catalog item and get its ID
       const processedLineItems = [];
 
-      console.log("🔄 [PROPOSAL-MANAGER] Processing", lineItems.length, "line items...");
+      // console.log("🔄 [PROPOSAL-MANAGER] Processing", lineItems.length, "line items...");
 
       for (const item of lineItems) {
-        console.log("🔄 [PROPOSAL-MANAGER] Processing item:", {
+        // console.log("🔄 [PROPOSAL-MANAGER] Processing item:", {
           description:
             item.description?.substring(0, 50) + (item.description?.length > 50 ? "..." : ""),
           hasCatalogId: !!item.catalog_item_id,
@@ -463,7 +463,7 @@ export class ProposalManager {
         const currentName = item.name;
         const currentDescription = item.description;
 
-        console.log("🔍 [PROPOSAL-MANAGER] Processing item with values:", {
+        // console.log("🔍 [PROPOSAL-MANAGER] Processing item with values:", {
           catalog_item_id: item.catalog_item_id,
           currentName: currentName,
           currentDescription: currentDescription,
@@ -471,7 +471,7 @@ export class ProposalManager {
           hasCatalogId: !!item.catalog_item_id,
         });
 
-        console.log("🔍 [PROPOSAL-MANAGER] Decision logic:", {
+        // console.log("🔍 [PROPOSAL-MANAGER] Decision logic:", {
           hasCatalogId: !!item.catalog_item_id,
           isEdited: item.isEdited,
           willReuse: !!(item.catalog_item_id && !item.isEdited),
@@ -479,7 +479,7 @@ export class ProposalManager {
 
         if (item.catalog_item_id && !item.isEdited) {
           // Item exists in catalog and hasn't been edited - reuse existing catalog item
-          console.log(
+          // console.log(
             "✅ [PROPOSAL-MANAGER] Using existing catalog item (not edited):",
             item.catalog_item_id
           );
@@ -493,7 +493,7 @@ export class ProposalManager {
         } else {
           // New item or edited item - create new catalog item
           const reason = item.catalog_item_id ? "edited" : "new";
-          console.log(`🔄 [PROPOSAL-MANAGER] Creating catalog item (${reason}):`, {
+          // console.log(`🔄 [PROPOSAL-MANAGER] Creating catalog item (${reason}):`, {
             hasCatalogId: !!item.catalog_item_id,
             isEdited: item.isEdited,
             name: currentName,
@@ -525,7 +525,7 @@ export class ProposalManager {
                 quantity: item.quantity,
                 unit_price: currentUnitPrice,
               });
-              console.log(
+              // console.log(
                 `✅ [PROPOSAL-MANAGER] Created ${reason} catalog item:`,
                 catalogResult.item.id
               );
@@ -553,8 +553,8 @@ export class ProposalManager {
         }
       }
 
-      console.log("💾 [PROPOSAL-MANAGER] Processed line items:", processedLineItems);
-      console.log("💾 [PROPOSAL-MANAGER] Final processed count:", processedLineItems.length);
+      // console.log("💾 [PROPOSAL-MANAGER] Processed line items:", processedLineItems);
+      // console.log("💾 [PROPOSAL-MANAGER] Final processed count:", processedLineItems.length);
 
       // Update line items in database
       const response = await fetch("/api/update-invoice-line-items", {
@@ -573,7 +573,7 @@ export class ProposalManager {
       const result = await response.json();
 
       if (result.success) {
-        console.log("✅ [PROPOSAL-MANAGER] Proposal data saved successfully");
+        // console.log("✅ [PROPOSAL-MANAGER] Proposal data saved successfully");
         // Show success message only if not suppressed (e.g., when sending proposal)
         if (!suppressModal && (window as any).showSuccess) {
           (window as any).showSuccess(
@@ -848,16 +848,16 @@ export class ProposalManager {
    * Update total for a specific row
    */
   updateRowTotal(rowIndex: number): void {
-    console.log("🔍 [PROPOSAL-MANAGER] updateRowTotal called for row:", rowIndex);
+    // console.log("🔍 [PROPOSAL-MANAGER] updateRowTotal called for row:", rowIndex);
     const tbody = document.getElementById("proposal-line-items");
     if (!tbody) {
-      console.log("❌ [PROPOSAL-MANAGER] No tbody found");
+      // console.log("❌ [PROPOSAL-MANAGER] No tbody found");
       return;
     }
 
     const row = tbody.querySelectorAll("tr")[rowIndex];
     if (!row) {
-      console.log("❌ [PROPOSAL-MANAGER] No row found at index:", rowIndex);
+      // console.log("❌ [PROPOSAL-MANAGER] No row found at index:", rowIndex);
       return;
     }
 
@@ -870,7 +870,7 @@ export class ProposalManager {
     ) as HTMLInputElement;
     const totalSpan = row.querySelector(".row-total, .line-item-total");
 
-    console.log("🔍 [PROPOSAL-MANAGER] Found elements:", {
+    // console.log("🔍 [PROPOSAL-MANAGER] Found elements:", {
       qtyInput: !!qtyInput,
       priceInput: !!priceInput,
       totalSpan: !!totalSpan,
@@ -883,7 +883,7 @@ export class ProposalManager {
       const unitPrice = parseFloat(priceInput.value) || 0;
       const total = quantity * unitPrice;
 
-      console.log("🔍 [PROPOSAL-MANAGER] Calculating total:", { quantity, unitPrice, total });
+      // console.log("🔍 [PROPOSAL-MANAGER] Calculating total:", { quantity, unitPrice, total });
       totalSpan.textContent = `$${total.toFixed(2)}`;
 
       // Update grand total using both methods
@@ -893,7 +893,7 @@ export class ProposalManager {
         (window as any).updateProposalTotal();
       }
     } else {
-      console.log("❌ [PROPOSAL-MANAGER] Missing required elements for total calculation");
+      // console.log("❌ [PROPOSAL-MANAGER] Missing required elements for total calculation");
     }
   }
 
@@ -1045,22 +1045,22 @@ export class ProposalManager {
 
     // Get line item data from the catalog_line_items JSONB field
     const catalogLineItems = invoice.catalog_line_items || [];
-    console.log("🔄 [PROPOSAL-MANAGER] Populating line items from stored data:", catalogLineItems);
-    console.log("🔄 [PROPOSAL-MANAGER] Invoice data:", invoice);
+    // console.log("🔄 [PROPOSAL-MANAGER] Populating line items from stored data:", catalogLineItems);
+    // console.log("🔄 [PROPOSAL-MANAGER] Invoice data:", invoice);
 
     if (catalogLineItems.length === 0) {
-      console.log(
+      // console.log(
         "🔄 [PROPOSAL-MANAGER] No catalog line items found in invoice, falling back to generateLineItemsFromProject"
       );
-      console.log("🔄 [PROPOSAL-MANAGER] Invoice structure:", JSON.stringify(invoice, null, 2));
+      // console.log("🔄 [PROPOSAL-MANAGER] Invoice structure:", JSON.stringify(invoice, null, 2));
 
       // Fall back to generating line items from project data
       const generatedLineItems = this.generateLineItemsFromProject(this.project);
-      console.log("🔄 [PROPOSAL-MANAGER] Generated line items from project:", generatedLineItems);
+      // console.log("🔄 [PROPOSAL-MANAGER] Generated line items from project:", generatedLineItems);
 
       // Use the generated line items
       const lineItems = generatedLineItems;
-      console.log("🔄 [PROPOSAL-MANAGER] Using generated line items:", lineItems);
+      // console.log("🔄 [PROPOSAL-MANAGER] Using generated line items:", lineItems);
 
       // Clear existing content
       tbody.innerHTML = "";
@@ -1072,7 +1072,7 @@ export class ProposalManager {
 
       // Use generated line items and create interactive rows
       lineItems.forEach((item: any) => {
-        console.log("🔍 [PROPOSAL-MANAGER] Processing generated line item:", item);
+        // console.log("🔍 [PROPOSAL-MANAGER] Processing generated line item:", item);
 
         const row = this.createLineItemRow(item);
         fragment.appendChild(row);
@@ -1085,13 +1085,13 @@ export class ProposalManager {
       // Update total
       this.updateProposalTotalFromManager();
 
-      console.log("✅ [PROPOSAL-MANAGER] Generated line items populated successfully");
+      // console.log("✅ [PROPOSAL-MANAGER] Generated line items populated successfully");
       return;
     }
 
     // Use the stored catalog line items data directly (no need to fetch from catalog)
     const lineItems = catalogLineItems;
-    console.log("🔄 [PROPOSAL-MANAGER] Using stored catalog line items data:", lineItems);
+    // console.log("🔄 [PROPOSAL-MANAGER] Using stored catalog line items data:", lineItems);
 
     // Clear existing content
     tbody.innerHTML = "";
@@ -1103,12 +1103,12 @@ export class ProposalManager {
 
     // Use line items from the catalog and create interactive rows
     lineItems.forEach((item: any) => {
-      console.log("🔍 [PROPOSAL-MANAGER] Processing line item:", item);
-      console.log("🔍 [PROPOSAL-MANAGER] Item keys:", Object.keys(item));
-      console.log("🔍 [PROPOSAL-MANAGER] Unit price value:", item.unit_price);
-      console.log("🔍 [PROPOSAL-MANAGER] Quantity value:", item.quantity);
-      console.log("🔍 [PROPOSAL-MANAGER] Catalog item ID:", item.catalog_item_id);
-      console.log("🔍 [PROPOSAL-MANAGER] Full item data:", JSON.stringify(item, null, 2));
+      // console.log("🔍 [PROPOSAL-MANAGER] Processing line item:", item);
+      // console.log("🔍 [PROPOSAL-MANAGER] Item keys:", Object.keys(item));
+      // console.log("🔍 [PROPOSAL-MANAGER] Unit price value:", item.unit_price);
+      // console.log("🔍 [PROPOSAL-MANAGER] Quantity value:", item.quantity);
+      // console.log("🔍 [PROPOSAL-MANAGER] Catalog item ID:", item.catalog_item_id);
+      // console.log("🔍 [PROPOSAL-MANAGER] Full item data:", JSON.stringify(item, null, 2));
 
       // Create desktop row using the stored data (preserves original pricing)
       // Handle both old and new field names for backward compatibility
@@ -1359,7 +1359,7 @@ export class ProposalManager {
   }
 
   private enterEditMode(): void {
-    console.log("Entering edit mode");
+    // console.log("Entering edit mode");
 
     const tbody = document.getElementById("proposal-line-items");
 
@@ -1395,7 +1395,7 @@ export class ProposalManager {
   }
 
   private saveProposalChanges(suppressModal: boolean = false): void {
-    console.log("Saving proposal changes");
+    // console.log("Saving proposal changes");
 
     const tbody = document.getElementById("proposal-line-items");
     const editBtn = document.querySelector('button[onclick*="editProposal"]') as HTMLButtonElement;
@@ -1482,7 +1482,7 @@ export class ProposalManager {
    */
   private async saveLineItemsToDatabase(): Promise<void> {
     try {
-      console.log("💾 [PROPOSAL-MANAGER] Saving line items to database");
+      // console.log("💾 [PROPOSAL-MANAGER] Saving line items to database");
 
       // Get the current invoice ID from the loaded invoice
       const tbody = document.getElementById("proposal-line-items");
@@ -1493,7 +1493,7 @@ export class ProposalManager {
 
       // Get line items data
       const lineItems = this.getLineItemsData();
-      // console.log("💾 [PROPOSAL-MANAGER] Line items to save:", lineItems);
+      // // console.log("💾 [PROPOSAL-MANAGER] Line items to save:", lineItems);
 
       // We need to get the invoice ID - let's get it from the existing invoice
       // For now, we'll need to make an API call to update the line items
@@ -1511,7 +1511,7 @@ export class ProposalManager {
       const result = await response.json();
 
       if (result.success) {
-        console.log("✅ [PROPOSAL-MANAGER] Line items saved successfully");
+        // console.log("✅ [PROPOSAL-MANAGER] Line items saved successfully");
       } else {
         console.error("❌ [PROPOSAL-MANAGER] Failed to save line items:", result.error);
         if ((window as any).showModal) {

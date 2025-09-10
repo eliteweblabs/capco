@@ -70,7 +70,7 @@ export const POST: APIRoute = async ({ request }) => {
 
     // this used to use modal_auto_redirect_admin and modal_auto_redirect_client
 
-    // console.log("📊 [UPDATE-STATUS] Updating project status:", { projectId, newStatus });
+    // // console.log("📊 [UPDATE-STATUS] Updating project status:", { projectId, newStatus });
 
     // Update project status
     const { data: updatedProject, error: updateError } = await supabase
@@ -94,15 +94,15 @@ export const POST: APIRoute = async ({ request }) => {
     // Log the status change if currentUserId is provided
     if (currentUserId) {
       try {
-        // console.log("📊 [UPDATE-STATUS] Logging status change for user:", currentUserId);
+        // // console.log("📊 [UPDATE-STATUS] Logging status change for user:", currentUserId);
         await SimpleProjectLogger.logStatusChange(projectId, currentUserId, oldStatus, newStatus);
-        // console.log("📊 [UPDATE-STATUS] Status change logged successfully");
+        // // console.log("📊 [UPDATE-STATUS] Status change logged successfully");
       } catch (logError) {
         console.error("📊 [UPDATE-STATUS] Failed to log status change:", logError);
         // Don't fail the entire request if logging fails
       }
     } else {
-      // console.log("📊 [UPDATE-STATUS] No currentUserId provided, skipping logging");
+      // // console.log("📊 [UPDATE-STATUS] No currentUserId provided, skipping logging");
     }
 
     // Get status data after successful update
@@ -118,7 +118,7 @@ export const POST: APIRoute = async ({ request }) => {
 
     if (statusDataResponse.ok) {
       const statusData = await statusDataResponse.json();
-      // console.log("📊 [UPDATE-STATUS] Status data retrieved:", statusData);
+      // // console.log("📊 [UPDATE-STATUS] Status data retrieved:", statusData);
 
       // Merge project data with status config for placeholder replacement
       const mergedData = {
@@ -127,7 +127,7 @@ export const POST: APIRoute = async ({ request }) => {
         newStatus: newStatus,
       };
 
-      // console.log("📊 [UPDATE-STATUS] Merged data for placeholder replacement:", mergedData);
+      // // console.log("📊 [UPDATE-STATUS] Merged data for placeholder replacement:", mergedData);
 
       // Get client profile data for placeholders
       const { data: profile, error: profileError } = await supabase
@@ -178,7 +178,7 @@ export const POST: APIRoute = async ({ request }) => {
         estTime: statusData.statusConfig.est_time,
       };
 
-      // console.log("📊 [UPDATE-STATUS] Placeholder data prepared:", placeholderData);
+      // // console.log("📊 [UPDATE-STATUS] Placeholder data prepared:", placeholderData);
 
       // Call placeholder replacement API
       const placeholderResponse = await fetch(`${baseUrl}/api/replace-placeholders`, {
@@ -191,7 +191,7 @@ export const POST: APIRoute = async ({ request }) => {
 
       if (placeholderResponse.ok) {
         const placeholderResult = await placeholderResponse.json();
-        // console.log("📊 [UPDATE-STATUS] Placeholders replaced:", placeholderResult);
+        // // console.log("📊 [UPDATE-STATUS] Placeholders replaced:", placeholderResult);
 
         // Process redirect URLs to replace placeholders
         const processRedirectUrl = (url: string) => {
@@ -231,15 +231,15 @@ export const POST: APIRoute = async ({ request }) => {
           },
         };
 
-// console.log("📊 [UPDATE-STATUS] Notification data prepared:", {
+// // console.log("📊 [UPDATE-STATUS] Notification data prepared:", {
           adminRedirect: statusData.statusConfig.modal_auto_redirect_admin,
           clientRedirect: statusData.statusConfig.modal_auto_redirect_client,
           projectId: updatedProject.id,
           notificationData,
         });
 
-// console.log("📊 [UPDATE-STATUS] About to fetch admin and staff emails...");
-// console.log(
+// // console.log("📊 [UPDATE-STATUS] About to fetch admin and staff emails...");
+// // console.log(
           "📊 [UPDATE-STATUS] Final notification data:",
           JSON.stringify(notificationData, null, 2)
         );
@@ -255,13 +255,13 @@ export const POST: APIRoute = async ({ request }) => {
         if (adminStaffResponse.ok) {
           const adminStaffData = await adminStaffResponse.json();
           adminStaffEmails = adminStaffData.emails || [];
-          // console.log("📊 [UPDATE-STATUS] Admin/Staff emails:", adminStaffEmails);
+          // // console.log("📊 [UPDATE-STATUS] Admin/Staff emails:", adminStaffEmails);
         } else {
           console.error("📊 [UPDATE-STATUS] Failed to fetch admin/staff emails");
         }
 
         // Send client email using original email delivery API
-        // console.log("📊 [UPDATE-STATUS] Sending client email...");
+        // // console.log("📊 [UPDATE-STATUS] Sending client email...");
         const clientEmailResponse = await fetch(`${baseUrl}/api/email-delivery`, {
           method: "POST",
           headers: {
@@ -282,13 +282,13 @@ export const POST: APIRoute = async ({ request }) => {
 
         if (clientEmailResponse.ok) {
           const clientEmailResult = await clientEmailResponse.json();
-          // console.log("📊 [UPDATE-STATUS] Client email sent:", clientEmailResult);
+          // // console.log("📊 [UPDATE-STATUS] Client email sent:", clientEmailResult);
         } else {
           console.error("📊 [UPDATE-STATUS] Failed to send client email");
         }
 
         // Send admin emails using original email delivery API
-        // console.log("📊 [UPDATE-STATUS] Sending admin emails...");
+        // // console.log("📊 [UPDATE-STATUS] Sending admin emails...");
         const adminEmailResponse = await fetch(`${baseUrl}/api/email-delivery`, {
           method: "POST",
           headers: {
@@ -305,7 +305,7 @@ export const POST: APIRoute = async ({ request }) => {
 
         if (adminEmailResponse.ok) {
           const adminEmailResult = await adminEmailResponse.json();
-          // console.log("📊 [UPDATE-STATUS] Admin emails sent:", adminEmailResult);
+          // // console.log("📊 [UPDATE-STATUS] Admin emails sent:", adminEmailResult);
         } else {
           console.error("📊 [UPDATE-STATUS] Failed to send admin emails");
         }

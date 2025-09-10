@@ -5,7 +5,7 @@ import { supabaseAdmin } from "../../lib/supabase-admin";
 import { getApiBaseUrl } from "../../lib/url-utils";
 
 export const GET: APIRoute = async ({ cookies }) => {
-  console.log("=== CREATE STAFF GET TEST ===");
+  // console.log("=== CREATE STAFF GET TEST ===");
   try {
     const { isAuth, currentRole } = await checkAuth(cookies);
     return new Response(
@@ -37,15 +37,15 @@ export const GET: APIRoute = async ({ cookies }) => {
 };
 
 export const POST: APIRoute = async ({ request, cookies }) => {
-  console.log("=== CREATE STAFF API CALLED ===");
-  console.log("Request headers:", Object.fromEntries(request.headers.entries()));
+  // console.log("=== CREATE STAFF API CALLED ===");
+  // console.log("Request headers:", Object.fromEntries(request.headers.entries()));
   try {
-    console.log("1. Starting create-user endpoint");
+    // console.log("1. Starting create-user endpoint");
 
     // Check if Supabase is configured
-    console.log("2. Checking Supabase configuration:", !!supabase);
+    // console.log("2. Checking Supabase configuration:", !!supabase);
     if (!supabase) {
-      console.log("ERROR: Supabase not configured");
+      // console.log("ERROR: Supabase not configured");
       return new Response(
         JSON.stringify({
           success: false,
@@ -59,9 +59,9 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     }
 
     // Ensure admin client is configured for user creation
-    console.log("2b. Checking Supabase admin configuration:", !!supabaseAdmin);
+    // console.log("2b. Checking Supabase admin configuration:", !!supabaseAdmin);
     if (!supabaseAdmin) {
-      console.log("ERROR: Supabase admin client not configured");
+      // console.log("ERROR: Supabase admin client not configured");
       return new Response(
         JSON.stringify({
           success: false,
@@ -75,13 +75,13 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       );
     }
 
-    console.log("3. Checking authentication...");
+    // console.log("3. Checking authentication...");
     // Check authentication and ensure user is Admin
     const { isAuth, currentRole } = await checkAuth(cookies);
-    console.log("4. Auth result:", { isAuth, role: currentRole });
+    // console.log("4. Auth result:", { isAuth, role: currentRole });
 
     if (!isAuth || currentRole !== "Admin") {
-      console.log("5. AUTH FAILED - User not authorized:", { isAuth, role: currentRole });
+      // console.log("5. AUTH FAILED - User not authorized:", { isAuth, role: currentRole });
       return new Response(
         JSON.stringify({
           success: false,
@@ -94,15 +94,15 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       );
     }
 
-    console.log("5. Auth successful, parsing request body...");
+    // console.log("5. Auth successful, parsing request body...");
     let body;
     let first_name, last_name, company_name, email, phone, staffRole;
 
     try {
       body = await request.json();
-      console.log("6. Request body:", body);
+      // console.log("6. Request body:", body);
       ({ first_name, last_name, company_name, email, phone, role: staffRole } = body);
-      console.log("7. Extracted data:", {
+      // console.log("7. Extracted data:", {
         first_name,
         last_name,
         company_name,
@@ -126,9 +126,9 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     }
 
     // Validate required fields
-    console.log("8. Validating required fields...");
+    // console.log("8. Validating required fields...");
     if (!first_name?.trim() || !last_name?.trim() || !email?.trim() || !staffRole?.trim()) {
-      console.log("ERROR: Missing required fields:", {
+      // console.log("ERROR: Missing required fields:", {
         first_name: !!first_name?.trim(),
         last_name: !!last_name?.trim(),
         email: !!email?.trim(),
@@ -299,7 +299,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     const displayName = company_name?.trim() || `${first_name.trim()} ${last_name.trim()}`;
 
     // Send email notifications to all admin and staff users, plus the new user
-    console.log("📧 [CREATE-USER] Sending email notifications...");
+    // console.log("📧 [CREATE-USER] Sending email notifications...");
 
     // Define base URL for email API calls
     const baseUrl = getApiBaseUrl(request);
@@ -314,7 +314,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       if (userError) {
         console.error("📧 [CREATE-USER] Failed to fetch admin and staff users:", userError);
       } else {
-        console.log(
+        // console.log(
           "📧 [CREATE-USER] Found admin and staff users:",
           adminAndStaffUsers?.length || 0
         );
@@ -343,7 +343,7 @@ The user will receive a magic link to access their account.`;
             );
 
             if (authError || !authUser?.user?.email) {
-              console.log(`📧 [CREATE-USER] No email found for ${user.role} ${user.id}, skipping`);
+              // console.log(`📧 [CREATE-USER] No email found for ${user.role} ${user.id}, skipping`);
               continue;
             }
 
@@ -375,7 +375,7 @@ The user will receive a magic link to access their account.`;
             });
 
             if (emailResponse.ok) {
-              console.log(`📧 [CREATE-USER] ${user.role} notification sent to ${userEmail}`);
+              // console.log(`📧 [CREATE-USER] ${user.role} notification sent to ${userEmail}`);
             } else {
               console.error(
                 `📧 [CREATE-USER] Failed to send ${user.role} notification to ${userEmail}:`,
@@ -417,7 +417,7 @@ Click the button below to access your account and set up your password.`;
         });
 
         if (userEmailResponse.ok) {
-          console.log(`📧 [CREATE-USER] Welcome email sent to ${email}`);
+          // console.log(`📧 [CREATE-USER] Welcome email sent to ${email}`);
         } else {
           console.error(
             `📧 [CREATE-USER] Failed to send welcome email to ${email}:`,
@@ -430,7 +430,7 @@ Click the button below to access your account and set up your password.`;
       // Don't fail the user creation if email notifications fail
     }
 
-    console.log(`Temporary password for ${email}: ${tempPassword}`);
+    // console.log(`Temporary password for ${email}: ${tempPassword}`);
 
     return new Response(
       JSON.stringify({

@@ -222,7 +222,7 @@ export function replaceStatusDropdown() {
     ],
     selectedValue: "20",
     onSelect: (value, label) => {
-      console.log("Status selected:", value, label);
+      // console.log("Status selected:", value, label);
       // Handle status change here
     },
   });

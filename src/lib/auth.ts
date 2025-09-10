@@ -19,12 +19,12 @@ export interface AuthResult {
 }
 
 export async function checkAuth(cookies: any): Promise<AuthResult> {
-  // console.log("🔐 [AUTH] Starting authentication check...");
+  // // console.log("🔐 [AUTH] Starting authentication check...");
 
   const accessToken = cookies.get("sb-access-token");
   const refreshToken = cookies.get("sb-refresh-token");
 
-  // console.log("🔐 [AUTH] Token check:", {
+  // // console.log("🔐 [AUTH] Token check:", {
   //   hasAccessToken: !!accessToken,
   //   hasRefreshToken: !!refreshToken,
   //   supabaseConfigured: !!supabase,
@@ -36,7 +36,7 @@ export async function checkAuth(cookies: any): Promise<AuthResult> {
   let currentRole = null;
 
   if (accessToken && refreshToken && supabase) {
-    // console.log("🔐 [AUTH] Tokens found, attempting to set session...");
+    // // console.log("🔐 [AUTH] Tokens found, attempting to set session...");
 
     try {
       session = await supabase.auth.setSession({
@@ -44,7 +44,7 @@ export async function checkAuth(cookies: any): Promise<AuthResult> {
         access_token: accessToken.value,
       });
 
-      // console.log("🔐 [AUTH] Session result:", {
+      // // console.log("🔐 [AUTH] Session result:", {
       //   hasSession: !!session,
       //   hasError: !!session.error,
       //   errorMessage: session.error?.message || null,
@@ -53,7 +53,7 @@ export async function checkAuth(cookies: any): Promise<AuthResult> {
       if (!session.error) {
         isAuth = true;
         currentUser = session.data.user as ExtendedUser;
-        // console.log("🔐 [AUTH] User authenticated:", {
+        // // console.log("🔐 [AUTH] User authenticated:", {
         //   userId: currentUser?.id,
         //   userEmail: currentUser?.email,
         //   hasUser: !!currentUser,
@@ -61,7 +61,7 @@ export async function checkAuth(cookies: any): Promise<AuthResult> {
 
         // Get user profile and role
         if (currentUser && currentUser.id) {
-          // console.log("🔐 [AUTH] Fetching currentUser profile for role...");
+          // // console.log("🔐 [AUTH] Fetching currentUser profile for role...");
 
           const { data: profile, error: profileError } = await supabase
             .from("profiles")
@@ -69,7 +69,7 @@ export async function checkAuth(cookies: any): Promise<AuthResult> {
             .eq("id", currentUser.id)
             .single();
 
-          // console.log("🔐 [AUTH] Profile query result:", {
+          // // console.log("🔐 [AUTH] Profile query result:", {
           //   hasProfile: !!profile,
           //   profileError: profileError?.message || null,
           //   role: profile?.role || null
@@ -85,7 +85,7 @@ export async function checkAuth(cookies: any): Promise<AuthResult> {
               currentUser.user_metadata?.full_name ||
               currentUser.email?.split("@")[0] ||
               "Unknown currentUser";
-            // console.log("🔐 [AUTH] currentUser role set:", role);
+            // // console.log("🔐 [AUTH] currentUser role set:", role);
           } else {
             console.warn("🔐 [AUTH] Failed to get currentUser profile:", profileError);
           }
@@ -101,7 +101,7 @@ export async function checkAuth(cookies: any): Promise<AuthResult> {
       clearAuthCookies(cookies);
     }
   } else {
-    // console.log("🔐 [AUTH] No tokens or Supabase not configured");
+    // // console.log("🔐 [AUTH] No tokens or Supabase not configured");
   }
 
   const result = {
@@ -113,7 +113,7 @@ export async function checkAuth(cookies: any): Promise<AuthResult> {
     company_name: currentUser?.company_name || null,
     display_name: currentUser?.display_name || null,
   };
-  // console.log("🔐 [AUTH] Authentication check complete:", {
+  // // console.log("🔐 [AUTH] Authentication check complete:", {
   //   isAuth,
   //   hasUser: !!currentUser,
   //   currentRole,

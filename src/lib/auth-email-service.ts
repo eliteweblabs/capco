@@ -66,7 +66,7 @@ export class AuthEmailService {
       };
 
       this.templateLoaded = true;
-      console.log("🔧 [AUTH-EMAIL] Templates loaded successfully");
+      // console.log("🔧 [AUTH-EMAIL] Templates loaded successfully");
     } catch (error) {
       console.error("🔧 [AUTH-EMAIL] Error loading templates:", error);
       this.templateLoaded = false;
@@ -98,7 +98,7 @@ export class AuthEmailService {
   }
 
   public static async sendAuthEmail(options: AuthEmailOptions): Promise<boolean> {
-    console.log(`🔧 [AUTH-EMAIL] Sending ${options.type} email to ${options.to}`);
+    // console.log(`🔧 [AUTH-EMAIL] Sending ${options.type} email to ${options.to}`);
 
     this.loadTemplates();
 
@@ -160,7 +160,7 @@ export class AuthEmailService {
 
       if (response.ok) {
         const result = await response.json();
-        console.log(`🔧 [AUTH-EMAIL] ${options.type} email sent successfully:`, result.id);
+        // console.log(`🔧 [AUTH-EMAIL] ${options.type} email sent successfully:`, result.id);
         return true;
       } else {
         const errorText = await response.text();

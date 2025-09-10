@@ -63,20 +63,20 @@ if (projectStatus !== 0) {
       const loadingIndicator = document.getElementById(`${id}-loading`);
 
       if (!input) {
-        console.log("🗺️ [GoogleAutocomplete] Input element not found:", id);
+        // console.log("🗺️ [GoogleAutocomplete] Input element not found:", id);
         return;
       }
 
       // Check if Google Maps is loaded
       if (!window.google?.maps?.places) {
-        console.log("🗺️ [GoogleAutocomplete] Google Maps not loaded, retrying in 500ms...");
+        // console.log("🗺️ [GoogleAutocomplete] Google Maps not loaded, retrying in 500ms...");
         setTimeout(initializeAutocomplete, 500);
         return;
       }
 
-      console.log("🗺️ [GoogleAutocomplete] Initializing for input:", id);
-      console.log("🗺️ [GoogleAutocomplete] Google Maps API version:", window.google?.maps?.version);
-      console.log("🗺️ [GoogleAutocomplete] Available APIs:", {
+      // console.log("🗺️ [GoogleAutocomplete] Initializing for input:", id);
+      // console.log("🗺️ [GoogleAutocomplete] Google Maps API version:", window.google?.maps?.version);
+      // console.log("🗺️ [GoogleAutocomplete] Available APIs:", {
         maps: !!window.google?.maps,
         places: !!window.google?.maps?.places,
         autocomplete: !!window.google?.maps?.places?.Autocomplete,
@@ -86,7 +86,7 @@ if (projectStatus !== 0) {
 
       // Verify API Key
       const apiKey = window.GOOGLE_MAPS_API_KEY;
-      console.log("🗺️ [GoogleAutocomplete] API Key Status:", {
+      // console.log("🗺️ [GoogleAutocomplete] API Key Status:", {
         hasApiKey: !!apiKey,
         keyLength: apiKey?.length || 0,
         keyPrefix: apiKey?.substring(0, 8) + "..." || "none",
@@ -94,7 +94,7 @@ if (projectStatus !== 0) {
 
       // Use the new PlaceAutocompleteElement API
       if (window.google?.maps?.places?.PlaceAutocompleteElement) {
-        console.log("🗺️ [GoogleAutocomplete] Using new PlaceAutocompleteElement API");
+        // console.log("🗺️ [GoogleAutocomplete] Using new PlaceAutocompleteElement API");
 
         try {
           // Create autocomplete element
@@ -114,7 +114,7 @@ if (projectStatus !== 0) {
           autocompleteElement.setAttribute("placeholder", input.placeholder || "Enter address...");
           autocompleteElement.setAttribute("data-google-autocomplete", "true");
 
-          console.log("🗺️ [GoogleAutocomplete] New API attributes set:", {
+          // console.log("🗺️ [GoogleAutocomplete] New API attributes set:", {
             locationBias: bostonBounds,
             regionCode: "US",
             elementTagName: autocompleteElement.tagName,
@@ -124,7 +124,7 @@ if (projectStatus !== 0) {
           });
 
           // Verify locationBias parameter format
-          console.log("🗺️ [GoogleAutocomplete] LocationBias Verification:", {
+          // console.log("🗺️ [GoogleAutocomplete] LocationBias Verification:", {
             format: "LatLngBounds object",
             locationBias: bostonBounds,
             southwest: bostonBounds.getSouthWest().toString(),
@@ -148,17 +148,17 @@ if (projectStatus !== 0) {
 
           // Handle place selection with new API
           autocompleteElement.addEventListener("gmp-placeselect", (event) => {
-            console.log("🗺️ [GoogleAutocomplete] Place selection event received:", event);
+            // console.log("🗺️ [GoogleAutocomplete] Place selection event received:", event);
 
             const place = event.place;
-            console.log("🗺️ [GoogleAutocomplete] Place object:", place);
+            // console.log("🗺️ [GoogleAutocomplete] Place object:", place);
 
             if (!place.formattedAddress) {
-              console.log("🗺️ [GoogleAutocomplete] No address details available");
+              // console.log("🗺️ [GoogleAutocomplete] No address details available");
               return;
             }
 
-            console.log("🗺️ [GoogleAutocomplete] Place selected:", {
+            // console.log("🗺️ [GoogleAutocomplete] Place selected:", {
               formattedAddress: place.formattedAddress,
               location: place.location
                 ? {
@@ -195,7 +195,7 @@ if (projectStatus !== 0) {
             });
           });
 
-          console.log(
+          // console.log(
             "🗺️ [GoogleAutocomplete] Successfully initialized with PlaceAutocompleteElement for:",
             id
           );
@@ -208,7 +208,7 @@ if (projectStatus !== 0) {
     }
 
     // Start initialization
-    console.log("🗺️ [GoogleAutocomplete] Starting initialization for input ID:", id);
+    // console.log("🗺️ [GoogleAutocomplete] Starting initialization for input ID:", id);
     initializeAutocomplete();
   });
 </script>

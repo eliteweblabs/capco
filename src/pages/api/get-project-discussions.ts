@@ -28,9 +28,9 @@ async function getAuthorInfoServer(userId: string) {
     .eq("id", userId)
     .single();
 
-  // console.log(`🔍 [USER-INFO] Profile data for ${userId}:`, profile);
-  // console.log(`🔍 [USER-INFO] Profile error:`, profileError);
-  // console.log(`🔍 [USER-INFO] Auth user metadata:`, authUser.user.user_metadata);
+  // // console.log(`🔍 [USER-INFO] Profile data for ${userId}:`, profile);
+  // // console.log(`🔍 [USER-INFO] Profile error:`, profileError);
+  // // console.log(`🔍 [USER-INFO] Auth user metadata:`, authUser.user.user_metadata);
 
   // Combine auth user data with profile data
   const userInfo = {
@@ -49,7 +49,7 @@ async function getAuthorInfoServer(userId: string) {
     role: profile?.role || "Unknown",
   };
 
-  // console.log(`🔍 [USER-INFO] Final userInfo for ${userId}:`, {
+  // // console.log(`🔍 [USER-INFO] Final userInfo for ${userId}:`, {
   //   company_name: userInfo.company_name,
   //   name: userInfo.name,
   //   display_name: userInfo.display_name,
@@ -64,7 +64,7 @@ export const GET: APIRoute = async ({ url, cookies }) => {
     // Check authentication to get user role for filtering
     const { currentRole } = await checkAuth(cookies);
     const isClient = currentRole === "Client";
-    // console.log("📡 [GET-DISCUSSIONS] User role:", currentRole, "isClient:", isClient);
+    // // console.log("📡 [GET-DISCUSSIONS] User role:", currentRole, "isClient:", isClient);
 
     const projectId = url.searchParams.get("projectId");
 
@@ -157,27 +157,27 @@ export const GET: APIRoute = async ({ url, cookies }) => {
     let authorProfiles: any = {};
 
     if (authorIds.length > 0) {
-      // console.log(`🔔 [DISCUSSIONS] Fetching profiles for ${authorIds.length} authors:`, authorIds);
+      // // console.log(`🔔 [DISCUSSIONS] Fetching profiles for ${authorIds.length} authors:`, authorIds);
 
       for (const authorId of authorIds) {
         try {
           const userInfo = await getAuthorInfoServer(authorId);
           if (userInfo) {
             authorProfiles[authorId] = userInfo;
-            // console.log(`🔔 [DISCUSSIONS] Profile for ${authorId}:`, {
+            // // console.log(`🔔 [DISCUSSIONS] Profile for ${authorId}:`, {
             //   company_name: userInfo.company_name,
             //   display_name: userInfo.display_name,
             //   name: userInfo.name,
             // });
           } else {
-            console.log(`🔔 [DISCUSSIONS] No profile found for ${authorId}`);
+            // console.log(`🔔 [DISCUSSIONS] No profile found for ${authorId}`);
           }
         } catch (error) {
           console.error(`🔔 [DISCUSSIONS] Error fetching profile for ${authorId}:`, error);
         }
       }
 
-      // console.log(`🔔 [DISCUSSIONS] Total profiles fetched: ${Object.keys(authorProfiles).length}`);
+      // // console.log(`🔔 [DISCUSSIONS] Total profiles fetched: ${Object.keys(authorProfiles).length}`);
     }
 
     // Combine discussions with author profiles
@@ -190,7 +190,7 @@ export const GET: APIRoute = async ({ url, cookies }) => {
           authorProfile?.name ||
           "Unknown User";
 
-        // console.log(`🔍 [DISCUSSIONS] Discussion ${discussion.id} author mapping:`, {
+        // // console.log(`🔍 [DISCUSSIONS] Discussion ${discussion.id} author mapping:`, {
         //   author_id: discussion.author_id,
         //   hasProfile: !!authorProfile,
         //   profileData: authorProfile ? {

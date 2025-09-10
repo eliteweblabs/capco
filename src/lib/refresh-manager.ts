@@ -34,7 +34,7 @@ export class RefreshManager {
    * Update a specific field across all elements with matching data-refresh attribute
    */
   public updateField(fieldName: string, newValue: any, projectId?: string | number): void {
-    console.log(
+    // console.log(
       `🔄 [REFRESH-MANAGER] Updating field '${fieldName}' to:`,
       newValue,
       projectId ? `for project ${projectId}` : ""
@@ -54,13 +54,13 @@ export class RefreshManager {
     }
 
     if (elements.length === 0) {
-      console.log(
+      // console.log(
         `🔄 [REFRESH-MANAGER] No elements found with data-refresh="${fieldName}"${projectId ? ` for project ${projectId}` : ""}`
       );
       return;
     }
 
-    console.log(`🔄 [REFRESH-MANAGER] Found ${elements.length} elements to update`);
+    // console.log(`🔄 [REFRESH-MANAGER] Found ${elements.length} elements to update`);
 
     elements.forEach((element, index) => {
       try {
@@ -73,7 +73,7 @@ export class RefreshManager {
           this.defaultUpdate(element, newValue);
         }
 
-        console.log(`🔄 [REFRESH-MANAGER] Updated element ${index + 1}/${elements.length}`);
+        // console.log(`🔄 [REFRESH-MANAGER] Updated element ${index + 1}/${elements.length}`);
       } catch (error) {
         console.error(`🔄 [REFRESH-MANAGER] Error updating element ${index + 1}:`, error);
       }
@@ -84,7 +84,7 @@ export class RefreshManager {
    * Update multiple fields at once
    */
   public updateFields(updates: Record<string, any>): void {
-    console.log(`🔄 [REFRESH-MANAGER] Updating multiple fields:`, updates);
+    // console.log(`🔄 [REFRESH-MANAGER] Updating multiple fields:`, updates);
 
     Object.entries(updates).forEach(([fieldName, value]) => {
       this.updateField(fieldName, value);
@@ -172,14 +172,14 @@ export class RefreshManager {
    */
   public debugRefreshableElements(): void {
     const elements = this.getRefreshableElements();
-    console.log(`🔄 [REFRESH-MANAGER] Found ${elements.length} refreshable elements:`);
+    // console.log(`🔄 [REFRESH-MANAGER] Found ${elements.length} refreshable elements:`);
 
     elements.forEach((element, index) => {
       const fieldName = element.getAttribute("data-refresh");
       const tagName = element.tagName.toLowerCase();
       const id = element.id || `element-${index}`;
 
-      console.log(`  ${index + 1}. ${tagName}#${id} -> data-refresh="${fieldName}"`);
+      // console.log(`  ${index + 1}. ${tagName}#${id} -> data-refresh="${fieldName}"`);
     });
   }
 }
