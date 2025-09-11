@@ -317,6 +317,7 @@ The user will receive a magic link to access their account.`;
 
             const userEmail = authUser.user.email;
 
+            // THIS IS TO THE ADMINS EMAIL
             // Send email using the email delivery API with full URL
             const baseUrl = getApiBaseUrl(request);
             const emailResponse = await fetch(`${baseUrl}/api/email-delivery`, {
@@ -324,21 +325,13 @@ The user will receive a magic link to access their account.`;
               headers: {
                 "Content-Type": "application/json",
               },
-              body: JSON.stringify({
-                projectId: "new-user-creation",
-                emailType: "registration",
-                newStatus: 0,
-                usersToNotify: [
-                  {
-                    email: userEmail,
-                    first_name: user.first_name,
-                    last_name: user.last_name,
-                  },
-                ],
 
-                email_content: emailContent,
-                button_text: "",
-                custom_subject: `New User ${displayName} Created As ${staffRole}`,
+              body: JSON.stringify({
+                usersToNotify: [userEmail], // Use resolved user email
+                emailSubject: `New User ${displayName} Created As ${staffRole}`,
+                emailContent: emailContent,
+                buttonText: "Access Your Dashboard",
+                buttonLink: "/dashboard",
               }),
             });
 
@@ -358,18 +351,23 @@ The user will receive a magic link to access their account.`;
           }
         }
 
-        // Send welcome email to the new user
-        const welcomeContent = `Welcome to the CAPCo App!<br>
+        // this is to the new user
 
-Your account has been created successfully:<br>
+        const welcomeContent = `Welcome to the new CAPCo Fire Protection App!<br><br>
 
-Name: ${displayName}
-Email: ${email}<br>
+CAPCo Fire has a new website that allows you to submit fire protection project requests, upload documents, track the status of your projects, and download completed documents all in one place.<br><br>
 
-Click the button below to access your account and set up your password.`;
+Your account has been created successfully:<br><br>
+
+<b>Company Name:</b> ${displayName}<br>
+<b>Email:</b> ${email}<br>
+<b>First Name:</b> ${first_name}<br>
+<b>Last Name:</b> ${last_name}<br>
+<b>Phone:</b> ${phone || "Not provided"}<br><br>
+
+Click the button below to access your account.`;
 
         // Send welcome email using the email delivery API with full URL
-        // For new users, we want to ensure they get a magic link, so we include them in profiles
         const userEmailResponse = await fetch(`${baseUrl}/api/email-delivery`, {
           method: "POST",
           headers: {
