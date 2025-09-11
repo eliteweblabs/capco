@@ -1,5 +1,6 @@
 import type { APIRoute } from "astro";
 import { setAuthCookies } from "../../../lib/auth-cookies";
+import { SimpleProjectLogger } from "../../../lib/simple-logging";
 import { getCarrierInfo } from "../../../lib/sms-carriers";
 import { supabase } from "../../../lib/supabase";
 import { supabaseAdmin } from "../../../lib/supabase-admin";
@@ -322,6 +323,23 @@ export const POST: APIRoute = async ({ request, redirect, cookies }) => {
         console.log("🔐 [REGISTER] Auth cookies set successfully");
       }
     }
+  }
+
+  // Log successful user registration
+  try {
+    await SimpleProjectLogger.logUserRegistration(email, "email", {
+      userId: data.user?.id,
+      firstName,
+      lastName,
+      companyName,
+      phone: phone || null,
+      smsAlerts,
+      mobileCarrier: mobileCarrier || null,
+      userAgent: request.headers.get("user-agent"),
+      ip: request.headers.get("x-forwarded-for") || "unknown",
+    });
+  } catch (logError) {
+    console.error("Error logging user registration:", logError);
   }
 
   // Return success response with email status for modal notifications

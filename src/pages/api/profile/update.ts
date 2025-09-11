@@ -1,4 +1,5 @@
 import type { APIRoute } from "astro";
+import { SimpleProjectLogger } from "../../../lib/simple-logging";
 import { getCarrierInfo } from "../../../lib/sms-carriers";
 import { supabase } from "../../../lib/supabase";
 
@@ -54,6 +55,14 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     }
 
     const userId = sessionData.session.user.id;
+    const userEmail = sessionData.session.user.email || "unknown";
+
+    // Get current profile data for logging
+    const { data: oldProfile } = await supabase
+      .from("profiles")
+      .select("*")
+      .eq("id", userId)
+      .single();
 
     // Update the profile
     const { data: profile, error: updateError } = await supabase
@@ -105,6 +114,13 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         console.error("Auth update error:", authUpdateError);
         // Don't fail the entire request if auth update fails
       }
+    }
+
+    // Log user profile update
+    try {
+      await SimpleProjectLogger.logUserProfileUpdate(userEmail, oldProfile, profile);
+    } catch (logError) {
+      console.error("Error logging profile update:", logError);
     }
 
     return new Response(

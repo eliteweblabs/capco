@@ -1,5 +1,6 @@
 import type { APIRoute } from "astro";
 import { checkAuth } from "../../lib/auth";
+import { SimpleProjectLogger } from "../../lib/simple-logging";
 import { supabase } from "../../lib/supabase";
 import { supabaseAdmin } from "../../lib/supabase-admin";
 import { getApiBaseUrl } from "../../lib/url-utils";
@@ -45,7 +46,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
     // console.log("3. Checking authentication...");
     // Check authentication and ensure user is Admin
-    const { isAuth, currentRole } = await checkAuth(cookies);
+    const { isAuth, currentRole, currentUser } = await checkAuth(cookies);
     console.log("4. Auth result:", { isAuth, role: currentRole });
 
     if (!isAuth || currentRole !== "Admin") {
@@ -397,6 +398,26 @@ Click the button below to access your account.`;
     }
 
     console.log(`Temporary password for ${email}: ${tempPassword}`);
+
+    // Log admin user creation
+    try {
+      await SimpleProjectLogger.logAdminUserCreation(
+        currentUser?.email || "unknown_admin",
+        email,
+        staffRole,
+        {
+          userId: authData.user.id,
+          firstName: first_name.trim(),
+          lastName: last_name.trim(),
+          companyName: company_name?.trim() || null,
+          phone: phone?.trim() || null,
+          userAgent: request.headers.get("user-agent"),
+          ip: request.headers.get("x-forwarded-for") || "unknown",
+        }
+      );
+    } catch (logError) {
+      console.error("Error logging admin user creation:", logError);
+    }
 
     return new Response(
       JSON.stringify({
