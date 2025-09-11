@@ -357,4 +357,225 @@ export class SimpleProjectLogger {
   static async logComment(projectId: number, currrentUserId: string, comment: string) {
     return await this.addLogEntry(projectId, "comment_added", currrentUserId, comment);
   }
+
+  // ===== USER EVENT LOGGING METHODS =====
+
+  /**
+   * Log user login events
+   */
+  static async logUserLogin(userEmail: string, loginMethod: string = "password", metadata?: any) {
+    return await this.addUserLogEntry(
+      "user_login",
+      userEmail,
+      `User logged in via ${loginMethod}`,
+      null,
+      { loginMethod, ...metadata }
+    );
+  }
+
+  /**
+   * Log user registration events
+   */
+  static async logUserRegistration(
+    userEmail: string,
+    registrationMethod: string = "email",
+    userData?: any
+  ) {
+    return await this.addUserLogEntry(
+      "user_registration",
+      userEmail,
+      `New user registered via ${registrationMethod}`,
+      null,
+      { registrationMethod, userData }
+    );
+  }
+
+  /**
+   * Log admin-created user events
+   */
+  static async logAdminUserCreation(
+    adminEmail: string,
+    newUserEmail: string,
+    userRole: string,
+    userData?: any
+  ) {
+    return await this.addUserLogEntry(
+      "admin_user_creation",
+      adminEmail,
+      `Admin created new ${userRole} user: ${newUserEmail}`,
+      null,
+      { newUserEmail, userRole, userData }
+    );
+  }
+
+  /**
+   * Log user profile updates
+   */
+  static async logUserProfileUpdate(userEmail: string, oldData: any, newData: any) {
+    return await this.addUserLogEntry(
+      "profile_updated",
+      userEmail,
+      "User profile updated",
+      oldData,
+      newData
+    );
+  }
+
+  /**
+   * Log password changes
+   */
+  static async logPasswordChange(userEmail: string, changeType: string = "password_change") {
+    return await this.addUserLogEntry(
+      "password_change",
+      userEmail,
+      `Password ${changeType}`,
+      null,
+      { changeType }
+    );
+  }
+
+  /**
+   * Log failed login attempts
+   */
+  static async logFailedLogin(email: string, reason: string, metadata?: any) {
+    return await this.addUserLogEntry(
+      "failed_login",
+      email,
+      `Failed login attempt: ${reason}`,
+      null,
+      { reason, ...metadata }
+    );
+  }
+
+  /**
+   * Add a user log entry to a special "system_log" project (ID: 0)
+   * This keeps all user events in the same logging system
+   */
+  private static async addUserLogEntry(
+    action: string,
+    userEmail: string,
+    details: string,
+    oldValue?: any,
+    newValue?: any
+  ): Promise<boolean> {
+    try {
+      if (!supabase) {
+        console.error("Supabase not configured");
+        return false;
+      }
+
+      // Create the log entry
+      const logEntry: SimpleLogEntry = {
+        timestamp: new Date().toISOString(),
+        action,
+        user: userEmail,
+        details,
+        old_value: oldValue,
+        new_value: newValue,
+      };
+
+      // Use a special system project (ID: 0) for user events
+      // First, ensure this system project exists
+      await this.ensureSystemLogProject();
+
+      // Get current system log to append to existing log
+      const { data: project, error: fetchError } = await supabase
+        .from("projects")
+        .select("log")
+        .eq("id", 0)
+        .single();
+
+      if (fetchError) {
+        console.error("Error fetching system log project:", fetchError);
+        return false;
+      }
+
+      // Append new entry to existing log
+      const currentLog = project.log || [];
+      const updatedLog = [...currentLog, logEntry];
+
+      // Update the system project with the new log
+      const { error: updateError } = await supabase
+        .from("projects")
+        .update({ log: updatedLog })
+        .eq("id", 0);
+
+      if (updateError) {
+        console.error("Error updating system log:", updateError);
+        return false;
+      }
+
+      console.log(`📝 [USER-LOG] ${action}: ${details} by ${userEmail}`);
+      return true;
+    } catch (error) {
+      console.error("Error in addUserLogEntry:", error);
+      return false;
+    }
+  }
+
+  /**
+   * Ensure the system log project exists (ID: 0)
+   */
+  private static async ensureSystemLogProject(): Promise<void> {
+    try {
+      if (!supabase) return;
+
+      // Check if system project exists
+      const { data: existing, error: checkError } = await supabase
+        .from("projects")
+        .select("id")
+        .eq("id", 0)
+        .single();
+
+      if (checkError && checkError.code === "PGRST116") {
+        // Project doesn't exist, create it
+        const { error: createError } = await supabase.from("projects").insert([
+          {
+            id: 0,
+            title: "System Log",
+            address: "System",
+            author_id: "00000000-0000-0000-0000-000000000000", // Dummy UUID
+            status: 220, // Complete status
+            log: [],
+          },
+        ]);
+
+        if (createError) {
+          console.error("Error creating system log project:", createError);
+        } else {
+          console.log("📝 [SYSTEM] Created system log project (ID: 0)");
+        }
+      }
+    } catch (error) {
+      console.error("Error ensuring system log project:", error);
+    }
+  }
+
+  /**
+   * Get user activity log from the system project
+   */
+  static async getUserActivityLog(): Promise<SimpleLogEntry[]> {
+    try {
+      if (!supabase) {
+        console.error("Supabase not configured");
+        return [];
+      }
+
+      const { data: project, error } = await supabase
+        .from("projects")
+        .select("log")
+        .eq("id", 0)
+        .single();
+
+      if (error) {
+        console.error("Error fetching user activity log:", error);
+        return [];
+      }
+
+      return project.log || [];
+    } catch (error) {
+      console.error("Error in getUserActivityLog:", error);
+      return [];
+    }
+  }
 }

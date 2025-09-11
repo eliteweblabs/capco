@@ -2,6 +2,7 @@ import type { Provider } from "@supabase/supabase-js";
 import type { APIRoute } from "astro";
 import { setAuthCookies } from "../../../lib/auth-cookies";
 import { ensureUserProfile } from "../../../lib/auth-utils";
+import { SimpleProjectLogger } from "../../../lib/simple-logging";
 import { supabase } from "../../../lib/supabase";
 
 export const POST: APIRoute = async ({ request, cookies, redirect }) => {
@@ -28,7 +29,28 @@ export const POST: APIRoute = async ({ request, cookies, redirect }) => {
     });
 
     if (error) {
+      // Log failed OAuth login attempt
+      try {
+        await SimpleProjectLogger.logFailedLogin(
+          email || "unknown",
+          `OAuth ${provider} failed: ${error.message}`,
+          { provider, error: error.message }
+        );
+      } catch (logError) {
+        console.error("Error logging failed OAuth login:", logError);
+      }
+
       return new Response(error.message, { status: 500 });
+    }
+
+    // Log OAuth login initiation (we'll log success in the callback)
+    try {
+      await SimpleProjectLogger.logUserLogin(email || "oauth_user", `oauth_${provider}`, {
+        provider,
+        initiated: true,
+      });
+    } catch (logError) {
+      console.error("Error logging OAuth login initiation:", logError);
     }
 
     return redirect(data.url);
@@ -44,6 +66,15 @@ export const POST: APIRoute = async ({ request, cookies, redirect }) => {
   });
 
   if (error) {
+    // Log failed login attempt
+    try {
+      await SimpleProjectLogger.logFailedLogin(email, `Password login failed: ${error.message}`, {
+        error: error.message,
+      });
+    } catch (logError) {
+      console.error("Error logging failed login:", logError);
+    }
+
     return new Response(error.message, { status: 500 });
   }
 
@@ -51,6 +82,17 @@ export const POST: APIRoute = async ({ request, cookies, redirect }) => {
   if (data.user) {
     console.log("Checking/creating profile for user:", data.user.id);
     await ensureUserProfile(data.user);
+  }
+
+  // Log successful login
+  try {
+    await SimpleProjectLogger.logUserLogin(data.user.email || email, "password", {
+      userId: data.user.id,
+      userAgent: request.headers.get("user-agent"),
+      ip: request.headers.get("x-forwarded-for") || "unknown",
+    });
+  } catch (logError) {
+    console.error("Error logging successful login:", logError);
   }
 
   const { access_token, refresh_token } = data.session;
