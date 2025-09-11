@@ -832,13 +832,22 @@ const {
       selectBtn.addEventListener("click", () => {
         const selectedOption = currentOptions[selectedIndex];
         if (selectedOption) {
+          console.log("🗺️ [CUSTOM-PLACES] Address selected from slot machine:", {
+            value: selectedOption.value,
+            label: selectedOption.label,
+            componentId,
+          });
+
           // Update the main input field with the selected address
           const mainInput = document.getElementById(
             `${componentId}-address-input`
           ) as HTMLInputElement;
           if (mainInput) {
             mainInput.value = selectedOption.label;
+            console.log("🗺️ [CUSTOM-PLACES] Updated main input value:", mainInput.value);
           }
+
+          console.log("🗺️ [CUSTOM-PLACES] Calling getPlaceDetails...");
           getPlaceDetails(selectedOption.value, selectedOption.label);
         }
       });
@@ -1055,6 +1064,7 @@ const {
 
     // Get detailed place information using our server-side proxy endpoint
     async function getPlaceDetails(placeId: string, description: string) {
+      console.log("🔍 [CUSTOM-PLACES] getPlaceDetails called with:", { placeId, description });
       showLoading();
 
       try {
@@ -1062,6 +1072,7 @@ const {
         const requestUrl = `/api/places-details?place_id=${placeId}&fields=formatted_address,name,address_components`;
 
         console.log("🔍 [CUSTOM-PLACES] Getting place details for:", placeId);
+        console.log("🔍 [CUSTOM-PLACES] Request URL:", requestUrl);
 
         const response = await fetch(requestUrl);
         const data = await response.json();
@@ -1069,12 +1080,18 @@ const {
         console.log("🔍 [CUSTOM-PLACES] Place details response:", {
           status: data.status,
           result: !!data.result,
+          formattedAddress: data.result?.formatted_address,
+          fullResponse: data,
         });
 
         if (data.status === "OK" && data.result) {
           // Update the hidden input with the selected address
           const formattedAddress = data.result.formatted_address || description;
+          console.log("🔍 [CUSTOM-PLACES] Setting hidden input value:", formattedAddress);
+          console.log("🔍 [CUSTOM-PLACES] Hidden input element:", hiddenInput);
+
           hiddenInput.value = formattedAddress;
+          console.log("🔍 [CUSTOM-PLACES] Hidden input value after setting:", hiddenInput.value);
 
           // Show selected address
           showSelectedAddress(formattedAddress);
@@ -1087,8 +1104,12 @@ const {
           // Trigger change event
           hiddenInput.dispatchEvent(new Event("change", { bubbles: true }));
 
-          console.log("🗺️ [CUSTOM-PLACES] Address selected:", formattedAddress);
+          console.log(
+            "🗺️ [CUSTOM-PLACES] Address selected and hidden input updated:",
+            formattedAddress
+          );
         } else {
+          console.error("🔍 [CUSTOM-PLACES] Failed to get place details:", data);
           showError("Failed to get address details. Please try again.");
         }
       } catch (error) {
