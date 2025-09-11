@@ -20,9 +20,14 @@ export const POST: APIRoute = async ({ request }) => {
     if (roles && roles.length > 0) {
       console.log("📧 [GET-USER-EMAILS-BY-ROLE] Fetching emails for roles:", roles);
 
+      if (!supabaseAdmin || !supabase) {
+        return new Response(JSON.stringify({ error: "Database connection not available" }), {
+          status: 500,
+        });
+      }
       const { data: roleUsers, error: roleError } = await supabase
         .from("profiles")
-        .select("id, first_name, last_name, company_name, role")
+        .select("id, first_name, last_name, company_name, role, email")
         .in("role", roles);
 
       if (roleError) {
@@ -30,19 +35,9 @@ export const POST: APIRoute = async ({ request }) => {
       } else if (roleUsers) {
         for (const user of roleUsers) {
           try {
-            const { data: authUser, error: authError } = await supabaseAdmin.auth.admin.getUserById(
-              user.id
-            );
-            if (authError || !authUser?.user?.email) {
-              console.log(
-                `📧 [GET-USER-EMAILS-BY-ROLE] No email found for ${user.role} user ${user.id}`
-              );
-              continue;
+            if (user.email) {
+              emails.push(user.email);
             }
-            emails.push(authUser.user.email);
-            console.log(
-              `📧 [GET-USER-EMAILS-BY-ROLE] Found ${user.role} email: ${authUser.user.email}`
-            );
           } catch (error) {
             console.error(
               `📧 [GET-USER-EMAILS-BY-ROLE] Error getting email for user ${user.id}:`,
@@ -57,23 +52,29 @@ export const POST: APIRoute = async ({ request }) => {
     if (userIds && userIds.length > 0) {
       console.log("📧 [GET-USER-EMAILS-BY-ROLE] Fetching emails for user IDs:", userIds);
 
-      for (const userId of userIds) {
-        try {
-          const { data: authUser, error: authError } =
-            await supabaseAdmin.auth.admin.getUserById(userId);
-          if (authError || !authUser?.user?.email) {
-            console.log(`📧 [GET-USER-EMAILS-BY-ROLE] No email found for user ID ${userId}`);
-            continue;
+      if (!supabaseAdmin) {
+        return new Response(JSON.stringify({ error: "Database connection not available" }), {
+          status: 500,
+        });
+      }
+
+      const { data: users, error: usersError } = await supabaseAdmin
+        .from("profiles")
+        .select("id, email")
+        .in("id", userIds);
+
+      if (usersError) {
+        console.error("📧 [GET-USER-EMAILS-BY-ROLE] Error fetching users by IDs:", usersError);
+      } else if (users) {
+        for (const user of users) {
+          if (user.email) {
+            emails.push(user.email);
+            console.log(
+              `📧 [GET-USER-EMAILS-BY-ROLE] Found email for user ID ${user.id}: ${user.email}`
+            );
+          } else {
+            console.log(`📧 [GET-USER-EMAILS-BY-ROLE] No email found for user ID ${user.id}`);
           }
-          emails.push(authUser.user.email);
-          console.log(
-            `📧 [GET-USER-EMAILS-BY-ROLE] Found email for user ID ${userId}: ${authUser.user.email}`
-          );
-        } catch (error) {
-          console.error(
-            `📧 [GET-USER-EMAILS-BY-ROLE] Error getting email for user ID ${userId}:`,
-            error
-          );
         }
       }
     }

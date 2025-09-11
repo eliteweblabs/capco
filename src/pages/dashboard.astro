@@ -126,7 +126,7 @@ try {
         const allUserIds = [...new Set([...uniqueAuthorIds, ...uniqueAssignedIds])];
 
         console.log("🏗️ [DASHBOARD] Unique author IDs:", uniqueAuthorIds);
-        console.log("🏗️ [DASHBOARD] All user IDs to fetch:", allUserIds);
+        // console.log("🏗️ [DASHBOARD] All user IDs to fetch:", allUserIds);
 
         let profilesMap = new Map();
         if (allUserIds.length > 0) {
@@ -139,8 +139,8 @@ try {
             profiles.forEach((profile) => {
               profilesMap.set(profile.id, profile);
             });
-            console.log("🏗️ [DASHBOARD] Successfully fetched profiles:", profiles.length);
-            console.log("🏗️ [DASHBOARD] Sample profile:", profiles[0]);
+            // console.log("🏗️ [DASHBOARD] Successfully fetched profiles:", profiles.length);
+            // console.log("🏗️ [DASHBOARD] Sample profile:", profiles[0]);
           } else {
             console.error("🏗️ [DASHBOARD] Error fetching profiles:", profilesError);
           }
@@ -153,12 +153,12 @@ try {
             project.profiles = authorProfile || null;
 
             if (authorProfile) {
-              console.log("🏗️ [DASHBOARD] Attached profile to project:", {
-                projectId: project.id,
-                authorId: project.author_id,
-                companyName: authorProfile.company_name,
-                profile: authorProfile,
-              });
+              // console.log("🏗️ [DASHBOARD] Attached profile to project:", {
+              //   projectId: project.id,
+              //   authorId: project.author_id,
+              //   companyName: authorProfile.company_name,
+              //   profile: authorProfile,
+              // });
             } else {
               console.log("🏗️ [DASHBOARD] No profile found for author:", project.author_id);
             }
@@ -178,7 +178,7 @@ try {
   let statusLabels: Record<number, { status_name: string; [key: string]: any }> = {};
   if (isAuth && supabase) {
     try {
-      console.log("🏗️ [DASHBOARD] Fetching statuses directly from database");
+      // console.log("🏗️ [DASHBOARD] Fetching statuses directly from database");
 
       // Fetch project statuses directly from database
       const { data: statusesData, error: statusesError } = supabaseAdmin
@@ -206,7 +206,7 @@ try {
           return acc;
         }, {});
 
-        console.log("🏗️ [DASHBOARD] Statuses fetched:", statusesData?.length || 0);
+        // console.log("🏗️ [DASHBOARD] Statuses fetched:", statusesData?.length || 0);
       }
     } catch (error) {
       console.error("🏗️ [DASHBOARD] Error fetching statuses:", error);
@@ -221,7 +221,7 @@ try {
   // Fetch client profiles for dropdowns and forms
   if (isAuth && supabase) {
     try {
-      console.log("👥 [DASHBOARD] Fetching client profiles for forms...");
+      // console.log("👥 [DASHBOARD] Fetching client profiles for forms...");
 
       const { data: profiles, error: profilesError } = supabaseAdmin
         ? await supabaseAdmin
@@ -239,7 +239,7 @@ try {
         console.error("👥 [DASHBOARD] Client profiles error:", profilesError);
       } else {
         clientProfiles = profiles || [];
-        console.log(`👥 [DASHBOARD] Loaded ${clientProfiles.length} client profiles`);
+        // console.log(`👥 [DASHBOARD] Loaded ${clientProfiles.length} client profiles`);
       }
     } catch (error) {
       console.error("👥 [DASHBOARD] Error fetching client profiles:", error);
@@ -247,11 +247,11 @@ try {
   }
 
   // Debug: Log the converted array to see if client_status_name is preserved
-  console.log("🔍 [DASHBOARD] Converted project_statuses array:", project_statuses.slice(0, 3));
-  console.log(
-    "🔍 [DASHBOARD] First status with client_status_name:",
-    project_statuses.find((s) => s.client_status_name)
-  );
+  // console.log("🔍 [DASHBOARD] Converted project_statuses array:", project_statuses.slice(0, 3));
+  // console.log(
+  //   "🔍 [DASHBOARD] First status with client_status_name:",
+  //   project_statuses.find((s) => s.client_status_name)
+  // );
 } catch (error) {
   console.error("Error fetching data:", error);
 }
@@ -299,13 +299,13 @@ try {
 >
   // Make client profiles available globally for components
   window.globalClientProfiles = clientProfiles;
-  console.log("👥 [DASHBOARD] Made client profiles available globally:", clientProfiles.length);
+  // console.log("👥 [DASHBOARD] Made client profiles available globally:", clientProfiles.length);
 
   // Project Action Notification System - Only for Clients
   document.addEventListener("DOMContentLoaded", async function () {
-    console.log("🔔 [PROJECT-ACTIONS] Initializing project action notifications...");
-    console.log("🔔 [PROJECT-ACTIONS] Current user currentRole:", currentRole);
-    console.log("🔔 [PROJECT-ACTIONS] Projects data:", projects);
+    // console.log("🔔 [PROJECT-ACTIONS] Initializing project action notifications...");
+    // console.log("🔔 [PROJECT-ACTIONS] Current user currentRole:", currentRole);
+    // console.log("🔔 [PROJECT-ACTIONS] Projects data:", projects);
 
     // Only run for clients
     if (currentRole !== "Client") {
@@ -336,19 +336,19 @@ try {
       const projectStatus = project.status;
       const statusConfig = project_statuses_object[projectStatus];
 
-      console.log(`🔔 [PROJECT-ACTIONS] Checking project ${index + 1}:`, {
-        id: project.id,
-        title: project.title,
-        status: projectStatus,
-        hasStatusConfig: !!statusConfig,
-        statusConfig: statusConfig,
-      });
+      // console.log(`🔔 [PROJECT-ACTIONS] Checking project ${index + 1}:`, {
+      //   id: project.id,
+      //   title: project.title,
+      //   status: projectStatus,
+      //   hasStatusConfig: !!statusConfig,
+      //   statusConfig: statusConfig,
+      // });
 
       if (statusConfig && statusConfig.project_action) {
-        console.log(
-          `🔔 [PROJECT-ACTIONS] Found project action for project "${project.title}":`,
-          statusConfig.project_action
-        );
+        // console.log(
+        //   `🔔 [PROJECT-ACTIONS] Found project action for project "${project.title}":`,
+        //   statusConfig.project_action
+        // );
 
         // Replace placeholders in the project action message using centralized API
         const actionMessage = await replacePlaceholders(
@@ -357,7 +357,7 @@ try {
           statusConfig
         );
 
-        console.log(`🔔 [PROJECT-ACTIONS] Showing for project "${project.title}":`, actionMessage);
+        // console.log(`🔔 [PROJECT-ACTIONS] Showing for project "${project.title}":`, actionMessage);
 
         // Show dismissible modal notification with proper initialization check
         const showNotificationWithRetry = (retryCount = 0) => {
@@ -365,9 +365,9 @@ try {
             console.log("🔔 [PROJECT-ACTIONS] Notification system available, showing modal...");
             window.showModal("info", "Project Action Required", actionMessage, 8000); // 8 seconds with progress bar
           } else if (retryCount < 5) {
-            console.log(
-              `🔔 [PROJECT-ACTIONS] Notification system not ready, retrying in ${(retryCount + 1) * 500}ms... (attempt ${retryCount + 1}/5)`
-            );
+            // console.log(
+            //   `🔔 [PROJECT-ACTIONS] Notification system not ready, retrying in ${(retryCount + 1) * 500}ms... (attempt ${retryCount + 1}/5)`
+            // );
             setTimeout(
               () => {
                 showNotificationWithRetry(retryCount + 1);
@@ -399,7 +399,7 @@ try {
   async function replacePlaceholders(message, project, statusConfig) {
     if (!message) return "";
 
-    console.log("🔄 [PLACEHOLDER] Original message:", message);
+    // console.log("🔄 [PLACEHOLDER] Original message:", message);
 
     // Get client name from currentUser data - use company_name consistently
     const clientName = currentUser?.company_name || "Client";
@@ -438,7 +438,7 @@ try {
         const result = await response.json();
         const processedMessage = result.processedMessages?.project_action || message;
 
-        console.log("🔄 [PLACEHOLDER] Final processed message:", processedMessage);
+        // console.log("🔄 [PLACEHOLDER] Final processed message:", processedMessage);
         return processedMessage;
       } else {
         console.error("🔄 [PLACEHOLDER] API call failed, falling back to local processing");

@@ -1,6 +1,5 @@
 import type { APIRoute } from "astro";
 import { supabase } from "../../lib/supabase";
-import { supabaseAdmin } from "../../lib/supabase-admin";
 
 export const GET: APIRoute = async ({ cookies, url }) => {
   try {
@@ -114,44 +113,18 @@ export const GET: APIRoute = async ({ cookies, url }) => {
         ) || [];
     }
 
-    // Get emails for all mentionable users from auth.users table
-    const mentionableUsers = await Promise.all(
-      users.map(async (user) => {
-        let email = "";
-        if (!supabaseAdmin) {
-          console.error("❌ [GET-MENTIONABLE-USERS] Supabase admin client not available");
-          return {
-            id: user.id,
-            name:
-              user.first_name && user.last_name
-                ? `${user.first_name} ${user.last_name}`
-                : user.company_name || "Unknown User",
-            role: user.role,
-            email: "Admin client unavailable",
-          };
-        }
-        try {
-          const { data: authUser, error: authError } = await supabaseAdmin.auth.admin.getUserById(
-            user.id
-          );
-          if (!authError && authUser.user) {
-            email = authUser.user.email || "";
-          }
-        } catch (error) {
-          console.error(`Error fetching email for user ${user.id}:`, error);
-        }
-
-        return {
-          id: user.id,
-          name:
-            user.first_name && user.last_name
-              ? `${user.first_name} ${user.last_name}`
-              : user.company_name || "Unknown User",
-          role: user.role,
-          email: email,
-        };
-      })
-    );
+    // Build mentionable users from profiles data (email already available)
+    const mentionableUsers = users.map((user) => {
+      return {
+        id: user.id,
+        name:
+          user.first_name && user.last_name
+            ? `${user.first_name} ${user.last_name}`
+            : user.company_name || "Unknown User",
+        role: user.role,
+        email: user.email || "",
+      };
+    });
 
     return new Response(JSON.stringify({ success: true, users: mentionableUsers }), {
       status: 200,

@@ -203,15 +203,10 @@ export const GET: APIRoute = async ({ request, cookies }) => {
             );
           }
 
-          // Get phone from auth user metadata
-          const { data: authUser, error: authError } = await supabaseAdmin.auth.admin.getUserById(
-            profile.id
-          );
-          const phone = authUser?.user?.user_metadata?.phone || null;
-
+          // Phone is already available in profiles table
           staffUsersFromAll.push({
             ...profile,
-            phone: phone,
+            phone: profile.phone || null,
           });
         } catch (authError) {
           console.error(`Error fetching auth data for user ${profile.id}:`, authError);

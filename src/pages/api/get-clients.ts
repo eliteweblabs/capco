@@ -5,12 +5,18 @@ export const GET: APIRoute = async ({ cookies }) => {
   try {
     console.log("👥 [GET-CLIENTS] Fetching all client profiles...");
 
+    if (!supabaseAdmin) {
+      return new Response(JSON.stringify({ error: "Database connection not available" }), {
+        status: 500,
+      });
+    }
     // Get all client profiles from Supabase
     const { data: profiles, error } = await supabaseAdmin
       .from("profiles")
       .select("id, first_name, last_name, company_name, email, phone, role")
       .eq("role", "Client")
-      .order("company_name", { ascending: true, nullsLast: true })
+      // .order("company_name", { ascending: true, nullsLast: true })
+      .order("company_name", { ascending: true })
       .order("first_name", { ascending: true });
 
     if (error) {

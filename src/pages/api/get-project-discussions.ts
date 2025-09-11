@@ -6,55 +6,37 @@ import { supabaseAdmin } from "../../lib/supabase-admin";
 // // Server-side function to get user info directly from database
 
 async function getAuthorInfoServer(userId: string) {
-  // Get user metadata from auth.users table
+  // Get user profile from profiles table
   if (!supabaseAdmin) {
     return null;
   }
-  const { data: authUser, error: authError } = await supabaseAdmin.auth.admin.getUserById(userId);
 
-  if (authError || !authUser.user) {
-    console.error("Error fetching auth user:", authError);
-    return null;
-  }
-
-  if (!supabase) {
-    return null;
-  }
-
-  // Get user profile from profiles table
-  const { data: profile, error: profileError } = await supabase
+  const { data: profile, error: profileError } = await supabaseAdmin
     .from("profiles")
-    .select("*")
+    .select("id, first_name, last_name, company_name, email, phone, role")
     .eq("id", userId)
     .single();
 
-  // console.log(`🔍 [USER-INFO] Profile data for ${userId}:`, profile);
-  // console.log(`🔍 [USER-INFO] Profile error:`, profileError);
-  // console.log(`🔍 [USER-INFO] Auth user metadata:`, authUser.user.user_metadata);
+  if (profileError || !profile) {
+    console.error("Error fetching user profile:", profileError);
+    return null;
+  }
 
-  // Combine auth user data with profile data
+  // Build user info from profile data
   const userInfo = {
-    id: authUser.user.id,
-    email: authUser.user.email,
-    profile: profile || null,
+    id: profile.id,
+    email: profile.email,
+    profile: profile,
     // Computed fields for easy access
     display_name:
-      profile?.company_name ||
-      profile?.name ||
-      authUser.user.user_metadata?.full_name ||
-      authUser.user.email?.split("@")[0] ||
+      profile.company_name ||
+      `${profile.first_name || ""} ${profile.last_name || ""}`.trim() ||
+      profile.email?.split("@")[0] ||
       "Unknown User",
-    company_name: profile?.company_name || null,
-    name: profile?.name || null,
-    role: profile?.role || "Unknown",
+    company_name: profile.company_name || null,
+    name: `${profile.first_name || ""} ${profile.last_name || ""}`.trim() || null,
+    role: profile.role || "Unknown",
   };
-
-  // console.log(`🔍 [USER-INFO] Final userInfo for ${userId}:`, {
-  //   company_name: userInfo.company_name,
-  //   name: userInfo.name,
-  //   display_name: userInfo.display_name,
-  //   email: userInfo.email,
-  // });
 
   return userInfo;
 }

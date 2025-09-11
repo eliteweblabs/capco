@@ -1,6 +1,5 @@
 import type { APIRoute } from "astro";
 import { checkAuth } from "../../lib/auth";
-import { supabase } from "../../lib/supabase";
 import { supabaseAdmin } from "../../lib/supabase-admin";
 
 export const POST: APIRoute = async ({ request, cookies }) => {
@@ -21,7 +20,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       );
     }
 
-    if (!supabase || !supabaseAdmin) {
+    if (!supabaseAdmin) {
       return new Response(
         JSON.stringify({
           success: false,
@@ -50,15 +49,19 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       );
     }
 
-    // Get user metadata from auth.users table
-    const { data: authUser, error: authError } = await supabaseAdmin.auth.admin.getUserById(userId);
+    // Get user profile from profiles table
+    const { data: profile, error: profileError } = await supabaseAdmin
+      .from("profiles")
+      .select("id, first_name, last_name, company_name, email, phone, role, created_at, updated_at")
+      .eq("id", userId)
+      .single();
 
-    if (authError) {
-      console.error("Error fetching auth user:", authError);
+    if (profileError) {
+      console.error("Error fetching user profile:", profileError);
       return new Response(
         JSON.stringify({
           success: false,
-          error: "Failed to fetch user authentication data",
+          error: "Failed to fetch user profile",
         }),
         {
           status: 500,
@@ -67,11 +70,11 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       );
     }
 
-    if (!authUser.user) {
+    if (!profile) {
       return new Response(
         JSON.stringify({
           success: false,
-          error: "User not found",
+          error: "User profile not found",
         }),
         {
           status: 404,
@@ -80,35 +83,24 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       );
     }
 
-    // Get user profile from profiles table
-    const { data: profile, error: profileError } = await supabase
-      .from("profiles")
-      .select("*")
-      .eq("id", userId)
-      .single();
-
-    // Combine auth user data with profile data
+    // Build user info from profile data
     const userInfo = {
-      id: authUser.user.id,
-      email: authUser.user.email,
-      email_confirmed_at: authUser.user.email_confirmed_at,
-      phone: authUser.user.phone,
-      phone_confirmed_at: authUser.user.phone_confirmed_at,
-      created_at: authUser.user.created_at,
-      updated_at: authUser.user.updated_at,
-      last_sign_in_at: authUser.user.last_sign_in_at,
-      user_metadata: authUser.user.user_metadata,
-      app_metadata: authUser.user.app_metadata,
-      profile: profile || null,
+      id: profile.id,
+      email: profile.email,
+      phone: profile.phone,
+      created_at: profile.created_at,
+      updated_at: profile.updated_at,
+      profile: profile,
       // Computed fields for easy access
       display_name:
-        profile?.company_name ||
-        profile?.name ||
-        authUser.user.user_metadata?.full_name ||
-        authUser.user.email?.split("@")[0] ||
+        profile.company_name ||
+        `${profile.first_name || ""} ${profile.last_name || ""}`.trim() ||
+        profile.email?.split("@")[0] ||
         "Unknown User",
-      role: profile?.role || "Unknown",
-      company_name: profile?.company_name || null,
+      role: profile.role || "Unknown",
+      company_name: profile.company_name || null,
+      first_name: profile.first_name || null,
+      last_name: profile.last_name || null,
     };
 
     console.log("🔔 [USER-INFO] Fetched user info for:", userId);
@@ -157,7 +149,7 @@ export const GET: APIRoute = async ({ url, cookies }) => {
       );
     }
 
-    if (!supabase || !supabaseAdmin) {
+    if (!supabaseAdmin) {
       return new Response(
         JSON.stringify({
           success: false,
@@ -185,15 +177,19 @@ export const GET: APIRoute = async ({ url, cookies }) => {
       );
     }
 
-    // Get user metadata from auth.users table
-    const { data: authUser, error: authError } = await supabaseAdmin.auth.admin.getUserById(userId);
+    // Get user profile from profiles table
+    const { data: profile, error: profileError } = await supabaseAdmin
+      .from("profiles")
+      .select("id, first_name, last_name, company_name, email, phone, role, created_at, updated_at")
+      .eq("id", userId)
+      .single();
 
-    if (authError) {
-      console.error("Error fetching auth user:", authError);
+    if (profileError) {
+      console.error("Error fetching user profile:", profileError);
       return new Response(
         JSON.stringify({
           success: false,
-          error: "Failed to fetch user authentication data",
+          error: "Failed to fetch user profile",
         }),
         {
           status: 500,
@@ -202,11 +198,11 @@ export const GET: APIRoute = async ({ url, cookies }) => {
       );
     }
 
-    if (!authUser.user) {
+    if (!profile) {
       return new Response(
         JSON.stringify({
           success: false,
-          error: "User not found",
+          error: "User profile not found",
         }),
         {
           status: 404,
@@ -215,35 +211,24 @@ export const GET: APIRoute = async ({ url, cookies }) => {
       );
     }
 
-    // Get user profile from profiles table
-    const { data: profile, error: profileError } = await supabase
-      .from("profiles")
-      .select("*")
-      .eq("id", userId)
-      .single();
-
-    // Combine auth user data with profile data
+    // Build user info from profile data
     const userInfo = {
-      id: authUser.user.id,
-      email: authUser.user.email,
-      email_confirmed_at: authUser.user.email_confirmed_at,
-      phone: authUser.user.phone,
-      phone_confirmed_at: authUser.user.phone_confirmed_at,
-      created_at: authUser.user.created_at,
-      updated_at: authUser.user.updated_at,
-      last_sign_in_at: authUser.user.last_sign_in_at,
-      user_metadata: authUser.user.user_metadata,
-      app_metadata: authUser.user.app_metadata,
-      profile: profile || null,
+      id: profile.id,
+      email: profile.email,
+      phone: profile.phone,
+      created_at: profile.created_at,
+      updated_at: profile.updated_at,
+      profile: profile,
       // Computed fields for easy access
       display_name:
-        profile?.company_name ||
-        profile?.name ||
-        authUser.user.user_metadata?.full_name ||
-        authUser.user.email?.split("@")[0] ||
+        profile.company_name ||
+        `${profile.first_name || ""} ${profile.last_name || ""}`.trim() ||
+        profile.email?.split("@")[0] ||
         "Unknown User",
-      role: profile?.role || "Unknown",
-      company_name: profile?.company_name || null,
+      role: profile.role || "Unknown",
+      company_name: profile.company_name || null,
+      first_name: profile.first_name || null,
+      last_name: profile.last_name || null,
     };
 
     console.log("🔔 [USER-INFO] Fetched user info for:", userId);

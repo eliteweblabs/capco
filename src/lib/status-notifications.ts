@@ -142,10 +142,9 @@ async function getAdminUsers(context: string) {
 
   const adminUsersWithEmails = [];
   for (const profile of adminUsers) {
-    const { data: userData } = await supabaseAdmin!.auth.admin.getUserById(profile.id);
-    if (userData?.user?.email) {
+    if (profile.email) {
       adminUsersWithEmails.push({
-        email: userData.user.email,
+        email: profile.email,
         first_name: profile.first_name,
         last_name: profile.last_name,
         company_name: profile.company_name,
@@ -177,18 +176,16 @@ async function getClientUser(authorId: string, context: string) {
 
   const { data: authorProfile } = await supabase
     .from("profiles")
-    .select("company_name")
+    .select("company_name, email, first_name, last_name")
     .eq("id", authorId)
     .single();
 
-  const { data: userData } = await supabaseAdmin!.auth.admin.getUserById(authorId);
-
-  if (authorProfile && userData?.user?.email) {
+  if (authorProfile && authorProfile.email) {
     return {
-      email: userData.user.email,
+      email: authorProfile.email,
       company_name: authorProfile.company_name,
-      first_name: userData.user.user_metadata?.full_name?.split(" ")[0] || "",
-      last_name: userData.user.user_metadata?.full_name?.split(" ").slice(1).join(" ") || "",
+      first_name: authorProfile.first_name || "",
+      last_name: authorProfile.last_name || "",
       role: "Client",
     };
   }

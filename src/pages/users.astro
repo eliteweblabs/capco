@@ -27,35 +27,14 @@ try {
       console.error("Error fetching profiles:", profilesError);
       error = profilesError.message;
     } else if (allProfiles) {
-      // Get emails from auth.users for each profile using admin client
-      const profilesWithEmails = await Promise.all(
-        allProfiles.map(async (profile) => {
-          try {
-            if (supabaseAdmin) {
-              const { data: authUser, error: authError } =
-                await supabaseAdmin.auth.admin.getUserById(profile.id);
-              return {
-                ...profile,
-                email: authUser?.user?.email || "No email found",
-                phone: authUser?.user?.user_metadata?.phone || null,
-              };
-            } else {
-              return {
-                ...profile,
-                email: "Admin client unavailable",
-                phone: null,
-              };
-            }
-          } catch (authError) {
-            console.error(`Error fetching email for user ${profile.id}:`, authError);
-            return {
-              ...profile,
-              email: "Email unavailable",
-              phone: null,
-            };
-          }
-        })
-      );
+      // Email and phone are already available in profiles table
+      const profilesWithEmails = allProfiles.map((profile) => {
+        return {
+          ...profile,
+          email: profile.email || "No email found",
+          phone: profile.phone || null,
+        };
+      });
 
       users = profilesWithEmails;
       console.log(`Fetched ${users.length} users with emails for admin panel`);

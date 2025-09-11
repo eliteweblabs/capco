@@ -62,16 +62,12 @@ export const POST: APIRoute = async ({ request }) => {
       try {
         const { data: profile } = await supabase
           .from("profiles")
-          .select("company_name")
+          .select("company_name, email")
           .eq("id", invoice.projects.author_id)
           .single();
-        // Auth user email
-        const { data: userData } = await supabase.auth.admin.getUserById(
-          invoice.projects.author_id
-        );
         client = {
           name: profile?.company_name || null,
-          email: userData?.user?.email || null,
+          email: profile?.email || null,
         };
       } catch (_) {
         client = null;
