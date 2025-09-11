@@ -198,22 +198,19 @@ async function handleEmailOpened(data: any) {
     const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
 
     try {
-      const updateResponse = await fetch(
-        `${import.meta.env.SITE_URL || "https://capcofire.com"}/api/update-status`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            projectId: projectId,
-            status: nextStatus, // Pass the next status to update to
-            currentUserId: authorId,
-            oldStatus: parseInt(currentStatus),
-          }),
-          signal: controller.signal,
-        }
-      );
+      const updateResponse = await fetch(`${new URL(request.url).origin}/api/update-status`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          projectId: projectId,
+          status: nextStatus, // Pass the next status to update to
+          currentUserId: authorId,
+          oldStatus: parseInt(currentStatus),
+        }),
+        signal: controller.signal,
+      });
 
       clearTimeout(timeoutId);
 

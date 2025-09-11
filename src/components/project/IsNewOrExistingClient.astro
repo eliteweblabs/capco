@@ -3,12 +3,66 @@
 // All toggle logic is contained here, and form data is handled by the parent component
 
 import ClientSelect from "../project/ClientSelectDropdown.astro";
+import SlotMachineModal from "../form/SlotMachineModal.astro";
+import CustomPlacesInput from "../form/CustomPlacesInput.astro";
+import { supabase } from "../../lib/supabase";
 
 interface Props {
   userRole?: string;
 }
 
 // const { currentRole = "Client" } = Astro.props;
+
+// Fetch existing clients for the slot machine - try global data first, fallback to database
+let existingClients: any[] = [];
+let clientError = null;
+
+// Try to get client profiles from global data first (loaded at dashboard level)
+if (typeof window !== "undefined" && (window as any).globalClientProfiles) {
+  const globalProfiles = (window as any).globalClientProfiles;
+  console.log(`📋 [IsNewOrExistingClient] Using global client profiles: ${globalProfiles.length}`);
+
+  existingClients = globalProfiles.map((profile: any) => ({
+    value: profile.id,
+    label: profile.company_name || `Client ${profile.id}`,
+  }));
+} else {
+  // Fallback to database call if global data not available
+  console.log(
+    "📋 [IsNewOrExistingClient] Global client profiles not available, falling back to database call"
+  );
+
+  if (supabase) {
+    try {
+      // Get all client profiles
+      const { data: profiles, error: profilesError } = await supabase
+        .from("profiles")
+        .select("id, company_name, role")
+        .eq("role", "Client")
+        .order("company_name");
+
+      if (profilesError) {
+        console.error("Error fetching client profiles:", profilesError);
+        clientError = profilesError.message;
+      } else if (profiles) {
+        console.log(
+          `📋 [IsNewOrExistingClient] Loaded ${profiles.length} client profiles from database`
+        );
+
+        // Format clients for slot machine
+        existingClients = profiles.map((profile) => ({
+          value: profile.id,
+          label: profile.company_name || `Client ${profile.id}`,
+        }));
+      }
+    } catch (err) {
+      console.error("Exception fetching clients:", err);
+      clientError = err instanceof Error ? err.message : "Unknown error";
+    }
+  } else {
+    clientError = "Supabase not configured";
+  }
+}
 ---
 
 <div class="space-y-4">
@@ -43,7 +97,7 @@ interface Props {
   </div>
 
   <!-- New Client Fields (hidden by default) -->
-  <div id="new-client-fields" class="hidden space-y-4">
+  <div id="new-client-fields" class="space-y-4 hidden">
     <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
       <!-- First Name -->
       <div>
@@ -106,15 +160,28 @@ interface Props {
     </div>
   </div>
 
-  <!-- Existing Client Select (shown by default) -->
-  <div id="existing-client-select-container">
-    <ClientSelect
+  <!-- Existing Client Select (hidden by default) -->
+  <div id="existing-client-select-container" class="">
+    <!-- <ClientSelect
       id="existing-client-select"
       name="author_id"
       label="Select Existing Client"
-      required={true}
+      required={false}
       class="w-full"
-    />
+    /> -->
+
+    <!-- <SlotMachineModal
+      id="existing-client-select"
+      title="Select Existing Client"
+      options={existingClients}
+      selectedValue=""
+      placeholder={clientError ? "Error loading clients..." : "Choose an existing client..."}
+      theme="blue"
+      showCloseButton={true}
+      showCancelButton={true}
+      buttonText="Select Client"
+      skipSaveToAPI={true}
+    /> -->
   </div>
 </div>
 
@@ -152,11 +219,20 @@ interface Props {
         newClientFields.classList.remove("hidden");
         existingClientSelect.classList.add("hidden");
 
-        // Remove required from existing client select hidden input
+        // Clear existing client selection to prevent stale data
         const selectInput = document.getElementById("existing-client-select") as HTMLInputElement;
         if (selectInput) {
           selectInput.removeAttribute("required");
-          console.log("🔄 [NEW-CLIENT-TOGGLE] Removed required from existing client select");
+          selectInput.value = ""; // Clear the selected client value
+          console.log("🔄 [NEW-CLIENT-TOGGLE] Cleared existing client selection");
+        }
+
+        // Also clear the slot machine modal value if it exists
+        const slotMachineValue = document.getElementById(
+          "existing-client-select-value"
+        ) as HTMLInputElement;
+        if (slotMachineValue) {
+          slotMachineValue.value = "";
         }
 
         // Enable new client fields and add required attributes back
@@ -178,41 +254,44 @@ interface Props {
         newClientFields.classList.add("hidden");
         existingClientSelect.classList.remove("hidden");
 
+        // Clear new client fields to prevent stale data
+        const newFields = newClientFields.querySelectorAll("input");
+        console.log("🔄 [NEW-CLIENT-TOGGLE] Clearing new client fields:", newFields.length);
+
+        newFields.forEach((field) => {
+          field.disabled = true;
+          field.removeAttribute("required"); // Remove required when disabled
+          field.value = ""; // Clear the field values
+          console.log("🔄 [NEW-CLIENT-TOGGLE] Cleared and disabled field:", field.name);
+        });
+
         // Add required to existing client select hidden input
         const selectInput = document.getElementById("existing-client-select") as HTMLInputElement;
         if (selectInput) {
           selectInput.setAttribute("required", "required");
           console.log("🔄 [NEW-CLIENT-TOGGLE] Added required to existing client select");
         }
-
-        // Disable new client fields and remove required attributes
-        const newFields = newClientFields.querySelectorAll("input");
-        console.log("🔄 [NEW-CLIENT-TOGGLE] Disabling new client fields:", newFields.length);
-
-        newFields.forEach((field) => {
-          field.disabled = true;
-          field.removeAttribute("required"); // Remove required when disabled
-          console.log("🔄 [NEW-CLIENT-TOGGLE] Disabled field and removed required:", field.name);
-        });
       }
 
       // Update the toggle state in the form data
       console.log("🔄 [NEW-CLIENT-TOGGLE] Toggle state updated:", toggle.checked);
     }
 
-    // Initial state - start with existing client mode (toggle unchecked)
+    // Initial state - start with new client mode (toggle ON)
     console.log("🔄 [NEW-CLIENT-TOGGLE] Setting initial state...");
-    toggle.checked = false; // Ensure toggle starts unchecked
 
-    // Remove required attributes from new client fields initially since they're hidden
+    // Set toggle to checked (ON) by default for new client mode
+    toggle.checked = true;
+
+    // New client fields are shown by default, so they should have required attributes
     const initialNewFields = newClientFields.querySelectorAll("input");
     initialNewFields.forEach((field) => {
       if (field.name === "first_name" || field.name === "last_name" || field.name === "email") {
-        field.removeAttribute("required");
+        field.setAttribute("required", "required");
       }
     });
 
-    updateVisibility();
+    // updateVisibility();
 
     // Listen for toggle changes
     console.log("🔄 [NEW-CLIENT-TOGGLE] Adding event listener...");

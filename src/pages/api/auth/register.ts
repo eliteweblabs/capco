@@ -63,11 +63,17 @@ export const POST: APIRoute = async ({ request, redirect, cookies }) => {
 
   console.log("🔐 [REGISTER] Attempting Supabase auth.signUp for:", email);
 
+  // Use the current request URL to determine the base URL
+  const currentUrl = new URL(request.url);
+  const emailRedirectUrl = `${currentUrl.origin}/api/auth/verify`;
+  console.log("🔐 [AUTH] Email redirect URL:", emailRedirectUrl);
+  console.log("🔐 [AUTH] Current request origin:", currentUrl.origin);
+
   const { data, error } = await supabase.auth.signUp({
     email,
     password,
     options: {
-      emailRedirectTo: `${import.meta.env.SITE_URL || "https://capcofire.com"}/api/auth/verify`,
+      emailRedirectTo: emailRedirectUrl,
       data: {
         first_name: firstName,
         last_name: lastName,

@@ -46,12 +46,16 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     // buttonText: button_text,
     // buttonLink: button_link,
 
+    // Use the current request URL to determine the base URL
+    const currentUrl = new URL(request.url);
+    const baseUrl = currentUrl.origin;
+
     const {
       usersToNotify,
       emailType,
       emailSubject,
       emailContent,
-      buttonLink = `${import.meta.env.SITE_URL || "https://capcofire.com"}/dashboard`,
+      buttonLink = `${baseUrl}/dashboard`,
       buttonText = "Access Your Dashboard",
       projectId,
       newStatus,
@@ -177,7 +181,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
                   type: "magiclink",
                   email: userEmail,
                   options: {
-                    redirectTo: `${import.meta.env.SITE_URL || "https://capcofire.com"}${buttonLink}`,
+                    redirectTo: `${baseUrl}${buttonLink}`,
                   },
                 });
 

@@ -35,6 +35,7 @@ import Footer from "./Footer.astro";
 import UnifiedNotification from "./UnifiedNotification.astro";
 import StickySMS from "./StickySMS.astro";
 import HttpChatWidget from "./HttpChatWidget.astro";
+import CookieBanner from "./CookieBanner.astro";
 import "../../styles/boxicons.css"; // Import Boxicons CSS first
 import "../../styles/global.css"; // Import Tailwind CSS
 
@@ -112,11 +113,12 @@ const lang = getLangFromUrl(Astro.url);
 
     <!-- Inject environment variables for client-side use FIRST -->
     <script
-      set:html={`window.SUPABASE_URL = "${import.meta.env.SUPABASE_URL || ""}"; window.SUPABASE_ANON_KEY = "${(import.meta.env.SUPABASE_ANON_KEY || "").replace(/\s/g, "")}"; window.GOOGLE_MAPS_API_KEY = "${import.meta.env.GOOGLE_MAPS_API_KEY || ""}"; window.STRIPE_PUBLISHABLE_KEY = "${import.meta.env.PUBLIC_STRIPE_PUBLISHABLE_KEY || ""}"; ${currentUser ? `window.USER_DATA = ${JSON.stringify(currentUser)};` : ""}`}
+      set:html={`window.SUPABASE_URL = "${import.meta.env.SUPABASE_URL || ""}"; window.SUPABASE_ANON_KEY = "${(import.meta.env.SUPABASE_ANON_KEY || "").replace(/\s/g, "")}"; window.GOOGLE_MAPS_API_KEY = "${process.env.GOOGLE_MAPS_API_KEY || ""}"; window.STRIPE_PUBLISHABLE_KEY = "${import.meta.env.PUBLIC_STRIPE_PUBLISHABLE_KEY || ""}"; ${currentUser ? `window.USER_DATA = ${JSON.stringify(currentUser)};` : ""}`}
     />
 
-    <!-- Flowbite CSS is loaded via Tailwind plugin, JavaScript via CDN -->
-    <script src="https://unpkg.com/flowbite@2.2.1/dist/flowbite.min.js"></script>
+    <!-- Flowbite CSS and JavaScript via NPM -->
+    <link rel="stylesheet" href="/css/flowbite.min.css" />
+    <script src="/js/flowbite.min.js" is:inline></script>
 
     <!-- Google Maps Places API - Load only if API key is available -->
     <script>
@@ -234,6 +236,9 @@ const lang = getLangFromUrl(Astro.url);
 
     <!-- Unified Notification System -->
     <UnifiedNotification />
+
+    <!-- Cookie Banner -->
+    <CookieBanner />
     <div id="sticky-container" class="fixed bottom-6 right-6 z-40">
       <!-- 
       <div data-dial-init class="fixed end-6 bottom-6 group">
@@ -484,7 +489,7 @@ const lang = getLangFromUrl(Astro.url);
 
           // Use centralized notification system
           if ((window as any).showModal) {
-            (window as any).showModal(errorTitle, errorMessage, "error");
+            (window as any).showModal("error", errorTitle, errorMessage);
           } else {
             console.error(`🔔 [${errorTitle}] ${errorMessage}`);
           }

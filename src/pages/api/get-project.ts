@@ -50,6 +50,7 @@ export const GET: APIRoute = async ({ request, cookies }) => {
           
         `
         )
+        .neq("id", 0) // Exclude system log project
         .order("updated_at", { ascending: false });
       projects = result.data;
       error = result.error;
@@ -73,6 +74,7 @@ export const GET: APIRoute = async ({ request, cookies }) => {
           
         `
         )
+        .neq("id", 0) // Exclude system log project
         .order("updated_at", { ascending: false });
       projects = result.data;
       error = result.error;

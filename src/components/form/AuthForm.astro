@@ -100,7 +100,7 @@
   <!-- Forgot Password Modal -->
   <div
     id="forgot-password-modal"
-    class="fixed inset-0 z-50 flex hidden items-center justify-center bg-black bg-opacity-50"
+    class="fixed inset-0 z-50 hidden items-center justify-center bg-black bg-opacity-50"
   >
     <div class="mx-4 w-full max-w-md rounded-lg bg-white p-6 shadow-xl dark:bg-gray-800">
       <div class="mb-4 flex items-center justify-between">
@@ -175,7 +175,7 @@
           if (!email || !password) {
             e.preventDefault();
             if (window.showModal) {
-              window.showModal("Validation Error", "Please fill in all required fields.", "error");
+              window.showModal("error", "Validation Error", "Please fill in all required fields.");
             } else {
               console.error("🔔 [Validation Error] Please fill in all required fields.");
             }
@@ -185,8 +185,9 @@
 
         // Show loading notification for regular login
         if (!loginForm.querySelector('[name="provider"]')) {
-          if (window.showInfo) {
-            window.showInfo(
+          if (window.showModal) {
+            window.showModal(
+              "info",
               "Signing In...",
               "Please wait while we authenticate your account.",
               3000
@@ -237,7 +238,7 @@
 
       if (!email) {
         if (window.showModal) {
-          window.showModal("Validation Error", "Please enter your email address.", "error");
+          window.showModal("error", "Validation Error", "Please enter your email address.");
         } else {
           console.error("🔔 [Validation Error] Please enter your email address.");
         }
@@ -260,8 +261,9 @@
         const result = await response.json();
 
         if (response.ok) {
-          if (window.showSuccess) {
-            window.showSuccess(
+          if (window.showModal) {
+            window.showModal(
+              "success",
               "Reset Link Sent",
               "If an account with that email exists, you will receive a password reset link shortly.",
               8000

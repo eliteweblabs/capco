@@ -323,7 +323,7 @@ const placeholder =
                     <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-green-300 dark:peer-focus:ring-green-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-green-600"></div>
                   </div>
                   <span class="text-xs text-gray-600 dark:text-gray-400">
-                    ${comment.mark_completed ? "Completed" : "Mark Complete"}
+                    ${comment.mark_completed ? '<i class="bx bx-check-circle mr-1"></i>Completed' : "Incomplete"}
                   </span>
                 </label>
               </div>
@@ -1260,7 +1260,10 @@ const placeholder =
           // Toggle discussion completed status
           async function toggleDiscussionCompleted(discussionId, isCompleted) {
             try {
-              // console.log("🔔 [DISCUSSION] Toggling completed status:", { discussionId, isCompleted });
+              console.log("🔔 [DISCUSSION] Toggling completed status:", {
+                discussionId,
+                isCompleted,
+              });
 
               const response = await fetch("/api/update-discussion-completed", {
                 method: "POST",
@@ -1276,7 +1279,7 @@ const placeholder =
               const data = await response.json();
 
               if (data.success) {
-                // console.log("✅ [DISCUSSION] Discussion completed status updated successfully");
+                console.log("✅ [DISCUSSION] Discussion completed status updated successfully");
                 // Update the local discussion data
                 const discussion = discussions.find((d) => d.id === discussionId);
                 if (discussion) {
@@ -1292,28 +1295,92 @@ const placeholder =
                     `Marked as ${isCompleted ? "completed" : "incomplete"}`
                   );
                 }
+
+                // Update the toggle text
+                console.log(
+                  "🔍 [DISCUSSION] About to update toggle text for discussionId:",
+                  discussionId
+                );
+                const toggle = document.querySelector(
+                  `input.completed-toggle[data-discussion-id="${discussionId}"]`
+                );
+                console.log("🔍 [DISCUSSION] Toggle element found:", toggle);
+                if (toggle) {
+                  const label = toggle.closest("label");
+                  console.log("🔍 [DISCUSSION] Label found:", label);
+                  if (label) {
+                    const span = label.querySelector("span.text-xs");
+                    console.log("🔍 [DISCUSSION] Span with text-xs found:", span);
+                    if (span) {
+                      const newText = `${isCompleted ? '<i class="bx bx-check-circle mr-1"></i>Completed' : "Incomplete"}`;
+                      console.log("🔍 [DISCUSSION] Updating span text to:", newText);
+                      span.innerHTML = newText;
+                    } else {
+                      const fallbackSpan = label.querySelector("span");
+                      console.log("🔍 [DISCUSSION] Fallback span found:", fallbackSpan);
+                      if (fallbackSpan) {
+                        const newText = `${isCompleted ? '<i class="bx bx-check-circle mr-1"></i>Completed' : "Incomplete"}`;
+                        console.log("🔍 [DISCUSSION] Updating fallback span text to:", newText);
+                        fallbackSpan.innerHTML = newText;
+                      }
+                    }
+                  }
+                } else {
+                  console.log(
+                    "🔍 [DISCUSSION] Toggle element not found for discussionId:",
+                    discussionId
+                  );
+                }
               } else {
                 console.error("❌ [DISCUSSION] Failed to update discussion status:", data.error);
                 // Revert the toggle if the API call failed
-                const toggle = document.getElementById(`completed-toggle-${discussionId}`);
+                const toggle = document.querySelector(
+                  `input.completed-toggle[data-discussion-id="${discussionId}"]`
+                );
                 if (toggle) {
                   toggle.checked = !isCompleted;
+                  // Update the text content
+                  const label = toggle.closest("label");
+                  if (label) {
+                    const span = label.querySelector("span.text-xs");
+                    if (span) {
+                      span.innerHTML = `${isCompleted ? '<i class="bx bx-check-circle mr-1"></i>Completed' : "Incomplete"}`;
+                    } else {
+                      const fallbackSpan = label.querySelector("span");
+                      if (fallbackSpan) {
+                        fallbackSpan.innerHTML = `<i class="bx bx-check-circle mr-1"></i>${isCompleted ? "Incomplete" : "Completed"}`;
+                      }
+                    }
+                  }
                 }
                 // Show error notification
                 if (window.showModal) {
-                  window.showModal("Update Failed", "Failed to update discussion status", "error");
+                  window.showModal("error", "Update Failed", "Failed to update discussion status");
                 }
               }
             } catch (error) {
               console.error("❌ [DISCUSSION] Error updating discussion status:", error);
               // Revert the toggle if there was an error
-              const toggle = document.getElementById(`completed-toggle-${discussionId}`);
+              const toggle = document.querySelector(`[data-discussion-id="${discussionId}"]`);
               if (toggle) {
                 toggle.checked = !isCompleted;
+                // Update the text content
+                const label = toggle.closest("label");
+                if (label) {
+                  const span = label.querySelector("span.text-xs");
+                  if (span) {
+                    span.innerHTML = `${isCompleted ? '<i class="bx bx-check-circle mr-1"></i>Completed' : "Incomplete"}`;
+                  } else {
+                    const fallbackSpan = label.querySelector("span");
+                    if (fallbackSpan) {
+                      fallbackSpan.innerHTML = `<i class="bx bx-check-circle mr-1"></i>${isCompleted ? "Incomplete" : "Completed"}`;
+                    }
+                  }
+                }
               }
               // Show error notification
               if (window.showModal) {
-                window.showModal("Update Failed", "Error updating discussion status", "error");
+                window.showModal("error", "Update Failed", "Error updating discussion status");
               }
             }
           }

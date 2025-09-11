@@ -13,6 +13,7 @@ import UnitSlider from "../form/UnitSlider.astro";
 import StaffSelect from "./StaffSelectDropdown.astro";
 import GoogleAddressAutocomplete from "../form/GoogleAddressAutocomplete.astro";
 import IsNewOrExistingClient from "./IsNewOrExistingClient.astro";
+import CustomPlacesInput from "../form/CustomPlacesInput.astro";
 
 interface Props {
   project?: any;
@@ -120,7 +121,7 @@ console.log("📝 [ProjectForm] Debug info:", {
       return googleFields;
     })().map((field) => (
       <div class="relative">
-        <GoogleAddressAutocomplete
+        {/* <GoogleAddressAutocomplete
           id={`${field.id}`}
           name={field.name}
           label={field.label}
@@ -128,10 +129,12 @@ console.log("📝 [ProjectForm] Debug info:", {
           placeholder={field.componentProps?.placeholder || "Enter address..."}
           required={field.componentProps?.required || field.required || false}
           projectStatus={projectStatus || 0}
-        />
+        /> */}
       </div>
     ))
   }
+
+  <CustomPlacesInput id="address" name="address" label="Address" />
 
   <!-- Other Core Fields Grid -->
   <div class="grid grid-cols-1 gap-4 lg:grid-cols-2">
@@ -991,7 +994,7 @@ console.log("📝 [ProjectForm] Debug info:", {
           }
 
           if ((window as any).showModal) {
-            (window as any).showModal(errorTitle, errorMessage, "error");
+            (window as any).showModal("error", errorTitle, errorMessage);
           }
 
           throw new Error(errorMessage);
@@ -1136,8 +1139,7 @@ console.log("📝 [ProjectForm] Debug info:", {
     sqFtInputs.forEach((input) => {
       // Prevent non-numeric characters on keypress
       input.addEventListener("keypress", (e) => {
-        const char = String.fromCharCode(e.which);
-        if (!/[0-9]/.test(char)) {
+        if (!/[0-9]/.test((e as KeyboardEvent).key)) {
           e.preventDefault();
         }
       });
@@ -1145,9 +1147,11 @@ console.log("📝 [ProjectForm] Debug info:", {
       // Handle paste events to filter out non-numeric characters
       input.addEventListener("paste", (e) => {
         e.preventDefault();
-        const paste = (e.clipboardData || (window as any).clipboardData).getData("text");
+        const paste = (
+          (e as ClipboardEvent).clipboardData || (window as any).clipboardData
+        ).getData("text");
         const numericOnly = paste.replace(/[^0-9]/g, "");
-        input.value = numericOnly;
+        (input as HTMLInputElement).value = numericOnly;
       });
 
       // Handle input events to remove any non-numeric characters
