@@ -49,23 +49,23 @@ try {
       return;
     }
     // Use admin client to bypass RLS policies
-    const { data: allProjects, error } = (await supabaseAdmin)
+    const { data: allProjects, error } = supabaseAdmin
       ? await supabaseAdmin
           .from("projects")
           .select(
             `
-          id,
-          title,
-          description,
-          address,
-          author_id,
-          status,
-          sq_ft,
-          new_construction,
-          created_at,
-          updated_at,
-          assigned_to_id
-        `
+            id,
+            title,
+            description,
+            address,
+            author_id,
+            status,
+            sq_ft,
+            new_construction,
+            created_at,
+            updated_at,
+            assigned_to_id
+          `
           )
           .neq("id", 0) // Exclude system log project
           .order("updated_at", { ascending: false })
@@ -73,18 +73,18 @@ try {
           .from("projects")
           .select(
             `
-          id,
-          title,
-          description,
-          address,
-          author_id,
-          status,
-          sq_ft,
-          new_construction,
-          created_at,
-          updated_at,
-          assigned_to_id
-        `
+            id,
+            title,
+            description,
+            address,
+            author_id,
+            status,
+            sq_ft,
+            new_construction,
+            created_at,
+            updated_at,
+            assigned_to_id
+          `
           )
           .neq("id", 0) // Exclude system log project
           .order("updated_at", { ascending: false });
@@ -115,6 +115,60 @@ try {
         console.log("🏗️ [DASHBOARD] Client - showing authored projects:", projects.length);
         console.log("🏗️ [DASHBOARD] Client projects:", projects);
       }
+
+      // Fetch and attach profile data to projects
+      if (projects && projects.length > 0) {
+        console.log("🏗️ [DASHBOARD] Fetching profiles for projects...");
+        const uniqueAuthorIds = [...new Set(projects.map((p) => p.author_id).filter(Boolean))];
+        const uniqueAssignedIds = [
+          ...new Set(projects.map((p) => p.assigned_to_id).filter(Boolean)),
+        ];
+        const allUserIds = [...new Set([...uniqueAuthorIds, ...uniqueAssignedIds])];
+
+        console.log("🏗️ [DASHBOARD] Unique author IDs:", uniqueAuthorIds);
+        console.log("🏗️ [DASHBOARD] All user IDs to fetch:", allUserIds);
+
+        let profilesMap = new Map();
+        if (allUserIds.length > 0) {
+          const { data: profiles, error: profilesError } = await supabaseAdmin
+            .from("profiles")
+            .select("id, company_name, first_name, last_name")
+            .in("id", allUserIds);
+
+          if (!profilesError && profiles) {
+            profiles.forEach((profile) => {
+              profilesMap.set(profile.id, profile);
+            });
+            console.log("🏗️ [DASHBOARD] Successfully fetched profiles:", profiles.length);
+            console.log("🏗️ [DASHBOARD] Sample profile:", profiles[0]);
+          } else {
+            console.error("🏗️ [DASHBOARD] Error fetching profiles:", profilesError);
+          }
+        }
+
+        // Attach profile data to projects
+        projects.forEach((project: any) => {
+          if (project.author_id) {
+            const authorProfile = profilesMap.get(project.author_id);
+            project.profiles = authorProfile || null;
+
+            if (authorProfile) {
+              console.log("🏗️ [DASHBOARD] Attached profile to project:", {
+                projectId: project.id,
+                authorId: project.author_id,
+                companyName: authorProfile.company_name,
+                profile: authorProfile,
+              });
+            } else {
+              console.log("🏗️ [DASHBOARD] No profile found for author:", project.author_id);
+            }
+          }
+
+          if (project.assigned_to_id) {
+            project.assigned_profiles = profilesMap.get(project.assigned_to_id) || null;
+          }
+        });
+      }
     }
   } else {
     console.error("🏗️ [DASHBOARD] Supabase client not available");
@@ -131,14 +185,14 @@ try {
         ? await supabaseAdmin
             .from("project_statuses")
             .select(
-              "status_code, admin_status_name, project_action, client_status_name, client_status_tab"
+              "status_code, admin_status_name, project_action, client_status_name, client_status_tab, admin_status_tab"
             )
             .neq("status_code", 0)
             .order("status_code")
         : await supabase
             .from("project_statuses")
             .select(
-              "status_code, admin_status_name, project_action, client_status_name, client_status_tab"
+              "status_code, admin_status_name, project_action, client_status_name, client_status_tab, admin_status_tab"
             )
             .neq("status_code", 0)
             .order("status_code");
@@ -244,7 +298,7 @@ try {
   }}
 >
   // Make client profiles available globally for components
-  (window as any).globalClientProfiles = clientProfiles;
+  window.globalClientProfiles = clientProfiles;
   console.log("👥 [DASHBOARD] Made client profiles available globally:", clientProfiles.length);
 
   // Project Action Notification System - Only for Clients

@@ -48,28 +48,28 @@ const buttonGroups = getFilteredButtonGroups(currentRole, isNewProject, projectS
 const formActions = getFilteredFormActions(currentRole, isNewProject, projectStatus);
 
 // Debug logging
-console.log("📝 [ProjectForm] Debug info:", {
-  isNewProject,
-  projectStatus,
-  formFieldsCount: formFields.length,
-  buttonGroupsCount: buttonGroups.length,
-  formActionsCount: formActions.length,
-  formFields: formFields.map((f) => ({
-    id: f.id,
-    name: f.name,
-    allow: f.allow,
-  })),
-  buttonGroups: buttonGroups.map((g) => ({
-    id: g.id,
-    name: g.name,
-    allow: g.allow,
-  })),
-  formActions: formActions.map((a) => ({
-    id: a.id,
-    label: a.label,
-    allow: a.allow,
-  })),
-});
+// console.log("📝 [ProjectForm] Debug info:", {
+//   isNewProject,
+//   projectStatus,
+//   formFieldsCount: formFields.length,
+//   buttonGroupsCount: buttonGroups.length,
+//   formActionsCount: formActions.length,
+//   formFields: formFields.map((f) => ({
+//     id: f.id,
+//     name: f.name,
+//     allow: f.allow,
+//   })),
+//   buttonGroups: buttonGroups.map((g) => ({
+//     id: g.id,
+//     name: g.name,
+//     allow: g.allow,
+//   })),
+//   formActions: formActions.map((a) => ({
+//     id: a.id,
+//     label: a.label,
+//     allow: a.allow,
+//   })),
+// });
 
 // Check specifically for the existing client select field
 // const existingClientField = formFields.find((f) => f.id === "existing-client-select");
@@ -113,11 +113,11 @@ console.log("📝 [ProjectForm] Debug info:", {
       const googleFields = formFields.filter(
         (field) => field.type === "component" && field.component === "GoogleAddressAutocomplete"
       );
-      console.log("🔍 [ProjectForm] GoogleAddressAutocomplete fields:", {
-        projectStatus,
-        googleFieldsCount: googleFields.length,
-        googleFields: googleFields.map((f) => ({ id: f.id, hideAtStatus: f.hideAtStatus })),
-      });
+      // console.log("🔍 [ProjectForm] GoogleAddressAutocomplete fields:", {
+      //   projectStatus,
+      //   googleFieldsCount: googleFields.length,
+      //   googleFields: googleFields.map((f) => ({ id: f.id, hideAtStatus: f.hideAtStatus })),
+      // });
       return googleFields;
     })().map((field) => (
       <div class="relative">
@@ -133,8 +133,6 @@ console.log("📝 [ProjectForm] Debug info:", {
       </div>
     ))
   }
-
-  <CustomPlacesInput id="address" name="address" label="Address" />
 
   <!-- Other Core Fields Grid -->
   <div class="grid grid-cols-1 gap-4 lg:grid-cols-2">
@@ -401,6 +399,7 @@ console.log("📝 [ProjectForm] Debug info:", {
       showModal?: any;
       hideNotification?: any;
       currentProjectData?: any;
+      handleUpdateStatusNotification?: any;
     }
   }
 
@@ -543,52 +542,7 @@ console.log("📝 [ProjectForm] Debug info:", {
               );
 
               // Show notification using new modal system
-              if (statusResult.success && statusResult.notificationData && window.showModal) {
-                const notification =
-                  statusResult.notificationData.client || statusResult.notificationData.admin;
-                if (notification) {
-                  window.showModal(
-                    notification.type,
-                    notification.title,
-                    notification.message,
-                    notification.duration,
-                    notification.redirect
-                  );
-                }
-              } else if (statusResult.success && statusResult.statusConfig?.redirect_url) {
-                // Fallback to old system for backward compatibility
-                const delay = statusResult.statusConfig.redirect_delay || 0;
-                const showCountdown = statusResult.statusConfig.redirect_show_countdown !== false;
-
-                if (delay > 0 && showCountdown) {
-                  // Show countdown and redirect after delay
-                  if ((window as any).showNotification) {
-                    (window as any).showNotification({
-                      type: "success",
-                      title: "Project Created",
-                      message:
-                        statusResult.message ||
-                        "Project created successfully! Redirecting in {{COUNTDOWN}} seconds...",
-                      redirect: {
-                        url: statusResult.statusConfig.redirect_url,
-                        delay: delay,
-                        showCountdown: true,
-                      },
-                    });
-                  } else {
-                    // Fallback: redirect after delay
-                    setTimeout(() => {
-                      window.location.href = statusResult.statusConfig.redirect_url;
-                    }, delay * 1000);
-                  }
-                } else {
-                  // Immediate redirect
-                  window.location.href = statusResult.statusConfig.redirect_url;
-                }
-              } else {
-                // No redirect configured, just refresh
-                window.location.reload();
-              }
+              window.handleUpdateStatusNotification(statusResult, "PROJECT-FORM");
             } catch (statusError: any) {
               console.error("📝 [ProjectForm] Status update failed:", statusError);
               console.error("📝 [ProjectForm] Status update error details:", statusError);
@@ -694,7 +648,7 @@ console.log("📝 [ProjectForm] Debug info:", {
 
     // Validate project ID
     if (!projectId || projectId.startsWith("new-project-")) {
-      console.error("Invalid project ID for deletion:", projectId);
+      // console.error("Invalid project ID for deletion:", projectId);
       if ((window as any).showModal) {
         (window as any).showModal(
           "error",
@@ -732,7 +686,7 @@ console.log("📝 [ProjectForm] Debug info:", {
               }
 
               // Make API call to delete project
-              console.log("Sending delete request for project:", projectId);
+              // console.log("Sending delete request for project:", projectId);
               fetch(`/api/delete-project`, {
                 method: "DELETE",
                 headers: {
@@ -741,9 +695,9 @@ console.log("📝 [ProjectForm] Debug info:", {
                 body: JSON.stringify({ projectId }),
               })
                 .then(async (response) => {
-                  console.log("Delete response status:", response.status);
+                  // console.log("Delete response status:", response.status);
                   const data = await response.json();
-                  console.log("Delete response data:", data);
+                  // console.log("Delete response data:", data);
 
                   if (!response.ok) {
                     throw new Error(data.error || "Failed to delete project");
@@ -828,7 +782,7 @@ console.log("📝 [ProjectForm] Debug info:", {
   // Form submission handler
   function handleFormSubmit(event: Event) {
     event.preventDefault();
-    console.log("Form submission started");
+    // console.log("Form submission started");
 
     // Remove required attribute and disable hidden fields to prevent validation errors
     const form = event.target as HTMLFormElement;
@@ -874,7 +828,7 @@ console.log("📝 [ProjectForm] Debug info:", {
     const projectId = form.getAttribute("data-project-id");
     const isNewProject = form.getAttribute("data-is-new-project") === "true";
 
-    console.log("Form data:", { projectId, isNewProject });
+    // console.log("Form data:", { projectId, isNewProject });
 
     // Collect form data
     const formValues: any = {};
@@ -1030,19 +984,7 @@ console.log("📝 [ProjectForm] Debug info:", {
               // console.log("🔍 [ProjectForm] Status update successful:", statusResult);
 
               // Show notification using new modal system
-              if (statusResult.notificationData && window.showModal) {
-                const notification =
-                  statusResult.notificationData.client || statusResult.notificationData.admin;
-                if (notification) {
-                  window.showModal(
-                    notification.type,
-                    notification.title,
-                    notification.message,
-                    notification.duration,
-                    notification.redirect
-                  );
-                }
-              }
+              window.handleUpdateStatusNotification(statusResult, "PROJECT-FORM");
             } else {
               const errorText = await statusResponse.text();
               console.error("🔍 [ProjectForm] Status update failed:", errorText);

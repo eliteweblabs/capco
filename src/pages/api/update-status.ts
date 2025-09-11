@@ -32,6 +32,7 @@
 // }
 
 import type { APIRoute } from "astro";
+import { checkAuth } from "../../lib/auth";
 import { SimpleProjectLogger } from "../../lib/simple-logging";
 import { supabase } from "../../lib/supabase";
 import { supabaseAdmin } from "../../lib/supabase-admin";
@@ -49,10 +50,23 @@ export const OPTIONS: APIRoute = async () => {
   });
 };
 
-export const POST: APIRoute = async ({ request }) => {
+export const POST: APIRoute = async ({ request, cookies }) => {
   try {
+    // Get current user from authentication
+    const { currentUser, currentRole } = await checkAuth(cookies);
+
+    if (!currentUser) {
+      return new Response(JSON.stringify({ error: "Authentication required" }), {
+        status: 401,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+
     const body = await request.json();
-    const { projectId, status: newStatus, currentUserId, oldStatus } = body;
+    const { projectId, status: newStatus, oldStatus } = body;
+
+    // Use the authenticated user's role
+    const currentUserRole = currentRole || "Client";
 
     if (!projectId || newStatus === undefined) {
       return new Response(JSON.stringify({ error: "Project ID and new status are required" }), {
@@ -91,18 +105,14 @@ export const POST: APIRoute = async ({ request }) => {
       });
     }
 
-    // Log the status change if currentUserId is provided
-    if (currentUserId) {
-      try {
-        // console.log("📊 [UPDATE-STATUS] Logging status change for user:", currentUserId);
-        await SimpleProjectLogger.logStatusChange(projectId, currentUserId, oldStatus, newStatus);
-        // console.log("📊 [UPDATE-STATUS] Status change logged successfully");
-      } catch (logError) {
-        console.error("📊 [UPDATE-STATUS] Failed to log status change:", logError);
-        // Don't fail the entire request if logging fails
-      }
-    } else {
-      // console.log("📊 [UPDATE-STATUS] No currentUserId provided, skipping logging");
+    // Log the status change using authenticated user
+    try {
+      // console.log("📊 [UPDATE-STATUS] Logging status change for user:", currentUser.id);
+      await SimpleProjectLogger.logStatusChange(projectId, currentUser.id, oldStatus, newStatus);
+      // console.log("📊 [UPDATE-STATUS] Status change logged successfully");
+    } catch (logError) {
+      console.error("📊 [UPDATE-STATUS] Failed to log status change:", logError);
+      // Don't fail the entire request if logging fails
     }
 
     // Get status data after successful update
@@ -199,7 +209,14 @@ export const POST: APIRoute = async ({ request }) => {
           return url.replace(/\{\{PROJECT_ID\}\}/g, updatedProject.id.toString());
         };
 
-        // Return unified notification data for both admin and client
+        // Debug: Log the status configuration to see what's available
+        console.log("🔍 [UPDATE-STATUS] Status config for status", newStatus, ":", {
+          modal_admin: statusData.statusConfig.modal_admin,
+          modal_client: statusData.statusConfig.modal_client,
+          processedMessages: placeholderResult.processedMessages,
+        });
+
+        // Return notification data with user role information
         const notificationData = {
           admin: {
             type: "success",
@@ -229,6 +246,8 @@ export const POST: APIRoute = async ({ request }) => {
                 }
               : undefined,
           },
+          // Include the current user's role for frontend to use
+          currentUserRole: currentUserRole,
         };
 
         // console.log("📊 [UPDATE-STATUS] Notification data prepared:", {

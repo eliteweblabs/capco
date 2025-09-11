@@ -26,15 +26,16 @@ export const filteredStatusObj = (statusObj: any, role: string) => {
   // Generate the status slug for this project
   // Default to "Client" if currentRole is empty or undefined
   // const statusTab = statusObj.status_tab || null;
-  filteredStatusObj.status_tab = statusObj.client_status_tab;
 
   // Use client_status_name for clients, admin_status_name for admins
   if (role === "Client" && statusObj.client_status_name) {
     filteredStatusObj.status_name = statusObj.client_status_name;
     filteredStatusObj.status_slug = generateStatusSlug(statusObj.client_status_name);
+    filteredStatusObj.status_tab = statusObj.client_status_tab;
   } else if (statusObj.admin_status_name) {
     filteredStatusObj.status_name = statusObj.admin_status_name;
     filteredStatusObj.status_slug = generateStatusSlug(statusObj.admin_status_name);
+    filteredStatusObj.status_tab = statusObj.admin_status_tab;
   }
 
   return filteredStatusObj;

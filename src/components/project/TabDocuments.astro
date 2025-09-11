@@ -961,29 +961,7 @@ const {
           console.log("📊 [PDF-UPLOAD] Status updated successfully:", result);
 
           // Show success notification using notificationData from API
-          if (result.notificationData && window.showModal) {
-            // Determine user role from the current user context
-            const isAdminOrStaff = this.currentRole === "Admin" || this.currentRole === "Staff";
-            const notification = isAdminOrStaff
-              ? result.notificationData.admin
-              : result.notificationData.client;
-
-            console.log("🔔 [PDF-UPLOAD] Showing modal:", {
-              message: notification.message,
-              redirect: notification.redirect,
-              userType: isAdminOrStaff ? "admin" : "client",
-            });
-
-            if (notification) {
-              window.showModal(
-                notification.type,
-                notification.title,
-                notification.message,
-                notification.duration,
-                notification.redirect
-              );
-            }
-          }
+          window.handleUpdateStatusNotification(result, "PDF-UPLOAD");
 
           const uploadHeader = document.getElementById("upload-header");
           uploadHeader.innerHTML = ``;

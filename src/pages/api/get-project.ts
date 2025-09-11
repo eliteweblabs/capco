@@ -122,7 +122,9 @@ export const GET: APIRoute = async ({ request, cookies }) => {
       const uniqueAssignedIds = [...new Set(projects.map((p) => p.assigned_to_id).filter(Boolean))];
       const allUserIds = [...new Set([...uniqueAuthorIds, ...uniqueAssignedIds])];
 
-      // console.log("📡 [API] Fetching profiles for users:", allUserIds.length);
+      console.log("📡 [API] Fetching profiles for users:", allUserIds.length);
+      console.log("📡 [API] Unique author IDs:", uniqueAuthorIds);
+      console.log("📡 [API] Sample project author_id:", projects[0]?.author_id);
 
       let profilesMap = new Map();
       if (allUserIds.length > 0) {
@@ -135,7 +137,8 @@ export const GET: APIRoute = async ({ request, cookies }) => {
           profiles.forEach((profile) => {
             profilesMap.set(profile.id, profile);
           });
-          // console.log("📡 [API] Successfully fetched profiles:", profiles.length);
+          console.log("📡 [API] Successfully fetched profiles:", profiles.length);
+          console.log("📡 [API] Sample profile:", profiles[0]);
         } else {
           console.error("📡 [API] Error fetching profiles:", profilesError);
         }
@@ -144,7 +147,18 @@ export const GET: APIRoute = async ({ request, cookies }) => {
       // Attach profile data to projects
       projects.forEach((project: any) => {
         if (project.author_id) {
-          project.profiles = profilesMap.get(project.author_id) || null;
+          const authorProfile = profilesMap.get(project.author_id);
+          project.profiles = authorProfile || null;
+          if (authorProfile) {
+            console.log("📡 [API] Attached profile to project:", {
+              projectId: project.id,
+              authorId: project.author_id,
+              companyName: authorProfile.company_name,
+              profile: authorProfile,
+            });
+          } else {
+            console.log("📡 [API] No profile found for author:", project.author_id);
+          }
         }
         if (project.assigned_to_id) {
           project.assigned_profiles = profilesMap.get(project.assigned_to_id) || null;

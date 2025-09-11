@@ -166,10 +166,10 @@ const { currentUser, currentRole } = Astro.props;
     checkChatStateFromCookie();
 
     // Join chat (disabled - API not working)
-    // joinChat();
+    joinChat();
 
     // Start heartbeat (disabled - API not working)
-    // startHeartbeat();
+    startHeartbeat();
 
     isInitialized = true;
     // console.log("🔔 [HTTP-CHAT] HTTP chat widget initialization complete");
@@ -277,35 +277,72 @@ const { currentUser, currentRole } = Astro.props;
     }
   }
 
-  // Send message (disabled - API not working)
+  // Send message
   async function sendMessage() {
     const input = document.getElementById("chat-input") as HTMLInputElement;
     const message = input.value.trim();
 
     if (!message) return;
 
-    // Create a local message object instead of sending to API
-    const localMessage = {
-      id: Date.now(),
-      userId: currentUser.id,
-      userName: currentUser.name,
-      userRole: currentUser.role,
-      message: message,
-      timestamp: new Date().toISOString(),
-      isLocal: true,
-    };
-
-    // Add message to chat locally
-    addMessage(localMessage);
-
-    // Clear input
-    input.value = "";
+    // Disable input while sending
+    input.disabled = true;
     const sendBtn = document.getElementById("chat-send") as HTMLButtonElement;
     if (sendBtn) {
       sendBtn.disabled = true;
     }
 
-    console.log("🔔 [HTTP-CHAT] Message added locally (API disabled)");
+    try {
+      console.log("🔔 [HTTP-CHAT] Sending message:", message);
+
+      const response = await fetch("/api/chat", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          action: "message",
+          userId: currentUser.id,
+          userName: currentUser.name,
+          userRole: currentUser.role,
+          message: message,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      console.log("🔔 [HTTP-CHAT] Send response:", data);
+
+      if (data.success) {
+        // Clear input
+        input.value = "";
+        console.log("✅ [HTTP-CHAT] Message sent successfully");
+      } else {
+        console.error("❌ [HTTP-CHAT] Failed to send message:", data.error);
+        // Show error to user
+        if (window.showModal) {
+          window.showModal(
+            "Error",
+            "Failed to send message: " + (data.error || "Unknown error"),
+            "error"
+          );
+        }
+      }
+    } catch (error) {
+      console.error("🔔 [HTTP-CHAT] Error sending message:", error);
+      // Show error to user
+      if (window.showModal) {
+        window.showModal("Error", "Failed to send message. Please try again.", "error");
+      }
+    } finally {
+      // Re-enable input
+      input.disabled = false;
+      if (sendBtn) {
+        sendBtn.disabled = false;
+      }
+    }
   }
 
   // Load chat history

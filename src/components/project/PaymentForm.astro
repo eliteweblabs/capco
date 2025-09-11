@@ -728,22 +728,7 @@ console.log("🔍 [PAYMENT-FORM] Computed lastNameValue:", lastNameValue);
 
             if (statusResponse.ok && statusData.success) {
               // Show notification from update-status API
-              if (statusData.notificationData && window.showModal) {
-                const notification =
-                  statusData.notificationData.client || statusData.notificationData.admin;
-                if (notification) {
-                  window.showModal(
-                    notification.type,
-                    notification.title,
-                    notification.message,
-                    notification.duration,
-                    notification.redirect
-                  );
-                }
-              } else {
-                // Fallback to existing success notification
-                showSuccess();
-              }
+              window.handleUpdateStatusNotification(statusData, "PAYMENT-FORM");
             } else {
               throw new Error(statusData.error || "Failed to update project status");
             }

@@ -15,6 +15,7 @@ interface Props {
   search?: boolean; // Optional: Show search input (default: false)
   addNewOption?: boolean; // Optional: Show add new option button (default: false)
   skipSaveToAPI?: boolean; // Optional: Skip saving to API (default: false)
+  name?: string; // Optional: Form field name (defaults to id)
 }
 
 const {
@@ -31,6 +32,7 @@ const {
   search = false,
   addNewOption = false,
   skipSaveToAPI = false,
+  name,
 } = Astro.props;
 
 // Ensure options is always an array
@@ -90,7 +92,7 @@ const colors = themeColors[theme];
 </button>
 
 <!-- Hidden input to store the selected value -->
-<input type="hidden" id={`${id}-value`} name={id} value={selectedValue} />
+<input type="hidden" id={`${id}-value`} name={name || id} value={selectedValue} />
 
 <script
   define:vars={{
@@ -243,14 +245,7 @@ const colors = themeColors[theme];
         console.log(`🎰 [SLOT-MACHINE] API response:`, result);
 
         // Show success notification if available
-        if (result.notificationData && window.showModal) {
-          window.showModal(
-            result.notificationData.type || "success",
-            result.notificationData.title || "Updated",
-            result.notificationData.message || `${label} selected successfully`,
-            result.notificationData.duration || 3000
-          );
-        }
+        window.handleUpdateStatusNotification(result, "SLOT-MACHINE");
       } else {
         const errorData = await response.json();
         console.error(`🎰 [SLOT-MACHINE] API error:`, errorData);
