@@ -6,9 +6,10 @@ interface Props {
   isAuth: boolean;
   currentUser: any;
   currentRole: string | null;
+  session: any;
 }
 
-const { isAuth, currentUser, currentRole } = Astro.props;
+const { isAuth, currentUser, currentRole, session } = Astro.props;
 
 const userProfile = currentUser?.profile || null;
 
@@ -16,37 +17,8 @@ const userProfile = currentUser?.profile || null;
   {
     isAuth ? (
       // Authenticated: Profile Button with Dropdown
-
-
-
-
-// <button id="dropdownDefaultButton" data-dropdown-toggle="dropdown" class="text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center inline-flex items-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800" type="button">
-// <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m1 1 4 4 4-4"/>
-// </svg>
-// </button>
-
-// <!-- Dropdown menu -->
-// <div id="dropdown" class="z-10 hidden bg-white divide-y divide-gray-100 rounded-lg shadow-sm w-44 dark:bg-gray-700">
-//     <ul class="py-2 text-sm text-gray-700 dark:text-gray-200" aria-labelledby="dropdownDefaultButton">
-//       <li>
-//         <a href="#" class="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white">Dashboard</a>
-//       </li>
-//       <li>
-//         <a href="#" class="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white">Settings</a>
-//       </li>
-//       <li>
-//         <a href="#" class="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white">Earnings</a>
-//       </li>
-//       <li>
-//         <a href="#" class="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white">Sign out</a>
-//       </li>
-//     </ul>
-// </div>
-
-
-
       <div class="relative">
-        <div id="profile-btn" class="text-black dark:text-white cursor-pointer" data-dropdown-toggle="profile-dropdown" >
+        <div id="profile-btn" class="text-black dark:text-white cursor-pointer">
           <img
             id="user-avatar"
             src=""
@@ -54,7 +26,7 @@ const userProfile = currentUser?.profile || null;
             class="block size-8 rounded-full"
             onerror="this.style.display='none'; this.nextElementSibling.style.display='block';"
           />
-          <BoxIcon name="user" style="display:none;" class="ml-2 bx-sm" />
+          <BoxIcon name="user" style="display:none;" class="ml-2 block size-4" />
         </div>
 
         <!-- Enhanced Dropdown menu -->
@@ -73,7 +45,7 @@ const userProfile = currentUser?.profile || null;
                   class="h-10 w-10 rounded-full"
                   onerror="this.style.display='none'; this.nextElementSibling.style.display='block';"
                 />
-                <BoxIcon name="user" style="display:none;" class="text-gray-400 bx-sm" />
+                <BoxIcon name="user" style="display:none;" class="h-10 w-10 text-gray-400" />
               </div>
               <div class="ml-3">
                 <p class="text-sm font-medium text-gray-900 dark:text-white">
@@ -91,52 +63,227 @@ const userProfile = currentUser?.profile || null;
 
           <!-- Menu Items -->
           <div class="py-1">
-            <ul aria-labelledby="profile-btn">
-            <li><a
+            <a
               href="/dashboard"
               class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-700"
             >
-              <BoxIcon name="building" class="mr-3 bx-sm" />
+              <BoxIcon name="building" class="mr-3 block size-4" />
               Dashboard
-            </a></li>
+            </a>
 
-            <li><a
+            <a
               href="/profile"
               class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-700"
             >
-              <BoxIcon name="user" class="mr-3 bx-sm" />
+              <BoxIcon name="user" class="mr-3 block size-4" />
               My Profile
-            </a></li>
-
-            {/* <a
-              href="/settings"
-              class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-700"
-            >
-              <BoxIcon name="cog" class="mr-3 block size-4" />
-              Settings
-            </a> */}
+            </a>
 
             <hr class="my-1 border-gray-200 dark:border-gray-700" />
 
-            <li><button
+            <button
               id="logout-btn"
               class="flex w-full items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-700"
             >
-              <BoxIcon name="log-out" class="mr-3 bx-sm" />
+              <BoxIcon name="log-out" class="mr-3 block size-4" />
               Logout
-            </button></li>
-          </ul>
+            </button>
           </div>
         </div>
       </div>
     ) : (
       // Not Authenticated: Login Button
       <Tooltip content="Login" variant="link" href="/login" placement="bottom" id="login-tooltip" class="text-black dark:text-white">
-      
-      
-          <BoxIcon name="log-in" class="text-gray-700 dark:text-gray-300 bx-sm"   aria-label="btn-profile"
-          id="profile-btn"/>
-
+        <div
+          aria-label="btn-profile"
+          id="profile-btn"
+          class="size-8 overflow-hidden rounded-full"
+        >
+          <BoxIcon name="log-in" class="text-lg text-gray-700 dark:text-gray-300 block size-4" />
+        </div>
       </Tooltip>
     )
   }
+
+
+
+<script type="module" define:vars={{ session }}>
+  // console.log("📋 [HEADER] Header script execution started");
+  // console.log("📋 [HEADER] Session data:", session);
+
+  const profileBtn = document.getElementById("profile-btn");
+  const userAvatar = document.getElementById("user-avatar");
+  const fallbackIcon = userAvatar?.nextElementSibling;
+  const profileDropdown = document.getElementById("profile-dropdown");
+  const logoutBtn = document.getElementById("logout-btn");
+
+  // Mobile menu elements
+  const mobileMenuBtn = document.getElementById("mobile-menu-btn");
+  const mobileMenu = document.getElementById("drawer-example");
+  const hamburgerIcon = document.getElementById("mobile-menu-btn"); // The button IS the hamburger
+
+  // console.log("📋 [HEADER] DOM elements found:", {
+  //   profileBtn: !!profileBtn,
+  //   userAvatar: !!userAvatar,
+  //   fallbackIcon: !!fallbackIcon,
+  //   profileDropdown: !!profileDropdown,
+  //   logoutBtn: !!logoutBtn,
+  //   mobileMenuBtn: !!mobileMenuBtn,
+  //   mobileMenu: !!mobileMenu,
+  //   hamburgerIcon: !!hamburgerIcon,
+  // });
+
+  // Initialize mobile menu icon states
+  if (hamburgerIcon) {
+    hamburgerIcon.classList.remove("is-active");
+    // console.log("📋 [HEADER] Mobile menu icons initialized");
+  }
+
+  function updateProfileButton(session) {
+    // console.log("📋 [HEADER] updateProfileButton called with session:", session);
+
+    if (session && session.data.user) {
+      const avatarUrl = session.data.user.user_metadata?.avatar_url;
+      // console.log("📋 [HEADER] Avatar URL:", avatarUrl);
+
+      // Only update avatar if elements exist (user is authenticated)
+      if (userAvatar && fallbackIcon) {
+        if (avatarUrl) {
+          userAvatar.src = avatarUrl;
+          userAvatar.style.display = "block";
+          fallbackIcon.style.display = "none";
+          // console.log("📋 [HEADER] Using avatar image");
+        } else {
+          userAvatar.style.display = "none";
+          fallbackIcon.style.display = "block";
+          // console.log("📋 [HEADER] Using fallback icon");
+        }
+      }
+      // console.log("📋 [HEADER] Profile button configured for authenticated user");
+    } else {
+      // console.log(
+      //   "📋 [HEADER] Profile button configured for unauthenticated user - avatar elements not present"
+      // );
+    }
+  }
+
+  // Check initial auth state
+  // console.log("📋 [HEADER] Checking initial auth state...");
+  updateProfileButton(session);
+
+  // Toggle dropdown (only if profile button exists - when authenticated)
+  if (profileBtn) {
+    profileBtn.addEventListener("click", (e) => {
+      // console.log("📋 [HEADER] Profile button clicked");
+      e.stopPropagation();
+      if (profileDropdown) {
+        profileDropdown.classList.toggle("hidden");
+        // console.log("📋 [HEADER] Dropdown toggled");
+      }
+    });
+  }
+
+  // Close dropdown when clicking outside
+  document.addEventListener("click", (e) => {
+    if (profileDropdown && !profileBtn?.contains(e.target) && !profileDropdown.contains(e.target)) {
+      // console.log("📋 [HEADER] Document clicked, closing dropdown");
+      profileDropdown.classList.add("hidden");
+    }
+  });
+
+  // Prevent dropdown from closing when clicking inside it
+  if (profileDropdown) {
+    profileDropdown.addEventListener("click", (e) => {
+      e.stopPropagation();
+    });
+  }
+
+  // Mobile menu toggle functionality
+  function toggleMobileMenu() {
+    if (!mobileMenu || !hamburgerIcon) {
+      // console.error("📋 [HEADER] Missing mobile menu elements");
+      return;
+    }
+
+    const isOpen = mobileMenu.classList.contains("translate-x-0");
+
+    // console.log("📋 [HEADER] isOpen:", isOpen);
+    if (isOpen) {
+      // Close drawer - slide out to the left
+      mobileMenu.classList.remove("translate-x-0");
+      mobileMenu.classList.add("-translate-x-full");
+      hamburgerIcon.classList.remove("is-active");
+      // console.log("📋 [HEADER] Mobile menu closed");
+    } else {
+      // Open drawer - slide in from the left
+      mobileMenu.classList.remove("-translate-x-full");
+      mobileMenu.classList.add("translate-x-0");
+      hamburgerIcon.classList.add("is-active");
+      // console.log("📋 [HEADER] Mobile menu opened");
+    }
+  }
+
+  // Mobile menu button event listener
+  if (mobileMenuBtn) {
+    mobileMenuBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      toggleMobileMenu();
+    });
+  }
+
+  // Close mobile menu when clicking outside or on menu links
+  document.addEventListener("click", (e) => {
+    if (mobileMenu && mobileMenu.classList.contains("translate-x-0")) {
+      // Close if clicking outside the mobile menu
+      if (!mobileMenu.contains(e.target) && !mobileMenuBtn?.contains(e.target)) {
+        mobileMenu.classList.remove("translate-x-0");
+        mobileMenu.classList.add("-translate-x-full");
+        if (hamburgerIcon) {
+          hamburgerIcon.classList.remove("is-active");
+        }
+        // console.log("📋 [HEADER] Mobile menu closed by outside click");
+      }
+    }
+  });
+
+  // Close mobile menu when clicking on navigation links
+  if (mobileMenu) {
+    const mobileNavLinks = mobileMenu.querySelectorAll("a");
+    mobileNavLinks.forEach((link) => {
+      link.addEventListener("click", () => {
+        mobileMenu.classList.remove("translate-x-0");
+        mobileMenu.classList.add("-translate-x-full");
+        if (hamburgerIcon) {
+          hamburgerIcon.classList.remove("is-active");
+        }
+        // console.log("📋 [HEADER] Mobile menu closed by navigation link click");
+      });
+    });
+  }
+
+  // Logout functionality (only if logout button exists - when authenticated)
+  if (logoutBtn) {
+    logoutBtn.addEventListener("click", async () => {
+      // console.log("📋 [HEADER] Logout button clicked");
+      try {
+        // console.log("📋 [HEADER] Sending logout request...");
+        const response = await fetch("/api/auth/signout", {
+          method: "POST",
+        });
+        // console.log("📋 [HEADER] Logout response status:", response.status);
+
+        if (response.ok) {
+          // console.log("📋 [HEADER] Logout successful, redirecting...");
+          window.location.href = "/";
+        } else {
+          // console.error("📋 [HEADER] Logout failed with status:", response.status);
+        }
+      } catch (error) {
+        console.error("📋 [HEADER] Logout error:", error);
+      }
+      if (profileDropdown) {
+        profileDropdown.classList.add("hidden");
+      }
+    });
+  }  
+</script>

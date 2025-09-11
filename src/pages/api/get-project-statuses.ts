@@ -53,7 +53,7 @@ export const GET: APIRoute = async ({ request }) => {
     let { data: statuses, error } = await supabase
       .from("project_statuses")
       .select(
-        "status_code, admin_status_name, project_action, client_status_name, client_status_tab"
+        "status_code, admin_status_name, project_action, client_status_name, client_status_tab, admin_status_tab"
       )
       .neq("status_code", 0)
       .order("status_code");
@@ -124,6 +124,7 @@ export const GET: APIRoute = async ({ request }) => {
         });
         acc[status.status_code] = {
           admin_status_name: status.admin_status_name,
+          admin_status_tab: status.admin_status_tab,
           status_code: status.status_code,
           project_action: status.project_action || null,
           client_status_name: status.client_status_name || null,
@@ -136,6 +137,7 @@ export const GET: APIRoute = async ({ request }) => {
         number,
         {
           admin_status_name: string;
+          admin_status_tab: string | null;
           status_code: number;
           project_action: string | null;
           client_status_name: string | null;

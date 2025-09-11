@@ -27,6 +27,21 @@ const {
 
 // Generate unique ID for this tooltip
 const tooltipId = `tooltip-${Math.random().toString(36).substr(2, 9)}`;
+
+// Placement classes
+const placementClasses = {
+  top: "bottom-full left-1/2 transform -translate-x-1/2 mb-2",
+  bottom: "top-full left-1/2 transform -translate-x-1/2 mt-2",
+  left: "right-full top-1/2 transform -translate-y-1/2 mr-2",
+  right: "left-full top-1/2 transform -translate-y-1/2 ml-2",
+};
+
+// Style classes
+const styleClasses = {
+  light: "bg-white text-gray-900 border border-gray-200 shadow-lg",
+  dark: "bg-gray-900 text-white",
+  auto: "bg-gray-900 text-white dark:bg-white dark:text-gray-900 dark:border dark:border-gray-200",
+};
 ---
 
 <div class={`relative inline-block ${className}`}>
@@ -35,26 +50,18 @@ const tooltipId = `tooltip-${Math.random().toString(36).substr(2, 9)}`;
       <a
         id={id}
         href={href}
-        data-tooltip-target={tooltipId}
-        data-tooltip-placement={placement}
+        class="focus:outline-none tooltip-trigger"
+        data-tooltip-id={tooltipId}
         data-tooltip-trigger={trigger}
-        data-tooltip-style={style}
-        data-tooltip-animation={animation}
-        data-tooltip-arrow={arrow}
-        class="focus:outline-none"
       >
         <slot />
       </a>
     ) : (
       <button
         id={id}
-        data-tooltip-target={tooltipId}
-        data-tooltip-placement={placement}
+        class="focus:outline-none tooltip-trigger"
+        data-tooltip-id={tooltipId}
         data-tooltip-trigger={trigger}
-        data-tooltip-style={style}
-        data-tooltip-animation={animation}
-        data-tooltip-arrow={arrow}
-        class="focus:outline-none"
       >
         <slot />
       </button>
@@ -64,9 +71,64 @@ const tooltipId = `tooltip-${Math.random().toString(36).substr(2, 9)}`;
   <div
     id={tooltipId}
     role="tooltip"
-    class="invisible absolute z-10 rounded-lg bg-gray-900 px-3 py-2 text-sm font-medium text-white opacity-0 shadow-sm transition-opacity duration-300"
+    class={`invisible absolute z-10 rounded-lg px-3 py-2 text-sm font-medium opacity-0 shadow-sm transition-opacity ${animation} ${placementClasses[placement]} ${styleClasses[style]}`}
   >
     {content}
-    <div class="tooltip-arrow" data-popper-arrow></div>
+    {
+      arrow && (
+        <div
+          class={`absolute w-2 h-2 transform rotate-45 ${
+            placement === "top"
+              ? "top-full left-1/2 -translate-x-1/2 -translate-y-1/2"
+              : placement === "bottom"
+                ? "bottom-full left-1/2 -translate-x-1/2 translate-y-1/2"
+                : placement === "left"
+                  ? "left-full top-1/2 -translate-y-1/2 -translate-x-1/2"
+                  : "right-full top-1/2 -translate-y-1/2 translate-x-1/2"
+          } ${
+            style === "light"
+              ? "bg-white border-r border-b border-gray-200"
+              : style === "dark"
+                ? "bg-gray-900"
+                : "bg-gray-900 dark:bg-white dark:border-r dark:border-b dark:border-gray-200"
+          }`}
+        />
+      )
+    }
   </div>
 </div>
+
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    // Simple tooltip implementation
+    const triggers = document.querySelectorAll(".tooltip-trigger");
+
+    triggers.forEach((trigger) => {
+      const tooltipId = trigger.getAttribute("data-tooltip-id") || "";
+      const tooltipTrigger = trigger.getAttribute("data-tooltip-trigger");
+      const tooltip = document.getElementById(tooltipId);
+
+      if (!tooltip) return;
+
+      if (tooltipTrigger === "hover") {
+        trigger.addEventListener("mouseenter", () => {
+          tooltip.classList.remove("invisible", "opacity-0");
+          tooltip.classList.add("visible", "opacity-100");
+        });
+
+        trigger.addEventListener("mouseleave", () => {
+          tooltip.classList.add("invisible", "opacity-0");
+          tooltip.classList.remove("visible", "opacity-100");
+        });
+      } else if (tooltipTrigger === "click") {
+        trigger.addEventListener("click", (e) => {
+          e.preventDefault();
+          tooltip.classList.toggle("invisible");
+          tooltip.classList.toggle("opacity-0");
+          tooltip.classList.toggle("visible");
+          tooltip.classList.toggle("opacity-100");
+        });
+      }
+    });
+  });
+</script>

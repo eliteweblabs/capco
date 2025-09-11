@@ -8,7 +8,5 @@ export const isBackendPage = (pathname: string) =>
   pathname.startsWith("/create-staff") ||
   pathname.startsWith("/create-user") ||
   pathname.startsWith("/users") ||
-  pathname.startsWith("/email-test") ||
-  pathname.startsWith("/email-test-debug") ||
   pathname.startsWith("/discussions") ||
   pathname.startsWith("/global-activity");

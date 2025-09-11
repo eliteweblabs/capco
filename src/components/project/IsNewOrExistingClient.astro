@@ -20,7 +20,7 @@ let clientError = null;
 // Try to get client profiles from global data first (loaded at dashboard level)
 if (typeof window !== "undefined" && (window as any).globalClientProfiles) {
   const globalProfiles = (window as any).globalClientProfiles;
-  console.log(`📋 [IsNewOrExistingClient] Using global client profiles: ${globalProfiles.length}`);
+  // console.log(`📋 [IsNewOrExistingClient] Using global client profiles: ${globalProfiles.length}`);
 
   existingClients = globalProfiles.map((profile: any) => ({
     value: profile.id,
@@ -28,9 +28,9 @@ if (typeof window !== "undefined" && (window as any).globalClientProfiles) {
   }));
 } else {
   // Fallback to database call if global data not available
-  console.log(
-    "📋 [IsNewOrExistingClient] Global client profiles not available, falling back to database call"
-  );
+  // console.log(
+  //   "📋 [IsNewOrExistingClient] Global client profiles not available, falling back to database call"
+  // );
 
   if (supabase) {
     try {
@@ -45,9 +45,9 @@ if (typeof window !== "undefined" && (window as any).globalClientProfiles) {
         console.error("Error fetching client profiles:", profilesError);
         clientError = profilesError.message;
       } else if (profiles) {
-        console.log(
-          `📋 [IsNewOrExistingClient] Loaded ${profiles.length} client profiles from database`
-        );
+        // console.log(
+        //   `📋 [IsNewOrExistingClient] Loaded ${profiles.length} client profiles from database`
+        // );
 
         // Format clients for slot machine
         existingClients = profiles.map((profile) => ({
@@ -64,6 +64,8 @@ if (typeof window !== "undefined" && (window as any).globalClientProfiles) {
   }
 }
 ---
+
+<CustomPlacesInput id="address" name="address" label="Address" />
 
 <div class="space-y-4">
   <!-- Modern New Client Toggle -->
@@ -84,7 +86,8 @@ if (typeof window !== "undefined" && (window as any).globalClientProfiles) {
 
     <!-- Modern Toggle Switch -->
     <div class="relative">
-      <input type="checkbox" id="new-client-toggle" name="new_client" class="peer sr-only" />
+      <input type="checkbox" id="new-client-toggle" class="peer sr-only" />
+      <input type="hidden" id="new-client-toggle-value" name="new_client" value="on" />
       <label
         for="new-client-toggle"
         class="relative flex h-6 w-11 cursor-pointer items-center rounded-full bg-gray-300 px-0.5 transition-colors duration-200 ease-in-out peer-checked:bg-green-500 peer-focus:ring-2 peer-focus:ring-green-500 peer-focus:ring-offset-2 dark:bg-gray-600 dark:peer-checked:bg-green-600"
@@ -170,8 +173,9 @@ if (typeof window !== "undefined" && (window as any).globalClientProfiles) {
       class="w-full"
     /> -->
 
-    <!-- <SlotMachineModal
+    <SlotMachineModal
       id="existing-client-select"
+      name="author_id"
       title="Select Existing Client"
       options={existingClients}
       selectedValue=""
@@ -181,7 +185,7 @@ if (typeof window !== "undefined" && (window as any).globalClientProfiles) {
       showCancelButton={true}
       buttonText="Select Client"
       skipSaveToAPI={true}
-    /> -->
+    />
   </div>
 </div>
 
@@ -211,6 +215,13 @@ if (typeof window !== "undefined" && (window as any).globalClientProfiles) {
 
     function updateVisibility() {
       // console.log("🔄 [NEW-CLIENT-TOGGLE] Toggle state:", toggle.checked);
+
+      // Update the hidden input value based on toggle state
+      const hiddenInput = document.getElementById("new-client-toggle-value") as HTMLInputElement;
+      if (hiddenInput) {
+        hiddenInput.value = toggle.checked ? "on" : "off";
+        console.log("🔄 [NEW-CLIENT-TOGGLE] Updated hidden input value:", hiddenInput.value);
+      }
 
       if (toggle.checked) {
         // console.log("🔄 [NEW-CLIENT-TOGGLE] Switching to NEW CLIENT mode");
@@ -291,7 +302,7 @@ if (typeof window !== "undefined" && (window as any).globalClientProfiles) {
       }
     });
 
-    // updateVisibility();
+    updateVisibility();
 
     // Listen for toggle changes
     console.log("🔄 [NEW-CLIENT-TOGGLE] Adding event listener...");
@@ -306,8 +317,20 @@ if (typeof window !== "undefined" && (window as any).globalClientProfiles) {
       form.addEventListener("submit", function (event) {
         console.log("🔄 [NEW-CLIENT-TOGGLE] Form submission intercepted for validation check");
 
-        // Check current toggle state
-        console.log("🔄 [NEW-CLIENT-TOGGLE] Current toggle state:", toggle.checked);
+        // Check current toggle state BEFORE updating visibility
+        console.log(
+          "🔄 [NEW-CLIENT-TOGGLE] Current toggle state BEFORE updateVisibility:",
+          toggle.checked
+        );
+
+        // Ensure visibility is properly set before validation
+        updateVisibility();
+
+        // Check current toggle state AFTER updating visibility
+        console.log(
+          "🔄 [NEW-CLIENT-TOGGLE] Current toggle state AFTER updateVisibility:",
+          toggle.checked
+        );
 
         // Check required fields
         const requiredFields = form.querySelectorAll("[required]");
@@ -370,10 +393,17 @@ if (typeof window !== "undefined" && (window as any).globalClientProfiles) {
 
         if (!isValid) {
           console.error(
-            "🔄 [NEW-CLIENT-TOGGLE] Form validation failed - fixing required attributes..."
+            "🔄 [NEW-CLIENT-TOGGLE] Form validation failed - required attributes are incorrect"
           );
-          updateVisibility(); // Re-run visibility update to fix required attributes
         }
+
+        // Debug: Log form data that will be submitted
+        const formData = new FormData(form);
+        const formDataObj: Record<string, any> = {};
+        for (let [key, value] of formData.entries()) {
+          formDataObj[key] = value;
+        }
+        console.log("🔄 [NEW-CLIENT-TOGGLE] Form data being submitted:", formDataObj);
       });
     }
   });

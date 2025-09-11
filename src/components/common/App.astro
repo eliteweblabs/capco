@@ -113,12 +113,10 @@ const lang = getLangFromUrl(Astro.url);
 
     <!-- Inject environment variables for client-side use FIRST -->
     <script
-      set:html={`window.SUPABASE_URL = "${import.meta.env.SUPABASE_URL || ""}"; window.SUPABASE_ANON_KEY = "${(import.meta.env.SUPABASE_ANON_KEY || "").replace(/\s/g, "")}"; window.GOOGLE_MAPS_API_KEY = "${process.env.GOOGLE_MAPS_API_KEY || ""}"; window.STRIPE_PUBLISHABLE_KEY = "${import.meta.env.PUBLIC_STRIPE_PUBLISHABLE_KEY || ""}"; ${currentUser ? `window.USER_DATA = ${JSON.stringify(currentUser)};` : ""}`}
+      set:html={`window.SUPABASE_URL = "${import.meta.env.SUPABASE_URL || ""}"; window.SUPABASE_ANON_KEY = "${(import.meta.env.SUPABASE_ANON_KEY || "").replace(/\s/g, "")}"; window.GOOGLE_MAPS_API_KEY = "${import.meta.env.PUBLIC_GOOGLE_MAPS_API_KEY || ""}"; window.STRIPE_PUBLISHABLE_KEY = "${import.meta.env.PUBLIC_STRIPE_PUBLISHABLE_KEY || ""}"; ${currentUser ? `window.USER_DATA = ${JSON.stringify(currentUser)};` : ""}`}
     />
 
-    <!-- Flowbite CSS and JavaScript via NPM -->
-    <link rel="stylesheet" href="/css/flowbite.min.css" />
-    <script src="/js/flowbite.min.js" is:inline></script>
+    <!-- Flowbite removed - using pure Tailwind CSS -->
 
     <!-- Google Maps Places API - Load only if API key is available -->
     <script>
@@ -137,7 +135,7 @@ const lang = getLangFromUrl(Astro.url);
           const script = document.createElement("script");
           script.async = true;
           script.defer = true;
-          // Use the stable version with places library for new PlaceAutocompleteElement API
+          // Use the stable version of Google Maps API with Places library
           script.src = `https://maps.googleapis.com/maps/api/js?key=${(window as any).GOOGLE_MAPS_API_KEY}&libraries=places&loading=async`;
           script.id = "google-maps-script";
 
@@ -553,6 +551,53 @@ const lang = getLangFromUrl(Astro.url);
           e.stopImmediatePropagation();
         }
       });
+
+      // Centralized notification handler for update-status API responses
+      (window as any).handleUpdateStatusNotification = function (response: any, context: any) {
+        if (!response.success) {
+          console.error(`❌ [${context || "NOTIFICATION"}] API call failed:`, response.error);
+          return;
+        }
+
+        if (!response.notificationData || !(window as any).showModal) {
+          console.warn(
+            `⚠️ [${context || "NOTIFICATION"}] No notification data or showModal function available`
+          );
+          return;
+        }
+
+        // Get user role from API response (more secure than frontend)
+        const currentUserRole = response.notificationData.currentUserRole || "Client";
+        const isAdminOrStaff = currentUserRole === "Admin" || currentUserRole === "Staff";
+        const notification = isAdminOrStaff
+          ? response.notificationData.admin
+          : response.notificationData.client;
+
+        if (notification) {
+          console.log(
+            `🔔 [${context || "NOTIFICATION"}] Showing ${isAdminOrStaff ? "admin" : "client"} notification:`,
+            {
+              type: notification.type,
+              title: notification.title,
+              message: notification.message,
+              redirect: notification.redirect,
+              userRole: currentUserRole,
+            }
+          );
+
+          (window as any).showModal(
+            notification.type,
+            notification.title,
+            notification.message,
+            notification.duration,
+            notification.redirect
+          );
+        } else {
+          console.warn(
+            `⚠️ [${context || "NOTIFICATION"}] No ${isAdminOrStaff ? "admin" : "client"} notification found in response`
+          );
+        }
+      };
     </script>
   </body>
 </html>

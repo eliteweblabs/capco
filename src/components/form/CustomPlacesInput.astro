@@ -30,36 +30,22 @@ const {
 ---
 
 <div class="relative custom-places-input">
-  <label for={id} class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
-    {label}
-    {required ? " *" : ""}
-  </label>
-
-  <!-- Search Input -->
-  <div class="relative mb-3">
-    <input
-      type="text"
-      id={`${id}-search`}
-      class={`places-search-input w-full rounded-md border border-gray-300 px-3 py-2.5 pr-10 text-sm text-gray-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:focus:border-blue-400 dark:focus:ring-blue-400 ${className}`}
-      placeholder={placeholder}
-      autocomplete="off"
-    />
-
-    <!-- Search Button -->
-    <button
-      type="button"
-      class="places-search-btn absolute right-2 top-1/2 transform -translate-y-1/2 p-1.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors duration-200"
-      title="Search for address"
-    >
-      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+  <!-- Add Address Button -->
+  <button
+    type="button"
+    class={`places-add-btn w-full rounded-md border border-gray-300 bg-white px-3 py-2.5 text-left text-sm text-gray-500 transition-colors hover:border-gray-400 hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-400 dark:hover:border-gray-500 dark:hover:bg-gray-600 ${className}`}
+  >
+    <div class="flex items-center justify-between">
+      <span class="places-button-text">Add Address</span>
+      <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path
           stroke-linecap="round"
           stroke-linejoin="round"
           stroke-width="2"
-          d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+          d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
       </svg>
-    </button>
-  </div>
+    </div>
+  </button>
 
   <!-- Loading Indicator -->
   <div class="places-loading mb-3 hidden">
@@ -138,9 +124,9 @@ const {
     // Generate a unique ID for this component instance
     const componentId = `places-${Math.random().toString(36).substr(2, 9)}`;
 
-    const searchInput = container.querySelector(".places-search-input") as HTMLInputElement;
+    const addBtn = container.querySelector(".places-add-btn") as HTMLButtonElement;
+    const buttonText = container.querySelector(".places-button-text") as HTMLSpanElement;
     const hiddenInput = container.querySelector(".places-hidden-input") as HTMLInputElement;
-    const searchBtn = container.querySelector(".places-search-btn") as HTMLButtonElement;
     const loadingIndicator = container.querySelector(".places-loading") as HTMLDivElement;
     const errorDiv = container.querySelector(".places-error") as HTMLDivElement;
     const selectedContainer = container.querySelector(
@@ -148,45 +134,20 @@ const {
     ) as HTMLDivElement;
     const selectedText = container.querySelector(".places-selected-text") as HTMLSpanElement;
     const clearBtn = container.querySelector(".places-clear-btn") as HTMLButtonElement;
-    const slotMachineContainer = container.querySelector(
-      ".places-slot-machine-container"
-    ) as HTMLDivElement;
 
-    if (!searchInput || !hiddenInput || !searchBtn) {
+    if (!addBtn || !hiddenInput) {
       console.error("🚨 [CUSTOM-PLACES] Required elements not found");
       return;
-    }
-
-    let placesService: any = null;
-    let autocompleteService: any = null;
-
-    // Initialize Google Places services
-    function initializePlacesServices() {
-      if (
-        typeof (window as any).google !== "undefined" &&
-        (window as any).google.maps &&
-        (window as any).google.maps.places
-      ) {
-        // Create a dummy div for PlacesService (required by Google)
-        const dummyDiv = document.createElement("div");
-        placesService = new (window as any).google.maps.places.PlacesService(dummyDiv);
-        autocompleteService = new (window as any).google.maps.places.AutocompleteService();
-        console.log("🗺️ [CUSTOM-PLACES] Google Places services initialized");
-        return true;
-      }
-      return false;
     }
 
     // Show loading state
     function showLoading() {
       loadingIndicator?.classList.remove("hidden");
-      searchBtn.disabled = true;
     }
 
     // Hide loading state
     function hideLoading() {
       loadingIndicator?.classList.add("hidden");
-      searchBtn.disabled = false;
     }
 
     // Show error message
@@ -208,6 +169,11 @@ const {
         selectedText.textContent = address;
       }
       selectedContainer?.classList.remove("hidden");
+
+      // Update button text to show selected address
+      if (buttonText) {
+        buttonText.textContent = address;
+      }
     }
 
     // Hide selected address
@@ -218,97 +184,346 @@ const {
     // Clear selection
     function clearSelection() {
       hiddenInput.value = "";
-      searchInput.value = "";
       hideSelectedAddress();
       hideError();
+
+      // Reset button text
+      if (buttonText) {
+        buttonText.textContent = "Add Address";
+      }
     }
 
-    // Search for places
-    async function searchPlaces(query: string) {
-      if (!query.trim()) {
-        showError("Please enter an address to search");
-        return;
+    // Helper functions to manage body scroll lock
+    function lockBodyScroll() {
+      const body = document.body;
+      const scrollY = window.scrollY;
+
+      // Store current scroll position
+      body.style.top = `-${scrollY}px`;
+      body.classList.add("modal-open");
+
+      console.log("🔒 [CUSTOM-PLACES] Body scroll locked at position:", scrollY);
+    }
+
+    function unlockBodyScroll() {
+      const body = document.body;
+      const scrollY = body.style.top;
+
+      // Remove the lock class
+      body.classList.remove("modal-open");
+
+      // Restore scroll position
+      if (scrollY) {
+        const scrollPosition = parseInt(scrollY || "0") * -1;
+        body.style.top = "";
+        window.scrollTo(0, scrollPosition);
       }
 
-      if (!autocompleteService) {
-        showError("Google Places service not available");
-        return;
-      }
+      console.log("🔓 [CUSTOM-PLACES] Body scroll unlocked, restored to position:", scrollY);
+    }
 
-      showLoading();
-      hideError();
+    // Show address search modal with input inside
+    function showAddressSearchModal() {
+      // Create modal HTML with search input inside
+      const modalHTML = `
+        <div id="${componentId}-address-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+          <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-md mx-4">
+            <!-- Modal Header -->
+            <div class="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
+              <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Add Address</h3>
+              <button type="button" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300" onclick="this.closest('.fixed').remove()">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
+              </button>
+            </div>
+            
+            <!-- Modal Body -->
+            <div class="p-4">
+              <!-- Search Input -->
+              <div class="relative mb-4">
+                <input
+                  type="text"
+                  id="${componentId}-modal-search"
+                  class="w-full rounded-md border border-gray-300 px-3 py-2.5 pr-10 text-sm text-gray-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:focus:border-blue-400 dark:focus:ring-blue-400"
+                  placeholder="Search for an address..."
+                  autocomplete="off"
+                />
+                <button
+                  type="button"
+                  id="${componentId}-modal-search-btn"
+                  class="absolute right-2 top-1/2 transform -translate-y-1/2 p-1.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors duration-200"
+                  title="Search for address"
+                >
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                  </svg>
+                </button>
+              </div>
+              
+              <!-- Loading Indicator -->
+              <div id="${componentId}-modal-loading" class="hidden mb-4">
+                <div class="flex items-center justify-center py-2">
+                  <svg class="h-4 w-4 animate-spin text-gray-400 mr-2" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  <span class="text-sm text-gray-500 dark:text-gray-400">Searching for addresses...</span>
+                </div>
+              </div>
+              
+              <!-- Error Message -->
+              <div class="h-4">
+              <div id="${componentId}-modal-error" class="hidden mb-4 text-sm text-red-600 dark:text-red-400"></div>
+              </div>
+            </div>
+            
+            <!-- Modal Footer -->
+            <div class="flex items-center justify-end gap-2 p-4 border-t border-gray-200 dark:border-gray-700">
+              <button
+                type="button"
+                id="${componentId}-modal-cancel"
+                class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-600"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      `;
 
-      try {
-        const request = {
-          input: query,
-          types: ["address"],
-          componentRestrictions: { country: "us" }, // Restrict to US addresses
-        };
+      // Lock body scroll and add modal to page
+      lockBodyScroll();
+      document.body.insertAdjacentHTML("beforeend", modalHTML);
 
-        // Use Promise to handle the callback-based API
-        const predictions = await new Promise<any[]>((resolve, reject) => {
-          autocompleteService!.getPlacePredictions(request, (predictions: any, status: any) => {
-            if (
-              status === (window as any).google?.maps?.places?.PlacesServiceStatus?.OK &&
-              predictions
-            ) {
-              resolve(predictions);
-            } else {
-              reject(new Error(`Places API error: ${status}`));
+      // Get modal elements
+      const modal = document.getElementById(`${componentId}-address-modal`);
+      const modalSearchInput = document.getElementById(
+        `${componentId}-modal-search`
+      ) as HTMLInputElement;
+      const modalSearchBtn = document.getElementById(
+        `${componentId}-modal-search-btn`
+      ) as HTMLButtonElement;
+      const modalLoading = document.getElementById(`${componentId}-modal-loading`);
+      const modalError = document.getElementById(`${componentId}-modal-error`);
+      const modalCancel = document.getElementById(`${componentId}-modal-cancel`);
+
+      // Debug: Check if all elements were found
+      console.log("🔍 [CUSTOM-PLACES] Modal elements found:", {
+        modal: !!modal,
+        modalSearchInput: !!modalSearchInput,
+        modalSearchBtn: !!modalSearchBtn,
+        modalLoading: !!modalLoading,
+        modalError: !!modalError,
+        modalCancel: !!modalCancel,
+        componentId: componentId,
+      });
+
+      // Focus on search input
+      modalSearchInput?.focus();
+
+      // Event listeners - add a small delay to ensure elements are fully rendered
+      setTimeout(() => {
+        console.log("🔍 [CUSTOM-PLACES] Setting up event listeners...");
+        console.log("🔍 [CUSTOM-PLACES] modalSearchBtn:", !!modalSearchBtn);
+        console.log("🔍 [CUSTOM-PLACES] modalSearchInput:", !!modalSearchInput);
+
+        if (modalSearchBtn) {
+          modalSearchBtn.addEventListener("click", () => {
+            console.log(
+              "🔍 [CUSTOM-PLACES] Search button clicked, query:",
+              modalSearchInput?.value
+            );
+            if (modalSearchInput) {
+              searchPlacesInModal(modalSearchInput.value);
             }
           });
-        });
+          console.log("🔍 [CUSTOM-PLACES] Search button event listener added");
+        } else {
+          console.error("🚨 [CUSTOM-PLACES] modalSearchBtn not found for event listener");
+        }
 
-        if (predictions.length === 0) {
-          showError("No addresses found. Please try a different search term.");
+        if (modalSearchInput) {
+          // Add input event listener with debouncing and 2-character minimum
+          let searchTimeout: NodeJS.Timeout;
+          modalSearchInput.addEventListener("input", (e) => {
+            const query = (e.target as HTMLInputElement).value.trim();
+            console.log("🔍 [CUSTOM-PLACES] Input changed, query:", query);
+
+            // Clear previous timeout
+            if (searchTimeout) {
+              clearTimeout(searchTimeout);
+            }
+
+            // Only search if query is at least 2 characters
+            if (query.length >= 2) {
+              console.log("🔍 [CUSTOM-PLACES] Query is 2+ characters, scheduling search...");
+              searchTimeout = setTimeout(() => {
+                console.log("🔍 [CUSTOM-PLACES] Executing delayed search for:", query);
+                searchPlacesInModal(query);
+              }, 300); // 300ms debounce
+            } else if (query.length === 0) {
+              // Clear results if input is empty
+              hideModalError();
+            }
+          });
+
+          // Keep Enter key functionality
+          modalSearchInput.addEventListener("keypress", (e) => {
+            if (e.key === "Enter") {
+              e.preventDefault();
+              const query = modalSearchInput.value.trim();
+              if (query.length >= 2) {
+                console.log("🔍 [CUSTOM-PLACES] Enter key pressed, query:", query);
+                if (searchTimeout) {
+                  clearTimeout(searchTimeout);
+                }
+                searchPlacesInModal(query);
+              }
+            }
+          });
+          console.log("🔍 [CUSTOM-PLACES] Search input event listeners added");
+        } else {
+          console.error("🚨 [CUSTOM-PLACES] modalSearchInput not found for event listener");
+        }
+      }, 100);
+
+      modalCancel?.addEventListener("click", () => {
+        modal?.remove();
+        unlockBodyScroll();
+      });
+
+      modal?.addEventListener("click", (e) => {
+        if (e.target === modal) {
+          modal.remove();
+          unlockBodyScroll();
+        }
+      });
+
+      // Search function for modal
+      async function searchPlacesInModal(query: string) {
+        console.log("🔍 [CUSTOM-PLACES] searchPlacesInModal function called with query:", query);
+
+        if (!query.trim()) {
+          console.log("🔍 [CUSTOM-PLACES] Empty query, showing error");
+          showModalError("Please enter an address to search");
           return;
         }
 
-        // Show slot machine modal with results
-        showSlotMachineModal(predictions);
-      } catch (error) {
-        console.error("🚨 [CUSTOM-PLACES] Search error:", error);
-        showError("Failed to search for addresses. Please try again.");
-      } finally {
-        hideLoading();
+        console.log("🔍 [CUSTOM-PLACES] Starting address search...");
+        showModalLoading();
+        hideModalError();
+
+        try {
+          // Use our server-side proxy endpoint to avoid CORS issues
+          const requestUrl = `/api/places-autocomplete?input=${encodeURIComponent(query)}&types=address&components=country:us&locationBias=circle:100@42.3601,-71.0589`;
+
+          console.log("🔍 [CUSTOM-PLACES] Making HTTP request to proxy endpoint:", requestUrl);
+
+          const response = await fetch(requestUrl);
+          const data = await response.json();
+
+          console.log("🔍 [CUSTOM-PLACES] API response received:", {
+            status: data.status,
+            predictions: data.predictions?.length,
+          });
+
+          if (data.status === "OK" && data.predictions && data.predictions.length > 0) {
+            console.log(
+              "🔍 [CUSTOM-PLACES] Showing results:",
+              data.predictions.length,
+              "predictions"
+            );
+            // Show results in modal
+            showModalResults(data.predictions, query);
+          } else {
+            console.log("🔍 [CUSTOM-PLACES] No results or error status:", data.status);
+            showModalError("No addresses found. Please try a different search term.");
+          }
+        } catch (error) {
+          console.error("🚨 [CUSTOM-PLACES] Search error:", error);
+          showModalError("Failed to search for addresses. Please try again.");
+        } finally {
+          hideModalLoading();
+        }
       }
-    }
 
-    // Show slot machine modal with address options
-    function showSlotMachineModal(predictions: any[]) {
-      // Create options for slot machine
-      const options = predictions.map((prediction) => ({
-        value: prediction.place_id,
-        label: prediction.description,
-        disabled: false,
-      }));
+      // Modal helper functions
+      function showModalLoading() {
+        modalLoading?.classList.remove("hidden");
+        modalSearchBtn.disabled = true;
+      }
 
-      // Update the SlotMachineMap component with new options
-      const slotMachineElement = slotMachineContainer.querySelector(
-        '[id$="-slot-machine"]'
-      ) as HTMLElement;
-      if (slotMachineElement) {
-        // Trigger the slot machine modal
-        slotMachineElement.click();
+      function hideModalLoading() {
+        modalLoading?.classList.add("hidden");
+        modalSearchBtn.disabled = false;
+      }
 
-        // Update options dynamically (this would need to be handled by the SlotMachineMap component)
-        // For now, we'll use a custom implementation
-        showCustomSlotMachine(options);
+      function showModalError(message: string) {
+        if (modalError) {
+          modalError.textContent = message;
+          modalError.classList.remove("hidden");
+        }
+      }
+
+      function hideModalError() {
+        modalError?.classList.add("hidden");
+      }
+
+      function showModalResults(predictions: any[], query: string) {
+        console.log(
+          "🔍 [CUSTOM-PLACES] showModalResults called with:",
+          predictions.length,
+          "predictions"
+        );
+
+        // Convert predictions to slot machine options format
+        const options = predictions.map((prediction) => ({
+          value: prediction.place_id,
+          label: prediction.description,
+          disabled: false,
+        }));
+
+        console.log(
+          "🔍 [CUSTOM-PLACES] Converting to slot machine format:",
+          options.length,
+          "options"
+        );
+
+        // Show slot machine modal instead of simple list
+        console.log(
+          "🔍 [CUSTOM-PLACES] About to call showCustomSlotMachine with",
+          options.length,
+          "options"
+        );
+        showCustomSlotMachine(options, query);
       }
     }
 
     // Custom slot machine implementation for addresses
     function showCustomSlotMachine(
-      options: Array<{ value: string; label: string; disabled: boolean }>
+      options: Array<{ value: string; label: string; disabled: boolean }>,
+      originalQuery: string
     ) {
-      // Create modal HTML
+      console.log("🎰 [SLOT-MACHINE] showCustomSlotMachine called with", options.length, "options");
+
+      // Close the search modal first
+      const searchModal = document.getElementById(`${componentId}-address-modal`);
+      if (searchModal) {
+        console.log("🎰 [SLOT-MACHINE] Removing search modal");
+        searchModal.remove();
+      } else {
+        console.log("🎰 [SLOT-MACHINE] No search modal found to remove");
+      }
+
+      // Create slot machine modal HTML with search input at top
       const modalHTML = `
-        <div id="${componentId}-address-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+        <div id="${componentId}-slot-machine-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
           <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
             <!-- Modal Header -->
             <div class="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
               <h2 class="text-xl font-semibold text-gray-900 dark:text-white">Select Address</h2>
-              <button id="${componentId}-close-modal" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors duration-200">
+              <button id="${componentId}-close-slot-modal" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors duration-200">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
                 </svg>
@@ -317,13 +532,56 @@ const {
 
             <!-- Modal Content -->
             <div class="p-6">
-              <p class="text-sm text-gray-600 dark:text-gray-300 mb-4">
-                Choose an address from the search results:
-              </p>
-              
-              <!-- Slot Machine Container -->
-              <div class="relative h-48 overflow-hidden border-2 border-gray-200 dark:border-gray-600 rounded-lg mb-4">
-                <ul id="${componentId}-address-list" class="absolute inset-0 transition-transform duration-300 ease-out">
+              <!-- Search Input Section -->
+              <div class="mb-4">
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Search for an address:
+                </label>
+                <div class="relative">
+                  <input
+                    type="text"
+                    id="${componentId}-slot-search-input"
+                    class="w-full rounded-md border border-gray-300 px-3 py-2.5 pr-10 text-sm text-gray-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:focus:border-blue-400 dark:focus:ring-blue-400"
+                    placeholder="Type to search for addresses..."
+                    autocomplete="off"
+                    value="${originalQuery}"
+                  />
+                  <button
+                    type="button"
+                    id="${componentId}-slot-search-btn"
+                    class="absolute right-2 top-1/2 transform -translate-y-1/2 p-1.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors duration-200"
+                    title="Search for address"
+                  >
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                    </svg>
+                  </button>
+                </div>
+              </div>
+
+              <!-- Slot Machine Container with Fixed Height -->
+              <div class="h-48 slot-machine-container relative overflow-hidden border-2 border-gray-200 dark:border-gray-600 rounded-lg mb-4 bg-gray-50 dark:bg-gray-700">
+                <!-- Loading State -->
+                <div id="${componentId}-slot-loading" class="absolute inset-0 flex items-center justify-center text-gray-500 dark:text-gray-400 hidden">
+                  <div class="text-center">
+                    <svg class="h-6 w-6 animate-spin text-gray-400 mx-auto mb-2" fill="none" viewBox="0 0 24 24">
+                      <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                      <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    <p class="text-sm">Searching for addresses...</p>
+                  </div>
+                </div>
+
+                <!-- Error State -->
+                <div id="${componentId}-slot-error" class="absolute inset-0 flex items-center justify-center text-red-600 dark:text-red-400 hidden">
+                  <div class="text-center">
+                    <svg class="w-6 h-6 mx-auto mb-2 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                    <p class="text-sm">Error loading addresses</p>
+                  </div>
+                </div>
+                <ul id="${componentId}-slot-address-list" class="absolute inset-0 transition-transform duration-300 ease-out">
                   ${options
                     .map(
                       (option, index) => `
@@ -334,14 +592,24 @@ const {
                     )
                     .join("")}
                 </ul>
+                <!-- Empty state when no results -->
+                <div id="${componentId}-slot-empty-state" class="slot-empty-state absolute inset-0 flex items-center justify-center text-gray-500 dark:text-gray-400 hidden">
+                  <div class="text-center">
+                    <svg class="w-8 h-8 mx-auto mb-2 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                    </svg>
+                    <p class="text-sm">No addresses found</p>
+                  </div>
+                </div>
               </div>
 
               <!-- Action Buttons -->
               <div class="flex justify-center gap-2">
-                <button id="${componentId}-cancel-btn" class="px-4 py-2 text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200">
+                <button id="${componentId}-slot-cancel-btn" class="px-4 py-2 text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200">
                   Cancel
                 </button>
-                <button id="${componentId}-select-btn" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md disabled:opacity-50" disabled>
+                <button id="${componentId}-slot-select-btn" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md disabled:opacity-50" disabled>
                   Select
                 </button>
               </div>
@@ -350,29 +618,94 @@ const {
         </div>
       `;
 
-      // Add modal to DOM
+      // Add modal to DOM (scroll is already locked from search modal)
+      console.log("🎰 [SLOT-MACHINE] Adding modal HTML to DOM");
       document.body.insertAdjacentHTML("beforeend", modalHTML);
+
+      // Verify modal was added
+      const addedModal = document.getElementById(`${componentId}-slot-machine-modal`);
+      if (addedModal) {
+        console.log("🎰 [SLOT-MACHINE] Modal successfully added to DOM");
+      } else {
+        console.error("🎰 [SLOT-MACHINE] Failed to add modal to DOM");
+      }
+
       setupSlotMachine(options);
     }
 
     // Set up slot machine functionality
     function setupSlotMachine(options: Array<{ value: string; label: string; disabled: boolean }>) {
-      const addressList = document.getElementById(
-        `${componentId}-address-list`
-      ) as HTMLUListElement;
-      const selectBtn = document.getElementById(`${componentId}-select-btn`) as HTMLButtonElement;
-      const cancelBtn = document.getElementById(`${componentId}-cancel-btn`) as HTMLButtonElement;
-      const closeBtn = document.getElementById(`${componentId}-close-modal`) as HTMLButtonElement;
-      const modal = document.getElementById(`${componentId}-address-modal`) as HTMLDivElement;
+      console.log("🎰 [SLOT-MACHINE] setupSlotMachine called with", options.length, "options");
 
-      let selectedIndex = 0;
+      const addressList = document.getElementById(
+        `${componentId}-slot-address-list`
+      ) as HTMLUListElement;
+      const selectBtn = document.getElementById(
+        `${componentId}-slot-select-btn`
+      ) as HTMLButtonElement;
+      const cancelBtn = document.getElementById(
+        `${componentId}-slot-cancel-btn`
+      ) as HTMLButtonElement;
+      const closeBtn = document.getElementById(
+        `${componentId}-close-slot-modal`
+      ) as HTMLButtonElement;
+      const modal = document.getElementById(`${componentId}-slot-machine-modal`) as HTMLDivElement;
+      const searchInput = document.getElementById(
+        `${componentId}-slot-search-input`
+      ) as HTMLInputElement;
+      const searchBtn = document.getElementById(
+        `${componentId}-slot-search-btn`
+      ) as HTMLButtonElement;
+      const loadingDiv = document.getElementById(`${componentId}-slot-loading`);
+      const errorDiv = document.getElementById(`${componentId}-slot-error`);
+
+      console.log("🎰 [SLOT-MACHINE] Element check:", {
+        addressList: !!addressList,
+        selectBtn: !!selectBtn,
+        cancelBtn: !!cancelBtn,
+        closeBtn: !!closeBtn,
+        modal: !!modal,
+        searchInput: !!searchInput,
+        searchBtn: !!searchBtn,
+        loadingDiv: !!loadingDiv,
+        errorDiv: !!errorDiv,
+      });
+
+      let selectedIndex = -1; // Start with no selection
       const itemHeight = 48;
+      let currentOptions = options;
 
       // Center selected item
       function centerSelectedItem() {
+        if (currentOptions.length === 0) {
+          return; // Don't center if no options
+        }
+
+        console.log(
+          "🎰 [SLOT-MACHINE] Centering item, selectedIndex:",
+          selectedIndex,
+          "total options:",
+          currentOptions.length
+        );
+
         const containerHeight = 192;
-        const centerOffset = (containerHeight - itemHeight) / 2;
-        const targetY = -(selectedIndex * itemHeight) + centerOffset;
+        let targetY;
+
+        if (selectedIndex === -1) {
+          // No selection - show items from the top (no dead space)
+          targetY = 0;
+        } else {
+          // Item selected - center it
+          const centerOffset = (containerHeight - itemHeight) / 2;
+          targetY = -(selectedIndex * itemHeight) + centerOffset;
+        }
+
+        console.log("🎰 [SLOT-MACHINE] Transform values:", {
+          containerHeight,
+          targetY,
+          selectedIndex,
+        });
+
         addressList.style.transform = `translateY(${targetY}px)`;
         updateSelection();
       }
@@ -381,50 +714,103 @@ const {
       function updateSelection() {
         const items = addressList.querySelectorAll("li");
         items.forEach((item, index) => {
-          if (index === selectedIndex) {
+          if (index === selectedIndex && selectedIndex !== -1) {
             item.classList.add("selected");
             item.style.cssText = `
-              display: flex;
-              align-items: center;
-              justify-content: center;
-              height: 3rem;
-              text-align: center;
-              color: white;
-              font-weight: 600;
-              cursor: pointer;
-              transition: all 0.2s;
-              background: linear-gradient(135deg, #3b82f6, #1d4ed8);
-              border-radius: 8px;
-              margin: 0 8px;
-              box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
-            `;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 3rem;
+            text-align: center;
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+            border-radius: 8px;
+            margin: 0 8px;
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+            position: relative;
+          `;
+            addCheckmark(item);
             selectBtn.disabled = false;
           } else {
             item.classList.remove("selected");
             item.style.cssText = `
-              display: flex;
-              align-items: center;
-              justify-content: center;
-              height: 3rem;
-              text-align: center;
-              color: #111827;
-              font-weight: 500;
-              cursor: pointer;
-              transition: all 0.2s;
-            `;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 3rem;
+            text-align: center;
+            color: #111827;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            position: relative;
+          `;
+            removeCheckmark(item);
           }
         });
+
+        // Disable select button if no item is selected
+        if (selectedIndex === -1) {
+          selectBtn.disabled = true;
+        }
+      }
+
+      // Add checkmark to selected item
+      function addCheckmark(item: HTMLElement) {
+        // Remove existing checkmark if any
+        const existingCheckmark = item.querySelector(".checkmark");
+        if (existingCheckmark) {
+          existingCheckmark.remove();
+        }
+
+        const checkmark = document.createElement("div");
+        checkmark.className = "checkmark";
+        checkmark.innerHTML = "✓";
+        checkmark.style.cssText = `
+          position: absolute;
+          right: 8px;
+          top: 50%;
+          transform: translateY(-50%);
+          color: #10b981;
+          font-weight: bold;
+          font-size: 16px;
+          animation: checkmarkPulse 1.5s ease-in-out infinite;
+          z-index: 10;
+        `;
+
+        item.appendChild(checkmark);
+      }
+
+      // Remove checkmark from item
+      function removeCheckmark(item: HTMLElement) {
+        const checkmark = item.querySelector(".checkmark");
+        if (checkmark) {
+          checkmark.remove();
+        }
       }
 
       // Handle wheel events
       addressList.addEventListener("wheel", (e) => {
         e.preventDefault();
+
+        if (currentOptions.length === 0) {
+          return; // Don't handle wheel events if no options
+        }
+
         const deltaY = e.deltaY;
 
-        if (deltaY > 0) {
-          selectedIndex = Math.min(selectedIndex + 1, options.length - 1);
+        // If no item is selected, start from the first item
+        if (selectedIndex === -1) {
+          selectedIndex = 0;
         } else {
-          selectedIndex = Math.max(selectedIndex - 1, 0);
+          if (deltaY > 0) {
+            selectedIndex = Math.min(selectedIndex + 1, currentOptions.length - 1);
+          } else {
+            selectedIndex = Math.max(selectedIndex - 1, 0);
+          }
         }
 
         centerSelectedItem();
@@ -444,8 +830,15 @@ const {
 
       // Handle select button
       selectBtn.addEventListener("click", () => {
-        const selectedOption = options[selectedIndex];
+        const selectedOption = currentOptions[selectedIndex];
         if (selectedOption) {
+          // Update the main input field with the selected address
+          const mainInput = document.getElementById(
+            `${componentId}-address-input`
+          ) as HTMLInputElement;
+          if (mainInput) {
+            mainInput.value = selectedOption.label;
+          }
           getPlaceDetails(selectedOption.value, selectedOption.label);
         }
       });
@@ -453,6 +846,7 @@ const {
       // Handle cancel/close buttons
       function closeModal() {
         modal?.remove();
+        unlockBodyScroll();
       }
 
       cancelBtn?.addEventListener("click", closeModal);
@@ -463,38 +857,232 @@ const {
         }
       });
 
-      // Initialize
-      centerSelectedItem();
-    }
+      // Search functionality for slot machine
+      function showSlotLoading() {
+        // Hide all other states
+        hideSlotError();
+        hideSlotResults();
+        hideSlotEmpty();
 
-    // Get detailed place information
-    function getPlaceDetails(placeId: string, description: string) {
-      if (!placesService) {
-        showError("Places service not available");
-        return;
+        // Show loading state
+        loadingDiv?.classList.remove("hidden");
+        searchBtn.disabled = true;
       }
 
+      function hideSlotLoading() {
+        loadingDiv?.classList.add("hidden");
+        searchBtn.disabled = false;
+      }
+
+      function showSlotError(message: string) {
+        // Hide all other states
+        hideSlotLoading();
+        hideSlotResults();
+        hideSlotEmpty();
+
+        // Show error state
+        if (errorDiv) {
+          errorDiv.classList.remove("hidden");
+        }
+      }
+
+      function hideSlotError() {
+        errorDiv?.classList.add("hidden");
+      }
+
+      function showSlotResults() {
+        // Hide all other states
+        hideSlotLoading();
+        hideSlotError();
+        hideSlotEmpty();
+
+        // Show results
+        addressList.style.display = "block";
+      }
+
+      function hideSlotResults() {
+        addressList.style.display = "none";
+      }
+
+      function showSlotEmpty() {
+        // Hide all other states
+        hideSlotLoading();
+        hideSlotError();
+        hideSlotResults();
+
+        // Show empty state
+        const emptyState = document.getElementById(`${componentId}-slot-empty-state`);
+        emptyState?.classList.remove("hidden");
+      }
+
+      function hideSlotEmpty() {
+        const emptyState = document.getElementById(`${componentId}-slot-empty-state`);
+        emptyState?.classList.add("hidden");
+      }
+
+      async function searchInSlotMachine(query: string) {
+        if (!query.trim() || query.length < 2) {
+          showSlotError("Please enter at least 2 characters to search");
+          return;
+        }
+
+        showSlotLoading();
+        hideSlotError();
+
+        try {
+          const requestUrl = `/api/places-autocomplete?input=${encodeURIComponent(query)}&types=address&components=country:us&locationBias=circle:100@42.3601,-71.0589`;
+          const response = await fetch(requestUrl);
+          const data = await response.json();
+
+          if (data.status === "OK" && data.predictions && data.predictions.length > 0) {
+            // Convert predictions to options format
+            const newOptions = data.predictions.map((prediction: any) => ({
+              value: prediction.place_id,
+              label: prediction.description,
+              disabled: false,
+            }));
+
+            // Update the slot machine with new options
+            updateSlotMachineOptions(newOptions);
+          } else {
+            showSlotError("No addresses found. Please try a different search term.");
+          }
+        } catch (error) {
+          console.error("🚨 [CUSTOM-PLACES] Slot machine search error:", error);
+          showSlotError("Failed to search for addresses. Please try again.");
+        } finally {
+          hideSlotLoading();
+        }
+      }
+
+      function updateSlotMachineOptions(
+        newOptions: Array<{ value: string; label: string; disabled: boolean }>
+      ) {
+        console.log("🎰 [SLOT-MACHINE] Updating options with:", newOptions.length, "items");
+
+        currentOptions = newOptions;
+        selectedIndex = -1; // Don't auto-select any item
+
+        if (newOptions.length === 0) {
+          console.log("🎰 [SLOT-MACHINE] No options, showing empty state");
+          // Show empty state
+          addressList.innerHTML = "";
+          showSlotEmpty();
+          selectBtn.disabled = true;
+        } else {
+          console.log("🎰 [SLOT-MACHINE] Updating with", newOptions.length, "options");
+
+          // Update the HTML with fixed height items
+          addressList.innerHTML = newOptions
+            .map(
+              (option, index) => `
+                <li class="slot-machine-item flex items-center justify-center h-12 text-center cursor-pointer transition-all duration-200 hover:bg-blue-50 dark:hover:bg-blue-900/20" data-index="${index}" data-value="${option.value}">
+                  <span class="text-sm font-medium text-gray-900 dark:text-white px-4">${option.label}</span>
+                </li>
+              `
+            )
+            .join("");
+
+          console.log("🎰 [SLOT-MACHINE] HTML updated, showing results");
+
+          // Show results without auto-selecting
+          showSlotResults();
+          // Position list at top (no dead space) since no item is selected
+          setTimeout(() => {
+            centerSelectedItem();
+          }, 10);
+        }
+      }
+
+      // Add search input event listeners
+      if (searchInput) {
+        let searchTimeout: NodeJS.Timeout;
+
+        searchInput.addEventListener("input", (e) => {
+          const query = (e.target as HTMLInputElement).value.trim();
+
+          if (searchTimeout) {
+            clearTimeout(searchTimeout);
+          }
+
+          if (query.length >= 2) {
+            searchTimeout = setTimeout(() => {
+              searchInSlotMachine(query);
+            }, 300);
+          } else if (query.length === 0) {
+            // Reset to original options if search is cleared
+            updateSlotMachineOptions(options);
+          } else {
+            // Show empty state for 1 character
+            showSlotEmpty();
+          }
+        });
+
+        searchInput.addEventListener("keypress", (e) => {
+          if (e.key === "Enter") {
+            e.preventDefault();
+            const query = searchInput.value.trim();
+            if (query.length >= 2) {
+              if (searchTimeout) {
+                clearTimeout(searchTimeout);
+              }
+              searchInSlotMachine(query);
+            }
+          }
+        });
+      }
+
+      if (searchBtn) {
+        searchBtn.addEventListener("click", () => {
+          const query = searchInput?.value.trim();
+          if (query && query.length >= 2) {
+            searchInSlotMachine(query);
+          }
+        });
+      }
+
+      // Initialize with a small delay to ensure DOM is ready
+      setTimeout(() => {
+        if (currentOptions.length > 0) {
+          showSlotResults();
+          // Position list at top (no dead space) since no item is selected
+          centerSelectedItem();
+        } else {
+          showSlotEmpty();
+        }
+      }, 50);
+    }
+
+    // Get detailed place information using our server-side proxy endpoint
+    async function getPlaceDetails(placeId: string, description: string) {
       showLoading();
 
-      const request = {
-        placeId: placeId,
-        fields: ["formatted_address", "geometry", "address_components"],
-      };
+      try {
+        // Use our server-side proxy endpoint to avoid CORS issues
+        const requestUrl = `/api/places-details?place_id=${placeId}&fields=formatted_address,name,address_components`;
 
-      placesService.getDetails(request, (place: any, status: any) => {
-        hideLoading();
+        console.log("🔍 [CUSTOM-PLACES] Getting place details for:", placeId);
 
-        if (status === (window as any).google?.maps?.places?.PlacesServiceStatus?.OK && place) {
+        const response = await fetch(requestUrl);
+        const data = await response.json();
+
+        console.log("🔍 [CUSTOM-PLACES] Place details response:", {
+          status: data.status,
+          result: !!data.result,
+        });
+
+        if (data.status === "OK" && data.result) {
           // Update the hidden input with the selected address
-          const formattedAddress = place.formatted_address || description;
+          const formattedAddress = data.result.formatted_address || description;
           hiddenInput.value = formattedAddress;
 
           // Show selected address
           showSelectedAddress(formattedAddress);
 
-          // Close the modal
-          const modal = document.getElementById(`${componentId}-address-modal`);
-          modal?.remove();
+          // Close the slot machine modal
+          const slotModal = document.getElementById(`${componentId}-slot-machine-modal`);
+          slotModal?.remove();
+          unlockBodyScroll();
 
           // Trigger change event
           hiddenInput.dispatchEvent(new Event("change", { bubbles: true }));
@@ -503,73 +1091,52 @@ const {
         } else {
           showError("Failed to get address details. Please try again.");
         }
-      });
+      } catch (error) {
+        console.error("🚨 [CUSTOM-PLACES] Get place details error:", error);
+        showError("Failed to get address details. Please try again.");
+      } finally {
+        hideLoading();
+      }
     }
 
     // Event listeners
-    searchBtn.addEventListener("click", () => {
-      searchPlaces(searchInput.value);
-    });
-
-    searchInput.addEventListener("keypress", (e) => {
-      if (e.key === "Enter") {
-        e.preventDefault();
-        searchPlaces(searchInput.value);
-      }
-    });
-
-    // Auto-search as user types (with debounce)
-    let searchTimeout: NodeJS.Timeout;
-    searchInput.addEventListener("input", (e) => {
-      const target = e.target as HTMLInputElement;
-      const query = target.value.trim();
-
-      // Clear previous timeout
-      if (searchTimeout) {
-        clearTimeout(searchTimeout);
-      }
-
-      // Hide any previous results
-      hideError();
-
-      // Only search if user has typed at least 3 characters
-      if (query.length >= 3) {
-        // Show loading indicator while waiting
-        loadingIndicator?.classList.remove("hidden");
-        searchBtn.disabled = true;
-
-        searchTimeout = setTimeout(() => {
-          searchPlaces(query);
-        }, 500); // Wait 500ms after user stops typing
-      } else if (query.length === 0) {
-        // Clear results if input is empty
-        hideSelectedAddress();
-        hiddenInput.value = "";
-      } else {
-        // Hide loading if query is too short
-        loadingIndicator?.classList.add("hidden");
-        searchBtn.disabled = false;
-      }
+    addBtn.addEventListener("click", () => {
+      console.log("🔍 [CUSTOM-PLACES] Add Address button clicked");
+      showAddressSearchModal();
     });
 
     clearBtn?.addEventListener("click", clearSelection);
 
-    // Initialize services when Google Maps is available
-    if (typeof (window as any).google !== "undefined" && (window as any).google.maps) {
-      initializePlacesServices();
-    } else {
-      // Wait for Google Maps to load via custom event
-      window.addEventListener("googleMapsLoaded", () => {
-        setTimeout(() => {
-          if (initializePlacesServices()) {
-            console.log(
-              "🗺️ [CUSTOM-PLACES] Google Places services initialized after googleMapsLoaded event"
-            );
-          } else {
-            console.error("🚨 [CUSTOM-PLACES] Failed to initialize Google Places services");
+    // Initialize component
+    function initializeComponent() {
+      console.log("🗺️ [CUSTOM-PLACES] Component initialized successfully");
+    }
+
+    // Start initialization
+    initializeComponent();
+
+    // Cleanup function to unlock scroll if component is destroyed
+    const cleanup = () => {
+      unlockBodyScroll();
+    };
+
+    // Add cleanup on page unload
+    window.addEventListener("beforeunload", cleanup);
+
+    // Also cleanup if the component container is removed
+    const observer = new MutationObserver((mutations) => {
+      mutations.forEach((mutation) => {
+        mutation.removedNodes.forEach((node) => {
+          if (node === container) {
+            cleanup();
+            observer.disconnect();
           }
-        }, 100);
+        });
       });
+    });
+
+    if (container.parentNode) {
+      observer.observe(container.parentNode, { childList: true });
     }
   });
 </script>
@@ -587,5 +1154,82 @@ const {
     transition-property: transform;
     transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
     transition-duration: 300ms;
+  }
+
+  /* Prevent body scrolling when modal is open */
+  body.modal-open {
+    overflow: hidden !important;
+    position: fixed !important;
+    width: 100% !important;
+    height: 100% !important;
+  }
+
+  /* Alternative approach for better browser compatibility */
+  body.modal-open-alt {
+    overflow: hidden !important;
+    height: 100vh !important;
+  }
+
+  /* Slot machine container styling */
+  .slot-machine-container {
+    min-height: 12rem !important;
+    max-height: 12rem !important;
+    height: 12rem !important;
+    display: block !important;
+  }
+
+  /* Ensure the slot machine list takes full height */
+  .slot-machine-container ul {
+    height: 100% !important;
+    min-height: 12rem !important;
+    position: absolute !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+  }
+
+  /* Ensure slot machine items are visible */
+  .slot-machine-item {
+    min-height: 3rem !important;
+    height: 3rem !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    transition: all 0.2s ease-in-out;
+  }
+
+  /* Checkmark pulse animation */
+  @keyframes checkmarkPulse {
+    0%,
+    100% {
+      opacity: 1;
+      transform: translateY(-50%) scale(1);
+      text-shadow: 0 0 8px rgba(16, 185, 129, 0.6);
+    }
+    50% {
+      opacity: 0.8;
+      transform: translateY(-50%) scale(1.1);
+      text-shadow: 0 0 12px rgba(16, 185, 129, 0.8);
+    }
+  }
+
+  @keyframes checkmarkPulseDark {
+    0%,
+    100% {
+      opacity: 1;
+      transform: translateY(-50%) scale(1);
+      text-shadow: 0 0 8px rgba(16, 185, 129, 0.8);
+    }
+    50% {
+      opacity: 0.9;
+      transform: translateY(-50%) scale(1.1);
+      text-shadow: 0 0 16px rgba(16, 185, 129, 1);
+    }
+  }
+
+  /* Empty state styling */
+  .slot-empty-state {
+    transition: opacity 0.3s ease-in-out;
   }
 </style>
