@@ -13,8 +13,19 @@ const { currentLocale } = Astro;
 const i18n = getI18N({ currentLocale });
 
 // Fetch featured projects directly from database to avoid DNS issues
-let featuredProjects = [];
-let error = null;
+interface Project {
+  id: number;
+  title: string;
+  address: string;
+  description?: string;
+  squareFootage: number | null;
+  isNewConstruction: boolean | null;
+  completedAt: string;
+  featured: string;
+}
+
+let featuredProjects: Project[] = [];
+let error: string | null = null;
 
 try {
   console.log("🏗️ [PROJECTS] Fetching featured projects directly from database");
@@ -189,7 +200,7 @@ function formatDate(dateString: string | null | undefined): string {
           </div>
 
           <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {featuredProjects.map((project: any) => (
+            {featuredProjects.map((project) => (
               <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden group">
                 <!-- Project Header -->
                 <div class="p-6 border-b border-gray-200 dark:border-gray-700">
