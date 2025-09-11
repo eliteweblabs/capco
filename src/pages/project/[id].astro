@@ -192,7 +192,7 @@ if (supabase) {
       profileQueries.push(
         supabase
           .from("profiles")
-          .select("id, company_name, role")
+          .select("id, company_name, role, email")
           .eq("id", project.author_id)
           .maybeSingle()
       );
@@ -202,7 +202,7 @@ if (supabase) {
       profileQueries.push(
         supabase
           .from("profiles")
-          .select("id, company_name, role")
+          .select("id, company_name, role, email")
           .eq("id", project.assigned_to_id)
           .maybeSingle()
       );
@@ -231,27 +231,12 @@ if (supabase) {
       // });
 
       if (profileData && !profileError) {
-        // Get email from auth system
-        let authorEmail = "";
-        if (supabaseAdmin) {
-          try {
-            const { data: authData, error: authError } = await supabaseAdmin.auth.admin.getUserById(
-              project.author_id
-            );
-            if (!authError && authData.user) {
-              authorEmail = authData.user.email || "";
-            }
-          } catch (error) {
-            console.error("Error fetching author email:", error);
-          }
-        }
-
         authorProfile = {
           id: profileData.id,
           display_name: profileData.company_name || "Unknown User",
           role: profileData.role || "Unknown",
           company_name: profileData.company_name,
-          email: authorEmail,
+          email: profileData.email || "",
           profile: profileData,
         };
       } else {

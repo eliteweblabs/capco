@@ -17,23 +17,9 @@ export const POST: APIRoute = async ({ request }) => {
     }
 
     if (!supabase) {
-      // For demo purposes, simulate a successful assignment when database is not configured
-      return new Response(
-        JSON.stringify({
-          success: true,
-          message: `Demo: Project ${projectId} assigned to ${assigned_to_name || "Unassigned"} (No database interaction)`,
-          notificationData: {
-            type: "success",
-            title: "Staff Assigned",
-            message: `Project assigned to ${assigned_to_name || "Unassigned"}`,
-            duration: 3000,
-          },
-        }),
-        {
-          status: 200,
-          headers: { "Content-Type": "application/json" },
-        }
-      );
+      return new Response(JSON.stringify({ error: "Database connection not available" }), {
+        status: 500,
+      });
     }
 
     // Update the project with the new staff assignment
@@ -61,7 +47,7 @@ export const POST: APIRoute = async ({ request }) => {
       );
     }
 
-    console.log("📧 [ASSIGN-STAFF] Project updated successfully:", projectData);
+    // console.log("📧 [ASSIGN-STAFF] Project updated successfully:", projectData);
 
     // If a staff member was assigned (not unassigned), send email notification
     if (assigned_to_id && assigned_to_name) {
@@ -107,12 +93,12 @@ export const POST: APIRoute = async ({ request }) => {
             console.error("📧 [ASSIGN-STAFF] Error fetching assigned staff email:", staffError);
           } else {
             staffEmail = staffData?.email || null;
-            console.log("📧 [ASSIGN-STAFF] Assigned staff email:", staffEmail);
+            // console.log("📧 [ASSIGN-STAFF] Assigned staff email:", staffEmail);
           }
 
           // Send email to assigned staff member
           if (staffEmail) {
-            console.log("📧 [ASSIGN-STAFF] Sending staff email to:", staffEmail);
+            // console.log("📧 [ASSIGN-STAFF] Sending staff email to:", staffEmail);
             const staffEmailData = {
               usersToNotify: [staffEmail],
               emailSubject: `New Project Assignment → ${projectDetails.address}`,
@@ -120,7 +106,7 @@ export const POST: APIRoute = async ({ request }) => {
               buttonLink: `${baseUrl}/project/${projectId}`,
               buttonText: "View Project",
             };
-            console.log("📧 [ASSIGN-STAFF] Staff email data:", staffEmailData);
+            // console.log("📧 [ASSIGN-STAFF] Staff email data:", staffEmailData);
 
             const staffEmailResponse = await fetch(`${baseUrl}/api/email-delivery`, {
               method: "POST",
@@ -143,7 +129,7 @@ export const POST: APIRoute = async ({ request }) => {
 
           // Send email to admins
           if (adminEmails.length > 0) {
-            console.log("📧 [ASSIGN-STAFF] Sending admin email to:", adminEmails);
+            // console.log("📧 [ASSIGN-STAFF] Sending admin email to:", adminEmails);
             const adminEmailData = {
               usersToNotify: adminEmails,
               emailSubject: `Project Assigned → ${projectDetails.address} → ${assigned_to_name}`,
@@ -163,7 +149,7 @@ export const POST: APIRoute = async ({ request }) => {
 
             if (adminEmailResponse.ok) {
               const adminEmailResult = await adminEmailResponse.json();
-              console.log("📧 [ASSIGN-STAFF] Admin email sent successfully:", adminEmailResult);
+              // console.log("📧 [ASSIGN-STAFF] Admin email sent successfully:", adminEmailResult);
             } else {
               const errorText = await adminEmailResponse.text();
               console.error("📧 [ASSIGN-STAFF] Failed to send admin email:", errorText);

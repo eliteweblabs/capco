@@ -4,7 +4,6 @@
 
 import { createClient } from "@supabase/supabase-js";
 import type { PlaceholderData } from "./placeholder-utils";
-import { supabaseAdmin } from "./supabase-admin";
 
 const supabase = createClient(
   import.meta.env.PUBLIC_SUPABASE_URL as string,
@@ -75,7 +74,7 @@ export async function getProfileData(userId: string): Promise<ProfileData | null
   // Get profile data from profiles table
   const { data: profileData, error: profileError } = await supabase
     .from("profiles")
-    .select("id, company_name, first_name, last_name, role")
+    .select("id, company_name, first_name, last_name, role, email")
     .eq("id", userId)
     .single();
 
@@ -84,23 +83,10 @@ export async function getProfileData(userId: string): Promise<ProfileData | null
     return null;
   }
 
-  // Get email from auth.users table using admin client
-  if (!supabaseAdmin) {
-    console.error("🗄️ [DATABASE-UTILS] ❌ Supabase admin client not available");
-    return null;
-  }
-
-  const { data: authData, error: authError } = await supabaseAdmin.auth.admin.getUserById(userId);
-
-  if (authError || !authData.user) {
-    console.error("🗄️ [DATABASE-UTILS] ❌ Error fetching auth data:", authError);
-    return null;
-  }
-
   const result = {
     id: profileData.id,
     company_name: profileData.company_name,
-    email: authData.user.email || "",
+    email: profileData.email || "",
   };
 
   console.log("🗄️ [DATABASE-UTILS] ✅ Profile data retrieved (merged with auth):", {

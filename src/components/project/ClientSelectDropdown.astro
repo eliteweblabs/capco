@@ -21,14 +21,14 @@ const {
   currentRole = undefined, // No role filter by default
 } = Astro.props;
 
-// Fetch all users from profiles table + emails from auth.users table
+// Fetch all users from profiles table (includes email)
 let users: any[] = [];
 let error = null;
 
 if (supabase) {
   try {
     // First, get profiles (name, role, id) with optional role filtering
-    let profilesQuery = supabase.from("profiles").select("id, company_name, role");
+    let profilesQuery = supabase.from("profiles").select("id, company_name, role, email");
 
     // Apply role filter if specified
     if (currentRole) {

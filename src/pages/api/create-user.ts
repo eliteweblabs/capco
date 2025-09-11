@@ -6,36 +6,19 @@ import { supabaseAdmin } from "../../lib/supabase-admin";
 import { getApiBaseUrl } from "../../lib/url-utils";
 
 export const POST: APIRoute = async ({ request, cookies }) => {
-  console.log("=== CREATE STAFF API CALLED ===");
-  console.log("Request headers:", Object.fromEntries(request.headers.entries()));
+  // console.log("=== CREATE STAFF API CALLED ===");
+  // console.log("Request headers:", Object.fromEntries(request.headers.entries()));
   try {
     // console.log("1. Starting create-user endpoint");
 
     // Check if Supabase is configured
     // console.log("2. Checking Supabase configuration:", !!supabase);
-    if (!supabase) {
+    if (!supabase || !supabaseAdmin) {
       console.log("ERROR: Supabase not configured");
       return new Response(
         JSON.stringify({
           success: false,
           error: "Supabase is not configured",
-        }),
-        {
-          status: 500,
-          headers: { "Content-Type": "application/json" },
-        }
-      );
-    }
-
-    // Ensure admin client is configured for user creation
-    // console.log("2b. Checking Supabase admin configuration:", !!supabaseAdmin);
-    if (!supabaseAdmin) {
-      console.log("ERROR: Supabase admin client not configured");
-      return new Response(
-        JSON.stringify({
-          success: false,
-          error:
-            "Supabase admin client is not configured. Ensure SUPABASE_SERVICE_ROLE_KEY is set.",
         }),
         {
           status: 500,
@@ -169,12 +152,13 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
       email: email.trim().toLowerCase(),
       password: tempPassword,
-      email_confirm: true, // Auto-confirm email
+      email_confirm: false, // Auto-confirm email
       user_metadata: {
         full_name: company_name?.trim() || `${first_name.trim()} ${last_name.trim()}`,
         role: staffRole,
         created_by_admin: true,
         must_change_password: true,
+        email: email.trim().toLowerCase(),
       },
     });
 
@@ -357,6 +341,10 @@ The user will receive a magic link to access their account.`;
         const welcomeContent = `Welcome to the new CAPCo Fire Protection App!<br><br>
 
 CAPCo Fire has a new website that allows you to submit fire protection project requests, upload documents, track the status of your projects, and download completed documents all in one place.<br><br>
+
+Our fire protection services will be even faster and more secure with this new web application.<br><br>
+
+Please use discussions section on projects to communicate with us, or the contact widget on the bottom right of the screen to reach us instantly.<br><br>
 
 Your account has been created successfully:<br><br>
 

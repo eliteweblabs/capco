@@ -35,7 +35,6 @@ import type { APIRoute } from "astro";
 import { checkAuth } from "../../lib/auth";
 import { SimpleProjectLogger } from "../../lib/simple-logging";
 import { supabase } from "../../lib/supabase";
-import { supabaseAdmin } from "../../lib/supabase-admin";
 import { getApiBaseUrl } from "../../lib/url-utils";
 
 export const OPTIONS: APIRoute = async () => {
@@ -154,28 +153,8 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         });
       }
 
-      // Get client email from auth.users using admin client
-      if (!supabaseAdmin) {
-        console.error("📊 [UPDATE-STATUS] Supabase admin client not available");
-        return new Response(JSON.stringify({ error: "Admin client not available" }), {
-          status: 500,
-          headers: { "Content-Type": "application/json" },
-        });
-      }
-
-      const { data: authData, error: authError } = await supabaseAdmin.auth.admin.getUserById(
-        updatedProject.author_id
-      );
-
-      if (authError || !authData.user) {
-        console.error("📊 [UPDATE-STATUS] Auth error:", authError);
-        return new Response(JSON.stringify({ error: "Failed to get client email" }), {
-          status: 500,
-          headers: { "Content-Type": "application/json" },
-        });
-      }
-
-      const clientEmail = authData.user.email || "";
+      // Get client email from profiles table (already fetched above)
+      const clientEmail = authorProfile?.email || "";
 
       // Prepare placeholder data
       const placeholderData = {
