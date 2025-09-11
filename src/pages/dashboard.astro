@@ -33,10 +33,11 @@ console.log("🔍 [DASHBOARD] Auth check results:", {
 //   refreshTokenLength: refreshToken?.value?.length || 0,
 // });
 
-// Fetch projects and statuses from API
+// Fetch projects, statuses, and client data from API
 let projects: any[] = [];
 let project_statuses: any[] = [];
 let project_statuses_object: any = {};
+let clientProfiles: any[] = [];
 
 try {
   // Fetch projects directly from database to avoid DNS issues
@@ -66,6 +67,7 @@ try {
           assigned_to_id
         `
           )
+          .neq("id", 0) // Exclude system log project
           .order("updated_at", { ascending: false })
       : await supabase
           .from("projects")
@@ -84,6 +86,7 @@ try {
           assigned_to_id
         `
           )
+          .neq("id", 0) // Exclude system log project
           .order("updated_at", { ascending: false });
 
     if (error) {
@@ -161,6 +164,34 @@ try {
   // Keep object format for project actions (make it global for script)
   project_statuses_object = statusLabels || {};
 
+  // Fetch client profiles for dropdowns and forms
+  if (isAuth && supabase) {
+    try {
+      console.log("👥 [DASHBOARD] Fetching client profiles for forms...");
+
+      const { data: profiles, error: profilesError } = supabaseAdmin
+        ? await supabaseAdmin
+            .from("profiles")
+            .select("id, company_name, role")
+            .eq("role", "Client")
+            .order("company_name")
+        : await supabase
+            .from("profiles")
+            .select("id, company_name, role")
+            .eq("role", "Client")
+            .order("company_name");
+
+      if (profilesError) {
+        console.error("👥 [DASHBOARD] Client profiles error:", profilesError);
+      } else {
+        clientProfiles = profiles || [];
+        console.log(`👥 [DASHBOARD] Loaded ${clientProfiles.length} client profiles`);
+      }
+    } catch (error) {
+      console.error("👥 [DASHBOARD] Error fetching client profiles:", error);
+    }
+  }
+
   // Debug: Log the converted array to see if client_status_name is preserved
   console.log("🔍 [DASHBOARD] Converted project_statuses array:", project_statuses.slice(0, 3));
   console.log(
@@ -203,8 +234,19 @@ try {
 </App>
 
 <script
-  define:vars={{ projects, project_statuses, project_statuses_object, currentRole, currentUser }}
+  define:vars={{
+    projects,
+    project_statuses,
+    project_statuses_object,
+    currentRole,
+    currentUser,
+    clientProfiles,
+  }}
 >
+  // Make client profiles available globally for components
+  (window as any).globalClientProfiles = clientProfiles;
+  console.log("👥 [DASHBOARD] Made client profiles available globally:", clientProfiles.length);
+
   // Project Action Notification System - Only for Clients
   document.addEventListener("DOMContentLoaded", async function () {
     console.log("🔔 [PROJECT-ACTIONS] Initializing project action notifications...");

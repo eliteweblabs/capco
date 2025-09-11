@@ -1,5 +1,6 @@
 // Simple Project Logging - Just append to a JSON column
 import { supabase } from "./supabase";
+import { supabaseAdmin } from "./supabase-admin";
 
 export interface SimpleLogEntry {
   timestamp: string;
@@ -459,8 +460,8 @@ export class SimpleProjectLogger {
     newValue?: any
   ): Promise<boolean> {
     try {
-      if (!supabase) {
-        console.error("Supabase not configured");
+      if (!supabaseAdmin) {
+        console.error("Supabase admin not configured");
         return false;
       }
 
@@ -479,7 +480,7 @@ export class SimpleProjectLogger {
       await this.ensureSystemLogProject();
 
       // Get current system log to append to existing log
-      const { data: project, error: fetchError } = await supabase
+      const { data: project, error: fetchError } = await supabaseAdmin
         .from("projects")
         .select("log")
         .eq("id", 0)
@@ -495,7 +496,7 @@ export class SimpleProjectLogger {
       const updatedLog = [...currentLog, logEntry];
 
       // Update the system project with the new log
-      const { error: updateError } = await supabase
+      const { error: updateError } = await supabaseAdmin
         .from("projects")
         .update({ log: updatedLog })
         .eq("id", 0);
@@ -518,10 +519,10 @@ export class SimpleProjectLogger {
    */
   private static async ensureSystemLogProject(): Promise<void> {
     try {
-      if (!supabase) return;
+      if (!supabaseAdmin) return;
 
       // Check if system project exists
-      const { data: existing, error: checkError } = await supabase
+      const { data: existing, error: checkError } = await supabaseAdmin
         .from("projects")
         .select("id")
         .eq("id", 0)
@@ -529,7 +530,7 @@ export class SimpleProjectLogger {
 
       if (checkError && checkError.code === "PGRST116") {
         // Project doesn't exist, create it
-        const { error: createError } = await supabase.from("projects").insert([
+        const { error: createError } = await supabaseAdmin.from("projects").insert([
           {
             id: 0,
             title: "System Log",
@@ -556,12 +557,12 @@ export class SimpleProjectLogger {
    */
   static async getUserActivityLog(): Promise<SimpleLogEntry[]> {
     try {
-      if (!supabase) {
-        console.error("Supabase not configured");
+      if (!supabaseAdmin) {
+        console.error("Supabase admin not configured");
         return [];
       }
 
-      const { data: project, error } = await supabase
+      const { data: project, error } = await supabaseAdmin
         .from("projects")
         .select("log")
         .eq("id", 0)

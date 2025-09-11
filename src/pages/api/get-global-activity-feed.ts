@@ -60,7 +60,8 @@ export const GET: APIRoute = async ({ cookies, url }) => {
       `
       )
       .not("log", "is", null)
-      .neq("log", "[]");
+      .neq("log", "[]")
+      .neq("id", 0); // Exclude system log project
 
     if (projectsError) {
       console.error("Error fetching projects with logs:", projectsError);

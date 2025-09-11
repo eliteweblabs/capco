@@ -858,23 +858,23 @@ const {
     showError(message) {
       // Use centralized notification system
       if (typeof window !== "undefined" && window.showModal) {
-        window.showModal("Upload Error", message, "error");
+        window.showModal("error", "Upload Error", message);
       } else {
         console.error("❌ Error:", message);
       }
     }
 
     showSuccess(message) {
-      console.log("🔔 [PDF-UPLOAD] showSuccess called with:", message);
+      console.log("🔔 [PDF-UPLOAD] showModal called with:", message);
       console.log(
-        "🔔 [PDF-UPLOAD] window.showSuccess available:",
-        typeof window !== "undefined" && window.showSuccess
+        "🔔 [PDF-UPLOAD] window.showModal available:",
+        typeof window !== "undefined" && window.showModal
       );
 
       // Use centralized notification system
-      if (typeof window !== "undefined" && window.showSuccess) {
-        console.log("🔔 [PDF-UPLOAD] Calling window.showSuccess");
-        window.showSuccess("Success", message, 5000);
+      if (typeof window !== "undefined" && window.showModal) {
+        console.log("🔔 [PDF-UPLOAD] Calling window.showModal");
+        window.showModal("success", "Success", message, 5000);
       } else {
         console.log("✅ Success:", message);
       }
@@ -1122,8 +1122,8 @@ const {
           }
 
           // Show success message
-          if (window.showSuccess) {
-            window.showSuccess("File Deleted", "File has been successfully deleted.");
+          if (window.showModal) {
+            window.showModal("success", "File Deleted", "File has been successfully deleted.");
           }
         } else {
           const errorData = await response.json().catch(() => ({ error: "Unknown error" }));

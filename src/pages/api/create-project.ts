@@ -78,8 +78,9 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       // If current user is admin/staff, handle new client creation or existing client
       if (body.new_client === "on") {
         // Create new client using the existing create-user endpoint
-        const { first_name, last_name, company_name, email } = body;
+        const { first_name, last_name, company_name, email, author_id } = body;
 
+        // Validate that we have new client data and no conflicting existing client data
         if (!first_name?.trim() || !last_name?.trim() || !email?.trim()) {
           return new Response(
             JSON.stringify({
@@ -87,6 +88,13 @@ export const POST: APIRoute = async ({ request, cookies }) => {
               details: "Please fill in all required fields for the new client",
             }),
             { status: 400 }
+          );
+        }
+
+        // If author_id is present when new_client is on, it might be stale data
+        if (author_id) {
+          console.log(
+            "📝 [CREATE-PROJECT] Warning: author_id present when new_client is on - this might be stale data"
           );
         }
 
@@ -139,15 +147,28 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         }
       } else {
         // Use existing client from form
-        if (!body.author_id) {
+        const { author_id, first_name, last_name, email } = body;
+
+        if (!author_id) {
           return new Response(
-            JSON.stringify({ error: "Author ID is required for admin/staff users" }),
+            JSON.stringify({
+              error: "Author ID is required for admin/staff users",
+              details: "Please select an existing client or toggle to create a new client",
+            }),
             {
               status: 400,
             }
           );
         }
-        projectAuthorId = body.author_id;
+
+        // If new client data is present when using existing client, it might be stale data
+        if (first_name || last_name || email) {
+          console.log(
+            "📝 [CREATE-PROJECT] Warning: new client data present when using existing client - this might be stale data"
+          );
+        }
+
+        projectAuthorId = author_id;
         console.log(
           "📝 [CREATE-PROJECT] Admin/Staff user - using existing client ID:",
           projectAuthorId

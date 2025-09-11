@@ -144,11 +144,11 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     for (const user of users) {
       try {
         // Use the existing create-user endpoint
-        const createUserResponse = await fetch(`${import.meta.env.SITE_URL || "https://capcofire.com"}/api/create-user`, {
+        const createUserResponse = await fetch(`${new URL(request.url).origin}/api/create-user`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            "Cookie": request.headers.get("Cookie") || "",
+            Cookie: request.headers.get("Cookie") || "",
           },
           body: JSON.stringify({
             first_name: user.first_name.trim(),
@@ -215,4 +215,3 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     );
   }
 };
-
