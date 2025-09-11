@@ -12,7 +12,7 @@ import ToggleButton from "../form/ToggleButton.astro";
 import UnitSlider from "../form/UnitSlider.astro";
 import StaffSelect from "./StaffSelectDropdown.astro";
 import GoogleAddressAutocomplete from "../form/GoogleAddressAutocomplete.astro";
-import IsNewOrExistingClient from "./IsNewOrExistingClient.astro";
+import SlotMachineModal from "../form/SlotMachineModal.astro";
 import CustomPlacesInput from "../form/CustomPlacesInput.astro";
 
 interface Props {
@@ -98,10 +98,132 @@ const formActions = getFilteredFormActions(currentRole, isNewProject, projectSta
   autocomplete="off"
   novalidate
 >
-  <!-- New Client Toggle (Top of Form) -->
+  <!-- Client Information (Admin/Staff Only) -->
   {
     isNewProject && (currentRole === "Admin" || currentRole === "Staff") ? (
-      <IsNewOrExistingClient />
+      <div class="space-y-4">
+        <!-- Existing Client Selector -->
+        <div class="rounded-lg border border-gray-200 bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-800">
+          <label class="mb-2 block text-sm font-medium text-gray-900 dark:text-gray-100">
+            Select Existing Client (Optional)
+          </label>
+          <p class="mb-3 text-xs text-gray-500 dark:text-gray-400">
+            Choose an existing client to auto-fill the form, or fill in the fields below manually
+          </p>
+          
+          <!-- Existing Client Slot Machine -->
+          <div id="existing-client-select-container">
+            <SlotMachineModal
+              id="existing-client-select"
+              name="author_id"
+              title="Select Existing Client"
+              options={[]}
+              selectedValue=""
+              placeholder="Choose an existing client..."
+              theme="blue"
+              showCloseButton={true}
+              showCancelButton={true}
+              buttonText="Select Client"
+              skipSaveToAPI={true}
+              onSelect="handleExistingClientSelect"
+            />
+            
+            <script>
+              // Load existing clients for the slot machine
+              document.addEventListener("DOMContentLoaded", async function() {
+                try {
+                  const response = await fetch("/api/get-clients");
+                  const data = await response.json();
+                  
+                  if (data.success && data.clients) {
+                    const clientOptions = data.clients.map((client: any) => ({
+                      value: client.id,
+                      label: client.company_name || `${client.first_name} ${client.last_name}`,
+                      disabled: false
+                    }));
+                    
+                    // Update the slot machine options
+                    const slotMachine = document.getElementById("existing-client-select");
+                    if (slotMachine && (window as any).updateSlotMachineOptions) {
+                      (window as any).updateSlotMachineOptions("existing-client-select", clientOptions);
+                    }
+                  }
+                } catch (error) {
+                  console.error("Failed to load existing clients:", error);
+                }
+              });
+            </script>
+          </div>
+        </div>
+
+        <!-- New Client Fields (Always Visible) -->
+        <div class="rounded-lg border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-800">
+          <h3 class="mb-4 text-lg font-medium text-gray-900 dark:text-gray-100">
+            Client Information
+          </h3>
+          
+          <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <!-- First Name -->
+            <div>
+              <label for="first_name" class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                First Name *
+              </label>
+              <input
+                type="text"
+                id="first_name"
+                name="first_name"
+                required
+                class="w-full rounded-md border border-gray-300 px-3 py-2.5 text-sm text-gray-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:focus:border-blue-400 dark:focus:ring-blue-400"
+                placeholder="Enter first name"
+              />
+            </div>
+
+            <!-- Last Name -->
+            <div>
+              <label for="last_name" class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                Last Name *
+              </label>
+              <input
+                type="text"
+                id="last_name"
+                name="last_name"
+                required
+                class="w-full rounded-md border border-gray-300 px-3 py-2.5 text-sm text-gray-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:focus:border-blue-400 dark:focus:ring-blue-400"
+                placeholder="Enter last name"
+              />
+            </div>
+
+            <!-- Company Name -->
+            <div>
+              <label for="company_name" class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                Company Name
+              </label>
+              <input
+                type="text"
+                id="company_name"
+                name="company_name"
+                class="w-full rounded-md border border-gray-300 px-3 py-2.5 text-sm text-gray-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:focus:border-blue-400 dark:focus:ring-blue-400"
+                placeholder="Enter company name"
+              />
+            </div>
+
+            <!-- Email -->
+            <div>
+              <label for="email" class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                Email *
+              </label>
+              <input
+                type="email"
+                id="email"
+                name="email"
+                required
+                class="w-full rounded-md border border-gray-300 px-3 py-2.5 text-sm text-gray-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:focus:border-blue-400 dark:focus:ring-blue-400"
+                placeholder="Enter email address"
+              />
+            </div>
+          </div>
+        </div>
+      </div>
     ) : (
       ""
     )
@@ -392,7 +514,7 @@ const formActions = getFilteredFormActions(currentRole, isNewProject, projectSta
   </div>
 </form>
 
-<script>
+<script define:vars={{ isNewProject, currentRole }}>
   // Extend Window interface for notification manager
   declare global {
     interface Window {
@@ -1102,5 +1224,45 @@ const formActions = getFilteredFormActions(currentRole, isNewProject, projectSta
         target.value = target.value.replace(/[^0-9]/g, "");
       });
     });
+
+    // Handle existing client selection for admin/staff users
+    if (isNewProject && (currentRole === "Admin" || currentRole === "Staff")) {
+      // Set up existing client selection handler
+      (window as any).handleExistingClientSelect = function(value: string, label: string, componentId: string) {
+        console.log("👤 [ProjectForm] Existing client selected:", { value, label, componentId });
+        
+        // Fetch client details and populate form fields
+        fetch(`/api/get-user-profile?userId=${value}`)
+          .then(response => response.json())
+          .then(data => {
+            if (data.success && data.profile) {
+              const profile = data.profile;
+              
+              // Populate form fields
+              const firstNameField = document.getElementById("first_name") as HTMLInputElement;
+              const lastNameField = document.getElementById("last_name") as HTMLInputElement;
+              const companyField = document.getElementById("company_name") as HTMLInputElement;
+              const emailField = document.getElementById("email") as HTMLInputElement;
+              
+              if (firstNameField) firstNameField.value = profile.first_name || "";
+              if (lastNameField) lastNameField.value = profile.last_name || "";
+              if (companyField) companyField.value = profile.company_name || "";
+              if (emailField) emailField.value = profile.email || "";
+              
+              console.log("👤 [ProjectForm] Form fields populated with client data:", {
+                first_name: profile.first_name,
+                last_name: profile.last_name,
+                company_name: profile.company_name,
+                email: profile.email
+              });
+            } else {
+              console.error("👤 [ProjectForm] Failed to fetch client profile:", data);
+            }
+          })
+          .catch(error => {
+            console.error("👤 [ProjectForm] Error fetching client profile:", error);
+          });
+      };
+    }
   });
 </script>

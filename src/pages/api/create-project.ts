@@ -1,6 +1,7 @@
 import type { APIRoute } from "astro";
 import { SimpleProjectLogger } from "../../lib/simple-logging";
 import { supabase } from "../../lib/supabase";
+import { supabaseAdmin } from "../../lib/supabase-admin";
 import { getApiBaseUrl } from "../../lib/url-utils";
 
 export const POST: APIRoute = async ({ request, cookies }) => {
@@ -75,104 +76,160 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       projectAuthorId = userId;
       console.log("📝 [CREATE-PROJECT] Client user - using their ID as author:", projectAuthorId);
     } else {
-      // If current user is admin/staff, handle new client creation or existing client
-      if (body.new_client === "on") {
-        // Create new client using the existing create-user endpoint
-        const { first_name, last_name, company_name, email, author_id } = body;
+      // If current user is admin/staff, check if client exists or create new one
+      const { first_name, last_name, company_name, email, author_id } = body;
 
-        // Validate that we have new client data and no conflicting existing client data
+      // Check if we should use existing client or create new one
+      if (author_id && author_id.trim()) {
+        // Use existing client
+        projectAuthorId = author_id;
+        console.log("📝 [CREATE-PROJECT] Using existing client ID:", projectAuthorId);
+      } else {
+        // Validate required fields
         if (!first_name?.trim() || !last_name?.trim() || !email?.trim()) {
           return new Response(
             JSON.stringify({
-              error: "First name, last name, and email are required for new clients",
-              details: "Please fill in all required fields for the new client",
+              error: "First name, last name, and email are required",
+              details: "Please fill in all required fields for the client",
             }),
             { status: 400 }
           );
         }
 
-        // If author_id is present when new_client is on, it might be stale data
-        if (author_id) {
-          console.log(
-            "📝 [CREATE-PROJECT] Warning: author_id present when new_client is on - this might be stale data"
-          );
-        }
-
-        console.log("📝 [CREATE-PROJECT] Creating new client using create-user endpoint");
-
-        try {
-          // Call the create-user API to create the new client
-          const baseUrl = getApiBaseUrl(request);
-          const createUserResponse = await fetch(`${baseUrl}/api/create-user`, {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              Cookie: `sb-access-token=${cookies.get("sb-access-token")?.value}; sb-refresh-token=${cookies.get("sb-refresh-token")?.value}`,
-            },
-            body: JSON.stringify({
-              first_name: first_name.trim(),
-              last_name: last_name.trim(),
-              company_name: company_name?.trim() || "",
-              email: email.trim(),
-              phone: "",
-              role: "Client",
-            }),
+        // Check if user with this email already exists
+        console.log("📝 [CREATE-PROJECT] Checking if user exists with email:", email);
+        if (!supabaseAdmin) {
+          return new Response(JSON.stringify({ error: "Database connection not available" }), {
+            status: 500,
           });
+        }
+        const { data: existingUser, error: userCheckError } = await supabaseAdmin
+          .from("profiles")
+          .select("id, email, role")
+          .eq("email", email.trim())
+          .single();
 
-          const createUserResult = await createUserResponse.json();
-
-          if (!createUserResponse.ok || !createUserResult.success) {
-            console.error("📝 [CREATE-PROJECT] Failed to create client:", createUserResult);
-            return new Response(
-              JSON.stringify({
-                error: createUserResult.error || "Failed to create client",
-                details: createUserResult.details || "Please try again",
-              }),
-              { status: createUserResponse.status }
-            );
-          }
-
-          // Use the created user's ID as the project author
-          projectAuthorId = createUserResult.user.id;
-          console.log("📝 [CREATE-PROJECT] New client created successfully, ID:", projectAuthorId);
-        } catch (error) {
-          console.error("📝 [CREATE-PROJECT] Error calling create-user endpoint:", error);
+        if (userCheckError && userCheckError.code !== "PGRST116") {
+          // PGRST116 is "not found" error, which is expected if user doesn't exist
+          console.error("📝 [CREATE-PROJECT] Error checking existing user:", userCheckError);
           return new Response(
             JSON.stringify({
-              error: "Failed to create client",
-              details: error instanceof Error ? error.message : "Unknown error",
+              error: "Failed to check existing user",
+              details: userCheckError.message,
             }),
             { status: 500 }
           );
         }
-      } else {
-        // Use existing client from form
-        const { author_id, first_name, last_name, email } = body;
 
-        if (!author_id) {
-          return new Response(
-            JSON.stringify({
-              error: "Author ID is required for admin/staff users",
-              details: "Please select an existing client or toggle to create a new client",
-            }),
-            {
-              status: 400,
+        if (existingUser) {
+          // User exists, check if profile needs updating
+          projectAuthorId = existingUser.id;
+          console.log("📝 [CREATE-PROJECT] User exists, using existing ID:", projectAuthorId);
+
+          // Get current profile to compare with form data
+          const { data: currentProfile, error: profileError } = await supabaseAdmin
+            .from("profiles")
+            .select("first_name, last_name, company_name")
+            .eq("id", existingUser.id)
+            .single();
+
+          if (profileError) {
+            console.error("📝 [CREATE-PROJECT] Error fetching current profile:", profileError);
+          } else if (currentProfile) {
+            // Check if any fields have changed
+            const hasChanges =
+              currentProfile.first_name !== first_name?.trim() ||
+              currentProfile.last_name !== last_name?.trim() ||
+              currentProfile.company_name !== company_name?.trim();
+
+            if (hasChanges) {
+              console.log("📝 [CREATE-PROJECT] Profile data has changed, updating profile:", {
+                old: {
+                  first_name: currentProfile.first_name,
+                  last_name: currentProfile.last_name,
+                  company_name: currentProfile.company_name,
+                },
+                new: {
+                  first_name: first_name?.trim(),
+                  last_name: last_name?.trim(),
+                  company_name: company_name?.trim(),
+                },
+              });
+
+              // Update the profile
+              const { error: updateError } = await supabaseAdmin
+                .from("profiles")
+                .update({
+                  first_name: first_name?.trim() || currentProfile.first_name,
+                  last_name: last_name?.trim() || currentProfile.last_name,
+                  company_name: company_name?.trim() || currentProfile.company_name,
+                  updated_at: new Date().toISOString(),
+                })
+                .eq("id", existingUser.id);
+
+              if (updateError) {
+                console.error("📝 [CREATE-PROJECT] Error updating profile:", updateError);
+                // Don't fail the project creation, just log the error
+              } else {
+                console.log("📝 [CREATE-PROJECT] Profile updated successfully");
+              }
+            } else {
+              console.log("📝 [CREATE-PROJECT] Profile data unchanged, no update needed");
             }
-          );
-        }
+          }
+        } else {
+          // User doesn't exist, create new client
+          console.log("📝 [CREATE-PROJECT] User doesn't exist, creating new client");
 
-        // If new client data is present when using existing client, it might be stale data
-        if (first_name || last_name || email) {
-          console.log(
-            "📝 [CREATE-PROJECT] Warning: new client data present when using existing client - this might be stale data"
-          );
-        }
+          try {
+            // Call the create-user API to create the new client
+            const baseUrl = getApiBaseUrl(request);
+            const createUserResponse = await fetch(`${baseUrl}/api/create-user`, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                Cookie: `sb-access-token=${cookies.get("sb-access-token")?.value}; sb-refresh-token=${cookies.get("sb-refresh-token")?.value}`,
+              },
+              body: JSON.stringify({
+                first_name: first_name.trim(),
+                last_name: last_name.trim(),
+                company_name: company_name?.trim() || "",
+                email: email.trim(),
+                phone: "",
+                role: "Client",
+              }),
+            });
 
-        projectAuthorId = author_id;
-        console.log(
-          "📝 [CREATE-PROJECT] Admin/Staff user - using existing client ID:",
-          projectAuthorId
-        );
+            const createUserResult = await createUserResponse.json();
+
+            if (!createUserResponse.ok || !createUserResult.success) {
+              console.error("📝 [CREATE-PROJECT] Failed to create client:", createUserResult);
+              return new Response(
+                JSON.stringify({
+                  error: createUserResult.error || "Failed to create client",
+                  details: createUserResult.details || "Please try again",
+                }),
+                { status: createUserResponse.status }
+              );
+            }
+
+            // Use the created user's ID as the project author
+            projectAuthorId = createUserResult.user.id;
+            console.log(
+              "📝 [CREATE-PROJECT] New client created successfully, ID:",
+              projectAuthorId
+            );
+          } catch (error) {
+            console.error("📝 [CREATE-PROJECT] Error calling create-user endpoint:", error);
+            return new Response(
+              JSON.stringify({
+                error: "Failed to create client",
+                details: error instanceof Error ? error.message : "Unknown error",
+              }),
+              { status: 500 }
+            );
+          }
+        }
       }
     }
 
