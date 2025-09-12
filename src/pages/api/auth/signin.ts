@@ -1,7 +1,6 @@
 import type { Provider } from "@supabase/supabase-js";
 import type { APIRoute } from "astro";
 import { setAuthCookies } from "../../../lib/auth-cookies";
-import { ensureUserProfile } from "../../../lib/auth-utils";
 import { SimpleProjectLogger } from "../../../lib/simple-logging";
 import { supabase } from "../../../lib/supabase";
 
@@ -84,11 +83,7 @@ export const POST: APIRoute = async ({ request, cookies, redirect }) => {
     return new Response(error.message, { status: 500 });
   }
 
-  // Check if user has a profile, create one if not
-  if (data.user) {
-    console.log("Checking/creating profile for user:", data.user.id);
-    await ensureUserProfile(data.user);
-  }
+  // Profile will be automatically created by database trigger
 
   // Log successful login
   try {

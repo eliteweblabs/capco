@@ -1,6 +1,5 @@
 import type { APIRoute } from "astro";
 import { setAuthCookies } from "../../../lib/auth-cookies";
-import { ensureUserProfile } from "../../../lib/auth-utils";
 import { supabase } from "../../../lib/supabase";
 
 export const GET: APIRoute = async ({ url, cookies, redirect }) => {
@@ -74,11 +73,7 @@ export const GET: APIRoute = async ({ url, cookies, redirect }) => {
       return redirect("/login?message=verification_success");
     }
 
-    // Check if user has a profile, create one if not
-    if (data.user) {
-      console.log("Checking/creating profile for verified user:", data.user.id);
-      await ensureUserProfile(data.user);
-    }
+    // Profile will be automatically created by database trigger
 
     const { access_token, refresh_token } = data.session;
     console.log("Setting auth cookies for verified user");

@@ -7,11 +7,10 @@ export const POST: APIRoute = async ({ request, cookies }) => {
   console.log("🔔 [UPDATE-DISCUSSION] API endpoint called");
   try {
     // Check authentication
-    const { isAuth, currentUser, role } = await checkAuth(cookies);
+    const { isAuth, currentUser } = await checkAuth(cookies);
     console.log("🔔 [UPDATE-DISCUSSION] Auth check result:", {
       isAuth,
       hasUser: !!currentUser,
-      role,
     });
 
     if (!isAuth || !currentUser) {
@@ -20,15 +19,6 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         headers: { "Content-Type": "application/json" },
       });
     }
-
-    // Only Admin and Staff can update discussion status
-    // COMMENTED OUT: Allow any authenticated user to update discussion status
-    // if (role !== "Admin" && role !== "Staff") {
-    //   return new Response(JSON.stringify({ success: false, error: "Insufficient permissions" }), {
-    //     status: 403,
-    //     headers: { "Content-Type": "application/json" },
-    //   });
-    // }
 
     const body = await request.json();
     console.log("🔔 [UPDATE-DISCUSSION] Request body:", body);
@@ -56,13 +46,6 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       );
     }
 
-    console.log("🔔 [UPDATE-DISCUSSION] Updating discussion:", {
-      discussionId: discussionIdNum,
-      mark_completed,
-      userRole: role,
-      userId: currentUser.id,
-    });
-
     // First, check if the discussion exists and get its current state
     console.log(
       "🔍 [UPDATE-DISCUSSION] Looking for discussion with ID:",
@@ -70,6 +53,14 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       "Type:",
       typeof discussionIdNum
     );
+
+    if (!supabase || !supabaseAdmin) {
+      return new Response(JSON.stringify({ success: false, error: "Database not configured" }), {
+        status: 500,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+
     const { data: existingDiscussion, error: fetchError } = await supabase
       .from("discussion")
       .select("id, mark_completed")

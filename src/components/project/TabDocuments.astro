@@ -402,6 +402,20 @@ const {
           e.stopPropagation(); // Prevent accordion from opening/closing
         }
       });
+
+      // Event delegation for featured image toggles
+      this.fileList.addEventListener("change", (e) => {
+        if (e.target.classList.contains("featured-image-toggle")) {
+          e.stopPropagation(); // Prevent accordion from opening/closing
+          const toggle = e.target;
+          const fileId = toggle.getAttribute("data-file-id");
+          const isChecked = toggle.checked;
+
+          if (fileId) {
+            this.updateFeaturedImage(fileId, isChecked);
+          }
+        }
+      });
     }
 
     setupAccordionListeners() {
@@ -623,6 +637,32 @@ const {
                   placeholder="Add any notes or comments about this file"
                 >${fileComments || ""}</textarea>
               </div>
+              ${
+                currentRole === "Admin" || currentRole === "Staff"
+                  ? `
+              <div>
+                <label class="flex items-center gap-3 cursor-pointer">
+                  <div class="relative">
+                    <input 
+                      type="checkbox" 
+                      class="featured-image-toggle sr-only peer" 
+                      data-file-id="${file.id}"
+                      ${file.is_featured ? "checked" : ""}
+                    />
+                    <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600" />
+                  </div>
+                  <span class="text-sm font-medium text-gray-700 dark:text-gray-300">
+                    <BoxIcon name="star" class="mr-1" />
+                    Featured Image
+                  </span>
+                </label>
+                <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                  Set this image as the featured image for the project
+                </p>
+              </div>
+              `
+                  : ""
+              }
               <div class="flex justify-end space-x-2">
                 <button class="save-metadata-btn inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors" data-file-id="${file.id}">
                   <svg class="h-4 w-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
@@ -696,6 +736,55 @@ const {
       } catch (error) {
         console.error("Error saving file metadata:", error);
         this.showError(`Failed to save metadata: ${error.message}`);
+      }
+    }
+
+    async updateFeaturedImage(fileId, isFeatured) {
+      try {
+        console.log("⭐ [FEATURED-IMAGE] Updating featured image:", { fileId, isFeatured });
+
+        const response = await fetch("/api/update-featured-image", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            projectId: this.projectId,
+            fileId: fileId,
+            isFeatured: isFeatured,
+          }),
+        });
+
+        if (!response.ok) {
+          const error = await response.json();
+          throw new Error(error.error || "Failed to update featured image");
+        }
+
+        const result = await response.json();
+
+        if (result.success) {
+          console.log("⭐ [FEATURED-IMAGE] Successfully updated featured image");
+
+          // Update all other featured image toggles to be unchecked
+          if (isFeatured) {
+            const allToggles = document.querySelectorAll(".featured-image-toggle");
+            allToggles.forEach((toggle) => {
+              if (toggle.getAttribute("data-file-id") !== fileId) {
+                toggle.checked = false;
+              }
+            });
+          }
+
+          // Show success feedback
+          this.showSuccess(`Featured image ${isFeatured ? "set" : "removed"} successfully`);
+        }
+      } catch (error) {
+        console.error("⭐ [FEATURED-IMAGE] Error updating featured image:", error);
+        this.showError(`Failed to update featured image: ${error.message}`);
+
+        // Revert the toggle state
+        const toggle = document.querySelector(`.featured-image-toggle[data-file-id="${fileId}"]`);
+        if (toggle) {
+          toggle.checked = !isFeatured;
+        }
       }
     }
 

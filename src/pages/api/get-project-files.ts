@@ -86,6 +86,15 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
     // console.log("📡 [API] Project access check for projectId:", projectId);
 
+    // First, get the project's featured_image field
+    const { data: project, error: projectError } = await supabase
+      .from("projects")
+      .select("featured_image")
+      .eq("id", parseInt(projectId))
+      .single();
+
+    const featuredImageId = project?.featured_image || null;
+
     // Fetch files for the project
     let query = supabase
       .from("files")
@@ -200,24 +209,30 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       );
     }
 
-    // Generate public URLs for files
+    // Generate public URLs for files and add featured image status
     const filesWithUrls =
       files?.map((file) => {
         try {
           if (!supabase) {
             throw new Error("Supabase client not available");
           }
-          const { data } = supabase.storage.from("project-documents").getPublicUrl(file.file_path);
+          // The file_path already includes the bucket name, so we need to extract just the path part
+          const pathWithoutBucket = file.file_path.replace(/^project-documents\//, "");
+          const { data } = supabase.storage
+            .from("project-documents")
+            .getPublicUrl(pathWithoutBucket);
 
           return {
             ...file,
             public_url: data.publicUrl,
+            is_featured: file.id === featuredImageId,
           };
         } catch (error) {
           console.error(`Error generating URL for file ${file.file_name}:`, error);
           return {
             ...file,
             public_url: null,
+            is_featured: file.id === featuredImageId,
           };
         }
       }) || [];

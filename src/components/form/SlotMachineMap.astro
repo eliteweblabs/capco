@@ -366,7 +366,8 @@ const colors = themeColors[theme];
     let selectedIndex = options.findIndex(
       (option) => option.value.toString() === selectedValue.toString()
     );
-    if (selectedIndex === -1) selectedIndex = 0;
+    // Don't default to first item - only select if there's a valid selectedValue
+    if (selectedIndex === -1) selectedIndex = -1;
 
     console.log("🗺️ [SLOT-MACHINE-MAP] Selection debug:", {
       selectedValue,
@@ -382,15 +383,22 @@ const colors = themeColors[theme];
 
     // Center selected item
     function centerSelectedItem() {
-      // Use responsive item height based on screen size
-      const itemHeight = window.innerWidth <= 768 ? 56 : 48;
-      const containerHeight = 192;
-      const centerOffset = (containerHeight - itemHeight) / 2;
-      const targetY = -(selectedIndex * itemHeight) + centerOffset;
+      // Only apply translateY if there's a valid selection
+      if (selectedIndex >= 0) {
+        // Use responsive item height based on screen size
+        const itemHeight = window.innerWidth <= 768 ? 56 : 48;
+        const containerHeight = 192;
+        const centerOffset = (containerHeight - itemHeight) / 2;
+        const targetY = -(selectedIndex * itemHeight) + centerOffset;
 
-      // Use smooth transition
-      optionsList.style.transition = "transform 0.2s ease-out";
-      optionsList.style.transform = `translateY(${targetY}px)`;
+        // Use smooth transition
+        optionsList.style.transition = "transform 0.2s ease-out";
+        optionsList.style.transform = `translateY(${targetY}px)`;
+      } else {
+        // No selection - keep at default position
+        optionsList.style.transition = "transform 0.2s ease-out";
+        optionsList.style.transform = "translateY(0px)";
+      }
 
       // Update centering (visual feedback only, no selection styling)
       updateCentering();
@@ -434,7 +442,7 @@ const colors = themeColors[theme];
     function updateSelection() {
       const items = optionsList.querySelectorAll("li");
       items.forEach((item, index) => {
-        if (index === selectedIndex) {
+        if (index === selectedIndex && selectedIndex >= 0) {
           item.classList.add("selected");
           // Reset and apply selected styles
           item.style.cssText = `
@@ -479,6 +487,11 @@ const colors = themeColors[theme];
           removeCheckmark(item);
         }
       });
+
+      // Disable select button if no item is selected
+      if (selectedIndex < 0) {
+        selectButton.disabled = true;
+      }
     }
 
     // Update visual centering (without selection styling)
@@ -486,7 +499,7 @@ const colors = themeColors[theme];
       const items = optionsList.querySelectorAll("li");
       items.forEach((item, index) => {
         // Only update the centering, not the selection styling
-        if (index === selectedIndex) {
+        if (index === selectedIndex && selectedIndex >= 0) {
           // Just center the item visually, don't apply selected styling
           item.style.transform = "scale(1.05)";
           item.style.transition = "transform 0.2s ease-out";

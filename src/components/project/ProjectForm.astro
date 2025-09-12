@@ -96,16 +96,20 @@ const formActions = getFilteredFormActions(currentRole, isNewProject, projectSta
   data-project-data={JSON.stringify(project || {})}
   autocomplete="off"
 >
-  <GooglePlacesSlotmachine
-    id="address"
-    name="address"
-    label="Address"
-    value={project?.address || ""}
-    placeholder="Enter address"
-    required={true}
-    projectStatus={projectStatus || 0}
-    class="w-full"
-  />
+  {
+    isNewProject && (
+      <GooglePlacesSlotmachine
+        id="address"
+        name="address"
+        label="Address"
+        value={project?.address || ""}
+        placeholder="Enter address"
+        required={true}
+        projectStatus={projectStatus || 0}
+        class="w-full"
+      />
+    )
+  }
   <!-- Client Information (Admin/Staff Only) -->
   {
     isNewProject && (currentRole === "Admin" || currentRole === "Staff") ? (
@@ -412,7 +416,7 @@ const formActions = getFilteredFormActions(currentRole, isNewProject, projectSta
               {group.label}
             </label>
             <div
-              class={`flex flex-wrap gap-2 ${isReadOnly ? "pointer-events-none opacity-75" : ""}`}
+              class={`flex flex-wrap gap-2 mb-4 ${isReadOnly ? "pointer-events-none opacity-75" : ""}`}
             >
               {group.options.map((option) => {
                 const isSelected = selectedValues.includes(option.value);

@@ -121,7 +121,7 @@ const colors = themeColors[theme];
     // Set up click handler
     trigger.addEventListener("click", function (e) {
       e.stopPropagation();
-      console.log(`🎰 [SLOT-MACHINE] Opening picker for ID: ${id}`);
+      // // console.log(`🎰 [SLOT-MACHINE] Opening picker for ID: ${id}`);
 
       // Open the slot machine modal using variables directly
       showSlotMachineModal({
@@ -156,7 +156,7 @@ const colors = themeColors[theme];
             saveToAPI(id, value, label);
           }
 
-          console.log(`🎰 [SLOT-MACHINE] Selected: ${label} (${value})`);
+          // // console.log(`🎰 [SLOT-MACHINE] Selected: ${label} (${value})`);
         },
       });
     });
@@ -166,26 +166,26 @@ const colors = themeColors[theme];
       const urlParams = new URLSearchParams(window.location.search);
       const modalParam = urlParams.get("modal");
 
-      console.log(`🎰 [SLOT-MACHINE] Checking URL parameters for ID '${id}':`, {
-        modalParam,
-        componentId: id,
-        match: modalParam === id,
-      });
+      // console.log(`🎰 [SLOT-MACHINE] Checking URL parameters for ID '${id}':`, {
+      //   modalParam,
+      //   componentId: id,
+      //   match: modalParam === id,
+      // });
 
       if (modalParam === id) {
-        console.log(`🎰 [SLOT-MACHINE] URL parameter detected: modal=${id}`);
+        // console.log(`🎰 [SLOT-MACHINE] URL parameter detected: modal=${id}`);
 
         // Wait for DOM to be ready, then trigger the picker
         setTimeout(() => {
           if (trigger) {
-            console.log(`🎰 [SLOT-MACHINE] Auto-opening picker for ID: ${id}`);
+            // console.log(`🎰 [SLOT-MACHINE] Auto-opening picker for ID: ${id}`);
             trigger.click();
 
             // Clean up the URL parameter
             const newUrl = new URL(window.location);
             newUrl.searchParams.delete("modal");
             window.history.replaceState({}, "", newUrl);
-            console.log(`🎰 [SLOT-MACHINE] URL cleaned up: ${newUrl.href}`);
+            // console.log(`🎰 [SLOT-MACHINE] URL cleaned up: ${newUrl.href}`);
           } else {
             console.error(`🎰 [SLOT-MACHINE] Trigger button not found for auto-open`);
           }
@@ -200,7 +200,7 @@ const colors = themeColors[theme];
   // Auto-save function that uses component ID to determine API endpoint
   async function saveToAPI(componentId, value, label) {
     try {
-      console.log(`🎰 [SLOT-MACHINE] Saving to API: /api/${componentId}`, { value, label });
+      // console.log(`🎰 [SLOT-MACHINE] Saving to API: /api/${componentId}`, { value, label });
 
       // Format data based on the component type
       let requestBody;
@@ -229,7 +229,7 @@ const colors = themeColors[theme];
         };
       }
 
-      console.log(`🎰 [SLOT-MACHINE] Request body:`, requestBody);
+      // console.log(`🎰 [SLOT-MACHINE] Request body:`, requestBody);
 
       const response = await fetch(`/api/${componentId}`, {
         method: "POST",
@@ -242,7 +242,7 @@ const colors = themeColors[theme];
 
       if (response.ok) {
         const result = await response.json();
-        console.log(`🎰 [SLOT-MACHINE] API response:`, result);
+        // console.log(`🎰 [SLOT-MACHINE] API response:`, result);
 
         // Show success notification if available
         window.handleUpdateStatusNotification(result, "SLOT-MACHINE");
@@ -446,7 +446,7 @@ const colors = themeColors[theme];
     if (selectedIndex === -1) selectedIndex = -1;
 
     // Debug logging for selection
-    // console.log("🎰 [SLOT-MACHINE] Selection debug:", {
+    // // console.log("🎰 [SLOT-MACHINE] Selection debug:", {
     //   selectedValue,
     //   selectedValueType: typeof selectedValue,
     //   options: finalOptions.map((opt) => ({
@@ -673,11 +673,13 @@ const colors = themeColors[theme];
 
     // Handle select button
     selectButton.addEventListener("click", () => {
-      const selectedOption = finalOptions[selectedIndex];
-      if (selectedOption && onSelect) {
-        cleanupModal();
-        modal.remove();
-        onSelect(selectedOption.value, selectedOption.label);
+      if (selectedIndex >= 0) {
+        const selectedOption = finalOptions[selectedIndex];
+        if (selectedOption && onSelect) {
+          cleanupModal();
+          modal.remove();
+          onSelect(selectedOption.value, selectedOption.label);
+        }
       }
     });
 

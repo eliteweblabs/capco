@@ -24,7 +24,7 @@ const i18n = getI18N({ currentLocale });
 // Get the project ID from the URL parameter
 const { id } = Astro.params;
 
-console.log("🚀 [PROJECT] Front matter starting execution for project ID:", id);
+// console.log("🚀 [PROJECT] Front matter starting execution for project ID:", id);
 
 // Get auth data directly since App component handles auth requirements
 import { checkAuth } from "../../lib/auth";
@@ -275,6 +275,8 @@ if (!project) {
 ---
 
 <App title={i18n.SEO_TITLE} description={i18n.SEO_DESCRIPTION} requireAuth={true}>
+  <!-- Add Supabase URL meta tag for image loading -->
+  <meta name="supabase-url" content={import.meta.env.PUBLIC_SUPABASE_URL} />
   <HeroProject
     title={project?.address || project?.title || "Untitled Project"}
     description={`<div class="space-y-1">
@@ -425,7 +427,6 @@ if (!project) {
         projectStatusLabel={currentStatusName || undefined}
         authorProfile={authorProfile}
         supabaseUrl={import.meta.env.PUBLIC_SUPABASE_URL}
-        client:load={defaultTab === "discussion"}
       />
 
       <!-- Documents Tab -->

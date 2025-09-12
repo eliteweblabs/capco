@@ -648,9 +648,40 @@ const placeholder =
               console.log("🖼️ [DISCUSSION] Already full URL, returning:", imagePath);
               return imagePath;
             }
+
+            // Check if supabaseUrl is valid
+            if (
+              !supabaseUrl ||
+              supabaseUrl === "undefined" ||
+              supabaseUrl.includes("your-project")
+            ) {
+              console.error("🖼️ [DISCUSSION] Invalid supabaseUrl:", supabaseUrl);
+              // For now, let's try to construct a working URL
+              // The image path should contain the full path from the bucket
+              // If it starts with "project-documents/", we can try to construct the URL
+              if (imagePath.startsWith("project-documents/")) {
+                // Try to get the Supabase URL from the current page's meta tags or window
+                const metaTag = document.querySelector('meta[name="supabase-url"]');
+                const supabaseUrlFromMeta = metaTag?.getAttribute("content");
+
+                if (supabaseUrlFromMeta) {
+                  const fullUrl = `${supabaseUrlFromMeta}/storage/v1/object/public/${imagePath}`;
+                  console.log("🖼️ [DISCUSSION] Using meta tag URL:", fullUrl);
+                  return fullUrl;
+                }
+
+                // Last resort: try to construct from current origin (won't work for Supabase storage)
+                console.error(
+                  "🖼️ [DISCUSSION] Cannot construct valid Supabase URL for:",
+                  imagePath
+                );
+                return `data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjEwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjNmNGY2Ii8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxNCIgZmlsbD0iIzY2NjY2NiIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPkltYWdlIG5vdCBhdmFpbGFibGU8L3RleHQ+PC9zdmc+`;
+              }
+            }
+
             // Otherwise, construct the Supabase storage URL
-            const baseUrl = supabaseUrl || "https://your-project.supabase.co";
-            const fullUrl = `${baseUrl}/storage/v1/object/public/project-documents/${imagePath}`;
+            // The imagePath already includes "project-documents/" so we don't need to add it again
+            const fullUrl = `${supabaseUrl}/storage/v1/object/public/${imagePath}`;
             console.log("🖼️ [DISCUSSION] Constructed URL:", fullUrl);
             return fullUrl;
           }
@@ -1313,7 +1344,8 @@ const placeholder =
                   window.showModal(
                     "success",
                     "Discussion status updated",
-                    `Marked as ${isCompleted ? "completed" : "incomplete"}`
+                    `Marked as ${isCompleted ? "completed" : "incomplete"}`,
+                    1500
                   );
                 }
 
