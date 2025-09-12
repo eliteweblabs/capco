@@ -36,28 +36,47 @@ export const GET: APIRoute = async ({ url }) => {
       );
     }
 
-    // Build the Google Places API URL
-    const googleApiUrl = new URL("https://maps.googleapis.com/maps/api/place/details/json");
-    googleApiUrl.searchParams.set("place_id", placeId);
+    // Build the Google Places API URL (New Places API)
+    const googleApiUrl = new URL(`https://places.googleapis.com/v1/places/${placeId}`);
     googleApiUrl.searchParams.set("fields", fields);
-    googleApiUrl.searchParams.set("key", apiKey);
 
     console.log(
-      "🔍 [PLACES-DETAILS-PROXY] Making request to Google Places API:",
+      "🔍 [PLACES-DETAILS-PROXY] Making request to Google Places API (New):",
       googleApiUrl.toString()
     );
 
-    // Make the request to Google Places API
-    const response = await fetch(googleApiUrl.toString());
+    // Make the request to Google Places API (New API)
+    const response = await fetch(googleApiUrl.toString(), {
+      headers: {
+        "X-Goog-Api-Key": apiKey,
+      },
+    });
     const data = await response.json();
 
     console.log("🔍 [PLACES-DETAILS-PROXY] Google Places API response:", {
-      status: data.status,
-      result: !!data.result,
+      status: data.error ? "ERROR" : "OK",
+      result: !!data,
     });
 
-    // Return the response from Google Places API
-    return new Response(JSON.stringify(data), {
+    // Convert new API response to legacy format for compatibility
+    const legacyResponse = {
+      status: data.error ? "REQUEST_DENIED" : "OK",
+      result: data.error
+        ? null
+        : {
+            formatted_address: data.formattedAddress,
+            name: data.displayName?.text,
+            address_components:
+              data.addressComponents?.map((comp: any) => ({
+                long_name: comp.longText,
+                short_name: comp.shortText,
+                types: comp.types,
+              })) || [],
+          },
+      error_message: data.error?.message || null,
+    };
+
+    return new Response(JSON.stringify(legacyResponse), {
       status: 200,
       headers: {
         "Content-Type": "application/json",
