@@ -278,13 +278,14 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
         // Prepare email content with proper name formatting
         const displayName = company_name?.trim() || `${first_name.trim()} ${last_name.trim()}`;
-        const emailContent = `A new user has been created in the system:<br>
 
-Name: ${displayName}
-Email: ${email}
-Role: ${staffRole}<br>
+        const adminContent = `A new user account has been created successfully:<br><br>
 
-The user will receive a magic link to access their account.`;
+<b>Company Name:</b> ${displayName}<br>
+<b>Email:</b> ${email}<br>
+<b>First Name:</b> ${first_name}<br>
+<b>Last Name:</b> ${last_name}<br>
+<b>Phone:</b> ${phone || "Not provided"}<br><br>`;
 
         // Send email to all admin and staff users (excluding the newly created user)
         const filteredAdminStaff = (adminAndStaffUsers || []).filter((user) => {
@@ -318,7 +319,7 @@ The user will receive a magic link to access their account.`;
               body: JSON.stringify({
                 usersToNotify: [userEmail], // Use resolved user email
                 emailSubject: `New User ${displayName} Created As ${staffRole}`,
-                emailContent: emailContent,
+                emailContent: adminContent,
                 buttonText: "Access Your Dashboard",
                 buttonLink: "/dashboard",
               }),
