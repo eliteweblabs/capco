@@ -1,49 +1,23 @@
 ---
-// console.log("📊 [DASHBOARD] Page loading started...");
-
 import App from "../components/common/App.astro";
 import DashboardComponent from "../components/common/Dashboard.astro";
 import SectionContainer from "../components/common/SectionContainer.astro";
 import ProjectNav from "../components/project/ProjectNav.astro";
 import Hero from "../components/common/Hero.astro";
 import "../lib/refresh-manager.ts";
-
 // Get auth data directly since App component handles auth requirements
 import { checkAuth } from "../lib/auth";
 import { supabase } from "../lib/supabase";
 import { supabaseAdmin } from "../lib/supabase-admin";
 const { isAuth, currentUser, currentRole } = await checkAuth(Astro.cookies);
-
-// Debug information
-// console.log("🔍 [DASHBOARD] Auth check results:", {
-//   isAuth,
-//   currentRole,
-// });
-
-// Test database access if authenticated
-
-// // Additional debugging - check cookies directly
-// const accessToken = Astro.cookies.get("sb-access-token");
-// const refreshToken = Astro.cookies.get("sb-refresh-token");
-
-// console.log("🍪 [DASHBOARD] Cookie status:", {
-//   hasAccessToken: !!accessToken,
-//   hasRefreshToken: !!refreshToken,
-//   accessTokenLength: accessToken?.value?.length || 0,
-//   refreshTokenLength: refreshToken?.value?.length || 0,
-// });
-
 // Fetch projects, statuses, and client data from API
 let projects: any[] = [];
 let project_statuses: any[] = [];
 let project_statuses_object: any = {};
 let clientProfiles: any[] = [];
-
+// Fetch projects directly from database to avoid DNS issues
 try {
-  // Fetch projects directly from database to avoid DNS issues
   if (supabase) {
-    // console.log("🏗️ [DASHBOARD] Fetching projects directly from database");
-
     if (!supabaseAdmin) {
       console.error("🏗️ [DASHBOARD] SupabaseAdmin not available");
       return;
