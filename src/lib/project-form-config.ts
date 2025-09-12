@@ -329,7 +329,7 @@ export const FORM_ACTIONS: FormActionConfig[] = [
     label: "Save Project",
     icon: "bx-save",
     cssClass:
-      "w-full md:w-auto px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors mt-6",
+      "w-full lg:w-auto px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors mt-6",
     allow: ["Admin", "Staff", "Client"], // All roles can save
     // No status restriction - can save project at any status
     // displayOnNew undefined - shows on both new and existing projects
@@ -651,46 +651,3 @@ export function generateButtonGroupHTML(group: ButtonGroupConfig, projectData: a
 // }
 
 // Function to generate complete form HTML
-export function generateCompleteFormHTML(index: number = 0, projectData: any = {}): string {
-  const coreFields = PROJECT_FORM_FIELDS.slice(0, 4); // Address, Owner, Architect, Sq Ft
-  const description = PROJECT_FORM_FIELDS.find((f) => f.name === "description");
-  const newConstruction = PROJECT_FORM_FIELDS.find((f) => f.name === "new_construction");
-
-  return `
-    <!-- Address Field (Full Width) -->
-    ${coreFields
-      .filter((field) => field.name === "address")
-      .map((field) => generateFormFieldHTML(field, index, projectData))
-      .join("")}
-    
-    <!-- Other Core Fields Grid -->
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-      ${coreFields
-        .filter((field) => field.name !== "address")
-        .map((field) => generateFormFieldHTML(field, index, projectData))
-        .join("")}
-    </div>
-
-    <!-- Description -->
-    ${description ? generateFormFieldHTML(description, index, projectData) : ""}
-
-    <!-- Construction Type & Units Row -->
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-      <!-- Construction Type -->
-      <div>
-        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Construction Type</label>
-        <div class="flex gap-4">
-          ${newConstruction ? generateFormFieldHTML(newConstruction, index, projectData) : ""}
-        </div>
-      </div>
-
-      <!-- Units Slider - Use UnitSlider component instead -->
-      <div id="units-slider-container-${projectData.id || index}">
-        <!-- UnitSlider component will be rendered here -->
-      </div>
-    </div>
-
-    <!-- Button Groups -->
-    ${BUTTON_GROUPS.map((group) => generateButtonGroupHTML(group, projectData)).join("")}
-  `;
-}

@@ -141,7 +141,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       // Get client profile data for placeholders
       const { data: profile, error: profileError } = await supabase
         .from("profiles")
-        .select("id, company_name, first_name, last_name, role")
+        .select("id, company_name, first_name, last_name, role, email")
         .eq("id", updatedProject.author_id)
         .single();
 
@@ -154,7 +154,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       }
 
       // Get client email from profiles table (already fetched above)
-      const clientEmail = authorProfile?.email || "";
+      const clientEmail = profile?.email || "";
 
       // Prepare placeholder data
       const placeholderData = {

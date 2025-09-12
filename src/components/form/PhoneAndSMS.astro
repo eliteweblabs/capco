@@ -1,0 +1,161 @@
+---
+interface Props {
+  id?: string;
+  name?: string;
+  value?: string;
+  placeholder?: string;
+  required?: boolean;
+  showSMS?: boolean;
+  smsChecked?: boolean;
+  selectedCarrier?: string;
+  class?: string;
+}
+
+const {
+  id = "phone",
+  name = "phone", 
+  value = "",
+  placeholder = "(555) 123-4567",
+  required = false,
+  showSMS = true,
+  smsChecked = false,
+  selectedCarrier = "",
+  class: className = "",
+} = Astro.props;
+
+// Generate unique IDs for SMS components
+const smsSectionId = `sms-section-${id}`;
+const smsAlertsId = `sms-alerts-${id}`;
+const carrierSelectionId = `carrier-selection-${id}`;
+const mobileCarrierId = `mobile-carrier-${id}`;
+---
+
+<div class="space-y-4">
+  <!-- Phone Number Input -->
+  <div>
+    <label for={id} class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
+      Phone Number {required && <span class="text-red-500">*</span>}
+    </label>
+    <input
+      type="tel"
+      id={id}
+      name={name}
+      value={value}
+      placeholder={placeholder}
+      required={required}
+      class={`w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-60 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:focus:border-blue-400 ${className}`}
+    />
+  </div>
+
+  <!-- SMS Alerts Section (only show if showSMS is true) -->
+  {showSMS && (
+    <div
+      id={smsSectionId}
+      class="rounded-lg border border-gray-200 bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-800"
+      style="display: none;"
+    >
+      <h3 class="mb-3 text-sm font-medium text-gray-900 dark:text-white">SMS Notifications</h3>
+
+      <!-- SMS Alerts Toggle -->
+      <div class="mb-4">
+        <label class="flex items-center">
+          <input
+            type="checkbox"
+            id={smsAlertsId}
+            name="sms_alerts"
+            class="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700"
+            checked={smsChecked}
+          />
+          <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">
+            Get SMS alerts for project updates
+          </span>
+        </label>
+        <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+          Receive text message notifications when your project status changes
+        </p>
+      </div>
+
+      <!-- Carrier Selection (shown when SMS alerts is enabled) -->
+      <div id={carrierSelectionId} class="hidden">
+        <label
+          for={mobileCarrierId}
+          class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300"
+        >
+          Mobile Carrier
+        </label>
+        <select
+          id={mobileCarrierId}
+          name="mobile_carrier"
+          class="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-60 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:focus:border-blue-400"
+        >
+          <option value="">Select your carrier</option>
+          <option value="att" selected={selectedCarrier === "att"}>AT&T</option>
+          <option value="verizon" selected={selectedCarrier === "verizon"}>Verizon</option>
+          <option value="spectrum" selected={selectedCarrier === "spectrum"}>Spectrum</option>
+          <option value="tmobile" selected={selectedCarrier === "tmobile"}>T-Mobile</option>
+          <option value="sprint" selected={selectedCarrier === "sprint"}>Sprint</option>
+          <option value="boost" selected={selectedCarrier === "boost"}>Boost Mobile</option>
+          <option value="cricket" selected={selectedCarrier === "cricket"}>Cricket Wireless</option>
+          <option value="metropcs" selected={selectedCarrier === "metropcs"}>MetroPCS</option>
+          <option value="uscellular" selected={selectedCarrier === "uscellular"}>U.S. Cellular</option>
+          <option value="virgin" selected={selectedCarrier === "virgin"}>Virgin Mobile</option>
+          <option value="other" selected={selectedCarrier === "other"}>Other</option>
+        </select>
+        <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+          Required for SMS delivery. We'll use your phone number with your carrier's email-to-SMS gateway.
+        </p>
+      </div>
+    </div>
+  )}
+</div>
+
+<script
+  define:vars={{
+    phoneId: id,
+    smsSectionId,
+    smsAlertsId,
+    carrierSelectionId,
+    showSMS,
+  }}
+>
+  document.addEventListener("DOMContentLoaded", function () {
+    if (!showSMS) return;
+
+    const phoneInput = document.getElementById(phoneId);
+    const smsAlertsCheckbox = document.getElementById(smsAlertsId);
+    const carrierSelection = document.getElementById(carrierSelectionId);
+    const smsSection = document.getElementById(smsSectionId);
+
+    if (!phoneInput || !smsAlertsCheckbox || !carrierSelection || !smsSection) return;
+
+    // Show/hide carrier selection based on SMS alerts toggle
+    function toggleCarrierSelection() {
+      if (smsAlertsCheckbox.checked) {
+        carrierSelection.classList.remove("hidden");
+      } else {
+        carrierSelection.classList.add("hidden");
+      }
+    }
+
+    // Show/hide SMS section based on phone number
+    function toggleSmsSection() {
+      const phoneValue = phoneInput.value.trim();
+      if (phoneValue) {
+        smsSection.style.display = "block";
+      } else {
+        smsSection.style.display = "none";
+        // Also uncheck SMS alerts if phone is removed
+        smsAlertsCheckbox.checked = false;
+        toggleCarrierSelection();
+      }
+    }
+
+    // Initial state
+    toggleSmsSection();
+    toggleCarrierSelection();
+
+    // Event listeners
+    smsAlertsCheckbox.addEventListener("change", toggleCarrierSelection);
+    phoneInput.addEventListener("input", toggleSmsSection);
+  });
+</script>
