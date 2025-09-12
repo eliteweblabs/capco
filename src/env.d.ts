@@ -24,8 +24,6 @@ interface ImportMetaEnv {
 
   // Google Maps API
   readonly GOOGLE_MAPS_API_KEY?: string;
-  readonly PUBLIC_GOOGLE_MAPS_API_KEY?: string;
-  readonly PLACES_API_KEY?: string;
 
   // Stripe configuration
   readonly STRIPE_SECRET_KEY?: string;
