@@ -36,11 +36,14 @@
       this.container = document.getElementById("unified-notification-container")!;
     }
 
-    show(options: NotificationOptions): string {
+    async show(options: NotificationOptions): Promise<string> {
       // console.log("🔔 [UNIFIED-NOTIFICATION] show() called with options:", options);
 
-      // Scroll to top before showing modal (fixes Safari positioning issues)
-      window.scrollTo({ top: 0, behavior: "smooth" });
+      // Scroll to top before showing modal (only on mobile devices - fixes Safari positioning issues)
+      const { isAnyMobile } = await import("../../lib/mobile-utils.ts");
+      if (isAnyMobile()) {
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      }
 
       const id = crypto.randomUUID();
       const fullNotification = { ...options, id };
@@ -333,12 +336,12 @@
   (window as any).unifiedNotificationManager = unifiedNotificationManager;
 
   // Convenience functions for backward compatibility and ease of use
-  (window as any).showNotification = (options: NotificationOptions) => {
-    return unifiedNotificationManager.show(options);
+  (window as any).showNotification = async (options: NotificationOptions) => {
+    return await unifiedNotificationManager.show(options);
   };
 
   // Default behavior is now full-screen modal
-  (window as any).showModal = (
+  (window as any).showModal = async (
     type: string,
     title: string,
     message: string,
@@ -370,7 +373,7 @@
     const isRedirect =
       redirectOrActions && typeof redirectOrActions === "object" && "url" in redirectOrActions;
 
-    const result = unifiedNotificationManager.show({
+    const result = await unifiedNotificationManager.show({
       type: type as any,
       title,
       message,
