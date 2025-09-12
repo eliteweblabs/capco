@@ -79,27 +79,38 @@ export const GET: APIRoute = async () => {
     console.log("🔍 [TEST-DASHBOARD-DATA] Featured images data:", featuredImages);
 
     // Create the same data structure as the dashboard
-    const projectsWithFeaturedData = projects.map((project) => {
-      const featuredImage = featuredImages?.find(
-        (img) => img.id.toString() === project.featured_image
-      );
+    const projectsWithFeaturedData = await Promise.all(
+      projects.map(async (project) => {
+        const featuredImage = featuredImages?.find(
+          (img) => img.id.toString() === project.featured_image
+        );
 
-      if (featuredImage && supabase) {
-        // The file_path already includes the bucket name, so we need to extract just the path part
-        const pathWithoutBucket = featuredImage.file_path.replace(/^project-documents\//, "");
-        const { data } = supabase.storage.from("project-documents").getPublicUrl(pathWithoutBucket);
+        if (featuredImage && supabase) {
+          // The file_path already includes the bucket name, so we need to extract just the path part
+          const pathWithoutBucket = featuredImage.file_path.replace(/^project-documents\//, "");
 
-        return {
-          ...project,
-          featured_image_data: {
-            ...featuredImage,
-            public_url: data.publicUrl,
-          },
-        };
-      }
+          // For private buckets, use signed URLs
+          const { data, error } = await supabase.storage
+            .from("project-documents")
+            .createSignedUrl(pathWithoutBucket, 3600); // 1 hour expiry
 
-      return project;
-    });
+          if (error) {
+            console.warn(`Failed to generate signed URL for featured image:`, error);
+            return project;
+          }
+
+          return {
+            ...project,
+            featured_image_data: {
+              ...featuredImage,
+              public_url: data.signedUrl,
+            },
+          };
+        }
+
+        return project;
+      })
+    );
 
     return new Response(
       JSON.stringify({

@@ -91,6 +91,10 @@ if (project.profiles) {
   data-project-id={project.id}
 >
   <!-- Featured Image Display -->
+  {(() => {
+    console.log("🔍 [DEBUG] ProjectListItem for project", project.id, "featured_image_data:", project.featured_image_data);
+    return null;
+  })()}
   {project.featured_image_data ? (
     <div class="mb-3 rounded-lg overflow-hidden relative">
       <img 
@@ -98,7 +102,9 @@ if (project.profiles) {
         alt={`Featured image for ${project.address}`}
         class="w-full h-32 object-cover hover:scale-105 transition-transform duration-200"
         loading="lazy"
-        onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';"
+        referrerpolicy="strict-origin-when-cross-origin"
+        crossorigin="anonymous"
+        onerror="console.warn('Featured image failed to load:', this.src); this.style.display='none'; this.nextElementSibling.style.display='flex';"
       />
       <!-- Fallback for broken images -->
       <div class="w-full h-32 bg-gray-100 dark:bg-gray-700 flex items-center justify-center hidden">

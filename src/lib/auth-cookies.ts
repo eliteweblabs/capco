@@ -7,18 +7,18 @@ export function setAuthCookies(cookies: AstroCookies, accessToken: string, refre
   // Set access token cookie
   cookies.set("sb-access-token", accessToken, {
     path: "/",
-    secure: !isDev, // Secure in production, not secure in development
+    secure: true, // Must be true when sameSite is "none"
     httpOnly: true,
-    sameSite: "lax",
+    sameSite: "lax", // Revert to "lax" for localhost compatibility
     maxAge: 60 * 60 * 24 * 7, // 7 days
   });
 
   // Set refresh token cookie
   cookies.set("sb-refresh-token", refreshToken, {
     path: "/",
-    secure: !isDev, // Secure in production, not secure in development
+    secure: true, // Must be true when sameSite is "none"
     httpOnly: true,
-    sameSite: "lax",
+    sameSite: "lax", // Revert to "lax" for localhost compatibility
     maxAge: 60 * 60 * 24 * 30, // 30 days
   });
 }

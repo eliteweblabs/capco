@@ -22,12 +22,11 @@ try {
       console.error("🏗️ [DASHBOARD] SupabaseAdmin not available");
       return;
     }
-    // Use admin client to bypass RLS policies
-    const { data: allProjects, error } = supabaseAdmin
-      ? await supabaseAdmin
-          .from("projects")
-          .select(
-            `
+    // Use admin client to bypass RLS policies and fetch everything in one query
+    const { data: allProjects, error } = await supabaseAdmin
+      .from("projects")
+      .select(
+        `
             id,
             title,
             description,
@@ -39,31 +38,12 @@ try {
             created_at,
             updated_at,
             assigned_to_id,
-            featured_image
+            featured_image,
+            contract_pdf_url
           `
-          )
-          .neq("id", 0) // Exclude system log project
-          .order("updated_at", { ascending: false })
-      : await supabase
-          .from("projects")
-          .select(
-            `
-            id,
-            title,
-            description,
-            address,
-            author_id,
-            status,
-            sq_ft,
-            new_construction,
-            created_at,
-            updated_at,
-            assigned_to_id,
-            featured_image
-          `
-          )
-          .neq("id", 0) // Exclude system log project
-          .order("updated_at", { ascending: false });
+      )
+      .neq("id", 0) // Exclude system log project
+      .order("updated_at", { ascending: false });
 
     if (error) {
       console.error("🏗️ [DASHBOARD] Database error:", error);
@@ -94,15 +74,16 @@ try {
 
       // Fetch and attach profile data to projects
       if (projects && projects.length > 0) {
-        // console.log("🏗️ [DASHBOARD] Fetching profiles for projects...");
+        console.log("🔍 [DEBUG] Processing projects:", projects.length);
+
+        // Fetch profiles for all projects
         const uniqueAuthorIds = [...new Set(projects.map((p) => p.author_id).filter(Boolean))];
         const uniqueAssignedIds = [
           ...new Set(projects.map((p) => p.assigned_to_id).filter(Boolean)),
         ];
         const allUserIds = [...new Set([...uniqueAuthorIds, ...uniqueAssignedIds])];
 
-        // console.log("🏗️ [DASHBOARD] Unique author IDs:", uniqueAuthorIds);
-        // console.log("🏗️ [DASHBOARD] All user IDs to fetch:", allUserIds);
+        console.log("🔍 [DEBUG] Fetching profiles for user IDs:", allUserIds);
 
         let profilesMap = new Map();
         if (allUserIds.length > 0) {
@@ -115,10 +96,9 @@ try {
             profiles.forEach((profile) => {
               profilesMap.set(profile.id, profile);
             });
-            // console.log("🏗️ [DASHBOARD] Successfully fetched profiles:", profiles.length);
-            // console.log("🏗️ [DASHBOARD] Sample profile:", profiles[0]);
+            console.log("🔍 [DEBUG] Successfully fetched profiles:", profiles.length);
           } else {
-            console.error("🏗️ [DASHBOARD] Error fetching profiles:", profilesError);
+            console.error("🔍 [DEBUG] Error fetching profiles:", profilesError);
           }
         }
 
@@ -127,16 +107,13 @@ try {
           if (project.author_id) {
             const authorProfile = profilesMap.get(project.author_id);
             project.profiles = authorProfile || null;
-
             if (authorProfile) {
-              // console.log("🏗️ [DASHBOARD] Attached profile to project:", {
-              //   projectId: project.id,
-              //   authorId: project.author_id,
-              //   companyName: authorProfile.company_name,
-              //   profile: authorProfile,
-              // });
-            } else {
-              console.log("🏗️ [DASHBOARD] No profile found for author:", project.author_id);
+              console.log(
+                "🔍 [DEBUG] Project",
+                project.id,
+                "has author profile:",
+                authorProfile.company_name
+              );
             }
           }
 
@@ -147,48 +124,110 @@ try {
 
         // Fetch featured image data for projects that have featured_image set
         const projectsWithFeaturedImages = projects.filter((p: any) => p.featured_image);
-        if (projectsWithFeaturedImages.length > 0) {
-          // console.log(
-          //   "🏗️ [DASHBOARD] Fetching featured images for",
-          //   projectsWithFeaturedImages.length,
-          //   "projects"
-          // );
+        console.log("🔍 [DEBUG] Projects with featured images:", projectsWithFeaturedImages.length);
 
+        if (projectsWithFeaturedImages.length > 0) {
           const featuredImageIds = projectsWithFeaturedImages.map((p: any) => p.featured_image);
+          console.log("🔍 [DEBUG] Fetching featured images for IDs:", featuredImageIds);
+
           const { data: featuredImages, error: featuredImagesError } = await supabaseAdmin
             .from("files")
             .select("id, file_path, file_name, file_type")
             .in("id", featuredImageIds);
 
+          console.log("🔍 [DEBUG] Featured images query result:", {
+            featuredImages,
+            error: featuredImagesError,
+          });
+
           if (!featuredImagesError && featuredImages) {
+            console.log(
+              "🔍 [DEBUG] Creating featured images map with:",
+              featuredImages.length,
+              "images"
+            );
             const featuredImagesMap = new Map();
             featuredImages.forEach((image) => {
-              featuredImagesMap.set(image.id.toString(), image);
+              console.log("🔍 [DEBUG] Adding to map:", {
+                id: image.id,
+                toString: image.id?.toString(),
+                file_name: image.file_name,
+              });
+              featuredImagesMap.set(image.id?.toString(), image);
             });
+            console.log("🔍 [DEBUG] Map keys:", Array.from(featuredImagesMap.keys()));
 
-            // Attach featured image data to projects
-            projects.forEach((project: any) => {
-              if (project.featured_image) {
-                const featuredImage = featuredImagesMap.get(project.featured_image);
-                if (featuredImage && supabase) {
-                  // Generate public URL for the featured image
-                  // The file_path already includes the bucket name, so we need to extract just the path part
-                  const pathWithoutBucket = featuredImage.file_path.replace(
-                    /^project-documents\//,
-                    ""
+            // Generate signed URLs for featured images
+            await Promise.all(
+              projects.map(async (project: any) => {
+                if (project.featured_image) {
+                  const lookupKey = project.featured_image?.toString();
+                  console.log(
+                    "🔍 [DEBUG] Looking up featured image for project",
+                    project.id,
+                    "with key:",
+                    lookupKey
                   );
-                  const { data } = supabase.storage
-                    .from("project-documents")
-                    .getPublicUrl(pathWithoutBucket);
-                  project.featured_image_data = {
-                    ...featuredImage,
-                    public_url: data.publicUrl,
-                  };
+                  const featuredImage = featuredImagesMap.get(lookupKey);
+                  console.log(
+                    "🔍 [DEBUG] Found featured image:",
+                    !!featuredImage,
+                    featuredImage
+                      ? { id: featuredImage.id, file_name: featuredImage.file_name }
+                      : null
+                  );
+
+                  if (featuredImage && supabase) {
+                    console.log(
+                      "🔍 [DEBUG] Processing featured image for project",
+                      project.id,
+                      ":",
+                      featuredImage.file_name
+                    );
+
+                    // Generate signed URL for the featured image (works with private buckets)
+                    // The file_path already includes the bucket name, so we need to extract just the path part
+                    const pathWithoutBucket = featuredImage.file_path.replace(
+                      /^project-documents\//,
+                      ""
+                    );
+
+                    try {
+                      console.log("🔍 [DEBUG] Generating signed URL for path:", pathWithoutBucket);
+                      // For private buckets, we need to use signed URLs
+                      const { data, error } = await supabase.storage
+                        .from("project-documents")
+                        .createSignedUrl(pathWithoutBucket, 3600); // 1 hour expiry
+
+                      if (error) {
+                        console.warn(
+                          "🔍 [DEBUG] Failed to generate signed URL for featured image:",
+                          error
+                        );
+                      } else {
+                        console.log(
+                          "🔍 [DEBUG] Successfully generated signed URL:",
+                          data.signedUrl
+                        );
+                        project.featured_image_data = {
+                          ...featuredImage,
+                          public_url: data.signedUrl,
+                        };
+                        console.log("🔍 [DEBUG] Set featured_image_data for project", project.id);
+                      }
+                    } catch (error) {
+                      console.warn(
+                        "🔍 [DEBUG] Exception generating URL for featured image:",
+                        error
+                      );
+                      // Don't set featured_image_data if URL generation fails
+                    }
+                  }
                 }
-              }
-            });
+              })
+            );
           } else {
-            console.error("🏗️ [DASHBOARD] Error fetching featured images:", featuredImagesError);
+            console.error("🔍 [DEBUG] Error fetching featured images:", featuredImagesError);
           }
         }
       }
