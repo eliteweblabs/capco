@@ -174,7 +174,14 @@ if (!projects || projects.length === 0) return;
     function updateActiveButton(activeButton: Element | null) {
       if (!subNav) return;
       subNav.querySelectorAll("button").forEach((btn) => {
-        btn.classList.remove("bg-blue-500", "text-white", "border-blue-500", "bg-hub-primary");
+        btn.classList.remove(
+          "bg-blue-500",
+          "text-white",
+          "border-blue-500",
+          "bg-hub-primary",
+          "text-blue-600",
+          "dark:text-blue-400"
+        );
         btn.classList.add("text-hub-inactive", "dark:text-hub-inactive-dark");
       });
       if (activeButton) {
@@ -242,6 +249,10 @@ if (!projects || projects.length === 0) return;
       if (targetButton) {
         updateActiveButton(targetButton);
         filterProjects(statusParam);
+        // Initialize pill position for URL-based active button
+        setTimeout(() => {
+          updateSlidingPill(targetButton);
+        }, 100);
         return;
       }
     }
@@ -250,6 +261,10 @@ if (!projects || projects.length === 0) return;
     if (allStatusesButton) {
       updateActiveButton(allStatusesButton);
       filterProjects("all");
+      // Initialize pill position for default active button
+      setTimeout(() => {
+        updateSlidingPill(allStatusesButton);
+      }, 100);
     }
 
     // Trigger scroll into view for the active button after page load
