@@ -1,0 +1,208 @@
+---
+// Adaptive video player that serves different qualities based on connection speed
+export interface Props {
+  videoSource?: string; // Base video name (e.g., "uhd_30fps" or "uhd_30fps-2")
+  poster?: string; // Poster image URL
+  alt?: string; // Alt text for fallback image
+}
+
+const {
+  videoSource = "uhd_30fps",
+  poster = "/hero.png",
+  alt = "Fire protection background",
+} = Astro.props;
+---
+
+<div class="adaptive-video-container absolute inset-0 w-full h-full">
+  <video
+    id="adaptive-video"
+    data-video-source={videoSource}
+    autoplay
+    muted
+    loop
+    playsinline
+    poster={poster}
+    class="absolute inset-0 w-full h-full object-cover"
+  >
+    <!-- Fallback image for browsers that don't support video -->
+    <img src={poster} alt={alt} class="absolute inset-0 w-full h-full object-cover" />
+  </video>
+</div>
+
+<script>
+  class AdaptiveVideoPlayer {
+    private video: HTMLVideoElement | null;
+    private connectionSpeed: string;
+    private videoSource: string;
+    private videoQualities: Record<string, string>;
+
+    constructor(videoSource = "uhd_30fps") {
+      this.video = document.getElementById("adaptive-video") as HTMLVideoElement;
+      this.connectionSpeed = "unknown";
+      this.videoSource = videoSource;
+
+      // Dynamically generate video qualities based on source
+      this.videoQualities = {
+        low: `/videos/${videoSource}_low.mp4`,
+        medium: `/videos/${videoSource}_medium.mp4`,
+        high: `/videos/${videoSource}_high.mp4`,
+        original: `/videos/${videoSource}.mp4`,
+      };
+
+      this.init();
+    }
+
+    async init() {
+      // Detect connection speed
+      await this.detectConnectionSpeed();
+
+      // Select appropriate video quality
+      const selectedQuality = this.selectVideoQuality();
+
+      // Load the video
+      this.loadVideo(selectedQuality);
+
+      console.log(
+        `🎬 [ADAPTIVE-VIDEO] Selected quality: ${selectedQuality} (${this.connectionSpeed})`
+      );
+    }
+
+    async detectConnectionSpeed() {
+      try {
+        // Use Network Information API if available
+        if ("connection" in navigator) {
+          const connection = (navigator as any).connection;
+          const effectiveType = connection.effectiveType;
+
+          switch (effectiveType) {
+            case "slow-2g":
+            case "2g":
+              this.connectionSpeed = "slow" as any;
+              break;
+            case "3g":
+              this.connectionSpeed = "medium" as any;
+              break;
+            case "4g":
+              this.connectionSpeed = "fast" as any;
+              break;
+            default:
+              this.connectionSpeed = "unknown" as any;
+          }
+
+          console.log(`🌐 [ADAPTIVE-VIDEO] Connection type: ${effectiveType}`);
+          return;
+        }
+
+        // Fallback: Test download speed with a small image
+        await this.testDownloadSpeed();
+      } catch (error) {
+        console.warn("🌐 [ADAPTIVE-VIDEO] Could not detect connection speed:", error);
+        this.connectionSpeed = "unknown" as any;
+      }
+    }
+
+    async testDownloadSpeed() {
+      const startTime = performance.now();
+
+      try {
+        // Test with a small image (should be cached)
+        const response = await fetch("/hero.png", {
+          method: "HEAD",
+          cache: "no-cache",
+        });
+
+        if (response.ok) {
+          const endTime = performance.now();
+          const duration = endTime - startTime;
+
+          // Rough speed estimation based on response time
+          if (duration < 100) {
+            this.connectionSpeed = "fast" as any;
+          } else if (duration < 500) {
+            this.connectionSpeed = "medium" as any;
+          } else {
+            this.connectionSpeed = "slow" as any;
+          }
+        }
+      } catch (error) {
+        console.warn("🌐 [ADAPTIVE-VIDEO] Speed test failed:", error);
+        this.connectionSpeed = "unknown" as any;
+      }
+    }
+
+    selectVideoQuality() {
+      // Mobile devices get lower quality by default
+      const { isAnyMobile } = window as any;
+      const isMobile = isAnyMobile ? isAnyMobile() : window.innerWidth < 768;
+
+      if (isMobile) {
+        // Mobile devices: prioritize lower quality for better performance
+        switch (this.connectionSpeed) {
+          case "fast":
+            return "medium";
+          case "medium":
+            return "low";
+          case "slow":
+            return "low";
+          default:
+            return "low";
+        }
+      } else {
+        // Desktop devices: use connection speed
+        switch (this.connectionSpeed) {
+          case "fast":
+            return "high";
+          case "medium":
+            return "medium";
+          case "slow":
+            return "low";
+          default:
+            return "medium"; // Default to medium for unknown connections
+        }
+      }
+    }
+
+    loadVideo(quality: string) {
+      const videoSrc = this.videoQualities[quality as keyof typeof this.videoQualities];
+
+      if (!videoSrc) {
+        console.error("🎬 [ADAPTIVE-VIDEO] Invalid video quality:", quality);
+        return;
+      }
+
+      if (!this.video) {
+        console.error("🎬 [ADAPTIVE-VIDEO] Video element not found");
+        return;
+      }
+
+      // Create source element
+      const source = document.createElement("source");
+      source.src = videoSrc;
+      source.type = "video/mp4";
+
+      // Clear existing sources and add new one
+      this.video.innerHTML = "";
+      this.video.appendChild(source);
+
+      // Add fallback image
+      const fallbackImg = document.createElement("img");
+      fallbackImg.src = "/hero.png";
+      fallbackImg.alt = "Fire protection background";
+      fallbackImg.className = "h-full w-full object-cover";
+      this.video.appendChild(fallbackImg);
+
+      // Load the video
+      this.video.load();
+
+      console.log(`🎬 [ADAPTIVE-VIDEO] Loading video: ${videoSrc}`);
+    }
+  }
+
+  // Initialize when DOM is ready
+  document.addEventListener("DOMContentLoaded", () => {
+    // Get video source from data attribute
+    const videoElement = document.getElementById("adaptive-video") as HTMLVideoElement;
+    const videoSource = videoElement?.getAttribute("data-video-source") || "uhd_30fps";
+    new AdaptiveVideoPlayer(videoSource);
+  });
+</script>
