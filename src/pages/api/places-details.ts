@@ -19,8 +19,8 @@ export const GET: APIRoute = async ({ url }) => {
       );
     }
 
-    // Get API key from environment variables (use Places API key)
-    const apiKey = import.meta.env.PLACES_API_KEY;
+    // Get API key from environment variables
+    const apiKey = import.meta.env.GOOGLE_MAPS_API_KEY;
 
     if (!apiKey) {
       return new Response(
