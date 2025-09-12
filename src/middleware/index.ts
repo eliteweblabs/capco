@@ -3,7 +3,6 @@
 import { defineMiddleware } from "astro:middleware";
 import micromatch from "micromatch";
 import { clearAuthCookies, setAuthCookies } from "../lib/auth-cookies";
-import { ensureUserProfile } from "../lib/auth-utils";
 import { supabase } from "../lib/supabase";
 
 const protectedRoutes = ["/dashboard(|/)", "/project/**"];
@@ -46,11 +45,8 @@ export const onRequest = defineMiddleware(async ({ locals, url, cookies, redirec
       return redirect("/login");
     }
 
-    // Ensure user has a profile
+    // Get user role from profile (profile created automatically by trigger)
     if (data.user) {
-      await ensureUserProfile(data.user);
-
-      // Get user role from profile and set in locals
       const { data: profile } = await supabase
         .from("profiles")
         .select("role")

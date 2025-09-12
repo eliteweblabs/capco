@@ -1,8 +1,7 @@
 import type { APIRoute } from "astro";
-import { supabaseAdmin } from "../../../lib/supabase-admin";
-import { supabase } from "../../../lib/supabase";
 import { setAuthCookies } from "../../../lib/auth-cookies";
-import { ensureUserProfile } from "../../../lib/auth-utils";
+import { supabase } from "../../../lib/supabase";
+import { supabaseAdmin } from "../../../lib/supabase-admin";
 
 export const POST: APIRoute = async ({ request, cookies }) => {
   try {
@@ -71,10 +70,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       });
     }
 
-    // Ensure user profile exists
-    if (signInData.user) {
-      await ensureUserProfile(signInData.user);
-    }
+    // Profile will be automatically created by database trigger
 
     // Set session cookies with the fresh session tokens
     const { access_token, refresh_token } = signInData.session;

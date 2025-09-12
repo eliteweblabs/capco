@@ -19,6 +19,14 @@ interface Props {
     comment_count?: any;
     profiles?: any;
     assigned_profiles?: any;
+    featured_image?: any;
+    featured_image_data?: {
+      id: any;
+      file_path: string;
+      file_name: string;
+      file_type: string;
+      public_url: string;
+    };
   };
   projectStatusesObject?: any;
   currentRole?: string;
@@ -67,13 +75,13 @@ let authorProfile: any = null;
 if (project.profiles) {
   authorProfile = project.profiles;
   // Debug: Log the profile data to see what's available
-  console.log("🔍 [PROJECT-LIST-ITEM] Author profile data:", {
-    company_name: authorProfile?.company_name,
-    first_name: authorProfile?.first_name,
-    last_name: authorProfile?.last_name,
-    email: authorProfile?.email,
-    fullProfile: authorProfile,
-  });
+  // console.log("🔍 [PROJECT-LIST-ITEM] Author profile data:", {
+  //   company_name: authorProfile?.company_name,
+  //   first_name: authorProfile?.first_name,
+  //   last_name: authorProfile?.last_name,
+  //   email: authorProfile?.email,
+  //   fullProfile: authorProfile,
+  // });
 }
 ---
 
@@ -82,6 +90,38 @@ if (project.profiles) {
   data-project-status={statusSlugOrId}
   data-project-id={project.id}
 >
+  <!-- Featured Image Display -->
+  {project.featured_image_data ? (
+    <div class="mb-3 rounded-lg overflow-hidden relative">
+      <img 
+        src={project.featured_image_data.public_url} 
+        alt={`Featured image for ${project.address}`}
+        class="w-full h-32 object-cover hover:scale-105 transition-transform duration-200"
+        loading="lazy"
+        onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';"
+      />
+      <!-- Fallback for broken images -->
+      <div class="w-full h-32 bg-gray-100 dark:bg-gray-700 flex items-center justify-center hidden">
+        <div class="text-center text-gray-400 dark:text-gray-500">
+          <BoxIcon name="image" class="h-8 w-8 mx-auto mb-2" />
+          <p class="text-xs">Image unavailable</p>
+        </div>
+      </div>
+      <!-- Featured Image Badge -->
+      <div class="absolute top-2 right-2 bg-yellow-500 text-white px-2 py-1 rounded-full text-xs font-medium flex items-center gap-1">
+        <BoxIcon name="star" class="h-3 w-3" />
+        Featured
+      </div>
+    </div>
+  ) : (
+    <!-- Placeholder for projects without featured images -->
+    <div class="mb-3 rounded-lg bg-gray-100 dark:bg-gray-700 h-32 flex items-center justify-center">
+      <div class="text-center text-gray-400 dark:text-gray-500">
+        <BoxIcon name="image" class="h-8 w-8 mx-auto mb-2" />
+        <p class="text-xs">No featured image</p>
+      </div>
+    </div>
+  )}
   <a
     href={`/project/${project.id}`}
     class="flex flex-col md:flex-row md:items-center gap-2 md:gap-4 hover:opacity-80 transition-opacity"

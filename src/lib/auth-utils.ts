@@ -2,14 +2,16 @@ import type { User } from "@supabase/supabase-js";
 import { supabase } from "./supabase";
 
 /**
- * Ensures that a user has a profile record.
- * This function checks if a profile exists for the user, and creates one if it doesn't.
- * This handles cases where:
- * - OAuth users sign in for the first time
- * - Database triggers didn't fire properly
- * - Profile was accidentally deleted
+ * MIGRATION TOOL: Creates profile for existing users who don't have one.
+ * This is a one-time migration function for users created before the auth trigger was implemented.
+ * New users will automatically get profiles created by the database trigger.
+ *
+ * Use this only for:
+ * - One-time migration of existing users
+ * - Manual profile creation for specific cases
+ * - Recovery from accidental profile deletion
  */
-export async function ensureUserProfile(user: User): Promise<void> {
+export async function createMissingUserProfile(user: User): Promise<void> {
   if (!supabase) {
     console.error("Supabase client not available");
     return;
@@ -24,7 +26,7 @@ export async function ensureUserProfile(user: User): Promise<void> {
       .single();
 
     if (existingProfile) {
-      console.log("Profile already exists for user:", user.id);
+      console.log("Profile already exists for user:", user.id, "- no action needed");
       return;
     }
 
@@ -34,14 +36,13 @@ export async function ensureUserProfile(user: User): Promise<void> {
       return;
     }
 
-    // Create profile with enhanced data - prioritize display_name
+    // Create profile with user data
     const firstName = user.user_metadata?.first_name || "";
     const lastName = user.user_metadata?.last_name || "";
     const companyName = user.user_metadata?.company_name || "";
 
-    // Priority: display_name > full_name > constructed name > OAuth name > email > fallback
-
-    console.log("Creating profile for user:", user.id, "with enhanced data:", {
+    console.log("Creating missing profile for user:", user.id, "with data:", {
+      email: user.email,
       company_name: companyName,
       firstName,
       lastName,
@@ -51,10 +52,13 @@ export async function ensureUserProfile(user: User): Promise<void> {
       .from("profiles")
       .insert({
         id: user.id,
-        company_name: companyName, // Use display_name as the main company_name field
+        email: user.email,
+        company_name: companyName,
         role: "Client",
         first_name: firstName,
         last_name: lastName,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
       })
       .select()
       .single();
@@ -64,8 +68,8 @@ export async function ensureUserProfile(user: User): Promise<void> {
       return;
     }
 
-    console.log("Profile created successfully:", newProfile);
+    console.log("Missing profile created successfully:", newProfile);
   } catch (error) {
-    console.error("Unexpected error in ensureUserProfile:", error);
+    console.error("Unexpected error in createMissingUserProfile:", error);
   }
 }

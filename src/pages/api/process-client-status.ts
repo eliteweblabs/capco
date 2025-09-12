@@ -1,6 +1,5 @@
 export const filteredStatusObj = (statusObj: any, role: string) => {
-  console.log("🔍 [PROJECT-LIST-ITEM] Status object:", statusObj);
-  // const statusInfo = statuses[statusCode];
+  // console.log("🔍 [PROJECT-LIST-ITEM] Status object:", statusObj);
   let filteredStatusObj: any = {};
 
   // Check if statusObj is defined before accessing its properties

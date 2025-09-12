@@ -32,7 +32,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     const { isAuth, currentRole, currentUser } = await checkAuth(cookies);
     console.log("4. Auth result:", { isAuth, role: currentRole });
 
-    if (!isAuth || currentRole !== "Admin") {
+    if (!isAuth && currentRole !== "Admin" && currentRole !== "Staff") {
       console.log("5. AUTH FAILED - User not authorized:", { isAuth, role: currentRole });
       return new Response(
         JSON.stringify({
@@ -204,19 +204,23 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       );
     }
 
-    // Create profile in profiles table (use admin client to bypass RLS)
+    // Update profile in profiles table (trigger creates it automatically)
+    // Use ON CONFLICT to handle cases where trigger already created the profile
     const profileData = {
       id: authData.user.id,
+      email: email.trim().toLowerCase(),
       first_name: first_name.trim(),
       last_name: last_name.trim(),
       company_name: company_name?.trim() || null,
       phone: phone?.trim() || null,
       role: staffRole,
-      created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     };
 
-    const { error: profileError } = await supabaseAdmin.from("profiles").insert([profileData]);
+    const { error: profileError } = await supabaseAdmin.from("profiles").upsert(profileData, {
+      onConflict: "id",
+      ignoreDuplicates: false,
+    });
 
     if (profileError) {
       console.error("Profile creation error:", profileError);
@@ -231,13 +235,13 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       return new Response(
         JSON.stringify({
           success: false,
-          error: "Failed to create user profile. Please try again.",
+          error: "Failed to update user profile. Please try again.",
           details: profileError.message,
           code: profileError.code,
           notification: {
             type: "error",
-            title: "Profile Creation Failed",
-            message: "Failed to create user profile. Please try again.",
+            title: "Profile Update Failed",
+            message: "Failed to update user profile. Please try again.",
             duration: 5000,
           },
         }),

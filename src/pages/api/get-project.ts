@@ -46,7 +46,8 @@ export const GET: APIRoute = async ({ request, cookies }) => {
           new_construction,
           created_at,
           updated_at,
-          assigned_to_id
+          assigned_to_id,
+          featured_image
           
         `
         )
@@ -70,7 +71,8 @@ export const GET: APIRoute = async ({ request, cookies }) => {
           new_construction,
           created_at,
           updated_at,
-          assigned_to_id
+          assigned_to_id,
+          featured_image
           
         `
         )
