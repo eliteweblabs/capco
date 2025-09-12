@@ -146,6 +146,8 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         "application/acad", // .dwg files (AutoCAD drawings)
         "application/x-autocad", // Alternative DWG MIME type
         "application/autocad", // Another alternative DWG MIME type
+        "application/x-apple-diskimage", // .dmg files (disk images)
+        "application/x-dmg", // Alternative DMG MIME type
       ];
     } else if (fileType === "discussion-images") {
       // Allow image files for discussion comments
@@ -165,16 +167,17 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     }
 
     for (const file of files) {
-      // Special handling for DWG files - check by extension if MIME type doesn't match expected types
+      // Special handling for DWG and DMG files - check by extension if MIME type doesn't match expected types
       const isDwgFile = file.name.toLowerCase().endsWith(".dwg");
+      const isDmgFile = file.name.toLowerCase().endsWith(".dmg");
       const isAllowedType =
         allowedTypes.includes(file.type) ||
         (fileType === "media" &&
-          isDwgFile &&
+          (isDwgFile || isDmgFile) &&
           (file.type === "application/octet-stream" || file.type === ""));
 
       console.log(
-        `File validation: ${file.name}, type: "${file.type}", isDwg: ${isDwgFile}, allowed: ${isAllowedType}`
+        `File validation: ${file.name}, type: "${file.type}", isDwg: ${isDwgFile}, isDmg: ${isDmgFile}, allowed: ${isAllowedType}`
       );
 
       if (!isAllowedType) {

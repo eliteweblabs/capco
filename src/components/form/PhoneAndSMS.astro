@@ -13,7 +13,7 @@ interface Props {
 
 const {
   id = "phone",
-  name = "phone", 
+  name = "phone",
   value = "",
   placeholder = "(555) 123-4567",
   required = false,
@@ -36,77 +36,107 @@ const mobileCarrierId = `mobile-carrier-${id}`;
     <label for={id} class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
       Phone Number {required && <span class="text-red-500">*</span>}
     </label>
-    <input
-      type="tel"
-      id={id}
-      name={name}
-      value={value}
-      placeholder={placeholder}
-      required={required}
-      class={`w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-60 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:focus:border-blue-400 ${className}`}
-    />
+    <div class="relative">
+      <input
+        type="tel"
+        id={id}
+        name={name}
+        value={value}
+        placeholder={placeholder}
+        required={required}
+        class={`w-full rounded-md border border-gray-300 px-3 py-2 pr-10 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-60 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:focus:border-blue-400 ${className}`}
+      />
+      <!-- Phone validation indicator -->
+      <div id={`phone-indicator-${id}`} class="absolute inset-y-0 right-0 items-center pr-3 hidden">
+        <svg class="h-4 w-4 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+          <path
+            fill-rule="evenodd"
+            d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+            clip-rule="evenodd"></path>
+        </svg>
+      </div>
+    </div>
   </div>
 
   <!-- SMS Alerts Section (only show if showSMS is true) -->
-  {showSMS && (
-    <div
-      id={smsSectionId}
-      class="rounded-lg border border-gray-200 bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-800"
-      style="display: none;"
-    >
-      <h3 class="mb-3 text-sm font-medium text-gray-900 dark:text-white">SMS Notifications</h3>
-
-      <!-- SMS Alerts Toggle -->
-      <div class="mb-4">
-        <label class="flex items-center">
+  {
+    showSMS && (
+      <div
+        id={smsSectionId}
+        class="rounded-lg border border-gray-200 bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-800"
+        style="display: none;"
+      >
+        {/* <!-- SMS Alerts Toggle --> */}
+        <label class="inline-flex items-center cursor-pointer">
           <input
             type="checkbox"
             id={smsAlertsId}
             name="sms_alerts"
-            class="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700"
+            class="sr-only peer"
             checked={smsChecked}
           />
-          <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">
-            Get SMS alerts for project updates
+          <div class="relative w-11 h-6 bg-gray-200 rounded-full peer peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600 dark:peer-checked:bg-blue-600" />
+          <span class="ml-3 text-sm font-medium text-gray-900 dark:text-white">
+            Get SMS Project Updates?
           </span>
         </label>
-        <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
-          Receive text message notifications when your project status changes
-        </p>
-      </div>
 
-      <!-- Carrier Selection (shown when SMS alerts is enabled) -->
-      <div id={carrierSelectionId} class="hidden">
-        <label
-          for={mobileCarrierId}
-          class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300"
-        >
-          Mobile Carrier
-        </label>
-        <select
-          id={mobileCarrierId}
-          name="mobile_carrier"
-          class="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-60 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:focus:border-blue-400"
-        >
-          <option value="">Select your carrier</option>
-          <option value="att" selected={selectedCarrier === "att"}>AT&T</option>
-          <option value="verizon" selected={selectedCarrier === "verizon"}>Verizon</option>
-          <option value="spectrum" selected={selectedCarrier === "spectrum"}>Spectrum</option>
-          <option value="tmobile" selected={selectedCarrier === "tmobile"}>T-Mobile</option>
-          <option value="sprint" selected={selectedCarrier === "sprint"}>Sprint</option>
-          <option value="boost" selected={selectedCarrier === "boost"}>Boost Mobile</option>
-          <option value="cricket" selected={selectedCarrier === "cricket"}>Cricket Wireless</option>
-          <option value="metropcs" selected={selectedCarrier === "metropcs"}>MetroPCS</option>
-          <option value="uscellular" selected={selectedCarrier === "uscellular"}>U.S. Cellular</option>
-          <option value="virgin" selected={selectedCarrier === "virgin"}>Virgin Mobile</option>
-          <option value="other" selected={selectedCarrier === "other"}>Other</option>
-        </select>
-        <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
-          Required for SMS delivery. We'll use your phone number with your carrier's email-to-SMS gateway.
-        </p>
+        {/* <!-- Carrier Selection (shown when SMS alerts is enabled) --> */}
+        <div id={carrierSelectionId} class="hidden">
+          {/* <label
+            for={mobileCarrierId}
+            class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300"
+          >
+            Mobile Carrier
+          </label> */}
+          <select
+            id={mobileCarrierId}
+            name="mobile_carrier"
+            class="mt-4 w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-60 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:focus:border-blue-400"
+          >
+            <option value="">Select your carrier</option>
+            <option value="att" selected={selectedCarrier === "att"}>
+              AT&T
+            </option>
+            <option value="verizon" selected={selectedCarrier === "verizon"}>
+              Verizon
+            </option>
+            <option value="spectrum" selected={selectedCarrier === "spectrum"}>
+              Spectrum
+            </option>
+            <option value="tmobile" selected={selectedCarrier === "tmobile"}>
+              T-Mobile
+            </option>
+            <option value="sprint" selected={selectedCarrier === "sprint"}>
+              Sprint
+            </option>
+            <option value="boost" selected={selectedCarrier === "boost"}>
+              Boost Mobile
+            </option>
+            <option value="cricket" selected={selectedCarrier === "cricket"}>
+              Cricket Wireless
+            </option>
+            <option value="metropcs" selected={selectedCarrier === "metropcs"}>
+              MetroPCS
+            </option>
+            <option value="uscellular" selected={selectedCarrier === "uscellular"}>
+              U.S. Cellular
+            </option>
+            <option value="virgin" selected={selectedCarrier === "virgin"}>
+              Virgin Mobile
+            </option>
+            <option value="other" selected={selectedCarrier === "other"}>
+              Other
+            </option>
+          </select>
+          <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+            Required for SMS delivery. We'll use your phone number with your carrier's email-to-SMS
+            gateway.
+          </p>
+        </div>
       </div>
-    </div>
-  )}
+    )
+  }
 </div>
 
 <script
@@ -125,6 +155,7 @@ const mobileCarrierId = `mobile-carrier-${id}`;
     const smsAlertsCheckbox = document.getElementById(smsAlertsId);
     const carrierSelection = document.getElementById(carrierSelectionId);
     const smsSection = document.getElementById(smsSectionId);
+    const phoneIndicator = document.getElementById(`phone-indicator-${phoneId}`);
 
     if (!phoneInput || !smsAlertsCheckbox || !carrierSelection || !smsSection) return;
 
@@ -137,14 +168,34 @@ const mobileCarrierId = `mobile-carrier-${id}`;
       }
     }
 
-    // Show/hide SMS section based on phone number
+    // Validate phone number format
+    function isValidPhoneNumber(phone) {
+      // Remove all non-digit characters
+      const digits = phone.replace(/\D/g, "");
+      // Check if it's a valid US phone number (10 digits)
+      return digits.length === 10;
+    }
+
+    // Show/hide SMS section based on valid phone number
     function toggleSmsSection() {
       const phoneValue = phoneInput.value.trim();
-      if (phoneValue) {
+      const isValid = isValidPhoneNumber(phoneValue);
+
+      if (isValid) {
         smsSection.style.display = "block";
+        // Show validation indicator
+        if (phoneIndicator) {
+          phoneIndicator.classList.remove("hidden");
+          phoneIndicator.classList.add("flex");
+        }
       } else {
         smsSection.style.display = "none";
-        // Also uncheck SMS alerts if phone is removed
+        // Hide validation indicator
+        if (phoneIndicator) {
+          phoneIndicator.classList.add("hidden");
+          phoneIndicator.classList.remove("flex");
+        }
+        // Also uncheck SMS alerts if phone is invalid
         smsAlertsCheckbox.checked = false;
         toggleCarrierSelection();
       }
