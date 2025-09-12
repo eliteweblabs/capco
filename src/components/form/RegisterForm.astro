@@ -1,5 +1,6 @@
 ---
 // RegisterForm component for registration
+import PhoneAndSMS from "./PhoneAndSMS.astro";
 ---
 
 <div class="mx-auto my-12 w-full max-w-lg">
@@ -122,83 +123,8 @@
       </div>
     </div>
 
-    <!-- Phone (Optional) -->
-    <div class="grid grid-cols-1 gap-2">
-      <div class="group relative z-0 mb-5 w-full">
-        <input
-          id="phone"
-          type="tel"
-          name="phone"
-          placeholder=" "
-          minlength="6"
-          class="peer block w-full appearance-none border-0 border-b-2 border-gray-300 bg-transparent px-0 py-2.5 text-sm text-gray-900 focus:border-blue-600 focus:outline-none focus:ring-0 dark:border-gray-600 dark:text-white dark:focus:border-blue-500"
-        />
-        <label
-          for="phone"
-          class="absolute top-3 -z-10 origin-[0] -translate-y-6 scale-75 transform text-sm text-gray-500 duration-300 peer-placeholder-shown:translate-y-0 peer-placeholder-shown:scale-100 peer-focus:start-0 peer-focus:-translate-y-6 peer-focus:scale-75 peer-focus:font-medium peer-focus:text-blue-600 dark:text-gray-400 peer-focus:dark:text-blue-500 rtl:peer-focus:left-auto rtl:peer-focus:translate-x-1/4"
-          >Phone Number (optional)</label
-        >
-      </div>
-    </div>
-
-    <!-- SMS Alerts Section (hidden by default, shown when phone is entered) -->
-    <div
-      id="register-sms-section"
-      class="mt-4 rounded-lg border border-gray-200 bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-800"
-      style="display: none;"
-    >
-      <h3 class="mb-3 text-sm font-medium text-gray-900 dark:text-white">SMS Notifications</h3>
-
-      <!-- SMS Alerts Toggle -->
-      <div class="mb-4">
-        <label class="flex items-center">
-          <input
-            type="checkbox"
-            id="register-sms-alerts"
-            name="sms_alerts"
-            class="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700"
-          />
-          <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">
-            Get SMS alerts for project updates
-          </span>
-        </label>
-        <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
-          Receive text message notifications when your project status changes
-        </p>
-      </div>
-
-      <!-- Carrier Selection (shown when SMS alerts is enabled) -->
-      <div id="register-carrier-selection" class="hidden">
-        <label
-          for="register-mobile-carrier"
-          class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300"
-        >
-          Mobile Carrier
-        </label>
-        <select
-          id="register-mobile-carrier"
-          name="mobile_carrier"
-          class="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-60 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:focus:border-blue-400"
-        >
-          <option value="">Select your carrier</option>
-          <option value="att">AT&T</option>
-          <option value="verizon">Verizon</option>
-          <option value="spectrum">Spectrum</option>
-          <option value="tmobile">T-Mobile</option>
-          <option value="sprint">Sprint</option>
-          <option value="boost">Boost Mobile</option>
-          <option value="cricket">Cricket Wireless</option>
-          <option value="metropcs">MetroPCS</option>
-          <option value="uscellular">U.S. Cellular</option>
-          <option value="virgin">Virgin Mobile</option>
-          <option value="other">Other</option>
-        </select>
-        <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
-          Required for SMS delivery. We'll use your phone number with your carrier's email-to-SMS
-          gateway.
-        </p>
-      </div>
-    </div>
+    <!-- Phone and SMS -->
+    <PhoneAndSMS id="phone" name="phone" placeholder="(555) 123-4567" showSMS={true} />
 
     <!-- Password -->
     <div class="grid grid-cols-1 gap-2 mb-4">
@@ -235,49 +161,8 @@
 <script>
   // Handle form submission with client-side validation feedback
   document.addEventListener("DOMContentLoaded", () => {
-    // SMS Alerts Toggle Functionality
-    const smsAlertsCheckbox = document.getElementById("register-sms-alerts") as HTMLInputElement;
-    const carrierSelection = document.getElementById(
-      "register-carrier-selection"
-    ) as HTMLDivElement;
-    const phoneInput = document.getElementById("phone") as HTMLInputElement;
-    const smsSection = document.getElementById("register-sms-section") as HTMLDivElement;
-
-    // Show/hide carrier selection based on SMS alerts toggle
-    function toggleCarrierSelection() {
-      if (smsAlertsCheckbox && carrierSelection) {
-        if (smsAlertsCheckbox.checked) {
-          carrierSelection.classList.remove("hidden");
-        } else {
-          carrierSelection.classList.add("hidden");
-        }
-      }
-    }
-
-    // Show/hide SMS section based on phone number
-    function toggleSmsSection() {
-      if (smsSection && phoneInput) {
-        const phoneValue = phoneInput.value.trim();
-        if (phoneValue && phoneValue.length >= 10) {
-          smsSection.style.display = "block";
-        } else {
-          smsSection.style.display = "none";
-          // Also uncheck SMS alerts if phone is removed
-          if (smsAlertsCheckbox) {
-            smsAlertsCheckbox.checked = false;
-            toggleCarrierSelection();
-          }
-        }
-      }
-    }
-
-    // Initialize visibility
-    toggleCarrierSelection();
-    toggleSmsSection();
-
-    // Add event listeners
-    smsAlertsCheckbox?.addEventListener("change", toggleCarrierSelection);
-    phoneInput?.addEventListener("input", toggleSmsSection);
+    // Get form elements
+    const phoneInput = document.getElementById("phone");
 
     const registerForm = document.querySelector('form[action="/api/auth/register"]');
     if (registerForm) {
@@ -299,9 +184,10 @@
         const password = (registerForm.querySelector("#register_password") as HTMLInputElement)
           ?.value;
         const phone = (registerForm.querySelector("#phone") as HTMLInputElement)?.value?.trim();
-        const smsAlerts = smsAlertsCheckbox.checked;
+        const smsAlertsCheckbox = document.getElementById("sms-alerts-phone") as HTMLInputElement;
+        const smsAlerts = smsAlertsCheckbox?.checked || false;
         const mobileCarrier = (
-          registerForm.querySelector("#register-mobile-carrier") as HTMLSelectElement
+          registerForm.querySelector("#mobile-carrier-phone") as HTMLSelectElement
         )?.value?.trim();
 
         // Check required fields

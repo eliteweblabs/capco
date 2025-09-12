@@ -274,6 +274,12 @@ const colors = themeColors[theme];
       onSelect,
     } = config;
 
+    // Check for dynamically updated options
+    const dynamicOptions = window.slotMachineOptions && window.slotMachineOptions[id];
+    const finalOptions = dynamicOptions || options;
+
+    // Use dynamic options if available, otherwise use static options
+
     // Create modal overlay
     const modal = document.createElement("div");
     modal.className = "fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50";
@@ -351,7 +357,7 @@ const colors = themeColors[theme];
     optionsList.style.transform = "translateY(0px)";
 
     // Add options
-    options.forEach((option, index) => {
+    finalOptions.forEach((option, index) => {
       const li = document.createElement("li");
       li.className = "slot-machine-item";
       li.style.cssText = `
@@ -433,34 +439,43 @@ const colors = themeColors[theme];
     modal.appendChild(modalContent);
 
     // Slot machine functionality
-    let selectedIndex = options.findIndex(
+    let selectedIndex = finalOptions.findIndex(
       (option) => option.value.toString() === selectedValue.toString()
     );
-    if (selectedIndex === -1) selectedIndex = 0;
+    // Don't default to first item - only select if there's a valid selectedValue
+    if (selectedIndex === -1) selectedIndex = -1;
 
-    console.log("🎰 [SLOT-MACHINE] Selection debug:", {
-      selectedValue,
-      selectedValueType: typeof selectedValue,
-      options: options.map((opt) => ({
-        value: opt.value,
-        valueType: typeof opt.value,
-        label: opt.label,
-      })),
-      selectedIndex,
-      foundOption: options[selectedIndex],
-    });
+    // Debug logging for selection
+    // console.log("🎰 [SLOT-MACHINE] Selection debug:", {
+    //   selectedValue,
+    //   selectedValueType: typeof selectedValue,
+    //   options: finalOptions.map((opt) => ({
+    //     value: opt.value,
+    //     valueType: typeof opt.value,
+    //     label: opt.label,
+    //   })),
+    //   selectedIndex,
+    //   foundOption: finalOptions[selectedIndex],
+    // });
 
     // Center selected item
     function centerSelectedItem() {
-      // Use responsive item height based on screen size
-      const itemHeight = window.innerWidth <= 768 ? 56 : 48;
-      const containerHeight = 192;
-      const centerOffset = (containerHeight - itemHeight) / 2;
-      const targetY = -(selectedIndex * itemHeight) + centerOffset;
+      // Only apply translateY if there's a valid selection
+      if (selectedIndex >= 0) {
+        // Use responsive item height based on screen size
+        const itemHeight = window.innerWidth <= 768 ? 56 : 48;
+        const containerHeight = 192;
+        const centerOffset = (containerHeight - itemHeight) / 2;
+        const targetY = -(selectedIndex * itemHeight) + centerOffset;
 
-      // Use smooth transition
-      optionsList.style.transition = "transform 0.2s ease-out";
-      optionsList.style.transform = `translateY(${targetY}px)`;
+        // Use smooth transition
+        optionsList.style.transition = "transform 0.2s ease-out";
+        optionsList.style.transform = `translateY(${targetY}px)`;
+      } else {
+        // No selection - keep at default position
+        optionsList.style.transition = "transform 0.2s ease-out";
+        optionsList.style.transform = "translateY(0px)";
+      }
 
       // Update centering (visual feedback only, no selection styling)
       updateCentering();
@@ -504,7 +519,7 @@ const colors = themeColors[theme];
     function updateSelection() {
       const items = optionsList.querySelectorAll("li");
       items.forEach((item, index) => {
-        if (index === selectedIndex) {
+        if (index === selectedIndex && selectedIndex >= 0) {
           item.classList.add("selected");
           // Reset and apply selected styles
           item.style.cssText = `
@@ -549,6 +564,11 @@ const colors = themeColors[theme];
           removeCheckmark(item);
         }
       });
+
+      // Disable select button if no item is selected
+      if (selectedIndex < 0) {
+        selectButton.disabled = true;
+      }
     }
 
     // Update visual centering (without selection styling)
@@ -556,7 +576,7 @@ const colors = themeColors[theme];
       const items = optionsList.querySelectorAll("li");
       items.forEach((item, index) => {
         // Only update the centering, not the selection styling
-        if (index === selectedIndex) {
+        if (index === selectedIndex && selectedIndex >= 0) {
           // Just center the item visually, don't apply selected styling
           item.style.transform = "scale(1.05)";
           item.style.transition = "transform 0.2s ease-out";
@@ -575,7 +595,7 @@ const colors = themeColors[theme];
       // Calculate new index based on scroll direction
       if (deltaY > 0) {
         // Scrolling down - move to next item
-        selectedIndex = Math.min(selectedIndex + 1, options.length - 1);
+        selectedIndex = Math.min(selectedIndex + 1, finalOptions.length - 1);
       } else {
         // Scrolling up - move to previous item
         selectedIndex = Math.max(selectedIndex - 1, 0);
@@ -627,7 +647,7 @@ const colors = themeColors[theme];
         if (Math.abs(deltaY) > 20 && deltaTime < 500) {
           if (deltaY > 0) {
             // Swiping up - move to next item
-            selectedIndex = Math.min(selectedIndex + 1, options.length - 1);
+            selectedIndex = Math.min(selectedIndex + 1, finalOptions.length - 1);
           } else {
             // Swiping down - move to previous item
             selectedIndex = Math.max(selectedIndex - 1, 0);
@@ -653,7 +673,7 @@ const colors = themeColors[theme];
 
     // Handle select button
     selectButton.addEventListener("click", () => {
-      const selectedOption = options[selectedIndex];
+      const selectedOption = finalOptions[selectedIndex];
       if (selectedOption && onSelect) {
         cleanupModal();
         modal.remove();
@@ -687,6 +707,15 @@ const colors = themeColors[theme];
     // Add to DOM
     document.body.appendChild(modal);
   }
+
+  // Expose function to update slot machine options dynamically
+  window.updateSlotMachineOptions = function (componentId, newOptions) {
+    // Store the new options for this component
+    if (!window.slotMachineOptions) {
+      window.slotMachineOptions = {};
+    }
+    window.slotMachineOptions[componentId] = newOptions;
+  };
 </script>
 
 <style>

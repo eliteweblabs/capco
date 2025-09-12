@@ -2,6 +2,7 @@
 import App from "../components/common/App.astro";
 import SectionContainer from "../components/common/SectionContainer.astro";
 import BoxIcon from "../components/common/BoxIcon.astro";
+import PhoneAndSMS from "../components/form/PhoneAndSMS.astro";
 import { getCarrierKeyFromGateway } from "../lib/sms-carriers";
 
 // Get auth data directly since App component handles auth requirements
@@ -137,92 +138,16 @@ const storedCarrierKey = currentUser?.user_metadata?.mobile_carrier
             </p>
           </div>
 
-          <!-- Phone Field -->
-          <div>
-            <label
-              for="phone"
-              class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300"
-            >
-              Phone Number
-            </label>
-            <input
-              type="tel"
-              id="phone"
-              name="phone"
-              value={currentUser?.user_metadata?.phone || ""}
-              class="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-60 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:focus:border-blue-400"
-              placeholder="Enter your phone number"
-            />
-          </div>
-
-          <!-- SMS Alerts Section (only show if phone number is provided) -->
-          {currentUser?.user_metadata?.phone && (
-            <div
-              class="rounded-lg border border-gray-200 bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-800"
-            >
-            <h3 class="mb-3 text-sm font-medium text-gray-900 dark:text-white">
-              SMS Notifications
-            </h3>
-
-            <!-- SMS Alerts Toggle -->
-            <div class="mb-4">
-              <label class="flex items-center">
-                <input
-                  type="checkbox"
-                  id="sms-alerts"
-                  name="sms_alerts"
-                  class="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700"
-                  checked={currentUser?.user_metadata?.sms_alerts || false}
-                />
-                <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">
-                  Get SMS alerts for project updates
-                </span>
-              </label>
-              <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                Receive text message notifications when your project status changes
-              </p>
-            </div>
-
-            <!-- Carrier Selection (shown when SMS alerts is enabled) -->
-            <div id="carrier-selection" class="hidden">
-              <label
-                for="mobile-carrier"
-                class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300"
-              >
-                Mobile Carrier
-              </label>
-              <select
-                id="mobile-carrier"
-                name="mobile_carrier"
-                class="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-60 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:focus:border-blue-400"
-              >
-                <option value="">Select your carrier</option>
-                <option value="att" selected={storedCarrierKey === "att"}>AT&T</option>
-                <option value="verizon" selected={storedCarrierKey === "verizon"}>Verizon</option>
-                <option value="spectrum" selected={storedCarrierKey === "spectrum"}>Spectrum</option>
-                <option value="tmobile" selected={storedCarrierKey === "tmobile"}>T-Mobile</option>
-                <option value="sprint" selected={storedCarrierKey === "sprint"}>Sprint</option>
-                <option value="boost" selected={storedCarrierKey === "boost"}>Boost Mobile</option>
-                <option value="cricket" selected={storedCarrierKey === "cricket"}
-                  >Cricket Wireless</option
-                >
-                <option value="metropcs" selected={storedCarrierKey === "metropcs"}>MetroPCS</option
-                >
-                <option value="uscellular" selected={storedCarrierKey === "uscellular"}
-                  >U.S. Cellular</option
-                >
-                <option value="virgin" selected={storedCarrierKey === "virgin"}
-                  >Virgin Mobile</option
-                >
-                <option value="other" selected={storedCarrierKey === "other"}>Other</option>
-              </select>
-              <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                Required for SMS delivery. We'll use your phone number with your carrier's
-                email-to-SMS gateway.
-              </p>
-            </div>
-          </div>
-          )}
+          <!-- Phone and SMS -->
+          <PhoneAndSMS
+            id="phone"
+            name="phone"
+            value={currentUser?.user_metadata?.phone || ""}
+            placeholder="Enter your phone number"
+            showSMS={true}
+            smsChecked={currentUser?.user_metadata?.sms_alerts || false}
+            selectedCarrier={storedCarrierKey || ""}
+          />
 
           <!-- Role Field (Read-only) -->
           <!-- <div>
@@ -362,78 +287,41 @@ const storedCarrierKey = currentUser?.user_metadata?.mobile_carrier
 
 <script>
   document.addEventListener("DOMContentLoaded", () => {
-    const profileForm = document.getElementById("profile-form") as HTMLFormElement;
-    const saveProfileBtn = document.getElementById("save-profile-btn") as HTMLButtonElement;
-    const uploadAvatarBtn = document.getElementById("upload-avatar-btn") as HTMLButtonElement;
-    const avatarInput = document.getElementById("avatar-input") as HTMLInputElement;
-    const deleteAccountBtn = document.getElementById("delete-account-btn") as HTMLButtonElement;
+    const profileForm = document.getElementById("profile-form");
+    const saveProfileBtn = document.getElementById("save-profile-btn");
+    const uploadAvatarBtn = document.getElementById("upload-avatar-btn");
+    const avatarInput = document.getElementById("avatar-input");
+    const deleteAccountBtn = document.getElementById("delete-account-btn");
 
     // Forgot Password Modal Elements
     const changePasswordBtn = document.getElementById("change-password-btn");
     const forgotPasswordModal = document.getElementById("forgot-password-modal");
     const closeForgotModal = document.getElementById("close-forgot-modal");
     const cancelForgot = document.getElementById("cancel-forgot");
-    const forgotPasswordForm = document.getElementById("forgot-password-form") as HTMLFormElement;
-    const resetEmailInput = document.getElementById("reset-email") as HTMLInputElement;
-    const sendResetLinkBtn = document.getElementById("send-reset-link") as HTMLButtonElement;
+    const forgotPasswordForm = document.getElementById("forgot-password-form");
+    const resetEmailInput = document.getElementById("reset-email");
+    const sendResetLinkBtn = document.getElementById("send-reset-link");
 
-    // SMS Alerts Toggle Functionality
-    const smsAlertsCheckbox = document.getElementById("sms-alerts") as HTMLInputElement;
-    const carrierSelection = document.getElementById("carrier-selection") as HTMLDivElement;
-    const phoneInput = document.getElementById("phone") as HTMLInputElement;
-    const smsSection = document.querySelector('[class*="rounded-lg border border-gray-200 bg-gray-50"]') as HTMLDivElement;
-
-    // Show/hide carrier selection based on SMS alerts toggle
-    function toggleCarrierSelection() {
-      if (smsAlertsCheckbox && carrierSelection) {
-        if (smsAlertsCheckbox.checked) {
-          carrierSelection.classList.remove("hidden");
-        } else {
-          carrierSelection.classList.add("hidden");
-        }
-      }
-    }
-
-    // Show/hide SMS section based on phone number
-    function toggleSmsSection() {
-      if (smsSection && phoneInput) {
-        const phoneValue = phoneInput.value.trim();
-        if (phoneValue && phoneValue.length >= 10) {
-          smsSection.style.display = "block";
-        } else {
-          smsSection.style.display = "none";
-          // Also uncheck SMS alerts if phone is removed
-          if (smsAlertsCheckbox) {
-            smsAlertsCheckbox.checked = false;
-            toggleCarrierSelection();
-          }
-        }
-      }
-    }
-
-    // Initialize visibility
-    toggleCarrierSelection();
-    toggleSmsSection();
-
-    // Add event listeners
-    smsAlertsCheckbox?.addEventListener("change", toggleCarrierSelection);
-    phoneInput?.addEventListener("input", toggleSmsSection);
+    // Get form elements
 
     // Handle profile form submission
     profileForm?.addEventListener("submit", async (e) => {
       e.preventDefault();
 
-      const formData = new FormData(profileForm);
+      const formData = new FormData(profileForm as HTMLFormElement);
       const companyName = formData.get("company_name") as string;
       const firstName = formData.get("first_name") as string;
       const lastName = formData.get("last_name") as string;
       const phone = formData.get("phone") as string;
-      const smsAlerts = smsAlertsCheckbox.checked;
+      const smsAlertsCheckbox = document.getElementById("sms-alerts-phone");
+      const smsAlerts = (smsAlertsCheckbox as HTMLInputElement)?.checked || false;
       const mobileCarrier = formData.get("mobile_carrier") as string;
 
       // Disable button and show loading state
-      saveProfileBtn.disabled = true;
-      saveProfileBtn.textContent = "Saving...";
+      if (saveProfileBtn) {
+        (saveProfileBtn as HTMLButtonElement).disabled = true;
+        (saveProfileBtn as HTMLButtonElement).textContent = "Saving...";
+      }
 
       try {
         const response = await fetch("/api/profile/update", {
@@ -495,8 +383,10 @@ const storedCarrierKey = currentUser?.user_metadata?.mobile_carrier
         }
       } finally {
         // Re-enable button
-        saveProfileBtn.disabled = false;
-        saveProfileBtn.textContent = "Save Changes";
+        if (saveProfileBtn) {
+          (saveProfileBtn as HTMLButtonElement).disabled = false;
+          (saveProfileBtn as HTMLButtonElement).textContent = "Save Changes";
+        }
       }
     });
 
@@ -506,7 +396,7 @@ const storedCarrierKey = currentUser?.user_metadata?.mobile_carrier
     });
 
     avatarInput?.addEventListener("change", async (e) => {
-      const file = (e.target as HTMLInputElement).files?.[0];
+      const file = (e.target as HTMLInputElement)?.files?.[0];
       if (!file) return;
 
       // TODO: Implement avatar upload functionality
@@ -546,7 +436,7 @@ const storedCarrierKey = currentUser?.user_metadata?.mobile_carrier
     const closeModal = () => {
       forgotPasswordModal?.classList.add("hidden");
       forgotPasswordModal?.classList.remove("flex");
-      forgotPasswordForm?.reset();
+      (forgotPasswordForm as HTMLFormElement)?.reset();
     };
 
     closeForgotModal?.addEventListener("click", closeModal);
@@ -563,7 +453,7 @@ const storedCarrierKey = currentUser?.user_metadata?.mobile_carrier
     forgotPasswordForm?.addEventListener("submit", async (e) => {
       e.preventDefault();
 
-      const email = resetEmailInput?.value.trim();
+      const email = (resetEmailInput as HTMLInputElement)?.value.trim();
 
       if (!email) {
         if (window.showModal) {
@@ -575,8 +465,10 @@ const storedCarrierKey = currentUser?.user_metadata?.mobile_carrier
       }
 
       // Disable button and show loading state
-      sendResetLinkBtn.disabled = true;
-      sendResetLinkBtn.textContent = "Sending...";
+      if (sendResetLinkBtn) {
+        (sendResetLinkBtn as HTMLButtonElement).disabled = true;
+        (sendResetLinkBtn as HTMLButtonElement).textContent = "Sending...";
+      }
 
       try {
         const response = await fetch("/api/auth/forgot-password", {
@@ -632,8 +524,10 @@ const storedCarrierKey = currentUser?.user_metadata?.mobile_carrier
         }
       } finally {
         // Re-enable button
-        sendResetLinkBtn.disabled = false;
-        sendResetLinkBtn.textContent = "Send Reset Link";
+        if (sendResetLinkBtn) {
+          (sendResetLinkBtn as HTMLButtonElement).disabled = false;
+          (sendResetLinkBtn as HTMLButtonElement).textContent = "Send Reset Link";
+        }
       }
     });
   });

@@ -137,6 +137,13 @@ export const DELETE: APIRoute = async ({ request, cookies }) => {
     // Delete associated files first (cascade delete)
     console.log("Deleting associated files...");
 
+    if (!supabaseAdmin) {
+      console.error("Database not configured - supabase admin client not available");
+      return new Response(JSON.stringify({ error: "Database not configured" }), {
+        status: 500,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
     // Get all files associated with this project using admin client
     const { data: projectFiles, error: filesQueryError } = await supabaseAdmin
       .from("files")
@@ -179,7 +186,10 @@ export const DELETE: APIRoute = async ({ request, cookies }) => {
 
     // Delete the project using admin client to bypass RLS
     console.log("Deleting project...");
-    const { error: deleteError } = await supabaseAdmin.from("projects").delete().eq("id", projectIdNum);
+    const { error: deleteError } = await supabaseAdmin
+      .from("projects")
+      .delete()
+      .eq("id", projectIdNum);
 
     if (deleteError) {
       console.error("Failed to delete project:", deleteError);
@@ -194,13 +204,13 @@ export const DELETE: APIRoute = async ({ request, cookies }) => {
       );
     }
 
-    console.log("Project deleted successfully");
+    // console.log("Project deleted successfully");
 
     // Return success response
     return new Response(
       JSON.stringify({
         success: true,
-        message: "Project deleted successfully, redirecting to dashboard...",
+        message: "Project has been deleted successfully, redirecting to dashboard...",
       }),
       {
         status: 200,

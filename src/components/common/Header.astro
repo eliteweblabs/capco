@@ -72,26 +72,6 @@ const navigation: NavItem[] = [
     isPrimary: currentUrl.startsWith("/dashboard#new-project"),
   },
   {
-    label: "Email Test",
-    href: "/email-test",
-    roles: ["Admin"],
-    pageType: "backend",
-    isPrimary: currentUrl.startsWith("/email-test"),
-  },
-  // {
-  //   label: "PDF Review",
-  //   href: "/pdf-review",
-  //   roles: ["Admin", "Staff"],
-  //   type: "backend",
-  // },
-  // {
-  //   label: "PDF Editor",
-  //   href: "/pdf-editor",
-  //   roles: ["Admin"],
-  //   pageType: "backend",
-  //   isPrimary: currentUrl.startsWith("/pdf-editor"),
-  // },
-  {
     label: "Discussions",
     href: "/discussions",
     roles: ["Admin", "Staff"],
@@ -301,6 +281,7 @@ const visibleNavigation = getVisibleNavItems(navigation, isAuth, currentRole, is
   let isVirtualKeyboardOpen = false;
 
   function detectVirtualKeyboard() {
+    console.log("📱 [HEADER] Detecting virtual keyboard");
     const currentHeight = window.innerHeight;
     const heightDifference = initialViewportHeight - currentHeight;
 
@@ -322,6 +303,7 @@ const visibleNavigation = getVisibleNavItems(navigation, isAuth, currentRole, is
 
   // Safari 18 beta fix - ensure header stays fixed to top
   function fixHeaderPosition() {
+    console.log("📱 [HEADER] Fixing header position");
     const header = document.querySelector("header");
     if (header) {
       // Skip header fixes when virtual keyboard is open to prevent layout issues
@@ -351,17 +333,20 @@ const visibleNavigation = getVisibleNavItems(navigation, isAuth, currentRole, is
 
   // Add multiple event listeners to catch Safari 18 beta resets
   window.addEventListener("resize", () => {
+    console.log("📱 [HEADER] Resizing window");
     detectVirtualKeyboard();
     fixHeaderPosition();
   });
   window.addEventListener("orientationchange", () => {
     // Update initial height after orientation change
+    console.log("📱 [HEADER] Orientation changed");
     setTimeout(() => {
       initialViewportHeight = window.innerHeight;
       detectVirtualKeyboard();
       fixHeaderPosition();
     }, 100);
   });
+  window.addEventListener("scroll", fixHeaderPosition);
   window.addEventListener("scroll", fixHeaderPosition);
   window.addEventListener("focus", fixHeaderPosition);
   window.addEventListener("blur", fixHeaderPosition);
