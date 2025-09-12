@@ -209,22 +209,33 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       );
     }
 
-    // Generate public URLs for files and add featured image status
-    const filesWithUrls =
-      files?.map((file) => {
+    // Generate signed URLs for files and add featured image status
+    const filesWithUrls = await Promise.all(
+      (files || []).map(async (file) => {
         try {
           if (!supabase) {
             throw new Error("Supabase client not available");
           }
           // The file_path already includes the bucket name, so we need to extract just the path part
           const pathWithoutBucket = file.file_path.replace(/^project-documents\//, "");
-          const { data } = supabase.storage
+
+          // For private buckets, use signed URLs
+          const { data, error } = await supabase.storage
             .from("project-documents")
-            .getPublicUrl(pathWithoutBucket);
+            .createSignedUrl(pathWithoutBucket, 3600); // 1 hour expiry
+
+          if (error) {
+            console.warn(`Failed to generate signed URL for file ${file.file_name}:`, error);
+            return {
+              ...file,
+              public_url: null,
+              is_featured: file.id.toString() === featuredImageId?.toString(),
+            };
+          }
 
           return {
             ...file,
-            public_url: data.publicUrl,
+            public_url: data.signedUrl,
             is_featured: file.id === featuredImageId,
           };
         } catch (error) {
@@ -235,7 +246,8 @@ export const POST: APIRoute = async ({ request, cookies }) => {
             is_featured: file.id === featuredImageId,
           };
         }
-      }) || [];
+      })
+    );
 
     return new Response(
       JSON.stringify({

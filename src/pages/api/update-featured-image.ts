@@ -57,8 +57,8 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     const { data: file, error: fileError } = await supabaseAdmin
       .from("files")
       .select("id, project_id, file_type")
-      .eq("id", fileId)
-      .eq("project_id", projectId)
+      .eq("id", parseInt(fileId))
+      .eq("project_id", parseInt(projectId))
       .single();
 
     if (fileError || !file) {
@@ -103,7 +103,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       const { error: clearError } = await supabaseAdmin
         .from("projects")
         .update({ featured_image: null })
-        .eq("id", projectId);
+        .eq("id", parseInt(projectId));
 
       if (clearError) {
         console.error(
@@ -124,12 +124,12 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     }
 
     // Update the project's featured_image field
-    const updateData = isFeatured ? { featured_image: fileId } : { featured_image: null };
+    const updateData = isFeatured ? { featured_image: parseInt(fileId) } : { featured_image: null };
 
     const { error: updateError } = await supabaseAdmin
       .from("projects")
       .update(updateData)
-      .eq("id", projectId);
+      .eq("id", parseInt(projectId));
 
     if (updateError) {
       console.error("⭐ [UPDATE-FEATURED-IMAGE] Error updating project:", updateError);
