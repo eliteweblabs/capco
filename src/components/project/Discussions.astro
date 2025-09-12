@@ -47,7 +47,8 @@ const placeholder =
             id="comment-message"
             placeholder={placeholder}
             class="w-full resize-none rounded-lg border border-gray-300 p-3 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
-            rows="4"></textarea>
+            rows="4"
+            required></textarea>
           <div
             id="mention-dropdown"
             class="absolute z-50 mt-1 hidden w-full max-h-48 overflow-y-auto rounded-lg border border-gray-300 bg-white shadow-lg dark:border-gray-600 dark:bg-gray-700"
@@ -137,7 +138,9 @@ const placeholder =
 
           async function loadDiscussions(projectId) {
             try {
-              const response = await fetch(`/api/get-project-discussions?projectId=${projectId}`);
+              const response = await fetch(`/api/get-project-discussions?projectId=${projectId}`, {
+                credentials: "include",
+              });
               const data = await response.json();
 
               if (data.success) {
@@ -492,6 +495,7 @@ const placeholder =
                 headers: {
                   "Content-Type": "application/json",
                 },
+                credentials: "include",
                 body: JSON.stringify({
                   projectId: currentProjectId,
                   message: message,
@@ -712,8 +716,9 @@ const placeholder =
             const isInternal = internalToggle?.checked || false;
             const submitBtn = document.getElementById("submit-comment-btn");
 
-            if (!message && selectedImages.length === 0) {
-              alert("Please enter a comment message or add images");
+            if (!message) {
+              alert("Please enter a comment message");
+              messageInput?.focus();
               return;
             }
 
@@ -749,15 +754,29 @@ const placeholder =
                     const uploadResponse = await fetch("/api/upload-discussion-image", {
                       method: "POST",
                       body: formData,
+                      credentials: "include",
                     });
 
-                    const uploadData = await uploadResponse.json();
-
-                    if (uploadData.success) {
-                      uploadedImagePaths.push(uploadData.imagePath);
-                      console.log("✅ Image uploaded:", uploadData.imagePath);
+                    let uploadData;
+                    const contentType = uploadResponse.headers.get("content-type");
+                    if (contentType && contentType.includes("application/json")) {
+                      uploadData = await uploadResponse.json();
                     } else {
-                      uploadErrors.push(`Failed to upload ${file.name}: ${uploadData.error}`);
+                      const textResponse = await uploadResponse.text();
+                      console.error("❌ Non-JSON response from upload API:", textResponse);
+                      throw new Error(
+                        `Server returned non-JSON response: ${uploadResponse.status}`
+                      );
+                    }
+
+                    if (uploadData.success && uploadData.files && uploadData.files.length > 0) {
+                      const uploadedFile = uploadData.files[0];
+                      uploadedImagePaths.push(uploadedFile.path);
+                      console.log("✅ Image uploaded:", uploadedFile.path);
+                    } else {
+                      uploadErrors.push(
+                        `Failed to upload ${file.name}: ${uploadData.error || "Unknown error"}`
+                      );
                     }
                   } catch (error) {
                     console.error("❌ Upload error for", file.name, ":", error);
@@ -784,6 +803,7 @@ const placeholder =
                 headers: {
                   "Content-Type": "application/json",
                 },
+                credentials: "include",
                 body: JSON.stringify({
                   projectId: currentProjectId,
                   message: message || "",
@@ -1270,6 +1290,7 @@ const placeholder =
                 headers: {
                   "Content-Type": "application/json",
                 },
+                credentials: "include",
                 body: JSON.stringify({
                   discussionId: discussionId,
                   mark_completed: isCompleted,
