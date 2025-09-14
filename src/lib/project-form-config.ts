@@ -532,7 +532,7 @@ export function generateFormFieldHTML(
             id="${fieldId}"
             name="${field.name}"
             value="${value}"
-            class="w-full py-2 px-3 text-sm border border-gray-300 dark:border-gray-600 rounded-full bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:focus:ring-blue-400 dark:focus:border-blue-400"
+            class="w-full py-2 px-3 text-sm border border-border-light dark:border-border-dark rounded-full bg-background-card dark:bg-background-card-dark text-text-primary dark:text-text-primary-dark focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:focus:ring-primary-400 dark:focus:border-primary-400"
             placeholder="${field.placeholder || ""}"
             ${field.required ? "required" : ""}
             ${field.min !== undefined ? `min="${field.min}"` : ""}
@@ -552,7 +552,7 @@ export function generateFormFieldHTML(
             id="${fieldId}"
             name="${field.name}"
             rows="3"
-            class="w-full py-2 px-3 text-sm border border-gray-300 dark:border-gray-600 rounded-full bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:focus:ring-blue-400 dark:focus:border-blue-400"
+            class="w-full py-2 px-3 text-sm border border-border-light dark:border-border-dark rounded-full bg-background-card dark:bg-background-card-dark text-text-primary dark:text-text-primary-dark focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:focus:ring-primary-400 dark:focus:border-primary-400"
             placeholder="${field.placeholder || ""}"
             data-project-id="${projectId}"
           >${value}</textarea>
@@ -628,7 +628,7 @@ export function generateButtonGroupHTML(group: ButtonGroupConfig, projectData: a
             (option) => `
           <button
             type="button"
-            class="${group.cssClass} px-3 py-2 text-sm rounded-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors ${selectedValues.includes(option.value) ? "bg-blue-500 text-white border-blue-500" : ""}"
+            class="${group.cssClass} px-3 py-2 text-sm rounded-full border border-border-light dark:border-border-dark bg-background-card dark:bg-background-card-dark text-text-secondary dark:text-text-secondary-dark hover:bg-neutral-50 dark:hover:bg-neutral-600 transition-colors ${selectedValues.includes(option.value) ? "bg-primary-500 text-white border-primary-500" : ""}"
             data-value="${option.value}"
             data-group="${group.name}"
             data-type="${group.type}"
