@@ -104,13 +104,13 @@ const buttonClasses = [
   .filter(Boolean)
   .join(" ");
 
-// Build data attributes string
-const dataAttrs = Object.entries(dataAttributes)
-  .map(([key, value]) => `data-${key}="${value}"`)
-  .join(" ");
+// Build data attributes object
+const dataAttrs = Object.fromEntries(
+  Object.entries(dataAttributes).map(([key, value]) => [`data-${key}`, value])
+);
 
 // Add selected classes data attribute if provided
-const selectedDataAttr = selectedClasses ? `data-selected-classes="${selectedClasses}"` : "";
+const selectedDataAttr = selectedClasses ? { "data-selected-classes": selectedClasses } : {};
 
 // Determine if this should be a link or button
 const isLink = href && !disabled;
@@ -125,8 +125,8 @@ const attributes = {
   ...(onclick && { onclick }),
   ...(disabled && !isLink && { disabled }),
   ...(isLink && { href, target }),
-  ...(dataAttrs && { "data-attributes": dataAttrs }),
-  ...(selectedDataAttr && { "data-selected-classes": selectedClasses }),
+  ...dataAttrs,
+  ...selectedDataAttr,
 };
 ---
 
