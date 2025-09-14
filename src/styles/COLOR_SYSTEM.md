@@ -28,8 +28,8 @@ Use the custom color names defined in `tailwind.config.mjs`:
 <div class="bg-background-card dark:bg-background-card-dark">Card Background</div>
 
 <!-- Text Colors -->
-<div class="text-text-primary dark:text-text-primary-dark">Primary Text</div>
-<div class="text-text-secondary dark:text-text-secondary-dark">Secondary Text</div>
+<div class="text-primary dark:text-primary-dark">Primary Text</div>
+<div class="text-secondary dark:text-secondary-dark">Secondary Text</div>
 
 <!-- Border Colors -->
 <div class="border-border-light dark:border-border-dark border">Adaptive Border</div>
@@ -125,10 +125,8 @@ All colors automatically adapt to dark mode using the `dark:` prefix in Tailwind
 <div
   class="bg-background-card dark:bg-background-card-dark border-border-light dark:border-border-dark rounded-lg border p-6"
 >
-  <h3 class="text-text-primary dark:text-text-primary-dark mb-2 text-xl font-semibold">
-    Card Title
-  </h3>
-  <p class="text-text-secondary dark:text-text-secondary-dark">Card content goes here.</p>
+  <h3 class="text-primary dark:text-primary-dark mb-2 text-xl font-semibold">Card Title</h3>
+  <p class="text-secondary dark:text-secondary-dark">Card content goes here.</p>
 </div>
 ```
 
@@ -138,7 +136,7 @@ All colors automatically adapt to dark mode using the `dark:` prefix in Tailwind
 <nav
   class="bg-background-light dark:bg-background-dark border-border-light dark:border-border-dark border-b"
 >
-  <a href="#" class="text-text-primary dark:text-text-primary-dark hover:text-primary-600">
+  <a href="#" class="text-primary dark:text-primary-dark hover:text-primary-600">
     Navigation Link
   </a>
 </nav>
