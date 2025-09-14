@@ -26,7 +26,12 @@ const userProfile = currentUser?.profile || null;
   isAuth ? (
     <>
       {/* Authenticated: Profile Button with Drawer */}
-      <div id="profile-btn" class="text-text-primary dark:text-text-primary-dark cursor-pointer">
+      <button 
+        id="profile-btn" 
+        data-drawer-target="profile-drawer"
+        data-drawer-toggle="profile-drawer"
+        class="text-text-primary dark:text-text-primary-dark cursor-pointer"
+      >
         <img
           id="user-avatar"
           src={currentUser?.user_metadata?.avatar_url || ""}
@@ -35,12 +40,13 @@ const userProfile = currentUser?.profile || null;
           onerror="this.style.display='none'; this.nextElementSibling.style.display='block';"
         />
         <BoxIcon name="user" style="display:none;" class="bx-sm" />
-      </div>
+      </button>
 
       {/* Profile Drawer */}
       <div
         id="profile-drawer"
         class="fixed inset-0 z-50 hidden overflow-y-auto"
+        data-drawer="profile-drawer"
         aria-labelledby="profile-drawer-title"
         role="dialog"
         aria-modal="true"
@@ -48,7 +54,7 @@ const userProfile = currentUser?.profile || null;
         {/* Backdrop */}
         <div
           class="fixed inset-0 bg-gray-900 bg-opacity-50 transition-opacity"
-          id="profile-drawer-backdrop"
+          data-drawer-backdrop="profile-drawer"
         />
 
         {/* Drawer */}
@@ -65,6 +71,7 @@ const userProfile = currentUser?.profile || null;
               <button
                 type="button"
                 id="profile-drawer-close"
+                data-drawer-hide="profile-drawer"
                 class="rounded-lg bg-transparent p-1.5 text-sm text-text-muted hover:bg-neutral-200 hover:text-text-primary dark:hover:bg-neutral-600 dark:hover:text-text-primary-dark"
               >
                 <svg class="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
@@ -241,56 +248,7 @@ const userProfile = currentUser?.profile || null;
   // console.log("📋 [HEADER] Checking initial auth state...");
   // updateProfileButton(session); // Removed - let static HTML handle the display
 
-  // Toggle profile drawer (only if profile button exists - when authenticated)
-  if (profileBtn) {
-    profileBtn.addEventListener("click", (e) => {
-      e.stopPropagation();
-      if (profileDrawer) {
-        profileDrawer.classList.remove("hidden");
-        document.body.classList.add("overflow-hidden");
-      }
-    });
-  }
-
-  // Close drawer when clicking close button
-  if (profileDrawerClose) {
-    profileDrawerClose.addEventListener("click", (e) => {
-      e.stopPropagation();
-      if (profileDrawer) {
-        profileDrawer.classList.add("hidden");
-        document.body.classList.remove("overflow-hidden");
-      }
-    });
-  }
-
-  // Close drawer when clicking backdrop
-  if (profileDrawerBackdrop) {
-    profileDrawerBackdrop.addEventListener("click", (e) => {
-      e.stopPropagation();
-      if (profileDrawer) {
-        profileDrawer.classList.add("hidden");
-        document.body.classList.remove("overflow-hidden");
-      }
-    });
-  }
-
-  // Close drawer when clicking outside
-  document.addEventListener("click", (e) => {
-    if (profileDrawer && !profileDrawer.classList.contains("hidden")) {
-      if (!profileBtn?.contains(e.target) && !profileDrawer.contains(e.target)) {
-        profileDrawer.classList.add("hidden");
-        document.body.classList.remove("overflow-hidden");
-      }
-    }
-  });
-
-  // Close drawer on escape key
-  document.addEventListener("keydown", (e) => {
-    if (e.key === "Escape" && profileDrawer && !profileDrawer.classList.contains("hidden")) {
-      profileDrawer.classList.add("hidden");
-      document.body.classList.remove("overflow-hidden");
-    }
-  });
+  // Profile drawer is now handled by Flowbite - no custom JavaScript needed
 
   // Mobile menu toggle functionality
   function toggleMobileMenu() {
