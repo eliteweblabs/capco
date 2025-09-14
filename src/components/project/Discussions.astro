@@ -22,7 +22,7 @@ const placeholder =
 
 <div
   id="content-discussion"
-  class="tab-content hidden rounded-lg border border-gray-200 bg-white p-6 dark:border-gray-700 dark:bg-gray-800"
+  class="tab-content hidden rounded-full border border-gray-200 bg-white p-6 dark:border-gray-700 dark:bg-gray-800"
 >
   <div>
     <div id="discussion-container" data-project-id={projectId}>
@@ -30,7 +30,7 @@ const placeholder =
         <h3 class="text-lg font-medium text-gray-900 dark:text-white">Project Discussion</h3>
         <button
           id="new-comment-btn"
-          class="inline-flex items-center rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-red-700 whitespace-nowrap min-w-[120px] justify-center"
+          class="inline-flex items-center rounded-full bg-red-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-red-700 whitespace-nowrap min-w-[120px] justify-center"
         >
           <BoxIcon name="plus" class="mr-2 bx-sm" />
           New Comment
@@ -40,18 +40,18 @@ const placeholder =
       <!-- Comment Form (hidden by default) -->
       <div
         id="comment-form"
-        class="mb-6 hidden rounded-lg border border-gray-200 p-4 dark:border-gray-700"
+        class="mb-6 hidden rounded-full border border-gray-200 p-4 dark:border-gray-700"
       >
         <div class="relative">
           <textarea
             id="comment-message"
             placeholder={placeholder}
-            class="w-full resize-none rounded-lg border border-gray-300 p-3 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+            class="w-full resize-none rounded-full border border-gray-300 p-3 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
             rows="4"
             required></textarea>
           <div
             id="mention-dropdown"
-            class="absolute z-50 mt-1 hidden w-full max-h-48 overflow-y-auto rounded-lg border border-gray-300 bg-white shadow-lg dark:border-gray-600 dark:bg-gray-700"
+            class="absolute z-50 mt-1 hidden w-full max-h-48 overflow-y-auto rounded-full border border-gray-300 bg-white shadow-lg dark:border-gray-600 dark:bg-gray-700"
           >
           </div>
         </div>
@@ -119,7 +119,7 @@ const placeholder =
         <div class="mt-4 flex items-center justify-end">
           <button
             id="submit-comment-btn"
-            class="inline-flex items-center rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700"
+            class="inline-flex items-center rounded-full bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700"
           >
             <BoxIcon name="send" class="mr-2 h-4 w-4" />
             Post
@@ -304,7 +304,7 @@ const placeholder =
 
             return `
       <div class="comment-item ${marginLeft} ${borderLeft}" data-discussion-id="${comment.id}">
-        <div class="rounded-lg border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-800">
+        <div class="rounded-full border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-800">
           <div class="flex items-start justify-between">
             <div class="flex items-center space-x-3">
               <div class="flex h-8 w-8 items-center justify-center rounded-full bg-gray-200 dark:bg-gray-600">
@@ -361,10 +361,10 @@ const placeholder =
                     <img 
                       src="${getImageUrl(imagePath)}" 
                       alt="Discussion image"
-                      class="max-w-xs max-h-48 object-cover rounded-lg border border-gray-300 dark:border-gray-600 cursor-pointer hover:opacity-90 transition-opacity"
+                      class="max-w-xs max-h-48 object-cover rounded-full border border-gray-300 dark:border-gray-600 cursor-pointer hover:opacity-90 transition-opacity"
                       onclick="console.log('🖼️ [DISCUSSION] Image clicked:', '${getImageUrl(imagePath)}'); openImageModal('${getImageUrl(imagePath)}')"
                     />
-                    <div class="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-10 transition-all rounded-lg flex items-center justify-center">
+                    <div class="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-10 transition-all rounded-full flex items-center justify-center">
                       <i class="bx bx-zoom-in text-white opacity-0 group-hover:opacity-100 transition-opacity text-2xl"></i>
                     </div>
                   </div>
@@ -620,7 +620,7 @@ const placeholder =
           <img 
             src="${URL.createObjectURL(file)}" 
             alt="${file.name}"
-            class="w-20 h-20 object-cover rounded-lg border border-gray-300 dark:border-gray-600"
+            class="w-20 h-20 object-cover rounded-full border border-gray-300 dark:border-gray-600"
           />
           <button
             type="button"
@@ -717,7 +717,7 @@ const placeholder =
           <img 
             src="${imageUrl}" 
             alt="Discussion image"
-            class="max-w-full max-h-full object-contain rounded-lg"
+            class="max-w-full max-h-full object-contain rounded-full"
           />
         </div>
       `;
@@ -861,7 +861,7 @@ const placeholder =
 
               if (data.success) {
                 console.log("✅ Comment with images submitted successfully");
-                
+
                 // Handle featured image if toggle is on and there are uploaded images
                 if (isFeaturedImage && uploadedImagePaths.length > 0) {
                   try {
@@ -869,7 +869,7 @@ const placeholder =
                     // The path format is typically: project-documents/projectId/filename
                     const firstImagePath = uploadedImagePaths[0];
                     console.log("⭐ Setting featured image for path:", firstImagePath);
-                    
+
                     // We need to get the file ID from the database using the path
                     const fileIdResponse = await fetch("/api/get-file-by-path", {
                       method: "POST",
@@ -885,7 +885,7 @@ const placeholder =
                       const fileData = await fileIdResponse.json();
                       if (fileData.success && fileData.fileId) {
                         console.log("⭐ Found file ID:", fileData.fileId);
-                        
+
                         const featuredResponse = await fetch("/api/update-featured-image", {
                           method: "POST",
                           headers: { "Content-Type": "application/json" },
@@ -908,7 +908,7 @@ const placeholder =
                     console.error("❌ Error setting featured image:", error);
                   }
                 }
-                
+
                 // Clear form and hide it
                 messageInput.value = "";
                 if (internalToggle) internalToggle.checked = false;
@@ -1301,11 +1301,11 @@ const placeholder =
 
             // Create inline reply form
             const replyFormHTML = `
-      <div class="inline-reply-form mt-3 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-600">
+      <div class="inline-reply-form mt-3 p-3 bg-gray-50 dark:bg-gray-800 rounded-full border border-gray-200 dark:border-gray-600">
         <!-- Textarea -->
         <div class="relative">
           <textarea
-            class="reply-message-input w-full resize-none rounded-lg border border-gray-300 p-3 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+            class="reply-message-input w-full resize-none rounded-full border border-gray-300 p-3 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
             placeholder="Type your reply here..."
             rows="3"
           ></textarea>
@@ -1345,7 +1345,7 @@ const placeholder =
             Cancel
           </button>
           <button
-            class="submit-reply-btn rounded-lg bg-blue-600 px-4 py-2 text-white transition-colors hover:bg-blue-700"
+            class="submit-reply-btn rounded-full bg-blue-600 px-4 py-2 text-white transition-colors hover:bg-blue-700"
             onclick="window.submitReply(${parentCommentId})"
           >
             <i class="bx bx-send mr-2"></i>

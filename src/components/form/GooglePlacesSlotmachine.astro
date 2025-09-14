@@ -1,5 +1,5 @@
 ---
-import SlotMachineMap from "./SlotMachineMap.astro";
+import BoxIcon from "../common/BoxIcon.astro";
 
 interface Props {
   id: string;
@@ -33,17 +33,12 @@ const {
   <!-- Add Address Button -->
   <button
     type="button"
-    class={`places-add-btn w-full rounded-md border border-gray-300 bg-white px-3 py-2.5 text-left text-sm text-gray-500 transition-colors hover:border-gray-400 hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-400 dark:hover:border-gray-500 dark:hover:bg-gray-600 ${className}`}
+    class={`places-add-btn rounded-full border border-gray-300 bg-white px-3 py-2.5 text-left text-sm text-gray-500 transition-colors hover:border-gray-400 hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-400 dark:hover:border-gray-500 dark:hover:bg-gray-600 ${className}`}
   >
     <div class="flex items-center justify-between">
       <span class="places-button-text">Add Address</span>
-      <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path
-          stroke-linecap="round"
-          stroke-linejoin="round"
-          stroke-width="2"
-          d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
-      </svg>
+
+      <BoxIcon name="plus" size="sm" />
     </div>
   </button>
 
@@ -71,7 +66,7 @@ const {
     <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
       >Selected Address:</label
     >
-    <div class="flex items-center justify-between bg-gray-50 dark:bg-gray-700 rounded-md p-3">
+    <div class="flex items-center justify-between bg-gray-50 dark:bg-gray-700 rounded-full p-3">
       <span class="places-selected-text text-sm text-gray-900 dark:text-white"></span>
       <button
         type="button"
@@ -101,19 +96,9 @@ const {
     aria-hidden="true"
   />
 
-  <!-- Slot Machine Map Component -->
+  <!-- Slot Machine Container (integrated) -->
   <div class="places-slot-machine-container hidden">
-    <SlotMachineMap
-      id={`${id}-slot-machine`}
-      title="Select Address"
-      options={[]}
-      selectedValue=""
-      placeholder="Choose an address..."
-      theme="blue"
-      showCloseButton={true}
-      showCancelButton={true}
-      skipSaveToAPI={true}
-    />
+    <!-- Slot machine functionality is now integrated directly into this component -->
   </div>
 </div>
 
@@ -224,36 +209,40 @@ const {
       console.log("🔓 [CUSTOM-PLACES] Body scroll unlocked, restored to position:", scrollY);
     }
 
-    // Show address search modal with input inside
-    function showAddressSearchModal() {
-      // Create modal HTML with search input inside
+    // Show slot machine modal directly
+    function showSlotMachineModal() {
+      // Create slot machine modal HTML
       const modalHTML = `
-        <div id="${componentId}-address-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-          <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-md mx-4">
+        <div id="${componentId}-slot-machine-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+          <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
             <!-- Modal Header -->
-            <div class="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
-              <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Add Address</h3>
-              <button type="button" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300" onclick="this.closest('.fixed').remove()">
+            <div class="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
+              <h2 class="text-xl font-semibold text-gray-900 dark:text-white">Select Address</h2>
+              <button id="${componentId}-close-slot-modal" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors duration-200">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
                 </svg>
               </button>
             </div>
             
-            <!-- Modal Body -->
-            <div class="p-4">
-              <!-- Search Input -->
-              <div class="relative mb-4">
+            <!-- Modal Content -->
+            <div class="p-6">
+              <!-- Search Input Section -->
+              <div class="mb-4">
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Search for an address:
+                </label>
+                <div class="relative">
                 <input
                   type="text"
-                  id="${componentId}-modal-search"
-                  class="w-full rounded-md border border-gray-300 px-3 py-2.5 pr-10 text-sm text-gray-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:focus:border-blue-400 dark:focus:ring-blue-400"
-                  placeholder="Search for an address..."
+                    id="${componentId}-slot-search-input"
+                    class="w-full rounded-full border border-gray-300 px-3 py-2.5 pr-10 text-sm text-gray-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:focus:border-blue-400 dark:focus:ring-blue-400"
+                    placeholder="Type to search for addresses..."
                   autocomplete="off"
                 />
                 <button
                   type="button"
-                  id="${componentId}-modal-search-btn"
+                    id="${componentId}-slot-search-btn"
                   class="absolute right-2 top-1/2 transform -translate-y-1/2 p-1.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors duration-200"
                   title="Search for address"
                 >
@@ -261,34 +250,58 @@ const {
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
                   </svg>
                 </button>
-              </div>
-              
-              <!-- Loading Indicator -->
-              <div id="${componentId}-modal-loading" class="hidden mb-4">
-                <div class="flex items-center justify-center py-2">
-                  <svg class="h-4 w-4 animate-spin text-gray-400 mr-2" fill="none" viewBox="0 0 24 24">
-                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
-                  <span class="text-sm text-gray-500 dark:text-gray-400">Searching for addresses...</span>
                 </div>
               </div>
               
-              <!-- Error Message -->
-              <div class="h-4">
-              <div id="${componentId}-modal-error" class="hidden mb-4 text-sm text-red-600 dark:text-red-400"></div>
+              <!-- Slot Machine Container with Fixed Height -->
+              <div class="h-48 slot-machine-container relative overflow-hidden border-2 border-gray-200 dark:border-gray-600 rounded-lg mb-4 bg-gray-50 dark:bg-gray-700">
+                <!-- Loading State -->
+                <div id="${componentId}-slot-loading" class="absolute inset-0 flex items-center justify-center text-gray-500 dark:text-gray-400 hidden">
+                  <div class="text-center">
+                    <svg class="h-6 w-6 animate-spin text-gray-400 mx-auto mb-2" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                    <p class="text-sm">Searching for addresses...</p>
+                </div>
+              </div>
+              
+                <!-- Error State -->
+                <div id="${componentId}-slot-error" class="absolute inset-0 flex items-center justify-center text-red-600 dark:text-red-400 hidden">
+                  <div class="text-center">
+                    <svg class="w-6 h-6 mx-auto mb-2 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                    <p class="text-sm">Error loading addresses</p>
               </div>
             </div>
             
-            <!-- Modal Footer -->
-            <div class="flex items-center justify-end gap-2 p-4 border-t border-gray-200 dark:border-gray-700">
-              <button
-                type="button"
-                id="${componentId}-modal-cancel"
-                class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-600"
-              >
+                <ul id="${componentId}-slot-address-list" class="absolute inset-0 transition-transform duration-300 ease-out">
+                  <!-- Options will be populated dynamically -->
+                </ul>
+                
+                <!-- Empty state when no results -->
+                <div id="${componentId}-slot-empty-state" class="slot-empty-state absolute inset-0 flex items-center justify-center text-gray-500 dark:text-gray-400 hidden">
+                  <div class="text-center">
+                    <svg class="w-8 h-8 mx-auto mb-2 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                    </svg>
+                    <p class="text-sm">No addresses found</p>
+                    <p class="text-xs text-gray-400 mt-1">Try a different search term</p>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Action Buttons -->
+              <div class="flex justify-center gap-2">
+                <button id="${componentId}-slot-cancel-btn" class="inline-flex items-center justify-center font-medium rounded-full transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed px-4 py-2 text-sm text-blue-600 hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-blue-900/20">
                 Cancel
               </button>
+                <button id="${componentId}-slot-select-btn" class="inline-flex items-center justify-center font-medium rounded-full transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed px-4 py-2 text-sm bg-blue-600 hover:bg-blue-700 text-white shadow-sm hover:shadow-md disabled:bg-gray-300 disabled:text-gray-500" disabled>
+                  Select
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -298,17 +311,17 @@ const {
       lockBodyScroll();
       document.body.insertAdjacentHTML("beforeend", modalHTML);
 
-      // Get modal elements
-      const modal = document.getElementById(`${componentId}-address-modal`);
+      // Get modal elements for the new slot machine modal
+      const modal = document.getElementById(`${componentId}-slot-machine-modal`);
       const modalSearchInput = document.getElementById(
-        `${componentId}-modal-search`
+        `${componentId}-slot-search-input`
       ) as HTMLInputElement;
       const modalSearchBtn = document.getElementById(
-        `${componentId}-modal-search-btn`
+        `${componentId}-slot-search-btn`
       ) as HTMLButtonElement;
-      const modalLoading = document.getElementById(`${componentId}-modal-loading`);
-      const modalError = document.getElementById(`${componentId}-modal-error`);
-      const modalCancel = document.getElementById(`${componentId}-modal-cancel`);
+      const modalLoading = document.getElementById(`${componentId}-slot-loading`);
+      const modalError = document.getElementById(`${componentId}-slot-error`);
+      const modalCancel = document.getElementById(`${componentId}-slot-cancel-btn`);
 
       // Debug: Check if all elements were found
       console.log("🔍 [CUSTOM-PLACES] Modal elements found:", {
@@ -337,7 +350,7 @@ const {
               modalSearchInput?.value
             );
             if (modalSearchInput) {
-              searchPlacesInModal(modalSearchInput.value);
+              searchAddresses(modalSearchInput.value);
             }
           });
           console.log("🔍 [CUSTOM-PLACES] Search button event listener added");
@@ -362,7 +375,7 @@ const {
               console.log("🔍 [CUSTOM-PLACES] Query is 2+ characters, scheduling search...");
               searchTimeout = setTimeout(() => {
                 console.log("🔍 [CUSTOM-PLACES] Executing delayed search for:", query);
-                searchPlacesInModal(query);
+                searchAddresses(query);
               }, 300); // 300ms debounce
             } else if (query.length === 0) {
               // Clear results if input is empty
@@ -380,7 +393,7 @@ const {
                 if (searchTimeout) {
                   clearTimeout(searchTimeout);
                 }
-                searchPlacesInModal(query);
+                searchAddresses(query);
               }
             }
           });
@@ -403,8 +416,8 @@ const {
       });
 
       // Search function for modal
-      async function searchPlacesInModal(query: string) {
-        console.log("🔍 [CUSTOM-PLACES] searchPlacesInModal function called with query:", query);
+      async function searchAddresses(query: string) {
+        console.log("🔍 [CUSTOM-PLACES] searchAddresses function called with query:", query);
 
         if (!query.trim()) {
           console.log("🔍 [CUSTOM-PLACES] Empty query, showing error");
@@ -450,28 +463,6 @@ const {
         }
       }
 
-      // Modal helper functions
-      function showModalLoading() {
-        modalLoading?.classList.remove("hidden");
-        modalSearchBtn.disabled = true;
-      }
-
-      function hideModalLoading() {
-        modalLoading?.classList.add("hidden");
-        modalSearchBtn.disabled = false;
-      }
-
-      function showModalError(message: string) {
-        if (modalError) {
-          modalError.textContent = message;
-          modalError.classList.remove("hidden");
-        }
-      }
-
-      function hideModalError() {
-        modalError?.classList.add("hidden");
-      }
-
       function showModalResults(predictions: any[], query: string) {
         console.log(
           "🔍 [CUSTOM-PLACES] showModalResults called with:",
@@ -492,13 +483,243 @@ const {
           "options"
         );
 
-        // Show slot machine modal instead of simple list
-        console.log(
-          "🔍 [CUSTOM-PLACES] About to call showCustomSlotMachine with",
-          options.length,
-          "options"
-        );
-        showCustomSlotMachine(options, query);
+        // Update the slot machine with the new options
+        console.log("🔍 [CUSTOM-PLACES] Updating slot machine with", options.length, "options");
+        updateSlotMachineOptions(options);
+      }
+
+      // Helper functions for modal states
+      function showModalLoading() {
+        modalLoading?.classList.remove("hidden");
+        modalError?.classList.add("hidden");
+      }
+
+      function hideModalLoading() {
+        modalLoading?.classList.add("hidden");
+      }
+
+      function showModalError(message: string) {
+        if (modalError) {
+          modalError.textContent = message;
+          modalError.classList.remove("hidden");
+        }
+      }
+
+      function hideModalError() {
+        modalError?.classList.add("hidden");
+      }
+
+      // Update slot machine with new options
+      function updateSlotMachineOptions(
+        options: Array<{ value: string; label: string; disabled: boolean }>
+      ) {
+        const addressList = document.getElementById(
+          `${componentId}-slot-address-list`
+        ) as HTMLUListElement;
+        const selectBtn = document.getElementById(
+          `${componentId}-slot-select-btn`
+        ) as HTMLButtonElement;
+        const emptyState = document.getElementById(
+          `${componentId}-slot-empty-state`
+        ) as HTMLDivElement;
+
+        if (!addressList) return;
+
+        if (options.length === 0) {
+          emptyState?.classList.remove("hidden");
+          return;
+        }
+
+        emptyState?.classList.add("hidden");
+        selectBtn.disabled = true;
+
+        addressList.innerHTML = options
+          .map(
+            (option, index) => `
+            <li class="slot-machine-item flex items-center justify-center h-12 text-center cursor-pointer transition-all duration-200 hover:bg-blue-50 dark:hover:bg-blue-900/20" data-index="${index}" data-value="${option.value}">
+              <span class="text-sm font-medium text-gray-900 dark:text-white px-4">${option.label}</span>
+            </li>
+          `
+          )
+          .join("");
+
+        setupSlotMachineInteractions();
+      }
+
+      // Setup slot machine interactions
+      function setupSlotMachineInteractions() {
+        const addressList = document.getElementById(
+          `${componentId}-slot-address-list`
+        ) as HTMLUListElement;
+        const selectBtn = document.getElementById(
+          `${componentId}-slot-select-btn`
+        ) as HTMLButtonElement;
+
+        if (!addressList) return;
+
+        let selectedIndex = -1;
+        let currentOptions: Array<{ value: string; label: string; disabled: boolean }> = [];
+
+        // Handle wheel events and touch events on the entire slot machine container
+        const slotContainer = document.querySelector(
+          `#${componentId}-slot-machine-modal .slot-machine-container`
+        ) as HTMLDivElement;
+        if (slotContainer) {
+          // Wheel events for desktop
+          slotContainer.addEventListener("wheel", (e) => {
+            e.preventDefault();
+            if (currentOptions.length === 0) return;
+
+            const deltaY = e.deltaY;
+            if (selectedIndex === -1) {
+              selectedIndex = 0;
+            } else {
+              if (deltaY > 0) {
+                selectedIndex = Math.min(selectedIndex + 1, currentOptions.length - 1);
+              } else {
+                selectedIndex = Math.max(selectedIndex - 1, 0);
+              }
+            }
+            centerSelectedItem();
+            updateSelection();
+          });
+
+          // Touch events for mobile
+          let touchStartY = 0;
+          let touchStartTime = 0;
+
+          slotContainer.addEventListener("touchstart", (e) => {
+            e.preventDefault();
+            if (currentOptions.length === 0) return;
+
+            touchStartY = e.touches[0].clientY;
+            touchStartTime = Date.now();
+          });
+
+          slotContainer.addEventListener("touchmove", (e) => {
+            e.preventDefault();
+          });
+
+          slotContainer.addEventListener("touchend", (e) => {
+            e.preventDefault();
+            if (currentOptions.length === 0) return;
+
+            const touchEndY = e.changedTouches[0].clientY;
+            const touchEndTime = Date.now();
+            const deltaY = touchStartY - touchEndY;
+            const deltaTime = touchEndTime - touchStartTime;
+
+            // Only process if it's a quick swipe (less than 300ms) with enough movement (more than 20px)
+            if (deltaTime < 300 && Math.abs(deltaY) > 20) {
+              if (selectedIndex === -1) {
+                selectedIndex = 0;
+              } else {
+                if (deltaY > 0) {
+                  // Swipe up - move to next item
+                  selectedIndex = Math.min(selectedIndex + 1, currentOptions.length - 1);
+                } else {
+                  // Swipe down - move to previous item
+                  selectedIndex = Math.max(selectedIndex - 1, 0);
+                }
+              }
+              centerSelectedItem();
+              updateSelection();
+            }
+          });
+        }
+
+        // Handle click and touch on items
+        addressList.addEventListener("click", (e) => {
+          const target = e.target as HTMLElement;
+          const li = target.closest("li[data-index]");
+          if (li) {
+            selectedIndex = parseInt(li.getAttribute("data-index") || "0");
+            centerSelectedItem();
+            updateSelection();
+          }
+        });
+
+        // Add touch support for list items
+        addressList.addEventListener("touchend", (e) => {
+          e.preventDefault();
+          const target = e.target as HTMLElement;
+          const li = target.closest("li[data-index]");
+          if (li) {
+            selectedIndex = parseInt(li.getAttribute("data-index") || "0");
+            centerSelectedItem();
+            updateSelection();
+          }
+        });
+
+        // Handle select button
+        selectBtn?.addEventListener("click", () => {
+          if (selectedIndex >= 0 && currentOptions[selectedIndex]) {
+            const selectedOption = currentOptions[selectedIndex];
+            showSelectedAddress(selectedOption.label);
+            modal?.remove();
+            unlockBodyScroll();
+          }
+        });
+
+        // Center selected item
+        function centerSelectedItem() {
+          if (selectedIndex >= 0) {
+            const itemHeight = 48;
+            const containerHeight = 192;
+            const centerOffset = (containerHeight - itemHeight) / 2;
+            const targetY = -(selectedIndex * itemHeight) + centerOffset;
+            addressList.style.transform = `translateY(${targetY}px)`;
+          }
+        }
+
+        // Update selection styling
+        function updateSelection() {
+          const items = addressList.querySelectorAll("li");
+          items.forEach((item, index) => {
+            if (index === selectedIndex && selectedIndex >= 0) {
+              item.classList.add("selected");
+              item.style.cssText = `
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                height: 3rem;
+                text-align: center;
+                color: white !important;
+                font-weight: 600;
+                cursor: pointer;
+                transition: all 0.2s;
+                background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+                border-radius: 8px;
+                margin: 0 8px;
+                box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+                position: relative;
+              `;
+              const span = item.querySelector("span");
+              if (span) {
+                span.style.color = "white !important";
+              }
+              selectBtn.disabled = false;
+            } else {
+              item.classList.remove("selected");
+              item.style.cssText = `
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                height: 3rem;
+                text-align: center;
+                color: #111827;
+                font-weight: 500;
+                cursor: pointer;
+                transition: all 0.2s;
+                position: relative;
+              `;
+              const span = item.querySelector("span");
+              if (span) {
+                span.style.color = "";
+              }
+            }
+          });
+        }
       }
     }
 
@@ -543,7 +764,7 @@ const {
                   <input
                     type="text"
                     id="${componentId}-slot-search-input"
-                    class="w-full rounded-md border border-gray-300 px-3 py-2.5 pr-10 text-sm text-gray-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:focus:border-blue-400 dark:focus:ring-blue-400"
+                    class="w-full rounded-full border border-gray-300 px-3 py-2.5 pr-10 text-sm text-gray-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:focus:border-blue-400 dark:focus:ring-blue-400"
                     placeholder="Type to search for addresses..."
                     autocomplete="off"
                     value="${originalQuery}"
@@ -608,10 +829,10 @@ const {
 
               <!-- Action Buttons -->
               <div class="flex justify-center gap-2">
-                <button id="${componentId}-slot-cancel-btn" class="px-4 py-2 text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200">
+                <button id="${componentId}-slot-cancel-btn" class="inline-flex items-center justify-center font-medium rounded-full transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed px-4 py-2.5 text-sm text-blue-600 hover:bg-blue-50 focus:ring-blue-500 dark:text-blue-400 dark:hover:bg-blue-900/20">
                   Cancel
                 </button>
-                <button id="${componentId}-slot-select-btn" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md disabled:opacity-50" disabled>
+                <button id="${componentId}-slot-select-btn" class="inline-flex items-center justify-center font-medium rounded-full transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed px-4 py-2.5 text-sm bg-blue-600 text-white hover:bg-blue-700 focus:ring-blue-500 dark:bg-blue-600 dark:hover:bg-blue-700 shadow-lg hover:shadow-xl" disabled>
                   Select
                 </button>
               </div>
@@ -724,7 +945,7 @@ const {
             justify-content: center;
             height: 3rem;
             text-align: center;
-            color: white;
+            color: white !important;
             font-weight: 600;
             cursor: pointer;
             transition: all 0.2s;
@@ -734,6 +955,13 @@ const {
             box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
             position: relative;
           `;
+
+            // Also ensure the span inside has white color
+            const span = item.querySelector("span");
+            if (span) {
+              span.style.color = "white !important";
+            }
+
             addCheckmark(item);
             selectBtn.disabled = false;
           } else {
@@ -750,6 +978,13 @@ const {
             transition: all 0.2s;
             position: relative;
           `;
+
+            // Reset the span color to default
+            const span = item.querySelector("span");
+            if (span) {
+              span.style.color = "";
+            }
+
             removeCheckmark(item);
           }
         });
@@ -794,29 +1029,34 @@ const {
         }
       }
 
-      // Handle wheel events
-      addressList.addEventListener("wheel", (e) => {
-        e.preventDefault();
+      // Handle wheel events on the entire slot machine container
+      const slotContainer = document.querySelector(
+        `#${componentId}-slot-machine-modal .slot-machine-container`
+      ) as HTMLDivElement;
+      if (slotContainer) {
+        slotContainer.addEventListener("wheel", (e) => {
+          e.preventDefault();
 
-        if (currentOptions.length === 0) {
-          return; // Don't handle wheel events if no options
-        }
-
-        const deltaY = e.deltaY;
-
-        // If no item is selected, start from the first item
-        if (selectedIndex === -1) {
-          selectedIndex = 0;
-        } else {
-          if (deltaY > 0) {
-            selectedIndex = Math.min(selectedIndex + 1, currentOptions.length - 1);
-          } else {
-            selectedIndex = Math.max(selectedIndex - 1, 0);
+          if (currentOptions.length === 0) {
+            return; // Don't handle wheel events if no options
           }
-        }
 
-        centerSelectedItem();
-      });
+          const deltaY = e.deltaY;
+
+          // If no item is selected, start from the first item
+          if (selectedIndex === -1) {
+            selectedIndex = 0;
+          } else {
+            if (deltaY > 0) {
+              selectedIndex = Math.min(selectedIndex + 1, currentOptions.length - 1);
+            } else {
+              selectedIndex = Math.max(selectedIndex - 1, 0);
+            }
+          }
+
+          centerSelectedItem();
+        });
+      }
 
       // Handle click on items
       addressList.addEventListener("click", (e) => {
@@ -1125,7 +1365,7 @@ const {
     // Event listeners
     addBtn.addEventListener("click", () => {
       console.log("🔍 [CUSTOM-PLACES] Add Address button clicked");
-      showAddressSearchModal();
+      showSlotMachineModal();
     });
 
     clearBtn?.addEventListener("click", clearSelection);
@@ -1220,6 +1460,15 @@ const {
     align-items: center !important;
     justify-content: center !important;
     transition: all 0.2s ease-in-out;
+  }
+
+  /* Ensure selected items have white text */
+  .slot-machine-item.selected {
+    color: white !important;
+  }
+
+  .slot-machine-item.selected span {
+    color: white !important;
   }
 
   /* Checkmark pulse animation */

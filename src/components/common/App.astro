@@ -8,6 +8,7 @@ interface Props {
 }
 
 import { checkAuth } from "../../lib/auth";
+
 const { isAuth, session, currentUser, currentRole } = await checkAuth(Astro.cookies);
 
 // Handle auth requirements
@@ -56,12 +57,11 @@ const lang = getLangFromUrl(Astro.url);
       content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no"
     />
     <link rel="icon" type="image/svg+xml" href="/img/capco-logo.svg" sizes="any" />
-
     <link rel="manifest" href="/manifest.json" />
     <meta name="theme-color" content="#000000" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-    <meta name="apple-mobile-web-app-title" content="Fire Pro" />
+    <meta name="apple-mobile-web-app-title" content="CAPCo Fire App" />
     <meta name="generator" content={Astro.generator} />
 
     <!-- Safari Privacy Protection Meta Tags -->
@@ -202,9 +202,7 @@ const lang = getLangFromUrl(Astro.url);
       }, 2000); // 2 second maximum (reduced from 5 seconds)
     </script>
   </head>
-  <body
-    class="h-min-screen bg-hub-background dark:bg-hub-background-dark md:flex md:justify-center"
-  >
+  <body class="h-min-screen hub-background dark:bg-gray-900 md:flex md:justify-center">
     <!-- Preloader -->
     <div
       id="preloader"
@@ -229,6 +227,8 @@ const lang = getLangFromUrl(Astro.url);
         session={session}
       />
       <slot />
+
+      <!-- Footer -->
       <Footer
         isAuth={isAuth}
         session={session}
@@ -268,7 +268,7 @@ const lang = getLangFromUrl(Astro.url);
           <div
             id="tooltip-share"
             role="tooltip"
-            class="absolute z-10 invisible inline-block w-auto px-3 py-2 text-sm font-medium text-white transition-opacity duration-300 bg-gray-900 rounded-lg shadow-xs opacity-0 tooltip dark:bg-gray-700"
+            class="absolute z-10 invisible inline-block w-auto px-3 py-2 text-sm font-medium text-white transition-opacity duration-300 bg-gray-900 rounded-full shadow-xs opacity-0 tooltip dark:bg-gray-700"
           >
             Share
             <div class="tooltip-arrow" data-popper-arrow></div>
@@ -296,7 +296,7 @@ const lang = getLangFromUrl(Astro.url);
           <div
             id="tooltip-print"
             role="tooltip"
-            class="absolute z-10 invisible inline-block w-auto px-3 py-2 text-sm font-medium text-white transition-opacity duration-300 bg-gray-900 rounded-lg shadow-xs opacity-0 tooltip dark:bg-gray-700"
+            class="absolute z-10 invisible inline-block w-auto px-3 py-2 text-sm font-medium text-white transition-opacity duration-300 bg-gray-900 rounded-full shadow-xs opacity-0 tooltip dark:bg-gray-700"
           >
             Print
             <div class="tooltip-arrow" data-popper-arrow></div>
@@ -326,7 +326,7 @@ const lang = getLangFromUrl(Astro.url);
           <div
             id="tooltip-download"
             role="tooltip"
-            class="absolute z-10 invisible inline-block w-auto px-3 py-2 text-sm font-medium text-white transition-opacity duration-300 bg-gray-900 rounded-lg shadow-xs opacity-0 tooltip dark:bg-gray-700"
+            class="absolute z-10 invisible inline-block w-auto px-3 py-2 text-sm font-medium text-white transition-opacity duration-300 bg-gray-900 rounded-full shadow-xs opacity-0 tooltip dark:bg-gray-700"
           >
             Download
             <div class="tooltip-arrow" data-popper-arrow></div>
@@ -356,7 +356,7 @@ const lang = getLangFromUrl(Astro.url);
           <div
             id="tooltip-copy"
             role="tooltip"
-            class="absolute z-10 invisible inline-block w-auto px-3 py-2 text-sm font-medium text-white transition-opacity duration-300 bg-gray-900 rounded-lg shadow-xs opacity-0 tooltip dark:bg-gray-700"
+            class="absolute z-10 invisible inline-block w-auto px-3 py-2 text-sm font-medium text-white transition-opacity duration-300 bg-gray-900 rounded-full shadow-xs opacity-0 tooltip dark:bg-gray-700"
           >
             Copy
             <div class="tooltip-arrow" data-popper-arrow></div>
@@ -579,16 +579,16 @@ const lang = getLangFromUrl(Astro.url);
           : response.notificationData.client;
 
         if (notification) {
-          console.log(
-            `🔔 [${context || "NOTIFICATION"}] Showing ${isAdminOrStaff ? "admin" : "client"} notification:`,
-            {
-              type: notification.type,
-              title: notification.title,
-              message: notification.message,
-              redirect: notification.redirect,
-              userRole: currentUserRole,
-            }
-          );
+          // console.log(
+          //   `🔔 [${context || "NOTIFICATION"}] Showing ${isAdminOrStaff ? "admin" : "client"} notification:`,
+          //   {
+          //     type: notification.type,
+          //     title: notification.title,
+          //     message: notification.message,
+          //     redirect: notification.redirect,
+          //     userRole: currentUserRole,
+          //   }
+          // );
 
           (window as any).showModal(
             notification.type,
@@ -604,5 +604,8 @@ const lang = getLangFromUrl(Astro.url);
         }
       };
     </script>
+
+    <!-- Flowbite JavaScript -->
+    <script src="https://unpkg.com/flowbite@2.5.2/dist/flowbite.min.js"></script>
   </body>
 </html>

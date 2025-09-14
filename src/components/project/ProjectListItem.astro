@@ -3,6 +3,7 @@ import BoxIcon from "../common/BoxIcon.astro";
 
 interface Props {
   project: {
+    incomplete_discussions: any;
     id: any;
     author_id?: any;
     title?: any;
@@ -49,6 +50,10 @@ const {
   currentStatusTab,
 } = Astro.props;
 
+const description = project?.description || "No description";
+
+// console.log("🔍 [PROJECT-feater] Project:", project.featured_image_data);
+// console.log("🔍 [PROJECT-featured=imaage] Project:", project.featured_image);
 // return if user is staff and project is not assigned to them
 if (currentRole === "Staff" && project.assigned_to_id !== user?.id) {
   return null;
@@ -56,7 +61,8 @@ if (currentRole === "Staff" && project.assigned_to_id !== user?.id) {
 
 // console.log("🔍 [PROJECT-LIST-ITEM] Status URL:", projectStatusesObject[project.status]);
 
-const statusSlugOrId = currentRole && currentRole === "Client" ? currentStatusSlug : project.status;
+const statusSlugOrId =
+  currentRole && currentRole === "Client" ? currentStatusSlug : currentStatusInt;
 // Debug logging removed for performance
 
 // Function to limit description to 200 words
@@ -86,89 +92,13 @@ if (project.profiles) {
 ---
 
 <div
-  class="relative my-4 rounded-lg border border-gray-200 bg-white p-3 shadow-sm dark:border-gray-700 dark:bg-gray-800 min-h-[200px]"
+  class="relative my-4 rounded-lg border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-800 min-h-[200px]"
   data-project-status={statusSlugOrId}
   data-project-id={project.id}
 >
   <!-- Featured Image Display -->
-  {(() => {
-    console.log("🔍 [DEBUG] ProjectListItem for project", project.id, "featured_image_data:", project.featured_image_data);
-    return null;
-  })()}
-  {project.featured_image_data ? (
-    <div class="mb-3 rounded-lg overflow-hidden relative">
-      <img 
-        src={project.featured_image_data.public_url} 
-        alt={`Featured image for ${project.address}`}
-        class="w-full h-32 object-cover hover:scale-105 transition-transform duration-200"
-        loading="lazy"
-        referrerpolicy="strict-origin-when-cross-origin"
-        crossorigin="anonymous"
-        onerror="console.warn('Featured image failed to load:', this.src); this.style.display='none'; this.nextElementSibling.style.display='flex';"
-      />
-      <!-- Fallback for broken images -->
-      <div class="w-full h-32 bg-gray-100 dark:bg-gray-700 flex items-center justify-center hidden">
-        <div class="text-center text-gray-400 dark:text-gray-500">
-          <BoxIcon name="image" class="h-8 w-8 mx-auto mb-2" />
-          <p class="text-xs">Image unavailable</p>
-        </div>
-      </div>
-      <!-- Featured Image Badge -->
-      <div class="absolute top-2 right-2 bg-yellow-500 text-white px-2 py-1 rounded-full text-xs font-medium flex items-center gap-1">
-        <BoxIcon name="star" class="h-3 w-3" />
-        Featured
-      </div>
-    </div>
-  ) : (
-    <!-- Placeholder for projects without featured images -->
-    <div class="mb-3 rounded-lg bg-gray-100 dark:bg-gray-700 h-32 flex items-center justify-center">
-      <div class="text-center text-gray-400 dark:text-gray-500">
-        <BoxIcon name="image" class="h-8 w-8 mx-auto mb-2" />
-        <p class="text-xs">No featured image</p>
-      </div>
-    </div>
-  )}
-  <a
-    href={`/project/${project.id}`}
-    class="flex flex-col md:flex-row md:items-center gap-2 md:gap-4 hover:opacity-80 transition-opacity"
-  >
-    <div class="flex items-center gap-2 min-w-0 flex-shrink-0">
-      <h3
-        class="text-lg font-semibold text-gray-900 dark:text-white truncate max-w-xs"
-        data-searchable
-      >
-        {
-          currentRole !== "Client" &&
-            (authorProfile?.company_name || authorProfile?.email) &&
-            (authorProfile?.company_name ||
-              `${authorProfile?.first_name || ""} ${authorProfile?.last_name || ""}`.trim() ||
-              authorProfile?.email ||
-              "Unknown Author")
-        }
 
-        <span class="text-gray-500 dark:text-gray-400 hidden md:inline"> → </span>
-        {project.address}
-
-        )
-      </h3>
-    </div>
-  </a>
-
-  <a
-  href={`/project/${project.id}`}
-  class="flex-none md:flex-1 hover:opacity-80 transition-opacity"
->
-  <p
-    class="mt-2 text-sm text-gray-600 dark:text-gray-300 mb-2"
-    data-project-description
-    title={project.description}
-  >
-    {limitDescription(project.description)}
-  </p>
-</a>
-
-  <div class="items-start justify-between md:flex gap-4">
-  
+  <div class="bg-gray-100 dark:bg-gray-700 h-32 flex items-center justify-center">
     {
       (() => {
         const tabUrl = `/project/${project.id}?tab=${currentStatusTab}`;
@@ -181,7 +111,7 @@ if (project.profiles) {
         return (
           <a
             href={tabUrl}
-            class={`absolute -right-4 -top-4 rounded-full px-2.5 py-0.5 text-md mb-4 font-large ${statusColorClasses} hover:opacity-80 transition-opacity cursor-pointer`}
+            class={`absolute -right-4 -top-4 rounded-full px-2.5 py-0.5 text-sm mb-4 font-large ${statusColorClasses} hover:opacity-80 transition-opacity cursor-pointer`}
             data-refresh="status_name"
             data-project-id={project.id}
             title={`Go to ${currentStatusName} tab`}
@@ -189,93 +119,124 @@ if (project.profiles) {
             {currentStatusName}
           </a>
         );
-        // } else {
-        //   // For admins or when no client_status_tab, keep as regular span
-        //   // Get status color from API data
-        //   const statusColor = projectStatusesObject?.[project.status]?.status_color || "gray";
-        //   const statusColorClasses = `bg-${statusColor}-100 text-${statusColor}-800 dark:bg-${statusColor}-700 dark:text-${statusColor}-300`;
-
-        //   return (
-        //     <a
-        //       href={tabUrl}
-        //       class={`inline-flex items-center rounded-full px-2.5 py-0.5 text-md mb-4 font-large ${statusColorClasses} hover:opacity-80 transition-opacity cursor-pointer`}
-        //       data-refresh="status_name"
-        //       data-project-id={project.id}
-        //       title={`Go to ${currentStatusName} tab`}
-        //       data-refresh="status_name"
-        //       data-project-id={project.id}
-        //     >
-        //       {currentStatusName}
-        //     </a>
-        //   );
-        // }
       })()
     }
 
-    <a
-      href={`/project/${project.id}`}
-      class="hover:opacity-80 transition-opacity cursor-pointer mb-4 text-sm"
-    >
-      <span class="flex items-center gap-1">
-        <BoxIcon name="area" />
-        {project.sq_ft ? project.sq_ft.toLocaleString() : 0}ft²
-      </span>
-      <span class="flex items-center gap-1">
-        <BoxIcon name="building" />
-        {project.new_construction ? "New" : "Existing"}
-      </span>
-    </a>
-    <span class="text-sm">
-      <b>Updated:</b>
-      {new Date(project.updated_at).toLocaleDateString()}
-      {
-        new Date(project.updated_at).toLocaleTimeString([], {
-          hour: "2-digit",
-          minute: "2-digit",
-          hour12: false,
-        })
-      }
-      <br><b>Created:</b>
-      {new Date(project.created_at).toLocaleDateString()}
-      {
-        new Date(project.created_at).toLocaleTimeString([], {
-          hour: "2-digit",
-          minute: "2-digit",
-          hour12: false,
-        })
-      }</span
-    >
-  </div>
-
-  <span class="absolute left-4 bottom-4 flex items-center gap-1">
-
-  {currentRole !== "Client" &&
-      project.assigned_profiles ? (
-          <BoxIcon name="user" />
-          <span data-searchable>
-            {project.assigned_profiles.company_name ||
-              project.assigned_profiles.name ||
-              "Assigned User"}
-        </span>
-      ) : (
-          <BoxIcon name="user" />
-          <span data-searchable>Unassigned</span>
-      )
-  }
-  </span>
-
-  <a
-    href={`/project/${project.id}?tab=discussion`}
-    class="absolute right-4 bottom-4 hover:opacity-80 transition-opacity cursor-pointer"
-    title={`${project.comment_count || 0} comments - Go to discussions`}
-  >
-    <BoxIcon name="message-rounded-dots" class="bx-md text-blue-500 dark:text-blue-400" />
     {
-      project.comment_count > 0 && (
-        <span class="absolute -right-1 -top-1 inline-flex h-5 w-5 min-w-[1.25rem] items-center justify-center rounded-full bg-red-500 text-xs font-bold text-white">
-          {project.comment_count > 99 ? "99+" : project.comment_count}
-        </span>
+      project.featured_image_data ? (
+        <img
+          src={project.featured_image_data.public_url}
+          alt={`Featured image for ${project.address}`}
+          class="w-full h-32 object-cover hover:scale-105 transition-transform duration-200 rounded-lg rounded-b-none"
+          loading="lazy"
+          referrerpolicy="strict-origin-when-cross-origin"
+          crossorigin="anonymous"
+          onerror="console.warn('Featured image failed to load:', this.src); this.style.display='none'; this.nextElementSibling.style.display='flex';"
+        />
+      ) : (
+        <div class="text-center text-gray-400 dark:text-gray-500">
+          <BoxIcon name="image" class="h-8 w-8 mx-auto mb-2" />
+          <p class="text-xs">No featured image</p>
+        </div>
       )
     }
-  </a>
+  </div>
+
+  <div class="p-3">
+    <a href={`/project/${project.id}`} class="hover:opacity-80 transition-opacity">
+      <div class="flex items-center gap-2 min-w-full">
+        <h3
+          class="text-lg font-semibold text-gray-900 dark:text-white truncate max-w-xs"
+          data-searchable
+        >
+          {
+            currentRole !== "Client" && (
+              <span>
+                {project?.company_name || "Unknown Author"}
+                <span class="text-gray-500 dark:text-gray-400 hidden md:inline"> → </span>
+              </span>
+            )
+          }
+          {project.address}
+        </h3>
+      </div>
+      <div class="flex-none md:flex-1 min-w-full">
+        <p
+          class="mt-2 text-sm text-gray-600 dark:text-gray-300 mb-2"
+          data-project-description
+          title={description}
+        >
+          {limitDescription(description)}
+        </p>
+      </div>
+    </a>
+
+    <div class="items-start justify-between md:flex gap-4">
+      <a
+        href={`/project/${project.id}`}
+        class="hover:opacity-80 transition-opacity cursor-pointer mb-4 text-sm"
+      >
+        <span class="flex items-center gap-1">
+          <BoxIcon name="area" />
+          {project.sq_ft ? project.sq_ft.toLocaleString() : 0}ft²
+        </span>
+        <span class="flex items-center gap-1">
+          <BoxIcon name="building" />
+          {project.new_construction ? "New" : "Existing"}
+        </span>
+      </a>
+      <div class="text-xs justify-end">
+        <div>
+          <b>Updated:</b>
+          {new Date(project.updated_at).toLocaleDateString()}
+          {
+            new Date(project.updated_at).toLocaleTimeString([], {
+              hour: "2-digit",
+              minute: "2-digit",
+              hour12: false,
+            })
+          }
+        </div>
+        <div>
+          <b>Created:</b>
+          {new Date(project.created_at).toLocaleDateString()}
+          {
+            new Date(project.created_at).toLocaleTimeString([], {
+              hour: "2-digit",
+              minute: "2-digit",
+              hour12: false,
+            })
+          }
+        </div>
+      </div>
+    </div>
+
+    <div
+      class="flex flex-col md:flex-row md:items-center gap-2 md:gap-4 hover:opacity-80 transition-opacity"
+    >
+      {
+        currentRole !== "Client" && (
+          <div class="flex items-center gap-1">
+            <BoxIcon name="user" size="sm" />
+            <span data-searchable>{project.assigned_to_name || "Unassigned"}</span>
+          </div>
+        )
+      }
+
+      <a
+        href={`/project/${project.id}?tab=discussion`}
+        class="relative hover:opacity-80 transition-opacity cursor-pointer"
+        title={`${project.comment_count || 0} comments - Go to discussions`}
+      >
+        <BoxIcon name="message-rounded-dots" class="bx-md text-blue-500 dark:text-blue-400" />
+        {
+          project.incomplete_discussions > 0 && (
+            <span class="absolute -right-2 -top-2 inline-flex h-5 w-5 min-w-[1.25rem] items-center justify-center rounded-full bg-red-500 text-xs font-bold text-white">
+              {project.incomplete_discussions > 99 ? "99+" : project.incomplete_discussions}
+            </span>
+          )
+        }
+      </a>
+    </div>
+  </div>
 </div>

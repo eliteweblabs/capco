@@ -123,8 +123,61 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       }
     }
 
-    // Update the project's featured_image field
-    const updateData = isFeatured ? { featured_image: parseInt(fileId) } : { featured_image: null };
+    // Prepare update data
+    let updateData: any = {};
+
+    if (isFeatured) {
+      // Get the file path to generate signed URL
+      const { data: fileData, error: fileDataError } = await supabaseAdmin
+        .from("files")
+        .select("file_path")
+        .eq("id", parseInt(fileId))
+        .single();
+
+      if (fileDataError || !fileData) {
+        console.error("⭐ [UPDATE-FEATURED-IMAGE] Error fetching file data:", fileDataError);
+        return new Response(
+          JSON.stringify({
+            success: false,
+            error: "Failed to fetch file data",
+          }),
+          {
+            status: 500,
+            headers: { "Content-Type": "application/json" },
+          }
+        );
+      }
+
+      // Generate signed URL
+      const pathWithoutBucket = fileData.file_path.replace(/^project-documents\//, "");
+      const { data: signedUrlData, error: urlError } = await supabaseAdmin.storage
+        .from("project-documents")
+        .createSignedUrl(pathWithoutBucket, 86400 * 30); // 30 days expiry
+
+      if (urlError || !signedUrlData) {
+        console.error("⭐ [UPDATE-FEATURED-IMAGE] Error generating signed URL:", urlError);
+        return new Response(
+          JSON.stringify({
+            success: false,
+            error: "Failed to generate signed URL",
+          }),
+          {
+            status: 500,
+            headers: { "Content-Type": "application/json" },
+          }
+        );
+      }
+
+      updateData = {
+        featured_image: parseInt(fileId),
+        featured_image_url: signedUrlData.signedUrl,
+      };
+    } else {
+      updateData = {
+        featured_image: null,
+        featured_image_url: null,
+      };
+    }
 
     const { error: updateError } = await supabaseAdmin
       .from("projects")

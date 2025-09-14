@@ -1,5 +1,5 @@
 ---
-console.log("🔐 [LOGIN] Login/Register page loading...");
+// console.log("🔐 [LOGIN] Login/Register page loading...");
 
 import BoxIcon from "../components/common/BoxIcon.astro";
 import SectionContainer from "../components/common/SectionContainer.astro";
@@ -26,18 +26,18 @@ const activeTab = urlParams.get("tab") || "login";
   description="Sign in or create an account to access your fire protection project management dashboard."
 >
   <!-- Features Reminder -->
-  <SectionContainer class="px-6 py-16 mt-20 bg-red-500 dark:bg-hub-background-dark">
+  <SectionContainer type="primary" class="hidden md:block">
     <div class="mx-auto max-w-4xl text-center">
       <h2 class="mb-8 text-2xl font-bold text-gray-900 dark:text-white">
         Access Your CAPCo Dashboard
       </h2>
 
-      <div class="grid grid-cols-1 gap-6 md:grid-cols-3">
-        <div class="rounded-lg bg-white p-6 shadow-sm dark:bg-gray-800">
+      <div class="grid grid-cols-1 gap-6 md:grid-cols-3 text-gray-900 dark:text-white">
+        <div class="rounded-lg p-6 shadow-sm bg-white dark:bg-gray-800">
           <div
-            class="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-blue-100 dark:bg-blue-900/30"
+            class="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-blue-100 dark:bg-blue-900/30"
           >
-            <BoxIcon name="cloud-upload" class="bx-md text-blue-600 dark:text-blue-400" />
+            <BoxIcon name="cloud-upload" />
           </div>
           <h3 class="mb-2 font-semibold text-gray-900 dark:text-white">Upload Documents</h3>
           <p class="text-sm text-gray-600 dark:text-gray-300">
@@ -45,28 +45,24 @@ const activeTab = urlParams.get("tab") || "login";
           </p>
         </div>
 
-        <div class="rounded-lg bg-white p-6 shadow-sm dark:bg-gray-800">
+        <div class="rounded-lg p-6 shadow-sm bg-white dark:bg-gray-800">
           <div
-            class="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-green-100 dark:bg-green-900/30"
+            class="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-green-100 dark:bg-green-900/30"
           >
             <BoxIcon name="check-circle" class="bx-md text-green-600 dark:text-green-400" />
           </div>
           <h3 class="mb-2 font-semibold text-gray-900 dark:text-white">Track Progress</h3>
-          <p class="text-sm text-gray-600 dark:text-gray-300">
-            Monitor project statuses &amp; approval workflows
-          </p>
+          <p class="text-sm">Monitor project statuses &amp; approval workflows</p>
         </div>
 
-        <div class="rounded-lg bg-white p-6 shadow-sm dark:bg-gray-800">
+        <div class="rounded-lg p-6 shadow-sm bg-white dark:bg-gray-800">
           <div
-            class="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-purple-100 dark:bg-purple-900/30"
+            class="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-purple-100 dark:bg-purple-900/30"
           >
-            <BoxIcon name="download" class="bx-md text-purple-600 dark:text-purple-400" />
+            <BoxIcon name="download" />
           </div>
-          <h3 class="mb-2 font-semibold text-gray-900 dark:text-white">Download Files</h3>
-          <p class="text-sm text-gray-600 dark:text-gray-300">
-            Quickly access stamped project deliverables &amp; archives
-          </p>
+          <h3 class="mb-2 font-semibold">Download Files</h3>
+          <p class="text-sm">Quickly access stamped project deliverables &amp; archives</p>
         </div>
       </div>
     </div>
@@ -74,28 +70,19 @@ const activeTab = urlParams.get("tab") || "login";
 
   <!-- Login/Register Form Section -->
   <SectionContainer class="px-6 py-16">
-    <div class="mx-auto max-w-md">
-      <!-- Tabs -->
+    <div class="h-screen-min md:h-auto mx-auto my-auto md:my-0 max-w-md">
+      <!-- Tabs with Sliding Pill -->
       <div class="mb-8">
-        <div class="flex rounded-lg bg-gray-100 p-1 dark:bg-gray-800">
-          <button
-            id="login-tab"
-            class={activeTab === "login"
-              ? "flex-1 rounded-md bg-white px-3 py-2 text-sm font-medium text-gray-900 shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:bg-gray-700 dark:text-white"
-              : "flex-1 rounded-md px-3 py-2 text-sm font-medium text-gray-600 transition-colors hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:text-gray-400 dark:hover:text-white"}
-            onclick="switchAuthTab('login')"
+        <div id="auth-tabs" class="relative flex rounded-full dark:bg-gray-800 bg-gray-100">
+          <!-- Sliding pill background -->
+          <div
+            id="auth-pill-bg"
+            class="absolute top-0.5 h-14 rounded-full bg-blue-500 dark:bg-gray-700 transition-all duration-300 ease-out shadow-sm mix-blend-mode-multiply"
+            style="width: 0px; left: 0px; opacity: 0;"
           >
-            Sign In
-          </button>
-          <button
-            id="register-tab"
-            class={activeTab === "register"
-              ? "flex-1 rounded-md bg-white px-3 py-2 text-sm font-medium text-gray-900 shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:bg-gray-700 dark:text-white"
-              : "flex-1 rounded-md px-3 py-2 text-sm font-medium text-gray-600 transition-colors hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:text-gray-400 dark:hover:text-white"}
-            onclick="switchAuthTab('register')"
-          >
-            Create Account
-          </button>
+          </div>
+          <button id="login-tab" onclick="switchAuthTab('login')"> Sign In </button>
+          <button id="register-tab" onclick="switchAuthTab('register')"> Create Account </button>
         </div>
       </div>
 
@@ -133,6 +120,26 @@ const activeTab = urlParams.get("tab") || "login";
 </App>
 
 <script>
+  // Sliding pill functionality
+  function updateSlidingPill(activeButton: Element | null) {
+    const pillBg = document.getElementById("auth-pill-bg");
+    const tabContainer = document.getElementById("auth-tabs");
+
+    if (!pillBg || !activeButton || !tabContainer) return;
+
+    const containerRect = tabContainer.getBoundingClientRect();
+    const buttonRect = activeButton.getBoundingClientRect();
+
+    // Calculate position relative to the container
+    const left = buttonRect.left - containerRect.left;
+    const width = buttonRect.width;
+
+    // Update pill position and size
+    pillBg.style.left = `${left}px`;
+    pillBg.style.width = `${width}px`;
+    pillBg.style.opacity = "1";
+  }
+
   // Global function for tab switching
   (window as any).switchAuthTab = function (tab: "login" | "register") {
     const loginTab = document.getElementById("login-tab");
@@ -143,30 +150,36 @@ const activeTab = urlParams.get("tab") || "login";
     if (!loginTab || !registerTab || !loginForm || !registerForm) return;
 
     if (tab === "login") {
-      // Active login tab
-      loginTab.className =
-        "flex-1 rounded-md px-3 py-2 text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 bg-white text-gray-900 shadow-sm dark:bg-gray-700 dark:text-white";
-      registerTab.className =
-        "flex-1 rounded-md px-3 py-2 text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white";
-
       // Show/hide forms
       loginForm.classList.remove("hidden");
       registerForm.classList.add("hidden");
+
+      // Update button text colors - active gets white text, inactive gets blue text
+      loginTab.className =
+        "relative z-10 flex-1 rounded-full px-3 py-5 text-sm font-medium transition-colors focus:outline-none text-white";
+      registerTab.className =
+        "relative z-10 flex-1 rounded-full px-3 py-5 text-sm font-medium transition-colors focus:outline-none text-blue-600 dark:text-blue-400";
+
+      // Update sliding pill
+      updateSlidingPill(loginTab);
 
       // Update URL without reload
       const url = new URL(window.location.href);
       url.searchParams.set("tab", "login");
       window.history.replaceState({}, "", url.toString());
     } else {
-      // Active register tab
-      registerTab.className =
-        "flex-1 rounded-md px-3 py-2 text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 bg-white text-gray-900 shadow-sm dark:bg-gray-700 dark:text-white";
-      loginTab.className =
-        "flex-1 rounded-md px-3 py-2 text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white";
-
       // Show/hide forms
       registerForm.classList.remove("hidden");
       loginForm.classList.add("hidden");
+
+      // Update button text colors - active gets white text, inactive gets blue text
+      registerTab.className =
+        "relative z-10 flex-1 rounded-full px-3 py-5 text-sm font-medium transition-colors focus:outline-none text-white";
+      loginTab.className =
+        "relative z-10 flex-1 rounded-full px-3 py-5 text-sm font-medium transition-colors focus:outline-none text-blue-600 dark:text-blue-400";
+
+      // Update sliding pill
+      updateSlidingPill(registerTab);
 
       // Update URL without reload
       const url = new URL(window.location.href);
@@ -185,6 +198,20 @@ const activeTab = urlParams.get("tab") || "login";
     if (activeTab === "register") {
       (window as any).switchAuthTab("register");
       console.log("🔐 [LOGIN] Auto-switched to register tab from URL parameter");
+    } else {
+      // Initialize pill position and text colors for login tab
+      setTimeout(() => {
+        const loginTab = document.getElementById("login-tab");
+        const registerTab = document.getElementById("register-tab");
+        if (loginTab && registerTab) {
+          // Set correct text colors for initial state
+          loginTab.className =
+            "relative z-10 flex-1 rounded-full px-3 py-5 text-sm font-medium transition-colors focus:outline-none text-white";
+          registerTab.className =
+            "relative z-10 flex-1 rounded-full px-3 py-5 text-sm font-medium transition-colors focus:outline-none text-blue-600 dark:text-blue-400";
+          updateSlidingPill(loginTab);
+        }
+      }, 100);
     }
   });
 

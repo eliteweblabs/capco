@@ -6,6 +6,7 @@ export interface Props {
 }
 
 import ProjectNavButton from "./ProjectNavButton.astro";
+import SectionContainer from "../common/SectionContainer.astro";
 
 // Get props
 const { currentRole, projects = [], statuses = [] } = Astro.props;
@@ -41,7 +42,7 @@ if (!projects || projects.length === 0) return;
 
 <nav
   id="project-nav"
-  class="scrollbar-hide relative flex gap-1 overflow-x-auto whitespace-nowrap text-hub-inactive dark:border-hub-border-dark"
+  class="pl-6 scrollbar-hide relative flex gap-1 overflow-x-auto whitespace-nowrap text-hub-inactive dark:border-hub-border-dark my-4"
 >
   <!-- Sliding pill background -->
   <div
@@ -162,7 +163,10 @@ if (!projects || projects.length === 0) return;
       const noProjectsText = document.getElementById("no-projects-text");
       if (noProjectsMessage && noProjectsText) {
         if (visibleCount === 0) {
-          noProjectsText.textContent = `No projects currently at ${statusFilter}.`;
+          const statusName = document
+            .querySelector(`[data-project-status-filter="${statusFilter}"]`)
+            ?.getAttribute("label");
+          noProjectsText.textContent = `No projects currently at ${statusName}.`;
           noProjectsMessage.classList.remove("hidden");
         } else {
           noProjectsMessage.classList.add("hidden");

@@ -11,101 +11,143 @@ interface Props {
 
 const { isAuth, currentUser, currentRole, session } = Astro.props;
 
+// Debug logging
+console.log("🔍 [AuthIcon] Props:", {
+  isAuth,
+  currentUser: !!currentUser,
+  currentRole,
+  session: !!session,
+});
+
 const userProfile = currentUser?.profile || null;
-
 ---
-  {
-    isAuth ? (
-      // Authenticated: Profile Button with Dropdown
-      <div class="relative">
-        <div id="profile-btn" class="text-black dark:text-white cursor-pointer">
-          <img
-            id="user-avatar"
-            src=""
-            alt="User avatar"
-            class="block size-8 rounded-full"
-            onerror="this.style.display='none'; this.nextElementSibling.style.display='block';"
-          />
-          <BoxIcon name="user" style="display:none;" class="ml-2 bx-sm" />
-        </div>
 
-        <!-- Enhanced Dropdown menu -->
+{
+  isAuth ? (
+    <>
+      {/* Authenticated: Profile Button with Drawer */}
+      <div id="profile-btn" class="text-black dark:text-white cursor-pointer">
+        <img
+          id="user-avatar"
+          src={currentUser?.user_metadata?.avatar_url || ""}
+          alt="User avatar"
+          class="block size-8 rounded-full"
+          onerror="this.style.display='none'; this.nextElementSibling.style.display='block';"
+        />
+        <BoxIcon name="user" style="display:none;" class="bx-sm" />
+      </div>
+
+      {/* Profile Drawer */}
+      <div
+        id="profile-drawer"
+        class="fixed inset-0 z-50 hidden overflow-y-auto"
+        aria-labelledby="profile-drawer-title"
+        role="dialog"
+        aria-modal="true"
+      >
+        {/* Backdrop */}
         <div
-          id="profile-dropdown"
-          class="absolute right-0 top-full mt-2 hidden w-64 rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 dark:bg-gray-800 dark:ring-gray-700 z-50 transition-all duration-200 ease-in-out"
-        >
-          <!-- User Info Section -->
-          <div class="border-b border-gray-200 dark:border-gray-700 px-4 py-3">
-            <div class="flex items-center">
-              <div class="flex-shrink-0">
-                <img
-                  id="dropdown-avatar"
-                  src=""
-                  alt="User avatar"
-                  class="h-10 w-10 rounded-full"
-                  onerror="this.style.display='none'; this.nextElementSibling.style.display='block';"
-                />
-                <BoxIcon name="user" style="display:none;" class="text-gray-400 bx-sm" />
-              </div>
-              <div class="ml-3">
-                <p class="text-sm font-medium text-gray-900 dark:text-white">
-                  {userProfile?.company_name || currentUser?.email?.split("@")[0] || "User"}
-                </p>
-                <p class="text-xs text-gray-500 dark:text-gray-400">
-                  {currentUser?.email}
-                </p>
-                <p class="text-xs text-blue-600 dark:text-blue-400 font-medium">
-                  {currentRole || "User"}
-                </p>
+          class="fixed inset-0 bg-gray-900 bg-opacity-50 transition-opacity"
+          id="profile-drawer-backdrop"
+        />
+
+        {/* Drawer */}
+        <div class="fixed right-0 top-0 z-50 h-screen w-80 transform transition-transform">
+          <div class="flex h-full flex-col bg-white shadow-xl dark:bg-gray-800">
+            {/* Header */}
+            <div class="flex items-center justify-between border-b border-gray-200 px-4 py-6 dark:border-gray-700">
+              <h2
+                id="profile-drawer-title"
+                class="text-lg font-semibold text-gray-900 dark:text-white"
+              >
+                User Menu
+              </h2>
+              <button
+                type="button"
+                id="profile-drawer-close"
+                class="rounded-lg bg-transparent p-1.5 text-sm text-gray-400 hover:bg-gray-200 hover:text-gray-900 dark:hover:bg-gray-600 dark:hover:text-white"
+              >
+                <svg class="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
+                  <path
+                    fill-rule="evenodd"
+                    d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
+                    clip-rule="evenodd"
+                  />
+                </svg>
+              </button>
+            </div>
+
+            {/* User Info Section */}
+            <div class="border-b border-gray-200 px-4 py-6 dark:border-gray-700">
+              <div class="flex items-center">
+                <div class="flex-shrink-0">
+                  <img
+                    id="drawer-avatar"
+                    src={currentUser?.user_metadata?.avatar_url || ""}
+                    alt="User avatar"
+                    class="h-12 w-12 rounded-full"
+                    onerror="this.style.display='none'; this.nextElementSibling.style.display='block';"
+                  />
+                  <BoxIcon name="user" style="display:none;" class="text-gray-400 bx-lg" />
+                </div>
+                <div class="ml-4">
+                  <p class="text-base font-medium text-gray-900 dark:text-white">
+                    {userProfile?.company_name || currentUser?.email?.split("@")[0] || "User"}
+                  </p>
+                  <p class="text-sm text-gray-500 dark:text-gray-400">{currentUser?.email}</p>
+                  <p class="text-sm text-blue-600 dark:text-blue-400 font-medium">
+                    {currentRole || "User"}
+                  </p>
+                </div>
               </div>
             </div>
-          </div>
 
-          <!-- Menu Items -->
-          <div class="py-1">
-            <a
-              href="/dashboard"
-              class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-700"
-            >
-              <BoxIcon name="building" class="mr-3 bx-sm" />
-              Dashboard
-            </a>
+            {/* Menu Items */}
+            <div class="flex-1 overflow-y-auto px-4 py-6">
+              <div class="space-y-2">
+                <a
+                  href="/dashboard"
+                  class="flex items-center rounded-lg px-3 py-2 text-base font-medium text-gray-900 hover:bg-gray-100 dark:text-white dark:hover:bg-gray-700"
+                >
+                  <BoxIcon name="building" class="mr-3 bx-sm" />
+                  Dashboard
+                </a>
 
-            <a
-              href="/profile"
-              class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-700"
-            >
-              <BoxIcon name="user" class="mr-3 bx-sm" />
-              My Profile
-            </a>
+                <a
+                  href="/profile"
+                  class="flex items-center rounded-lg px-3 py-2 text-base font-medium text-gray-900 hover:bg-gray-100 dark:text-white dark:hover:bg-gray-700"
+                >
+                  <BoxIcon name="user" class="mr-3 bx-sm" />
+                  My Profile
+                </a>
+              </div>
+            </div>
 
-            <hr class="my-1 border-gray-200 dark:border-gray-700" />
-
-            <button
-              id="logout-btn"
-              class="flex w-full items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-700"
-            >
-              <BoxIcon name="log-out" class="mr-3 bx-sm" />
-              Logout
-            </button>
+            {/* Footer */}
+            <div class="border-t border-gray-200 px-4 py-6 dark:border-gray-700">
+              <button
+                id="logout-btn"
+                class="flex w-full items-center justify-center rounded-lg bg-red-600 px-3 py-2 text-base font-medium text-white hover:bg-red-700"
+              >
+                <BoxIcon name="log-out" class="mr-3 bx-sm" />
+                Logout
+              </button>
+            </div>
           </div>
         </div>
       </div>
-    ) : (
-      // Not Authenticated: Login Button
-      <Tooltip content="Login" variant="link" href="/login" placement="bottom" id="login-tooltip" class="text-black dark:text-white">
-        <div
-          aria-label="btn-profile"
-          id="profile-btn"
-          class="size-8 overflow-hidden rounded-full"
-        >
-          <BoxIcon name="log-in" class="text-gray-700 dark:text-gray-300 bx-sm" />
-        </div>
-      </Tooltip>
-    )
-  }
-
-
+    </>
+  ) : (
+    <>
+      {/* Not Authenticated: Login Button */}
+      <a href="/login" class="text-black dark:text-white" aria-label="btn-profile" id="profile-btn">
+        {/* <div  class="size-8 overflow-hidden rounded-full"> */}
+        <BoxIcon name="user" />
+        {/* </div> */}
+      </a>
+    </>
+  )
+}
 
 <script type="module" define:vars={{ session }}>
   // console.log("📋 [HEADER] Header script execution started");
@@ -114,7 +156,9 @@ const userProfile = currentUser?.profile || null;
   const profileBtn = document.getElementById("profile-btn");
   const userAvatar = document.getElementById("user-avatar");
   const fallbackIcon = userAvatar?.nextElementSibling;
-  const profileDropdown = document.getElementById("profile-dropdown");
+  const profileDrawer = document.getElementById("profile-drawer");
+  const profileDrawerClose = document.getElementById("profile-drawer-close");
+  const profileDrawerBackdrop = document.getElementById("profile-drawer-backdrop");
   const logoutBtn = document.getElementById("logout-btn");
 
   // Mobile menu elements
@@ -159,6 +203,25 @@ const userProfile = currentUser?.profile || null;
           // console.log("📋 [HEADER] Using fallback icon");
         }
       }
+
+      // Update drawer avatar if it exists
+      const drawerAvatar = document.getElementById("drawer-avatar");
+      if (drawerAvatar) {
+        if (avatarUrl) {
+          drawerAvatar.src = avatarUrl;
+          drawerAvatar.style.display = "block";
+          const drawerFallback = drawerAvatar.nextElementSibling;
+          if (drawerFallback) {
+            drawerFallback.style.display = "none";
+          }
+        } else {
+          drawerAvatar.style.display = "none";
+          const drawerFallback = drawerAvatar.nextElementSibling;
+          if (drawerFallback) {
+            drawerFallback.style.display = "block";
+          }
+        }
+      }
       // console.log("📋 [HEADER] Profile button configured for authenticated user");
     } else {
       // console.log(
@@ -169,34 +232,58 @@ const userProfile = currentUser?.profile || null;
 
   // Check initial auth state
   // console.log("📋 [HEADER] Checking initial auth state...");
-  updateProfileButton(session);
+  // updateProfileButton(session); // Removed - let static HTML handle the display
 
-  // Toggle dropdown (only if profile button exists - when authenticated)
+  // Toggle profile drawer (only if profile button exists - when authenticated)
   if (profileBtn) {
     profileBtn.addEventListener("click", (e) => {
-      // console.log("📋 [HEADER] Profile button clicked");
       e.stopPropagation();
-      if (profileDropdown) {
-        profileDropdown.classList.toggle("hidden");
-        // console.log("📋 [HEADER] Dropdown toggled");
+      if (profileDrawer) {
+        profileDrawer.classList.remove("hidden");
+        document.body.classList.add("overflow-hidden");
       }
     });
   }
 
-  // Close dropdown when clicking outside
+  // Close drawer when clicking close button
+  if (profileDrawerClose) {
+    profileDrawerClose.addEventListener("click", (e) => {
+      e.stopPropagation();
+      if (profileDrawer) {
+        profileDrawer.classList.add("hidden");
+        document.body.classList.remove("overflow-hidden");
+      }
+    });
+  }
+
+  // Close drawer when clicking backdrop
+  if (profileDrawerBackdrop) {
+    profileDrawerBackdrop.addEventListener("click", (e) => {
+      e.stopPropagation();
+      if (profileDrawer) {
+        profileDrawer.classList.add("hidden");
+        document.body.classList.remove("overflow-hidden");
+      }
+    });
+  }
+
+  // Close drawer when clicking outside
   document.addEventListener("click", (e) => {
-    if (profileDropdown && !profileBtn?.contains(e.target) && !profileDropdown.contains(e.target)) {
-      // console.log("📋 [HEADER] Document clicked, closing dropdown");
-      profileDropdown.classList.add("hidden");
+    if (profileDrawer && !profileDrawer.classList.contains("hidden")) {
+      if (!profileBtn?.contains(e.target) && !profileDrawer.contains(e.target)) {
+        profileDrawer.classList.add("hidden");
+        document.body.classList.remove("overflow-hidden");
+      }
     }
   });
 
-  // Prevent dropdown from closing when clicking inside it
-  if (profileDropdown) {
-    profileDropdown.addEventListener("click", (e) => {
-      e.stopPropagation();
-    });
-  }
+  // Close drawer on escape key
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && profileDrawer && !profileDrawer.classList.contains("hidden")) {
+      profileDrawer.classList.add("hidden");
+      document.body.classList.remove("overflow-hidden");
+    }
+  });
 
   // Mobile menu toggle functionality
   function toggleMobileMenu() {
@@ -285,5 +372,5 @@ const userProfile = currentUser?.profile || null;
         profileDropdown.classList.add("hidden");
       }
     });
-  }  
+  }
 </script>
