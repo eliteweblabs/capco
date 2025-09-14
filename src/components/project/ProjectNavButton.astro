@@ -1,29 +1,26 @@
 ---
 import Button from "../common/Button.astro";
 
-const { 
-  class: className, 
-  "data-count": count, 
-  label,
-  icon,
-  ...props 
-} = Astro.props;
+const { class: className, "data-count": count, label, icon, ...props } = Astro.props;
 
-// Build data attributes object
-const dataAttributes = {
-  count: count || "0",
-  ...Object.fromEntries(
-    Object.entries(props).filter(([key]) => key.startsWith('data-'))
-  )
-};
+// Extract data attributes from props
+const dataAttributes: Record<string, string> = {};
+const buttonProps: Record<string, any> = {};
 
-// Remove data-* props from the main props object
-const { ...buttonProps } = props;
-Object.keys(buttonProps).forEach(key => {
-  if (key.startsWith('data-')) {
-    delete buttonProps[key];
+Object.entries(props).forEach(([key, value]) => {
+  if (key.startsWith("data-")) {
+    // Remove 'data-' prefix for the dataAttributes object
+    const dataKey = key.replace("data-", "");
+    dataAttributes[dataKey] = value;
+  } else {
+    buttonProps[key] = value;
   }
 });
+
+// Add count to data attributes
+if (count) {
+  dataAttributes.count = count;
+}
 ---
 
 <div class="relative">
