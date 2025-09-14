@@ -3,12 +3,18 @@
 export default {
   content: ["./src/**/*.{astro,js,ts,jsx,tsx,vue,svelte}", "./node_modules/flowbite/**/*.js"],
   darkMode: "class", // Esto permite usar 'dark:' en clases
-  // safelist: [
-  //   "bg-hub-background",
-  //   "bg-hub-background-dark",
-  //   "dark:bg-hub-background",
-  //   "dark:bg-hub-background-dark",
-  // ],
+  safelist: [
+    // Drawer animation classes
+    "translate-x-full",
+    "translate-x-0",
+    "-translate-x-full",
+    // Flowbite drawer classes
+    "data-drawer-target",
+    "data-drawer-toggle",
+    "data-drawer-hide",
+    "data-drawer-backdrop",
+    "data-drawer-placement",
+  ],
   theme: {
     extend: {
       //      ### Fonts
