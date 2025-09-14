@@ -3,26 +3,101 @@ import App from "../components/common/App.astro";
 import DashboardComponent from "../components/common/Dashboard.astro";
 import SectionContainer from "../components/common/SectionContainer.astro";
 import ProjectNav from "../components/project/ProjectNav.astro";
-import Hero from "../components/common/Hero.astro";
+import HeroDashboard from "../components/common/HeroDashboard.astro";
 import "../lib/refresh-manager.ts";
 // Get auth data directly since App component handles auth requirements
 import { checkAuth } from "../lib/auth";
 import { supabase } from "../lib/supabase";
 import { supabaseAdmin } from "../lib/supabase-admin";
-const { isAuth, currentUser, currentRole } = await checkAuth(Astro.cookies);
-// Fetch projects, statuses, and client data from API
+
+const { isAuth = false, currentUser, currentRole } = await checkAuth(Astro.cookies);
+
+// Initialize data arrays
 let projects: any[] = [];
 let project_statuses: any[] = [];
 let project_statuses_object: any = {};
-let clientProfiles: any[] = [];
-// Fetch projects directly from database to avoid DNS issues
-try {
-  if (supabase) {
-    if (!supabaseAdmin) {
-      console.error("🏗️ [DASHBOARD] SupabaseAdmin not available");
-      return;
+
+// Fetch project statuses directly in front matter
+if (supabaseAdmin) {
+  try {
+    const { data: statusesData, error: statusesError } = await supabaseAdmin
+      .from("project_statuses")
+      .select(
+        "status_code, admin_status_name, project_action, client_status_name, client_status_tab, admin_status_tab, admin_status_slug, client_status_slug"
+      )
+      .neq("status_code", 0)
+      .order("status_code");
+
+    if (!statusesError && statusesData) {
+      project_statuses = statusesData;
+      project_statuses_object = statusesData.reduce((acc: any, status: any) => {
+        acc[status.status_code] = status;
+        return acc;
+      }, {});
+
+      // Process statuses for role-based filtering (merged from process-client-status)
+      const role = currentRole || "Client";
+      console.log(
+        "🔍 [DASHBOARD] Processing statuses for role:",
+        role,
+        "currentRole:",
+        currentRole
+      );
+      console.log("🔍 [DASHBOARD] Statuses object keys:", Object.keys(project_statuses_object));
+
+      project_statuses_object = Object.keys(project_statuses_object).reduce(
+        (acc: any, statusCode: string) => {
+          const statusObj = project_statuses_object[statusCode];
+          console.log(
+            "🔍 [DASHBOARD] Processing status",
+            statusCode,
+            "for role",
+            role,
+            "statusObj:",
+            statusObj
+          );
+
+          // Use client_status_name for clients, admin_status_name for admins
+          if (role === "Client" && statusObj.client_status_name) {
+            // console.log("🔍 [DASHBOARD] Using client status name for", statusCode);
+            acc[statusCode] = {
+              ...statusObj,
+              status_name: statusObj.client_status_name,
+              status_tab: statusObj.client_status_tab,
+              status_slug: statusObj.client_status_slug,
+            };
+          } else if (statusObj.admin_status_name) {
+            // console.log("🔍 [DASHBOARD] Using admin status name for", statusCode);
+            acc[statusCode] = {
+              ...statusObj,
+              status_name: statusObj.admin_status_name,
+              status_tab: statusObj.admin_status_tab,
+              status_slug: statusObj.admin_status_slug,
+            };
+          } else {
+            // console.log("🔍 [DASHBOARD] Using fallback status name for", statusCode);
+            // Fallback if no role-specific name exists
+            acc[statusCode] = {
+              ...statusObj,
+              status_name: statusObj.admin_status_name || "Unknown Status",
+              status_tab: statusObj.admin_status_tab || null,
+              status_slug: statusObj.admin_status_slug || null,
+            };
+          }
+
+          return acc;
+        },
+        {}
+      );
     }
-    // Use admin client to bypass RLS policies and fetch everything in one query
+  } catch (error) {
+    console.error("🏗️ [DASHBOARD] Error fetching statuses:", error);
+  }
+}
+
+// Fetch projects with new optimized columns
+if (supabaseAdmin) {
+  try {
     const { data: allProjects, error } = await supabaseAdmin
       .from("projects")
       .select(
@@ -32,14 +107,18 @@ try {
             description,
             address,
             author_id,
+            company_name,
             status,
             sq_ft,
             new_construction,
             created_at,
             updated_at,
             assigned_to_id,
+            assigned_to_name,
             featured_image,
-            contract_pdf_url
+            featured_image_url,
+            contract_pdf_url,
+            incomplete_discussions
           `
       )
       .neq("id", 0) // Exclude system log project
@@ -48,467 +127,47 @@ try {
     if (error) {
       console.error("🏗️ [DASHBOARD] Database error:", error);
     } else {
-      // console.log("🏗️ [DASHBOARD] Projects fetched:", allProjects?.length || 0);
-      // console.log("🏗️ [DASHBOARD] Current role:", currentRole);
-      // console.log("🏗️ [DASHBOARD] Current user ID:", currentUser?.id);
-
-      // Filter projects based on user currentRole
-      if (currentRole === "Admin") {
-        // Admin sees all projects
-        projects = allProjects || [];
-        // console.log("🏗️ [DASHBOARD] Admin - showing all projects:", projects.length);
-      } else if (currentRole === "Staff") {
-        // Staff only sees projects where they are assigned
-        projects = (allProjects || []).filter(
-          (project: any) => project.assigned_to_id === currentUser?.id
-        );
-        // console.log("🏗️ [DASHBOARD] Staff - showing assigned projects:", projects.length);
-      } else {
-        // Clients only see projects they authored
-        projects = (allProjects || []).filter(
-          (project: any) => project.author_id === currentUser?.id
-        );
-        // console.log("🏗️ [DASHBOARD] Client - showing authored projects:", projects.length);
-        // console.log("🏗️ [DASHBOARD] Client projects:", projects);
-      }
-
-      // Fetch and attach profile data to projects
-      if (projects && projects.length > 0) {
-        console.log("🔍 [DEBUG] Processing projects:", projects.length);
-
-        // Fetch profiles for all projects
-        const uniqueAuthorIds = [...new Set(projects.map((p) => p.author_id).filter(Boolean))];
-        const uniqueAssignedIds = [
-          ...new Set(projects.map((p) => p.assigned_to_id).filter(Boolean)),
-        ];
-        const allUserIds = [...new Set([...uniqueAuthorIds, ...uniqueAssignedIds])];
-
-        console.log("🔍 [DEBUG] Fetching profiles for user IDs:", allUserIds);
-
-        let profilesMap = new Map();
-        if (allUserIds.length > 0) {
-          const { data: profiles, error: profilesError } = await supabaseAdmin
-            .from("profiles")
-            .select("id, company_name, first_name, last_name")
-            .in("id", allUserIds);
-
-          if (!profilesError && profiles) {
-            profiles.forEach((profile) => {
-              profilesMap.set(profile.id, profile);
-            });
-            console.log("🔍 [DEBUG] Successfully fetched profiles:", profiles.length);
-          } else {
-            console.error("🔍 [DEBUG] Error fetching profiles:", profilesError);
-          }
+      // Add featured_image_data for projects with featured_image_url
+      projects = (allProjects || []).map((project) => {
+        if (project.featured_image_url) {
+          return {
+            ...project,
+            featured_image_data: {
+              public_url: project.featured_image_url,
+            },
+          };
         }
-
-        // Attach profile data to projects
-        projects.forEach((project: any) => {
-          if (project.author_id) {
-            const authorProfile = profilesMap.get(project.author_id);
-            project.profiles = authorProfile || null;
-            if (authorProfile) {
-              console.log(
-                "🔍 [DEBUG] Project",
-                project.id,
-                "has author profile:",
-                authorProfile.company_name
-              );
-            }
-          }
-
-          if (project.assigned_to_id) {
-            project.assigned_profiles = profilesMap.get(project.assigned_to_id) || null;
-          }
-        });
-
-        // Fetch featured image data for projects that have featured_image set
-        const projectsWithFeaturedImages = projects.filter((p: any) => p.featured_image);
-        console.log("🔍 [DEBUG] Projects with featured images:", projectsWithFeaturedImages.length);
-
-        if (projectsWithFeaturedImages.length > 0) {
-          const featuredImageIds = projectsWithFeaturedImages.map((p: any) => p.featured_image);
-          console.log("🔍 [DEBUG] Fetching featured images for IDs:", featuredImageIds);
-
-          const { data: featuredImages, error: featuredImagesError } = await supabaseAdmin
-            .from("files")
-            .select("id, file_path, file_name, file_type")
-            .in("id", featuredImageIds);
-
-          console.log("🔍 [DEBUG] Featured images query result:", {
-            featuredImages,
-            error: featuredImagesError,
-          });
-
-          if (!featuredImagesError && featuredImages) {
-            console.log(
-              "🔍 [DEBUG] Creating featured images map with:",
-              featuredImages.length,
-              "images"
-            );
-            const featuredImagesMap = new Map();
-            featuredImages.forEach((image) => {
-              console.log("🔍 [DEBUG] Adding to map:", {
-                id: image.id,
-                toString: image.id?.toString(),
-                file_name: image.file_name,
-              });
-              featuredImagesMap.set(image.id?.toString(), image);
-            });
-            console.log("🔍 [DEBUG] Map keys:", Array.from(featuredImagesMap.keys()));
-
-            // Generate signed URLs for featured images
-            await Promise.all(
-              projects.map(async (project: any) => {
-                if (project.featured_image) {
-                  const lookupKey = project.featured_image?.toString();
-                  console.log(
-                    "🔍 [DEBUG] Looking up featured image for project",
-                    project.id,
-                    "with key:",
-                    lookupKey
-                  );
-                  const featuredImage = featuredImagesMap.get(lookupKey);
-                  console.log(
-                    "🔍 [DEBUG] Found featured image:",
-                    !!featuredImage,
-                    featuredImage
-                      ? { id: featuredImage.id, file_name: featuredImage.file_name }
-                      : null
-                  );
-
-                  if (featuredImage && supabase) {
-                    console.log(
-                      "🔍 [DEBUG] Processing featured image for project",
-                      project.id,
-                      ":",
-                      featuredImage.file_name
-                    );
-
-                    // Generate signed URL for the featured image (works with private buckets)
-                    // The file_path already includes the bucket name, so we need to extract just the path part
-                    const pathWithoutBucket = featuredImage.file_path.replace(
-                      /^project-documents\//,
-                      ""
-                    );
-
-                    try {
-                      console.log("🔍 [DEBUG] Generating signed URL for path:", pathWithoutBucket);
-                      // For private buckets, we need to use signed URLs
-                      const { data, error } = await supabase.storage
-                        .from("project-documents")
-                        .createSignedUrl(pathWithoutBucket, 3600); // 1 hour expiry
-
-                      if (error) {
-                        console.warn(
-                          "🔍 [DEBUG] Failed to generate signed URL for featured image:",
-                          error
-                        );
-                      } else {
-                        console.log(
-                          "🔍 [DEBUG] Successfully generated signed URL:",
-                          data.signedUrl
-                        );
-                        project.featured_image_data = {
-                          ...featuredImage,
-                          public_url: data.signedUrl,
-                        };
-                        console.log("🔍 [DEBUG] Set featured_image_data for project", project.id);
-                      }
-                    } catch (error) {
-                      console.warn(
-                        "🔍 [DEBUG] Exception generating URL for featured image:",
-                        error
-                      );
-                      // Don't set featured_image_data if URL generation fails
-                    }
-                  }
-                }
-              })
-            );
-          } else {
-            console.error("🔍 [DEBUG] Error fetching featured images:", featuredImagesError);
-          }
-        }
-      }
+        return project;
+      });
     }
-  } else {
-    console.error("🏗️ [DASHBOARD] Supabase client not available");
+  } catch (error) {
+    console.error("🏗️ [DASHBOARD] Error fetching projects:", error);
   }
-
-  // Fetch status labels directly from database to avoid DNS issues
-  let statusLabels: Record<number, { status_name: string; [key: string]: any }> = {};
-  if (isAuth && supabase) {
-    try {
-      // console.log("🏗️ [DASHBOARD] Fetching statuses directly from database");
-
-      // Fetch project statuses directly from database
-      const { data: statusesData, error: statusesError } = supabaseAdmin
-        ? await supabaseAdmin
-            .from("project_statuses")
-            .select(
-              "status_code, admin_status_name, project_action, client_status_name, client_status_tab, admin_status_tab"
-            )
-            .neq("status_code", 0)
-            .order("status_code")
-        : await supabase
-            .from("project_statuses")
-            .select(
-              "status_code, admin_status_name, project_action, client_status_name, client_status_tab, admin_status_tab"
-            )
-            .neq("status_code", 0)
-            .order("status_code");
-
-      if (statusesError) {
-        console.error("🏗️ [DASHBOARD] Statuses database error:", statusesError);
-      } else {
-        // Convert array to object for easier lookup
-        statusLabels = (statusesData || []).reduce((acc: any, status: any) => {
-          acc[status.status_code] = status;
-          return acc;
-        }, {});
-
-        // console.log("🏗️ [DASHBOARD] Statuses fetched:", statusesData?.length || 0);
-      }
-    } catch (error) {
-      console.error("🏗️ [DASHBOARD] Error fetching statuses:", error);
-    }
-  }
-
-  // Convert to array format for existing components - preserve all properties
-  project_statuses = Object.values(statusLabels || {});
-  // Keep object format for project actions (make it global for script)
-  project_statuses_object = statusLabels || {};
-
-  // Fetch client profiles for dropdowns and forms
-  if (isAuth && supabase) {
-    try {
-      // console.log("👥 [DASHBOARD] Fetching client profiles for forms...");
-
-      const { data: profiles, error: profilesError } = supabaseAdmin
-        ? await supabaseAdmin
-            .from("profiles")
-            .select("id, company_name, role")
-            .eq("role", "Client")
-            .order("company_name")
-        : await supabase
-            .from("profiles")
-            .select("id, company_name, role")
-            .eq("role", "Client")
-            .order("company_name");
-
-      if (profilesError) {
-        console.error("👥 [DASHBOARD] Client profiles error:", profilesError);
-      } else {
-        clientProfiles = profiles || [];
-        // console.log(`👥 [DASHBOARD] Loaded ${clientProfiles.length} client profiles`);
-      }
-    } catch (error) {
-      console.error("👥 [DASHBOARD] Error fetching client profiles:", error);
-    }
-  }
-
-  // Debug: Log the converted array to see if client_status_name is preserved
-  // console.log("🔍 [DASHBOARD] Converted project_statuses array:", project_statuses.slice(0, 3));
-  // console.log(
-  //   "🔍 [DASHBOARD] First status with client_status_name:",
-  //   project_statuses.find((s) => s.client_status_name)
-  // );
-} catch (error) {
-  console.error("Error fetching data:", error);
 }
 ---
 
-<App requireAuth={true}>
-  <Hero
-    title={currentUser?.company_name || "Dashboard"}
-    authorProfile={currentUser}
-    description={""}
-    currentRole={currentRole || "Client"}
-    class:list={"pt-24 pb-6"}
+<App>
+  <HeroDashboard
+    title="Project Dashboard"
+    description="Manage and track your fire protection projects"
   />
 
-  <!-- <DebugComponent/> -->
+  <ProjectNav
+    currentRole={currentRole || "Client"}
+    projects={projects}
+    statuses={project_statuses}
+  />
 
-  <!-- Navigation -->
-  <SectionContainer class="mx-6 flex flex-col gap-y-6 pb-6">
-    <ProjectNav
-      currentRole={currentRole || "Client"}
-      projects={projects}
-      statuses={project_statuses}
-    />
-  </SectionContainer>
-
-  <!-- Main Dashboard -->
-  <SectionContainer id="dashboard" class="mx-6 mb-0 mt-0 flex">
-    <DashboardComponent
-      currentRole={currentRole || "Client"}
-      currentUser={currentUser}
-      projects={projects}
-      statuses={project_statuses}
-    />
-  </SectionContainer>
+  <DashboardComponent
+    projects={projects}
+    project_statuses={project_statuses}
+    project_statuses_object={project_statuses_object}
+    currentUser={currentUser}
+    currentRole={currentRole}
+  />
 </App>
 
-<script
-  define:vars={{
-    projects,
-    project_statuses,
-    project_statuses_object,
-    currentRole,
-    currentUser,
-    clientProfiles,
-  }}
->
-  // Make client profiles available globally for components
-  window.globalClientProfiles = clientProfiles;
-  // console.log("👥 [DASHBOARD] Made client profiles available globally:", clientProfiles.length);
-
-  // Project Action Notification System - Only for Clients
-  document.addEventListener("DOMContentLoaded", async function () {
-    // console.log("🔔 [PROJECT-ACTIONS] Initializing project action notifications...");
-    // console.log("🔔 [PROJECT-ACTIONS] Current user currentRole:", currentRole);
-    // console.log("🔔 [PROJECT-ACTIONS] Projects data:", projects);
-
-    // Only run for clients
-    if (currentRole !== "Client") {
-      console.log("🔔 [PROJECT-ACTIONS] Skipping - user is not a client");
-      return;
-    }
-
-    if (!projects || !Array.isArray(projects) || projects.length === 0) {
-      console.log("🔔 [PROJECT-ACTIONS] No projects found for client");
-      return;
-    }
-
-    // Use project statuses data that's already available from server-side
-    // console.log("🔔 [PROJECT-ACTIONS] Using project statuses data from server-side variables");
-    // console.log("🔔 [PROJECT-ACTIONS] Project statuses data:", project_statuses_object);
-
-    if (!project_statuses_object || typeof project_statuses_object !== "object") {
-      console.log("🔔 [PROJECT-ACTIONS] No project statuses found");
-      return;
-    }
-
-    // console.log("🔔 [PROJECT-ACTIONS] Processing projects:", projects.length);
-    // console.log("🔔 [PROJECT-ACTIONS] Available statuses:", Object.keys(project_statuses_object));
-
-    // Check each project for action notifications
-    for (let index = 0; index < projects.length; index++) {
-      const project = projects[index];
-      const projectStatus = project.status;
-      const statusConfig = project_statuses_object[projectStatus];
-
-      // console.log(`🔔 [PROJECT-ACTIONS] Checking project ${index + 1}:`, {
-      //   id: project.id,
-      //   title: project.title,
-      //   status: projectStatus,
-      //   hasStatusConfig: !!statusConfig,
-      //   statusConfig: statusConfig,
-      // });
-
-      if (statusConfig && statusConfig.project_action) {
-        // console.log(
-        //   `🔔 [PROJECT-ACTIONS] Found project action for project "${project.title}":`,
-        //   statusConfig.project_action
-        // );
-
-        // Replace placeholders in the project action message using centralized API
-        const actionMessage = await replacePlaceholders(
-          statusConfig.project_action,
-          project,
-          statusConfig
-        );
-
-        // console.log(`🔔 [PROJECT-ACTIONS] Showing for project "${project.title}":`, actionMessage);
-
-        // Show dismissible modal notification with proper initialization check
-        const showNotificationWithRetry = (retryCount = 0) => {
-          if (window.showModal && window.unifiedNotificationManager) {
-            console.log("🔔 [PROJECT-ACTIONS] Notification system available, showing modal...");
-            window.showModal("info", "Project Action Required", actionMessage, 8000); // 8 seconds with progress bar
-          } else if (retryCount < 5) {
-            // console.log(
-            //   `🔔 [PROJECT-ACTIONS] Notification system not ready, retrying in ${(retryCount + 1) * 500}ms... (attempt ${retryCount + 1}/5)`
-            // );
-            setTimeout(
-              () => {
-                showNotificationWithRetry(retryCount + 1);
-              },
-              (retryCount + 1) * 500
-            );
-          } else {
-            console.error(
-              "🔔 [PROJECT-ACTIONS] Notification system failed to initialize after 5 attempts"
-            );
-            console.error(
-              "🔔 [PROJECT-ACTIONS] Available window methods:",
-              Object.keys(window).filter((key) => key.includes("show"))
-            );
-
-            // Fallback to alert if notification system fails
-            alert(`Project Action Required: ${actionMessage}`);
-          }
-        };
-
-        showNotificationWithRetry();
-      } else {
-        console.log(`🔔 [PROJECT-ACTIONS] No project action for project "${project.title}"`);
-      }
-    }
-  });
-
-  // Function to replace placeholders in project action messages using centralized API
-  async function replacePlaceholders(message, project, statusConfig) {
-    if (!message) return "";
-
-    // console.log("🔄 [PLACEHOLDER] Original message:", message);
-
-    // Get client name from currentUser data - use company_name consistently
-    const clientName = currentUser?.company_name || "Client";
-
-    // Prepare data for centralized placeholder API
-    const mergedData = {
-      statusConfig: {
-        project_action: message,
-      },
-    };
-
-    const placeholderData = {
-      projectAddress: project.address || "N/A",
-      clientName: clientName,
-      clientEmail: currentUser?.email || "",
-      statusName: statusConfig?.status_name || "Status Update",
-      estTime: statusConfig?.est_time || "2-3 business days",
-      projectId: project.id,
-      siteUrl: window.location.origin,
-    };
-
-    try {
-      // Call centralized placeholder API
-      const response = await fetch("/api/replace-placeholders", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          mergedData,
-          placeholderData,
-        }),
-      });
-
-      if (response.ok) {
-        const result = await response.json();
-        const processedMessage = result.processedMessages?.project_action || message;
-
-        // console.log("🔄 [PLACEHOLDER] Final processed message:", processedMessage);
-        return processedMessage;
-      } else {
-        console.error("🔄 [PLACEHOLDER] API call failed, falling back to local processing");
-        throw new Error("API call failed");
-      }
-    } catch (error) {
-      console.error("🔄 [PLACEHOLDER] Error calling centralized API:", error);
-    }
-  }
+<script>
+  // Data is now loaded in front matter, no need for client-side API calls
+  console.log("🏗️ [DASHBOARD] Dashboard loaded with data from front matter");
 </script>

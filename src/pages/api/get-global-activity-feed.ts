@@ -47,7 +47,7 @@ export const GET: APIRoute = async ({ cookies, url }) => {
     const offset = parseInt(searchParams.get("offset") || "0");
     const actionFilter = searchParams.get("action");
 
-    // Get all projects with their logs
+    // Get all projects with their logs - now with denormalized user data
     const { data: projects, error: projectsError } = await supabase!
       .from("projects")
       .select(
@@ -56,7 +56,9 @@ export const GET: APIRoute = async ({ cookies, url }) => {
         address,
         title,
         log,
-        author_id
+        author_id,
+        company_name,
+        assigned_to_name
       `
       )
       .not("log", "is", null)
@@ -71,40 +73,12 @@ export const GET: APIRoute = async ({ cookies, url }) => {
       });
     }
 
-    // Get unique author IDs to fetch their profile information
-    const uniqueAuthorIds = projects
-      ? [...new Set(projects.map((p) => p.author_id).filter(Boolean))]
-      : [];
-
-    // Fetch profile information for all authors efficiently
-    let profilesMap = new Map();
-    if (uniqueAuthorIds.length > 0) {
-      const { data: profiles, error: profilesError } = await supabase!
-        .from("profiles")
-        .select("id, name, company_name, role")
-        .in("id", uniqueAuthorIds);
-
-      if (!profilesError && profiles) {
-        profiles.forEach((profile) => {
-          profilesMap.set(profile.id, {
-            id: profile.id,
-            name: profile.name,
-            display_name: profile.company_name || "Unknown User",
-            role: profile.role,
-          });
-        });
-        console.log(`✅ [ACTIVITY-FEED] Fetched ${profiles.length} user profiles efficiently`);
-      } else {
-        console.error("Error fetching activity feed profiles:", profilesError);
-      }
-    }
-
     // Extract and flatten all log entries with project context
+    // No need for profile lookups - use denormalized company_name directly
     const allActivities: any[] = [];
 
     projects?.forEach((project) => {
       const logs = project.log || [];
-      const authorProfile = profilesMap.get(project.author_id);
 
       logs.forEach((logEntry: any) => {
         allActivities.push({
@@ -112,8 +86,8 @@ export const GET: APIRoute = async ({ cookies, url }) => {
           project_id: project.id,
           project_address: project.address,
           project_title: project.title,
-          project_owner: authorProfile?.display_name || authorProfile?.name || "Unknown",
-          project_owner_id: authorProfile?.id || project.author_id,
+          project_owner: project.company_name || "Unknown",
+          project_owner_id: project.author_id,
         });
       });
     });

@@ -161,6 +161,109 @@ WHERE table_schema = 'public'
 ORDER BY table_name, ordinal_position;
 ```
 
+| table_name       | column_name                | data_type                   | is_nullable | column_default                               |
+| ---------------- | -------------------------- | --------------------------- | ----------- | -------------------------------------------- |
+| chat_messages    | id                         | integer                     | NO          | nextval('chat_messages_id_seq'::regclass)    |
+| chat_messages    | user_id                    | uuid                        | YES         | null                                         |
+| chat_messages    | user_name                  | text                        | NO          | null                                         |
+| chat_messages    | user_role                  | text                        | NO          | null                                         |
+| chat_messages    | message                    | text                        | NO          | null                                         |
+| chat_messages    | timestamp                  | timestamp with time zone    | YES         | now()                                        |
+| chat_messages    | created_at                 | timestamp with time zone    | YES         | now()                                        |
+| files            | id                         | integer                     | NO          | nextval('files_id_seq'::regclass)            |
+| files            | project_id                 | integer                     | YES         | null                                         |
+| files            | author_id                  | uuid                        | YES         | null                                         |
+| files            | file_name                  | text                        | YES         | null                                         |
+| files            | file_path                  | text                        | YES         | null                                         |
+| files            | file_type                  | text                        | YES         | null                                         |
+| files            | file_size                  | bigint                      | YES         | null                                         |
+| files            | uploaded_at                | timestamp without time zone | YES         | now()                                        |
+| files            | status                     | text                        | YES         | 'active'::text                               |
+| files            | comments                   | text                        | YES         | null                                         |
+| files            | title                      | text                        | YES         | null                                         |
+| files            | updated_at                 | timestamp with time zone    | YES         | null                                         |
+| files_global     | id                         | integer                     | NO          | nextval('files_id_seq'::regclass)            |
+| files_global     | name                       | text                        | YES         | null                                         |
+| files_global     | type                       | integer                     | YES         | null                                         |
+| files_global     | file_name                  | text                        | YES         | null                                         |
+| files_global     | file_path                  | text                        | YES         | null                                         |
+| files_global     | file_type                  | text                        | YES         | null                                         |
+| files_global     | file_size                  | bigint                      | YES         | null                                         |
+| files_global     | uploaded_at                | timestamp without time zone | YES         | now()                                        |
+| files_global     | status                     | text                        | YES         | 'active'::text                               |
+| global_options   | id                         | bigint                      | NO          | null                                         |
+| global_options   | key                        | text                        | YES         | null                                         |
+| global_options   | value                      | text                        | YES         | null                                         |
+| invoices         | id                         | bigint                      | NO          | null                                         |
+| invoices         | created_at                 | timestamp with time zone    | NO          | now()                                        |
+| invoices         | updated_at                 | timestamp with time zone    | YES         | now()                                        |
+| invoices         | project_id                 | bigint                      | NO          | null                                         |
+| invoices         | created_by                 | uuid                        | YES         | auth.uid()                                   |
+| invoices         | subject                    | text                        | YES         | null                                         |
+| invoices         | status                     | text                        | NO          | 'draft'::text                                |
+| invoices         | invoice_date               | date                        | NO          | CURRENT_DATE                                 |
+| invoices         | due_date                   | date                        | YES         | null                                         |
+| invoices         | sent_at                    | timestamp with time zone    | YES         | null                                         |
+| invoices         | subtotal                   | numeric                     | YES         | 0                                            |
+| invoices         | tax_rate                   | numeric                     | YES         | 0                                            |
+| invoices         | tax_amount                 | numeric                     | YES         | 0                                            |
+| invoices         | discount_amount            | numeric                     | YES         | 0                                            |
+| invoices         | total_amount               | numeric                     | YES         | 0                                            |
+| invoices         | payment_terms              | text                        | YES         | '30 days'::text                              |
+| invoices         | notes                      | text                        | YES         | null                                         |
+| invoices         | proposal_signature         | text                        | YES         | null                                         |
+| invoices         | signed_at                  | timestamp with time zone    | YES         | null                                         |
+| invoices         | catalog_line_items         | jsonb                       | YES         | null                                         |
+| invoices         | proposal_notes             | text                        | YES         | null                                         |
+| profiles         | id                         | uuid                        | NO          | null                                         |
+| profiles         | company_name               | text                        | YES         | null                                         |
+| profiles         | role                       | text                        | YES         | 'Client'::text                               |
+| profiles         | created_at                 | timestamp with time zone    | YES         | now()                                        |
+| profiles         | updated_at                 | timestamp with time zone    | YES         | now()                                        |
+| profiles         | first_name                 | text                        | YES         | null                                         |
+| profiles         | last_name                  | text                        | YES         | null                                         |
+| profiles         | mobile_carrier             | text                        | YES         | null                                         |
+| profiles         | avatar_url                 | text                        | YES         | null                                         |
+| profiles         | sms_alerts                 | boolean                     | YES         | null                                         |
+| profiles         | phone                      | text                        | YES         | null                                         |
+| profiles         | email                      | text                        | YES         | null                                         |
+| project_statuses | id                         | integer                     | NO          | nextval('project_statuses_id_seq'::regclass) |
+| project_statuses | status_code                | integer                     | NO          | null                                         |
+| project_statuses | admin_status_name          | character varying           | NO          | null                                         |
+| project_statuses | client_email_content       | text                        | YES         | null                                         |
+| project_statuses | est_time                   | character varying           | YES         | null                                         |
+| project_statuses | created_at                 | timestamp with time zone    | YES         | now()                                        |
+| project_statuses | updated_at                 | timestamp with time zone    | YES         | now()                                        |
+| project_statuses | admin_visible              | boolean                     | YES         | null                                         |
+| project_statuses | client_visible             | boolean                     | YES         | null                                         |
+| project_statuses | button_text                | text                        | YES         | null                                         |
+| project_statuses | client_email_subject       | text                        | YES         | null                                         |
+| project_statuses | modal_admin                | text                        | YES         | null                                         |
+| project_statuses | modal_client               | text                        | YES         | null                                         |
+| project_statuses | button_link                | text                        | YES         | '/dashboard'::text                           |
+| project_statuses | project_action             | text                        | YES         | null                                         |
+| project_statuses | modal_auto_redirect_client | text                        | YES         | '/dashboard'::text                           |
+| project_statuses | admin_email_content        | text                        | YES         | null                                         |
+| project_statuses | admin_email_subject        | text                        | YES         | null                                         |
+| project_statuses | modal_auto_redirect_admin  | text                        | YES         | '/dashboard'::text                           |
+| project_statuses | client_status_name         | text                        | YES         | null                                         |
+| project_statuses | client_status_tab          | text                        | YES         | null                                         |
+| project_statuses | admin_status_tab           | character varying           | YES         | null                                         |
+| projects         | id                         | integer                     | NO          | nextval('projects_id_seq'::regclass)         |
+| projects         | author_id                  | uuid                        | YES         | null                                         |
+| projects         | description                | text                        | YES         | null                                         |
+| projects         | address                    | text                        | YES         | null                                         |
+| projects         | created_at                 | timestamp with time zone    | YES         | null                                         |
+| projects         | sq_ft                      | integer                     | YES         | 0                                            |
+| projects         | new_construction           | boolean                     | YES         | null                                         |
+| projects         | status                     | integer                     | YES         | null                                         |
+| projects         | title                      | text                        | YES         | null                                         |
+| projects         | building                   | jsonb                       | YES         | null                                         |
+| projects         | project                    | jsonb                       | YES         | null                                         |
+| projects         | service                    | jsonb                       | YES         | null                                         |
+| projects         | requested_docs             | jsonb                       | YES         | null                                         |
+| projects         | assigned_to_id             | uuid                        | YES         | null                                         |
+
 ### Row Level Security (RLS) Policies
 
 #### Files Table Policies

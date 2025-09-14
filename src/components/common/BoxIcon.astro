@@ -6,21 +6,24 @@ interface Props {
   variant?: "regular" | "solid" | "logo";
   id?: string;
   style?: string;
+  size?: "sm" | "md" | "lg";
 }
 
 const {
   name,
-  class: className = "block bx-sm",
+  class: className = "block",
   color = "currentColor",
   variant = "regular",
   id,
   style,
+  size = "sm",
   ...rest
 } = Astro.props;
 
 const prefix = variant === "solid" ? "bxs" : variant === "logo" ? "bxl" : "bx";
 const iconClass = `${prefix} ${prefix}-${name}`;
 const iconStyle = style || `color: ${color};`;
+const sizeClass = size === "sm" ? "bx-sm" : size === "md" ? "bx-md" : "bx-lg";
 ---
 
-<i class={iconClass} style={iconStyle} class:list={[className]} id={id} {...rest}></i>
+<i class={iconClass} style={iconStyle} class:list={[className, sizeClass]} id={id} {...rest}></i>

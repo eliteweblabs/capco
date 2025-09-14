@@ -1,13 +1,11 @@
 ---
-// import { getI18N } from "@/i18n";
-import BoxIcon from "./BoxIcon.astro";
-import Logo from "./Logo.astro";
+import { isBackendPage } from "../../pages/api/backend-page-check";
 import AuthIcon from "./AuthIcon.astro";
-// import LanguagePicker from "../LanguagePicker.astro";
-import Tooltip from "./Tooltip.astro";
-// import SectionContainer from "./SectionContainer.astro";
-// import NavLi from "./NavLi.astro";
+import BoxIcon from "./BoxIcon.astro";
 import ThemeToggle from "./ThemeToggle.astro";
+import Logo from "./Logo.astro";
+import Button from "./Button.astro";
+import ProjectDrawer from "../project/ProjectDrawer.astro";
 
 interface Props {
   isAuth: boolean;
@@ -16,13 +14,31 @@ interface Props {
   session: any;
 }
 
-// console.log("📋 [HEADER] Header component loading...");
-
+// Header component
 const { isAuth, currentUser, session, currentRole } = Astro.props;
+
+// Fetch user's projects for the drawer
+let projects: any[] = [];
+if (isAuth && currentUser?.id) {
+  try {
+    const { supabase } = await import("../../lib/supabase");
+    if (supabase) {
+      const { data, error } = await supabase
+        .from("projects")
+        .select("id, title, address, status, created_at")
+        .order("created_at", { ascending: false });
+
+      if (!error && data) {
+        projects = data;
+      }
+    }
+  } catch (error) {
+    console.error("Error fetching projects for header:", error);
+  }
+}
 
 // Get current URL and determine page type
 const currentUrl = Astro.url.pathname;
-import { isBackendPage } from "../../pages/api/backend-page-check";
 const isBackend = isBackendPage(currentUrl);
 
 // Navigation schema
@@ -32,35 +48,69 @@ type NavType = "frontend" | "backend";
 interface NavItem {
   label: string;
   href: string;
-  roles: UserRole[]; // Array of roles that can access this item
-  isPrimary: boolean; // For styling primary CTA buttons
-  pageType: NavType; // Frontend or backend navigation
+  roles: UserRole[];
+  pageType: NavType;
+  isPrimary: boolean;
+  isDrawer?: boolean; // Special flag for drawer trigger
+  mobileOnly?: boolean; // Show only on mobile
+  desktopOnly?: boolean; // Show only on desktop
+  buttonStyle?: "primary" | "secondary" | "ghost" | "outline"; // Button variant
+  isDropdown?: boolean; // Is a dropdown menu
+  dropdownItems?: DropdownItem[]; // Items for dropdown
 }
 
-const navigation: NavItem[] = [
-  // Always visible - Home link for easy return to main site
-  // {
-  //   label: "Home",
-  //   href: "/",
-  //   roles: ["any"],
-  //   pageType: "frontend",
-  //   isPrimary: currentUrl === "/",
-  // },
+interface DropdownItem {
+  label: string;
+  href: string;
+}
 
+interface DropdownMenu {
+  label: string;
+  items: DropdownItem[];
+}
+
+// Navigation items
+const navItems: NavItem[] = [
   // Frontend navigation (hidden on backend pages to reduce clutter)
   {
-    label: "About",
-    href: "/about",
+    label: "Why CAPCo",
+    href: "#",
     roles: ["any"],
     pageType: "frontend",
-    isPrimary: currentUrl.startsWith("/about"),
+    isPrimary: false,
+    isDropdown: true,
+    dropdownItems: [
+      { label: "Unified Fire Protection Platform", href: "/solutions" },
+      { label: "CAPCo vs Competitors", href: "/solutions" },
+      { label: "Move to CAPCo", href: "/solutions" },
+      { label: "See Our Customers", href: "/customers" },
+    ],
   },
   {
-    label: "Projects",
-    href: "/projects",
+    label: "Pricing",
+    href: "/pricing",
     roles: ["any"],
     pageType: "frontend",
-    isPrimary: currentUrl.startsWith("/projects"),
+    isPrimary: currentUrl.startsWith("/pricing"),
+    desktopOnly: true,
+  },
+  {
+    label: "Book Demo",
+    href: "/demo",
+    roles: ["any"],
+    pageType: "frontend",
+    isPrimary: currentUrl.startsWith("/demo"),
+    buttonStyle: "primary",
+    desktopOnly: true,
+  },
+  {
+    label: "Log In",
+    href: "/login",
+    roles: ["any"],
+    pageType: "frontend",
+    isPrimary: currentUrl.startsWith("/login"),
+    buttonStyle: "ghost",
+    desktopOnly: true,
   },
 
   // Backend navigation (shown on backend pages)
@@ -70,6 +120,14 @@ const navigation: NavItem[] = [
     roles: ["Client", "Admin", "Staff"],
     pageType: "backend",
     isPrimary: currentUrl.startsWith("/dashboard#new-project"),
+  },
+  {
+    label: "Projects",
+    href: "#",
+    roles: ["Client", "Admin", "Staff"],
+    pageType: "backend",
+    isPrimary: false,
+    isDrawer: true, // Special flag for drawer trigger
   },
   {
     label: "Discussions",
@@ -94,385 +152,305 @@ const navigation: NavItem[] = [
   },
 ];
 
+// Dropdown menus are now integrated into navItems array above
+
 // Filter navigation items based on auth state, role, and page type
 function getVisibleNavItems(
   navItems: NavItem[],
   isAuth: boolean,
-  userRole?: string | null,
-  isBackend: boolean = false
+  currentRole: string | null,
+  isBackend: boolean
 ): NavItem[] {
   return navItems.filter((item) => {
-    // Always show Home link - users should always be able to return to main site
-    if (item.href === "/") {
-      return true;
+    // Show frontend items when not on backend pages
+    if (item.pageType === "frontend" && !isBackend) {
+      return (
+        item.roles.includes("any") ||
+        (isAuth && currentRole && item.roles.includes(currentRole as UserRole))
+      );
     }
 
-    // Page type filtering - hide other frontend nav on backend pages to reduce clutter
-    if (isBackend && item.pageType === "frontend") {
-      return false;
+    // Show backend items when on backend pages and authenticated
+    if (item.pageType === "backend" && isBackend && isAuth) {
+      return (
+        item.roles.includes("any") || (currentRole && item.roles.includes(currentRole as UserRole))
+      );
     }
 
-    // Show backend nav only on backend pages
-    if (item.pageType === "backend" && !isBackend) {
-      return false;
-    }
-
-    // If item allows "any" role, show it based on page type rules above
-    if (item.roles.includes("any")) return true;
-
-    // If user is not authenticated, only show "any" role items
-    if (!isAuth) return false;
-
-    // Map database role to our role system
-    const mappedRole: UserRole =
-      userRole === "Admin" ? "Admin" : userRole === "Staff" ? "Staff" : "Client";
-
-    // Check if user's role is in the allowed roles for this item
-    return item.roles.includes(mappedRole);
+    return false;
   });
 }
 
-const visibleNavigation = getVisibleNavItems(navigation, isAuth, currentRole, isBackend);
+const visibleNavItems = getVisibleNavItems(navItems, isAuth, currentRole, isBackend);
 ---
 
 <header
-  class="section sticky top-0 z-50 mx-auto p-6 backdrop-blur-sm"
-  style="position: -webkit-sticky !important; position: sticky !important; transform: translateZ(0) !important; backface-visibility: hidden !important; will-change: transform !important;"
+  class="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 sticky top-0 z-50 backdrop-blur-sm"
 >
-  <!-- <SectionContainer> -->
-  <div class="flex items-center justify-between">
-    <Logo />
+  <nav class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="flex justify-between items-center h-16">
+      {/* Logo */}
+      <div class="flex-shrink-0">
+        <Logo />
+      </div>
 
-    {
-      isAuth && isBackend && currentUrl !== "/dashboard" && (
-        <a
-          href="/dashboard"
-          class="inline-flex items-center rounded-lg bg-gray-500 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-gray-600"
+      {/* Unified Navigation - Desktop */}
+      <div class="hidden md:flex items-center space-x-8">
+        {/* Navigation Items */}
+        {
+          visibleNavItems
+            .filter((item) => !item.mobileOnly) // Show only desktop items
+            .map((item) => {
+              // Handle dropdown items
+              if (item.isDropdown && item.dropdownItems) {
+                return (
+                  <div class="relative group">
+                    <button class="text-gray-700 hover:text-gray-900 px-3 py-2 text-sm font-medium flex items-center">
+                      {item.label}
+                      <BoxIcon name="chevron-down" class="ml-1 bx-xs" />
+                    </button>
+                    <div class="absolute left-0 mt-2 w-64 bg-white dark:bg-gray-800 rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 border border-gray-200 dark:border-gray-700">
+                      <div class="py-1">
+                        {item.dropdownItems.map((dropdownItem) => (
+                          <a
+                            href={dropdownItem.href}
+                            class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+                          >
+                            {dropdownItem.label}
+                          </a>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                );
+              }
+
+              // Handle drawer items
+              if (item.isDrawer) {
+                return (
+                  <button
+                    data-drawer-target="project-drawer"
+                    data-drawer-toggle="project-drawer"
+                    class="px-3 py-2 text-sm font-medium text-gray-700 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white transition-colors"
+                  >
+                    {item.label}
+                  </button>
+                );
+              }
+
+              // Handle button style items
+              if (item.buttonStyle) {
+                return (
+                  <Button
+                    href={item.href}
+                    variant={item.buttonStyle}
+                    size="sm"
+                    class={item.buttonStyle === "ghost" ? "text-gray-700 hover:text-gray-900" : ""}
+                  >
+                    {item.label}
+                  </Button>
+                );
+              }
+
+              // Handle regular links
+              return (
+                <a
+                  href={item.href}
+                  class={`px-3 py-2 text-sm font-medium transition-colors ${
+                    item.isPrimary
+                      ? "text-blue-600 dark:text-blue-400"
+                      : "text-gray-700 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white"
+                  }`}
+                >
+                  {item.label}
+                </a>
+              );
+            })
+        }
+
+        {/* Auth Section */}
+        {
+          isAuth ? (
+            <AuthIcon
+              isAuth={isAuth}
+              currentUser={currentUser}
+              currentRole={currentRole}
+              session={session}
+            />
+          ) : null
+        }
+
+        {/* Theme Toggle */}
+        <ThemeToggle />
+      </div>
+
+      {/* Mobile Controls */}
+      <div class="md:hidden flex items-center space-x-4">
+        <ThemeToggle />
+        <AuthIcon
+          isAuth={isAuth}
+          currentUser={currentUser}
+          currentRole={currentRole}
+          session={session}
+        />
+        <button
+          id="mobile-menu-btn"
+          aria-controls="drawer-example"
+          aria-label="Toggle mobile menu"
+          class="hamburger z-[60] size-10 text-gray-700 transition-colors dark:text-gray-300"
         >
-          <BoxIcon name="arrow-back" class="mr-2" />
-          <span class="hidden md:inline">Back to Projects</span>
-        </a>
-      )
-    }
-    <!-- Navigation (Desktop) -->
-    <nav class="hidden items-center space-x-8 md:flex">
-      {
-        visibleNavigation.map((item) =>
-          item.isPrimary ? (
-            <a
-              href={item.href}
-              class="inline-flex items-center rounded-lg bg-red-600 px-4 py-2 font-medium text-white transition-colors hover:bg-red-700"
-            >
-              {item.label}
-            </a>
-          ) : (
-            <a
-              href={item.href}
-              class="font-medium text-gray-700 transition-colors hover:text-red-600 dark:text-gray-300 dark:hover:text-red-400"
-            >
-              {item.label}
-            </a>
-          )
-        )
-      }
-    </nav>
-
-    <div class="flex items-center gap-2">
-      <!-- Admin Quick Actions -->
-      <ThemeToggle />
-      {
-        currentRole === "Admin" && isBackend && (
-          <>
-            <Tooltip content="Global Activity Feed" id="global-activity-tooltip">
-              <a
-                href="/admin/global-activity"
-                aria-label="btn-global-activity"
-                class="flex size-8 items-center justify-center rounded-full bg-purple-600 text-white transition-colors hover:bg-purple-700"
-              >
-                <BoxIcon name="pulse" class="text-lg" />
-              </a>
-            </Tooltip>
-            <Tooltip
-              content="New Project"
-              id="new-project-tooltip"
-              class="cursor-pointer md:hidden"
-            >
-              <a
-                href="/dashboard#new-project"
-                aria-label="btn-new-project"
-                class="flex size-8 items-center justify-center rounded-full bg-blue-600 text-white transition-colors hover:bg-blue-700"
-              >
-                <BoxIcon name="plus-circle" class="text-lg" />
-              </a>
-            </Tooltip>
-
-            <Tooltip content="Users" id="add-user-tooltip">
-              <a
-                href="/users"
-                aria-label="btn-add-user"
-                class="flex size-8 items-center justify-center rounded-full bg-blue-600 text-white transition-colors hover:bg-blue-700"
-              >
-                <BoxIcon name="user-plus" class="text-lg" />
-              </a>
-            </Tooltip>
-          </>
-        )
-      }
-
-      {/* <LanguagePicker /> */}
-
-      <AuthIcon
-        isAuth={isAuth}
-        currentUser={currentUser}
-        currentRole={currentRole}
-        session={session}
-      />
-
-      {/* Mobile Menu Button (Hamburger) */}
-      <button
-        type="button"
-        id="mobile-menu-btn"
-        aria-controls="drawer-example"
-        aria-label="Toggle mobile menu"
-        class="hamburger z-50 size-10 text-gray-700 transition-colors dark:text-gray-300 md:hidden"
-      >
-        <span class="line"></span>
-        <span class="line"></span>
-        <span class="line"></span>
-      </button>
-      {/* Mobile Navigation Menu */}
-      <div
-        id="drawer-example"
-        class="fixed left-0 top-0 z-40 h-screen w-screen -translate-x-full overflow-y-auto bg-white p-4 transition-transform dark:bg-gray-800"
-        tabindex="-1"
-        aria-labelledby="drawer-label"
-      >
-        <nav class="space-y-4 px-6 py-4">
-          {/* Navigation Items */}
-          {
-            visibleNavigation.map((item) =>
-              item.isPrimary ? (
-                <a
-                  href={item.href}
-                  class="block w-full rounded-lg bg-red-600 px-4 py-3 text-center font-medium text-white transition-colors hover:bg-red-700"
-                >
-                  {item.label}
-                </a>
-              ) : (
-                <a
-                  href={item.href}
-                  class="block py-2 font-medium text-gray-700 transition-colors hover:text-red-600 dark:text-gray-300 dark:hover:text-red-400"
-                >
-                  {item.label}
-                </a>
-              )
-            )
-          }
-        </nav>
+          <span class="line"></span>
+          <span class="line"></span>
+          <span class="line"></span>
+        </button>
       </div>
     </div>
-  </div>
-  <!-- </SectionContainer> -->
+  </nav>
 </header>
 
-<script>
-  const isHomepage = window.location.pathname === "/" || window.location.pathname === "/index.html";
-  // Virtual keyboard detection
-  let initialViewportHeight = window.innerHeight;
-  let isVirtualKeyboardOpen = false;
+{/* <!-- Mobile Navigation Menu --> */}
+<div
+  id="drawer-example"
+  class="fixed left-0 top-0 z-40 h-screen w-screen overflow-y-auto bg-white dark:bg-gray-800 p-4"
+  tabindex="-1"
+  aria-labelledby="drawer-label"
+>
+  <!-- Close button -->
+  <div class="flex justify-end mb-4">
+    <button
+      id="mobile-menu-close"
+      aria-label="Close mobile menu"
+      class="flex items-center justify-center w-10 h-10 text-gray-700 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white transition-colors"
+    >
+      <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          stroke-width="2"
+          d="M6 18L18 6M6 6l12 12"></path>
+      </svg>
+    </button>
+  </div>
 
-  function detectVirtualKeyboard() {
-    console.log("📱 [HEADER] Detecting virtual keyboard");
-    const currentHeight = window.innerHeight;
-    const heightDifference = initialViewportHeight - currentHeight;
+  <nav class="space-y-4 px-6 py-4">
+    <!-- Navigation Items -->
+    {
+      visibleNavItems
+        .filter((item) => !item.desktopOnly) // Show only mobile items
+        .map((item) => {
+          // Handle dropdown items - show as expandable sections
+          if (item.isDropdown && item.dropdownItems) {
+            return (
+              <div class="border-t border-gray-200 pt-4 dark:border-gray-600">
+                <h3 class="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3">
+                  {item.label}
+                </h3>
+                {item.dropdownItems.map((dropdownItem) => (
+                  <a
+                    href={dropdownItem.href}
+                    class="block py-2 text-gray-700 hover:text-blue-600 dark:text-gray-300 dark:hover:text-blue-400"
+                  >
+                    {dropdownItem.label}
+                  </a>
+                ))}
+              </div>
+            );
+          }
 
-    // If viewport height decreased by more than 150px, likely virtual keyboard is open
-    if (heightDifference > 150) {
-      if (!isVirtualKeyboardOpen) {
-        isVirtualKeyboardOpen = true;
-        console.log("📱 [HEADER] Virtual keyboard detected as OPEN");
-        document.body.classList.add("virtual-keyboard-open");
+          // Handle drawer items
+          if (item.isDrawer) {
+            return (
+              <button
+                data-drawer-target="project-drawer"
+                data-drawer-toggle="project-drawer"
+                class="w-full text-left py-2 text-gray-700 hover:text-blue-600 dark:text-gray-300 dark:hover:text-blue-400"
+              >
+                {item.label}
+              </button>
+            );
+          }
+
+          // Handle button style items
+          if (item.buttonStyle) {
+            return (
+              <Button
+                href={item.href}
+                variant={item.buttonStyle}
+                size="md"
+                fullWidth
+                class={item.buttonStyle === "primary" ? "rounded-full" : "justify-start py-2"}
+              >
+                {item.label}
+              </Button>
+            );
+          }
+
+          // Handle regular links
+          return (
+            <Button
+              href={item.href}
+              variant={item.isPrimary ? "primary" : "ghost"}
+              size="md"
+              fullWidth
+              class={item.isPrimary ? "rounded-full" : "justify-start py-2"}
+            >
+              {item.label}
+            </Button>
+          );
+        })
+    }
+
+    {/* <!-- Auth Section --> */}
+    <div class="border-t border-gray-200 pt-4 dark:border-gray-600">
+      {
+        isAuth ? (
+          <div class="space-y-3">
+            <AuthIcon
+              isAuth={isAuth}
+              currentUser={currentUser}
+              currentRole={currentRole}
+              session={session}
+            />
+          </div>
+        ) : (
+          <div class="space-y-3">
+            <Button href="/login" variant="secondary" size="md" fullWidth>
+              Log In
+            </Button>
+            <Button
+              href="/login?tab=register"
+              variant="primary"
+              size="md"
+              fullWidth
+              class="rounded-full"
+            >
+              Get Started Free
+            </Button>
+            <Button href="/demo" variant="secondary" size="md" fullWidth>
+              Book a Demo
+            </Button>
+          </div>
+        )
       }
-    } else {
-      if (isVirtualKeyboardOpen) {
-        isVirtualKeyboardOpen = false;
-        console.log("📱 [HEADER] Virtual keyboard detected as CLOSED");
-        document.body.classList.remove("virtual-keyboard-open");
+    </div>
+  </nav>
+</div>
+
+<!-- Project Drawer -->
+{
+  isAuth && (
+    <ProjectDrawer
+      projects={projects}
+      currentProjectId={
+        currentUrl.includes("/project/")
+          ? currentUrl.split("/project/")[1]?.split("?")[0] || ""
+          : ""
       }
-    }
-  }
-
-  // Safari 18 beta fix - more aggressive approach for stubborn Safari
-  let fixHeaderTimer = null as any;
-  let isFixingHeader = false;
-  let lastScrollY = 0;
-
-  function fixHeaderPosition() {
-    // Prevent recursive calls
-    if (isFixingHeader) {
-      return;
-    }
-
-    // Clear existing timer
-    if (fixHeaderTimer) {
-      clearTimeout(fixHeaderTimer);
-    }
-
-    // Debounce the function call
-    fixHeaderTimer = setTimeout(() => {
-      isFixingHeader = true;
-
-      console.log("📱 [HEADER] Aggressive Safari fix - header position");
-      const header = document.querySelector("header");
-      if (header) {
-        // Skip header fixes when virtual keyboard is open to prevent layout issues
-        if (isVirtualKeyboardOpen) {
-          console.log("📱 [HEADER] Skipping header fixes - virtual keyboard is open");
-          isFixingHeader = false;
-          return;
-        }
-
-        // Get current scroll position
-        const currentScrollY = window.scrollY;
-
-        // More aggressive Safari fixes
-        header.style.cssText = `
-          position: fixed !important;
-          top: 0 !important;
-          left: 0 !important;
-          right: 0 !important;
-          width: 100% !important;
-          z-index: 9999 !important;
-          transform: translateZ(0) !important;
-          backface-visibility: hidden !important;
-          will-change: transform !important;
-          -webkit-transform: translateZ(0) !important;
-          -webkit-backface-visibility: hidden !important;
-        `;
-
-        // Force multiple reflows to ensure Safari applies the styles
-        header.offsetHeight;
-        header.offsetWidth;
-        header.getBoundingClientRect();
-
-        // Additional Safari-specific property setting
-        header.style.setProperty("position", "fixed", "important");
-        header.style.setProperty("-webkit-position", "fixed", "important");
-
-        // Force another reflow
-        header.offsetHeight;
-
-        lastScrollY = currentScrollY;
-      }
-
-      isFixingHeader = false;
-    }, 16); // ~60fps debounce
-  }
-
-  // Apply fix on load and multiple events
-  fixHeaderPosition();
-
-  // Add essential event listeners only (reduced to prevent infinite loops)
-  window.addEventListener("resize", () => {
-    console.log("📱 [HEADER] Resizing window");
-    detectVirtualKeyboard();
-    fixHeaderPosition();
-
-    // Re-evaluate mobile detection on resize
-    const newIsMobile = isMobile();
-    if (newIsMobile !== deviceInfo.isMobile) {
-      console.log("📱 [HEADER] Mobile status changed:", {
-        wasMobile: deviceInfo.isMobile,
-        nowMobile: newIsMobile,
-        width: window.innerWidth,
-      });
-      // Force a header fix when switching between mobile/desktop
-      fixHeaderPosition();
-    }
-  });
-
-  window.addEventListener("orientationchange", () => {
-    // Update initial height after orientation change
-    console.log("📱 [HEADER] Orientation changed");
-    setTimeout(() => {
-      initialViewportHeight = window.innerHeight;
-      detectVirtualKeyboard();
-      fixHeaderPosition();
-    }, 100);
-  });
-
-  // Use passive listeners to prevent blocking
-  window.addEventListener("scroll", fixHeaderPosition, { passive: true });
-  document.addEventListener("visibilitychange", fixHeaderPosition);
-  window.addEventListener("pageshow", fixHeaderPosition);
-
-  // Import mobile detection utility
-  const { isMobile, isMobileSafari, getDeviceInfo } = await import("../../lib/mobile-utils.ts");
-
-  const deviceInfo = getDeviceInfo();
-  const isMobileSafariDevice = isMobileSafari();
-
-  if (isMobileSafariDevice) {
-    console.log("📱 [HEADER] Mobile Safari detected - applying aggressive fixes", deviceInfo);
-
-    // More frequent checks for Safari (500ms interval)
-    setInterval(fixHeaderPosition, 500);
-
-    // Additional Safari-specific events
-    window.addEventListener("touchstart", fixHeaderPosition, { passive: true });
-    window.addEventListener("touchend", fixHeaderPosition, { passive: true });
-    window.addEventListener("focusin", fixHeaderPosition);
-    window.addEventListener("focusout", fixHeaderPosition);
-
-    // Force fix on any DOM mutation (Safari sometimes resets styles)
-    if (window.MutationObserver) {
-      const observer = new MutationObserver(() => {
-        fixHeaderPosition();
-      });
-      observer.observe(document.body, {
-        attributes: true,
-        childList: true,
-        subtree: true,
-        attributeFilter: ["style", "class"],
-      });
-    }
-  } else {
-    // Standard interval for non-Safari browsers
-
-    const checkInterval = isHomepage ? 1000 : 3000;
-    setInterval(fixHeaderPosition, checkInterval);
-  }
-
-  // Use MutationObserver to catch DOM changes that might reset positioning
-  const headerObserver = new MutationObserver((mutations) => {
-    let shouldFix = false;
-    mutations.forEach((mutation) => {
-      if (
-        mutation.type === "attributes" &&
-        (mutation.attributeName === "style" || mutation.attributeName === "class")
-      ) {
-        const target = mutation.target;
-        if (target instanceof HTMLElement && target.tagName === "HEADER") {
-          shouldFix = true;
-        }
-      }
-    });
-    if (shouldFix) {
-      setTimeout(fixHeaderPosition, 50);
-    }
-  });
-
-  // Start observing
-  const header = document.querySelector("header");
-  if (header) {
-    headerObserver.observe(header, {
-      attributes: true,
-      attributeFilter: ["style", "class"],
-    });
-  }
-
-  // console.log("📋 [HEADER] Header initialized with Safari 18 beta fix");
-</script>
+      currentUser={currentUser}
+      currentRole={currentRole || ""}
+    />
+  )
+}
 
 <style>
   .hamburger .line {
@@ -530,7 +508,6 @@ const visibleNavigation = getVisibleNavItems(navigation, isAuth, currentRole, is
       -o-transform: scale(1);
       transform: scale(1);
     }
-
     50% {
       -webkit-transform: scale(0);
       -ms-transform: scale(0);
@@ -539,29 +516,119 @@ const visibleNavigation = getVisibleNavItems(navigation, isAuth, currentRole, is
     }
   }
 
-  /* Safari 18 beta fix for header */
-  header {
-    position: sticky !important;
-    top: 0 !important;
-    z-index: 10 !important;
-    transform: translateZ(0) !important; /* Force hardware acceleration */
+  /* Mobile menu overlay */
+  .mobile-menu-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 30;
+    opacity: 0;
+    visibility: hidden;
+    transition:
+      opacity 0.3s ease,
+      visibility 0.3s ease;
   }
 
-  /* Virtual keyboard open state - prevent header interference */
-  .virtual-keyboard-open header {
-    position: relative !important;
-    top: auto !important;
-    transform: none !important;
+  .mobile-menu-overlay.active {
+    opacity: 1;
+    visibility: visible;
   }
 
-  /* Adjust sticky elements when virtual keyboard is open */
-  .virtual-keyboard-open #sticky-container {
-    bottom: 0.5rem !important;
-    transform: translateY(-50px) !important;
+  /* Mobile menu drawer */
+  #drawer-example {
+    transform: translateX(-100%);
+    transition: transform 0.3s ease;
   }
 
-  /* Prevent layout shifts when virtual keyboard opens/closes */
-  .virtual-keyboard-open {
-    overflow: hidden;
+  #drawer-example.active {
+    transform: translateX(0);
   }
 </style>
+
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    // Initialize Flowbite components
+    if (typeof window !== "undefined" && (window as any).initFlowbite) {
+      (window as any).initFlowbite();
+    }
+    const mobileMenuBtn = document.getElementById("mobile-menu-btn");
+    const mobileMenuClose = document.getElementById("mobile-menu-close");
+    const drawer = document.getElementById("drawer-example");
+    const body = document.body;
+
+    if (mobileMenuBtn && drawer) {
+      // Toggle mobile menu
+      mobileMenuBtn.addEventListener("click", function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+
+        const isActive = mobileMenuBtn.classList.contains("is-active");
+
+        if (isActive) {
+          // Close menu
+          mobileMenuBtn.classList.remove("is-active");
+          drawer.classList.remove("active");
+          body.classList.remove("overflow-hidden");
+        } else {
+          // Open menu
+          mobileMenuBtn.classList.add("is-active");
+          drawer.classList.add("active");
+          body.classList.add("overflow-hidden");
+        }
+      });
+
+      // Close menu when clicking close button
+      if (mobileMenuClose) {
+        mobileMenuClose.addEventListener("click", function (e) {
+          e.preventDefault();
+          e.stopPropagation();
+
+          mobileMenuBtn.classList.remove("is-active");
+          drawer.classList.remove("active");
+          body.classList.remove("overflow-hidden");
+        });
+      }
+
+      // Close menu when clicking on overlay or outside
+      drawer.addEventListener("click", function (e) {
+        if (e.target === drawer) {
+          mobileMenuBtn.classList.remove("is-active");
+          drawer.classList.remove("active");
+          body.classList.remove("overflow-hidden");
+        }
+      });
+
+      // Close menu when clicking on navigation links
+      const navLinks = drawer.querySelectorAll("a");
+      navLinks.forEach((link) => {
+        link.addEventListener("click", function () {
+          mobileMenuBtn.classList.remove("is-active");
+          drawer.classList.remove("active");
+          body.classList.remove("overflow-hidden");
+        });
+      });
+
+      // Close menu on escape key
+      document.addEventListener("keydown", function (e) {
+        if (e.key === "Escape" && drawer.classList.contains("active")) {
+          mobileMenuBtn.classList.remove("is-active");
+          drawer.classList.remove("active");
+          body.classList.remove("overflow-hidden");
+        }
+      });
+
+      // Close menu on window resize to desktop size
+      window.addEventListener("resize", function () {
+        if (window.innerWidth >= 768) {
+          // md breakpoint
+          mobileMenuBtn.classList.remove("is-active");
+          drawer.classList.remove("active");
+          body.classList.remove("overflow-hidden");
+        }
+      });
+    }
+  });
+</script>

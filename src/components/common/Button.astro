@@ -1,0 +1,227 @@
+---
+import BoxIcon from "./BoxIcon.astro";
+
+const primaryButtonColor = "blue";
+
+// Button component for standardized button styling throughout the project
+export interface Props {
+  type?: "button" | "submit" | "reset";
+  variant?:
+    | "primary"
+    | "secondary"
+    | "success"
+    | "warning"
+    | "danger"
+    | "outline"
+    | "ghost"
+    | "link"
+    | "loading"
+    | "disabled"
+    | "selected";
+  size?: "xs" | "sm" | "md" | "lg" | "xl";
+  href?: string;
+  target?: "_blank" | "_self" | "_parent" | "_top";
+  disabled?: boolean;
+  loading?: boolean;
+  icon?: string;
+  iconPosition?: "left" | "right";
+  fullWidth?: boolean;
+  class?: string;
+  id?: string;
+  name?: string;
+  value?: string;
+  form?: string;
+  onclick?: string;
+  dataAttributes?: Record<string, string>;
+  selectedClasses?: string;
+}
+
+const {
+  type = "button",
+  variant = "primary",
+  size = "md",
+  href,
+  target = "_self",
+  disabled = false,
+  loading = false,
+  icon,
+  iconPosition = "left",
+  fullWidth = false,
+  class: className = "",
+  id,
+  name,
+  value,
+  form,
+  onclick,
+  dataAttributes = {},
+  selectedClasses,
+} = Astro.props;
+
+// Base classes for all buttons
+const baseClasses =
+  "inline-flex items-center justify-center font-medium rounded-full transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed";
+
+// Size classes
+const sizeClasses = {
+  xs: "px-2.5 py-1.5 text-xs",
+  sm: "px-3 py-2 text-sm",
+  md: "px-4 py-2.5 text-sm",
+  lg: "px-5 py-3 text-base",
+  xl: "px-6 py-3.5 text-lg",
+};
+
+// Variant classes
+const variantClasses = {
+  primary: `bg-${primaryButtonColor}-600 text-white hover:bg-${primaryButtonColor}-700 focus:ring-${primaryButtonColor}-500 dark:bg-${primaryButtonColor}-600 dark:hover:bg-${primaryButtonColor}-700 shadow-lg hover:shadow-xl`,
+  secondary: `border-2 border-gray-300 text-gray-700 hover:text-white dark:border-gray-600 dark:text-gray-300 hover:bg-${primaryButtonColor}-600 dark:hover:bg-${primaryButtonColor}-600`,
+  success: `bg-green-600 text-white hover:bg-green-700 focus:ring-green-500 dark:bg-green-600 dark:hover:bg-green-700 shadow-lg hover:shadow-xl`,
+  warning:
+    "bg-yellow-600 text-white hover:bg-yellow-700 focus:ring-yellow-500 dark:bg-yellow-600 dark:hover:bg-yellow-700 shadow-lg hover:shadow-xl",
+  danger:
+    "bg-red-600 text-white hover:bg-red-700 focus:ring-red-500 dark:bg-red-600 dark:hover:bg-red-700 shadow-lg hover:shadow-xl",
+  outline: `border-2 border-${primaryButtonColor}-600 text-${primaryButtonColor}-600 hover:bg-${primaryButtonColor}-600 hover:text-white focus:ring-${primaryButtonColor}-500 dark:border-${primaryButtonColor}-400 dark:text-${primaryButtonColor}-400 dark:hover:bg-${primaryButtonColor}-400 dark:hover:text-white`,
+  ghost: `text-${primaryButtonColor}-600 hover:bg-${primaryButtonColor}-50 focus:ring-${primaryButtonColor}-500 dark:text-${primaryButtonColor}-400 dark:hover:bg-${primaryButtonColor}-900/20`,
+  link: `text-${primaryButtonColor}-600 underline hover:text-${primaryButtonColor}-700 focus:ring-${primaryButtonColor}-500 dark:text-${primaryButtonColor}-400 dark:hover:text-${primaryButtonColor}-300`,
+  loading: `bg-${primaryButtonColor}-600 text-white cursor-not-allowed opacity-75 focus:ring-${primaryButtonColor}-500 dark:bg-${primaryButtonColor}-600`,
+  disabled:
+    "bg-gray-100 text-gray-400 border border-gray-200 cursor-not-allowed opacity-60 dark:bg-gray-800 dark:text-gray-500 dark:border-gray-700",
+  selected: `bg-${primaryButtonColor}-600 text-white border-2 border-${primaryButtonColor}-600 focus:ring-${primaryButtonColor}-500 dark:bg-${primaryButtonColor}-600 dark:border-${primaryButtonColor}-600`,
+};
+
+// Build the complete class string
+const buttonClasses = [
+  baseClasses,
+  sizeClasses[size],
+  variantClasses[variant],
+  fullWidth ? "w-full" : "",
+  className,
+]
+  .filter(Boolean)
+  .join(" ");
+
+// Build data attributes string
+const dataAttrs = Object.entries(dataAttributes)
+  .map(([key, value]) => `data-${key}="${value}"`)
+  .join(" ");
+
+// Add selected classes data attribute if provided
+const selectedDataAttr = selectedClasses ? `data-selected-classes="${selectedClasses}"` : "";
+
+// Determine if this should be a link or button
+const isLink = href && !disabled;
+
+// Build attributes object
+const attributes = {
+  class: buttonClasses,
+  ...(id && { id }),
+  ...(name && { name }),
+  ...(value && { value }),
+  ...(form && { form }),
+  ...(onclick && { onclick }),
+  ...(disabled && !isLink && { disabled }),
+  ...(isLink && { href, target }),
+  ...(dataAttrs && { "data-attributes": dataAttrs }),
+  ...(selectedDataAttr && { "data-selected-classes": selectedClasses }),
+};
+---
+
+{
+  isLink ? (
+    <a {...attributes}>
+      {loading && (
+        <svg class="animate-spin -ml-1 mr-2 h-4 w-4" fill="none" viewBox="0 0 24 24">
+          <circle
+            class="opacity-25"
+            cx="12"
+            cy="12"
+            r="10"
+            stroke="currentColor"
+            stroke-width="4"
+          />
+          <path
+            class="opacity-75"
+            fill="currentColor"
+            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+          />
+        </svg>
+      )}
+      {icon && iconPosition === "left" && !loading && <BoxIcon name={icon} class="mr-2" />}
+      <slot />
+      {icon && iconPosition === "right" && !loading && <BoxIcon name={icon} class="ml-2" />}
+    </a>
+  ) : (
+    <button type={type} {...attributes}>
+      {loading && (
+        <svg class="animate-spin -ml-1 mr-2 h-4 w-4" fill="none" viewBox="0 0 24 24">
+          <circle
+            class="opacity-25"
+            cx="12"
+            cy="12"
+            r="10"
+            stroke="currentColor"
+            stroke-width="4"
+          />
+          <path
+            class="opacity-75"
+            fill="currentColor"
+            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+          />
+        </svg>
+      )}
+      {icon && iconPosition === "left" && !loading && <BoxIcon name={icon} class="mr-2" />}
+      <slot />
+      {icon && iconPosition === "right" && !loading && <BoxIcon name={icon} class="ml-2" />}
+    </button>
+  )
+}
+
+<style>
+  /* Additional button styles for specific variants */
+  .btn-loading {
+    position: relative;
+    pointer-events: none;
+  }
+
+  .btn-loading::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 20px;
+    height: 20px;
+    margin: -10px 0 0 -10px;
+    border: 2px solid transparent;
+    border-top: 2px solid currentColor;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+  }
+
+  @keyframes spin {
+    0% {
+      transform: rotate(0deg);
+    }
+    100% {
+      transform: rotate(360deg);
+    }
+  }
+
+  /* Focus styles for better accessibility */
+  button:focus-visible,
+  a:focus-visible {
+    outline: 2px solid #3b82f6;
+    outline-offset: 2px;
+  }
+
+  /* Hover effects for better UX */
+  button:not(:disabled):hover,
+  a:not([aria-disabled="true"]):hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.12);
+  }
+
+  button:not(:disabled):active,
+  a:not([aria-disabled="true"]):active {
+    transform: translateY(0);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.12);
+  }
+</style>

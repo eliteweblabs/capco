@@ -14,6 +14,12 @@ export const POST: APIRoute = async ({ request }) => {
 
     console.log("Updating invoice:", { invoiceId, lineItems, notes });
 
+    if (!supabase) {
+      return new Response(JSON.stringify({ error: "Database connection not available" }), {
+        status: 500,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
     // Update invoice notes
     const { error: invoiceError } = await supabase
       .from("invoices")

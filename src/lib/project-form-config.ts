@@ -329,7 +329,7 @@ export const FORM_ACTIONS: FormActionConfig[] = [
     label: "Save Project",
     icon: "bx-save",
     cssClass:
-      "w-full lg:w-auto px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors mt-6",
+      "w-full lg:w-auto px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-full hover:bg-blue-700 transition-colors mt-6",
     allow: ["Admin", "Staff", "Client"], // All roles can save
     // No status restriction - can save project at any status
     // displayOnNew undefined - shows on both new and existing projects
@@ -340,7 +340,7 @@ export const FORM_ACTIONS: FormActionConfig[] = [
     label: "Delete Project",
     icon: "bx-trash",
     cssClass:
-      "w-full md:w-auto px-4 py-2 bg-red-600 text-white text-sm font-medium rounded-lg hover:bg-red-700 transition-colors mt-6",
+      "w-full md:w-auto px-4 py-2 bg-red-600 text-white text-sm font-medium rounded-full hover:bg-red-700 transition-colors mt-6",
     action: "deleteProject",
     allow: ["Admin", "Staff"], // Only admin and staff can delete
     hideAtStatus: [0], // Only show when specs are received (status 10)
@@ -352,7 +352,7 @@ export const FORM_ACTIONS: FormActionConfig[] = [
     icon: "bx-file-pdf",
     tab: "proposal",
     cssClass:
-      "w-full md:w-auto px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 transition-colors mt-6",
+      "w-full md:w-auto px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-full hover:bg-green-700 transition-colors mt-6",
     action: "buildProposal",
     allow: ["Admin", "Staff"], // Only admin and staff can build proposals
     hideAtStatus: [
@@ -366,7 +366,7 @@ export const FORM_ACTIONS: FormActionConfig[] = [
   //   icon: "bx-file",
   //   tab: "documents",
   //   cssClass:
-  //     "px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors",
+  //     "px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-full hover:bg-blue-700 transition-colors",
   //   allow: ["Admin", "Staff", "Client"], // All roles can view documents
   //   hideAtStatus: [0], // Hide on new projects
   // },
@@ -377,7 +377,7 @@ export const FORM_ACTIONS: FormActionConfig[] = [
     icon: "bx-package",
     tab: "deliverables",
     cssClass:
-      "px-4 py-2 bg-purple-600 text-white text-sm font-medium rounded-lg hover:bg-purple-700 transition-colors",
+      "px-4 py-2 bg-purple-600 text-white text-sm font-medium rounded-full hover:bg-purple-700 transition-colors",
     allow: ["Admin", "Staff", "Client"], // All roles can view deliverables
     hideAtStatus: [
       0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170, 180, 190,
@@ -390,7 +390,7 @@ export const FORM_ACTIONS: FormActionConfig[] = [
     icon: "bx-receipt",
     tab: "final-invoice",
     cssClass:
-      "px-4 py-2 bg-orange-600 text-white text-sm font-medium rounded-lg hover:bg-orange-700 transition-colors",
+      "px-4 py-2 bg-orange-600 text-white text-sm font-medium rounded-full hover:bg-orange-700 transition-colors",
     allow: ["Admin", "Staff", "Client"], // All roles can view invoices
     hideAtStatus: [0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140], // Only show when final invoice is generated
   },
@@ -401,7 +401,7 @@ export const FORM_ACTIONS: FormActionConfig[] = [
   //   icon: "bx-history",
   //   tab: "activity-log",
   //   cssClass:
-  //     "px-4 py-2 bg-gray-600 text-white text-sm font-medium rounded-lg hover:bg-gray-700 transition-colors",
+  //     "px-4 py-2 bg-gray-600 text-white text-sm font-medium rounded-full hover:bg-gray-700 transition-colors",
   //   allow: ["Admin", "Staff", "Client"], // All roles can view activity log
   //   hideAtStatus: [0], // Hide on new projects
   // },
@@ -532,7 +532,7 @@ export function generateFormFieldHTML(
             id="${fieldId}"
             name="${field.name}"
             value="${value}"
-            class="w-full py-2 px-3 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:focus:ring-blue-400 dark:focus:border-blue-400"
+            class="w-full py-2 px-3 text-sm border border-gray-300 dark:border-gray-600 rounded-full bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:focus:ring-blue-400 dark:focus:border-blue-400"
             placeholder="${field.placeholder || ""}"
             ${field.required ? "required" : ""}
             ${field.min !== undefined ? `min="${field.min}"` : ""}
@@ -552,7 +552,7 @@ export function generateFormFieldHTML(
             id="${fieldId}"
             name="${field.name}"
             rows="3"
-            class="w-full py-2 px-3 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:focus:ring-blue-400 dark:focus:border-blue-400"
+            class="w-full py-2 px-3 text-sm border border-gray-300 dark:border-gray-600 rounded-full bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:focus:ring-blue-400 dark:focus:border-blue-400"
             placeholder="${field.placeholder || ""}"
             data-project-id="${projectId}"
           >${value}</textarea>

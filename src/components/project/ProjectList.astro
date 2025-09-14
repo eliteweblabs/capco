@@ -1,6 +1,5 @@
 ---
 import { getI18N } from "@/i18n";
-import { filteredStatusObj } from "../../pages/api/process-client-status";
 import NoDataCard from "./NoDataCard.astro";
 import ProjectListItem from "./ProjectListItem.astro";
 
@@ -18,12 +17,19 @@ const { projects, statusesObject, currentUser, currentRole } = Astro.props;
 
 if (!projects || projects.length === 0) return;
 
+// console.log("🔍 [DEBUG] ProjectList statusesObject:", statusesObject);
+// console.log("🔍 [DEBUG] ProjectList currentUser:", currentUser);
+// console.log("🔍 [DEBUG] ProjectList currentRole:", currentRole);
+// console.log("🔍 [DEBUG] ProjectList projects:", projects);
+
 // Process each project's status in the frontmatter
 const processedProjects = projects.map((project: any) => {
-  const currentStatusObj = filteredStatusObj(
-    statusesObject[project.status],
-    currentRole || "Client"
-  );
+  const currentStatusObj = statusesObject[project.status] || {
+    status_name: "Unknown Status",
+    status_tab: null,
+    status_slug: null,
+    status_code: project.status,
+  };
   return {
     ...project,
     currentStatusObj,
@@ -43,12 +49,12 @@ const processedProjects = projects.map((project: any) => {
   {
     projects.length > 0 ? (
       processedProjects.map((project: any) => {
-        console.log("🔍 [DEBUG] ProjectList passing project to ProjectListItem:", {
-          id: project.id,
-          title: project.title,
-          featured_image: project.featured_image,
-          featured_image_data: project.featured_image_data,
-        });
+        // console.log("🔍 [DEBUG] ProjectList passing project to ProjectListItem:", {
+        //   id: project.id,
+        //   title: project.title,
+        //   featured_image: project.featured_image,
+        //   featured_image_data: project.featured_image_data,
+        // });
         return (
           <ProjectListItem
             project={project}

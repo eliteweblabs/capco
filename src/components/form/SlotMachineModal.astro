@@ -82,7 +82,7 @@ const colors = themeColors[theme];
 <!-- Slot Machine Picker Button -->
 <button
   type="button"
-  class={`inline-flex items-center rounded-full px-3 py-1 text-sm font-medium cursor-pointer transition-colors ${colors.button}`}
+  class={`w-full md:w-auto inline-flex items-center rounded-full px-3 py-1 text-sm font-medium cursor-pointer transition-colors ${colors.button}`}
   id={id}
 >
   {displayText}
@@ -426,7 +426,7 @@ const colors = themeColors[theme];
     }
 
     const selectButton = document.createElement("button");
-    selectButton.className = `px-4 py-2 ${colors.modal} text-white rounded-md disabled:opacity-50`;
+    selectButton.className = `px-4 py-2 ${colors.modal} text-white rounded-lg disabled:opacity-50`;
     selectButton.textContent = "Select";
     selectButton.disabled = true;
 
@@ -667,6 +667,18 @@ const colors = themeColors[theme];
         selectedIndex = parseInt(span.dataset.index);
         centerSelectedItem();
         // Apply full selection styling on click
+        updateSelection();
+      }
+    });
+
+    // Handle touch on items for mobile
+    optionsList.addEventListener("touchend", (e) => {
+      e.preventDefault();
+      const span = e.target.closest("span[data-index]");
+      if (span) {
+        selectedIndex = parseInt(span.dataset.index);
+        centerSelectedItem();
+        // Apply full selection styling on touch
         updateSelection();
       }
     });
