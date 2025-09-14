@@ -306,153 +306,12 @@ const visibleNavItems = getVisibleNavItems(navItems, isAuth, currentRole, isBack
           currentRole={currentRole}
           session={session}
         />
-        <button
-          id="mobile-menu-btn"
-          aria-controls="drawer-example"
-          aria-label="Toggle mobile menu"
-          class="hamburger z-[60] size-10 text-text-primary dark:text-text-primary-dark transition-colors"
-        >
-          <span class="line"></span>
-          <span class="line"></span>
-          <span class="line"></span>
-        </button>
       </div>
     </div>
   </nav>
 </header>
 
-{/* <!-- Mobile Navigation Menu --> */}
-<div
-  id="drawer-example"
-  class="fixed left-0 top-0 z-40 h-screen w-screen overflow-y-auto bg-background-light dark:bg-background-dark p-4"
-  tabindex="-1"
-  aria-labelledby="drawer-label"
->
-  <!-- Close button -->
-  <div class="flex justify-end mb-4">
-    <Button
-      id="mobile-menu-close"
-      variant="ghost"
-      size="sm"
-      class="flex items-center justify-center w-10 h-10 text-text-primary dark:text-text-primary-dark hover:text-primary-600 transition-colors"
-    >
-      <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path
-          stroke-linecap="round"
-          stroke-linejoin="round"
-          stroke-width="2"
-          d="M6 18L18 6M6 6l12 12"></path>
-      </svg>
-    </Button>
-  </div>
 
-  <nav class="space-y-4 px-6 py-4">
-    <!-- Navigation Items -->
-    {
-      visibleNavItems
-        .filter((item) => !item.desktopOnly) // Show only mobile items
-        .map((item) => {
-          // Handle dropdown items - show as expandable sections
-          if (item.isDropdown && item.dropdownItems) {
-            return (
-              <div class="border-t border-border-light dark:border-border-dark pt-4">
-                <h3 class="text-sm font-semibold text-text-muted dark:text-text-muted uppercase tracking-wider mb-3">
-                  {item.label}
-                </h3>
-                {item.dropdownItems.map((dropdownItem) => (
-                  <a
-                    href={dropdownItem.href}
-                    class="block py-2 text-text-secondary dark:text-text-secondary-dark hover:text-primary-600"
-                  >
-                    {dropdownItem.label}
-                  </a>
-                ))}
-              </div>
-            );
-          }
-
-          // Handle drawer items
-          if (item.isDrawer) {
-            return (
-              <Button
-                variant="ghost"
-                size="sm"
-                dataAttributes={{
-                  "drawer-target": "project-drawer",
-                  "drawer-toggle": "project-drawer",
-                }}
-                class="w-full text-left py-2 text-text-secondary dark:text-text-secondary-dark hover:text-primary-600"
-              >
-                {item.label}
-              </Button>
-            );
-          }
-
-          // Handle button style items
-          if (item.buttonStyle) {
-            return (
-              <Button
-                href={item.href}
-                variant={item.buttonStyle}
-                size="md"
-                fullWidth
-                class={item.buttonStyle === "primary" ? "rounded-full" : "justify-start py-2"}
-              >
-                {item.label}
-              </Button>
-            );
-          }
-
-          // Handle regular links
-          return (
-            <Button
-              href={item.href}
-              variant={item.isPrimary ? "primary" : "ghost"}
-              size="md"
-              fullWidth
-              class={item.isPrimary ? "rounded-full" : "justify-start py-2"}
-            >
-              {item.label}
-            </Button>
-          );
-        })
-    }
-
-    {/* <!-- Auth Section --> */}
-    <div class="border-t border-border-light dark:border-border-dark pt-4">
-      {
-        isAuth ? (
-          <div class="space-y-3">
-            <AuthIcon
-              isAuth={isAuth}
-              currentUser={currentUser}
-              currentRole={currentRole}
-              session={session}
-            />
-          </div>
-        ) : (
-          <div class="space-y-3">
-            <Button href="/login" variant="secondary" size="md" fullWidth>
-              Log In
-            </Button>
-            <Button
-              href="/login?tab=register"
-              variant="primary"
-              size="md"
-              fullWidth
-              class="rounded-full"
-            >
-              Get Started Free
-            </Button>
-            <Button href="/demo" variant="secondary" size="md" fullWidth>
-              Book a Demo
-            </Button>
-          </div>
-        )
-      }
-    </div>
-  </nav>
-</div>
 
 <!-- Project Drawer -->
 {
@@ -555,15 +414,6 @@ const visibleNavItems = getVisibleNavItems(navItems, isAuth, currentRole, isBack
     visibility: visible;
   }
 
-  /* Mobile menu drawer */
-  #drawer-example {
-    transform: translateX(-100%);
-    transition: transform 0.3s ease;
-  }
-
-  #drawer-example.active {
-    transform: translateX(0);
-  }
 </style>
 
 <script>
@@ -572,12 +422,7 @@ const visibleNavItems = getVisibleNavItems(navItems, isAuth, currentRole, isBack
     if (typeof window !== "undefined" && (window as any).initFlowbite) {
       (window as any).initFlowbite();
     }
-    const mobileMenuBtn = document.getElementById("mobile-menu-btn");
-    const mobileMenuClose = document.getElementById("mobile-menu-close");
-    const drawer = document.getElementById("drawer-example");
-    const body = document.body;
 
-    if (mobileMenuBtn && drawer) {
       // Toggle mobile menu
       mobileMenuBtn.addEventListener("click", function (e) {
         e.preventDefault();
