@@ -110,9 +110,9 @@ export default {
 
         // Background Colors
         background: {
-          light: "#ffffff",
+          light: "#fafafa",
           dark: "#0a0a0a",
-          card: "#ffffff",
+          card: "#fafafa",
           "card-dark": "#171717",
         },
 
