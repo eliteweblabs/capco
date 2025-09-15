@@ -31,8 +31,21 @@ export const POST: APIRoute = async ({ request }) => {
     // Parse the email data (adjust based on your webhook provider)
     const emailData: EmailWebhookData = parseWebhookData(body);
 
+    console.log("📧 [EMAIL-WEBHOOK] Parsed email data:", {
+      from: emailData.from,
+      to: emailData.to,
+      subject: emailData.subject,
+      hasText: !!emailData.text,
+      hasHtml: !!emailData.html,
+      attachmentCount: emailData.attachments?.length || 0,
+      headerKeys: Object.keys(emailData.headers || {}),
+    });
+
     if (!emailData.from || !emailData.subject) {
-      console.error("❌ [EMAIL-WEBHOOK] Missing required email data");
+      console.error("❌ [EMAIL-WEBHOOK] Missing required email data", {
+        from: emailData.from,
+        subject: emailData.subject,
+      });
       return new Response(
         JSON.stringify({ success: false, error: "Missing required email data" }),
         {
@@ -167,6 +180,30 @@ function parseWebhookData(body: any): EmailWebhookData {
   throw new Error("Unsupported webhook format - please check webhook provider configuration");
 }
 
+// Extract pure email address from formats like "Name <email@domain.com>" or just "email@domain.com"
+function extractEmailAddress(emailString: string): string | null {
+  if (!emailString || typeof emailString !== "string") {
+    return null;
+  }
+
+  const trimmed = emailString.trim();
+
+  // Check for "Name <email@domain.com>" format
+  const emailInBrackets = trimmed.match(/<([^>]+)>/);
+  if (emailInBrackets) {
+    return emailInBrackets[1].trim();
+  }
+
+  // Return as-is if it's already a plain email
+  return trimmed;
+}
+
+// Validate email format
+function isValidEmail(email: string): boolean {
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return emailRegex.test(email);
+}
+
 // Generate a temporary password for new users
 function generateTempPassword(): string {
   const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*";
@@ -267,6 +304,25 @@ function extractNameFromEmail(email: string, headers?: Record<string, string>): 
 async function findOrCreateUser(email: string, headers?: Record<string, string>) {
   try {
     console.log("🔍 [EMAIL-WEBHOOK] Looking for user with email:", email);
+    console.log("🔍 [EMAIL-WEBHOOK] Raw email value:", JSON.stringify(email));
+    console.log("🔍 [EMAIL-WEBHOOK] Email type:", typeof email);
+    console.log("🔍 [EMAIL-WEBHOOK] Email length:", email?.length);
+
+    // Extract pure email address from formats like "Name <email@domain.com>"
+    const extractedEmail = extractEmailAddress(email);
+    if (!extractedEmail) {
+      console.error("❌ [EMAIL-WEBHOOK] Could not extract email address from:", email);
+      return null;
+    }
+
+    const cleanEmail = extractedEmail.toLowerCase();
+    console.log("🔍 [EMAIL-WEBHOOK] Extracted and cleaned email:", cleanEmail);
+
+    if (!isValidEmail(cleanEmail)) {
+      console.error("❌ [EMAIL-WEBHOOK] Invalid email format:", cleanEmail);
+      return null;
+    }
+
     if (!supabase) {
       console.error("❌ [EMAIL-WEBHOOK] Supabase client not initialized");
       return null;
@@ -275,7 +331,7 @@ async function findOrCreateUser(email: string, headers?: Record<string, string>)
     const { data: existingProfile, error: profileError } = await supabase
       .from("profiles")
       .select("*")
-      .eq("email", email)
+      .eq("email", cleanEmail)
       .single();
 
     if (existingProfile) {
@@ -284,10 +340,10 @@ async function findOrCreateUser(email: string, headers?: Record<string, string>)
     }
 
     // User doesn't exist, create new one
-    console.log("🆕 [EMAIL-WEBHOOK] Creating new user for email:", email);
+    console.log("🆕 [EMAIL-WEBHOOK] Creating new user for email:", cleanEmail);
 
     // Extract name from email headers or email address
-    const fullName = extractNameFromEmail(email, headers);
+    const fullName = extractNameFromEmail(cleanEmail, headers);
     const { firstName, lastName } = splitFullName(fullName);
 
     // Generate a temporary password
@@ -297,9 +353,19 @@ async function findOrCreateUser(email: string, headers?: Record<string, string>)
       console.error("❌ [EMAIL-WEBHOOK] Supabase admin client not initialized");
       return null;
     }
+
     // Create user in Supabase Auth (requires service role key)
+    console.log("🔐 [EMAIL-WEBHOOK] Creating auth user with email:", cleanEmail);
+    console.log("🔐 [EMAIL-WEBHOOK] User metadata:", {
+      full_name: fullName,
+      role: "Client",
+      created_by_email_webhook: true,
+      must_change_password: true,
+      email: cleanEmail,
+    });
+
     const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
-      email: email.trim().toLowerCase(),
+      email: cleanEmail,
       password: tempPassword,
       email_confirm: false, // Auto-confirm email
       user_metadata: {
@@ -307,7 +373,7 @@ async function findOrCreateUser(email: string, headers?: Record<string, string>)
         role: "Client",
         created_by_email_webhook: true,
         must_change_password: true,
-        email: email.trim().toLowerCase(),
+        email: cleanEmail,
       },
     });
 
@@ -320,7 +386,7 @@ async function findOrCreateUser(email: string, headers?: Record<string, string>)
     // Use ON CONFLICT to handle cases where trigger already created the profile
     const profileData = {
       id: authData.user.id,
-      email: email.trim().toLowerCase(),
+      email: cleanEmail,
       first_name: firstName,
       last_name: lastName,
       company_name: fullName,
@@ -331,6 +397,8 @@ async function findOrCreateUser(email: string, headers?: Record<string, string>)
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     };
+
+    console.log("📝 [EMAIL-WEBHOOK] Creating profile with data:", profileData);
 
     const { error: upsertError } = await supabaseAdmin.from("profiles").upsert(profileData, {
       onConflict: "id",
@@ -355,7 +423,7 @@ async function findOrCreateUser(email: string, headers?: Record<string, string>)
     // Return the profile data
     const newProfile = {
       id: authData.user.id,
-      email: email.trim().toLowerCase(),
+      email: cleanEmail,
       first_name: firstName,
       last_name: lastName,
       company_name: fullName,
