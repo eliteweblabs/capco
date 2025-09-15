@@ -317,56 +317,65 @@ if (!project) {
           id: "tab-project-form",
           label: "Project Form",
           icon: "edit",
-          variant: "ghost",
+          variant: "anchor",
+          onclick: "switchTab('project-form')",
         },
         {
           id: "tab-discussion",
           label: "Discussion",
           icon: "message-rounded-dots",
-          variant: "ghost",
+          variant: "anchor",
           dataAttributes: { "data-count": "0" },
+          onclick: "switchTab('discussion')",
         },
         {
           id: "tab-documents",
           label: "Documents",
           icon: "file",
-          variant: "ghost",
+          variant: "anchor",
+          onclick: "switchTab('documents')",
         },
         {
           id: "tab-proposal",
           label: "Proposal",
           icon: "grid",
-          variant: "ghost",
+          variant: "anchor",
+          onclick: "switchTab('proposal')",
         },
         {
           id: "tab-contract",
           label: "Contract",
           icon: "pencil",
-          variant: "ghost",
+          variant: "anchor",
+          onclick: "switchTab('contract')",
         },
         {
           id: "tab-deposit",
           label: "Deposit",
           icon: "credit-card",
-          variant: "ghost",
+          variant: "anchor",
+          onclick: "switchTab('deposit')",
         },
         {
           id: "tab-deliverables",
           label: "Deliverables",
           icon: "package",
-          variant: "ghost",
+          variant: "anchor",
+          onclick: "switchTab('deliverables')",
         },
         {
           id: "tab-final-invoice",
           label: "Final Invoice",
           icon: "receipt",
-          variant: "ghost",
+          variant: "anchor",
+          onclick: "switchTab('final-invoice')",
         },
         {
           id: "tab-activity-log",
           label: "Activity Log",
           icon: "history",
-          variant: "ghost",
+          variant: "anchor",
+          onclick: "switchTab('activity-log')",
         },
       ]}
     />
@@ -700,75 +709,4 @@ if (!project) {
 
   // Make switchTab globally available for other components
   window.switchTab = switchTab;
-
-  // Payment method switching functionality
-  document.addEventListener("DOMContentLoaded", function () {
-    const paymentMethodRadios = document.querySelectorAll('input[name="payment-method"]');
-    const cardForm = document.getElementById("card-payment-form");
-    const bankForm = document.getElementById("bank-payment-form");
-    const checkForm = document.getElementById("check-payment-form");
-
-    paymentMethodRadios.forEach((radio) => {
-      radio.addEventListener("change", function () {
-        // Hide all forms
-        if (cardForm) cardForm.classList.add("hidden");
-        if (bankForm) bankForm.classList.add("hidden");
-        if (checkForm) checkForm.classList.add("hidden");
-
-        // Show selected form
-        if (this.value === "card" && cardForm) {
-          cardForm.classList.remove("hidden");
-        } else if (this.value === "bank" && bankForm) {
-          bankForm.classList.remove("hidden");
-        } else if (this.value === "check" && checkForm) {
-          checkForm.classList.remove("hidden");
-        }
-      });
-    });
-  });
-
-  // Payment processing function
-  function processDepositPayment() {
-    const selectedMethodElement = document.querySelector('input[name="payment-method"]:checked');
-    const selectedMethod = selectedMethodElement?.value;
-
-    if (!selectedMethod) {
-      alert("Please select a payment method");
-      return;
-    }
-
-    // Get the amount (this would come from the proposal total in a real implementation)
-    const amount = 0.0; // Placeholder - should be calculated from proposal
-
-    console.log("Processing deposit payment:", {
-      method: selectedMethod,
-      amount: amount,
-      projectId: projectData?.id,
-    });
-
-    // Show loading state
-    const button = document.querySelector('button[onclick="processDepositPayment()"]');
-    if (button) {
-      const originalText = button.innerHTML;
-      button.innerHTML =
-        '<BoxIcon name="loader" class="mr-2 inline h-5 w-5 animate-spin" />Processing...';
-      button.disabled = true;
-
-      // Simulate payment processing
-      setTimeout(() => {
-        button.innerHTML = originalText;
-        button.disabled = false;
-
-        // Show success message
-        if (window.showModal) {
-          window.showModal("success", "Success", "Deposit payment processed successfully!");
-        } else {
-          alert("Deposit payment processed successfully!");
-        }
-      }, 2000);
-    }
-  }
-
-  // Make payment function globally available
-  window.processDepositPayment = processDepositPayment;
 </script>

@@ -6,10 +6,13 @@ import Button from "./Button.astro";
 const {
   user,
   currentRole,
-  visibleNavigation,
   currentUser,
   assignedProjects,
-  assignedProjectsCount,
+  assignedProjectsCount = 0,
+  isAuth,
+  visibleNavigation,
+  desktopNavigationHTML,
+  mobileNavigationHTML,
 } = Astro.props;
 // Fetch projects assigned to current user
 ---
@@ -75,7 +78,7 @@ const {
   <!-- Assigned Projects Section -->
   <div class="mb-6">
     <h6 class="mb-3 text-sm font-medium text-gray-900 dark:text-white">
-      Assigned Projects ({assignedProjectsCount})
+      Your Projects ({assignedProjectsCount})
     </h6>
 
     {
@@ -140,45 +143,40 @@ const {
       <BoxIcon name="user" class="bx-sm mr-3" />
       My Profile
     </a>
-
-    <hr class="my-1 border-gray-200 dark:border-gray-700" />
-
-    <Button
-      id="logout-btn"
-      variant="ghost"
-      size="sm"
-      icon="log-out"
-      iconPosition="left"
-      fullWidth
-      class="text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-700"
-    >
-      Logout
-    </Button>
   </div>
 
   <!-- Navigation -->
-  <nav class="mb-6 space-y-2">
+  <!-- <nav class="mb-6 space-y-2">
     {
       visibleNavigation &&
         visibleNavigation.map((item: any) =>
           item.isPrimary ? (
             <a
               href={item.href}
-              class="block w-full rounded-lg bg-red-600 px-4 py-3 text-center font-medium text-white transition-colors hover:bg-red-700"
+              class="block w-full px-4 py-3 text-center font-medium text-black dark:text-white"
             >
               {item.label}
             </a>
           ) : (
             <a
               href={item.href}
-              class="block py-2 font-medium text-gray-700 transition-colors hover:text-red-600 dark:text-gray-300 dark:hover:text-red-400"
+              class="block w-full px-4 py-3 text-center font-medium text-black dark:text-white"
             >
               {item.label}
             </a>
           )
         )
     }
-  </nav>
+  </nav> -->
+
+  <!-- Alternative: Generated Navigation HTML (optional) -->
+  {
+    desktopNavigationHTML && (
+      <div class="mb-6">
+        <div class="space-y-1" set:html={desktopNavigationHTML} />
+      </div>
+    )
+  }
 
   <!-- User Actions -->
   <div class="space-y-2">

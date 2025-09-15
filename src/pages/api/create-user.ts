@@ -304,7 +304,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
               continue;
             }
 
-            const userEmail = authUser.user.email;
+            const adminEmail = authUser.user.email;
 
             // THIS IS TO THE ADMINS EMAIL
             // Send email using the email delivery API with full URL
@@ -316,8 +316,8 @@ export const POST: APIRoute = async ({ request, cookies }) => {
               },
 
               body: JSON.stringify({
-                usersToNotify: [userEmail], // Use resolved user email
-                emailSubject: `New User ${displayName} Created As ${staffRole}`,
+                usersToNotify: [adminEmail], // Use resolved user email
+                emailSubject: `New User → ${displayName} → ${staffRole}`,
                 emailContent: adminContent,
                 buttonText: "Access Your Dashboard",
                 buttonLink: "/dashboard",
@@ -325,10 +325,10 @@ export const POST: APIRoute = async ({ request, cookies }) => {
             });
 
             if (emailResponse.ok) {
-              console.log(`📧 [CREATE-USER] ${user.role} notification sent to ${userEmail}`);
+              console.log(`📧 [CREATE-USER] ${user.role} notification sent to ${adminEmail}`);
             } else {
               console.error(
-                `📧 [CREATE-USER] Failed to send ${user.role} notification to ${userEmail}:`,
+                `📧 [CREATE-USER] Failed to send ${user.role} notification to ${adminEmail}:`,
                 await emailResponse.text()
               );
             }

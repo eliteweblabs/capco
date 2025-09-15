@@ -123,3 +123,112 @@ if (project_statuses.length > 0) {
   navClass="text-hub-inactive dark:border-hub-border-dark"
   items={navItems}
 />
+
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    // Project-specific filtering logic
+    const projectList = document.getElementById("project-list");
+    const subNav = document.getElementById("project-nav");
+
+    if (!subNav || !projectList) return;
+
+    const projectItems = projectList.querySelectorAll("[data-project-status]");
+    const filterButtons = subNav.querySelectorAll("[data-project-status-filter]");
+    const allStatusesButton = subNav.querySelector("#all-statuses");
+
+    // Project filtering logic
+    function filterProjects(statusFilter: string) {
+      const shouldShow = (projectStatusSlug: string) => {
+        if (statusFilter === "all") {
+          return true;
+        }
+        return projectStatusSlug === statusFilter;
+      };
+
+      let visibleCount = 0;
+      projectItems.forEach((item) => {
+        const projectStatusSlug = item.getAttribute("data-project-status");
+        const shouldShowItem = shouldShow(projectStatusSlug || "");
+
+        if (shouldShowItem && !item.classList.contains("hidden")) {
+          (item as any).style.display = "block";
+          (item as any).style.opacity = "1";
+          visibleCount++;
+        } else {
+          (item as any).style.display = "none";
+          (item as any).style.opacity = "0";
+        }
+      });
+
+      // Show/hide no projects message
+      const noProjectsMessage = document.getElementById("no-projects-message");
+      const noProjectsText = document.getElementById("no-projects-text");
+      if (noProjectsMessage && noProjectsText) {
+        if (visibleCount === 0) {
+          noProjectsText.textContent = `No projects currently at ${statusFilter}.`;
+          noProjectsMessage.classList.remove("hidden");
+        } else {
+          noProjectsMessage.classList.add("hidden");
+        }
+      }
+    }
+
+    // Update URL for project filtering
+    function updateURL(statusFilter: string) {
+      const url = new URL(window.location.href);
+      if (statusFilter === "all") {
+        url.searchParams.delete("status");
+      } else {
+        url.searchParams.set("status", statusFilter);
+      }
+      window.history.pushState({}, "", url.toString());
+    }
+
+    // Add project filtering to button clicks
+    filterButtons.forEach((button: Element) => {
+      button.addEventListener("click", function (this: HTMLElement) {
+        const filterValue = this.getAttribute("data-project-status-filter");
+        if (filterValue) {
+          filterProjects(filterValue);
+          updateURL(filterValue);
+        }
+      });
+    });
+
+    if (allStatusesButton) {
+      allStatusesButton.addEventListener("click", function (this: HTMLElement) {
+        filterProjects("all");
+        updateURL("all");
+      });
+    }
+
+    // Initial filter from URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const statusParam = urlParams.get("status");
+    if (statusParam) {
+      const targetButton = subNav.querySelector(`[data-project-status-filter="${statusParam}"]`);
+      if (targetButton) {
+        filterProjects(statusParam);
+        // Use the SlidingPillNav's exposed functions to update the UI
+        setTimeout(() => {
+          if ((window as any).project_nav_updateActiveButton) {
+            (window as any).project_nav_updateActiveButton(targetButton);
+            (window as any).project_nav_updateSlidingPill(targetButton);
+          }
+        }, 100);
+        return;
+      }
+    }
+
+    // Default to all
+    if (allStatusesButton) {
+      filterProjects("all");
+      setTimeout(() => {
+        if ((window as any).project_nav_updateActiveButton) {
+          (window as any).project_nav_updateActiveButton(allStatusesButton);
+          (window as any).project_nav_updateSlidingPill(allStatusesButton);
+        }
+      }, 100);
+    }
+  });
+</script>

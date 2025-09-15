@@ -9,6 +9,7 @@ export interface NavItem {
   variant?: string;
   dataAttributes?: Record<string, string>;
   count?: number;
+  onclick?: string;
 }
 
 interface Props {
@@ -55,6 +56,7 @@ const {
         }`}
         data-index={index}
         dataAttributes={item.dataAttributes || {}}
+        onclick={item.onclick}
       >
         {item.label}
         {item.count !== undefined && item.count > 0 && (
@@ -69,92 +71,57 @@ const {
 
 <script>
   document.addEventListener("DOMContentLoaded", function () {
-    const subNav = document.getElementById("project-nav");
-    const projectList = document.getElementById("project-list");
+    // Generic sliding pill navigation - works with any nav that has the right structure
+    function initializeSlidingPillNav(navId: string) {
+      const nav = document.getElementById(navId);
+      if (!nav) return;
 
-    if (!subNav || !projectList) return;
+      const pillBg = nav.querySelector('[id$="-pill-bg"]') || nav.querySelector("#nav-pill-bg");
+      const buttons = nav.querySelectorAll("button[data-index], button[id], a[data-index], a[id]");
 
-    const projectItems = projectList.querySelectorAll("[data-project-status]");
-    const filterButtons = subNav.querySelectorAll("[data-project-status-filter]");
-    const allStatusesButton = subNav.querySelector("#all-statuses");
-    const pillBg = document.getElementById("nav-pill-bg");
+      // Update active button styling
+      function updateActiveButton(activeButton: Element | null) {
+        if (!nav) return;
 
-    // Simple filtering based on data attributes - project cards handle their own visibility
-    function filterProjects(statusFilter: string) {
-      const shouldShow = (projectStatusSlug: string) => {
-        if (statusFilter === "all") {
-          return true;
-        }
-        return projectStatusSlug === statusFilter;
-      };
+        nav.querySelectorAll("button, a").forEach((btn) => {
+          btn.classList.remove(
+            "bg-blue-500",
+            "text-white",
+            "border-blue-500",
+            "bg-hub-primary",
+            "text-blue-600",
+            "dark:text-blue-400"
+          );
+          btn.classList.add("text-hub-inactive", "dark:text-hub-inactive-dark");
+        });
 
-      let visibleCount = 0;
-      projectItems.forEach((item) => {
-        const projectStatusSlug = item.getAttribute("data-project-status");
-        const shouldShowItem = shouldShow(projectStatusSlug || "");
-
-        if (shouldShowItem && !item.classList.contains("hidden")) {
-          (item as any).style.display = "block";
-          (item as any).style.opacity = "1";
-          visibleCount++;
-        } else {
-          (item as any).style.display = "none";
-          (item as any).style.opacity = "0";
-        }
-      });
-
-      // Show/hide no projects message
-      const noProjectsMessage = document.getElementById("no-projects-message");
-      const noProjectsText = document.getElementById("no-projects-text");
-      if (noProjectsMessage && noProjectsText) {
-        if (visibleCount === 0) {
-          noProjectsText.textContent = `No projects currently at ${statusFilter}.`;
-          noProjectsMessage.classList.remove("hidden");
-        } else {
-          noProjectsMessage.classList.add("hidden");
+        if (activeButton) {
+          activeButton.classList.remove("text-hub-inactive", "dark:text-hub-inactive-dark");
+          activeButton.classList.add("text-blue-600", "dark:text-blue-400");
         }
       }
-    }
 
-    // Update active button - only change text color, no background
-    function updateActiveButton(activeButton: Element | null) {
-      if (!subNav) return;
-      subNav.querySelectorAll("button").forEach((btn) => {
-        btn.classList.remove(
-          "bg-blue-500",
-          "text-white",
-          "border-blue-500",
-          "bg-hub-primary",
-          "text-blue-600",
-          "dark:text-blue-400"
-        );
-        btn.classList.add("text-hub-inactive", "dark:text-hub-inactive-dark");
-      });
-      if (activeButton) {
-        activeButton.classList.remove("text-hub-inactive", "dark:text-hub-inactive-dark");
-        activeButton.classList.add("text-blue-600", "dark:text-blue-400");
+      // Update sliding pill position
+      function updateSlidingPill(activeButton: Element | null) {
+        if (!pillBg || !activeButton || !nav) return;
+
+        const navRect = nav.getBoundingClientRect();
+        const buttonRect = activeButton.getBoundingClientRect();
+
+        // Calculate position relative to the nav container, accounting for scroll offset
+        const left = buttonRect.left - navRect.left + nav.scrollLeft;
+        const width = buttonRect.width;
+
+        // Update pill position and size
+        (pillBg as HTMLElement).style.left = `${left}px`;
+        (pillBg as HTMLElement).style.width = `${width}px`;
+        (pillBg as HTMLElement).style.opacity = "1";
       }
-    }
 
-    // Update URL
-    function updateURL(statusFilter: string) {
-      const url = new URL(window.location.href);
-      if (statusFilter === "all") {
-        url.searchParams.delete("status");
-      } else {
-        url.searchParams.set("status", statusFilter);
-      }
-      window.history.pushState({}, "", url.toString());
-    }
-
-    // Button click handlers
-    filterButtons.forEach((button: Element) => {
-      button.addEventListener("click", function (this: HTMLElement) {
-        const filterValue = this.getAttribute("data-project-status-filter");
-        if (filterValue) {
-          filterProjects(filterValue);
+      // Handle button clicks - only update UI, don't handle business logic
+      buttons.forEach((button: Element) => {
+        button.addEventListener("click", function (this: HTMLElement) {
           updateActiveButton(this);
-          updateURL(filterValue);
 
           // Slide pill first, then center navigation
           updateSlidingPill(this);
@@ -165,100 +132,53 @@ const {
               updateSlidingPill(this);
             }, 500); // Wait for scroll animation to complete
           }, 350); // Wait for pill animation to complete (300ms + buffer)
-        }
+        });
       });
+
+      // Initialize pill position
+      setTimeout(() => {
+        const activeButton =
+          nav.querySelector(".text-blue-600, .dark\\:text-blue-400") ||
+          nav.querySelector("button:first-child, a:first-child");
+        if (activeButton) {
+          updateActiveButton(activeButton);
+          updateSlidingPill(activeButton);
+          // Center the active button on page load
+          activeButton.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" });
+        }
+      }, 200);
+
+      // Handle window resize to reposition pill
+      let resizeTimeout: NodeJS.Timeout;
+      window.addEventListener("resize", () => {
+        clearTimeout(resizeTimeout);
+        resizeTimeout = setTimeout(() => {
+          const activeButton = nav.querySelector(".text-blue-600, .dark\\:text-blue-400");
+          if (activeButton) {
+            updateSlidingPill(activeButton);
+          }
+        }, 100);
+      });
+
+      // Expose functions globally for external control
+      (window as any)[`${navId}_updateActiveButton`] = updateActiveButton;
+      (window as any)[`${navId}_updateSlidingPill`] = updateSlidingPill;
+    }
+
+    // Initialize any sliding pill navs found on the page
+    const slidingNavs = document.querySelectorAll('[class*="sliding-pill-nav"], [id*="nav"]');
+    slidingNavs.forEach((nav) => {
+      if (nav.id) {
+        initializeSlidingPillNav(nav.id);
+      }
     });
 
-    if (allStatusesButton) {
-      allStatusesButton.addEventListener("click", function (this: HTMLElement) {
-        console.log("🔘 All statuses button clicked:", this);
-        filterProjects("all");
-        updateActiveButton(this);
-        updateURL("all");
-
-        // Slide pill first, then center navigation
-        updateSlidingPill(this);
-        setTimeout(() => {
-          this.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" });
-          // Recalculate pill position after scroll completes
-          setTimeout(() => {
-            updateSlidingPill(this);
-          }, 500); // Wait for scroll animation to complete
-        }, 350); // Wait for pill animation to complete (300ms + buffer)
-      });
-    }
-
-    // Initial filter from URL
-    const urlParams = new URLSearchParams(window.location.search);
-    const statusParam = urlParams.get("status");
-    if (statusParam) {
-      const targetButton = subNav.querySelector(`[data-project-status-filter="${statusParam}"]`);
-      if (targetButton) {
-        updateActiveButton(targetButton);
-        filterProjects(statusParam);
-        // Initialize pill position for URL-based active button and center it
-        setTimeout(() => {
-          updateSlidingPill(targetButton);
-          targetButton.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" });
-        }, 100);
-        return;
+    // Also initialize common nav IDs
+    const commonNavIds = ["project-nav", "tab-nav", "pill-nav"];
+    commonNavIds.forEach((navId) => {
+      if (document.getElementById(navId)) {
+        initializeSlidingPillNav(navId);
       }
-    }
-
-    // Default to all
-    if (allStatusesButton) {
-      updateActiveButton(allStatusesButton);
-      filterProjects("all");
-      // Initialize pill position for default active button and center it
-      setTimeout(() => {
-        updateSlidingPill(allStatusesButton);
-        allStatusesButton.scrollIntoView({
-          behavior: "smooth",
-          block: "nearest",
-          inline: "center",
-        });
-      }, 100);
-    }
-
-    // Sliding pill functionality
-    function updateSlidingPill(activeButton: Element | null) {
-      if (!pillBg || !activeButton || !subNav) return;
-
-      const navRect = subNav.getBoundingClientRect();
-      const buttonRect = activeButton.getBoundingClientRect();
-
-      // Calculate position relative to the nav container, accounting for scroll offset
-      const left = buttonRect.left - navRect.left + subNav.scrollLeft;
-      const width = buttonRect.width;
-
-      // Update pill position and size
-      pillBg.style.left = `${left}px`;
-      pillBg.style.width = `${width}px`;
-      pillBg.style.opacity = "1";
-    }
-
-    // Initialize pill position for the active button and center it
-    setTimeout(() => {
-      const activeButton = subNav.querySelector(".text-blue-600, .dark\\:text-blue-400");
-      if (activeButton) {
-        updateSlidingPill(activeButton);
-        // Center the active button on page load
-        activeButton.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" });
-      }
-    }, 200); // Slightly longer delay for initial load
-
-    // Pill position is now handled in the main button click handlers above
-
-    // Handle window resize to reposition pill
-    let resizeTimeout: NodeJS.Timeout;
-    window.addEventListener("resize", () => {
-      clearTimeout(resizeTimeout);
-      resizeTimeout = setTimeout(() => {
-        const activeButton = subNav.querySelector(".text-blue-600, .dark\\:text-blue-400");
-        if (activeButton) {
-          updateSlidingPill(activeButton);
-        }
-      }, 100);
     });
   });
 </script>

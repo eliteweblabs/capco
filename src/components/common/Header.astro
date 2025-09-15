@@ -1,11 +1,18 @@
 ---
 import AuthIcon from "./AuthIcon.astro";
-import Button from "./Button.astro";
 import HamburgerIcon from "./Hamburger.astro";
 import Logo from "./Logo.astro";
 import ThemeToggle from "./ThemeToggle.astro";
 
-const { isAuth, currentUser, currentRole, session, visibleNavItems } = Astro.props;
+const {
+  isAuth,
+  currentUser,
+  currentRole,
+  session,
+  visibleNavItems,
+  desktopNavigationHTML,
+  mobileNavigationHTML,
+} = Astro.props;
 ---
 
 <header
@@ -19,118 +26,7 @@ const { isAuth, currentUser, currentRole, session, visibleNavItems } = Astro.pro
       </div>
 
       {/* Unified Navigation - Desktop */}
-      <div class="hidden items-center space-x-8 md:flex">
-        {/* Navigation Items */}
-        {
-          visibleNavItems
-            .filter((item: any) => !item.mobileOnly) // Show only desktop items
-            .map((item: any) => {
-              // Handle dropdown items
-              if (item.isDropdown && item.dropdownItems) {
-                return (
-                  <div class="group relative">
-                    <Button
-                      variant="anchor"
-                      size="sm"
-                      class={`px-3 py-2 text-sm font-medium transition-colors ${
-                        item.isPrimary
-                          ? "text-primary dark:text-primary-dark"
-                          : "text-black dark:text-white"
-                      }`}
-                      icon="chevron-down"
-                      iconPosition="right"
-                    >
-                      {item.label}
-                    </Button>
-                    <div class="invisible absolute left-0 mt-2 w-64 rounded-lg border border-border-light bg-background-card opacity-0 shadow-lg transition-all duration-200 group-hover:visible group-hover:opacity-100 dark:border-border-dark dark:bg-background-card-dark">
-                      <div class="py-1">
-                        {item.dropdownItems.map((dropdownItem: any) => (
-                          <a
-                            href={dropdownItem.href}
-                            class="block px-4 py-2 text-sm text-text-secondary hover:bg-neutral-100 dark:text-text-secondary-dark dark:hover:bg-neutral-700"
-                          >
-                            {dropdownItem.label}
-                          </a>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                );
-              }
-
-              // Handle drawer items
-              if (item.isDrawer) {
-                // return (
-                //   <Button
-                //     variant="ghost"
-                //     size="sm"
-                //     dataAttributes={{
-                //       "drawer-target": "project-drawer",
-                //       "drawer-toggle": "project-drawer",
-                //     }}
-                //     class="text-primary dark:text-primary-dark hover:text-primary-dark px-3 py-2 text-sm font-medium transition-colors"
-                //   >
-                //     {item.label}
-                //   </Button>
-                // );
-              }
-
-              // Handle button style items
-              if (item.buttonStyle) {
-                return (
-                  <Button
-                    href={item.href}
-                    variant={item.buttonStyle}
-                    size="sm"
-                    class={
-                      item.buttonStyle === "ghost"
-                        ? "text-primary dark:text-primary-dark hover:text-primary-dark"
-                        : ""
-                    }
-                  >
-                    {item.label}
-                  </Button>
-                );
-              }
-
-              // Handle regular links
-              return (
-                <a
-                  href={item.href}
-                  class={`px-3 py-2 text-sm font-medium transition-colors ${
-                    item.isPrimary
-                      ? "text-primary dark:text-primary-dark"
-                      : "hover:text-primary dark:hover:text-primary-dark text-black dark:text-white"
-                  }`}
-                >
-                  {item.label}
-                </a>
-              );
-            })
-        }
-
-        {/* Theme Toggle */}
-        <!-- <ThemeToggle /> -->
-
-        <!-- {/* Auth Section */}
-        {
-          isAuth ? (
-            <div class="text-center">
-              {/* <button
-                class="mb-2 rounded-lg px-5 py-2.5 text-sm font-medium text-white hover:bg-blue-800 focus:outline-none focus:ring-4 focus:ring-blue-300 dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800"
-                
-              > */}
-              <AuthIcon
-                isAuth={isAuth}
-                currentUser={currentUser}
-                currentRole={currentRole}
-                session={session}
-              />
-              {/* </button> */}
-            </div>
-          ) : null
-        } -->
-      </div>
+      <div class="hidden items-center space-x-8 md:flex" set:html={desktopNavigationHTML} />
 
       {/* Mobile Controls */}
       <div class="flex items-center space-x-4">
@@ -140,10 +36,11 @@ const { isAuth, currentUser, currentRole, session, visibleNavItems } = Astro.pro
           currentUser={currentUser}
           currentRole={currentRole}
           session={session}
+          class="hidden md:block"
         />
 
         <!-- put hamburger icon here -->
-        <HamburgerIcon visibleNavigation={visibleNavItems} />
+        <HamburgerIcon class="block md:hidden" />
       </div>
     </div>
   </nav>
