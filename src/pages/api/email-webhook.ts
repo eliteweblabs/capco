@@ -120,18 +120,32 @@ function parseWebhookData(body: any): EmailWebhookData {
   }
 
   // Mailgun format
-  if (body["event-data"] && body["event-data"].message) {
+  if (body.sender || body["event-data"]) {
     console.log("✅ [EMAIL-WEBHOOK] Detected Mailgun format");
-    const message = body["event-data"].message;
-    return {
-      from: message.headers.from || "",
-      to: message.headers.to || "",
-      subject: message.headers.subject || "",
-      text: message.body || "",
-      html: message["body-html"] || "",
-      attachments: message.attachments || [],
-      headers: message.headers || {},
-    };
+    // Handle both webhook and test formats
+    if (body["event-data"]) {
+      const message = body["event-data"].message;
+      return {
+        from: message.headers.from || "",
+        to: message.headers.to || "",
+        subject: message.headers.subject || "",
+        text: message.body || "",
+        html: message["body-html"] || "",
+        attachments: message.attachments || [],
+        headers: message.headers || {},
+      };
+    } else {
+      // Test email format
+      return {
+        from: body.sender || "",
+        to: body.recipient || "",
+        subject: body.subject || "",
+        text: body["body-plain"] || body.text || "",
+        html: body["body-html"] || body.html || "",
+        attachments: body.attachments || [],
+        headers: body.headers || {},
+      };
+    }
   }
 
   // Generic format (fallback)
