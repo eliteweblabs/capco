@@ -25,14 +25,43 @@ export const POST: APIRoute = async ({ request }) => {
           status: 500,
         });
       }
-      const { data: roleUsers, error: roleError } = await supabase
+      // Get user emails by joining profiles with auth.users
+      const { data: roleUsers, error: roleError } = await supabaseAdmin
         .from("profiles")
-        .select("id, first_name, last_name, company_name, role, email")
+        .select(
+          `
+          id, 
+          first_name, 
+          last_name, 
+          company_name, 
+          role,
+          email
+        `
+        )
         .in("role", roles);
+
+      // If no email in profiles, try to get from auth.users
+      if (roleUsers && roleUsers.length > 0) {
+        const userIds = roleUsers.map((user) => user.id);
+        const { data: authUsers, error: authError } = await supabaseAdmin.auth.admin.listUsers();
+
+        if (authUsers && authUsers.users) {
+          // Match profiles with auth users
+          for (const user of roleUsers) {
+            if (!user.email) {
+              const authUser = authUsers.users.find((au) => au.id === user.id);
+              if (authUser && authUser.email) {
+                user.email = authUser.email;
+              }
+            }
+          }
+        }
+      }
 
       if (roleError) {
         console.error("📧 [GET-USER-EMAILS-BY-ROLE] Error fetching users by roles:", roleError);
       } else if (roleUsers) {
+        console.log("📧 [GET-USER-EMAILS-BY-ROLE] Found users by roles:", roleUsers);
         for (const user of roleUsers) {
           try {
             if (user.email) {

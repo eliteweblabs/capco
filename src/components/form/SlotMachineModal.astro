@@ -161,7 +161,7 @@ const displayText = buttonText || selectedOption?.label || placeholder;
   // Auto-save function that uses component ID to determine API endpoint
   async function saveToAPI(componentId, value, label) {
     try {
-      // console.log(`🎰 [SLOT-MACHINE] Saving to API: /api/${componentId}`, { value, label });
+      console.log(`🎰 [SLOT-MACHINE] Saving to API: /api/${componentId}`, { value, label });
 
       // Format data based on the component type
       let requestBody;
@@ -190,7 +190,7 @@ const displayText = buttonText || selectedOption?.label || placeholder;
         };
       }
 
-      // console.log(`🎰 [SLOT-MACHINE] Request body:`, requestBody);
+      console.log(`🎰 [SLOT-MACHINE] Request body:`, requestBody, componentId);
 
       const response = await fetch(`/api/${componentId}`, {
         method: "POST",
@@ -203,10 +203,34 @@ const displayText = buttonText || selectedOption?.label || placeholder;
 
       if (response.ok) {
         const result = await response.json();
-        // console.log(`🎰 [SLOT-MACHINE] API response:`, result);
+        console.log(`🎰 [SLOT-MACHINE] API response:`, result);
 
-        // Show success notification if available
-        window.handleUpdateStatusNotification(result, "SLOT-MACHINE");
+        // Show success notification
+        if (result.notificationData && window.showModal) {
+          const { type, title, message, duration } = result.notificationData;
+          window.showModal(type, title, message, duration);
+        } else if (result.success && window.showModal) {
+          // Fallback success notification
+          window.showModal(
+            "success",
+            "Success",
+            result.message || "Operation completed successfully",
+            3000
+          );
+        }
+
+        // Also try the original notification handler if it exists
+        if (window.handleUpdateStatusNotification) {
+          window.handleUpdateStatusNotification(result, "SLOT-MACHINE");
+        }
+
+        // Close the modal after success
+        setTimeout(() => {
+          const modal = document.querySelector(`[data-modal-backdrop="${componentId}-modal"]`);
+          if (modal) {
+            modal.click(); // Click the backdrop to close
+          }
+        }, 1000);
       } else {
         const errorData = await response.json();
         console.error(`🎰 [SLOT-MACHINE] API error:`, errorData);

@@ -6,9 +6,10 @@ interface Props {
   currentUser: any;
   currentRole: string | null;
   session: any;
+  class: string;
 }
 
-const { isAuth, currentUser, currentRole, session } = Astro.props;
+const { isAuth, currentUser, currentRole, session, class: className = "" } = Astro.props;
 
 // Debug logging
 console.log("🔍 [AuthIcon] Props:", {
@@ -24,6 +25,7 @@ const userProfile = currentUser?.profile || null;
 {
   isAuth ? (
     <a
+      class={className}
       id="profile-btn"
       data-drawer-target="drawer-user-center"
       data-drawer-show="drawer-user-center"
@@ -43,158 +45,9 @@ const userProfile = currentUser?.profile || null;
   ) : (
     <>
       {/* Not Authenticated: Login Button */}
-      <a href="/login" aria-label="btn-profile" id="profile-btn">
-        {/* <div  class="size-8 overflow-hidden rounded-full"> */}
+      <a href="/login" aria-label="btn-profile" id="profile-btn" class={className}>
         <BoxIcon name="user" />
-        {/* </div> */}
       </a>
     </>
   )
 }
-
-<!-- <script type="module" define:vars={{ session }}>
-  // console.log("📋 [HEADER] Header script execution started");
-  // console.log("📋 [HEADER] Session data:", session);
-
-  // const userAvatar = document.getElementById("user-avatar");
-  // const fallbackIcon = userAvatar?.nextElementSibling;
-
-  // Mobile menu elements
-  const mobileMenuBtn = document.getElementById("mobile-menu-btn");
-  const mobileMenu = document.getElementById("mobile-menu");
-  const hamburgerIcon = document.getElementById("mobile-menu-btn"); // The button IS the hamburger
-
-  // console.log("📋 [HEADER] DOM elements found:", {
-  //   profileBtn: !!profileBtn,
-  //   userAvatar: !!userAvatar,
-  //   fallbackIcon: !!fallbackIcon,
-  //   profileDropdown: !!profileDropdown,
-  //   logoutBtn: !!logoutBtn,
-  //   mobileMenuBtn: !!mobileMenuBtn,
-  //   mobileMenu: !!mobileMenu,
-  //   hamburgerIcon: !!hamburgerIcon,
-  // });
-
-  // Initialize mobile menu icon states
-  if (hamburgerIcon) {
-    hamburgerIcon.classList.remove("is-active");
-    // console.log("📋 [HEADER] Mobile menu icons initialized");
-  }
-
-  function updateProfileButton(session) {
-    // console.log("📋 [HEADER] updateProfileButton called with session:", session);
-
-    if (session && session.data.user) {
-      const avatarUrl = session.data.user.user_metadata?.avatar_url;
-      // console.log("📋 [HEADER] Avatar URL:", avatarUrl);
-
-      // Only update avatar if elements exist (user is authenticated)
-      if (userAvatar && fallbackIcon) {
-        if (avatarUrl) {
-          userAvatar.src = avatarUrl;
-          userAvatar.style.display = "block";
-          fallbackIcon.style.display = "none";
-          // console.log("📋 [HEADER] Using avatar image");
-        } else {
-          userAvatar.style.display = "none";
-          fallbackIcon.style.display = "block";
-          // console.log("📋 [HEADER] Using fallback icon");
-        }
-      }
-
-      // Update drawer avatar if it exists
-      const drawerAvatar = document.getElementById("drawer-avatar");
-      if (drawerAvatar) {
-        if (avatarUrl) {
-          drawerAvatar.src = avatarUrl;
-          drawerAvatar.style.display = "block";
-          const drawerFallback = drawerAvatar.nextElementSibling;
-          if (drawerFallback) {
-            drawerFallback.style.display = "none";
-          }
-        } else {
-          drawerAvatar.style.display = "none";
-          const drawerFallback = drawerAvatar.nextElementSibling;
-          if (drawerFallback) {
-            drawerFallback.style.display = "block";
-          }
-        }
-      }
-      // console.log("📋 [HEADER] Profile button configured for authenticated user");
-    } else {
-      // console.log(
-      //   "📋 [HEADER] Profile button configured for unauthenticated user - avatar elements not present"
-      // );
-    }
-  }
-
-  // Check initial auth state
-  // console.log("📋 [HEADER] Checking initial auth state...");
-  // updateProfileButton(session); // Removed - let static HTML handle the display
-
-  // Mobile menu toggle functionality
-  // function toggleMobileMenu() {
-  //   if (!mobileMenu || !hamburgerIcon) {
-  //     // console.error("📋 [HEADER] Missing mobile menu elements");
-  //     return;
-  //   }
-
-  //   const isOpen = mobileMenu.classList.contains("translate-x-0");
-
-  //   // console.log("📋 [HEADER] isOpen:", isOpen);
-  //   if (isOpen) {
-  //     // Close drawer - slide out to the left
-  //     mobileMenu.classList.remove("translate-x-0");
-  //     mobileMenu.classList.add("-translate-x-full");
-  //     hamburgerIcon.classList.remove("is-active");
-  //     // console.log("📋 [HEADER] Mobile menu closed");
-  //   } else {
-  //     // Open drawer - slide in from the left
-  //     mobileMenu.classList.remove("-translate-x-full");
-  //     mobileMenu.classList.add("translate-x-0");
-  //     hamburgerIcon.classList.add("is-active");
-  //     // console.log("📋 [HEADER] Mobile menu opened");
-  //   }
-  // }
-
-  // // Mobile menu button event listener
-  // if (mobileMenuBtn) {
-  //   mobileMenuBtn.addEventListener("click", (e) => {
-  //     e.stopPropagation();
-  //     toggleMobileMenu();
-  //   });
-  // }
-
-  // Close mobile menu when clicking outside or on menu links
-  // document.addEventListener("click", (e) => {
-  //   if (mobileMenu && mobileMenu.classList.contains("translate-x-0")) {
-  //     // Close if clicking outside the mobile menu
-  //     if (!mobileMenu.contains(e.target) && !mobileMenuBtn?.contains(e.target)) {
-  //       mobileMenu.classList.remove("translate-x-0");
-  //       mobileMenu.classList.add("-translate-x-full");
-  //       if (hamburgerIcon) {
-  //         hamburgerIcon.classList.remove("is-active");
-  //       }
-  //       // console.log("📋 [HEADER] Mobile menu closed by outside click");
-  //     }
-  //   }
-  // });
-
-  // Close mobile menu when clicking on navigation links
-  // if (mobileMenu) {
-  //   const mobileNavLinks = mobileMenu.querySelectorAll("a");
-  //   mobileNavLinks.forEach((link) => {
-  //     link.addEventListener("click", () => {
-  //       mobileMenu.classList.remove("translate-x-0");
-  //       mobileMenu.classList.add("-translate-x-full");
-  //       if (hamburgerIcon) {
-  //         hamburgerIcon.classList.remove("is-active");
-  //       }
-  //       // console.log("📋 [HEADER] Mobile menu closed by navigation link click");
-  //     });
-  //   });
-  // }
-
-  // Logout functionality (only if logout button exists - when authenticated)
-  
-</script> -->

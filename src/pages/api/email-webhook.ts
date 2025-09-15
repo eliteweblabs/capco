@@ -5,6 +5,7 @@
 import type { APIRoute } from "astro";
 import { supabase } from "../../lib/supabase";
 import { supabaseAdmin } from "../../lib/supabase-admin";
+import { getApiBaseUrl } from "../../lib/url-utils";
 
 interface EmailWebhookData {
   from: string;
@@ -31,8 +32,21 @@ export const POST: APIRoute = async ({ request }) => {
     // Parse the email data (adjust based on your webhook provider)
     const emailData: EmailWebhookData = parseWebhookData(body);
 
+    console.log("📧 [EMAIL-WEBHOOK] Parsed email data:", {
+      from: emailData.from,
+      to: emailData.to,
+      subject: emailData.subject,
+      hasText: !!emailData.text,
+      hasHtml: !!emailData.html,
+      attachmentCount: emailData.attachments?.length || 0,
+      headerKeys: Object.keys(emailData.headers || {}),
+    });
+
     if (!emailData.from || !emailData.subject) {
-      console.error("❌ [EMAIL-WEBHOOK] Missing required email data");
+      console.error("❌ [EMAIL-WEBHOOK] Missing required email data", {
+        from: emailData.from,
+        subject: emailData.subject,
+      });
       return new Response(
         JSON.stringify({ success: false, error: "Missing required email data" }),
         {
@@ -42,11 +56,13 @@ export const POST: APIRoute = async ({ request }) => {
       );
     }
 
-    console.log("📧 [EMAIL-WEBHOOK] Processing email from:", emailData.from);
+    // Step 1: Extract the original sender (handles forwarded emails)
+    const originalSender = extractOriginalSender(emailData);
+    console.log("📧 [EMAIL-WEBHOOK] Processing email from original sender:", originalSender);
     console.log("📧 [EMAIL-WEBHOOK] Subject:", emailData.subject);
 
-    // Step 1: Find or create user based on email
-    const user = await findOrCreateUser(emailData.from, emailData.headers);
+    // Step 2: Find or create user based on original sender email
+    const user = await findOrCreateUser(originalSender, emailData.headers);
     if (!user) {
       console.error("❌ [EMAIL-WEBHOOK] Failed to find or create user");
       return new Response(
@@ -58,12 +74,12 @@ export const POST: APIRoute = async ({ request }) => {
       );
     }
 
-    // Step 2: Extract project information from email
+    // Step 3: Extract project information from email
     const projectInfo = extractProjectInfo(emailData);
     console.log("📧 [EMAIL-WEBHOOK] Extracted project info:", projectInfo);
 
-    // Step 3: Create new project
-    const project = await createProjectFromEmail(user.id, projectInfo);
+    // Step 4: Create new project
+    const project = await createProjectFromEmail(user.id, projectInfo, user);
     if (!project) {
       console.error("❌ [EMAIL-WEBHOOK] Failed to create project");
       return new Response(JSON.stringify({ success: false, error: "Failed to create project" }), {
@@ -72,12 +88,12 @@ export const POST: APIRoute = async ({ request }) => {
       });
     }
 
-    // Step 4: Upload attachments as project documents
+    // Step 5: Upload attachments as project documents
     if (emailData.attachments && emailData.attachments.length > 0) {
       await uploadAttachments(project.id, emailData.attachments);
     }
 
-    // Step 5: Create initial discussion entry
+    // Step 6: Create initial discussion entry
     await createInitialDiscussion(project.id, user.id, emailData);
 
     console.log("✅ [EMAIL-WEBHOOK] Successfully processed email and created project:", project.id);
@@ -165,6 +181,120 @@ function parseWebhookData(body: any): EmailWebhookData {
 
   console.error("❌ [EMAIL-WEBHOOK] Unsupported webhook format:", body);
   throw new Error("Unsupported webhook format - please check webhook provider configuration");
+}
+
+// Extract the original sender from forwarded emails
+function extractOriginalSender(emailData: EmailWebhookData): string {
+  console.log("🔍 [EMAIL-WEBHOOK] Extracting original sender from:", {
+    from: emailData.from,
+    to: emailData.to,
+    headerKeys: Object.keys(emailData.headers || {}),
+  });
+
+  // If the 'from' field is our webhook address, this is likely a forwarded email
+  const webhookAddresses = ["project@new.capcofire.com", "webhook@capcofire.com"];
+  const fromLower = emailData.from?.toLowerCase() || "";
+  const toLower = emailData.to?.toLowerCase() || "";
+
+  const isForwardedEmail = webhookAddresses.some(
+    (addr) => fromLower.includes(addr.toLowerCase()) || toLower.includes(addr.toLowerCase())
+  );
+
+  console.log("🔍 [EMAIL-WEBHOOK] Forwarding check:", {
+    from: emailData.from,
+    to: emailData.to,
+    webhookAddresses,
+    isForwardedEmail,
+  });
+
+  if (isForwardedEmail) {
+    console.log("📧 [EMAIL-WEBHOOK] Detected forwarded email, looking for original sender");
+
+    // Look for original sender in headers
+    const headers = emailData.headers || {};
+
+    // Check common forwarding headers
+    const originalSenderHeaders = [
+      "X-Original-Sender",
+      "X-Forwarded-For",
+      "Reply-To",
+      "Return-Path",
+      "X-Original-From",
+    ];
+
+    for (const headerName of originalSenderHeaders) {
+      const headerValue = headers[headerName] || headers[headerName.toLowerCase()];
+      if (headerValue && typeof headerValue === "string") {
+        const extractedEmail = extractEmailAddress(headerValue);
+        if (
+          extractedEmail &&
+          !webhookAddresses.some((addr) =>
+            extractedEmail.toLowerCase().includes(addr.toLowerCase())
+          )
+        ) {
+          console.log(`✅ [EMAIL-WEBHOOK] Found original sender in ${headerName}:`, extractedEmail);
+          return extractedEmail;
+        }
+      }
+    }
+
+    // Look for original sender in email content (forwarded email patterns)
+    const emailContent = emailData.text || emailData.html || "";
+
+    // Common forwarding patterns
+    const forwardingPatterns = [
+      /From:\s*([^\n\r<>]+<[^>]+>|[^\s@]+@[^\s]+)/i,
+      /Sent by:\s*([^\n\r<>]+<[^>]+>|[^\s@]+@[^\s]+)/i,
+      /Originally sent by:\s*([^\n\r<>]+<[^>]+>|[^\s@]+@[^\s]+)/i,
+      /---------- Forwarded message ---------[\s\S]*?From:\s*([^\n\r<>]+<[^>]+>|[^\s@]+@[^\s]+)/i,
+      /Begin forwarded message:[\s\S]*?From:\s*([^\n\r<>]+<[^>]+>|[^\s@]+@[^\s]+)/i,
+    ];
+
+    for (const pattern of forwardingPatterns) {
+      const match = emailContent.match(pattern);
+      if (match && match[1]) {
+        const extractedEmail = extractEmailAddress(match[1].trim());
+        if (
+          extractedEmail &&
+          !webhookAddresses.some((addr) =>
+            extractedEmail.toLowerCase().includes(addr.toLowerCase())
+          )
+        ) {
+          console.log("✅ [EMAIL-WEBHOOK] Found original sender in email content:", extractedEmail);
+          return extractedEmail;
+        }
+      }
+    }
+
+    console.log("⚠️ [EMAIL-WEBHOOK] Could not find original sender in forwarded email");
+  }
+
+  // Return the from field if not forwarded or if we couldn't find the original sender
+  return emailData.from || "";
+}
+
+// Extract pure email address from formats like "Name <email@domain.com>" or just "email@domain.com"
+function extractEmailAddress(emailString: string): string | null {
+  if (!emailString || typeof emailString !== "string") {
+    return null;
+  }
+
+  const trimmed = emailString.trim();
+
+  // Check for "Name <email@domain.com>" format
+  const emailInBrackets = trimmed.match(/<([^>]+)>/);
+  if (emailInBrackets) {
+    return emailInBrackets[1].trim();
+  }
+
+  // Return as-is if it's already a plain email
+  return trimmed;
+}
+
+// Validate email format
+function isValidEmail(email: string): boolean {
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return emailRegex.test(email);
 }
 
 // Generate a temporary password for new users
@@ -267,6 +397,25 @@ function extractNameFromEmail(email: string, headers?: Record<string, string>): 
 async function findOrCreateUser(email: string, headers?: Record<string, string>) {
   try {
     console.log("🔍 [EMAIL-WEBHOOK] Looking for user with email:", email);
+    console.log("🔍 [EMAIL-WEBHOOK] Raw email value:", JSON.stringify(email));
+    console.log("🔍 [EMAIL-WEBHOOK] Email type:", typeof email);
+    console.log("🔍 [EMAIL-WEBHOOK] Email length:", email?.length);
+
+    // Extract pure email address from formats like "Name <email@domain.com>"
+    const extractedEmail = extractEmailAddress(email);
+    if (!extractedEmail) {
+      console.error("❌ [EMAIL-WEBHOOK] Could not extract email address from:", email);
+      return null;
+    }
+
+    const cleanEmail = extractedEmail.toLowerCase();
+    console.log("🔍 [EMAIL-WEBHOOK] Extracted and cleaned email:", cleanEmail);
+
+    if (!isValidEmail(cleanEmail)) {
+      console.error("❌ [EMAIL-WEBHOOK] Invalid email format:", cleanEmail);
+      return null;
+    }
+
     if (!supabase) {
       console.error("❌ [EMAIL-WEBHOOK] Supabase client not initialized");
       return null;
@@ -275,7 +424,7 @@ async function findOrCreateUser(email: string, headers?: Record<string, string>)
     const { data: existingProfile, error: profileError } = await supabase
       .from("profiles")
       .select("*")
-      .eq("email", email)
+      .eq("email", cleanEmail)
       .single();
 
     if (existingProfile) {
@@ -284,10 +433,10 @@ async function findOrCreateUser(email: string, headers?: Record<string, string>)
     }
 
     // User doesn't exist, create new one
-    console.log("🆕 [EMAIL-WEBHOOK] Creating new user for email:", email);
+    console.log("🆕 [EMAIL-WEBHOOK] Creating new user for email:", cleanEmail);
 
     // Extract name from email headers or email address
-    const fullName = extractNameFromEmail(email, headers);
+    const fullName = extractNameFromEmail(cleanEmail, headers);
     const { firstName, lastName } = splitFullName(fullName);
 
     // Generate a temporary password
@@ -297,9 +446,19 @@ async function findOrCreateUser(email: string, headers?: Record<string, string>)
       console.error("❌ [EMAIL-WEBHOOK] Supabase admin client not initialized");
       return null;
     }
+
     // Create user in Supabase Auth (requires service role key)
+    console.log("🔐 [EMAIL-WEBHOOK] Creating auth user with email:", cleanEmail);
+    console.log("🔐 [EMAIL-WEBHOOK] User metadata:", {
+      full_name: fullName,
+      role: "Client",
+      created_by_email_webhook: true,
+      must_change_password: true,
+      email: cleanEmail,
+    });
+
     const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
-      email: email.trim().toLowerCase(),
+      email: cleanEmail,
       password: tempPassword,
       email_confirm: false, // Auto-confirm email
       user_metadata: {
@@ -307,7 +466,7 @@ async function findOrCreateUser(email: string, headers?: Record<string, string>)
         role: "Client",
         created_by_email_webhook: true,
         must_change_password: true,
-        email: email.trim().toLowerCase(),
+        email: cleanEmail,
       },
     });
 
@@ -320,7 +479,7 @@ async function findOrCreateUser(email: string, headers?: Record<string, string>)
     // Use ON CONFLICT to handle cases where trigger already created the profile
     const profileData = {
       id: authData.user.id,
-      email: email.trim().toLowerCase(),
+      email: cleanEmail,
       first_name: firstName,
       last_name: lastName,
       company_name: fullName,
@@ -331,6 +490,8 @@ async function findOrCreateUser(email: string, headers?: Record<string, string>)
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     };
+
+    console.log("📝 [EMAIL-WEBHOOK] Creating profile with data:", profileData);
 
     const { error: upsertError } = await supabaseAdmin.from("profiles").upsert(profileData, {
       onConflict: "id",
@@ -355,7 +516,7 @@ async function findOrCreateUser(email: string, headers?: Record<string, string>)
     // Return the profile data
     const newProfile = {
       id: authData.user.id,
-      email: email.trim().toLowerCase(),
+      email: cleanEmail,
       first_name: firstName,
       last_name: lastName,
       company_name: fullName,
@@ -392,6 +553,9 @@ function extractProjectInfo(emailData: EmailWebhookData) {
       /location[:\s]+([^\n\r]+)/i,
       /property[:\s]+([^\n\r]+)/i,
       /site[:\s]+([^\n\r]+)/i,
+      /\bat\s+([^,\n\r.]+(?:street|st|avenue|ave|road|rd|drive|dr|lane|ln|boulevard|blvd|way|court|ct|place|pl)[^,\n\r.]*)/i,
+      /building\s+(?:at|located\s+at)\s+([^\n\r]+)/i,
+      /facility\s+(?:at|located\s+at)\s+([^\n\r]+)/i,
     ];
 
     for (const pattern of addressPatterns) {
@@ -452,35 +616,108 @@ function extractPlaceholders(text: string): Record<string, string> {
   return placeholders;
 }
 
-// Create new project from email
-async function createProjectFromEmail(userId: string, projectInfo: any) {
+// Create new project using the create-project API (ensures proper notifications)
+async function createProjectFromEmail(userId: string, projectInfo: any, userProfile: any) {
   try {
-    console.log("🏗️ [EMAIL-WEBHOOK] Creating project for user:", userId);
-    if (!supabase) {
-      console.error("❌ [EMAIL-WEBHOOK] Supabase client not initialized");
+    console.log("🏗️ [EMAIL-WEBHOOK] Creating project via API for user:", userId);
+
+    // Prepare the request body in the format expected by the create-project API
+    const projectData = {
+      // Client information (will be used to find existing client)
+      first_name: userProfile.first_name || "",
+      last_name: userProfile.last_name || "",
+      company_name:
+        userProfile.company_name || userProfile.first_name + " " + userProfile.last_name,
+      email: userProfile.email,
+      author_id: userId, // Use existing client ID
+
+      // Project information
+      title: projectInfo.title,
+      address: projectInfo.address,
+      description: projectInfo.description || "",
+      sq_ft: projectInfo.sq_ft?.toString() || "",
+      new_construction: projectInfo.new_construction || false,
+
+      // Default arrays for required fields
+      building: [],
+      project: [],
+      service: [],
+      requested_docs: [],
+    };
+
+    console.log("🏗️ [EMAIL-WEBHOOK] Project data for API:", JSON.stringify(projectData, null, 2));
+
+    // Create project using supabaseAdmin directly (bypassing auth requirements)
+    // This replicates the core logic from create-project API but without session auth
+    if (!supabaseAdmin) {
+      console.error("❌ [EMAIL-WEBHOOK] Supabase admin client not initialized");
       return null;
     }
-    const { data: project, error } = await supabase
+
+    const finalProjectData = {
+      author_id: userId,
+      title: projectData.title,
+      address: projectData.address?.replace(/, USA$/, "") || projectData.address,
+      description: projectData.description,
+      sq_ft:
+        projectData.sq_ft && projectData.sq_ft.trim() !== "" ? parseInt(projectData.sq_ft) : null,
+      new_construction: projectData.new_construction === true,
+      building: projectData.building || [],
+      project: projectData.project || [],
+      service: projectData.service || [],
+      requested_docs: projectData.requested_docs || [],
+      status: 0, // Initial status - will be updated to trigger notifications
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    };
+
+    console.log(
+      "🏗️ [EMAIL-WEBHOOK] Final project data:",
+      JSON.stringify(finalProjectData, null, 2)
+    );
+
+    const { data: projects, error } = await supabaseAdmin
       .from("projects")
-      .insert({
-        author_id: userId,
-        title: projectInfo.title,
-        address: projectInfo.address,
-        sq_ft: projectInfo.sqft,
-        new_construction: projectInfo.newConstruction,
-        status: 0, // Initial status
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      })
-      .select()
-      .single();
+      .insert([finalProjectData])
+      .select();
 
     if (error) {
       console.error("❌ [EMAIL-WEBHOOK] Error creating project:", error);
       return null;
     }
 
+    if (!projects || projects.length === 0) {
+      console.error("❌ [EMAIL-WEBHOOK] No project returned after creation");
+      return null;
+    }
+
+    const project = projects[0];
     console.log("✅ [EMAIL-WEBHOOK] Created project:", project.id);
+
+    // Update project status to 10 to trigger "Specs Received" notifications
+    try {
+      console.log("🔔 [EMAIL-WEBHOOK] Updating project status to trigger notifications");
+
+      const statusResponse = await fetch(`${getApiBaseUrl()}/api/update-status`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          projectId: project.id,
+          status: 10, // "Specs Received" status
+        }),
+      });
+
+      if (statusResponse.ok) {
+        console.log("✅ [EMAIL-WEBHOOK] Project status updated, notifications should be sent");
+      } else {
+        console.warn("⚠️ [EMAIL-WEBHOOK] Failed to update project status for notifications");
+      }
+    } catch (statusError) {
+      console.error("❌ [EMAIL-WEBHOOK] Error updating project status:", statusError);
+    }
+
     return project;
   } catch (error) {
     console.error("❌ [EMAIL-WEBHOOK] Error in createProjectFromEmail:", error);
