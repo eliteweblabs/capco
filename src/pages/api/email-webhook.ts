@@ -325,7 +325,10 @@ async function findOrCreateUser(email: string, headers?: Record<string, string>)
       last_name: lastName,
       company_name: fullName,
       phone: null,
+      sms_alerts: false,
+      mobile_carrier: null,
       role: "Client",
+      created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     };
 
