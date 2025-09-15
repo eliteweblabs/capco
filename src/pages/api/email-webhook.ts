@@ -45,7 +45,7 @@ export const POST: APIRoute = async ({ request }) => {
     console.log("📧 [EMAIL-WEBHOOK] Subject:", emailData.subject);
 
     // Step 1: Find or create user based on email
-    const user = await findOrCreateUser(emailData.from);
+    const user = await findOrCreateUser(emailData.from, emailData.headers);
     if (!user) {
       console.error("❌ [EMAIL-WEBHOOK] Failed to find or create user");
       return new Response(
@@ -166,8 +166,94 @@ function parseWebhookData(body: any): EmailWebhookData {
   throw new Error("Unsupported webhook format - please check webhook provider configuration");
 }
 
+// Split a full name into first and last name
+function splitFullName(fullName: string): { firstName: string; lastName: string } {
+  const nameParts = fullName.trim().split(/\s+/);
+
+  if (nameParts.length === 1) {
+    // Single name - use as first name, empty last name
+    return {
+      firstName: nameParts[0],
+      lastName: "",
+    };
+  }
+
+  if (nameParts.length === 2) {
+    // Two names - first and last
+    return {
+      firstName: nameParts[0],
+      lastName: nameParts[1],
+    };
+  }
+
+  // Three or more names - first name is first part, last name is everything else
+  return {
+    firstName: nameParts[0],
+    lastName: nameParts.slice(1).join(" "),
+  };
+}
+
+// Extract a good display name from email and headers
+function extractNameFromEmail(email: string, headers?: Record<string, string>): string {
+  // Try to get name from email headers first
+  if (headers) {
+    // Check for common header formats
+    const fromHeader = headers.from || headers.From || headers.FROM;
+    if (fromHeader) {
+      // Parse "John Doe <john@example.com>" format
+      const nameMatch = fromHeader.match(/^"?([^"<]+)"?\s*<[^>]+>$/);
+      if (nameMatch) {
+        const extractedName = nameMatch[1].trim();
+        if (extractedName && extractedName !== email) {
+          console.log("✅ [EMAIL-WEBHOOK] Extracted name from header:", extractedName);
+          return extractedName;
+        }
+      }
+    }
+  }
+
+  // Fallback: try to extract a reasonable name from email address
+  const emailPrefix = email.split("@")[0];
+
+  // Handle common patterns
+  if (emailPrefix.includes(".")) {
+    // "john.doe" -> "John Doe"
+    const nameParts = emailPrefix
+      .split(".")
+      .map((part) => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase());
+    const formattedName = nameParts.join(" ");
+    console.log("✅ [EMAIL-WEBHOOK] Formatted name from email:", formattedName);
+    return formattedName;
+  }
+
+  if (emailPrefix.includes("-")) {
+    // "john-doe" -> "John Doe"
+    const nameParts = emailPrefix
+      .split("-")
+      .map((part) => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase());
+    const formattedName = nameParts.join(" ");
+    console.log("✅ [EMAIL-WEBHOOK] Formatted name from email:", formattedName);
+    return formattedName;
+  }
+
+  if (emailPrefix.includes("_")) {
+    // "john_doe" -> "John Doe"
+    const nameParts = emailPrefix
+      .split("_")
+      .map((part) => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase());
+    const formattedName = nameParts.join(" ");
+    console.log("✅ [EMAIL-WEBHOOK] Formatted name from email:", formattedName);
+    return formattedName;
+  }
+
+  // Last resort: capitalize first letter
+  const fallbackName = emailPrefix.charAt(0).toUpperCase() + emailPrefix.slice(1).toLowerCase();
+  console.log("⚠️ [EMAIL-WEBHOOK] Using fallback name:", fallbackName);
+  return fallbackName;
+}
+
 // Find existing user or create new one
-async function findOrCreateUser(email: string) {
+async function findOrCreateUser(email: string, headers?: Record<string, string>) {
   try {
     console.log("🔍 [EMAIL-WEBHOOK] Looking for user with email:", email);
     if (!supabase) {
@@ -189,19 +275,20 @@ async function findOrCreateUser(email: string) {
     // User doesn't exist, create new one
     console.log("🆕 [EMAIL-WEBHOOK] Creating new user for email:", email);
 
-    // Extract name from email (you might want to parse the email headers for actual name)
-    const name = email.split("@")[0];
-
+    // Extract name from email headers or email address
+    const name = extractNameFromEmail(email, headers);
+    const { firstName, lastName } = splitFullName(name);
     const { data: newProfile, error: createError } = await supabase
       .from("profiles")
       .insert({
         email: email,
-        name: name,
         company_name: name, // Default company name
         role: "Client", // Default role
         phone: null,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
+        first_name: firstName,
+        last_name: lastName,
       })
       .select()
       .single();
