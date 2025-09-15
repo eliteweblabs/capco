@@ -13,7 +13,7 @@ interface Props {
 }
 
 const {
-  id,
+  id = "google-places-slotmachine",
   name,
   label,
   value = "",
@@ -29,77 +29,31 @@ const {
 // }
 ---
 
-<div class="relative custom-places-input">
+<div class="custom-places-input relative" data-component-id={id}>
   <!-- Add Address Button -->
   <button
     type="button"
-    class={`places-add-btn rounded-full border border-gray-300 bg-white px-3 py-2.5 text-left text-sm text-gray-500 transition-colors hover:border-gray-400 hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-400 dark:hover:border-gray-500 dark:hover:bg-gray-600 ${className}`}
+    id={`${id}-add-address-btn`}
+    class={`rounded-full border border-gray-300 bg-white px-3 py-2.5 text-left text-sm text-gray-500 transition-colors hover:border-gray-400 hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-400 dark:hover:border-gray-500 dark:hover:bg-gray-600 ${className}`}
   >
     <div class="flex items-center justify-between">
-      <span class="places-button-text">Add Address</span>
+      <span id={`${id}-button-text`}>Add Address</span>
 
       <BoxIcon name="plus" size="sm" />
     </div>
   </button>
 
-  <!-- Loading Indicator -->
-  <div class="places-loading mb-3 hidden">
-    <div class="flex items-center justify-center py-2">
-      <svg class="h-4 w-4 animate-spin text-gray-400 mr-2" fill="none" viewBox="0 0 24 24">
-        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"
-        ></circle>
-        <path
-          class="opacity-75"
-          fill="currentColor"
-          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-        ></path>
-      </svg>
-      <span class="text-sm text-gray-500 dark:text-gray-400">Searching for addresses...</span>
-    </div>
-  </div>
-
-  <!-- Error Message -->
-  <div class="places-error mb-3 text-sm text-red-600 dark:text-red-400 hidden"></div>
-
-  <!-- Selected Address Display -->
-  <!-- <div class="places-selected-container mb-3 hidden">
-    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-      >Selected Address:</label
-    >
-    <div class="flex items-center justify-between bg-gray-50 dark:bg-gray-700 rounded-full p-3">
-      <span class="places-selected-text text-sm text-gray-900 dark:text-white"></span>
-      <button
-        type="button"
-        class="places-clear-btn text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 ml-2"
-        title="Clear selection"
-      >
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            stroke-width="2"
-            d="M6 18L18 6M6 6l12 12"></path>
-        </svg>
-      </button>
-    </div>
-  </div> -->
-
   <!-- Hidden input for form submission -->
   <input
     type="text"
-    id={id}
+    id={`${id}-hidden-input`}
     name={name}
     value={value}
     required={required}
-    class="places-hidden-input sr-only"
+    class="sr-only"
     tabindex="-1"
     aria-hidden="true"
   />
-
-  <!-- Slot Machine Container (integrated) -->
-  <div class="places-slot-machine-container hidden">
-    <!-- Slot machine functionality is now integrated directly into this component -->
-  </div>
 </div>
 
 <script>
@@ -109,13 +63,11 @@ const {
     if (!container) return;
 
     // Generate a unique ID for this component instance
-    const componentId = `places-${Math.random().toString(36).substr(2, 9)}`;
+    const componentId = container.getAttribute("data-component-id") || "google-places-slotmachine";
 
-    const addBtn = container.querySelector(".places-add-btn") as HTMLButtonElement;
-    const buttonText = container.querySelector(".places-button-text") as HTMLSpanElement;
-    const hiddenInput = container.querySelector(".places-hidden-input") as HTMLInputElement;
-    const loadingIndicator = container.querySelector(".places-loading") as HTMLDivElement;
-    const errorDiv = container.querySelector(".places-error") as HTMLDivElement;
+    const addBtn = container.querySelector(`#${componentId}-add-address-btn`) as HTMLButtonElement;
+    const buttonText = container.querySelector(`#${componentId}-button-text`) as HTMLSpanElement;
+    const hiddenInput = container.querySelector(`#${componentId}-hidden-input`) as HTMLInputElement;
     const selectedContainer = container.querySelector(
       ".places-selected-container"
     ) as HTMLDivElement;
@@ -125,29 +77,6 @@ const {
     if (!addBtn || !hiddenInput) {
       console.error("🚨 [CUSTOM-PLACES] Required elements not found");
       return;
-    }
-
-    // Show loading state
-    function showLoading() {
-      loadingIndicator?.classList.remove("hidden");
-    }
-
-    // Hide loading state
-    function hideLoading() {
-      loadingIndicator?.classList.add("hidden");
-    }
-
-    // Show error message
-    function showError(message: string) {
-      if (errorDiv) {
-        errorDiv.textContent = message;
-        errorDiv.classList.remove("hidden");
-      }
-    }
-
-    // Hide error message
-    function hideError() {
-      errorDiv?.classList.add("hidden");
     }
 
     // Show selected address
@@ -172,7 +101,6 @@ const {
     function clearSelection() {
       hiddenInput.value = "";
       hideSelectedAddress();
-      hideError();
 
       // Reset button text
       if (buttonText) {
@@ -210,106 +138,124 @@ const {
     }
 
     // Show slot machine modal directly
-    function showSlotMachineModal() {
-      // Create slot machine modal HTML
-      const modalHTML = `
-        <div id="${componentId}-slot-machine-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-          <div class="bg-background-card dark:bg-background-card-dark rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
-            <!-- Modal Header -->
-            <div class="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
-              <h2 class="text-xl font-semibold text-gray-900 dark:text-white">Select Address</h2>
-              <button id="${componentId}-close-slot-modal" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors duration-200">
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                </svg>
-              </button>
-            </div>
-            
-            <!-- Modal Content -->
-            <div class="p-6">
-              <!-- Search Input Section -->
-              <div class="mb-4">
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Search for an address:
-                </label>
-                <div class="relative">
-                <input
-                  type="text"
-                    id="${componentId}-slot-search-input"
-                    class="w-full rounded-full border border-gray-300 px-3 py-2.5 pr-10 text-sm text-gray-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:focus:border-blue-400 dark:focus:ring-blue-400"
-                    placeholder="Type to search for addresses..."
-                  autocomplete="off"
-                />
-                <button
-                  type="button"
-                    id="${componentId}-slot-search-btn"
-                  class="absolute right-2 top-1/2 transform -translate-y-1/2 p-1.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors duration-200"
-                  title="Search for address"
-                >
-                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
-                  </svg>
-                </button>
-                </div>
-              </div>
-              
-              <!-- Slot Machine Container with Fixed Height -->
-              <div class="h-48 slot-machine-container relative overflow-hidden border-2 border-gray-200 dark:border-gray-600 rounded-lg mb-4 bg-gray-50 dark:bg-gray-700">
-                <!-- Loading State -->
-                <div id="${componentId}-slot-loading" class="absolute inset-0 flex items-center justify-center text-gray-500 dark:text-gray-400 hidden">
-                  <div class="text-center">
-                    <svg class="h-6 w-6 animate-spin text-gray-400 mx-auto mb-2" fill="none" viewBox="0 0 24 24">
-                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
-                    <p class="text-sm">Searching for addresses...</p>
-                </div>
-              </div>
-              
-                <!-- Error State -->
-                <div id="${componentId}-slot-error" class="absolute inset-0 flex items-center justify-center text-red-600 dark:text-red-400 hidden">
-                  <div class="text-center">
-                    <svg class="w-6 h-6 mx-auto mb-2 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                    </svg>
-                    <p class="text-sm">Error loading addresses</p>
-              </div>
-            </div>
-            
-                <ul id="${componentId}-slot-address-list" class="absolute inset-0 transition-transform duration-300 ease-out">
-                  <!-- Options will be populated dynamically -->
-                </ul>
-                
-                <!-- Empty state when no results -->
-                <div id="${componentId}-slot-empty-state" class="slot-empty-state absolute inset-0 flex items-center justify-center text-gray-500 dark:text-gray-400 hidden">
-                  <div class="text-center">
-                    <svg class="w-8 h-8 mx-auto mb-2 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
-                    </svg>
-                    <p class="text-sm">No addresses found</p>
-                    <p class="text-xs text-gray-400 mt-1">Try a different search term</p>
-                  </div>
-                </div>
-              </div>
+    let selectedIndex = -1; // Track selected item index
 
-              <!-- Action Buttons -->
-              <div class="flex justify-center gap-2">
-                <button id="${componentId}-slot-cancel-btn" class="inline-flex items-center justify-center font-medium rounded-full transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed px-4 py-2 text-sm text-blue-600 hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-blue-900/20">
-                Cancel
-              </button>
-                <button id="${componentId}-slot-select-btn" class="inline-flex items-center justify-center font-medium rounded-full transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed px-4 py-2 text-sm bg-blue-600 hover:bg-blue-700 text-white shadow-sm hover:shadow-md disabled:bg-gray-300 disabled:text-gray-500" disabled>
-                  Select
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      `;
+    async function showSlotMachineModal() {
+      const response = await fetch("/partials/slot-machine-modal", {
+        headers: {
+          "x-component-id": componentId,
+          "x-modal-title": "Select Address",
+          "x-show-search": "true",
+          "x-cancel-button": "Cancel",
+          "x-select-button": "Select",
+        },
+      });
+      const modalHTML = await response.text();
 
-      // Lock body scroll and add modal to page
-      lockBodyScroll();
+      // Insert the modal into the DOM
       document.body.insertAdjacentHTML("beforeend", modalHTML);
+
+      // Lock body scroll
+      lockBodyScroll();
+
+      // const modalHTML = `
+      //   <div id="${componentId}-slot-machine-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+      //     <div class="bg-background-card dark:bg-background-card-dark rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+      //       <!-- Modal Header -->
+      //       <div class="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
+      //         <h2 class="text-xl font-semibold text-gray-900 dark:text-white">Select Address</h2>
+      //         <button id="${componentId}-close-slot-modal" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors duration-200">
+      //           <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      //             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+      //           </svg>
+      //         </button>
+      //       </div>
+
+      //       <!-- Modal Content -->
+      //       <div class="p-6">
+      //         <!-- Search Input Section -->
+      //         <div class="mb-4">
+      //           <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+      //             Search for an address:
+      //           </label>
+      //           <div class="relative">
+      //           <input
+      //             type="text"
+      //               id="${componentId}-slot-search-input"
+      //               class="w-full rounded-full border border-gray-300 px-3 py-2.5 pr-10 text-sm text-gray-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:focus:border-blue-400 dark:focus:ring-blue-400"
+      //               placeholder="Type to search for addresses..."
+      //             autocomplete="off"
+      //           />
+      //           <button
+      //             type="button"
+      //               id="${componentId}-slot-search-btn"
+      //             class="absolute right-2 top-1/2 transform -translate-y-1/2 p-1.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors duration-200"
+      //             title="Search for address"
+      //           >
+      //             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      //               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+      //             </svg>
+      //           </button>
+      //           </div>
+      //         </div>
+
+      //         <!-- Slot Machine Container with Fixed Height -->
+      //         <div class="h-48 slot-machine-container relative overflow-hidden border-2 border-gray-200 dark:border-gray-600 rounded-lg mb-4 bg-gray-50 dark:bg-gray-700">
+      //           <!-- Loading State -->
+      //           <div id="${componentId}-slot-loading" class="absolute inset-0 flex items-center justify-center text-gray-500 dark:text-gray-400 hidden">
+      //             <div class="text-center">
+      //               <svg class="h-6 w-6 animate-spin text-gray-400 mx-auto mb-2" fill="none" viewBox="0 0 24 24">
+      //               <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+      //               <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+      //             </svg>
+      //               <p class="text-sm">Searching for addresses...</p>
+      //           </div>
+      //         </div>
+
+      //           <!-- Error State -->
+      //           <div id="${componentId}-slot-error" class="absolute inset-0 flex items-center justify-center text-red-600 dark:text-red-400 hidden">
+      //             <div class="text-center">
+      //               <svg class="w-6 h-6 mx-auto mb-2 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      //                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+      //               </svg>
+      //               <p class="text-sm">Error loading addresses</p>
+      //         </div>
+      //       </div>
+
+      //           <ul id="${componentId}-slot-address-list" class="absolute inset-0 transition-transform duration-300 ease-out">
+      //             <!-- Options will be populated dynamically -->
+      //           </ul>
+
+      //           <!-- Empty state when no results -->
+      //           <div id="${componentId}-slot-empty-state" class="slot-empty-state absolute inset-0 flex items-center justify-center text-gray-500 dark:text-gray-400 hidden">
+      //             <div class="text-center">
+      //               <svg class="w-8 h-8 mx-auto mb-2 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      //                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
+      //                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
+      //               </svg>
+      //               <p class="text-sm">No addresses found</p>
+      //               <p class="text-xs text-gray-400 mt-1">Try a different search term</p>
+      //             </div>
+      //           </div>
+      //         </div>
+
+      //         <!-- Action Buttons -->
+      //         <div class="flex justify-center gap-2">
+      //           <button id="${componentId}-slot-cancel-btn" class="inline-flex items-center justify-center font-medium rounded-full transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed px-4 py-2 text-sm text-blue-600 hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-blue-900/20">
+      //           Cancel
+      //         </button>
+      //           <button id="${componentId}-slot-select-btn" class="inline-flex items-center justify-center font-medium rounded-full transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed px-4 py-2 text-sm bg-blue-600 hover:bg-blue-700 text-white shadow-sm hover:shadow-md disabled:bg-gray-300 disabled:text-gray-500" disabled>
+      //             Select
+      //           </button>
+      //         </div>
+      //       </div>
+      //     </div>
+      //   </div>
+      // `;
+
+      // // Lock body scroll and add modal to page
+      // lockBodyScroll();
+      // document.body.insertAdjacentHTML("beforeend", modalHTML);
 
       // Get modal elements for the new slot machine modal
       const modal = document.getElementById(`${componentId}-slot-machine-modal`);
@@ -322,6 +268,13 @@ const {
       const modalLoading = document.getElementById(`${componentId}-slot-loading`);
       const modalError = document.getElementById(`${componentId}-slot-error`);
       const modalCancel = document.getElementById(`${componentId}-slot-cancel-btn`);
+      const modalSelect = document.getElementById(`${componentId}-slot-select-btn`);
+      const modalPlacesLoading = document.getElementById(
+        `${componentId}-slot-loading`
+      ) as HTMLDivElement;
+      const modalPlacesError = document.getElementById(
+        `${componentId}-slot-error`
+      ) as HTMLDivElement;
 
       // Debug: Check if all elements were found
       console.log("🔍 [CUSTOM-PLACES] Modal elements found:", {
@@ -331,6 +284,9 @@ const {
         modalLoading: !!modalLoading,
         modalError: !!modalError,
         modalCancel: !!modalCancel,
+        modalSelect: !!modalSelect,
+        modalPlacesLoading: !!modalPlacesLoading,
+        modalPlacesError: !!modalPlacesError,
         componentId: componentId,
       });
 
@@ -406,6 +362,43 @@ const {
       modalCancel?.addEventListener("click", () => {
         modal?.remove();
         unlockBodyScroll();
+      });
+
+      modalSelect?.addEventListener("click", () => {
+        // Get the selected option from the slot machine using the selectedIndex
+        const addressList = document.getElementById(
+          `${componentId}-slot-address-list`
+        ) as HTMLUListElement;
+        if (addressList) {
+          const selectedItem = addressList.querySelector(`li[data-index="${selectedIndex}"]`);
+          if (selectedItem && selectedIndex >= 0) {
+            const value = selectedItem.getAttribute("data-value");
+            const label = selectedItem.querySelector("span")?.textContent;
+            if (value && label) {
+              console.log("🎰 [SLOT-MACHINE] Selected option:", { value, label, selectedIndex });
+
+              // Update the hidden input with the selected address
+              hiddenInput.value = label;
+
+              // Update the button text to show the selected address
+              if (buttonText) {
+                buttonText.textContent = label;
+              }
+
+              // Close the modal
+              modal?.remove();
+              unlockBodyScroll();
+
+              // Trigger change event for form validation
+              hiddenInput.dispatchEvent(new Event("change", { bubbles: true }));
+            }
+          } else {
+            console.log(
+              "🎰 [SLOT-MACHINE] No item selected or invalid selectedIndex:",
+              selectedIndex
+            );
+          }
+        }
       });
 
       modal?.addEventListener("click", (e) => {
@@ -490,23 +483,23 @@ const {
 
       // Helper functions for modal states
       function showModalLoading() {
-        modalLoading?.classList.remove("hidden");
-        modalError?.classList.add("hidden");
+        modalPlacesLoading?.classList.remove("hidden");
+        modalPlacesError?.classList.add("hidden");
       }
 
       function hideModalLoading() {
-        modalLoading?.classList.add("hidden");
+        modalPlacesLoading?.classList.add("hidden");
       }
 
       function showModalError(message: string) {
-        if (modalError) {
-          modalError.textContent = message;
-          modalError.classList.remove("hidden");
+        if (modalPlacesError) {
+          modalPlacesError.textContent = message;
+          modalPlacesError.classList.remove("hidden");
         }
       }
 
       function hideModalError() {
-        modalError?.classList.add("hidden");
+        modalPlacesError?.classList.add("hidden");
       }
 
       // Update slot machine with new options
@@ -557,7 +550,6 @@ const {
 
         if (!addressList) return;
 
-        let selectedIndex = -1;
         let currentOptions: Array<{ value: string; label: string; disabled: boolean }> = [];
 
         // Handle wheel events and touch events on the entire slot machine container
@@ -651,15 +643,7 @@ const {
           }
         });
 
-        // Handle select button
-        selectBtn?.addEventListener("click", () => {
-          if (selectedIndex >= 0 && currentOptions[selectedIndex]) {
-            const selectedOption = currentOptions[selectedIndex];
-            showSelectedAddress(selectedOption.label);
-            modal?.remove();
-            unlockBodyScroll();
-          }
-        });
+        // Handle select button - this will be handled by the modal setup
 
         // Center selected item
         function centerSelectedItem() {
@@ -1307,7 +1291,6 @@ const {
     // Get detailed place information using our server-side proxy endpoint
     async function getPlaceDetails(placeId: string, description: string) {
       console.log("🔍 [CUSTOM-PLACES] getPlaceDetails called with:", { placeId, description });
-      showLoading();
 
       try {
         // Use our server-side proxy endpoint to avoid CORS issues
@@ -1352,13 +1335,9 @@ const {
           );
         } else {
           console.error("🔍 [CUSTOM-PLACES] Failed to get place details:", data);
-          showError("Failed to get address details. Please try again.");
         }
       } catch (error) {
         console.error("🚨 [CUSTOM-PLACES] Get place details error:", error);
-        showError("Failed to get address details. Please try again.");
-      } finally {
-        hideLoading();
       }
     }
 

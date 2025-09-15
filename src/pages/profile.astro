@@ -8,7 +8,7 @@ import { getCarrierKeyFromGateway } from "../lib/sms-carriers";
 
 // Get auth data directly since App component handles auth requirements
 import { checkAuth } from "../lib/auth";
-const { isAuth, currentUser, currentRole } = await checkAuth(Astro.cookies);
+const { isAuth, currentUser, currentRole, session } = await checkAuth(Astro.cookies);
 const userProfile = currentUser?.profile || null;
 
 // Get the carrier key from the stored gateway domain
@@ -21,6 +21,10 @@ const storedCarrierKey = currentUser?.user_metadata?.mobile_carrier
   title="My Profile - CAPCo Fire Protection"
   description="Manage your profile and account settings."
   requireAuth={true}
+  isAuth={isAuth}
+  currentUser={currentUser}
+  currentRole={currentRole}
+  session={session}
 >
   <SectionContainer class="px-6 py-16">
     <div class="mx-auto max-w-2xl">
@@ -76,7 +80,7 @@ const storedCarrierKey = currentUser?.user_metadata?.mobile_carrier
             </label>
             <input
               type="text"
-              id="companyName"
+              id="company-name"
               name="company_name"
               value={userProfile?.company_name || ""}
               class="w-full rounded-full border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-60 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:focus:border-blue-400"
@@ -88,14 +92,14 @@ const storedCarrierKey = currentUser?.user_metadata?.mobile_carrier
           <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
             <div>
               <label
-                for="firstName"
+                for="first-name"
                 class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300"
               >
                 First Name
               </label>
               <input
                 type="text"
-                id="firstName"
+                id="first-name"
                 name="first_name"
                 value={userProfile?.first_name || ""}
                 class="w-full rounded-full border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-60 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:focus:border-blue-400"
@@ -104,14 +108,14 @@ const storedCarrierKey = currentUser?.user_metadata?.mobile_carrier
             </div>
             <div>
               <label
-                for="lastName"
+                for="last-name"
                 class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300"
               >
                 Last Name
               </label>
               <input
                 type="text"
-                id="lastName"
+                id="last-name"
                 name="last_name"
                 value={userProfile?.last_name || ""}
                 class="w-full rounded-full border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-60 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:focus:border-blue-400"

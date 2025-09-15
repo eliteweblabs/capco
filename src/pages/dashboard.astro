@@ -10,7 +10,7 @@ import { checkAuth } from "../lib/auth";
 import { supabase } from "../lib/supabase";
 import { supabaseAdmin } from "../lib/supabase-admin";
 
-const { isAuth = false, currentUser, currentRole } = await checkAuth(Astro.cookies);
+const { isAuth = false, currentUser, currentRole, session } = await checkAuth(Astro.cookies);
 
 // Initialize data arrays
 let projects: any[] = [];
@@ -42,7 +42,15 @@ if (supabaseAdmin) {
 }
 ---
 
-<App>
+<App
+  title="Global Dashboard - CAPCo Fire Protection"
+  description="View all projects."
+  requireAuth={true}
+  isAuth={isAuth}
+  currentUser={currentUser}
+  currentRole={currentRole}
+  session={session}
+>
   <HeroDashboard
     title="Project Dashboard"
     description={currentRole === "Client"

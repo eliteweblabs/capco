@@ -30,12 +30,12 @@ const {
 
 <nav
   id={navId}
-  class={`scrollbar-hide relative flex gap-1 overflow-x-auto whitespace-nowrap ${navClass}`}
+  class={`ml-6 h-12 scrollbar-hide relative flex gap-1 overflow-x-auto whitespace-nowrap ${navClass}`}
 >
   <!-- Sliding pill background -->
   <div
     id="nav-pill-bg"
-    class="mix-blend-mode-multiply absolute top-2 h-9 rounded-full bg-blue-800 transition-all duration-300 ease-out dark:bg-blue-600"
+    class="mix-blend-mode-multiply bg-primary dark:bg-primary-dark absolute top-2 h-9 rounded-full transition-all duration-300 ease-out"
     style="width: 0px; left: 0px; opacity: 0;"
   >
   </div>
@@ -50,57 +50,37 @@ const {
         iconPosition="left"
         class={`pill-nav-item relative z-10 rounded-full transition-colors duration-200 ${
           index === activeItem
-            ? "text-gray-900 dark:text-white"
+            ? "text-white dark:text-white"
             : "text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white"
         }`}
         data-index={index}
-        {...(item.dataAttributes || {})}
+        dataAttributes={item.dataAttributes || {}}
       >
-        <span class="flex items-center gap-2">
-          {item.label}
-          {item.count !== undefined && item.count > 0 && (
-            <span class="inline-flex items-center rounded-full bg-gray-200 px-2 py-0.5 text-xs font-medium text-gray-800 dark:bg-gray-700 dark:text-gray-200">
-              {item.count}
-            </span>
-          )}
-        </span>
+        {item.label}
+        {item.count !== undefined && item.count > 0 && (
+          <span class="absolute -right-2 -top-2 inline-flex items-center rounded-full bg-gray-200 px-2 py-0.5 text-xs font-medium text-gray-800 dark:bg-gray-700 dark:text-gray-200">
+            {item.count}
+          </span>
+        )}
       </Button>
     ))
   }
 </nav>
-<script>
-  // Enhanced sliding pill navigation functionality
-  document.addEventListener("DOMContentLoaded", function () {
-    const nav = document.getElementById("project-nav");
-    if (!nav) return;
 
-    const bg = nav.querySelector("#nav-pill-bg") as HTMLElement;
-    const items = nav.querySelectorAll(".pill-nav-item");
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    const subNav = document.getElementById("project-nav");
     const projectList = document.getElementById("project-list");
 
-    // Update sliding background
-    function updateSlider(activeIndex: number) {
-      const activeItem = items[activeIndex] as HTMLElement;
-      if (activeItem && bg && nav) {
-        const itemRect = activeItem.getBoundingClientRect();
-        const navRect = nav.getBoundingClientRect();
-        const left = itemRect.left - navRect.left;
-        const width = itemRect.width;
+    if (!subNav || !projectList) return;
 
-        bg.style.transform = `translateX(${left}px)`;
-        bg.style.width = `${width}px`;
-        bg.style.opacity = "1";
-      }
-    }
+    const projectItems = projectList.querySelectorAll("[data-project-status]");
+    const filterButtons = subNav.querySelectorAll("[data-project-status-filter]");
+    const allStatusesButton = subNav.querySelector("#all-statuses");
+    const pillBg = document.getElementById("nav-pill-bg");
 
-    // Project filtering functionality
+    // Simple filtering based on data attributes - project cards handle their own visibility
     function filterProjects(statusFilter: string) {
-      if (!projectList) return;
-
-      const projectItems = projectList.querySelectorAll("[data-project-status]");
-      const filterButtons = nav?.querySelectorAll("[data-project-status-filter]");
-      const allStatusesButton = nav?.querySelector("#all-statuses");
-
       const shouldShow = (projectStatusSlug: string) => {
         if (statusFilter === "all") {
           return true;
@@ -114,12 +94,12 @@ const {
         const shouldShowItem = shouldShow(projectStatusSlug || "");
 
         if (shouldShowItem && !item.classList.contains("hidden")) {
-          (item as HTMLElement).style.display = "block";
-          (item as HTMLElement).style.opacity = "1";
+          (item as any).style.display = "block";
+          (item as any).style.opacity = "1";
           visibleCount++;
         } else {
-          (item as HTMLElement).style.display = "none";
-          (item as HTMLElement).style.opacity = "0";
+          (item as any).style.display = "none";
+          (item as any).style.opacity = "0";
         }
       });
 
@@ -128,14 +108,31 @@ const {
       const noProjectsText = document.getElementById("no-projects-text");
       if (noProjectsMessage && noProjectsText) {
         if (visibleCount === 0) {
-          const statusName = document
-            .querySelector(`[data-project-status-filter="${statusFilter}"]`)
-            ?.getAttribute("data-project-status-label");
-          noProjectsText.textContent = `No projects currently at ${statusName}.`;
+          noProjectsText.textContent = `No projects currently at ${statusFilter}.`;
           noProjectsMessage.classList.remove("hidden");
         } else {
           noProjectsMessage.classList.add("hidden");
         }
+      }
+    }
+
+    // Update active button - only change text color, no background
+    function updateActiveButton(activeButton: Element | null) {
+      if (!subNav) return;
+      subNav.querySelectorAll("button").forEach((btn) => {
+        btn.classList.remove(
+          "bg-blue-500",
+          "text-white",
+          "border-blue-500",
+          "bg-hub-primary",
+          "text-blue-600",
+          "dark:text-blue-400"
+        );
+        btn.classList.add("text-hub-inactive", "dark:text-hub-inactive-dark");
+      });
+      if (activeButton) {
+        activeButton.classList.remove("text-hub-inactive", "dark:text-hub-inactive-dark");
+        activeButton.classList.add("text-blue-600", "dark:text-blue-400");
       }
     }
 
@@ -151,42 +148,117 @@ const {
     }
 
     // Button click handlers
-    items.forEach((item, index) => {
-      item.addEventListener("click", () => {
-        updateSlider(index);
-
-        // Handle project filtering
-        const filterValue = item.getAttribute("data-project-status-filter");
+    filterButtons.forEach((button: Element) => {
+      button.addEventListener("click", function (this: HTMLElement) {
+        const filterValue = this.getAttribute("data-project-status-filter");
         if (filterValue) {
           filterProjects(filterValue);
+          updateActiveButton(this);
           updateURL(filterValue);
-        } else if (item.id === "all-statuses") {
-          filterProjects("all");
-          updateURL("all");
-        }
 
-        // Add scroll into view functionality
-        setTimeout(() => {
-          item.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" });
-        }, 100);
+          // Slide pill first, then center navigation
+          updateSlidingPill(this);
+          setTimeout(() => {
+            this.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" });
+            // Recalculate pill position after scroll completes
+            setTimeout(() => {
+              updateSlidingPill(this);
+            }, 500); // Wait for scroll animation to complete
+          }, 350); // Wait for pill animation to complete (300ms + buffer)
+        }
       });
     });
+
+    if (allStatusesButton) {
+      allStatusesButton.addEventListener("click", function (this: HTMLElement) {
+        console.log("🔘 All statuses button clicked:", this);
+        filterProjects("all");
+        updateActiveButton(this);
+        updateURL("all");
+
+        // Slide pill first, then center navigation
+        updateSlidingPill(this);
+        setTimeout(() => {
+          this.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" });
+          // Recalculate pill position after scroll completes
+          setTimeout(() => {
+            updateSlidingPill(this);
+          }, 500); // Wait for scroll animation to complete
+        }, 350); // Wait for pill animation to complete (300ms + buffer)
+      });
+    }
 
     // Initial filter from URL
     const urlParams = new URLSearchParams(window.location.search);
     const statusParam = urlParams.get("status");
-    if (statusParam && nav) {
-      const targetButton = nav.querySelector(`[data-project-status-filter="${statusParam}"]`);
+    if (statusParam) {
+      const targetButton = subNav.querySelector(`[data-project-status-filter="${statusParam}"]`);
       if (targetButton) {
-        const targetIndex = Array.from(items).indexOf(targetButton);
-        updateSlider(targetIndex);
+        updateActiveButton(targetButton);
         filterProjects(statusParam);
+        // Initialize pill position for URL-based active button and center it
+        setTimeout(() => {
+          updateSlidingPill(targetButton);
+          targetButton.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" });
+        }, 100);
         return;
       }
     }
 
-    // Initialize with first item
-    updateSlider(0);
-    filterProjects("all");
+    // Default to all
+    if (allStatusesButton) {
+      updateActiveButton(allStatusesButton);
+      filterProjects("all");
+      // Initialize pill position for default active button and center it
+      setTimeout(() => {
+        updateSlidingPill(allStatusesButton);
+        allStatusesButton.scrollIntoView({
+          behavior: "smooth",
+          block: "nearest",
+          inline: "center",
+        });
+      }, 100);
+    }
+
+    // Sliding pill functionality
+    function updateSlidingPill(activeButton: Element | null) {
+      if (!pillBg || !activeButton || !subNav) return;
+
+      const navRect = subNav.getBoundingClientRect();
+      const buttonRect = activeButton.getBoundingClientRect();
+
+      // Calculate position relative to the nav container, accounting for scroll offset
+      const left = buttonRect.left - navRect.left + subNav.scrollLeft;
+      const width = buttonRect.width;
+
+      // Update pill position and size
+      pillBg.style.left = `${left}px`;
+      pillBg.style.width = `${width}px`;
+      pillBg.style.opacity = "1";
+    }
+
+    // Initialize pill position for the active button and center it
+    setTimeout(() => {
+      const activeButton = subNav.querySelector(".text-blue-600, .dark\\:text-blue-400");
+      if (activeButton) {
+        updateSlidingPill(activeButton);
+        // Center the active button on page load
+        activeButton.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" });
+      }
+    }, 200); // Slightly longer delay for initial load
+
+    // Pill position is now handled in the main button click handlers above
+
+    // Handle window resize to reposition pill
+    let resizeTimeout: NodeJS.Timeout;
+    window.addEventListener("resize", () => {
+      clearTimeout(resizeTimeout);
+      resizeTimeout = setTimeout(() => {
+        const activeButton = subNav.querySelector(".text-blue-600, .dark\\:text-blue-400");
+        if (activeButton) {
+          updateSlidingPill(activeButton);
+        }
+      }, 100);
+    });
   });
 </script>
