@@ -41,7 +41,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       internal = false,
       sms_alert = false,
       parent_id = null,
-      imagePaths = [],
+      imageUrls = [],
     } = body;
 
     // Force internal = false for clients (only Admin/Staff can create internal comments)
@@ -94,9 +94,9 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     //   message: message.trim(),
     //   internal: internal,
     //   sms_alert: sms_alert,
-    //   image_paths: imagePaths,
-    //   image_paths_type: typeof imagePaths,
-    //   image_paths_length: Array.isArray(imagePaths) ? imagePaths.length : "not array",
+    //   image_urls: imageUrls,
+    //   image_urls_type: typeof imageUrls,
+    //   image_urls_length: Array.isArray(imageUrls) ? imageUrls.length : "not array",
     // });
 
     const { data: discussion, error } = await supabase
@@ -108,7 +108,8 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         internal: internal,
         sms_alert: sms_alert,
         parent_id: parent_id,
-        image_paths: imagePaths,
+        image_urls: imageUrls,
+        company_name: currentUser.company_name,
       })
       .select(
         `
@@ -120,7 +121,8 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         sms_alert,
         project_id,
         parent_id,
-        image_paths
+        image_urls,
+        company_name
       `
       )
       .single();
@@ -139,22 +141,10 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       );
     }
 
-    // Get the author profile using the server-side function
-    // console.log("🔔 [DISCUSSION] Fetching user info for user:", currentUser.id);
-
-    const userInfo = {
-      company_name: currentUser.company_name,
-      name: currentUser.company_name,
-      display_name: currentUser.company_name,
-      email: currentUser.email,
-      profile: currentUser.profile,
-    };
-    // console.log("🔔 [DISCUSSION] User info from currentUser:", userInfo);
-
-    // Combine discussion with user info
-    const discussionWithProfile = {
+    // Use company_name directly from the discussion record
+    const discussionWithCompanyName = {
       ...discussion,
-      profiles: userInfo || null,
+      company_name: discussion.company_name || "Unknown User",
     };
 
     if (error) {
@@ -208,7 +198,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         projectAuthorId = projectData.author_id || "";
       }
 
-      const authorName = userInfo?.company_name || "User";
+      const authorName = discussion.company_name || "User";
 
       // Always indicate if it's internal or not in subject and content
       const commentType = internal ? "Internal Comment" : "Public Comment";
@@ -256,7 +246,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       const commentTime = new Date().toLocaleString();
 
       const emailContent = `
-            <p><strong>${userInfo?.company_name}</strong> posted a new comment on <strong>${projectAddress}</strong>:</p>
+            <p><strong>${discussion.company_name}</strong> posted a new comment on <strong>${projectAddress}</strong>:</p>
             <div style="background-color: #f8f9fa; border-left: 4px solid #007bff; padding: 16px; margin: 16px 0; border-radius: 4px;">
               <p style="margin: 0; font-style: italic;">"${message}"</p>
             </div>
@@ -330,7 +320,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     return new Response(
       JSON.stringify({
         success: true,
-        discussion: discussionWithProfile,
+        discussion: discussionWithCompanyName,
       }),
       {
         status: 201,

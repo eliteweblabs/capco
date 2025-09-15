@@ -532,7 +532,7 @@ export function generateFormFieldHTML(
             id="${fieldId}"
             name="${field.name}"
             value="${value}"
-            class="w-full py-2 px-3 text-sm border border-border-light dark:border-border-dark rounded-full bg-background-card dark:bg-background-card-dark text-primary dark:text-primary-dark focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:focus:ring-primary-400 dark:focus:border-primary-400"
+            class="w-full py-2 px-3 text-sm border border-border-light dark:border-border-dark rounded-full bg-background-card dark:bg-background-card-dark text-black dark:text-light focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:focus:ring-primary-400 dark:focus:border-primary-400"
             placeholder="${field.placeholder || ""}"
             ${field.required ? "required" : ""}
             ${field.min !== undefined ? `min="${field.min}"` : ""}
@@ -552,7 +552,7 @@ export function generateFormFieldHTML(
             id="${fieldId}"
             name="${field.name}"
             rows="3"
-            class="w-full py-2 px-3 text-sm border border-border-light dark:border-border-dark rounded-full bg-background-card dark:bg-background-card-dark text-primary dark:text-primary-dark focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:focus:ring-primary-400 dark:focus:border-primary-400"
+            class="w-full py-2 px-3 text-sm border border-border-light dark:border-border-dark rounded-full bg-background-card dark:bg-background-card-dark text-black dark:text-light focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:focus:ring-primary-400 dark:focus:border-primary-400"
             placeholder="${field.placeholder || ""}"
             data-project-id="${projectId}"
           >${value}</textarea>

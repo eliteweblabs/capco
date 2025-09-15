@@ -28,11 +28,11 @@ Use the custom color names defined in `tailwind.config.mjs`:
 <div class="bg-background-card dark:bg-background-card-dark">Card Background</div>
 
 <!-- Text Colors -->
-<div class="text-primary dark:text-primary-dark">Primary Text</div>
+<div class="dark:text-light text-black">Primary Text</div>
 <div class="text-secondary dark:text-secondary-dark">Secondary Text</div>
 
 <!-- Border Colors -->
-<div class="border-border-light dark:border-border-dark border">Adaptive Border</div>
+<div class="border border-border-light dark:border-border-dark">Adaptive Border</div>
 ```
 
 ### 2. CSS Custom Properties
@@ -110,11 +110,11 @@ All colors automatically adapt to dark mode using the `dark:` prefix in Tailwind
 ### Button Component
 
 ```html
-<button class="bg-primary-500 hover:bg-primary-600 rounded px-4 py-2 text-white">
+<button class="rounded bg-primary-500 px-4 py-2 text-white hover:bg-primary-600">
   Primary Button
 </button>
 
-<button class="bg-success-500 hover:bg-success-600 rounded px-4 py-2 text-white">
+<button class="rounded bg-success-500 px-4 py-2 text-white hover:bg-success-600">
   Success Button
 </button>
 ```
@@ -123,9 +123,9 @@ All colors automatically adapt to dark mode using the `dark:` prefix in Tailwind
 
 ```html
 <div
-  class="bg-background-card dark:bg-background-card-dark border-border-light dark:border-border-dark rounded-lg border p-6"
+  class="rounded-lg border border-border-light bg-background-card p-6 dark:border-border-dark dark:bg-background-card-dark"
 >
-  <h3 class="text-primary dark:text-primary-dark mb-2 text-xl font-semibold">Card Title</h3>
+  <h3 class="dark:text-light mb-2 text-xl font-semibold text-black">Card Title</h3>
   <p class="text-secondary dark:text-secondary-dark">Card content goes here.</p>
 </div>
 ```
@@ -134,11 +134,9 @@ All colors automatically adapt to dark mode using the `dark:` prefix in Tailwind
 
 ```html
 <nav
-  class="bg-background-light dark:bg-background-dark border-border-light dark:border-border-dark border-b"
+  class="border-b border-border-light bg-background-light dark:border-border-dark dark:bg-background-dark"
 >
-  <a href="#" class="text-primary dark:text-primary-dark hover:text-primary-600">
-    Navigation Link
-  </a>
+  <a href="#" class="dark:text-light text-black hover:text-primary-600"> Navigation Link </a>
 </nav>
 ```
 

@@ -15,6 +15,7 @@ export interface Props {
     | "link"
     | "loading"
     | "disabled"
+    | "anchor"
     | "selected";
   size?: "xs" | "sm" | "md" | "lg" | "xl";
   href?: string;
@@ -59,15 +60,15 @@ const {
 
 // Base classes for all buttons
 const baseClasses =
-  "inline-flex items-center justify-center font-medium rounded-full transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed";
+  "relative inline-flex items-center justify-center font-medium rounded-full transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed";
 
 // Size classes
 const sizeClasses = {
   xs: "px-2.5 py-1.5 text-xs",
-  sm: "px-3 py-2 text-sm",
-  md: "px-4 py-2.5 text-sm",
-  lg: "px-5 py-3 text-base",
-  xl: "px-6 py-3.5 text-lg",
+  sm: "px-4 py-2 text-sm",
+  md: "px-5 py-2.5 text-sm",
+  lg: "px-6 py-3 text-base",
+  xl: "px-7 py-3.5 text-lg",
 };
 
 // Variant classes using global color system
@@ -88,9 +89,11 @@ const variantClasses = {
   link: "text-primary-500 underline hover:text-primary-600 dark:text-primary-400 dark:hover:text-primary-300",
   loading: "bg-primary-500 text-white cursor-not-allowed opacity-75 dark:bg-primary-500",
   disabled:
-    "bg-neutral-100 text-neutral-400 border border-neutral-200 cursor-not-allowed opacity-60 dark:bg-neutral-800 dark:text-neutral-500 dark:border-neutral-700",
+    "bg-neutral-100 text-neutral-400 border border-neutral-200 cursor-not-allowed opacity-60 dark:bg-neutral-800 dark:text-neutral-500 dark:border-neutral-700 disabled",
   selected:
     "bg-primary-500 text-white border-2 border-primary-500 dark:bg-primary-500 dark:border-primary-500",
+  anchor:
+    "text-black dark:text-white hover:text-primary dark:hover:text-primary-dark outline-none focus:outline-none border-none focus:ring-0 focus:ring-offset-0 hover:shadow-none opacity-100 disabled",
 };
 
 // Build the complete class string
@@ -104,10 +107,8 @@ const buttonClasses = [
   .filter(Boolean)
   .join(" ");
 
-// Build data attributes object
-const dataAttrs = Object.fromEntries(
-  Object.entries(dataAttributes).map(([key, value]) => [`data-${key}`, value])
-);
+// Build data attributes object - don't add the data- prefix as it's already in the keys
+const dataAttrs = dataAttributes;
 
 // Add selected classes data attribute if provided
 const selectedDataAttr = selectedClasses ? { "data-selected-classes": selectedClasses } : {};
@@ -134,7 +135,7 @@ const attributes = {
   isLink ? (
     <a title={title} {...attributes}>
       {loading && (
-        <svg class="animate-spin -ml-1 mr-2 h-4 w-4" fill="none" viewBox="0 0 24 24">
+        <svg class="-ml-1 mr-2 h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">
           <circle
             class="opacity-25"
             cx="12"
@@ -153,11 +154,16 @@ const attributes = {
       {icon && iconPosition === "left" && !loading && <BoxIcon name={icon} class="mr-2" />}
       <slot />
       {icon && iconPosition === "right" && !loading && <BoxIcon name={icon} class="ml-2" />}
+      {dataAttributes?.["data-count"] && parseInt(dataAttributes["data-count"]) > 0 && (
+        <span class="absolute -right-2 -top-2 flex h-5 w-5 items-center justify-center rounded-full border border-primary-500 bg-white text-xs font-medium text-primary-500 dark:border-primary-400 dark:bg-background-dark dark:text-primary-400">
+          {dataAttributes["data-count"]}
+        </span>
+      )}
     </a>
   ) : (
     <button type={type} title={title} {...attributes}>
       {loading && (
-        <svg class="animate-spin -ml-1 mr-2 h-4 w-4" fill="none" viewBox="0 0 24 24">
+        <svg class="-ml-1 mr-2 h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">
           <circle
             class="opacity-25"
             cx="12"
@@ -176,6 +182,11 @@ const attributes = {
       {icon && iconPosition === "left" && !loading && <BoxIcon name={icon} class="mr-2" />}
       <slot />
       {icon && iconPosition === "right" && !loading && <BoxIcon name={icon} class="ml-2" />}
+      {dataAttributes?.["data-count"] && parseInt(dataAttributes["data-count"]) > 0 && (
+        <span class="absolute -right-2 -top-2 flex h-5 w-5 items-center justify-center rounded-full border border-primary-500 bg-white text-xs font-medium text-primary-500 dark:border-primary-400 dark:bg-background-dark dark:text-primary-400">
+          {dataAttributes["data-count"]}
+        </span>
+      )}
     </button>
   )
 }
@@ -218,14 +229,14 @@ const attributes = {
   }
 
   /* Hover effects for better UX */
-  button:not(:disabled):hover,
-  a:not([aria-disabled="true"]):hover {
+  button:not(.disabled):hover,
+  a:not([aria-disabled="true"]):not(.disabled):hover {
     transform: translateY(-1px);
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.12);
   }
 
-  button:not(:disabled):active,
-  a:not([aria-disabled="true"]):active {
+  button:not(.disabled):active,
+  a:not([aria-disabled="true"]):not(.disabled):active {
     transform: translateY(0);
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.12);
   }

@@ -25,7 +25,7 @@ const {
 
 <div
   id="content-documents"
-  class="tab-content hidden rounded-full bg-white p-6 shadow-md dark:bg-gray-800 text-gray-800 dark:text-gray-200"
+  class="tab-content hidden rounded-lg bg-white p-6 text-gray-800 shadow-md dark:bg-gray-800 dark:text-gray-200"
 >
   {
     projectStatus === 10 ||
@@ -36,11 +36,11 @@ const {
       <>
         <div
           id="upload-dropzone"
-          class="hidden cursor-pointer touch-manipulation rounded-full border-2 border-dashed border-gray-300 p-8 text-center transition-colors hover:border-blue-400 dark:border-gray-600 dark:hover:border-blue-500 md:block"
+          class="hidden cursor-pointer touch-manipulation rounded-lg border-2 border-dashed border-gray-300 p-8 text-center transition-colors hover:border-blue-400 dark:border-gray-600 dark:hover:border-blue-500 md:block"
           style="min-height: 120px; -webkit-tap-highlight-color: transparent;"
         >
           <div class="space-y-4">
-            <BoxIcon name="cloud-upload" class="mx-auto bx-lg" />
+            <BoxIcon name="cloud-upload" class="bx-lg mx-auto" />
             <div>
               <p class="font-medium text-gray-600 dark:text-gray-300">
                 Drop files here or click to browse
@@ -51,7 +51,7 @@ const {
             </div>
             <button
               id="browse-files-btn"
-              class="hidden md:inline-flex touch-manipulation items-center rounded-full bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700"
+              class="hidden touch-manipulation items-center rounded-full bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700 md:inline-flex"
               style="-webkit-tap-highlight-color: transparent; min-height: 44px;"
             >
               <BoxIcon name="folder-open" class="mr-2 h-4 w-4" />
@@ -101,7 +101,7 @@ const {
 
   <!-- File List -->
   <div id="uploaded-files" class="mt-6 hidden">
-    <div class="mb-3 hidden md:flex items-center justify-between">
+    <div class="mb-3 hidden items-center justify-between md:flex">
       <h4 class="text-md flex items-center font-medium text-gray-900 dark:text-white">
         <BoxIcon name="file" class="mr-2" />
         Uploaded Files
@@ -125,10 +125,10 @@ const {
     </div>
     <div id="file-list" class="space-y-2"></div>
     <div id="no-files-message" class="hidden">
-      <div class="text-center py-8">
-        <BoxIcon name="file" class="bx-lg mx-auto h-12 w-12 text-gray-400 mb-4" />
-        <p class="text-gray-500 dark:text-gray-400 text-sm">No files have been uploaded yet.</p>
-        <p class="text-gray-400 dark:text-gray-500 text-xs mt-1">
+      <div class="py-8 text-center">
+        <BoxIcon name="file" class="bx-lg mx-auto mb-4 h-12 w-12 text-gray-400" />
+        <p class="text-sm text-gray-500 dark:text-gray-400">No files have been uploaded yet.</p>
+        <p class="mt-1 text-xs text-gray-400 dark:text-gray-500">
           Upload your project documents to get started.
         </p>
       </div>
@@ -145,7 +145,7 @@ const {
             class="inline-flex items-center rounded-full bg-green-600 px-6 py-3 text-sm font-medium text-white transition-colors hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
           >
             Finished Uploading Documents
-            <BoxIcon name="check" class="ml-2 bx-sm" />
+            <BoxIcon name="check" class="bx-sm ml-2" />
           </button>
         </div>
       </div>
@@ -543,7 +543,7 @@ const {
 
       const fileItem = document.createElement("div");
       fileItem.className =
-        "file-item bg-gray-50 dark:bg-gray-700 rounded-full border border-gray-200 dark:border-gray-600 accordion-open";
+        "file-item bg-gray-50 dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600 accordion-open";
 
       // Use file_name from database or fallback to name
       const fileName = file.file_name || file.name;
@@ -743,13 +743,16 @@ const {
       try {
         console.log("⭐ [FEATURED-IMAGE] Updating featured image:", { fileId, isFeatured });
 
-        const response = await fetch("/api/update-featured-image", {
+        const response = await fetch("/api/save-media", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             projectId: this.projectId,
             fileId: fileId,
-            isFeatured: isFeatured,
+            mediaType: "featured_image",
+            targetLocation: "projects.featured_image_url",
+            targetId: this.projectId,
+            isActive: isFeatured,
           }),
         });
 
