@@ -3,11 +3,18 @@ import { checkAuth } from "../../lib/auth";
 import { supabase } from "../../lib/supabase";
 import { supabaseAdmin } from "../../lib/supabase-admin";
 
-export const GET: APIRoute = async ({ request, cookies }) => {
+export const GET: APIRoute = async ({ request, cookies, url }) => {
   try {
     // Check authentication to get user role for filtering
     const { currentRole } = await checkAuth(cookies);
     const isClient = currentRole === "Client";
+
+    // Get user ID from query parameters
+    const assignedToId = url.searchParams.get("assigned_to_id");
+
+    if (assignedToId) {
+      console.log(`📡 [API] Filtering projects by assigned_to_id: ${assignedToId}`);
+    }
     if (!supabase) {
       return new Response(JSON.stringify({ error: "Database connection not available" }), {
         status: 500,
@@ -32,7 +39,7 @@ export const GET: APIRoute = async ({ request, cookies }) => {
       console.error("📡 [API] CRITICAL: supabaseAdmin is null - check SUPABASE_SERVICE_ROLE_KEY");
       // console.log("📡 [API] Falling back to regular supabase client");
       // Fallback to regular client if admin client is not available
-      const result = await supabase
+      let query = supabase
         .from("projects")
         .select(
           `
@@ -47,17 +54,36 @@ export const GET: APIRoute = async ({ request, cookies }) => {
           created_at,
           updated_at,
           assigned_to_id,
-          featured_image
-          
+          featured_image,
+          featured_image_url,
+          company_name,
+          subject,
+          proposal_signature,
+          signed_at,
+          contract_pdf_url,
+          building,
+          project,
+          service,
+          requested_docs,
+          owner,
+          architect,
+          units
         `
         )
         .neq("id", 0) // Exclude system log project
         .order("updated_at", { ascending: false });
+
+      // Filter by assigned_to_id if provided
+      if (assignedToId) {
+        query = query.eq("assigned_to_id", assignedToId);
+      }
+
+      const result = await query;
       projects = result.data;
       error = result.error;
     } else {
       // Use admin client to bypass RLS policies for project listing
-      const result = await supabaseAdmin
+      let query = supabaseAdmin
         .from("projects")
         .select(
           `
@@ -72,12 +98,31 @@ export const GET: APIRoute = async ({ request, cookies }) => {
           created_at,
           updated_at,
           assigned_to_id,
-          featured_image
-          
+          featured_image,
+          featured_image_url,
+          company_name,
+          subject,
+          proposal_signature,
+          signed_at,
+          contract_pdf_url,
+          building,
+          project,
+          service,
+          requested_docs,
+          owner,
+          architect,
+          units
         `
         )
         .neq("id", 0) // Exclude system log project
         .order("updated_at", { ascending: false });
+
+      // Filter by assigned_to_id if provided
+      if (assignedToId) {
+        query = query.eq("assigned_to_id", assignedToId);
+      }
+
+      const result = await query;
       projects = result.data;
       error = result.error;
     }
@@ -239,6 +284,7 @@ export const GET: APIRoute = async ({ request, cookies }) => {
         success: true,
         projects: projects || [],
         count: projects?.length || 0,
+        filtered_by: assignedToId ? `assigned_to_id: ${assignedToId}` : null,
       }),
       {
         status: 200,

@@ -12,6 +12,7 @@ import ToggleButton from "../form/ToggleButton.astro";
 import UnitSlider from "../form/UnitSlider.astro";
 import GooglePlacesSlotmachine from "../form/GooglePlacesSlotmachine.astro";
 import SlotMachineModal from "../form/SlotMachineModal.astro";
+import Button from "../common/Button.astro";
 
 interface Props {
   project?: any;
@@ -261,8 +262,8 @@ const formActions = getFilteredFormActions(currentRole, isNewProject, projectSta
                       inputmode="numeric"
                       pattern="[0-9]*"
                     />
-                    <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-                      <span class="text-gray-500 dark:text-gray-400 text-sm">ft²</span>
+                    <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
+                      <span class="text-sm text-gray-500 dark:text-gray-400">ft²</span>
                     </div>
                   </div>
                 ) : (
@@ -414,7 +415,7 @@ const formActions = getFilteredFormActions(currentRole, isNewProject, projectSta
               {group.label}
             </label>
             <div
-              class={`flex flex-wrap gap-2 mb-4 ${isReadOnly ? "pointer-events-none opacity-75" : ""}`}
+              class={`mb-4 flex flex-wrap gap-2 ${isReadOnly ? "pointer-events-none opacity-75" : ""}`}
             >
               {group.options.map((option) => {
                 const isSelected = selectedValues.includes(option.value);
@@ -439,19 +440,28 @@ const formActions = getFilteredFormActions(currentRole, isNewProject, projectSta
     }
   </div>
   <!-- Form Actions -->
-  <div class="flex gap-2 pt-4 dark:border-gray-600 flex-col lg:flex-row">
+  <div class="flex flex-col gap-2 pt-4 dark:border-gray-600 lg:flex-row">
     {
       formActions.map((action) => (
-        <button
+        <Button
           type={action.type}
+          variant={
+            action.cssClass.includes("bg-red")
+              ? "danger"
+              : action.cssClass.includes("bg-gray")
+                ? "secondary"
+                : "primary"
+          }
+          size="md"
+          icon={action.icon}
+          iconPosition="left"
           class={action.cssClass}
           id={action.id}
           data-action={action.action}
           data-tab={action.tab}
         >
-          {action.icon && <i class={`bx ${action.icon} mr-1`} />}
           {action.label}
-        </button>
+        </Button>
       ))
     }
   </div>

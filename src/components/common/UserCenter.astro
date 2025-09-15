@@ -1,0 +1,200 @@
+---
+// User center component for header
+import BoxIcon from "./BoxIcon.astro";
+import Button from "./Button.astro";
+
+const {
+  user,
+  currentRole,
+  visibleNavigation,
+  currentUser,
+  assignedProjects,
+  assignedProjectsCount,
+} = Astro.props;
+// Fetch projects assigned to current user
+---
+
+<div
+  id="drawer-user-center"
+  class="fixed right-0 top-0 z-50 h-screen w-80 translate-x-full overflow-y-auto bg-white p-4 transition-transform dark:bg-gray-800"
+  tabindex="-1"
+  aria-labelledby="drawer-right-label"
+>
+  <button
+    type="button"
+    data-drawer-hide="drawer-user-center"
+    aria-controls="drawer-user-center"
+    class="absolute end-2.5 top-2.5 inline-flex h-8 w-8 items-center justify-center rounded-lg bg-transparent text-sm text-gray-400 hover:bg-gray-200 hover:text-gray-900 dark:hover:bg-gray-600 dark:hover:text-white"
+  >
+    <svg
+      class="h-3 w-3"
+      aria-hidden="true"
+      xmlns="http://www.w3.org/2000/svg"
+      fill="none"
+      viewBox="0 0 14 14"
+    >
+      <path
+        stroke="currentColor"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        stroke-width="2"
+        d="m1 1 6 6m0 0 6 6M7 7l6-6M7 7l-6 6"></path>
+    </svg>
+    <span class="sr-only">Close menu</span>
+  </button>
+  <!-- Header -->
+  <div class="mb-6">
+    <!-- User Info Section -->
+    <div class="border-b border-gray-200 px-4 py-3 dark:border-gray-700">
+      <div class="flex items-center">
+        <div class="flex-shrink-0">
+          <img
+            id="dropdown-avatar"
+            src=""
+            alt="User avatar"
+            class="h-10 w-10 rounded-full"
+            onerror="this.style.display='none'; this.nextElementSibling.style.display='block';"
+          />
+          <BoxIcon name="user" style="display:none;" class="bx-sm text-gray-400" />
+        </div>
+        <div class="ml-3">
+          <p class="text-sm font-medium text-gray-900 dark:text-white">
+            {currentUser?.company_name || currentUser?.email?.split("@")[0] || "User"}
+          </p>
+          <p class="text-xs text-gray-500 dark:text-gray-400">
+            {currentUser?.email}
+          </p>
+          <p class="text-xs font-medium text-blue-600 dark:text-blue-400">
+            {currentRole || "User"}
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Assigned Projects Section -->
+  <div class="mb-6">
+    <h6 class="mb-3 text-sm font-medium text-gray-900 dark:text-white">
+      Assigned Projects ({assignedProjectsCount})
+    </h6>
+
+    {
+      assignedProjectsCount > 0 ? (
+        <div class="max-h-48 space-y-2 overflow-y-auto">
+          {assignedProjects.slice(0, 5).map((project: any) => (
+            <a
+              href={`/project/${project.id}`}
+              class="block rounded-lg border border-gray-200 p-3 transition-colors hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-700"
+            >
+              <div class="flex items-start justify-between">
+                <div class="min-w-0 flex-1">
+                  <p class="truncate text-sm font-medium text-gray-900 dark:text-white">
+                    {project.title || "Untitled Project"}
+                  </p>
+                  <p class="truncate text-xs text-gray-500 dark:text-gray-400">
+                    {project.address || "No address"}
+                  </p>
+                  <p class="text-xs text-gray-400 dark:text-gray-500">
+                    Status: {project.status || "Unknown"}
+                  </p>
+                </div>
+                <div class="ml-2 flex-shrink-0">
+                  <span class="inline-flex items-center rounded-full bg-blue-100 px-2 py-1 text-xs font-medium text-blue-800 dark:bg-blue-900 dark:text-blue-200">
+                    {project.comment_count || 0} comments
+                  </span>
+                </div>
+              </div>
+            </a>
+          ))}
+
+          {assignedProjectsCount > 5 && (
+            <div class="text-center">
+              <Button href="/dashboard" variant="ghost" size="sm" class="text-xs">
+                View all {assignedProjectsCount} projects
+              </Button>
+            </div>
+          )}
+        </div>
+      ) : (
+        <div class="py-4 text-center">
+          <p class="text-sm text-gray-500 dark:text-gray-400">No projects assigned to you</p>
+        </div>
+      )
+    }
+  </div>
+
+  <!-- Menu Items -->
+  <div class="py-1">
+    <a
+      href="/dashboard"
+      class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-700"
+    >
+      <BoxIcon name="building" class="bx-sm mr-3" />
+      Dashboard
+    </a>
+
+    <a
+      href="/profile"
+      class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-700"
+    >
+      <BoxIcon name="user" class="bx-sm mr-3" />
+      My Profile
+    </a>
+
+    <hr class="my-1 border-gray-200 dark:border-gray-700" />
+
+    <Button
+      id="logout-btn"
+      variant="ghost"
+      size="sm"
+      icon="log-out"
+      iconPosition="left"
+      fullWidth
+      class="text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-700"
+    >
+      Logout
+    </Button>
+  </div>
+
+  <!-- Navigation -->
+  <nav class="mb-6 space-y-2">
+    {
+      visibleNavigation &&
+        visibleNavigation.map((item: any) =>
+          item.isPrimary ? (
+            <a
+              href={item.href}
+              class="block w-full rounded-lg bg-red-600 px-4 py-3 text-center font-medium text-white transition-colors hover:bg-red-700"
+            >
+              {item.label}
+            </a>
+          ) : (
+            <a
+              href={item.href}
+              class="block py-2 font-medium text-gray-700 transition-colors hover:text-red-600 dark:text-gray-300 dark:hover:text-red-400"
+            >
+              {item.label}
+            </a>
+          )
+        )
+    }
+  </nav>
+
+  <!-- User Actions -->
+  <div class="space-y-2">
+    <Button
+      href="/dashboard"
+      variant="ghost"
+      size="sm"
+      icon="dashboard"
+      iconPosition="left"
+      fullWidth
+    >
+      Dashboard
+    </Button>
+
+    <Button href="/logout" variant="outline" size="sm" icon="log-out" iconPosition="left" fullWidth>
+      Logout
+    </Button>
+  </div>
+</div>
