@@ -30,7 +30,14 @@ export default {
         body: "14px",
       },
       colors: {
-        // Brand Colors
+        // Text Colors
+        black: "#171717", // Default text (black)
+        white: "#fafafa", // Default text (white for dark mode)
+        gray: {
+          600: "#525252", // Secondary text (gray)
+          400: "#a3a3a3", // Secondary text (dark mode)
+        },
+        // Brand Colors - Our purple theme
         primary: {
           50: "#f3f0ff",
           100: "#e9e3ff",

@@ -17,129 +17,25 @@ let projects: any[] = [];
 let project_statuses: any[] = [];
 let project_statuses_object: any = {};
 
-// Fetch project statuses directly in front matter
+import { fetchProjectStatuses, processProjectStatuses } from "../lib/api/project-statuses";
+import { fetchProjects } from "../lib/api/projects";
+import type { ProjectStatus } from "../lib/types/project-status";
+
+// Fetch project statuses
 if (supabaseAdmin) {
   try {
-    const { data: statusesData, error: statusesError } = await supabaseAdmin
-      .from("project_statuses")
-      .select(
-        "status_code, admin_status_name, project_action, client_status_name, client_status_tab, admin_status_tab, admin_status_slug, client_status_slug"
-      )
-      .neq("status_code", 0)
-      .order("status_code");
-
-    if (!statusesError && statusesData) {
-      project_statuses = statusesData;
-      project_statuses_object = statusesData.reduce((acc: any, status: any) => {
-        acc[status.status_code] = status;
-        return acc;
-      }, {});
-
-      // Process statuses for role-based filtering (merged from process-client-status)
-      const role = currentRole || "Client";
-      console.log(
-        "🔍 [DASHBOARD] Processing statuses for role:",
-        role,
-        "currentRole:",
-        currentRole
-      );
-      console.log("🔍 [DASHBOARD] Statuses object keys:", Object.keys(project_statuses_object));
-
-      project_statuses_object = Object.keys(project_statuses_object).reduce(
-        (acc: any, statusCode: string) => {
-          const statusObj = project_statuses_object[statusCode];
-          console.log(
-            "🔍 [DASHBOARD] Processing status",
-            statusCode,
-            "for role",
-            role,
-            "statusObj:",
-            statusObj
-          );
-
-          // Use client_status_name for clients, admin_status_name for admins
-          if (role === "Client" && statusObj.client_status_name) {
-            // console.log("🔍 [DASHBOARD] Using client status name for", statusCode);
-            acc[statusCode] = {
-              ...statusObj,
-              status_name: statusObj.client_status_name,
-              status_tab: statusObj.client_status_tab,
-              status_slug: statusObj.client_status_slug,
-            };
-          } else if (statusObj.admin_status_name) {
-            // console.log("🔍 [DASHBOARD] Using admin status name for", statusCode);
-            acc[statusCode] = {
-              ...statusObj,
-              status_name: statusObj.admin_status_name,
-              status_tab: statusObj.admin_status_tab,
-              status_slug: statusObj.admin_status_slug,
-            };
-          } else {
-            // console.log("🔍 [DASHBOARD] Using fallback status name for", statusCode);
-            // Fallback if no role-specific name exists
-            acc[statusCode] = {
-              ...statusObj,
-              status_name: statusObj.admin_status_name || "Unknown Status",
-              status_tab: statusObj.admin_status_tab || null,
-              status_slug: statusObj.admin_status_slug || null,
-            };
-          }
-
-          return acc;
-        },
-        {}
-      );
-    }
+    const { statuses, statusesMap } = await fetchProjectStatuses(supabaseAdmin);
+    project_statuses = statuses as ProjectStatus[];
+    project_statuses_object = processProjectStatuses(statuses, currentRole || "Client");
   } catch (error) {
     console.error("🏗️ [DASHBOARD] Error fetching statuses:", error);
   }
 }
 
-// Fetch projects with new optimized columns
+// Fetch projects
 if (supabaseAdmin) {
   try {
-    const { data: allProjects, error } = await supabaseAdmin
-      .from("projects")
-      .select(
-        `
-            id,
-            title,
-            description,
-            address,
-            author_id,
-            company_name,
-            status,
-            sq_ft,
-            new_construction,
-            created_at,
-            updated_at,
-            assigned_to_id,
-            assigned_to_name,
-            featured_image,
-            featured_image_url,
-            contract_pdf_url,
-            incomplete_discussions
-          `
-      )
-      .neq("id", 0) // Exclude system log project
-      .order("updated_at", { ascending: false });
-
-    if (error) {
-      console.error("🏗️ [DASHBOARD] Database error:", error);
-    } else {
-      // Add featured_image_data for projects with featured_image_url
-      projects = (allProjects || []).map((project) => {
-        if (project.featured_image_url) {
-          return {
-            ...project,
-            featured_image_data: {
-              public_url: project.featured_image_url,
-            },
-          };
-        }
-        return project;
-      });
-    }
+    projects = await fetchProjects(supabaseAdmin);
   } catch (error) {
     console.error("🏗️ [DASHBOARD] Error fetching projects:", error);
   }
@@ -149,7 +45,9 @@ if (supabaseAdmin) {
 <App>
   <HeroDashboard
     title="Project Dashboard"
-    description="Manage and track your fire protection projects"
+    description={currentRole === "Client"
+      ? "Manage and track your fire protection projects"
+      : "Manage and track all fire protection projects"}
   />
 
   <ProjectNav

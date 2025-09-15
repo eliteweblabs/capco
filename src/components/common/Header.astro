@@ -1,11 +1,11 @@
 ---
 import { isBackendPage } from "../../pages/api/backend-page-check";
+import UserCenter from "../project/UserCenter.astro";
 import AuthIcon from "./AuthIcon.astro";
-import BoxIcon from "./BoxIcon.astro";
-import ThemeToggle from "./ThemeToggle.astro";
-import Logo from "./Logo.astro";
 import Button from "./Button.astro";
-import ProjectDrawer from "../project/ProjectDrawer.astro";
+import HamburgerIcon from "./Hamburger.astro";
+import Logo from "./Logo.astro";
+import ThemeToggle from "./ThemeToggle.astro";
 
 interface Props {
   isAuth: boolean;
@@ -57,6 +57,8 @@ interface NavItem {
   buttonStyle?: "primary" | "secondary" | "ghost" | "outline"; // Button variant
   isDropdown?: boolean; // Is a dropdown menu
   dropdownItems?: DropdownItem[]; // Items for dropdown
+  showWhenAuth?: boolean; // Show only when authenticated
+  hideWhenAuth?: boolean; // Hide when authenticated
 }
 
 interface DropdownItem {
@@ -103,15 +105,16 @@ const navItems: NavItem[] = [
     buttonStyle: "primary",
     desktopOnly: true,
   },
-  {
-    label: "Log In",
-    href: "/login",
-    roles: ["any"],
-    pageType: "frontend",
-    isPrimary: currentUrl.startsWith("/login"),
-    buttonStyle: "ghost",
-    desktopOnly: true,
-  },
+  // {
+  //   label: "Log In",
+  //   href: "/login",
+  //   roles: ["any"],
+  //   pageType: "frontend",
+  //   isPrimary: currentUrl.startsWith("/login"),
+  //   // buttonStyle: "ghost",
+  //   desktopOnly: true,
+  //   hideWhenAuth: true, // Hide login button when user is authenticated
+  // },
 
   // Backend navigation (shown on backend pages)
   {
@@ -162,6 +165,10 @@ function getVisibleNavItems(
   isBackend: boolean
 ): NavItem[] {
   return navItems.filter((item) => {
+    // Check auth-specific visibility
+    if (item.hideWhenAuth && isAuth) return false;
+    if (item.showWhenAuth && !isAuth) return false;
+
     // Show frontend items when not on backend pages
     if (item.pageType === "frontend" && !isBackend) {
       return (
@@ -185,17 +192,17 @@ const visibleNavItems = getVisibleNavItems(navItems, isAuth, currentRole, isBack
 ---
 
 <header
-  class="bg-background-light dark:bg-background-dark border-b border-border-light dark:border-border-dark sticky top-0 z-50 backdrop-blur-sm"
+  class="sticky top-0 z-50 border-b border-border-light bg-background-light backdrop-blur-sm dark:border-border-dark dark:bg-background-dark"
 >
-  <nav class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-    <div class="flex justify-between items-center h-16">
+  <nav class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+    <div class="flex h-16 items-center justify-between">
       {/* Logo */}
       <div class="flex-shrink-0">
         <Logo />
       </div>
 
       {/* Unified Navigation - Desktop */}
-      <div class="hidden md:flex items-center space-x-8">
+      <div class="hidden items-center space-x-8 md:flex">
         {/* Navigation Items */}
         {
           visibleNavItems
@@ -204,22 +211,26 @@ const visibleNavItems = getVisibleNavItems(navItems, isAuth, currentRole, isBack
               // Handle dropdown items
               if (item.isDropdown && item.dropdownItems) {
                 return (
-                  <div class="relative group">
+                  <div class="group relative">
                     <Button
-                      variant="ghost"
+                      variant="anchor"
                       size="sm"
-                      class="text-primary dark:text-primary-dark hover:text-primary-600 px-3 py-2 text-sm font-medium flex items-center"
+                      class={`px-3 py-2 text-sm font-medium transition-colors ${
+                        item.isPrimary
+                          ? "text-primary dark:text-primary-dark"
+                          : "text-black dark:text-white"
+                      }`}
                       icon="chevron-down"
                       iconPosition="right"
                     >
                       {item.label}
                     </Button>
-                    <div class="absolute left-0 mt-2 w-64 bg-background-card dark:bg-background-card-dark rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 border border-border-light dark:border-border-dark">
+                    <div class="invisible absolute left-0 mt-2 w-64 rounded-lg border border-border-light bg-background-card opacity-0 shadow-lg transition-all duration-200 group-hover:visible group-hover:opacity-100 dark:border-border-dark dark:bg-background-card-dark">
                       <div class="py-1">
                         {item.dropdownItems.map((dropdownItem) => (
                           <a
                             href={dropdownItem.href}
-                            class="block px-4 py-2 text-sm text-secondary dark:text-secondary-dark hover:bg-neutral-100 dark:hover:bg-neutral-700"
+                            class="block px-4 py-2 text-sm text-text-secondary hover:bg-neutral-100 dark:text-text-secondary-dark dark:hover:bg-neutral-700"
                           >
                             {dropdownItem.label}
                           </a>
@@ -232,19 +243,19 @@ const visibleNavItems = getVisibleNavItems(navItems, isAuth, currentRole, isBack
 
               // Handle drawer items
               if (item.isDrawer) {
-                return (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    dataAttributes={{
-                      "drawer-target": "project-drawer",
-                      "drawer-toggle": "project-drawer",
-                    }}
-                    class="px-3 py-2 text-sm font-medium text-primary dark:text-primary-dark hover:text-primary-600 transition-colors"
-                  >
-                    {item.label}
-                  </Button>
-                );
+                // return (
+                //   <Button
+                //     variant="ghost"
+                //     size="sm"
+                //     dataAttributes={{
+                //       "drawer-target": "project-drawer",
+                //       "drawer-toggle": "project-drawer",
+                //     }}
+                //     class="text-primary dark:text-primary-dark hover:text-primary-dark px-3 py-2 text-sm font-medium transition-colors"
+                //   >
+                //     {item.label}
+                //   </Button>
+                // );
               }
 
               // Handle button style items
@@ -256,7 +267,7 @@ const visibleNavItems = getVisibleNavItems(navItems, isAuth, currentRole, isBack
                     size="sm"
                     class={
                       item.buttonStyle === "ghost"
-                        ? "text-primary dark:text-primary-dark hover:text-primary-600"
+                        ? "text-primary dark:text-primary-dark hover:text-primary-dark"
                         : ""
                     }
                   >
@@ -271,8 +282,8 @@ const visibleNavItems = getVisibleNavItems(navItems, isAuth, currentRole, isBack
                   href={item.href}
                   class={`px-3 py-2 text-sm font-medium transition-colors ${
                     item.isPrimary
-                      ? "text-primary-600 dark:text-primary-400"
-                      : "text-primary dark:text-primary-dark hover:text-primary-600"
+                      ? "text-primary dark:text-primary-dark"
+                      : "hover:text-primary dark:hover:text-primary-dark text-black dark:text-white"
                   }`}
                 >
                   {item.label}
@@ -282,34 +293,30 @@ const visibleNavItems = getVisibleNavItems(navItems, isAuth, currentRole, isBack
         }
 
         {/* Theme Toggle */}
-        <ThemeToggle />
+        <!-- <ThemeToggle /> -->
 
-        {/* Auth Section */}
+        <!-- {/* Auth Section */}
         {
           isAuth ? (
             <div class="text-center">
-              <button
-                class="text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 mb-2 dark:bg-blue-600 dark:hover:bg-blue-700 focus:outline-none dark:focus:ring-blue-800"
-                type="button"
-                data-drawer-target="drawer-right-example"
-                data-drawer-show="drawer-right-example"
-                data-drawer-placement="right"
-                aria-controls="drawer-right-example"
-              >
-                <AuthIcon
-                  isAuth={isAuth}
-                  currentUser={currentUser}
-                  currentRole={currentRole}
-                  session={session}
-                />
-              </button>
+              {/* <button
+                class="mb-2 rounded-lg px-5 py-2.5 text-sm font-medium text-white hover:bg-blue-800 focus:outline-none focus:ring-4 focus:ring-blue-300 dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800"
+                
+              > */}
+              <AuthIcon
+                isAuth={isAuth}
+                currentUser={currentUser}
+                currentRole={currentRole}
+                session={session}
+              />
+              {/* </button> */}
             </div>
           ) : null
-        }
+        } -->
       </div>
 
       {/* Mobile Controls */}
-      <div class="md:hidden flex items-center space-x-4">
+      <div class="flex items-center space-x-4">
         <ThemeToggle />
         <AuthIcon
           isAuth={isAuth}
@@ -317,118 +324,17 @@ const visibleNavItems = getVisibleNavItems(navItems, isAuth, currentRole, isBack
           currentRole={currentRole}
           session={session}
         />
+        <!-- put hamburger icon here -->
+        <HamburgerIcon visibleNavigation={visibleNavItems} />
       </div>
     </div>
   </nav>
 </header>
 
 <!-- Project Drawer -->
-{
-  isAuth && (
-    <ProjectDrawer
-      projects={projects}
-      currentProjectId={
-        currentUrl.includes("/project/")
-          ? currentUrl.split("/project/")[1]?.split("?")[0] || ""
-          : ""
-      }
-      currentUser={currentUser}
-      currentRole={currentRole || ""}
-    />
-  )
-}
-
-<style>
-  .hamburger .line {
-    width: 20px;
-    background-color: currentColor;
-    height: 2px;
-    display: block;
-    margin: 3px auto;
-    border-radius: 1px;
-    -webkit-transition: all 0.3s ease-in-out;
-    -o-transition: all 0.3s ease-in-out;
-    transition: all 0.3s ease-in-out;
-  }
-  #mobile-menu-btn {
-    -webkit-transition: all 0.3s ease-in-out;
-    -o-transition: all 0.3s ease-in-out;
-    transition: all 0.3s ease-in-out;
-  }
-
-  #mobile-menu-btn.is-active {
-    animation: smallbig 0.6s forwards;
-  }
-
-  #mobile-menu-btn.is-active .line:nth-child(1),
-  #mobile-menu-btn.is-active .line:nth-child(2),
-  #mobile-menu-btn.is-active .line:nth-child(3) {
-    -webkit-transition-delay: 0.2s;
-    -o-transition-delay: 0.2s;
-    transition-delay: 0.2s;
-  }
-
-  #mobile-menu-btn.is-active .line:nth-child(2) {
-    opacity: 0;
-  }
-
-  #mobile-menu-btn.is-active .line:nth-child(1) {
-    -webkit-transform: translateY(5px) rotate(45deg);
-    -ms-transform: translateY(5px) rotate(45deg);
-    -o-transform: translateY(5px) rotate(45deg);
-    transform: translateY(5px) rotate(45deg);
-  }
-
-  #mobile-menu-btn.is-active .line:nth-child(3) {
-    -webkit-transform: translateY(-5px) rotate(-45deg);
-    -ms-transform: translateY(-5px) rotate(-45deg);
-    -o-transform: translateY(-5px) rotate(-45deg);
-    transform: translateY(-5px) rotate(-45deg);
-  }
-
-  @keyframes smallbig {
-    0%,
-    100% {
-      -webkit-transform: scale(1);
-      -ms-transform: scale(1);
-      -o-transform: scale(1);
-      transform: scale(1);
-    }
-    50% {
-      -webkit-transform: scale(0);
-      -ms-transform: scale(0);
-      -o-transform: scale(0);
-      transform: scale(0);
-    }
-  }
-
-  /* Mobile menu overlay */
-  .mobile-menu-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-color: rgba(0, 0, 0, 0.5);
-    z-index: 30;
-    opacity: 0;
-    visibility: hidden;
-    transition:
-      opacity 0.3s ease,
-      visibility 0.3s ease;
-  }
-
-  .mobile-menu-overlay.active {
-    opacity: 1;
-    visibility: visible;
-  }
-</style>
-
-<script>
-  document.addEventListener("DOMContentLoaded", function () {
-    // Initialize Flowbite components
-    if (typeof window !== "undefined" && (window as any).initFlowbite) {
-      (window as any).initFlowbite();
-    }
-  });
-</script>
+<UserCenter
+  isAuth={isAuth}
+  currentUser={currentUser}
+  currentRole={currentRole || ""}
+  session={session}
+/>

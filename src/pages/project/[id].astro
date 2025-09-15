@@ -3,9 +3,9 @@ import App from "../../components/common/App.astro";
 import SectionContainer from "../../components/common/SectionContainer.astro";
 import HeroProject from "../../components/common/HeroProject.astro";
 import BoxIcon from "../../components/common/BoxIcon.astro";
-import Button from "../../components/common/Button.astro";
+import SlidingPillNav from "../../components/common/SlidingPillNav.astro";
 import TabDocuments from "../../components/project/TabDocuments.astro";
-import Discussions from "../../components/project/Discussions.astro";
+import TabDiscussions from "../../components/project/TabDiscussions.astro";
 import TabProjectForm from "../../components/project/TabProjectForm.astro";
 import TabProposal from "../../components/project/TabProposal.astro";
 import TabContract from "../../components/project/TabContract.astro";
@@ -301,139 +301,86 @@ if (!project) {
   />
   <SectionContainer>
     <!-- Tab Navigation -->
-    <nav
-      id="project-tab-nav"
-      class="scrollbar-hide relative my-4 flex gap-1 overflow-x-auto whitespace-nowrap dark:border-gray-700"
-      aria-label="Tabs"
-    >
-      <Button
-        id="tab-project-form"
-        variant="ghost"
-        size="sm"
-        class="tab-button relative mt-2 w-auto text-muted hover:text-primary dark:text-muted dark:hover:text-primary-dark"
-        onclick="switchTab('project-form')"
-        icon="edit"
-        iconPosition="left"
-      >
-        Project Form
-      </Button>
-      <div class="relative">
-        <Button
-          id="tab-discussion"
-          variant="ghost"
-          size="sm"
-          class="tab-button relative mt-2 w-auto text-muted hover:text-primary dark:text-muted dark:hover:text-primary-dark"
-          onclick="switchTab('discussion')"
-          dataAttributes={{ count: "0" }}
-          icon="message-rounded-dots"
-          iconPosition="left"
-        >
-          Discussion
-        </Button>
-        <span
-          class="incomplete-comments-count absolute -right-2 -top-2 h-5 w-5 items-center justify-center rounded-full border border-primary-500 bg-white text-xs font-medium text-primary-500 dark:bg-background-dark dark:border-primary-400 dark:text-primary-400 hidden"
-        >
-          0
-        </span>
-      </div>
-      <!-- {
-        currentRole === "Admin" || currentRole === "Staff" ? (
-          <button
-            id="tab-comments"
-            class="tab-button relative mt-2 w-auto rounded-full px-4 py-2 text-sm font-medium text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
-            onclick="switchTab('comments')"
-          >
-            <BoxIcon name="file" class="mr-2 inline h-4 w-4" />
-            Comments
-          </button>
-        ) : (
-          ""
-        )
-      } -->
-      <Button
-        id="tab-documents"
-        variant="ghost"
-        size="sm"
-        class="tab-button relative mt-2 w-auto text-muted hover:text-primary dark:text-muted dark:hover:text-primary-dark"
-        onclick="switchTab('documents')"
-        icon="file"
-        iconPosition="left"
-      >
-        Documents
-      </Button>
-      <Button
-        id="tab-proposal"
-        variant="ghost"
-        size="sm"
-        class="tab-button relative mt-2 w-auto text-muted hover:text-primary dark:text-muted dark:hover:text-primary-dark"
-        onclick="switchTab('proposal')"
-        icon="grid"
-        iconPosition="left"
-      >
-        Proposal
-      </Button>
-      <Button
-        id="tab-contract"
-        variant="ghost"
-        size="sm"
-        class="tab-button relative mt-2 w-auto text-muted hover:text-primary dark:text-muted dark:hover:text-primary-dark"
-        onclick="switchTab('contract')"
-        icon="pencil"
-        iconPosition="left"
-      >
-        Contract
-      </Button>
-      <Button
-        id="tab-deposit"
-        variant="ghost"
-        size="sm"
-        class="tab-button relative mt-2 w-auto text-muted hover:text-primary dark:text-muted dark:hover:text-primary-dark"
-        onclick="switchTab('deposit')"
-        icon="credit-card"
-        iconPosition="left"
-      >
-        Deposit
-      </Button>
-      <Button
-        id="tab-deliverables"
-        variant="ghost"
-        size="sm"
-        class="tab-button relative mt-2 w-auto text-muted hover:text-primary dark:text-muted dark:hover:text-primary-dark"
-        onclick="switchTab('deliverables')"
-        icon="package"
-        iconPosition="left"
-      >
-        Deliverables
-      </Button>
-      <Button
-        id="tab-final-invoice"
-        variant="ghost"
-        size="sm"
-        class="tab-button relative mt-2 w-auto text-muted hover:text-primary dark:text-muted dark:hover:text-primary-dark"
-        onclick="switchTab('final-invoice')"
-        icon="receipt"
-        iconPosition="left"
-      >
-        Final Invoice
-      </Button>
-      {
-        currentRole === "Admin" || currentRole === "Staff" ? (
-          <Button
-            id="tab-activity-log"
-            variant="ghost"
-            size="sm"
-            class="tab-button relative mt-2 w-auto text-muted hover:text-primary dark:text-muted dark:hover:text-primary-dark"
-            onclick="switchTab('activity-log')"
-            icon="history"
-            iconPosition="left"
-          >
-            Activity Log
-          </Button>
-        ) : (
-          ""
-        )
-      }
-    </nav>
+    <SlidingPillNav
+      navId="project-tab-nav"
+      navClass="my-4 dark:border-gray-700"
+      items={[
+        {
+          id: "tab-project-form",
+          label: "Project Form",
+          icon: "edit",
+          variant: "ghost",
+          onClick: "switchTab('project-form')",
+          class: "tab-button",
+        },
+        {
+          id: "tab-discussion",
+          label: "Discussion",
+          icon: "message-rounded-dots",
+          variant: "ghost",
+          onClick: "switchTab('discussion')",
+          class: "tab-button",
+          dataAttributes: { "data-count": "0" },
+        },
+        {
+          id: "tab-documents",
+          label: "Documents",
+          icon: "file",
+          variant: "ghost",
+          onClick: "switchTab('documents')",
+          class: "tab-button",
+        },
+        {
+          id: "tab-proposal",
+          label: "Proposal",
+          icon: "grid",
+          variant: "ghost",
+          onClick: "switchTab('proposal')",
+          class: "tab-button",
+        },
+        {
+          id: "tab-contract",
+          label: "Contract",
+          icon: "pencil",
+          variant: "ghost",
+          onClick: "switchTab('contract')",
+          class: "tab-button",
+        },
+        {
+          id: "tab-deposit",
+          label: "Deposit",
+          icon: "credit-card",
+          variant: "ghost",
+          onClick: "switchTab('deposit')",
+          class: "tab-button",
+        },
+        {
+          id: "tab-deliverables",
+          label: "Deliverables",
+          icon: "package",
+          variant: "ghost",
+          onClick: "switchTab('deliverables')",
+          class: "tab-button",
+        },
+        {
+          id: "tab-final-invoice",
+          label: "Final Invoice",
+          icon: "receipt",
+          variant: "ghost",
+          onClick: "switchTab('final-invoice')",
+          class: "tab-button",
+        },
+        {
+          id: "tab-activity-log",
+          label: "Activity Log",
+          icon: "history",
+          variant: "ghost",
+          onClick: "switchTab('activity-log')",
+          class: "tab-button",
+          show: currentRole === "Admin" || currentRole === "Staff",
+        },
+      ]}
+    />
 
     <!-- Tab Content -->
     <div class="grid grid-cols-1 gap-6 lg:grid-cols-1">
@@ -449,7 +396,7 @@ if (!project) {
 
       <!-- Discussion Tab -->
 
-      <Discussions
+      <TabDiscussions
         project={project}
         currentRole={currentRole || undefined}
         projectId={projectId}
