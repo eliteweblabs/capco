@@ -1,6 +1,6 @@
 ---
-import SlidingPillNav from "../common/SlidingPillNav.astro";
 import type { NavItem } from "../common/SlidingPillNav.astro";
+import SlidingPillNav from "../common/SlidingPillNav.astro";
 
 interface Project {
   status: number;
@@ -55,6 +55,7 @@ const navItems: NavItem[] = [
     id: "all-statuses",
     label: "All Projects",
     variant: "anchor",
+    count: projects.length,
     dataAttributes: {
       "data-label": "All Projects",
       "data-count": projects.length.toString(),
@@ -90,10 +91,11 @@ if (project_statuses.length > 0) {
         id: `status-${slug}`,
         label: status.client_status_name,
         variant: "anchor",
+        count: statusCounts[status.client_status_name] || 0,
         dataAttributes: {
-          "data-project-status-label": status.status_name,
+          "data-project-status-label": status.client_status_name,
           "data-project-status-filter": slug,
-          "data-count": (statusCounts[status.status_name] || 0).toString(),
+          "data-count": (statusCounts[status.client_status_name] || 0).toString(),
         },
       });
     });
@@ -104,6 +106,7 @@ if (project_statuses.length > 0) {
         id: `status-${status.status_code}`,
         label: status.admin_status_name,
         variant: "anchor",
+        count: statusCounts[status.status_code] || 0,
         dataAttributes: {
           "data-label": status.admin_status_name,
           "data-project-status-filter": status.status_code.toString(),
@@ -117,104 +120,6 @@ if (project_statuses.length > 0) {
 
 <SlidingPillNav
   navId="project-nav"
-  navClass="text-muted dark:border-border-dark"
+  navClass="text-hub-inactive dark:border-hub-border-dark"
   items={navItems}
 />
-
-<script>
-  document.addEventListener("DOMContentLoaded", function () {
-    const subNav = document.getElementById("project-nav");
-    const projectList = document.getElementById("project-list");
-
-    if (!subNav || !projectList) return;
-
-    const projectItems = projectList.querySelectorAll("[data-project-status]");
-    const filterButtons = subNav.querySelectorAll("[data-project-status-filter]");
-    const allStatusesButton = subNav.querySelector("#all-statuses");
-
-    // Simple filtering based on data attributes - project cards handle their own visibility
-    function filterProjects(statusFilter: string) {
-      const shouldShow = (projectStatusSlug: string) => {
-        if (statusFilter === "all") {
-          return true;
-        }
-        return projectStatusSlug === statusFilter;
-      };
-
-      let visibleCount = 0;
-      projectItems.forEach((item) => {
-        const projectStatusSlug = item.getAttribute("data-project-status");
-        const shouldShowItem = shouldShow(projectStatusSlug || "");
-
-        if (shouldShowItem && !item.classList.contains("hidden")) {
-          (item as any).style.display = "block";
-          (item as any).style.opacity = "1";
-          visibleCount++;
-        } else {
-          (item as any).style.display = "none";
-          (item as any).style.opacity = "0";
-        }
-      });
-
-      // Show/hide no projects message
-      const noProjectsMessage = document.getElementById("no-projects-message");
-      const noProjectsText = document.getElementById("no-projects-text");
-      if (noProjectsMessage && noProjectsText) {
-        if (visibleCount === 0) {
-          const statusName = document
-            .querySelector(`[data-project-status-filter="${statusFilter}"]`)
-            ?.getAttribute("data-project-status-label");
-          noProjectsText.textContent = `No projects currently at ${statusName}.`;
-          noProjectsMessage.classList.remove("hidden");
-        } else {
-          noProjectsMessage.classList.add("hidden");
-        }
-      }
-    }
-
-    // Update URL
-    function updateURL(statusFilter: string) {
-      const url = new URL(window.location.href);
-      if (statusFilter === "all") {
-        url.searchParams.delete("status");
-      } else {
-        url.searchParams.set("status", statusFilter);
-      }
-      window.history.pushState({}, "", url.toString());
-    }
-
-    // Button click handlers
-    filterButtons.forEach((button: Element) => {
-      button.addEventListener("click", function (this: HTMLElement) {
-        const filterValue = this.getAttribute("data-project-status-filter");
-        if (filterValue) {
-          filterProjects(filterValue);
-          updateURL(filterValue);
-        }
-      });
-    });
-
-    if (allStatusesButton) {
-      allStatusesButton.addEventListener("click", function () {
-        filterProjects("all");
-        updateURL("all");
-      });
-    }
-
-    // Initial filter from URL
-    const urlParams = new URLSearchParams(window.location.search);
-    const statusParam = urlParams.get("status");
-    if (statusParam) {
-      const targetButton = subNav.querySelector(`[data-project-status-filter="${statusParam}"]`);
-      if (targetButton) {
-        filterProjects(statusParam);
-        return;
-      }
-    }
-
-    // Default to all
-    if (allStatusesButton) {
-      filterProjects("all");
-    }
-  });
-</script>

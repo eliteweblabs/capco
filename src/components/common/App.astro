@@ -44,6 +44,186 @@ import { getLangFromUrl } from "../../i18n/utils";
 
 const lang = getLangFromUrl(Astro.url);
 
+import { isBackendPage } from "../../pages/api/backend-page-check";
+
+interface Props {
+  isAuth: boolean;
+  currentUser: any;
+  currentRole: string | null;
+  session: any;
+}
+
+// Header component
+
+// Get current URL and determine page type
+const currentUrl = Astro.url.pathname;
+const isBackend = isBackendPage(currentUrl);
+
+// Navigation schema
+type UserRole = "any" | "Client" | "Admin" | "Staff";
+type NavType = "frontend" | "backend";
+
+interface NavItem {
+  label: string;
+  href: string;
+  roles: UserRole[];
+  pageType: NavType;
+  isPrimary: boolean;
+  isDrawer?: boolean; // Special flag for drawer trigger
+  mobileOnly?: boolean; // Show only on mobile
+  desktopOnly?: boolean; // Show only on desktop
+  buttonStyle?: "primary" | "secondary" | "ghost" | "outline"; // Button variant
+  isDropdown?: boolean; // Is a dropdown menu
+  dropdownItems?: DropdownItem[]; // Items for dropdown
+  showWhenAuth?: boolean; // Show only when authenticated
+  hideWhenAuth?: boolean; // Hide when authenticated
+}
+
+interface DropdownItem {
+  label: string;
+  href: string;
+}
+
+interface DropdownMenu {
+  label: string;
+  items: DropdownItem[];
+}
+
+// Navigation items
+const navItems: NavItem[] = [
+  // Frontend navigation (hidden on backend pages to reduce clutter)
+  {
+    label: "Why CAPCo",
+    href: "#",
+    roles: ["any"],
+    pageType: "frontend",
+    isPrimary: false,
+    isDropdown: true,
+    dropdownItems: [
+      { label: "Unified Fire Protection Platform", href: "/solutions" },
+      { label: "CAPCo vs Competitors", href: "/solutions" },
+      { label: "Move to CAPCo", href: "/solutions" },
+      { label: "See Our Customers", href: "/customers" },
+    ],
+  },
+  {
+    label: "Pricing",
+    href: "/pricing",
+    roles: ["any"],
+    pageType: "frontend",
+    isPrimary: currentUrl.startsWith("/pricing"),
+    desktopOnly: true,
+  },
+  {
+    label: "Book Demo",
+    href: "/demo",
+    roles: ["any"],
+    pageType: "frontend",
+    isPrimary: currentUrl.startsWith("/demo"),
+    buttonStyle: "primary",
+    desktopOnly: true,
+  },
+  // {
+  //   label: "Log In",
+  //   href: "/login",
+  //   roles: ["any"],
+  //   pageType: "frontend",
+  //   isPrimary: currentUrl.startsWith("/login"),
+  //   // buttonStyle: "ghost",
+  //   desktopOnly: true,
+  //   hideWhenAuth: true, // Hide login button when user is authenticated
+  // },
+
+  // Backend navigation (shown on backend pages)
+  {
+    label: "New Project",
+    href: "/dashboard#new-project",
+    roles: ["Client", "Admin", "Staff"],
+    pageType: "backend",
+    isPrimary: currentUrl.startsWith("/dashboard#new-project"),
+  },
+  {
+    label: "Projects",
+    href: "#",
+    roles: ["Client", "Admin", "Staff"],
+    pageType: "backend",
+    isPrimary: false,
+    isDrawer: true, // Special flag for drawer trigger
+  },
+  {
+    label: "Discussions",
+    href: "/discussions",
+    roles: ["Admin", "Staff"],
+    pageType: "backend",
+    isPrimary: currentUrl.startsWith("/discussions"),
+  },
+  {
+    label: "Global Activity",
+    href: "/admin/global-activity",
+    roles: ["Admin"],
+    pageType: "backend",
+    isPrimary: currentUrl.startsWith("/admin/global-activity"),
+  },
+  {
+    label: "Users",
+    href: "/users",
+    roles: ["Admin"],
+    pageType: "backend",
+    isPrimary: currentUrl.startsWith("/users"),
+  },
+];
+
+// Dropdown menus are now integrated into navItems array above
+
+// Filter navigation items based on auth state, role, and page type
+function getVisibleNavItems(
+  navItems: NavItem[],
+  isAuth: boolean,
+  currentRole: string | null,
+  isBackend: boolean
+): NavItem[] {
+  return navItems.filter((item) => {
+    // Check auth-specific visibility
+    if (item.hideWhenAuth && isAuth) return false;
+    if (item.showWhenAuth && !isAuth) return false;
+
+    // Show frontend items when not on backend pages
+    if (item.pageType === "frontend" && !isBackend) {
+      return (
+        item.roles.includes("any") ||
+        (isAuth && currentRole && item.roles.includes(currentRole as UserRole))
+      );
+    }
+
+    // Show backend items when on backend pages and authenticated
+    if (item.pageType === "backend" && isBackend && isAuth) {
+      return (
+        item.roles.includes("any") || (currentRole && item.roles.includes(currentRole as UserRole))
+      );
+    }
+
+    return false;
+  });
+}
+
+const visibleNavItems = getVisibleNavItems(navItems, isAuth, currentRole, isBackend);
+
+let assignedProjects = [];
+let assignedProjectsCount = 0;
+
+if (currentUser?.id) {
+  try {
+    const response = await fetch(`/api/get-project?assigned_to_id=${currentUser.id}`);
+    if (response.ok) {
+      const data = await response.json();
+      assignedProjects = data.projects || [];
+      assignedProjectsCount = data.count || 0;
+    }
+  } catch (error) {
+    console.error("Error fetching assigned projects:", error);
+  }
+}
+
 // console.log("🏗️ [APP] App component loading...", user);
 ---
 
@@ -184,6 +364,9 @@ const lang = getLangFromUrl(Astro.url);
         currentUser={currentUser}
         currentRole={currentRole || ""}
         session={session}
+        visibleNavItems={visibleNavItems}
+        assignedProjects={assignedProjects}
+        assignedProjectsCount={assignedProjectsCount}
       />
       <slot />
       <!-- Footer -->
@@ -192,6 +375,9 @@ const lang = getLangFromUrl(Astro.url);
         session={session}
         currentUser={currentUser}
         currentRole={currentRole || ""}
+        assignedProjects={assignedProjects}
+        assignedProjectsCount={assignedProjectsCount}
+        visibleNavItems={visibleNavItems}
       />
     </main>
 
