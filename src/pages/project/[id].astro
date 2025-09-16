@@ -13,6 +13,7 @@ import TabDeposit from "../../components/project/TabDeposit.astro";
 import TabFinalInvoice from "../../components/project/TabFinalInvoice.astro";
 import TabActivityLog from "../../components/project/TabActivityLog.astro";
 import TabFinalDocuments from "../../components/project/TabFinalDocuments.astro";
+import TabGeneratePdf from "../../components/project/TabGeneratePdf.astro";
 import { getI18N } from "@/i18n";
 import { supabase } from "../../lib/supabase";
 import { supabaseAdmin } from "../../lib/supabase-admin";
@@ -45,6 +46,7 @@ const validTabs = [
   "deliverables",
   "final-invoice",
   "activity-log",
+  "generate-pdf",
 ];
 const defaultTab = validTabs.includes(statusParam || "") ? statusParam : "project-form";
 
@@ -59,6 +61,7 @@ const tabOrder = [
   "deliverables",
   "final-invoice",
   "activity-log",
+  "generate-pdf",
 ];
 const activeTabIndex =
   tabOrder.indexOf(defaultTab || "project-form") >= 0
@@ -298,7 +301,7 @@ if (!project) {
   requireAuth={true}
   isAuth={!!currentUser}
   currentUser={currentUser}
-  currentRole={currentRole}
+  currentRole={currentRole || "Client"}
   session={null}
 >
   <!-- Add Supabase URL meta tag for image loading -->
@@ -395,6 +398,13 @@ if (!project) {
           variant: "anchor",
           onclick: "switchTab('activity-log')",
         },
+        {
+          id: "status-generate-pdf",
+          label: "Generate PDF",
+          icon: "history",
+          variant: "anchor",
+          onclick: "switchTab('generate-pdf')",
+        },
       ]}
     />
 
@@ -489,6 +499,8 @@ if (!project) {
       />
 
       <TabActivityLog currentRole={currentRole || undefined} projectId={projectId} />
+
+      <TabGeneratePdf projectId={projectId} currentRole={currentRole || undefined} />
     </div>
   </SectionContainer>
 </App>

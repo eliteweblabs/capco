@@ -2,6 +2,8 @@
 
 This app is designed to facilitate the process of submitting (by clients) and reviewing (by admins) PDFs for fire protection systems.
 
+ALWAYS RUN ON PORT 4321
+
 - **Admins & Clients** can upload and submit PDF documents related to fire protection systems.
 - **Admins** can review, manage, and approve/reject these submissions.
 - **Client** can download final submissions
@@ -378,6 +380,17 @@ Placeholders
 {{BUTTON_TEXT}}
 {{CONTRACT_URL}}
 {{BASE_URL}}
+
+Brand/Design Color Placeholders
+{{PRIMARY_COLOR}} - Primary brand color hex code (#825bdd)
+{{PRIMARY_COLOR_RGB}} - Primary color in RGB format (130, 91, 221)
+{{SECONDARY_COLOR}} - Secondary brand color hex code (#0ea5e9)
+{{SUCCESS_COLOR}} - Success color hex code (#22c55e)
+{{WARNING_COLOR}} - Warning color hex code (#f59e0b)
+{{DANGER_COLOR}} - Danger color hex code (#ef4444)
+
+Brand/Design Asset Placeholders
+{{SVG_LOGO}} - Company SVG logo (responsive, dark mode compatible)
 
 projectStatusInt = ALWAYS THE NUMERICAL VALUE
 projectStatusLabel = THE status_name column corresponding to projectStatus
