@@ -5,12 +5,20 @@ interface Props {
   requireAuth?: boolean;
   requireRole?: string;
   redirectTo?: string;
+  isAuth?: boolean;
+  currentUser?: any;
+  currentRole?: string;
+  session?: any;
 }
 
-import { checkAuth } from "../../lib/auth";
+const { isAuth, currentUser, currentRole, session } = Astro.props;
+// import { checkAuth } from "../../lib/auth";
 
-const { isAuth, session, currentUser, currentRole } = await checkAuth(Astro.cookies);
+// const { isAuth, session, currentUser, currentRole } = await checkAuth(Astro.cookies);
 
+console.log("🏗️ [APP] Current user:", currentUser);
+console.log("🏗️ [APP] Astro.url:", Astro.url);
+console.log("🏗️ [APP] Astro.url.origin:", Astro.url.origin);
 // Handle auth requirements
 const { requireAuth = false, requireRole, redirectTo = "/login" } = Astro.props;
 if (requireAuth && !isAuth) {
@@ -31,6 +39,7 @@ const title = Astro.props.title || i18n.SEO_TITLE;
 const description = Astro.props.description || i18n.SEO_DESCRIPTION;
 
 // Import components
+import Button from "./Button.astro";
 import Preloader from "./Preloader.astro";
 import Header from "./Header.astro";
 import Footer from "./Footer.astro";
@@ -46,7 +55,7 @@ const lang = getLangFromUrl(Astro.url);
 
 import { isBackendPage } from "../../pages/api/backend-page-check";
 
-interface Props {
+interface HeaderProps {
   isAuth: boolean;
   currentUser: any;
   currentRole: string | null;
@@ -206,13 +215,18 @@ function getVisibleNavItems(
   });
 }
 
-const visibleNavItems = getVisibleNavItems(navItems, isAuth, currentRole, isBackend);
+const visibleNavItems = getVisibleNavItems(
+  navItems,
+  isAuth || false,
+  currentRole || null,
+  isBackend
+);
 
 // Generate navigation HTML for reuse
-function generateNavigationHTML(
+async function generateNavigationHTML(
   navItems: NavItem[],
   filterType: "desktop" | "mobile" = "desktop"
-): string {
+): Promise<string> {
   const filteredItems = navItems.filter((item: any) => {
     if (filterType === "desktop") {
       return !item.mobileOnly; // Show only desktop items
@@ -221,8 +235,8 @@ function generateNavigationHTML(
     }
   });
 
-  return filteredItems
-    .map((item: any) => {
+  const results = await Promise.all(
+    filteredItems.map(async (item: any) => {
       // Handle dropdown items
       if (item.isDropdown && item.dropdownItems) {
         return `
@@ -257,30 +271,11 @@ function generateNavigationHTML(
       }
 
       // Handle button style items
-      if (item.buttonStyle) {
-        const buttonClasses = {
-          primary:
-            "bg-blue-600 text-white hover:bg-blue-700 focus:ring-blue-500 shadow-sm hover:shadow-md disabled:bg-gray-300 disabled:text-gray-500",
-          secondary:
-            "bg-gray-200 text-gray-900 hover:bg-gray-300 focus:ring-gray-500 dark:bg-gray-700 dark:text-white dark:hover:bg-gray-600",
-          ghost:
-            "text-blue-600 hover:bg-blue-50 focus:ring-blue-500 dark:text-blue-400 dark:hover:bg-blue-900/20",
-          outline:
-            "border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600",
-        };
+      if (item.buttonStyle && item.href && item.label) {
+        // Since we can't use fetch() during SSR, create the button HTML manually
+        // This matches the Button component's output structure
 
-        return `
-        <a
-          href="${item.href}"
-          class="inline-flex items-center justify-center font-medium rounded-full transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed px-3 py-2 text-sm ${buttonClasses[item.buttonStyle as keyof typeof buttonClasses]} ${
-            item.buttonStyle === "ghost"
-              ? "text-primary dark:text-primary-dark hover:text-primary-dark"
-              : ""
-          }"
-        >
-          ${item.label}
-        </a>
-      `;
+        return `<a href="${item.href}" class="relative inline-flex items-center justify-center font-medium rounded-full transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed px-5 py-2.5 text-sm bg-primary-500 text-white hover:bg-primary-600 dark:bg-primary-500 dark:hover:bg-primary-600 shadow-lg hover:shadow-xl w-full">${item.label}</a>`;
       }
 
       // Handle regular links
@@ -297,19 +292,25 @@ function generateNavigationHTML(
       </a>
     `;
     })
-    .join("");
+  );
+
+  return results.join("");
 }
 
 // Generate navigation HTML for desktop and mobile
-const desktopNavigationHTML = generateNavigationHTML(visibleNavItems, "desktop");
-const mobileNavigationHTML = generateNavigationHTML(visibleNavItems, "mobile");
+const desktopNavigationHTML = await generateNavigationHTML(visibleNavItems, "desktop");
+const mobileNavigationHTML = await generateNavigationHTML(visibleNavItems, "mobile");
 
 let assignedProjects = [];
 let assignedProjectsCount = 0;
 
 if (currentUser?.id) {
+  console.log("🏗️ [APP] Fetching assigned projects for user:", currentUser.id);
+  const baseUrl = Astro.url.origin || "http://localhost:4321";
+  const fullUrl = `${baseUrl}/api/get-project?assigned_to_id=${currentUser.id}`;
+  console.log("🏗️ [APP] Full URL:", fullUrl);
   try {
-    const response = await fetch(`/api/get-project?assigned_to_id=${currentUser.id}`);
+    const response = await fetch(fullUrl);
     if (response.ok) {
       const data = await response.json();
       assignedProjects = data.projects || [];

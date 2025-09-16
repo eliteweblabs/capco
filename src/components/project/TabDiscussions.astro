@@ -202,7 +202,7 @@ const placeholder =
             }
           }
 
-          function renderDiscussions() {
+          async function renderDiscussions() {
             const commentsList = document.getElementById("comments-list");
             if (!commentsList) return;
 
@@ -240,7 +240,8 @@ const placeholder =
 
             let html = "";
 
-            topLevelComments.forEach((comment) => {
+            // Process comments asynchronously
+            for (const comment of topLevelComments) {
               // Check if user can see this comment
               const canSeeComment =
                 !comment.internal ||
@@ -250,24 +251,24 @@ const placeholder =
 
               if (!canSeeComment) {
                 console.log("🔍 [DEBUG] Hiding internal comment from user:", comment.id);
-                return;
+                continue;
               }
 
-              html += renderComment(comment, 0);
+              html += await renderComment(comment, 0);
 
               // Find and render replies for this comment
               const commentReplies = replies.filter((reply) => reply.parent_id === comment.id);
-              commentReplies.forEach((reply) => {
+              for (const reply of commentReplies) {
                 const canSeeReply =
                   !reply.internal ||
                   currentUserRole === "Admin" ||
                   currentUserRole === "Staff" ||
                   reply.author_id === currentUserId;
                 if (canSeeReply) {
-                  html += renderComment(reply, 1);
+                  html += await renderComment(reply, 1);
                 }
-              });
-            });
+              }
+            }
 
             commentsList.innerHTML = html;
 
@@ -296,98 +297,30 @@ const placeholder =
           // Make highlightMentions available globally for other components
           window.highlightMentions = highlightMentions;
 
-          function renderComment(comment, depth = 0) {
-            const isInternal = comment.internal;
-            const isAuthor = comment.author_id === currentUserId;
-            const canToggleCompleted =
-              currentUserRole === "Admin" || currentUserRole === "Staff" || isAuthor;
-            const canReply =
-              currentUserRole === "Admin" ||
-              currentUserRole === "Staff" ||
-              currentUserRole === "Client";
+          async function renderComment(comment, depth = 0) {
+            try {
+              const headers = new Headers({
+                "x-comment-data": JSON.stringify(comment),
+                "x-current-user-role": currentUserRole,
+                "x-current-user-id": currentUserId,
+                "x-supabase-url": supabaseUrl,
+                "x-comment-depth": depth.toString(),
+              });
 
-            const marginLeft = depth > 0 ? `ml-${Math.min(depth * 8, 32)}` : "";
-            const borderLeft =
-              depth > 0 ? "border-l-2 border-gray-200 dark:border-gray-600 pl-4" : "";
+              const response = await fetch("/partials/comment", {
+                headers: headers,
+              });
 
-            return `
-      <div class="comment-item ${marginLeft} ${borderLeft}" data-discussion-id="${comment.id}">
-        <div class="rounded-lg border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-800">
-          <div class="flex items-start justify-between">
-            <div class="flex items-center space-x-3">
-              <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-gray-200 dark:bg-gray-600">
-                <span class="text-sm font-medium text-gray-700 dark:text-gray-300">
-                  ${comment.company_name ? comment.company_name.charAt(0).toUpperCase() : "U"}
-                </span>
-              </div>
-              <div>
-                <p class="text-sm font-medium text-gray-900 dark:text-white">
-                  ${comment.company_name || "Unknown User"}
-                  ${isInternal ? '<span class="ml-2 inline-flex items-center rounded-lg bg-red-100 px-2 py-1 text-xs font-medium text-red-800 dark:bg-red-900 dark:text-red-200"><i class="bx bx-lock mr-1"></i>Internal</span>' : ""}
-                </p>
-                <p class="text-xs text-gray-500 dark:text-gray-400">
-                  ${new Date(comment.created_at).toLocaleString()}
-                </p>
-              </div>
-            </div>
-            
-            ${
-              canToggleCompleted
-                ? `<div class="flex items-center space-x-2" id="toggle-container-${comment.id}">
-                     <!-- Toggle will be loaded here -->
-                   </div>`
-                : ""
+              if (response.ok) {
+                return await response.text();
+              } else {
+                console.error("Failed to load comment partial:", response.status);
+                return `<div class="text-red-500">Failed to load comment</div>`;
+              }
+            } catch (error) {
+              console.error("Error loading comment partial:", error);
+              return `<div class="text-red-500">Error loading comment</div>`;
             }
-          </div>
-          
-          <div class="mt-3">
-            <p class="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">${highlightMentions(comment.message)}</p>
-            
-            ${
-              comment.image_paths && comment.image_paths.length > 0
-                ? `
-              <div class="mt-3 flex flex-wrap gap-2">
-                ${comment.image_paths
-                  .map(
-                    (imagePath) => `
-                  <div class="relative group">
-                    <img 
-                      src="${getImageUrl(imagePath)}" 
-                      alt="Discussion image"
-                      class="max-w-xs max-h-48 object-cover rounded-lg border border-gray-300 dark:border-gray-600 cursor-pointer hover:opacity-90 transition-opacity"
-                      onclick="console.log('🖼️ [DISCUSSION] Image clicked:', '${getImageUrl(imagePath)}'); openImageModal('${getImageUrl(imagePath)}')"
-                    />
-                    <div class="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-10 transition-all rounded-lg flex items-center justify-center">
-                      <i class="bx bx-zoom-in text-white opacity-0 group-hover:opacity-100 transition-opacity text-2xl"></i>
-                    </div>
-                  </div>
-                `
-                  )
-                  .join("")}
-              </div>
-            `
-                : ""
-            }
-          </div>
-          
-          ${
-            canReply
-              ? `
-            <div class="mt-3 flex items-center justify-between">
-              <button
-                class="reply-button text-sm text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-200"
-                data-discussion-id="${comment.id}"
-              >
-                <i class="bx bx-reply mr-1"></i>
-                Reply
-              </button>
-            </div>
-          `
-              : ""
-          }
-        </div>
-      </div>
-    `;
           }
 
           // Load toggle using SlideToggle partial
@@ -405,7 +338,7 @@ const placeholder =
                 "x-toggle-data-discussion-id": commentId.toString(),
               });
 
-              const response = await fetch("/components/common/SlideToggle.astro", {
+              const response = await fetch("/partials/slide-toggle", {
                 headers: headers,
               });
 
@@ -1132,7 +1065,7 @@ const placeholder =
             const commentTextarea = document.getElementById("comment-message");
 
             if (newCommentBtn) {
-              // Remove all existing event listeners by cloning the node
+              // Remove existing event listeners by cloning the node
               const newBtn = newCommentBtn.cloneNode(true);
               newCommentBtn.parentNode?.replaceChild(newBtn, newCommentBtn);
 

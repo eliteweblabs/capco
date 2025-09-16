@@ -42,19 +42,11 @@ export const GET: APIRoute = async ({ url }) => {
     const googleApiUrl = new URL("https://places.googleapis.com/v1/places:autocomplete");
 
     // Prepare request body for new API
-    // Map old types to new API types
-    const typeMapping: Record<string, string> = {
-      address: "establishment",
-      establishment: "establishment",
-      geocode: "establishment",
-    };
-
-    const mappedType = typeMapping[types] || "establishment";
-
-    const requestBody = {
+    // For addresses, don't restrict primary types - let Google return all relevant results
+    const requestBody: any = {
       input: input,
-      includedPrimaryTypes: [mappedType],
       includedRegionCodes: ["us"], // equivalent to components=country:us
+      // Don't restrict includedPrimaryTypes for addresses to get better results
     };
 
     // Add location bias if provided
@@ -100,6 +92,7 @@ export const GET: APIRoute = async ({ url }) => {
     console.log("🔍 [PLACES-PROXY] Google Places API response:", {
       status: data.error ? "ERROR" : "OK",
       suggestions: data.suggestions?.length || 0,
+      fullResponse: data, // Log the full response to see what we're getting
     });
 
     // Convert new API response to legacy format for compatibility

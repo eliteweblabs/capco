@@ -47,12 +47,30 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
     console.log("5. Auth successful, parsing request body...");
     let body;
-    let first_name, last_name, company_name, email, phone, staffRole;
+    let first_name,
+      last_name,
+      company_name,
+      email,
+      phone,
+      staffRole,
+      mobile_carrier,
+      sms_alerts,
+      password;
 
     try {
       body = await request.json();
       // console.log("6. Request body:", body);
-      ({ first_name, last_name, company_name, email, phone, role: staffRole } = body);
+      ({
+        first_name,
+        last_name,
+        company_name,
+        email,
+        phone,
+        role: staffRole,
+        mobile_carrier,
+        sms_alerts,
+        password,
+      } = body);
       // console.log("7. Extracted data:", {
       //   first_name,
       //   last_name,
@@ -144,8 +162,8 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       );
     }
 
-    // Generate a temporary password
-    const tempPassword = generateTempPassword();
+    // Use provided password or generate a temporary one
+    const tempPassword = password?.trim() || generateTempPassword();
 
     // Create user in Supabase Auth (requires service role key)
     const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
@@ -154,10 +172,16 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       email_confirm: false, // Auto-confirm email
       user_metadata: {
         full_name: company_name?.trim() || `${first_name.trim()} ${last_name.trim()}`,
+        first_name: first_name.trim(),
+        last_name: last_name.trim(),
+        company_name: company_name?.trim() || null,
+        phone: phone?.trim() || null,
+        mobile_carrier: mobile_carrier?.trim() || null,
+        sms_alerts: sms_alerts || false,
         role: staffRole,
+        email: email.trim().toLowerCase(),
         created_by_admin: true,
         must_change_password: true,
-        email: email.trim().toLowerCase(),
       },
     });
 
@@ -203,8 +227,10 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       );
     }
 
-    // Update profile in profiles table (trigger creates it automatically)
-    // Use ON CONFLICT to handle cases where trigger already created the profile
+    // Wait a moment for the trigger to complete, then upsert the profile
+    // The SQL trigger creates a basic profile, we upsert to handle race conditions
+    await new Promise((resolve) => setTimeout(resolve, 100));
+
     const profileData = {
       id: authData.user.id,
       email: email.trim().toLowerCase(),
@@ -212,6 +238,8 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       last_name: last_name.trim(),
       company_name: company_name?.trim() || null,
       phone: phone?.trim() || null,
+      mobile_carrier: mobile_carrier?.trim() || null,
+      sms_alerts: sms_alerts || false,
       role: staffRole,
       updated_at: new Date().toISOString(),
     };

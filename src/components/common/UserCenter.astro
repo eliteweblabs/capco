@@ -50,33 +50,51 @@ const {
     <!-- User Info Section -->
     <div class="border-b border-gray-200 px-4 py-3 dark:border-gray-700">
       <div class="flex items-center">
-        <div class="flex-shrink-0">
-          <img
-            id="dropdown-avatar"
-            src=""
-            alt="User avatar"
-            class="h-10 w-10 rounded-full"
-            onerror="this.style.display='none'; this.nextElementSibling.style.display='block';"
-          />
-          <BoxIcon name="user" style="display:none;" class="bx-sm text-gray-400" />
-        </div>
-        <div class="ml-3">
-          <p class="text-sm font-medium text-gray-900 dark:text-white">
-            {currentUser?.company_name || currentUser?.email?.split("@")[0] || "User"}
-          </p>
-          <p class="text-xs text-gray-500 dark:text-gray-400">
-            {currentUser?.email}
-          </p>
-          <p class="text-xs font-medium text-blue-600 dark:text-blue-400">
-            {currentRole || "User"}
-          </p>
-        </div>
+        <a
+          href="/profile"
+          class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-700"
+        >
+          <div class="flex-shrink-0">
+            <img
+              id="dropdown-avatar"
+              src=""
+              alt="User avatar"
+              class="h-10 w-10 rounded-full"
+              onerror="this.style.display='none'; this.nextElementSibling.style.display='block';"
+            />
+            <BoxIcon name="user" style="display:none;" class="bx-sm text-gray-400" />
+          </div>
+          <div class="ml-3">
+            <p class="text-sm font-medium text-gray-900 dark:text-white">
+              {currentUser?.company_name || currentUser?.email?.split("@")[0] || "User"}
+            </p>
+            <p class="text-xs text-gray-500 dark:text-gray-400">
+              {currentUser?.email}
+            </p>
+            <p class="text-xs font-medium text-blue-600 dark:text-blue-400">
+              {currentRole || "User"}
+            </p>
+          </div>
+        </a>
       </div>
     </div>
   </div>
 
+  <div class="py-1">
+    <Button
+      href="/dashboard"
+      variant="primary"
+      size="sm"
+      icon="dashboard"
+      iconPosition="left"
+      fullWidth
+    >
+      Dashboard
+    </Button>
+  </div>
+
   <!-- Assigned Projects Section -->
-  <div class="mb-6">
+  <div class="my-6">
     <h6 class="mb-3 text-sm font-medium text-gray-900 dark:text-white">
       Your Projects ({assignedProjectsCount})
     </h6>
@@ -127,23 +145,6 @@ const {
   </div>
 
   <!-- Menu Items -->
-  <div class="py-1">
-    <a
-      href="/dashboard"
-      class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-700"
-    >
-      <BoxIcon name="building" class="bx-sm mr-3" />
-      Dashboard
-    </a>
-
-    <a
-      href="/profile"
-      class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-700"
-    >
-      <BoxIcon name="user" class="bx-sm mr-3" />
-      My Profile
-    </a>
-  </div>
 
   <!-- Navigation -->
   <!-- <nav class="mb-6 space-y-2">
@@ -172,7 +173,7 @@ const {
   <!-- Alternative: Generated Navigation HTML (optional) -->
   {
     desktopNavigationHTML && (
-      <div class="mb-6">
+      <div class="mb-6 block md:hidden">
         <div class="space-y-1" set:html={desktopNavigationHTML} />
       </div>
     )
@@ -181,18 +182,42 @@ const {
   <!-- User Actions -->
   <div class="space-y-2">
     <Button
-      href="/dashboard"
-      variant="ghost"
+      id="logout-btn"
+      variant="outline"
       size="sm"
-      icon="dashboard"
+      icon="log-out"
       iconPosition="left"
       fullWidth
+      class="flex w-full items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-700"
     >
-      Dashboard
-    </Button>
-
-    <Button href="/logout" variant="outline" size="sm" icon="log-out" iconPosition="left" fullWidth>
       Logout
     </Button>
   </div>
 </div>
+
+<script>
+  const logoutBtn = document.getElementById("logout-btn");
+
+  // Logout functionality (only if logout button exists - when authenticated)
+  if (logoutBtn) {
+    logoutBtn.addEventListener("click", async () => {
+      // console.log("📋 [HEADER] Logout button clicked");
+      try {
+        // console.log("📋 [HEADER] Sending logout request...");
+        const response = await fetch("/api/auth/signout", {
+          method: "POST",
+        });
+        // console.log("📋 [HEADER] Logout response status:", response.status);
+
+        if (response.ok) {
+          // console.log("📋 [HEADER] Logout successful, redirecting...");
+          window.location.href = "/";
+        } else {
+          // console.error("📋 [HEADER] Logout failed with status:", response.status);
+        }
+      } catch (error) {
+        console.error("📋 [HEADER] Logout error:", error);
+      }
+    });
+  }
+</script>

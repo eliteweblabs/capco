@@ -53,7 +53,7 @@ const {
             <Button
               id="browse-files-btn"
               variant="primary"
-              size="sm"
+              size="lg"
               icon="folder-open"
               iconPosition="left"
               class="hidden touch-manipulation md:inline-flex"
@@ -420,15 +420,24 @@ const {
 
       // Event delegation for featured image toggles
       this.fileList.addEventListener("change", (e) => {
+        console.log("📁 [PDF-UPLOAD] Change event triggered on:", e.target);
+        console.log("📁 [PDF-UPLOAD] Target classes:", e.target.classList.toString());
+
         if (e.target.classList.contains("featured-image-toggle")) {
+          console.log("📁 [PDF-UPLOAD] Featured image toggle detected!");
           e.stopPropagation(); // Prevent accordion from opening/closing
           const toggle = e.target;
           const fileId = toggle.getAttribute("data-file-id");
           const isChecked = toggle.checked;
-
+          console.log("📁 [PDF-UPLOAD] Featured image toggle data:", {
+            fileId,
+            isChecked,
+          });
           if (fileId) {
             this.updateFeaturedImage(fileId, isChecked);
           }
+        } else {
+          console.log("📁 [PDF-UPLOAD] Not a featured image toggle, ignoring");
         }
       });
     }
@@ -553,7 +562,33 @@ const {
       this.refreshFileList();
     }
 
-    addFileToList(file) {
+    // Helper function to create buttons using Button partial
+    async createButtonPartial(config) {
+      try {
+        const headers = new Headers();
+        Object.entries(config).forEach(([key, value]) => {
+          if (value !== undefined && value !== null) {
+            headers.set(`x-button-${key}`, value.toString());
+          }
+        });
+
+        const response = await fetch("/partials/button", {
+          headers: headers,
+        });
+
+        if (response.ok) {
+          return await response.text();
+        } else {
+          console.error("Failed to fetch button partial:", response.status);
+          return null;
+        }
+      } catch (error) {
+        console.error("Error creating button partial:", error);
+        return null;
+      }
+    }
+
+    async addFileToList(file) {
       this.filesContainer.classList.remove("hidden");
 
       const fileItem = document.createElement("div");
@@ -599,11 +634,7 @@ const {
                   <path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/>
                 </svg>
               </a>
-              <button class="download-btn p-2 text-green-600 hover:text-green-800 hover:bg-green-50 dark:hover:bg-green-900/20 rounded-full transition-colors" data-file-path="${file.file_path}" data-file-name="${fileName}" title="Download file">
-                <svg class="h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/>
-                </svg>
-              </button>
+              <div class="download-btn-container"></div>
             `
                 : `
               <button class="p-2 text-gray-400 cursor-not-allowed rounded-full" disabled title="View not available">
@@ -657,21 +688,9 @@ const {
                   currentRole === "Admin" || currentRole === "Staff"
                     ? `
                 <div>
-                  <label class="flex items-center gap-3 cursor-pointer">
-                    <div class="relative">
-                      <input 
-                        type="checkbox" 
-                        class="featured-image-toggle sr-only peer" 
-                        data-file-id="${file.id}"
-                        ${file.is_featured ? "checked" : ""}
-                      />
-                      <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600" />
-                    </div>
-                    <span class="text-sm font-medium text-gray-700 dark:text-gray-300">
-                      <BoxIcon name="star" class="mr-1" />
-                      Featured Image
-                    </span>
-                  </label>
+                  <div class="featured-image-toggle-container" data-file-id="${file.id}">
+                    <!-- Slide toggle will be loaded here -->
+                  </div>
                   <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
                     Automatically saves when toggled
                   </p>
@@ -679,12 +698,7 @@ const {
                 `
                     : `<div></div>`
                 }
-                <button class="save-metadata-btn inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-full text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors" data-file-id="${file.id}">
-                  <svg class="h-4 w-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                    <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
-                  </svg>
-                  Save Title & Comments
-                </button>
+                <div class="save-metadata-btn-container"></div>
               </div>
             </div>
           </div>
@@ -692,6 +706,95 @@ const {
       `;
 
       this.fileList.appendChild(fileItem);
+
+      // Load buttons using Button partial
+      await this.loadFileItemButtons(fileItem, file, fileName);
+
+      // Load slide toggle for featured image if user has permission
+      if (this.currentRole === "Admin" || this.currentRole === "Staff") {
+        await this.loadFeaturedImageToggle(fileItem, file);
+      }
+    }
+
+    async loadFileItemButtons(fileItem, file, fileName) {
+      try {
+        // Load download button if file has public URL
+        const downloadContainer = fileItem.querySelector(".download-btn-container");
+        if (downloadContainer && file.public_url) {
+          const downloadButtonHtml = await this.createButtonPartial({
+            variant: "ghost",
+            size: "sm",
+            icon: "download",
+            class:
+              "download-btn p-2 text-green-600 hover:text-green-800 hover:bg-green-50 dark:hover:bg-green-900/20 rounded-full",
+            title: "Download file",
+            "data-file-path": file.file_path,
+            "data-file-name": fileName,
+          });
+          if (downloadButtonHtml) {
+            downloadContainer.innerHTML = downloadButtonHtml;
+          }
+        }
+
+        // Load save metadata button
+        const saveContainer = fileItem.querySelector(".save-metadata-btn-container");
+        if (saveContainer) {
+          const saveButtonHtml = await this.createButtonPartial({
+            variant: "primary",
+            size: "sm",
+            icon: "check",
+            text: "Save Title & Comments",
+            class: "save-metadata-btn",
+            "data-file-id": file.id.toString(),
+          });
+          if (saveButtonHtml) {
+            saveContainer.innerHTML = saveButtonHtml;
+          }
+        }
+      } catch (error) {
+        console.error("Error loading file item buttons:", error);
+      }
+    }
+
+    async loadFeaturedImageToggle(fileItem, file) {
+      try {
+        const toggleContainer = fileItem.querySelector(".featured-image-toggle-container");
+        if (!toggleContainer) {
+          console.log("📁 [PDF-UPLOAD] No toggle container found for file:", file.id);
+          return;
+        }
+
+        const response = await fetch("/partials/slide-toggle", {
+          method: "GET",
+          headers: {
+            "x-toggle-id": `featured-toggle-${file.id}`,
+            "x-toggle-label": "Featured Image",
+            "x-toggle-icon": "bx-star",
+            "x-toggle-color": "blue",
+            "x-toggle-checked": file.is_featured ? "true" : "false",
+            "x-toggle-size": "md",
+            "x-toggle-class": "featured-image-toggle",
+            "x-toggle-data-file-id": file.id,
+          },
+        });
+
+        if (response.ok) {
+          const toggleHtml = await response.text();
+          toggleContainer.innerHTML = toggleHtml;
+
+          // Add the featured-image-toggle class to the input for event delegation
+          const toggleInput = toggleContainer.querySelector('input[type="checkbox"]');
+          if (toggleInput) {
+            toggleInput.classList.add("featured-image-toggle");
+          }
+
+          console.log("📁 [PDF-UPLOAD] Featured image toggle loaded for file:", file.id);
+        } else {
+          console.error("📁 [PDF-UPLOAD] Failed to load featured image toggle:", response.status);
+        }
+      } catch (error) {
+        console.error("📁 [PDF-UPLOAD] Error loading featured image toggle:", error);
+      }
     }
 
     async saveFileMetadata(fileId, title, comments, fileItem) {
@@ -833,7 +936,9 @@ const {
           console.log("📁 [PDF-UPLOAD] Files count:", result.files?.length || 0);
 
           if (result.files && result.files.length > 0) {
-            result.files.forEach((file) => this.addFileToList(file));
+            for (const file of result.files) {
+              await this.addFileToList(file);
+            }
             this.filesContainer.classList.remove("hidden");
             this.noFilesMessage.classList.add("hidden");
             console.log("📁 [PDF-UPLOAD] Showing file list, hiding no-files message");

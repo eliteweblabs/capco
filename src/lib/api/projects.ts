@@ -80,6 +80,126 @@ export async function fetchProjects(
   }
 }
 
+export async function getProjectsByAuthor(
+  supabaseAdmin: SupabaseClient,
+  authorId: string
+): Promise<Project[]> {
+  try {
+    const { data: projects, error } = await supabaseAdmin
+      .from("projects")
+      .select(
+        `
+            id,
+            title,
+            description,
+            address,
+            author_id,
+            company_name,
+            status,
+            sq_ft,
+            new_construction,
+            created_at,
+            updated_at,
+            assigned_to_id,
+            assigned_to_name,
+            featured_image,
+            featured_image_url,
+            contract_pdf_url,
+            incomplete_discussions
+          `
+      )
+      .eq("author_id", authorId) // Filter by author ID
+      .neq("id", 0) // Exclude system log project
+      .order("updated_at", { ascending: false });
+
+    if (error) {
+      console.error("🏗️ [PROJECTS-API] Database error:", error);
+      return [];
+    }
+
+    // Add featured_image_data for projects with featured_image_url
+    const projectsWithImageData = (projects || []).map((project) => {
+      if (project.featured_image_url) {
+        return {
+          ...project,
+          featured_image_data: {
+            public_url: project.featured_image_url,
+          },
+        };
+      }
+      return project;
+    });
+
+    console.log(
+      `🏗️ [PROJECTS-API] Retrieved ${projectsWithImageData.length} projects for author ${authorId}`
+    );
+    return projectsWithImageData;
+  } catch (error) {
+    console.error("🏗️ [PROJECTS-API] Error fetching projects by author:", error);
+    return [];
+  }
+}
+
+export async function getProjectsByAssignedToId(
+  supabaseAdmin: SupabaseClient,
+  assignedToId: string
+): Promise<Project[]> {
+  try {
+    const { data: projects, error } = await supabaseAdmin
+      .from("projects")
+      .select(
+        `
+            id,
+            title,
+            description,
+            address,
+            author_id,
+            company_name,
+            status,
+            sq_ft,
+            new_construction,
+            created_at,
+            updated_at,
+            assigned_to_id,
+            assigned_to_name,
+            featured_image,
+            featured_image_url,
+            contract_pdf_url,
+            incomplete_discussions
+          `
+      )
+      .eq("assigned_to_id", assignedToId) // Filter by author ID
+      .neq("id", 0) // Exclude system log project
+      .order("updated_at", { ascending: false });
+
+    if (error) {
+      console.error("🏗️ [PROJECTS-API] Database error:", error);
+      return [];
+    }
+
+    // Add featured_image_data for projects with featured_image_url
+    const projectsWithImageData = (projects || []).map((project) => {
+      if (project.featured_image_url) {
+        return {
+          ...project,
+          featured_image_data: {
+            public_url: project.featured_image_url,
+          },
+        };
+      }
+      return project;
+    });
+
+    console.log(
+      `🏗️ [PROJECTS-API] Retrieved ${projectsWithImageData.length} projects for author ${authorId}`
+    );
+    return projectsWithImageData;
+  } catch (error) {
+    console.error("🏗️ [PROJECTS-API] Error fetching projects by author:", error);
+    return [];
+  }
+}
+
 export async function fetchProjectsWithStatus(
   supabaseAdmin: SupabaseClient,
   userId?: string

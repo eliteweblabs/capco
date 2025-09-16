@@ -1,6 +1,7 @@
 ---
+// Enable this component to work as both regular component and partial
+export const partial = true;
 import BoxIcon from "./BoxIcon.astro";
-
 // Button component for standardized button styling throughout the project
 export interface Props {
   type?: "button" | "submit" | "reset";
@@ -36,27 +37,45 @@ export interface Props {
   selectedClasses?: string;
 }
 
-const {
-  type = "button",
-  variant = "primary",
-  size = "md",
-  href,
-  target = "_self",
-  disabled = false,
-  loading = false,
-  icon,
-  iconPosition = "left",
-  fullWidth = false,
-  class: className = "",
-  id,
-  name,
-  value,
-  title,
-  form,
-  onclick,
-  dataAttributes = {},
-  selectedClasses,
-} = Astro.props;
+// Check if this is being used as a partial (X-headers present) or regular component
+const isPartial =
+  Astro.request.headers.has("x-button-variant") || Astro.request.headers.has("x-button-text");
+
+// Extract props from either Astro.props or X-headers
+const type = Astro.props.type || Astro.request.headers.get("x-button-type") || "button";
+const variant = Astro.props.variant || Astro.request.headers.get("x-button-variant") || "primary";
+const size = Astro.props.size || Astro.request.headers.get("x-button-size") || "md";
+const href = Astro.props.href || Astro.request.headers.get("x-button-href") || undefined;
+const target = Astro.props.target || Astro.request.headers.get("x-button-target") || "_self";
+const disabled =
+  Astro.props.disabled || Astro.request.headers.get("x-button-disabled") === "true" || false;
+const loading =
+  Astro.props.loading || Astro.request.headers.get("x-button-loading") === "true" || false;
+const icon = Astro.props.icon || Astro.request.headers.get("x-button-icon") || undefined;
+const iconPosition =
+  Astro.props.iconPosition || Astro.request.headers.get("x-button-icon-position") || "left";
+const fullWidth =
+  Astro.props.fullWidth || Astro.request.headers.get("x-button-full-width") === "true" || false;
+const className = Astro.props.class || Astro.request.headers.get("x-button-class") || "";
+const id = Astro.props.id || Astro.request.headers.get("x-button-id") || undefined;
+const name = Astro.props.name || Astro.request.headers.get("x-button-name") || undefined;
+const value = Astro.props.value || Astro.request.headers.get("x-button-value") || undefined;
+const title = Astro.props.title || Astro.request.headers.get("x-button-title") || undefined;
+const form = Astro.props.form || Astro.request.headers.get("x-button-form") || undefined;
+const onclick = Astro.props.onclick || Astro.request.headers.get("x-button-onclick") || undefined;
+const buttonText = Astro.request.headers.get("x-button-text") || "";
+const selectedClasses = Astro.props.selectedClasses || "";
+
+// Handle data attributes from both props and headers
+let dataAttributes = Astro.props.dataAttributes || {};
+if (isPartial) {
+  for (const [key, value] of Astro.request.headers.entries()) {
+    if (key.startsWith("x-button-data-")) {
+      const dataKey = key.replace("x-button-data-", "").replace(/-/g, "-");
+      dataAttributes[`data-${dataKey}`] = value;
+    }
+  }
+}
 
 // Base classes for all buttons
 const baseClasses =
@@ -99,13 +118,22 @@ const variantClasses = {
 // Build the complete class string
 const buttonClasses = [
   baseClasses,
-  sizeClasses[size],
-  variantClasses[variant],
+  sizeClasses[size as keyof typeof sizeClasses],
+  variantClasses[variant as keyof typeof variantClasses],
   fullWidth ? "w-full" : "",
   className,
 ]
   .filter(Boolean)
   .join(" ");
+
+console.log(
+  "🔘 [BUTTON] Size:",
+  size,
+  "Size classes:",
+  sizeClasses[size as keyof typeof sizeClasses],
+  "Full classes:",
+  buttonClasses
+);
 
 // Build data attributes object - don't add the data- prefix as it's already in the keys
 const dataAttrs = dataAttributes;
@@ -152,7 +180,7 @@ const attributes = {
         </svg>
       )}
       {icon && iconPosition === "left" && !loading && <BoxIcon name={icon} class="mr-2" />}
-      <slot />
+      {buttonText ? buttonText : <slot />}
       {icon && iconPosition === "right" && !loading && <BoxIcon name={icon} class="ml-2" />}
       {dataAttributes?.["data-count"] && parseInt(dataAttributes["data-count"]) > 0 && (
         <span class="absolute -right-2 -top-2 flex h-5 w-5 items-center justify-center rounded-full border border-primary-500 bg-white text-xs font-medium text-primary-500 dark:border-primary-400 dark:bg-background-dark dark:text-primary-400">
@@ -161,7 +189,7 @@ const attributes = {
       )}
     </a>
   ) : (
-    <button type={type} title={title} {...attributes}>
+    <button type={type as "button" | "submit" | "reset"} title={title} {...attributes}>
       {loading && (
         <svg class="-ml-1 mr-2 h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">
           <circle
@@ -180,10 +208,10 @@ const attributes = {
         </svg>
       )}
       {icon && iconPosition === "left" && !loading && <BoxIcon name={icon} class="mr-2" />}
-      <slot />
+      {buttonText ? buttonText : <slot />}
       {icon && iconPosition === "right" && !loading && <BoxIcon name={icon} class="ml-2" />}
       {dataAttributes?.["data-count"] && parseInt(dataAttributes["data-count"]) > 0 && (
-        <span class="absolute -right-2 -top-2 flex h-5 w-5 items-center justify-center rounded-full border border-primary-500 bg-white text-xs font-medium text-primary-500 dark:border-primary-400 dark:bg-background-dark dark:text-primary-400">
+        <span class="absolute right-0 top-0 flex h-5 w-5 items-center justify-center rounded-full border border-primary-500 bg-white text-xs font-medium text-primary-500 dark:border-primary-400 dark:bg-background-dark dark:text-primary-400">
           {dataAttributes["data-count"]}
         </span>
       )}

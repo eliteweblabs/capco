@@ -24,6 +24,7 @@ const {
 } = Astro.props;
 
 import SlotMachineModal from "../../components/form/SlotMachineModal.astro";
+import SlideToggle from "../common/SlideToggle.astro";
 
 // Generate unique IDs for SMS components
 const smsSectionId = `sms-section-${id}`;
@@ -58,7 +59,7 @@ const mobileCarrierOptions = [
       />
 
       <!-- Phone validation indicator -->
-      <div id={`phone-indicator-${id}`} class="absolute inset-y-0 right-0 items-center pr-3 hidden">
+      <div id={`phone-indicator-${id}`} class="absolute inset-y-0 right-0 hidden items-center pr-3">
         <svg class="h-4 w-4 text-green-500" fill="currentColor" viewBox="0 0 20 20">
           <path
             fill-rule="evenodd"
@@ -74,42 +75,27 @@ const mobileCarrierOptions = [
     showSMS && (
       <div id={smsSectionId} style="display: none;">
         {/* <!-- SMS Alerts Toggle --> */}
-        <label class="inline-flex items-center cursor-pointer">
-          <input
-            type="checkbox"
-            id={smsAlertsId}
-            name="sms_alerts"
-            class="sr-only peer"
-            checked={smsChecked}
-          />
-          <div class="relative w-11 h-6 bg-gray-200 rounded-full peer peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600 dark:peer-checked:bg-blue-600" />
-          <span class="ml-3 text-sm font-medium text-gray-900 dark:text-white">
-            Get SMS Project Updates?
-          </span>
-        </label>
-
-        {/* <!-- Carrier Selection (shown when SMS alerts is enabled) --> */}
-        <div id={carrierSelectionId} class="hidden">
-          {/* <label
-            for={mobileCarrierId}
-            class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300"
-          >
-            Mobile Carrier
-          </label> */}
-
-          <SlotMachineModal
-            title="Select your carrier"
-            id={mobileCarrierId}
-            name="mobile_carrier"
-            options={mobileCarrierOptions}
-            selectedValue={selectedCarrier}
-            theme="blue"
-          />
-
-          {/* <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
-            Required for SMS delivery. We'll use your phone number with your carrier's email-to-SMS
-            gateway.
-          </p> */}
+        <div class="flex items-center gap-3 pt-4">
+          <div class="flex-1">
+            <SlideToggle
+              id={smsAlertsId}
+              name="sms_alerts"
+              checked={smsChecked}
+              label="Get SMS Project Updates?"
+            />
+          </div>
+          {/* <!-- Carrier Selection (shown when SMS alerts is enabled) --> */}
+          <div id={carrierSelectionId} class="flex-1">
+            <SlotMachineModal
+              title="Select your carrier"
+              id={mobileCarrierId}
+              name="mobile_carrier"
+              options={mobileCarrierOptions}
+              selectedValue={selectedCarrier}
+              skipSaveToAPI={true}
+              buttonClass="w-full"
+            />
+          </div>
         </div>
       </div>
     )
@@ -136,11 +122,16 @@ const mobileCarrierOptions = [
 
     if (!phoneInput || !smsAlertsCheckbox || !carrierSelection || !smsSection) return;
 
+    let isUserInteraction = false;
+
     // Show/hide carrier selection based on SMS alerts toggle
     function toggleCarrierSelection() {
       if (smsAlertsCheckbox.checked) {
         carrierSelection.classList.remove("hidden");
-        document.getElementById("mobile-carrier-phone").click();
+        // Only auto-click if this is user interaction, not page load
+        if (isUserInteraction) {
+          document.getElementById("mobile-carrier-phone").click();
+        }
       } else {
         carrierSelection.classList.add("hidden");
       }
@@ -182,6 +173,9 @@ const mobileCarrierOptions = [
     // Initial state
     toggleSmsSection();
     toggleCarrierSelection();
+
+    // Set flag to true after initial setup
+    isUserInteraction = true;
 
     // Event listeners
     smsAlertsCheckbox.addEventListener("change", toggleCarrierSelection);

@@ -17,9 +17,27 @@ let projects: any[] = [];
 let project_statuses: any[] = [];
 let project_statuses_object: any = {};
 
-import { fetchProjectStatuses, processProjectStatuses } from "../lib/api/project-statuses";
-import { fetchProjects } from "../lib/api/projects";
+// Import all functions at the top level
+import { fetchProjects, getProjectsByAuthor, getProjectsByAssignedToId } from "../lib/api/projects";
+
+// Fetch projects based on user role
+if (supabaseAdmin && currentUser?.id) {
+  try {
+    if (currentRole === "Client") {
+      projects = await getProjectsByAuthor(supabaseAdmin, currentUser.id);
+    } else if (currentRole === "Staff") {
+      projects = await getProjectsByAssignedToId(supabaseAdmin, currentUser.id);
+    } else if (currentRole === "Admin") {
+      projects = await fetchProjects(supabaseAdmin);
+    }
+  } catch (error) {
+    console.error("🏗️ [DASHBOARD] Error fetching projects:", error);
+  }
+}
+
 import type { ProjectStatus } from "../lib/types/project-status";
+import { fetchProjectStatuses } from "../lib/api/project-statuses";
+import { processProjectStatuses } from "../lib/api/project-statuses";
 
 // Fetch project statuses
 if (supabaseAdmin) {
@@ -31,24 +49,16 @@ if (supabaseAdmin) {
     console.error("🏗️ [DASHBOARD] Error fetching statuses:", error);
   }
 }
-
-// Fetch projects
-if (supabaseAdmin) {
-  try {
-    projects = await fetchProjects(supabaseAdmin);
-  } catch (error) {
-    console.error("🏗️ [DASHBOARD] Error fetching projects:", error);
-  }
-}
 ---
 
 <App
   title="Global Dashboard - CAPCo Fire Protection"
   description="View all projects."
   requireAuth={true}
+  requireRole={currentRole || "Client"}
   isAuth={isAuth}
   currentUser={currentUser}
-  currentRole={currentRole}
+  currentRole={currentRole || "Client"}
   session={session}
 >
   <HeroDashboard
