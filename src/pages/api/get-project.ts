@@ -44,49 +44,43 @@ export const GET: APIRoute = async ({ request, cookies, url }) => {
 
     if (!supabaseAdmin) {
       console.error("📡 [API] CRITICAL: supabaseAdmin is null - check SUPABASE_SERVICE_ROLE_KEY");
-      // console.log("📡 [API] Falling back to regular supabase client");
+      console.log("📡 [API] Falling back to regular supabase client");
       // Fallback to regular client if admin client is not available
       let query = supabase
         .from("projects")
-        .select(
-          `
-          id,
-          title,
-          description,
-          address,
-          author_id,
-          status,
-          sq_ft,
-          new_construction,
-          created_at,
-          updated_at,
-          assigned_to_id,
-          featured_image,
-          featured_image_url,
-          company_name,
-          subject,
-          proposal_signature,
-          signed_at,
-          contract_pdf_url,
-          building,
-          project,
-          service,
-          requested_docs,
-          architect,
-          units
-        `
-        )
+        .select("*")
         .neq("id", 0) // Exclude system log project
         .order("updated_at", { ascending: false });
 
       // Filter by assigned_to_id if provided
       if (assignedToId) {
+        console.log(`📡 [API] Adding filter for assigned_to_id: ${assignedToId}`);
         query = query.eq("assigned_to_id", assignedToId);
       }
 
       const result = await query;
       projects = result.data || [];
       error = result.error;
+    } else {
+      console.log("📡 [API] Using supabaseAdmin client to bypass RLS policies");
+
+      // Use admin client to bypass RLS policies for project listing
+      let query = supabaseAdmin
+        .from("projects")
+        .select("*")
+        .neq("id", 0) // Exclude system log project
+        .order("updated_at", { ascending: false });
+
+      // Filter by assigned_to_id if provided
+      if (assignedToId) {
+        console.log(`📡 [API] Adding filter for assigned_to_id: ${assignedToId}`);
+        query = query.eq("assigned_to_id", assignedToId);
+      }
+
+      const result = await query;
+      projects = result.data || [];
+      error = result.error;
+
       // } else {
       //   // Use admin client to bypass RLS policies for project listing
       //   let query = supabaseAdmin

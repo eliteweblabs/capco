@@ -50,7 +50,8 @@ export interface FormActionConfig {
   action?: string; // Function name or action identifier
   tab?: string; // Tab to navigate to when button is clicked
   allow?: string[]; // Control button visibility based on user roles - array of allowed roles
-  hideAtStatus?: number[]; // Control button visibility based on project status - array of status values where button should be hidden
+  hideAtStatus?: number[];
+  variant?: "primary" | "secondary" | "success" | "danger" | "warning" | "info"; // Control button visibility based on project status - array of status values where button should be hidden
 }
 
 // Helper function to check if a field or button group should be allowed based on user role
@@ -328,8 +329,9 @@ export const FORM_ACTIONS: FormActionConfig[] = [
     type: "submit",
     label: "Save Project",
     icon: "bx-save",
+    variant: "primary",
     cssClass:
-      "w-full lg:w-auto px-4 py-2 bg-primary-600 text-white text-sm font-medium rounded-full hover:bg-primary-700 transition-colors mt-6",
+      "flex-1 w-full lg:w-auto px-4 py-2 bg-primary-600 text-white text-sm font-medium rounded-full hover:bg-primary-700 transition-colors mt-6",
     allow: ["Admin", "Staff", "Client"], // All roles can save
     // No status restriction - can save project at any status
     // displayOnNew undefined - shows on both new and existing projects
@@ -339,8 +341,9 @@ export const FORM_ACTIONS: FormActionConfig[] = [
     type: "button",
     label: "Delete Project",
     icon: "bx-trash",
+    variant: "danger",
     cssClass:
-      "w-full md:w-auto px-4 py-2 bg-red-600 text-white text-sm font-medium rounded-full hover:bg-red-700 transition-colors mt-6",
+      "flex-1 w-full md:w-auto px-4 py-2 bg-red-600 text-white text-sm font-medium rounded-full hover:bg-red-700 transition-colors mt-6",
     action: "deleteProject",
     allow: ["Admin", "Staff"], // Only admin and staff can delete
     hideAtStatus: [0], // Only show when specs are received (status 10)
@@ -351,8 +354,9 @@ export const FORM_ACTIONS: FormActionConfig[] = [
     label: "Build Proposal",
     icon: "bx-file-pdf",
     tab: "proposal",
+    variant: "success",
     cssClass:
-      "w-full md:w-auto px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-full hover:bg-green-700 transition-colors mt-6",
+      "flex-1 w-full md:w-auto px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-full hover:bg-green-700 transition-colors mt-6",
     action: "buildProposal",
     allow: ["Admin", "Staff"], // Only admin and staff can build proposals
     hideAtStatus: [
@@ -365,6 +369,7 @@ export const FORM_ACTIONS: FormActionConfig[] = [
   //   label: "View Documents",
   //   icon: "bx-file",
   //   tab: "documents",
+  //   variant: "primary",
   //   cssClass:
   //     "px-4 py-2 bg-primary-600 text-white text-sm font-medium rounded-full hover:bg-primary-700 transition-colors",
   //   allow: ["Admin", "Staff", "Client"], // All roles can view documents
@@ -376,8 +381,9 @@ export const FORM_ACTIONS: FormActionConfig[] = [
     label: "View Deliverables",
     icon: "bx-package",
     tab: "deliverables",
+    variant: "warning",
     cssClass:
-      "px-4 py-2 bg-purple-600 text-white text-sm font-medium rounded-full hover:bg-purple-700 transition-colors",
+      "flex-1 px-4 py-2 bg-purple-600 text-white text-sm font-medium rounded-full hover:bg-purple-700 transition-colors",
     allow: ["Admin", "Staff", "Client"], // All roles can view deliverables
     hideAtStatus: [
       0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170, 180, 190,
@@ -389,8 +395,9 @@ export const FORM_ACTIONS: FormActionConfig[] = [
     label: "View Invoice",
     icon: "bx-receipt",
     tab: "final-invoice",
+    variant: "warning",
     cssClass:
-      "px-4 py-2 bg-orange-600 text-white text-sm font-medium rounded-full hover:bg-orange-700 transition-colors",
+      "flex-1 px-4 py-2 bg-orange-600 text-white text-sm font-medium rounded-full hover:bg-orange-700 transition-colors",
     allow: ["Admin", "Staff", "Client"], // All roles can view invoices
     hideAtStatus: [0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140], // Only show when final invoice is generated
   },
@@ -400,6 +407,7 @@ export const FORM_ACTIONS: FormActionConfig[] = [
   //   label: "View Activity Log",
   //   icon: "bx-history",
   //   tab: "activity-log",
+  //   variant: "secondary",
   //   cssClass:
   //     "px-4 py-2 bg-gray-600 text-white text-sm font-medium rounded-full hover:bg-gray-700 transition-colors",
   //   allow: ["Admin", "Staff", "Client"], // All roles can view activity log
@@ -450,6 +458,24 @@ export const BUTTON_GROUPS: ButtonGroupConfig[] = [
       { value: "Plumbing", label: "Plumbing" },
       { value: "Civil engineering", label: "Civil engineering" },
       { value: "Other", label: "Other" },
+    ],
+  },
+  {
+    id: "tier",
+    name: "tier",
+    label: "Tier",
+    type: "multi-select",
+    cssClass: "project-type-btns",
+    allow: ["Admin", "Staff", "Client"], // Only admin and staff can see consulting services
+    // hideAtStatus: [50, 60, 70, 80, 90], // Hide after proposal is viewed
+    readOnlyAtStatus: [
+      20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170, 180, 190, 200,
+    ], // Read-only after proposal is viewed but before signed off
+
+    options: [
+      { value: "Tier I", label: "Tier I" },
+      { value: "Tier II", label: "Tier II" },
+      { value: "Tier III", label: "Tier III" },
     ],
   },
   {
