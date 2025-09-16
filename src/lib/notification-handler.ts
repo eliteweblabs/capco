@@ -66,6 +66,11 @@ export function handleUpdateStatusNotification(
       }
     );
 
+    if (!notification.title || !notification.message) {
+      console.warn(`⚠️ [${context || "NOTIFICATION"}] No title or message found in notification`);
+      return;
+    }
+
     (window as any).showModal(
       notification.type,
       notification.title,

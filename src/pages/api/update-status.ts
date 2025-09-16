@@ -62,7 +62,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     }
 
     const body = await request.json();
-    const { projectId, status: newStatus, oldStatus } = body;
+    const { projectId, status: newStatus } = body;
 
     // Use the authenticated user's role
     const currentUserRole = currentRole || "Client";
@@ -81,9 +81,26 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       });
     }
 
+    // Fetch current project status before updating
+    const { data: currentProject, error: fetchError } = await supabase
+      .from("projects")
+      .select("status")
+      .eq("id", projectId)
+      .single();
+
+    if (fetchError) {
+      console.error("📊 [UPDATE-STATUS] Error fetching current project:", fetchError);
+      return new Response(JSON.stringify({ error: "Failed to fetch current project status" }), {
+        status: 500,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+
+    const oldStatus = currentProject.status;
+
     // this used to use modal_auto_redirect_admin and modal_auto_redirect_client
 
-    // console.log("📊 [UPDATE-STATUS] Updating project status:", { projectId, newStatus });
+    // console.log("📊 [UPDATE-STATUS] Updating project status:", { projectId, newStatus, oldStatus });
 
     // Update project status
     const { data: updatedProject, error: updateError } = await supabase

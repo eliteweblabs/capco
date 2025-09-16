@@ -30,6 +30,8 @@ interface Props {
   labelField?: string; // Optional: Field name to use for the label (default: "label")
   fetchOnLoad?: boolean; // Optional: Whether to fetch data immediately on modal open (default: false)
   projectId?: string; // Optional: Project ID for API calls
+  showNotification?: boolean; // Optional: Whether to show notification (default: true)
+  project: any; // Optional: Status for API calls
 }
 
 const {
@@ -59,6 +61,8 @@ const {
   labelField = "label",
   fetchOnLoad = false,
   projectId,
+  showNotification = false,
+  project = {},
 } = Astro.props;
 
 // Ensure options is always an array
@@ -96,6 +100,7 @@ const displayText = buttonText || selectedOption?.label || placeholder;
     apiEndpoint,
     searchText,
     searchPlaceholder,
+    showNotification,
     apiParams,
     dataTransform,
     showImages,
@@ -105,6 +110,7 @@ const displayText = buttonText || selectedOption?.label || placeholder;
     fetchOnLoad,
     projectId,
     noResultsText,
+    project,
   }}
 >
   // Initialize the slot machine picker
@@ -190,6 +196,7 @@ const displayText = buttonText || selectedOption?.label || placeholder;
         labelField: labelField,
         fetchOnLoad: fetchOnLoad,
         noResultsText: noResultsText,
+        project: project,
       });
     });
 
@@ -259,8 +266,6 @@ const displayText = buttonText || selectedOption?.label || placeholder;
         requestBody = {
           projectId: parsedProjectId,
           status: parsedStatus, // Convert value to integer
-          currentUserId: null, // Will be handled by server-side auth
-          oldStatus: null, // Could be enhanced to track previous status
         };
         console.log(`🎰 [SLOT-MACHINE] UPDATE-STATUS requestBody:`, requestBody);
       } else if (componentId === "assign-staff") {
@@ -316,23 +321,25 @@ const displayText = buttonText || selectedOption?.label || placeholder;
         console.log(`🎰 [SLOT-MACHINE] API response:`, result);
 
         // Show success notification
-        if (result.notificationData && window.showModal) {
-          const { type, title, message, duration } = result.notificationData;
-          window.showModal(type, title, message, duration);
-        } else if (result.success && window.showModal) {
-          // Fallback success notification
-          window.showModal(
-            "success",
-            "Success",
-            result.message || "Operation completed successfully",
-            3000
-          );
-        }
 
         // Also try the original notification handler if it exists
         if (window.handleUpdateStatusNotification) {
           window.handleUpdateStatusNotification(result, "SLOT-MACHINE");
         }
+
+        // if (result.notificationData && window.showModal && showNotification) {
+        //   const { type, title, message, duration } = result.notificationData;
+
+        //   window.showModal(type, title, message, duration);
+        // } else if (result.success && window.showModal && showNotification) {
+        //   // Fallback success notification
+        //   window.showModal(
+        //     "success",
+        //     "Success",
+        //     result.message || "Operation completed successfully",
+        //     3000
+        //   );
+        // }
 
         // Close the modal after success
         setTimeout(() => {
