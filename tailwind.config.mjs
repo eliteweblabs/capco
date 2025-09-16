@@ -39,6 +39,7 @@ export default {
         },
         // Brand Colors - Our purple theme
         primary: {
+          DEFAULT: "#825BDD", // Default primary color for bg-primary, text-primary, etc.
           50: "#f3f0ff",
           100: "#e9e3ff",
           200: "#d6ccff",

@@ -63,335 +63,195 @@ if (typeof window !== "undefined" && (window as any).globalClientProfiles) {
 ---
 
 <div class="space-y-4">
-  <!-- Modern New Client Toggle -->
   <div
-    class="flex items-center justify-between rounded-lg border border-gray-200 bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-800"
+    class="rounded-lg border border-gray-200 bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-800"
   >
-    <div class="flex flex-col">
-      <label
-        for="new-client-toggle"
-        class="cursor-pointer text-sm font-medium text-gray-900 dark:text-white"
-      >
-        New Client
-      </label>
-      <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
-        Toggle to create a new client or select an existing one
-      </p>
-    </div>
+    <label class="mb-2 block text-sm font-medium text-gray-900 dark:text-white">
+      Select Existing Client (Optional)
+    </label>
+    <p class="mb-3 text-xs text-gray-500 dark:text-gray-400">
+      Choose an existing client to auto-fill the form, or fill in the fields below manually
+    </p>
 
-    <!-- Modern Toggle Switch -->
-    <div class="relative">
-      <input type="checkbox" id="new-client-toggle" class="peer sr-only" />
-      <input type="hidden" id="new-client-toggle-value" name="new_client" value="on" />
-      <label
-        for="new-client-toggle"
-        class="relative flex h-6 w-11 cursor-pointer items-center rounded-lg bg-gray-300 px-0.5 transition-colors duration-200 ease-in-out peer-checked:bg-green-500 peer-focus:ring-2 peer-focus:ring-green-500 peer-focus:ring-offset-2 dark:bg-gray-600 dark:peer-checked:bg-green-600"
-      >
-      </label>
-      <span
-        class="pointer-events-none absolute left-0.5 top-0.5 inline-block h-5 w-5 transform rounded-lg bg-white shadow-lg transition-transform duration-200 ease-in-out peer-checked:translate-x-5"
-        aria-hidden="true"></span>
+    <div id="existing-client-select-container">
+      <SlotMachineModal
+        id="existing-client-select"
+        name="author_id"
+        title="Select Existing Client"
+        options={[]}
+        selectedValue=""
+        placeholder="Choose an existing client..."
+        showCloseButton={true}
+        showCancelButton={true}
+        buttonText="Select Client"
+        searchText="Search Client"
+        searchPlaceholder="Type to search clients..."
+        apiEndpoint="/api/clients"
+        apiParams={{
+          role: "Client",
+        }}
+        valueField="id"
+        labelField="company_name"
+        fetchOnLoad={true}
+        skipSaveToAPI={true}
+      />
     </div>
   </div>
 
-  <!-- New Client Fields (hidden by default) -->
-  <div id="new-client-fields" class="hidden space-y-4">
-    <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
-      <!-- First Name -->
+  <div class="rounded-lg border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-800">
+    <h3 class="mb-4 text-lg font-medium text-gray-900 dark:text-white">Client Information</h3>
+
+    <div id="new-client-fields" class="grid grid-cols-1 gap-4 md:grid-cols-2">
       <div>
-        <label for="first-name-input" class="mb-1 block text-sm font-medium text-gray-700">
+        <label
+          for="first-name"
+          class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300"
+        >
           First Name *
         </label>
         <input
           type="text"
-          id="first-name-input"
+          id="first-name"
           name="first_name"
-          placeholder="First Name"
           required
-          class="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm text-gray-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:focus:border-blue-400 dark:focus:ring-blue-400"
+          class="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm text-gray-900 focus:border-primary-500 focus:ring-2 focus:ring-primary-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:focus:border-primary-400 dark:focus:ring-primary-400"
+          placeholder="Enter first name"
         />
       </div>
 
-      <!-- Last Name -->
       <div>
-        <label for="last-name-input" class="mb-1 block text-sm font-medium text-gray-700">
+        <label
+          for="last-name"
+          class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300"
+        >
           Last Name *
         </label>
         <input
           type="text"
-          id="last-name-input"
+          id="last-name"
           name="last_name"
-          placeholder="Last Name"
           required
-          class="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm text-gray-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:focus:border-blue-400 dark:focus:ring-blue-400"
+          class="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm text-gray-900 focus:border-primary-500 focus:ring-2 focus:ring-primary-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:focus:border-primary-400 dark:focus:ring-primary-400"
+          placeholder="Enter last name"
+        />
+      </div>
+
+      <div>
+        <label
+          for="company-name"
+          class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300"
+        >
+          Company Name
+        </label>
+        <input
+          type="text"
+          id="company-name"
+          name="company_name"
+          class="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm text-gray-900 focus:border-primary-500 focus:ring-2 focus:ring-primary-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:focus:border-primary-400 dark:focus:ring-primary-400"
+          placeholder="Enter company name"
+        />
+      </div>
+
+      <div>
+        <label for="email" class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
+          Email *
+        </label>
+        <input
+          type="email"
+          id="email"
+          name="email"
+          required
+          class="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm text-gray-900 focus:border-primary-500 focus:ring-2 focus:ring-primary-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:focus:border-primary-400 dark:focus:ring-primary-400"
+          placeholder="Enter email address"
         />
       </div>
     </div>
-
-    <!-- Company Name -->
-    <div>
-      <label for="company-name-input" class="mb-1 block text-sm font-medium text-gray-700">
-        Company Name
-      </label>
-      <input
-        type="text"
-        id="company-name-input"
-        name="company_name"
-        placeholder="Company Name"
-        class="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm text-gray-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:focus:border-blue-400 dark:focus:ring-blue-400"
-      />
-    </div>
-
-    <!-- Email -->
-    <div>
-      <label for="email-input" class="mb-1 block text-sm font-medium text-gray-700">
-        Email *
-      </label>
-      <input
-        type="email"
-        id="email-input"
-        name="email"
-        placeholder="email@example.com"
-        required
-        class="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm text-gray-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:focus:border-blue-400 dark:focus:ring-blue-400"
-      />
-    </div>
-  </div>
-
-  <!-- Existing Client Select (hidden by default) -->
-  <div id="existing-client-select-container" class="">
-    <SlotMachineModal
-      id="existing-client-select"
-      name="author_id"
-      title="Select Existing Client"
-      options={existingClients}
-      selectedValue=""
-      placeholder={clientError ? "Error loading clients..." : "Choose an existing client..."}
-      theme="blue"
-      showCloseButton={true}
-      showCancelButton={true}
-      buttonText="Select Client"
-      skipSaveToAPI={true}
-    />
   </div>
 </div>
 
 <!-- Using proper Flowbite toggle structure - no custom CSS needed -->
 
 <script>
-  // Toggle logic for new/existing client
+  // Initialize form fields and watch for client selection changes
   document.addEventListener("DOMContentLoaded", function () {
-    // console.log("🔄 [NEW-CLIENT-TOGGLE] Initializing toggle logic...");
-
-    const toggle = document.getElementById("new-client-toggle") as HTMLInputElement;
     const newClientFields = document.getElementById("new-client-fields") as HTMLDivElement;
-    const existingClientSelect = document.getElementById(
-      "existing-client-select-container"
-    ) as HTMLDivElement;
 
-    // console.log("🔄 [NEW-CLIENT-TOGGLE] Elements found:", {
-    //   toggle: !!toggle,
-    //   newClientFields: !!newClientFields,
-    //   existingClientSelect: !!existingClientSelect,
-    // });
-
-    if (!toggle || !newClientFields || !existingClientSelect) {
-      console.error("🔄 [NEW-CLIENT-TOGGLE] Missing required elements!");
-      return;
-    }
-
-    function updateVisibility() {
-      // console.log("🔄 [NEW-CLIENT-TOGGLE] Toggle state:", toggle.checked);
-
-      // Update the hidden input value based on toggle state
-      const hiddenInput = document.getElementById("new-client-toggle-value") as HTMLInputElement;
-      if (hiddenInput) {
-        hiddenInput.value = toggle.checked ? "on" : "off";
-        console.log("🔄 [NEW-CLIENT-TOGGLE] Updated hidden input value:", hiddenInput.value);
-      }
-
-      if (toggle.checked) {
-        // console.log("🔄 [NEW-CLIENT-TOGGLE] Switching to NEW CLIENT mode");
-
-        // Show new client fields, hide existing client select
-        newClientFields.classList.remove("hidden");
-        existingClientSelect.classList.add("hidden");
-
-        // Clear existing client selection to prevent stale data
-        const selectInput = document.getElementById("existing-client-select") as HTMLInputElement;
-        if (selectInput) {
-          selectInput.removeAttribute("required");
-          selectInput.value = ""; // Clear the selected client value
-          console.log("🔄 [NEW-CLIENT-TOGGLE] Cleared existing client selection");
+    if (newClientFields) {
+      // Set required attributes on new client fields
+      const initialNewFields = newClientFields.querySelectorAll("input");
+      initialNewFields.forEach((field) => {
+        if (field.name === "first_name" || field.name === "last_name" || field.name === "email") {
+          field.setAttribute("required", "required");
         }
-
-        // Also clear the slot machine modal value if it exists
-        const slotMachineValue = document.getElementById(
-          "existing-client-select-value"
-        ) as HTMLInputElement;
-        if (slotMachineValue) {
-          slotMachineValue.value = "";
-        }
-
-        // Enable new client fields and add required attributes back
-        const newFields = newClientFields.querySelectorAll("input");
-        console.log("🔄 [NEW-CLIENT-TOGGLE] Found new client fields:", newFields.length);
-
-        newFields.forEach((field) => {
-          field.disabled = false;
-          // Add required attribute back when enabling
-          if (field.name === "first_name" || field.name === "last_name" || field.name === "email") {
-            field.setAttribute("required", "required");
-          }
-          console.log("🔄 [NEW-CLIENT-TOGGLE] Enabled field and added required:", field.name);
-        });
-      } else {
-        console.log("🔄 [NEW-CLIENT-TOGGLE] Switching to EXISTING CLIENT mode");
-
-        // Hide new client fields, show existing client select
-        newClientFields.classList.add("hidden");
-        existingClientSelect.classList.remove("hidden");
-
-        // Clear new client fields to prevent stale data
-        const newFields = newClientFields.querySelectorAll("input");
-        console.log("🔄 [NEW-CLIENT-TOGGLE] Clearing new client fields:", newFields.length);
-
-        newFields.forEach((field) => {
-          field.disabled = true;
-          field.removeAttribute("required"); // Remove required when disabled
-          field.value = ""; // Clear the field values
-          console.log("🔄 [NEW-CLIENT-TOGGLE] Cleared and disabled field:", field.name);
-        });
-
-        // Add required to existing client select hidden input
-        const selectInput = document.getElementById("existing-client-select") as HTMLInputElement;
-        if (selectInput) {
-          selectInput.setAttribute("required", "required");
-          console.log("🔄 [NEW-CLIENT-TOGGLE] Added required to existing client select");
-        }
-      }
-
-      // Update the toggle state in the form data
-      console.log("🔄 [NEW-CLIENT-TOGGLE] Toggle state updated:", toggle.checked);
-    }
-
-    // Initial state - start with new client mode (toggle ON)
-    console.log("🔄 [NEW-CLIENT-TOGGLE] Setting initial state...");
-
-    // Set toggle to checked (ON) by default for new client mode
-    toggle.checked = true;
-
-    // New client fields are shown by default, so they should have required attributes
-    const initialNewFields = newClientFields.querySelectorAll("input");
-    initialNewFields.forEach((field) => {
-      if (field.name === "first_name" || field.name === "last_name" || field.name === "email") {
-        field.setAttribute("required", "required");
-      }
-    });
-
-    updateVisibility();
-
-    // Listen for toggle changes
-    console.log("🔄 [NEW-CLIENT-TOGGLE] Adding event listener...");
-    toggle.addEventListener("change", function () {
-      console.log("🔄 [NEW-CLIENT-TOGGLE] Toggle changed!");
-      updateVisibility();
-    });
-
-    // Add form validation debugging and manual validation
-    const form = toggle.closest("form");
-    if (form) {
-      form.addEventListener("submit", function (event) {
-        console.log("🔄 [NEW-CLIENT-TOGGLE] Form submission intercepted for validation check");
-
-        // Check current toggle state BEFORE updating visibility
-        console.log(
-          "🔄 [NEW-CLIENT-TOGGLE] Current toggle state BEFORE updateVisibility:",
-          toggle.checked
-        );
-
-        // Ensure visibility is properly set before validation
-        updateVisibility();
-
-        // Check current toggle state AFTER updating visibility
-        console.log(
-          "🔄 [NEW-CLIENT-TOGGLE] Current toggle state AFTER updateVisibility:",
-          toggle.checked
-        );
-
-        // Check required fields
-        const requiredFields = form.querySelectorAll("[required]");
-        console.log("🔄 [NEW-CLIENT-TOGGLE] Required fields found:", requiredFields.length);
-
-        requiredFields.forEach((field, index) => {
-          const input = field as HTMLInputElement;
-          console.log(`🔄 [NEW-CLIENT-TOGGLE] Required field ${index + 1}:`, {
-            name: input.name,
-            value: input.value,
-            disabled: input.disabled,
-            hidden: input.closest(".hidden") !== null,
-          });
-        });
-
-        // Manual validation: ensure only appropriate fields are required
-        let isValid = true;
-
-        if (toggle.checked) {
-          // New client mode: new client fields should be required, existing client select should not
-          const newClientRequired = form.querySelectorAll(
-            "#new-client-fields input[required]"
-          ).length;
-          const existingClientRequired = form.querySelectorAll(
-            "#existing-client-select[required]"
-          ).length;
-
-          console.log("🔄 [NEW-CLIENT-TOGGLE] Validation - New client mode:", {
-            newClientRequired,
-            existingClientRequired,
-          });
-
-          if (existingClientRequired > 0) {
-            console.error(
-              "🔄 [NEW-CLIENT-TOGGLE] Validation failed: existing client select still required in new client mode"
-            );
-            isValid = false;
-          }
-        } else {
-          // Existing client mode: existing client select should be required, new client fields should not
-          const newClientRequired = form.querySelectorAll(
-            "#new-client-fields input[required]"
-          ).length;
-          const existingClientRequired = form.querySelectorAll(
-            "#existing-client-select[required]"
-          ).length;
-
-          console.log("🔄 [NEW-CLIENT-TOGGLE] Validation - Existing client mode:", {
-            newClientRequired,
-            existingClientRequired,
-          });
-
-          if (newClientRequired > 0) {
-            console.error(
-              "🔄 [NEW-CLIENT-TOGGLE] Validation failed: new client fields still required in existing client mode"
-            );
-            isValid = false;
-          }
-        }
-
-        if (!isValid) {
-          console.error(
-            "🔄 [NEW-CLIENT-TOGGLE] Form validation failed - required attributes are incorrect"
-          );
-        }
-
-        // Debug: Log form data that will be submitted
-        const formData = new FormData(form);
-        const formDataObj: Record<string, any> = {};
-        for (let [key, value] of formData.entries()) {
-          formDataObj[key] = value;
-        }
-        console.log("🔄 [NEW-CLIENT-TOGGLE] Form data being submitted:", formDataObj);
       });
     }
+
+    // Watch for changes on the author_id hidden input
+    const authorIdInput = document.getElementById(
+      "existing-client-select-value"
+    ) as HTMLInputElement;
+
+    if (authorIdInput) {
+      // Create a mutation observer to watch for value changes
+      const observer = new MutationObserver((mutations) => {
+        mutations.forEach((mutation) => {
+          if (mutation.type === "attributes" && mutation.attributeName === "value") {
+            const clientId = authorIdInput.value;
+            if (clientId && clientId.trim() !== "") {
+              console.log(`👤 [CLIENT-WATCHER] Author ID changed to: ${clientId}`);
+              populateClientFields(clientId);
+            }
+          }
+        });
+      });
+
+      // Start observing the input for attribute changes
+      observer.observe(authorIdInput, { attributes: true, attributeFilter: ["value"] });
+
+      // Also watch for direct value changes (for browsers that don't trigger attribute mutations)
+      let lastValue = authorIdInput.value;
+      setInterval(() => {
+        if (authorIdInput.value !== lastValue) {
+          lastValue = authorIdInput.value;
+          if (lastValue && lastValue.trim() !== "") {
+            console.log(`👤 [CLIENT-WATCHER] Author ID changed to: ${lastValue}`);
+            populateClientFields(lastValue);
+          }
+        }
+      }, 100); // Check every 100ms
+    }
   });
+
+  // Function to populate client fields
+  function populateClientFields(clientId: string) {
+    console.log(`👤 [CLIENT-POPULATE] Fetching client data for ID: ${clientId}`);
+
+    fetch(`/api/clients?role=Client&id=${clientId}`)
+      .then((response) => response.json())
+      .then((data) => {
+        if (data.success && data.clients && data.clients.length > 0) {
+          const selectedClient = data.clients[0]; // Should only be one client when filtering by ID
+
+          console.log(`👤 [CLIENT-POPULATE] Found client data:`, selectedClient);
+
+          // Populate the form fields
+          const firstNameField = document.getElementById("first-name") as HTMLInputElement;
+          const lastNameField = document.getElementById("last-name") as HTMLInputElement;
+          const companyNameField = document.getElementById("company-name") as HTMLInputElement;
+          const emailField = document.getElementById("email") as HTMLInputElement;
+
+          if (firstNameField) firstNameField.value = selectedClient.first_name || "";
+          if (lastNameField) lastNameField.value = selectedClient.last_name || "";
+          if (companyNameField) companyNameField.value = selectedClient.company_name || "";
+          if (emailField) emailField.value = selectedClient.email || "";
+
+          console.log(`👤 [CLIENT-POPULATE] Form fields populated successfully`);
+        } else {
+          console.error(`👤 [CLIENT-POPULATE] Client not found in API response`);
+        }
+      })
+      .catch((error) => {
+        console.error(`👤 [CLIENT-POPULATE] Error fetching client data:`, error);
+      });
+  }
 </script>

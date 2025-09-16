@@ -55,9 +55,9 @@ const navItems: NavItem[] = [
     id: "all-statuses",
     label: "All Projects",
     variant: "anchor",
-    count: projects.length,
     dataAttributes: {
       "data-label": "All Projects",
+      "data-project-status-filter": "all",
       "data-count": projects.length.toString(),
     },
   },
@@ -91,7 +91,6 @@ if (project_statuses.length > 0) {
         id: `status-${slug}`,
         label: status.client_status_name,
         variant: "anchor",
-        count: statusCounts[status.client_status_name] || 0,
         dataAttributes: {
           "data-project-status-label": status.client_status_name,
           "data-project-status-filter": slug,
@@ -106,7 +105,6 @@ if (project_statuses.length > 0) {
         id: `status-${status.status_code}`,
         label: status.admin_status_name,
         variant: "anchor",
-        count: statusCounts[status.status_code] || 0,
         dataAttributes: {
           "data-label": status.admin_status_name,
           "data-project-status-filter": status.status_code.toString(),
@@ -120,7 +118,7 @@ if (project_statuses.length > 0) {
 
 <SlidingPillNav
   navId="project-nav"
-  navClass="text-hub-inactive dark:border-hub-border-dark"
+  navClass="text-gray-600 dark:text-gray-400 dark:border-gray-700"
   items={navItems}
 />
 
@@ -200,35 +198,6 @@ if (project_statuses.length > 0) {
         filterProjects("all");
         updateURL("all");
       });
-    }
-
-    // Initial filter from URL
-    const urlParams = new URLSearchParams(window.location.search);
-    const statusParam = urlParams.get("status");
-    if (statusParam) {
-      const targetButton = subNav.querySelector(`[data-project-status-filter="${statusParam}"]`);
-      if (targetButton) {
-        filterProjects(statusParam);
-        // Use the SlidingPillNav's exposed functions to update the UI
-        setTimeout(() => {
-          if ((window as any).project_nav_updateActiveButton) {
-            (window as any).project_nav_updateActiveButton(targetButton);
-            (window as any).project_nav_updateSlidingPill(targetButton);
-          }
-        }, 100);
-        return;
-      }
-    }
-
-    // Default to all
-    if (allStatusesButton) {
-      filterProjects("all");
-      setTimeout(() => {
-        if ((window as any).project_nav_updateActiveButton) {
-          (window as any).project_nav_updateActiveButton(allStatusesButton);
-          (window as any).project_nav_updateSlidingPill(allStatusesButton);
-        }
-      }, 100);
     }
   });
 </script>

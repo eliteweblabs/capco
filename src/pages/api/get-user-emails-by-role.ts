@@ -15,6 +15,7 @@ export const POST: APIRoute = async ({ request }) => {
     });
 
     const emails = [];
+    let roleUsers: any[] = []; // Initialize roleUsers outside the if block
 
     // Get emails by roles
     if (roles && roles.length > 0) {
@@ -25,8 +26,8 @@ export const POST: APIRoute = async ({ request }) => {
           status: 500,
         });
       }
-      // Get user emails by joining profiles with auth.users
-      const { data: roleUsers, error: roleError } = await supabaseAdmin
+      // Get user data by roles
+      const { data: fetchedRoleUsers, error: roleError } = await supabaseAdmin
         .from("profiles")
         .select(
           `
@@ -41,8 +42,9 @@ export const POST: APIRoute = async ({ request }) => {
         .in("role", roles);
 
       // If no email in profiles, try to get from auth.users
-      if (roleUsers && roleUsers.length > 0) {
-        const userIds = roleUsers.map((user) => user.id);
+      if (fetchedRoleUsers && fetchedRoleUsers.length > 0) {
+        roleUsers = fetchedRoleUsers; // Assign to the outer scope variable
+        const userIds = fetchedRoleUsers.map((user) => user.id);
         const { data: authUsers, error: authError } = await supabaseAdmin.auth.admin.listUsers();
 
         if (authUsers && authUsers.users) {
@@ -60,7 +62,8 @@ export const POST: APIRoute = async ({ request }) => {
 
       if (roleError) {
         console.error("📧 [GET-USER-EMAILS-BY-ROLE] Error fetching users by roles:", roleError);
-      } else if (roleUsers) {
+      } else if (fetchedRoleUsers) {
+        roleUsers = fetchedRoleUsers; // Assign to the outer scope variable
         console.log("📧 [GET-USER-EMAILS-BY-ROLE] Found users by roles:", roleUsers);
         for (const user of roleUsers) {
           try {
@@ -113,11 +116,15 @@ export const POST: APIRoute = async ({ request }) => {
 
     console.log("📧 [GET-USER-EMAILS-BY-ROLE] Final unique emails:", uniqueEmails);
 
+    // Also return the full user data for staff dropdowns
+    const staffUsers = roleUsers || [];
+
     return new Response(
       JSON.stringify({
         success: true,
         emails: uniqueEmails,
         count: uniqueEmails.length,
+        staffUsers: staffUsers,
       }),
       {
         status: 200,

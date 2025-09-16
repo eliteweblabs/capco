@@ -1,5 +1,6 @@
 ---
 import Button from "../common/Button.astro";
+import BoxIcon from "../common/BoxIcon.astro";
 
 // Generic Slot Machine Modal Component - Reusable for any picker scenario
 
@@ -9,15 +10,25 @@ interface Props {
   options: Array<{ value: string; label: string; disabled?: boolean }>; // Required: Array of options
   selectedValue?: string; // Optional: Currently selected value
   placeholder?: string; // Optional: Placeholder text for button
-  theme?: "blue" | "green" | "orange" | "red" | "purple"; // Optional: Color theme
   buttonText?: string; // Optional: Custom button text (defaults to selected label or placeholder)
   showCloseButton?: boolean; // Optional: Show X close button (default: true)
   showCancelButton?: boolean; // Optional: Show Cancel button (default: true)
-  onSelect?: string; // Optional: Function name to call when item is selected
-  search?: boolean; // Optional: Show search input (default: false)
   addNewOption?: boolean; // Optional: Show add new option button (default: false)
   skipSaveToAPI?: boolean; // Optional: Skip saving to API (default: false)
   name?: string; // Optional: Form field name (defaults to id)
+  buttonClass?: string; // Optional: Custom button class (defaults to "")
+  noResultsText?: string; // Optional: No results text (defaults to "No results found")
+  // NEW FLEXIBLE PROPS:
+  apiEndpoint?: string; // Optional: API endpoint for dynamic data
+  searchText?: string; // Optional: Search input label (if provided, enables search)
+  searchPlaceholder?: string; // Optional: Search input placeholder
+  apiParams?: Record<string, any>; // Optional: Additional API parameters
+  dataTransform?: string; // Optional: Function name to transform API response
+  showImages?: boolean; // Optional: Whether to show images (for places)
+  imageField?: string; // Optional: Field name for image URLs
+  valueField?: string; // Optional: Field name to use for the value (default: "value")
+  labelField?: string; // Optional: Field name to use for the label (default: "label")
+  fetchOnLoad?: boolean; // Optional: Whether to fetch data immediately on modal open (default: false)
 }
 
 const {
@@ -26,19 +37,33 @@ const {
   options = [],
   selectedValue = "",
   placeholder = "Select an option...",
-  theme = "blue",
+  buttonClass = "",
   buttonText,
   showCloseButton = true,
   showCancelButton = true,
-  onSelect = "handleSlotMachineSelect",
-  search = false,
   addNewOption = false,
   skipSaveToAPI = false,
   name,
+  noResultsText = "No Options found",
+
+  // NEW FLEXIBLE PROPS:
+  apiEndpoint,
+  searchText,
+  searchPlaceholder,
+  apiParams = {},
+  dataTransform,
+  showImages = false,
+  imageField = "image_url",
+  valueField = "value",
+  labelField = "label",
+  fetchOnLoad = false,
 } = Astro.props;
 
 // Ensure options is always an array
 const optionsArray = Array.isArray(options) ? options : [];
+
+// Determine if search should be enabled (if searchText is provided)
+const enableSearch = !!searchText;
 
 // Find the selected option to get the button text
 const selectedOption = optionsArray.find((option) => option.value === selectedValue);
@@ -46,11 +71,11 @@ const displayText = buttonText || selectedOption?.label || placeholder;
 ---
 
 <!-- Slot Machine Picker Button -->
-<Button id={id} variant="primary">
-  {displayText}
-  <svg class="ml-1 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
-  </svg>
+<Button id={id} variant="primary" class={buttonClass}>
+  <span class="button-text">{displayText}</span>
+  <span class="button-icon" style="display: inline-block;">
+    <BoxIcon name="chevron-down" />
+  </span>
 </Button>
 
 <!-- Hidden input to store the selected value -->
@@ -62,11 +87,21 @@ const displayText = buttonText || selectedOption?.label || placeholder;
     title,
     options: optionsArray,
     selectedValue,
-    theme,
     showCloseButton,
     showCancelButton,
-    onSelect,
     skipSaveToAPI,
+    enableSearch,
+    apiEndpoint,
+    searchText,
+    searchPlaceholder,
+    apiParams,
+    dataTransform,
+    showImages,
+    imageField,
+    valueField,
+    labelField,
+    fetchOnLoad,
+    noResultsText,
   }}
 >
   // Initialize the slot machine picker
@@ -85,31 +120,40 @@ const displayText = buttonText || selectedOption?.label || placeholder;
       // // console.log(`🎰 [SLOT-MACHINE] Opening picker for ID: ${id}`);
 
       // Open the slot machine modal using variables directly
+      // Use current hidden input value if it exists, otherwise fall back to original selectedValue
+      const currentValue = hiddenInput ? hiddenInput.value : selectedValue;
       showSlotMachineModal({
         id: id,
         title: title,
         options: options,
-        selectedValue: selectedValue,
-        theme: theme,
+        selectedValue: currentValue,
         showCloseButton: showCloseButton,
         showCancelButton: showCancelButton,
+        valueField: valueField,
+        labelField: labelField,
+        fetchOnLoad: fetchOnLoad,
         onSelect: (value, label) => {
           // Update hidden input
           if (hiddenInput) {
             hiddenInput.value = value;
           }
 
-          // Update button text
-          trigger.innerHTML = `
-            ${label}
-            <svg class="ml-1 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-            </svg>
-          `;
+          // Update button text by showing/hiding elements
+          const buttonText = trigger.querySelector(".button-text");
+          const buttonIcon = trigger.querySelector(".button-icon");
 
-          // Call the onSelect callback if provided
-          if (typeof window[onSelect] === "function") {
-            window[onSelect](value, label, id);
+          if (buttonText) {
+            buttonText.textContent = label;
+          }
+
+          // Show the button icon if it exists
+          if (buttonIcon) {
+            buttonIcon.style.display = "inline-block";
+          }
+
+          // Call the generic handleSelect function
+          if (typeof window.handleSelect === "function") {
+            window.handleSelect(value, label, id);
           }
 
           // Auto-save to API endpoint using the component ID
@@ -119,6 +163,18 @@ const displayText = buttonText || selectedOption?.label || placeholder;
 
           // // console.log(`🎰 [SLOT-MACHINE] Selected: ${label} (${value})`);
         },
+        enableSearch: enableSearch,
+        apiEndpoint: apiEndpoint,
+        searchText: searchText,
+        searchPlaceholder: searchPlaceholder,
+        apiParams: apiParams,
+        dataTransform: dataTransform,
+        showImages: showImages,
+        imageField: imageField,
+        valueField: valueField,
+        labelField: labelField,
+        fetchOnLoad: fetchOnLoad,
+        noResultsText: noResultsText,
       });
     });
 
@@ -127,11 +183,11 @@ const displayText = buttonText || selectedOption?.label || placeholder;
       const urlParams = new URLSearchParams(window.location.search);
       const modalParam = urlParams.get("modal");
 
-      // console.log(`🎰 [SLOT-MACHINE] Checking URL parameters for ID '${id}':`, {
-      //   modalParam,
-      //   componentId: id,
-      //   match: modalParam === id,
-      // });
+      console.log(`🎰 [SLOT-MACHINE] Checking URL parameters for ID '${id}':`, {
+        modalParam,
+        componentId: id,
+        match: modalParam === id,
+      });
 
       if (modalParam === id) {
         // console.log(`🎰 [SLOT-MACHINE] URL parameter detected: modal=${id}`);
@@ -246,107 +302,402 @@ const displayText = buttonText || selectedOption?.label || placeholder;
     }
   }
 
+  // Helper function to create buttons using Button partial
+  async function createButtonPartial(config) {
+    try {
+      const headers = new Headers();
+      Object.entries(config).forEach(([key, value]) => {
+        if (value !== undefined && value !== null) {
+          headers.set(`x-button-${key}`, value.toString());
+        }
+      });
+
+      const response = await fetch("/partials/button", {
+        headers: headers,
+      });
+
+      if (response.ok) {
+        const buttonHTML = await response.text();
+        const wrapper = document.createElement("div");
+        wrapper.innerHTML = buttonHTML;
+        return wrapper.firstElementChild;
+      } else {
+        console.error("Failed to fetch button partial:", response.status);
+        return null;
+      }
+    } catch (error) {
+      console.error("Error creating button partial:", error);
+      return null;
+    }
+  }
+
   // Generic slot machine modal function
-  function showSlotMachineModal(config) {
+  async function showSlotMachineModal(config) {
     const {
       id,
       title,
       options,
       selectedValue,
-      theme,
       showCloseButton = true,
       showCancelButton = true,
       onSelect,
+      enableSearch = false,
+      apiEndpoint,
+      searchText,
+      searchPlaceholder,
+      apiParams = {},
+      dataTransform,
+      showImages = false,
+      imageField = "image_url",
+      valueField = "value",
+      labelField = "label",
+      fetchOnLoad = false,
+      noResultsText = "No results found",
     } = config;
 
     // Check for dynamically updated options
     const dynamicOptions = window.slotMachineOptions && window.slotMachineOptions[id];
     const finalOptions = dynamicOptions || options;
 
-    // Use dynamic options if available, otherwise use static options
+    // Initialize selectedIndex early to avoid reference errors
+    let selectedIndex = finalOptions.findIndex((option) => {
+      const optionValue = option[valueField] || option.value || option.place_id || option.id;
+      return optionValue.toString() === selectedValue.toString();
+    });
 
-    // Create modal overlay
-    const modal = document.createElement("div");
-    modal.className = "fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50";
-    modal.id = `${id}-modal`;
+    // Lock body scroll to prevent background scrolling
+    document.body.style.overflow = "hidden";
 
-    // Create modal content
-    const modalContent = document.createElement("div");
-    modalContent.className =
-      "bg-background-card dark:bg-background-card-dark rounded-lg p-6 max-w-sm w-full mx-4";
-    modalContent.style.userSelect = "none";
+    // Create modal using partial route
+    const headers = new Headers();
+    headers.set("x-component-id", id);
+    headers.set("x-modal-title", title);
+    headers.set("x-show-search", enableSearch.toString());
+    headers.set("x-cancel-button", "Cancel");
+    headers.set("x-select-button", "Select");
+    headers.set("x-no-results-text", noResultsText);
 
-    // Create title with close button
-    const titleContainer = document.createElement("div");
-    titleContainer.className = "relative flex items-center justify-center mb-4";
+    // Add search-specific headers if search is enabled
+    if (enableSearch) {
+      headers.set("x-search-text", searchText || "");
+      headers.set("x-search-placeholder", searchPlaceholder || "Type to search...");
+    }
 
-    const titleElement = document.createElement("h3");
-    titleElement.className = "text-lg font-semibold text-gray-900 dark:text-white text-center";
-    titleElement.textContent = title;
+    const response = await fetch("/partials/slot-machine-modal", {
+      headers: headers,
+    });
 
-    titleContainer.appendChild(titleElement);
+    if (!response.ok) {
+      console.error("Failed to fetch slot machine modal partial:", response.status);
+      return;
+    }
 
-    // Add close X button if enabled
-    if (showCloseButton) {
-      const closeButton = document.createElement("button");
-      closeButton.className = "close-button";
-      closeButton.innerHTML = "×";
-      closeButton.style.cssText = `
-        position: absolute;
-        right: 0;
-        top: 50%;
-        transform: translateY(-50%);
-        background: transparent;
-        border: none;
-        font-size: 24px;
-        font-weight: bold;
-        color: #6b7280;
+    const modalHTML = await response.text();
+    const modalWrapper = document.createElement("div");
+    modalWrapper.innerHTML = modalHTML;
+    const modal = modalWrapper.firstElementChild;
+
+    // Get the modal content from the partial
+    const modalContent = modal.querySelector(".mx-4.max-h-\\[90vh\\].w-full.max-w-2xl");
+
+    // Get references to elements from the partial
+    const optionsList = modal.querySelector(`#${id}-slot-options-list`);
+    const selectButton = modal.querySelector(`#${id}-slot-select-btn`);
+    const cancelButton = modal.querySelector(`#${id}-slot-cancel-btn`);
+    const closeButton = modal.querySelector(`#${id}-close-slot-modal`);
+    const searchInput = modal.querySelector(`#${id}-slot-search-input`);
+    const searchButton = modal.querySelector(`#${id}-slot-search-btn`);
+
+    // Add event listeners to buttons from the partial
+    if (closeButton) {
+      closeButton.addEventListener("click", async () => {
+        await cleanupModal();
+        modal.remove();
+      });
+    }
+
+    if (cancelButton) {
+      cancelButton.addEventListener("click", async () => {
+        await cleanupModal();
+        modal.remove();
+      });
+    }
+
+    // Focus search input after modal is fully rendered (only for non-fetchOnLoad modals)
+    if (searchInput && !fetchOnLoad) {
+      // Use setTimeout to ensure the modal is fully rendered
+      setTimeout(() => {
+        searchInput.focus();
+      }, 100);
+    }
+
+    // Add search functionality if enabled
+    if (enableSearch && searchInput) {
+      let searchTimeout;
+      let originalOptions = []; // Store original options for filtering
+
+      searchInput.addEventListener("input", (e) => {
+        const query = e.target.value.trim();
+
+        // Clear previous timeout
+        if (searchTimeout) {
+          clearTimeout(searchTimeout);
+        }
+
+        // If fetchOnLoad is true, filter existing options instead of making API calls
+        if (fetchOnLoad) {
+          // Store original options on first search
+          if (originalOptions.length === 0) {
+            originalOptions = Array.from(optionsList.querySelectorAll("li")).map((li, index) => {
+              const span = li.querySelector("span");
+              return {
+                value: span?.dataset.value || "",
+                label: span?.dataset.label || "",
+                index: index,
+              };
+            });
+          }
+
+          // If search is cleared, restore all original options
+          if (query.length === 0) {
+            if (optionsList) {
+              optionsList.innerHTML = "";
+              originalOptions.forEach((option, index) => {
+                const li = document.createElement("li");
+                li.className = "slot-machine-item";
+                li.style.cssText = `
+                  display: flex;
+                  align-items: center;
+                  justify-content: center;
+                  height: 3rem;
+                  text-align: center;
+                  color: #111827;
+                  font-weight: 500;
         cursor: pointer;
-        padding: 4px 8px;
-        border-radius: 4px;
         transition: all 0.2s;
+                  min-height: 48px;
+                  padding: 12px 16px;
+                  user-select: none;
+                  position: relative;
+                `;
+
+                const span = document.createElement("span");
+                span.className = "slot-machine-item-text";
+                span.style.cssText = `
+                  text-align: center;
+                  font-weight: 500;
+                  transition: all 0.2s;
+                  width: 100%;
+                `;
+
+                span.textContent = option.label;
+                span.dataset.value = option.value;
+                span.dataset.label = option.label;
+                span.dataset.index = index;
+
+                li.appendChild(span);
+                optionsList.appendChild(li);
+              });
+            }
+            return;
+          }
+
+          // Filter options based on search query
+          const filteredOptions = originalOptions.filter((option) =>
+            option.label.toLowerCase().includes(query.toLowerCase())
+          );
+
+          // Update the options list
+          if (optionsList) {
+            optionsList.innerHTML = "";
+
+            if (filteredOptions.length > 0) {
+              filteredOptions.forEach((option, index) => {
+                const li = document.createElement("li");
+                li.className = "slot-machine-item";
+                li.style.cssText = `
         display: flex;
         align-items: center;
         justify-content: center;
-        min-width: 32px;
-        min-height: 32px;
-      `;
+                  height: 3rem;
+                  text-align: center;
+                  color: #111827;
+                  font-weight: 500;
+                  cursor: pointer;
+                  transition: all 0.2s;
+                  min-height: 48px;
+                  padding: 12px 16px;
+                  user-select: none;
+                  position: relative;
+                `;
 
-      closeButton.addEventListener("mouseenter", () => {
-        closeButton.style.background = "#ef4444";
-        closeButton.style.color = "white";
-        closeButton.style.transform = "translateY(-50%) scale(1.1)";
-      });
+                const span = document.createElement("span");
+                span.className = "slot-machine-item-text";
+                span.style.cssText = `
+                  text-align: center;
+                  font-weight: 500;
+                  transition: all 0.2s;
+                  width: 100%;
+                `;
 
-      closeButton.addEventListener("mouseleave", () => {
-        closeButton.style.background = "transparent";
-        closeButton.style.color = "#6b7280";
-        closeButton.style.transform = "translateY(-50%) scale(1)";
-      });
+                span.textContent = option.label;
+                span.dataset.value = option.value;
+                span.dataset.label = option.label;
+                span.dataset.index = index;
 
-      closeButton.addEventListener("click", () => {
-        cleanupModal();
-        modal.remove();
-      });
+                li.appendChild(span);
+                optionsList.appendChild(li);
+              });
+            } else {
+              // Show "no results" message
+              const li = document.createElement("li");
+              li.className = "slot-machine-item";
+              li.style.cssText = `
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                height: 3rem;
+                text-align: center;
+                color: #666;
+                font-style: italic;
+              `;
+              li.textContent = "No matching clients found";
+              optionsList.appendChild(li);
+            }
+          }
+          return;
+        }
 
-      titleContainer.appendChild(closeButton);
-    }
+        // Original API-based search for non-fetchOnLoad cases
+        if (apiEndpoint && query.length >= 2) {
+          searchTimeout = setTimeout(async () => {
+            try {
+              console.log(`🔍 [SLOT-MACHINE] Searching for: ${query}`);
 
-    // Create slot machine container
-    const slotContainer = document.createElement("div");
-    slotContainer.className =
-      "relative h-48 overflow-hidden border-2 border-gray-200 dark:border-gray-600 rounded-lg mb-4";
+              // Build search URL with API params
+              const searchParams = new URLSearchParams({
+                input: query,
+                ...apiParams,
+              });
 
-    // Create options list
-    const optionsList = document.createElement("ul");
-    optionsList.className = "absolute inset-0 transition-transform duration-300 ease-out";
-    optionsList.style.transform = "translateY(0px)";
+              const response = await fetch(`${apiEndpoint}?${searchParams}`);
+              if (!response.ok) {
+                throw new Error(`Search failed: ${response.status}`);
+              }
 
-    // Add options
-    finalOptions.forEach((option, index) => {
-      const li = document.createElement("li");
-      li.className = "slot-machine-item";
-      li.style.cssText = `
+              const data = await response.json();
+              console.log(`🔍 [SLOT-MACHINE] Search results:`, data);
+
+              // Transform data if transform function exists
+              let transformedData = data;
+              if (dataTransform && typeof window[dataTransform] === "function") {
+                transformedData = window[dataTransform](data);
+                console.log(`🔍 [SLOT-MACHINE] Transformed data:`, transformedData);
+              }
+
+              // Handle different data formats
+              let optionsArray = [];
+              if (Array.isArray(transformedData)) {
+                optionsArray = transformedData;
+              } else if (transformedData && Array.isArray(transformedData.predictions)) {
+                // Google Places format
+                optionsArray = transformedData.predictions;
+              } else if (transformedData && Array.isArray(transformedData.results)) {
+                // Alternative format
+                optionsArray = transformedData.results;
+              } else if (
+                transformedData &&
+                transformedData.data &&
+                Array.isArray(transformedData.data)
+              ) {
+                // Wrapped format
+                optionsArray = transformedData.data;
+              }
+
+              console.log(`🔍 [SLOT-MACHINE] Options array:`, optionsArray);
+
+              // Update options list with search results
+              if (optionsList && optionsArray.length > 0) {
+                // Clear existing options
+                optionsList.innerHTML = "";
+
+                // Add new options
+                optionsArray.forEach((option, index) => {
+                  const li = document.createElement("li");
+                  li.className = "slot-machine-item";
+                  li.style.cssText = `
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    height: 3rem;
+                    text-align: center;
+                    color: #111827;
+                    font-weight: 500;
+                    cursor: pointer;
+                    transition: all 0.2s;
+                    min-height: 48px;
+                    padding: 12px 16px;
+                    user-select: none;
+                    position: relative;
+                  `;
+
+                  const span = document.createElement("span");
+                  span.className = "slot-machine-item-text";
+                  span.style.cssText = `
+                    text-align: center;
+                    font-weight: 500;
+                    transition: all 0.2s;
+                    width: 100%;
+                  `;
+
+                  span.textContent =
+                    option[labelField] || option.label || option.name || option.description;
+                  span.dataset.value =
+                    option[valueField] || option.value || option.place_id || option.id;
+                  span.dataset.label =
+                    option[labelField] || option.label || option.name || option.description;
+                  span.dataset.index = index;
+
+                  li.appendChild(span);
+                  optionsList.appendChild(li);
+                });
+
+                // Reset selected index
+                selectedIndex = -1;
+                updateSelection();
+              } else if (optionsList) {
+                // Show no results message
+                optionsList.innerHTML = `
+                  <li class="slot-machine-item" style="display: flex; align-items: center; justify-content: center; height: 3rem; color: #6b7280;">
+                    <span>No results found</span>
+                  </li>
+                `;
+                selectedIndex = -1;
+                updateSelection();
+              }
+            } catch (error) {
+              console.error(`🔍 [SLOT-MACHINE] Search error:`, error);
+
+              // Show error message
+              if (optionsList) {
+                optionsList.innerHTML = `
+                  <li class="slot-machine-item" style="display: flex; align-items: center; justify-content: center; height: 3rem; color: #ef4444;">
+                    <span>Error loading results</span>
+                  </li>
+                `;
+              }
+            }
+          }, 300); // 300ms debounce
+        } else if (query.length === 0) {
+          // Restore original options when search is empty
+          if (optionsList) {
+            optionsList.innerHTML = "";
+
+            // Restore original options
+            finalOptions.forEach((option, index) => {
+              const li = document.createElement("li");
+              li.className = "slot-machine-item";
+              li.style.cssText = `
         display: flex;
         align-items: center;
         justify-content: center;
@@ -362,72 +713,251 @@ const displayText = buttonText || selectedOption?.label || placeholder;
         position: relative;
       `;
 
-      const span = document.createElement("span");
-      span.className = "slot-machine-item-text";
-      span.style.cssText = `
+              const span = document.createElement("span");
+              span.className = "slot-machine-item-text";
+              span.style.cssText = `
         text-align: center;
         font-weight: 500;
         transition: all 0.2s;
         width: 100%;
       `;
 
-      // Add selected styling if this is the current value
-      if (option.value === selectedValue) {
-        li.classList.add("selected");
-        li.style.cssText += `
-          background: bg-primary-500 !important;
-          color: text-white !important;
+              // Add selected styling if this is the current value
+              const optionValue =
+                option[valueField] || option.value || option.place_id || option.id;
+              if (optionValue === selectedValue) {
+                li.classList.add("selected");
+                li.style.cssText += `
+                  background: bg-primary-500 !important;
+                  color: text-white !important;
           border-radius: 8px !important;
           margin: 0 8px !important;
           position: relative !important;
         `;
-      }
+              }
 
-      span.textContent = option.label;
-      span.dataset.value = option.value;
-      span.dataset.label = option.label;
-      span.dataset.index = index;
+              span.textContent = option.label;
+              span.dataset.value = option.value;
+              span.dataset.label = option.label;
+              span.dataset.index = index;
 
-      li.appendChild(span);
-      optionsList.appendChild(li);
-    });
+              li.appendChild(span);
+              optionsList.appendChild(li);
+            });
 
-    slotContainer.appendChild(optionsList);
-
-    // Create action buttons
-    const buttonContainer = document.createElement("div");
-    buttonContainer.className = "flex justify-center gap-2";
-
-    // Add cancel button if enabled
-    if (showCancelButton) {
-      const cancelButton = document.createElement("button");
-      cancelButton.className =
-        "px-4 py-2 text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200";
-      cancelButton.textContent = "Cancel";
-      cancelButton.onclick = () => {
-        cleanupModal();
-        modal.remove();
-      };
-      buttonContainer.appendChild(cancelButton);
+            // Reset to original selected index
+            selectedIndex = finalOptions.findIndex((option) => option.value === selectedValue);
+            updateSelection();
+          }
+        }
+      });
     }
 
-    const selectButton = document.createElement("button");
-    selectButton.className = `px-4 py-2 text-white rounded-lg disabled:opacity-50`;
-    selectButton.textContent = "Select";
-    selectButton.disabled = true;
+    // Fetch data on load if fetchOnLoad is true
+    if (fetchOnLoad && apiEndpoint && optionsList) {
+      try {
+        console.log(`🔄 [SLOT-MACHINE] Fetching data on load for: ${apiEndpoint}`);
 
-    buttonContainer.appendChild(selectButton);
+        // Build URL with API params
+        const searchParams = new URLSearchParams(apiParams);
+        const response = await fetch(`${apiEndpoint}?${searchParams}`);
 
-    // Assemble modal
-    modalContent.appendChild(titleContainer);
-    modalContent.appendChild(slotContainer);
-    modalContent.appendChild(buttonContainer);
-    modal.appendChild(modalContent);
+        if (!response.ok) {
+          throw new Error(`Fetch failed: ${response.status}`);
+        }
+
+        const data = await response.json();
+        console.log(`🔄 [SLOT-MACHINE] Load data response:`, data);
+
+        // Transform data if transform function exists
+        let transformedData = data;
+        if (dataTransform && typeof window[dataTransform] === "function") {
+          transformedData = window[dataTransform](data);
+          console.log(`🔄 [SLOT-MACHINE] Transformed load data:`, transformedData);
+        }
+
+        // Handle different data formats
+        let optionsArray = [];
+        if (Array.isArray(transformedData)) {
+          optionsArray = transformedData;
+        } else if (transformedData && Array.isArray(transformedData.predictions)) {
+          // Google Places format
+          optionsArray = transformedData.predictions;
+        } else if (transformedData && Array.isArray(transformedData.results)) {
+          // Alternative format
+          optionsArray = transformedData.results;
+        } else if (transformedData && Array.isArray(transformedData.clients)) {
+          // Clients API format
+          optionsArray = transformedData.clients;
+        } else if (transformedData && transformedData.data && Array.isArray(transformedData.data)) {
+          // Wrapped format
+          optionsArray = transformedData.data;
+        }
+
+        console.log(`🔄 [SLOT-MACHINE] Load options array:`, optionsArray);
+
+        // Update finalOptions with fetched data
+        if (optionsArray.length > 0) {
+          // Clear existing options and populate with fetched data
+          optionsList.innerHTML = "";
+          optionsArray.forEach((option, index) => {
+            const li = document.createElement("li");
+            li.className = "slot-machine-item";
+            li.style.cssText = `
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              height: 3rem;
+              text-align: center;
+              color: #111827;
+              font-weight: 500;
+              cursor: pointer;
+              transition: all 0.2s;
+              min-height: 48px;
+              padding: 12px 16px;
+              user-select: none;
+              position: relative;
+            `;
+
+            const span = document.createElement("span");
+            span.className = "slot-machine-item-text";
+            span.style.cssText = `
+              text-align: center;
+              font-weight: 500;
+              transition: all 0.2s;
+              width: 100%;
+            `;
+
+            // Add selected styling if this is the current value
+            const optionValue = option[valueField] || option.value || option.place_id || option.id;
+            if (optionValue === selectedValue) {
+              li.classList.add("selected");
+              li.style.cssText += `
+                background: bg-primary-500 !important;
+                color: text-white !important;
+                border-radius: 8px !important;
+                margin: 0 8px !important;
+                position: relative !important;
+              `;
+            }
+
+            span.textContent =
+              option[labelField] || option.label || option.name || option.description;
+            span.dataset.value = option[valueField] || option.value || option.place_id || option.id;
+            span.dataset.label =
+              option[labelField] || option.label || option.name || option.description;
+            span.dataset.index = index;
+
+            li.appendChild(span);
+            optionsList.appendChild(li);
+          });
+
+          // Update selectedIndex to match the fetched data
+          selectedIndex = optionsArray.findIndex((option) => {
+            const optionValue = option[valueField] || option.value || option.place_id || option.id;
+            return optionValue.toString() === selectedValue.toString();
+          });
+
+          // Update the selection display
+          updateSelection();
+        }
+      } catch (error) {
+        console.error(`🔄 [SLOT-MACHINE] Error fetching data on load:`, error);
+      }
+
+      // Focus search input after fetchOnLoad data is populated
+      if (searchInput) {
+        setTimeout(() => {
+          searchInput.focus();
+        }, 100);
+      }
+    }
+
+    // Populate options in the list from the partial (only if not fetched on load)
+    if (optionsList && !fetchOnLoad) {
+      optionsList.style.transform = "translateY(0px)";
+
+      // Add options to the existing list from the partial
+      finalOptions.forEach((option, index) => {
+        const li = document.createElement("li");
+        li.className = "slot-machine-item";
+        li.style.cssText = `
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        height: 3rem;
+        text-align: center;
+        color: #111827;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s;
+        min-height: 48px;
+        padding: 12px 16px;
+        user-select: none;
+        position: relative;
+      `;
+
+        const span = document.createElement("span");
+        span.className = "slot-machine-item-text";
+        span.style.cssText = `
+        text-align: center;
+        font-weight: 500;
+        transition: all 0.2s;
+        width: 100%;
+      `;
+
+        // Add selected styling if this is the current value
+        if (option.value === selectedValue) {
+          li.classList.add("selected");
+          li.style.cssText += `
+            background: bg-primary-500 !important;
+            color: text-white !important;
+          border-radius: 8px !important;
+          margin: 0 8px !important;
+          position: relative !important;
+        `;
+        }
+
+        span.textContent = option.label;
+        span.dataset.value = option.value;
+        span.dataset.label = option.label;
+        span.dataset.index = index;
+
+        li.appendChild(span);
+        optionsList.appendChild(li);
+      });
+    }
 
     // Slot machine functionality
-    let selectedIndex = finalOptions.findIndex(
-      (option) => option.value.toString() === selectedValue.toString()
-    );
+
+    // Add event listener to select button from the partial
+    if (selectButton) {
+      selectButton.addEventListener("click", async () => {
+        // Get the currently selected option from the DOM
+        const currentOptions = optionsList.querySelectorAll("li");
+        const selectedItem = currentOptions[selectedIndex];
+
+        if (selectedItem && selectedIndex >= 0) {
+          const span = selectedItem.querySelector("span");
+          if (span) {
+            const value = span.dataset.value;
+            const label = span.dataset.label;
+
+            await cleanupModal();
+            modal.remove();
+
+            // Call the generic handleSelect function
+            if (typeof window.handleSelect === "function") {
+              window.handleSelect(value, label, id);
+            }
+          }
+        }
+      });
+    }
+
+    // Add modal to DOM
+    document.body.appendChild(modal);
+
     // Don't default to first item - only select if there's a valid selectedValue
     if (selectedIndex === -1) selectedIndex = -1;
 
@@ -506,7 +1036,7 @@ const displayText = buttonText || selectedOption?.label || placeholder;
       const items = optionsList.querySelectorAll("li");
       items.forEach((item, index) => {
         if (index === selectedIndex && selectedIndex >= 0) {
-          item.classList.add("selected");
+          item.classList.add("selected", "bg-primary-500");
           // Reset and apply selected styles
           item.style.cssText = `
             display: flex;
@@ -522,16 +1052,13 @@ const displayText = buttonText || selectedOption?.label || placeholder;
             padding: 12px 16px;
             user-select: none;
             position: relative;
-            background: linear-gradient(135deg, #3b82f6, #1d4ed8);
             border-radius: 8px;
             margin: 0 8px;
-            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
-            border: 2px solid #1d4ed8;
           `;
           addCheckmark(item);
-          selectButton.disabled = false;
+          if (selectButton) selectButton.disabled = false;
         } else {
-          item.classList.remove("selected");
+          item.classList.remove("selected", "bg-primary-500");
           item.style.cssText = `
             display: flex;
             align-items: center;
@@ -553,7 +1080,7 @@ const displayText = buttonText || selectedOption?.label || placeholder;
 
       // Disable select button if no item is selected
       if (selectedIndex < 0) {
-        selectButton.disabled = true;
+        if (selectButton) selectButton.disabled = true;
       }
     }
 
@@ -578,10 +1105,14 @@ const displayText = buttonText || selectedOption?.label || placeholder;
       e.preventDefault();
       const deltaY = e.deltaY;
 
+      // Get current options count from DOM
+      const currentOptions = optionsList.querySelectorAll("li");
+      const maxIndex = currentOptions.length - 1;
+
       // Calculate new index based on scroll direction
       if (deltaY > 0) {
         // Scrolling down - move to next item
-        selectedIndex = Math.min(selectedIndex + 1, finalOptions.length - 1);
+        selectedIndex = Math.min(selectedIndex + 1, maxIndex);
       } else {
         // Scrolling up - move to previous item
         selectedIndex = Math.max(selectedIndex - 1, 0);
@@ -631,9 +1162,13 @@ const displayText = buttonText || selectedOption?.label || placeholder;
 
         // Only process if there was significant movement and it was quick enough
         if (Math.abs(deltaY) > 20 && deltaTime < 500) {
+          // Get current options count from DOM
+          const currentOptions = optionsList.querySelectorAll("li");
+          const maxIndex = currentOptions.length - 1;
+
           if (deltaY > 0) {
             // Swiping up - move to next item
-            selectedIndex = Math.min(selectedIndex + 1, finalOptions.length - 1);
+            selectedIndex = Math.min(selectedIndex + 1, maxIndex);
           } else {
             // Swiping down - move to previous item
             selectedIndex = Math.max(selectedIndex - 1, 0);
@@ -669,44 +1204,47 @@ const displayText = buttonText || selectedOption?.label || placeholder;
       }
     });
 
-    // Handle select button
-    selectButton.addEventListener("click", () => {
-      if (selectedIndex >= 0) {
-        const selectedOption = finalOptions[selectedIndex];
-        if (selectedOption && onSelect) {
-          cleanupModal();
-          modal.remove();
-          onSelect(selectedOption.value, selectedOption.label);
-        }
-      }
-    });
+    // Initial setup
+    centerSelectedItem();
+    updateSelection();
 
     // Cleanup function to restore body scroll
     function cleanupModal() {
-      document.body.classList.remove("modal-open");
+      // Unlock body scroll
       document.body.style.overflow = "";
     }
 
     // Close modal when clicking outside
-    modal.addEventListener("click", (e) => {
+    modal.addEventListener("click", async (e) => {
       if (e.target === modal) {
-        cleanupModal();
+        await cleanupModal();
         modal.remove();
       }
     });
 
-    // Initialize
-    centerSelectedItem();
-    // Apply selection styling to the initially selected item
-    updateSelection();
-
     // Prevent body scroll when modal is open
-    document.body.classList.add("modal-open");
     document.body.style.overflow = "hidden";
-
-    // Add to DOM
-    document.body.appendChild(modal);
   }
+
+  // Generic handleSelect function that works for any slot machine
+  window.handleSelect = function (value, label, componentId) {
+    // Find the hidden input for this component
+    const hiddenInput = document.getElementById(`${componentId}-value`);
+    if (hiddenInput) {
+      hiddenInput.value = value;
+    }
+
+    // Find the button and update its text
+    const button = document.getElementById(componentId);
+    if (button) {
+      const buttonText = button.querySelector(".button-text");
+      if (buttonText) {
+        buttonText.textContent = label;
+      }
+    }
+
+    console.log(`✅ [SLOT-MACHINE] Selected: ${label} (${value}) for component: ${componentId}`);
+  };
 
   // Expose function to update slot machine options dynamically
   window.updateSlotMachineOptions = function (componentId, newOptions) {
@@ -719,13 +1257,6 @@ const displayText = buttonText || selectedOption?.label || placeholder;
 </script>
 
 <style>
-  /* Prevent body scroll when modal is open */
-  body.modal-open {
-    overflow: hidden !important;
-    position: fixed !important;
-    width: 100% !important;
-  }
-
   /* Prevent text selection in modal */
   .slot-machine-item {
     user-select: none !important;
@@ -750,6 +1281,59 @@ const displayText = buttonText || selectedOption?.label || placeholder;
     }
   }
 
+  .slot-machine-item {
+    user-select: none !important;
+    -webkit-user-select: none !important;
+    -moz-user-select: none !important;
+    -ms-user-select: none !important;
+  }
+
+  /* Smooth transitions */
+  .transition-transform {
+    transition-property: transform;
+    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+    transition-duration: 300ms;
+  }
+
+  /* Slot machine container styling */
+  .slot-machine-container {
+    min-height: 12rem !important;
+    max-height: 12rem !important;
+    height: 12rem !important;
+    display: block !important;
+  }
+
+  /* Ensure the slot machine list takes full height */
+  .slot-machine-container ul {
+    height: 100% !important;
+    min-height: 12rem !important;
+    position: absolute !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+  }
+
+  /* Ensure slot machine items are visible */
+  .slot-machine-item {
+    min-height: 3rem !important;
+    height: 3rem !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    transition: all 0.2s ease-in-out;
+  }
+
+  /* Ensure selected items have white text */
+  .slot-machine-item.selected {
+    color: white !important;
+  }
+
+  .slot-machine-item.selected span {
+    color: white !important;
+  }
+
+  /* Checkmark pulse animation */
   @keyframes checkmarkPulse {
     0%,
     100% {
@@ -776,5 +1360,10 @@ const displayText = buttonText || selectedOption?.label || placeholder;
       transform: translateY(-50%) scale(1.1);
       text-shadow: 0 0 16px rgba(16, 185, 129, 1);
     }
+  }
+
+  /* Empty state styling */
+  .slot-empty-state {
+    transition: opacity 0.3s ease-in-out;
   }
 </style>

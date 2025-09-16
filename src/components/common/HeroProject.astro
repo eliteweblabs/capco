@@ -40,7 +40,15 @@ const statusOptions = Object.values(statuses).map((status: any) => ({
 let staffOptions: any[] = [];
 if (currentRole === "Admin" || currentRole === "Staff") {
   try {
-    const staffResponse = await fetch(`${Astro.url.origin}/api/get-team-users`);
+    const staffResponse = await fetch(`${Astro.url.origin}/api/get-user-emails-by-role`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        roles: ["Admin", "Staff"],
+      }),
+    });
     if (staffResponse.ok) {
       const staffData = await staffResponse.json();
       if (staffData.success && staffData.staffUsers) {
@@ -100,27 +108,23 @@ if (currentRole === "Admin" || currentRole === "Staff") {
               title="Select Status"
               options={statusOptions}
               selectedValue={currentStatusInt || ""}
-              theme="blue"
               placeholder="Choose status"
             />
 
-            {(currentRole === "Admin" || currentRole === "Staff") && (
-              <SlotMachineModal
-                title={(() => {
-                  if (!project?.assigned_to_id) return "Unassigned";
-                  const assignedStaff = staffOptions.find(
-                    (staff) => staff.value === project.assigned_to_id
-                  );
-                  return assignedStaff?.label || "Unknown Staff";
-                })()}
-                id="assign-staff"
-                title="Assign Staff Member"
-                options={staffOptions}
-                selectedValue={project?.assigned_to_id || ""}
-                theme="green"
-                placeholder="Assign staff..."
-              />
-            )}
+            <SlotMachineModal
+              title={(() => {
+                if (!project?.assigned_to_id) return "Unassigned";
+                const assignedStaff = staffOptions.find(
+                  (staff) => staff.value === project.assigned_to_id
+                );
+                return assignedStaff?.label || "Unknown Staff";
+              })()}
+              id="assign-staff"
+              title="Assign Staff Member"
+              options={staffOptions}
+              selectedValue={project?.assigned_to_id || ""}
+              placeholder="Assign staff..."
+            />
           </div>
         ) : (
           <a

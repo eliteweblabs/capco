@@ -442,89 +442,56 @@ async function findOrCreateUser(email: string, headers?: Record<string, string>)
     // Generate a temporary password
     const tempPassword = generateTempPassword();
 
-    if (!supabaseAdmin) {
-      console.error("❌ [EMAIL-WEBHOOK] Supabase admin client not initialized");
-      return null;
-    }
+    // Use the create-user API to create the user (keeps logic consistent)
+    console.log("🔐 [EMAIL-WEBHOOK] Creating user via create-user API");
 
-    // Create user in Supabase Auth (requires service role key)
-    console.log("🔐 [EMAIL-WEBHOOK] Creating auth user with email:", cleanEmail);
-    console.log("🔐 [EMAIL-WEBHOOK] User metadata:", {
-      full_name: fullName,
-      role: "Client",
-      created_by_email_webhook: true,
-      must_change_password: true,
-      email: cleanEmail,
-    });
+    try {
+      const createUserResponse = await fetch(
+        `${process.env.SITE_URL || "http://localhost:4321"}/api/create-user`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            email: cleanEmail,
+            password: tempPassword,
+            first_name: firstName,
+            last_name: lastName,
+            company_name: fullName,
+            phone: null,
+            mobile_carrier: null,
+            sms_alerts: false,
+            role: "Client", // Note: it's 'role', not 'staff_role'
+          }),
+        }
+      );
 
-    const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
-      email: cleanEmail,
-      password: tempPassword,
-      email_confirm: false, // Auto-confirm email
-      user_metadata: {
-        full_name: fullName,
-        role: "Client",
-        created_by_email_webhook: true,
-        must_change_password: true,
-        email: cleanEmail,
-      },
-    });
+      const createUserResult = await createUserResponse.json();
 
-    if (authError) {
-      console.error("❌ [EMAIL-WEBHOOK] Supabase auth error:", authError);
-      return null;
-    }
-
-    // Update profile in profiles table (trigger creates it automatically)
-    // Use ON CONFLICT to handle cases where trigger already created the profile
-    const profileData = {
-      id: authData.user.id,
-      email: cleanEmail,
-      first_name: firstName,
-      last_name: lastName,
-      company_name: fullName,
-      phone: null,
-      sms_alerts: false,
-      mobile_carrier: null,
-      role: "Client",
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    };
-
-    console.log("📝 [EMAIL-WEBHOOK] Creating profile with data:", profileData);
-
-    const { error: upsertError } = await supabaseAdmin.from("profiles").upsert(profileData, {
-      onConflict: "id",
-      ignoreDuplicates: false,
-    });
-
-    if (upsertError) {
-      console.error("❌ [EMAIL-WEBHOOK] Profile creation error:", upsertError);
-
-      // Try to delete the auth user if profile creation fails
-      try {
-        await supabaseAdmin.auth.admin.deleteUser(authData.user.id);
-      } catch (deleteError) {
-        console.error("❌ [EMAIL-WEBHOOK] Failed to cleanup auth user:", deleteError);
+      if (!createUserResult.success) {
+        console.error("❌ [EMAIL-WEBHOOK] Create user API failed:", createUserResult.error);
+        return null;
       }
 
+      console.log("✅ [EMAIL-WEBHOOK] Created new user via API:", createUserResult.user.id);
+
+      // Return the profile data in the expected format
+      const newProfile = {
+        id: createUserResult.user.id,
+        email: cleanEmail,
+        first_name: firstName,
+        last_name: lastName,
+        company_name: fullName,
+        phone: null,
+        role: "Client",
+      };
+
+      return newProfile;
+    } catch (error) {
+      console.error("❌ [EMAIL-WEBHOOK] Error calling create-user API:", error);
       return null;
     }
-
-    console.log("✅ [EMAIL-WEBHOOK] Created new user:", authData.user.id);
-
-    // Return the profile data
-    const newProfile = {
-      id: authData.user.id,
-      email: cleanEmail,
-      first_name: firstName,
-      last_name: lastName,
-      company_name: fullName,
-      phone: null,
-      role: "Client",
-    };
-
-    return newProfile;
   } catch (error) {
     console.error("❌ [EMAIL-WEBHOOK] Error in findOrCreateUser:", error);
     return null;

@@ -59,6 +59,10 @@ if (currentRole === "Staff" && project.assigned_to_id !== user?.id) {
   return null;
 }
 
+if (currentRole === "Client" && project.author_id !== user?.id) {
+  return null;
+}
+
 // console.log("🔍 [PROJECT-LIST-ITEM] Status URL:", projectStatusesObject[project.status]);
 
 const statusSlugOrId =
@@ -92,13 +96,15 @@ if (project.profiles) {
 ---
 
 <div
-  class="relative my-4 rounded-lg border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-800 min-h-[200px]"
+  class="relative my-4 min-h-[200px] rounded-lg border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-800"
   data-project-status={statusSlugOrId}
   data-project-id={project.id}
 >
   <!-- Featured Image Display -->
 
-  <div class="bg-gray-100 dark:bg-gray-700 h-32 flex items-center justify-center">
+  <div
+    class="flex h-32 items-center justify-center overflow-hidden rounded-t-lg bg-gray-100 dark:bg-gray-700"
+  >
     {
       (() => {
         const tabUrl = `/project/${project.id}?tab=${currentStatusTab}`;
@@ -111,7 +117,7 @@ if (project.profiles) {
         return (
           <a
             href={tabUrl}
-            class={`absolute -right-4 -top-4 rounded-full px-2.5 py-0.5 text-sm mb-4 font-large ${statusColorClasses} hover:opacity-80 transition-opacity cursor-pointer`}
+            class={`font-large absolute -right-4 -top-4 mb-4 rounded-full px-2.5 py-0.5 text-sm ${statusColorClasses} cursor-pointer transition-opacity hover:opacity-80`}
             data-refresh="status_name"
             data-project-id={project.id}
             title={`Go to ${currentStatusName} tab`}
@@ -127,7 +133,7 @@ if (project.profiles) {
         <img
           src={project.featured_image_data.public_url}
           alt={`Featured image for ${project.address}`}
-          class="w-full h-32 object-cover hover:scale-105 transition-transform duration-200 rounded-lg rounded-b-none"
+          class="h-32 w-full rounded-lg rounded-b-none object-cover transition-transform duration-200 hover:scale-105"
           loading="lazy"
           referrerpolicy="strict-origin-when-cross-origin"
           crossorigin="anonymous"
@@ -135,7 +141,7 @@ if (project.profiles) {
         />
       ) : (
         <div class="text-center text-gray-400 dark:text-gray-500">
-          <BoxIcon name="image" class="h-8 w-8 mx-auto mb-2" />
+          <BoxIcon name="image" class="mx-auto mb-2 h-8 w-8" />
           <p class="text-xs">No featured image</p>
         </div>
       )
@@ -143,26 +149,26 @@ if (project.profiles) {
   </div>
 
   <div class="p-3">
-    <a href={`/project/${project.id}`} class="hover:opacity-80 transition-opacity">
-      <div class="flex items-center gap-2 min-w-full">
+    <a href={`/project/${project.id}`} class="transition-opacity hover:opacity-80">
+      <div class="flex min-w-full items-center gap-2">
         <h3
-          class="text-lg font-semibold text-gray-900 dark:text-white truncate max-w-xs"
+          class="max-w-xs truncate text-lg font-semibold text-gray-900 dark:text-white"
           data-searchable
         >
           {
             currentRole !== "Client" && (
               <span>
                 {project?.company_name || "Unknown Author"}
-                <span class="text-gray-500 dark:text-gray-400 hidden md:inline"> → </span>
+                <span class="hidden text-gray-500 dark:text-gray-400 md:inline"> → </span>
               </span>
             )
           }
           {project.address}
         </h3>
       </div>
-      <div class="flex-none md:flex-1 min-w-full">
+      <div class="min-w-full flex-none md:flex-1">
         <p
-          class="mt-2 text-sm text-gray-600 dark:text-gray-300 mb-2"
+          class="mb-2 mt-2 text-sm text-gray-600 dark:text-gray-300"
           data-project-description
           title={description}
         >
@@ -171,10 +177,10 @@ if (project.profiles) {
       </div>
     </a>
 
-    <div class="items-start justify-between md:flex gap-4">
+    <div class="items-start justify-between gap-4 md:flex">
       <a
         href={`/project/${project.id}`}
-        class="hover:opacity-80 transition-opacity cursor-pointer mb-4 text-sm"
+        class="mb-4 cursor-pointer text-sm transition-opacity hover:opacity-80"
       >
         <span class="flex items-center gap-1">
           <BoxIcon name="area" />
@@ -185,7 +191,7 @@ if (project.profiles) {
           {project.new_construction ? "New" : "Existing"}
         </span>
       </a>
-      <div class="text-xs justify-end">
+      <div class="justify-end text-xs">
         <div>
           <b>Updated:</b>
           {new Date(project.updated_at).toLocaleDateString()}
@@ -212,7 +218,7 @@ if (project.profiles) {
     </div>
 
     <div
-      class="flex flex-col md:flex-row md:items-center gap-2 md:gap-4 hover:opacity-80 transition-opacity"
+      class="flex flex-col gap-2 transition-opacity hover:opacity-80 md:flex-row md:items-center md:gap-4"
     >
       {
         currentRole !== "Client" && (
@@ -225,7 +231,7 @@ if (project.profiles) {
 
       <a
         href={`/project/${project.id}?tab=discussion`}
-        class="relative hover:opacity-80 transition-opacity cursor-pointer"
+        class="relative cursor-pointer transition-opacity hover:opacity-80"
         title={`${project.comment_count || 0} comments - Go to discussions`}
       >
         <BoxIcon name="message-rounded-dots" class="bx-md text-blue-500 dark:text-blue-400" />

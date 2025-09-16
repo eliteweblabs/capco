@@ -28,11 +28,11 @@ const {
   class="tab-content hidden rounded-lg bg-white p-6 text-gray-800 shadow-md dark:bg-gray-800 dark:text-gray-200"
 >
   {
-    projectStatus === 10 ||
-    projectStatus === 20 ||
-    projectStatus === 30 ||
-    projectStatus === 40 ||
-    projectStatus === 50 ? (
+    projectStatus === 100 ||
+    projectStatus === 200 ||
+    projectStatus === 300 ||
+    projectStatus === 400 ||
+    projectStatus === 500 ? (
       <>
         <div
           id="upload-dropzone"
@@ -75,17 +75,17 @@ const {
   }
 
   <!-- Hidden file input -->
-  <input
+  <!-- <input
     type="file"
     id="file-input"
     multiple
     accept=".pdf,.png,.jpg,.jpeg,.gif,.webp,.dwg,.doc,.docx,.xls,.xlsx,.txt"
     class="hidden"
     capture="environment"
-  />
+  /> -->
 
   <!-- Upload Progress -->
-  <div id="upload-progress" class="mt-4 hidden">
+  <!-- <div id="upload-progress" class="mt-4 hidden">
     <div class="h-2 rounded-full bg-gray-200 dark:bg-gray-700">
       <div
         id="progress-bar"
@@ -97,10 +97,10 @@ const {
     <p id="upload-status" class="mt-2 max-w-full truncate text-sm text-gray-600 dark:text-gray-400">
       Uploading...
     </p>
-  </div>
+  </div> -->
 
   <!-- File List -->
-  <div id="uploaded-files" class="mt-6 hidden">
+  <!-- <div id="uploaded-files" class="mt-6 hidden">
     <div class="mb-3 hidden items-center justify-between md:flex">
       <h4 class="text-md flex items-center font-medium text-gray-900 dark:text-white">
         <BoxIcon name="file" class="mr-2" />
@@ -133,7 +133,7 @@ const {
         </p>
       </div>
     </div>
-  </div>
+  </div> -->
 
   <!-- All Documents Uploaded Button (Clients Only) -->
   {
@@ -538,7 +538,33 @@ const {
       this.refreshFileList();
     }
 
-    addFileToList(file) {
+    // Helper function to create buttons using Button partial
+    async createButtonPartial(config) {
+      try {
+        const headers = new Headers();
+        Object.entries(config).forEach(([key, value]) => {
+          if (value !== undefined && value !== null) {
+            headers.set(`x-button-${key}`, value.toString());
+          }
+        });
+
+        const response = await fetch("/partials/button", {
+          headers: headers,
+        });
+
+        if (response.ok) {
+          return await response.text();
+        } else {
+          console.error("Failed to fetch button partial:", response.status);
+          return null;
+        }
+      } catch (error) {
+        console.error("Error creating button partial:", error);
+        return null;
+      }
+    }
+
+    async addFileToList(file) {
       this.filesContainer.classList.remove("hidden");
 
       const fileItem = document.createElement("div");
@@ -584,11 +610,7 @@ const {
                   <path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/>
                 </svg>
               </a>
-              <button class="download-btn p-2 text-green-600 hover:text-green-800 hover:bg-green-50 dark:hover:bg-green-900/20 rounded-full transition-colors" data-file-path="${file.file_path}" data-file-name="${fileName}" title="Download file">
-                <svg class="h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/>
-                </svg>
-              </button>
+              <div class="download-btn-container"></div>
             `
                 : `
               <button class="p-2 text-gray-400 cursor-not-allowed rounded-full" disabled title="View not available">
@@ -664,12 +686,7 @@ const {
                 `
                     : `<div></div>`
                 }
-                <button class="save-metadata-btn inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-full text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors" data-file-id="${file.id}">
-                  <svg class="h-4 w-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                    <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
-                  </svg>
-                  Save Title & Comments
-                </button>
+                <div class="save-metadata-btn-container"></div>
               </div>
             </div>
           </div>
@@ -677,6 +694,49 @@ const {
       `;
 
       this.fileList.appendChild(fileItem);
+
+      // Load buttons using Button partial
+      await this.loadFileItemButtons(fileItem, file, fileName);
+    }
+
+    async loadFileItemButtons(fileItem, file, fileName) {
+      try {
+        // Load download button if file has public URL
+        const downloadContainer = fileItem.querySelector(".download-btn-container");
+        if (downloadContainer && file.public_url) {
+          const downloadButtonHtml = await this.createButtonPartial({
+            variant: "ghost",
+            size: "sm",
+            icon: "download",
+            class:
+              "download-btn p-2 text-green-600 hover:text-green-800 hover:bg-green-50 dark:hover:bg-green-900/20 rounded-full",
+            title: "Download file",
+            "data-file-path": file.file_path,
+            "data-file-name": fileName,
+          });
+          if (downloadButtonHtml) {
+            downloadContainer.innerHTML = downloadButtonHtml;
+          }
+        }
+
+        // Load save metadata button
+        const saveContainer = fileItem.querySelector(".save-metadata-btn-container");
+        if (saveContainer) {
+          const saveButtonHtml = await this.createButtonPartial({
+            variant: "primary",
+            size: "sm",
+            icon: "check",
+            text: "Save Title & Comments",
+            class: "save-metadata-btn",
+            "data-file-id": file.id.toString(),
+          });
+          if (saveButtonHtml) {
+            saveContainer.innerHTML = saveButtonHtml;
+          }
+        }
+      } catch (error) {
+        console.error("Error loading file item buttons:", error);
+      }
     }
 
     async saveFileMetadata(fileId, title, comments, fileItem) {
@@ -818,7 +878,9 @@ const {
           console.log("📁 [PDF-UPLOAD] Files count:", result.files?.length || 0);
 
           if (result.files && result.files.length > 0) {
-            result.files.forEach((file) => this.addFileToList(file));
+            for (const file of result.files) {
+              await this.addFileToList(file);
+            }
             this.filesContainer.classList.remove("hidden");
             this.noFilesMessage.classList.add("hidden");
             console.log("📁 [PDF-UPLOAD] Showing file list, hiding no-files message");

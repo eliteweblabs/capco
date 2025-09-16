@@ -101,10 +101,10 @@ function getAuthorName(discussion: any): string {
   title="Global Discussions - CAPCo Fire Protection" 
   description="View all project discussions and comments across all projects." 
   requireAuth={true}
-  isAuth={isAuth}
-  currentUser={currentUser}
-  currentRole={currentRole}
-  session={session}
+  isAuth={isAuth || false}
+  currentUser={currentUser || null}
+  currentRole={currentRole || ""}
+  session={session || null}
 >
   <!-- Header Section -->
   <div class="bg-gradient-to-r from-red-50 to-orange-50 px-6 py-16 dark:from-red-900/20 dark:to-orange-900/20">
@@ -289,13 +289,40 @@ function getAuthorName(discussion: any): string {
 
   </SectionContainer>
 
-  <!-- Auto-refresh script -->
+  <!-- Toggle functionality script -->
   <script>
-    // Auto-refresh every 30 seconds
-    setInterval(() => {
-      window.location.reload();
-    }, 30000);
-    
-    // Toggle functionality is handled by the Discussions component
+    // Toggle functionality for completed status
+    document.addEventListener("change", (e) => {
+      if ((e.target as HTMLInputElement).classList.contains("completed-toggle")) {
+        const discussionId = (e.target as HTMLInputElement).getAttribute("data-discussion-id");
+        const isCompleted = (e.target as HTMLInputElement).checked;
+        
+        if (discussionId) {
+          fetch("/api/update-discussion-completed", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              discussionId: parseInt(discussionId),
+              mark_completed: isCompleted,
+            }),
+          })
+          .then(response => response.json())
+          .then(data => {
+            if (data.success) {
+              console.log("Discussion status updated");
+            } else {
+              // Revert toggle on error
+              (e.target as HTMLInputElement).checked = !isCompleted;
+              console.error("Failed to update discussion status:", data.error);
+            }
+          })
+          .catch(error => {
+            // Revert toggle on error
+            (e.target as HTMLInputElement).checked = !isCompleted;
+            console.error("Error updating discussion status:", error);
+          });
+        }
+      }
+    });
   </script>
 </App>

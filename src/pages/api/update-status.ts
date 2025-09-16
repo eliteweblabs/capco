@@ -199,9 +199,9 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         const notificationData = {
           admin: {
             type: "success",
-            title: "Status Updated",
+            title: "Project Updated",
             message:
-              placeholderResult.processedMessages.modal_admin || "Status updated successfully",
+              placeholderResult.processedMessages.modal_admin || "Project updated successfully",
             duration: 5000, // 5 seconds
             redirect: statusData.statusConfig.modal_auto_redirect_admin
               ? {
@@ -213,9 +213,9 @@ export const POST: APIRoute = async ({ request, cookies }) => {
           },
           client: {
             type: "success",
-            title: "Status Updated",
+            title: "Project Updated",
             message:
-              placeholderResult.processedMessages.modal_client || "Status updated successfully",
+              placeholderResult.processedMessages.modal_client || "Project updated successfully",
             duration: 5000, // 5 seconds
             redirect: statusData.statusConfig.modal_auto_redirect_client
               ? {
