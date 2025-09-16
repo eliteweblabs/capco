@@ -212,15 +212,15 @@ const placeholder =
             //   discussions: discussions.map(d => ({ id: d.id, internal: d.internal, author_id: d.author_id, parent_id: d.parent_id }))
             // });
 
-            if (discussions.length === 0) {
-              commentsList.innerHTML = `
-        <div class="text-center py-8 text-gray-500 dark:text-gray-400">
-          <i class="bx bx-message-rounded-dots mx-auto mb-4 text-4xl"></i>
-          <p>No comments yet. Be the first to start the discussion!</p>
-        </div>
-      `;
-              return;
-            }
+            //       if (discussions.length === 0) {
+            //         commentsList.innerHTML = `
+            //   <div class="text-center py-8 text-gray-500 dark:text-gray-400">
+            //     <i class="bx bx-message-rounded-dots mx-auto mb-4 text-4xl"></i>
+            //     <p>No comments yet. Be the first to start the discussion!</p>
+            //   </div>
+            // `;
+            //         return;
+            //       }
 
             // Separate top-level comments and replies
             const topLevelComments = discussions.filter((d) => !d.parent_id);
@@ -297,15 +297,58 @@ const placeholder =
           // Make highlightMentions available globally for other components
           window.highlightMentions = highlightMentions;
 
+          // Helper function to get image URL
+          function getImageUrl(imagePath) {
+            if (imagePath.startsWith("http")) {
+              return imagePath;
+            }
+
+            if (
+              !supabaseUrl ||
+              supabaseUrl === "undefined" ||
+              supabaseUrl.includes("your-project")
+            ) {
+              return `data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjEwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjNmNGY2Ii8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxNCIgZmlsbD0iIzY2NjY2NiIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPkltYWdlIG5vdCBhdmFpbGFibGU8L3RleHQ+PC9zdmc+`;
+            }
+
+            return `${supabaseUrl}/storage/v1/object/public/${imagePath}`;
+          }
+
           async function renderComment(comment, depth = 0) {
             try {
+              // Compute all values in the parent component
+              const isInternal = comment.internal;
+              const isAuthor = comment.author_id === currentUserId;
+              const canToggleCompleted =
+                currentUserRole === "Admin" || currentUserRole === "Staff" || isAuthor;
+              const canReply =
+                currentUserRole === "Admin" ||
+                currentUserRole === "Staff" ||
+                currentUserRole === "Client";
+              const marginLeft = depth > 0 ? `ml-${Math.min(depth * 8, 32)}` : "";
+              const borderLeft =
+                depth > 0 ? "border-l-2 border-gray-200 dark:border-gray-600 pl-4" : "";
+
               const headers = new Headers({
                 "x-comment-data": JSON.stringify(comment),
                 "x-current-user-role": currentUserRole,
                 "x-current-user-id": currentUserId,
                 "x-supabase-url": supabaseUrl,
                 "x-comment-depth": depth.toString(),
+                "x-is-internal": isInternal.toString(),
+                "x-is-author": isAuthor.toString(),
+                "x-can-toggle-completed": canToggleCompleted.toString(),
+                "x-can-reply": canReply.toString(),
+                "x-margin-left": marginLeft,
+                "x-border-left": borderLeft,
               });
+
+              // Add image URLs to headers
+              if (comment.image_paths && comment.image_paths.length > 0) {
+                comment.image_paths.forEach((imagePath, index) => {
+                  headers.set(`x-image-url-${index}`, getImageUrl(imagePath));
+                });
+              }
 
               const response = await fetch("/partials/comment", {
                 headers: headers,
@@ -328,12 +371,15 @@ const placeholder =
             if (!canToggle) return;
 
             try {
+              // Handle null/undefined isCompleted values
+              const completed = isCompleted === true || isCompleted === "true" || isCompleted === 1;
+
               const headers = new Headers({
                 "x-toggle-id": `completed-toggle-${commentId}`,
-                "x-toggle-label": isCompleted ? "Completed" : "Incomplete",
-                "x-toggle-icon": isCompleted ? "bx-check-circle" : "",
+                "x-toggle-label": completed ? "Completed" : "Incomplete",
+                "x-toggle-icon": completed ? "bx-check-circle" : "",
                 "x-toggle-color": "green",
-                "x-toggle-checked": isCompleted.toString(),
+                "x-toggle-checked": completed.toString(),
                 "x-toggle-class": "completed-toggle",
                 "x-toggle-data-discussion-id": commentId.toString(),
               });

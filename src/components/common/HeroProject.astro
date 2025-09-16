@@ -103,27 +103,35 @@ if (currentRole === "Admin" || currentRole === "Staff") {
         currentRole === "Admin" || currentRole === "Staff" ? (
           <div class="relative flex flex-row gap-2 text-left">
             <SlotMachineModal
-              title={currentStatusName}
               id="update-status"
               title="Select Status"
               options={statusOptions}
               selectedValue={currentStatusInt || ""}
               placeholder="Choose status"
+              buttonText={currentStatusName}
+              showCloseButton={true}
+              showCancelButton={true}
+              skipSaveToAPI={false}
+              projectId={projectId}
             />
 
             <SlotMachineModal
-              title={(() => {
+              id="assign-staff"
+              title="Assign Staff Member"
+              options={staffOptions}
+              selectedValue={project?.assigned_to_id || ""}
+              placeholder="Assign staff..."
+              buttonText={(() => {
                 if (!project?.assigned_to_id) return "Unassigned";
                 const assignedStaff = staffOptions.find(
                   (staff) => staff.value === project.assigned_to_id
                 );
                 return assignedStaff?.label || "Unknown Staff";
               })()}
-              id="assign-staff"
-              title="Assign Staff Member"
-              options={staffOptions}
-              selectedValue={project?.assigned_to_id || ""}
-              placeholder="Assign staff..."
+              showCloseButton={true}
+              showCancelButton={true}
+              skipSaveToAPI={false}
+              projectId={projectId}
             />
           </div>
         ) : (

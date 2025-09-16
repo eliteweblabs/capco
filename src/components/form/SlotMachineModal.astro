@@ -29,6 +29,7 @@ interface Props {
   valueField?: string; // Optional: Field name to use for the value (default: "value")
   labelField?: string; // Optional: Field name to use for the label (default: "label")
   fetchOnLoad?: boolean; // Optional: Whether to fetch data immediately on modal open (default: false)
+  projectId?: string; // Optional: Project ID for API calls
 }
 
 const {
@@ -57,6 +58,7 @@ const {
   valueField = "value",
   labelField = "label",
   fetchOnLoad = false,
+  projectId,
 } = Astro.props;
 
 // Ensure options is always an array
@@ -101,6 +103,7 @@ const displayText = buttonText || selectedOption?.label || placeholder;
     valueField,
     labelField,
     fetchOnLoad,
+    projectId,
     noResultsText,
   }}
 >
@@ -151,17 +154,29 @@ const displayText = buttonText || selectedOption?.label || placeholder;
             buttonIcon.style.display = "inline-block";
           }
 
+          console.log(`🎰 [SLOT-MACHINE] ===== SELECTION MADE =====`);
+          console.log(`🎰 [SLOT-MACHINE] Selected value: ${value} (type: ${typeof value})`);
+          console.log(`🎰 [SLOT-MACHINE] Selected label: ${label} (type: ${typeof label})`);
+          console.log(`🎰 [SLOT-MACHINE] Component ID: ${id}`);
+          console.log(`🎰 [SLOT-MACHINE] Skip save to API: ${skipSaveToAPI}`);
+
           // Call the generic handleSelect function
           if (typeof window.handleSelect === "function") {
+            console.log(`🎰 [SLOT-MACHINE] Calling window.handleSelect function`);
             window.handleSelect(value, label, id);
+          } else {
+            console.log(`🎰 [SLOT-MACHINE] No window.handleSelect function found`);
           }
 
           // Auto-save to API endpoint using the component ID
           if (!skipSaveToAPI) {
+            console.log(`🎰 [SLOT-MACHINE] Calling saveToAPI with:`, { id, value, label });
             saveToAPI(id, value, label);
+          } else {
+            console.log(`🎰 [SLOT-MACHINE] Skipping saveToAPI because skipSaveToAPI is true`);
           }
 
-          // // console.log(`🎰 [SLOT-MACHINE] Selected: ${label} (${value})`);
+          console.log(`🎰 [SLOT-MACHINE] Selection process completed`);
         },
         enableSearch: enableSearch,
         apiEndpoint: apiEndpoint,
@@ -217,36 +232,67 @@ const displayText = buttonText || selectedOption?.label || placeholder;
   // Auto-save function that uses component ID to determine API endpoint
   async function saveToAPI(componentId, value, label) {
     try {
-      console.log(`🎰 [SLOT-MACHINE] Saving to API: /api/${componentId}`, { value, label });
+      console.log(`🎰 [SLOT-MACHINE] ===== SAVE TO API START =====`);
+      console.log(`🎰 [SLOT-MACHINE] Component ID: ${componentId}`);
+      console.log(`🎰 [SLOT-MACHINE] Value: ${value} (type: ${typeof value})`);
+      console.log(`🎰 [SLOT-MACHINE] Label: ${label} (type: ${typeof label})`);
+      console.log(`🎰 [SLOT-MACHINE] ProjectId prop: ${projectId} (type: ${typeof projectId})`);
+      console.log(`🎰 [SLOT-MACHINE] Current URL: ${window.location.href}`);
+      console.log(`🎰 [SLOT-MACHINE] URL pathname: ${window.location.pathname}`);
 
       // Format data based on the component type
       let requestBody;
 
       if (componentId === "update-status") {
+        console.log(`🎰 [SLOT-MACHINE] Processing UPDATE-STATUS request`);
+        const parsedProjectId =
+          parseInt(projectId) || parseInt(window.location.pathname.split("/").pop()) || null;
+        const parsedStatus = parseInt(value);
+        console.log(
+          `🎰 [SLOT-MACHINE] Parsed projectId: ${parsedProjectId} (type: ${typeof parsedProjectId})`
+        );
+        console.log(
+          `🎰 [SLOT-MACHINE] Parsed status: ${parsedStatus} (type: ${typeof parsedStatus})`
+        );
+
         // For status updates, send the format expected by update-status API
         requestBody = {
-          projectId: parseInt(window.location.pathname.split("/").pop()) || null, // Get project ID from URL
-          status: parseInt(value), // Convert value to integer
+          projectId: parsedProjectId,
+          status: parsedStatus, // Convert value to integer
           currentUserId: null, // Will be handled by server-side auth
           oldStatus: null, // Could be enhanced to track previous status
         };
+        console.log(`🎰 [SLOT-MACHINE] UPDATE-STATUS requestBody:`, requestBody);
       } else if (componentId === "assign-staff") {
+        console.log(`🎰 [SLOT-MACHINE] Processing ASSIGN-STAFF request`);
+        const parsedProjectId =
+          parseInt(projectId) || parseInt(window.location.pathname.split("/").pop()) || null;
+        console.log(
+          `🎰 [SLOT-MACHINE] Parsed projectId: ${parsedProjectId} (type: ${typeof parsedProjectId})`
+        );
+        console.log(`🎰 [SLOT-MACHINE] Staff ID: ${value} (type: ${typeof value})`);
+        console.log(`🎰 [SLOT-MACHINE] Staff Name: ${label} (type: ${typeof label})`);
+
         // For staff assignment, send the format expected by update-project API
         requestBody = {
-          projectId: parseInt(window.location.pathname.split("/").pop()) || null, // Get project ID from URL
+          projectId: parsedProjectId,
           assigned_to_id: value, // Staff member ID
           assigned_to_name: label, // Staff member name
         };
+        console.log(`🎰 [SLOT-MACHINE] ASSIGN-STAFF requestBody:`, requestBody);
       } else {
+        console.log(`🎰 [SLOT-MACHINE] Processing GENERIC request for component: ${componentId}`);
         // For other components, use generic format
         requestBody = {
           value: value,
           label: label,
           componentId: componentId,
         };
+        console.log(`🎰 [SLOT-MACHINE] GENERIC requestBody:`, requestBody);
       }
 
-      console.log(`🎰 [SLOT-MACHINE] Request body:`, requestBody, componentId);
+      console.log(`🎰 [SLOT-MACHINE] Final request body:`, requestBody);
+      console.log(`🎰 [SLOT-MACHINE] Making fetch request to: /api/${componentId}`);
 
       const response = await fetch(`/api/${componentId}`, {
         method: "POST",
@@ -257,8 +303,16 @@ const displayText = buttonText || selectedOption?.label || placeholder;
         body: JSON.stringify(requestBody),
       });
 
+      console.log(`🎰 [SLOT-MACHINE] Fetch response status: ${response.status}`);
+      console.log(`🎰 [SLOT-MACHINE] Fetch response ok: ${response.ok}`);
+      console.log(
+        `🎰 [SLOT-MACHINE] Fetch response headers:`,
+        Object.fromEntries(response.headers.entries())
+      );
+
       if (response.ok) {
         const result = await response.json();
+        console.log(`🎰 [SLOT-MACHINE] ===== API SUCCESS RESPONSE =====`);
         console.log(`🎰 [SLOT-MACHINE] API response:`, result);
 
         // Show success notification
@@ -288,12 +342,30 @@ const displayText = buttonText || selectedOption?.label || placeholder;
           }
         }, 1000);
       } else {
-        const errorData = await response.json();
+        console.log(`🎰 [SLOT-MACHINE] ===== API ERROR RESPONSE =====`);
+        console.log(`🎰 [SLOT-MACHINE] Response status: ${response.status}`);
+        console.log(`🎰 [SLOT-MACHINE] Response statusText: ${response.statusText}`);
+
+        let errorData;
+        try {
+          errorData = await response.json();
+          console.log(`🎰 [SLOT-MACHINE] Error response body:`, errorData);
+        } catch (parseError) {
+          console.log(`🎰 [SLOT-MACHINE] Could not parse error response as JSON:`, parseError);
+          const textResponse = await response.text();
+          console.log(`🎰 [SLOT-MACHINE] Error response as text:`, textResponse);
+          errorData = { error: textResponse };
+        }
+
         console.error(`🎰 [SLOT-MACHINE] API error:`, errorData);
         throw new Error(errorData.error || `Failed to save ${componentId}`);
       }
     } catch (error) {
+      console.log(`🎰 [SLOT-MACHINE] ===== CATCH BLOCK =====`);
       console.error(`🎰 [SLOT-MACHINE] Error saving to API:`, error);
+      console.error(`🎰 [SLOT-MACHINE] Error name:`, error.name);
+      console.error(`🎰 [SLOT-MACHINE] Error message:`, error.message);
+      console.error(`🎰 [SLOT-MACHINE] Error stack:`, error.stack);
 
       // Show error notification if available
       if (window.showModal) {
@@ -362,7 +434,7 @@ const displayText = buttonText || selectedOption?.label || placeholder;
     // Initialize selectedIndex early to avoid reference errors
     let selectedIndex = finalOptions.findIndex((option) => {
       const optionValue = option[valueField] || option.value || option.place_id || option.id;
-      return optionValue.toString() === selectedValue.toString();
+      return optionValue && selectedValue && optionValue.toString() === selectedValue.toString();
     });
 
     // Lock body scroll to prevent background scrolling
@@ -855,7 +927,9 @@ const displayText = buttonText || selectedOption?.label || placeholder;
           // Update selectedIndex to match the fetched data
           selectedIndex = optionsArray.findIndex((option) => {
             const optionValue = option[valueField] || option.value || option.place_id || option.id;
-            return optionValue.toString() === selectedValue.toString();
+            return (
+              optionValue && selectedValue && optionValue.toString() === selectedValue.toString()
+            );
           });
 
           // Update the selection display
@@ -1228,10 +1302,20 @@ const displayText = buttonText || selectedOption?.label || placeholder;
 
   // Generic handleSelect function that works for any slot machine
   window.handleSelect = function (value, label, componentId) {
+    console.log(`🎰 [SLOT-MACHINE] ===== WINDOW.HANDLESELECT CALLED =====`);
+    console.log(`🎰 [SLOT-MACHINE] Value: ${value} (type: ${typeof value})`);
+    console.log(`🎰 [SLOT-MACHINE] Label: ${label} (type: ${typeof label})`);
+    console.log(`🎰 [SLOT-MACHINE] Component ID: ${componentId}`);
+
     // Find the hidden input for this component
     const hiddenInput = document.getElementById(`${componentId}-value`);
     if (hiddenInput) {
       hiddenInput.value = value;
+      console.log(
+        `🎰 [SLOT-MACHINE] Updated hidden input ${componentId}-value with value: ${value}`
+      );
+    } else {
+      console.log(`🎰 [SLOT-MACHINE] Hidden input ${componentId}-value not found`);
     }
 
     // Find the button and update its text
@@ -1240,10 +1324,24 @@ const displayText = buttonText || selectedOption?.label || placeholder;
       const buttonText = button.querySelector(".button-text");
       if (buttonText) {
         buttonText.textContent = label;
+        console.log(`🎰 [SLOT-MACHINE] Updated button text to: ${label}`);
+      } else {
+        console.log(`🎰 [SLOT-MACHINE] Button text element not found`);
       }
+    } else {
+      console.log(`🎰 [SLOT-MACHINE] Button ${componentId} not found`);
     }
 
     console.log(`✅ [SLOT-MACHINE] Selected: ${label} (${value}) for component: ${componentId}`);
+
+    // Check if we should auto-save to API
+    // For update-status and assign-staff, we should auto-save
+    if (componentId === "update-status" || componentId === "assign-staff") {
+      console.log(`🎰 [SLOT-MACHINE] Auto-saving to API for component: ${componentId}`);
+      saveToAPI(componentId, value, label);
+    } else {
+      console.log(`🎰 [SLOT-MACHINE] Not auto-saving to API for component: ${componentId}`);
+    }
   };
 
   // Expose function to update slot machine options dynamically

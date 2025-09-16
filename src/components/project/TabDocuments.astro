@@ -207,7 +207,7 @@ const {
 
     init() {
       if (this.initialized) {
-        // console.log("📱 [PDF-UPLOAD] Already initialized, skipping...");
+        console.log("📱 [PDF-UPLOAD] Already initialized, skipping...");
         return;
       }
 
@@ -589,6 +589,7 @@ const {
     }
 
     async addFileToList(file) {
+      console.log("📁 [PDF-UPLOAD] Adding file to list:", file.id, file.file_name);
       this.filesContainer.classList.remove("hidden");
 
       const fileItem = document.createElement("div");
@@ -914,6 +915,8 @@ const {
     }
 
     async refreshFileList() {
+      console.log("📁 [PDF-UPLOAD] refreshFileList called for project:", this.projectId);
+
       // Clear existing file list
       this.fileList.innerHTML = "";
 
@@ -1086,7 +1089,7 @@ const {
       // Use centralized notification system
       if (typeof window !== "undefined" && window.showModal) {
         console.log("🔔 [PDF-UPLOAD] Calling window.showModal");
-        window.showModal("success", "Success", message, 5000);
+        window.showModal("success", "Success", message, 1500);
       } else {
         console.log("✅ Success:", message);
       }
@@ -1362,6 +1365,14 @@ const {
 
   // Initialize the PDF upload component
   document.addEventListener("DOMContentLoaded", () => {
+    console.log("📁 [PDF-UPLOAD] DOMContentLoaded event fired");
+
+    // Check if already initialized
+    if (window.pdfUploadDocuments && window.pdfUploadDocuments.initialized) {
+      console.log("📁 [PDF-UPLOAD] PDFUpload already initialized, skipping");
+      return;
+    }
+
     console.log("📁 [PDF-UPLOAD] Initializing PDFUpload component for Documents");
     window.pdfUploadDocuments = new PDFUpload();
   });
