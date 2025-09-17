@@ -1,24 +1,29 @@
 // Simple Project Logging - Just append to a JSON column
+import { globalServices } from "./global-services";
 import { supabase } from "./supabase";
 import { supabaseAdmin } from "./supabase-admin";
 
 export interface SimpleLogEntry {
   timestamp: string;
   action: string;
-  user: string;
+  user: any;
   details: string;
   old_value?: any;
   new_value?: any;
 }
 
+const user = await globalServices.getCurrentUser();
+const currentUserId = user?.id;
+
 export class SimpleProjectLogger {
   /**
    * Add a log entry to a project's log column
    */
+
   static async addLogEntry(
     projectId: number,
     action: string,
-    currrentUserId: string,
+    user: any,
     details: string,
     oldValue?: any,
     newValue?: any
@@ -33,7 +38,7 @@ export class SimpleProjectLogger {
       const logEntry: SimpleLogEntry = {
         timestamp: new Date().toISOString(),
         action,
-        user: currrentUserId,
+        user: user, // This should be the company name from resolveUserIdToName
         details,
         old_value: oldValue,
         new_value: newValue,
@@ -128,32 +133,36 @@ export class SimpleProjectLogger {
   /**
    * Convenience methods for common actions
    */
-  static async logProjectCreation(projectId: number, currrentUserId: string, projectData: any) {
+  static async logProjectCreation(projectId: number, user: any, projectData: any) {
+    const userName =
+      user?.company_name ||
+      `${user?.first_name || ""} ${user?.last_name || ""}`.trim() ||
+      "Unknown User";
+
     return await this.addLogEntry(
       projectId,
       "project_created",
-      currrentUserId,
+      userName,
       "Project was created",
       null,
       projectData
     );
   }
 
-  static async logStatusChange(
-    projectId: number,
-    currrentUserId: string,
-    oldStatus: number,
-    newStatus: number
-  ) {
+  static async logStatusChange(projectId: number, user: any, oldStatus: number, newStatus: number) {
     // Try to get human-readable status names
     const statusNames = await this.getStatusNames();
     const oldStatusName = statusNames[oldStatus] || `Status ${oldStatus}`;
     const newStatusName = statusNames[newStatus] || `Status ${newStatus}`;
+    const userName =
+      user?.company_name ||
+      `${user?.first_name || ""} ${user?.last_name || ""}`.trim() ||
+      "Unknown User";
 
     return await this.addLogEntry(
       projectId,
       "status_change",
-      currrentUserId,
+      userName,
       `Status changed from "${oldStatusName}" to "${newStatusName}"`,
       { status: oldStatus, name: oldStatusName },
       { status: newStatus, name: newStatusName }
@@ -220,13 +229,16 @@ export class SimpleProjectLogger {
       if (supabase && userIds.length > 0) {
         const { data: profiles, error } = await supabase
           .from("profiles")
-          .select("id, name")
+          .select("id, company_name, first_name, last_name")
           .in("id", userIds);
 
         if (!error && profiles) {
           const userNames: Record<string, string> = {};
           profiles.forEach((profile: any) => {
-            userNames[profile.id] = profile.company_name;
+            userNames[profile.id] =
+              profile.company_name ||
+              `${profile.first_name || ""} ${profile.last_name || ""}`.trim() ||
+              "Unknown User";
           });
           return userNames;
         }
@@ -240,15 +252,20 @@ export class SimpleProjectLogger {
 
   static async logProjectUpdate(
     projectId: number,
-    currrentUserId: string,
+    user: any,
     details: string,
     oldData?: any,
     newData?: any
   ) {
+    const userName =
+      user?.company_name ||
+      `${user?.first_name || ""} ${user?.last_name || ""}`.trim() ||
+      "Unknown User";
+
     return await this.addLogEntry(
       projectId,
       "project_updated",
-      currrentUserId,
+      userName,
       details,
       oldData,
       newData
@@ -258,18 +275,14 @@ export class SimpleProjectLogger {
   /**
    * Enhanced project update logging with granular change detection
    */
-  static async logProjectChanges(
-    projectId: number,
-    currrentUserId: string,
-    oldData: any,
-    newData: any
-  ) {
+  static async logProjectChanges(projectId: number, user: any, oldData: any, newData: any) {
+    const userName = user?.company_name || user?.first_name || user?.last_name || "Unknown User";
     // Detect status changes
     if (oldData.status !== newData.status) {
       console.log(
         `📝 [LOGGING] Status change detected for project ${projectId}: ${oldData.status} -> ${newData.status}`
       );
-      await this.logStatusChange(projectId, currrentUserId, oldData.status, newData.status);
+      await this.logStatusChange(projectId, userName, oldData.status, newData.status);
     }
 
     // Detect assignment changes
@@ -289,7 +302,7 @@ export class SimpleProjectLogger {
       await this.addLogEntry(
         projectId,
         "assignment_changed",
-        currrentUserId,
+        userName,
         `Project assignment changed from ${oldAssignment} to ${newAssignment}`,
         { id: oldData.assigned_to_id, name: oldAssignment },
         { id: newData.assigned_to_id, name: newAssignment }
@@ -313,7 +326,7 @@ export class SimpleProjectLogger {
       await this.addLogEntry(
         projectId,
         "metadata_updated",
-        currrentUserId,
+        userName,
         `Project metadata updated: ${changedFieldsList}`,
         oldData,
         newData
@@ -334,7 +347,7 @@ export class SimpleProjectLogger {
       await this.addLogEntry(
         projectId,
         "configuration_updated",
-        currrentUserId,
+        userName,
         `Project configuration updated: ${changedConfigList}`,
         oldData,
         newData
@@ -344,19 +357,56 @@ export class SimpleProjectLogger {
     return true;
   }
 
-  static async logFileUpload(projectId: number, currrentUserId: string, fileName: string) {
+  static async logFileUpload(projectId: number, user: any, fileName: string) {
+    const userName =
+      user?.company_name ||
+      `${user?.first_name || ""} ${user?.last_name || ""}`.trim() ||
+      "Unknown User";
+
     return await this.addLogEntry(
       projectId,
       "file_uploaded",
-      currrentUserId,
+      userName,
       `File uploaded: ${fileName}`,
       null,
       { fileName }
     );
   }
 
-  static async logComment(projectId: number, currrentUserId: string, comment: string) {
-    return await this.addLogEntry(projectId, "comment_added", currrentUserId, comment);
+  static async logComment(projectId: number, user: any, comment: string) {
+    const userName =
+      user?.company_name ||
+      `${user?.first_name || ""} ${user?.last_name || ""}`.trim() ||
+      "Unknown User";
+
+    return await this.addLogEntry(projectId, "comment_added", userName, comment);
+  }
+
+  static async logDiscussionToggle(
+    projectId: number,
+    discussionId: number,
+    isCompleted: boolean,
+    currentUser: any,
+    messagePreview: string
+  ) {
+    const action = isCompleted ? "discussion_completed" : "discussion_incomplete";
+
+    // Extract company name from user object
+    const userName =
+      currentUser?.company_name ||
+      `${currentUser?.first_name || ""} ${currentUser?.last_name || ""}`.trim() ||
+      "Unknown User";
+
+    const details = `Discussion ${isCompleted ? "marked as completed" : "marked as incomplete"}: ${messagePreview}`;
+
+    return await this.addLogEntry(
+      projectId,
+      action,
+      userName,
+      details,
+      { discussionId, completed: !isCompleted },
+      { discussionId, completed: isCompleted }
+    );
   }
 
   // ===== USER EVENT LOGGING METHODS =====

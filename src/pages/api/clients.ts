@@ -12,6 +12,13 @@ export const GET: APIRoute = async ({ request }) => {
       `📡 [API] Fetching clients with role: ${role}${clientId ? `, specific ID: ${clientId}` : ""}${searchQuery ? `, search: ${searchQuery}` : ""}`
     );
 
+    if (!supabase) {
+      return new Response(JSON.stringify({ error: "Database not configured" }), {
+        status: 500,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+
     let query = supabase
       .from("profiles")
       .select("id, first_name, last_name, company_name, email, role")
