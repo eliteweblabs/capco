@@ -50,34 +50,43 @@ const {
     <!-- User Info Section -->
     <div class="border-b border-gray-200 px-4 py-3 dark:border-gray-700">
       <div class="flex items-center">
-        <a
-          href="/profile"
-          class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-700"
-        >
-          <div class="flex-shrink-0">
-            <img
-              id="dropdown-avatar"
-              src=""
-              alt="User avatar"
-              class="h-10 w-10 rounded-full"
-              onerror="this.style.display='none'; this.nextElementSibling.style.display='block';"
-            />
-            <BoxIcon name="user" style="display:none;" class="bx-sm text-gray-400" />
-          </div>
-          <div class="ml-3">
-            <p class="text-sm font-medium text-gray-900 dark:text-white">
-              {currentUser?.company_name || currentUser?.email?.split("@")[0] || "User"}
-            </p>
-            <p class="text-xs text-gray-500 dark:text-gray-400">
-              {currentUser?.email}
-            </p>
-            <p class="text-xs font-medium text-blue-600 dark:text-blue-400">
-              {currentRole || "User"}
-            </p>
-          </div>
-        </a>
+        <div class="flex-shrink-0">
+          <img
+            id="dropdown-avatar"
+            src=""
+            alt="User avatar"
+            class="h-10 w-10 rounded-full"
+            onerror="this.style.display='none'; this.nextElementSibling.style.display='block';"
+          />
+          <BoxIcon name="user" style="display:none;" class="bx-sm text-gray-400" />
+        </div>
+        <div class="ml-3">
+          <p class="text-sm font-medium text-gray-900 dark:text-white">
+            {currentUser?.company_name || currentUser?.email?.split("@")[0] || "User"}
+          </p>
+          <p class="text-xs text-gray-500 dark:text-gray-400">
+            {currentUser?.email}
+          </p>
+          <p class="text-xs font-medium text-blue-600 dark:text-blue-400">
+            {currentRole || "User"}
+          </p>
+        </div>
       </div>
+      <Button href="/profile" variant="anchor" size="sm">Edit Profile</Button>
     </div>
+  </div>
+
+  <div class="py-1">
+    <Button
+      href="/dashboard#new-project"
+      variant="secondary"
+      size="sm"
+      icon="plus"
+      iconPosition="left"
+      fullWidth
+    >
+      New Project
+    </Button>
   </div>
 
   <div class="py-1">
@@ -95,59 +104,50 @@ const {
 
   <!-- Assigned Projects Section -->
   <div class="my-6">
-    <h6 class="mb-3 text-sm font-medium text-gray-900 dark:text-white">
-      Your Projects ({assignedProjectsCount})
-    </h6>
-
-    {
-      assignedProjectsCount > 0 ? (
-        <div class="space-y-2 overflow-y-auto">
-          {assignedProjects.slice(0, 5).map((project: any) => (
-            <a
-              href={`/project/${project.id}`}
-              class="block rounded-lg border border-gray-200 p-3 transition-colors hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-700"
-            >
-              <div class="flex items-start justify-between">
-                <div class="min-w-0 flex-1">
-                  <p class="truncate text-sm font-medium text-gray-900 dark:text-white">
-                    {project.title || "Untitled Project"}
-                  </p>
-                  <p class="truncate text-xs text-gray-500 dark:text-gray-400">
-                    {project.address || "No address"}
-                  </p>
-                  <p class="text-xs text-gray-400 dark:text-gray-500">
-                    Status: {project.status || "Unknown"}
-                  </p>
-                </div>
-                <div class="ml-2 flex-shrink-0">
-                  <span class="inline-flex items-center rounded-full bg-blue-100 px-2 py-1 text-xs font-medium text-blue-800 dark:bg-blue-900 dark:text-blue-200">
-                    {project.comment_count || 0} comments
-                  </span>
-                </div>
-              </div>
-            </a>
-          ))}
-
-          {assignedProjectsCount > 5 && (
-            <div class="text-center">
-              <Button href="/dashboard" variant="ghost" size="sm" class="text-xs">
-                View all {assignedProjectsCount} projects
-              </Button>
-            </div>
-          )}
-        </div>
-      ) : (
-        <div class="py-4 text-center">
-          <p class="text-sm text-gray-500 dark:text-gray-400">No projects assigned to you</p>
-        </div>
-      )
-    }
+    Your Projects ({assignedProjectsCount})
   </div>
 
-  <!-- Menu Items -->
+  {
+    assignedProjectsCount > 0 ? (
+      <div class="space-y-2 overflow-y-auto">
+        {assignedProjects.slice(0, 5).map((project: any) => (
+          <a
+            href={`/project/${project.id}`}
+            class="block rounded-lg border border-gray-200 p-3 transition-colors hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-700"
+          >
+            <div class="flex items-start justify-between">
+              <div class="min-w-0 flex-1">
+                <p class="truncate text-sm font-medium text-gray-900 dark:text-white">
+                  {project.title || "Untitled Project"}
+                </p>
+                <p class="truncate text-xs text-gray-500 dark:text-gray-400">
+                  {project.address || "No address"}
+                </p>
+                <p class="text-xs text-gray-400 dark:text-gray-500">
+                  Status: {project.status || "Unknown"}
+                </p>
+              </div>
+              <div class="ml-2 flex-shrink-0">
+                <span class="inline-flex items-center rounded-full bg-blue-100 px-2 py-1 text-xs font-medium text-blue-800 dark:bg-blue-900 dark:text-blue-200">
+                  {project.comment_count || 0} comments
+                </span>
+              </div>
+            </div>
+          </a>
+        ))}
+      </div>
+    ) : (
+      <div class="py-4 text-center">
+        <p class="text-sm text-gray-500 dark:text-gray-400">No projects assigned to you</p>
+      </div>
+    )
+  }
+</div>
 
-  <!-- Navigation -->
-  <!-- <nav class="mb-6 space-y-2">
+<!-- Menu Items -->
+
+<!-- Navigation -->
+<!-- <nav class="mb-6 space-y-2">
     {
       visibleNavigation &&
         visibleNavigation.map((item: any) =>
@@ -170,29 +170,28 @@ const {
     }
   </nav> -->
 
-  <!-- Alternative: Generated Navigation HTML (optional) -->
-  {
-    desktopNavigationHTML && (
-      <div class="mb-6 block md:hidden">
-        <div class="space-y-1" set:html={desktopNavigationHTML} />
-      </div>
-    )
-  }
+<!-- Alternative: Generated Navigation HTML (optional) -->
+{
+  desktopNavigationHTML && (
+    <div class="mb-6 block md:hidden">
+      <div class="space-y-1" set:html={desktopNavigationHTML} />
+    </div>
+  )
+}
 
-  <!-- User Actions -->
-  <div class="space-y-2">
-    <Button
-      id="logout-btn"
-      variant="outline"
-      size="sm"
-      icon="log-out"
-      iconPosition="left"
-      fullWidth
-      class="flex w-full items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-700"
-    >
-      Logout
-    </Button>
-  </div>
+<!-- User Actions -->
+<div class="space-y-2">
+  <Button
+    id="logout-btn"
+    variant="outline"
+    size="sm"
+    icon="log-out"
+    iconPosition="left"
+    fullWidth
+    class="flex w-full items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-700"
+  >
+    Logout
+  </Button>
 </div>
 
 <script>

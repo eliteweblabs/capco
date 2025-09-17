@@ -7,9 +7,12 @@ import Button from "../components/common/Button.astro";
 import { getCarrierKeyFromGateway } from "../lib/sms-carriers";
 import ForgotPasswordModal from "../components/form/ForgetPasswordModal.astro";
 
-// Get auth data directly since App component handles auth requirements
+// Get auth data directly to pass to App component
+
 import { checkAuth } from "../lib/auth";
-const { isAuth, currentUser, currentRole, session } = await checkAuth(Astro.cookies);
+import { supabaseAdmin } from "../lib/supabase-admin";
+
+const { isAuth = false, currentUser, currentRole, session } = await checkAuth(Astro.cookies);
 const userProfile = currentUser?.profile || null;
 
 // Get the carrier key from the stored gateway domain
@@ -22,6 +25,11 @@ const storedCarrierKey = currentUser?.user_metadata?.mobile_carrier
   title="My Profile - CAPCo Fire Protection"
   description="Manage your profile and account settings."
   requireAuth={true}
+  requireRole={currentRole || "Client"}
+  isAuth={isAuth}
+  currentUser={currentUser}
+  currentRole={currentRole || "Client"}
+  session={session}
 >
   <SectionContainer class="px-6 py-16">
     <div class="mx-auto max-w-2xl">
@@ -80,7 +88,7 @@ const storedCarrierKey = currentUser?.user_metadata?.mobile_carrier
               id="company-name"
               name="company_name"
               value={userProfile?.company_name || ""}
-              class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-60 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:focus:border-blue-400"
+              class="w-full rounded-lg border border-gray-300 bg-background-card px-3 py-2.5 text-sm text-gray-900 focus:border-primary-500 focus:ring-2 focus:ring-primary-500 dark:border-gray-600 dark:bg-background-card-dark dark:text-white dark:focus:border-primary-400 dark:focus:ring-primary-400"
               placeholder="Enter your company name"
             />
           </div>
@@ -99,7 +107,7 @@ const storedCarrierKey = currentUser?.user_metadata?.mobile_carrier
                 id="first-name"
                 name="first_name"
                 value={userProfile?.first_name || ""}
-                class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-60 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:focus:border-blue-400"
+                class="w-full rounded-lg border border-gray-300 bg-background-card px-3 py-2.5 text-sm text-gray-900 focus:border-primary-500 focus:ring-2 focus:ring-primary-500 dark:border-gray-600 dark:bg-background-card-dark dark:text-white dark:focus:border-primary-400 dark:focus:ring-primary-400"
                 placeholder="Enter your first name"
               />
             </div>
@@ -115,7 +123,7 @@ const storedCarrierKey = currentUser?.user_metadata?.mobile_carrier
                 id="last-name"
                 name="last_name"
                 value={userProfile?.last_name || ""}
-                class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-60 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:focus:border-blue-400"
+                class="w-full rounded-lg border border-gray-300 bg-background-card px-3 py-2.5 text-sm text-gray-900 focus:border-primary-500 focus:ring-2 focus:ring-primary-500 dark:border-gray-600 dark:bg-background-card-dark dark:text-white dark:focus:border-primary-400 dark:focus:ring-primary-400"
                 placeholder="Enter your last name"
               />
             </div>
@@ -135,7 +143,7 @@ const storedCarrierKey = currentUser?.user_metadata?.mobile_carrier
               name="email"
               value={currentUser?.email || ""}
               readonly
-              class="w-full rounded-lg border border-gray-300 bg-gray-50 px-3 py-2 text-sm text-gray-500 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-400"
+              class="w-full rounded-lg border border-gray-300 bg-background-card px-3 py-2.5 text-sm text-gray-500 dark:border-gray-600 dark:bg-background-card-dark dark:text-gray-400"
             />
             <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
               Email cannot be changed. Contact support if needed.
@@ -153,27 +161,28 @@ const storedCarrierKey = currentUser?.user_metadata?.mobile_carrier
             selectedCarrier={storedCarrierKey || ""}
           />
 
-          <!-- Role Field (Read-only) -->
-          <!-- <div>
-            <label for="role" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Role
-            </label>
-            <input
-              type="text"
-              id="role"
-              name="role"
-              value={role || "User"}
-              readonly
-              class="w-full rounded-lg border border-gray-300 bg-gray-50 px-3 py-2 text-sm text-gray-500 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-400"
-            />
-          </div> -->
-
           <!-- Action Buttons -->
           <div class="flex gap-3 pt-4">
-            <Button type="button" variant="outline" size="sm" class="flex-1" href="/dashboard">
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              class="flex-1"
+              href="/dashboard"
+              icon="chevron-left"
+              iconPosition="left"
+            >
               Cancel / Dashboard
             </Button>
-            <Button type="submit" id="save-profile-btn" variant="primary" size="sm" class="flex-1">
+            <Button
+              type="submit"
+              id="save-profile-btn"
+              variant="primary"
+              size="sm"
+              class="flex-1"
+              icon="save"
+              iconPosition="left"
+            >
               Save Changes
             </Button>
           </div>

@@ -1,6 +1,6 @@
 ---
 import BoxIcon from "../common/BoxIcon.astro";
-
+import Tooltip from "../common/Tooltip.astro";
 interface Props {
   project: {
     incomplete_discussions: any;
@@ -93,42 +93,107 @@ if (project.profiles) {
   //   fullProfile: authorProfile,
   // });
 }
+
+// Calculate the duration since project creation
+const projectCreatedDate = new Date(project.created_at);
+const currentDate = new Date();
+const timeDifference = currentDate.getTime() - projectCreatedDate.getTime();
+
+// Debug logging for project age color calculation
+console.log(`🔍 [PROJECT-AGE-COLOR] Project ${project.id}:`, {
+  created_at: project.created_at,
+  projectCreatedDate: projectCreatedDate.toISOString(),
+  currentDate: currentDate.toISOString(),
+  timeDifferenceMs: timeDifference,
+  timeDifferenceHours: timeDifference / (1000 * 60 * 60),
+  timeDifferenceDays: timeDifference / (1000 * 60 * 60 * 24),
+  isOver48Hours: timeDifference > 48 * 60 * 60 * 1000,
+});
+
+// Color scale system for projects older than 48 hours
+let projectAgeColor = "rgb(209, 213, 219)"; // Default gray color
+if (timeDifference > 48 * 60 * 60 * 1000) {
+  // More than 48 hours
+  const hoursPast48 = (timeDifference - 48 * 60 * 60 * 1000) / (1000 * 60 * 60);
+  const colorLevel = Math.floor(hoursPast48 / 12); // Every 12 hours = new color level
+
+  console.log(`🔍 [PROJECT-AGE-COLOR] Project ${project.id} is over 48 hours:`, {
+    hoursPast48,
+    colorLevel,
+    originalTimeDifference: timeDifference,
+  });
+
+  // Progressive red color scale (using standard red colors)
+  switch (colorLevel) {
+    case 0:
+      projectAgeColor = "rgb(254, 242, 242)";
+      break; // 48-60 hours
+    case 1:
+      projectAgeColor = "rgb(254, 226, 226)";
+      break; // 60-72 hours
+    case 2:
+      projectAgeColor = "rgb(252, 202, 202)";
+      break; // 72-84 hours
+    case 3:
+      projectAgeColor = "rgb(251, 173, 173)";
+      break; // 84-96 hours
+    case 4:
+      projectAgeColor = "rgb(239, 68, 68)";
+      break; // 96-108 hours
+    default:
+      projectAgeColor = "rgb(220, 38, 38)";
+      break; // 108+ hours
+  }
+
+  console.log(`🔍 [PROJECT-AGE-COLOR] Project ${project.id} final color:`, projectAgeColor);
+} else {
+  console.log(`🔍 [PROJECT-AGE-COLOR] Project ${project.id} is under 48 hours, using default gray`);
+}
+
+// Convert to days, hours, and minutes
+const days = Math.floor(timeDifference / (1000 * 60 * 60 * 24));
+const hours = Math.floor((timeDifference % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+const minutes = Math.floor((timeDifference % (1000 * 60 * 60)) / (1000 * 60));
+
+// Format the duration
+const createdAt = `${days}d ${hours}h ${minutes}m`;
 ---
 
 <div
-  class="relative my-4 min-h-[200px] rounded-lg border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-800"
+  class={`relative mt-2 min-h-[200px] rounded-lg bg-white shadow-sm dark:bg-gray-800`}
   data-project-status={statusSlugOrId}
   data-project-id={project.id}
+  style={`border: 4px solid ${projectAgeColor};`}
 >
   <!-- Featured Image Display -->
 
+  {
+    (() => {
+      const tabUrl = `/project/${project.id}?status=${currentStatusTab}`;
+      // For clients, make status label clickable if client_status_tab exists
+      // if (currentRole === "Client" && currentStatusTab) {
+      // Get status color from API data
+      const statusColor = projectStatusesObject?.[project.status]?.status_color || "gray";
+      // const statusColorClasses = `bg-${statusColor}-100 text-${statusColor}-800 dark:bg-${statusColor}-700 dark:text-${statusColor}-300`;
+
+      return (
+        <a
+          href={tabUrl}
+          class={`font-large absolute -right-4 -top-4 z-10 mb-4 cursor-pointer rounded-full px-2.5 py-0.5 text-sm transition-opacity hover:opacity-80`}
+          data-refresh="status_name"
+          data-project-id={project.id}
+          title={`Go to ${currentStatusName} tab`}
+          style={`background-color: ${statusColor};`}
+        >
+          <span class="text-black">{currentStatusName}</span>
+        </a>
+      );
+    })()
+  }
   <div
     class="flex h-32 items-center justify-center overflow-hidden rounded-t-lg bg-gray-100 dark:bg-gray-700"
   >
-    {
-      (() => {
-        const tabUrl = `/project/${project.id}?tab=${currentStatusTab}`;
-        // For clients, make status label clickable if client_status_tab exists
-        // if (currentRole === "Client" && currentStatusTab) {
-        // Get status color from API data
-        const statusColor = projectStatusesObject?.[project.status]?.status_color || "gray";
-        // const statusColorClasses = `bg-${statusColor}-100 text-${statusColor}-800 dark:bg-${statusColor}-700 dark:text-${statusColor}-300`;
-
-        return (
-          <a
-            href={tabUrl}
-            class={`font-large absolute -right-4 -top-4 mb-4 cursor-pointer rounded-full px-2.5 py-0.5 text-sm transition-opacity hover:opacity-80`}
-            data-refresh="status_name"
-            data-project-id={project.id}
-            title={`Go to ${currentStatusName} tab`}
-            style={`background-color: ${statusColor};`}
-          >
-            <span class="text-black">{currentStatusName}</span>
-          </a>
-        );
-      })()
-    }
-
+    <!-- <a href={`/project/${project.id}`} class="transition-opacity hover:opacity-80"> -->
     {
       project.featured_image_data ? (
         <img
@@ -147,6 +212,7 @@ if (project.profiles) {
         </div>
       )
     }
+    <!-- </a> -->
   </div>
 
   <div class="p-3">
@@ -192,30 +258,13 @@ if (project.profiles) {
           {project.new_construction ? "New" : "Existing"}
         </span>
       </a>
-      <div class="justify-end text-xs">
+
+      <!-- <div class="justify-end text-xs">
         <div>
-          <b>Updated:</b>
-          {new Date(project.updated_at).toLocaleDateString()}
-          {
-            new Date(project.updated_at).toLocaleTimeString([], {
-              hour: "2-digit",
-              minute: "2-digit",
-              hour12: false,
-            })
-          }
+          <b>Project Age:</b>
+          {createdAt}
         </div>
-        <div>
-          <b>Created:</b>
-          {new Date(project.created_at).toLocaleDateString()}
-          {
-            new Date(project.created_at).toLocaleTimeString([], {
-              hour: "2-digit",
-              minute: "2-digit",
-              hour12: false,
-            })
-          }
-        </div>
-      </div>
+      </div> -->
     </div>
 
     <div
@@ -230,19 +279,27 @@ if (project.profiles) {
         )
       }
 
+      <Tooltip content={createdAt} id="project-created-at">
+        <BoxIcon name="time" size="lg" class="fill-current" />
+      </Tooltip>
+
       <a
-        href={`/project/${project.id}?tab=discussion`}
-        class="relative cursor-pointer transition-opacity hover:opacity-80"
+        href={`/project/${project.id}?status=discussion`}
+        class="relative ml-auto cursor-pointer transition-opacity hover:opacity-80"
         title={`${project.comment_count || 0} comments - Go to discussions`}
       >
-        <BoxIcon name="message-rounded-dots" class="bx-md text-blue-500 dark:text-blue-400" />
-        {
-          project.incomplete_discussions > 0 && (
-            <span class="absolute -right-2 -top-2 inline-flex h-5 w-5 min-w-[1.25rem] items-center justify-center rounded-full bg-red-500 text-xs font-bold text-white">
-              {project.incomplete_discussions > 99 ? "99+" : project.incomplete_discussions}
-            </span>
-          )
-        }
+        <BoxIcon name="message-rounded" size="lg" class="fill-current" />
+        <!-- {
+          project.incomplete_discussions > 0 && ( -->
+        <span
+          class="absolute right-2.5 top-2.5 inline-flex h-5 w-7 min-w-[1.25rem] items-center justify-center rounded-full text-xs"
+        >
+          {project.incomplete_discussions > 99 ? "99+" : project.incomplete_discussions}/{
+            project.comment_count > 99 ? "99+" : project.comment_count
+          }
+        </span>
+        <!-- )
+        } -->
       </a>
     </div>
   </div>

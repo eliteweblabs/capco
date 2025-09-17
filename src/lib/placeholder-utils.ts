@@ -32,12 +32,18 @@ export interface PlaceholderData {
   statusName?: string;
   estTime?: string;
   baseUrl?: string;
+  primaryColor?: string;
+  svgLogo?: string;
 }
 
 /**
  * Replace placeholders in a message string
  */
-export function replacePlaceholders(message: string, data: PlaceholderData): string {
+export function replacePlaceholders(
+  message: string,
+  data: PlaceholderData,
+  addBoldTags: boolean = true
+): string {
   console.log("🔄 [PLACEHOLDER-UTILS] Starting placeholder replacement...");
   console.log("🔄 [PLACEHOLDER-UTILS] Original message:", message);
   console.log("🔄 [PLACEHOLDER-UTILS] Placeholder data:", data);
@@ -62,35 +68,50 @@ export function replacePlaceholders(message: string, data: PlaceholderData): str
     console.log(
       `🔄 [PLACEHOLDER-UTILS] Replacing {{PROJECT_ADDRESS}} with: ${data.projectAddress}`
     );
-    result = result.replace(/\{\{PROJECT_ADDRESS\}\}/g, data.projectAddress);
+    result = result.replace(/\{\{\s*PROJECT_ADDRESS\s*\}\}/g, data.projectAddress);
   } else {
     console.log("🔄 [PLACEHOLDER-UTILS] ⚠️ No projectAddress data available");
   }
 
   if (data.clientName) {
     console.log(`🔄 [PLACEHOLDER-UTILS] Replacing {{CLIENT_NAME}} with: ${data.clientName}`);
-    result = result.replace(/\{\{CLIENT_NAME\}\}/g, data.clientName);
+    result = result.replace(/\{\{\s*CLIENT_NAME\s*\}\}/g, data.clientName);
   } else {
     console.log("🔄 [PLACEHOLDER-UTILS] ⚠️ No clientName data available");
   }
 
   if (data.clientEmail) {
     console.log(`🔄 [PLACEHOLDER-UTILS] Replacing {{CLIENT_EMAIL}} with: ${data.clientEmail}`);
-    result = result.replace(/\{\{CLIENT_EMAIL\}\}/g, data.clientEmail);
+    result = result.replace(/\{\{\s*CLIENT_EMAIL\s*\}\}/g, data.clientEmail);
   } else {
     console.log("🔄 [PLACEHOLDER-UTILS] ⚠️ No clientEmail data available");
   }
 
   if (data.statusName) {
     console.log(`🔄 [PLACEHOLDER-UTILS] Replacing {{STATUS_NAME}} with: ${data.statusName}`);
-    result = result.replace(/\{\{STATUS_NAME\}\}/g, data.statusName);
+    result = result.replace(/\{\{\s*STATUS_NAME\s*\}\}/g, data.statusName);
   }
 
   if (data.estTime) {
     console.log(`🔄 [PLACEHOLDER-UTILS] Replacing {{EST_TIME}} with: ${data.estTime}`);
-    result = result.replace(/\{\{EST_TIME\}\}/g, data.estTime);
+    result = result.replace(/\{\{\s*EST_TIME\s*\}\}/g, data.estTime);
+  }
+
+  if (data.primaryColor) {
+    console.log(`🔄 [PLACEHOLDER-UTILS] Replacing {{PRIMARY_COLOR}} with: ${data.primaryColor}`);
+    result = result.replace(
+      /\{\{\s*PRIMARY_COLOR\s*\}\}/g,
+      `<strong>${data.primaryColor}</strong>`
+    );
+  }
+
+  if (data.svgLogo) {
+    console.log(
+      `🔄 [PLACEHOLDER-UTILS] Replacing {{SVG_LOGO}} with: ${data.svgLogo.substring(0, 50)}...`
+    );
+    result = result.replace(/\{\{\s*SVG_LOGO\s*\}\}/g, data.svgLogo);
   }
 
   console.log("🔄 [PLACEHOLDER-UTILS] Final result:", result);
-  return "<b>" + result + "</b>";
+  return addBoldTags ? "<b>" + result + "</b>" : result;
 }

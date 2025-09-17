@@ -1,5 +1,6 @@
 import type { APIRoute } from "astro";
 import { checkAuth } from "../../lib/auth";
+import { replacePlaceholders, type PlaceholderData } from "../../lib/placeholder-utils";
 import { supabase } from "../../lib/supabase";
 
 export const GET: APIRoute = async ({ url, cookies }) => {
@@ -124,29 +125,30 @@ export const GET: APIRoute = async ({ url, cookies }) => {
       }
     }
 
-    // Function to replace placeholders in discussion messages
-    const replacePlaceholders = (message: string) => {
-      if (!message || !project) return message;
-
-      return message
-        .replace(/\{\{PROJECT_TITLE\}\}/g, project.title || "Untitled Project")
-        .replace(/\{\{PROJECT_ADDRESS\}\}/g, project.address || "No Address Provided")
-        .replace(
-          /\{\{CLIENT_NAME\}\}/g,
-          projectAuthor?.company_name ||
-            `${projectAuthor?.first_name || ""} ${projectAuthor?.last_name || ""}`.trim() ||
-            "Unknown Client"
-        )
-        .replace(/\{\{CLIENT_EMAIL\}\}/g, projectAuthor?.email || "No Email Provided")
-        .replace(/\{\{CLIENT_PHONE\}\}/g, projectAuthor?.phone || "No Phone Provided")
-        .replace(/\{\{CLIENT_COMPANY\}\}/g, projectAuthor?.company_name || "No Company Provided");
+    // Prepare placeholder data for centralized replacement
+    const placeholderData: PlaceholderData = {
+      projectAddress: project.address || "No Address Provided",
+      clientName:
+        projectAuthor?.company_name ||
+        `${projectAuthor?.first_name || ""} ${projectAuthor?.last_name || ""}`.trim() ||
+        "Unknown Client",
+      clientEmail: projectAuthor?.email || "No Email Provided",
+      statusName: "Current Status", // Could be enhanced to get actual status
+      estTime: "TBD", // Could be enhanced to get actual estimated time
+      baseUrl: "https://capcofire.com", // Base URL for the application
+      primaryColor: "#825bdd",
+      svgLogo: `<svg id="Layer_1" xmlns="http://www.w3.org/2000/svg" width="100" version="1.1" viewBox="0 0 400 143.7" class="h-auto"> <defs> <style>
+        .fill {
+          fill: black;
+        }
+      </style> </defs> <g> <path class="fill" d="M0 0h400v143.7H0z"/> <text x="200" y="80" text-anchor="middle" fill="white" font-family="Arial, sans-serif" font-size="24" font-weight="bold">CAPCo</text> </g> </svg>`,
     };
 
     // Process discussions with placeholder replacement and company name
     const discussionsWithCompanyName =
       discussions?.map((discussion) => ({
         ...discussion,
-        message: replacePlaceholders(discussion.message),
+        message: replacePlaceholders(discussion.message, placeholderData, false),
         company_name: discussion.company_name || "Unknown User",
       })) || [];
 

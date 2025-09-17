@@ -1,20 +1,59 @@
 ---
 export const partial = true;
-// Get parameters from request headers
-const componentId = Astro.request.headers.get("x-component-id") || "slot-machine";
-const title = Astro.request.headers.get("x-modal-title") || "Select Option";
-const showSearch = Astro.request.headers.get("x-show-search") === "true";
-const cancelButtonText = Astro.request.headers.get("x-cancel-button") || "Cancel";
-const selectButtonText = Astro.request.headers.get("x-select-button") || "Select";
-const noResultsText = Astro.request.headers.get("x-no-results-text") || "No results found";
-const searchText = Astro.request.headers.get("x-search-text") || "Searching for options...";
-const searchPlaceholder = Astro.request.headers.get("x-search-placeholder") || "Type to search...";
-const searchLabel = Astro.request.headers.get("x-search-label") || "Search:";
-const errorText = Astro.request.headers.get("x-error-text") || "Error loading options";
-const showImages = Astro.request.headers.get("x-show-images") === "true";
-const imageField = Astro.request.headers.get("x-image-field") || "image_url";
-const valueField = Astro.request.headers.get("x-value-field") || "value";
-const labelField = Astro.request.headers.get("x-label-field") || "label";
+
+// Check if we have props (when used as component) or need to use headers (when used as partial)
+const hasProps = Object.keys(Astro.props).length > 0;
+
+let componentId,
+  title,
+  showSearch,
+  cancelButtonText,
+  selectButtonText,
+  noResultsText,
+  searchText,
+  searchPlaceholder,
+  searchLabel,
+  errorText,
+  showImages,
+  imageField,
+  valueField,
+  labelField;
+
+if (hasProps) {
+  // Use props when available (prioritize props over headers)
+  const props = Astro.props;
+  componentId = props.id || "slot-machine";
+  title = props.title || "Select Option";
+  showSearch = props.showSearch || false;
+  cancelButtonText = props.cancelButtonText || "Cancel";
+  selectButtonText = props.selectButtonText || "Select";
+  noResultsText = props.noResultsText || "No results found";
+  searchText = props.searchText || "Searching for options...";
+  searchPlaceholder = props.searchPlaceholder || "Type to search...";
+  searchLabel = props.searchLabel || "Search:";
+  errorText = props.errorText || "Error loading options";
+  showImages = props.showImages || false;
+  imageField = props.imageField || "image_url";
+  valueField = props.valueField || "value";
+  labelField = props.labelField || "label";
+} else {
+  // Fall back to headers when used as partial
+  componentId = Astro.request.headers.get("x-component-id") || "slot-machine";
+  title = Astro.request.headers.get("x-modal-title") || "Select Option";
+  showSearch = Astro.request.headers.get("x-show-search") === "true";
+  cancelButtonText = Astro.request.headers.get("x-cancel-button") || "Cancel";
+  selectButtonText = Astro.request.headers.get("x-select-button") || "Select";
+  noResultsText = Astro.request.headers.get("x-no-results-text") || "No results found";
+  searchText = Astro.request.headers.get("x-search-text") || "Searching for options...";
+  searchPlaceholder = Astro.request.headers.get("x-search-placeholder") || "Type to search...";
+  searchLabel = Astro.request.headers.get("x-search-label") || "Search:";
+  errorText = Astro.request.headers.get("x-error-text") || "Error loading options";
+  showImages = Astro.request.headers.get("x-show-images") === "true";
+  imageField = Astro.request.headers.get("x-image-field") || "image_url";
+  valueField = Astro.request.headers.get("x-value-field") || "value";
+  labelField = Astro.request.headers.get("x-label-field") || "label";
+}
+
 import Button from "../../components/common/Button.astro";
 ---
 
@@ -57,7 +96,7 @@ import Button from "../../components/common/Button.astro";
               <input
                 type="text"
                 id={`${componentId}-slot-search-input`}
-                class="focus:primary-500 w-full rounded-lg border border-gray-300 px-3 py-2.5 pr-10 text-sm text-gray-900 focus:ring-2 focus:ring-primary-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:focus:border-primary-400 dark:focus:ring-primary-400"
+                class="w-full rounded-lg border border-gray-300 bg-background-card px-3 py-2.5 pr-10 text-sm text-gray-900 focus:border-primary-500 focus:ring-2 focus:ring-primary-500 dark:border-gray-600 dark:bg-background-card-dark dark:text-white dark:focus:border-primary-400 dark:focus:ring-primary-400"
                 placeholder={searchPlaceholder}
                 autocomplete="off"
               />
@@ -83,7 +122,7 @@ import Button from "../../components/common/Button.astro";
 
       <!-- Slot Machine Container with Fixed Height -->
       <div
-        class="slot-machine-container relative mb-4 h-48 overflow-hidden rounded-lg border-2 border-gray-200 bg-gray-50 dark:border-gray-600 dark:bg-gray-700"
+        class="slot-machine-container relative mb-4 h-48 overflow-hidden rounded-lg border-2 border-gray-200 dark:border-gray-600"
       >
         <!-- Loading State -->
 
@@ -99,7 +138,7 @@ import Button from "../../components/common/Button.astro";
           class="absolute inset-0 hidden items-center justify-center text-gray-500 dark:text-gray-400"
         >
           {
-            showSearch && (
+            searchText && (
               <div class="text-center">
                 <svg
                   class="mx-auto mb-2 h-6 w-6 animate-spin text-gray-400"

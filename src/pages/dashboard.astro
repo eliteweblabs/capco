@@ -7,7 +7,6 @@ import HeroDashboard from "../components/common/HeroDashboard.astro";
 import "../lib/refresh-manager.ts";
 // Get auth data directly since App component handles auth requirements
 import { checkAuth } from "../lib/auth";
-import { supabase } from "../lib/supabase";
 import { supabaseAdmin } from "../lib/supabase-admin";
 
 const { isAuth = false, currentUser, currentRole, session } = await checkAuth(Astro.cookies);
@@ -17,18 +16,37 @@ let projects: any[] = [];
 let project_statuses: any[] = [];
 let project_statuses_object: any = {};
 
-// Import all functions at the top level
-import { fetchProjects, getProjectsByAuthor, getProjectsByAssignedToId } from "../lib/api/projects";
-
-// Fetch projects based on user role
-if (supabaseAdmin && currentUser?.id) {
+// Fetch projects using the API endpoint that includes discussion counts
+if (currentUser?.id) {
   try {
-    if (currentRole === "Client") {
-      projects = await getProjectsByAuthor(supabaseAdmin, currentUser.id);
-    } else if (currentRole === "Staff") {
-      projects = await getProjectsByAssignedToId(supabaseAdmin, currentUser.id);
-    } else if (currentRole === "Admin") {
-      projects = await fetchProjects(supabaseAdmin);
+    const baseUrl = Astro.url.origin || "http://localhost:4321";
+    let apiUrl = `${baseUrl}/api/get-project`;
+
+    // Add assigned_to_id parameter for Staff role
+    if (currentRole === "Staff") {
+      apiUrl += `?assigned_to_id=${currentUser.id}`;
+    }
+    // For Admin and Client, no additional parameters needed (API handles role-based filtering)
+
+    // console.log("🏗️ [DASHBOARD] Fetching projects from API:", apiUrl);
+    const response = await fetch(apiUrl);
+
+    if (response.ok) {
+      const data = await response.json();
+      projects = data.projects || [];
+      // console.log("🏗️ [DASHBOARD] Projects fetched with discussion counts:", projects.length);
+      // console.log("🏗️ [DASHBOARD] Sample project data:", {
+      //   id: projects[0]?.id,
+      //   title: projects[0]?.title,
+      //   comment_count: projects[0]?.comment_count,
+      //   incomplete_discussions: projects[0]?.i,complete_discussions,
+      // });
+    } else {
+      console.error(
+        "🏗️ [DASHBOARD] Error fetching projects:",
+        response.status,
+        response.statusText
+      );
     }
   } catch (error) {
     console.error("🏗️ [DASHBOARD] Error fetching projects:", error);
