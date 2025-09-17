@@ -2,6 +2,7 @@
 interface Props {
   authorProfile?: any;
   currentRole?: string;
+  currentUser?: any;
   project: any;
   projectId: string;
   projectStatus?: number;
@@ -12,8 +13,15 @@ interface Props {
 import BoxIcon from "../common/BoxIcon.astro";
 import Button from "../common/Button.astro";
 
-const { projectId, authorProfile, projectStatus, currentRole, projectStatusLabel, supabaseUrl } =
-  Astro.props;
+const {
+  projectId,
+  authorProfile,
+  projectStatus,
+  currentRole,
+  currentUser,
+  projectStatusLabel,
+  supabaseUrl,
+} = Astro.props;
 
 const placeholder =
   currentRole === "Admin" || currentRole === "Staff"
@@ -134,13 +142,13 @@ const placeholder =
         <!-- Comments will be dynamically loaded here -->
       </div>
       <div>
-        <script define:vars={{ projectId, authorProfile, currentRole, supabaseUrl }}>
+        <script define:vars={{ projectId, authorProfile, currentRole, currentUser, supabaseUrl }}>
           // Discussion functionality
           let discussions = [];
           let currentProjectId = projectId;
           let currentUserRole = currentRole;
-          let currentUserId = authorProfile.id;
-          let currentUserName = authorProfile.company_name;
+          let currentUserId = currentUser?.id || authorProfile.id;
+          let currentUserName = currentUser?.company_name || authorProfile.company_name;
           let mentionableUsers = [];
           let currentMentionStart = -1;
           let selectedImages = [];
@@ -1393,7 +1401,7 @@ const placeholder =
                     currentProjectId,
                     discussionId,
                     isCompleted,
-                    discussion?.author_id || "unknown",
+                    currentUser,
                     discussion?.message?.substring(0, 50) + "..." || "No message"
                   );
                 }

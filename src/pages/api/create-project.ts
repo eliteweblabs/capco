@@ -391,11 +391,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
     // Log the project creation
     try {
-      await SimpleProjectLogger.logProjectCreation(
-        project.id,
-        session.session.user.email || "unknown",
-        projectData
-      );
+      await SimpleProjectLogger.logProjectCreation(project.id, session.session.user, projectData);
     } catch (logError) {
       console.error("Error logging project creation:", logError);
       // Don't fail the request if logging fails

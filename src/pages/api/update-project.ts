@@ -139,7 +139,7 @@ export const POST: APIRoute = async ({ request }) => {
       } else {
         // console.log("New fields updated successfully");
         finalData = newFieldsData;
-        await SimpleProjectLogger.logProjectChanges(projectId, user.id, finalData, newFieldsData);
+        await SimpleProjectLogger.logProjectChanges(projectId, user, finalData, newFieldsData);
       }
     }
 

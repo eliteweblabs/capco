@@ -124,7 +124,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     // Log the status change using authenticated user
     try {
       // console.log("📊 [UPDATE-STATUS] Logging status change for user:", currentUser.id);
-      await SimpleProjectLogger.logStatusChange(projectId, currentUser.id, oldStatus, newStatus);
+      await SimpleProjectLogger.logStatusChange(projectId, currentUser, oldStatus, newStatus);
       // console.log("📊 [UPDATE-STATUS] Status change logged successfully");
     } catch (logError) {
       console.error("📊 [UPDATE-STATUS] Failed to log status change:", logError);
