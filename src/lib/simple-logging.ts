@@ -1,5 +1,4 @@
 // Simple Project Logging - Just append to a JSON column
-import { globalServices } from "./global-services";
 import { supabase } from "./supabase";
 import { supabaseAdmin } from "./supabase-admin";
 
@@ -12,8 +11,7 @@ export interface SimpleLogEntry {
   new_value?: any;
 }
 
-const user = await globalServices.getCurrentUser();
-const currentUserId = user?.id;
+// Removed global user fetch - user data is now passed as parameters to functions
 
 export class SimpleProjectLogger {
   /**

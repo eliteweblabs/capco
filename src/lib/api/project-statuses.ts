@@ -23,7 +23,7 @@ export async function fetchProjectStatuses(
     const { data: statusesData, error: statusesError } = await supabaseAdmin
       .from("project_statuses")
       .select(
-        "status_code, admin_status_name, project_action, client_status_name, client_status_tab, admin_status_tab, admin_status_slug, client_status_slug"
+        "status_code, admin_status_name, project_action, client_status_name, client_status_tab, admin_status_tab, admin_status_slug, client_status_slug, status_color"
       )
       .neq("status_code", 0)
       .order("status_code");
@@ -110,35 +110,35 @@ export function processProjectStatuses(
   }, {});
 }
 
-export function getStatusBySlug(
-  statuses: ProjectStatus[],
-  slug: string
-): ProjectStatus | undefined {
-  return statuses.find((status) => status.slug === slug);
-}
+// export function getStatusBySlug(
+//   statuses: ProjectStatus[],
+//   slug: string
+// ): ProjectStatus | undefined {
+//   return statuses.find((status) => status.slug === slug);
+// }
 
-export function getStatusById(statuses: ProjectStatus[], id: number): ProjectStatus | undefined {
-  return statuses.find((status) => status.id === id);
-}
+// export function getStatusById(statuses: ProjectStatus[], id: number): ProjectStatus | undefined {
+//   return statuses.find((status) => status.id === id);
+// }
 
-export function getNextStatus(
-  statuses: ProjectStatus[],
-  currentStatusId: number
-): ProjectStatus | undefined {
-  const currentIndex = statuses.findIndex((status) => status.id === currentStatusId);
-  if (currentIndex === -1 || currentIndex >= statuses.length - 1) {
-    return undefined;
-  }
-  return statuses[currentIndex + 1];
-}
+// export function getNextStatus(
+//   statuses: ProjectStatus[],
+//   currentStatusId: number
+// ): ProjectStatus | undefined {
+//   const currentIndex = statuses.findIndex((status) => status.id === currentStatusId);
+//   if (currentIndex === -1 || currentIndex >= statuses.length - 1) {
+//     return undefined;
+//   }
+//   return statuses[currentIndex + 1];
+// }
 
-export function getPreviousStatus(
-  statuses: ProjectStatus[],
-  currentStatusId: number
-): ProjectStatus | undefined {
-  const currentIndex = statuses.findIndex((status) => status.id === currentStatusId);
-  if (currentIndex <= 0) {
-    return undefined;
-  }
-  return statuses[currentIndex - 1];
-}
+// export function getPreviousStatus(
+//   statuses: ProjectStatus[],
+//   currentStatusId: number
+// ): ProjectStatus | undefined {
+//   const currentIndex = statuses.findIndex((status) => status.id === currentStatusId);
+//   if (currentIndex <= 0) {
+//     return undefined;
+//   }
+//   return statuses[currentIndex - 1];
+// }
