@@ -130,9 +130,9 @@ export async function getProjectsByAuthor(
       return project;
     });
 
-    console.log(
-      `🏗️ [PROJECTS-API] Retrieved ${projectsWithImageData.length} projects for author ${authorId}`
-    );
+    // console.log(
+    //   `🏗️ [PROJECTS-API] Retrieved ${projectsWithImageData.length} projects for author ${authorId}`
+    // );
     return projectsWithImageData;
   } catch (error) {
     console.error("🏗️ [PROJECTS-API] Error fetching projects by author:", error);
@@ -190,9 +190,9 @@ export async function getProjectsByAssignedToId(
       return project;
     });
 
-    console.log(
-      `🏗️ [PROJECTS-API] Retrieved ${projectsWithImageData.length} projects for author ${authorId}`
-    );
+    // console.log(
+    //   `🏗️ [PROJECTS-API] Retrieved ${projectsWithImageData.length} projects for author ${assignedToId}`
+    // );
     return projectsWithImageData;
   } catch (error) {
     console.error("🏗️ [PROJECTS-API] Error fetching projects by author:", error);
@@ -237,7 +237,7 @@ export async function fetchProjectsWithStatus(
       ...project,
       status_name: project.project_statuses?.name,
       status_slug: project.project_statuses?.slug,
-      status_color: project.project_statuses?.color,
+      status_color: project.project_statuses?.status_color,
     }));
 
     return projectsWithStatus;
