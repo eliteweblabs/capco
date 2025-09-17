@@ -97,10 +97,56 @@ export const GET: APIRoute = async ({ url, cookies }) => {
       );
     }
 
-    // Use company_name directly from the discussion record
+    // Get project data for placeholder replacement
+    const { data: project, error: projectError } = await supabase
+      .from("projects")
+      .select("*")
+      .eq("id", projectIdInt)
+      .single();
+
+    if (projectError) {
+      console.error("Error fetching project for placeholders:", projectError);
+    }
+
+    // Get project author's profile data for placeholders
+    let projectAuthor = null;
+    if (project?.author_id) {
+      const { data: authorProfile, error: authorError } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("id", project.author_id)
+        .single();
+
+      if (authorError) {
+        console.error("Error fetching author profile for placeholders:", authorError);
+      } else {
+        projectAuthor = authorProfile;
+      }
+    }
+
+    // Function to replace placeholders in discussion messages
+    const replacePlaceholders = (message: string) => {
+      if (!message || !project) return message;
+
+      return message
+        .replace(/\{\{PROJECT_TITLE\}\}/g, project.title || "Untitled Project")
+        .replace(/\{\{PROJECT_ADDRESS\}\}/g, project.address || "No Address Provided")
+        .replace(
+          /\{\{CLIENT_NAME\}\}/g,
+          projectAuthor?.company_name ||
+            `${projectAuthor?.first_name || ""} ${projectAuthor?.last_name || ""}`.trim() ||
+            "Unknown Client"
+        )
+        .replace(/\{\{CLIENT_EMAIL\}\}/g, projectAuthor?.email || "No Email Provided")
+        .replace(/\{\{CLIENT_PHONE\}\}/g, projectAuthor?.phone || "No Phone Provided")
+        .replace(/\{\{CLIENT_COMPANY\}\}/g, projectAuthor?.company_name || "No Company Provided");
+    };
+
+    // Process discussions with placeholder replacement and company name
     const discussionsWithCompanyName =
       discussions?.map((discussion) => ({
         ...discussion,
+        message: replacePlaceholders(discussion.message),
         company_name: discussion.company_name || "Unknown User",
       })) || [];
 

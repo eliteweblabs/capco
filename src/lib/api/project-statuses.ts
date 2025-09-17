@@ -62,8 +62,8 @@ export function processProjectStatuses(
   userRole: string
 ): Record<string, any> {
   const role = userRole || "Client";
-  console.log("🔍 [DASHBOARD] Processing statuses for role:", role);
-  console.log("🔍 [DASHBOARD] Statuses object keys:", Object.keys(statuses));
+  // console.log("🔍 [DASHBOARD] Processing statuses for role:", role);
+  // console.log("🔍 [DASHBOARD] Statuses object keys:", Object.keys(statuses));
 
   const statusesObject = statuses.reduce((acc: any, status: any) => {
     acc[status.status_code] = status;
@@ -72,14 +72,14 @@ export function processProjectStatuses(
 
   return Object.keys(statusesObject).reduce((acc: any, statusCode: string) => {
     const statusObj = statusesObject[statusCode];
-    console.log(
-      "🔍 [DASHBOARD] Processing status",
-      statusCode,
-      "for role",
-      role,
-      "statusObj:",
-      statusObj
-    );
+    // console.log(
+    //   "🔍 [DASHBOARD] Processing status",
+    //   statusCode,
+    //   "for role",
+    //   role,
+    //   "statusObj:",
+    //   statusObj
+    // );
 
     // Use client_status_name for clients, admin_status_name for admins
     if (role === "Client" && statusObj.client_status_name) {
