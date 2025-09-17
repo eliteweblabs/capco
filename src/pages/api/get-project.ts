@@ -81,6 +81,17 @@ export const GET: APIRoute = async ({ request, cookies, url }) => {
       projects = result.data || [];
       error = result.error;
 
+      // Debug: Log sample project data to see what fields are available
+      // if (projects.length > 0) {
+      //   console.log("📡 [GET-PROJECT] Sample project raw data:", {
+      //     id: projects[0].id,
+      //     title: projects[0].title,
+      //     featured_image: projects[0].featured_image,
+      //     featured_image_url: projects[0].featured_image_url,
+      //     allKeys: Object.keys(projects[0]),
+      //   });
+      // }
+
       // } else {
       //   // Use admin client to bypass RLS policies for project listing
       //   let query = supabaseAdmin
@@ -209,6 +220,34 @@ export const GET: APIRoute = async ({ request, cookies, url }) => {
         if (project.assigned_to_id) {
           project.assigned_profiles = profilesMap.get(project.assigned_to_id) || null;
         }
+
+        // Process featured image data
+        if (project.featured_image) {
+          try {
+            // Parse the featured_image JSON if it's a string
+            const featuredImageData =
+              typeof project.featured_image === "string"
+                ? JSON.parse(project.featured_image)
+                : project.featured_image;
+
+            project.featured_image_data = {
+              id: featuredImageData.id,
+              file_path: featuredImageData.file_path,
+              file_name: featuredImageData.file_name,
+              file_type: featuredImageData.file_type,
+              public_url: featuredImageData.public_url || project.featured_image_url,
+            };
+          } catch (error) {
+            console.warn(
+              "📡 [GET-PROJECT] Error parsing featured_image for project",
+              project.id,
+              error
+            );
+            project.featured_image_data = null;
+          }
+        } else {
+          project.featured_image_data = null;
+        }
       });
     }
 
@@ -217,63 +256,135 @@ export const GET: APIRoute = async ({ request, cookies, url }) => {
       const projectIds = projects.map((p) => p.id);
 
       try {
-        // Use proper aggregation query to get counts directly
-        let countQuery = (supabaseAdmin || supabase)
+        // Get total discussion counts
+        let totalCountQuery = (supabaseAdmin || supabase)
           .from("discussion")
           .select("project_id")
           .in("project_id", projectIds);
 
+        // Get incomplete discussion counts (where mark_completed = false)
+        let incompleteCountQuery = (supabaseAdmin || supabase)
+          .from("discussion")
+          .select("project_id")
+          .in("project_id", projectIds)
+          .eq("mark_completed", false);
+
         // For clients, exclude internal discussions (Admin/Staff see all)
         if (isClient) {
-          countQuery = countQuery.eq("internal", false);
+          totalCountQuery = totalCountQuery.eq("internal", false);
+          incompleteCountQuery = incompleteCountQuery.eq("internal", false);
           // console.log("📡 [GET-PROJECT] Client filter applied - excluding internal discussions");
         } else {
           // console.log("📡 [GET-PROJECT] Admin/Staff - showing all discussions");
         }
 
-        // Execute the query to get all discussions
-        const { data: discussions, error: countError } = await countQuery;
+        // Execute both queries in parallel
+        const [
+          { data: totalDiscussions, error: totalError },
+          { data: incompleteDiscussions, error: incompleteError },
+        ] = await Promise.all([totalCountQuery, incompleteCountQuery]);
 
-        let discussionCounts: Array<{ project_id: number; comment_count: number }> = [];
+        // console.log("📡 [GET-PROJECT] Discussion query results:", {
+        //   totalDiscussionsFound: totalDiscussions?.length || 0,
+        //   incompleteDiscussionsFound: incompleteDiscussions?.length || 0,
+        //   totalError: totalError?.message || null,
+        //   incompleteError: incompleteError?.message || null,
+        // });
 
-        if (!countError && discussions) {
-          // Count discussions per project
-          const countsByProject: Record<number, number> = {};
-          discussions.forEach((discussion: any) => {
-            countsByProject[discussion.project_id] =
-              (countsByProject[discussion.project_id] || 0) + 1;
+        let discussionCounts: Array<{
+          project_id: number;
+          comment_count: number;
+          incomplete_count: number;
+        }> = [];
+
+        if (!totalError && !incompleteError && totalDiscussions && incompleteDiscussions) {
+          // Count total discussions per project
+          const totalCountsByProject: Record<number, number> = {};
+          totalDiscussions.forEach((discussion: any) => {
+            totalCountsByProject[discussion.project_id] =
+              (totalCountsByProject[discussion.project_id] || 0) + 1;
           });
 
-          discussionCounts = Object.entries(countsByProject).map(([project_id, comment_count]) => ({
-            project_id: parseInt(project_id),
-            comment_count,
-          }));
+          // Count incomplete discussions per project
+          const incompleteCountsByProject: Record<number, number> = {};
+          incompleteDiscussions.forEach((discussion: any) => {
+            incompleteCountsByProject[discussion.project_id] =
+              (incompleteCountsByProject[discussion.project_id] || 0) + 1;
+          });
+
+          // console.log("📡 [GET-PROJECT] Total discussion counts by project:", totalCountsByProject);
+          // console.log(
+          //   "📡 [GET-PROJECT] Incomplete discussion counts by project:",
+          //   incompleteCountsByProject
+          // );
+
+          discussionCounts = Object.entries(totalCountsByProject).map(
+            ([project_id, comment_count]) => ({
+              project_id: parseInt(project_id),
+              comment_count,
+              incomplete_count: incompleteCountsByProject[parseInt(project_id)] || 0,
+            })
+          );
         }
 
-        if (!countError && discussionCounts) {
-          // Create lookup map for comment counts
-          const countsByProject: Record<number, number> = {};
+        if (!totalError && !incompleteError && discussionCounts) {
+          // console.log("📡 [GET-PROJECT] Processing discussion counts:", discussionCounts.length);
+
+          // Create lookup maps for both counts
+          const totalCountsByProject: Record<number, number> = {};
+          const incompleteCountsByProject: Record<number, number> = {};
+
           discussionCounts.forEach((item: any) => {
-            countsByProject[item.project_id] = item.comment_count;
+            totalCountsByProject[item.project_id] = item.comment_count;
+            incompleteCountsByProject[item.project_id] = item.incomplete_count;
           });
+
+          // console.log("📡 [GET-PROJECT] Lookup maps created:", {
+          //   totalCountsByProject,
+          //   incompleteCountsByProject,
+          // });
 
           // Add comment counts to projects
           projects.forEach((project: any) => {
-            project.comment_count = countsByProject[project.id] || 0;
+            const totalCount = totalCountsByProject[project.id] || 0;
+            const incompleteCount = incompleteCountsByProject[project.id] || 0;
+
+            project.comment_count = totalCount;
+            project.incomplete_discussions = incompleteCount;
+
+            // Add a formatted ratio string for easy display
+            project.discussion_ratio = `${incompleteCount}/${totalCount}`;
           });
 
-          // console.log("📡 [GET-PROJECT] Comment counts added efficiently");
+          // console.log("📡 [GET-PROJECT] Discussion counts added efficiently");
+          // console.log("📡 [GET-PROJECT] Sample project with counts:", {
+          //   id: projects[0]?.id,
+          //   title: projects[0]?.title,
+          //   comment_count: projects[0]?.comment_count,
+          //   incomplete_discussions: projects[0]?.incomplete_discussions,
+          //   discussion_ratio: projects[0]?.discussion_ratio,
+          // });
         } else {
-          console.error("Error fetching discussion counts:", countError);
-          // Set default comment count to 0 if there's an error
+          console.error("Error fetching discussion counts:", {
+            totalError: totalError?.message,
+            incompleteError: incompleteError?.message,
+            totalDiscussionsFound: totalDiscussions?.length || 0,
+            incompleteDiscussionsFound: incompleteDiscussions?.length || 0,
+            discussionCountsLength: discussionCounts?.length || 0,
+          });
+          // Set default counts to 0 if there's an error
           projects.forEach((project: any) => {
             project.comment_count = 0;
+            project.incomplete_discussions = 0;
+            project.discussion_ratio = "0/0";
           });
         }
       } catch (error) {
         console.error("Error in comment count optimization:", error);
         projects.forEach((project: any) => {
           project.comment_count = 0;
+          project.incomplete_discussions = 0;
+          project.discussion_ratio = "0/0";
         });
       }
     }

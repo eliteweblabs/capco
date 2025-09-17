@@ -148,6 +148,18 @@ export default {
           "muted-dark": "#262626",
         },
 
+        // Add border support for custom colors
+        red: {
+          200: "#fecaca",
+          300: "#fca5a5",
+          400: "#f87171",
+          500: "#ef4444",
+          600: "#dc2626",
+          700: "#b91c1c",
+          800: "#991b1b",
+          900: "#7f1d1d",
+        },
+
         // Icon Colors
         icon: {
           primary: "#6E6E6E",

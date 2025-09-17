@@ -19,16 +19,18 @@ export interface AuthResult {
 }
 
 export async function checkAuth(cookies: any): Promise<AuthResult> {
-  // console.log("🔐 [AUTH] Starting authentication check...");
+  console.log("🔐 [AUTH] Starting authentication check...");
 
   const accessToken = cookies.get("sb-access-token");
   const refreshToken = cookies.get("sb-refresh-token");
 
-  // console.log("🔐 [AUTH] Token check:", {
-  //   hasAccessToken: !!accessToken,
-  //   hasRefreshToken: !!refreshToken,
-  //   supabaseConfigured: !!supabase,
-  // });
+  console.log("🔐 [AUTH] Token check:", {
+    hasAccessToken: !!accessToken,
+    hasRefreshToken: !!refreshToken,
+    supabaseConfigured: !!supabase,
+    accessTokenValue: accessToken?.value?.substring(0, 20) + "...",
+    refreshTokenValue: refreshToken?.value?.substring(0, 20) + "...",
+  });
 
   let isAuth = false;
   let session = null;

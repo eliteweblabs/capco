@@ -4,6 +4,7 @@
 import type { APIRoute } from "astro";
 import { readFileSync } from "fs";
 import { join } from "path";
+import { replacePlaceholders, type PlaceholderData } from "../../lib/placeholder-utils";
 import { supabase } from "../../lib/supabase";
 import { supabaseAdmin } from "../../lib/supabase-admin";
 
@@ -169,6 +170,18 @@ export const POST: APIRoute = async ({ request, cookies }) => {
           } else {
             // Replace template variables for regular emails
             emailHtml = emailTemplate.replace("{{CONTENT}}", emailContent);
+
+            // Replace brand/design placeholders using centralized system
+            const placeholderData: PlaceholderData = {
+              primaryColor: "#825bdd",
+              svgLogo: `<svg id="Layer_1" xmlns="http://www.w3.org/2000/svg" width="100" version="1.1" viewBox="0 0 400 143.7" class="h-auto"> <defs> <style>
+        .fill {
+          fill: black;
+        }
+      </style> </defs> <g> <path class="fill" d="M0 0h400v143.7H0z"/> <text x="200" y="80" text-anchor="middle" fill="white" font-family="Arial, sans-serif" font-size="24" font-weight="bold">CAPCo</text> </g> </svg>`,
+            };
+
+            emailHtml = replacePlaceholders(emailHtml, placeholderData);
           }
 
           // Override buttonLink with magic link for authentication

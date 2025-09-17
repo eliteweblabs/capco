@@ -33,6 +33,7 @@ interface Props {
   showNotification?: boolean; // Optional: Whether to show notification (default: true)
   // project: any; // Optional: Status for API calls
   icon?: string; // Optional: Icon name for the button (default: "")
+  buttonVariant?: string; // Optional: Button variant (default: "primary")
 }
 
 const {
@@ -52,8 +53,8 @@ const {
   icon = "chevron-down",
   // NEW FLEXIBLE PROPS:
   apiEndpoint,
-  searchText,
-  searchPlaceholder,
+  searchText = "Search Options",
+  searchPlaceholder = "Type to search options...",
   apiParams = {},
   dataTransform,
   showImages = false,
@@ -63,6 +64,8 @@ const {
   fetchOnLoad = false,
   projectId,
   showNotification = false,
+  buttonVariant = "primary",
+
   // project = {},
 } = Astro.props;
 
@@ -80,8 +83,8 @@ const displayText = buttonText || selectedOption?.label || placeholder;
 <!-- Slot Machine Picker Button -->
 <Button
   id={id}
-  variant="primary"
-  class={buttonClass}
+  variant={buttonVariant || "primary"}
+  class={buttonClass || ""}
   icon={icon}
   iconPosition="right"
   class="w-full"
@@ -147,6 +150,8 @@ const displayText = buttonText || selectedOption?.label || placeholder;
         valueField: valueField,
         labelField: labelField,
         fetchOnLoad: fetchOnLoad,
+        searchText: searchText,
+        searchPlaceholder: searchPlaceholder,
         onSelect: (value, label) => {
           // Update hidden input
           if (hiddenInput) {
@@ -202,7 +207,7 @@ const displayText = buttonText || selectedOption?.label || placeholder;
         labelField: labelField,
         fetchOnLoad: fetchOnLoad,
         noResultsText: noResultsText,
-        project: project,
+        // project: project,
       });
     });
 
@@ -450,6 +455,120 @@ const displayText = buttonText || selectedOption?.label || placeholder;
       return optionValue && selectedValue && optionValue.toString() === selectedValue.toString();
     });
 
+    // Initialize originalOptions immediately for static options (before search setup)
+    let originalOptions = [];
+    if (!fetchOnLoad && finalOptions.length > 0) {
+      originalOptions = [...finalOptions];
+      console.log(
+        `🔍 [SLOT-MACHINE] Initialized originalOptions with ${originalOptions.length} static options`
+      );
+      console.log(`🔍 [SLOT-MACHINE] Sample option structure:`, originalOptions[0]);
+    }
+
+    // Helper function to create LI elements consistently
+    function createOptionElement(option, index, isSelected = false) {
+      const li = document.createElement("li");
+      li.className = spanClassName;
+
+      // Base styles
+      let baseStyles = `
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        height: 3rem;
+        text-align: center;
+        color: #111827;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s;
+        min-height: 48px;
+        padding: 12px 16px;
+        user-select: none;
+        position: relative;
+      `;
+
+      // Add selected styling if needed
+      if (isSelected) {
+        baseStyles += `
+          background: bg-primary-500 !important;
+          color: text-white !important;
+          border-radius: 8px !important;
+          margin: 0 8px !important;
+        `;
+        li.classList.add("selected");
+      }
+
+      li.style.cssText = baseStyles;
+
+      const span = document.createElement("span");
+      span.className = spanClassName;
+      span.style.cssText = `
+        text-align: center;
+        font-weight: 500;
+        transition: all 0.2s;
+        width: 100%;
+      `;
+
+      // Set content and data attributes
+      span.textContent =
+        option[labelField] || option.label || option.name || option.description || option;
+      span.dataset.value =
+        option[valueField] || option.value || option.place_id || option.id || option;
+      span.dataset.label =
+        option[labelField] || option.label || option.name || option.description || option;
+      span.dataset.index = index;
+
+      li.appendChild(span);
+      return li;
+    }
+
+    // Helper function to create message LI elements
+    function createMessageElement(message, isError = false) {
+      const li = document.createElement("li");
+      li.className = spanClassName;
+      li.style.cssText = `
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        height: 3rem;
+        text-align: center;
+        color: ${isError ? "#ef4444" : "#6b7280"};
+        font-style: italic;
+      `;
+      li.textContent = message;
+      return li;
+    }
+
+    // Helper function to populate options list
+    function populateOptionsList(optionsArray, clearExisting = true) {
+      if (clearExisting) {
+        optionsList.innerHTML = "";
+      }
+
+      let newSelectedIndex = -1;
+
+      if (optionsArray.length > 0) {
+        optionsArray.forEach((option, index) => {
+          const optionValue = option[valueField] || option.value || option.place_id || option.id;
+          const isSelected =
+            optionValue && selectedValue && optionValue.toString() === selectedValue.toString();
+
+          // Track the new selected index in the filtered results
+          if (isSelected) {
+            newSelectedIndex = index;
+          }
+
+          const li = createOptionElement(option, index, isSelected);
+          optionsList.appendChild(li);
+        });
+      } else {
+        const messageLi = createMessageElement("No results found");
+        optionsList.appendChild(messageLi);
+      }
+
+      return newSelectedIndex;
+    }
+
     // Lock body scroll to prevent background scrolling
     document.body.style.overflow = "hidden";
 
@@ -492,6 +611,8 @@ const displayText = buttonText || selectedOption?.label || placeholder;
     const closeButton = modal.querySelector(`#${id}-close-slot-modal`);
     const searchInput = modal.querySelector(`#${id}-slot-search-input`);
     const searchButton = modal.querySelector(`#${id}-slot-search-btn`);
+    const spanClassName =
+      "slot-machine-item-text text-global-primary dark:text-global-primary-dark";
 
     // Add event listeners to buttons from the partial
     if (closeButton) {
@@ -518,11 +639,17 @@ const displayText = buttonText || selectedOption?.label || placeholder;
 
     // Add search functionality if enabled
     if (enableSearch && searchInput) {
+      console.log(
+        `🔍 [SLOT-MACHINE] Setting up search for ${id}, enableSearch: ${enableSearch}, searchInput: ${!!searchInput}, fetchOnLoad: ${fetchOnLoad}, finalOptions: ${finalOptions.length}`
+      );
       let searchTimeout;
-      let originalOptions = []; // Store original options for filtering
+      // originalOptions is now initialized earlier in the function
 
       searchInput.addEventListener("input", (e) => {
         const query = e.target.value.trim();
+        console.log(
+          `🔍 [SLOT-MACHINE] Search input changed: "${query}", originalOptions: ${originalOptions.length}`
+        );
 
         // Clear previous timeout
         if (searchTimeout) {
@@ -549,31 +676,31 @@ const displayText = buttonText || selectedOption?.label || placeholder;
               optionsList.innerHTML = "";
               originalOptions.forEach((option, index) => {
                 const li = document.createElement("li");
-                li.className = "slot-machine-item";
+                li.className = spanClassName;
                 li.style.cssText = `
-                  display: flex;
-                  align-items: center;
-                  justify-content: center;
-                  height: 3rem;
-                  text-align: center;
-                  color: #111827;
-                  font-weight: 500;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        height: 3rem;
+        text-align: center;
+        color: #111827;
+        font-weight: 500;
         cursor: pointer;
         transition: all 0.2s;
-                  min-height: 48px;
-                  padding: 12px 16px;
-                  user-select: none;
-                  position: relative;
-                `;
+        min-height: 48px;
+        padding: 12px 16px;
+        user-select: none;
+        position: relative;
+      `;
 
                 const span = document.createElement("span");
-                span.className = "slot-machine-item-text";
+                span.className = spanClassName;
                 span.style.cssText = `
-                  text-align: center;
-                  font-weight: 500;
-                  transition: all 0.2s;
-                  width: 100%;
-                `;
+        text-align: center;
+        font-weight: 500;
+        transition: all 0.2s;
+        width: 100%;
+      `;
 
                 span.textContent = option.label;
                 span.dataset.value = option.value;
@@ -588,8 +715,21 @@ const displayText = buttonText || selectedOption?.label || placeholder;
           }
 
           // Filter options based on search query
-          const filteredOptions = originalOptions.filter((option) =>
-            option.label.toLowerCase().includes(query.toLowerCase())
+          console.log(`🔍 [SLOT-MACHINE] Filtering options with query: "${query}"`);
+          console.log(
+            `🔍 [SLOT-MACHINE] Original options:`,
+            originalOptions.map((o) => ({ label: o.label, value: o.value }))
+          );
+
+          const filteredOptions = originalOptions.filter((option) => {
+            const matches = option.label.toLowerCase().includes(query.toLowerCase());
+            console.log(
+              `🔍 [SLOT-MACHINE] Option "${option.label}" matches "${query}": ${matches}`
+            );
+            return matches;
+          });
+          console.log(
+            `🔍 [SLOT-MACHINE] Filtered ${originalOptions.length} options to ${filteredOptions.length} results`
           );
 
           // Update the options list
@@ -597,57 +737,22 @@ const displayText = buttonText || selectedOption?.label || placeholder;
             optionsList.innerHTML = "";
 
             if (filteredOptions.length > 0) {
-              filteredOptions.forEach((option, index) => {
-                const li = document.createElement("li");
-                li.className = "slot-machine-item";
-                li.style.cssText = `
-        display: flex;
-        align-items: center;
-        justify-content: center;
-                  height: 3rem;
-                  text-align: center;
-                  color: #111827;
-                  font-weight: 500;
-                  cursor: pointer;
-                  transition: all 0.2s;
-                  min-height: 48px;
-                  padding: 12px 16px;
-                  user-select: none;
-                  position: relative;
-                `;
+              console.log(`🔍 [SLOT-MACHINE] Showing ${filteredOptions.length} filtered results`);
+              const newSelectedIndex = populateOptionsList(filteredOptions);
+              selectedIndex = newSelectedIndex;
 
-                const span = document.createElement("span");
-                span.className = "slot-machine-item-text";
-                span.style.cssText = `
-                  text-align: center;
-                  font-weight: 500;
-                  transition: all 0.2s;
-                  width: 100%;
-                `;
-
-                span.textContent = option.label;
-                span.dataset.value = option.value;
-                span.dataset.label = option.label;
-                span.dataset.index = index;
-
-                li.appendChild(span);
-                optionsList.appendChild(li);
-              });
+              // Update selection styling and center the selected item
+              updateSelection();
+              centerSelectedItem();
             } else {
+              console.log(
+                `🔍 [SLOT-MACHINE] No matching results found, showing no-results message`
+              );
               // Show "no results" message
-              const li = document.createElement("li");
-              li.className = "slot-machine-item";
-              li.style.cssText = `
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                height: 3rem;
-                text-align: center;
-                color: #666;
-                font-style: italic;
-              `;
-              li.textContent = "No matching clients found";
-              optionsList.appendChild(li);
+              const messageLi = createMessageElement("No matching clients found");
+              optionsList.innerHTML = "";
+              optionsList.appendChild(messageLi);
+              selectedIndex = -1;
             }
           }
           return;
@@ -702,137 +807,32 @@ const displayText = buttonText || selectedOption?.label || placeholder;
               console.log(`🔍 [SLOT-MACHINE] Options array:`, optionsArray);
 
               // Update options list with search results
-              if (optionsList && optionsArray.length > 0) {
-                // Clear existing options
-                optionsList.innerHTML = "";
-
-                // Add new options
-                optionsArray.forEach((option, index) => {
-                  const li = document.createElement("li");
-                  li.className = "slot-machine-item";
-                  li.style.cssText = `
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    height: 3rem;
-                    text-align: center;
-                    color: #111827;
-                    font-weight: 500;
-                    cursor: pointer;
-                    transition: all 0.2s;
-                    min-height: 48px;
-                    padding: 12px 16px;
-                    user-select: none;
-                    position: relative;
-                  `;
-
-                  const span = document.createElement("span");
-                  span.className = "slot-machine-item-text";
-                  span.style.cssText = `
-                    text-align: center;
-                    font-weight: 500;
-                    transition: all 0.2s;
-                    width: 100%;
-                  `;
-
-                  span.textContent =
-                    option[labelField] || option.label || option.name || option.description;
-                  span.dataset.value =
-                    option[valueField] || option.value || option.place_id || option.id;
-                  span.dataset.label =
-                    option[labelField] || option.label || option.name || option.description;
-                  span.dataset.index = index;
-
-                  li.appendChild(span);
-                  optionsList.appendChild(li);
-                });
-
-                // Reset selected index
-                selectedIndex = -1;
+              if (optionsList) {
+                const newSelectedIndex = populateOptionsList(optionsArray);
+                selectedIndex = newSelectedIndex;
                 updateSelection();
-              } else if (optionsList) {
-                // Show no results message
-                optionsList.innerHTML = `
-                  <li class="slot-machine-item" style="display: flex; align-items: center; justify-content: center; height: 3rem; color: #6b7280;">
-                    <span>No results found</span>
-                  </li>
-                `;
-                selectedIndex = -1;
-                updateSelection();
+                centerSelectedItem();
               }
             } catch (error) {
               console.error(`🔍 [SLOT-MACHINE] Search error:`, error);
 
               // Show error message
               if (optionsList) {
-                optionsList.innerHTML = `
-                  <li class="slot-machine-item" style="display: flex; align-items: center; justify-content: center; height: 3rem; color: #ef4444;">
-                    <span>Error loading results</span>
-                  </li>
-                `;
+                const errorLi = createMessageElement("Error loading results", true);
+                optionsList.innerHTML = "";
+                optionsList.appendChild(errorLi);
               }
             }
           }, 300); // 300ms debounce
         } else if (query.length === 0) {
           // Restore original options when search is empty
           if (optionsList) {
-            optionsList.innerHTML = "";
-
-            // Restore original options
-            finalOptions.forEach((option, index) => {
-              const li = document.createElement("li");
-              li.className = "slot-machine-item";
-              li.style.cssText = `
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        height: 3rem;
-        text-align: center;
-        color: #111827;
-        font-weight: 500;
-        cursor: pointer;
-        transition: all 0.2s;
-        min-height: 48px;
-        padding: 12px 16px;
-        user-select: none;
-        position: relative;
-      `;
-
-              const span = document.createElement("span");
-              span.className = "slot-machine-item-text";
-              span.style.cssText = `
-        text-align: center;
-        font-weight: 500;
-        transition: all 0.2s;
-        width: 100%;
-      `;
-
-              // Add selected styling if this is the current value
-              const optionValue =
-                option[valueField] || option.value || option.place_id || option.id;
-              if (optionValue === selectedValue) {
-                li.classList.add("selected");
-                li.style.cssText += `
-                  background: bg-primary-500 !important;
-                  color: text-white !important;
-          border-radius: 8px !important;
-          margin: 0 8px !important;
-          position: relative !important;
-        `;
-              }
-
-              span.textContent = option.label;
-              span.dataset.value = option.value;
-              span.dataset.label = option.label;
-              span.dataset.index = index;
-
-              li.appendChild(span);
-              optionsList.appendChild(li);
-            });
-
-            // Reset to original selected index
-            selectedIndex = finalOptions.findIndex((option) => option.value === selectedValue);
+            // Use originalOptions if available (for static options), otherwise use finalOptions
+            const optionsToRestore = originalOptions.length > 0 ? originalOptions : finalOptions;
+            const newSelectedIndex = populateOptionsList(optionsToRestore);
+            selectedIndex = newSelectedIndex;
             updateSelection();
+            centerSelectedItem();
           }
         }
       });
@@ -883,70 +883,10 @@ const displayText = buttonText || selectedOption?.label || placeholder;
 
         // Update finalOptions with fetched data
         if (optionsArray.length > 0) {
-          // Clear existing options and populate with fetched data
-          optionsList.innerHTML = "";
-          optionsArray.forEach((option, index) => {
-            const li = document.createElement("li");
-            li.className = "slot-machine-item";
-            li.style.cssText = `
-              display: flex;
-              align-items: center;
-              justify-content: center;
-              height: 3rem;
-              text-align: center;
-              color: #111827;
-              font-weight: 500;
-              cursor: pointer;
-              transition: all 0.2s;
-              min-height: 48px;
-              padding: 12px 16px;
-              user-select: none;
-              position: relative;
-            `;
-
-            const span = document.createElement("span");
-            span.className = "slot-machine-item-text";
-            span.style.cssText = `
-              text-align: center;
-              font-weight: 500;
-              transition: all 0.2s;
-              width: 100%;
-            `;
-
-            // Add selected styling if this is the current value
-            const optionValue = option[valueField] || option.value || option.place_id || option.id;
-            if (optionValue === selectedValue) {
-              li.classList.add("selected");
-              li.style.cssText += `
-                background: bg-primary-500 !important;
-                color: text-white !important;
-                border-radius: 8px !important;
-                margin: 0 8px !important;
-                position: relative !important;
-              `;
-            }
-
-            span.textContent =
-              option[labelField] || option.label || option.name || option.description;
-            span.dataset.value = option[valueField] || option.value || option.place_id || option.id;
-            span.dataset.label =
-              option[labelField] || option.label || option.name || option.description;
-            span.dataset.index = index;
-
-            li.appendChild(span);
-            optionsList.appendChild(li);
-          });
-
-          // Update selectedIndex to match the fetched data
-          selectedIndex = optionsArray.findIndex((option) => {
-            const optionValue = option[valueField] || option.value || option.place_id || option.id;
-            return (
-              optionValue && selectedValue && optionValue.toString() === selectedValue.toString()
-            );
-          });
-
-          // Update the selection display
+          const newSelectedIndex = populateOptionsList(optionsArray);
+          selectedIndex = newSelectedIndex;
           updateSelection();
+          centerSelectedItem();
         }
       } catch (error) {
         console.error(`🔄 [SLOT-MACHINE] Error fetching data on load:`, error);
@@ -963,56 +903,7 @@ const displayText = buttonText || selectedOption?.label || placeholder;
     // Populate options in the list from the partial (only if not fetched on load)
     if (optionsList && !fetchOnLoad) {
       optionsList.style.transform = "translateY(0px)";
-
-      // Add options to the existing list from the partial
-      finalOptions.forEach((option, index) => {
-        const li = document.createElement("li");
-        li.className = "slot-machine-item";
-        li.style.cssText = `
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        height: 3rem;
-        text-align: center;
-        color: #111827;
-        font-weight: 500;
-        cursor: pointer;
-        transition: all 0.2s;
-        min-height: 48px;
-        padding: 12px 16px;
-        user-select: none;
-        position: relative;
-      `;
-
-        const span = document.createElement("span");
-        span.className = "slot-machine-item-text";
-        span.style.cssText = `
-        text-align: center;
-        font-weight: 500;
-        transition: all 0.2s;
-        width: 100%;
-      `;
-
-        // Add selected styling if this is the current value
-        if (option.value === selectedValue) {
-          li.classList.add("selected");
-          li.style.cssText += `
-            background: bg-primary-500 !important;
-            color: text-white !important;
-          border-radius: 8px !important;
-          margin: 0 8px !important;
-          position: relative !important;
-        `;
-        }
-
-        span.textContent = option.label;
-        span.dataset.value = option.value;
-        span.dataset.label = option.label;
-        span.dataset.index = index;
-
-        li.appendChild(span);
-        optionsList.appendChild(li);
-      });
+      populateOptionsList(finalOptions);
     }
 
     // Slot machine functionality
@@ -1100,7 +991,8 @@ const displayText = buttonText || selectedOption?.label || placeholder;
         right: 8px;
         top: 50%;
         transform: translateY(-50%);
-        color: #10b981;
+        transition: all 0.2s ease-out;
+        color: #ffffff;
         font-weight: bold;
         font-size: 16px;
         animation: checkmarkPulse 1.5s ease-in-out infinite;
