@@ -369,9 +369,7 @@ User rules are always capitalized Admin, Client, Staff
 
 Placeholders
 
-{{PROJECT_TITLE}}
 {{PROJECT_ADDRESS}}
-{{ADDRESS}}
 {{CLIENT_NAME}}
 {{CLIENT_EMAIL}}
 {{EST_TIME}}

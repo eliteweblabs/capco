@@ -260,6 +260,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       // Button group fields - all are now consistently arrays
       building: body.building || [],
       project: body.project || [],
+      tier: body.tier || [],
       service: body.service || [],
       requested_docs: body.requested_docs || [],
       status: 0, // Set initial status to 0, will be updated to 10 via update-status API to trigger emails
@@ -267,15 +268,15 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       updated_at: new Date().toISOString(), // Set initial update timestamp
     };
 
-    console.log(
-      "📝 [CREATE-PROJECT] Inserting project data:",
-      JSON.stringify(projectData, null, 2)
-    );
+    // console.log(
+    //   "📝 [CREATE-PROJECT] Inserting project data:",
+    //   JSON.stringify(projectData, null, 2)
+    // );
 
     // SAFETY CHECK: Ensure project author is always a client
     // This prevents the issue where projects could be created with admin/staff authors
     // The check validates that the author_id corresponds to a user with role = 'Client'
-    console.log("📝 [CREATE-PROJECT] Safety check: Verifying project author role");
+    // console.log("📝 [CREATE-PROJECT] Safety check: Verifying project author role");
     const { data: authorProfile, error: authorCheckError } = await supabase
       .from("profiles")
       .select("role")
@@ -316,13 +317,13 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       );
     }
 
-    console.log("📝 [CREATE-PROJECT] ✅ Safety check passed - project author is a client:", {
-      authorId: projectAuthorId,
-      authorRole: authorProfile.role,
-    });
+    // console.log("📝 [CREATE-PROJECT] ✅ Safety check passed - project author is a client:", {
+    //   authorId: projectAuthorId,
+    //   authorRole: authorProfile.role,
+    // });
 
     // Create project
-    console.log("📝 [CREATE-PROJECT] About to insert project into database");
+    // console.log("📝 [CREATE-PROJECT] About to insert project into database");
     const { data: projects, error } = await supabase
       .from("projects")
       .insert([projectData])
@@ -361,32 +362,32 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
     const project = projects[0];
 
-    console.log("📝 [CREATE-PROJECT] Project created successfully:", {
-      id: project.id,
-      author_id: project.author_id,
-      title: project.title,
-      address: project.address,
-      status: project.status,
-    });
+    // console.log("📝 [CREATE-PROJECT] Project created successfully:", {
+    //   id: project.id,
+    //   author_id: project.author_id,
+    //   title: project.title,
+    //   address: project.address,
+    //   status: project.status,
+    // });
 
     // Verify the project has the correct initial status
-    if (project.status !== 0) {
-      console.error("📝 [CREATE-PROJECT] WARNING: Project created without status 0!", {
-        actualStatus: project.status,
-        expectedStatus: 0,
-        projectId: project.id,
-      });
-    } else {
-      console.log(
-        "📝 [CREATE-PROJECT] ✅ Project created with correct initial status:",
-        project.status
-      );
-    }
+    // if (project.status !== 0) {
+    //   console.error("📝 [CREATE-PROJECT] WARNING: Project created without status 0!", {
+    //     actualStatus: project.status,
+    //     expectedStatus: 0,
+    //     projectId: project.id,
+    //   });
+    // } else {
+    //   console.log(
+    //     "📝 [CREATE-PROJECT] ✅ Project created with correct initial status:",
+    //     project.status
+    //   );
+    // }
 
     // Note: Frontend should now call /api/update-status to set status from 0 -> 10
     // This will trigger proper email notifications for "Specs Received" status
 
-    console.log("📝 [CREATE-PROJECT] ==========================================");
+    // console.log("📝 [CREATE-PROJECT] ==========================================");
 
     // Log the project creation
     try {
