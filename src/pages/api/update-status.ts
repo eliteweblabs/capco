@@ -100,7 +100,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
     // this used to use modal_auto_redirect_admin and modal_auto_redirect_client
 
-    // console.log("📊 [UPDATE-STATUS] Updating project status:", { projectId, newStatus, oldStatus });
+    console.log("📊 [UPDATE-STATUS] Updating project status:", { projectId, newStatus, oldStatus });
 
     // Update project status
     const { data: updatedProject, error: updateError } = await supabase
@@ -123,9 +123,9 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
     // Log the status change using authenticated user
     try {
-      // console.log("📊 [UPDATE-STATUS] Logging status change for user:", currentUser.id);
+      console.log("📊 [UPDATE-STATUS] Logging status change for user:", currentUser.id);
       await SimpleProjectLogger.logStatusChange(projectId, currentUser, oldStatus, newStatus);
-      // console.log("📊 [UPDATE-STATUS] Status change logged successfully");
+      console.log("📊 [UPDATE-STATUS] Status change logged successfully");
     } catch (logError) {
       console.error("📊 [UPDATE-STATUS] Failed to log status change:", logError);
       // Don't fail the entire request if logging fails
@@ -144,7 +144,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
     if (statusDataResponse.ok) {
       const statusData = await statusDataResponse.json();
-      // console.log("📊 [UPDATE-STATUS] Status data retrieved:", statusData);
+      console.log("📊 [UPDATE-STATUS] Status data retrieved:", statusData);
 
       // Merge project data with status config for placeholder replacement
       const mergedData = {
@@ -153,22 +153,31 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         newStatus: newStatus,
       };
 
-      // console.log("📊 [UPDATE-STATUS] Merged data for placeholder replacement:", mergedData);
+      console.log("📊 [UPDATE-STATUS] Merged data for placeholder replacement:", mergedData);
 
       // Get client profile data for placeholders
-      const { data: profile, error: profileError } = await supabase
+      const { data: profiles, error: profileError } = await supabase
         .from("profiles")
         .select("id, company_name, first_name, last_name, role, email")
-        .eq("id", updatedProject.author_id)
-        .single();
+        .eq("id", updatedProject.author_id);
 
       if (profileError) {
-        console.error("📊 [UPDATE-STATUS] Profile error:", profileError);
+        console.error("📊 [UPDATE-STATUS] Profile query error:", profileError);
         return new Response(JSON.stringify({ error: profileError.message }), {
           status: 500,
           headers: { "Content-Type": "application/json" },
         });
       }
+
+      if (!profiles || profiles.length === 0) {
+        console.warn(
+          "📊 [UPDATE-STATUS] No profile found for author_id:",
+          updatedProject.author_id
+        );
+        // Continue with empty profile data rather than failing
+      }
+
+      const profile = profiles && profiles.length > 0 ? profiles[0] : null;
 
       // Get client email from profiles table (already fetched above)
       const clientEmail = profile?.email || "";
@@ -178,13 +187,13 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         projectId: updatedProject.id,
         siteUrl: baseUrl,
         projectAddress: updatedProject.address,
-        clientName: profile.company_name,
+        clientName: profile?.company_name,
         clientEmail: clientEmail,
         statusName: statusData.statusConfig.admin_status_name,
         estTime: statusData.statusConfig.est_time,
       };
 
-      // console.log("📊 [UPDATE-STATUS] Placeholder data prepared:", placeholderData);
+      console.log("📊 [UPDATE-STATUS] Placeholder data prepared:", placeholderData);
 
       // Call placeholder replacement API
       const placeholderResponse = await fetch(`${baseUrl}/api/replace-placeholders`, {
@@ -197,7 +206,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
       if (placeholderResponse.ok) {
         const placeholderResult = await placeholderResponse.json();
-        // console.log("📊 [UPDATE-STATUS] Placeholders replaced:", placeholderResult);
+        console.log("📊 [UPDATE-STATUS] Placeholders replaced:", placeholderResult);
 
         // Process redirect URLs to replace placeholders
         const processRedirectUrl = (url: string) => {
@@ -246,18 +255,18 @@ export const POST: APIRoute = async ({ request, cookies }) => {
           currentUserRole: currentUserRole,
         };
 
-        // console.log("📊 [UPDATE-STATUS] Notification data prepared:", {
-        //   adminRedirect: statusData.statusConfig.modal_auto_redirect_admin,
-        //   clientRedirect: statusData.statusConfig.modal_auto_redirect_client,
-        //   projectId: updatedProject.id,
-        //   notificationData,
-        // });
+        console.log("📊 [UPDATE-STATUS] Notification data prepared:", {
+          adminRedirect: statusData.statusConfig.modal_auto_redirect_admin,
+          clientRedirect: statusData.statusConfig.modal_auto_redirect_client,
+          projectId: updatedProject.id,
+          notificationData,
+        });
 
-        // console.log("📊 [UPDATE-STATUS] About to fetch admin and staff emails...");
-        // console.log(
-        //   "📊 [UPDATE-STATUS] Final notification data:",
-        //   JSON.stringify(notificationData, null, 2)
-        // );
+        console.log("📊 [UPDATE-STATUS] About to fetch admin and staff emails...");
+        console.log(
+          "📊 [UPDATE-STATUS] Final notification data:",
+          JSON.stringify(notificationData, null, 2)
+        );
 
         // Get admin and staff emails using reusable API
         const adminStaffResponse = await fetch(`${baseUrl}/api/get-user-emails-by-role`, {

@@ -69,7 +69,6 @@ export class GlobalServices {
     return GlobalServices.instance;
   }
 
-  // Event Management - Used by project-service.ts and various components
   emit(type: string, data: any, source?: string) {
     // console.log("🌐 [GLOBAL] Emitting event:", { type, data, source });
     const event = new CustomEvent("global-service", {
@@ -102,7 +101,6 @@ export class GlobalServices {
     };
   }
 
-  // User Management - Used by project-service.ts
   async getCurrentUser() {
     try {
       if (!supabase) {

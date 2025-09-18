@@ -82,9 +82,15 @@ const placeholder =
             <label
               class="flex cursor-pointer items-center gap-2 text-sm text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200"
             >
-              <BoxIcon name="image-add" class="h-4 w-4" />
-              <span>Add Images</span>
-              <input type="file" id="comment-images" accept="image/*" multiple class="hidden" />
+              <BoxIcon name="paperclip" class="h-4 w-4" />
+              <span>Add Files</span>
+              <input
+                type="file"
+                id="comment-images"
+                accept="image/*,application/pdf,.dwg,.dxf,.dwt,.dws,.dwf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv"
+                multiple
+                class="hidden"
+              />
             </label>
 
             <Button
@@ -111,6 +117,7 @@ const placeholder =
           (currentRole === "Admin" || currentRole === "Staff") && (
             <div class="mt-3 flex flex-wrap gap-6 border-t border-gray-200 pt-3 dark:border-gray-600">
               {/* Internal Only Toggle */}
+              <SlideToggle id="internal-toggle" label="Internal Only" checked={true} />
               {/* <label class="flex cursor-pointer items-center gap-3">
                 <div class="relative">
                   <input type="checkbox" id="internal-toggle" class="peer sr-only" />
@@ -121,7 +128,6 @@ const placeholder =
                   Internal Only
                 </span>
               </label> */}
-              <SlideToggle id="internal-toggle" label="Internal Only" />
             </div>
           )
         }
@@ -150,7 +156,7 @@ const placeholder =
           let currentProjectId = projectId;
           let currentUserRole = currentRole;
           let currentUserId = currentUser?.id || authorProfile.id;
-          let currentUserName = currentUser?.company_name || authorProfile.company_name;
+          // let currentUserName = currentUser?.company_name || authorProfile.company_name;
           let mentionableUsers = [];
           let currentMentionStart = -1;
           let selectedImages = [];
@@ -337,22 +343,7 @@ const placeholder =
           // Make highlightMentions available globally for other components
           window.highlightMentions = highlightMentions;
 
-          // Helper function to get image URL
-          function getImageUrl(imagePath) {
-            if (imagePath.startsWith("http")) {
-              return imagePath;
-            }
-
-            if (
-              !supabaseUrl ||
-              supabaseUrl === "undefined" ||
-              supabaseUrl.includes("your-project")
-            ) {
-              return `data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjEwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjNmNGY2Ii8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxNCIgZmlsbD0iIzY2NjY2NiIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPkltYWdlIG5vdCBhdmFpbGFibGU8L3RleHQ+PC9zdmc+`;
-            }
-
-            return `${supabaseUrl}/storage/v1/object/public/${imagePath}`;
-          }
+          // Legacy function - images now loaded via get-media API
 
           async function renderComment(comment, depth = 0) {
             try {
@@ -386,11 +377,27 @@ const placeholder =
                 "x-border-left": borderLeft,
               });
 
-              // Add image URLs to headers
-              if (comment.image_paths && comment.image_paths.length > 0) {
-                comment.image_paths.forEach((imagePath, index) => {
-                  headers.set(`x-image-url-${index}`, getImageUrl(imagePath));
-                });
+              // Load images for this discussion using unified media API
+              try {
+                const imageResponse = await fetch(
+                  `/api/media?targetLocation=discussions&targetId=${comment.id}&projectId=${currentProjectId}`,
+                  {
+                    credentials: "include",
+                  }
+                );
+
+                if (imageResponse.ok) {
+                  const imageData = await imageResponse.json();
+                  if (imageData.success && imageData.media && imageData.media.length > 0) {
+                    imageData.media.forEach((mediaFile, index) => {
+                      headers.set(`x-image-url-${index}`, mediaFile.publicUrl);
+                      headers.set(`x-image-name-${index}`, mediaFile.fileName);
+                    });
+                    headers.set(`x-image-count`, imageData.media.length.toString());
+                  }
+                }
+              } catch (error) {
+                console.warn("Failed to load images for discussion:", comment.id, error);
               }
 
               const response = await fetch("/partials/comment", {
@@ -469,8 +476,8 @@ const placeholder =
           <i class="bx bx-x mr-2 bx-sm"></i>
           Cancel
         `;
-                // newCommentBtn.classList.remove("bg-red-600", "hover:bg-red-700");
-                // newCommentBtn.classList.add("bg-gray-600", "hover:bg-gray-700");
+                newCommentBtn.classList.remove("bg-red-600", "hover:bg-red-700");
+                newCommentBtn.classList.add("bg-gray-600", "hover:bg-gray-700");
 
                 // Focus on textarea
                 const textarea = document.getElementById("comment-message");
@@ -479,12 +486,12 @@ const placeholder =
                 }
               } else {
                 commentForm.classList.add("hidden");
-                //         newCommentBtn.innerHTML = `
-                //   <i class="bx bx-plus bx-sm"></i>
-                //   New Comment
-                // `;
-                // newCommentBtn.classList.remove("bg-gray-600", "hover:bg-gray-700");
-                // newCommentBtn.classList.add("bg-red-600", "hover:bg-red-700");
+                newCommentBtn.innerHTML = `
+          <i class="bx bx-plus bx-sm"></i>
+          New Comment
+        `;
+                newCommentBtn.classList.remove("bg-gray-600", "hover:bg-gray-700");
+                newCommentBtn.classList.add("bg-red-600", "hover:bg-red-700");
 
                 // Clear form
                 const textarea = document.getElementById("comment-message");
@@ -597,25 +604,84 @@ const placeholder =
             }
           }
 
-          // Image upload functionality
-          function handleImageUpload(event) {
+          // Image upload functionality (using new save-media API)
+          async function handleImageUpload(event) {
             const files = Array.from(event.target.files);
-            const maxImages = 5;
-            const maxSize = 5 * 1024 * 1024; // 5MB per image
+            const maxFiles = 5;
+            const maxSize = 50 * 1024 * 1024; // 50MB per file (increased for CAD files)
+
+            // Define allowed file types
+            const allowedTypes = [
+              // Images
+              "image/jpeg",
+              "image/jpg",
+              "image/png",
+              "image/gif",
+              "image/webp",
+              "image/bmp",
+              "image/tiff",
+              "image/svg+xml",
+              // Documents
+              "application/pdf",
+              "application/msword",
+              "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+              "application/vnd.ms-excel",
+              "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+              "application/vnd.ms-powerpoint",
+              "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+              "text/plain",
+              "text/csv",
+              // AutoCAD files
+              "application/acad",
+              "application/x-acad",
+              "application/autocad",
+              "application/x-autocad",
+              "application/dwg",
+              "application/x-dwg",
+              "image/vnd.dwg",
+              "drawing/dwg",
+              "application/dxf",
+              "application/x-dxf",
+              "image/vnd.dxf",
+              "drawing/dxf",
+              "application/dwt",
+              "application/x-dwt",
+              "application/dws",
+              "application/x-dws",
+              "application/dwf",
+              "application/x-dwf",
+              "model/vnd.dwf",
+              // Generic binary for CAD files
+              "application/octet-stream",
+            ];
 
             // Validate files
             const validFiles = files.filter((file) => {
-              if (!file.type.startsWith("image/")) {
-                console.warn("Skipping non-image file:", file.name);
+              // Check file type (including extension fallback for octet-stream)
+              const isAllowedType =
+                allowedTypes.includes(file.type) ||
+                (file.type === "application/octet-stream" &&
+                  /\.(dwg|dxf|dwt|dws|dwf)$/i.test(file.name));
+
+              if (!isAllowedType) {
+                console.warn("Skipping unsupported file type:", file.name, "Type:", file.type);
+                if (window.showModal) {
+                  window.showModal(
+                    "warning",
+                    "Unsupported File Type",
+                    `${file.name} is not a supported file type. Please upload images, PDFs, documents, or CAD files.`
+                  );
+                }
                 return false;
               }
+
               if (file.size > maxSize) {
                 console.warn("Skipping large file:", file.name, "Size:", file.size);
                 if (window.showModal) {
                   window.showModal(
                     "warning",
                     "File Too Large",
-                    `${file.name} is too large. Maximum size is 5MB.`
+                    `${file.name} is too large. Maximum size is 50MB.`
                   );
                 }
                 return false;
@@ -623,19 +689,15 @@ const placeholder =
               return true;
             });
 
-            // Check total image limit
-            if (selectedImages.length + validFiles.length > maxImages) {
+            // Check total file limit
+            if (selectedImages.length + validFiles.length > maxFiles) {
               if (window.showModal) {
-                window.showModal(
-                  "warning",
-                  "Too Many Images",
-                  `Maximum ${maxImages} images allowed.`
-                );
+                window.showModal("warning", "Too Many Files", `Maximum ${maxFiles} files allowed.`);
               }
               return;
             }
 
-            // Add valid files to selected images
+            // Add valid files to selected images for preview
             validFiles.forEach((file) => {
               selectedImages.push(file);
             });
@@ -696,53 +758,7 @@ const placeholder =
             if (fileInput) fileInput.value = "";
           }
 
-          // Image URL helper function
-          function getImageUrl(imagePath) {
-            console.log("🖼️ [DISCUSSION] getImageUrl called with:", imagePath);
-            console.log("🖼️ [DISCUSSION] supabaseUrl:", supabaseUrl);
-
-            // If it's already a full URL, return as is
-            if (imagePath.startsWith("http")) {
-              console.log("🖼️ [DISCUSSION] Already full URL, returning:", imagePath);
-              return imagePath;
-            }
-
-            // Check if supabaseUrl is valid
-            if (
-              !supabaseUrl ||
-              supabaseUrl === "undefined" ||
-              supabaseUrl.includes("your-project")
-            ) {
-              console.error("🖼️ [DISCUSSION] Invalid supabaseUrl:", supabaseUrl);
-              // For now, let's try to construct a working URL
-              // The image path should contain the full path from the bucket
-              // If it starts with "project-documents/", we can try to construct the URL
-              if (imagePath.startsWith("project-documents/")) {
-                // Try to get the Supabase URL from the current page's meta tags or window
-                const metaTag = document.querySelector('meta[name="supabase-url"]');
-                const supabaseUrlFromMeta = metaTag?.getAttribute("content");
-
-                if (supabaseUrlFromMeta) {
-                  const fullUrl = `${supabaseUrlFromMeta}/storage/v1/object/public/${imagePath}`;
-                  console.log("🖼️ [DISCUSSION] Using meta tag URL:", fullUrl);
-                  return fullUrl;
-                }
-
-                // Last resort: try to construct from current origin (won't work for Supabase storage)
-                console.error(
-                  "🖼️ [DISCUSSION] Cannot construct valid Supabase URL for:",
-                  imagePath
-                );
-                return `data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjEwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjNmNGY2Ii8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxNCIgZmlsbD0iIzY2NjY2NiIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPkltYWdlIG5vdCBhdmFpbGFibGU8L3RleHQ+PC9zdmc+`;
-              }
-            }
-
-            // Otherwise, construct the Supabase storage URL
-            // The imagePath already includes "project-documents/" so we don't need to add it again
-            const fullUrl = `${supabaseUrl}/storage/v1/object/public/${imagePath}`;
-            console.log("🖼️ [DISCUSSION] Constructed URL:", fullUrl);
-            return fullUrl;
-          }
+          // Image URL helper function removed - now using get-media API
 
           // Image modal functionality
           function openImageModal(imageUrl) {
@@ -790,7 +806,6 @@ const placeholder =
           // Make image functions globally available
           window.removeImage = removeImage;
           window.clearAllImages = clearAllImages;
-          window.getImageUrl = getImageUrl;
           window.openImageModal = openImageModal;
 
           // Make functions globally available
@@ -824,69 +839,7 @@ const placeholder =
             }
 
             try {
-              // Image uploads
-              let uploadedImagePaths = [];
-              let uploadErrors = [];
-
-              if (selectedImages.length > 0) {
-                console.log("📸 Uploading", selectedImages.length, "images");
-
-                // Upload each image
-                for (let i = 0; i < selectedImages.length; i++) {
-                  const file = selectedImages[i];
-                  const formData = new FormData();
-                  formData.append("file", file);
-                  formData.append("projectId", currentProjectId);
-                  formData.append("commentId", "temp-" + Date.now() + "-" + i);
-
-                  try {
-                    const uploadResponse = await fetch("/api/upload-discussion-image", {
-                      method: "POST",
-                      body: formData,
-                      credentials: "include",
-                    });
-
-                    let uploadData;
-                    const contentType = uploadResponse.headers.get("content-type");
-                    if (contentType && contentType.includes("application/json")) {
-                      uploadData = await uploadResponse.json();
-                    } else {
-                      const textResponse = await uploadResponse.text();
-                      console.error("❌ Non-JSON response from upload API:", textResponse);
-                      throw new Error(
-                        `Server returned non-JSON response: ${uploadResponse.status}`
-                      );
-                    }
-
-                    if (uploadData.success && uploadData.files && uploadData.files.length > 0) {
-                      const uploadedFile = uploadData.files[0];
-                      uploadedImagePaths.push(uploadedFile.path);
-                      console.log("✅ Image uploaded:", uploadedFile.path);
-                    } else {
-                      uploadErrors.push(
-                        `Failed to upload ${file.name}: ${uploadData.error || "Unknown error"}`
-                      );
-                    }
-                  } catch (error) {
-                    console.error("❌ Upload error for", file.name, ":", error);
-                    uploadErrors.push(`Failed to upload ${file.name}: ${error.message}`);
-                  }
-                }
-
-                // Show upload errors if any
-                if (uploadErrors.length > 0) {
-                  console.warn("⚠️ Upload errors:", uploadErrors);
-                  if (window.showModal) {
-                    window.showModal(
-                      "warning",
-                      "Upload Warnings",
-                      `Some images failed to upload:\n${uploadErrors.join("\n")}`
-                    );
-                  }
-                }
-              }
-
-              // Submit discussion with image paths
+              // First, submit the discussion without images
               const response = await fetch("/api/add-discussion", {
                 method: "POST",
                 headers: {
@@ -897,14 +850,85 @@ const placeholder =
                   projectId: currentProjectId,
                   message: message || "",
                   internal: isInternal,
-                  imagePaths: uploadedImagePaths,
                 }),
               });
 
               const data = await response.json();
 
               if (data.success) {
-                console.log("✅ Comment with images submitted successfully");
+                const discussionId = data.discussion.id;
+
+                // Upload images using save-media API if any were selected
+                let uploadedImageCount = 0;
+                let uploadErrors = [];
+
+                if (selectedImages.length > 0) {
+                  console.log(
+                    "📸 Uploading",
+                    selectedImages.length,
+                    "images for discussion",
+                    discussionId
+                  );
+
+                  for (let i = 0; i < selectedImages.length; i++) {
+                    const file = selectedImages[i];
+
+                    try {
+                      // Convert file to base64
+                      const reader = new FileReader();
+                      const fileData = await new Promise((resolve, reject) => {
+                        reader.onload = () => resolve(reader.result);
+                        reader.onerror = reject;
+                        reader.readAsDataURL(file);
+                      });
+
+                      // Upload using unified media API
+                      const response = await fetch("/api/media", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        credentials: "include",
+                        body: JSON.stringify({
+                          mediaData: fileData,
+                          fileName: file.name,
+                          fileType: file.type,
+                          projectId: currentProjectId,
+                          targetLocation: "discussions",
+                          targetId: discussionId,
+                          title: `Discussion file - ${file.name}`,
+                          description: `File attached to discussion comment`,
+                        }),
+                      });
+
+                      if (!response.ok) {
+                        const errorData = await response.json();
+                        throw new Error(errorData.error || "Upload failed");
+                      }
+
+                      const uploadResult = await response.json();
+                      const uploadedFile = uploadResult.file;
+
+                      uploadedImageCount++;
+                      console.log("✅ File uploaded:", uploadedFile.fileName);
+                    } catch (error) {
+                      console.error("❌ Upload error for", file.name, ":", error);
+                      uploadErrors.push(`Failed to upload ${file.name}: ${error.message}`);
+                    }
+                  }
+
+                  // Show upload errors if any
+                  if (uploadErrors.length > 0) {
+                    console.warn("⚠️ Upload errors:", uploadErrors);
+                    if (window.showModal) {
+                      window.showModal(
+                        "warning",
+                        "Upload Warnings",
+                        `Some images failed to upload:\n${uploadErrors.join("\n")}`
+                      );
+                    }
+                  }
+                }
+
+                console.log("✅ Comment submitted successfully");
 
                 // Clear form and hide it
                 messageInput.value = "";
@@ -918,7 +942,7 @@ const placeholder =
                   window.showModal(
                     "success",
                     "Comment posted",
-                    `Your comment has been added to the discussion${uploadedImagePaths.length > 0 ? ` with ${uploadedImagePaths.length} image(s)` : ""}`
+                    `Your comment has been added to the discussion${uploadedImageCount > 0 ? ` with ${uploadedImageCount} image(s)` : ""}`
                   );
                 }
               } else {

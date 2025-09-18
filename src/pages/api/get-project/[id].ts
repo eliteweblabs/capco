@@ -22,7 +22,7 @@ export const GET: APIRoute = async ({ params, cookies }) => {
     }
 
     // Check authentication
-    const { isAuth, currentUser, role } = await checkAuth(cookies);
+    const { isAuth, currentUser } = await checkAuth(cookies);
 
     if (!isAuth || !currentUser) {
       console.log("📡 [GET-PROJECT-ID] User not authenticated");

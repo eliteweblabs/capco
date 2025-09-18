@@ -44,12 +44,12 @@ export function replacePlaceholders(
   data: PlaceholderData,
   addBoldTags: boolean = true
 ): string {
-  console.log("🔄 [PLACEHOLDER-UTILS] Starting placeholder replacement...");
-  console.log("🔄 [PLACEHOLDER-UTILS] Original message:", message);
-  console.log("🔄 [PLACEHOLDER-UTILS] Placeholder data:", data);
+  // // console.log("🔄 [PLACEHOLDER-UTILS] Starting placeholder replacement...");
+  // // console.log("🔄 [PLACEHOLDER-UTILS] Original message:", message);
+  // // console.log("🔄 [PLACEHOLDER-UTILS] Placeholder data:", data);
 
   if (!message || !data) {
-    console.log("🔄 [PLACEHOLDER-UTILS] No message or data, returning original");
+    // console.log("🔄 [PLACEHOLDER-UTILS] No message or data, returning original");
     return message;
   }
 
@@ -59,46 +59,46 @@ export function replacePlaceholders(
   // Get base URL from data or environment
   const baseUrl = data.baseUrl || getBaseUrl();
   if (baseUrl) {
-    console.log(`🔄 [PLACEHOLDER-UTILS] Replacing {{BASE_URL}} with: ${baseUrl}`);
+    // // console.log(`🔄 [PLACEHOLDER-UTILS] Replacing {{BASE_URL}} with: ${baseUrl}`);
     result = result.replace(/\{\{BASE_URL\}\}/g, baseUrl);
   } else {
-    console.log("🔄 [PLACEHOLDER-UTILS] ⚠️ No baseUrl available");
+    // console.log("🔄 [PLACEHOLDER-UTILS] ⚠️ No baseUrl available");
   }
   if (data.projectAddress) {
-    console.log(
-      `🔄 [PLACEHOLDER-UTILS] Replacing {{PROJECT_ADDRESS}} with: ${data.projectAddress}`
-    );
+    // // console.log(
+    //   `🔄 [PLACEHOLDER-UTILS] Replacing {{PROJECT_ADDRESS}} with: ${data.projectAddress}`
+    // );
     result = result.replace(/\{\{\s*PROJECT_ADDRESS\s*\}\}/g, data.projectAddress);
   } else {
-    console.log("🔄 [PLACEHOLDER-UTILS] ⚠️ No projectAddress data available");
+    // console.log("🔄 [PLACEHOLDER-UTILS] ⚠️ No projectAddress data available");
   }
 
   if (data.clientName) {
-    console.log(`🔄 [PLACEHOLDER-UTILS] Replacing {{CLIENT_NAME}} with: ${data.clientName}`);
+    // // console.log(`🔄 [PLACEHOLDER-UTILS] Replacing {{CLIENT_NAME}} with: ${data.clientName}`);
     result = result.replace(/\{\{\s*CLIENT_NAME\s*\}\}/g, data.clientName);
   } else {
-    console.log("🔄 [PLACEHOLDER-UTILS] ⚠️ No clientName data available");
+    // console.log("🔄 [PLACEHOLDER-UTILS] ⚠️ No clientName data available");
   }
 
   if (data.clientEmail) {
-    console.log(`🔄 [PLACEHOLDER-UTILS] Replacing {{CLIENT_EMAIL}} with: ${data.clientEmail}`);
+    // // console.log(`🔄 [PLACEHOLDER-UTILS] Replacing {{CLIENT_EMAIL}} with: ${data.clientEmail}`);
     result = result.replace(/\{\{\s*CLIENT_EMAIL\s*\}\}/g, data.clientEmail);
   } else {
-    console.log("🔄 [PLACEHOLDER-UTILS] ⚠️ No clientEmail data available");
+    // console.log("🔄 [PLACEHOLDER-UTILS] ⚠️ No clientEmail data available");
   }
 
   if (data.statusName) {
-    console.log(`🔄 [PLACEHOLDER-UTILS] Replacing {{STATUS_NAME}} with: ${data.statusName}`);
+    // console.log(`🔄 [PLACEHOLDER-UTILS] Replacing {{STATUS_NAME}} with: ${data.statusName}`);
     result = result.replace(/\{\{\s*STATUS_NAME\s*\}\}/g, data.statusName);
   }
 
   if (data.estTime) {
-    console.log(`🔄 [PLACEHOLDER-UTILS] Replacing {{EST_TIME}} with: ${data.estTime}`);
+    // console.log(`🔄 [PLACEHOLDER-UTILS] Replacing {{EST_TIME}} with: ${data.estTime}`);
     result = result.replace(/\{\{\s*EST_TIME\s*\}\}/g, data.estTime);
   }
 
   if (data.primaryColor) {
-    console.log(`🔄 [PLACEHOLDER-UTILS] Replacing {{PRIMARY_COLOR}} with: ${data.primaryColor}`);
+    // console.log(`🔄 [PLACEHOLDER-UTILS] Replacing {{PRIMARY_COLOR}} with: ${data.primaryColor}`);
     result = result.replace(
       /\{\{\s*PRIMARY_COLOR\s*\}\}/g,
       `<strong>${data.primaryColor}</strong>`
@@ -106,12 +106,12 @@ export function replacePlaceholders(
   }
 
   if (data.svgLogo) {
-    console.log(
-      `🔄 [PLACEHOLDER-UTILS] Replacing {{SVG_LOGO}} with: ${data.svgLogo.substring(0, 50)}...`
-    );
+    // console.log(
+    //   `🔄 [PLACEHOLDER-UTILS] Replacing {{SVG_LOGO}} with: ${data.svgLogo.substring(0, 50)}...`
+    // );
     result = result.replace(/\{\{\s*SVG_LOGO\s*\}\}/g, data.svgLogo);
   }
 
-  console.log("🔄 [PLACEHOLDER-UTILS] Final result:", result);
+  // console.log("🔄 [PLACEHOLDER-UTILS] Final result:", result);
   return addBoldTags ? "<b>" + result + "</b>" : result;
 }

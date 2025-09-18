@@ -1,6 +1,10 @@
 import type { APIRoute } from "astro";
 import { supabaseAdmin } from "../../lib/supabase-admin";
 
+// 🚧 DEAD STOP - 2024-12-19: Potentially unused API endpoint
+// If you see this log after a few days, this endpoint can likely be deleted
+console.log("🚧 [DEAD-STOP-2024-12-19] get-project-statuses.ts accessed - may be unused");
+
 export const GET: APIRoute = async ({ request }) => {
   try {
     if (!supabaseAdmin) {

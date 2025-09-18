@@ -31,27 +31,7 @@ export async function fetchProjects(
   try {
     const { data: allProjects, error } = await supabaseAdmin
       .from("projects")
-      .select(
-        `
-            id,
-            title,
-            description,
-            address,
-            author_id,
-            company_name,
-            status,
-            sq_ft,
-            new_construction,
-            created_at,
-            updated_at,
-            assigned_to_id,
-            assigned_to_name,
-            featured_image,
-            featured_image_url,
-            contract_pdf_url,
-            incomplete_discussions
-          `
-      )
+      .select("*")
       .neq("id", 0) // Exclude system log project
       .order("updated_at", { ascending: false });
 
@@ -62,11 +42,11 @@ export async function fetchProjects(
 
     // Add featured_image_data for projects with featured_image_url
     const projects = (allProjects || []).map((project) => {
-      if (project.featured_image_url) {
+      if (project.featured_image_data) {
         return {
           ...project,
           featured_image_data: {
-            public_url: project.featured_image_url,
+            public_url: project.featured_image_data.public_url,
           },
         };
       }
@@ -87,27 +67,7 @@ export async function getProjectsByAuthor(
   try {
     const { data: projects, error } = await supabaseAdmin
       .from("projects")
-      .select(
-        `
-            id,
-            title,
-            description,
-            address,
-            author_id,
-            company_name,
-            status,
-            sq_ft,
-            new_construction,
-            created_at,
-            updated_at,
-            assigned_to_id,
-            assigned_to_name,
-            featured_image,
-            featured_image_url,
-            contract_pdf_url,
-            incomplete_discussions
-          `
-      )
+      .select("*")
       .eq("author_id", authorId) // Filter by author ID
       .neq("id", 0) // Exclude system log project
       .order("updated_at", { ascending: false });
@@ -119,11 +79,11 @@ export async function getProjectsByAuthor(
 
     // Add featured_image_data for projects with featured_image_url
     const projectsWithImageData = (projects || []).map((project) => {
-      if (project.featured_image_url) {
+      if (project.featured_image_data) {
         return {
           ...project,
           featured_image_data: {
-            public_url: project.featured_image_url,
+            public_url: project.featured_image_data.public_url,
           },
         };
       }
@@ -147,27 +107,7 @@ export async function getProjectsByAssignedToId(
   try {
     const { data: projects, error } = await supabaseAdmin
       .from("projects")
-      .select(
-        `
-            id,
-            title,
-            description,
-            address,
-            author_id,
-            company_name,
-            status,
-            sq_ft,
-            new_construction,
-            created_at,
-            updated_at,
-            assigned_to_id,
-            assigned_to_name,
-            featured_image,
-            featured_image_url,
-            contract_pdf_url,
-            incomplete_discussions
-          `
-      )
+      .select("*")
       .eq("assigned_to_id", assignedToId) // Filter by author ID
       .neq("id", 0) // Exclude system log project
       .order("updated_at", { ascending: false });

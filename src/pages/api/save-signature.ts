@@ -258,11 +258,18 @@ async function generateContractPDF(
       throw new Error("Failed to upload contract PDF");
     }
 
-    // Get public URL
-    const { data: urlData } = supabase.storage.from("project-documents").getPublicUrl(fileName);
+    // Get signed URL
+    const { data: urlData, error: urlError } = await supabase.storage
+      .from("project-documents")
+      .createSignedUrl(fileName, 3600);
 
-    console.log("✅ [SAVE-SIGNATURE] Contract PDF generated and uploaded:", urlData.publicUrl);
-    return urlData.publicUrl;
+    if (urlError) {
+      console.warn("Failed to generate signed URL:", urlError);
+      throw new Error("Failed to generate file URL");
+    }
+
+    console.log("✅ [SAVE-SIGNATURE] Contract PDF generated and uploaded:", urlData.signedUrl);
+    return urlData.signedUrl;
   } catch (error) {
     console.error("❌ [SAVE-SIGNATURE] PDF generation error:", error);
     throw error;

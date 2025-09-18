@@ -5,11 +5,11 @@ import { supabaseAdmin } from "../../lib/supabase-admin";
 import { getApiBaseUrl } from "../../lib/url-utils";
 
 export const POST: APIRoute = async ({ request, cookies }) => {
-  console.log("📝 [CREATE-PROJECT] API route called!");
+  // console.log("📝 [CREATE-PROJECT] API route called!");
 
   try {
     const body = await request.json();
-    console.log("📝 [CREATE-PROJECT] Received request body:", JSON.stringify(body, null, 2));
+    // console.log("📝 [CREATE-PROJECT] Received request body:", JSON.stringify(body, null, 2));
 
     if (!supabase) {
       return new Response(JSON.stringify({ error: "Database connection not available" }), {
@@ -21,13 +21,13 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     const accessToken = cookies.get("sb-access-token")?.value;
     const refreshToken = cookies.get("sb-refresh-token")?.value;
 
-    console.log("📝 [CREATE-PROJECT] Auth check:", {
-      hasAccessToken: !!accessToken,
-      hasRefreshToken: !!refreshToken,
-    });
+    // console.log("📝 [CREATE-PROJECT] Auth check:", {
+    //   hasAccessToken: !!accessToken,
+    //   hasRefreshToken: !!refreshToken,
+    // });
 
     if (!accessToken || !refreshToken) {
-      console.log("📝 [CREATE-PROJECT] Missing auth tokens");
+      // console.log("📝 [CREATE-PROJECT] Missing auth tokens");
       return new Response(JSON.stringify({ error: "Not authenticated" }), {
         status: 401,
       });
@@ -47,10 +47,10 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     }
 
     const userId = session.session.user.id;
-    console.log("📝 [CREATE-PROJECT] User authenticated:", {
-      userId,
-      userEmail: session.session.user.email,
-    });
+    // console.log("📝 [CREATE-PROJECT] User authenticated:", {
+    //   userId,
+    //   userEmail: session.session.user.email,
+    // });
 
     // Get user profile to determine role
     const { data: userProfile, error: profileError } = await supabase
@@ -66,7 +66,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       });
     }
 
-    console.log("📝 [CREATE-PROJECT] User profile:", userProfile);
+    // console.log("📝 [CREATE-PROJECT] User profile:", userProfile);
 
     let projectAuthorId: string;
 
@@ -74,16 +74,106 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     if (userProfile.role === "Client") {
       // If current user is a client, they are the project author
       projectAuthorId = userId;
-      console.log("📝 [CREATE-PROJECT] Client user - using their ID as author:", projectAuthorId);
+      // console.log("📝 [CREATE-PROJECT] Client user - using their ID as author:", projectAuthorId);
     } else {
       // If current user is admin/staff, check if client exists or create new one
       const { first_name, last_name, company_name, email, author_id } = body;
+      // console.log("📝 [CREATE-PROJECT] Form data received:", {
+      //   first_name,
+      //   last_name,
+      //   company_name,
+      //   email,
+      //   author_id,
+      // });
 
       // Check if we should use existing client or create new one
       if (author_id && author_id.trim()) {
         // Use existing client
+        if (!supabaseAdmin) {
+          return new Response(JSON.stringify({ error: "Database connection not available" }), {
+            status: 500,
+          });
+        }
         projectAuthorId = author_id;
-        console.log("📝 [CREATE-PROJECT] Using existing client ID:", projectAuthorId);
+        // console.log("📝 [CREATE-PROJECT] Using existing client ID:", projectAuthorId);
+
+        // Still check if profile needs updating even when using existing client
+        // console.log("📝 [CREATE-PROJECT] Checking if profile needs updating for existing client");
+
+        // Get current profile to compare with form data
+        const { data: currentProfile, error: profileError } = await supabaseAdmin
+          .from("profiles")
+          .select("first_name, last_name, company_name")
+          .eq("id", projectAuthorId)
+          .single();
+
+        if (profileError) {
+          console.error("📝 [CREATE-PROJECT] Error fetching current profile:", profileError);
+        } else if (currentProfile) {
+          // Check if any fields have changed
+          const trimmedFirstName = first_name?.trim() || "";
+          const trimmedLastName = last_name?.trim() || "";
+          const trimmedCompanyName = company_name?.trim() || "";
+
+          const hasChanges =
+            currentProfile.first_name !== trimmedFirstName ||
+            currentProfile.last_name !== trimmedLastName ||
+            currentProfile.company_name !== trimmedCompanyName;
+
+          // console.log("📝 [CREATE-PROJECT] Profile comparison for existing client:", {
+          //   current: {
+          //     first_name: currentProfile.first_name,
+          //     last_name: currentProfile.last_name,
+          //     company_name: currentProfile.company_name,
+          //   },
+          //   new: {
+          //     first_name: trimmedFirstName,
+          //     last_name: trimmedLastName,
+          //     company_name: trimmedCompanyName,
+          //   },
+          //   hasChanges,
+          // });
+
+          if (hasChanges) {
+            console.log("📝 [CREATE-PROJECT] Profile data has changed, updating profile:", {
+              old: {
+                first_name: currentProfile.first_name,
+                last_name: currentProfile.last_name,
+                company_name: currentProfile.company_name,
+              },
+              new: {
+                first_name: trimmedFirstName,
+                last_name: trimmedLastName,
+                company_name: trimmedCompanyName,
+              },
+            });
+
+            // Update the profile
+            const { error: updateError } = await supabaseAdmin
+              .from("profiles")
+              .update({
+                first_name: trimmedFirstName,
+                last_name: trimmedLastName,
+                company_name: trimmedCompanyName,
+                updated_at: new Date().toISOString(),
+              })
+              .eq("id", projectAuthorId);
+
+            if (updateError) {
+              console.error("📝 [CREATE-PROJECT] Error updating profile:", updateError);
+              // Don't fail the project creation, just log the error
+            } else {
+              // console.log("📝 [CREATE-PROJECT] Profile updated successfully");
+              // console.log("📝 [CREATE-PROJECT] Updated profile data:", {
+              //   first_name: trimmedFirstName,
+              //   last_name: trimmedLastName,
+              //   company_name: trimmedCompanyName,
+              // });
+            }
+          } else {
+            // console.log("📝 [CREATE-PROJECT] Profile data unchanged, no update needed");
+          }
+        }
       } else {
         // Validate required fields
         if (!first_name?.trim() || !last_name?.trim() || !email?.trim()) {
@@ -97,7 +187,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         }
 
         // Check if user with this email already exists
-        console.log("📝 [CREATE-PROJECT] Checking if user exists with email:", email);
+        // console.log("📝 [CREATE-PROJECT] Checking if user exists with email:", email);
         if (!supabaseAdmin) {
           return new Response(JSON.stringify({ error: "Database connection not available" }), {
             status: 500,
@@ -124,7 +214,8 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         if (existingUser) {
           // User exists, check if profile needs updating
           projectAuthorId = existingUser.id;
-          console.log("📝 [CREATE-PROJECT] User exists, using existing ID:", projectAuthorId);
+          // console.log("📝 [CREATE-PROJECT] User exists, using existing ID:", projectAuthorId);
+          // console.log("📝 [CREATE-PROJECT] Existing user data:", existingUser);
 
           // Get current profile to compare with form data
           const { data: currentProfile, error: profileError } = await supabaseAdmin
@@ -137,10 +228,28 @@ export const POST: APIRoute = async ({ request, cookies }) => {
             console.error("📝 [CREATE-PROJECT] Error fetching current profile:", profileError);
           } else if (currentProfile) {
             // Check if any fields have changed
+            const trimmedFirstName = first_name?.trim() || "";
+            const trimmedLastName = last_name?.trim() || "";
+            const trimmedCompanyName = company_name?.trim() || "";
+
             const hasChanges =
-              currentProfile.first_name !== first_name?.trim() ||
-              currentProfile.last_name !== last_name?.trim() ||
-              currentProfile.company_name !== company_name?.trim();
+              currentProfile.first_name !== trimmedFirstName ||
+              currentProfile.last_name !== trimmedLastName ||
+              currentProfile.company_name !== trimmedCompanyName;
+
+            // console.log("📝 [CREATE-PROJECT] Profile comparison:", {
+            //   current: {
+            //     first_name: currentProfile.first_name,
+            //     last_name: currentProfile.last_name,
+            //     company_name: currentProfile.company_name,
+            //   },
+            //   new: {
+            //     first_name: trimmedFirstName,
+            //     last_name: trimmedLastName,
+            //     company_name: trimmedCompanyName,
+            //   },
+            //   hasChanges,
+            // });
 
             if (hasChanges) {
               console.log("📝 [CREATE-PROJECT] Profile data has changed, updating profile:", {
@@ -160,9 +269,9 @@ export const POST: APIRoute = async ({ request, cookies }) => {
               const { error: updateError } = await supabaseAdmin
                 .from("profiles")
                 .update({
-                  first_name: first_name?.trim() || currentProfile.first_name,
-                  last_name: last_name?.trim() || currentProfile.last_name,
-                  company_name: company_name?.trim() || currentProfile.company_name,
+                  first_name: trimmedFirstName,
+                  last_name: trimmedLastName,
+                  company_name: trimmedCompanyName,
                   updated_at: new Date().toISOString(),
                 })
                 .eq("id", existingUser.id);
@@ -171,15 +280,20 @@ export const POST: APIRoute = async ({ request, cookies }) => {
                 console.error("📝 [CREATE-PROJECT] Error updating profile:", updateError);
                 // Don't fail the project creation, just log the error
               } else {
-                console.log("📝 [CREATE-PROJECT] Profile updated successfully");
+                // console.log("📝 [CREATE-PROJECT] Profile updated successfully");
+                // console.log("📝 [CREATE-PROJECT] Updated profile data:", {
+                //   first_name: trimmedFirstName,
+                //   last_name: trimmedLastName,
+                //   company_name: trimmedCompanyName,
+                // });
               }
             } else {
-              console.log("📝 [CREATE-PROJECT] Profile data unchanged, no update needed");
+              // console.log("📝 [CREATE-PROJECT] Profile data unchanged, no update needed");
             }
           }
         } else {
           // User doesn't exist, create new client
-          console.log("📝 [CREATE-PROJECT] User doesn't exist, creating new client");
+          // console.log("📝 [CREATE-PROJECT] User doesn't exist, creating new client");
 
           try {
             // Call the create-user API to create the new client
@@ -195,7 +309,6 @@ export const POST: APIRoute = async ({ request, cookies }) => {
                 last_name: last_name.trim(),
                 company_name: company_name?.trim() || "",
                 email: email.trim(),
-                phone: "",
                 role: "Client",
               }),
             });
@@ -215,10 +328,10 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
             // Use the created user's ID as the project author
             projectAuthorId = createUserResult.user.id;
-            console.log(
-              "📝 [CREATE-PROJECT] New client created successfully, ID:",
-              projectAuthorId
-            );
+            // console.log(
+            //   "📝 [CREATE-PROJECT] New client created successfully, ID:",
+            //   projectAuthorId
+            // );
           } catch (error) {
             console.error("📝 [CREATE-PROJECT] Error calling create-user endpoint:", error);
             return new Response(
@@ -236,16 +349,16 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     // Debug all button group fields
     const buttonGroupFields = ["building", "project", "service", "requested_docs"];
 
-    buttonGroupFields.forEach((fieldName) => {
-      console.log(`📝 [CREATE-PROJECT] Debug ${fieldName} field:`, {
-        value: body[fieldName],
-        type: typeof body[fieldName],
-        isArray: Array.isArray(body[fieldName]),
-        stringified: Array.isArray(body[fieldName])
-          ? JSON.stringify(body[fieldName])
-          : body[fieldName],
-      });
-    });
+    // buttonGroupFields.forEach((fieldName) => {
+    //   console.log(`📝 [CREATE-PROJECT] Debug ${fieldName} field:`, {
+    //     value: body[fieldName],
+    //     type: typeof body[fieldName],
+    //     isArray: Array.isArray(body[fieldName]),
+    //     stringified: Array.isArray(body[fieldName])
+    //       ? JSON.stringify(body[fieldName])
+    //       : body[fieldName],
+    //   });
+    // });
 
     // Prepare project data - match the update-project API structure
     const projectData = {

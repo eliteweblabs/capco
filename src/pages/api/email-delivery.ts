@@ -8,6 +8,10 @@ import { replacePlaceholders, type PlaceholderData } from "../../lib/placeholder
 import { supabase } from "../../lib/supabase";
 import { supabaseAdmin } from "../../lib/supabase-admin";
 
+// 🚧 DEAD STOP - 2024-12-19: Potentially unused API endpoint
+// If you see this log after a few days, this endpoint can likely be deleted
+console.log("🚧 [DEAD-STOP-2024-12-19] email-delivery.ts accessed - may be unused");
+
 export const POST: APIRoute = async ({ request, cookies }) => {
   console.log("📧 little bit bigger API endpoint called");
   console.log("📧 [EMAIL-DELIVERY] ==========================================");

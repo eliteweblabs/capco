@@ -197,7 +197,7 @@ export const PROJECT_FORM_FIELDS: FormFieldConfig[] = [
       10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170, 180, 190, 200,
     ], // Hide after proposal is signed off
     readOnlyAtStatus: [
-      20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170, 180, 190, 200,
+      30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170, 180, 190, 200,
     ], // Read-only after proposal is viewed but before signed off
   },
 
@@ -258,9 +258,9 @@ export const PROJECT_FORM_FIELDS: FormFieldConfig[] = [
     placeholder: "Architect",
     dataField: "architect",
     allow: ["Admin", "Staff", "Client"], // Only admin and staff can see architect
-    hideAtStatus: [60, 70, 80, 90], // Hide after proposal is signed off
+    hideAtStatus: [], // Hide after proposal is signed off
     readOnlyAtStatus: [
-      20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170, 180, 190, 200,
+      30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170, 180, 190, 200,
     ], // Read-only after proposal is viewed but before signed off
   },
   {
@@ -269,15 +269,15 @@ export const PROJECT_FORM_FIELDS: FormFieldConfig[] = [
     type: "number",
     label: "Square Footage",
     placeholder: "Gross Square Footage (GFA) *",
-    required: true,
+    required: false,
     min: 0,
     max: 50000,
     step: 1,
     dataField: "square_foot",
     allow: ["Admin", "Staff", "Client"], // All roles can see square footage
-    hideAtStatus: [60, 70, 80, 90], // Hide after proposal is signed off
+    hideAtStatus: [], // Hide after proposal is signed off
     readOnlyAtStatus: [
-      20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170, 180, 190, 200,
+      30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170, 180, 190, 200,
     ], // Read-only after proposal is viewed but before signed off
   },
   {
@@ -289,17 +289,17 @@ export const PROJECT_FORM_FIELDS: FormFieldConfig[] = [
     allow: ["Admin", "Staff", "Client"], // Only admin and staff can see description
     hideAtStatus: [50, 60, 70, 80, 90], // Hide after proposal is viewed
     readOnlyAtStatus: [
-      20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170, 180, 190, 200,
+      30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170, 180, 190, 200,
     ], // Read-only after proposal is viewed but before signed off
   },
   {
     id: "new-construction",
     name: "new_construction",
     type: "checkbox",
-    label: "New Construction",
+    label: "New",
     allow: ["Admin", "Staff", "Client"], // All roles can see new construction
     readOnlyAtStatus: [
-      20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170, 180, 190, 200,
+      30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170, 180, 190, 200,
     ], // Read-only after proposal is viewed but before signed off
   },
   // Units slider is now handled by UnitSlider.astro component
@@ -317,7 +317,7 @@ export const PROJECT_FORM_FIELDS: FormFieldConfig[] = [
     allow: ["Admin", "Staff", "Client"], // Only admin and staff can see units slider
     // hideAtStatus: [0, 60, 70, 80, 90], // Hide on new projects and after proposal is signed off
     readOnlyAtStatus: [
-      20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170, 180, 190, 200,
+      30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170, 180, 190, 200,
     ], // Read-only after proposal is viewed but before signed off
   },
 ];

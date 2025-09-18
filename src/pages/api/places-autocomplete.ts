@@ -1,5 +1,9 @@
 import type { APIRoute } from "astro";
 
+// 🚧 DEAD STOP - 2024-12-19: Potentially unused API endpoint
+// If you see this log after a few days, this endpoint can likely be deleted
+console.log("🚧 [DEAD-STOP-2024-12-19] places-autocomplete.ts accessed - may be unused");
+
 export const GET: APIRoute = async ({ url }) => {
   try {
     const input = url.searchParams.get("input");
