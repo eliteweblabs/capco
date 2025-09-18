@@ -3,12 +3,14 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 export interface ProjectStatus {
   status_code: number;
   admin_status_name: string;
-  project_action: string;
+  admin_project_action: string;
   client_status_name: string;
+  client_project_action: string;
   client_status_tab: string;
   admin_status_tab: string;
   admin_status_slug: string;
   client_status_slug: string;
+  status_color: string;
 }
 
 export interface ProjectStatusesResponse {
