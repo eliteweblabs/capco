@@ -3,18 +3,17 @@ import type { APIRoute } from "astro";
 export const POST: APIRoute = async ({ request }) => {
   try {
     const formData = await request.formData();
-    const phone1 = formData.get("phone1") as string;
-    const carrier1 = formData.get("carrier1") as string;
-    const phone2 = formData.get("phone2") as string;
-    const carrier2 = formData.get("carrier2") as string;
+    
+    // SMS functionality commented out to avoid gateway bounces
+    // const phone1 = formData.get("phone1") as string;
+    // const carrier1 = formData.get("carrier1") as string;
+    // const phone2 = formData.get("phone2") as string;
+    // const carrier2 = formData.get("carrier2") as string;
+    
     const message = formData.get("message") as string;
     const contactInfo = formData.get("contact_info") as string;
 
-    console.log("📱 [SMS-API] SMS request received:", {
-      phone1: phone1 ? "***" + phone1.slice(-4) : "none",
-      carrier1,
-      phone2: phone2 ? "***" + phone2.slice(-4) : "none",
-      carrier2,
+    console.log("📧 [EMAIL-API] Email notification request received:", {
       messageLength: message?.length || 0,
       hasContactInfo: !!contactInfo,
     });
@@ -32,71 +31,25 @@ export const POST: APIRoute = async ({ request }) => {
       );
     }
 
-    // Build list of SMS recipients
-    const smsRecipients = [];
+    // Fixed email recipients (instead of SMS gateways)
+    const emailRecipients = [
+      "capco@eliteweblabs.com",
+      "jk@capcofire.com"
+    ];
 
-    if (phone1 && carrier1) {
-      smsRecipients.push(`${phone1}${carrier1}`);
-    }
+    console.log("📧 [EMAIL-API] Sending to email recipients:", emailRecipients);
 
-    if (phone2 && carrier2) {
-      smsRecipients.push(`${phone2}${carrier2}`);
-    }
-
-    if (smsRecipients.length === 0) {
-      return new Response(
-        JSON.stringify({
-          success: false,
-          error: "At least one phone number and carrier are required",
-        }),
-        {
-          status: 400,
-          headers: { "Content-Type": "application/json" },
-        }
-      );
-    }
-
-    // Format the message with context - put contact info first to avoid truncation
-    // Keep it simple for SMS gateways
-    let emailContent = `CAPCo Contact`;
-
-    if (contactInfo) {
-      emailContent += ` from ${contactInfo}`;
-    }
-
-    emailContent += `: ${message}`;
-
-    // Ensure content is not too long for SMS (most carriers have 160-320 character limits)
-    if (emailContent.length > 300) {
-      console.warn("📱 [SMS-API] Content is long for SMS:", emailContent.length, "characters");
-      // Truncate if too long
-      emailContent = emailContent.substring(0, 300) + "...";
-    }
-
-    // Debug: Log the full email content being sent
-    console.log("📱 [SMS-API] Full email content being sent:");
-    console.log("📱 [SMS-API] Content length:", emailContent.length);
-    console.log(
-      "📱 [SMS-API] Content preview:",
-      emailContent.substring(0, 200) + (emailContent.length > 200 ? "..." : "")
-    );
-
-    // Send SMS directly via Resend API (no email delivery system)
-    console.log("📱 [SMS-API] Sending SMS directly via Resend API to:", smsRecipients);
-
-    // Get email configuration from environment
-    const emailApiKey = import.meta.env.EMAIL_API_KEY;
-    const fromEmail = import.meta.env.FROM_EMAIL || "noreply@capcofire.com";
-    const fromName = import.meta.env.FROM_NAME || "CAPCo";
+    // Get the email API key (using RESEND_API_KEY for consistency)
+    const emailApiKey = import.meta.env.RESEND_API_KEY;
 
     if (!emailApiKey) {
-      console.error("📱 [SMS-API] EMAIL_API_KEY not configured");
+      console.error("📧 [EMAIL-API] RESEND_API_KEY not found in environment");
       return new Response(
         JSON.stringify({
           success: false,
           error: "Email service not configured",
           totalSent: 0,
-          totalFailed: smsRecipients.length,
+          totalFailed: emailRecipients.length,
         }),
         {
           status: 500,
@@ -105,28 +58,44 @@ export const POST: APIRoute = async ({ request }) => {
       );
     }
 
+    // Create email content (no SMS length restrictions)
+    const emailContent = `${message}\n\n${contactInfo ? `Contact Information:\n${contactInfo}` : ""}`;
+    
     const sentEmails = [];
     const failedEmails = [];
 
-    // Send to each SMS gateway
-    for (const smsEmail of smsRecipients) {
+    // Send to each email recipient
+    for (const emailAddress of emailRecipients) {
       try {
-        console.log(`📱 [SMS-API] Sending to SMS gateway: ${smsEmail}`);
+        console.log(`📧 [EMAIL-API] Sending to email: ${emailAddress}`);
 
         const emailPayload = {
-          from: `CAPCo Fire <noreply@capcofire.com>`, // Use consistent, verified sender
-          to: smsEmail,
-          subject: "", // Empty subject for SMS gateways (reduces spam triggers)
-          text: emailContent.substring(0, 160), // Limit to SMS length (160 chars)
-          // Add SMS-specific headers
-          headers: {
-            "X-SMS-Gateway": "true",
-            "Content-Type": "text/plain; charset=UTF-8",
-          },
+          from: `CAPCo Fire <noreply@capcofire.com>`,
+          to: emailAddress,
+          subject: "CAPCo Fire Protection - Project Notification",
+          text: emailContent,
+          html: `
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+              <h2 style="color: #ef4444;">CAPCo Fire Protection</h2>
+              <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;">
+                <p style="white-space: pre-line; margin: 0;">${message}</p>
+              </div>
+              ${contactInfo ? `
+                <div style="border-top: 1px solid #e5e7eb; padding-top: 15px; margin-top: 15px;">
+                  <h3 style="color: #6b7280; font-size: 16px;">Contact Information:</h3>
+                  <p style="white-space: pre-line; color: #374151;">${contactInfo}</p>
+                </div>
+              ` : ''}
+              <hr style="margin: 20px 0; border: none; border-top: 1px solid #e5e7eb;">
+              <p style="color: #6b7280; font-size: 12px; margin: 0;">
+                This is an automated notification from CAPCo Fire Protection Systems.
+              </p>
+            </div>
+          `
         };
 
-        console.log("📱 [SMS-API] SMS payload:", {
-          to: smsEmail,
+        console.log("📧 [EMAIL-API] Email payload:", {
+          to: emailAddress,
           subject: emailPayload.subject,
           contentLength: emailContent.length,
         });
@@ -142,67 +111,49 @@ export const POST: APIRoute = async ({ request }) => {
 
         if (!response.ok) {
           const errorText = await response.text();
-          console.error(`📱 [SMS-API] Failed to send to ${smsEmail}:`, response.status, errorText);
-          failedEmails.push({ email: smsEmail, error: errorText });
+          console.error(`📧 [EMAIL-API] Failed to send to ${emailAddress}:`, response.status, errorText);
+          failedEmails.push({ email: emailAddress, error: errorText });
         } else {
           const responseData = await response.json();
-          console.log(`📱 [SMS-API] Successfully sent to ${smsEmail}:`, responseData);
-          sentEmails.push(smsEmail);
+          console.log(`📧 [EMAIL-API] Successfully sent to ${emailAddress}:`, responseData);
+          sentEmails.push(emailAddress);
         }
       } catch (error) {
-        console.error(`📱 [SMS-API] Error sending to ${smsEmail}:`, error);
+        console.error(`📧 [EMAIL-API] Error sending to ${emailAddress}:`, error);
         failedEmails.push({
-          email: smsEmail,
+          email: emailAddress,
           error: error instanceof Error ? error.message : "Unknown error",
         });
       }
     }
 
-    console.log("📱 [SMS-API] SMS sending completed:");
+    console.log("📧 [EMAIL-API] Email sending completed:");
     console.log("  - Sent:", sentEmails.length);
     console.log("  - Failed:", failedEmails.length);
     console.log("  - Sent emails:", sentEmails);
     console.log("  - Failed emails:", failedEmails);
 
-    if (sentEmails.length > 0) {
-      return new Response(
-        JSON.stringify({
-          success: true,
-          message: `Message sent successfully to CAPCo Fire, Someone will respond to you shortly.`,
-          totalSent: sentEmails.length,
-          totalFailed: failedEmails.length,
-          sentEmails: sentEmails,
-          failedEmails: failedEmails,
-        }),
-        {
-          status: 200,
-          headers: { "Content-Type": "application/json" },
-        }
-      );
-    } else {
-      return new Response(
-        JSON.stringify({
-          success: false,
-          error: "Failed to send SMS to any recipients",
-          totalSent: 0,
-          totalFailed: failedEmails.length,
-          sentEmails: [],
-          failedEmails: failedEmails,
-        }),
-        {
-          status: 500,
-          headers: { "Content-Type": "application/json" },
-        }
-      );
-    }
+    return new Response(
+      JSON.stringify({
+        success: sentEmails.length > 0,
+        totalSent: sentEmails.length,
+        totalFailed: failedEmails.length,
+        sentEmails,
+        failedEmails,
+        message: `Sent ${sentEmails.length} emails, ${failedEmails.length} failed`,
+      }),
+      {
+        status: sentEmails.length > 0 ? 200 : 500,
+        headers: { "Content-Type": "application/json" },
+      }
+    );
   } catch (error) {
-    console.error("📱 [SMS-API] SMS API error:", error);
+    console.error("📧 [EMAIL-API] Unexpected error:", error);
     return new Response(
       JSON.stringify({
         success: false,
         error: "Internal server error",
-        totalSent: 0,
-        totalFailed: 0,
+        details: error instanceof Error ? error.message : "Unknown error",
       }),
       {
         status: 500,
@@ -211,3 +162,26 @@ export const POST: APIRoute = async ({ request }) => {
     );
   }
 };
+
+/*
+=== SMS FUNCTIONALITY DISABLED ===
+The following SMS gateway functionality has been commented out due to carrier bounce issues.
+To re-enable SMS, uncomment the code above and restore the phone/carrier form fields.
+
+SMS Carriers that were supported:
+- Verizon: @vtext.com (frequently bounces)
+- AT&T: @txt.att.net
+- T-Mobile: @tmomail.net
+- Sprint: @messaging.sprintpcs.com
+- And others...
+
+For reliable SMS, consider switching to:
+- Twilio ($0.0075/SMS)
+- Vonage/Nexmo
+- AWS SNS
+- TextMagic
+
+The current implementation sends emails to:
+- capco@eliteweblabs.com
+- jk@capcofire.com
+*/
