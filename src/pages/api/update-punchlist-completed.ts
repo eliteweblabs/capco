@@ -107,15 +107,42 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
     console.log("✅ [UPDATE-PUNCHLIST-COMPLETED] Punchlist completion status updated successfully");
 
-    // Log the punchlist status change
-    if (typeof window !== "undefined" && window.SimpleProjectLogger) {
-      window.SimpleProjectLogger.logPunchlistToggle(
-        punchlistItem.project_id,
-        punchlistId,
-        mark_completed,
-        currentUser,
-        punchlistItem.message?.substring(0, 50) + "..." || "No message"
-      );
+    // Note: SimpleProjectLogger is client-side only, logging handled in frontend
+
+    try {
+      // Get discussion data from the local discussions array instead of querying Supabase
+      const punchlistMessage = punchlistItem.message;
+
+      if (!punchlistMessage) {
+        console.error("Punchlist message not found:", punchlistMessage);
+        // Continue with the response instead of returning
+      }
+
+      const adminContent = ` ${punchlistMessage} marked complete by ${currentUser.company_name}:<br><br>`;
+
+      // THIS IS TO THE ADMINS EMAIL
+      // Send email using the email delivery API
+      const emailResponse = await fetch("/api/email-delivery", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+
+        body: JSON.stringify({
+          usersToNotify: ["jk@capcofire.com", "capco@eliteweblabs.com"], // Use resolved user email
+          emailSubject: `Punchlist Item Completed → ${punchlistMessage.message} → ${currentUser.company_name}`,
+          emailContent: adminContent,
+          buttonText: "Access Your Dashboard",
+          buttonLink: "/dashboard",
+        }),
+      });
+
+      if (emailResponse.ok) {
+      } else {
+        console.error(await emailResponse.text());
+      }
+    } catch (emailError) {
+      console.error(emailError);
     }
 
     return new Response(

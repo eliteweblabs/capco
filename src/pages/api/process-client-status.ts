@@ -1,4 +1,6 @@
-export const filteredStatusObj = (statusObj: any, role: string) => {
+import { replacePlaceholders } from "../../lib/placeholder-utils";
+
+export const filteredStatusObj = (statusObj: any, role: string, placeholderData?: any) => {
   // console.log("🔍 [PROJECT-LIST-ITEM] Status object:", statusObj);
   let filteredStatusObj: any = {};
 
@@ -36,6 +38,20 @@ export const filteredStatusObj = (statusObj: any, role: string) => {
     filteredStatusObj.status_slug = generateStatusSlug(statusObj.admin_status_name);
     filteredStatusObj.status_tab = statusObj.admin_status_tab;
   }
+
+  // Always include project_action for the modal system
+  let projectAction = statusObj.project_action || null;
+
+  // Process placeholders if project_action exists and placeholder data is provided
+  if (projectAction && placeholderData) {
+    try {
+      projectAction = replacePlaceholders(projectAction, placeholderData);
+    } catch (error) {
+      console.warn("Failed to process placeholders in project_action:", error);
+    }
+  }
+
+  filteredStatusObj.project_action = projectAction;
 
   return filteredStatusObj;
 };
