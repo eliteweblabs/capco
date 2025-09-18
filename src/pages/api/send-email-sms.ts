@@ -5,10 +5,10 @@ export const POST: APIRoute = async ({ request }) => {
     // Handle both form data and JSON requests
     let message: string;
     let contactInfo: string;
-    
+
     const contentType = request.headers.get("content-type");
     console.log("📧 [EMAIL-API] Request content-type:", contentType);
-    
+
     if (contentType?.includes("application/json")) {
       // Handle JSON request
       const jsonData = await request.json();
@@ -20,7 +20,7 @@ export const POST: APIRoute = async ({ request }) => {
       message = formData.get("message") as string;
       contactInfo = formData.get("contact_info") as string;
     }
-    
+
     // SMS functionality commented out to avoid gateway bounces
     // const phone1 = formData.get("phone1") as string;
     // const carrier1 = formData.get("carrier1") as string;
@@ -46,10 +46,7 @@ export const POST: APIRoute = async ({ request }) => {
     }
 
     // Fixed email recipients (instead of SMS gateways)
-    const emailRecipients = [
-      "capco@eliteweblabs.com",
-      "jk@capcofire.com"
-    ];
+    const emailRecipients = ["capco@eliteweblabs.com", "jk@capcofire.com"];
 
     console.log("📧 [EMAIL-API] Sending to email recipients:", emailRecipients);
 
@@ -74,7 +71,7 @@ export const POST: APIRoute = async ({ request }) => {
 
     // Create email content (no SMS length restrictions)
     const emailContent = `${message}\n\n${contactInfo ? `Contact Information:\n${contactInfo}` : ""}`;
-    
+
     const sentEmails = [];
     const failedEmails = [];
 
@@ -94,18 +91,22 @@ export const POST: APIRoute = async ({ request }) => {
               <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;">
                 <p style="white-space: pre-line; margin: 0;">${message}</p>
               </div>
-              ${contactInfo ? `
+              ${
+                contactInfo
+                  ? `
                 <div style="border-top: 1px solid #e5e7eb; padding-top: 15px; margin-top: 15px;">
                   <h3 style="color: #6b7280; font-size: 16px;">Contact Information:</h3>
                   <p style="white-space: pre-line; color: #374151;">${contactInfo}</p>
                 </div>
-              ` : ''}
+              `
+                  : ""
+              }
               <hr style="margin: 20px 0; border: none; border-top: 1px solid #e5e7eb;">
               <p style="color: #6b7280; font-size: 12px; margin: 0;">
                 This is an automated notification from CAPCo Fire Protection Systems.
               </p>
             </div>
-          `
+          `,
         };
 
         console.log("📧 [EMAIL-API] Email payload:", {
@@ -125,7 +126,11 @@ export const POST: APIRoute = async ({ request }) => {
 
         if (!response.ok) {
           const errorText = await response.text();
-          console.error(`📧 [EMAIL-API] Failed to send to ${emailAddress}:`, response.status, errorText);
+          console.error(
+            `📧 [EMAIL-API] Failed to send to ${emailAddress}:`,
+            response.status,
+            errorText
+          );
           failedEmails.push({ email: emailAddress, error: errorText });
         } else {
           const responseData = await response.json();
@@ -163,14 +168,14 @@ export const POST: APIRoute = async ({ request }) => {
     );
   } catch (error) {
     console.error("📧 [EMAIL-API] Unexpected error:", error);
-    
+
     // Log additional details for debugging
     if (error instanceof Error) {
       console.error("📧 [EMAIL-API] Error name:", error.name);
       console.error("📧 [EMAIL-API] Error message:", error.message);
       console.error("📧 [EMAIL-API] Error stack:", error.stack);
     }
-    
+
     return new Response(
       JSON.stringify({
         success: false,
