@@ -36,22 +36,21 @@ export const GET: APIRoute = async ({ url, cookies }) => {
       currentRole
     );
 
-    // Build query based on user role
+    // First, let's test if we can access the punchlist table at all
+    console.log("🔍 [GET-PROJECT-PUNCHLIST] Testing punchlist table access...");
+
+    try {
+      const testQuery = await supabase.from("punchlist").select("count", { count: "exact" });
+
+      console.log("🔍 [GET-PROJECT-PUNCHLIST] Table access test result:", testQuery);
+    } catch (testError) {
+      console.error("🔍 [GET-PROJECT-PUNCHLIST] Table access test failed:", testError);
+    }
+
+    // Build query based on user role - simplified to avoid foreign key issues
     let query = supabase
       .from("punchlist")
-      .select(
-        `
-        *,
-        profiles!punchlist_author_id_fkey (
-          id,
-          company_name,
-          first_name,
-          last_name,
-          display_name,
-          role
-        )
-      `
-      )
+      .select("*")
       .eq("project_id", projectId)
       .order("created_at", { ascending: true });
 
@@ -97,13 +96,8 @@ export const GET: APIRoute = async ({ url, cookies }) => {
     // Process the punchlist data to ensure proper structure
     const processedPunchlist = (punchlistData || []).map((item) => ({
       ...item,
-      // Ensure company_name is available from either the item itself or the profile
-      company_name:
-        item.company_name ||
-        item.profiles?.company_name ||
-        (item.profiles?.first_name && item.profiles?.last_name
-          ? `${item.profiles.first_name} ${item.profiles.last_name}`
-          : item.profiles?.display_name || "Unknown User"),
+      // Ensure company_name is available - it should be stored directly in the punchlist table
+      company_name: item.company_name || "Unknown User",
     }));
 
     console.log(
