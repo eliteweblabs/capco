@@ -2,16 +2,30 @@ import type { APIRoute } from "astro";
 
 export const POST: APIRoute = async ({ request }) => {
   try {
-    const formData = await request.formData();
+    // Handle both form data and JSON requests
+    let message: string;
+    let contactInfo: string;
+    
+    const contentType = request.headers.get("content-type");
+    console.log("📧 [EMAIL-API] Request content-type:", contentType);
+    
+    if (contentType?.includes("application/json")) {
+      // Handle JSON request
+      const jsonData = await request.json();
+      message = jsonData.message;
+      contactInfo = jsonData.contact_info || jsonData.contactInfo;
+    } else {
+      // Handle form data request
+      const formData = await request.formData();
+      message = formData.get("message") as string;
+      contactInfo = formData.get("contact_info") as string;
+    }
     
     // SMS functionality commented out to avoid gateway bounces
     // const phone1 = formData.get("phone1") as string;
     // const carrier1 = formData.get("carrier1") as string;
     // const phone2 = formData.get("phone2") as string;
     // const carrier2 = formData.get("carrier2") as string;
-    
-    const message = formData.get("message") as string;
-    const contactInfo = formData.get("contact_info") as string;
 
     console.log("📧 [EMAIL-API] Email notification request received:", {
       messageLength: message?.length || 0,
@@ -149,6 +163,14 @@ export const POST: APIRoute = async ({ request }) => {
     );
   } catch (error) {
     console.error("📧 [EMAIL-API] Unexpected error:", error);
+    
+    // Log additional details for debugging
+    if (error instanceof Error) {
+      console.error("📧 [EMAIL-API] Error name:", error.name);
+      console.error("📧 [EMAIL-API] Error message:", error.message);
+      console.error("📧 [EMAIL-API] Error stack:", error.stack);
+    }
+    
     return new Response(
       JSON.stringify({
         success: false,
