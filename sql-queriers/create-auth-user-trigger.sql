@@ -22,7 +22,7 @@ BEGIN
     NEW.id, 
     NEW.email,
     'Client', -- Default role for new users
-    COALESCE(NEW.raw_user_meta_data->>'company_name', ''), -- Extract from OAuth metadata if available
+    COALESCE(NULLIF(NEW.raw_user_meta_data->>'company_name', ''), NEW.email), -- Fall back to email if company_name is empty
     COALESCE(NEW.raw_user_meta_data->>'first_name', ''), -- Extract from OAuth metadata if available
     COALESCE(NEW.raw_user_meta_data->>'last_name', ''), -- Extract from OAuth metadata if available
     NOW(),

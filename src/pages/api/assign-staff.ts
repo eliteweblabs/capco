@@ -164,21 +164,60 @@ export const POST: APIRoute = async ({ request }) => {
       }
     }
 
+    // return new Response(
+    //   JSON.stringify({
+    //     success: true,
+    //     project: updatedProject,
+    //     newStatus: newStatus,
+    //     statusConfig: statusData.statusConfig,
+    //     mergedData: placeholderResult.mergedData,
+    //     placeholderData: placeholderResult.placeholderData,
+    //     processedMessages: placeholderResult.processedMessages,
+    //     notificationData: notificationData,
+    //     clientEmail: clientEmail,
+    //     clientProfile: profile,
+    //   }),
+    //   {
+    //     status: 200,
+    //     headers: {
+    //       "Content-Type": "application/json",
+    //       "Access-Control-Allow-Origin": "*",
+    //       "Access-Control-Allow-Methods": "POST, OPTIONS",
+    //       "Access-Control-Allow-Headers": "Content-Type",
+    //       "Access-Control-Allow-Credentials": "true",
+    //     },
+    //   }
+    // );
+
     return new Response(
       JSON.stringify({
         success: true,
         message: `Project assigned to ${assigned_to_name || "Unassigned"}`,
         project: projectData,
         notificationData: {
-          type: "success",
-          title: "Staff Assigned",
-          message: `Project assigned to ${assigned_to_name || "Unassigned"}`,
-          duration: 3000,
+          admin: {
+            type: "success",
+            title: "Staff Assigned",
+            message: `Project assigned to ${assigned_to_name || "Unassigned"}`,
+            duration: 3000,
+            // redirect: {
+            //   url: `${baseUrl}/project/${projectId}`,
+            //   delay: 3,
+            //   showCountdown: true,
+            // },
+          },
+          currentUserRole: "Admin",
         },
       }),
       {
         status: 200,
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "Access-Control-Allow-Origin": "*",
+          "Access-Control-Allow-Methods": "POST, OPTIONS",
+          "Access-Control-Allow-Headers": "Content-Type",
+          "Access-Control-Allow-Credentials": "true",
+        },
       }
     );
   } catch (error) {

@@ -5,7 +5,7 @@ import micromatch from "micromatch";
 import { clearAuthCookies, setAuthCookies } from "../lib/auth-cookies";
 import { supabase } from "../lib/supabase";
 
-const protectedRoutes = ["/dashboard(|/)", "/project/**"];
+const protectedRoutes = ["/dashboard(|/)", "/project/**", "/push(|/)"];
 const redirectRoutes = ["/signin(|/)", "/register(|/)"];
 const protectedAPIRoutes = [
   "/api/guestbook(|/)",

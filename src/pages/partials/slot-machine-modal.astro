@@ -1,0 +1,238 @@
+---
+export const partial = true;
+
+// Check if we have props (when used as component) or need to use headers (when used as partial)
+const hasProps = Object.keys(Astro.props).length > 0;
+
+let componentId,
+  title,
+  showSearch,
+  cancelButtonText,
+  selectButtonText,
+  noResultsText,
+  searchText,
+  searchPlaceholder,
+  searchLabel,
+  errorText,
+  showImages,
+  imageField,
+  valueField,
+  projectId,
+  name,
+  labelField;
+
+if (hasProps) {
+  // Use props when available (prioritize props over headers)
+  const props = Astro.props;
+  componentId = props.id || "slot-machine";
+  title = props.title || "Select Option";
+  showSearch = props.showSearch || false;
+  cancelButtonText = props.cancelButtonText || "Cancel";
+  selectButtonText = props.selectButtonText || "Select";
+  noResultsText = props.noResultsText || "No results found";
+  searchText = props.searchText || "Searching for options...";
+  searchPlaceholder = props.searchPlaceholder || "Type to search...";
+  searchLabel = props.searchLabel || "Search:";
+  errorText = props.errorText || "Error loading options";
+  showImages = props.showImages || false;
+  imageField = props.imageField || "image_url";
+  valueField = props.valueField || "value";
+  labelField = props.labelField || "label";
+  projectId = props.projectId || "";
+  name = props.name || "";
+} else {
+  // Fall back to headers when used as partial
+  componentId = Astro.request.headers.get("x-component-id") || "slot-machine";
+  title = Astro.request.headers.get("x-modal-title") || "Select Option";
+  showSearch = Astro.request.headers.get("x-show-search") === "true";
+  cancelButtonText = Astro.request.headers.get("x-cancel-button") || "Cancel";
+  selectButtonText = Astro.request.headers.get("x-select-button") || "Select";
+  noResultsText = Astro.request.headers.get("x-no-results-text") || "No results found";
+  searchText = Astro.request.headers.get("x-search-text") || "Searching for options...";
+  searchPlaceholder = Astro.request.headers.get("x-search-placeholder") || "Type to search...";
+  searchLabel = Astro.request.headers.get("x-search-label") || "Search:";
+  errorText = Astro.request.headers.get("x-error-text") || "Error loading options";
+  showImages = Astro.request.headers.get("x-show-images") === "true";
+  imageField = Astro.request.headers.get("x-image-field") || "image_url";
+  valueField = Astro.request.headers.get("x-value-field") || "value";
+  labelField = Astro.request.headers.get("x-label-field") || "label";
+  projectId = Astro.request.headers.get("x-project-id") || "";
+  name = Astro.request.headers.get("x-name") || "";
+}
+
+import Button from "../../components/common/Button.astro";
+---
+
+<div
+  id={`${componentId}-slot-machine-modal`}
+  class="animate-fade-in fixed inset-0 z-50 flex transform items-center justify-center bg-black/30 backdrop-blur-sm transition-all duration-300 ease-in-out"
+>
+  <div
+    class="mx-4 max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-lg bg-background-card shadow-xl dark:bg-background-card-dark"
+  >
+    <!-- Modal Header -->
+    <div
+      class="flex items-center justify-between border-b border-gray-200 p-6 dark:border-gray-700"
+    >
+      <h2 class="text-xl font-semibold text-gray-900 dark:text-white">{title}</h2>
+      <button
+        id={`${componentId}-close-slot-modal`}
+        class="text-gray-400 transition-colors duration-200 hover:text-gray-600 dark:hover:text-gray-300"
+      >
+        <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M6 18L18 6M6 6l12 12"></path>
+        </svg>
+      </button>
+    </div>
+
+    <!-- Modal Content -->
+    <div class="p-6">
+      <!-- Search Input Section (conditional) -->
+      {
+        showSearch && (
+          <div class="mb-4">
+            <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
+              {searchLabel}
+            </label>
+            <div class="relative">
+              <input
+                type="text"
+                id={`${componentId}-slot-search-input`}
+                class="w-full rounded-lg border border-gray-300 bg-background-card px-3 py-2.5 pr-10 text-sm text-gray-900 focus:border-primary-500 focus:ring-2 focus:ring-primary-500 dark:border-gray-600 dark:bg-background-card-dark dark:text-white dark:focus:border-primary-400 dark:focus:ring-primary-400"
+                placeholder={searchPlaceholder}
+                autocomplete="off"
+              />
+              <button
+                type="button"
+                id={`${componentId}-slot-search-btn`}
+                class="absolute right-2 top-1/2 -translate-y-1/2 transform p-1.5 text-gray-400 transition-colors duration-200 hover:text-gray-600 dark:hover:text-gray-300"
+                title="Search for address"
+              >
+                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                  />
+                </svg>
+              </button>
+            </div>
+          </div>
+        )
+      }
+
+      <!-- Slot Machine Container with Fixed Height -->
+      <div
+        class="slot-machine-container relative mb-4 h-48 overflow-hidden rounded-lg border-2 border-gray-200 dark:border-gray-600"
+      >
+        <!-- Loading State -->
+
+        <div
+          id={`${componentId}-slot-loading`}
+          class="absolute inset-0 hidden items-center justify-center text-gray-500 dark:text-gray-400"
+        >
+          {
+            searchText && (
+              <div class="text-center">
+                <svg
+                  class="mx-auto mb-2 h-6 w-6 animate-spin text-gray-400"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                >
+                  <circle
+                    class="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    stroke-width="4"
+                  />
+                  <path
+                    class="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                  />
+                </svg>
+                <p class="text-sm">{searchText}</p>
+              </div>
+            )
+          }
+        </div>
+
+        <!-- Error State -->
+        <div
+          id={`${componentId}-slot-error`}
+          class="absolute inset-0 hidden items-center justify-center text-red-600 dark:text-red-400"
+        >
+          <div class="text-center">
+            <svg
+              class="mx-auto mb-2 h-6 w-6 opacity-50"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+            <p class="text-sm">{errorText}</p>
+          </div>
+        </div>
+
+        <ul
+          id={`${componentId}-slot-options-list`}
+          class="absolute inset-0 transition-transform duration-300 ease-out"
+        >
+          <!-- Options will be populated dynamically -->
+        </ul>
+
+        <!-- Empty state when no results -->
+        <div
+          id={`${componentId}-slot-empty-state`}
+          class="slot-empty-state absolute inset-0 hidden items-center justify-center text-gray-500 dark:text-gray-400"
+        >
+          <div class="text-center">
+            <svg
+              class="mx-auto mb-2 h-8 w-8 opacity-50"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
+              ></path>
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
+            </svg>
+            <p class="text-sm">{noResultsText}</p>
+            <p class="mt-1 text-xs text-gray-400">Try a different search term</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="flex justify-center gap-2">
+        <Button id={`${componentId}-slot-cancel-btn`} variant="secondary" size="md" fullWidth>
+          {cancelButtonText}
+        </Button>
+
+        <Button id={`${componentId}-slot-select-btn`} variant="primary" size="md" fullWidth>
+          {selectButtonText}
+        </Button>
+      </div>
+    </div>
+  </div>
+</div>

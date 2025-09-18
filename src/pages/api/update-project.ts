@@ -6,7 +6,7 @@ import { supabase } from "../../lib/supabase";
 export const POST: APIRoute = async ({ request }) => {
   try {
     const body = await request.json();
-    console.log("Update project API received:", body);
+    // console.log("Update project API received:", body);
 
     const { projectId, ...updateFields } = body;
 
@@ -18,21 +18,10 @@ export const POST: APIRoute = async ({ request }) => {
     }
 
     if (!supabase) {
-      // For demo purposes, simulate a successful update when database is not configured
-      return new Response(
-        JSON.stringify({
-          success: true,
-          project: {
-            id: projectId,
-            ...updateFields,
-          },
-          message: `Demo: Project ${projectId} ${updateFields.status !== undefined ? `status updated to ${updateFields.status}` : "updated"} (No database interaction)`,
-        }),
-        {
-          status: 200,
-          headers: { "Content-Type": "application/json" },
-        }
-      );
+      return new Response(JSON.stringify({ error: "Database connection not available" }), {
+        status: 500,
+        headers: { "Content-Type": "application/json" },
+      });
     }
 
     // Get current user
@@ -88,7 +77,7 @@ export const POST: APIRoute = async ({ request }) => {
       updated_at: new Date().toISOString(),
     };
 
-    console.log("Attempting to update project with core data:", updateData);
+    // console.log("Attempting to update project with core data:", updateData);
 
     // First, try to update with core fields
     let coreUpdateQuery = supabase.from("projects").update(updateData).eq("id", projectId);
@@ -133,7 +122,7 @@ export const POST: APIRoute = async ({ request }) => {
     // If core update succeeded and we have new fields, try to update them
     let finalData = coreData;
     if (Object.keys(newUpdateData).length > 0) {
-      console.log("Attempting to update new fields:", newUpdateData);
+      // console.log("Attempting to update new fields:", newUpdateData);
 
       let newFieldsQuery = supabase.from("projects").update(newUpdateData).eq("id", projectId);
       if (!isAdminOrStaff) {
@@ -148,9 +137,9 @@ export const POST: APIRoute = async ({ request }) => {
         );
         // Don't fail the entire request - core fields were updated successfully
       } else {
-        console.log("New fields updated successfully");
+        // console.log("New fields updated successfully");
         finalData = newFieldsData;
-        await SimpleProjectLogger.logProjectChanges(projectId, user.id, finalData, newFieldsData);
+        await SimpleProjectLogger.logProjectChanges(projectId, user, finalData, newFieldsData);
       }
     }
 

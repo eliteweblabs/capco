@@ -8,10 +8,16 @@ export default {
   printWidth: 100,
   overrides: [
     {
-      files: "*.astro",
+      files: "*.astro, *.css, *.js, *.ts, *.json, *.md",
       options: {
         parser: "astro",
         plugins: ["prettier-plugin-astro"],
+      },
+    },
+    {
+      files: "*.css",
+      options: {
+        plugins: ["prettier-plugin-tailwindcss"],
       },
     },
   ],

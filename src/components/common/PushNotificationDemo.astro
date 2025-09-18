@@ -2,12 +2,12 @@
 // Push Notification Demo Component
 ---
 
-<div class="p-6 bg-white dark:bg-gray-800 rounded-lg shadow">
-  <h3 class="text-lg font-semibold mb-4">🔔 Push Notification Demo</h3>
+<div class="rounded-full bg-background-card p-6 shadow dark:bg-background-card-dark">
+  <h3 class="mb-4 text-lg font-semibold">🔔 Push Notification Demo</h3>
 
   <div class="space-y-4">
     <!-- Notification Permission Status -->
-    <div id="permission-status" class="p-3 rounded-lg bg-gray-100 dark:bg-gray-700">
+    <div id="permission-status" class="rounded-full bg-gray-100 p-3 dark:bg-gray-700">
       <p class="text-sm text-gray-600 dark:text-gray-400">Checking notification permissions...</p>
     </div>
 
@@ -15,7 +15,7 @@
     <div class="flex flex-wrap gap-3">
       <button
         id="request-permission-btn"
-        class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50"
+        class="rounded bg-blue-500 px-4 py-2 text-white hover:bg-blue-600 disabled:opacity-50"
         disabled
       >
         Request Permission
@@ -23,7 +23,7 @@
 
       <button
         id="test-local-push-btn"
-        class="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 disabled:opacity-50"
+        class="rounded bg-green-500 px-4 py-2 text-white hover:bg-green-600 disabled:opacity-50"
         disabled
       >
         Test Local Push
@@ -31,7 +31,7 @@
 
       <button
         id="test-project-update-btn"
-        class="px-4 py-2 bg-purple-500 text-white rounded hover:bg-purple-600 disabled:opacity-50"
+        class="rounded bg-purple-500 px-4 py-2 text-white hover:bg-purple-600 disabled:opacity-50"
         disabled
       >
         Demo: Project Update
@@ -39,7 +39,7 @@
 
       <button
         id="test-deadline-reminder-btn"
-        class="px-4 py-2 bg-orange-500 text-white rounded hover:bg-orange-600 disabled:opacity-50"
+        class="rounded bg-orange-500 px-4 py-2 text-white hover:bg-orange-600 disabled:opacity-50"
         disabled
       >
         Demo: Deadline Reminder
@@ -49,13 +49,13 @@
     <!-- Installation Instructions for iOS -->
     <div
       id="ios-instructions"
-      class="hidden p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800"
+      class="hidden rounded-full border border-blue-200 bg-blue-50 p-4 dark:border-blue-800 dark:bg-blue-900/20"
     >
-      <h4 class="font-semibold text-blue-800 dark:text-blue-200 mb-2">📱 iOS Users:</h4>
-      <p class="text-sm text-blue-700 dark:text-blue-300 mb-2">
+      <h4 class="mb-2 font-semibold text-blue-800 dark:text-blue-200">📱 iOS Users:</h4>
+      <p class="mb-2 text-sm text-blue-700 dark:text-blue-300">
         To enable push notifications on iOS:
       </p>
-      <ol class="text-sm text-blue-700 dark:text-blue-300 list-decimal list-inside space-y-1">
+      <ol class="list-inside list-decimal space-y-1 text-sm text-blue-700 dark:text-blue-300">
         <li>Tap the Share button (square with arrow) in Safari</li>
         <li>Select "Add to Home Screen"</li>
         <li>Tap "Add"</li>
@@ -67,7 +67,7 @@
     <!-- Debug Info -->
     <details class="text-sm">
       <summary class="cursor-pointer text-gray-600 dark:text-gray-400">🛠️ Debug Info</summary>
-      <div id="debug-info" class="mt-2 p-3 bg-gray-50 dark:bg-gray-900 rounded font-mono text-xs">
+      <div id="debug-info" class="mt-2 rounded bg-gray-50 p-3 font-mono text-xs dark:bg-gray-900">
         Loading...
       </div>
     </details>
@@ -154,72 +154,6 @@
     }
   }
 
-  // Send a test notification
-  async function sendTestNotification(type: string) {
-    if (!isPushSupported() || Notification.permission !== "granted") {
-      alert("Push notifications not available or not permitted");
-      return;
-    }
-
-    try {
-      // Register service worker if not already registered
-      let registration = await navigator.serviceWorker.getRegistration();
-      if (!registration) {
-        registration = await navigator.serviceWorker.register("/sw.js");
-        await new Promise((resolve) => setTimeout(resolve, 1000)); // Wait for registration
-      }
-
-      let options: NotificationOptions;
-
-      switch (type) {
-        case "local":
-          options = {
-            body: "This is a test notification from your fire protection app!",
-            icon: "/favicon.svg",
-            badge: "/favicon.svg",
-            tag: "test-notification",
-            data: { type: "test", timestamp: Date.now() },
-          };
-          break;
-
-        case "project-update":
-          options = {
-            body: "Your fire protection proposal for 6235 Green St has been approved",
-            icon: "/favicon.svg",
-            badge: "/favicon.svg",
-            tag: "project-update",
-            data: { type: "project", projectId: 123, action: "view" },
-          };
-          break;
-
-        case "deadline":
-          options = {
-            body: "Review deadline for Goodtown project is tomorrow",
-            icon: "/favicon.svg",
-            badge: "/favicon.svg",
-            tag: "deadline-reminder",
-            data: { type: "deadline", projectId: 456, daysLeft: 1 },
-          };
-          break;
-
-        default:
-          return;
-      }
-
-      await registration.showNotification("🔥 Fire Protection App", options);
-
-      // Show success message
-      const statusDiv = document.getElementById("permission-status");
-      if (statusDiv) {
-        statusDiv.innerHTML = `<p class="text-green-600">✅ Notification sent successfully!</p>`;
-        setTimeout(updatePermissionStatus, 3000);
-      }
-    } catch (error) {
-      console.error("Error sending notification:", error);
-      alert("Error sending notification: " + error);
-    }
-  }
-
   // Request notification permission
   async function requestPermission() {
     try {
@@ -251,24 +185,66 @@
     }
   }
 
-  // Initialize on page load
-  document.addEventListener("DOMContentLoaded", () => {
+  // Send a local push notification
+  function sendLocalPush(title: string, body: string, icon?: string) {
+    if (Notification.permission === "granted") {
+      const notification = new Notification(title, {
+        body: body,
+        icon: icon || "/favicon.svg",
+        badge: "/favicon.svg",
+        tag: "capco-demo",
+        requireInteraction: false,
+      });
+
+      // Auto-close after 5 seconds
+      setTimeout(() => notification.close(), 5000);
+
+      notification.onclick = function () {
+        window.focus();
+        notification.close();
+      };
+    }
+  }
+
+  // Initialize the component
+  function initPushDemo() {
     updatePermissionStatus();
     updateDebugInfo();
 
     // Set up event listeners
     document.getElementById("request-permission-btn")?.addEventListener("click", requestPermission);
-    document
-      .getElementById("test-local-push-btn")
-      ?.addEventListener("click", () => sendTestNotification("local"));
-    document
-      .getElementById("test-project-update-btn")
-      ?.addEventListener("click", () => sendTestNotification("project-update"));
-    document
-      .getElementById("test-deadline-reminder-btn")
-      ?.addEventListener("click", () => sendTestNotification("deadline"));
 
-    // Update status every few seconds to catch changes
-    setInterval(updatePermissionStatus, 5000);
-  });
+    document.getElementById("test-local-push-btn")?.addEventListener("click", () => {
+      sendLocalPush("🔔 Test Notification", "This is a test push notification from CAPCo Fire!");
+    });
+
+    document.getElementById("test-project-update-btn")?.addEventListener("click", () => {
+      sendLocalPush(
+        "📋 Project Update",
+        "Your fire protection project status has been updated to 'Under Review'",
+        "/img/capco-icon.svg"
+      );
+    });
+
+    document.getElementById("test-deadline-reminder-btn")?.addEventListener("click", () => {
+      sendLocalPush(
+        "⏰ Deadline Reminder",
+        "Don't forget: Your project documentation is due in 2 days",
+        "/img/capco-icon.svg"
+      );
+    });
+
+    // Update status periodically
+    setInterval(() => {
+      updatePermissionStatus();
+      updateDebugInfo();
+    }, 2000);
+  }
+
+  // Run when DOM is ready
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", initPushDemo);
+  } else {
+    initPushDemo();
+  }
 </script>

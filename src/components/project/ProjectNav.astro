@@ -1,17 +1,28 @@
 ---
-export interface Props {
-  currentRole?: string;
-  projects?: any[];
-  statuses?: any[];
+import type { NavItem } from "../common/SlidingPillNav.astro";
+import SlidingPillNav from "../common/SlidingPillNav.astro";
+
+interface Project {
+  status: number;
 }
 
-import ProjectNavButton from "./ProjectNavButton.astro";
+interface Status {
+  status_code: number;
+  client_status_name: string;
+  admin_status_name: string;
+  status_name: string;
+}
 
-// Get props
+interface Props {
+  currentRole?: string;
+  projects?: Project[];
+  statuses?: Status[];
+}
+
 const { currentRole, projects = [], statuses = [] } = Astro.props;
 
 // Use provided data instead of fetching
-let project_statuses: any[] = statuses;
+let project_statuses: Status[] = statuses;
 let statusCounts: Record<string, number> = {};
 
 // Calculate status counts from provided projects
@@ -20,8 +31,8 @@ if (projects && projects.length > 0) {
 
   if (currentRole === "Client") {
     // For clients, count by client_status_name (deduplicated)
-    projects.forEach((project) => {
-      const statusInfo = project_statuses.find((s: any) => s.status_code === project.status);
+    projects.forEach((project: Project) => {
+      const statusInfo = project_statuses.find((s: Status) => s.status_code === project.status);
       if (statusInfo && statusInfo.client_status_name) {
         const clientStatusName = statusInfo.client_status_name;
         statusCounts[clientStatusName] = (statusCounts[clientStatusName] || 0) + 1;
@@ -29,7 +40,7 @@ if (projects && projects.length > 0) {
     });
   } else {
     // For admins/staff, count by status number
-    projects.forEach((project) => {
+    projects.forEach((project: Project) => {
       const status = project.status?.toString() || "10";
       statusCounts[status] = (statusCounts[status] || 0) + 1;
     });
@@ -37,103 +48,93 @@ if (projects && projects.length > 0) {
 }
 
 if (!projects || projects.length === 0) return;
+
+// Build navigation items
+const navItems: NavItem[] = [
+  {
+    id: "all-statuses",
+    label: "All Projects",
+    variant: "anchor",
+    dataAttributes: {
+      "data-label": "All Projects",
+      "data-project-status-filter": "all",
+      "data-count": projects.length.toString(),
+    },
+  },
+];
+
+if (project_statuses.length > 0) {
+  if (currentRole === "Client") {
+    // Client navigation: deduplicate by client_status_name and use slugs
+    const clientStatuses = project_statuses
+      .filter(
+        (status: Status) => status.client_status_name && status.client_status_name.trim() !== ""
+      )
+      .reduce((acc: Status[], status: Status) => {
+        // Check if this client_status_name already exists
+        const existing = acc.find((s) => s.client_status_name === status.client_status_name);
+        if (!existing) {
+          acc.push(status);
+        }
+        return acc;
+      }, []);
+
+    clientStatuses.forEach((status: Status) => {
+      // Create slug from client_status_name
+      const slug = status.client_status_name
+        .toLowerCase()
+        .replace(/[^a-z0-9\s-]/g, "")
+        .replace(/\s+/g, "-")
+        .trim();
+
+      navItems.push({
+        id: `status-${slug}`,
+        label: status.client_status_name,
+        variant: "anchor",
+        dataAttributes: {
+          "data-project-status-label": status.client_status_name,
+          "data-project-status-filter": slug,
+          "data-count": (statusCounts[status.client_status_name] || 0).toString(),
+        },
+      });
+    });
+  } else {
+    // Admin/Staff navigation: use status numbers
+    project_statuses.forEach((status: Status) => {
+      navItems.push({
+        id: `status-${status.status_code}`,
+        label: status.admin_status_name,
+        variant: "anchor",
+        dataAttributes: {
+          "data-label": status.admin_status_name,
+          "data-project-status-filter": status.status_code.toString(),
+          "data-count": (statusCounts[status.status_code] || 0).toString(),
+        },
+      });
+    });
+  }
+}
 ---
 
-<nav
-  id="project-nav"
-  class="scrollbar-hide relative flex gap-1 overflow-x-auto whitespace-nowrap text-hub-inactive dark:border-hub-border-dark"
->
-  <!-- Sliding pill background -->
-  <div
-    id="nav-pill-bg"
-    class="absolute top-2 h-9 rounded-full bg-blue-800 dark:bg-blue-600 transition-all duration-300 ease-out mix-blend-mode-multiply"
-    style="width: 0px; left: 0px; opacity: 0;"
-  >
-  </div>
-  <ProjectNavButton
-    id="all-statuses"
-    label="All Projects"
-    icon="bx bx-list-ul"
-    data-count={projects.length.toString()}
-  >
-    All Projects
-  </ProjectNavButton>
-
-  {
-    project_statuses.length > 0
-      ? (() => {
-          if (currentRole === "Client") {
-            // Client navigation: deduplicate by client_status_name and use slugs
-            const clientStatuses = project_statuses
-              .filter(
-                (status: any) =>
-                  status.client_status_name && status.client_status_name.trim() !== ""
-              )
-              .reduce((acc: any[], status: any) => {
-                // Check if this client_status_name already exists
-                const existing = acc.find(
-                  (s) => s.client_status_name === status.client_status_name
-                );
-                if (!existing) {
-                  acc.push(status);
-                }
-                return acc;
-              }, []);
-
-            return clientStatuses.map((status: any) => {
-              // Create slug from client_status_name
-              const slug = status.client_status_name
-                .toLowerCase()
-                .replace(/[^a-z0-9\s-]/g, "")
-                .replace(/\s+/g, "-")
-                .trim();
-
-              // Debug logging removed for performance
-
-              return (
-                <ProjectNavButton
-                  label={status.client_status_name}
-                  data-project-status-filter={slug}
-                  data-count={(statusCounts[status.client_status_name] || 0).toString()}
-                >
-                  {status.client_status_name}
-                </ProjectNavButton>
-              );
-            });
-          } else {
-            // Admin/Staff navigation: use status numbers
-            return project_statuses.map((status: any) => {
-              // Debug logging removed for performance
-
-              return (
-                <ProjectNavButton
-                  label={status.admin_status_name}
-                  data-project-status-filter={status.status_code}
-                  data-count={(statusCounts[status.status_code] || 0).toString()}
-                >
-                  {status.admin_status_name}
-                </ProjectNavButton>
-              );
-            });
-          }
-        })()
-      : ""
-  }
-</nav>
+<SlidingPillNav
+  navId="project-nav"
+  navClass="text-gray-600 dark:text-gray-400 dark:border-gray-700"
+  items={navItems}
+/>
 
 <script>
   document.addEventListener("DOMContentLoaded", function () {
-    const subNav = document.getElementById("project-nav");
+    // Project-specific filtering logic
     const projectList = document.getElementById("project-list");
+    const subNav = document.getElementById("project-nav");
 
     if (!subNav || !projectList) return;
 
     const projectItems = projectList.querySelectorAll("[data-project-status]");
     const filterButtons = subNav.querySelectorAll("[data-project-status-filter]");
     const allStatusesButton = subNav.querySelector("#all-statuses");
-    const pillBg = document.getElementById("nav-pill-bg");
 
-    // Simple filtering based on data attributes - project cards handle their own visibility
+    // Project filtering logic
     function filterProjects(statusFilter: string) {
       const shouldShow = (projectStatusSlug: string) => {
         if (statusFilter === "all") {
@@ -170,27 +171,7 @@ if (!projects || projects.length === 0) return;
       }
     }
 
-    // Update active button - only change text color, no background
-    function updateActiveButton(activeButton: Element | null) {
-      if (!subNav) return;
-      subNav.querySelectorAll("button").forEach((btn) => {
-        btn.classList.remove(
-          "bg-blue-500",
-          "text-white",
-          "border-blue-500",
-          "bg-hub-primary",
-          "text-blue-600",
-          "dark:text-blue-400"
-        );
-        btn.classList.add("text-hub-inactive", "dark:text-hub-inactive-dark");
-      });
-      if (activeButton) {
-        activeButton.classList.remove("text-hub-inactive", "dark:text-hub-inactive-dark");
-        activeButton.classList.add("text-blue-600", "dark:text-blue-400");
-      }
-    }
-
-    // Update URL
+    // Update URL for project filtering
     function updateURL(statusFilter: string) {
       const url = new URL(window.location.href);
       if (statusFilter === "all") {
@@ -201,24 +182,13 @@ if (!projects || projects.length === 0) return;
       window.history.pushState({}, "", url.toString());
     }
 
-    // Button click handlers
+    // Add project filtering to button clicks
     filterButtons.forEach((button: Element) => {
       button.addEventListener("click", function (this: HTMLElement) {
         const filterValue = this.getAttribute("data-project-status-filter");
         if (filterValue) {
           filterProjects(filterValue);
-          updateActiveButton(this);
           updateURL(filterValue);
-
-          // Slide pill first, then center navigation
-          updateSlidingPill(this);
-          setTimeout(() => {
-            this.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" });
-            // Recalculate pill position after scroll completes
-            setTimeout(() => {
-              updateSlidingPill(this);
-            }, 500); // Wait for scroll animation to complete
-          }, 350); // Wait for pill animation to complete (300ms + buffer)
         }
       });
     });
@@ -226,92 +196,8 @@ if (!projects || projects.length === 0) return;
     if (allStatusesButton) {
       allStatusesButton.addEventListener("click", function (this: HTMLElement) {
         filterProjects("all");
-        updateActiveButton(this);
         updateURL("all");
-
-        // Slide pill first, then center navigation
-        updateSlidingPill(this);
-        setTimeout(() => {
-          this.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" });
-          // Recalculate pill position after scroll completes
-          setTimeout(() => {
-            updateSlidingPill(this);
-          }, 500); // Wait for scroll animation to complete
-        }, 350); // Wait for pill animation to complete (300ms + buffer)
       });
     }
-
-    // Initial filter from URL
-    const urlParams = new URLSearchParams(window.location.search);
-    const statusParam = urlParams.get("status");
-    if (statusParam) {
-      const targetButton = subNav.querySelector(`[data-project-status-filter="${statusParam}"]`);
-      if (targetButton) {
-        updateActiveButton(targetButton);
-        filterProjects(statusParam);
-        // Initialize pill position for URL-based active button
-        setTimeout(() => {
-          updateSlidingPill(targetButton);
-        }, 100);
-        return;
-      }
-    }
-
-    // Default to all
-    if (allStatusesButton) {
-      updateActiveButton(allStatusesButton);
-      filterProjects("all");
-      // Initialize pill position for default active button
-      setTimeout(() => {
-        updateSlidingPill(allStatusesButton);
-      }, 100);
-    }
-
-    // Trigger scroll into view for the active button after page load
-    setTimeout(() => {
-      const activeButton = subNav.querySelector(".bg-hub-primary, .bg-blue-600");
-      if (activeButton) {
-        activeButton.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" });
-      }
-    }, 100);
-
-    // Sliding pill functionality
-    function updateSlidingPill(activeButton: Element | null) {
-      if (!pillBg || !activeButton || !subNav) return;
-
-      const navRect = subNav.getBoundingClientRect();
-      const buttonRect = activeButton.getBoundingClientRect();
-
-      // Calculate position relative to the nav container, accounting for scroll offset
-      const left = buttonRect.left - navRect.left + subNav.scrollLeft;
-      const width = buttonRect.width;
-
-      // Update pill position and size
-      pillBg.style.left = `${left}px`;
-      pillBg.style.width = `${width}px`;
-      pillBg.style.opacity = "1";
-    }
-
-    // Initialize pill position for the active button
-    setTimeout(() => {
-      const activeButton = subNav.querySelector(".text-blue-600, .dark\\:text-blue-400");
-      if (activeButton) {
-        updateSlidingPill(activeButton);
-      }
-    }, 200); // Slightly longer delay for initial load
-
-    // Pill position is now handled in the main button click handlers above
-
-    // Handle window resize to reposition pill
-    let resizeTimeout: NodeJS.Timeout;
-    window.addEventListener("resize", () => {
-      clearTimeout(resizeTimeout);
-      resizeTimeout = setTimeout(() => {
-        const activeButton = subNav.querySelector(".text-blue-600, .dark\\:text-blue-400");
-        if (activeButton) {
-          updateSlidingPill(activeButton);
-        }
-      }, 100);
-    });
   });
 </script>

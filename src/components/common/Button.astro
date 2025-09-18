@@ -1,0 +1,278 @@
+---
+// Enable this component to work as both regular component and partial
+export const partial = true;
+import BoxIcon from "./BoxIcon.astro";
+// Button component for standardized button styling throughout the project
+export interface Props {
+  type?: "button" | "submit" | "reset";
+  variant?:
+    | "primary"
+    | "secondary"
+    | "success"
+    | "warning"
+    | "danger"
+    | "outline"
+    | "ghost"
+    | "link"
+    | "loading"
+    | "disabled"
+    | "anchor"
+    | "selected";
+  size?: "xs" | "sm" | "md" | "lg" | "xl";
+  href?: string;
+  target?: "_blank" | "_self" | "_parent" | "_top";
+  disabled?: boolean;
+  loading?: boolean;
+  icon?: string;
+  iconPosition?: "left" | "right";
+  fullWidth?: boolean;
+  class?: string;
+  id?: string;
+  name?: string;
+  value?: string;
+  title?: string;
+  form?: string;
+  onclick?: string;
+  dataAttributes?: Record<string, string>;
+  selectedClasses?: string;
+}
+
+// Check if this is being used as a partial (X-headers present) or regular component
+const isPartial =
+  Astro.request.headers.has("x-button-variant") || Astro.request.headers.has("x-button-text");
+
+// Extract props from either Astro.props or X-headers
+const type = Astro.props.type || Astro.request.headers.get("x-button-type") || "button";
+const variant = Astro.props.variant || Astro.request.headers.get("x-button-variant") || "primary";
+const size = Astro.props.size || Astro.request.headers.get("x-button-size") || "md";
+const href = Astro.props.href || Astro.request.headers.get("x-button-href") || undefined;
+const target = Astro.props.target || Astro.request.headers.get("x-button-target") || "_self";
+const disabled =
+  Astro.props.disabled || Astro.request.headers.get("x-button-disabled") === "true" || false;
+const loading =
+  Astro.props.loading || Astro.request.headers.get("x-button-loading") === "true" || false;
+const icon = Astro.props.icon || Astro.request.headers.get("x-button-icon") || undefined;
+const iconPosition =
+  Astro.props.iconPosition || Astro.request.headers.get("x-button-icon-position") || "left";
+const fullWidth =
+  Astro.props.fullWidth || Astro.request.headers.get("x-button-full-width") === "true" || false;
+const className = Astro.props.class || Astro.request.headers.get("x-button-class") || "";
+const id = Astro.props.id || Astro.request.headers.get("x-button-id") || undefined;
+const name = Astro.props.name || Astro.request.headers.get("x-button-name") || undefined;
+const value = Astro.props.value || Astro.request.headers.get("x-button-value") || undefined;
+const title = Astro.props.title || Astro.request.headers.get("x-button-title") || undefined;
+const form = Astro.props.form || Astro.request.headers.get("x-button-form") || undefined;
+const onclick = Astro.props.onclick || Astro.request.headers.get("x-button-onclick") || undefined;
+const buttonText = Astro.request.headers.get("x-button-text") || "";
+const selectedClasses = Astro.props.selectedClasses || "";
+
+// Handle data attributes from both props and headers
+let dataAttributes = Astro.props.dataAttributes || {};
+if (isPartial) {
+  for (const [key, value] of Astro.request.headers.entries()) {
+    if (key.startsWith("x-button-data-")) {
+      const dataKey = key.replace("x-button-data-", "").replace(/-/g, "-");
+      dataAttributes[`data-${dataKey}`] = value;
+    }
+  }
+}
+
+// Base classes for all buttons
+const baseClasses =
+  "relative inline-flex items-center justify-center font-medium rounded-full transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed";
+
+// Size classes
+const sizeClasses = {
+  xs: "px-2.5 py-1.5 text-xs",
+  sm: "px-4 py-2 text-sm",
+  md: "px-5 py-2.5 text-sm",
+  lg: "px-6 py-3 text-base",
+  xl: "px-7 py-3.5 text-lg",
+};
+
+// Variant classes using global color system
+const variantClasses = {
+  primary:
+    "bg-primary-500 text-white hover:bg-primary-600 dark:bg-primary-500 dark:hover:bg-primary-600 shadow-lg hover:shadow-xl",
+  secondary:
+    "border-2 border-neutral-300 text-neutral-700 hover:text-white dark:border-neutral-600 dark:text-neutral-300 hover:bg-primary-500 dark:hover:bg-primary-500",
+  success:
+    "bg-success-500 text-white hover:bg-success-600 dark:bg-success-500 dark:hover:bg-success-600 shadow-lg hover:shadow-xl",
+  warning:
+    "bg-warning-500 text-white hover:bg-warning-600 dark:bg-warning-500 dark:hover:bg-warning-600 shadow-lg hover:shadow-xl",
+  danger:
+    "bg-danger-500 text-white hover:bg-danger-600 dark:bg-danger-500 dark:hover:bg-danger-600 shadow-lg hover:shadow-xl",
+  outline:
+    "border-2 border-primary-500 text-primary-500 hover:bg-primary-500 hover:text-white dark:border-primary-400 dark:text-primary-400 dark:hover:bg-primary-400 dark:hover:text-white",
+  ghost: "text-primary-500 hover:bg-primary-50 dark:text-primary-400 dark:hover:bg-primary-900/20",
+  link: "text-primary-500 underline hover:text-primary-600 dark:text-primary-400 dark:hover:text-primary-300",
+  loading: "bg-primary-500 text-white cursor-not-allowed opacity-75 dark:bg-primary-500",
+  disabled:
+    "bg-neutral-100 text-neutral-400 border border-neutral-200 cursor-not-allowed opacity-60 dark:bg-neutral-800 dark:text-neutral-500 dark:border-neutral-700 disabled",
+  selected:
+    "bg-primary-500 text-white border-2 border-primary-500 dark:bg-primary-500 dark:border-primary-500",
+  anchor:
+    "text-black dark:text-white hover:text-primary dark:hover:text-primary-dark outline-none focus:outline-none border-none focus:ring-0 focus:ring-offset-0 hover:shadow-none opacity-100 disabled",
+};
+
+// Build the complete class string
+const buttonClasses = [
+  baseClasses,
+  sizeClasses[size as keyof typeof sizeClasses],
+  variantClasses[variant as keyof typeof variantClasses],
+  fullWidth ? "w-full" : "",
+  className,
+]
+  .filter(Boolean)
+  .join(" ");
+
+// console.log(
+//   "🔘 [BUTTON] Size:",
+//   size,
+//   "Size classes:",
+//   sizeClasses[size as keyof typeof sizeClasses],
+//   "Full classes:",
+//   buttonClasses
+// );
+
+// Build data attributes object - don't add the data- prefix as it's already in the keys
+const dataAttrs = dataAttributes;
+
+// Add selected classes data attribute if provided
+const selectedDataAttr = selectedClasses ? { "data-selected-classes": selectedClasses } : {};
+
+// Determine if this should be a link or button
+const isLink = href && !disabled;
+
+// Build attributes object
+const attributes = {
+  class: buttonClasses,
+  ...(id && { id }),
+  ...(name && { name }),
+  ...(value && { value }),
+  ...(form && { form }),
+  ...(onclick && { onclick }),
+  ...(disabled && !isLink && { disabled }),
+  ...(isLink && { href, target }),
+  ...dataAttrs,
+  ...selectedDataAttr,
+};
+---
+
+{
+  isLink ? (
+    <a title={title} {...attributes}>
+      {loading && (
+        <svg class="-ml-1 mr-2 h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">
+          <circle
+            class="opacity-25"
+            cx="12"
+            cy="12"
+            r="10"
+            stroke="currentColor"
+            stroke-width="4"
+          />
+          <path
+            class="opacity-75"
+            fill="currentColor"
+            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+          />
+        </svg>
+      )}
+      {icon && iconPosition === "left" && !loading && <BoxIcon name={icon} class="mr-2" />}
+      {buttonText ? buttonText : <slot />}
+      {icon && iconPosition === "right" && !loading && <BoxIcon name={icon} class="ml-2" />}
+      {dataAttributes?.["data-count"] && parseInt(dataAttributes["data-count"]) > 0 && (
+        <span class="absolute -right-2 -top-2 flex h-5 w-5 items-center justify-center rounded-full border border-primary-500 bg-white text-xs font-medium text-primary-500 dark:border-primary-400 dark:bg-background-dark dark:text-primary-400">
+          {dataAttributes["data-count"]}
+        </span>
+      )}
+    </a>
+  ) : (
+    <button type={type as "button" | "submit" | "reset"} title={title} {...attributes}>
+      {loading && (
+        <svg class="-ml-1 mr-2 h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">
+          <circle
+            class="opacity-25"
+            cx="12"
+            cy="12"
+            r="10"
+            stroke="currentColor"
+            stroke-width="4"
+          />
+          <path
+            class="opacity-75"
+            fill="currentColor"
+            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+          />
+        </svg>
+      )}
+      {icon && iconPosition === "left" && !loading && <BoxIcon name={icon} class="mr-2" />}
+      {buttonText ? buttonText : <slot />}
+      {icon && iconPosition === "right" && !loading && <BoxIcon name={icon} class="ml-2" />}
+      {dataAttributes?.["data-count"] && parseInt(dataAttributes["data-count"]) > 0 && (
+        <span class="absolute right-0 top-0 flex h-5 w-5 items-center justify-center rounded-full border border-primary bg-white text-xs font-medium text-primary-500 dark:border-primary dark:bg-background-dark dark:text-primary-400">
+          {dataAttributes["data-count"]}
+        </span>
+      )}
+    </button>
+  )
+}
+
+<style>
+  /* Additional button styles for specific variants */
+  .btn-loading {
+    position: relative;
+    pointer-events: none;
+  }
+
+  .btn-loading::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 20px;
+    height: 20px;
+    margin: -10px 0 0 -10px;
+    border: 2px solid transparent;
+    border-top: 2px solid currentColor;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+  }
+
+  @keyframes spin {
+    0% {
+      transform: rotate(0deg);
+    }
+    100% {
+      transform: rotate(360deg);
+    }
+  }
+
+  /* Focus styles for better accessibility */
+  button:focus-visible,
+  a:focus-visible {
+    outline: 2px solid #3b82f6;
+    outline-offset: 2px;
+  }
+
+  /* Hover effects for better UX */
+  button:not(.disabled):hover,
+  a:not([aria-disabled="true"]):not(.disabled):hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.12);
+  }
+
+  button:not(.disabled):active,
+  a:not([aria-disabled="true"]):not(.disabled):active {
+    transform: translateY(0);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.12);
+  }
+</style>
+
+<style>
+  .pill-nav-item[data-active="true"],
+  .pill-nav-item[data-active="true"]:hover {
+    color: white !important;
+  }
+</style>

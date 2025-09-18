@@ -4,8 +4,12 @@
 import type { APIRoute } from "astro";
 import { readFileSync } from "fs";
 import { join } from "path";
+import { replacePlaceholders, type PlaceholderData } from "../../lib/placeholder-utils";
 import { supabase } from "../../lib/supabase";
 import { supabaseAdmin } from "../../lib/supabase-admin";
+
+// 🚧 DEAD STOP - 2024-12-19: Potentially unused API endpoint
+// If you see this log after a few days, this endpoint can likely be deleted
 
 export const POST: APIRoute = async ({ request, cookies }) => {
   console.log("📧 little bit bigger API endpoint called");
@@ -169,6 +173,18 @@ export const POST: APIRoute = async ({ request, cookies }) => {
           } else {
             // Replace template variables for regular emails
             emailHtml = emailTemplate.replace("{{CONTENT}}", emailContent);
+
+            // Replace brand/design placeholders using centralized system
+            const placeholderData: PlaceholderData = {
+              primaryColor: "#825bdd",
+              svgLogo: `<svg id="Layer_1" xmlns="http://www.w3.org/2000/svg" width="100" version="1.1" viewBox="0 0 400 143.7" class="h-auto"> <defs> <style>
+        .fill {
+          fill: black;
+        }
+      </style> </defs> <g> <path class="fill" d="M0 0h400v143.7H0z"/> <text x="200" y="80" text-anchor="middle" fill="white" font-family="Arial, sans-serif" font-size="24" font-weight="bold">CAPCo</text> </g> </svg>`,
+            };
+
+            emailHtml = replacePlaceholders(emailHtml, placeholderData);
           }
 
           // Override buttonLink with magic link for authentication
@@ -202,6 +218,14 @@ export const POST: APIRoute = async ({ request, cookies }) => {
           }
 
           // Apply button configuration (skip for SMS gateways)
+          console.log("🔍 [EMAIL-DELIVERY] Button debug for", {
+            buttonText,
+            buttonLink,
+            finalButtonLink,
+            isSmsGateway,
+            hasButton: !!(buttonText && finalButtonLink),
+          });
+
           if (!isSmsGateway) {
             if (buttonText && finalButtonLink) {
               emailHtml = emailHtml.replace("{{BUTTON_TEXT}}", buttonText);

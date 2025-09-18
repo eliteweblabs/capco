@@ -1,289 +1,48 @@
 ---
 import BoxIcon from "./BoxIcon.astro";
-import Tooltip from "./Tooltip.astro";
 
 interface Props {
   isAuth: boolean;
   currentUser: any;
   currentRole: string | null;
   session: any;
+  class: string;
 }
 
-const { isAuth, currentUser, currentRole, session } = Astro.props;
+const { isAuth, currentUser, class: className = "" } = Astro.props;
 
-const userProfile = currentUser?.profile || null;
-
+// Debug logging
+// console.log("🔍 [AuthIcon] Props:", {
+//   isAuth,
+// });
 ---
-  {
-    isAuth ? (
-      // Authenticated: Profile Button with Dropdown
-      <div class="relative">
-        <div id="profile-btn" class="text-black dark:text-white cursor-pointer">
-          <img
-            id="user-avatar"
-            src=""
-            alt="User avatar"
-            class="block size-8 rounded-full"
-            onerror="this.style.display='none'; this.nextElementSibling.style.display='block';"
-          />
-          <BoxIcon name="user" style="display:none;" class="ml-2 bx-sm" />
-        </div>
 
-        <!-- Enhanced Dropdown menu -->
-        <div
-          id="profile-dropdown"
-          class="absolute right-0 top-full mt-2 hidden w-64 rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 dark:bg-gray-800 dark:ring-gray-700 z-50 transition-all duration-200 ease-in-out"
-        >
-          <!-- User Info Section -->
-          <div class="border-b border-gray-200 dark:border-gray-700 px-4 py-3">
-            <div class="flex items-center">
-              <div class="flex-shrink-0">
-                <img
-                  id="dropdown-avatar"
-                  src=""
-                  alt="User avatar"
-                  class="h-10 w-10 rounded-full"
-                  onerror="this.style.display='none'; this.nextElementSibling.style.display='block';"
-                />
-                <BoxIcon name="user" style="display:none;" class="text-gray-400 bx-sm" />
-              </div>
-              <div class="ml-3">
-                <p class="text-sm font-medium text-gray-900 dark:text-white">
-                  {userProfile?.company_name || currentUser?.email?.split("@")[0] || "User"}
-                </p>
-                <p class="text-xs text-gray-500 dark:text-gray-400">
-                  {currentUser?.email}
-                </p>
-                <p class="text-xs text-blue-600 dark:text-blue-400 font-medium">
-                  {currentRole || "User"}
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <!-- Menu Items -->
-          <div class="py-1">
-            <a
-              href="/dashboard"
-              class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-700"
-            >
-              <BoxIcon name="building" class="mr-3 bx-sm" />
-              Dashboard
-            </a>
-
-            <a
-              href="/profile"
-              class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-700"
-            >
-              <BoxIcon name="user" class="mr-3 bx-sm" />
-              My Profile
-            </a>
-
-            <hr class="my-1 border-gray-200 dark:border-gray-700" />
-
-            <button
-              id="logout-btn"
-              class="flex w-full items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-700"
-            >
-              <BoxIcon name="log-out" class="mr-3 bx-sm" />
-              Logout
-            </button>
-          </div>
-        </div>
-      </div>
-    ) : (
-      // Not Authenticated: Login Button
-      <Tooltip content="Login" variant="link" href="/login" placement="bottom" id="login-tooltip" class="text-black dark:text-white">
-        <div
-          aria-label="btn-profile"
-          id="profile-btn"
-          class="size-8 overflow-hidden rounded-full"
-        >
-          <BoxIcon name="log-in" class="text-gray-700 dark:text-gray-300 bx-sm" />
-        </div>
-      </Tooltip>
-    )
-  }
-
-
-
-<script type="module" define:vars={{ session }}>
-  // console.log("📋 [HEADER] Header script execution started");
-  // console.log("📋 [HEADER] Session data:", session);
-
-  const profileBtn = document.getElementById("profile-btn");
-  const userAvatar = document.getElementById("user-avatar");
-  const fallbackIcon = userAvatar?.nextElementSibling;
-  const profileDropdown = document.getElementById("profile-dropdown");
-  const logoutBtn = document.getElementById("logout-btn");
-
-  // Mobile menu elements
-  const mobileMenuBtn = document.getElementById("mobile-menu-btn");
-  const mobileMenu = document.getElementById("drawer-example");
-  const hamburgerIcon = document.getElementById("mobile-menu-btn"); // The button IS the hamburger
-
-  // console.log("📋 [HEADER] DOM elements found:", {
-  //   profileBtn: !!profileBtn,
-  //   userAvatar: !!userAvatar,
-  //   fallbackIcon: !!fallbackIcon,
-  //   profileDropdown: !!profileDropdown,
-  //   logoutBtn: !!logoutBtn,
-  //   mobileMenuBtn: !!mobileMenuBtn,
-  //   mobileMenu: !!mobileMenu,
-  //   hamburgerIcon: !!hamburgerIcon,
-  // });
-
-  // Initialize mobile menu icon states
-  if (hamburgerIcon) {
-    hamburgerIcon.classList.remove("is-active");
-    // console.log("📋 [HEADER] Mobile menu icons initialized");
-  }
-
-  function updateProfileButton(session) {
-    // console.log("📋 [HEADER] updateProfileButton called with session:", session);
-
-    if (session && session.data.user) {
-      const avatarUrl = session.data.user.user_metadata?.avatar_url;
-      // console.log("📋 [HEADER] Avatar URL:", avatarUrl);
-
-      // Only update avatar if elements exist (user is authenticated)
-      if (userAvatar && fallbackIcon) {
-        if (avatarUrl) {
-          userAvatar.src = avatarUrl;
-          userAvatar.style.display = "block";
-          fallbackIcon.style.display = "none";
-          // console.log("📋 [HEADER] Using avatar image");
-        } else {
-          userAvatar.style.display = "none";
-          fallbackIcon.style.display = "block";
-          // console.log("📋 [HEADER] Using fallback icon");
-        }
-      }
-      // console.log("📋 [HEADER] Profile button configured for authenticated user");
-    } else {
-      // console.log(
-      //   "📋 [HEADER] Profile button configured for unauthenticated user - avatar elements not present"
-      // );
-    }
-  }
-
-  // Check initial auth state
-  // console.log("📋 [HEADER] Checking initial auth state...");
-  updateProfileButton(session);
-
-  // Toggle dropdown (only if profile button exists - when authenticated)
-  if (profileBtn) {
-    profileBtn.addEventListener("click", (e) => {
-      // console.log("📋 [HEADER] Profile button clicked");
-      e.stopPropagation();
-      if (profileDropdown) {
-        profileDropdown.classList.toggle("hidden");
-        // console.log("📋 [HEADER] Dropdown toggled");
-      }
-    });
-  }
-
-  // Close dropdown when clicking outside
-  document.addEventListener("click", (e) => {
-    if (profileDropdown && !profileBtn?.contains(e.target) && !profileDropdown.contains(e.target)) {
-      // console.log("📋 [HEADER] Document clicked, closing dropdown");
-      profileDropdown.classList.add("hidden");
-    }
-  });
-
-  // Prevent dropdown from closing when clicking inside it
-  if (profileDropdown) {
-    profileDropdown.addEventListener("click", (e) => {
-      e.stopPropagation();
-    });
-  }
-
-  // Mobile menu toggle functionality
-  function toggleMobileMenu() {
-    if (!mobileMenu || !hamburgerIcon) {
-      // console.error("📋 [HEADER] Missing mobile menu elements");
-      return;
-    }
-
-    const isOpen = mobileMenu.classList.contains("translate-x-0");
-
-    // console.log("📋 [HEADER] isOpen:", isOpen);
-    if (isOpen) {
-      // Close drawer - slide out to the left
-      mobileMenu.classList.remove("translate-x-0");
-      mobileMenu.classList.add("-translate-x-full");
-      hamburgerIcon.classList.remove("is-active");
-      // console.log("📋 [HEADER] Mobile menu closed");
-    } else {
-      // Open drawer - slide in from the left
-      mobileMenu.classList.remove("-translate-x-full");
-      mobileMenu.classList.add("translate-x-0");
-      hamburgerIcon.classList.add("is-active");
-      // console.log("📋 [HEADER] Mobile menu opened");
-    }
-  }
-
-  // Mobile menu button event listener
-  if (mobileMenuBtn) {
-    mobileMenuBtn.addEventListener("click", (e) => {
-      e.stopPropagation();
-      toggleMobileMenu();
-    });
-  }
-
-  // Close mobile menu when clicking outside or on menu links
-  document.addEventListener("click", (e) => {
-    if (mobileMenu && mobileMenu.classList.contains("translate-x-0")) {
-      // Close if clicking outside the mobile menu
-      if (!mobileMenu.contains(e.target) && !mobileMenuBtn?.contains(e.target)) {
-        mobileMenu.classList.remove("translate-x-0");
-        mobileMenu.classList.add("-translate-x-full");
-        if (hamburgerIcon) {
-          hamburgerIcon.classList.remove("is-active");
-        }
-        // console.log("📋 [HEADER] Mobile menu closed by outside click");
-      }
-    }
-  });
-
-  // Close mobile menu when clicking on navigation links
-  if (mobileMenu) {
-    const mobileNavLinks = mobileMenu.querySelectorAll("a");
-    mobileNavLinks.forEach((link) => {
-      link.addEventListener("click", () => {
-        mobileMenu.classList.remove("translate-x-0");
-        mobileMenu.classList.add("-translate-x-full");
-        if (hamburgerIcon) {
-          hamburgerIcon.classList.remove("is-active");
-        }
-        // console.log("📋 [HEADER] Mobile menu closed by navigation link click");
-      });
-    });
-  }
-
-  // Logout functionality (only if logout button exists - when authenticated)
-  if (logoutBtn) {
-    logoutBtn.addEventListener("click", async () => {
-      // console.log("📋 [HEADER] Logout button clicked");
-      try {
-        // console.log("📋 [HEADER] Sending logout request...");
-        const response = await fetch("/api/auth/signout", {
-          method: "POST",
-        });
-        // console.log("📋 [HEADER] Logout response status:", response.status);
-
-        if (response.ok) {
-          // console.log("📋 [HEADER] Logout successful, redirecting...");
-          window.location.href = "/";
-        } else {
-          // console.error("📋 [HEADER] Logout failed with status:", response.status);
-        }
-      } catch (error) {
-        console.error("📋 [HEADER] Logout error:", error);
-      }
-      if (profileDropdown) {
-        profileDropdown.classList.add("hidden");
-      }
-    });
-  }  
-</script>
+{
+  isAuth ? (
+    <a
+      class={className}
+      id="profile-btn"
+      data-drawer-target="drawer-user-center"
+      data-drawer-show="drawer-user-center"
+      data-drawer-placement="right"
+      aria-controls="drawer-user-center"
+      type="button"
+    >
+      <img
+        id="user-avatar"
+        src={currentUser?.user_metadata?.avatar_url || ""}
+        alt="User avatar"
+        class="block size-8 rounded-full"
+        onerror="this.style.display='none'; this.nextElementSibling.style.display='block';"
+      />
+      <BoxIcon name="user" style="display:none;" class="bx-sm" />
+    </a>
+  ) : (
+    <>
+      {/* Not Authenticated: Login Button */}
+      <a href="/login" aria-label="btn-profile" id="profile-btn" class={className}>
+        <BoxIcon name="user" />
+      </a>
+    </>
+  )
+}

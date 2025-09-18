@@ -1,0 +1,1537 @@
+---
+interface Props {
+  authorProfile?: any;
+  currentRole?: string;
+  currentUser?: any;
+  project: any;
+  projectId: string;
+  projectStatus?: number;
+  projectStatusLabel?: string;
+  supabaseUrl?: string;
+}
+
+import BoxIcon from "../common/BoxIcon.astro";
+import Button from "../common/Button.astro";
+import SlideToggle from "../common/SlideToggle.astro";
+
+const {
+  projectId,
+  authorProfile,
+  projectStatus,
+  currentRole,
+  currentUser,
+  projectStatusLabel,
+  supabaseUrl,
+} = Astro.props;
+
+const placeholder =
+  currentRole === "Admin" || currentRole === "Staff"
+    ? "Write your comment here... (Use @username to mention users)"
+    : "Write your comment here...";
+---
+
+<div
+  id="content-discussion"
+  class="tab-content hidden rounded-lg border border-gray-200 bg-white p-6 dark:border-gray-700 dark:bg-gray-800"
+>
+  <div>
+    <div id="discussion-container" data-project-id={projectId}>
+      <div class="mb-6 flex items-center justify-between">
+        <h3 class="text-lg font-medium text-gray-900 dark:text-white">Project Discussion</h3>
+
+        <Button
+          id="new-comment-btn"
+          variant="primary"
+          size="sm"
+          icon="plus"
+          iconPosition="left"
+          class="min-w-[120px] whitespace-nowrap"
+        >
+          New Comment
+        </Button>
+      </div>
+
+      <p class="mb-4 text-sm text-gray-500 dark:text-gray-400">
+        <b>Placeholders: </b>
+        &#123;&#123; PROJECT_ADDRESS &#125;&#125;, &#123;&#123; CLIENT_NAME &#125;&#125;, &#123;&#123;
+        CLIENT_EMAIL &#125;&#125;, &#123;&#123; EST_TIME &#125;&#125;, &#123;&#123; STATUS_NAME &#125;&#125;,
+        &#123;&#123; CONTRACT_URL &#125;&#125;
+      </p>
+      <!-- Comment Form (hidden by default) -->
+      <div
+        id="comment-form"
+        class="mb-6 hidden rounded-lg border border-gray-200 p-4 dark:border-gray-700"
+      >
+        <div class="relative">
+          <textarea
+            id="comment-message"
+            placeholder={placeholder}
+            class="w-full resize-none rounded-lg border border-gray-300 p-3 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+            rows="4"
+            required></textarea>
+          <div
+            id="mention-dropdown"
+            class="absolute z-50 mt-1 hidden max-h-48 w-full overflow-y-auto rounded-lg border border-gray-300 bg-white shadow-lg dark:border-gray-600 dark:bg-gray-700"
+          >
+          </div>
+        </div>
+
+        {/* Image Upload Section */}
+        <div class="mt-3">
+          <div class="flex items-center justify-between">
+            <label
+              class="flex cursor-pointer items-center gap-2 text-sm text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200"
+            >
+              <BoxIcon name="paperclip" class="h-4 w-4" />
+              <span>Add Files</span>
+              <input
+                type="file"
+                id="comment-images"
+                accept="image/*,application/pdf,.dwg,.dxf,.dwt,.dws,.dwf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv"
+                multiple
+                class="hidden"
+              />
+            </label>
+
+            <Button
+              type="button"
+              id="clear-images-btn"
+              variant="ghost"
+              size="xs"
+              class="hidden text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-200"
+            >
+              Clear All
+            </Button>
+          </div>
+
+          {/* Image Preview Area */}
+          <div id="image-preview-container" class="mt-2 hidden">
+            <div id="image-previews" class="flex flex-wrap gap-2">
+              <!-- Image previews will be added here -->
+            </div>
+          </div>
+        </div>
+
+        {/* Admin/Staff Only Toggles */}
+        {
+          (currentRole === "Admin" || currentRole === "Staff") && (
+            <div class="mt-3 flex flex-wrap gap-6 border-t border-gray-200 pt-3 dark:border-gray-600">
+              {/* Internal Only Toggle */}
+              <SlideToggle id="internal-toggle" label="Internal Only" checked={true} />
+              {/* <label class="flex cursor-pointer items-center gap-3">
+                <div class="relative">
+                  <input type="checkbox" id="internal-toggle" class="peer sr-only" />
+                  <div class="peer h-6 w-11 rounded-lg bg-gray-200 after:absolute after:left-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-lg after:border after:border-gray-300 after:bg-white after:transition-all after:content-[''] peer-checked:bg-red-600 peer-checked:after:translate-x-full peer-checked:after:border-white peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-red-300 dark:border-gray-600 dark:bg-gray-700 dark:peer-focus:ring-red-800" />
+                </div>
+                <span class="text-sm text-gray-700 dark:text-gray-300">
+                  <BoxIcon name="lock" class="mr-1" />
+                  Internal Only
+                </span>
+              </label> */}
+            </div>
+          )
+        }
+
+        {/* Form Actions */}
+        <div class="mt-4 flex items-center justify-end">
+          <Button
+            id="submit-comment-btn"
+            variant="primary"
+            size="sm"
+            icon="send"
+            iconPosition="left"
+          >
+            Post
+          </Button>
+        </div>
+      </div>
+      <!-- Comments List -->
+      <div id="comments-list" class="space-y-4">
+        <!-- Comments will be dynamically loaded here -->
+      </div>
+      <div>
+        <script
+          define:vars={{
+            projectId,
+            authorProfile,
+            currentRole,
+            currentUser,
+            supabaseUrl,
+          }}
+          type="module"
+        >
+          // Discussion functionality
+          let discussions = [];
+          let currentProjectId = projectId;
+          let currentUserRole = currentRole;
+          let currentUserId = currentUser?.id || authorProfile.id;
+          // let currentUserName = currentUser?.company_name || authorProfile.company_name;
+          let mentionableUsers = [];
+          let currentMentionStart = -1;
+          let selectedImages = [];
+
+          // console.log("🔔 [DISCUSSION] Initial userRole:", currentUserRole);
+
+          // Make user role available globally for reply forms
+          window.currentUserRole = currentUserRole;
+          window.PROJECT_USER_ROLE = currentUserRole;
+
+          async function loadDiscussions(projectId) {
+            try {
+              const response = await fetch(`/api/get-project-discussions?projectId=${projectId}`, {
+                credentials: "include",
+              });
+              const data = await response.json();
+
+              if (data.success) {
+                discussions = data.discussions;
+                //       console.log("🔍 [DISCUSSIONS] Loaded discussions data:", discussions.map(d => ({
+                //         // id: d.id,
+                //         // author_id: d.author_id,
+                //         // company_name: d.company_name,
+                //         // hasProfiles: !!d.profiles,
+                //         // profileData: d.profiles ? {
+                //         //   display_name: d.profiles.display_name,
+                //         //   company_name: d.profiles.company_name,
+                //         //   first_name: d.profiles.first_name,
+                //         //   last_name: d.profiles.last_name
+                //         // } : null
+                //       }
+                //     )
+                //   )
+                // );
+                renderDiscussions();
+                updateIncompleteCommentsCount(); // Update count after loading discussions
+              } else {
+                console.error("Failed to load discussions:", data.error);
+                showDiscussionError("Failed to load discussions");
+              }
+            } catch (error) {
+              console.error("Error loading discussions:", error);
+              showDiscussionError("Failed to load discussions");
+            }
+          }
+
+          // Update incomplete comments count in the discussion tab
+          function updateIncompleteCommentsCount() {
+            const incompleteCount = discussions.filter(
+              (discussion) => !discussion.mark_completed
+            ).length;
+            const countElement = document.querySelector(".incomplete-comments-count");
+            const tabButton = document.getElementById("status-discussion");
+
+            if (tabButton) {
+              // Create or update count bubble
+              let countBubble = tabButton.querySelector(".discussion-count-bubble");
+
+              if (incompleteCount > 0) {
+                if (!countBubble) {
+                  // Create count bubble if it doesn't exist
+                  countBubble = document.createElement("span");
+                  countBubble.className =
+                    "discussion-count-bubble absolute right-0 top-0 flex h-5 w-5 items-center justify-center rounded-full border border-primary-500 bg-white text-xs font-medium text-primary-500 dark:border-primary-400 dark:bg-background-dark dark:text-primary-400";
+                  tabButton.style.position = "relative";
+                  tabButton.appendChild(countBubble);
+                }
+                countBubble.textContent = incompleteCount.toString();
+                countBubble.style.display = "flex";
+                tabButton.setAttribute("data-count", incompleteCount.toString());
+              } else {
+                if (countBubble) {
+                  countBubble.style.display = "none";
+                }
+                tabButton.setAttribute("data-count", "0");
+              }
+
+              // Also update the old count element if it exists
+              if (countElement) {
+                if (incompleteCount > 0) {
+                  countElement.textContent = incompleteCount.toString();
+                  countElement.classList.remove("hidden");
+                } else {
+                  countElement.classList.add("hidden");
+                }
+              }
+
+              // console.log("🔍 [DISCUSSION] Incomplete comments count updated:", incompleteCount);
+            }
+          }
+
+          async function renderDiscussions() {
+            const commentsList = document.getElementById("comments-list");
+            if (!commentsList) return;
+
+            // console.log("🔍 [DEBUG] renderDiscussions called with:", {
+            //   userRole: currentUserRole,
+            //   discussionsCount: discussions.length,
+            //   discussions: discussions.map(d => ({ id: d.id, internal: d.internal, author_id: d.author_id, parent_id: d.parent_id }))
+            // });
+
+            //       if (discussions.length === 0) {
+            //         commentsList.innerHTML = `
+            //   <div class="text-center py-8 text-gray-500 dark:text-gray-400">
+            //     <i class="bx bx-message-rounded-dots mx-auto mb-4 text-4xl"></i>
+            //     <p>No comments yet. Be the first to start the discussion!</p>
+            //   </div>
+            // `;
+            //         return;
+            //       }
+
+            // Separate top-level comments and replies
+            const topLevelComments = discussions.filter((d) => !d.parent_id);
+            const replies = discussions.filter((d) => d.parent_id);
+
+            // console.log("🔍 [DEBUG] Threading:", {
+            //   topLevel: topLevelComments.length,
+            //   replies: replies.length,
+            //   topLevelIds: topLevelComments.map(c => c.id),
+            //   replyParents: replies.map(r => r.parent_id)
+            // });
+
+            // Debug the first few replies to see their structure
+            if (replies.length > 0) {
+              // console.log("🔍 [DEBUG] First reply structure:", replies[0]);
+            }
+
+            let html = "";
+
+            // Process comments asynchronously
+            for (const comment of topLevelComments) {
+              // Check if user can see this comment
+              const canSeeComment =
+                !comment.internal ||
+                currentUserRole === "Admin" ||
+                currentUserRole === "Staff" ||
+                comment.author_id === currentUserId;
+
+              if (!canSeeComment) {
+                console.log("🔍 [DEBUG] Hiding internal comment from user:", comment.id);
+                continue;
+              }
+
+              html += await renderComment(comment, 0);
+
+              // Find and render replies for this comment
+              const commentReplies = replies.filter((reply) => reply.parent_id === comment.id);
+              for (const reply of commentReplies) {
+                const canSeeReply =
+                  !reply.internal ||
+                  currentUserRole === "Admin" ||
+                  currentUserRole === "Staff" ||
+                  reply.author_id === currentUserId;
+                if (canSeeReply) {
+                  html += await renderComment(reply, 1);
+                }
+              }
+            }
+
+            commentsList.innerHTML = html;
+
+            // Load toggles for all comments that can be toggled
+            discussions.forEach((comment) => {
+              const canToggleCompleted =
+                currentUserRole === "Admin" ||
+                currentUserRole === "Staff" ||
+                comment.author_id === currentUserId;
+
+              if (canToggleCompleted) {
+                loadToggleForComment(comment.id, comment.mark_completed, true);
+              }
+            });
+          }
+
+          function highlightMentions(text) {
+            // Highlight @mentions with a blue background and white text
+            // Pattern for formatted mentions (spaces converted to underscores on save)
+            return text.replace(
+              /@([a-zA-Z0-9_]+)/g,
+              '<span class="inline-flex items-center rounded-lg bg-blue-100 px-2 py-1 text-xs font-medium text-blue-800 dark:bg-blue-900 dark:text-blue-200">@$1</span>'
+            );
+          }
+
+          // Make highlightMentions available globally for other components
+          window.highlightMentions = highlightMentions;
+
+          // Legacy function - images now loaded via get-media API
+
+          async function renderComment(comment, depth = 0) {
+            try {
+              // Compute all values in the parent component
+              const isInternal = comment.internal;
+              const isAuthor = comment.author_id === currentUserId;
+              const canToggleCompleted =
+                currentUserRole === "Admin" || currentUserRole === "Staff" || isAuthor;
+              const canReply =
+                currentUserRole === "Admin" ||
+                currentUserRole === "Staff" ||
+                currentUserRole === "Client";
+              const marginLeft = depth > 0 ? `ml-${Math.min(depth * 8, 32)}` : "";
+              const borderLeft =
+                depth > 0 ? "border-l-2 border-gray-200 dark:border-gray-600 pl-4" : "";
+
+              // Ensure comment data is properly encoded to handle Unicode characters
+              const commentData = encodeURIComponent(JSON.stringify(comment));
+
+              const headers = new Headers({
+                "x-comment-data": commentData,
+                "x-current-user-role": currentUserRole,
+                "x-current-user-id": currentUserId,
+                "x-supabase-url": supabaseUrl,
+                "x-comment-depth": depth.toString(),
+                "x-is-internal": isInternal.toString(),
+                "x-is-author": isAuthor.toString(),
+                "x-can-toggle-completed": canToggleCompleted.toString(),
+                "x-can-reply": canReply.toString(),
+                "x-margin-left": marginLeft,
+                "x-border-left": borderLeft,
+              });
+
+              // Load images for this discussion using unified media API
+              try {
+                const imageResponse = await fetch(
+                  `/api/media?targetLocation=discussions&targetId=${comment.id}&projectId=${currentProjectId}`,
+                  {
+                    credentials: "include",
+                  }
+                );
+
+                if (imageResponse.ok) {
+                  const imageData = await imageResponse.json();
+                  if (imageData.success && imageData.media && imageData.media.length > 0) {
+                    imageData.media.forEach((mediaFile, index) => {
+                      headers.set(`x-image-url-${index}`, mediaFile.publicUrl);
+                      headers.set(`x-image-name-${index}`, mediaFile.fileName);
+                    });
+                    headers.set(`x-image-count`, imageData.media.length.toString());
+                  }
+                }
+              } catch (error) {
+                console.warn("Failed to load images for discussion:", comment.id, error);
+              }
+
+              const response = await fetch("/partials/comment", {
+                headers: headers,
+              });
+
+              if (response.ok) {
+                return await response.text();
+              } else {
+                console.error("Failed to load comment partial:", response.status);
+                return `<div class="text-red-500">Failed to load comment</div>`;
+              }
+            } catch (error) {
+              console.error("Error loading comment partial:", error);
+              return `<div class="text-red-500">Error loading comment</div>`;
+            }
+          }
+
+          // Load toggle using SlideToggle partial
+          async function loadToggleForComment(commentId, isCompleted, canToggle) {
+            if (!canToggle) return;
+
+            try {
+              // Handle null/undefined isCompleted values
+              const completed = isCompleted === true || isCompleted === "true" || isCompleted === 1;
+
+              const headers = new Headers({
+                "x-toggle-id": `completed-toggle-${commentId}`,
+                "x-toggle-label": completed ? "Completed" : "Incomplete",
+                "x-toggle-icon": completed ? "bx-check-circle" : "",
+                "x-toggle-color": "green",
+                "x-toggle-checked": completed.toString(),
+                "x-toggle-class": "completed-toggle",
+                "x-toggle-data-discussion-id": commentId.toString(),
+              });
+
+              const response = await fetch("/partials/slide-toggle", {
+                headers: headers,
+              });
+
+              if (response.ok) {
+                const toggleHTML = await response.text();
+                const container = document.getElementById(`toggle-container-${commentId}`);
+                if (container) {
+                  container.innerHTML = toggleHTML;
+                }
+              }
+            } catch (error) {
+              console.error("❌ [DISCUSSION] Error loading toggle:", error);
+            }
+          }
+
+          function showDiscussionError(message) {
+            const commentsList = document.getElementById("comments-list");
+            if (commentsList) {
+              commentsList.innerHTML = `
+        <div class="text-center py-8 text-red-500">
+          <i class="bx bx-error-circle mx-auto mb-4 text-4xl"></i>
+          <p>${message}</p>
+        </div>
+      `;
+            }
+          }
+
+          function toggleCommentForm() {
+            console.log("🔔 [DISCUSSION] toggleCommentForm called");
+            const commentForm = document.getElementById("comment-form");
+            const newCommentBtn = document.getElementById("new-comment-btn");
+
+            if (commentForm && newCommentBtn) {
+              const isHidden = commentForm.classList.contains("hidden");
+
+              if (isHidden) {
+                commentForm.classList.remove("hidden");
+                newCommentBtn.innerHTML = `
+          <i class="bx bx-x mr-2 bx-sm"></i>
+          Cancel
+        `;
+                newCommentBtn.classList.remove("bg-red-600", "hover:bg-red-700");
+                newCommentBtn.classList.add("bg-gray-600", "hover:bg-gray-700");
+
+                // Focus on textarea
+                const textarea = document.getElementById("comment-message");
+                if (textarea) {
+                  textarea.focus();
+                }
+              } else {
+                commentForm.classList.add("hidden");
+                newCommentBtn.innerHTML = `
+          <i class="bx bx-plus bx-sm"></i>
+          New Comment
+        `;
+                newCommentBtn.classList.remove("bg-gray-600", "hover:bg-gray-700");
+                newCommentBtn.classList.add("bg-red-600", "hover:bg-red-700");
+
+                // Clear form
+                const textarea = document.getElementById("comment-message");
+                const internalToggle = document.getElementById("internal-toggle");
+                if (textarea) textarea.value = "";
+                if (internalToggle) internalToggle.checked = false;
+                clearAllImages();
+              }
+            }
+          }
+
+          // Cancel reply form
+          function cancelReply(parentCommentId) {
+            console.log("🔔 [DISCUSSION] Canceling reply for comment:", parentCommentId);
+
+            const replyForm = document.querySelector(
+              `[data-discussion-id="${parentCommentId}"]`
+            )?.nextElementSibling;
+            if (replyForm && replyForm.classList.contains("inline-reply-form")) {
+              replyForm.remove();
+            }
+
+            // Clear the current reply target
+            window.currentReplyTo = null;
+          }
+
+          // Submit reply
+          async function submitReply(parentCommentId) {
+            console.log("🔔 [DISCUSSION] Submitting reply for comment:", parentCommentId);
+
+            const replyForm = document.querySelector(
+              `[data-discussion-id="${parentCommentId}"]`
+            )?.nextElementSibling;
+            if (!replyForm) {
+              console.error("Reply form not found");
+              return;
+            }
+
+            const messageInput = replyForm.querySelector(".reply-message-input");
+            const internalToggle = replyForm.querySelector(".reply-internal-toggle");
+            const submitBtn = replyForm.querySelector(".submit-reply-btn");
+
+            const message = messageInput?.value?.trim();
+            const isInternal = internalToggle?.checked || false;
+
+            if (!message) {
+              alert("Please enter a reply message");
+              return;
+            }
+
+            // Set loading state
+            if (submitBtn) {
+              submitBtn.disabled = true;
+              submitBtn.innerHTML = `
+        <svg class="animate-spin mr-2 h-4 w-4" fill="none" viewBox="0 0 24 24">
+          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+        </svg>
+        Posting...
+      `;
+            }
+
+            try {
+              const response = await fetch("/api/add-discussion", {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                },
+                credentials: "include",
+                body: JSON.stringify({
+                  projectId: currentProjectId,
+                  message: message,
+                  parentId: parentCommentId,
+                  internal: isInternal,
+                }),
+              });
+
+              const data = await response.json();
+
+              if (data.success) {
+                console.log("✅ Reply submitted successfully");
+                // Remove the reply form
+                replyForm.remove();
+                // Reload discussions
+                await loadDiscussions(currentProjectId);
+                // Show success message
+                if (window.showModal) {
+                  window.showModal(
+                    "success",
+                    "Reply posted",
+                    "Your reply has been added to the discussion"
+                  );
+                }
+              } else {
+                console.error("Failed to submit reply:", data.error);
+                alert("Failed to submit reply: " + data.error);
+              }
+            } catch (error) {
+              console.error("Error submitting reply:", error);
+              alert("Error submitting reply");
+            } finally {
+              // Reset loading state
+              if (submitBtn) {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = `
+          <i class="bx bx-send mr-2"></i>
+          Post Reply
+        `;
+              }
+            }
+          }
+
+          // Image upload functionality (using new save-media API)
+          async function handleImageUpload(event) {
+            const files = Array.from(event.target.files);
+            const maxFiles = 5;
+            const maxSize = 50 * 1024 * 1024; // 50MB per file (increased for CAD files)
+
+            // Define allowed file types
+            const allowedTypes = [
+              // Images
+              "image/jpeg",
+              "image/jpg",
+              "image/png",
+              "image/gif",
+              "image/webp",
+              "image/bmp",
+              "image/tiff",
+              "image/svg+xml",
+              // Documents
+              "application/pdf",
+              "application/msword",
+              "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+              "application/vnd.ms-excel",
+              "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+              "application/vnd.ms-powerpoint",
+              "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+              "text/plain",
+              "text/csv",
+              // AutoCAD files
+              "application/acad",
+              "application/x-acad",
+              "application/autocad",
+              "application/x-autocad",
+              "application/dwg",
+              "application/x-dwg",
+              "image/vnd.dwg",
+              "drawing/dwg",
+              "application/dxf",
+              "application/x-dxf",
+              "image/vnd.dxf",
+              "drawing/dxf",
+              "application/dwt",
+              "application/x-dwt",
+              "application/dws",
+              "application/x-dws",
+              "application/dwf",
+              "application/x-dwf",
+              "model/vnd.dwf",
+              // Generic binary for CAD files
+              "application/octet-stream",
+            ];
+
+            // Validate files
+            const validFiles = files.filter((file) => {
+              // Check file type (including extension fallback for octet-stream)
+              const isAllowedType =
+                allowedTypes.includes(file.type) ||
+                (file.type === "application/octet-stream" &&
+                  /\.(dwg|dxf|dwt|dws|dwf)$/i.test(file.name));
+
+              if (!isAllowedType) {
+                console.warn("Skipping unsupported file type:", file.name, "Type:", file.type);
+                if (window.showModal) {
+                  window.showModal(
+                    "warning",
+                    "Unsupported File Type",
+                    `${file.name} is not a supported file type. Please upload images, PDFs, documents, or CAD files.`
+                  );
+                }
+                return false;
+              }
+
+              if (file.size > maxSize) {
+                console.warn("Skipping large file:", file.name, "Size:", file.size);
+                if (window.showModal) {
+                  window.showModal(
+                    "warning",
+                    "File Too Large",
+                    `${file.name} is too large. Maximum size is 50MB.`
+                  );
+                }
+                return false;
+              }
+              return true;
+            });
+
+            // Check total file limit
+            if (selectedImages.length + validFiles.length > maxFiles) {
+              if (window.showModal) {
+                window.showModal("warning", "Too Many Files", `Maximum ${maxFiles} files allowed.`);
+              }
+              return;
+            }
+
+            // Add valid files to selected images for preview
+            validFiles.forEach((file) => {
+              selectedImages.push(file);
+            });
+
+            updateImagePreviews();
+          }
+
+          function updateImagePreviews() {
+            const container = document.getElementById("image-preview-container");
+            const previews = document.getElementById("image-previews");
+            const clearBtn = document.getElementById("clear-images-btn");
+
+            if (!container || !previews) return;
+
+            if (selectedImages.length === 0) {
+              container.classList.add("hidden");
+              if (clearBtn) clearBtn.classList.add("hidden");
+              return;
+            }
+
+            container.classList.remove("hidden");
+            if (clearBtn) clearBtn.classList.remove("hidden");
+
+            previews.innerHTML = selectedImages
+              .map(
+                (file, index) => `
+        <div class="relative group">
+          <img 
+            src="${URL.createObjectURL(file)}" 
+            alt="${file.name}"
+            class="w-20 h-20 object-cover rounded-lg border border-gray-300 dark:border-gray-600"
+          />
+          <button
+            type="button"
+            onclick="removeImage(${index})"
+            class="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white rounded-lg flex items-center justify-center text-xs hover:bg-red-600 opacity-0 group-hover:opacity-100 transition-opacity"
+          >
+            ×
+          </button>
+          <div class="absolute bottom-0 left-0 right-0 bg-black bg-opacity-50 text-white text-xs p-1 rounded-b-lg truncate">
+            ${file.name}
+          </div>
+        </div>
+      `
+              )
+              .join("");
+          }
+
+          function removeImage(index) {
+            selectedImages.splice(index, 1);
+            updateImagePreviews();
+          }
+
+          function clearAllImages() {
+            selectedImages = [];
+            updateImagePreviews();
+            const fileInput = document.getElementById("comment-images");
+            if (fileInput) fileInput.value = "";
+          }
+
+          // Image URL helper function removed - now using get-media API
+
+          // Image modal functionality
+          function openImageModal(imageUrl) {
+            console.log("🖼️ [DISCUSSION] openImageModal called with:", imageUrl);
+
+            // Create modal overlay
+            const modal = document.createElement("div");
+            modal.className =
+              "fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50";
+            modal.innerHTML = `
+        <div class="relative max-w-4xl max-h-full p-4">
+          <button 
+            onclick="this.closest('.fixed').remove()"
+            class="absolute top-2 right-2 text-white text-2xl hover:text-gray-300 z-10"
+          >
+            ×
+          </button>
+          <img 
+            src="${imageUrl}" 
+            alt="Discussion image"
+            class="max-w-full max-h-full object-contain rounded-lg"
+          />
+        </div>
+      `;
+
+            // Close on background click
+            modal.addEventListener("click", (e) => {
+              if (e.target === modal) {
+                modal.remove();
+              }
+            });
+
+            // Close on escape key
+            const handleEscape = (e) => {
+              if (e.key === "Escape") {
+                modal.remove();
+                document.removeEventListener("keydown", handleEscape);
+              }
+            };
+            document.addEventListener("keydown", handleEscape);
+
+            document.body.appendChild(modal);
+          }
+
+          // Make image functions globally available
+          window.removeImage = removeImage;
+          window.clearAllImages = clearAllImages;
+          window.openImageModal = openImageModal;
+
+          // Make functions globally available
+          window.toggleCommentForm = toggleCommentForm;
+          window.cancelReply = cancelReply;
+          window.submitReply = submitReply;
+
+          async function submitComment() {
+            const messageInput = document.getElementById("comment-message");
+            const message = messageInput?.value?.trim();
+            const internalToggle = document.getElementById("internal-toggle");
+            const isInternal = internalToggle?.checked || false;
+            const submitBtn = document.getElementById("submit-comment-btn");
+
+            if (!message) {
+              if (window.showModal) {
+                window.showModal("error", "Please enter a message", "", 5000);
+              }
+              messageInput?.focus();
+              return;
+            }
+
+            // Set loading state
+            if (submitBtn) {
+              submitBtn.disabled = true;
+              submitBtn.innerHTML = `
+        <svg class="animate-spin mr-2 h-4 w-4" fill="none" viewBox="0 0 24 24">
+          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+        </svg>
+        ${selectedImages.length > 0 ? "Uploading..." : "Posting..."}
+      `;
+            }
+
+            try {
+              // First, submit the discussion without images
+              const response = await fetch("/api/add-discussion", {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                },
+                credentials: "include",
+                body: JSON.stringify({
+                  projectId: currentProjectId,
+                  message: message || "",
+                  internal: isInternal,
+                }),
+              });
+
+              const data = await response.json();
+
+              if (data.success) {
+                const discussionId = data.discussion.id;
+
+                // Upload images using save-media API if any were selected
+                let uploadedImageCount = 0;
+                let uploadErrors = [];
+
+                if (selectedImages.length > 0) {
+                  console.log(
+                    "📸 Uploading",
+                    selectedImages.length,
+                    "images for discussion",
+                    discussionId
+                  );
+
+                  for (let i = 0; i < selectedImages.length; i++) {
+                    const file = selectedImages[i];
+
+                    try {
+                      // Convert file to base64
+                      const reader = new FileReader();
+                      const fileData = await new Promise((resolve, reject) => {
+                        reader.onload = () => resolve(reader.result);
+                        reader.onerror = reject;
+                        reader.readAsDataURL(file);
+                      });
+
+                      // Upload using unified media API
+                      const response = await fetch("/api/media", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        credentials: "include",
+                        body: JSON.stringify({
+                          mediaData: fileData,
+                          fileName: file.name,
+                          fileType: file.type,
+                          projectId: currentProjectId,
+                          targetLocation: "discussions",
+                          targetId: discussionId,
+                          title: `Discussion file - ${file.name}`,
+                          description: `File attached to discussion comment`,
+                        }),
+                      });
+
+                      if (!response.ok) {
+                        const errorData = await response.json();
+                        throw new Error(errorData.error || "Upload failed");
+                      }
+
+                      const uploadResult = await response.json();
+                      const uploadedFile = uploadResult.file;
+
+                      uploadedImageCount++;
+                      console.log("✅ File uploaded:", uploadedFile.fileName);
+                    } catch (error) {
+                      console.error("❌ Upload error for", file.name, ":", error);
+                      uploadErrors.push(`Failed to upload ${file.name}: ${error.message}`);
+                    }
+                  }
+
+                  // Show upload errors if any
+                  if (uploadErrors.length > 0) {
+                    console.warn("⚠️ Upload errors:", uploadErrors);
+                    if (window.showModal) {
+                      window.showModal(
+                        "warning",
+                        "Upload Warnings",
+                        `Some images failed to upload:\n${uploadErrors.join("\n")}`
+                      );
+                    }
+                  }
+                }
+
+                console.log("✅ Comment submitted successfully");
+
+                // Clear form and hide it
+                messageInput.value = "";
+                if (internalToggle) internalToggle.checked = false;
+                clearAllImages();
+                toggleCommentForm();
+                // Reload discussions
+                await loadDiscussions(currentProjectId);
+                // Show success message
+                if (window.showModal) {
+                  window.showModal(
+                    "success",
+                    "Comment posted",
+                    `Your comment has been added to the discussion${uploadedImageCount > 0 ? ` with ${uploadedImageCount} image(s)` : ""}`
+                  );
+                }
+              } else {
+                console.error("Failed to submit comment:", data.error);
+                if (window.showModal) {
+                  window.showModal(
+                    "error",
+                    "Comment Failed",
+                    `Failed to submit comment: ${data.error}`
+                  );
+                } else {
+                  alert("Failed to submit comment: " + data.error);
+                }
+              }
+            } catch (error) {
+              console.error("Error submitting comment:", error);
+              if (window.showModal) {
+                window.showModal(
+                  "error",
+                  "Comment Error",
+                  `Error submitting comment: ${error.message}`
+                );
+              } else {
+                alert("Error submitting comment: " + error.message);
+              }
+            } finally {
+              // Reset loading state
+              if (submitBtn) {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = `
+          <i class="bx bx-send mr-2 h-4 w-4"></i>
+          Post Comment
+        `;
+              }
+            }
+          }
+
+          // Load mentionable users
+          async function loadMentionableUsers() {
+            if (!currentProjectId) return;
+
+            // console.log("📋 [DISCUSSION] Loading mentionable users with authorProfile");
+
+            try {
+              const response = await fetch(
+                `/api/get-mentionable-users?projectId=${currentProjectId}`
+              );
+              const data = await response.json();
+
+              if (data.success) {
+                mentionableUsers = data.users;
+
+                // Add project author to mentionable users if not already included
+                if (
+                  authorProfile &&
+                  !mentionableUsers.find((user) => user.id === authorProfile.id)
+                ) {
+                  const authorUser = {
+                    id: authorProfile.id,
+                    name:
+                      authorProfile.first_name && authorProfile.last_name
+                        ? `${authorProfile.first_name} ${authorProfile.last_name}`
+                        : authorProfile.company_name || "Unknown User",
+                    role: authorProfile.role || "Client",
+                    email: authorProfile.email || "",
+                  };
+                  mentionableUsers.unshift(authorUser); // Add to beginning of list
+                  // console.log("📋 [DISCUSSION] Added project author to mentionable users");
+                }
+
+                // console.log("📋 [DISCUSSION] Loaded mentionable users:", mentionableUsers.length);
+              } else {
+                console.error("Failed to load mentionable users:", data.error);
+              }
+            } catch (error) {
+              console.error("Error loading mentionable users:", error);
+            }
+          }
+
+          // Show mention dropdown
+          function showMentionDropdown(query, position) {
+            const dropdown = document.getElementById("mention-dropdown");
+            const textarea = document.getElementById("comment-message");
+
+            if (!dropdown || !textarea) return;
+
+            const filteredUsers = mentionableUsers.filter(
+              (user) =>
+                user.name.toLowerCase().includes(query.toLowerCase()) ||
+                user.email.toLowerCase().includes(query.toLowerCase())
+            );
+
+            if (filteredUsers.length === 0) {
+              hideMentionDropdown();
+              return;
+            }
+
+            // Separate project author from other users
+            const projectAuthor = filteredUsers.find((user) => user.id === authorProfile?.id);
+            const otherUsers = filteredUsers.filter((user) => user.id !== authorProfile?.id);
+
+            let html = "";
+            let itemIndex = 0;
+
+            // Add project author first with special styling
+            if (projectAuthor) {
+              html += `
+        <div class="mention-item px-3 py-2 cursor-pointer hover:bg-blue-50 dark:hover:bg-blue-900/20 ${itemIndex === 0 ? "bg-blue-50 dark:bg-blue-900/20" : ""} border-b border-gray-200 dark:border-gray-600" 
+             data-index="${itemIndex}" 
+             data-user-name="${projectAuthor.name}">
+          <div class="flex items-center gap-2">
+            <i class="bx bx-user-circle text-blue-600 dark:text-blue-400 text-lg"></i>
+            <div>
+              <div class="font-medium text-blue-900 dark:text-blue-100">${projectAuthor.name}</div>
+              <div class="text-sm text-blue-600 dark:text-blue-400">Project Author</div>
+            </div>
+          </div>
+        </div>
+      `;
+              itemIndex++;
+            }
+
+            // Add other users
+            html += otherUsers
+              .map(
+                (user, index) => `
+      <div class="mention-item px-3 py-2 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-600 ${itemIndex === 0 ? "bg-gray-50 dark:bg-gray-600" : ""}" 
+           data-index="${itemIndex}" 
+           data-user-name="${user.name}">
+        <div class="flex items-center gap-2">
+          <i class="bx bx-user text-gray-500 dark:text-gray-400 text-lg"></i>
+          <div>
+            <div class="font-medium text-gray-900 dark:text-white">${user.name}</div>
+            <div class="text-sm text-gray-500 dark:text-gray-400">${user.email}</div>
+          </div>
+        </div>
+      </div>
+    `
+              )
+              .join("");
+
+            dropdown.innerHTML = html;
+            dropdown.classList.remove("hidden");
+
+            // Add click handlers
+            dropdown.querySelectorAll(".mention-item").forEach((item) => {
+              item.addEventListener("click", () => {
+                const userName = item.getAttribute("data-user-name");
+                if (userName) insertMention(userName);
+              });
+            });
+          }
+
+          // Hide mention dropdown
+          function hideMentionDropdown() {
+            const dropdown = document.getElementById("mention-dropdown");
+            if (dropdown) {
+              dropdown.classList.add("hidden");
+            }
+            currentMentionStart = -1;
+          }
+
+          // Insert mention into textarea
+          function insertMention(userName) {
+            const textarea = document.getElementById("comment-message");
+            if (!textarea || currentMentionStart === -1) return;
+
+            // Format the username to replace spaces with underscores
+            const formattedUserName = userName.replace(/\s+/g, "_");
+
+            const beforeMention = textarea.value.substring(0, currentMentionStart);
+            const afterMention = textarea.value.substring(textarea.selectionStart);
+            const mentionText = `@${formattedUserName} `;
+
+            textarea.value = beforeMention + mentionText + afterMention;
+
+            // Set cursor position after mention
+            const newPosition = beforeMention.length + mentionText.length;
+            textarea.setSelectionRange(newPosition, newPosition);
+            textarea.focus();
+
+            hideMentionDropdown();
+          }
+
+          // Handle mention input
+          function handleMentionInput() {
+            const textarea = document.getElementById("comment-message");
+            if (!textarea) return;
+
+            const cursorPos = textarea.selectionStart;
+            const textBeforeCursor = textarea.value.substring(0, cursorPos);
+
+            // Look for @ symbol
+            const atIndex = textBeforeCursor.lastIndexOf("@");
+            if (atIndex === -1) {
+              hideMentionDropdown();
+              return;
+            }
+
+            // Check if there's a space after @ (not a mention)
+            const textAfterAt = textBeforeCursor.substring(atIndex + 1);
+            if (textAfterAt.includes(" ")) {
+              hideMentionDropdown();
+              return;
+            }
+
+            // Show dropdown with filtered users
+            currentMentionStart = atIndex;
+            showMentionDropdown(textAfterAt, atIndex);
+          }
+
+          // Initialize discussion functionality when discussion tab is shown
+          function initializeDiscussion() {
+            // Set user role from server-side data (already set via define:vars)
+            currentUserRole = window.PROJECT_USER_ROLE || "Client";
+            console.log("🔔 [DISCUSSION] User role set to:", currentUserRole);
+
+            // Make user role available globally for reply forms
+            window.currentUserRole = currentUserRole;
+
+            const discussionContainer = document.getElementById("discussion-container");
+            if (discussionContainer) {
+              currentProjectId = discussionContainer.dataset.projectId || "";
+              if (currentProjectId) {
+                loadDiscussions(currentProjectId);
+                loadMentionableUsers();
+              }
+            }
+
+            // Remove existing event listeners to prevent duplicates
+            const newCommentBtn = document.getElementById("new-comment-btn");
+            const submitCommentBtn = document.getElementById("submit-comment-btn");
+            const commentTextarea = document.getElementById("comment-message");
+
+            if (newCommentBtn) {
+              // Remove existing event listeners by cloning the node
+              const newBtn = newCommentBtn.cloneNode(true);
+              newCommentBtn.parentNode?.replaceChild(newBtn, newCommentBtn);
+
+              // Add single clean event listener
+              newBtn.addEventListener("click", function (e) {
+                e.preventDefault();
+                e.stopPropagation();
+                console.log("🔔 [DISCUSSION] New comment button clicked!");
+                toggleCommentForm();
+              });
+            }
+
+            if (submitCommentBtn) {
+              submitCommentBtn.removeEventListener("click", submitComment);
+              submitCommentBtn.addEventListener("click", submitComment);
+            }
+
+            // Image upload functionality
+            const imageInput = document.getElementById("comment-images");
+            const clearImagesBtn = document.getElementById("clear-images-btn");
+
+            // Image upload event listeners
+            if (imageInput) {
+              imageInput.addEventListener("change", handleImageUpload);
+            }
+
+            if (clearImagesBtn) {
+              clearImagesBtn.addEventListener("click", clearAllImages);
+            }
+
+            // Add mention functionality to textarea
+            if (commentTextarea) {
+              commentTextarea.addEventListener("input", handleMentionInput);
+              commentTextarea.addEventListener("keydown", (e) => {
+                const dropdown = document.getElementById("mention-dropdown");
+                if (!dropdown || dropdown.classList.contains("hidden")) return;
+
+                const items = dropdown.querySelectorAll(".mention-item");
+                const selected = dropdown.querySelector(
+                  ".mention-item.bg-gray-50, .mention-item.dark\\:bg-gray-600"
+                );
+                let selectedIndex = 0;
+
+                if (selected) {
+                  selectedIndex = parseInt(selected.getAttribute("data-index") || "0");
+                }
+
+                if (e.key === "ArrowDown") {
+                  e.preventDefault();
+                  const nextIndex = Math.min(selectedIndex + 1, items.length - 1);
+                  items.forEach((item, i) => {
+                    item.classList.toggle("bg-gray-50", i === nextIndex);
+                    item.classList.toggle("dark:bg-gray-600", i === nextIndex);
+                  });
+                } else if (e.key === "ArrowUp") {
+                  e.preventDefault();
+                  const prevIndex = Math.max(selectedIndex - 1, 0);
+                  items.forEach((item, i) => {
+                    item.classList.toggle("bg-gray-50", i === prevIndex);
+                    item.classList.toggle("dark:bg-gray-600", i === prevIndex);
+                  });
+                } else if (e.key === "Enter" || e.key === "Tab") {
+                  e.preventDefault();
+                  const selectedItem = items[selectedIndex];
+                  if (selectedItem) {
+                    const userName = selectedItem.getAttribute("data-user-name");
+                    if (userName) insertMention(userName);
+                  }
+                } else if (e.key === "Escape") {
+                  e.preventDefault();
+                  hideMentionDropdown();
+                }
+              });
+
+              // Hide dropdown when clicking outside
+              document.addEventListener("click", (e) => {
+                const dropdown = document.getElementById("mention-dropdown");
+                const textarea = document.getElementById("comment-message");
+                if (dropdown && !dropdown.contains(e.target) && e.target !== textarea) {
+                  hideMentionDropdown();
+                }
+              });
+            }
+
+            // Add event delegation for completed toggles
+            document.addEventListener("change", (e) => {
+              const target = e.target;
+              if (target.classList.contains("completed-toggle")) {
+                const discussionId = parseInt(target.getAttribute("data-discussion-id") || "0");
+                const isCompleted = target.checked;
+                if (discussionId) {
+                  toggleDiscussionCompleted(discussionId, isCompleted);
+                }
+              }
+            });
+
+            // Add event delegation for reply buttons
+            document.addEventListener("click", (e) => {
+              const target = e.target;
+
+              // Only log clicks on buttons or elements that might be reply-related
+              // if (target.tagName === 'BUTTON' || target.closest('button') || target.classList.contains('reply-button')) {
+              //   console.log("🔔 [DISCUSSION] Click event on:", target.tagName, target.className, target.textContent?.trim());
+              // }
+
+              if (target.classList.contains("reply-button") || target.closest(".reply-button")) {
+                // console.log("🔔 [DISCUSSION] Reply button clicked!");
+                const button = target.classList.contains("reply-button")
+                  ? target
+                  : target.closest(".reply-button");
+                if (button) {
+                  const discussionId = parseInt(button.getAttribute("data-discussion-id") || "0");
+                  // console.log("🔔 [DISCUSSION] Discussion ID from button:", discussionId);
+                  if (discussionId) {
+                    showReplyForm(discussionId);
+                  }
+                }
+              }
+            });
+
+            // console.log("🔔 [DISCUSSION] Event listeners attached");
+          }
+
+          // Show reply form for a specific comment
+          function showReplyForm(parentCommentId) {
+            // console.log("🔔 [DISCUSSION] showReplyForm called with:", parentCommentId);
+
+            // First, hide any existing inline reply forms
+            const existingReplyForms = document.querySelectorAll(".inline-reply-form");
+            existingReplyForms.forEach((form) => form.remove());
+
+            // Find the comment element to reply to
+            const commentElement = document.querySelector(
+              `[data-discussion-id="${parentCommentId}"]`
+            );
+            if (!commentElement) {
+              console.error("🔔 [DISCUSSION] Comment element not found for ID:", parentCommentId);
+              return;
+            }
+
+            // Create inline reply form
+            const replyFormHTML = `
+      <div class="inline-reply-form mt-3 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-600">
+        <!-- Textarea -->
+        <div class="relative">
+          <textarea
+            class="reply-message-input w-full resize-none rounded-lg border border-gray-300 p-3 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+            placeholder="Type your reply here..."
+            rows="3"
+          ></textarea>
+        </div>
+        
+        <!-- Admin/Staff Only Toggles for Reply -->
+        ${(() => {
+          const userRole = window.currentUserRole || "Client";
+          return userRole === "Admin" || userRole === "Staff"
+            ? `
+            <div class="mt-3 flex flex-wrap gap-6 border-t border-gray-200 pt-3 dark:border-gray-600">
+              <!-- Internal Only Toggle -->
+              <label class="flex items-center gap-3 cursor-pointer">
+                <div class="relative">
+                  <input
+                    type="checkbox"
+                    class="reply-internal-toggle sr-only peer"
+                  />
+                  <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-red-300 dark:peer-focus:ring-red-800 rounded-lg peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-lg after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-red-600"></div>
+                </div>
+                <span class="text-sm text-gray-700 dark:text-gray-300">
+                  <i class="bx bx-lock mr-1"></i>
+                  Internal Only
+                </span>
+              </label>
+            </div>
+          `
+            : "";
+        })()}
+        
+        <!-- Buttons Row -->
+        <div class="mt-3 flex items-center justify-between">
+          <button
+            class="cancel-reply-btn px-4 py-2 text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200"
+            onclick="window.cancelReply(${parentCommentId})"
+          >
+            Cancel
+          </button>
+          <button
+            class="submit-reply-btn rounded-lg bg-blue-600 px-4 py-2 text-white transition-colors hover:bg-blue-700"
+            onclick="window.submitReply(${parentCommentId})"
+          >
+            <i class="bx bx-send mr-2"></i>
+            Post Reply
+          </button>
+        </div>
+      </div>
+    `;
+
+            // Insert the reply form after the comment
+            commentElement.insertAdjacentHTML("afterend", replyFormHTML);
+
+            // Set the parent comment ID for the reply
+            window.currentReplyTo = parentCommentId;
+
+            // Focus on the reply textarea
+            const replyTextarea = document.querySelector(".reply-message-input");
+            if (replyTextarea) {
+              replyTextarea.focus();
+            }
+
+            // console.log("🔔 [DISCUSSION] Inline reply form created for comment:", parentCommentId);
+            // console.log("🔔 [DISCUSSION] currentReplyTo set to:", window.currentReplyTo);
+          }
+
+          // Toggle discussion completed status
+          async function toggleDiscussionCompleted(discussionId, isCompleted) {
+            try {
+              console.log("🔔 [DISCUSSION] Toggling completed status:", {
+                discussionId,
+                isCompleted,
+              });
+
+              const response = await fetch("/api/update-discussion-completed", {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                },
+                credentials: "include",
+                body: JSON.stringify({
+                  discussionId: discussionId,
+                  mark_completed: isCompleted,
+                }),
+              });
+
+              const data = await response.json();
+
+              if (data.success) {
+                console.log("✅ [DISCUSSION] Discussion completed status updated successfully");
+                // Update the local discussion data
+                const discussion = discussions.find((d) => d.id === discussionId);
+                if (discussion) {
+                  discussion.mark_completed = isCompleted;
+                }
+
+                try {
+                  // Get discussion data from the local discussions array instead of querying Supabase
+                  const discussionData = discussions.find((d) => d.id === discussionId);
+
+                  if (!discussionData) {
+                    console.error("Discussion not found in local data:", discussionId);
+                    return;
+                  }
+
+                  console.log("📧 [CREATE-USER] Found discussion data:", discussionData);
+
+                  const adminContent = ` ${discussionData.message} marked complete by ${currentUser.company_name}:<br><br>`;
+
+                  // THIS IS TO THE ADMINS EMAIL
+                  // Send email using the email delivery API with full URL
+                  const emailResponse = await fetch(
+                    `${window.location.origin}/api/email-delivery`,
+                    {
+                      method: "POST",
+                      headers: {
+                        "Content-Type": "application/json",
+                      },
+
+                      body: JSON.stringify({
+                        usersToNotify: ["jk@capcofire.com", "capco@eliteweblabs.com"], // Use resolved user email
+                        emailSubject: `Item Completed → ${discussionData.message} → ${currentUser.company_name}`,
+                        emailContent: adminContent,
+                        buttonText: "Access Your Dashboard",
+                        buttonLink: "/dashboard",
+                      }),
+                    }
+                  );
+
+                  if (emailResponse.ok) {
+                    console.log(`📧 [CREATE-USER] notification sent to ${adminEmail}`);
+                  } else {
+                    console.error(
+                      `📧 [CREATE-USER] Failed to send notification to ${adminEmail}:`,
+                      await emailResponse.text()
+                    );
+                  }
+                } catch (emailError) {
+                  console.error(emailError);
+                }
+
+                // Log the discussion status change
+                if (window.SimpleProjectLogger) {
+                  window.SimpleProjectLogger.logDiscussionToggle(
+                    currentProjectId,
+                    discussionId,
+                    isCompleted,
+                    currentUser,
+                    discussion?.message?.substring(0, 50) + "..." || "No message"
+                  );
+                }
+
+                // Update the incomplete comments count
+                updateIncompleteCommentsCount();
+                // Show success notification
+                if (window.showModal) {
+                  window.showModal(
+                    "success",
+                    "Discussion status updated",
+                    `Marked as ${isCompleted ? "completed" : "incomplete"}`,
+                    1500
+                  );
+                }
+
+                // Reload the toggle with the updated state
+                loadToggleForComment(discussionId, isCompleted, true);
+              } else {
+                console.error("❌ [DISCUSSION] Failed to update discussion status:", data.error);
+                // Revert the toggle to previous state
+                loadToggleForComment(discussionId, !isCompleted, true);
+                // Show error notification
+                if (window.showModal) {
+                  window.showModal("error", "Update Failed", "Failed to update discussion status");
+                }
+              }
+            } catch (error) {
+              console.error("❌ [DISCUSSION] Error updating discussion status:", error);
+              // Revert the toggle to previous state
+              loadToggleForComment(discussionId, !isCompleted, true);
+              // Show error notification
+              if (window.showModal) {
+                window.showModal("error", "Update Failed", "Error updating discussion status");
+              }
+            }
+          }
+
+          // Initialize discussion functionality when component loads
+          document.addEventListener("DOMContentLoaded", function () {
+            console.log("🔔 [DISCUSSION] Discussions component loaded, initializing...");
+            setTimeout(initializeDiscussion, 100);
+          });
+
+          // Make initializeDiscussion globally available for tab switching
+          window.initializeDiscussion = initializeDiscussion;
+        </script>
+      </div>
+    </div>
+  </div>
+</div>

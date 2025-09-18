@@ -1,9 +1,10 @@
 ---
-console.log("🏗️ [PROJECTS] Projects showcase page loading...");
+// console.log("🏗️ [PROJECTS] Projects showcase page loading...");
 
 import App from "../components/common/App.astro";
 import SectionContainer from "../components/common/SectionContainer.astro";
 import BoxIcon from "../components/common/BoxIcon.astro";
+import Button from "../components/common/Button.astro";
 import { supabase } from "../lib/supabase";
 import { supabaseAdmin } from "../lib/supabase-admin";
 
@@ -22,18 +23,22 @@ interface Project {
   isNewConstruction: boolean | null;
   completedAt: string;
   featured: boolean;
+  featured_image_url: string;
 }
 
 let featuredProjects: Project[] = [];
 let error: string | null = null;
 
 try {
-  console.log("🏗️ [PROJECTS] Fetching featured projects directly from database");
-  
+  // console.log("🏗️ [PROJECTS] Fetching featured projects directly from database");
+
   if (supabase) {
     // Fetch projects for display (completed projects with status 220)
     const { data: projects, error: dbError } = supabaseAdmin
-      ? await supabaseAdmin.from("projects").select(`
+      ? await supabaseAdmin
+          .from("projects")
+          .select(
+            `
           id,
           address,
           title,
@@ -43,15 +48,21 @@ try {
           status,
           created_at,
           updated_at,
-          featured
-        `)
-        // .eq("status", 220) // Only completed projects
-        .not("address", "is", null) // Has address
-        .eq("featured", true) // Has featured
-        .neq("id", 0) // Exclude system log project
-        .order("updated_at", { ascending: false })
-        .limit(6)
-      : await supabase.from("projects").select(`
+          featured,
+          featured_image_url,
+          featured_image_data
+        `
+          )
+          // .eq("status", 220) // Only completed projects
+          .not("address", "is", null) // Has address
+          .eq("featured", true) // Has featured
+          .neq("id", 0) // Exclude system log project
+          .order("updated_at", { ascending: false })
+          .limit(6)
+      : await supabase
+          .from("projects")
+          .select(
+            `
           id,
           address,
           title,
@@ -61,14 +72,17 @@ try {
           status,
           created_at,
           updated_at,
-          featured
-        `)
-        .eq("status", 220) // Only completed projects
-        .not("address", "is", null) // Has address
-        .eq("featured", "yes") // Has featured
-        .neq("id", 0) // Exclude system log project
-        .order("updated_at", { ascending: false })
-        .limit(6);
+          featured,
+          featured_image_url,
+          featured_image_data
+        `
+          )
+          .eq("status", 220) // Only completed projects
+          .not("address", "is", null) // Has address
+          .eq("featured", "yes") // Has featured
+          .neq("id", 0) // Exclude system log project
+          .order("updated_at", { ascending: false })
+          .limit(6);
 
     if (dbError) {
       error = "Failed to load projects from database";
@@ -83,10 +97,11 @@ try {
         squareFootage: project.sq_ft,
         isNewConstruction: project.new_construction,
         completedAt: project.updated_at,
-        featured: project.featured
+        featured: project.featured,
+        featured_image_url: project.featured_image_url,
       }));
-      
-      console.log(`🏗️ [PROJECTS] Loaded ${featuredProjects.length} featured projects`);
+
+      // console.log(`🏗️ [PROJECTS] Loaded ${featuredProjects.length} featured projects`);
     }
   } else {
     error = "Database connection not available";
@@ -106,218 +121,234 @@ function formatSquareFootage(sqFt: number | null | undefined): string {
 // Helper function to format date
 function formatDate(dateString: string | null | undefined): string {
   if (!dateString) return "N/A";
-  return new Date(dateString).toLocaleDateString('en-US', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric'
+  return new Date(dateString).toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
   });
 }
 ---
 
-<App title="Featured Projects - CAPCo Fire Protection" description="Explore our completed fire protection system projects showcasing innovative safety solutions and regulatory compliance.">
+<App
+  title="Featured Projects - CAPCo Fire Protection"
+  description="Explore our completed fire protection system projects showcasing innovative safety solutions and regulatory compliance."
+>
   <!-- Header Section -->
-  <SectionContainer class="py-16 px-6 bg-gradient-to-r from-red-50 to-orange-50 dark:from-red-900/20 dark:to-orange-900/20 mt-0">
-    <div class="max-w-6xl mx-auto text-center">
-      <h1 class="text-4xl md:text-5xl font-bold text-gray-900 dark:text-white mb-6">
+  <SectionContainer
+    class="mt-0 bg-gradient-to-r from-red-50 to-orange-50 px-6 py-16 dark:from-red-900/20 dark:to-orange-900/20"
+  >
+    <div class="mx-auto max-w-6xl text-center">
+      <h1 class="mb-6 text-4xl font-bold text-gray-900 dark:text-white md:text-5xl">
         Featured <span class="text-red-600 dark:text-red-400">Projects</span>
       </h1>
-      <p class="text-xl text-gray-600 dark:text-gray-300 max-w-3xl mx-auto mb-8">
-        Discover our completed fire protection system installations. Each project represents our commitment 
-        to safety, innovation, and regulatory compliance.
+      <p class="text-secondary dark:text-secondary-dark mx-auto mb-8 max-w-3xl text-xl">
+        Discover our completed fire protection system installations. Each project represents our
+        commitment to safety, innovation, and regulatory compliance.
       </p>
-      
+
       <!-- Navigation -->
       <div class="flex justify-center gap-4">
-        <a 
-          href="/" 
-          class="inline-flex items-center px-6 py-3 border-2 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 font-medium rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+        <Button href="/" variant="secondary" icon="home" iconPosition="left"> Home </Button>
+        <Button
+          href="/dashboard"
+          variant="primary"
+          icon="grid"
+          iconPosition="left"
+          class="bg-red-600 hover:bg-red-700 focus:ring-red-500"
         >
-          <BoxIcon name="home" class="w-5 h-5 mr-2" />
-          Home
-        </a>
-        <a 
-          href="/dashboard" 
-          class="inline-flex items-center px-6 py-3 bg-red-600 text-white font-medium rounded-lg hover:bg-red-700 transition-colors"
-        >
-          <BoxIcon name="grid" class="w-5 h-5 mr-2" />
           Dashboard
-        </a>
+        </Button>
       </div>
     </div>
   </SectionContainer>
 
   <!-- Projects Grid -->
-  <SectionContainer class="py-16 px-6">
-    <div class="max-w-7xl mx-auto">
-      {error ? (
-        <!-- Error State -->
-        <div class="text-center py-16">
-          <div class="w-16 h-16 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center mx-auto mb-6">
-            <BoxIcon name="error-circle" class="bx-md text-red-600 dark:text-red-400" />
+  <SectionContainer class="px-6 py-16">
+    <div class="mx-auto max-w-7xl">
+      {
+        error ? (
+          <div class="py-16 text-center">
+            <div class="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-red-100 dark:bg-red-900/30">
+              <BoxIcon name="error-circle" class="bx-md text-red-600 dark:text-red-400" />
+            </div>
+            <h2 class="mb-4 text-2xl font-bold text-gray-900 dark:text-white">No Projects Found</h2>
+            <p class="text-secondary dark:text-secondary-dark mb-6">{error}</p>
+            <Button
+              onclick="window.location.reload()"
+              variant="danger"
+              icon="refresh"
+              iconPosition="left"
+            >
+              Try Again
+            </Button>
           </div>
-          <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-4">
-            No Projects Found
-          </h2>
-          <p class="text-gray-600 dark:text-gray-300 mb-6">
-            {error}
-          </p>
-          <button 
-            onclick="window.location.reload()" 
-            class="inline-flex items-center px-6 py-3 bg-red-600 text-white font-medium rounded-lg hover:bg-red-700 transition-colors"
-          >
-            <BoxIcon name="refresh" class="bx-md w-5 h-5 mr-2" />
-            Try Again
-          </button>
-        </div>
-      ) : featuredProjects.length === 0 ? (
-        <!-- Empty State -->
-        <div class="text-center py-16">
-          <div class="w-16 h-16 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center mx-auto mb-6">
-            <BoxIcon name="building" class="bx-md w-8 h-8 text-blue-600 dark:text-blue-400" />
-          </div>
-          <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-4">
-            No Featured Projects Yet
-          </h2>
-          <p class="text-gray-600 dark:text-gray-300 mb-6">
-            We're working on exciting fire protection projects. Check back soon to see our latest completed work!
-          </p>
-          <a 
-            href="/" 
-            class="inline-flex items-center px-6 py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors"
-          >
-            <BoxIcon name="home" class="bx-md mr-2" />
-            Back to Home
-          </a>
-        </div>
-      ) : (
-        <!-- Projects Grid -->
-        <>
-          <div class="text-center mb-12">
-            <h2 class="text-3xl font-bold text-gray-900 dark:text-white mb-4">
-              Completed Projects
+        ) : featuredProjects.length === 0 ? (
+          <div class="py-16 text-center">
+            <div class="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-blue-100 dark:bg-blue-900/30">
+              <BoxIcon name="building" class="bx-md h-8 w-8 text-blue-600 dark:text-blue-400" />
+            </div>
+            <h2 class="mb-4 text-2xl font-bold text-gray-900 dark:text-white">
+              No Featured Projects Yet
             </h2>
-            <p class="text-gray-600 dark:text-gray-300">
-              {featuredProjects.length} featured project{featuredProjects.length !== 1 ? 's' : ''} showcasing our expertise
+            <p class="mb-6 text-gray-600 dark:text-gray-300">
+              We're working on exciting fire protection projects. Check back soon to see our latest
+              completed work!
             </p>
+            <Button href="/" variant="primary" icon="home" iconPosition="left">
+              Back to Home
+            </Button>
           </div>
+        ) : (
+          <div class="projects-container">
+            <div class="mb-12 text-center">
+              <h2 class="mb-4 text-3xl font-bold text-gray-900 dark:text-white">
+                Completed Projects
+              </h2>
+              <p class="text-gray-600 dark:text-gray-300">
+                {featuredProjects.length} featured project{featuredProjects.length !== 1 ? "s" : ""}{" "}
+                showcasing our expertise
+              </p>
+            </div>
 
-          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {featuredProjects.map((project) => (
-              <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden group">
-                <!-- Project Header -->
-                <div class="p-6 border-b border-gray-200 dark:border-gray-700">
-                  <div class="flex items-start justify-between mb-4">
-                    <div class="flex-1">
-                      <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-2 group-hover:text-red-600 dark:group-hover:text-red-400 transition-colors">
-                        {project.address}
-                      </h3>
-                  
-                    </div>
-                    <div class="w-12 h-12 bg-red-100 dark:bg-red-900/30 rounded-lg flex items-center justify-center flex-shrink-0 ml-4 text-black dark:text-white">
-                      <BoxIcon name="building" class="bx-md" />
-                    </div>
-                  </div>
-                  
-                  {project.description && (
-                    <p class="text-sm text-gray-600 dark:text-gray-400 line-clamp-3">
-                      {project.description}
-                    </p>
-                  )}
-                </div>
-
-                <!-- Project Details -->
-                <div class="p-6 space-y-4">
-                  <!-- Size and Type -->
-                  <div class="grid grid-cols-2 gap-4">
-                    <div class="flex items-center space-x-2">
-                      <BoxIcon name="expand" class="w-4 h-4 text-gray-400" />
-                      <div>
-                        <p class="text-xs text-gray-500 dark:text-gray-400">Size</p>
-                        <p class="text-sm font-medium text-gray-900 dark:text-white">
-                          {formatSquareFootage(project.squareFootage)}
-                        </p>
+            <div class="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
+              {featuredProjects.map((project) => (
+                <div class="group overflow-hidden rounded-xl bg-background-card shadow-lg transition-all duration-300 hover:shadow-xl dark:bg-background-card-dark">
+                  <div class="border-b border-border-light p-6 dark:border-border-dark">
+                    <div class="mb-4 flex items-start justify-between">
+                      <div class="flex-1">
+                        <h3 class="mb-2 text-xl font-bold text-gray-900 transition-colors group-hover:text-red-600 dark:text-white dark:group-hover:text-red-400">
+                          {project.address}
+                        </h3>
+                      </div>
+                      <div class="ml-4 flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-red-100 text-black dark:bg-red-900/30 dark:text-white">
+                        <BoxIcon name="building" class="bx-md" />
                       </div>
                     </div>
-                    <div class="flex items-center space-x-2">
-                      <BoxIcon name={project.isNewConstruction ? "plus-circle" : "edit"} class="w-4 h-4 text-gray-400" />
-                      <div>
-                        <p class="text-xs text-gray-500 dark:text-gray-400">Type</p>
-                        <p class="text-sm font-medium text-gray-900 dark:text-white">
-                          {project.isNewConstruction ? "New Construction" : "Renovation"}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
 
-                  <!-- Project Type -->
-                  {project.isNewConstruction !== null && (
-                    <div class="flex items-center space-x-2">
-                      <BoxIcon name="building" class="w-4 h-4 text-gray-400" />
-                      <div>
-                        <p class="text-xs text-gray-500 dark:text-gray-400">Project Type</p>
-                        <p class="text-sm font-medium text-gray-900 dark:text-white">
-                          {project.isNewConstruction ? 'New Construction' : 'Renovation'}
-                        </p>
+                    {project.featured_image_url ? (
+                      <div class="relative mb-3 overflow-hidden rounded-lg">
+                        <img
+                          src={project.featured_image_url}
+                          alt={`Featured image for ${project.address}`}
+                          class="h-32 w-full object-cover transition-transform duration-200 hover:scale-105"
+                          loading="lazy"
+                          referrerpolicy="strict-origin-when-cross-origin"
+                          crossorigin="anonymous"
+                          onerror="console.warn('Featured image failed to load:', this.src); this.style.display='none'; this.nextElementSibling.style.display='flex';"
+                        />
+                        <div class="flex hidden h-32 w-full items-center justify-center bg-neutral-100 dark:bg-neutral-700">
+                          <div class="text-center text-gray-400 dark:text-gray-500">
+                            <BoxIcon name="image" class="mx-auto mb-2 h-8 w-8" />
+                            <p class="text-xs">Image unavailable</p>
+                          </div>
+                        </div>
+                        <div class="absolute right-2 top-2 flex items-center gap-1 rounded-full bg-yellow-500 px-2 py-1 text-xs font-medium text-white">
+                          <BoxIcon name="star" class="h-3 w-3" />
+                          Featured
+                        </div>
                       </div>
-                    </div>
-                  )}
+                    ) : (
+                      <div class="mb-3 flex h-32 items-center justify-center rounded-lg bg-neutral-100 dark:bg-neutral-700">
+                        <div class="text-center text-gray-400 dark:text-gray-500">
+                          <BoxIcon name="image" class="mx-auto mb-2 h-8 w-8" />
+                          <p class="text-xs">No featured image</p>
+                        </div>
+                      </div>
+                    )}
 
-                  <!-- Completion Date -->
-                  <div class="flex items-center space-x-2 pt-2 border-t border-gray-200 dark:border-gray-700">
-                    <BoxIcon name="calendar-check" class="w-4 h-4 text-green-500" />
-                    <div>
-                      <p class="text-xs text-gray-500 dark:text-gray-400">Completed</p>
-                      <p class="text-sm font-medium text-gray-900 dark:text-white">
-                        {formatDate(project.completedAt)}
+                    {project.description && (
+                      <p class="line-clamp-3 text-sm text-gray-600 dark:text-gray-400">
+                        {project.description}
                       </p>
-                    </div>
+                    )}
                   </div>
-                </div>
 
-                <!-- Project Footer -->
-                <div class="px-6 py-4 bg-gray-50 dark:bg-gray-900/50">
-                  <div class="flex items-center justify-between">
-                    <div class="flex items-center space-x-2">
-                      <div class="w-2 h-2 bg-green-500 rounded-full"></div>
-                      <span class="text-sm font-medium text-green-600 dark:text-green-400">
-                        Project Complete
-                      </span>
+                  <div class="space-y-4 p-6">
+                    <div class="grid grid-cols-2 gap-4">
+                      <div class="flex items-center space-x-2">
+                        <BoxIcon name="expand" class="h-4 w-4 text-gray-400" />
+                        <div>
+                          <p class="text-xs text-gray-500 dark:text-gray-400">Size</p>
+                          <p class="text-sm font-medium text-gray-900 dark:text-white">
+                            {formatSquareFootage(project.squareFootage)}
+                          </p>
+                        </div>
+                      </div>
+                      <div class="flex items-center space-x-2">
+                        <BoxIcon
+                          name={project.isNewConstruction ? "plus-circle" : "edit"}
+                          class="h-4 w-4 text-gray-400"
+                        />
+                        <div>
+                          <p class="text-xs text-gray-500 dark:text-gray-400">Type</p>
+                          <p class="text-sm font-medium text-gray-900 dark:text-white">
+                            {project.isNewConstruction ? "New Construction" : "Renovation"}
+                          </p>
+                        </div>
+                      </div>
                     </div>
-                    <BoxIcon name="shield-check" class="w-5 h-5 text-green-500" />
+
+                    <div class="flex items-center space-x-2 border-t border-border-light pt-2 dark:border-border-dark">
+                      <BoxIcon name="calendar-check" class="h-4 w-4 text-green-500" />
+                      <div>
+                        <p class="text-xs text-gray-500 dark:text-gray-400">Completed</p>
+                        <p class="text-sm font-medium text-gray-900 dark:text-white">
+                          {formatDate(project.completedAt)}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="bg-neutral-50 px-6 py-4 dark:bg-neutral-900/50">
+                    <div class="flex items-center justify-between">
+                      <div class="flex items-center space-x-2">
+                        <div class="h-2 w-2 rounded-full bg-green-500" />
+                        <span class="text-sm font-medium text-green-600 dark:text-green-400">
+                          Project Complete
+                        </span>
+                      </div>
+                      <BoxIcon name="shield-check" class="h-5 w-5 text-green-500" />
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
-        </>
-      )}
+        )
+      }
     </div>
   </SectionContainer>
 
   <!-- Call to Action -->
-  <SectionContainer class="py-16 px-6 bg-gray-50 dark:bg-gray-900">
-    <div class="max-w-4xl mx-auto text-center">
-      <h2 class="text-3xl font-bold text-gray-900 dark:text-white mb-6">
+  <SectionContainer class="bg-neutral-50 px-6 py-16 dark:bg-neutral-900">
+    <div class="mx-auto max-w-4xl text-center">
+      <h2 class="mb-6 text-3xl font-bold text-gray-900 dark:text-white">
         Ready to Start Your Fire Protection Project?
       </h2>
-      <p class="text-xl text-gray-600 dark:text-gray-300 mb-8">
-        Join our satisfied clients and ensure your building meets all safety requirements with our expert fire protection services.
+      <p class="mb-8 text-xl text-gray-600 dark:text-gray-300">
+        Join our satisfied clients and ensure your building meets all safety requirements with our
+        expert fire protection services.
       </p>
-      <div class="flex flex-col sm:flex-row gap-4 justify-center">
-                  <a 
-            href="/login" 
-            class="inline-flex items-center justify-center px-8 py-4 bg-red-600 text-white font-semibold rounded-lg hover:bg-red-700 transition-colors shadow-lg hover:shadow-xl"
-          >
-          <BoxIcon name="plus-circle" class="w-5 h-5 mr-2" />
-          Start New Project
-        </a>
-        <a 
-          href="/login?tab=register" 
-          class="inline-flex items-center justify-center px-8 py-4 border-2 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 font-semibold rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+      <div class="flex flex-col justify-center gap-4 sm:flex-row">
+        <Button
+          href="/login"
+          variant="primary"
+          size="lg"
+          icon="plus-circle"
+          iconPosition="left"
+          class="bg-red-600 shadow-lg hover:bg-red-700 hover:shadow-xl focus:ring-red-500"
         >
-          <BoxIcon name="user-plus" class="w-5 h-5 mr-2" />
+          Start New Project
+        </Button>
+        <Button
+          href="/login?tab=register"
+          variant="secondary"
+          size="lg"
+          icon="user-plus"
+          iconPosition="left"
+        >
           Create Account
-        </a>
+        </Button>
       </div>
     </div>
   </SectionContainer>

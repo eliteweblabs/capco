@@ -50,7 +50,8 @@ export interface FormActionConfig {
   action?: string; // Function name or action identifier
   tab?: string; // Tab to navigate to when button is clicked
   allow?: string[]; // Control button visibility based on user roles - array of allowed roles
-  hideAtStatus?: number[]; // Control button visibility based on project status - array of status values where button should be hidden
+  hideAtStatus?: number[];
+  variant?: "primary" | "secondary" | "success" | "danger" | "warning" | "info"; // Control button visibility based on project status - array of status values where button should be hidden
 }
 
 // Helper function to check if a field or button group should be allowed based on user role
@@ -196,7 +197,7 @@ export const PROJECT_FORM_FIELDS: FormFieldConfig[] = [
       10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170, 180, 190, 200,
     ], // Hide after proposal is signed off
     readOnlyAtStatus: [
-      20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170, 180, 190, 200,
+      30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170, 180, 190, 200,
     ], // Read-only after proposal is viewed but before signed off
   },
 
@@ -257,9 +258,9 @@ export const PROJECT_FORM_FIELDS: FormFieldConfig[] = [
     placeholder: "Architect",
     dataField: "architect",
     allow: ["Admin", "Staff", "Client"], // Only admin and staff can see architect
-    hideAtStatus: [60, 70, 80, 90], // Hide after proposal is signed off
+    hideAtStatus: [], // Hide after proposal is signed off
     readOnlyAtStatus: [
-      20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170, 180, 190, 200,
+      30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170, 180, 190, 200,
     ], // Read-only after proposal is viewed but before signed off
   },
   {
@@ -268,15 +269,15 @@ export const PROJECT_FORM_FIELDS: FormFieldConfig[] = [
     type: "number",
     label: "Square Footage",
     placeholder: "Gross Square Footage (GFA) *",
-    required: true,
+    required: false,
     min: 0,
     max: 50000,
     step: 1,
     dataField: "square_foot",
     allow: ["Admin", "Staff", "Client"], // All roles can see square footage
-    hideAtStatus: [60, 70, 80, 90], // Hide after proposal is signed off
+    hideAtStatus: [], // Hide after proposal is signed off
     readOnlyAtStatus: [
-      20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170, 180, 190, 200,
+      30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170, 180, 190, 200,
     ], // Read-only after proposal is viewed but before signed off
   },
   {
@@ -288,17 +289,17 @@ export const PROJECT_FORM_FIELDS: FormFieldConfig[] = [
     allow: ["Admin", "Staff", "Client"], // Only admin and staff can see description
     hideAtStatus: [50, 60, 70, 80, 90], // Hide after proposal is viewed
     readOnlyAtStatus: [
-      20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170, 180, 190, 200,
+      30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170, 180, 190, 200,
     ], // Read-only after proposal is viewed but before signed off
   },
   {
     id: "new-construction",
     name: "new_construction",
     type: "checkbox",
-    label: "New Construction",
+    label: "New",
     allow: ["Admin", "Staff", "Client"], // All roles can see new construction
     readOnlyAtStatus: [
-      20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170, 180, 190, 200,
+      30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170, 180, 190, 200,
     ], // Read-only after proposal is viewed but before signed off
   },
   // Units slider is now handled by UnitSlider.astro component
@@ -316,7 +317,7 @@ export const PROJECT_FORM_FIELDS: FormFieldConfig[] = [
     allow: ["Admin", "Staff", "Client"], // Only admin and staff can see units slider
     // hideAtStatus: [0, 60, 70, 80, 90], // Hide on new projects and after proposal is signed off
     readOnlyAtStatus: [
-      20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170, 180, 190, 200,
+      30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170, 180, 190, 200,
     ], // Read-only after proposal is viewed but before signed off
   },
 ];
@@ -328,8 +329,9 @@ export const FORM_ACTIONS: FormActionConfig[] = [
     type: "submit",
     label: "Save Project",
     icon: "bx-save",
+    variant: "primary",
     cssClass:
-      "w-full lg:w-auto px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors mt-6",
+      "flex-1 w-full lg:w-auto px-4 py-2 bg-primary-600 text-white text-sm font-medium rounded-full hover:bg-primary-700 transition-colors mt-6",
     allow: ["Admin", "Staff", "Client"], // All roles can save
     // No status restriction - can save project at any status
     // displayOnNew undefined - shows on both new and existing projects
@@ -339,8 +341,9 @@ export const FORM_ACTIONS: FormActionConfig[] = [
     type: "button",
     label: "Delete Project",
     icon: "bx-trash",
+    variant: "danger",
     cssClass:
-      "w-full md:w-auto px-4 py-2 bg-red-600 text-white text-sm font-medium rounded-lg hover:bg-red-700 transition-colors mt-6",
+      "flex-1 w-full md:w-auto px-4 py-2 bg-red-600 text-white text-sm font-medium rounded-full hover:bg-red-700 transition-colors mt-6",
     action: "deleteProject",
     allow: ["Admin", "Staff"], // Only admin and staff can delete
     hideAtStatus: [0], // Only show when specs are received (status 10)
@@ -351,8 +354,9 @@ export const FORM_ACTIONS: FormActionConfig[] = [
     label: "Build Proposal",
     icon: "bx-file-pdf",
     tab: "proposal",
+    variant: "success",
     cssClass:
-      "w-full md:w-auto px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 transition-colors mt-6",
+      "flex-1 w-full md:w-auto px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-full hover:bg-green-700 transition-colors mt-6",
     action: "buildProposal",
     allow: ["Admin", "Staff"], // Only admin and staff can build proposals
     hideAtStatus: [
@@ -365,8 +369,9 @@ export const FORM_ACTIONS: FormActionConfig[] = [
   //   label: "View Documents",
   //   icon: "bx-file",
   //   tab: "documents",
+  //   variant: "primary",
   //   cssClass:
-  //     "px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors",
+  //     "px-4 py-2 bg-primary-600 text-white text-sm font-medium rounded-full hover:bg-primary-700 transition-colors",
   //   allow: ["Admin", "Staff", "Client"], // All roles can view documents
   //   hideAtStatus: [0], // Hide on new projects
   // },
@@ -376,8 +381,9 @@ export const FORM_ACTIONS: FormActionConfig[] = [
     label: "View Deliverables",
     icon: "bx-package",
     tab: "deliverables",
+    variant: "warning",
     cssClass:
-      "px-4 py-2 bg-purple-600 text-white text-sm font-medium rounded-lg hover:bg-purple-700 transition-colors",
+      "flex-1 px-4 py-2 bg-purple-600 text-white text-sm font-medium rounded-full hover:bg-purple-700 transition-colors",
     allow: ["Admin", "Staff", "Client"], // All roles can view deliverables
     hideAtStatus: [
       0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170, 180, 190,
@@ -389,8 +395,9 @@ export const FORM_ACTIONS: FormActionConfig[] = [
     label: "View Invoice",
     icon: "bx-receipt",
     tab: "final-invoice",
+    variant: "warning",
     cssClass:
-      "px-4 py-2 bg-orange-600 text-white text-sm font-medium rounded-lg hover:bg-orange-700 transition-colors",
+      "flex-1 px-4 py-2 bg-orange-600 text-white text-sm font-medium rounded-full hover:bg-orange-700 transition-colors",
     allow: ["Admin", "Staff", "Client"], // All roles can view invoices
     hideAtStatus: [0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140], // Only show when final invoice is generated
   },
@@ -400,8 +407,9 @@ export const FORM_ACTIONS: FormActionConfig[] = [
   //   label: "View Activity Log",
   //   icon: "bx-history",
   //   tab: "activity-log",
+  //   variant: "secondary",
   //   cssClass:
-  //     "px-4 py-2 bg-gray-600 text-white text-sm font-medium rounded-lg hover:bg-gray-700 transition-colors",
+  //     "px-4 py-2 bg-gray-600 text-white text-sm font-medium rounded-full hover:bg-gray-700 transition-colors",
   //   allow: ["Admin", "Staff", "Client"], // All roles can view activity log
   //   hideAtStatus: [0], // Hide on new projects
   // },
@@ -453,6 +461,24 @@ export const BUTTON_GROUPS: ButtonGroupConfig[] = [
     ],
   },
   {
+    id: "tier",
+    name: "tier",
+    label: "Tier",
+    type: "multi-select",
+    cssClass: "project-type-btns",
+    allow: ["Admin", "Staff", "Client"], // Only admin and staff can see consulting services
+    // hideAtStatus: [50, 60, 70, 80, 90], // Hide after proposal is viewed
+    readOnlyAtStatus: [
+      20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170, 180, 190, 200,
+    ], // Read-only after proposal is viewed but before signed off
+
+    options: [
+      { value: "Tier I", label: "Tier I" },
+      { value: "Tier II", label: "Tier II" },
+      { value: "Tier III", label: "Tier III" },
+    ],
+  },
+  {
     id: "fire-service",
     name: "service",
     label: "Supply / Service",
@@ -486,8 +512,8 @@ export const BUTTON_GROUPS: ButtonGroupConfig[] = [
     // hideAtStatus: [50, 60, 70, 80, 90], // Hide after proposal is viewed
     options: [
       { value: "Narrative", label: "Narrative" },
-      { value: "Sprinkler", label: "Sprinkler" },
-      { value: "Alarm", label: "Alarm" },
+      // { value: "Sprinkler", label: "Sprinkler" },
+      // { value: "Alarm", label: "Alarm" },
       { value: "NFPA 241", label: "NFPA 241" },
       { value: "IEBC", label: "IEBC" },
       { value: "IBC", label: "IBC" },
@@ -532,7 +558,7 @@ export function generateFormFieldHTML(
             id="${fieldId}"
             name="${field.name}"
             value="${value}"
-            class="w-full py-2 px-3 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:focus:ring-blue-400 dark:focus:border-blue-400"
+            class="w-full py-2 px-3 text-sm border border-border-light dark:border-border-dark rounded-full bg-background-card dark:bg-background-card-dark text-black dark:text-light focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:focus:ring-primary-400 dark:focus:border-primary-400"
             placeholder="${field.placeholder || ""}"
             ${field.required ? "required" : ""}
             ${field.min !== undefined ? `min="${field.min}"` : ""}
@@ -552,7 +578,7 @@ export function generateFormFieldHTML(
             id="${fieldId}"
             name="${field.name}"
             rows="3"
-            class="w-full py-2 px-3 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:focus:ring-blue-400 dark:focus:border-blue-400"
+            class="w-full py-2 px-3 text-sm border border-border-light dark:border-border-dark rounded-full bg-background-card dark:bg-background-card-dark text-black dark:text-light focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:focus:ring-primary-400 dark:focus:border-primary-400"
             placeholder="${field.placeholder || ""}"
             data-project-id="${projectId}"
           >${value}</textarea>
@@ -573,7 +599,7 @@ export function generateFormFieldHTML(
               class="sr-only peer"
               data-project-id="${projectId}"
             >
-            <div class="relative w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600 dark:peer-checked:bg-blue-600"></div>
+            <div class="relative w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 dark:peer-focus:ring-primary-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-primary-600 dark:peer-checked:bg-primary-600"></div>
             <span class="ms-3 text-sm font-medium text-gray-900 dark:text-gray-300">${field.label}</span>
           </label>
         </div>
@@ -628,7 +654,7 @@ export function generateButtonGroupHTML(group: ButtonGroupConfig, projectData: a
             (option) => `
           <button
             type="button"
-            class="${group.cssClass} px-3 py-2 text-sm rounded-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors ${selectedValues.includes(option.value) ? "bg-blue-500 text-white border-blue-500" : ""}"
+            class="${group.cssClass} px-3 py-2 text-sm rounded-full border border-border-light dark:border-border-dark bg-background-card dark:bg-background-card-dark text-secondary dark:text-secondary-dark hover:bg-neutral-50 dark:hover:bg-neutral-600 transition-colors ${selectedValues.includes(option.value) ? "bg-primary-500 text-white border-primary-500" : ""}"
             data-value="${option.value}"
             data-group="${group.name}"
             data-type="${group.type}"

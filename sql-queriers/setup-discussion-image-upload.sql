@@ -67,14 +67,14 @@ CREATE TABLE IF NOT EXISTS files (
 -- 3. CREATE DISCUSSIONS TABLE (if it doesn't exist)
 -- ==============================================
 
-CREATE TABLE IF NOT EXISTS discussions (
+CREATE TABLE IF NOT EXISTS discussion (
   id SERIAL PRIMARY KEY,
   project_id INTEGER NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
   author_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
   message TEXT NOT NULL,
   internal BOOLEAN DEFAULT false,
   sms_alert BOOLEAN DEFAULT false,
-  parent_id INTEGER REFERENCES discussions(id) ON DELETE CASCADE,
+  parent_id INTEGER REFERENCES discussion(id) ON DELETE CASCADE,
   image_paths TEXT[] DEFAULT '{}',
   mark_completed BOOLEAN DEFAULT false,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
@@ -111,12 +111,12 @@ CREATE INDEX IF NOT EXISTS idx_files_author_id ON files(author_id);
 CREATE INDEX IF NOT EXISTS idx_files_status ON files(status);
 CREATE INDEX IF NOT EXISTS idx_files_uploaded_at ON files(uploaded_at);
 
--- Discussions table indexes
-CREATE INDEX IF NOT EXISTS idx_discussions_project_id ON discussions(project_id);
-CREATE INDEX IF NOT EXISTS idx_discussions_author_id ON discussions(author_id);
-CREATE INDEX IF NOT EXISTS idx_discussions_parent_id ON discussions(parent_id);
-CREATE INDEX IF NOT EXISTS idx_discussions_created_at ON discussions(created_at);
-CREATE INDEX IF NOT EXISTS idx_discussions_internal ON discussions(internal);
+-- Discussion table indexes
+CREATE INDEX IF NOT EXISTS idx_discussion_project_id ON discussion(project_id);
+CREATE INDEX IF NOT EXISTS idx_discussion_author_id ON discussion(author_id);
+CREATE INDEX IF NOT EXISTS idx_discussion_parent_id ON discussion(parent_id);
+CREATE INDEX IF NOT EXISTS idx_discussion_created_at ON discussion(created_at);
+CREATE INDEX IF NOT EXISTS idx_discussion_internal ON discussion(internal);
 
 -- Profiles table indexes
 CREATE INDEX IF NOT EXISTS idx_profiles_email ON profiles(email);
@@ -128,7 +128,7 @@ CREATE INDEX IF NOT EXISTS idx_profiles_role ON profiles(role);
 
 -- Enable RLS on tables
 ALTER TABLE files ENABLE ROW LEVEL SECURITY;
-ALTER TABLE discussions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE discussion ENABLE ROW LEVEL SECURITY;
 
 -- Files table policies
 DROP POLICY IF EXISTS "Users can view files for their projects" ON files;
@@ -166,13 +166,13 @@ CREATE POLICY "Users can insert files for their projects" ON files
     )
   );
 
--- Discussions table policies
-DROP POLICY IF EXISTS "Users can view discussions for their projects" ON discussions;
-CREATE POLICY "Users can view discussions for their projects" ON discussions
+-- Discussion table policies
+DROP POLICY IF EXISTS "Users can view discussions for their projects" ON discussion;
+CREATE POLICY "Users can view discussions for their projects" ON discussion
   FOR SELECT USING (
     EXISTS (
       SELECT 1 FROM projects p 
-      WHERE p.id = discussions.project_id 
+      WHERE p.id = discussion.project_id 
       AND (
         p.author_id = auth.uid() 
         OR EXISTS (
@@ -184,13 +184,13 @@ CREATE POLICY "Users can view discussions for their projects" ON discussions
     )
   );
 
-DROP POLICY IF EXISTS "Users can insert discussions for their projects" ON discussions;
-CREATE POLICY "Users can insert discussions for their projects" ON discussions
+DROP POLICY IF EXISTS "Users can insert discussions for their projects" ON discussion;
+CREATE POLICY "Users can insert discussions for their projects" ON discussion
   FOR INSERT WITH CHECK (
     author_id = auth.uid() AND
     EXISTS (
       SELECT 1 FROM projects p 
-      WHERE p.id = discussions.project_id 
+      WHERE p.id = discussion.project_id 
       AND (
         p.author_id = auth.uid() 
         OR EXISTS (
@@ -202,8 +202,8 @@ CREATE POLICY "Users can insert discussions for their projects" ON discussions
     )
   );
 
-DROP POLICY IF EXISTS "Users can update their own discussions" ON discussions;
-CREATE POLICY "Users can update their own discussions" ON discussions
+DROP POLICY IF EXISTS "Users can update their own discussions" ON discussion;
+CREATE POLICY "Users can update their own discussions" ON discussion
   FOR UPDATE USING (
     author_id = auth.uid() OR
     EXISTS (
@@ -274,9 +274,9 @@ CREATE TRIGGER update_files_updated_at
   BEFORE UPDATE ON files 
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
-DROP TRIGGER IF EXISTS update_discussions_updated_at ON discussions;
+DROP TRIGGER IF EXISTS update_discussions_updated_at ON discussion;
 CREATE TRIGGER update_discussions_updated_at 
-  BEFORE UPDATE ON discussions 
+  BEFORE UPDATE ON discussion 
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 -- ==============================================

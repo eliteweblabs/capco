@@ -15,6 +15,12 @@ export const POST: APIRoute = async ({ request }) => {
 
     console.log("📄 [GENERATE-CONTRACT-PDF] Starting PDF generation for project:", projectId);
 
+    if (!supabase) {
+      return new Response(JSON.stringify({ error: "Database connection not available" }), {
+        status: 500,
+      });
+    }
+
     // Get project data
     const { data: project, error: projectError } = await supabase
       .from("projects")
@@ -271,50 +277,37 @@ async function generateContractPDF(
 
     await browser.close();
 
-    // Save to Supabase Storage using existing project-documents bucket
+    // Generate unique filename for the contract
     const fileName = `contract-${project.id}-${Date.now()}.pdf`;
-    const filePath = `contracts/${project.id}/${fileName}`;
-    const { data: uploadData, error: uploadError } = await supabase.storage
-      .from("project-documents")
-      .upload(filePath, pdfBuffer, {
-        contentType: "application/pdf",
-        upsert: false,
-      });
+    console.log("📄 [GENERATE-CONTRACT-PDF] Generated filename:", fileName);
 
-    if (uploadError) {
-      console.error("📄 [GENERATE-CONTRACT-PDF] Upload error:", uploadError);
-      throw new Error("Failed to upload PDF to storage");
-    }
+    // Use unified media system to save contract
+    const { saveMedia } = await import("../../lib/media");
 
-    // Get public URL
-    const { data: urlData } = supabase.storage.from("project-documents").getPublicUrl(filePath);
-
-    if (!urlData?.publicUrl) {
-      throw new Error("Failed to get public URL for PDF");
-    }
-
-    console.log("✅ [GENERATE-CONTRACT-PDF] PDF saved to storage:", urlData.publicUrl);
-
-    // Log contract file in database
-    const { error: dbError } = await supabase.from("files").insert({
-      project_id: project.id,
-      author_id: project.author_id,
-      file_path: filePath,
-      file_name: fileName,
-      file_size: pdfBuffer.length,
-      file_type: "application/pdf",
+    const contractFile = await saveMedia({
+      mediaData: pdfBuffer,
+      fileName: fileName,
+      fileType: "application/pdf",
+      projectId: project.id.toString(),
+      targetLocation: "contracts", // Routes to project-media/projectId/contracts/
       title: `Contract - ${project.title}`,
-      comments: "Generated contract with digital signature",
-      status: "active",
-      uploaded_at: new Date().toISOString(),
+      description: "Generated contract with digital signature",
+      currentUser: {
+        id: project.author_id,
+        // Add minimal required User properties for type safety
+        app_metadata: {},
+        user_metadata: {},
+        aud: "authenticated",
+        created_at: new Date().toISOString(),
+      } as any, // Type assertion to bypass strict User type checking
     });
 
-    if (dbError) {
-      console.error("📄 [GENERATE-CONTRACT-PDF] Failed to log contract file:", dbError);
-      // Don't fail the entire process if database logging fails
-    }
+    console.log(
+      "📄 [GENERATE-CONTRACT-PDF] Contract saved to unified media system:",
+      contractFile.id
+    );
 
-    return urlData.publicUrl;
+    return contractFile.publicUrl || "";
   } catch (error) {
     console.error("📄 [GENERATE-CONTRACT-PDF] PDF generation error:", error);
     throw error;

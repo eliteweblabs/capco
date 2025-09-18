@@ -324,11 +324,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
         // Log file upload
         try {
-          await SimpleProjectLogger.logFileUpload(
-            parseInt(projectId),
-            user.email || user.id,
-            file.name
-          );
+          await SimpleProjectLogger.logFileUpload(parseInt(projectId), user, file.name);
         } catch (logError) {
           console.error("Error logging file upload:", logError);
           // Don't fail the upload if logging fails

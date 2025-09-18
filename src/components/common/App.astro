@@ -5,19 +5,16 @@ interface Props {
   requireAuth?: boolean;
   requireRole?: string;
   redirectTo?: string;
+  isAuth?: boolean;
+  currentUser?: any;
+  currentRole?: string;
+  session?: any;
 }
 
-import { checkAuth } from "../../lib/auth";
-const { isAuth, session, currentUser, currentRole } = await checkAuth(Astro.cookies);
+// Use props if provided, otherwise fetch auth state directly
+const { isAuth, currentUser, currentRole, session } = Astro.props;
 
-// Handle auth requirements
-const { requireAuth = false, requireRole, redirectTo = "/login" } = Astro.props;
-if (requireAuth && !isAuth) {
-  return Astro.redirect(redirectTo);
-}
-if (requireRole && currentRole !== requireRole) {
-  return Astro.redirect(redirectTo);
-}
+// If auth propse not provided, fetch them directly
 
 // Status data is now fetched in individual pages as needed
 
@@ -30,18 +27,55 @@ const title = Astro.props.title || i18n.SEO_TITLE;
 const description = Astro.props.description || i18n.SEO_DESCRIPTION;
 
 // Import components
+import Preloader from "./Preloader.astro";
 import Header from "./Header.astro";
 import Footer from "./Footer.astro";
 import UnifiedNotification from "./UnifiedNotification.astro";
-import StickySMS from "./StickySMS.astro";
-import HttpChatWidget from "./HttpChatWidget.astro";
 import CookieBanner from "./CookieBanner.astro";
+import SpeedDial from "./SpeedDial.astro";
 import "../../styles/boxicons.css"; // Import Boxicons CSS first
 import "../../styles/global.css"; // Import Tailwind CSS
-
 import { getLangFromUrl } from "../../i18n/utils";
-
+import { SimpleProjectLogger } from "../../lib/simple-logging";
 const lang = getLangFromUrl(Astro.url);
+// Get current URL and determine page type
+const currentUrl = Astro.url.pathname;
+const isBackend = isBackendPage(currentUrl);
+import { isBackendPage } from "../../pages/api/backend-page-check";
+import { navigation } from "@/pages/api/navigation";
+const navigationData = navigation(
+  currentUrl,
+  isAuth || false,
+  currentRole || "Client",
+  isBackend || false
+);
+const { desktopNavigationHTML, visibleNavItems } = navigationData;
+// console.log("🏗️ [APP] Desktop navigation HTML:", desktopNavigationHTML);
+// console.log("🏗️ [APP] Visible nav items:", visibleNavItems);
+
+let assignedProjectsCount = 0;
+let assignedProjects: any[] = [];
+
+if (currentUser?.id) {
+  // console.log("🏗️ [APP] Fetching assigned projects for user:", currentUser.id);
+  const baseUrl = Astro.url.origin || "http://localhost:4321";
+  const fullUrl = `${baseUrl}/api/get-project?assigned_to_id=${currentUser.id}`;
+  // console.log("🏗️ [APP] Full URL:", fullUrl);
+  try {
+    const response = await fetch(fullUrl);
+    if (response.ok) {
+      const data = await response.json();
+      // console.log("🏗️ [APP] Assigned projects:", data);
+      assignedProjects = data.projects || [];
+      assignedProjectsCount = data.count || 0;
+    }
+  } catch (error) {
+    console.error("Error fetching assigned projects:", error);
+  }
+}
+
+// Genee navigation HTML for desktop and mobile
+// const mobileNavigationHTML = (assignedProjects = []);
 
 // console.log("🏗️ [APP] App component loading...", user);
 ---
@@ -56,12 +90,11 @@ const lang = getLangFromUrl(Astro.url);
       content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no"
     />
     <link rel="icon" type="image/svg+xml" href="/img/capco-logo.svg" sizes="any" />
-
     <link rel="manifest" href="/manifest.json" />
     <meta name="theme-color" content="#000000" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-    <meta name="apple-mobile-web-app-title" content="Fire Pro" />
+    <meta name="apple-mobile-web-app-title" content="CAPCo Fire App" />
     <meta name="generator" content={Astro.generator} />
 
     <!-- Safari Privacy Protection Meta Tags -->
@@ -76,14 +109,12 @@ const lang = getLangFromUrl(Astro.url);
     <meta name="twitter:title" content={title} />
     <meta name="twitter:description" content={description} />
     <meta name="twitter:image" content="/img/capco-logo.svg" />
-
     <link rel="icon" href="/public/img/capco-favicon.png" sizes="any" />
 
     <!-- <link
       rel="apple-touch-icon"
       href="https://tomsens.com/wp-content/uploads/2025/05/tomsens-rekko-favicon.svg"
     /> -->
-
     <meta
       name="description"
       content="Saving small businesses money with workflow automation, generating leads for them with website design and giving them a professional look with full stack branding."
@@ -118,10 +149,17 @@ const lang = getLangFromUrl(Astro.url);
 
     <!-- Inject environment variables for client-side use FIRST -->
     <script
-      set:html={`window.SUPABASE_URL = "${import.meta.env.SUPABASE_URL || ""}"; window.SUPABASE_ANON_KEY = "${(import.meta.env.SUPABASE_ANON_KEY || "").replace(/\s/g, "")}"; window.GOOGLE_MAPS_API_KEY = "${import.meta.env.GOOGLE_MAPS_API_KEY || ""}"; window.STRIPE_PUBLISHABLE_KEY = "${import.meta.env.PUBLIC_STRIPE_PUBLISHABLE_KEY || ""}"; ${currentUser ? `window.USER_DATA = ${JSON.stringify(currentUser)};` : ""}`}
+      set:html={`window.GOOGLE_MAPS_API_KEY = "${import.meta.env.GOOGLE_MAPS_API_KEY || ""}"; window.STRIPE_PUBLISHABLE_KEY = "${import.meta.env.PUBLIC_STRIPE_PUBLISHABLE_KEY || ""}";`}
     />
 
-    <!-- Flowbite removed - using pure Tailwind CSS -->
+    <!-- ${currentUser ? `window.USER_DATA = ${JSON.stringify(currentUser)};` : ""}
+    window.SUPABASE_URL = "${import.meta.env.SUPABASE_URL || ""}"; window.SUPABASE_ANON_KEY = "${(import.meta.env.SUPABASE_ANON_KEY || "").replace(/\s/g, "")}";  -->
+    <!-- SimpleProjectLogger Global Setup -->
+    <!-- <script define:vars={{ SimpleProjectLogger }}>
+      if (typeof window !== "undefined") {
+        (window as any).SimpleProjectLogger = SimpleProjectLogger;
+      }
+    </script> -->
 
     <!-- Google Maps Places API - Load only if API key is available -->
     <script>
@@ -150,7 +188,7 @@ const lang = getLangFromUrl(Astro.url);
           };
 
           script.onload = function () {
-            console.log("✅ [GoogleMaps] Google Maps API (stable version) loaded successfully");
+            // console.log("✅ [GoogleMaps] Google Maps API (stable version) loaded successfully");
             // console.log("🗺️ [GoogleMaps] Available APIs:", {
             //   maps: !!window.google?.maps,
             //   places: !!window.google?.maps?.places,
@@ -174,236 +212,47 @@ const lang = getLangFromUrl(Astro.url);
       // Try to load immediately, and also on DOMContentLoaded as fallback
       loadGoogleMaps();
       document.addEventListener("DOMContentLoaded", loadGoogleMaps);
-
-      // Hide preloader when page is fully loaded
-      function hidePreloader() {
-        const preloader = document.getElementById("preloader");
-        if (preloader) {
-          preloader.style.opacity = "0";
-          setTimeout(() => {
-            preloader.style.display = "none";
-          }, 300); // Match the transition duration
-        }
-      }
-
-      // Global function to hide preloader (can be called by components)
-      (window as any).hidePreloader = hidePreloader;
-
-      // Hide preloader when everything is loaded
-      if (document.readyState === "complete") {
-        hidePreloader();
-      } else {
-        window.addEventListener("load", hidePreloader);
-      }
-
-      // Also hide preloader after a maximum delay to prevent it from staying forever
-      setTimeout(() => {
-        hidePreloader();
-      }, 2000); // 2 second maximum (reduced from 5 seconds)
     </script>
   </head>
-  <body
-    class="h-min-screen bg-hub-background dark:bg-hub-background-dark md:flex md:justify-center"
-  >
+  <body class="h-min-screen bg-background-light dark:bg-background-dark md:flex md:justify-center">
     <!-- Preloader -->
-    <div
-      id="preloader"
-      class="fixed inset-0 z-50 flex items-center justify-center bg-white transition-opacity duration-300 dark:bg-gray-900"
-    >
-      <div class="text-center">
-        <div
-          class="inline-block h-12 w-12 animate-spin rounded-full border-4 border-solid border-blue-600 border-r-transparent motion-reduce:animate-[spin_1.5s_linear_infinite]"
-        >
-        </div>
-        <p class="mt-4 text-lg font-medium text-gray-900 dark:text-white">Loading...</p>
-      </div>
-    </div>
-
+    <Preloader />
     <!-- Loading Overlay for Save Operations -->
-
     <main class="section relative mx-auto w-full max-w-[2000px]">
       <Header
         isAuth={isAuth}
         currentUser={currentUser}
         currentRole={currentRole || ""}
         session={session}
+        assignedProjects={assignedProjects}
+        assignedProjectsCount={assignedProjectsCount}
+        desktopNavigationHTML={desktopNavigationHTML}
       />
       <slot />
+      <!-- F
+o       oter -->
       <Footer
         isAuth={isAuth}
         session={session}
         currentUser={currentUser}
         currentRole={currentRole || ""}
+        assignedProjects={assignedProjects}
+        assignedProjectsCount={assignedProjectsCount}
+        desktopNavigationHTML={desktopNavigationHTML}
       />
     </main>
 
     <!-- Unified Notification System -->
     <UnifiedNotification />
-
     <!-- Cookie Banner -->
     <CookieBanner />
-    <div id="sticky-container" class="fixed bottom-6 right-6 z-40">
-      <!-- 
-      <div data-dial-init class="fixed end-6 bottom-6 group">
-        <div id="speed-dial-menu-default" class="flex flex-col items-center hidden mb-4 space-y-2">
-          <button
-            type="button"
-            data-tooltip-target="tooltip-share"
-            data-tooltip-placement="left"
-            class="flex justify-center items-center w-[52px] h-[52px] text-gray-500 hover:text-gray-900 bg-white rounded-full border border-gray-200 dark:border-gray-600 shadow-xs dark:hover:text-white dark:text-gray-400 hover:bg-gray-50 dark:bg-gray-700 dark:hover:bg-gray-600 focus:ring-4 focus:ring-gray-300 focus:outline-none dark:focus:ring-gray-400"
-          >
-            <svg
-              class="w-5 h-5"
-              aria-hidden="true"
-              xmlns="http://www.w3.org/2000/svg"
-              fill="currentColor"
-              viewBox="0 0 18 18"
-            >
-              <path
-                d="M14.419 10.581a3.564 3.564 0 0 0-2.574 1.1l-4.756-2.49a3.54 3.54 0 0 0 .072-.71 3.55 3.55 0 0 0-.043-.428L11.67 6.1a3.56 3.56 0 1 0-.831-2.265c.006.143.02.286.043.428L6.33 6.218a3.573 3.573 0 1 0-.175 4.743l4.756 2.491a3.58 3.58 0 1 0 3.508-2.871Z"
-              ></path>
-            </svg>
-            <span class="sr-only">Share</span>
-          </button>
-          <div
-            id="tooltip-share"
-            role="tooltip"
-            class="absolute z-10 invisible inline-block w-auto px-3 py-2 text-sm font-medium text-white transition-opacity duration-300 bg-gray-900 rounded-lg shadow-xs opacity-0 tooltip dark:bg-gray-700"
-          >
-            Share
-            <div class="tooltip-arrow" data-popper-arrow></div>
-          </div>
-          <button
-            type="button"
-            data-tooltip-target="tooltip-print"
-            data-tooltip-placement="left"
-            class="flex justify-center items-center w-[52px] h-[52px] text-gray-500 hover:text-gray-900 bg-white rounded-full border border-gray-200 dark:border-gray-600 shadow-xs dark:hover:text-white dark:text-gray-400 hover:bg-gray-50 dark:bg-gray-700 dark:hover:bg-gray-600 focus:ring-4 focus:ring-gray-300 focus:outline-none dark:focus:ring-gray-400"
-          >
-            <svg
-              class="w-5 h-5"
-              aria-hidden="true"
-              xmlns="http://www.w3.org/2000/svg"
-              fill="currentColor"
-              viewBox="0 0 20 20"
-            >
-              <path d="M5 20h10a1 1 0 0 0 1-1v-5H4v5a1 1 0 0 0 1 1Z"></path>
-              <path
-                d="M18 7H2a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2v-3a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v3a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2Zm-1-2V2a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v3h14Z"
-              ></path>
-            </svg>
-            <span class="sr-only">Print</span>
-          </button>
-          <div
-            id="tooltip-print"
-            role="tooltip"
-            class="absolute z-10 invisible inline-block w-auto px-3 py-2 text-sm font-medium text-white transition-opacity duration-300 bg-gray-900 rounded-lg shadow-xs opacity-0 tooltip dark:bg-gray-700"
-          >
-            Print
-            <div class="tooltip-arrow" data-popper-arrow></div>
-          </div>
-          <button
-            type="button"
-            data-tooltip-target="tooltip-download"
-            data-tooltip-placement="left"
-            class="flex justify-center items-center w-[52px] h-[52px] text-gray-500 hover:text-gray-900 bg-white rounded-full border border-gray-200 dark:border-gray-600 shadow-xs dark:hover:text-white dark:text-gray-400 hover:bg-gray-50 dark:bg-gray-700 dark:hover:bg-gray-600 focus:ring-4 focus:ring-gray-300 focus:outline-none dark:focus:ring-gray-400"
-          >
-            <svg
-              class="w-5 h-5"
-              aria-hidden="true"
-              xmlns="http://www.w3.org/2000/svg"
-              fill="currentColor"
-              viewBox="0 0 20 20"
-            >
-              <path
-                d="M14.707 7.793a1 1 0 0 0-1.414 0L11 10.086V1.5a1 1 0 0 0-2 0v8.586L6.707 7.793a1 1 0 1 0-1.414 1.414l4 4a1 1 0 0 0 1.416 0l4-4a1 1 0 0 0-.002-1.414Z"
-              ></path>
-              <path
-                d="M18 12h-2.55l-2.975 2.975a3.5 3.5 0 0 1-4.95 0L4.55 12H2a2 2 0 0 0-2 2v4a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-4a2 2 0 0 0-2-2Zm-3 5a1 1 0 1 1 0-2 1 1 0 0 1 0 2Z"
-              ></path>
-            </svg>
-            <span class="sr-only">Download</span>
-          </button>
-          <div
-            id="tooltip-download"
-            role="tooltip"
-            class="absolute z-10 invisible inline-block w-auto px-3 py-2 text-sm font-medium text-white transition-opacity duration-300 bg-gray-900 rounded-lg shadow-xs opacity-0 tooltip dark:bg-gray-700"
-          >
-            Download
-            <div class="tooltip-arrow" data-popper-arrow></div>
-          </div>
-          <button
-            type="button"
-            data-tooltip-target="tooltip-copy"
-            data-tooltip-placement="left"
-            class="flex justify-center items-center w-[52px] h-[52px] text-gray-500 hover:text-gray-900 bg-white rounded-full border border-gray-200 dark:border-gray-600 dark:hover:text-white shadow-xs dark:text-gray-400 hover:bg-gray-50 dark:bg-gray-700 dark:hover:bg-gray-600 focus:ring-4 focus:ring-gray-300 focus:outline-none dark:focus:ring-gray-400"
-          >
-            <svg
-              class="w-5 h-5"
-              aria-hidden="true"
-              xmlns="http://www.w3.org/2000/svg"
-              fill="currentColor"
-              viewBox="0 0 18 20"
-            >
-              <path
-                d="M5 9V4.13a2.96 2.96 0 0 0-1.293.749L.879 7.707A2.96 2.96 0 0 0 .13 9H5Zm11.066-9H9.829a2.98 2.98 0 0 0-2.122.879L7 1.584A.987.987 0 0 0 6.766 2h4.3A3.972 3.972 0 0 1 15 6v10h1.066A1.97 1.97 0 0 0 18 14V2a1.97 1.97 0 0 0-1.934-2Z"
-              ></path>
-              <path
-                d="M11.066 4H7v5a2 2 0 0 1-2 2H0v7a1.969 1.969 0 0 0 1.933 2h9.133A1.97 1.97 0 0 0 13 18V6a1.97 1.97 0 0 0-1.934-2Z"
-              ></path>
-            </svg>
-            <span class="sr-only">Copy</span>
-          </button>
-          <div
-            id="tooltip-copy"
-            role="tooltip"
-            class="absolute z-10 invisible inline-block w-auto px-3 py-2 text-sm font-medium text-white transition-opacity duration-300 bg-gray-900 rounded-lg shadow-xs opacity-0 tooltip dark:bg-gray-700"
-          >
-            Copy
-            <div class="tooltip-arrow" data-popper-arrow></div>
-          </div>
-        </div>
-        <button
-          type="button"
-          data-dial-toggle="speed-dial-menu-default"
-          aria-controls="speed-dial-menu-default"
-          aria-expanded="false"
-          class="flex items-center justify-center text-white bg-blue-700 rounded-full w-14 h-14 hover:bg-blue-800 dark:bg-blue-600 dark:hover:bg-blue-700 focus:ring-4 focus:ring-blue-300 focus:outline-none dark:focus:ring-blue-800"
-        >
-          <svg
-            class="w-5 h-5 transition-transform group-hover:rotate-45"
-            aria-hidden="true"
-            xmlns="http://www.w3.org/2000/svg"
-            fill="none"
-            viewBox="0 0 18 18"
-          >
-            <path
-              stroke="currentColor"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2"
-              d="M9 1v16M1 9h16"></path>
-          </svg>
-          <span class="sr-only">Open actions menu</span>
-        </button>
-      </div> -->
 
-      {
-        !isAuth || currentRole === "Client" ? (
-          <StickySMS isAuth={isAuth} currentUser={currentUser} currentRole={currentRole} />
-        ) : (
-          currentUser && (
-            <HttpChatWidget
-              currentUser={{
-                id: currentUser.id,
-                email: currentUser.email || "",
-                company_name: currentUser.company_name || "User",
-              }}
-              currentRole={currentRole || ""}
-            />
-          )
-        )
-      }
-    </div>
+    <!-- Speed Dial -->
+    <SpeedDial
+      currentUser={currentUser || undefined}
+      currentRole={currentRole || ""}
+      isAuth={isAuth}
+    />
 
     <script>
       document.addEventListener("DOMContentLoaded", () => {
@@ -579,16 +428,16 @@ const lang = getLangFromUrl(Astro.url);
           : response.notificationData.client;
 
         if (notification) {
-          console.log(
-            `🔔 [${context || "NOTIFICATION"}] Showing ${isAdminOrStaff ? "admin" : "client"} notification:`,
-            {
-              type: notification.type,
-              title: notification.title,
-              message: notification.message,
-              redirect: notification.redirect,
-              userRole: currentUserRole,
-            }
-          );
+          // console.log(
+          //   `🔔 [${context || "NOTIFICATION"}] Showing ${isAdminOrStaff ? "admin" : "client"} notification:`,
+          //   {
+          //     type: notification.type,
+          //     title: notification.title,
+          //     message: notification.message,
+          //     redirect: notification.redirect,
+          //     userRole: currentUserRole,
+          //   }
+          // );
 
           (window as any).showModal(
             notification.type,
@@ -603,6 +452,105 @@ const lang = getLangFromUrl(Astro.url);
           );
         }
       };
+    </script>
+
+    <!-- Magic Link Authentication Handler -->
+    <script>
+      // Global magic link authentication handler
+      (window as any).handleMagicLinkAuth = async function () {
+        try {
+          // Check if we have auth tokens in the URL fragment
+          const fragment = window.location.hash.substring(1);
+          if (!fragment) return;
+
+          const params = new URLSearchParams(fragment);
+          const accessToken = params.get("access_token");
+          const refreshToken = params.get("refresh_token");
+          const expiresIn = params.get("expires_in");
+          const tokenType = params.get("token_type");
+          const type = params.get("type");
+
+          // Only handle magic link callbacks
+          if (!accessToken || !refreshToken || type !== "magiclink") {
+            return;
+          }
+
+          console.log("🔐 [MAGIC-LINK] Processing magic link authentication...");
+
+          // Set auth cookies via API call
+          const response = await fetch("/api/auth/callback", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              access_token: accessToken,
+              refresh_token: refreshToken,
+              expires_in: parseInt(expiresIn || "3600"),
+              token_type: tokenType || "bearer",
+            }),
+          });
+
+          if (response.ok) {
+            console.log("✅ [MAGIC-LINK] Authentication successful, redirecting...");
+
+            // Clear the URL fragment to prevent reprocessing
+            window.history.replaceState(
+              {},
+              document.title,
+              window.location.pathname + window.location.search
+            );
+
+            // Redirect to dashboard
+            window.location.href = "/dashboard";
+          } else {
+            const errorData = await response.json();
+            console.error("❌ [MAGIC-LINK] Authentication failed:", errorData);
+
+            // Show error message to user
+            if (typeof (window as any).showModal === "function") {
+              (window as any).showModal(
+                "error",
+                "Login Failed",
+                "There was an error processing your login. Please try again."
+              );
+            }
+          }
+        } catch (error) {
+          console.error("❌ [MAGIC-LINK] Error processing magic link:", error);
+
+          // Show error message to user
+          if (typeof (window as any).showModal === "function") {
+            (window as any).showModal(
+              "error",
+              "Login Error",
+              "There was an unexpected error. Please try again."
+            );
+          }
+        }
+      };
+
+      // Run magic link handler on page load
+      document.addEventListener("DOMContentLoaded", (window as any).handleMagicLinkAuth);
+
+      // Also run immediately in case DOM is already loaded
+      if (document.readyState === "loading") {
+        // DOM is still loading, event listener will handle it
+      } else {
+        // DOM is already loaded, run immediately
+        (window as any).handleMagicLinkAuth();
+      }
+    </script>
+
+    <!-- Flowbite JavaScript -->
+    <script src="https://unpkg.com/flowbite@2.5.2/dist/flowbite.min.js"></script>
+    <script>
+      // Initialize Flowbite components
+      document.addEventListener("DOMContentLoaded", function () {
+        if (typeof (window as any).initFlowbite === "function") {
+          (window as any).initFlowbite();
+        }
+      });
     </script>
   </body>
 </html>

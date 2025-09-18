@@ -1,6 +1,10 @@
 import type { APIRoute } from "astro";
 import { supabase } from "../../lib/supabase";
 
+// 🚧 DEAD STOP - 2024-12-19: Potentially unused API endpoint
+// If you see this log after a few days, this endpoint can likely be deleted
+console.log("🚧 [DEAD-STOP-2024-12-19] get-mentionable-users.ts accessed - may be unused");
+
 export const GET: APIRoute = async ({ cookies, url }) => {
   try {
     if (!supabase) {
@@ -59,7 +63,7 @@ export const GET: APIRoute = async ({ cookies, url }) => {
     // Get current user's role to determine what users they can mention
     const { data: currentUserProfile, error: currentUserError } = await supabase
       .from("profiles")
-      .select("role")
+      .select("role, email")
       .eq("id", user.id)
       .single();
 
@@ -81,7 +85,7 @@ export const GET: APIRoute = async ({ cookies, url }) => {
     if (currentUserRole === "Client") {
       const { data: clientProfile, error: clientError } = await supabase
         .from("profiles")
-        .select("id, company_name, role, first_name, last_name")
+        .select("id, company_name, role, first_name, last_name, email")
         .eq("id", project.author_id)
         .single();
 
@@ -97,7 +101,7 @@ export const GET: APIRoute = async ({ cookies, url }) => {
       // For Admin/Staff, get all mentionable users (Admin, Staff, or project author)
       const { data: allProfiles, error: allProfilesError } = await supabase
         .from("profiles")
-        .select("id, company_name, role, first_name, last_name");
+        .select("id, company_name, role, first_name, last_name, email");
 
       if (allProfilesError) {
         return new Response(JSON.stringify({ success: false, error: "Failed to fetch users" }), {

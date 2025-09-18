@@ -21,7 +21,14 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     const accessToken = cookies.get("sb-access-token")?.value;
     const refreshToken = cookies.get("sb-refresh-token")?.value;
 
-    if (accessToken && refreshToken) {
+    if (!supabase) {
+      return new Response(JSON.stringify({ error: "Database not configured" }), {
+        status: 500,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+
+    if (accessToken && refreshToken && supabase) {
       await supabase.auth.setSession({
         access_token: accessToken,
         refresh_token: refreshToken,

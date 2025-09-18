@@ -69,3 +69,87 @@ export const GET: APIRoute = async ({ url, cookies, redirect }) => {
     );
   }
 };
+
+export const POST: APIRoute = async ({ request, cookies }) => {
+  console.log("🔐 [MAGIC-LINK] POST callback started");
+
+  // Check if Supabase is configured
+  if (!supabase) {
+    console.error("❌ [MAGIC-LINK] Supabase is not configured");
+    return new Response(JSON.stringify({ error: "Supabase is not configured" }), {
+      status: 500,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
+
+  try {
+    const body = await request.json();
+    const { access_token, refresh_token, expires_in, token_type } = body;
+
+    console.log("🔐 [MAGIC-LINK] Received tokens:", {
+      hasAccessToken: !!access_token,
+      hasRefreshToken: !!refresh_token,
+      expiresIn: expires_in,
+      tokenType: token_type,
+    });
+
+    if (!access_token || !refresh_token) {
+      console.error("❌ [MAGIC-LINK] Missing required tokens");
+      return new Response(JSON.stringify({ error: "Missing access_token or refresh_token" }), {
+        status: 400,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+
+    // Verify the session with Supabase
+    const { data, error } = await supabase.auth.setSession({
+      access_token,
+      refresh_token,
+    });
+
+    if (error) {
+      console.error("❌ [MAGIC-LINK] Session verification error:", error);
+      return new Response(JSON.stringify({ error: error.message }), {
+        status: 400,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+
+    if (!data.session) {
+      console.error("❌ [MAGIC-LINK] No session created");
+      return new Response(JSON.stringify({ error: "Failed to create session" }), {
+        status: 400,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+
+    console.log("✅ [MAGIC-LINK] Session verified for user:", data.user?.email);
+
+    // Set auth cookies using the verified session tokens
+    setAuthCookies(cookies, data.session.access_token, data.session.refresh_token);
+
+    console.log("✅ [MAGIC-LINK] Auth cookies set successfully");
+
+    return new Response(
+      JSON.stringify({
+        success: true,
+        user: data.user?.email,
+      }),
+      {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      }
+    );
+  } catch (error) {
+    console.error("❌ [MAGIC-LINK] Unexpected error:", error);
+    return new Response(
+      JSON.stringify({
+        error: error instanceof Error ? error.message : "Unknown error",
+      }),
+      {
+        status: 500,
+        headers: { "Content-Type": "application/json" },
+      }
+    );
+  }
+};

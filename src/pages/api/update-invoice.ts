@@ -1,6 +1,10 @@
 import type { APIRoute } from "astro";
 import { supabase } from "../../lib/supabase";
 
+// 🚧 DEAD STOP - 2024-12-19: Potentially unused API endpoint
+// If you see this log after a few days, this endpoint can likely be deleted
+console.log("🚧 [DEAD-STOP-2024-12-19] update-invoice.ts accessed - may be unused");
+
 export const POST: APIRoute = async ({ request }) => {
   try {
     const { invoiceId, lineItems, notes } = await request.json();
@@ -14,6 +18,12 @@ export const POST: APIRoute = async ({ request }) => {
 
     console.log("Updating invoice:", { invoiceId, lineItems, notes });
 
+    if (!supabase) {
+      return new Response(JSON.stringify({ error: "Database connection not available" }), {
+        status: 500,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
     // Update invoice notes
     const { error: invoiceError } = await supabase
       .from("invoices")

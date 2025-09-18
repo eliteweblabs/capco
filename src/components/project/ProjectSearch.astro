@@ -1,5 +1,6 @@
 ---
 import BoxIcon from "../common/BoxIcon.astro";
+import Button from "../common/Button.astro";
 // import SectionContainer from "../common/SectionContainer.astro";
 const { class: className, id = "project-search" } = Astro.props;
 ---
@@ -9,21 +10,20 @@ const { class: className, id = "project-search" } = Astro.props;
     type="text"
     id={id}
     placeholder="Search active projects..."
-    class="w-full rounded-lg border border-gray-300 bg-white px-4 py-2 pr-10 text-sm transition-colors focus:border-blue-500 focus:ring-2 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400"
+    class="w-full rounded-full border border-gray-300 bg-white py-2.5 pl-6 pr-10 text-left text-sm text-gray-500 transition-colors hover:border-gray-400 hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-400 dark:hover:border-gray-500 dark:hover:bg-gray-600"
     autocomplete="off"
   />
-  <button
+  <BoxIcon
     id={`${id}-clear`}
-    class="absolute right-2 top-1/2 -translate-y-1/2 transform p-1 text-gray-400 transition-colors hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300"
-    title="Clear search"
-  >
-    <BoxIcon name="x" class="text-lg" />
-  </button>
+    name="x"
+    size="sm"
+    class="absolute right-2 top-1/2 hidden -translate-y-1/2 transform cursor-pointer p-1 text-gray-400 transition-colors hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300"
+  />
 
   <!-- Auto-suggest dropdown -->
   <div
     id={`${id}-suggestions`}
-    class="absolute left-0 right-0 top-full z-50 hidden max-h-60 overflow-y-auto rounded-md border border-gray-300 bg-white shadow-lg dark:border-gray-600 dark:bg-gray-800"
+    class="absolute left-0 right-0 top-full z-50 hidden max-h-60 overflow-y-auto rounded-lg border border-gray-300 bg-white shadow-lg dark:border-gray-600 dark:bg-gray-800"
   >
     <!-- Suggestions will be populated by JavaScript -->
   </div>
@@ -291,6 +291,103 @@ const { class: className, id = "project-search" } = Astro.props;
     const regex = new RegExp(`(${searchTerm.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")})`, "gi");
     return text.replace(regex, '<strong class="font-semibold">$1</strong>');
   }
+
+  // Event listeners
+  document.addEventListener("DOMContentLoaded", function () {
+    const searchInput = document.getElementById(id);
+    const clearBtn = document.getElementById(`${id}-clear`);
+
+    if (searchInput) {
+      searchInput.addEventListener("input", function () {
+        const searchTerm = this.value;
+        filterProjectsBySearch(searchTerm);
+
+        // Show suggestions if there's a search term
+        if (searchTerm.length > 0) {
+          showSuggestions(searchTerm);
+        } else {
+          hideSuggestions();
+        }
+      });
+
+      // Hide suggestions when input loses focus (with a small delay for clicks)
+      searchInput.addEventListener("blur", function () {
+        setTimeout(() => hideSuggestions(), 150);
+      });
+
+      // Handle keyboard navigation
+      searchInput.addEventListener("keydown", function (e) {
+        const suggestionsDiv = document.getElementById(`${id}-suggestions`);
+        if (!suggestionsDiv || suggestionsDiv.classList.contains("hidden")) return;
+
+        const suggestions = suggestionsDiv.querySelectorAll(".suggestion-item");
+        const currentActive = suggestionsDiv.querySelector(".suggestion-item.bg-gray-100");
+        let activeIndex = -1;
+
+        if (currentActive) {
+          activeIndex = Array.from(suggestions).indexOf(currentActive);
+        }
+
+        if (e.key === "ArrowDown") {
+          e.preventDefault();
+          activeIndex = Math.min(activeIndex + 1, suggestions.length - 1);
+        } else if (e.key === "ArrowUp") {
+          e.preventDefault();
+          activeIndex = Math.max(activeIndex - 1, -1);
+        } else if (e.key === "Enter" && activeIndex >= 0) {
+          e.preventDefault();
+          const activeSuggestion = suggestions[activeIndex];
+          if (activeSuggestion) {
+            const suggestion = activeSuggestion.getAttribute("data-suggestion");
+            this.value = suggestion;
+            filterProjectsBySearch(suggestion);
+            hideSuggestions();
+          }
+          return;
+        } else if (e.key === "Escape") {
+          hideSuggestions();
+          return;
+        }
+
+        // Update active suggestion highlight
+        suggestions.forEach((item, index) => {
+          if (index === activeIndex) {
+            item.classList.add("bg-gray-100", "dark:bg-gray-700");
+          } else {
+            item.classList.remove("bg-gray-100", "dark:bg-gray-700");
+          }
+        });
+      });
+    }
+
+    if (clearBtn) {
+      clearBtn.addEventListener("click", clearProjectSearch);
+    }
+
+    // Build initial suggestions list
+    setTimeout(() => {
+      const projectList = document.getElementById("project-list");
+      const projects = projectList ? projectList.querySelectorAll("[data-project-id]") : [];
+      console.log("🔍 Initial check: Found", projects.length, "projects in list");
+
+      // Build suggestions from searchable elements
+      buildSuggestionsList();
+
+      // Watch for changes to the project list to rebuild suggestions
+      if (projectList) {
+        const observer = new MutationObserver(() => {
+          // Rebuild suggestions when projects are added/removed/changed
+          setTimeout(() => buildSuggestionsList(), 100);
+        });
+
+        observer.observe(projectList, {
+          childList: true,
+          subtree: true,
+          characterData: true,
+        });
+      }
+    }, 500);
+  });
 
   // Make functions globally available for other components
   window.filterProjectsBySearch = filterProjectsBySearch;
