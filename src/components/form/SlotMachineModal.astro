@@ -283,15 +283,37 @@ const displayText = buttonText || selectedOption?.label || placeholder;
 
       if (componentId === "update-status") {
         console.log(`🎰 [SLOT-MACHINE] Processing UPDATE-STATUS request`);
+        console.log(`🎰 [SLOT-MACHINE] Raw projectId prop:`, projectId);
+        console.log(`🎰 [SLOT-MACHINE] Raw value:`, value);
+        console.log(`🎰 [SLOT-MACHINE] URL pathname:`, window.location.pathname);
+
         const parsedProjectId =
           parseInt(projectId) || parseInt(window.location.pathname.split("/").pop()) || null;
         const parsedStatus = parseInt(value);
+
         console.log(
           `🎰 [SLOT-MACHINE] Parsed projectId: ${parsedProjectId} (type: ${typeof parsedProjectId})`
         );
         console.log(
           `🎰 [SLOT-MACHINE] Parsed status: ${parsedStatus} (type: ${typeof parsedStatus})`
         );
+
+        // Additional validation checks
+        if (!parsedProjectId) {
+          console.error(`🎰 [SLOT-MACHINE] ERROR: Could not parse projectId!`);
+          console.error(`🎰 [SLOT-MACHINE] projectId prop:`, projectId);
+          console.error(`🎰 [SLOT-MACHINE] URL pathname:`, window.location.pathname);
+          console.error(
+            `🎰 [SLOT-MACHINE] URL pathname split:`,
+            window.location.pathname.split("/")
+          );
+        }
+
+        if (isNaN(parsedStatus)) {
+          console.error(`🎰 [SLOT-MACHINE] ERROR: Could not parse status!`);
+          console.error(`🎰 [SLOT-MACHINE] Raw value:`, value);
+          console.error(`🎰 [SLOT-MACHINE] Parsed status:`, parsedStatus);
+        }
 
         // For status updates, send the format expected by update-status API
         requestBody = {

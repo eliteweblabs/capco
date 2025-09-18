@@ -1935,13 +1935,28 @@ const hasExistingProposal = !!existingInvoice;
 
     // Get data from DOM or global variables
     private getProjectData() {
-      return {
-        projectId: window.proposalManager?.projectId || null,
+      console.log("🔍 [PROPOSAL-HELPER] Getting project data...");
+      console.log("🔍 [PROPOSAL-HELPER] window.proposalManager exists:", !!window.proposalManager);
+      console.log("🔍 [PROPOSAL-HELPER] window.proposalManager.projectId:", window.proposalManager?.projectId);
+      
+      // Try to get projectId from multiple sources
+      const projectId = window.proposalManager?.projectId || 
+                       document.querySelector('[data-project-id]')?.getAttribute('data-project-id') ||
+                       new URLSearchParams(window.location.search).get('projectId') ||
+                       window.location.pathname.split('/').pop();
+      
+      console.log("🔍 [PROPOSAL-HELPER] Resolved projectId:", projectId);
+      
+      const projectData = {
+        projectId: projectId,
         project: window.proposalManager?.project || null,
         authorProfile: window.proposalManager?.projectAuthor || null,
         projectStatus: window.proposalManager?.projectStatus || 0,
         hasExistingProposal: window.PROPOSAL_HAS_EXISTING_INVOICE || false
       };
+      
+      console.log("🔍 [PROPOSAL-HELPER] Final project data:", projectData);
+      return projectData;
     }
 
     // Initialize the helper
@@ -2459,19 +2474,52 @@ const hasExistingProposal = !!existingInvoice;
 
         const { projectId, projectStatus } = this.projectData;
         console.log("🔔 [PROPOSAL-MANAGER] Accepting proposal for project:", projectId);
+        console.log("🔔 [PROPOSAL-MANAGER] Project status:", projectStatus);
 
-        // Get current user ID and project status from the page context
-        // const currentUserId = document.querySelector('[data-current-user-id]')?.getAttribute('data-current-user-id');
-        // const oldStatus = document.querySelector('[data-project-status]')?.getAttribute('data-project-status');
+        // Validate projectId
+        if (!projectId) {
+          console.error("❌ [PROPOSAL-MANAGER] No projectId found!");
+          console.error("❌ [PROPOSAL-MANAGER] this.projectData:", this.projectData);
+          console.error("❌ [PROPOSAL-MANAGER] window.proposalManager:", window.proposalManager);
+          
+          // Show error to user
+          if (window.showModal) {
+            window.showModal('error', 'Error', 'Project ID not found. Please refresh the page and try again.');
+          }
+          
+          // Reset button
+          button.disabled = false;
+          button.innerHTML = originalText;
+          return;
+        }
+
+        const parsedProjectId = parseInt(projectId);
+        if (isNaN(parsedProjectId)) {
+          console.error("❌ [PROPOSAL-MANAGER] Invalid projectId:", projectId);
+          
+          // Show error to user
+          if (window.showModal) {
+            window.showModal('error', 'Error', 'Invalid project ID. Please refresh the page and try again.');
+          }
+          
+          // Reset button
+          button.disabled = false;
+          button.innerHTML = originalText;
+          return;
+        }
         
         // Make API call to update status to 45 (Proposal Accepted)
         const requestBody = {
-          projectId: parseInt(projectId),
+          projectId: parsedProjectId,
           status: 45,
           oldStatus: projectStatus ? parseInt(projectStatus.toString()) : null
         };
 
         console.log("🔔 [PROPOSAL-MANAGER] Making API call to /api/update-status with body:", requestBody);
+        console.log("🔔 [PROPOSAL-MANAGER] Validating request body:");
+        console.log("  - projectId:", requestBody.projectId, "(type:", typeof requestBody.projectId, ")");
+        console.log("  - status:", requestBody.status, "(type:", typeof requestBody.status, ")");
+        console.log("  - oldStatus:", requestBody.oldStatus, "(type:", typeof requestBody.oldStatus, ")");
         
         const response = await fetch('/api/update-status', {
           method: 'POST',

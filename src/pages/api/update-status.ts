@@ -67,11 +67,32 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     // Use the authenticated user's role
     const currentUserRole = currentRole || "Client";
 
+    // Debug logging for parameter validation
+    console.log("📊 [UPDATE-STATUS] Request body:", body);
+    console.log("📊 [UPDATE-STATUS] Parsed projectId:", projectId, "(type:", typeof projectId, ")");
+    console.log("📊 [UPDATE-STATUS] Parsed newStatus:", newStatus, "(type:", typeof newStatus, ")");
+
     if (!projectId || newStatus === undefined) {
-      return new Response(JSON.stringify({ error: "Project ID and new status are required" }), {
-        status: 400,
-        headers: { "Content-Type": "application/json" },
+      console.error("📊 [UPDATE-STATUS] Validation failed:", {
+        projectId,
+        newStatus,
+        projectIdCheck: !projectId,
+        newStatusCheck: newStatus === undefined,
       });
+      return new Response(
+        JSON.stringify({
+          error: "Project ID and new status are required",
+          received: { projectId, newStatus },
+          validation: {
+            projectIdMissing: !projectId,
+            newStatusMissing: newStatus === undefined,
+          },
+        }),
+        {
+          status: 400,
+          headers: { "Content-Type": "application/json" },
+        }
+      );
     }
 
     if (!supabase) {
