@@ -118,48 +118,72 @@ if (supabase) {
       .order("status_code"),
   ]);
 
-  // Assign the statuses result
+  // Assign the statuses result (legacy - will be replaced)
   statusesResult = statusesResultData;
-
-  // console.log("🔍 [PROJECT-PAGE] Database query results:", {
-  //   statusesResult: statusesResult,
-  //   statusesError: statusesResult?.error,
-  //   statusesData: statusesResult?.data,
-  //   statusesLength: statusesResult?.data?.length || 0,
-  // });
 
   project = projectResult.data;
   console.log("🔍 [PROJECT] Project data:", project.featured_image_data);
   projectId = project?.id?.toString() || id || "";
 
-  // Convert statuses array to object for easier lookup
-  statusesObject = (statusesResult?.data || []).reduce((acc: any, status: any) => {
-    acc[status.status_code] = status;
-    return acc;
-  }, {});
-
-  // Prepare placeholder data for project_action processing
-  const placeholderData = {
-    projectId: project.id,
-    projectAddress: project.address,
-    clientName:
-      (authorProfile as any)?.company_name ||
+  // Fetch project statuses using the unified API
+  const statusApiUrl = new URL("/api/project-statuses", Astro.url.origin);
+  statusApiUrl.searchParams.set("projectId", projectId);
+  statusApiUrl.searchParams.set("projectAddress", project.address || "");
+  statusApiUrl.searchParams.set(
+    "clientName",
+    (authorProfile as any)?.company_name ||
       (authorProfile as any)?.first_name + " " + (authorProfile as any)?.last_name ||
-      "Client",
-    clientEmail: (authorProfile as any)?.email || "",
-    statusName:
-      statusesObject[project.status]?.admin_status_name ||
-      statusesObject[project.status]?.client_status_name ||
-      "",
-    contractUrl: `/project/${project.id}?status=contract`,
-    siteUrl: import.meta.env.PUBLIC_SITE_URL || "https://capcofire.com",
-  };
-
-  currentStatusObj = filteredStatusObj(
-    statusesObject[project.status],
-    currentRole || "Client",
-    placeholderData
+      "Client"
   );
+  statusApiUrl.searchParams.set("clientEmail", (authorProfile as any)?.email || "");
+
+  const statusResponse = await fetch(statusApiUrl.toString(), {
+    method: "GET",
+    headers: {
+      Cookie: Astro.request.headers.get("Cookie") || "",
+    },
+  });
+
+  let statusData: any = { success: false, roleBasedStatuses: {}, statusesMap: {} };
+  if (statusResponse.ok) {
+    statusData = await statusResponse.json();
+    console.log("✅ [PROJECT] Unified status API response received");
+  } else {
+    console.warn("⚠️ [PROJECT] Unified status API failed, falling back to legacy method");
+    // Fallback to legacy method
+    statusesObject = (statusesResult?.data || []).reduce((acc: any, status: any) => {
+      acc[status.status_code] = status;
+      return acc;
+    }, {});
+
+    const placeholderData = {
+      projectId: project.id,
+      projectAddress: project.address,
+      clientName:
+        (authorProfile as any)?.company_name ||
+        (authorProfile as any)?.first_name + " " + (authorProfile as any)?.last_name ||
+        "Client",
+      clientEmail: (authorProfile as any)?.email || "",
+      statusName:
+        statusesObject[project.status]?.admin_status_name ||
+        statusesObject[project.status]?.client_status_name ||
+        "",
+      contractUrl: `/project/${project.id}?status=contract`,
+      siteUrl: import.meta.env.PUBLIC_SITE_URL || "https://capcofire.com",
+    };
+
+    currentStatusObj = filteredStatusObj(
+      statusesObject[project.status],
+      currentRole || "Client",
+      placeholderData
+    );
+  }
+
+  // Use unified API data if available
+  if (statusData.success) {
+    statusesObject = statusData.roleBasedStatuses;
+    currentStatusObj = statusesObject[project.status] || {};
+  }
   currentStatusTab = currentStatusObj.status_tab || null;
   currentStatusSlug = currentStatusObj.status_slug || null;
   currentStatusName = currentStatusObj.status_name || null;

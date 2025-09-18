@@ -29,19 +29,19 @@ if (currentUser?.id) {
     }
     // For Admin and Client, no additional parameters needed (API handles role-based filtering)
 
-    // console.log("🏗️ [DASHBOARD] Fetching projects from API:", apiUrl);
+    console.log("🏗️ [DASHBOARD] Fetching projects from API:", apiUrl);
     const response = await fetch(apiUrl);
 
     if (response.ok) {
       const data = await response.json();
       projects = data.projects || [];
-      // console.log("🏗️ [DASHBOARD] Projects fetched with discussion counts:", projects.length);
-      // console.log("🏗️ [DASHBOARD] Sample project data:", {
-      //   id: projects[0]?.id,
-      //   title: projects[0]?.title,
-      //   comment_count: projects[0]?.comment_count,
-      //   incomplete_discussions: projects[0]?.i,complete_discussions,
-      // });
+      console.log("🏗️ [DASHBOARD] Projects fetched with discussion counts:", projects.length);
+      console.log("🏗️ [DASHBOARD] Sample project data:", {
+        id: projects[0]?.id,
+        title: projects[0]?.title,
+        comment_count: projects[0]?.comment_count,
+        incomplete_discussions: projects[0]?.i,
+      });
     } else {
       console.error(
         "🏗️ [DASHBOARD] Error fetching projects:",
@@ -64,6 +64,11 @@ if (supabaseAdmin) {
     const { statuses, statusesMap } = await fetchProjectStatuses(supabaseAdmin);
     project_statuses = statuses as ProjectStatus[];
     project_statuses_object = processProjectStatuses(statuses, currentRole || "Client");
+    console.log(
+      "🏗️ [DASHBOARD] Project statuses fetched:",
+      project_statuses,
+      project_statuses_object
+    );
   } catch (error) {
     console.error("🏗️ [DASHBOARD] Error fetching statuses:", error);
   }

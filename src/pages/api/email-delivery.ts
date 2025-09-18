@@ -252,11 +252,14 @@ export const POST: APIRoute = async ({ request, cookies }) => {
           // For SMS gateways, send only plain text (no HTML)
           const emailPayload = isSmsGateway
             ? {
-                from: `${validFromName} <${validFromEmail}>`,
+                from: `CAPCo Fire <noreply@capcofire.com>`, // Consistent verified sender
                 to: userEmail,
-                subject: cleanSubject,
-                text: emailContent, // Only text for SMS gateways
-                // No HTML for SMS gateways
+                subject: "", // Empty subject for SMS gateways
+                text: emailContent.substring(0, 160), // Limit to 160 characters for SMS
+                headers: {
+                  "X-SMS-Gateway": "true",
+                  "Content-Type": "text/plain; charset=UTF-8",
+                },
               }
             : {
                 from: `${validFromName} <${validFromEmail}>`,

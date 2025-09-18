@@ -88,13 +88,22 @@ export async function sendProjectStatusSms(
 
   const statusText = statusMessages[newStatus] || `Status ${newStatus}`;
 
-  let message = `CAPCo Fire Protection: Your project "${projectTitle}" status has been updated to: ${statusText}`;
+  // Keep SMS messages short and concise for better delivery
+  let message = `CAPCo Fire: "${projectTitle}" → ${statusText}`;
 
-  if (projectAddress) {
-    message += `\n\nProject Address: ${projectAddress}`;
+  if (projectAddress && message.length < 120) {
+    message += `\nAddr: ${projectAddress}`;
   }
 
-  message += "\n\nReply STOP to opt out of SMS notifications.";
+  // Only add opt-out if there's space (SMS gateways prefer shorter messages)
+  if (message.length < 140) {
+    message += "\nReply STOP to opt out";
+  }
+
+  // Ensure message is under 160 characters
+  if (message.length > 160) {
+    message = message.substring(0, 157) + "...";
+  }
 
   return await sendSmsViaEmail({
     to: phoneNumber,

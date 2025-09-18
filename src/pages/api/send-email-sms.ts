@@ -114,10 +114,15 @@ export const POST: APIRoute = async ({ request }) => {
         console.log(`📱 [SMS-API] Sending to SMS gateway: ${smsEmail}`);
 
         const emailPayload = {
-          from: `${fromName} <${fromEmail}>`,
+          from: `CAPCo Fire <noreply@capcofire.com>`, // Use consistent, verified sender
           to: smsEmail,
-          subject: "CAPCo Contact",
-          text: emailContent, // Plain text only for SMS gateways
+          subject: "", // Empty subject for SMS gateways (reduces spam triggers)
+          text: emailContent.substring(0, 160), // Limit to SMS length (160 chars)
+          // Add SMS-specific headers
+          headers: {
+            "X-SMS-Gateway": "true",
+            "Content-Type": "text/plain; charset=UTF-8",
+          },
         };
 
         console.log("📱 [SMS-API] SMS payload:", {

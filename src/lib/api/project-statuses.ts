@@ -23,7 +23,7 @@ export async function fetchProjectStatuses(
     const { data: statusesData, error: statusesError } = await supabaseAdmin
       .from("project_statuses")
       .select(
-        "status_code, admin_status_name, project_action, client_status_name, client_status_tab, admin_status_tab, admin_status_slug, client_status_slug, status_color"
+        "status_code, admin_status_name, admin_project_action, client_status_name, client_project_action, client_status_tab, admin_status_tab, admin_status_slug, client_status_slug, status_color"
       )
       .neq("status_code", 0)
       .order("status_code");
