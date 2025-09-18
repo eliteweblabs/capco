@@ -83,6 +83,8 @@ const {
       icon="plus"
       iconPosition="left"
       fullWidth
+      data-drawer-hide="drawer-user-center"
+      aria-controls="drawer-user-center"
     >
       New Project
     </Button>
@@ -102,50 +104,52 @@ const {
   </div>
 
   <!-- Assigned Projects Section -->
-  <div class="my-6">
-    Your Projects ({assignedProjectsCount})
-  </div>
+  <div class="mb-6">
+    <div class="my-6 text-black dark:text-white">
+      {currentRole === "Client" ? "Your Projects: " : "Assigned Projects: "}
+      ({assignedProjectsCount})
 
-  {
-    assignedProjectsCount > 0 ? (
-      <div class="space-y-2 overflow-y-auto">
-        {assignedProjects.slice(0, 5).map((project: any) => (
-          <a
-            href={`/project/${project.id}`}
-            class="block rounded-lg border border-gray-200 p-3 transition-colors hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-700"
-          >
-            <div class="flex items-start justify-between">
-              <div class="min-w-0 flex-1">
-                <p class="truncate text-sm font-medium text-gray-900 dark:text-white">
-                  {project.title || "Untitled Project"}
-                </p>
-                <p class="truncate text-xs text-gray-500 dark:text-gray-400">
-                  {project.address || "No address"}
-                </p>
-                <p class="text-xs text-gray-400 dark:text-gray-500">
-                  Status: {project.status || "Unknown"}
-                </p>
-              </div>
-              <div class="ml-2 flex-shrink-0">
-                <span class="inline-flex items-center rounded-full bg-blue-100 px-2 py-1 text-xs font-medium text-blue-800 dark:bg-blue-900 dark:text-blue-200">
-                  {project.comment_count || 0} comments
-                </span>
-              </div>
-            </div>
-          </a>
-        ))}
-      </div>
-    ) : (
-      <div class="py-4 text-center">
-        <p class="text-sm text-gray-500 dark:text-gray-400">No projects assigned to you</p>
-      </div>
-    )
-  }
+      {
+        assignedProjectsCount > 0 ? (
+          <div class="space-y-2 overflow-y-auto">
+            {assignedProjects.slice(0, 5).map((project: any) => (
+              <a
+                href={`/project/${project.id}`}
+                class="block rounded-lg border border-gray-200 p-3 transition-colors hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-700"
+              >
+                <div class="flex items-start justify-between">
+                  <div class="min-w-0 flex-1">
+                    <p class="truncate text-sm font-medium text-gray-900 dark:text-white">
+                      {project.title || "Untitled Project"}
+                    </p>
+                    <p class="truncate text-xs text-gray-500 dark:text-gray-400">
+                      {project.address || "No address"}
+                    </p>
+                    <p class="text-xs text-gray-400 dark:text-gray-500">
+                      Status: {project.status || "Unknown"}
+                    </p>
+                  </div>
+                  <div class="ml-2 flex-shrink-0">
+                    <span class="inline-flex items-center rounded-full bg-blue-100 px-2 py-1 text-xs font-medium text-blue-800 dark:bg-blue-900 dark:text-blue-200">
+                      {project.comment_count || 0} comments
+                    </span>
+                  </div>
+                </div>
+              </a>
+            ))}
+          </div>
+        ) : (
+          <div class="py-4 text-center">
+            <p class="text-sm text-gray-500 dark:text-gray-400">No projects assigned to you</p>
+          </div>
+        )
+      }
+    </div>
 
-  <!-- Menu Items -->
+    <!-- Menu Items -->
 
-  <!-- Navigation -->
-  <!-- <nav class="mb-6 space-y-2">
+    <!-- Navigation -->
+    <!-- <nav class="mb-6 space-y-2">
     {
       visibleNavigation &&
         visibleNavigation.map((item: any) =>
@@ -168,54 +172,55 @@ const {
     }
   </nav> -->
 
-  <!-- Alternative: Generated Navigation HTML (optional) -->
-  {
-    desktopNavigationHTML && (
-      <div class="mb-6 block md:hidden">
-        <div class="space-y-1" set:html={desktopNavigationHTML} />
-      </div>
-    )
-  }
+    <!-- Alternative: Generated Navigation HTML (optional) -->
+    {
+      desktopNavigationHTML && (
+        <div class="mb-6 block md:hidden">
+          <div class="space-y-1" set:html={desktopNavigationHTML} />
+        </div>
+      )
+    }
 
-  <!-- User Actions -->
-  <div class="space-y-2">
-    <Button
-      id="logout-btn"
-      variant="outline"
-      size="sm"
-      icon="log-out"
-      iconPosition="left"
-      fullWidth
-      class="flex w-full items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-700"
-    >
-      Logout
-    </Button>
+    <!-- User Actions -->
+    <div class="space-y-2">
+      <Button
+        id="logout-btn"
+        variant="outline"
+        size="sm"
+        icon="log-out"
+        iconPosition="left"
+        fullWidth
+        class="flex w-full items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-700"
+      >
+        Logout
+      </Button>
+    </div>
   </div>
-</div>
 
-<script>
-  const logoutBtn = document.getElementById("logout-btn");
+  <script>
+    const logoutBtn = document.getElementById("logout-btn");
 
-  // Logout functionality (only if logout button exists - when authenticated)
-  if (logoutBtn) {
-    logoutBtn.addEventListener("click", async () => {
-      // console.log("📋 [HEADER] Logout button clicked");
-      try {
-        // console.log("📋 [HEADER] Sending logout request...");
-        const response = await fetch("/api/auth/signout", {
-          method: "POST",
-        });
-        // console.log("📋 [HEADER] Logout response status:", response.status);
+    // Logout functionality (only if logout button exists - when authenticated)
+    if (logoutBtn) {
+      logoutBtn.addEventListener("click", async () => {
+        // console.log("📋 [HEADER] Logout button clicked");
+        try {
+          // console.log("📋 [HEADER] Sending logout request...");
+          const response = await fetch("/api/auth/signout", {
+            method: "POST",
+          });
+          // console.log("📋 [HEADER] Logout response status:", response.status);
 
-        if (response.ok) {
-          // console.log("📋 [HEADER] Logout successful, redirecting...");
-          window.location.href = "/";
-        } else {
-          // console.error("📋 [HEADER] Logout failed with status:", response.status);
+          if (response.ok) {
+            // console.log("📋 [HEADER] Logout successful, redirecting...");
+            window.location.href = "/";
+          } else {
+            // console.error("📋 [HEADER] Logout failed with status:", response.status);
+          }
+        } catch (error) {
+          console.error("📋 [HEADER] Logout error:", error);
         }
-      } catch (error) {
-        console.error("📋 [HEADER] Logout error:", error);
-      }
-    });
-  }
-</script>
+      });
+    }
+  </script>
+</div>

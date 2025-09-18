@@ -17,13 +17,15 @@ interface Props {
   currentRole?: string;
   projects?: Project[];
   statuses?: Status[];
+  currentUser?: any;
 }
 
-const { currentRole, projects = [], statuses = [] } = Astro.props;
+const { currentRole, projects = [], statuses = [], currentUser } = Astro.props;
 
 // Use provided data instead of fetching
 let project_statuses: Status[] = statuses;
 let statusCounts: Record<string, number> = {};
+let roleBasedProjectsCount = 0;
 
 // Calculate status counts from provided projects
 if (projects && projects.length > 0) {
@@ -33,9 +35,10 @@ if (projects && projects.length > 0) {
     // For clients, count by client_status_name (deduplicated)
     projects.forEach((project: Project) => {
       const statusInfo = project_statuses.find((s: Status) => s.status_code === project.status);
-      if (statusInfo && statusInfo.client_status_name) {
+      if (statusInfo && statusInfo.client_status_name && project.author_id === currentUser?.id) {
         const clientStatusName = statusInfo.client_status_name;
         statusCounts[clientStatusName] = (statusCounts[clientStatusName] || 0) + 1;
+        roleBasedProjectsCount++;
       }
     });
   } else {
@@ -43,6 +46,7 @@ if (projects && projects.length > 0) {
     projects.forEach((project: Project) => {
       const status = project.status?.toString() || "10";
       statusCounts[status] = (statusCounts[status] || 0) + 1;
+      roleBasedProjectsCount++;
     });
   }
 }
@@ -58,7 +62,7 @@ const navItems: NavItem[] = [
     dataAttributes: {
       "data-label": "All Projects",
       "data-project-status-filter": "all",
-      "data-count": projects.length.toString(),
+      "data-count": roleBasedProjectsCount.toString(),
     },
   },
 ];
