@@ -80,29 +80,50 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       });
     }
 
-    // Download file from Supabase Storage
-    console.log("Attempting to download from storage:", filePath);
+    // First, get the file record from the database to get the correct bucket and path
+    console.log("Looking up file record for:", { filePath, projectId });
 
-    // Extract the actual file path (remove bucket prefix if present)
-    let actualFilePath = filePath;
-    if (filePath.startsWith("project-documents/")) {
-      actualFilePath = filePath.replace("project-documents/", "");
+    const { data: fileRecord, error: fileError } = await supabase
+      .from("files")
+      .select("bucket_name, file_path, file_name")
+      .eq("file_path", filePath)
+      .eq("project_id", projectId)
+      .single();
+
+    if (fileError || !fileRecord) {
+      console.error("File record not found:", fileError);
+      return new Response(
+        JSON.stringify({
+          error: "File record not found in database",
+          details: fileError?.message || "No matching file record",
+          filePath: filePath,
+        }),
+        {
+          status: 404,
+          headers: { "Content-Type": "application/json" },
+        }
+      );
     }
 
-    console.log("Actual file path for download:", actualFilePath);
+    console.log("Found file record:", fileRecord);
 
+    // Download file from the correct bucket using the stored path
     const { data: fileData, error: downloadError } = await supabase.storage
-      .from("project-documents")
-      .download(actualFilePath);
+      .from(fileRecord.bucket_name)
+      .download(fileRecord.file_path);
 
     if (downloadError || !fileData) {
       console.error("Error downloading file from storage:", downloadError);
-      console.error("File path attempted:", filePath);
+      console.error("Bucket:", fileRecord.bucket_name);
+      console.error("File path attempted:", fileRecord.file_path);
+      console.error("Original filePath parameter:", filePath);
       return new Response(
         JSON.stringify({
-          error: "Failed to download file",
+          error: "Failed to download file from storage",
           details: downloadError?.message || "Unknown error",
-          filePath: filePath,
+          bucket: fileRecord.bucket_name,
+          storagePath: fileRecord.file_path,
+          originalPath: filePath,
         }),
         {
           status: 500,
@@ -115,11 +136,14 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     const arrayBuffer = await fileData.arrayBuffer();
 
     // Return file with proper headers for download
+    // Use the filename from the database record if available, fallback to parameter
+    const downloadFileName = fileRecord.file_name || fileName;
+
     return new Response(arrayBuffer, {
       status: 200,
       headers: {
         "Content-Type": "application/octet-stream",
-        "Content-Disposition": `attachment; filename="${fileName}"`,
+        "Content-Disposition": `attachment; filename="${downloadFileName}"`,
         "Content-Length": arrayBuffer.byteLength.toString(),
       },
     });
