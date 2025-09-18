@@ -33,10 +33,12 @@ export const filteredStatusObj = (statusObj: any, role: string, placeholderData?
     filteredStatusObj.status_name = statusObj.client_status_name;
     filteredStatusObj.status_slug = generateStatusSlug(statusObj.client_status_name);
     filteredStatusObj.status_tab = statusObj.client_status_tab;
+    filteredStatusObj.project_action = statusObj.client_project_action || null;
   } else if (statusObj.admin_status_name) {
     filteredStatusObj.status_name = statusObj.admin_status_name;
     filteredStatusObj.status_slug = generateStatusSlug(statusObj.admin_status_name);
     filteredStatusObj.status_tab = statusObj.admin_status_tab;
+    filteredStatusObj.project_action = statusObj.admin_project_action || null;
   }
 
   // Always include project_action for the modal system

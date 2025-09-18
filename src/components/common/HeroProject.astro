@@ -31,11 +31,34 @@ const {
   statuses = {},
 } = Astro.props;
 
-// Transform statuses object to array format for SlotMachineModal
-const statusOptions = Object.values(statuses).map((status: any) => ({
-  value: status.status_code?.toString() || "",
-  label: status.admin_status_name || "",
-}));
+// Get status options from the unified API if not provided
+let statusOptions: any[] = [];
+if (Object.keys(statuses).length > 0) {
+  // Use provided statuses (legacy support)
+  statusOptions = Object.values(statuses).map((status: any) => ({
+    value: status.status_code?.toString() || "",
+    label: status.admin_status_name || "",
+  }));
+} else {
+  // Fetch from unified API
+  try {
+    const statusResponse = await fetch(`${Astro.url.origin}/api/project-statuses`, {
+      method: "GET",
+      headers: {
+        Cookie: Astro.request.headers.get("Cookie") || "",
+      },
+    });
+
+    if (statusResponse.ok) {
+      const statusData = await statusResponse.json();
+      if (statusData.success) {
+        statusOptions = statusData.selectOptions;
+      }
+    }
+  } catch (error) {
+    console.error("Failed to fetch status options:", error);
+  }
+}
 
 // Fetch staff data for staff selection
 let staffOptions: any[] = [];
