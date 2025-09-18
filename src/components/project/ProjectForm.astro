@@ -386,7 +386,6 @@ const formActions = getFilteredFormActions(currentRole, isNewProject, projectSta
   }
 
   // Window properties
-  const windowWithProps = window;
 
   // Initialize project form
   document.addEventListener("DOMContentLoaded", async function () {
@@ -397,16 +396,16 @@ const formActions = getFilteredFormActions(currentRole, isNewProject, projectSta
     const isNewProject = form.getAttribute("data-is-new-project") === "true";
 
     // Make project data available globally
-    const projectDataAttr = form.getAttribute("data-project-data");
-    if (projectDataAttr) {
-      try {
-        const projectData = JSON.parse(projectDataAttr);
-        windowWithProps.currentProjectData = projectData;
-        // console.log("Project data loaded:", projectData);
-      } catch (error) {
-        console.error("Error parsing project data:", error);
-      }
-    }
+    // const projectDataAttr = form.getAttribute("data-project-data");
+    // if (projectDataAttr) {
+    //   try {
+    //     const projectData = JSON.parse(projectDataAttr);
+    //     window.currentProjectData = projectData;
+    //     // console.log("Project data loaded:", projectData);
+    //   } catch (error) {
+    //     console.error("Error parsing project data:", error);
+    //   }
+    // }
 
     // Add event listeners for action buttons
 
@@ -532,7 +531,7 @@ const formActions = getFilteredFormActions(currentRole, isNewProject, projectSta
               );
 
               // Show notification using new modal system
-              windowWithProps.handleUpdateStatusNotification(statusResult, "PROJECT-FORM");
+              window.handleUpdateStatusNotification(statusResult, "PROJECT-FORM");
             } catch (statusError) {
               console.error("📝 [ProjectForm] Status update failed:", statusError);
               console.error("📝 [ProjectForm] Status update error details:", statusError);
@@ -548,18 +547,15 @@ const formActions = getFilteredFormActions(currentRole, isNewProject, projectSta
               );
 
               // Fallback: just refresh the page
-              windowWithProps.location.reload();
+              window.location.reload();
             }
           } else {
             // For existing projects, just show success and refresh
-            if (windowWithProps.showSuccess) {
-              windowWithProps.showSuccess(
-                "Project Updated",
-                "Project has been updated successfully!"
-              );
+            if (window.showSuccess) {
+              window.showSuccess("Project Updated", "Project has been updated successfully!");
             }
             setTimeout(() => {
-              windowWithProps.location.reload();
+              window.location.reload();
             }, 1000);
           }
         } else {
@@ -570,8 +566,8 @@ const formActions = getFilteredFormActions(currentRole, isNewProject, projectSta
         }
       } catch (error) {
         console.error("📝 [ProjectForm] Error saving project:", error);
-        if (windowWithProps.showModal) {
-          windowWithProps.showModal(
+        if (window.showModal) {
+          window.showModal(
             "Error",
             error instanceof Error ? error.message : "Failed to save project",
             "error"
@@ -611,8 +607,8 @@ const formActions = getFilteredFormActions(currentRole, isNewProject, projectSta
       if (projectId) {
         button.addEventListener("click", function () {
           // If button has a tab property, navigate to that tab
-          if (tab && typeof window !== "undefined" && windowWithProps.switchTab) {
-            windowWithProps.switchTab(tab);
+          if (tab && typeof window !== "undefined" && window.switchTab) {
+            window.switchTab(tab);
           } else if (action) {
             // Otherwise handle the action normally
             handleAction(action, projectId, isNewProject);
@@ -637,8 +633,8 @@ const formActions = getFilteredFormActions(currentRole, isNewProject, projectSta
     // Validate project ID
     if (!projectId || projectId.startsWith("new-project-")) {
       // console.error("Invalid project ID for deletion:", projectId);
-      if (windowWithProps.showModal) {
-        windowWithProps.showModal(
+      if (window.showModal) {
+        window.showModal(
           "error",
           "Delete Failed",
           "Cannot delete a new project that hasn't been saved yet.",
@@ -649,8 +645,8 @@ const formActions = getFilteredFormActions(currentRole, isNewProject, projectSta
     }
 
     // Show confirmation modal with action buttons
-    if (windowWithProps.showModal) {
-      windowWithProps.showModal(
+    if (window.showModal) {
+      window.showModal(
         "warning",
         "Delete Project",
         "Are you sure you want to delete this project? This action cannot be undone.",
@@ -668,6 +664,7 @@ const formActions = getFilteredFormActions(currentRole, isNewProject, projectSta
 
               // Show loading state
               const deleteBtn = document.getElementById("delete-project") as HTMLButtonElement;
+              deleteBtn?.setAttribute("data-loading", "true");
               if (deleteBtn) {
                 deleteBtn.disabled = true;
                 deleteBtn.innerHTML = '<i class="bx bx-loader-alt bx-spin mr-1"></i>Deleting...';
@@ -692,8 +689,8 @@ const formActions = getFilteredFormActions(currentRole, isNewProject, projectSta
                   }
 
                   // Show success modal
-                  if (windowWithProps.showModal) {
-                    windowWithProps.showModal(
+                  if (window.showModal) {
+                    window.showModal(
                       "success",
                       "Project Deleted!",
                       data.message || "Project has been deleted successfully.",
@@ -706,15 +703,15 @@ const formActions = getFilteredFormActions(currentRole, isNewProject, projectSta
 
                   // Redirect to dashboard after a short delay
                   setTimeout(() => {
-                    windowWithProps.location.href = "/dashboard";
+                    window.location.href = "/dashboard";
                   }, 1500);
                 })
                 .catch((error) => {
                   console.error("Error deleting project:", error);
 
                   // Show error modal with specific error message
-                  if (windowWithProps.showModal) {
-                    windowWithProps.showModal(
+                  if (window.showModal) {
+                    window.showModal(
                       "error",
                       "Delete Failed",
                       error.message || "Failed to delete project. Please try again.",
@@ -746,8 +743,8 @@ const formActions = getFilteredFormActions(currentRole, isNewProject, projectSta
         break;
       case "buildProposal":
         // Navigate to proposal tab
-        if (typeof window !== "undefined" && windowWithProps.switchTab) {
-          windowWithProps.switchTab("proposal");
+        if (typeof window !== "undefined" && window.switchTab) {
+          window.switchTab("proposal");
         }
         break;
       default:
@@ -808,7 +805,7 @@ const formActions = getFilteredFormActions(currentRole, isNewProject, projectSta
       resetForm();
     }
     // Make resetForm globally available
-    windowWithProps.resetForm = resetForm;
+    window.resetForm = resetForm;
 
     // Square footage numeric filtering
     const sqFtInputs = document.querySelectorAll('input[name="sq_ft"]');
@@ -824,9 +821,7 @@ const formActions = getFilteredFormActions(currentRole, isNewProject, projectSta
       // Handle paste events to filter out non-numeric characters
       input.addEventListener("paste", (e) => {
         e.preventDefault();
-        const paste = (
-          (e as ClipboardEvent).clipboardData || windowWithProps.clipboardData
-        ).getData("text");
+        const paste = ((e as ClipboardEvent).clipboardData || window.clipboardData).getData("text");
         const numericOnly = paste.replace(/[^0-9]/g, "");
         (input as HTMLInputElement).value = numericOnly;
       });

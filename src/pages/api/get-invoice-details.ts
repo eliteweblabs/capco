@@ -46,7 +46,7 @@ export const GET: APIRoute = async ({ url, cookies }) => {
       });
     }
 
-    console.log("🔍 [GET-INVOICE-DETAILS] Fetching invoice details for ID:", id);
+    // console.log("🔍 [GET-INVOICE-DETAILS] Fetching invoice details for ID:", id);
 
     // Get invoice with project data
     const { data: invoice, error: invoiceError } = await supabase
@@ -77,13 +77,13 @@ export const GET: APIRoute = async ({ url, cookies }) => {
       );
     }
 
-    console.log("✅ [GET-INVOICE-DETAILS] Found invoice:", invoice.id);
+    // console.log("✅ [GET-INVOICE-DETAILS] Found invoice:", invoice.id);
 
     return new Response(JSON.stringify({ success: true, invoice }), {
       status: 200,
       headers: { "Content-Type": "application/json" },
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error("❌ [GET-INVOICE-DETAILS] Unexpected error:", error);
     return new Response(
       JSON.stringify({ error: "Internal server error", details: error.message }),
