@@ -51,7 +51,7 @@ const placeholder =
         </Button>
       </div>
 
-      <p class="text-sm text-gray-500 dark:text-gray-400">
+      <p class="mb-4 text-sm text-gray-500 dark:text-gray-400">
         <b>Placeholders: </b>
         &#123;&#123; PROJECT_ADDRESS &#125;&#125;, &#123;&#123; CLIENT_NAME &#125;&#125;, &#123;&#123;
         CLIENT_EMAIL &#125;&#125;, &#123;&#123; EST_TIME &#125;&#125;, &#123;&#123; STATUS_NAME &#125;&#125;,
@@ -150,7 +150,16 @@ const placeholder =
         <!-- Comments will be dynamically loaded here -->
       </div>
       <div>
-        <script define:vars={{ projectId, authorProfile, currentRole, currentUser, supabaseUrl }}>
+        <script
+          define:vars={{
+            projectId,
+            authorProfile,
+            currentRole,
+            currentUser,
+            supabaseUrl,
+          }}
+          type="module"
+        >
           // Discussion functionality
           let discussions = [];
           let currentProjectId = projectId;
@@ -821,7 +830,9 @@ const placeholder =
             const submitBtn = document.getElementById("submit-comment-btn");
 
             if (!message) {
-              alert("Please enter a comment message");
+              if (window.showModal) {
+                window.showModal("error", "Please enter a message", "", 5000);
+              }
               messageInput?.focus();
               return;
             }
@@ -1419,6 +1430,51 @@ const placeholder =
                 const discussion = discussions.find((d) => d.id === discussionId);
                 if (discussion) {
                   discussion.mark_completed = isCompleted;
+                }
+
+                try {
+                  // Get discussion data from the local discussions array instead of querying Supabase
+                  const discussionData = discussions.find((d) => d.id === discussionId);
+
+                  if (!discussionData) {
+                    console.error("Discussion not found in local data:", discussionId);
+                    return;
+                  }
+
+                  console.log("📧 [CREATE-USER] Found discussion data:", discussionData);
+
+                  const adminContent = ` ${discussionData.message} marked complete by ${currentUser.company_name}:<br><br>`;
+
+                  // THIS IS TO THE ADMINS EMAIL
+                  // Send email using the email delivery API with full URL
+                  const emailResponse = await fetch(
+                    `${window.location.origin}/api/email-delivery`,
+                    {
+                      method: "POST",
+                      headers: {
+                        "Content-Type": "application/json",
+                      },
+
+                      body: JSON.stringify({
+                        usersToNotify: ["jk@capcofire.com", "capco@eliteweblabs.com"], // Use resolved user email
+                        emailSubject: `Item Completed → ${discussionData.message} → ${currentUser.company_name}`,
+                        emailContent: adminContent,
+                        buttonText: "Access Your Dashboard",
+                        buttonLink: "/dashboard",
+                      }),
+                    }
+                  );
+
+                  if (emailResponse.ok) {
+                    console.log(`📧 [CREATE-USER] notification sent to ${adminEmail}`);
+                  } else {
+                    console.error(
+                      `📧 [CREATE-USER] Failed to send notification to ${adminEmail}:`,
+                      await emailResponse.text()
+                    );
+                  }
+                } catch (emailError) {
+                  console.error(emailError);
                 }
 
                 // Log the discussion status change

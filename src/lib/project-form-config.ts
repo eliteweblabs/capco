@@ -512,8 +512,8 @@ export const BUTTON_GROUPS: ButtonGroupConfig[] = [
     // hideAtStatus: [50, 60, 70, 80, 90], // Hide after proposal is viewed
     options: [
       { value: "Narrative", label: "Narrative" },
-      { value: "Sprinkler", label: "Sprinkler" },
-      { value: "Alarm", label: "Alarm" },
+      // { value: "Sprinkler", label: "Sprinkler" },
+      // { value: "Alarm", label: "Alarm" },
       { value: "NFPA 241", label: "NFPA 241" },
       { value: "IEBC", label: "IEBC" },
       { value: "IBC", label: "IBC" },

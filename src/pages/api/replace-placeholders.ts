@@ -75,6 +75,17 @@ export const POST: APIRoute = async ({ request }) => {
         .replace(/\{\{STATUS_NAME\}\}/g, "<b>" + (data.statusName || "") + "</b>")
         .replace(/\{\{EST_TIME\}\}/g, "<b>" + (data.estTime || "") + "</b>")
         .replace(/\{\{CONTRACT_URL\}\}/g, data.contractUrl || "")
+        .replace(
+          /\{\{PRIMARY_COLOR\}\}/g,
+          (() => {
+            // Handle PRIMARY_COLOR without bold tags (for CSS usage)
+            let hexColor = data.primaryColor || "#3b82f6"; // Default blue if not provided
+            if (!hexColor.startsWith("#")) {
+              hexColor = "#" + hexColor;
+            }
+            return hexColor;
+          })()
+        )
         // Replace any remaining {{PLACEHOLDER}} with empty string
         .replace(/\{\{[^}]+\}\}/g, "");
 

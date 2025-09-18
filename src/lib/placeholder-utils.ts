@@ -99,10 +99,12 @@ export function replacePlaceholders(
 
   if (data.primaryColor) {
     // console.log(`🔄 [PLACEHOLDER-UTILS] Replacing {{PRIMARY_COLOR}} with: ${data.primaryColor}`);
-    result = result.replace(
-      /\{\{\s*PRIMARY_COLOR\s*\}\}/g,
-      `<strong>${data.primaryColor}</strong>`
-    );
+    // Ensure primary color starts with # for hexadecimal format
+    let hexColor = data.primaryColor;
+    if (!hexColor.startsWith("#")) {
+      hexColor = "#" + hexColor;
+    }
+    result = result.replace(/\{\{\s*PRIMARY_COLOR\s*\}\}/g, hexColor);
   }
 
   if (data.svgLogo) {

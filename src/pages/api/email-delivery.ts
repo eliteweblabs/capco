@@ -10,7 +10,6 @@ import { supabaseAdmin } from "../../lib/supabase-admin";
 
 // 🚧 DEAD STOP - 2024-12-19: Potentially unused API endpoint
 // If you see this log after a few days, this endpoint can likely be deleted
-console.log("🚧 [DEAD-STOP-2024-12-19] email-delivery.ts accessed - may be unused");
 
 export const POST: APIRoute = async ({ request, cookies }) => {
   console.log("📧 little bit bigger API endpoint called");
@@ -219,6 +218,14 @@ export const POST: APIRoute = async ({ request, cookies }) => {
           }
 
           // Apply button configuration (skip for SMS gateways)
+          console.log("🔍 [EMAIL-DELIVERY] Button debug for", {
+            buttonText,
+            buttonLink,
+            finalButtonLink,
+            isSmsGateway,
+            hasButton: !!(buttonText && finalButtonLink),
+          });
+
           if (!isSmsGateway) {
             if (buttonText && finalButtonLink) {
               emailHtml = emailHtml.replace("{{BUTTON_TEXT}}", buttonText);

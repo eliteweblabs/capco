@@ -1099,26 +1099,37 @@ const displayText = buttonText || selectedOption?.label || placeholder;
       });
     }
 
-    // Handle wheel events (desktop)
+    // Handle wheel events (desktop) with natural scroll sensitivity
+    let wheelAccumulator = 0;
+    const wheelThreshold = 50; // Require more scroll distance before moving items
+
     optionsList.addEventListener("wheel", (e) => {
       e.preventDefault();
-      const deltaY = e.deltaY;
 
-      // Get current options count from DOM
-      const currentOptions = optionsList.querySelectorAll("li");
-      const maxIndex = currentOptions.length - 1;
+      // Accumulate wheel delta to make scrolling feel more natural
+      wheelAccumulator += e.deltaY;
 
-      // Calculate new index based on scroll direction
-      if (deltaY > 0) {
-        // Scrolling down - move to next item
-        selectedIndex = Math.min(selectedIndex + 1, maxIndex);
-      } else {
-        // Scrolling up - move to previous item
-        selectedIndex = Math.max(selectedIndex - 1, 0);
+      // Only move when we've accumulated enough scroll distance
+      if (Math.abs(wheelAccumulator) >= wheelThreshold) {
+        const deltaY = wheelAccumulator;
+        wheelAccumulator = 0; // Reset accumulator
+
+        // Get current options count from DOM
+        const currentOptions = optionsList.querySelectorAll("li");
+        const maxIndex = currentOptions.length - 1;
+
+        // Calculate new index based on scroll direction
+        if (deltaY > 0) {
+          // Scrolling down - move to next item
+          selectedIndex = Math.min(selectedIndex + 1, maxIndex);
+        } else {
+          // Scrolling up - move to previous item
+          selectedIndex = Math.max(selectedIndex - 1, 0);
+        }
+
+        // Smoothly center the selected item
+        centerSelectedItem();
       }
-
-      // Smoothly center the selected item
-      centerSelectedItem();
     });
 
     // Handle touch events (mobile)

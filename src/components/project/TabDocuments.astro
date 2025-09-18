@@ -1074,6 +1074,7 @@ const {
               uploaded_at: file.uploadedAt,
               public_url: file.publicUrl,
               bucket_name: file.bucketName,
+              is_featured: file.is_featured || false,
             };
             await this.addFileToList(formattedFile);
           }
@@ -1091,35 +1092,123 @@ const {
     }
 
 
-    // async downloadAllFiles() {
-    //   try {
-    //     const response = await fetch("/api/get-project-files", {
-    //       method: "POST",
-    //       headers: { "Content-Type": "application/json" },
-    //       body: JSON.stringify({ projectId: this.projectId }),
-    //     });
+    async markAllDocumentsUploaded() {
+      try {
+        // Disable button and show loading state
+        this.allDocumentsUploadedBtn.disabled = true;
+        this.allDocumentsUploadedBtn.innerHTML = `
+          <svg class="animate-spin mr-2 h-5 w-5" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+          </svg>
+          Updating Status...
+        `;
 
-    //     if (response.ok) {
-    //       const result = await response.json();
-    //       if (result.files && result.files.length > 0) {
-    //         // Download each file with a slight delay to avoid browser blocking
-    //         for (let i = 0; i < result.files.length; i++) {
-    //           const file = result.files[i];
-    //           if (file.file_path) {
-    //             setTimeout(() => {
-    //               this.downloadFile(file.file_path, file.file_name || file.name || `file-${i + 1}`);
-    //             }, i * 500); // 500ms delay between downloads
-    //           }
-    //         }
-    //       } else {
-    //         this.showError("No files available to download");
-    //       }
-    //     }
-    //   } catch (error) {
-    //     console.error("Error downloading files:", error);
-    //     this.showError("Failed to download files");
-    //   }
-    // }
+        // Call the update-status API to change status
+        console.log("🔔 [PDF-UPLOAD] Debug projectId:", {
+          projectIdProp: projectId,
+          thisProjectId: this.projectId,
+          typeof: typeof this.projectId,
+          stringified: JSON.stringify(this.projectId),
+        });
+
+        console.log("🔔 [PDF-UPLOAD] Calling /api/update-status with:", {
+          projectId: this.projectId,
+          status: 20,
+          currentUserId: this.currentUser?.id,
+          oldStatus: this.projectStatus,
+        });
+
+        const response = await fetch("/api/update-status", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include", // Include cookies for authentication
+          body: JSON.stringify({
+            projectId: this.projectId,
+            status: 20, // Status 20 - All Documents Uploaded
+            currentUserId: this.currentUser?.id, // Add current user ID for logging
+            oldStatus: this.projectStatus, // Add old status for logging
+          }),
+        });
+
+        console.log("🔔 [PDF-UPLOAD] API response status:", response.status);
+
+        if (!response.ok) {
+          const error = await response.json();
+          throw new Error(error.error || "Failed to update project status");
+        }
+
+        const result = await response.json();
+
+        if (result.success) {
+          console.log("📊 [PDF-UPLOAD] Status updated successfully:", result);
+
+          // Show success notification using notificationData from API
+          window.handleUpdateStatusNotification(result, "PDF-UPLOAD");
+
+          const uploadStatus = document.getElementById("upload-status");
+          if (uploadStatus) {
+            uploadStatus.innerHTML = ``;
+          }
+          this.dropzone.classList.add("hidden");
+          // Update button to show completion
+          this.allDocumentsUploadedBtn.innerHTML = `
+            <svg class="mr-2 h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+            </svg>
+            Documents Submitted ✓
+          `;
+          this.allDocumentsUploadedBtn.classList.remove("bg-green-600", "hover:bg-green-700");
+          this.allDocumentsUploadedBtn.classList.add("bg-gray-600", "cursor-not-allowed");
+          this.allDocumentsUploadedBtn.disabled = true;
+
+          // window.location.href = `/project/${this.projectId}?tab=proposal`;
+        }
+      } catch (error) {
+        console.error("Error updating project status:", error);
+        this.showError(`Failed to update project status: ${error.message}`);
+
+        // Reset button to original state
+        this.allDocumentsUploadedBtn.disabled = false;
+        this.allDocumentsUploadedBtn.innerHTML = `
+          <svg class="mr-2 h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
+            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+          </svg>
+          All Documents Uploaded
+        `;
+      }
+    }
+
+
+    async downloadAllFiles() {
+      try {
+        const response = await fetch("/api/get-project-files", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ projectId: this.projectId }),
+        });
+
+        if (response.ok) {
+          const result = await response.json();
+          if (result.files && result.files.length > 0) {
+            // Download each file with a slight delay to avoid browser blocking
+            for (let i = 0; i < result.files.length; i++) {
+              const file = result.files[i];
+              if (file.file_path) {
+                setTimeout(() => {
+                  this.downloadFile(file.file_path, file.file_name || file.name || `file-${i + 1}`);
+                }, i * 500); // 500ms delay between downloads
+              }
+            }
+          } else {
+            this.showError("No files available to download");
+          }
+        }
+      } catch (error) {
+        console.error("Error downloading files:", error);
+        this.showError("Failed to download files");
+      }
+    }
 
     showProgress() {
       this.progressContainer.classList.remove("hidden");
