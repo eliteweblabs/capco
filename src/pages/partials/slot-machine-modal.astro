@@ -17,6 +17,8 @@ let componentId,
   showImages,
   imageField,
   valueField,
+  projectId,
+  name,
   labelField;
 
 if (hasProps) {
@@ -36,6 +38,8 @@ if (hasProps) {
   imageField = props.imageField || "image_url";
   valueField = props.valueField || "value";
   labelField = props.labelField || "label";
+  projectId = props.projectId || "";
+  name = props.name || "";
 } else {
   // Fall back to headers when used as partial
   componentId = Astro.request.headers.get("x-component-id") || "slot-machine";
@@ -52,6 +56,8 @@ if (hasProps) {
   imageField = Astro.request.headers.get("x-image-field") || "image_url";
   valueField = Astro.request.headers.get("x-value-field") || "value";
   labelField = Astro.request.headers.get("x-label-field") || "label";
+  projectId = Astro.request.headers.get("x-project-id") || "";
+  name = Astro.request.headers.get("x-name") || "";
 }
 
 import Button from "../../components/common/Button.astro";
@@ -125,13 +131,6 @@ import Button from "../../components/common/Button.astro";
         class="slot-machine-container relative mb-4 h-48 overflow-hidden rounded-lg border-2 border-gray-200 dark:border-gray-600"
       >
         <!-- Loading State -->
-
-        <!-- Error Message -->
-        <div
-          id={`${componentId}-slot-error`}
-          class="absolute inset-0 hidden items-center justify-center text-red-600 dark:text-red-400"
-        >
-        </div>
 
         <div
           id={`${componentId}-slot-loading`}

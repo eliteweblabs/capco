@@ -121,10 +121,10 @@ export const DELETE: APIRoute = async ({ request, cookies }) => {
 
     const canDelete = profile?.role === "Admin" || profile?.role === "Staff";
 
-    console.log("User role:", profile?.role);
-    console.log("Is admin:", canDelete);
-    console.log("Project author:", project.author_id);
-    console.log("Current user:", user.id);
+    // console.log("User role:", profile?.role);
+    // console.log("Is admin:", canDelete);
+    // console.log("Project author:", project.author_id);
+    // console.log("Current user:", user.id);
 
     if (!canDelete) {
       console.error("Unauthorized to delete this project");
@@ -161,7 +161,7 @@ export const DELETE: APIRoute = async ({ request, cookies }) => {
         console.log("Deleting files from storage:", filePaths);
 
         const { error: storageDeleteError } = await supabase.storage
-          .from("project-documents")
+          .from("project-media")
           .remove(filePaths);
 
         if (storageDeleteError) {

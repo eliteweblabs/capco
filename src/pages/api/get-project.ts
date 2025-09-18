@@ -65,9 +65,10 @@ export const GET: APIRoute = async ({ request, cookies, url }) => {
       console.log("📡 [API] Using supabaseAdmin client to bypass RLS policies");
 
       // Use admin client to bypass RLS policies for project listing
+      // Now includes featured_image_data for optimized queries
       let query = supabaseAdmin
         .from("projects")
-        .select("*")
+        .select("*, featured_image_data")
         .neq("id", 0) // Exclude system log project
         .order("updated_at", { ascending: false });
 
@@ -202,7 +203,7 @@ export const GET: APIRoute = async ({ request, cookies, url }) => {
       }
 
       // Attach profile data to projects
-      projects.forEach((project: any) => {
+      for (const project of projects) {
         if (project.author_id) {
           const authorProfile = profilesMap.get(project.author_id);
           project.profiles = authorProfile || null;
@@ -221,10 +222,58 @@ export const GET: APIRoute = async ({ request, cookies, url }) => {
           project.assigned_profiles = profilesMap.get(project.assigned_to_id) || null;
         }
 
-        // Process featured image data
-        if (project.featured_image) {
+        // Process featured image data (new system using featured_image_id)
+        if (project.featured_image_id && (supabaseAdmin || supabase)) {
           try {
-            // Parse the featured_image JSON if it's a string
+            // Get featured image from files table using featured_image_id
+            const client = supabaseAdmin || supabase;
+            const { data: featuredImageFile, error: featuredImageError } = await client
+              .from("files")
+              .select("*")
+              .eq("id", project.featured_image_id)
+              .single();
+
+            if (!featuredImageError && featuredImageFile) {
+              // Generate signed URL using bucket name
+              const bucketName = featuredImageFile.bucket_name || "project-documents";
+              const { data: urlData, error: urlError } = await client.storage
+                .from(bucketName)
+                .createSignedUrl(featuredImageFile.file_path, 3600);
+
+              if (urlError) {
+                console.warn("Failed to generate signed URL for featured image:", urlError);
+              }
+
+              project.featured_image_data = {
+                id: featuredImageFile.id,
+                file_path: featuredImageFile.file_path,
+                file_name: featuredImageFile.file_name,
+                file_type: featuredImageFile.file_type,
+                public_url: urlData?.signedUrl || null,
+                bucket_name: bucketName,
+                title: featuredImageFile.title,
+                uploaded_at: featuredImageFile.uploaded_at,
+              };
+            } else {
+              console.warn(
+                "📡 [GET-PROJECT] Featured image file not found for project",
+                project.id,
+                "featured_image_id:",
+                project.featured_image_id
+              );
+              project.featured_image_data = null;
+            }
+          } catch (error) {
+            console.warn(
+              "📡 [GET-PROJECT] Error loading featured image for project",
+              project.id,
+              error
+            );
+            project.featured_image_data = null;
+          }
+        } else if (project.featured_image) {
+          // Fallback: Handle old featured_image JSON format for backward compatibility
+          try {
             const featuredImageData =
               typeof project.featured_image === "string"
                 ? JSON.parse(project.featured_image)
@@ -239,7 +288,7 @@ export const GET: APIRoute = async ({ request, cookies, url }) => {
             };
           } catch (error) {
             console.warn(
-              "📡 [GET-PROJECT] Error parsing featured_image for project",
+              "📡 [GET-PROJECT] Error parsing legacy featured_image for project",
               project.id,
               error
             );
@@ -248,7 +297,7 @@ export const GET: APIRoute = async ({ request, cookies, url }) => {
         } else {
           project.featured_image_data = null;
         }
-      });
+      }
     }
 
     // Optimize: Add comment counts with efficient aggregation query

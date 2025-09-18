@@ -33,7 +33,19 @@ interface Props {
   showNotification?: boolean; // Optional: Whether to show notification (default: true)
   // project: any; // Optional: Status for API calls
   icon?: string; // Optional: Icon name for the button (default: "")
-  buttonVariant?: string; // Optional: Button variant (default: "primary")
+  buttonVariant?:
+    | "primary"
+    | "secondary"
+    | "outline"
+    | "ghost"
+    | "link"
+    | "success"
+    | "warning"
+    | "danger"
+    | "loading"
+    | "disabled"
+    | "selected"
+    | "anchor"; // Optional: Button variant (default: "primary")
 }
 
 const {
@@ -83,18 +95,26 @@ const displayText = buttonText || selectedOption?.label || placeholder;
 <!-- Slot Machine Picker Button -->
 <Button
   id={id}
-  variant={buttonVariant || "primary"}
+  variant={buttonVariant || "outline"}
   class={buttonClass || ""}
   icon={icon}
   iconPosition="right"
   class="w-full"
+  data-refresh={name}
+  data-project-id={projectId}
 >
-  <span class="button-text">{displayText}</span>
-  <span class="button-icon" style="display: inline-block;"> </span>
+  {displayText}
 </Button>
 
 <!-- Hidden input to store the selected value -->
-<input type="hidden" id={`${id}-value`} name={name || id} value={selectedValue} />
+<input
+  type="hidden"
+  id={`${id}-value`}
+  name={name || id}
+  value={selectedValue}
+  data-refresh={name}
+  data-project-id={projectId}
+/>
 
 <script
   define:vars={{
@@ -159,17 +179,17 @@ const displayText = buttonText || selectedOption?.label || placeholder;
           }
 
           // Update button text by showing/hiding elements
-          const buttonText = trigger.querySelector(".button-text");
-          const buttonIcon = trigger.querySelector(".button-icon");
+          // const buttonText = trigger.querySelector(".button-text");
+          // const buttonIcon = trigger.querySelector(".button-icon");
 
-          if (buttonText) {
-            buttonText.textContent = label;
-          }
+          // if (buttonText) {
+          //   buttonText.textContent = label;
+          // }
 
-          // Show the button icon if it exists
-          if (buttonIcon) {
-            buttonIcon.style.display = "inline-block";
-          }
+          // // Show the button icon if it exists
+          // if (buttonIcon) {
+          //   buttonIcon.style.display = "inline-block";
+          // }
 
           console.log(`🎰 [SLOT-MACHINE] ===== SELECTION MADE =====`);
           console.log(`🎰 [SLOT-MACHINE] Selected value: ${value} (type: ${typeof value})`);
@@ -1226,13 +1246,8 @@ const displayText = buttonText || selectedOption?.label || placeholder;
     // Find the button and update its text
     const button = document.getElementById(componentId);
     if (button) {
-      const buttonText = button.querySelector(".button-text");
-      if (buttonText) {
-        buttonText.textContent = label;
-        console.log(`🎰 [SLOT-MACHINE] Updated button text to: ${label}`);
-      } else {
-        console.log(`🎰 [SLOT-MACHINE] Button text element not found`);
-      }
+      button.textContent = label;
+      console.log(`🎰 [SLOT-MACHINE] Updated button text to: ${label}`);
     } else {
       console.log(`🎰 [SLOT-MACHINE] Button ${componentId} not found`);
     }

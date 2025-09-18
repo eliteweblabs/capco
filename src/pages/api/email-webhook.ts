@@ -722,10 +722,14 @@ async function uploadAttachments(projectId: number, attachments: any[]) {
         continue;
       }
 
-      // Get public URL
-      const { data: urlData } = supabase.storage
+      // Get signed URL
+      const { data: urlData, error: urlError } = await supabase.storage
         .from("project-files")
-        .getPublicUrl(`${projectId}/${filename}`);
+        .createSignedUrl(`${projectId}/${filename}`, 3600);
+
+      if (urlError) {
+        console.warn("Failed to generate signed URL for email attachment:", urlError);
+      }
 
       // Add to files table
       const { error: dbError } = await supabase.from("files").insert({

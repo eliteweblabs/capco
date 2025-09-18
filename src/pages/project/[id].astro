@@ -2,7 +2,7 @@
 import App from "../../components/common/App.astro";
 import SectionContainer from "../../components/common/SectionContainer.astro";
 import HeroProject from "../../components/common/HeroProject.astro";
-import BoxIcon from "../../components/common/BoxIcon.astro";
+
 import SlidingPillNav from "../../components/common/SlidingPillNav.astro";
 import TabDocuments from "../../components/project/TabDocuments.astro";
 import TabDiscussions from "../../components/project/TabDiscussions.astro";
@@ -125,6 +125,7 @@ if (supabase) {
   // });
 
   project = projectResult.data;
+  console.log("🔍 [PROJECT] Project data:", project.featured_image_data);
   projectId = project?.id?.toString() || id || "";
 
   // Convert statuses array to object for easier lookup
@@ -311,11 +312,9 @@ if (!project) {
     description={`<div class="space-y-1">
       <div class="inline-flex items-center">
         <i class="bx bx-user mr-2 text-gray-500"></i>
-        <span class="font-medium">${authorProfile?.company_name || "Unknown Author"}</span>
+        <span class="font-medium">${project?.company_name || "Unknown Author"}</span>
       </div>
-      <div class="text-sm text-gray-600 dark:text-gray-400">
-        ${authorProfile?.display_name ? `<br/>${authorProfile.display_name}` : ""}
-      </div>
+     
     </div>`}
     statusColor={currentStatusColor}
     projectId={projectId}

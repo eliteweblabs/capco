@@ -35,14 +35,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     }
 
     const body = await request.json();
-    let {
-      projectId,
-      message,
-      internal = false,
-      sms_alert = false,
-      parent_id = null,
-      imageUrls = [],
-    } = body;
+    let { projectId, message, internal = false, sms_alert = false, parent_id = null } = body;
 
     // Force internal = false for clients (only Admin/Staff can create internal comments)
     const isClient = currentRole === "Client";
@@ -88,17 +81,6 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     }
 
     // Add the discussion
-    // console.log("🔔 [DISCUSSION] Inserting discussion:", {
-    //   project_id: projectIdInt,
-    //   author_id: currentUser.id,
-    //   message: message.trim(),
-    //   internal: internal,
-    //   sms_alert: sms_alert,
-    //   image_urls: imageUrls,
-    //   image_urls_type: typeof imageUrls,
-    //   image_urls_length: Array.isArray(imageUrls) ? imageUrls.length : "not array",
-    // });
-
     const { data: discussion, error } = await supabase
       .from("discussion")
       .insert({
@@ -108,7 +90,6 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         internal: internal,
         sms_alert: sms_alert,
         parent_id: parent_id,
-        image_urls: imageUrls,
         company_name: currentUser.company_name,
       })
       .select(
@@ -121,7 +102,6 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         sms_alert,
         project_id,
         parent_id,
-        image_urls,
         company_name
       `
       )

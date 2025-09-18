@@ -292,6 +292,103 @@ const { class: className, id = "project-search" } = Astro.props;
     return text.replace(regex, '<strong class="font-semibold">$1</strong>');
   }
 
+  // Event listeners
+  document.addEventListener("DOMContentLoaded", function () {
+    const searchInput = document.getElementById(id);
+    const clearBtn = document.getElementById(`${id}-clear`);
+
+    if (searchInput) {
+      searchInput.addEventListener("input", function () {
+        const searchTerm = this.value;
+        filterProjectsBySearch(searchTerm);
+
+        // Show suggestions if there's a search term
+        if (searchTerm.length > 0) {
+          showSuggestions(searchTerm);
+        } else {
+          hideSuggestions();
+        }
+      });
+
+      // Hide suggestions when input loses focus (with a small delay for clicks)
+      searchInput.addEventListener("blur", function () {
+        setTimeout(() => hideSuggestions(), 150);
+      });
+
+      // Handle keyboard navigation
+      searchInput.addEventListener("keydown", function (e) {
+        const suggestionsDiv = document.getElementById(`${id}-suggestions`);
+        if (!suggestionsDiv || suggestionsDiv.classList.contains("hidden")) return;
+
+        const suggestions = suggestionsDiv.querySelectorAll(".suggestion-item");
+        const currentActive = suggestionsDiv.querySelector(".suggestion-item.bg-gray-100");
+        let activeIndex = -1;
+
+        if (currentActive) {
+          activeIndex = Array.from(suggestions).indexOf(currentActive);
+        }
+
+        if (e.key === "ArrowDown") {
+          e.preventDefault();
+          activeIndex = Math.min(activeIndex + 1, suggestions.length - 1);
+        } else if (e.key === "ArrowUp") {
+          e.preventDefault();
+          activeIndex = Math.max(activeIndex - 1, -1);
+        } else if (e.key === "Enter" && activeIndex >= 0) {
+          e.preventDefault();
+          const activeSuggestion = suggestions[activeIndex];
+          if (activeSuggestion) {
+            const suggestion = activeSuggestion.getAttribute("data-suggestion");
+            this.value = suggestion;
+            filterProjectsBySearch(suggestion);
+            hideSuggestions();
+          }
+          return;
+        } else if (e.key === "Escape") {
+          hideSuggestions();
+          return;
+        }
+
+        // Update active suggestion highlight
+        suggestions.forEach((item, index) => {
+          if (index === activeIndex) {
+            item.classList.add("bg-gray-100", "dark:bg-gray-700");
+          } else {
+            item.classList.remove("bg-gray-100", "dark:bg-gray-700");
+          }
+        });
+      });
+    }
+
+    if (clearBtn) {
+      clearBtn.addEventListener("click", clearProjectSearch);
+    }
+
+    // Build initial suggestions list
+    setTimeout(() => {
+      const projectList = document.getElementById("project-list");
+      const projects = projectList ? projectList.querySelectorAll("[data-project-id]") : [];
+      console.log("🔍 Initial check: Found", projects.length, "projects in list");
+
+      // Build suggestions from searchable elements
+      buildSuggestionsList();
+
+      // Watch for changes to the project list to rebuild suggestions
+      if (projectList) {
+        const observer = new MutationObserver(() => {
+          // Rebuild suggestions when projects are added/removed/changed
+          setTimeout(() => buildSuggestionsList(), 100);
+        });
+
+        observer.observe(projectList, {
+          childList: true,
+          subtree: true,
+          characterData: true,
+        });
+      }
+    }, 500);
+  });
+
   // Make functions globally available for other components
   window.filterProjectsBySearch = filterProjectsBySearch;
   window.clearProjectSearch = clearProjectSearch;
