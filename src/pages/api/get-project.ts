@@ -13,36 +13,11 @@ export const GET: APIRoute = async ({ request, cookies, url }) => {
     const assignedToId = url.searchParams.get("assigned_to_id");
     const authorId = url.searchParams.get("author_id");
 
-    console.log(`📡 [API] URL search params:`, url.searchParams.toString());
-    console.log(`📡 [API] assignedToId value:`, assignedToId);
-    console.log(`📡 [API] authorId value:`, authorId);
-
-    if (assignedToId) {
-      console.log(`📡 [API] Filtering projects by assigned_to_id: ${assignedToId}`);
-    }
-    if (authorId) {
-      console.log(`📡 [API] Filtering projects by author_id: ${authorId}`);
-    }
-    if (!assignedToId && !authorId) {
-      console.log(`📡 [API] No filter parameters found - returning all projects`);
-    }
     if (!supabase) {
       return new Response(JSON.stringify({ error: "Database connection not available" }), {
         status: 500,
       });
     }
-
-    // Fetch all projects - no role-based filtering
-    // console.log("📡 [API] Fetching all projects");
-
-    // First, get projects without JOINs to ensure basic functionality works
-    // console.log("📡 [API] Fetching projects with basic query first...");
-    // console.log("📡 [API] Using supabaseAdmin client:", !!supabaseAdmin);
-    // console.log(
-    //   "📡 [API] Service role key available:",
-    //   !!import.meta.env.SUPABASE_SERVICE_ROLE_KEY
-    // );
-    // console.log("📡 [API] Supabase URL:", import.meta.env.SUPABASE_URL);
 
     let projects: any[] = [],
       error;
@@ -73,7 +48,7 @@ export const GET: APIRoute = async ({ request, cookies, url }) => {
       projects = result.data || [];
       error = result.error;
     } else {
-      console.log("📡 [API] Using supabaseAdmin client to bypass RLS policies");
+      // console.log("📡 [API] Using supabaseAdmin client to bypass RLS policies");
 
       // Use admin client to bypass RLS policies for project listing
       // Now includes featured_image_data for optimized queries
@@ -85,13 +60,13 @@ export const GET: APIRoute = async ({ request, cookies, url }) => {
 
       // Filter by assigned_to_id if provided
       if (assignedToId) {
-        console.log(`📡 [API] Adding filter for assigned_to_id: ${assignedToId}`);
+        // console.log(`📡 [API] Adding filter for assigned_to_id: ${assignedToId}`);
         query = query.eq("assigned_to_id", assignedToId);
       }
 
       // Filter by author_id if provided
       if (authorId) {
-        console.log(`📡 [API] Adding filter for author_id: ${authorId}`);
+        // console.log(`📡 [API] Adding filter for author_id: ${authorId}`);
         query = query.eq("author_id", authorId);
       }
 
