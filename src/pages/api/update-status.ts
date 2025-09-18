@@ -145,6 +145,12 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     if (statusDataResponse.ok) {
       const statusData = await statusDataResponse.json();
       console.log("📊 [UPDATE-STATUS] Status data retrieved:", statusData);
+      console.log("🔍 [UPDATE-STATUS] Button config debug:", {
+        button_link: statusData.statusConfig.button_link,
+        button_text: statusData.statusConfig.button_text,
+        hasButtonLink: !!statusData.statusConfig.button_link,
+        hasButtonText: !!statusData.statusConfig.button_text,
+      });
 
       // Merge project data with status config for placeholder replacement
       const mergedData = {
@@ -191,6 +197,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         clientEmail: clientEmail,
         statusName: statusData.statusConfig.admin_status_name,
         estTime: statusData.statusConfig.est_time,
+        primaryColor: "#3b82f6", // Default primary color (can be made configurable later)
       };
 
       console.log("📊 [UPDATE-STATUS] Placeholder data prepared:", placeholderData);
@@ -284,6 +291,33 @@ export const POST: APIRoute = async ({ request, cookies }) => {
           console.error("📊 [UPDATE-STATUS] Failed to fetch admin/staff emails");
         }
 
+        // Process button link and text through placeholder replacement (without bold tags)
+        let processedButtonLink = statusData.statusConfig.button_link || "";
+        let processedButtonText = statusData.statusConfig.button_text || "";
+
+        if (processedButtonLink) {
+          // Add # prefix if it doesn't start with http or #
+          if (!processedButtonLink.startsWith("http") && !processedButtonLink.startsWith("#")) {
+            processedButtonLink = "#" + processedButtonLink;
+          }
+          // Process placeholders without bold tags
+          const { replacePlaceholders } = await import("../../lib/placeholder-utils");
+          processedButtonLink = replacePlaceholders(processedButtonLink, placeholderData, false);
+        }
+
+        if (processedButtonText) {
+          // Process placeholders without bold tags
+          const { replacePlaceholders } = await import("../../lib/placeholder-utils");
+          processedButtonText = replacePlaceholders(processedButtonText, placeholderData, false);
+        }
+
+        console.log("🔍 [UPDATE-STATUS] Processed button config:", {
+          originalLink: statusData.statusConfig.button_link,
+          processedLink: processedButtonLink,
+          originalText: statusData.statusConfig.button_text,
+          processedText: processedButtonText,
+        });
+
         // Send client email using original email delivery API
         // console.log("📊 [UPDATE-STATUS] Sending client email...");
         const clientEmailResponse = await fetch(`${baseUrl}/api/email-delivery`, {
@@ -295,8 +329,8 @@ export const POST: APIRoute = async ({ request, cookies }) => {
             usersToNotify: [clientEmail], // Use resolved client email
             emailSubject: placeholderResult.processedMessages.client_email_subject,
             emailContent: placeholderResult.processedMessages.client_email_content,
-            buttonLink: statusData.statusConfig.button_link,
-            buttonText: statusData.statusConfig.button_text,
+            buttonLink: processedButtonLink,
+            buttonText: processedButtonText,
             projectId: projectId,
             newStatus: newStatus,
             authorId: updatedProject.author_id,
@@ -322,8 +356,8 @@ export const POST: APIRoute = async ({ request, cookies }) => {
             usersToNotify: adminStaffEmails, // Use resolved admin/staff emails
             emailSubject: placeholderResult.processedMessages.admin_email_subject,
             emailContent: placeholderResult.processedMessages.admin_email_content,
-            buttonLink: statusData.statusConfig.button_link,
-            buttonText: statusData.statusConfig.button_text,
+            buttonLink: processedButtonLink, // Use processed button link
+            buttonText: processedButtonText, // Use processed button text
           }),
         });
 

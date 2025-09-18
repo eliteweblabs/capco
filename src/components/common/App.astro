@@ -50,8 +50,8 @@ const navigationData = navigation(
   isBackend || false
 );
 const { desktopNavigationHTML, visibleNavItems } = navigationData;
-console.log("🏗️ [APP] Desktop navigation HTML:", desktopNavigationHTML);
-console.log("🏗️ [APP] Visible nav items:", visibleNavItems);
+// console.log("🏗️ [APP] Desktop navigation HTML:", desktopNavigationHTML);
+// console.log("🏗️ [APP] Visible nav items:", visibleNavItems);
 
 let assignedProjectsCount = 0;
 let assignedProjects: any[] = [];
@@ -452,6 +452,94 @@ o       oter -->
           );
         }
       };
+    </script>
+
+    <!-- Magic Link Authentication Handler -->
+    <script>
+      // Global magic link authentication handler
+      (window as any).handleMagicLinkAuth = async function () {
+        try {
+          // Check if we have auth tokens in the URL fragment
+          const fragment = window.location.hash.substring(1);
+          if (!fragment) return;
+
+          const params = new URLSearchParams(fragment);
+          const accessToken = params.get("access_token");
+          const refreshToken = params.get("refresh_token");
+          const expiresIn = params.get("expires_in");
+          const tokenType = params.get("token_type");
+          const type = params.get("type");
+
+          // Only handle magic link callbacks
+          if (!accessToken || !refreshToken || type !== "magiclink") {
+            return;
+          }
+
+          console.log("🔐 [MAGIC-LINK] Processing magic link authentication...");
+
+          // Set auth cookies via API call
+          const response = await fetch("/api/auth/callback", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              access_token: accessToken,
+              refresh_token: refreshToken,
+              expires_in: parseInt(expiresIn || "3600"),
+              token_type: tokenType || "bearer",
+            }),
+          });
+
+          if (response.ok) {
+            console.log("✅ [MAGIC-LINK] Authentication successful, redirecting...");
+
+            // Clear the URL fragment to prevent reprocessing
+            window.history.replaceState(
+              {},
+              document.title,
+              window.location.pathname + window.location.search
+            );
+
+            // Redirect to dashboard
+            window.location.href = "/dashboard";
+          } else {
+            const errorData = await response.json();
+            console.error("❌ [MAGIC-LINK] Authentication failed:", errorData);
+
+            // Show error message to user
+            if (typeof (window as any).showModal === "function") {
+              (window as any).showModal(
+                "error",
+                "Login Failed",
+                "There was an error processing your login. Please try again."
+              );
+            }
+          }
+        } catch (error) {
+          console.error("❌ [MAGIC-LINK] Error processing magic link:", error);
+
+          // Show error message to user
+          if (typeof (window as any).showModal === "function") {
+            (window as any).showModal(
+              "error",
+              "Login Error",
+              "There was an unexpected error. Please try again."
+            );
+          }
+        }
+      };
+
+      // Run magic link handler on page load
+      document.addEventListener("DOMContentLoaded", (window as any).handleMagicLinkAuth);
+
+      // Also run immediately in case DOM is already loaded
+      if (document.readyState === "loading") {
+        // DOM is still loading, event listener will handle it
+      } else {
+        // DOM is already loaded, run immediately
+        (window as any).handleMagicLinkAuth();
+      }
     </script>
 
     <!-- Flowbite JavaScript -->
