@@ -177,7 +177,7 @@ const newStatus = 50;
         });
       }
 
-      initializeCanvas(canvas, maxWidth, maxHeight, aspectRatio) {
+      initializeCanvas(canvas, maxWidth, maxHeight, aspectRatio, retryCount = 0) {
         const container = canvas.parentElement;
         if (!container) {
           console.warn("🎨 [DigitalSignature] No container found for canvas:", canvas.id);
@@ -187,15 +187,26 @@ const newStatus = 50;
         // Wait for container to be properly sized
         const containerWidth = container.clientWidth || container.offsetWidth;
 
-        // Ensure we have a valid container width
-        if (!containerWidth || containerWidth < 100) {
-          console.warn("🎨 [DigitalSignature] Container not ready, retrying in 100ms");
-          setTimeout(() => this.initializeCanvas(canvas, maxWidth, maxHeight, aspectRatio), 100);
+        // Ensure we have a valid container width, but limit retries to prevent infinite loops
+        if ((!containerWidth || containerWidth < 100) && retryCount < 10) {
+          console.warn(
+            `🎨 [DigitalSignature] Container not ready (${containerWidth}px), retrying ${retryCount + 1}/10`
+          );
+          setTimeout(
+            () => this.initializeCanvas(canvas, maxWidth, maxHeight, aspectRatio, retryCount + 1),
+            100
+          );
           return;
         }
 
-        // Calculate responsive dimensions
-        const availableWidth = Math.min(containerWidth - 8, maxWidth); // -8 for border and padding
+        // If we've exceeded retry limit, use fallback dimensions
+        if (retryCount >= 10) {
+          console.warn("🎨 [DigitalSignature] Retry limit exceeded, using fallback dimensions");
+        }
+
+        // Calculate responsive dimensions with fallback for failed container detection
+        const effectiveContainerWidth = containerWidth || 600; // Fallback to 600px if detection failed
+        const availableWidth = Math.min(effectiveContainerWidth - 8, maxWidth); // -8 for border and padding
         const calculatedHeight = availableWidth / aspectRatio;
         const availableHeight = Math.min(calculatedHeight, maxHeight);
 
@@ -204,7 +215,9 @@ const newStatus = 50;
         const displayHeight = Math.max(availableHeight, 150); // Minimum 150px height
 
         console.log("📐 [DigitalSignature] Initializing canvas dimensions:", {
-          containerWidth,
+          containerWidth: containerWidth || "FAILED_TO_DETECT",
+          effectiveContainerWidth,
+          retryCount,
           maxWidth,
           maxHeight,
           aspectRatio,

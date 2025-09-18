@@ -1,6 +1,6 @@
 ---
-import StickySMS from "./StickySMS.astro";
 import HttpChatWidget from "./HttpChatWidget.astro";
+import StickySMS from "./StickySMS.astro";
 
 const { isAuth, currentUser, currentRole } = Astro.props;
 
@@ -9,19 +9,17 @@ const { isAuth, currentUser, currentRole } = Astro.props;
 
 <div id="sticky-container" class="fixed bottom-6 left-6 z-40">
   {
-    !isAuth ? (
-      <StickySMS isAuth={isAuth} currentUser={currentUser} currentRole={currentRole} />
+    currentRole === "Admin" || currentRole === "Staff" ? (
+      <HttpChatWidget
+        currentUser={{
+          id: currentUser.id,
+          email: currentUser.email || "",
+          company_name: currentUser.company_name || "User",
+        }}
+        currentRole={currentRole || ""}
+      />
     ) : (
-      currentUser && (
-        <HttpChatWidget
-          currentUser={{
-            id: currentUser.id,
-            email: currentUser.email || "",
-            company_name: currentUser.company_name || "User",
-          }}
-          currentRole={currentRole || ""}
-        />
-      )
+      <StickySMS isAuth={isAuth} currentUser={currentUser} currentRole={currentRole} />
     )
   }
 </div>

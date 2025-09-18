@@ -56,7 +56,7 @@ const { desktopNavigationHTML, visibleNavItems } = navigationData;
 let assignedProjectsCount = 0;
 let assignedProjects: any[] = [];
 
-if (currentUser?.id) {
+if ((currentUser?.id && currentRole === "Staff") || currentRole === "Admin") {
   // console.log("🏗️ [APP] Fetching assigned projects for user:", currentUser.id);
   const baseUrl = Astro.url.origin || "http://localhost:4321";
   const fullUrl = `${baseUrl}/api/get-project?assigned_to_id=${currentUser.id}`;
@@ -67,7 +67,22 @@ if (currentUser?.id) {
       const data = await response.json();
       // console.log("🏗️ [APP] Assigned projects:", data);
       assignedProjects = data.projects || [];
-      assignedProjectsCount = data.count || 0;
+      assignedProjectsCount = data.projects.length || 0;
+    }
+  } catch (error) {
+    console.error("Error fetching assigned projects:", error);
+  }
+} else if (currentUser?.id && currentRole === "Client") {
+  const baseUrl = Astro.url.origin || "http://localhost:4321";
+  const fullUrl = `${baseUrl}/api/get-project?author_id=${currentUser.id}`;
+  // console.log("🏗️ [APP] Full URL:", fullUrl);
+  try {
+    const response = await fetch(fullUrl);
+    if (response.ok) {
+      const data = await response.json();
+      // console.log("🏗️ [APP] Assigned projects:", data);
+      assignedProjects = data.projects || [];
+      assignedProjectsCount = data.projects.length || 0;
     }
   } catch (error) {
     console.error("Error fetching assigned projects:", error);

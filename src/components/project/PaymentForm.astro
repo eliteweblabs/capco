@@ -904,11 +904,46 @@ console.log("🔍 [PAYMENT-FORM] Computed lastNameValue:", lastNameValue);
     // Link Pay setup (Venmo-like)
     const linkPayButton = document.getElementById("link-pay-button");
     if (linkPayButton) {
-      linkPayButton.classList.remove("hidden");
+      // Check if Link is available
+      const linkAvailable = await stripe
+        .paymentRequest({
+          country: "US",
+          currency: "usd",
+          total: { label: "Test", amount: 100 },
+          requestPayerName: true,
+          requestPayerEmail: true,
+        })
+        .canMakePayment();
 
-      linkPayButton.addEventListener("click", async () => {
-        await handlePayment("link");
-      });
+      if (linkAvailable?.link) {
+        linkPayButton.classList.remove("hidden");
+
+        linkPayButton.addEventListener("click", async () => {
+          try {
+            console.log("💳 [LINK-PAY] Processing Link payment...");
+
+            // Create Link payment method
+            const { error, paymentMethod } = await stripe.createPaymentMethod({
+              type: "link",
+            });
+
+            if (error) {
+              console.error("❌ [LINK-PAY] Error creating payment method:", error);
+              showError("Failed to initialize Link payment. Please try another method.");
+              return;
+            }
+
+            console.log("✅ [LINK-PAY] Payment method created:", paymentMethod.id);
+            await handlePayment(paymentMethod.id);
+          } catch (error) {
+            console.error("❌ [LINK-PAY] Link payment error:", error);
+            showError("Link payment failed. Please try another method.");
+          }
+        });
+      } else {
+        console.log("🔗 [LINK-PAY] Link not available, hiding button");
+        linkPayButton.style.display = "none";
+      }
     }
   })();
 </script>

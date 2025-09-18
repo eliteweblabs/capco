@@ -9,17 +9,22 @@ export const GET: APIRoute = async ({ request, cookies, url }) => {
     const { currentRole } = await checkAuth(cookies);
     const isClient = currentRole === "Client";
 
-    // Get user ID from query parameters
+    // Get filter parameters from query
     const assignedToId = url.searchParams.get("assigned_to_id");
+    const authorId = url.searchParams.get("author_id");
 
     console.log(`📡 [API] URL search params:`, url.searchParams.toString());
     console.log(`📡 [API] assignedToId value:`, assignedToId);
-    console.log(`📡 [API] assignedToId type:`, typeof assignedToId);
+    console.log(`📡 [API] authorId value:`, authorId);
 
     if (assignedToId) {
       console.log(`📡 [API] Filtering projects by assigned_to_id: ${assignedToId}`);
-    } else {
-      console.log(`📡 [API] No assigned_to_id parameter found`);
+    }
+    if (authorId) {
+      console.log(`📡 [API] Filtering projects by author_id: ${authorId}`);
+    }
+    if (!assignedToId && !authorId) {
+      console.log(`📡 [API] No filter parameters found - returning all projects`);
     }
     if (!supabase) {
       return new Response(JSON.stringify({ error: "Database connection not available" }), {
@@ -58,6 +63,12 @@ export const GET: APIRoute = async ({ request, cookies, url }) => {
         query = query.eq("assigned_to_id", assignedToId);
       }
 
+      // Filter by author_id if provided
+      if (authorId) {
+        console.log(`📡 [API] Adding filter for author_id: ${authorId}`);
+        query = query.eq("author_id", authorId);
+      }
+
       const result = await query;
       projects = result.data || [];
       error = result.error;
@@ -76,6 +87,12 @@ export const GET: APIRoute = async ({ request, cookies, url }) => {
       if (assignedToId) {
         console.log(`📡 [API] Adding filter for assigned_to_id: ${assignedToId}`);
         query = query.eq("assigned_to_id", assignedToId);
+      }
+
+      // Filter by author_id if provided
+      if (authorId) {
+        console.log(`📡 [API] Adding filter for author_id: ${authorId}`);
+        query = query.eq("author_id", authorId);
       }
 
       const result = await query;
@@ -438,12 +455,18 @@ export const GET: APIRoute = async ({ request, cookies, url }) => {
       }
     }
 
+    // Build filter description for response
+    const filters = [];
+    if (assignedToId) filters.push(`assigned_to_id: ${assignedToId}`);
+    if (authorId) filters.push(`author_id: ${authorId}`);
+    const filteredBy = filters.length > 0 ? filters.join(", ") : null;
+
     return new Response(
       JSON.stringify({
         success: true,
         projects: projects || [],
         count: projects?.length || 0,
-        filtered_by: assignedToId ? `assigned_to_id: ${assignedToId}` : null,
+        filtered_by: filteredBy,
       }),
       {
         status: 200,

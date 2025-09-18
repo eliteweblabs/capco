@@ -6,6 +6,7 @@ import HeroProject from "../../components/common/HeroProject.astro";
 import SlidingPillNav from "../../components/common/SlidingPillNav.astro";
 import TabDocuments from "../../components/project/TabDocuments.astro";
 import TabDiscussions from "../../components/project/TabDiscussions.astro";
+import TabPunchlist from "../../components/project/TabPunchlist.astro";
 import TabProjectForm from "../../components/project/TabProjectForm.astro";
 import TabProposal from "../../components/project/TabProposal.astro";
 import TabContract from "../../components/project/TabContract.astro";
@@ -30,8 +31,9 @@ const { id } = Astro.params;
 
 // Get auth data directly since App component handles auth requirements
 import { checkAuth } from "../../lib/auth";
-const { currentUser = undefined, currentRole = "Client" } = await checkAuth(Astro.cookies);
+const { currentUser, currentRole = "Client" } = await checkAuth(Astro.cookies);
 
+console.log("🚀 [PROJECT] Current user:", currentUser);
 // Removed getAuthorInfoServer function - using direct database queries for better performance
 
 // Get the status parameter from URL query string
@@ -43,6 +45,7 @@ const validTabs = [
   "proposal",
   "contract",
   "deposit",
+  "punchlist",
   "deliverables",
   "final-invoice",
   "activity-log",
@@ -58,6 +61,7 @@ const tabOrder = [
   "proposal",
   "contract",
   "deposit",
+  "punchlist",
   "deliverables",
   "final-invoice",
   "activity-log",
@@ -377,6 +381,14 @@ if (!project) {
           onclick: "switchTab('deposit')",
         },
         {
+          id: "status-punchlist",
+          label: "Punchlist",
+          icon: "check-square",
+          variant: "anchor",
+          dataAttributes: { "data-count": "0" },
+          onclick: "switchTab('punchlist')",
+        },
+        {
           id: "status-deliverables",
           label: "Deliverables",
           icon: "package",
@@ -474,6 +486,18 @@ if (!project) {
         authorProfile={authorProfile}
         invoiceId={invoiceId || "0"}
         totalAmount={totalAmount}
+      />
+
+      <!-- Punchlist Tab -->
+      <TabPunchlist
+        project={project}
+        currentRole={currentRole || undefined}
+        currentUser={currentUser}
+        projectId={projectId}
+        projectStatus={currentStatusInt}
+        projectStatusLabel={currentStatusName || undefined}
+        authorProfile={authorProfile}
+        supabaseUrl={import.meta.env.PUBLIC_SUPABASE_URL}
       />
 
       <!-- Deliverables Tab -->
