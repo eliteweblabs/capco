@@ -3,7 +3,7 @@ import { supabase } from "../../lib/supabase";
 import { supabaseAdmin } from "../../lib/supabase-admin";
 
 export const POST: APIRoute = async ({ request }) => {
-  console.log("📧 [GET-USER-EMAILS-BY-ROLE] API called");
+  // console.log("📧 [GET-USER-EMAILS-BY-ROLE] API called");
 
   try {
     const body = await request.json();

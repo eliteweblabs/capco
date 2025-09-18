@@ -4,7 +4,7 @@ import { supabase } from "../../lib/supabase";
 import ActionButton from "../common/ActionButton.astro";
 import Button from "../common/Button.astro";
 
-const { projectId, project, authorProfile, projectStatus = 0, currentRole, projectStatusLabel, currentUser } = Astro.props;
+const { projectId, project, authorProfile, projectStatus = 0, currentRole, projectStatusLabel, currentUser, invoiceResult } = Astro.props;
 
 // Only show to Admin/Staff users
 const canManageProposals = currentRole === "Admin" || currentRole === "Staff";
@@ -2572,4 +2572,46 @@ const hasExistingProposal = !!existingInvoice;
   }
   // Initialize the ProposalHelper class
   (window as any).proposalHelper = new ProposalHelper();
+</script>
+
+
+<script define:vars={{ invoiceResult }}>  
+
+
+let invoiceId = "0";
+let totalAmount = 0;
+
+
+console.log("🔍 [IS THIS NEEDED???] Invoice result:", invoiceResult);
+
+  //   // Process invoice data
+  //   if (!invoiceResult.error && invoiceResult.data) {
+  //   invoiceId = invoiceResult.data.id.toString();
+  //   // invoiceData = invoiceResult.data;
+
+  //   // Calculate total by looping through catalog line items
+  //   if (
+  //     invoiceResult.data.catalog_line_items &&
+  //     Array.isArray(invoiceResult.data.catalog_line_items)
+  //   ) {
+  //     totalAmount = invoiceResult.data.catalog_line_items.reduce((sum, item) => {
+  //       const quantity = parseFloat(item.quantity) || 0;
+  //       const unitPrice = parseFloat(item.unit_price) || 0;
+  //       return sum + quantity * unitPrice;
+  //     }, 0);
+
+  //     // Convert to cents for Stripe (multiply by 100)
+  //     totalAmount = Math.round(totalAmount * 100);
+  //   }
+  // } else {
+  //   // No invoice found for this project
+  //   invoiceId = "0";
+  // }
+
+  // // Fallback to hardcoded amount if no invoice data found
+  // if (totalAmount === 0) {
+  //   totalAmount = 2000;
+  // }
+
+
 </script>

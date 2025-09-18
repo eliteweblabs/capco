@@ -9,6 +9,9 @@
 </div>
 
 <script>
+  // Import the client-side button styling
+  import "/src/lib/button-styles-client.js";
+
   interface NotificationOptions {
     type: "success" | "error" | "warning" | "info";
     title: string;
@@ -232,6 +235,12 @@
         return this.render({ ...notification, type: "info" });
       }
 
+      // Generate actions HTML first if needed
+      const actionsHTML =
+        notification.actions && Array.isArray(notification.actions)
+          ? this.renderActions(notification.actions, notification.id)
+          : "";
+
       const element = document.createElement("div");
       element.id = `unified-notification-${notification.id}`;
       element.setAttribute("role", "alert");
@@ -262,7 +271,7 @@
               <div class="text-center">
                 <h3 class="text-2xl font-bold text-gray-900 dark:text-white mb-4">${notification.title}</h3>
                 <div class="notification-message text-lg text-gray-600 dark:text-gray-400 mb-8 leading-relaxed">${notification.message}</div>
-                ${notification.actions && Array.isArray(notification.actions) ? this.renderActions(notification.actions, notification.id) : ""}
+                ${actionsHTML}
               </div>
             </div>
             <button 
@@ -309,6 +318,30 @@
       }
     }
 
+    // Helper function to generate button HTML using shared button styling
+    private generateButtonHTML(
+      text: string,
+      variant: string = "primary",
+      size: string = "sm",
+      dataAttributes: Record<string, string> = {}
+    ): string {
+      // Use the global ButtonStyles if available, otherwise fallback
+      if ((window as any).ButtonStyles?.generateButtonHTML) {
+        return (window as any).ButtonStyles.generateButtonHTML(
+          text,
+          { variant, size },
+          dataAttributes
+        );
+      }
+
+      // Fallback button with basic styling if ButtonStyles not loaded
+      const dataAttrs = Object.entries(dataAttributes)
+        .map(([key, value]) => `data-${key}="${value}"`)
+        .join(" ");
+
+      return `<button class="inline-flex justify-center px-4 py-2 text-sm font-medium text-center text-white bg-primary-600 rounded-full hover:bg-primary-700 transition-all duration-200" ${dataAttrs}>${text}</button>`;
+    }
+
     private renderActions(
       actions: Array<{ label: string; action: () => void; primary?: boolean }>,
       notificationId: string
@@ -319,29 +352,25 @@
         return "";
       }
 
-      return `
-        <div class="flex gap-2 mt-3">
-          ${actions
-            .map((action, index) => {
-              // Primary button styling for first action or explicitly marked primary
-              const isPrimary = action.primary || index === 0;
-              const buttonClasses = isPrimary
-                ? "inline-flex justify-center px-3 py-2 text-sm font-medium text-center text-white bg-primary-600 rounded-full hover:bg-primary-700 focus:ring-4 focus:outline-none focus:ring-primary-300 dark:bg-primary-500 dark:hover:bg-primary-600 dark:focus:ring-primary-800"
-                : "inline-flex justify-center px-3 py-2 text-sm font-medium text-center text-gray-900 bg-white border border-gray-300 rounded-full hover:bg-gray-100 focus:ring-4 focus:outline-none focus:ring-gray-200 dark:bg-gray-600 dark:text-white dark:border-gray-600 dark:hover:bg-gray-700 dark:hover:border-gray-700 dark:focus:ring-gray-700";
+      // Generate buttons using shared button styling
+      const buttonHTMLs = actions.map((action, index) => {
+        // Determine variant based on primary flag or position
+        const isPrimary = action.primary || index === 0;
+        const variant = isPrimary ? "primary" : "secondary";
 
-              return `
-                <button 
-                  class="${buttonClasses}"
-                  data-action-index="${index}"
-                  data-notification-id="${notificationId}"
-                >
-                  ${action.label}
-                </button>
-              `;
-            })
-            .join("")}
-        </div>
-      `;
+        const dataAttributes = {
+          "action-index": index.toString(),
+          "notification-id": notificationId,
+        };
+
+        return this.generateButtonHTML(action.label, variant, "sm", dataAttributes);
+      });
+
+      return `
+      <div class="flex gap-2 mt-3">
+        ${buttonHTMLs.join("")}
+      </div>
+    `;
     }
   }
 

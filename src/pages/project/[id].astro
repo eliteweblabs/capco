@@ -33,7 +33,7 @@ const { id } = Astro.params;
 import { checkAuth } from "../../lib/auth";
 const { currentUser, currentRole = "Client" } = await checkAuth(Astro.cookies);
 
-console.log("🚀 [PROJECT] Current user:", currentUser);
+// console.log("🚀 [PROJECT] Current user:", currentUser);
 // Removed getAuthorInfoServer function - using direct database queries for better performance
 
 // Get the status parameter from URL query string
@@ -96,9 +96,12 @@ let statusesObject: any = {};
 // console.log("🚀 [PROJECT] Supabase object:", supabase);
 // console.log("🚀 [PROJECT] SupabaseAdmin object:", supabaseAdmin);
 
+// Initialize invoiceResult with default value
+let invoiceResult = { data: null, error: null };
+
 if (supabase) {
   // OPTIMIZED: Run all database queries in parallel for much faster loading
-  const [projectResult, invoiceResult, statusesResultData] = await Promise.all([
+  const [projectResult, invoiceResultData, statusesResultData] = await Promise.all([
     // 1. Get project data
     supabase.from("projects").select("*").eq("id", id).single(),
 
@@ -118,11 +121,12 @@ if (supabase) {
       .order("status_code"),
   ]);
 
+  const invoiceResult = invoiceResultData || { data: null, error: null };
   // Assign the statuses result (legacy - will be replaced)
   statusesResult = statusesResultData;
 
   project = projectResult.data;
-  console.log("🔍 [PROJECT] Project data:", project.featured_image_data);
+  // console.log("🔍 [PROJECT] Project data:", project.featured_image_data);
   projectId = project?.id?.toString() || id || "";
 
   // Fetch project statuses using the unified API
@@ -149,34 +153,32 @@ if (supabase) {
     statusData = await statusResponse.json();
     console.log("✅ [PROJECT] Unified status API response received");
   } else {
-    console.warn("⚠️ [PROJECT] Unified status API failed, falling back to legacy method");
-    // Fallback to legacy method
-    statusesObject = (statusesResult?.data || []).reduce((acc: any, status: any) => {
-      acc[status.status_code] = status;
-      return acc;
-    }, {});
-
-    const placeholderData = {
-      projectId: project.id,
-      projectAddress: project.address,
-      clientName:
-        (authorProfile as any)?.company_name ||
-        (authorProfile as any)?.first_name + " " + (authorProfile as any)?.last_name ||
-        "Client",
-      clientEmail: (authorProfile as any)?.email || "",
-      statusName:
-        statusesObject[project.status]?.admin_status_name ||
-        statusesObject[project.status]?.client_status_name ||
-        "",
-      contractUrl: `/project/${project.id}?status=contract`,
-      siteUrl: import.meta.env.PUBLIC_SITE_URL || "https://capcofire.com",
-    };
-
-    currentStatusObj = filteredStatusObj(
-      statusesObject[project.status],
-      currentRole || "Client",
-      placeholderData
-    );
+    // console.warn("⚠️ [PROJECT] Unified status API failed, falling back to legacy method");
+    // // Fallback to legacy method
+    // statusesObject = (statusesResult?.data || []).reduce((acc: any, status: any) => {
+    //   acc[status.status_code] = status;
+    //   return acc;
+    // }, {});
+    // const placeholderData = {
+    //   projectId: project.id,
+    //   projectAddress: project.address,
+    //   clientName:
+    //     (authorProfile as any)?.company_name ||
+    //     (authorProfile as any)?.first_name + " " + (authorProfile as any)?.last_name ||
+    //     "Client",
+    //   clientEmail: (authorProfile as any)?.email || "",
+    //   statusName:
+    //     statusesObject[project.status]?.admin_status_name ||
+    //     statusesObject[project.status]?.client_status_name ||
+    //     "",
+    //   contractUrl: `/project/${project.id}?status=contract`,
+    //   siteUrl: import.meta.env.PUBLIC_SITE_URL || "https://capcofire.com",
+    // };
+    // currentStatusObj = filteredStatusObj(
+    //   statusesObject[project.status],
+    //   currentRole || "Client",
+    //   placeholderData
+    // );
   }
 
   // Use unified API data if available
@@ -217,35 +219,6 @@ if (supabase) {
   //   assigned_to_id: project.assigned_to_id,
   //   hasAuthorId: !!project.author_id,
   // });
-
-  // Process invoice data
-  if (!invoiceResult.error && invoiceResult.data) {
-    invoiceId = invoiceResult.data.id.toString();
-    // invoiceData = invoiceResult.data;
-
-    // Calculate total by looping through catalog line items
-    if (
-      invoiceResult.data.catalog_line_items &&
-      Array.isArray(invoiceResult.data.catalog_line_items)
-    ) {
-      totalAmount = invoiceResult.data.catalog_line_items.reduce((sum: number, item: any) => {
-        const quantity = parseFloat(item.quantity) || 0;
-        const unitPrice = parseFloat(item.unit_price) || 0;
-        return sum + quantity * unitPrice;
-      }, 0);
-
-      // Convert to cents for Stripe (multiply by 100)
-      totalAmount = Math.round(totalAmount * 100);
-    }
-  } else {
-    // No invoice found for this project
-    invoiceId = "0";
-  }
-
-  // Fallback to hardcoded amount if no invoice data found
-  if (totalAmount === 0) {
-    totalAmount = 2000;
-  }
 
   // OPTIMIZED: Get author and assigned user profiles in parallel (only if needed)
   // console.log("🔍 [PROJECT] Setting up profile queries:", {
@@ -509,6 +482,7 @@ if (!project) {
         projectStatusLabel={currentStatusName || undefined}
         authorProfile={authorProfile}
         currentUser={currentUser}
+        invoiceResult={invoiceResult || { data: null, error: null }}
       />
 
       <!-- Contract Tab -->
