@@ -220,7 +220,7 @@ const placeholder =
             const countElement = document.querySelector(".incomplete-comments-count");
             const tabButton = document.getElementById("status-discussion");
 
-            if (tabButton) {
+            if ((tabButton && currentUserRole === "Admin") || currentUserRole === "Staff") {
               // Create or update count bubble
               let countBubble = tabButton.querySelector(".discussion-count-bubble");
 
@@ -1466,12 +1466,8 @@ const placeholder =
                   );
 
                   if (emailResponse.ok) {
-                    console.log(`📧 [CREATE-USER] notification sent to ${adminEmail}`);
                   } else {
-                    console.error(
-                      `📧 [CREATE-USER] Failed to send notification to ${adminEmail}:`,
-                      await emailResponse.text()
-                    );
+                    console.error(await emailResponse.text());
                   }
                 } catch (emailError) {
                   console.error(emailError);

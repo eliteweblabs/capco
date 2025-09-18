@@ -113,7 +113,7 @@ if (supabase) {
     supabase
       .from("project_statuses")
       .select(
-        "status_code, admin_status_name, client_status_name, project_action, client_status_tab, admin_status_tab, status_color"
+        "status_code, admin_status_name, client_status_name, client_project_action, admin_project_action, client_status_tab, admin_status_tab, status_color"
       )
       .order("status_code"),
   ]);
@@ -138,7 +138,28 @@ if (supabase) {
     return acc;
   }, {});
 
-  currentStatusObj = filteredStatusObj(statusesObject[project.status], currentRole || "Client");
+  // Prepare placeholder data for project_action processing
+  const placeholderData = {
+    projectId: project.id,
+    projectAddress: project.address,
+    clientName:
+      (authorProfile as any)?.company_name ||
+      (authorProfile as any)?.first_name + " " + (authorProfile as any)?.last_name ||
+      "Client",
+    clientEmail: (authorProfile as any)?.email || "",
+    statusName:
+      statusesObject[project.status]?.admin_status_name ||
+      statusesObject[project.status]?.client_status_name ||
+      "",
+    contractUrl: `/project/${project.id}?status=contract`,
+    siteUrl: import.meta.env.PUBLIC_SITE_URL || "https://capcofire.com",
+  };
+
+  currentStatusObj = filteredStatusObj(
+    statusesObject[project.status],
+    currentRole || "Client",
+    placeholderData
+  );
   currentStatusTab = currentStatusObj.status_tab || null;
   currentStatusSlug = currentStatusObj.status_slug || null;
   currentStatusName = currentStatusObj.status_name || null;
@@ -537,6 +558,7 @@ if (!project) {
     currentUserData: authorProfile,
     currentStatusInt: currentStatusInt.toString(),
     currentStatusName: currentStatusName,
+    currentStatusProjectAction: currentStatusProjectAction,
   }}
 >
   // Tab switching functionality
@@ -748,8 +770,35 @@ if (!project) {
     // window.history.replaceState({}, "", currentUrl.toString());
   }
 
+  // Check for project action modal on page load
+  function checkProjectActionModal() {
+    console.log("🔍 [PROJECT] Checking for project action:", currentStatusProjectAction);
+
+    if (currentStatusProjectAction && currentStatusProjectAction.trim() !== "") {
+      console.log("🚀 [PROJECT] Found project action, showing modal:", currentStatusProjectAction);
+
+      // Show modal with project action content
+      if (typeof window.showModal === "function") {
+        window.showModal(
+          "info",
+          "Project Status Update",
+          currentStatusProjectAction,
+          0 // No auto-hide
+        );
+      } else {
+        // Fallback alert if modal function not available
+        alert(`Project Status Update:\n\n${currentStatusProjectAction}`);
+      }
+    } else {
+      console.log("🔍 [PROJECT] No project action to display");
+    }
+  }
+
   // Initialize tabs on page load
   document.addEventListener("DOMContentLoaded", function () {
+    // Check for project action modal first
+    checkProjectActionModal();
+
     // Get status from URL parameter or use default
     const urlParams = new URLSearchParams(window.location.search);
     const statusFromUrl = urlParams.get("status");
