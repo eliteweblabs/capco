@@ -4,14 +4,6 @@ export function setAuthCookies(cookies: AstroCookies, accessToken: string, refre
   // Determine if we're in development or production
   const isDev = !import.meta.env.PROD;
 
-  console.log("🍪 [AUTH-COOKIES] Setting auth cookies:", {
-    isDev,
-    hasAccessToken: !!accessToken,
-    hasRefreshToken: !!refreshToken,
-    accessTokenLength: accessToken?.length,
-    refreshTokenLength: refreshToken?.length,
-  });
-
   // Set access token cookie
   cookies.set("sb-access-token", accessToken, {
     path: "/",

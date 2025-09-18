@@ -52,7 +52,7 @@ export const GET: APIRoute = async ({ request, cookies, url }) => {
     const clientName = url.searchParams.get("clientName");
     const clientEmail = url.searchParams.get("clientEmail");
 
-    console.log("🔍 [PROJECT-STATUSES-API] Fetching statuses for role:", currentRole);
+    // console.log("🔍 [PROJECT-STATUSES-API] Fetching statuses for role:", currentRole);
 
     // Fetch all project statuses from database
     const { data: statusesData, error: statusesError } = await supabaseAdmin
@@ -125,12 +125,12 @@ export const GET: APIRoute = async ({ request, cookies, url }) => {
       label: status.status_name,
     }));
 
-    console.log(
-      "✅ [PROJECT-STATUSES-API] Processed",
-      statuses.length,
-      "statuses for role:",
-      currentRole
-    );
+    // console.log(
+    //   "✅ [PROJECT-STATUSES-API] Processed",
+    //   statuses.length,
+    //   "statuses for role:",
+    //   currentRole
+    // );
 
     const response: ProjectStatusesResponse = {
       success: true,
