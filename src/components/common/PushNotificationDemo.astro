@@ -187,38 +187,82 @@
 
   // Send a local push notification
   function sendLocalPush(title: string, body: string, icon?: string) {
+    console.log("🔔 [PUSH-DEMO] sendLocalPush called with:", { title, body, icon });
+    console.log("🔔 [PUSH-DEMO] Notification permission:", Notification.permission);
+
     if (Notification.permission === "granted") {
-      const notification = new Notification(title, {
-        body: body,
-        icon: icon || "/favicon.svg",
-        badge: "/favicon.svg",
-        tag: "capco-demo",
-        requireInteraction: false,
-      });
+      console.log("🔔 [PUSH-DEMO] Creating notification...");
+      try {
+        const notification = new Notification(title, {
+          body: body,
+          icon: icon || "/favicon.svg",
+          badge: "/favicon.svg",
+          tag: "capco-demo",
+          requireInteraction: false,
+        });
 
-      // Auto-close after 5 seconds
-      setTimeout(() => notification.close(), 5000);
+        console.log("✅ [PUSH-DEMO] Notification created successfully");
 
-      notification.onclick = function () {
-        window.focus();
-        notification.close();
-      };
+        // Auto-close after 5 seconds
+        setTimeout(() => {
+          console.log("🔔 [PUSH-DEMO] Auto-closing notification");
+          notification.close();
+        }, 5000);
+
+        notification.onclick = function () {
+          console.log("🔔 [PUSH-DEMO] Notification clicked");
+          window.focus();
+          notification.close();
+        };
+      } catch (error) {
+        console.error("❌ [PUSH-DEMO] Error creating notification:", error);
+      }
+    } else {
+      console.log("❌ [PUSH-DEMO] Notification permission not granted:", Notification.permission);
     }
   }
 
   // Initialize the component
   function initPushDemo() {
+    console.log("🔔 [PUSH-DEMO] Initializing push notification demo...");
+
     updatePermissionStatus();
     updateDebugInfo();
 
-    // Set up event listeners
-    document.getElementById("request-permission-btn")?.addEventListener("click", requestPermission);
+    // Set up event listeners with debugging
+    const requestBtn = document.getElementById("request-permission-btn") as HTMLButtonElement;
+    console.log(
+      "🔔 [PUSH-DEMO] Request button found:",
+      !!requestBtn,
+      "disabled:",
+      requestBtn?.disabled
+    );
+    requestBtn?.addEventListener("click", () => {
+      console.log("🔔 [PUSH-DEMO] Request permission button clicked");
+      requestPermission();
+    });
 
-    document.getElementById("test-local-push-btn")?.addEventListener("click", () => {
+    const testLocalBtn = document.getElementById("test-local-push-btn") as HTMLButtonElement;
+    console.log(
+      "🔔 [PUSH-DEMO] Test local button found:",
+      !!testLocalBtn,
+      "disabled:",
+      testLocalBtn?.disabled
+    );
+    testLocalBtn?.addEventListener("click", () => {
+      console.log("🔔 [PUSH-DEMO] Test local push button clicked");
       sendLocalPush("🔔 Test Notification", "This is a test push notification from CAPCo Fire!");
     });
 
-    document.getElementById("test-project-update-btn")?.addEventListener("click", () => {
+    const testProjectBtn = document.getElementById("test-project-update-btn") as HTMLButtonElement;
+    console.log(
+      "🔔 [PUSH-DEMO] Test project button found:",
+      !!testProjectBtn,
+      "disabled:",
+      testProjectBtn?.disabled
+    );
+    testProjectBtn?.addEventListener("click", () => {
+      console.log("🔔 [PUSH-DEMO] Test project update button clicked");
       sendLocalPush(
         "📋 Project Update",
         "Your fire protection project status has been updated to 'Under Review'",
@@ -226,7 +270,17 @@
       );
     });
 
-    document.getElementById("test-deadline-reminder-btn")?.addEventListener("click", () => {
+    const testDeadlineBtn = document.getElementById(
+      "test-deadline-reminder-btn"
+    ) as HTMLButtonElement;
+    console.log(
+      "🔔 [PUSH-DEMO] Test deadline button found:",
+      !!testDeadlineBtn,
+      "disabled:",
+      testDeadlineBtn?.disabled
+    );
+    testDeadlineBtn?.addEventListener("click", () => {
+      console.log("🔔 [PUSH-DEMO] Test deadline reminder button clicked");
       sendLocalPush(
         "⏰ Deadline Reminder",
         "Don't forget: Your project documentation is due in 2 days",
@@ -242,9 +296,16 @@
   }
 
   // Run when DOM is ready
+  console.log("🔔 [PUSH-DEMO] Script loaded, document.readyState:", document.readyState);
+
   if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", initPushDemo);
+    console.log("🔔 [PUSH-DEMO] DOM still loading, adding event listener");
+    document.addEventListener("DOMContentLoaded", () => {
+      console.log("🔔 [PUSH-DEMO] DOMContentLoaded fired");
+      initPushDemo();
+    });
   } else {
+    console.log("🔔 [PUSH-DEMO] DOM already loaded, initializing immediately");
     initPushDemo();
   }
 </script>
