@@ -142,9 +142,13 @@ export const POST: APIRoute = async ({ request, redirect, cookies }) => {
       role: "Client",
     });
 
-    // Use admin client to bypass RLS policies during registration
-    const { error: profileError } = await supabaseAdmin.from("profiles").insert({
+    // Wait a moment for the trigger to complete, then upsert the profile
+    // The SQL trigger creates a basic profile, we upsert to handle race conditions
+    await new Promise((resolve) => setTimeout(resolve, 100));
+
+    const profileData = {
       id: data.user.id,
+      email: email.trim().toLowerCase(),
       company_name: companyName,
       first_name: firstName,
       last_name: lastName,
@@ -154,6 +158,12 @@ export const POST: APIRoute = async ({ request, redirect, cookies }) => {
       role: "Client",
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
+    };
+
+    // Use admin client to bypass RLS policies during registration
+    const { error: profileError } = await supabaseAdmin.from("profiles").upsert(profileData, {
+      onConflict: "id",
+      ignoreDuplicates: false,
     });
 
     if (profileError) {

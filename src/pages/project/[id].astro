@@ -2,9 +2,10 @@
 import App from "../../components/common/App.astro";
 import SectionContainer from "../../components/common/SectionContainer.astro";
 import HeroProject from "../../components/common/HeroProject.astro";
-import BoxIcon from "../../components/common/BoxIcon.astro";
+
+import SlidingPillNav from "../../components/common/SlidingPillNav.astro";
 import TabDocuments from "../../components/project/TabDocuments.astro";
-import Discussions from "../../components/project/Discussions.astro";
+import TabDiscussions from "../../components/project/TabDiscussions.astro";
 import TabProjectForm from "../../components/project/TabProjectForm.astro";
 import TabProposal from "../../components/project/TabProposal.astro";
 import TabContract from "../../components/project/TabContract.astro";
@@ -12,6 +13,7 @@ import TabDeposit from "../../components/project/TabDeposit.astro";
 import TabFinalInvoice from "../../components/project/TabFinalInvoice.astro";
 import TabActivityLog from "../../components/project/TabActivityLog.astro";
 import TabFinalDocuments from "../../components/project/TabFinalDocuments.astro";
+import TabGeneratePdf from "../../components/project/TabGeneratePdf.astro";
 import { getI18N } from "@/i18n";
 import { supabase } from "../../lib/supabase";
 import { supabaseAdmin } from "../../lib/supabase-admin";
@@ -32,8 +34,8 @@ const { currentUser = undefined, currentRole = "Client" } = await checkAuth(Astr
 
 // Removed getAuthorInfoServer function - using direct database queries for better performance
 
-// Get the tab parameter from URL query string
-const tabParam = Astro.url.searchParams.get("tab");
+// Get the status parameter from URL query string
+const statusParam = Astro.url.searchParams.get("status");
 const validTabs = [
   "project-form",
   "discussion",
@@ -44,8 +46,27 @@ const validTabs = [
   "deliverables",
   "final-invoice",
   "activity-log",
+  "generate-pdf",
 ];
-const defaultTab = validTabs.includes(tabParam || "") ? tabParam : "project-form";
+const defaultTab = validTabs.includes(statusParam || "") ? statusParam : "project-form";
+
+// Calculate active tab index for SlidingPillNav
+const tabOrder = [
+  "project-form",
+  "discussion",
+  "documents",
+  "proposal",
+  "contract",
+  "deposit",
+  "deliverables",
+  "final-invoice",
+  "activity-log",
+  "generate-pdf",
+];
+const activeTabIndex =
+  tabOrder.indexOf(defaultTab || "project-form") >= 0
+    ? tabOrder.indexOf(defaultTab || "project-form")
+    : 0;
 
 // Fetch project data and project author profile - RLS will handle authorization
 let project = null;
@@ -88,7 +109,7 @@ if (supabase) {
     supabase
       .from("project_statuses")
       .select(
-        "status_code, admin_status_name, client_status_name, project_action, client_status_tab, admin_status_tab"
+        "status_code, admin_status_name, client_status_name, project_action, client_status_tab, admin_status_tab, status_color"
       )
       .order("status_code"),
   ]);
@@ -104,6 +125,7 @@ if (supabase) {
   // });
 
   project = projectResult.data;
+  console.log("🔍 [PROJECT] Project data:", project.featured_image_data);
   projectId = project?.id?.toString() || id || "";
 
   // Convert statuses array to object for easier lookup
@@ -198,15 +220,15 @@ if (supabase) {
       );
     }
 
-    if (project.assigned_to_id) {
-      profileQueries.push(
-        supabase
-          .from("profiles")
-          .select("id, company_name, role, email")
-          .eq("id", project.assigned_to_id)
-          .maybeSingle()
-      );
-    }
+    // if (project.assigned_to_id) {
+    //   profileQueries.push(
+    //     supabase
+    //       .from("profiles")
+    //       .select("id, company_name, role, email")
+    //       .eq("id", project.assigned_to_id)
+    //       .maybeSingle()
+    //   );
+    // }
 
     const profileResults = await Promise.all(profileQueries);
 
@@ -274,7 +296,15 @@ if (!project) {
 }
 ---
 
-<App title={i18n.SEO_TITLE} description={i18n.SEO_DESCRIPTION} requireAuth={true}>
+<App
+  title={i18n.SEO_TITLE}
+  description={i18n.SEO_DESCRIPTION}
+  requireAuth={true}
+  isAuth={!!currentUser}
+  currentUser={currentUser}
+  currentRole={currentRole || "Client"}
+  session={null}
+>
   <!-- Add Supabase URL meta tag for image loading -->
   <meta name="supabase-url" content={import.meta.env.PUBLIC_SUPABASE_URL} />
   <HeroProject
@@ -282,11 +312,9 @@ if (!project) {
     description={`<div class="space-y-1">
       <div class="inline-flex items-center">
         <i class="bx bx-user mr-2 text-gray-500"></i>
-        <span class="font-medium">${authorProfile?.company_name || "Unknown Author"}</span>
+        <span class="font-medium">${project?.company_name || "Unknown Author"}</span>
       </div>
-      <div class="text-sm text-gray-600 dark:text-gray-400">
-        ${authorProfile?.display_name ? `<br/>${authorProfile.display_name}` : ""}
-      </div>
+     
     </div>`}
     statusColor={currentStatusColor}
     projectId={projectId}
@@ -300,110 +328,84 @@ if (!project) {
   />
   <SectionContainer>
     <!-- Tab Navigation -->
-    <nav
-      id="project-tab-nav"
-      class="scrollbar-hide relative my-4 flex gap-1 overflow-x-auto whitespace-nowrap dark:border-gray-700"
-      aria-label="Tabs"
-    >
-      <button
-        id="tab-project-form"
-        class="tab-button relative mt-2 w-auto rounded-full px-4 py-2 text-sm font-medium text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
-        onclick="switchTab('project-form')"
-      >
-        <BoxIcon name="edit" class="mr-2 inline h-4 w-4" />
-        Project Form
-      </button>
-      <button
-        id="tab-discussion"
-        class="tab-button relative mt-2 w-auto rounded-full px-4 py-2 text-sm font-medium text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
-        onclick="switchTab('discussion')"
-        data-count="0"
-      >
-        <BoxIcon name="message-rounded-dots" class="mr-2 inline h-4 w-4" />
-        Discussion
-        <span
-          class="incomplete-comments-count absolute -right-2 -top-2 h-5 w-5 items-center justify-center rounded-full border border-blue-500 bg-white text-xs font-medium text-blue-500 hidden"
-        >
-          0
-        </span>
-      </button>
-      <!-- {
-        currentRole === "Admin" || currentRole === "Staff" ? (
-          <button
-            id="tab-comments"
-            class="tab-button relative mt-2 w-auto rounded-full px-4 py-2 text-sm font-medium text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
-            onclick="switchTab('comments')"
-          >
-            <BoxIcon name="file" class="mr-2 inline h-4 w-4" />
-            Comments
-          </button>
-        ) : (
-          ""
-        )
-      } -->
-      <button
-        id="tab-documents"
-        class="tab-button relative mt-2 w-auto rounded-full px-4 py-2 text-sm font-medium text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
-        onclick="switchTab('documents')"
-      >
-        <BoxIcon name="file" class="mr-2 inline h-4 w-4" />
-        Documents
-      </button>
-      <button
-        id="tab-proposal"
-        class="tab-button relative mt-2 w-auto rounded-full px-4 py-2 text-sm font-medium text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
-        onclick="switchTab('proposal')"
-      >
-        <BoxIcon name="grid" class="mr-2 inline h-4 w-4" />
-        Proposal
-      </button>
-      <button
-        id="tab-contract"
-        class="tab-button relative mt-2 w-auto rounded-full px-4 py-2 text-sm font-medium text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
-        onclick="switchTab('contract')"
-      >
-        <BoxIcon name="pencil" class="mr-2 inline h-4 w-4" />
-        Contract
-      </button>
-      <button
-        id="tab-deposit"
-        class="tab-button relative mt-2 w-auto rounded-full px-4 py-2 text-sm font-medium text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
-        onclick="switchTab('deposit')"
-      >
-        <BoxIcon name="credit-card" class="mr-2 inline h-4 w-4" />
-        Deposit
-      </button>
-      <button
-        id="tab-deliverables"
-        class="tab-button relative mt-2 w-auto rounded-full px-4 py-2 text-sm font-medium text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
-        onclick="switchTab('deliverables')"
-      >
-        <BoxIcon name="package" class="mr-2 inline h-4 w-4" />
-        Deliverables
-      </button>
-      <button
-        id="tab-final-invoice"
-        class="tab-button relative mt-2 w-auto rounded-full px-4 py-2 text-sm font-medium text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
-        onclick="switchTab('final-invoice')"
-      >
-        <BoxIcon name="receipt" class="mr-2 inline h-4 w-4" />
-        Final Invoice
-      </button>
-      {
-        currentRole === "Admin" || currentRole === "Staff" ? (
-          <button
-            id="tab-activity-log"
-            class="tab-button relative mt-2 w-auto rounded-full px-4 py-2 text-sm font-medium text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
-            onclick="switchTab('activity-log')"
-          >
-            <BoxIcon name="history" class="mr-2 inline h-4 w-4" />
-            Activity Log
-          </button>
-        ) : (
-          ""
-        )
-      }
-    </nav>
+    <SlidingPillNav
+      navId="project-tab-nav"
+      navClass="my-4 dark:border-gray-700"
+      activeItem={activeTabIndex}
+      items={[
+        {
+          id: "status-project-form",
+          label: "Project Form",
+          icon: "edit",
+          variant: "anchor",
+          onclick: "switchTab('project-form')",
+        },
+        {
+          id: "status-discussion",
+          label: "Discussion",
+          icon: "message-rounded-dots",
+          variant: "anchor",
+          dataAttributes: { "data-count": "0" },
+          onclick: "switchTab('discussion')",
+        },
+        {
+          id: "status-documents",
+          label: "Documents",
+          icon: "file",
+          variant: "anchor",
+          onclick: "switchTab('documents')",
+        },
+        {
+          id: "status-proposal",
+          label: "Proposal",
+          icon: "grid",
+          variant: "anchor",
+          onclick: "switchTab('proposal')",
+        },
+        {
+          id: "status-contract",
+          label: "Contract",
+          icon: "pencil",
+          variant: "anchor",
+          onclick: "switchTab('contract')",
+        },
+        {
+          id: "status-deposit",
+          label: "Deposit",
+          icon: "credit-card",
+          variant: "anchor",
+          onclick: "switchTab('deposit')",
+        },
+        {
+          id: "status-deliverables",
+          label: "Deliverables",
+          icon: "package",
+          variant: "anchor",
+          onclick: "switchTab('deliverables')",
+        },
+        {
+          id: "status-final-invoice",
+          label: "Final Invoice",
+          icon: "receipt",
+          variant: "anchor",
+          onclick: "switchTab('final-invoice')",
+        },
+        {
+          id: "status-activity-log",
+          label: "Activity Log",
+          icon: "history",
+          variant: "anchor",
+          onclick: "switchTab('activity-log')",
+        },
+        {
+          id: "status-generate-pdf",
+          label: "Generate PDF",
+          icon: "history",
+          variant: "anchor",
+          onclick: "switchTab('generate-pdf')",
+        },
+      ]}
+    />
 
     <!-- Tab Content -->
     <div class="grid grid-cols-1 gap-6 lg:grid-cols-1">
@@ -419,9 +421,10 @@ if (!project) {
 
       <!-- Discussion Tab -->
 
-      <Discussions
+      <TabDiscussions
         project={project}
         currentRole={currentRole || undefined}
+        currentUser={currentUser}
         projectId={projectId}
         projectStatus={currentStatusInt}
         projectStatusLabel={currentStatusName || undefined}
@@ -496,6 +499,8 @@ if (!project) {
       />
 
       <TabActivityLog currentRole={currentRole || undefined} projectId={projectId} />
+
+      <TabGeneratePdf projectId={projectId} currentRole={currentRole || undefined} />
     </div>
   </SectionContainer>
 </App>
@@ -511,53 +516,70 @@ if (!project) {
   }}
 >
   // Tab switching functionality
-  function switchTab(tabName) {
+  function setPageLoadProjectStatus(tabName) {
     // Parse tab name and parameters (e.g., "discussion&new=true")
     const [baseTabName, ...paramParts] = tabName.split("&");
     const params = new URLSearchParams(paramParts.join("&"));
 
-    // Hide all tab contents
-    const tabContents = document.querySelectorAll(".tab-content");
-    tabContents.forEach((content) => {
-      content.classList.add("hidden");
-    });
+    // // Hide all tab contents
+    // const tabContents = document.querySelectorAll(".tab-content");
+    // tabContents.forEach((content) => {
+    //   content.classList.add("hidden");
+    // });
 
-    // Remove active class from all tab buttons
-    const tabButtons = document.querySelectorAll(".tab-button");
-    tabButtons.forEach((button) => {
-      button.classList.remove("active", "bg-gray-500", "text-white", "border-black");
-      button.classList.add(
-        "text-gray-500",
-        "hover:text-gray-700",
-        "dark:text-gray-400",
-        "dark:hover:text-gray-300"
-      );
-    });
+    // // Remove active class from all tab buttons
+    // const tabButtons = document.querySelectorAll(".tab-button");
+    // tabButtons.forEach((button) => {
+    //   button.classList.remove("active");
+    //   // button.classList.add(
+    //   //   "text-gray-500",
+    //   //   "hover:text-gray-700",
+    //   //   "dark:text-gray-400",
+    //   //   "dark:hover:text-gray-300"
+    //   // );
+    // });
 
-    // Show selected tab content
-    const selectedContent = document.getElementById(`content-${baseTabName}`);
-    if (selectedContent) {
-      selectedContent.classList.remove("hidden");
-    }
+    // // Show selected tab content
+    // const selectedContent = document.getElementById(`content-${baseTabName}`);
+    // if (selectedContent) {
+    //   selectedContent.classList.remove("hidden");
+    // }
 
     // Add active class to selected tab button
-    const selectedButton = document.getElementById(`tab-${baseTabName}`);
-    if (selectedButton) {
-      selectedButton.classList.remove(
-        "text-gray-500",
-        "hover:text-gray-700",
-        "dark:text-gray-400",
-        "dark:hover:text-gray-300"
-      );
-      selectedButton.classList.add("active", "bg-gray-500", "text-white", "border-black");
+    // const selectedButton = document.getElementById(`status-${baseTabName}`);
+    // if (selectedButton) {
+    //   selectedButton.classList.remove(
+    //     "text-gray-500",
+    //     "hover:text-gray-700",
+    //     "dark:text-gray-400",
+    //     "dark:hover:text-gray-300"
+    //   );
+    //   selectedButton.classList.add("active");
 
-      // Center the active button in the navigation
-      selectedButton.scrollIntoView({
-        behavior: "smooth",
-        block: "nearest",
-        inline: "center",
-      });
-    }
+    // Update sliding pill nav if it exists
+    //   if (window.project_tab_nav_updateActiveButton && window.project_tab_nav_updateSlidingPill) {
+    //     window.project_tab_nav_updateActiveButton(selectedButton);
+    //     window.project_tab_nav_updateSlidingPill(selectedButton);
+    //   } else {
+    //     // Fallback: try again after a short delay if functions aren't available yet
+    //     setTimeout(() => {
+    //       if (
+    //         window.project_tab_nav_updateActiveButton &&
+    //         window.project_tab_nav_updateSlidingPill
+    //       ) {
+    //         window.project_tab_nav_updateActiveButton(selectedButton);
+    //         window.project_tab_nav_updateSlidingPill(selectedButton);
+    //       }
+    //     }, 100);
+    //   }
+
+    //   // Center the active button in the navigation
+    //   selectedButton.scrollIntoView({
+    //     behavior: "smooth",
+    //     block: "nearest",
+    //     inline: "center",
+    //   });
+    // }
 
     // Handle tab-specific actions based on parameters
     if (baseTabName === "discussion" && params.get("new") === "true") {
@@ -584,7 +606,7 @@ if (!project) {
     // console.log("📋 [PROPOSAL-VIEW] Project data:", { projectId, currentUserId });
 
     if (
-      tabName === "proposal" &&
+      baseTabName === "proposal" &&
       userRole === "Client" &&
       currentStatus >= 20 &&
       currentStatus < 40 &&
@@ -599,7 +621,7 @@ if (!project) {
       // );
       nextStatus = 40;
     } else if (
-      tabName === "deposit" &&
+      baseTabName === "deposit" &&
       userRole === "Client" &&
       currentStatus >= 55 &&
       currentStatus < 65 &&
@@ -614,7 +636,7 @@ if (!project) {
       // );
       nextStatus = 65;
     } else if (
-      tabName === "final-invoice" &&
+      baseTabName === "final-invoice" &&
       userRole === "Client" &&
       currentStatus >= 150 &&
       currentStatus < 160 &&
@@ -629,7 +651,7 @@ if (!project) {
       // );
       nextStatus = 160;
     } else if (
-      tabName === "final-invoice" &&
+      baseTabName === "final-invoice" &&
       userRole === "Client" &&
       currentStatus >= 200 &&
       currentStatus < 210 &&
@@ -689,24 +711,24 @@ if (!project) {
     }
 
     // Update URL with tab parameter (without page reload)
-    const currentUrl = new URL(window.location.href);
-    if (baseTabName === "project-form") {
-      // Remove tab parameter for default tab
-      currentUrl.searchParams.delete("tab");
-    } else {
-      // Add or update tab parameter with any additional parameters
-      currentUrl.searchParams.set("tab", tabName);
-    }
+    // const currentUrl = new URL(window.location.href);
+    // if (baseTabName === "project-form") {
+    //   // Remove status parameter for default tab
+    //   currentUrl.searchParams.delete("status");
+    // } else {
+    //   // Add or update status parameter with any additional parameters
+    //   currentUrl.searchParams.set("status", tabName);
+    // }
 
-    // Update browser history without reloading the page
-    window.history.replaceState({}, "", currentUrl.toString());
+    // // Update browser history without reloading the page
+    // window.history.replaceState({}, "", currentUrl.toString());
   }
 
   // Initialize tabs on page load
   document.addEventListener("DOMContentLoaded", function () {
-    // Get tab from URL parameter or use default
+    // Get status from URL parameter or use default
     const urlParams = new URLSearchParams(window.location.search);
-    const tabFromUrl = urlParams.get("tab");
+    const statusFromUrl = urlParams.get("status");
     const validTabs = [
       "project-form",
       "discussion",
@@ -719,90 +741,19 @@ if (!project) {
       "activity-log",
     ];
 
-    // Parse tab name and parameters
+    // Parse status name and parameters
     let initialTab = "project-form";
-    if (tabFromUrl) {
-      const [baseTabName] = tabFromUrl.split("&");
+    if (statusFromUrl) {
+      const [baseTabName] = statusFromUrl.split("&");
       if (validTabs.includes(baseTabName)) {
-        initialTab = tabFromUrl; // Keep full parameter string for processing
+        initialTab = statusFromUrl; // Keep full parameter string for processing
       }
     }
 
     // Switch to the initial tab
-    switchTab(initialTab);
+    setPageLoadProjectStatus(initialTab);
   });
 
   // Make switchTab globally available for other components
-  window.switchTab = switchTab;
-
-  // Payment method switching functionality
-  document.addEventListener("DOMContentLoaded", function () {
-    const paymentMethodRadios = document.querySelectorAll('input[name="payment-method"]');
-    const cardForm = document.getElementById("card-payment-form");
-    const bankForm = document.getElementById("bank-payment-form");
-    const checkForm = document.getElementById("check-payment-form");
-
-    paymentMethodRadios.forEach((radio) => {
-      radio.addEventListener("change", function () {
-        // Hide all forms
-        if (cardForm) cardForm.classList.add("hidden");
-        if (bankForm) bankForm.classList.add("hidden");
-        if (checkForm) checkForm.classList.add("hidden");
-
-        // Show selected form
-        if (this.value === "card" && cardForm) {
-          cardForm.classList.remove("hidden");
-        } else if (this.value === "bank" && bankForm) {
-          bankForm.classList.remove("hidden");
-        } else if (this.value === "check" && checkForm) {
-          checkForm.classList.remove("hidden");
-        }
-      });
-    });
-  });
-
-  // Payment processing function
-  function processDepositPayment() {
-    const selectedMethodElement = document.querySelector('input[name="payment-method"]:checked');
-    const selectedMethod = selectedMethodElement?.value;
-
-    if (!selectedMethod) {
-      alert("Please select a payment method");
-      return;
-    }
-
-    // Get the amount (this would come from the proposal total in a real implementation)
-    const amount = 0.0; // Placeholder - should be calculated from proposal
-
-    console.log("Processing deposit payment:", {
-      method: selectedMethod,
-      amount: amount,
-      projectId: projectData?.id,
-    });
-
-    // Show loading state
-    const button = document.querySelector('button[onclick="processDepositPayment()"]');
-    if (button) {
-      const originalText = button.innerHTML;
-      button.innerHTML =
-        '<BoxIcon name="loader" class="mr-2 inline h-5 w-5 animate-spin" />Processing...';
-      button.disabled = true;
-
-      // Simulate payment processing
-      setTimeout(() => {
-        button.innerHTML = originalText;
-        button.disabled = false;
-
-        // Show success message
-        if (window.showModal) {
-          window.showModal("success", "Success", "Deposit payment processed successfully!");
-        } else {
-          alert("Deposit payment processed successfully!");
-        }
-      }, 2000);
-    }
-  }
-
-  // Make payment function globally available
-  window.processDepositPayment = processDepositPayment;
+  window.setPageLoadProjectStatus = setPageLoadProjectStatus;
 </script>

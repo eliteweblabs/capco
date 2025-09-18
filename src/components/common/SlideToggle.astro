@@ -1,0 +1,60 @@
+---
+// Toggle component that works both as a regular component and as a partial
+export const partial = true;
+
+// Detect if this is being used as a partial
+const isPartial = Astro.request.headers.has("x-toggle-id");
+
+let id, label, icon, color, checked, size, className, dataAttributes;
+
+if (isPartial) {
+  // Extract props from headers when used as partial
+  id = Astro.request.headers.get("x-toggle-id") || "";
+  label = Astro.request.headers.get("x-toggle-label") || "";
+  icon = Astro.request.headers.get("x-toggle-icon") || "";
+  color = Astro.request.headers.get("x-toggle-color") || "primary";
+  checked = Astro.request.headers.get("x-toggle-checked") === "true";
+  size = Astro.request.headers.get("x-toggle-size") || "md";
+  className = Astro.request.headers.get("x-toggle-class") || "";
+
+  // Extract data attributes from headers
+  dataAttributes = {} as Record<string, string>;
+  for (const [key, value] of Astro.request.headers.entries()) {
+    if (key.startsWith("x-toggle-data-")) {
+      const dataKey = key.replace("x-toggle-data-", "").replace(/-/g, "-");
+      dataAttributes[`data-${dataKey}`] = value;
+    }
+  }
+} else {
+  // Use regular props when used as a component
+  const props = Astro.props;
+  id = props.id;
+  label = props.label;
+  icon = props.icon;
+  color = props.color || "primary";
+  checked = props.checked || false;
+  size = props.size || "md";
+  className = props.class || "";
+  dataAttributes = props.dataAttributes || {};
+}
+---
+
+<label class="toggle-wrapper flex cursor-pointer items-center gap-3">
+  <div class="relative">
+    <input
+      type="checkbox"
+      id={id}
+      class={`toggle-input peer sr-only ${className}`}
+      checked={checked}
+      {...dataAttributes}
+    />
+    <div
+      class={`h-6 w-11 rounded-full bg-gray-200 after:absolute after:left-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:border after:border-gray-300 after:bg-white after:transition-all after:content-[''] peer-checked:bg-${color}-600 peer-checked:after:translate-x-full peer-checked:after:border-white peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-${color}-300 dark:border-gray-600 dark:bg-gray-700 dark:peer-focus:ring-${color}-800`}
+    >
+    </div>
+  </div>
+  <span class="text-sm text-gray-700 dark:text-gray-300">
+    {icon && <i class={`bx ${icon} mr-1`} />}
+    {label}
+  </span>
+</label>

@@ -2,13 +2,14 @@
 import BoxIcon from "../common/BoxIcon.astro";
 
 interface Props {
-  project?: any;
-  currentRole?: string;
-  projectId: string;
   authorProfile?: any;
+  currentRole?: string;
+  project: any;
+  projectId: string;
   projectStatus?: number;
-  fileType?: string;
   projectStatusLabel?: string;
+
+  fileType?: string;
 }
 
 const {
@@ -24,51 +25,33 @@ const {
 
 <div
   id="content-deliverables"
-  class="tab-content hidden rounded-lg bg-white p-6 shadow-md dark:bg-gray-800"
+  class="tab-content hidden rounded-lg bg-white p-6 text-gray-800 shadow-md dark:bg-gray-800 dark:text-gray-200"
 >
   {
-    (currentRole === "Admin" || currentRole === "Staff") &&
-      (projectStatus === 10 ||
-        projectStatus === 20 ||
-        projectStatus === 30 ||
-        projectStatus === 40 ||
-        projectStatus === 50) && (
-        <div class="mb-6">
-          <div class="mb-6" id="upload-header">
-            <p class="text-sm text-gray-600 dark:text-gray-400">
-              Upload supports PDF, images, CAD files, and deliverables (max 10MB each)
-            </p>
-          </div>
-          <div
-            id="upload-dropzone"
-            class="hidden cursor-pointer touch-manipulation rounded-lg border-2 border-dashed border-gray-300 p-8 text-center transition-colors hover:border-blue-400 dark:border-gray-600 dark:hover:border-blue-500 md:block"
-            style="min-height: 120px; -webkit-tap-highlight-color: transparent;"
-          >
-            <div class="space-y-4">
-              <BoxIcon name="cloud-upload" class="mx-auto h-12 w-12 text-gray-400" />
-              <div>
-                <p class="font-medium text-gray-600 dark:text-gray-300">
-                  Drop files here or click to browse
-                </p>
-                <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                  Upload supports PDF, images, CAD files, and deliverables (max 10MB each)
-                </p>
-              </div>
-              <button
-                id="browse-files-btn"
-                class="inline-flex touch-manipulation items-center rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700"
-                style="-webkit-tap-highlight-color: transparent; min-height: 44px;"
-              >
-                <BoxIcon name="folder-open" class="mr-2 h-4 w-4" />
-                Browse Files
-              </button>
+    projectStatus === 100 ||
+    projectStatus === 200 ||
+    projectStatus === 300 ||
+    projectStatus === 400 ||
+    projectStatus === 500 ? (
+      <>
+        <div
+          id="upload-dropzone"
+          class="hidden cursor-pointer touch-manipulation rounded-lg border-2 border-dashed border-gray-300 p-8 text-center transition-colors hover:border-blue-400 dark:border-gray-600 dark:hover:border-blue-500 md:block"
+          style="min-height: 120px; -webkit-tap-highlight-color: transparent;"
+        >
+          <div class="space-y-4">
+            <BoxIcon name="cloud-upload" class="bx-lg mx-auto" />
+            <div>
+              <p class="font-medium text-gray-600 dark:text-gray-300">
+                Drop files here or click to browse
+              </p>
+              <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                Upload supports PDF, images, CAD files, and documents (max 10MB each)
+              </p>
             </div>
-          </div>
-
-          <div class="block md:hidden">
             <button
-              id="mobile-browse-files-btn"
-              class="w-full touch-manipulation items-center rounded-lg bg-blue-600 px-4 py-3 text-sm font-medium text-white transition-colors hover:bg-blue-700"
+              id="browse-files-btn"
+              class="hidden touch-manipulation items-center rounded-full bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700 md:inline-flex"
               style="-webkit-tap-highlight-color: transparent; min-height: 44px;"
             >
               <BoxIcon name="folder-open" class="mr-2 h-4 w-4" />
@@ -76,21 +59,33 @@ const {
             </button>
           </div>
         </div>
-      )
+
+        <div class="hidden">
+          <button
+            id="mobile-browse-files-btn"
+            class="w-full touch-manipulation items-center rounded-full bg-blue-600 px-4 py-3 text-sm font-medium text-white transition-colors hover:bg-blue-700"
+            style="-webkit-tap-highlight-color: transparent; min-height: 44px;"
+          >
+            <BoxIcon name="folder-open" class="mr-2 h-4 w-4" />
+            Browse Files
+          </button>
+        </div>
+      </>
+    ) : null
   }
 
   <!-- Hidden file input -->
-  <input
+  <!-- <input
     type="file"
     id="file-input"
     multiple
     accept=".pdf,.png,.jpg,.jpeg,.gif,.webp,.dwg,.doc,.docx,.xls,.xlsx,.txt"
     class="hidden"
     capture="environment"
-  />
+  /> -->
 
   <!-- Upload Progress -->
-  <div id="upload-progress" class="mt-4 hidden">
+  <!-- <div id="upload-progress" class="mt-4 hidden">
     <div class="h-2 rounded-full bg-gray-200 dark:bg-gray-700">
       <div
         id="progress-bar"
@@ -102,11 +97,11 @@ const {
     <p id="upload-status" class="mt-2 max-w-full truncate text-sm text-gray-600 dark:text-gray-400">
       Uploading...
     </p>
-  </div>
+  </div> -->
 
   <!-- File List -->
-  <div id="uploaded-files" class="mt-6 hidden">
-    <div class="mb-3 flex items-center justify-between">
+  <!-- <div id="uploaded-files" class="mt-6 hidden">
+    <div class="mb-3 hidden items-center justify-between md:flex">
       <h4 class="text-md flex items-center font-medium text-gray-900 dark:text-white">
         <BoxIcon name="file" class="mr-2" />
         Uploaded Files
@@ -128,34 +123,32 @@ const {
         </button>
       </div>
     </div>
-    ) }
-
     <div id="file-list" class="space-y-2"></div>
     <div id="no-files-message" class="hidden">
-      <div class="text-center py-8">
-        <BoxIcon name="file" class="bx-lg mx-auto h-12 w-12 text-gray-400 mb-4" />
-        <p class="text-gray-500 dark:text-gray-400 text-sm">No files have been uploaded yet.</p>
-        <p class="text-gray-400 dark:text-gray-500 text-xs mt-1">
-          Upload your project deliverables to get started.
+      <div class="py-8 text-center">
+        <BoxIcon name="file" class="bx-lg mx-auto mb-4 h-12 w-12 text-gray-400" />
+        <p class="text-sm text-gray-500 dark:text-gray-400">No files have been uploaded yet.</p>
+        <p class="mt-1 text-xs text-gray-400 dark:text-gray-500">
+          Upload your project documents to get started.
         </p>
       </div>
     </div>
-  </div>
+  </div> -->
 
-  <!-- All Deliverables Uploaded Button (Admins/Staff Only) -->
+  <!-- All Documents Uploaded Button (Clients Only) -->
   {
-    projectStatus === 10 && (currentRole === "Admin" || currentRole === "Staff") && (
+    projectStatus === 10 ? (
       <div class="mt-6 border-t border-gray-200 pt-6 dark:border-gray-700">
         <div class="text-center">
           <button
-            id="all-deliverables-uploaded-btn"
-            class="inline-flex items-center rounded-lg bg-green-600 px-6 py-3 text-sm font-medium text-white transition-colors hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
+            id="all-documents-uploaded-btn"
+            class="inline-flex items-center rounded-full bg-green-600 px-6 py-3 text-sm font-medium text-white transition-colors hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
           >
-            Finished Uploading Deliverables
-            <BoxIcon name="check" class="ml-2 bx-sm" />
+            Finished Uploading Documents
+            <BoxIcon name="check" class="bx-sm ml-2" />
           </button>
         </div>
       </div>
-    )
+    ) : null
   }
 </div>

@@ -86,10 +86,12 @@ export const PUT: APIRoute = async ({ request, cookies, params }) => {
       new_construction: body.new_construction === "on" || body.new_construction === true,
       units: body.units && body.units.trim() !== "" ? parseInt(body.units) : null,
       building: body.building,
+      tier: body.tier,
       project: body.project,
       service: body.service,
       requested_docs: body.requested_docs,
-      assigned_to_id: body.assigned_to_id || null, // Add assigned_to_id field
+      // handled by assign-staff.ts
+      // assigned_to_id: body.assigned_to_id || null, // Add assigned_to_id field
       updated_at: new Date().toISOString(), // Always update the timestamp when any field is modified
     };
 

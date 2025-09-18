@@ -2,6 +2,10 @@ import type { APIRoute } from "astro";
 import { apiCache } from "../../lib/api-cache";
 import { userInfoCache } from "../../lib/user-utils";
 
+// 🚧 DEAD STOP - 2024-12-19: Potentially unused API endpoint
+// If you see this log after a few days, this endpoint can likely be deleted
+console.log("🚧 [DEAD-STOP-2024-12-19] clear-cache.ts accessed - may be unused");
+
 export const POST: APIRoute = async ({ request }) => {
   try {
     // Clear all API cache

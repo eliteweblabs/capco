@@ -1,6 +1,7 @@
 ---
 import BoxIcon from "../common/BoxIcon.astro";
-
+import Button from "../common/Button.astro";
+import SlideToggle from "../common/SlideToggle.astro";
 interface Props {
   authorProfile?: any;
   currentRole?: string;
@@ -25,7 +26,7 @@ const {
 
 <div
   id="content-documents"
-  class="tab-content hidden rounded-lg bg-white p-6 shadow-md dark:bg-gray-800 text-gray-800 dark:text-gray-200"
+  class="tab-content hidden rounded-lg bg-white p-6 text-gray-800 shadow-md dark:bg-gray-800 dark:text-gray-200"
 >
   {
     projectStatus === 10 ||
@@ -40,7 +41,7 @@ const {
           style="min-height: 120px; -webkit-tap-highlight-color: transparent;"
         >
           <div class="space-y-4">
-            <BoxIcon name="cloud-upload" class="mx-auto bx-lg" />
+            <BoxIcon name="cloud-upload" class="bx-lg mx-auto" />
             <div>
               <p class="font-medium text-gray-600 dark:text-gray-300">
                 Drop files here or click to browse
@@ -49,26 +50,31 @@ const {
                 Upload supports PDF, images, CAD files, and documents (max 10MB each)
               </p>
             </div>
-            <button
+            <Button
               id="browse-files-btn"
-              class="hidden md:inline-flex touch-manipulation items-center rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700"
-              style="-webkit-tap-highlight-color: transparent; min-height: 44px;"
+              variant="primary"
+              size="lg"
+              icon="folder-open"
+              iconPosition="left"
+              class="hidden touch-manipulation md:inline-flex"
             >
-              <BoxIcon name="folder-open" class="mr-2 h-4 w-4" />
               Browse Files
-            </button>
+            </Button>
           </div>
         </div>
 
         <div class="hidden">
-          <button
+          <Button
             id="mobile-browse-files-btn"
-            class="w-full touch-manipulation items-center rounded-lg bg-blue-600 px-4 py-3 text-sm font-medium text-white transition-colors hover:bg-blue-700"
-            style="-webkit-tap-highlight-color: transparent; min-height: 44px;"
+            variant="primary"
+            size="md"
+            icon="folder-open"
+            iconPosition="left"
+            fullWidth
+            class="touch-manipulation"
           >
-            <BoxIcon name="folder-open" class="mr-2 h-4 w-4" />
             Browse Files
-          </button>
+          </Button>
         </div>
       </>
     ) : null
@@ -86,10 +92,10 @@ const {
 
   <!-- Upload Progress -->
   <div id="upload-progress" class="mt-4 hidden">
-    <div class="h-2 rounded-full bg-gray-200 dark:bg-gray-700">
+    <div class="h-2 rounded-lg bg-gray-200 dark:bg-gray-700">
       <div
         id="progress-bar"
-        class="h-2 rounded-full bg-blue-600 transition-all duration-300"
+        class="h-2 rounded-lg bg-blue-600 transition-all duration-300"
         style="width: 0%"
       >
       </div>
@@ -101,38 +107,163 @@ const {
 
   <!-- File List -->
   <div id="uploaded-files" class="mt-6 hidden">
-    <div class="mb-3 hidden md:flex items-center justify-between">
+    <div class="mb-3 hidden items-center justify-between md:flex">
       <h4 class="text-md flex items-center font-medium text-gray-900 dark:text-white">
         <BoxIcon name="file" class="mr-2" />
         Uploaded Files
       </h4>
       <div class="flex items-center space-x-3">
-        <button
+        <Button
           id="download-all-btn"
-          class="flex items-center text-sm font-medium text-green-600 hover:text-green-800"
+          variant="ghost"
+          size="sm"
+          icon="download"
+          iconPosition="left"
+          class="text-green-600 hover:text-green-800"
         >
-          <BoxIcon name="download" class="mr-1 h-4 w-4" />
           Download All
-        </button>
-        <button
+        </Button>
+        <Button
           id="refresh-files-btn"
-          class="flex items-center text-sm font-medium text-blue-600 hover:text-blue-800"
+          variant="ghost"
+          size="sm"
+          icon="refresh"
+          iconPosition="left"
+          class="text-blue-600 hover:text-blue-800"
         >
-          <BoxIcon name="refresh" class="mr-1 h-4 w-4" />
           Refresh
-        </button>
+        </Button>
       </div>
     </div>
     <div id="file-list" class="space-y-2"></div>
     <div id="no-files-message" class="hidden">
-      <div class="text-center py-8">
-        <BoxIcon name="file" class="bx-lg mx-auto h-12 w-12 text-gray-400 mb-4" />
-        <p class="text-gray-500 dark:text-gray-400 text-sm">No files have been uploaded yet.</p>
-        <p class="text-gray-400 dark:text-gray-500 text-xs mt-1">
+      <div class="py-8 text-center">
+        <BoxIcon name="file" class="bx-lg mx-auto mb-4 h-12 w-12 text-gray-400" />
+        <p class="text-sm text-gray-500 dark:text-gray-400">No files have been uploaded yet.</p>
+        <p class="mt-1 text-xs text-gray-400 dark:text-gray-500">
           Upload your project documents to get started.
         </p>
       </div>
     </div>
+
+    <!-- File Item Template (hidden, used for cloning) -->
+    <template id="file-item-template">
+      <div
+        class="file-item rounded-lg border border-gray-200 bg-white shadow-sm dark:border-gray-600 dark:bg-gray-800"
+      >
+        <!-- Accordion Header -->
+        <div
+          class="accordion-header flex cursor-pointer items-center justify-between p-3 transition-colors hover:bg-gray-100 dark:hover:bg-gray-600"
+        >
+          <div class="flex min-w-0 flex-1 items-center space-x-3">
+            <!-- Expand/Collapse Icon -->
+            <div class="hidden flex-shrink-0 md:block">
+              <BoxIcon
+                name="chevron-right"
+                class="accordion-chevron h-5 w-5 text-gray-400 transition-transform"
+              />
+            </div>
+
+            <!-- File Type Icon Container -->
+            <div class="file-icon-container hidden flex-shrink-0 md:block">
+              <!-- Icon will be populated by JavaScript -->
+            </div>
+
+            <!-- File Info -->
+            <div class="min-w-0 flex-1">
+              <p class="file-title truncate text-sm font-medium text-gray-900 dark:text-white">
+                <!-- Title will be populated by JavaScript -->
+              </p>
+              <p class="file-metadata text-sm text-gray-500 dark:text-gray-400">
+                <!-- Metadata will be populated by JavaScript -->
+              </p>
+            </div>
+          </div>
+
+          <!-- Action Buttons -->
+          <div class="ml-3 flex flex-shrink-0 flex-col items-center space-y-1 md:flex-row">
+            <!-- View Button -->
+            <a
+              class="view-button rounded-full p-2 text-blue-600 transition-colors hover:bg-blue-50 hover:text-blue-800 dark:hover:bg-blue-900/20"
+              target="_blank"
+              title="View file"
+            >
+              <BoxIcon name="show" class="h-4 w-4" />
+            </a>
+
+            <!-- Download Button Container -->
+            <div class="download-btn-container"></div>
+
+            <!-- Delete Button -->
+            <button
+              class="delete-button rounded-full p-2 text-red-600 transition-colors hover:bg-red-50 hover:text-red-800 dark:hover:bg-red-900/20"
+              title="Delete file"
+            >
+              <BoxIcon name="trash" class="h-4 w-4" />
+            </button>
+          </div>
+        </div>
+
+        <!-- Accordion Content -->
+        <div class="accordion-content border-t border-gray-200 dark:border-gray-600">
+          <div class="space-y-4 p-4">
+            <!-- File Metadata Form -->
+            <div class="space-y-3">
+              <!-- Title Input -->
+              <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                  Title
+                </label>
+                <input
+                  type="text"
+                  class="file-title-input mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:focus:border-blue-400"
+                  placeholder="Enter a descriptive title for this file"
+                />
+              </div>
+
+              <!-- Comments Textarea -->
+              <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                  Comments
+                </label>
+                <textarea
+                  class="file-comments-input mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:focus:border-blue-400"
+                  rows="3"
+                  placeholder="Add any notes or comments about this file"></textarea>
+              </div>
+
+              <!-- Actions Row -->
+              <div class="flex items-start justify-between">
+                {
+                  currentRole === "Admin" || currentRole === "Staff" ? (
+                    <div>
+                       <!-- Featured Image Toggle -->
+                       <div class="featured-image-toggle-container">
+                         <SlideToggle
+                           id="featured-image-toggle-template"
+                           label="Featured Image"
+                           icon="star"
+                           checked={false}
+                           class="featured-image-toggle"
+                         />
+                      </div>
+                      <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                        Automatically saves when toggled
+                      </p>
+                    </div>
+                  ) : (
+                    <div />
+                  )
+                }
+
+                <!-- Save Button Container -->
+                <div class="save-metadata-btn-container"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </template>
   </div>
 
   <!-- All Documents Uploaded Button (Clients Only) -->
@@ -140,13 +271,16 @@ const {
     projectStatus === 10 ? (
       <div class="mt-6 border-t border-gray-200 pt-6 dark:border-gray-700">
         <div class="text-center">
-          <button
+          <Button
             id="all-documents-uploaded-btn"
-            class="inline-flex items-center rounded-lg bg-green-600 px-6 py-3 text-sm font-medium text-white transition-colors hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
+            variant="success"
+            size="md"
+            icon="check"
+            iconPosition="right"
+            class="focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
           >
             Finished Uploading Documents
-            <BoxIcon name="check" class="ml-2 bx-sm" />
-          </button>
+          </Button>
         </div>
       </div>
     ) : null
@@ -192,7 +326,7 @@ const {
 
     init() {
       if (this.initialized) {
-        // console.log("📱 [PDF-UPLOAD] Already initialized, skipping...");
+        console.log("📱 [PDF-UPLOAD] Already initialized, skipping...");
         return;
       }
 
@@ -206,7 +340,6 @@ const {
       this.setupEventListeners();
       this.setupAccordionListeners();
       this.loadExistingFiles();
-      this.handleStatusBasedVisibility();
       this.initialized = true;
       // console.log("📱 [PDF-UPLOAD] Initialization complete");
     }
@@ -242,7 +375,7 @@ const {
       mobileFileInput.multiple = true;
       mobileFileInput.accept = ".pdf,.png,.jpg,.jpeg,.gif,.webp,.dwg,.doc,.docx,.xls,.xlsx,.txt";
       mobileFileInput.className =
-        "block w-full text-sm text-transparent file:mr-4 file:py-3 file:px-6 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-blue-600 file:text-white hover:file:bg-blue-700 file:transition-colors file:cursor-pointer";
+        "block w-full text-sm text-transparent file:mr-4 file:py-3 file:px-6 file:rounded-full file:border-0 file:text-sm file:font-medium file:bg-blue-600 file:text-white hover:file:bg-blue-700 file:transition-colors file:cursor-pointer";
       mobileFileInput.style.marginTop = "1rem";
       // Make the "No file chosen" text transparent
       mobileFileInput.style.color = "transparent";
@@ -386,7 +519,7 @@ const {
       }
 
       // Event delegation for download buttons and view links
-      this.fileList.addEventListener("click", (e) => {
+      this.fileList.addEventListener("click", async (e) => {
         if (e.target.closest(".download-btn")) {
           e.stopPropagation(); // Prevent accordion from opening/closing
           const downloadBtn = e.target.closest(".download-btn");
@@ -405,15 +538,24 @@ const {
 
       // Event delegation for featured image toggles
       this.fileList.addEventListener("change", (e) => {
+        console.log("📁 [PDF-UPLOAD] Change event triggered on:", e.target);
+        console.log("📁 [PDF-UPLOAD] Target classes:", e.target.classList.toString());
+
         if (e.target.classList.contains("featured-image-toggle")) {
+          console.log("📁 [PDF-UPLOAD] Featured image toggle detected!");
           e.stopPropagation(); // Prevent accordion from opening/closing
           const toggle = e.target;
           const fileId = toggle.getAttribute("data-file-id");
           const isChecked = toggle.checked;
-
+          console.log("📁 [PDF-UPLOAD] Featured image toggle data:", {
+            fileId,
+            isChecked,
+          });
           if (fileId) {
             this.updateFeaturedImage(fileId, isChecked);
           }
+        } else {
+          console.log("📁 [PDF-UPLOAD] Not a featured image toggle, ignoring");
         }
       });
     }
@@ -458,20 +600,26 @@ const {
     }
 
     async handleFiles(files) {
-      // console.log("📁 [PDF-UPLOAD] handleFiles called with:", files);
-      // console.log("📱 [PDF-UPLOAD] Mobile device:", this.isMobile);
-      // console.log("📱 [PDF-UPLOAD] User agent:", navigator.userAgent);
+      console.log("🐛 [DEBUG] handleFiles called with:", files);
+      console.log("🐛 [DEBUG] Files length:", files?.length);
+      console.log("🐛 [DEBUG] Mobile device:", this.isMobile);
+      console.log("🐛 [DEBUG] Project ID:", this.projectId);
+      console.log("🐛 [DEBUG] Current user:", this.currentUser);
 
       if (!files || files.length === 0) {
-        console.log("📁 [PDF-UPLOAD] No files provided");
+        console.log("🐛 [DEBUG] No files provided - STOPPING");
         return;
       }
 
       const fileArray = Array.from(files);
-      // console.log(
-      //   "📁 [PDF-UPLOAD] File array:",
-      //   fileArray.map((f) => ({ name: f.name, size: f.size, type: f.type }))
-      // );
+      console.log("🐛 [DEBUG] File array details:", 
+        fileArray.map((f) => ({ 
+          name: f.name, 
+          size: f.size, 
+          type: f.type,
+          lastModified: f.lastModified 
+        }))
+      );
       this.showProgress();
 
       for (let i = 0; i < fileArray.length; i++) {
@@ -488,195 +636,282 @@ const {
     }
 
     async uploadFile(file, index, total) {
-      console.log("📁 [PDF-UPLOAD] uploadFile called:", {
-        file: file.name,
+      console.log("🐛 [DEBUG] uploadFile called with full details:", {
+        fileName: file.name,
+        fileSize: file.size,
+        fileType: file.type,
         index,
         total,
         projectId: this.projectId,
+        timestamp: new Date().toISOString()
       });
-
-      const formData = new FormData();
-      formData.append("file", file);
-      formData.append("projectId", this.projectId);
-      formData.append("fileType", this.fileType);
 
       // Add metadata if available
       const titleInput = document.getElementById("file-title");
       const commentsInput = document.getElementById("file-comments");
 
-      if (titleInput && titleInput.value.trim()) {
-        formData.append("fileTitle", titleInput.value.trim());
-      }
-      if (commentsInput && commentsInput.value.trim()) {
-        formData.append("fileComments", commentsInput.value.trim());
-      }
+      const title = titleInput && titleInput.value.trim() ? titleInput.value.trim() : file.name;
+      const description =
+        commentsInput && commentsInput.value.trim() ? commentsInput.value.trim() : null;
+
+      console.log("🐛 [DEBUG] Upload metadata:", { title, description });
 
       this.updateProgress((index / total) * 100, `Uploading ${file.name}...`);
 
-      console.log("📁 [PDF-UPLOAD] Sending upload request to /api/upload");
-      const response = await fetch("/api/upload", {
-        method: "POST",
-        body: formData,
-      });
+      try {
+        console.log("🐛 [DEBUG] Starting file conversion to base64...");
+        // Convert file to base64
+        const reader = new FileReader();
+        const fileData = await new Promise((resolve, reject) => {
+          reader.onload = () => {
+            console.log("🐛 [DEBUG] File converted to base64, length:", reader.result?.length);
+            resolve(reader.result);
+          };
+          reader.onerror = (error) => {
+            console.error("🐛 [DEBUG] FileReader error:", error);
+            reject(error);
+          };
+          reader.readAsDataURL(file);
+        });
 
-      console.log("📁 [PDF-UPLOAD] Upload response status:", response.status);
+        const requestPayload = {
+          mediaData: fileData,
+          fileName: file.name,
+          fileType: file.type,
+          projectId: this.projectId,
+          targetLocation: "project",
+          title: title,
+          description: description,
+        };
 
-      if (!response.ok) {
-        const error = await response.json();
-        console.error("📁 [PDF-UPLOAD] Upload failed:", error);
-        throw new Error(error.error || "Upload failed");
-      }
+        console.log("🐛 [DEBUG] Request payload (without mediaData):", {
+          ...requestPayload,
+          mediaData: `[BASE64 DATA - ${fileData?.length} chars]`
+        });
 
-      const result = await response.json();
-      console.log("📁 [PDF-UPLOAD] Upload successful:", result);
-      const uploadedFile = result.files[0];
+        console.log("🐛 [DEBUG] Using unified media system...");
+        // Call the unified media API directly
+        const response = await fetch("/api/media", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({
+            ...requestPayload,
+            targetLocation: "documents", // Always documents for this tab
+          }),
+        });
 
-      // Don't add to list immediately - refreshFileList() will show all files
-      this.uploadedFiles.push(uploadedFile);
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || "Upload failed");
+        }
+
+        const uploadResult = await response.json();
+        const uploadedFile = uploadResult.file; 
+
+        console.log("🐛 [DEBUG] Upload successful:", uploadedFile);
+
+        // Add to uploaded files list
+        this.uploadedFiles.push(uploadedFile);
+        console.log("🐛 [DEBUG] Added to uploadedFiles, total count:", this.uploadedFiles.length);
 
       // Refresh the file list to show all files
+        console.log("🐛 [DEBUG] Calling refreshFileList...");
       this.refreshFileList();
+      } catch (error) {
+        console.error("🐛 [DEBUG] Complete error in uploadFile:", {
+          message: error.message,
+          stack: error.stack,
+          fileName: file.name
+        });
+        throw new Error(`Failed to process ${file.name}: ${error.message}`);
+      }
     }
 
-    addFileToList(file) {
+    // Helper function to create buttons using Button partial
+    async createButtonPartial(config) {
+      try {
+        const headers = new Headers();
+        Object.entries(config).forEach(([key, value]) => {
+          if (value !== undefined && value !== null) {
+            headers.set(`x-button-${key}`, value.toString());
+          }
+        });
+
+        const response = await fetch("/partials/button", {
+          headers: headers,
+        });
+
+        if (response.ok) {
+          return await response.text();
+        } else {
+          console.error("Failed to fetch button partial:", response.status);
+          return null;
+        }
+      } catch (error) {
+        console.error("Error creating button partial:", error);
+        return null;
+      }
+    }
+
+    async populateFileTemplate(
+      fileItem,
+      { file, fileTitle, fileName, fileType, fileSize, uploadedAt, fileComments, hasCustomTitle }
+    ) {
+      // Populate file title
+      const fileTitleElement = fileItem.querySelector(".file-title");
+      if (fileTitleElement) {
+        fileTitleElement.textContent = fileTitle;
+        fileTitleElement.title = fileTitle;
+      }
+
+      // Populate file metadata
+      const fileMetadataElement = fileItem.querySelector(".file-metadata");
+      if (fileMetadataElement) {
+        fileMetadataElement.textContent = `${this.formatFileSize(fileSize)} • ${fileType}${uploadedAt ? ` • ${uploadedAt}` : ""}`;
+      }
+
+      // Populate file icon
+      const fileIconContainer = fileItem.querySelector(".file-icon-container");
+      if (fileIconContainer) {
+        fileIconContainer.innerHTML = this.getFileIcon(fileType);
+      }
+
+      // Set up view button
+      const viewButton = fileItem.querySelector(".view-button");
+      if (viewButton && file.public_url) {
+        viewButton.href = file.public_url;
+        viewButton.classList.remove("hidden");
+      } else if (viewButton) {
+        viewButton.style.display = "none";
+      }
+
+      // Set up delete button
+      const deleteButton = fileItem.querySelector(".delete-button");
+      if (deleteButton) {
+        deleteButton.onclick = () => this.deleteFile(file.id, fileItem);
+      }
+
+      // Populate form fields
+      const titleInput = fileItem.querySelector(".file-title-input");
+      if (titleInput) {
+        titleInput.value = hasCustomTitle ? fileTitle : "";
+      }
+
+      const commentsInput = fileItem.querySelector(".file-comments-input");
+      if (commentsInput) {
+        commentsInput.value = fileComments || "";
+      }
+
+      // Set up accordion functionality - ALWAYS open by default like the original
+      const accordionContent = fileItem.querySelector(".accordion-content");
+      const chevron = fileItem.querySelector(".accordion-chevron");
+
+      if (accordionContent && chevron) {
+        // Always show content by default (like the original behavior)
+        accordionContent.classList.remove("hidden");
+        chevron.style.transform = "rotate(90deg)"; // Pointing down when open (chevron-right rotated 90deg)
+        fileItem.classList.add("accordion-open");
+      }
+
+      // Set up featured image toggle
+      const toggleContainer = fileItem.querySelector(".featured-image-toggle-container");
+      const toggleInput = fileItem.querySelector("input.featured-image-toggle");
+      if (toggleContainer && toggleInput) {
+        // Set unique ID for this toggle
+        const uniqueId = `featured-image-toggle-${file.id}`;
+        toggleInput.id = uniqueId;
+        
+        // Set data attributes
+        toggleContainer.setAttribute("data-file-id", file.id);
+        toggleInput.setAttribute("data-file-id", file.id);
+        
+        // Set the checked state
+        toggleInput.checked = file.is_featured || false;
+        console.log("📁 [PDF-UPLOAD] Set toggle state for file:", file.id, "is_featured:", file.is_featured, "checked:", toggleInput.checked);
+      } else {
+        console.warn("📁 [PDF-UPLOAD] Could not find toggle input for file:", file.id);
+      }
+    }
+
+    async addFileToList(file) {
+      console.log("📁 [PDF-UPLOAD] Adding file to list:", file.id, file.file_name);
       this.filesContainer.classList.remove("hidden");
 
-      const fileItem = document.createElement("div");
+      // Clone the template
+      const template = document.getElementById("file-item-template");
+      const fileItem = template.content.cloneNode(true).querySelector(".file-item");
+      fileItem.setAttribute("data-file-id", file.id);
+
+      // Add the original classes that were in the createElement version
       fileItem.className =
         "file-item bg-gray-50 dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600 accordion-open";
 
       // Use file_name from database or fallback to name
-      const fileName = file.file_name || file.name;
+      const fileName = file.fileName || file.file_name || file.name;
       const fileTitle = file.title || fileName;
-      const fileSize = file.file_size || file.size;
-      const fileType = file.file_type || file.type;
+      const fileSize = file.fileSize || file.file_size || file.size;
+      const fileType = file.fileType || file.file_type || file.type;
       const uploadedAt = file.uploaded_at ? new Date(file.uploaded_at).toLocaleDateString() : "";
       const fileComments = file.comments;
+      const hasCustomTitle = fileTitle && fileTitle !== fileName;
 
-      fileItem.innerHTML = `
-        <!-- Accordion Header -->
-        <div class="accordion-header flex items-center justify-between p-3 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors" data-file-id="${file.id}">
-          <div class="flex items-center space-x-3 flex-1 min-w-0">
-           
-            <div class="flex-shrink-0 hidden md:block">
-              <svg class="h-5 w-5 text-gray-400" fill="currentColor" viewBox="0 0 20 20" style="transform: rotate(90deg);">
-                <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
-              </svg>
-            </div>
-            <div class="flex-shrink-0 hidden md:block">
-              ${this.getFileIcon(fileType)}
-            </div>
-             <div class="flex-1 min-w-0">
-              <p class="text-sm font-medium text-gray-900 dark:text-white truncate" title="${fileTitle}">
-                ${fileTitle}
-              </p>
-              <p class="text-sm text-gray-500 dark:text-gray-400">
-                ${this.formatFileSize(fileSize)} • ${fileType}${uploadedAt ? " • " + uploadedAt : ""}
-              </p>
-            </div>
-          </div>
-          <div class="flex flex-col md:flex-row items-center space-y-1 flex-shrink-0 ml-3">
-            ${
-              file.public_url
-                ? `
-              <a href="${file.public_url}" target="_blank" class="p-2 text-blue-600 hover:text-blue-800 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors" title="View file">
-                <svg class="h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/>
-                </svg>
-              </a>
-              <button class="download-btn p-2 text-green-600 hover:text-green-800 hover:bg-green-50 dark:hover:bg-green-900/20 rounded-lg transition-colors" data-file-path="${file.file_path}" data-file-name="${fileName}" title="Download file">
-                <svg class="h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/>
-                </svg>
-              </button>
-            `
-                : `
-              <button class="p-2 text-gray-400 cursor-not-allowed rounded-lg" disabled title="View not available">
-                <svg class="h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/>
-                </svg>
-              </button>
-              <button class="p-2 text-gray-400 cursor-not-allowed rounded-lg" disabled title="Download not available">
-                <svg class="h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/>
-                </svg>
-              </button>
-            `
-            }
-            <button class="p-2 text-red-600 hover:text-red-800 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors" onclick="window.pdfUploadDocuments.deleteFile('${file.id}', this.closest('.file-item'))" title="Delete file">
-              <svg class="h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
-              </svg>
-            </button>
-          </div>
-        </div>
-        
-        <!-- Accordion Content -->
-        <div class="accordion-content border-t border-gray-200 dark:border-gray-600 ${fileTitle !== fileName ? "hidden" : ""}">
-          <div class="p-4 space-y-4">
-            <!-- File Metadata Form -->
-            <div class="space-y-3">
-              <div>
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                  Title
-                </label>
-                <input
-                  type="text"
-                  class="file-title-input mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:focus:border-blue-400"
-                  placeholder="Enter a descriptive title for this file"
-                  value="${fileTitle !== fileName ? fileTitle : ""}"
-                />
-              </div>
-              <div>
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                  Comments
-                </label>
-                <textarea
-                  class="file-comments-input mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:focus:border-blue-400"
-                  rows="3"
-                  placeholder="Add any notes or comments about this file"
-                >${fileComments || ""}</textarea>
-              </div>
-              <div class="flex items-start justify-between">
-                ${
-                  currentRole === "Admin" || currentRole === "Staff"
-                    ? `
-                <div>
-                  <label class="flex items-center gap-3 cursor-pointer">
-                    <div class="relative">
-                      <input 
-                        type="checkbox" 
-                        class="featured-image-toggle sr-only peer" 
-                        data-file-id="${file.id}"
-                        ${file.is_featured ? "checked" : ""}
-                      />
-                      <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600" />
-                    </div>
-                    <span class="text-sm font-medium text-gray-700 dark:text-gray-300">
-                      <BoxIcon name="star" class="mr-1" />
-                      Featured Image
-                    </span>
-                  </label>
-                  <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                    Automatically saves when toggled
-                  </p>
-                </div>
-                `
-                    : `<div></div>`
-                }
-                <button class="save-metadata-btn inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors" data-file-id="${file.id}">
-                  <svg class="h-4 w-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                    <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
-                  </svg>
-                  Save Title & Comments
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      `;
+      // Populate the template with file data
+      this.populateFileTemplate(fileItem, {
+        file,
+        fileTitle,
+        fileName,
+        fileType,
+        fileSize,
+        uploadedAt,
+        fileComments,
+        hasCustomTitle,
+      });
 
       this.fileList.appendChild(fileItem);
+
+      // Load buttons using Button partial
+      await this.loadFileItemButtons(fileItem, file, fileName);
+    }
+
+    async loadFileItemButtons(fileItem, file, fileName) {
+      try {
+        // Load download button if file has public URL
+        const downloadContainer = fileItem.querySelector(".download-btn-container");
+        if (downloadContainer && file.public_url) {
+          const downloadButtonHtml = await this.createButtonPartial({
+            variant: "ghost",
+            size: "sm",
+            icon: "download",
+            class:
+              "download-btn p-2 text-green-600 hover:text-green-800 hover:bg-green-50 dark:hover:bg-green-900/20 rounded-full",
+            title: "Download file",
+            "data-file-path": file.file_path,
+            "data-file-name": fileName,
+          });
+          if (downloadButtonHtml) {
+            downloadContainer.innerHTML = downloadButtonHtml;
+          }
+        }
+
+        // Load save metadata button
+        const saveContainer = fileItem.querySelector(".save-metadata-btn-container");
+        if (saveContainer) {
+          const saveButtonHtml = await this.createButtonPartial({
+            variant: "primary",
+            size: "sm",
+            icon: "check",
+            text: "Save Title & Comments",
+            class: "save-metadata-btn",
+            "data-file-id": file.id.toString(),
+          });
+          if (saveButtonHtml) {
+            saveContainer.innerHTML = saveButtonHtml;
+          }
+        }
+      } catch (error) {
+        console.error("Error loading file item buttons:", error);
+      }
     }
 
     async saveFileMetadata(fileId, title, comments, fileItem) {
@@ -743,42 +978,52 @@ const {
       try {
         console.log("⭐ [FEATURED-IMAGE] Updating featured image:", { fileId, isFeatured });
 
-        const response = await fetch("/api/update-featured-image", {
-          method: "POST",
+        const response = await fetch("/api/media", {
+          method: "PUT",
           headers: { "Content-Type": "application/json" },
+          credentials: "include",
           body: JSON.stringify({
             projectId: this.projectId,
             fileId: fileId,
-            isFeatured: isFeatured,
+            mediaType: "featured_image",
+            isActive: isFeatured,
           }),
         });
 
         if (!response.ok) {
-          const error = await response.json();
-          throw new Error(error.error || "Failed to update featured image");
+          const errorData = await response.json();
+          throw new Error(errorData.error || "Failed to update featured image");
         }
 
-        const result = await response.json();
+        const updateResult = await response.json();
 
-        if (result.success) {
-          console.log("⭐ [FEATURED-IMAGE] Successfully updated featured image");
-
-          // Update all other featured image toggles to be unchecked
-          if (isFeatured) {
-            const allToggles = document.querySelectorAll(".featured-image-toggle");
-            allToggles.forEach((toggle) => {
-              if (toggle.getAttribute("data-file-id") !== fileId) {
-                toggle.checked = false;
-              }
-            });
-          }
-
-          // Show success feedback
-          this.showSuccess(`Featured image ${isFeatured ? "set" : "removed"} successfully`);
+        if (!updateResult.success) {
+          throw new Error(updateResult.message || "Failed to update featured image");
         }
+
+        console.log("⭐ [FEATURED-IMAGE] Successfully updated featured image");
+
+        // Update all other featured image toggles to be unchecked
+        if (isFeatured) {
+          const allToggles = document.querySelectorAll(".featured-image-toggle");
+          allToggles.forEach((toggle) => {
+            if (toggle.getAttribute("data-file-id") !== fileId) {
+              toggle.checked = false;
+            }
+          });
+        }
+
+      // Show success feedback
+        if (typeof window !== "undefined" && window.showModal) {
+          console.log("🔔 [PDF-UPLOAD] Calling window.showModal");
+          window.showModal("success", "Success", `Featured image ${isFeatured ? "set" : "removed"} successfully`, 1500);
+        } else {
+          console.log("✅ Success:", message);
+        }
+        
       } catch (error) {
         console.error("⭐ [FEATURED-IMAGE] Error updating featured image:", error);
-        this.showError(`Failed to update featured image: ${error.message}`);
+        this.showError(`Failed to update featured image: ${error.message}`, 111500);
 
         // Revert the toggle state
         const toggle = document.querySelector(`.featured-image-toggle[data-file-id="${fileId}"]`);
@@ -793,29 +1038,46 @@ const {
     }
 
     async refreshFileList() {
+      console.log("📁 [PDF-UPLOAD] refreshFileList called for project:", this.projectId);
+
       // Clear existing file list
       this.fileList.innerHTML = "";
 
       try {
         console.log("📁 [PDF-UPLOAD] Fetching files for project:", this.projectId);
-        const requestBody = { projectId: this.projectId };
-        console.log("📁 [PDF-UPLOAD] Request body:", requestBody);
 
-        const response = await fetch("/api/get-project-files", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(requestBody),
+        const response = await fetch(`/api/media?projectId=${this.projectId}&targetLocation=documents`, {
+          method: "GET",
+          credentials: "include",
         });
 
-        console.log("📁 [PDF-UPLOAD] API response status:", response.status);
+        if (!response.ok) {
+          throw new Error(`Failed to load files: ${response.statusText}`);
+        }
 
-        if (response.ok) {
-          const result = await response.json();
-          console.log("📁 [PDF-UPLOAD] Files result:", result);
-          console.log("📁 [PDF-UPLOAD] Files count:", result.files?.length || 0);
+        const result = await response.json();
 
-          if (result.files && result.files.length > 0) {
-            result.files.forEach((file) => this.addFileToList(file));
+        console.log("📁 [PDF-UPLOAD] Files result:", result);
+        console.log("📁 [PDF-UPLOAD] Files count:", result.media?.length || 0);
+
+        if (result.success && result.media && result.media.length > 0) {
+          for (const file of result.media) {
+            // Convert get-media response format to match expected file format
+            const formattedFile = {
+              id: file.id,
+              file_name: file.fileName,
+              file_path: file.filePath,
+              file_type: file.fileType,
+              file_size: file.fileSize || 0,
+              title: file.title,
+              comments: file.comments,
+              uploaded_at: file.uploadedAt,
+              public_url: file.publicUrl,
+              bucket_name: file.bucketName,
+              is_featured: file.is_featured || false,
+            };
+            await this.addFileToList(formattedFile);
+          }
             this.filesContainer.classList.remove("hidden");
             this.noFilesMessage.classList.add("hidden");
             console.log("📁 [PDF-UPLOAD] Showing file list, hiding no-files message");
@@ -823,180 +1085,12 @@ const {
             this.filesContainer.classList.remove("hidden");
             this.noFilesMessage.classList.remove("hidden");
             console.log("📁 [PDF-UPLOAD] Showing no-files message, hiding file list");
-          }
-        } else {
-          // Handle error responses
-          const errorData = await response.json().catch(() => ({ error: "Unknown error" }));
-          console.error("📁 [PDF-UPLOAD] API error:", {
-            status: response.status,
-            statusText: response.statusText,
-            error: errorData,
-            projectId: this.projectId,
-          });
-
-          if (response.status === 403) {
-            console.error("📁 [PDF-UPLOAD] Access denied - check user permissions");
-          }
         }
       } catch (error) {
         console.error("Error loading existing files:", error);
       }
     }
 
-    async downloadFile(filePath, fileName) {
-      try {
-        const response = await fetch("/api/download-file", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ filePath, fileName, projectId: this.projectId }),
-        });
-
-        if (!response.ok) {
-          const error = await response.json();
-          throw new Error(error.error || "Download failed");
-        }
-
-        // Create blob from response and download
-        const blob = await response.blob();
-        const url = window.URL.createObjectURL(blob);
-        const link = document.createElement("a");
-        link.href = url;
-        link.download = fileName;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        window.URL.revokeObjectURL(url);
-      } catch (error) {
-        console.error("Error downloading file:", error);
-        this.showError(`Failed to download ${fileName}: ${error.message}`);
-      }
-    }
-
-    async downloadAllFiles() {
-      try {
-        const response = await fetch("/api/get-project-files", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ projectId: this.projectId }),
-        });
-
-        if (response.ok) {
-          const result = await response.json();
-          if (result.files && result.files.length > 0) {
-            // Download each file with a slight delay to avoid browser blocking
-            for (let i = 0; i < result.files.length; i++) {
-              const file = result.files[i];
-              if (file.file_path) {
-                setTimeout(() => {
-                  this.downloadFile(file.file_path, file.file_name || file.name || `file-${i + 1}`);
-                }, i * 500); // 500ms delay between downloads
-              }
-            }
-          } else {
-            this.showError("No files available to download");
-          }
-        }
-      } catch (error) {
-        console.error("Error downloading files:", error);
-        this.showError("Failed to download files");
-      }
-    }
-
-    showProgress() {
-      this.progressContainer.classList.remove("hidden");
-    }
-
-    hideProgress() {
-      setTimeout(() => {
-        this.progressContainer.classList.add("hidden");
-        this.progressBar.style.width = "0%";
-      }, 1000);
-    }
-
-    updateProgress(percent, status) {
-      this.progressBar.style.width = `${percent}%`;
-
-      // Truncate long filenames to prevent screen jumping on mobile
-      let displayStatus = status;
-      if (status.includes("Uploading") && status.length > 50) {
-        // Extract filename from "Uploading filename.ext..."
-        const match = status.match(/Uploading (.+?)\.\.\./);
-        if (match) {
-          const filename = match[1];
-          const extension = filename.split(".").pop();
-          const nameWithoutExt = filename.substring(0, filename.lastIndexOf("."));
-
-          // Truncate to 30 characters + extension
-          if (nameWithoutExt.length > 30) {
-            const truncatedName = nameWithoutExt.substring(0, 30) + "...";
-            displayStatus = `Uploading ${truncatedName}.${extension}...`;
-          }
-        }
-      }
-
-      this.uploadStatus.textContent = displayStatus;
-
-      // Add title attribute for full filename on hover
-      if (status !== displayStatus) {
-        this.uploadStatus.title = status;
-      } else {
-        this.uploadStatus.title = "";
-      }
-    }
-
-    showError(message) {
-      // Use centralized notification system
-      if (typeof window !== "undefined" && window.showModal) {
-        window.showModal("error", "Upload Error", message);
-      } else {
-        console.error("❌ Error:", message);
-      }
-    }
-
-    showSuccess(message) {
-      console.log("🔔 [PDF-UPLOAD] showModal called with:", message);
-      console.log(
-        "🔔 [PDF-UPLOAD] window.showModal available:",
-        typeof window !== "undefined" && window.showModal
-      );
-
-      // Use centralized notification system
-      if (typeof window !== "undefined" && window.showModal) {
-        console.log("🔔 [PDF-UPLOAD] Calling window.showModal");
-        window.showModal("success", "Success", message, 5000);
-      } else {
-        console.log("✅ Success:", message);
-      }
-    }
-
-    formatFileSize(bytes) {
-      if (bytes === 0) return "0 Bytes";
-      const k = 1024;
-      const sizes = ["Bytes", "KB", "MB", "GB"];
-      const i = Math.floor(Math.log(bytes) / Math.log(k));
-      return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
-    }
-
-    handleStatusBasedVisibility() {
-      console.log(
-        "📁 [PDF-UPLOAD] Handling status-based visibility. Status:",
-        this.status,
-        "Role:",
-        currentRole
-      );
-
-      // Hide "All Documents Uploaded" button for clients if status is > 10
-      if (this.allDocumentsUploadedBtn && currentRole === "Client" && this.status > 10) {
-        console.log("📁 [PDF-UPLOAD] Hiding 'All Documents Uploaded' button - status > 10");
-        this.allDocumentsUploadedBtn.style.display = "none";
-      }
-
-      // You can add more status-based visibility logic here
-      // For example:
-      // - Hide upload area if status is completed
-      // - Show different messages based on status
-      // - Disable certain features based on project stage
-    }
 
     async markAllDocumentsUploaded() {
       try {
@@ -1085,6 +1179,96 @@ const {
       }
     }
 
+
+    async downloadAllFiles() {
+      try {
+        const response = await fetch("/api/get-project-files", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ projectId: this.projectId }),
+        });
+
+        if (response.ok) {
+          const result = await response.json();
+          if (result.files && result.files.length > 0) {
+            // Download each file with a slight delay to avoid browser blocking
+            for (let i = 0; i < result.files.length; i++) {
+              const file = result.files[i];
+              if (file.file_path) {
+                setTimeout(() => {
+                  this.downloadFile(file.file_path, file.file_name || file.name || `file-${i + 1}`);
+                }, i * 500); // 500ms delay between downloads
+              }
+            }
+          } else {
+            this.showError("No files available to download");
+          }
+        }
+      } catch (error) {
+        console.error("Error downloading files:", error);
+        this.showError("Failed to download files");
+      }
+    }
+
+    showProgress() {
+      this.progressContainer.classList.remove("hidden");
+    }
+
+    hideProgress() {
+      setTimeout(() => {
+        this.progressContainer.classList.add("hidden");
+        this.progressBar.style.width = "0%";
+      }, 1000);
+    }
+
+    updateProgress(percent, statusVal) {
+      this.progressBar.style.width = `${percent}%`;
+
+      // Truncate long filenames to prevent screen jumping on mobile
+      let displayStatus = statusVal;
+      if (statusVal.includes("Uploading") && statusVal.length > 50) {
+        // Extract filename from "Uploading filename.ext..."
+        const match = statusVal.match(/Uploading (.+?)\.\.\./);
+        if (match) {
+          const filename = match[1];
+          const extension = filename.split(".").pop();
+          const nameWithoutExt = filename.substring(0, filename.lastIndexOf("."));
+
+          // Truncate to 30 characters + extension
+          if (nameWithoutExt.length > 30) {
+            const truncatedName = nameWithoutExt.substring(0, 30) + "...";
+            displayStatus = `Uploading ${truncatedName}.${extension}...`;
+          }
+        }
+      }
+
+      this.uploadStatus.textContent = displayStatus;
+
+      // Add title attribute for full filename on hover
+      if (statusVal !== displayStatus) {
+        this.uploadStatus.title = statusVal;
+      } else {
+        this.uploadStatus.title = "";
+      }
+    }
+
+    showError(message) {
+      // Use centralized notification system
+      if (typeof window !== "undefined" && window.showModal) {
+        window.showModal("error", "Upload Error", message);
+      } else {
+        console.error("❌ Error:", message);
+      }
+    }
+
+    formatFileSize(bytes) {
+      if (bytes === 0) return "0 Bytes";
+      const k = 1024;
+      const sizes = ["Bytes", "KB", "MB", "GB"];
+      const i = Math.floor(Math.log(bytes) / Math.log(k));
+      return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
+    }
+
     getFileIcon(fileType) {
       const type = fileType.toLowerCase();
 
@@ -1158,87 +1342,47 @@ const {
       </svg>`;
     }
 
-    async deleteFile(fileId, fileItem) {
+    async downloadFile(filePath, fileName) {
       try {
-        console.log("🗑️ [PDF-UPLOAD] Deleting file:", fileId);
-
-        // Show loading state
-        const deleteBtn = fileItem.querySelector('button[title="Delete file"]');
-        if (deleteBtn) {
-          deleteBtn.disabled = true;
-          deleteBtn.innerHTML =
-            '<svg class="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>';
-        }
-
-        const response = await fetch("/api/delete-media-file", {
-          method: "DELETE",
+        const response = await fetch("/api/download-file", {
+          method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ fileId }),
+          body: JSON.stringify({ filePath, fileName, projectId: this.projectId }),
         });
 
-        if (response.ok) {
-          const result = await response.json();
-          console.log("✅ [PDF-UPLOAD] File deleted successfully:", result);
-
-          // Remove the file item from DOM
-          fileItem.remove();
-
-          // Check if there are any files left
-          const remainingFiles = this.fileList.querySelectorAll(".file-item");
-          if (remainingFiles.length === 0) {
-            this.filesContainer.classList.add("hidden");
-            this.noFilesMessage.classList.remove("hidden");
-          }
-
-          // Show success message
-          if (window.showModal) {
-            window.showModal("success", "File Deleted", "File has been successfully deleted.");
-          }
-        } else {
-          const errorData = await response.json().catch(() => ({ error: "Unknown error" }));
-          console.error("❌ [PDF-UPLOAD] Delete failed:", errorData);
-
-          // Reset button state
-          if (deleteBtn) {
-            deleteBtn.disabled = false;
-            deleteBtn.innerHTML =
-              '<svg class="h-4 w-4" fill="currentColor" viewBox="0 0 24 24"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>';
-          }
-
-          // Show error message
-          if (window.showModal) {
-            window.showModal(
-              "Delete Failed",
-              errorData.error || "Failed to delete file. Please try again.",
-              "error"
-            );
-          }
+        if (!response.ok) {
+          const error = await response.json();
+          throw new Error(error.error || "Download failed");
         }
+
+        // Create blob from response and download
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = fileName;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(url);
       } catch (error) {
-        console.error("❌ [PDF-UPLOAD] Delete error:", error);
-
-        // Reset button state
-        const deleteBtn = fileItem.querySelector('button[title="Delete file"]');
-        if (deleteBtn) {
-          deleteBtn.disabled = false;
-          deleteBtn.innerHTML =
-            '<svg class="h-4 w-4" fill="currentColor" viewBox="0 0 24 24"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>';
-        }
-
-        // Show error message
-        if (window.showModal) {
-          window.showModal(
-            "Delete Failed",
-            "An error occurred while deleting the file. Please try again.",
-            "error"
-          );
-        }
+        console.error("Error downloading file:", error);
+        this.showError(`Failed to download ${fileName}: ${error.message}`);
       }
     }
   }
 
+
   // Initialize the PDF upload component
   document.addEventListener("DOMContentLoaded", () => {
+    console.log("📁 [PDF-UPLOAD] DOMContentLoaded event fired");
+
+    // Check if already initialized
+    if (window.pdfUploadDocuments && window.pdfUploadDocuments.initialized) {
+      console.log("📁 [PDF-UPLOAD] PDFUpload already initialized, skipping");
+      return;
+    }
+
     console.log("📁 [PDF-UPLOAD] Initializing PDFUpload component for Documents");
     window.pdfUploadDocuments = new PDFUpload();
   });

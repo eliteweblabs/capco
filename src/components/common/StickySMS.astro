@@ -15,7 +15,7 @@ const isBackend = isBackendPage(currentUrl);
 <button
   id="sms-toggle-btn"
   aria-label="Contact CAPCo"
-  class="flex h-14 w-14 items-center justify-center rounded-full bg-blue-600 text-white shadow-lg transition-all duration-300 hover:bg-blue-700 hover:shadow-xl focus:outline-none focus:ring-4 focus:ring-blue-300 dark:focus:ring-blue-800"
+  class="inline-flex items-center justify-center rounded-full bg-primary-500 px-5 py-3 text-base font-medium text-white shadow-lg transition-all duration-200 hover:bg-primary-600 hover:shadow-xl disabled:cursor-not-allowed disabled:opacity-50 dark:bg-primary-500 dark:hover:bg-primary-600"
 >
   <BoxIcon name="message-rounded" class="text-xl" />
 </button>
@@ -23,7 +23,7 @@ const isBackend = isBackendPage(currentUrl);
 <!-- SMS Form Panel (expanded state) -->
 <div
   id="sms-form-panel"
-  class="absolute bottom-16 right-0 hidden w-80 max-w-[calc(100vw-3rem)] transform rounded-lg border border-gray-200 bg-white shadow-2xl transition-all duration-300 dark:border-gray-700 dark:bg-gray-800"
+  class="absolute bottom-16 left-0 hidden w-80 max-w-[calc(100vw-3rem)] transform rounded-lg border border-gray-200 bg-white shadow-2xl transition-all duration-300 dark:border-gray-700 dark:bg-gray-800"
 >
   <!-- Panel Header -->
   <div class="flex items-center justify-between border-b border-gray-200 p-4 dark:border-gray-700">
@@ -46,6 +46,18 @@ const isBackend = isBackendPage(currentUrl);
 <!-- Backdrop for mobile -->
 <div id="sms-backdrop" class="fixed inset-0 z-[-1] hidden bg-black bg-opacity-50 md:hidden"></div>
 
+<script>
+  // Global function to trigger SMS form
+  (window as any).triggerSMSForm = function () {
+    const smsToggleBtn = document.getElementById("sms-toggle-btn");
+    if (smsToggleBtn) {
+      smsToggleBtn.click();
+      console.log("📱 [LOGIN] SMS form triggered from contact support link");
+    } else {
+      console.warn("📱 [LOGIN] SMS toggle button not found");
+    }
+  };
+</script>
 <script is:inline>
   document.addEventListener("DOMContentLoaded", () => {
     const container = document.getElementById("sticky-container");
@@ -53,7 +65,6 @@ const isBackend = isBackendPage(currentUrl);
     const formPanel = document.getElementById("sms-form-panel");
     const closeBtn = document.getElementById("sms-close-btn");
     const backdrop = document.getElementById("sms-backdrop");
-    const form = document.querySelector('form[action="/api/send-email-sms"]');
 
     if (!container || !toggleBtn || !formPanel || !closeBtn || !backdrop) {
       return; // Component not rendered (backend page)

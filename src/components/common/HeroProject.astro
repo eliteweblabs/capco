@@ -40,7 +40,15 @@ const statusOptions = Object.values(statuses).map((status: any) => ({
 let staffOptions: any[] = [];
 if (currentRole === "Admin" || currentRole === "Staff") {
   try {
-    const staffResponse = await fetch(`${Astro.url.origin}/api/get-team-users`);
+    const staffResponse = await fetch(`${Astro.url.origin}/api/get-user-emails-by-role`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        roles: ["Admin", "Staff"],
+      }),
+    });
     if (staffResponse.ok) {
       const staffData = await staffResponse.json();
       if (staffData.success && staffData.staffUsers) {
@@ -74,17 +82,13 @@ if (currentRole === "Admin" || currentRole === "Staff") {
 
 <SectionContainer>
   <div class="relative mx-auto md:flex">
-    <div class="flex-none md:flex-1">
-      <h1
-        class="text-2xl font-medium text-hub-title dark:text-hub-title-dark"
-        id="page-title"
-        data-refresh
-      >
+    <div class="mx-4 ml-0 flex flex-1 flex-col gap-2">
+      <h1 class="text-2xl font-medium text-black dark:text-white" id="page-title" data-refresh>
         {title}
       </h1>
       <h2
         id="page-subtitle"
-        class="text-hub-subtitle dark:text-hub-subtitle-dark"
+        class="text-secondary dark:text-secondary-dark"
         set:html={description}
       />
       {
@@ -94,43 +98,58 @@ if (currentRole === "Admin" || currentRole === "Staff") {
       }
     </div>
 
-    <div class="my-4 ml-0 md:ml-4 flex flex-shrink-0 items-center gap-2 md:my-2">
+    <div class="mx-4 mr-0 flex flex-1 flex-col gap-2">
       {
         currentRole === "Admin" || currentRole === "Staff" ? (
-          <div class="relative text-left flex flex-row gap-2">
-            <SlotMachineModal
-              title={currentStatusName}
-              id="update-status"
-              title="Select Status"
-              options={statusOptions}
-              selectedValue={currentStatusInt || ""}
-              theme="blue"
-              placeholder="Choose status"
-            />
-
-            {(currentRole === "Admin" || currentRole === "Staff") && (
+          <>
+            <div class="relative flex w-full">
               <SlotMachineModal
-                title={(() => {
+                id="update-status"
+                title="Select Status"
+                options={statusOptions}
+                selectedValue={currentStatusInt || ""}
+                placeholder="Choose status"
+                buttonText={currentStatusName}
+                showCloseButton={true}
+                showCancelButton={true}
+                skipSaveToAPI={false}
+                projectId={projectId}
+                showNotification={false}
+                icon="code"
+                searchText="Search status..."
+              />
+            </div>
+
+            <div class="relative w-full">
+              <SlotMachineModal
+                id="assign-staff"
+                title="Assign Staff Member"
+                options={staffOptions}
+                selectedValue={project?.assigned_to_id || ""}
+                placeholder="Assign staff..."
+                buttonText={(() => {
                   if (!project?.assigned_to_id) return "Unassigned";
                   const assignedStaff = staffOptions.find(
                     (staff) => staff.value === project.assigned_to_id
                   );
                   return assignedStaff?.label || "Unknown Staff";
                 })()}
-                id="assign-staff"
-                title="Assign Staff Member"
-                options={staffOptions}
-                selectedValue={project?.assigned_to_id || ""}
-                theme="green"
-                placeholder="Assign staff..."
+                showCloseButton={true}
+                showCancelButton={true}
+                skipSaveToAPI={false}
+                projectId={projectId}
+                showNotification={true}
+                icon="user"
+                searchText="Search staff..."
+                buttonVariant="outline"
               />
-            )}
-          </div>
+            </div>
+          </>
         ) : (
           <a
             href={`/project/${projectId}?tab=${currentStatusTab}`}
             title={`Go to ${currentStatusName} tab`}
-            class="ml-4 flex-shrink-0 hover:opacity-80 transition-opacity cursor-pointer"
+            class="ml-4 flex-shrink-0 cursor-pointer transition-opacity hover:opacity-80"
           >
             {currentStatusName}
           </a>

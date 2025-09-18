@@ -1,10 +1,14 @@
 import type { APIRoute } from "astro";
 
+// 🚧 DEAD STOP - 2024-12-19: Potentially unused API endpoint
+// If you see this log after a few days, this endpoint can likely be deleted
+console.log("🚧 [DEAD-STOP-2024-12-19] video-quality.ts accessed - may be unused");
+
 export const GET: APIRoute = async ({ request, url }) => {
   try {
     // Get video source from query parameter
     const videoSource = url.searchParams.get("source") || "uhd_30fps";
-    
+
     // Get connection hints from headers
     const userAgent = request.headers.get("user-agent") || "";
     const connectionType = request.headers.get("save-data") || "";

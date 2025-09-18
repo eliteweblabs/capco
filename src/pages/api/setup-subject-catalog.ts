@@ -4,13 +4,14 @@ import { supabase } from "../../lib/supabase";
 
 export const POST: APIRoute = async ({ cookies }) => {
   try {
-    const { isAuth, currentUser, role } = await checkAuth(cookies);
+    const { isAuth, currentUser } = await checkAuth(cookies);
     if (!isAuth || !currentUser) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 401,
         headers: { "Content-Type": "application/json" },
       });
     }
+    const { role } = currentUser;
 
     // Only allow Admin/Staff to set up the catalog
     if (!["Admin", "Staff"].includes(role || "")) {
@@ -28,33 +29,6 @@ export const POST: APIRoute = async ({ cookies }) => {
     }
 
     console.log("🔧 Setting up subject_catalog table...");
-
-    // First, try to create the table using raw SQL
-    const createTableSQL = `
-      CREATE TABLE IF NOT EXISTS subject_catalog (
-        id SERIAL PRIMARY KEY,
-        subject TEXT NOT NULL UNIQUE,
-        description TEXT,
-        category VARCHAR(100) DEFAULT 'General',
-        usage_count INTEGER DEFAULT 1,
-        is_active BOOLEAN DEFAULT true,
-        created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
-        updated_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
-        created_by UUID REFERENCES auth.users(id)
-      );
-    `;
-
-    try {
-      const { error: createError } = await supabase.rpc("exec_sql", { sql: createTableSQL });
-      if (createError) {
-        console.error("❌ Error creating table:", createError);
-        // Continue anyway, table might already exist
-      } else {
-        console.log("✅ Table created successfully");
-      }
-    } catch (error) {
-      console.log("⚠️ Could not create table via RPC, trying direct approach...");
-    }
 
     // Try to insert default subjects
     const defaultSubjects = [

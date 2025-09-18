@@ -28,6 +28,8 @@ export async function checkAuth(cookies: any): Promise<AuthResult> {
   //   hasAccessToken: !!accessToken,
   //   hasRefreshToken: !!refreshToken,
   //   supabaseConfigured: !!supabase,
+  //   accessTokenValue: accessToken?.value?.substring(0, 20) + "...",
+  //   refreshTokenValue: refreshToken?.value?.substring(0, 20) + "...",
   // });
 
   let isAuth = false;

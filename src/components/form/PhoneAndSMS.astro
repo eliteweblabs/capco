@@ -23,11 +23,22 @@ const {
   class: className = "",
 } = Astro.props;
 
+import SlotMachineModal from "../../components/form/SlotMachineModal.astro";
+import SlideToggle from "../common/SlideToggle.astro";
+
 // Generate unique IDs for SMS components
 const smsSectionId = `sms-section-${id}`;
 const smsAlertsId = `sms-alerts-${id}`;
 const carrierSelectionId = `carrier-selection-${id}`;
 const mobileCarrierId = `mobile-carrier-${id}`;
+
+const mobileCarrierOptions = [
+  { value: "att", label: "AT&T" },
+  { value: "verizon", label: "Verizon" },
+  { value: "spectrum", label: "Spectrum" },
+  { value: "tmobile", label: "T-Mobile" },
+  { value: "sprint", label: "Sprint" },
+];
 ---
 
 <div class="space-y-4">
@@ -44,10 +55,11 @@ const mobileCarrierId = `mobile-carrier-${id}`;
         value={value}
         placeholder={placeholder}
         required={required}
-        class={`w-full rounded-md border border-gray-300 px-3 py-2 pr-10 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-60 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:focus:border-blue-400 ${className}`}
+        class={`w-full rounded-lg border border-gray-300 px-3 py-2.5 pr-10 text-sm text-gray-900 focus:border-primary-500 focus:ring-2 focus:ring-primary-500 dark:border-gray-600 dark:text-white dark:focus:border-primary-400 dark:focus:ring-primary-400 bg-background-card dark:bg-background-card-dark ${className}`}
       />
+
       <!-- Phone validation indicator -->
-      <div id={`phone-indicator-${id}`} class="absolute inset-y-0 right-0 items-center pr-3 hidden">
+      <div id={`phone-indicator-${id}`} class="absolute inset-y-0 right-0 hidden items-center pr-3">
         <svg class="h-4 w-4 text-green-500" fill="currentColor" viewBox="0 0 20 20">
           <path
             fill-rule="evenodd"
@@ -61,78 +73,31 @@ const mobileCarrierId = `mobile-carrier-${id}`;
   <!-- SMS Alerts Section (only show if showSMS is true) -->
   {
     showSMS && (
-      <div
-        id={smsSectionId}
-        class="rounded-lg border border-gray-200 bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-800"
-        style="display: none;"
-      >
+      <div id={smsSectionId} style="display: none;">
         {/* <!-- SMS Alerts Toggle --> */}
-        <label class="inline-flex items-center cursor-pointer">
-          <input
-            type="checkbox"
-            id={smsAlertsId}
-            name="sms_alerts"
-            class="sr-only peer"
-            checked={smsChecked}
-          />
-          <div class="relative w-11 h-6 bg-gray-200 rounded-full peer peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600 dark:peer-checked:bg-blue-600" />
-          <span class="ml-3 text-sm font-medium text-gray-900 dark:text-white">
-            Get SMS Project Updates?
-          </span>
-        </label>
-
-        {/* <!-- Carrier Selection (shown when SMS alerts is enabled) --> */}
-        <div id={carrierSelectionId} class="hidden">
-          {/* <label
-            for={mobileCarrierId}
-            class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300"
-          >
-            Mobile Carrier
-          </label> */}
-          <select
-            id={mobileCarrierId}
-            name="mobile_carrier"
-            class="mt-4 w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-60 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:focus:border-blue-400"
-          >
-            <option value="">Select your carrier</option>
-            <option value="att" selected={selectedCarrier === "att"}>
-              AT&T
-            </option>
-            <option value="verizon" selected={selectedCarrier === "verizon"}>
-              Verizon
-            </option>
-            <option value="spectrum" selected={selectedCarrier === "spectrum"}>
-              Spectrum
-            </option>
-            <option value="tmobile" selected={selectedCarrier === "tmobile"}>
-              T-Mobile
-            </option>
-            <option value="sprint" selected={selectedCarrier === "sprint"}>
-              Sprint
-            </option>
-            <option value="boost" selected={selectedCarrier === "boost"}>
-              Boost Mobile
-            </option>
-            <option value="cricket" selected={selectedCarrier === "cricket"}>
-              Cricket Wireless
-            </option>
-            <option value="metropcs" selected={selectedCarrier === "metropcs"}>
-              MetroPCS
-            </option>
-            <option value="uscellular" selected={selectedCarrier === "uscellular"}>
-              U.S. Cellular
-            </option>
-            <option value="virgin" selected={selectedCarrier === "virgin"}>
-              Virgin Mobile
-            </option>
-            <option value="other" selected={selectedCarrier === "other"}>
-              Other
-            </option>
-          </select>
-          <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
-            Required for SMS delivery. We'll use your phone number with your carrier's email-to-SMS
-            gateway.
-          </p>
+        <div class="flex items-center gap-3 pt-4">
+          <div class="flex-1">
+            <SlideToggle
+              id={smsAlertsId}
+              name="sms_alerts"
+              checked={smsChecked}
+              label="Get SMS Project Updates?"
+            />
+          </div>
+          {/* <!-- Carrier Selection (shown when SMS alerts is enabled) --> */}
+          <div id={carrierSelectionId} class="flex-1">
+            <SlotMachineModal
+              title="Select your carrier"
+              id={mobileCarrierId}
+              name="mobile_carrier"
+              options={mobileCarrierOptions}
+              selectedValue={selectedCarrier}
+              skipSaveToAPI={true}
+              buttonClass="w-full"
+              icon="wifi"
+              buttonVariant="outline"
+            />
+          </div>
         </div>
       </div>
     )
@@ -159,10 +124,16 @@ const mobileCarrierId = `mobile-carrier-${id}`;
 
     if (!phoneInput || !smsAlertsCheckbox || !carrierSelection || !smsSection) return;
 
+    let isUserInteraction = false;
+
     // Show/hide carrier selection based on SMS alerts toggle
     function toggleCarrierSelection() {
       if (smsAlertsCheckbox.checked) {
         carrierSelection.classList.remove("hidden");
+        // Only auto-click if this is user interaction, not page load
+        if (isUserInteraction) {
+          document.getElementById("mobile-carrier-phone").click();
+        }
       } else {
         carrierSelection.classList.add("hidden");
       }
@@ -204,6 +175,9 @@ const mobileCarrierId = `mobile-carrier-${id}`;
     // Initial state
     toggleSmsSection();
     toggleCarrierSelection();
+
+    // Set flag to true after initial setup
+    isUserInteraction = true;
 
     // Event listeners
     smsAlertsCheckbox.addEventListener("change", toggleCarrierSelection);

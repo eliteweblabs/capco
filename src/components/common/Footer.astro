@@ -1,105 +1,296 @@
 ---
-// import { getI18N } from "@/i18n";
-import LogoIcon from "./LogoIcon.astro";
-import SectionContainer from "./SectionContainer.astro";
+import BoxIcon from "./BoxIcon.astro";
+// Footer component
+import UserCenter from "./UserCenter.astro";
 
-// Props interface
-export interface Props {
-  isAuth?: boolean;
-  session?: any;
-  currentUser?: any;
-  currentRole?: string;
-}
-
-const { isAuth, session, currentUser, currentRole } = Astro.props;
-
-// Navigation schema
+const {
+  isAuth,
+  currentUser,
+  currentRole,
+  session,
+  visibleNavItems,
+  desktopNavigationHTML,
+  mobileNavigationHTML,
+  assignedProjects,
+  assignedProjectsCount,
+} = Astro.props;
 ---
 
-<footer class="bg-hub-background pb-2 pt-4 dark:bg-hub-background-dark">
-  <SectionContainer class="px-6 py-8">
-    <!-- Certification Images - Temporarily disabled to fix loading errors -->
-    <div class="mt-6 flex flex-col items-center justify-between md:flex-row">
-      <div class="flex flex-wrap items-center justify-center gap-4 md:justify-start">
-        <LogoIcon />
-        <p class="text-sm text-gray-500">
-          &copy; {new Date().getFullYear()} CAPCo Fire. All rights reserved.
-        </p>
+<footer class="bg-gray-900 text-white">
+  <!-- Main Footer Content -->
+  <div class="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
+    <div class="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-6">
+      <!-- Product Column -->
+      <!-- <div class="lg:col-span-2">
+        <h3 class="mb-4 text-sm font-semibold uppercase tracking-wider text-gray-300">Product</h3>
+        <ul class="space-y-3">
+          <li>
+            <a href="/platform" class="text-gray-400 transition-colors hover:text-white"
+              >Platform Overview</a
+            >
+          </li>
+          <li>
+            <a href="/project-management" class="text-gray-400 transition-colors hover:text-white"
+              >Project Management</a
+            >
+          </li>
+          <li>
+            <a href="/document-review" class="text-gray-400 transition-colors hover:text-white"
+              >Document Review</a
+            >
+          </li>
+          <li>
+            <a href="/client-portal" class="text-gray-400 transition-colors hover:text-white"
+              >Client Portal</a
+            >
+          </li>
+          <li>
+            <a href="/security" class="text-gray-400 transition-colors hover:text-white"
+              >Security & Trust</a
+            >
+          </li>
+          <li>
+            <a href="/pricing" class="text-gray-400 transition-colors hover:text-white">Pricing</a>
+          </li>
+        </ul>
+      </div> -->
+
+      <!-- Solutions Column -->
+      <!-- <div>
+        <h3 class="mb-4 text-sm font-semibold uppercase tracking-wider text-gray-300">Solutions</h3>
+        <ul class="space-y-3">
+          <li>
+            <a href="/fire-alarm-systems" class="text-gray-400 transition-colors hover:text-white"
+              >Fire Alarm Systems</a
+            >
+          </li>
+          <li>
+            <a href="/sprinkler-systems" class="text-gray-400 transition-colors hover:text-white"
+              >Sprinkler Systems</a
+            >
+          </li>
+          <li>
+            <a href="/emergency-systems" class="text-gray-400 transition-colors hover:text-white"
+              >Emergency Systems</a
+            >
+          </li>
+          <li>
+            <a
+              href="/compliance-management"
+              class="text-gray-400 transition-colors hover:text-white">Compliance Management</a
+            >
+          </li>
+        </ul>
+      </div> -->
+
+      <!-- Industries Column -->
+      <!-- <div>
+        <h3 class="mb-4 text-sm font-semibold uppercase tracking-wider text-gray-300">
+          Industries
+        </h3>
+        <ul class="space-y-3">
+          <li>
+            <a href="/commercial" class="text-gray-400 transition-colors hover:text-white"
+              >Commercial</a
+            >
+          </li>
+          <li>
+            <a href="/residential" class="text-gray-400 transition-colors hover:text-white"
+              >Residential</a
+            >
+          </li>
+          <li>
+            <a href="/healthcare" class="text-gray-400 transition-colors hover:text-white"
+              >Healthcare</a
+            >
+          </li>
+          <li>
+            <a href="/manufacturing" class="text-gray-400 transition-colors hover:text-white"
+              >Manufacturing</a
+            >
+          </li>
+          <li>
+            <a href="/education" class="text-gray-400 transition-colors hover:text-white"
+              >Education</a
+            >
+          </li>
+        </ul>
+      </div> -->
+
+      <!-- Resources Column -->
+      <!-- <div>
+        <h3 class="mb-4 text-sm font-semibold uppercase tracking-wider text-gray-300">Resources</h3>
+        <ul class="space-y-3">
+          <li>
+            <a href="/documentation" class="text-gray-400 transition-colors hover:text-white"
+              >Documentation</a
+            >
+          </li>
+          <li>
+            <a href="/case-studies" class="text-gray-400 transition-colors hover:text-white"
+              >Case Studies</a
+            >
+          </li>
+          <li><a href="/blog" class="text-gray-400 transition-colors hover:text-white">Blog</a></li>
+          <li>
+            <a href="/webinars" class="text-gray-400 transition-colors hover:text-white">Webinars</a
+            >
+          </li>
+          <li>
+            <a href="/events" class="text-gray-400 transition-colors hover:text-white">Events</a>
+          </li>
+          <li>
+            <a href="/support" class="text-gray-400 transition-colors hover:text-white">Support</a>
+          </li>
+        </ul>
+      </div> -->
+
+      <!-- Company Column -->
+      <!-- <div>
+        <h3 class="mb-4 text-sm font-semibold uppercase tracking-wider text-gray-300">Company</h3>
+        <ul class="space-y-3">
+          <li>
+            <a href="/about" class="text-gray-400 transition-colors hover:text-white">About Us</a>
+          </li>
+          <li>
+            <a href="/customers" class="text-gray-400 transition-colors hover:text-white"
+              >Customers</a
+            >
+          </li>
+          <li>
+            <a
+              onclick="window.triggerSMSForm()"
+              class="text-gray-400 transition-colors hover:text-white">Contact Us</a
+            >
+          </li>
+          <li>
+            <a href="/careers" class="text-gray-400 transition-colors hover:text-white">Careers</a>
+          </li>
+          <li>
+            <a href="/newsroom" class="text-gray-400 transition-colors hover:text-white">Newsroom</a
+            >
+          </li>
+        </ul>
       </div>
-      <div class="flex flex-wrap items-center justify-center gap-4 md:justify-end">
-        <!-- Certificate images temporarily disabled to fix console errors -->
-        <!--
-        <img
-          src="/img/cert-afsa.png"
-          alt="AFSA Certification"
-          class="h-auto w-16 max-w-[40px] object-contain md:w-20"
-        />
-        <img
-          src="/img/cert-hfsc.jpg"
-          alt="HFSC Certification"
-          class="h-auto w-16 max-w-[90px] object-contain md:w-20"
-        />
-        <img
-          src="/img/cert-nfpa.jpg"
-          alt="NFPA Certification"
-          class="h-auto w-16 max-w-[40px] object-contain md:w-20"
-        />
-        <img
-          src="/img/cert-nfsa.png"
-          alt="NFSA Certification"
-          class="h-auto w-16 max-w-[40px] object-contain md:w-20"
-        />
-        <img
-          src="/img/cert-nicet.png"
-          alt="NICET Certification"
-          class="h-auto w-16 max-w-[40px] object-contain md:w-20"
-        />
-        <img
-          src="/img/cert-sfpe.png"
-          alt="SFPE Certification"
-          class="h-auto w-16 max-w-[40px] object-contain md:w-20"
-        />
-        -->
+    </div>-->
+    </div>
+
+    <!-- CTA Section -->
+    {
+      !isAuth && (
+        <div class="border-t border-gray-800">
+          <div class="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
+            <div class="text-center">
+              <h3 class="mb-4 text-2xl font-bold text-white">Ready to get started?</h3>
+              <p class="mx-auto mb-8 max-w-2xl text-gray-400">
+                Try CAPCo today and get up to $500 in free credits during your 14-day trial.
+              </p>
+              <div class="flex flex-col justify-center gap-4 sm:flex-row">
+                <a
+                  onclick="window.triggerSMSForm()"
+                  class="rounded-full bg-blue-600 px-8 py-3 font-semibold text-white transition-colors hover:bg-blue-700"
+                >
+                  Get Started Free
+                </a>
+                <a
+                  href="/demo"
+                  class="rounded-full border border-gray-600 px-8 py-3 font-semibold text-white transition-colors hover:bg-gray-800"
+                >
+                  Book a Demo
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+      )
+    }
+
+    <!-- Bottom Footer -->
+    <div class="border-t border-gray-800">
+      <div class="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+        <div class="flex flex-col items-center justify-between md:flex-row">
+          <!-- Logo and Copyright -->
+          <div class="mb-4 flex items-center md:mb-0">
+            <span class="text-sm text-gray-400">
+              © 2025 CAPCo Fire Protection Systems.<br />All rights reserved.
+            </span>
+          </div>
+
+          <!-- Legal Links -->
+          <div class="flex flex-wrap gap-6 text-sm">
+            <a href="/privacy" class="text-gray-400 transition-colors hover:text-white">Privacy</a>
+            <a href="/terms" class="text-gray-400 transition-colors hover:text-white">Terms</a>
+            <a href="/cookies" class="text-gray-400 transition-colors hover:text-white">Cookies</a>
+          </div>
+
+          <!-- Social Links -->
+          <!-- <div class="mt-4 flex space-x-4 md:mt-0">
+          <a href="#" class="text-gray-400 transition-colors hover:text-white">
+            <BoxIcon name="twitter" class="bx-sm" variant="logo" />
+          </a>
+          <a href="#" class="text-gray-400 transition-colors hover:text-white">
+            <BoxIcon name="linkedin" class="bx-sm" variant="logo" />
+          </a>
+          <a href="#" class="text-gray-400 transition-colors hover:text-white">
+            <BoxIcon name="pinterest" class="bx-sm" variant="logo" />
+          </a>
+        </div> -->
+
+          <div class="flex flex-wrap items-center justify-center gap-4 md:justify-end">
+            <!-- Certificate images temporarily disabled to fix console errors -->
+            <img
+              src="/img/cert-afsa.png"
+              alt="AFSA Certification"
+              class="h-auto w-16 max-w-[40px] object-contain grayscale md:w-20"
+            />
+            <img
+              src="/img/cert-hfsc.jpg"
+              alt="HFSC Certification"
+              class="h-auto w-16 max-w-[90px] object-contain grayscale md:w-20"
+            />
+            <img
+              src="/img/cert-nfpa.jpg"
+              alt="NFPA Certification"
+              class="h-auto w-16 max-w-[40px] object-contain grayscale md:w-20"
+            />
+            <img
+              src="/img/cert-nfsa.png"
+              alt="NFSA Certification"
+              class="h-auto w-16 max-w-[40px] object-contain grayscale md:w-20"
+            />
+            <img
+              src="/img/cert-nicet.png"
+              alt="NICET Certification"
+              class="h-auto w-16 max-w-[40px] object-contain grayscale md:w-20"
+            />
+            <img
+              src="/img/cert-sfpe.png"
+              alt="SFPE Certification"
+              class="h-auto w-16 max-w-[40px] object-contain grayscale md:w-20"
+            />
+          </div>
+        </div>
       </div>
     </div>
-
-    <!-- <div class="flex items-center justify-center">
-      <p class="text-sm text-gray-500">
-        <a href="/privacy-policy" class="text-gray-500 hover:text-red-600">Privacy Policy</a>
-      </p>
-    </div>
-
     <div class="flex items-center justify-center">
-      <p class="text-sm text-gray-500">
-        <a href="/terms-of-service" class="text-gray-500 hover:text-red-600">Terms of Service</a>
-      </p>
+      <img src="/img/hero.png" alt="SupaBase & Astro Baby!" class="h-10 w-auto" />
     </div>
-
-    <div class="flex items-center justify-center">
-      <p class="text-sm text-gray-500">
-        <a href="/contact" class="text-gray-500 hover:text-red-600">Contact Us</a>
-      </p>
-    </div>
-
-    <div class="flex items-center justify-center">
-      <p class="text-sm text-gray-500">
-        <a href="/faq" class="text-gray-500 hover:text-red-600">FAQ</a>
-      </p>
-    </div>
-
-    <div class="flex items-center justify-center">
-      <p class="text-sm text-gray-500">
-        <a href="/blog" class="text-gray-500 hover:text-red-600">Blog</a>
-      </p>
-    </div>
-
-    <div class="flex items-center justify-center">
-      <p class="text-sm text-gray-500">
-        <a href="/careers" class="text-gray-500 hover:text-red-600">Careers</a>
-      </p>
-    </div> -->
-  </SectionContainer>
-  <div class="flex items-center justify-center">
-    <img src="/img/hero.png" alt="SupaBase & Astro Baby!" class="h-10 w-auto" />
   </div>
+
+  <!-- Project Drawer -->
+  {
+    isAuth && (
+      <UserCenter
+        isAuth={isAuth}
+        currentUser={currentUser}
+        currentRole={currentRole || ""}
+        session={session}
+        visibleNavItems={visibleNavItems}
+        desktopNavigationHTML={desktopNavigationHTML}
+        mobileNavigationHTML={mobileNavigationHTML}
+        assignedProjects={assignedProjects}
+        assignedProjectsCount={assignedProjectsCount}
+      />
+    )
+  }
 </footer>

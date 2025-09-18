@@ -1,14 +1,18 @@
 ---
 // AuthForm component for login
+import Button from "../common/Button.astro";
+import ForgotPasswordModal from "./ForgetPasswordModal.astro";
 ---
 
 <div class="mx-auto my-12 w-full max-w-lg">
   <form action="/api/auth/signin" method="post" class="mt-6 flex w-full flex-col gap-2">
-    <button
-      value="google"
-      name="provider"
-      class="mt-2 flex w-full items-center justify-center gap-2 rounded-md border border-zinc-300 p-1.5 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 dark:border-zinc-100 dark:bg-zinc-100 dark:text-zinc-900 dark:focus:ring-offset-zinc-900"
+    <Button
       type="submit"
+      variant="secondary"
+      fullWidth
+      name="provider"
+      value="google"
+      class="flex items-center justify-center gap-2"
     >
       <svg
         xmlns="http://www.w3.org/2000/svg"
@@ -34,129 +38,47 @@
         ></path>
       </svg>
       Sign in with Google
-    </button>
+    </Button>
   </form>
-
-  <hr class="mt-8 h-0 border-t border-zinc-300 dark:border-zinc-600" />
-  <p class="-mt-2.5 text-center text-xs text-zinc-500 dark:text-zinc-400">
-    <span class="bg-zinc-50 px-4 dark:bg-zinc-900">Or</span>
-  </p>
 </div>
 
+<hr class="mt-14 h-0 border-t border-zinc-300 dark:border-zinc-600" />
+<p class="-mt-2.5 text-center text-xs text-zinc-500 dark:text-zinc-400">
+  <span class="bg-background-light px-4 dark:bg-background-dark">Or</span>
+</p>
 <div class="mx-auto my-12 w-full max-w-lg">
   <form action="/api/auth/signin" method="post" class="grid w-full grid-cols-1 gap-3">
-    <div class="grid grid-cols-1 gap-2">
-      <div class="group relative z-0 mb-5 w-full">
-        <input
-          type="email"
-          name="email"
-          id="email"
-          class="peer block w-full appearance-none border-0 border-b-2 border-gray-300 bg-transparent px-0 py-2.5 text-sm text-gray-900 focus:border-blue-600 focus:outline-none focus:ring-0 dark:border-gray-600 dark:text-white dark:focus:border-blue-500"
-          placeholder=" "
-          required
-        />
-        <label
-          for="email"
-          class="absolute top-3 -z-10 origin-[0] -translate-y-6 scale-75 transform text-sm text-gray-500 duration-300 peer-placeholder-shown:translate-y-0 peer-placeholder-shown:scale-100 peer-focus:start-0 peer-focus:-translate-y-6 peer-focus:scale-75 peer-focus:font-medium peer-focus:text-blue-600 dark:text-gray-400 peer-focus:dark:text-blue-500 rtl:peer-focus:left-auto rtl:peer-focus:translate-x-1/4"
-          >Email</label
-        >
-      </div>
+    <div>
+      <label for="email" class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
+        Email
+      </label>
+      <input
+        type="email"
+        name="email"
+        id="email"
+        placeholder="Enter your email address"
+        required
+        class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:focus:border-blue-400"
+      />
     </div>
-    <div class="group relative z-0 mb-5 w-full">
+    <div>
+      <label for="password" class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
+        Password
+      </label>
       <input
         id="password"
         type="password"
         name="password"
-        placeholder=" "
+        placeholder="Enter your password"
         required
         minlength="6"
-        class="peer block w-full appearance-none border-0 border-b-2 border-gray-300 bg-transparent px-0 py-2.5 text-sm text-gray-900 focus:border-blue-600 focus:outline-none focus:ring-0 dark:border-gray-600 dark:text-white dark:focus:border-blue-500"
+        class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:focus:border-blue-400"
       />
-      <label
-        for="password"
-        class="absolute top-3 -z-10 origin-[0] -translate-y-6 scale-75 transform text-sm text-gray-500 duration-300 peer-placeholder-shown:translate-y-0 peer-placeholder-shown:scale-100 peer-focus:start-0 peer-focus:-translate-y-6 peer-focus:scale-75 peer-focus:font-medium peer-focus:text-blue-600 dark:text-gray-400 peer-focus:dark:text-blue-500 rtl:peer-focus:left-auto rtl:peer-focus:translate-x-1/4"
-        >Password</label
-      >
     </div>
-    <button
-      type="submit"
-      class="mt-2 rounded-md border border-zinc-900 bg-zinc-900 py-1.5 text-sm font-medium text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 dark:border-zinc-100 dark:bg-zinc-100 dark:text-zinc-900 dark:focus:ring-offset-zinc-900"
-    >
-      Sign In
-    </button>
+    <Button type="submit" variant="primary" size="lg" fullWidth class="mt-6"> Sign In </Button>
   </form>
 
-  <!-- Forgot Password Button -->
-  <div class="mt-4 text-center">
-    <button
-      type="button"
-      id="forgot-password-btn"
-      class="text-sm text-blue-600 underline hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
-    >
-      Forgot your password?
-    </button>
-  </div>
-
-  <!-- Forgot Password Modal -->
-  <div
-    id="forgot-password-modal"
-    class="fixed inset-0 z-50 hidden items-center justify-center bg-black bg-opacity-50"
-  >
-    <div class="mx-4 w-full max-w-md rounded-lg bg-white p-6 shadow-xl dark:bg-gray-800">
-      <div class="mb-4 flex items-center justify-between">
-        <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Reset Password</h3>
-        <button
-          type="button"
-          id="close-forgot-modal"
-          class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
-        >
-          <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2"
-              d="M6 18L18 6M6 6l12 12"></path>
-          </svg>
-        </button>
-      </div>
-
-      <form id="forgot-password-form" class="space-y-4">
-        <div>
-          <label
-            for="reset-email"
-            class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300"
-          >
-            Email Address
-          </label>
-          <input
-            type="email"
-            id="reset-email"
-            name="email"
-            required
-            class="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-60 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:focus:border-blue-400"
-            placeholder="Enter your email address"
-          />
-        </div>
-
-        <div class="flex gap-3">
-          <button
-            type="button"
-            id="cancel-forgot"
-            class="flex-1 rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
-          >
-            Cancel
-          </button>
-          <button
-            type="submit"
-            id="send-reset-link"
-            class="flex-1 rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50"
-          >
-            Send Reset Link
-          </button>
-        </div>
-      </form>
-    </div>
-  </div>
+  <ForgotPasswordModal message="Forgot Password?" />
 </div>
 
 <script>
@@ -198,114 +120,5 @@
         }
       });
     }
-
-    // Forgot Password Modal Functionality
-    const forgotPasswordBtn = document.getElementById("forgot-password-btn");
-    const forgotPasswordModal = document.getElementById("forgot-password-modal");
-    const closeForgotModal = document.getElementById("close-forgot-modal");
-    const cancelForgot = document.getElementById("cancel-forgot");
-    const forgotPasswordForm = document.getElementById("forgot-password-form") as HTMLFormElement;
-    const resetEmailInput = document.getElementById("reset-email") as HTMLInputElement;
-    const sendResetLinkBtn = document.getElementById("send-reset-link") as HTMLButtonElement;
-
-    // Open modal
-    forgotPasswordBtn?.addEventListener("click", () => {
-      forgotPasswordModal?.classList.remove("hidden");
-      resetEmailInput?.focus();
-    });
-
-    // Close modal functions
-    const closeModal = () => {
-      forgotPasswordModal?.classList.add("hidden");
-      forgotPasswordForm?.reset();
-    };
-
-    closeForgotModal?.addEventListener("click", closeModal);
-    cancelForgot?.addEventListener("click", closeModal);
-
-    // Close modal when clicking outside
-    forgotPasswordModal?.addEventListener("click", (e) => {
-      if (e.target === forgotPasswordModal) {
-        closeModal();
-      }
-    });
-
-    // Handle forgot password form submission
-    forgotPasswordForm?.addEventListener("submit", async (e) => {
-      e.preventDefault();
-
-      const email = resetEmailInput?.value.trim();
-
-      if (!email) {
-        if (window.showModal) {
-          window.showModal("error", "Validation Error", "Please enter your email address.");
-        } else {
-          console.error("🔔 [Validation Error] Please enter your email address.");
-        }
-        return;
-      }
-
-      // Disable button and show loading state
-      sendResetLinkBtn.disabled = true;
-      sendResetLinkBtn.textContent = "Sending...";
-
-      try {
-        const response = await fetch("/api/auth/forgot-password", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ email }),
-        });
-
-        const result = await response.json();
-
-        if (response.ok) {
-          if (window.showModal) {
-            window.showModal(
-              "success",
-              "Reset Link Sent",
-              "If an account with that email exists, you will receive a password reset link shortly.",
-              8000
-            );
-          } else {
-            console.log(
-              "🔔 [Reset Link Sent] If an account with that email exists, you will receive a password reset link shortly."
-            );
-          }
-          closeModal();
-        } else {
-          if (window.showModal) {
-            window.showModal(
-              "Error",
-              result.error || "Failed to send reset link. Please try again.",
-              "error"
-            );
-          } else {
-            console.error(
-              "🔔 [Error]",
-              result.error || "Failed to send reset link. Please try again."
-            );
-          }
-        }
-      } catch (error) {
-        console.error("Forgot password error:", error);
-        if (window.showModal) {
-          window.showModal(
-            "Network Error",
-            "Failed to send reset link. Please check your connection and try again.",
-            "error"
-          );
-        } else {
-          console.error(
-            "🔔 [Network Error] Failed to send reset link. Please check your connection and try again."
-          );
-        }
-      } finally {
-        // Re-enable button
-        sendResetLinkBtn.disabled = false;
-        sendResetLinkBtn.textContent = "Send Reset Link";
-      }
-    });
   });
 </script>

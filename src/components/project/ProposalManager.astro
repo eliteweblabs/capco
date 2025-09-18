@@ -2,6 +2,7 @@
 import BoxIcon from "../common/BoxIcon.astro";
 import { supabase } from "../../lib/supabase";
 import ActionButton from "../common/ActionButton.astro";
+import Button from "../common/Button.astro";
 
 const { projectId, project, authorProfile, projectStatus = 0, currentRole, projectStatusLabel, currentUser } = Astro.props;
 
@@ -76,9 +77,9 @@ const hasExistingProposal = !!existingInvoice;
   <div id="proposal-placeholder" class={hasExistingProposal ? "hidden" : "py-8 text-center"}>
     <BoxIcon name="upload" class="bx-lg mx-auto mb-4 text-gray-700 dark:text-gray-300" />
     <p class="mb-4 text-gray-500 dark:text-gray-400">
-      {canManageProposals && (
+      {canManageProposals && projectStatus < 20 && (
         <span
-          set:html={`Generate a project proposal for <b>${authorProfile?.company_name || 'Client'}</b> for <b>${project.address}</b> based on the project form data.`}
+          set:html={`Upload Project Documents for <b>${authorProfile?.company_name || 'Client'}</b> at <b>${project.address}</b> first.`}
         />
       )}
         
@@ -96,13 +97,15 @@ const hasExistingProposal = !!existingInvoice;
     </p>
     { 
       canManageProposals && !hasExistingProposal && projectStatus === 20 && (
-        <button
+        <Button
           onclick={`buildProposal('${projectId}')`}
-          class="inline-flex items-center rounded-lg bg-green-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-green-700"
+          variant="success"
+          size="sm"
+          icon="plus"
+          iconPosition="left"
         >
-          <BoxIcon name="plus" class="mr-2 h-4 w-4" />
           Build Proposal
-        </button>
+        </Button>
       )
     }
   </div>
@@ -121,14 +124,15 @@ const hasExistingProposal = !!existingInvoice;
               class="text-2xl font-medium text-gray-800 transition-colors hover:text-blue-600 dark:text-gray-200 dark:hover:text-blue-400"
             >
               <span id="proposal-subject-text" class="inline-block animate-pulse bg-gray-200 dark:bg-gray-700 h-6 w-64 rounded"></span>
-              <button
+              <Button
                 type="button"
                 id="edit-subject-btn"
+                variant="ghost"
+                size="sm"
+                icon="edit"
                 class="ml-2 text-gray-400 hover:text-blue-600 dark:hover:text-blue-400"
                 title="Edit subject"
-              >
-                <i class="bx bx-edit text-sm"></i>
-              </button>
+              />
             </p>
           </div>
 
@@ -138,24 +142,28 @@ const hasExistingProposal = !!existingInvoice;
                 <!-- Subject dropdown will be inserted here -->
               </div>
               <div class="flex items-center space-x-2">
-                <button
+                <Button
                   type="button"
                   id="save-subject-btn"
-                  class="rounded-lg bg-blue-600 px-3 py-2 text-sm text-white transition-colors hover:bg-blue-700"
+                  variant="primary"
+                  size="sm"
+                  icon="check"
+                  iconPosition="left"
                   title="Save subject"
                 >
-                  <i class="bx bx-check mr-1"></i>
                   Save
-                </button>
-                <button
+                </Button>
+                <Button
                   type="button"
                   id="cancel-subject-btn"
-                  class="rounded-lg bg-gray-500 px-3 py-2 text-sm text-white transition-colors hover:bg-gray-600"
+                  variant="secondary"
+                  size="sm"
+                  icon="x"
+                  iconPosition="left"
                   title="Cancel"
                 >
-                  <i class="bx bx-x mr-1"></i>
                   Cancel
-                </button>
+                </Button>
               </div>
             </div>
           </div>
@@ -190,9 +198,9 @@ const hasExistingProposal = !!existingInvoice;
         <h3 class="mb-2 font-semibold text-gray-900 dark:text-white">Contact Information</h3>
         <div class="space-y-1 text-sm">
           
-          <p><strong>Client:</strong> <span id="proposal-client-name">{authorProfile?.company_name || 'N/A'}</span></p>
-          <p><strong>Email:</strong> <span id="proposal-client-email">{authorProfile?.email || 'N/A'}</span></p>
-          <p><strong>Phone:</strong> <span id="proposal-client-phone">{authorProfile?.phone || 'N/A'}</span></p>
+          <p><strong>Client:</strong> <span id="proposal-client-name">{project?.company_name || 'N/A'}</span></p>
+          <!-- <p><strong>Email:</strong> <span id="proposal-client-email">{authorProfile?.email || 'N/A'}</span></p> -->
+          <!-- <p><strong>Phone:</strong> <span id="proposal-client-phone">{authorProfile?.phone || 'N/A'}</span></p> -->
         </div>
       </div>
     </div>
@@ -290,18 +298,25 @@ const hasExistingProposal = !!existingInvoice;
       canManageProposals && projectStatus === 20 && (
         <div class="flex justify-between">
         
-          <div class="flex gap-2">
-      Proposal Saves Automatically
-            <button
+          
+        <div class="flex gap-2">
+           Proposal Saves Automatically
+        </div>
+        <div class="flex gap-2">
+     
+            <Button
               id="send-proposal-btn"
               onclick="sendProposal()"
-              class="inline-flex items-center rounded-lg bg-purple-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-purple-700"
+              variant="primary"
+              size="sm"
+              icon="send"
+              iconPosition="left"
+              class="bg-purple-600 hover:bg-purple-700"
             >
-              <BoxIcon name="send" class="mr-2 h-4 w-4" />
               Send Proposal
-            </button>
+            </Button>
           </div>
-        </div>
+      </div>
       )
     }
     
@@ -633,16 +648,16 @@ const hasExistingProposal = !!existingInvoice;
         row.className = "hover:bg-gray-50 dark:hover:bg-gray-700 proposal-line-item-row";
         row.innerHTML = `
           <td class="px-4 py-3">
-            <input type="text" value="${item.name || ''}" class="w-full border rounded px-2 py-1 line-item-name" onchange="window.proposalManager.updateLineItem(${index}, 'name', this.value)">
+            <input type="text" value="${item.name || ''}" class="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm text-gray-900 focus:border-primary-500 focus:ring-2 focus:ring-primary-500 dark:border-gray-600 dark:text-white dark:focus:border-primary-400 dark:focus:ring-primary-400 bg-background-card dark:bg-background-card-dark line-item-name" onchange="window.proposalManager.updateLineItem(${index}, 'name', this.value)">
           </td>
           <td class="px-4 py-3">
-            <input type="text" value="${item.description || ''}" class="w-full border rounded px-2 py-1 line-item-description" onchange="window.proposalManager.updateLineItem(${index}, 'description', this.value)">
+            <input type="text" value="${item.description || ''}" class="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm text-gray-900 focus:border-primary-500 focus:ring-2 focus:ring-primary-500 dark:border-gray-600 dark:text-white dark:focus:border-primary-400 dark:focus:ring-primary-400 bg-background-card dark:bg-background-card-dark line-item-description" onchange="window.proposalManager.updateLineItem(${index}, 'description', this.value)">
           </td>
           <td class="px-4 py-3">
-            <input type="number" value="${item.quantity || 1}" class="w-20 border rounded px-2 py-1 line-item-quantity" data-row-index="${index}" data-field="quantity" onchange="window.proposalManager.updateLineItemFromInput(this)">
+            <input type="number" value="${item.quantity || 1}" class="w-20 rounded-lg border border-gray-300 px-3 py-2.5 text-sm text-gray-900 focus:border-primary-500 focus:ring-2 focus:ring-primary-500 dark:border-gray-600 dark:text-white dark:focus:border-primary-400 dark:focus:ring-primary-400 bg-background-card dark:bg-background-card-dark line-item-quantity" data-row-index="${index}" data-field="quantity" onchange="window.proposalManager.updateLineItemFromInput(this)">
           </td>
           <td class="px-4 py-3">
-            <input type="number" value="${item.unitPrice || 0}" class="w-24 border rounded px-2 py-1 line-item-price" data-row-index="${index}" data-field="unitPrice" onchange="window.proposalManager.updateLineItemFromInput(this)">
+            <input type="number" value="${item.unitPrice || 0}" class="w-24 rounded-lg border border-gray-300 px-3 py-2.5 text-sm text-gray-900 focus:border-primary-500 focus:ring-2 focus:ring-primary-500 dark:border-gray-600 dark:text-white dark:focus:border-primary-400 dark:focus:ring-primary-400 bg-background-card dark:bg-background-card-dark line-item-price" data-row-index="${index}" data-field="unitPrice" onchange="window.proposalManager.updateLineItemFromInput(this)">
           </td>
           <td class="px-4 py-3 text-right line-item-total">$${((item.quantity || 1) * (item.unitPrice || 0)).toFixed(2)}</td>
           <td class="px-4 py-3 text-sm text-center">
@@ -1028,7 +1043,7 @@ const hasExistingProposal = !!existingInvoice;
               const inputContainer = target.closest('td');
               if (inputContainer) {
                 dropdown = document.createElement('div');
-                dropdown.className = 'autocomplete-dropdown overflow-y-auto absolute z-50 w-66 h-80 mt-1 bg-white border border-gray-300 rounded-md shadow-lg dark:bg-gray-700 dark:border-gray-600 hidden';
+                dropdown.className = 'autocomplete-dropdown overflow-y-auto absolute z-50 w-66 h-80 mt-1 bg-white border border-gray-300 rounded-lg shadow-lg dark:bg-gray-700 dark:border-gray-600 hidden';
                 inputContainer.appendChild(dropdown);
                 console.log("🔍 [AUTOCOMPLETE] Created dropdown for row");
               }
@@ -1521,13 +1536,13 @@ const hasExistingProposal = !!existingInvoice;
               type="text"
               id="${rowId}-name"
               name="line-item-name"
-              class="line-item-name w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+              class="line-item-name w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
               placeholder="Enter line item description..."
               value="${item.name || ""}"
               autocomplete="off"
             />
             <!-- Autocomplete dropdown -->
-            <div class="autocomplete-dropdown overflow-y-auto absolute z-50 w-66 h-80 mt-1 bg-white border border-gray-300 rounded-md shadow-lg dark:bg-gray-700 dark:border-gray-600 hidden">
+            <div class="autocomplete-dropdown overflow-y-auto absolute z-50 w-66 h-80 mt-1 bg-white border border-gray-300 rounded-lg shadow-lg dark:bg-gray-700 dark:border-gray-600 hidden">
               <!-- Suggestions will be populated here -->
             </div>
           </div>
@@ -1535,7 +1550,7 @@ const hasExistingProposal = !!existingInvoice;
             type="text"
             id="${rowId}-description"
             name="line-item-description"
-            class="line-item-description w-full mt-2 px-3 py-1 text-sm border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+            class="line-item-description w-full mt-2 px-3 py-1 text-sm border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
             placeholder="Description (optional)"
               value="${item.description || ""}"
           />
@@ -1689,7 +1704,7 @@ const hasExistingProposal = !!existingInvoice;
               const inputContainer = target.closest('td');
               if (inputContainer) {
                 dropdown = document.createElement('div');
-                dropdown.className = 'autocomplete-dropdown overflow-y-auto absolute z-50 w-66 h-80 mt-1 bg-white border border-gray-300 rounded-md shadow-lg dark:bg-gray-700 dark:border-gray-600 hidden';
+                dropdown.className = 'autocomplete-dropdown overflow-y-auto absolute z-50 w-66 h-80 mt-1 bg-white border border-gray-300 rounded-lg shadow-lg dark:bg-gray-700 dark:border-gray-600 hidden';
                 // inputContainer.style.position = 'relative';
                 inputContainer.appendChild(dropdown);
                 // console.log("🔍 [AUTOCOMPLETE] Created dropdown for row");
@@ -2014,7 +2029,7 @@ const hasExistingProposal = !!existingInvoice;
                     type="text"
                     id="proposal-subject-dropdown-search"
                     placeholder="Search and select or create subject..."
-                    class="w-full px-3 py-2 pl-8 pr-10 text-sm text-left border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:placeholder-gray-400"
+                    class="w-full px-3 py-2 pl-8 pr-10 text-sm text-left border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:placeholder-gray-400"
                     autocomplete="off"
                     value="${currentSubject}"
                   />
@@ -2032,7 +2047,7 @@ const hasExistingProposal = !!existingInvoice;
                   </button>
                 </div>
                 <div
-                  class="absolute left-0 right-0 z-50 mt-1 bg-white rounded-md shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none dark:bg-gray-800 dark:ring-gray-700 hidden"
+                  class="absolute left-0 right-0 z-50 mt-1 bg-white rounded-lg shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none dark:bg-gray-800 dark:ring-gray-700 hidden"
                   id="proposal-subject-dropdown-menu"
                   role="listbox"
                 >
@@ -2068,7 +2083,7 @@ const hasExistingProposal = !!existingInvoice;
                       <div class="text-xs">Try a different search or create a new subject</div>
                     </div>
                     <div id="proposal-subject-dropdown-loading" class="hidden px-4 py-8 text-center text-sm text-gray-500 dark:text-gray-400">
-                      <div class="animate-spin mx-auto h-6 w-6 border-2 border-blue-500 border-t-transparent rounded-full"></div>
+                      <div class="animate-spin mx-auto h-6 w-6 border-2 border-blue-500 border-t-transparent rounded-lg"></div>
                       <div class="mt-2">Loading subjects...</div>
                     </div>
                   </div>
