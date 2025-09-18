@@ -184,4 +184,67 @@
       alert("Error requesting permission: " + error);
     }
   }
+
+  // Send a local push notification
+  function sendLocalPush(title: string, body: string, icon?: string) {
+    if (Notification.permission === "granted") {
+      const notification = new Notification(title, {
+        body: body,
+        icon: icon || "/favicon.svg",
+        badge: "/favicon.svg",
+        tag: "capco-demo",
+        requireInteraction: false,
+      });
+
+      // Auto-close after 5 seconds
+      setTimeout(() => notification.close(), 5000);
+
+      notification.onclick = function () {
+        window.focus();
+        notification.close();
+      };
+    }
+  }
+
+  // Initialize the component
+  function initPushDemo() {
+    updatePermissionStatus();
+    updateDebugInfo();
+
+    // Set up event listeners
+    document.getElementById("request-permission-btn")?.addEventListener("click", requestPermission);
+
+    document.getElementById("test-local-push-btn")?.addEventListener("click", () => {
+      sendLocalPush("🔔 Test Notification", "This is a test push notification from CAPCo Fire!");
+    });
+
+    document.getElementById("test-project-update-btn")?.addEventListener("click", () => {
+      sendLocalPush(
+        "📋 Project Update",
+        "Your fire protection project status has been updated to 'Under Review'",
+        "/img/capco-icon.svg"
+      );
+    });
+
+    document.getElementById("test-deadline-reminder-btn")?.addEventListener("click", () => {
+      sendLocalPush(
+        "⏰ Deadline Reminder",
+        "Don't forget: Your project documentation is due in 2 days",
+        "/img/capco-icon.svg"
+      );
+    });
+
+    // Update status periodically
+    setInterval(() => {
+      updatePermissionStatus();
+      updateDebugInfo();
+    }, 2000);
+  }
+
+  // Run when DOM is ready
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", initPushDemo);
+  } else {
+    initPushDemo();
+  }
 </script>
