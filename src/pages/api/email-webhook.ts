@@ -673,6 +673,8 @@ async function createProjectFromEmail(userId: string, projectInfo: any, userProf
         body: JSON.stringify({
           projectId: project.id,
           status: 10, // "Specs Received" status
+          oldStatus: 0,
+          currentUserId: userId,
         }),
       });
 

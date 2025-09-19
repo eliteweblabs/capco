@@ -65,19 +65,17 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     const { projectId, status: newStatus } = body;
 
     // Use the authenticated user's role
-    const currentUserRole = currentRole || "Client";
 
     // Debug logging for parameter validation
-    console.log("📊 [UPDATE-STATUS] Request body:", body);
-    console.log("📊 [UPDATE-STATUS] Parsed projectId:", projectId, "(type:", typeof projectId, ")");
-    console.log("📊 [UPDATE-STATUS] Parsed newStatus:", newStatus, "(type:", typeof newStatus, ")");
+    // console.log("📊 [UPDATE-STATUS] Request body:", body);
+    // console.log("📊 [UPDATE-STATUS] Parsed projectId:", projectId, "(type:", typeof projectId, ")");
+    // console.log("📊 [UPDATE-STATUS] Parsed newStatus:", newStatus, "(type:", typeof newStatus, ")");
 
     if (!projectId || newStatus === undefined) {
       console.error("📊 [UPDATE-STATUS] Validation failed:", {
         projectId,
         newStatus,
         projectIdCheck: !projectId,
-        newStatusCheck: newStatus === undefined,
       });
       return new Response(
         JSON.stringify({
@@ -144,9 +142,9 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
     // Log the status change using authenticated user
     try {
-      console.log("📊 [UPDATE-STATUS] Logging status change for user:", currentUser.id);
+      // console.log("📊 [UPDATE-STATUS] Logging status change for user:", currentUser.id);
       await SimpleProjectLogger.logStatusChange(projectId, currentUser, oldStatus, newStatus);
-      console.log("📊 [UPDATE-STATUS] Status change logged successfully");
+      // console.log("📊 [UPDATE-STATUS] Status change logged successfully");
     } catch (logError) {
       console.error("📊 [UPDATE-STATUS] Failed to log status change:", logError);
       // Don't fail the entire request if logging fails
@@ -165,13 +163,13 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
     if (statusDataResponse.ok) {
       const statusData = await statusDataResponse.json();
-      console.log("📊 [UPDATE-STATUS] Status data retrieved:", statusData);
-      console.log("🔍 [UPDATE-STATUS] Button config debug:", {
-        button_link: statusData.statusConfig.button_link,
-        button_text: statusData.statusConfig.button_text,
-        hasButtonLink: !!statusData.statusConfig.button_link,
-        hasButtonText: !!statusData.statusConfig.button_text,
-      });
+      // console.log("📊 [UPDATE-STATUS] Status data retrieved:", statusData);
+      // console.log("🔍 [UPDATE-STATUS] Button config debug:", {
+      //   button_link: statusData.statusConfig.button_link,
+      //   button_text: statusData.statusConfig.button_text,
+      //   hasButtonLink: !!statusData.statusConfig.button_link,
+      //   hasButtonText: !!statusData.statusConfig.button_text,
+      // });
 
       // Merge project data with status config for placeholder replacement
       const mergedData = {
@@ -180,7 +178,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         newStatus: newStatus,
       };
 
-      console.log("📊 [UPDATE-STATUS] Merged data for placeholder replacement:", mergedData);
+      // console.log("📊 [UPDATE-STATUS] Merged data for placeholder replacement:", mergedData);
 
       // Get client profile data for placeholders
       const { data: profiles, error: profileError } = await supabase
@@ -221,7 +219,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         primaryColor: "#3b82f6", // Default primary color (can be made configurable later)
       };
 
-      console.log("📊 [UPDATE-STATUS] Placeholder data prepared:", placeholderData);
+      // console.log("📊 [UPDATE-STATUS] Placeholder data prepared:", placeholderData);
 
       // Call placeholder replacement API
       const placeholderResponse = await fetch(`${baseUrl}/api/replace-placeholders`, {
@@ -243,11 +241,11 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         };
 
         // Debug: Log the status configuration to see what's available
-        console.log("🔍 [UPDATE-STATUS] Status config for status", newStatus, ":", {
-          modal_admin: statusData.statusConfig.modal_admin,
-          modal_client: statusData.statusConfig.modal_client,
-          processedMessages: placeholderResult.processedMessages,
-        });
+        // console.log("🔍 [UPDATE-STATUS] Status config for status", newStatus, ":", {
+        //   modal_admin: statusData.statusConfig.modal_admin,
+        //   modal_client: statusData.statusConfig.modal_client,
+        //   processedMessages: placeholderResult.processedMessages,
+        // });
 
         // Return notification data with user role information
         const notificationData = {
@@ -280,21 +278,21 @@ export const POST: APIRoute = async ({ request, cookies }) => {
               : undefined,
           },
           // Include the current user's role for frontend to use
-          currentUserRole: currentUserRole,
+          currentUserRole: currentRole,
         };
 
-        console.log("📊 [UPDATE-STATUS] Notification data prepared:", {
-          adminRedirect: statusData.statusConfig.modal_auto_redirect_admin,
-          clientRedirect: statusData.statusConfig.modal_auto_redirect_client,
-          projectId: updatedProject.id,
-          notificationData,
-        });
+        // console.log("📊 [UPDATE-STATUS] Notification data prepared:", {
+        //   adminRedirect: statusData.statusConfig.modal_auto_redirect_admin,
+        //   clientRedirect: statusData.statusConfig.modal_auto_redirect_client,
+        //   projectId: updatedProject.id,
+        //   notificationData,
+        // });
 
-        console.log("📊 [UPDATE-STATUS] About to fetch admin and staff emails...");
-        console.log(
-          "📊 [UPDATE-STATUS] Final notification data:",
-          JSON.stringify(notificationData, null, 2)
-        );
+        // console.log("📊 [UPDATE-STATUS] About to fetch admin and staff emails...");
+        // console.log(
+        //   "📊 [UPDATE-STATUS] Final notification data:",
+        //   JSON.stringify(notificationData, null, 2)
+        // );
 
         // Get admin and staff emails using reusable API
         const adminStaffResponse = await fetch(`${baseUrl}/api/get-user-emails-by-role`, {
@@ -332,12 +330,12 @@ export const POST: APIRoute = async ({ request, cookies }) => {
           processedButtonText = replacePlaceholders(processedButtonText, placeholderData, false);
         }
 
-        console.log("🔍 [UPDATE-STATUS] Processed button config:", {
-          originalLink: statusData.statusConfig.button_link,
-          processedLink: processedButtonLink,
-          originalText: statusData.statusConfig.button_text,
-          processedText: processedButtonText,
-        });
+        // console.log("🔍 [UPDATE-STATUS] Processed button config:", {
+        //   originalLink: statusData.statusConfig.button_link,
+        //   processedLink: processedButtonLink,
+        //   originalText: statusData.statusConfig.button_text,
+        //   processedText: processedButtonText,
+        // });
 
         // Send client email using original email delivery API
         // console.log("📊 [UPDATE-STATUS] Sending client email...");

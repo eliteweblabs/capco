@@ -1429,19 +1429,13 @@ const hasExistingProposal = !!existingInvoice;
           "info",
           "Sending Proposal",
           "Please wait while we send your proposal...",
-          0 // No auto-hide
+          1000 // No auto-hide
         );
       }
 
       try {
         // Update project status to 30 (Proposal Shipped)
-        const statusUpdateData = {
-          projectId: projectId,
-          status: 30, // Proposal Shipped
-          oldStatus: projectStatus,
-        };
         
-        console.log("🔧 [PROPOSAL-MANAGER] Sending status update:", statusUpdateData);
         
         const response = await fetch("/api/update-status", {
           method: "POST",
@@ -1449,14 +1443,18 @@ const hasExistingProposal = !!existingInvoice;
             "Content-Type": "application/json",
           },
           credentials: "include", // Include cookies for authentication
-          body: JSON.stringify(statusUpdateData),
+          body: JSON.stringify({
+            projectId: projectId,
+            status: 30, // Proposal Shipped
+            oldStatus: projectStatus,
+          })
         });
 
         const data = await response.json();
-        console.log("🔍 [PROPOSAL-MANAGER] Full API response:", data);
+        // console.log("🔍 [PROPOSAL-MANAGER] Full API response:", data);
 
         if (data.success) {
-          console.log("✅ [PROPOSAL-MANAGER] Proposal sent successfully");
+          // console.log("✅ [PROPOSAL-MANAGER] Proposal sent successfully");
           
           // Hide loading modal
           if (window.hideNotification) {
@@ -1499,7 +1497,6 @@ const hasExistingProposal = !!existingInvoice;
     // Calculate initial total
     updateProposalTotal();
     
-
     // Generate initial empty row
     generateInitialEmptyRow();
 
@@ -2509,24 +2506,18 @@ const hasExistingProposal = !!existingInvoice;
         }
         
         // Make API call to update status to 45 (Proposal Accepted)
-        const requestBody = {
-          projectId: parsedProjectId,
-          status: 45,
-          oldStatus: projectStatus ? parseInt(projectStatus.toString()) : null
-        };
 
-        console.log("🔔 [PROPOSAL-MANAGER] Making API call to /api/update-status with body:", requestBody);
-        console.log("🔔 [PROPOSAL-MANAGER] Validating request body:");
-        console.log("  - projectId:", requestBody.projectId, "(type:", typeof requestBody.projectId, ")");
-        console.log("  - status:", requestBody.status, "(type:", typeof requestBody.status, ")");
-        console.log("  - oldStatus:", requestBody.oldStatus, "(type:", typeof requestBody.oldStatus, ")");
-        
+
         const response = await fetch('/api/update-status', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify(requestBody),
+          body: JSON.stringify({
+            projectId: parsedProjectId,
+            status: 45,
+            oldStatus: projectStatus ? parseInt(projectStatus.toString()) : null
+          })
         });
 
         const result = await response.json();
