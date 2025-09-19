@@ -67,6 +67,7 @@ export const navigation = (
       isPrimary: currentUrl.startsWith("/demo"),
       buttonStyle: "primary",
       desktopOnly: true,
+      hideWhenAuth: true,
     },
     // Backend navigation (shown on backend pages)
     {

@@ -2,8 +2,6 @@
 interface Props {
   title?: string;
   description?: string;
-  requireAuth?: boolean;
-  requireRole?: string | null;
   redirectTo?: string;
   isAuth?: boolean;
   currentUser?: any;
@@ -19,8 +17,6 @@ interface Props {
 const {
   title = undefined,
   description = undefined,
-  requireAuth = false,
-  requireRole = "Client",
   redirectTo = undefined,
   isAuth = false,
   currentUser = null,
@@ -37,21 +33,22 @@ const {
 // Status data is now fetched in individual pages as needed
 
 // Import components
+
+import "../../styles/boxicons.css"; // Import Boxicons CSS first
+import "../../styles/global.css"; // Import Tailwind CSS
 import Preloader from "./Preloader.astro";
 import Header from "./Header.astro";
 import Footer from "./Footer.astro";
 import UnifiedNotification from "./UnifiedNotification.astro";
 import CookieBanner from "./CookieBanner.astro";
 import SpeedDial from "./SpeedDial.astro";
-import "../../styles/boxicons.css"; // Import Boxicons CSS first
-import "../../styles/global.css"; // Import Tailwind CSS
-import { getLangFromUrl } from "../../i18n/utils";
-const lang = getLangFromUrl(Astro.url);
+
 // Get current URL and determine page type
 const currentUrl = Astro.url.pathname;
 const isBackend = isBackendPage(currentUrl);
 import { isBackendPage } from "../../pages/api/backend-page-check";
 import { navigation } from "@/pages/api/navigation";
+import { undefined } from "astro:schema";
 const navigationData = navigation(
   currentUrl,
   isAuth || false,
@@ -105,7 +102,7 @@ if ((currentUser?.id && currentRole === "Staff") || currentRole === "Admin") {
 ---
 
 <!doctype html>
-<html {lang}>
+<html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta name="description" content={description} />

@@ -7,7 +7,10 @@ import Button from "../components/common/Button.astro";
 
 // Get auth data directly since App component handles auth requirements
 import { checkAuth } from "../lib/auth";
-const { isAuth, currentUser, currentRole } = await checkAuth(Astro.cookies);
+const { isAuth, currentUser, currentRole, session } = await checkAuth(Astro.cookies);
+
+// After the requireAuth check
+if (!isAuth || currentRole !== "Admin") return Astro.redirect("/login");
 
 import { supabase } from "../lib/supabase";
 import { supabaseAdmin } from "../lib/supabase-admin";
@@ -58,8 +61,11 @@ const userCounts = {
 <App
   title="User Management - CAPCo Fire Protection"
   description="Manage system users"
-  requireAuth={true}
-  requireRole="Admin"
+  session={session}
+  isAuth={isAuth}
+  currentRole={currentRole}
+  currentUser={currentUser}
+  session={session}
 >
   <SectionContainer class="mx-auto max-w-7xl">
     <!-- Page Header -->

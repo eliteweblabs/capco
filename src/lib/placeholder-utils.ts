@@ -6,7 +6,11 @@
  * Get the CAPCo logo SVG as a string
  * This function extracts the SVG content from the Logo component
  */
-export function getCapcoLogoSvg(size: string, file: string = "svg"): string {
+export function getCapcoLogoSvg(
+  size: string,
+  file: string = "svg",
+  link: string = "/dashboard"
+): string {
   return `<svg id="Layer_1" xmlns="http://www.w3.org/2000/svg" width="155" height="26.6" version="1.1" viewBox="0 0 135 24.6">
   <defs>
     <style>
