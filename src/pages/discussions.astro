@@ -186,7 +186,7 @@ function getAuthorName(discussion: any): string {
         <!-- Discussions List -->
         <div class="space-y-6">
           {discussions.map((discussion) => (
-            <div class="rounded-lg border border-border-light bg-background-card p-6 shadow-sm dark:border-border-dark dark:bg-background-card-dark">
+            <div class="discussion-item rounded-lg border border-border-light bg-background-card p-6 shadow-sm dark:border-border-dark dark:bg-background-card-dark" data-project-id={discussion.project_id}>
               <div class="mb-4 flex items-start justify-between">
                 <div class="flex items-center space-x-3">
                   <div class="flex h-10 w-10 items-center justify-center rounded-full bg-red-100 dark:bg-red-900/30">
@@ -226,7 +226,7 @@ function getAuthorName(discussion: any): string {
               </div>
 
               <div class="prose max-w-none dark:prose-invert">
-                <p class="whitespace-pre-wrap text-gray-700 dark:text-gray-300">
+                <p class="discussion-message whitespace-pre-wrap text-gray-700 dark:text-gray-300">
                   {discussion.message}
                 </p>
               </div>
@@ -239,7 +239,6 @@ function getAuthorName(discussion: any): string {
                       <div class="relative">
                         <input
                           type="checkbox"
-                          id={`completed-toggle-${discussion.id}`}
                           class="peer sr-only completed-toggle"
                           data-discussion-id={discussion.id}
                           checked={discussion.mark_completed || false}
@@ -292,10 +291,24 @@ function getAuthorName(discussion: any): string {
   <!-- Toggle functionality script -->
   <script>
     // Toggle functionality for completed status
+    console.log("🔔 [DISCUSSIONS] Script loaded, setting up event listener");
+    document.addEventListener("DOMContentLoaded", () => {
+      console.log("🔔 [DISCUSSIONS] DOM loaded, checking for toggles:", document.querySelectorAll(".completed-toggle").length);
+    });
+    
     document.addEventListener("change", (e) => {
-      if ((e.target as HTMLInputElement).classList.contains("completed-toggle")) {
+      console.log("🔔 [DISCUSSIONS] Change event fired on:", e.target);
+      // Only handle toggles on the global discussions page (not in project tabs)
+      if ((e.target as HTMLInputElement).classList.contains("completed-toggle") && 
+          !document.getElementById("discussion-container")) {
         const discussionId = (e.target as HTMLInputElement).getAttribute("data-discussion-id");
         const isCompleted = (e.target as HTMLInputElement).checked;
+        
+        console.log("🔔 [DISCUSSIONS] Toggle clicked:", {
+          discussionId,
+          isCompleted,
+          target: e.target
+        });
         
         if (discussionId) {
           fetch("/api/update-discussion-completed", {
@@ -309,7 +322,8 @@ function getAuthorName(discussion: any): string {
           .then(response => response.json())
           .then(data => {
             if (data.success) {
-              console.log("Discussion status updated");
+              console.log("✅ [DISCUSSIONS] Discussion status updated successfully");
+              // Note: Project logging happens on individual project pages, not global discussions
             } else {
               // Revert toggle on error
               (e.target as HTMLInputElement).checked = !isCompleted;

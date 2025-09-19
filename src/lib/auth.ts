@@ -5,7 +5,6 @@ import { supabase } from "./supabase";
 export interface ExtendedUser extends User {
   profile?: any;
   company_name?: string | null;
-  display_name?: string | null;
 }
 
 export interface AuthResult {
@@ -15,7 +14,6 @@ export interface AuthResult {
   currentRole: string | null;
   profile: any;
   company_name: string | null;
-  display_name: string | null;
 }
 
 export async function checkAuth(cookies: any): Promise<AuthResult> {
@@ -82,11 +80,7 @@ export async function checkAuth(cookies: any): Promise<AuthResult> {
             // Enhance currentUser object with profile data
             currentUser.profile = profile;
             currentUser.company_name = profile.company_name;
-            currentUser.display_name =
-              profile.company_name ||
-              currentUser.user_metadata?.full_name ||
-              currentUser.email?.split("@")[0] ||
-              "Unknown currentUser";
+
             // console.log("🔐 [AUTH] currentUser role set:", role);
           } else {
             console.warn("🔐 [AUTH] Failed to get currentUser profile:", profileError);
@@ -113,7 +107,6 @@ export async function checkAuth(cookies: any): Promise<AuthResult> {
     currentRole,
     profile: currentUser?.profile || null,
     company_name: currentUser?.company_name || null,
-    display_name: currentUser?.display_name || null,
   };
   // console.log("🔐 [AUTH] Authentication check complete:", {
   //   isAuth,

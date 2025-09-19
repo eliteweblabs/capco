@@ -183,7 +183,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       // Always indicate if it's internal or not in subject and content
       const commentType = internal ? "Internal Comment" : "Public Comment";
       const subjectLine = projectAddress
-        ? `New ${commentType} from ${authorName} - ${projectAddress}`
+        ? `New ${commentType} from ${authorName} -> ${projectAddress}`
         : `New ${commentType} from ${authorName}`;
 
       // Get admin and staff emails using reusable API

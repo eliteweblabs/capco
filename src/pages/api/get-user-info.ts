@@ -91,12 +91,6 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       created_at: profile.created_at,
       updated_at: profile.updated_at,
       profile: profile,
-      // Computed fields for easy access
-      display_name:
-        profile.company_name ||
-        `${profile.first_name || ""} ${profile.last_name || ""}`.trim() ||
-        profile.email?.split("@")[0] ||
-        "Unknown User",
       role: profile.role || "Unknown",
       company_name: profile.company_name || null,
       first_name: profile.first_name || null,
@@ -219,12 +213,6 @@ export const GET: APIRoute = async ({ url, cookies }) => {
       created_at: profile.created_at,
       updated_at: profile.updated_at,
       profile: profile,
-      // Computed fields for easy access
-      display_name:
-        profile.company_name ||
-        `${profile.first_name || ""} ${profile.last_name || ""}`.trim() ||
-        profile.email?.split("@")[0] ||
-        "Unknown User",
       role: profile.role || "Unknown",
       company_name: profile.company_name || null,
       first_name: profile.first_name || null,

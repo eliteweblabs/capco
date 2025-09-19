@@ -60,6 +60,10 @@ export default defineConfig({
       // Stripe environment variables
       "process.env.STRIPE_SECRET_KEY": JSON.stringify(env.STRIPE_SECRET_KEY),
       "process.env.STRIPE_PUBLISHABLE_KEY": JSON.stringify(env.PUBLIC_STRIPE_PUBLISHABLE_KEY),
+      // Brand colors
+      "process.env.PRIMARY_COLOR": JSON.stringify(env.PRIMARY_COLOR),
+      "process.env.PRIMARY_COLOR_RGB": JSON.stringify(env.PRIMARY_COLOR_RGB),
+      "process.env.SECONDARY_COLOR": JSON.stringify(env.SECONDARY_COLOR),
     },
   },
 });

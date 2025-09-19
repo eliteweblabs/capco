@@ -2,19 +2,25 @@
 // User center component for header
 import BoxIcon from "./BoxIcon.astro";
 import Button from "./Button.astro";
+import TabPunchlist from "../project/TabPunchlist.astro";
 
 const {
-  user,
+  project,
   currentRole,
   currentUser,
   assignedProjects,
   assignedProjectsCount = 0,
   isAuth,
   desktopNavigationHTML,
-  visibleNavItems,
+  supabaseUrl,
 } = Astro.props;
 
-console.log("🔍 [UserCenter] isAuth:", isAuth);
+const projectId = project?.id;
+
+// Early return if not authenticated - UserCenter only shows for logged-in users
+if (!isAuth) {
+  return null;
+}
 // Fetch projects assigned to current user
 ---
 
@@ -119,8 +125,11 @@ console.log("🔍 [UserCenter] isAuth:", isAuth);
     isAuth && (
       <div class="mb-6">
         <div class="my-6 text-black dark:text-white">
-          {currentRole === "Client" ? "Your Projects: " : "Assigned Projects: "}(
-          {assignedProjectsCount})
+          {" "}
+          <h3 class="text-lg font-medium text-gray-900 dark:text-white">
+            {currentRole === "Client" ? "Your Projects: " : "Assigned Projects: "}(
+            {assignedProjectsCount})
+          </h3>
           {assignedProjectsCount > 0 ? (
             <div class="space-y-2 overflow-y-auto">
               {assignedProjects.slice(0, 5).map((project: any) => (
@@ -182,6 +191,17 @@ console.log("🔍 [UserCenter] isAuth:", isAuth);
     }
   </nav> -->
 
+  {
+    projectId && project && (
+      <TabPunchlist
+        project={project}
+        currentRole={currentRole || undefined}
+        currentUser={currentUser}
+        projectId={projectId}
+        supabaseUrl={supabaseUrl}
+      />
+    )
+  }
   <!-- Alternative: Generated Navigation HTML (optional) -->
   {
     desktopNavigationHTML && (

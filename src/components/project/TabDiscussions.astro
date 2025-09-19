@@ -188,7 +188,6 @@ const placeholder =
                 //         // company_name: d.company_name,
                 //         // hasProfiles: !!d.profiles,
                 //         // profileData: d.profiles ? {
-                //         //   display_name: d.profiles.display_name,
                 //         //   company_name: d.profiles.company_name,
                 //         //   first_name: d.profiles.first_name,
                 //         //   last_name: d.profiles.last_name
@@ -950,7 +949,8 @@ const placeholder =
                   window.showModal(
                     "success",
                     "Comment posted",
-                    `Your comment has been added to the discussion${uploadedImageCount > 0 ? ` with ${uploadedImageCount} image(s)` : ""}`
+                    `Your comment has been added to the discussion${uploadedImageCount > 0 ? ` with ${uploadedImageCount} image(s)` : ""}`,
+                    1500
                   );
                 }
               } else {
@@ -1271,15 +1271,31 @@ const placeholder =
               });
             }
 
-            // Add event delegation for completed toggles
+            // Add event delegation for completed toggles (only in project context)
             document.addEventListener("change", (e) => {
+              console.log("🔔 [TAB-DISCUSSIONS] Change event fired on:", e.target);
               const target = e.target;
-              if (target.classList.contains("completed-toggle")) {
+              // Only handle toggles when we're in a project discussion context
+              if (
+                target.classList.contains("completed-toggle") &&
+                document.getElementById("discussion-container")
+              ) {
+                console.log("🔔 [TAB-DISCUSSIONS] Found completed-toggle, processing...");
                 const discussionId = parseInt(target.getAttribute("data-discussion-id") || "0");
                 const isCompleted = target.checked;
+                console.log("🔔 [TAB-DISCUSSIONS] Toggle details:", {
+                  discussionId,
+                  isCompleted,
+                  targetClasses: target.className,
+                });
                 if (discussionId) {
+                  console.log("🔔 [TAB-DISCUSSIONS] Calling toggleDiscussionCompleted...");
                   toggleDiscussionCompleted(discussionId, isCompleted);
+                } else {
+                  console.warn("🔔 [TAB-DISCUSSIONS] No valid discussion ID found");
                 }
+              } else {
+                console.log("🔔 [TAB-DISCUSSIONS] Change event not for completed-toggle, ignoring");
               }
             });
 
@@ -1438,7 +1454,7 @@ const placeholder =
                     return;
                   }
 
-                  console.log("📧 [CREATE-USER] Found discussion data:", discussionData);
+                  // console.log("📧 [CREATE-USER] Found discussion data:", discussionData);
 
                   const adminContent = ` ${discussionData.message} marked complete by ${currentUser.company_name}:<br><br>`;
 
@@ -1470,16 +1486,8 @@ const placeholder =
                   console.error(emailError);
                 }
 
-                // Log the discussion status change
-                if (window.SimpleProjectLogger) {
-                  window.SimpleProjectLogger.logDiscussionToggle(
-                    currentProjectId,
-                    discussionId,
-                    isCompleted,
-                    currentUser,
-                    discussion?.message?.substring(0, 50) + "..." || "No message"
-                  );
-                }
+                // Note: Project logging is handled server-side in the update-discussion-completed API
+                console.log("📝 [TAB-DISCUSSIONS] Discussion toggle logged server-side");
 
                 // Update the incomplete comments count
                 updateIncompleteCommentsCount();
