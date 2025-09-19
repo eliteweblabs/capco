@@ -127,84 +127,18 @@ const formActions = getFilteredFormActions(currentRole, isNewProject, projectSta
   }
 
   <!-- Other Core Fields Grid -->
-  <div class="rounded-lg border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-800">
-    <div class="grid grid-cols-1 gap-4 lg:grid-cols-2">
-      {
-        formFields
-          .filter(
-            (field) =>
-              field.name !== "address" &&
-              field.name !== "first_name" &&
-              field.name !== "last_name" &&
-              field.name !== "company_name" &&
-              field.name !== "email" &&
-              (field.type === "text" || field.type === "number")
-          )
-          .map((field) => {
-            const isReadOnly = isFieldReadOnly(field, projectStatus);
-            return (
-              <div class="relative">
-                <label
-                  for={`${field.id}`}
-                  class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300"
-                >
-                  {field.label}
-                  {field.required ? " *" : ""}
-                </label>
-                {field.name === "sq_ft" ? (
-                  <div class="relative">
-                    <input
-                      type="text"
-                      id={`${field.id}`}
-                      name={field.name}
-                      value={project?.[field.name] || ""}
-                      class={`w-full rounded-lg border border-gray-300 px-3 py-2.5 pr-12 text-sm text-gray-900 focus:border-primary-500 focus:ring-2 focus:ring-primary-500 dark:border-gray-600 dark:text-white dark:focus:border-primary-400 dark:focus:ring-primary-400 ${
-                        isReadOnly
-                          ? "cursor-not-allowed bg-gray-100 dark:bg-gray-800"
-                          : "bg-background-card dark:bg-background-card-dark"
-                      }`}
-                      placeholder={field.placeholder || ""}
-                      required={field.required}
-                      readonly={isReadOnly}
-                      data-field={field.dataField}
-                      data-project-id={formId}
-                      inputmode="numeric"
-                      pattern="[0-9]*"
-                    />
-                    <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
-                      <span class="text-sm text-gray-500 dark:text-gray-400">ft²</span>
-                    </div>
-                  </div>
-                ) : (
-                  <input
-                    type={field.type === "number" ? "number" : "text"}
-                    id={`${field.id}`}
-                    name={field.name}
-                    value={project?.[field.name] || ""}
-                    class={`w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm text-gray-900 focus:border-primary-500 focus:ring-2 focus:ring-primary-500 dark:border-gray-600 dark:text-white dark:focus:border-primary-400 dark:focus:ring-primary-400 ${
-                      isReadOnly
-                        ? "cursor-not-allowed bg-gray-100 dark:bg-gray-800"
-                        : "bg-background-card dark:bg-background-card-dark"
-                    }`}
-                    placeholder={field.placeholder || ""}
-                    required={field.required}
-                    min={field.min}
-                    max={field.max}
-                    step={field.step}
-                    readonly={isReadOnly}
-                    data-field={field.dataField}
-                  />
-                )}
-              </div>
-            );
-          })
-      }
-    </div>
-
-    <!-- Description Field -->
+  <div class="grid grid-cols-1 gap-4 lg:grid-cols-2">
     {
       formFields
-        .filter((field) => field.type === "textarea")
+        .filter(
+          (field) =>
+            field.name !== "address" &&
+            field.name !== "first_name" &&
+            field.name !== "last_name" &&
+            field.name !== "company_name" &&
+            field.name !== "email" &&
+            (field.type === "text" || field.type === "number")
+        )
         .map((field) => {
           const isReadOnly = isFieldReadOnly(field, projectStatus);
           return (
@@ -214,144 +148,198 @@ const formActions = getFilteredFormActions(currentRole, isNewProject, projectSta
                 class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300"
               >
                 {field.label}
+                {field.required ? " *" : ""}
               </label>
-              <textarea
-                id={`${field.id}`}
-                name={field.name}
-                rows="3"
-                class={`w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm text-gray-900 focus:border-primary-500 focus:ring-2 focus:ring-primary-500 dark:border-gray-600 dark:text-white dark:focus:border-primary-400 dark:focus:ring-primary-400 ${
-                  isReadOnly
-                    ? "cursor-not-allowed bg-gray-100 dark:bg-gray-800"
-                    : "bg-white dark:bg-gray-700"
-                }`}
-                placeholder={field.placeholder || ""}
-                readonly={isReadOnly}
-              >
-                {project?.[field.name] || ""}
-              </textarea>
+              {field.name === "sq_ft" ? (
+                <div class="relative">
+                  <input
+                    type="text"
+                    id={`${field.id}`}
+                    name={field.name}
+                    value={project?.[field.name] || ""}
+                    class={`w-full rounded-lg border border-gray-300 px-3 py-2.5 pr-12 text-sm text-gray-900 focus:border-primary-500 focus:ring-2 focus:ring-primary-500 dark:border-gray-600 dark:text-white dark:focus:border-primary-400 dark:focus:ring-primary-400 ${
+                      isReadOnly
+                        ? "cursor-not-allowed bg-gray-100 dark:bg-gray-800"
+                        : "bg-background-card dark:bg-background-card-dark"
+                    }`}
+                    placeholder={field.placeholder || ""}
+                    required={field.required}
+                    readonly={isReadOnly}
+                    data-field={field.dataField}
+                    data-project-id={formId}
+                    inputmode="numeric"
+                    pattern="[0-9]*"
+                  />
+                  <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
+                    <span class="text-sm text-gray-500 dark:text-gray-400">ft²</span>
+                  </div>
+                </div>
+              ) : (
+                <input
+                  type={field.type === "number" ? "number" : "text"}
+                  id={`${field.id}`}
+                  name={field.name}
+                  value={project?.[field.name] || ""}
+                  class={`w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm text-gray-900 focus:border-primary-500 focus:ring-2 focus:ring-primary-500 dark:border-gray-600 dark:text-white dark:focus:border-primary-400 dark:focus:ring-primary-400 ${
+                    isReadOnly
+                      ? "cursor-not-allowed bg-gray-100 dark:bg-gray-800"
+                      : "bg-background-card dark:bg-background-card-dark"
+                  }`}
+                  placeholder={field.placeholder || ""}
+                  required={field.required}
+                  min={field.min}
+                  max={field.max}
+                  step={field.step}
+                  readonly={isReadOnly}
+                  data-field={field.dataField}
+                />
+              )}
             </div>
           );
         })
     }
+  </div>
 
-    <!-- Construction Type & Units Row -->
-    <div class="grid grid-cols-1 gap-4 lg:grid-cols-2">
-      <!-- Construction Type -->
-      <div>
-        <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300"
-          >Construction Type</label
-        >
-        <div class="flex gap-4">
-          {
-            formFields
-              .filter((field) => field.type === "checkbox" && field.name !== "new_client")
-              .map((field) => {
-                const isReadOnly = isFieldReadOnly(field, projectStatus);
-                const isChecked =
-                  project?.[field.name] === true ||
-                  project?.[field.name] === "true" ||
-                  project?.[field.name] === 1 ||
-                  project?.[field.name] === "1";
-                return (
-                  <label
-                    class={`inline-flex items-center ${isReadOnly ? "cursor-not-allowed" : "cursor-pointer"}`}
-                  >
-                    <input
-                      type="checkbox"
-                      id={`${field.id}`}
-                      name={field.name}
-                      checked={isChecked}
-                      disabled={isReadOnly}
-                      class="peer sr-only"
-                    />
-                    <div
-                      class={`peer relative h-6 w-11 rounded-full after:absolute after:start-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:border after:border-gray-300 after:bg-white after:transition-all after:content-[''] peer-checked:after:translate-x-full peer-checked:after:border-white peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 dark:border-gray-600 dark:peer-focus:ring-primary-800 rtl:peer-checked:after:-translate-x-full ${
-                        isReadOnly
-                          ? "cursor-not-allowed bg-gray-300 dark:bg-gray-600"
-                          : "bg-gray-200 peer-checked:bg-primary-600 dark:bg-gray-700 dark:peer-checked:bg-primary-600"
-                      }`}
-                    />
-                    <span class="ms-3 text-sm font-medium text-gray-900 dark:text-gray-300">
-                      {field.label}
-                    </span>
-                  </label>
-                );
-              })
-          }
-        </div>
-      </div>
-
-      <!-- Units Slider -->
-      {
-        formFields
-          .filter((field) => field.type === "component" && field.component === "UnitSlider")
-          .map((field) => {
-            const isReadOnly = isFieldReadOnly(field, projectStatus);
-            return (
-              <UnitSlider projectId={formId} value={project?.units || 1} readOnly={isReadOnly} />
-            );
-          })
-      }
-    </div>
-
-    <!-- Button Groups -->
-    {
-      buttonGroups.map((group) => {
-        const isReadOnly = isButtonGroupReadOnly(group, projectStatus);
-        // Parse selected values from project data
-        let selectedValues = [] as any;
-        if (project?.[group.name]) {
-          if (Array.isArray(project[group.name])) {
-            selectedValues = project[group.name];
-          } else if (typeof project[group.name] === "string") {
-            try {
-              const parsed = JSON.parse(project[group.name]);
-              selectedValues = Array.isArray(parsed) ? parsed : [project[group.name]];
-            } catch {
-              selectedValues = project[group.name]
-                .split(",")
-                .map((s: any) => s.trim())
-                .filter((s: any) => s);
-            }
-          } else {
-            selectedValues = [project[group.name]];
-          }
-        }
-
+  <!-- Description Field -->
+  {
+    formFields
+      .filter((field) => field.type === "textarea")
+      .map((field) => {
+        const isReadOnly = isFieldReadOnly(field, projectStatus);
         return (
-          <div class="mt-5 space-y-3">
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
-              {group.label}
-            </label>
-            <div
-              class={`mb-4 flex flex-wrap gap-2 ${isReadOnly ? "pointer-events-none opacity-75" : ""}`}
-            >
-              {group.options.map((option) => {
-                const isSelected = selectedValues.includes(option.value);
-                return (
-                  <ToggleButton
-                    value={option.value}
-                    group={group.name}
-                    type={group.type}
-                    disabled={isReadOnly}
-                    class={`${group.cssClass} ${isSelected ? "border-primary-500 bg-primary-500 text-white" : ""} ${
-                      isReadOnly ? "cursor-not-allowed" : ""
-                    }`}
-                  >
-                    {option.label}
-                  </ToggleButton>
-                );
-              })}
+          <div class="grid grid-cols-1 gap-4 lg:grid-cols-1">
+            <div class="relative">
+              <label
+                for={`${field.id}`}
+                class="block text-sm font-medium text-gray-700 dark:text-gray-300"
+              >
+                {field.label}
+              </label>
+              <!-- @ts-ignore -->
+              <textarea id={`${field.id}`} name={field.name} rows="3" class={`w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm text-gray-900 focus:border-primary-500 focus:ring-2 focus:ring-primary-500 dark:border-gray-600 dark:text-white dark:focus:border-primary-400 dark:focus:ring-primary-400 ${isReadOnly ? "cursor-not-allowed bg-gray-100 dark:bg-gray-800" : "bg-background-card dark:bg-background-card-dark" }`} placeholder={field.placeholder || ""} readonly={isReadOnly}>{project?.[field.name] || ""}</textarea>
             </div>
           </div>
         );
       })
+  }
+
+  <!-- Construction Type & Units Row -->
+  <div class="grid grid-cols-1 gap-4 lg:grid-cols-2">
+    <!-- Construction Type -->
+    <div>
+      <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300"
+        >Construction Type</label
+      >
+      <div class="flex gap-4">
+        {
+          formFields
+            .filter((field) => field.type === "checkbox" && field.name !== "new_client")
+            .map((field) => {
+              const isReadOnly = isFieldReadOnly(field, projectStatus);
+              const isChecked =
+                project?.[field.name] === true ||
+                project?.[field.name] === "true" ||
+                project?.[field.name] === 1 ||
+                project?.[field.name] === "1";
+              return (
+                <label
+                  class={`inline-flex items-center ${isReadOnly ? "cursor-not-allowed" : "cursor-pointer"}`}
+                >
+                  <input
+                    type="checkbox"
+                    id={`${field.id}`}
+                    name={field.name}
+                    checked={isChecked}
+                    disabled={isReadOnly}
+                    class="peer sr-only"
+                  />
+                  <div
+                    class={`peer relative h-6 w-11 rounded-full after:absolute after:start-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:border after:border-gray-300 after:bg-white after:transition-all after:content-[''] peer-checked:after:translate-x-full peer-checked:after:border-white peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 dark:border-gray-600 dark:peer-focus:ring-primary-800 rtl:peer-checked:after:-translate-x-full ${
+                      isReadOnly
+                        ? "cursor-not-allowed bg-gray-300 dark:bg-gray-600"
+                        : "bg-gray-200 peer-checked:bg-primary-600 dark:bg-gray-700 dark:peer-checked:bg-primary-600"
+                    }`}
+                  />
+                  <span class="ms-3 text-sm font-medium text-gray-900 dark:text-gray-300">
+                    {field.label}
+                  </span>
+                </label>
+              );
+            })
+        }
+      </div>
+    </div>
+
+    <!-- Units Slider -->
+    {
+      formFields
+        .filter((field) => field.type === "component" && field.component === "UnitSlider")
+        .map((field) => {
+          const isReadOnly = isFieldReadOnly(field, projectStatus);
+          return (
+            <UnitSlider projectId={formId} value={project?.units || 1} readOnly={isReadOnly} />
+          );
+        })
     }
   </div>
+
+  <!-- Button Groups -->
+  {
+    buttonGroups.map((group) => {
+      const isReadOnly = isButtonGroupReadOnly(group, projectStatus);
+      // Parse selected values from project data
+      let selectedValues = [] as any;
+      if (project?.[group.name]) {
+        if (Array.isArray(project[group.name])) {
+          selectedValues = project[group.name];
+        } else if (typeof project[group.name] === "string") {
+          try {
+            const parsed = JSON.parse(project[group.name]);
+            selectedValues = Array.isArray(parsed) ? parsed : [project[group.name]];
+          } catch {
+            selectedValues = project[group.name]
+              .split(",")
+              .map((s: any) => s.trim())
+              .filter((s: any) => s);
+          }
+        } else {
+          selectedValues = [project[group.name]];
+        }
+      }
+
+      return (
+        <div class="mt-5 space-y-3">
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+            {group.label}
+          </label>
+          <div
+            class={`mb-4 flex flex-wrap gap-2 ${isReadOnly ? "pointer-events-none opacity-75" : ""}`}
+          >
+            {group.options.map((option) => {
+              const isSelected = selectedValues.includes(option.value);
+              return (
+                <ToggleButton
+                  value={option.value}
+                  group={group.name}
+                  type={group.type}
+                  disabled={isReadOnly}
+                  class={`${group.cssClass} ${isSelected ? "toggle-button dark:bg-primary-dark selected bg-primary text-white" : ""} ${
+                    isReadOnly ? "cursor-not-allowed" : ""
+                  }`}
+                >
+                  {option.label}
+                </ToggleButton>
+              );
+            })}
+          </div>
+        </div>
+      );
+    })
+  }
   <!-- Form Actions -->
   <div class="flex gap-2 pt-4 dark:border-gray-600">
     {
-      formActions.map((action) => (
+      formActions.map((action: any) => (
         <Button
           type={action.type}
           variant={action.variant === "info" ? "primary" : action.variant || "primary"}
@@ -360,8 +348,10 @@ const formActions = getFilteredFormActions(currentRole, isNewProject, projectSta
           iconPosition="left"
           class={action.cssClass}
           id={action.id}
-          data-action={action.action}
-          data-tab={action.tab}
+          dataAttributes={{
+            "data-action": action.action,
+            "data-tab": action.tab,
+          }}
         >
           {action.label}
         </Button>
@@ -416,7 +406,6 @@ const formActions = getFilteredFormActions(currentRole, isNewProject, projectSta
     async function handleFormSubmit(event: Event) {
       const form = event.target as HTMLFormElement;
 
-      debugger;
       // Check form validity before preventing default
       if (!form.checkValidity()) {
         // Let the browser show validation messages
@@ -455,7 +444,13 @@ const formActions = getFilteredFormActions(currentRole, isNewProject, projectSta
         }
       }
 
-      // console.log("📝 [ProjectForm] Form data:", projectData);
+      console.log("📝 [ProjectForm] Form data:", projectData);
+      console.log("📝 [ProjectForm] Button group data:", {
+        building: projectData.building,
+        project: projectData.project,
+        service: projectData.service,
+        requested_docs: projectData.requested_docs,
+      });
 
       try {
         const submitBtn = form.querySelector('button[type="submit"]') as HTMLButtonElement;
@@ -478,13 +473,29 @@ const formActions = getFilteredFormActions(currentRole, isNewProject, projectSta
         } else {
           // Update existing project
           // console.log("📝 [ProjectForm] Updating existing project:", projectId);
-          response = await fetch(`/api/update-project/${projectId}`, {
-            method: "PUT",
+          const updateData = {
+            ...projectData,
+            projectId: projectId
+          };
+          response = await fetch(`/api/update-project`, {
+            method: "POST",
             headers: {
               "Content-Type": "application/json",
             },
-            body: JSON.stringify(projectData),
+            body: JSON.stringify(updateData),
           });
+        }
+
+        // Check if response is JSON before parsing
+        const contentType = response.headers.get("content-type");
+        if (!contentType || !contentType.includes("application/json")) {
+          const textResponse = await response.text();
+          console.error("📝 [ProjectForm] Non-JSON response received:", {
+            status: response.status,
+            contentType,
+            body: textResponse.substring(0, 200) + "..."
+          });
+          throw new Error(`API returned non-JSON response (${response.status}): ${textResponse.substring(0, 100)}`);
         }
 
         const result = await response.json();
@@ -775,11 +786,10 @@ const formActions = getFilteredFormActions(currentRole, isNewProject, projectSta
         }
       });
 
-      // Reset toggle buttons
+      // Reset toggle buttons - let ToggleButton component handle its own state
       const toggleButtons = form.querySelectorAll(".toggle-button");
       toggleButtons.forEach((button) => {
-        button.classList.remove("bg-primary-500", "text-white", "border-primary-500");
-        button.classList.add("bg-white", "dark:bg-gray-700", "text-gray-700", "dark:text-gray-300");
+        button.classList.remove("selected");
       });
 
       // Reset units slider to default
