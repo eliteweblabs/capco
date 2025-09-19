@@ -128,27 +128,15 @@ export const GET: APIRoute = async ({ url, cookies }) => {
     // Prepare placeholder data for centralized replacement
     const placeholderData: PlaceholderData = {
       projectAddress: project.address || "No Address Provided",
-      clientName:
-        projectAuthor?.company_name ||
-        `${projectAuthor?.first_name || ""} ${projectAuthor?.last_name || ""}`.trim() ||
-        "Unknown Client",
+      clientName: projectAuthor?.company_name || "Unknown Client",
       clientEmail: projectAuthor?.email || "No Email Provided",
-      statusName: "Current Status", // Could be enhanced to get actual status
-      estTime: "TBD", // Could be enhanced to get actual estimated time
-      baseUrl: "https://capcofire.com", // Base URL for the application
-      primaryColor: "#825bdd",
-      svgLogo: `<svg id="Layer_1" xmlns="http://www.w3.org/2000/svg" width="100" version="1.1" viewBox="0 0 400 143.7" class="h-auto"> <defs> <style>
-        .fill {
-          fill: black;
-        }
-      </style> </defs> <g> <path class="fill" d="M0 0h400v143.7H0z"/> <text x="200" y="80" text-anchor="middle" fill="white" font-family="Arial, sans-serif" font-size="24" font-weight="bold">CAPCo</text> </g> </svg>`,
     };
 
     // Process discussions with placeholder replacement and company name
     const discussionsWithCompanyName =
       discussions?.map((discussion) => ({
         ...discussion,
-        message: replacePlaceholders(discussion.message, placeholderData, false),
+        message: replacePlaceholders(discussion.message, placeholderData, true),
         company_name: discussion.company_name || "Unknown User",
       })) || [];
 

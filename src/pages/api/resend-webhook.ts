@@ -110,7 +110,7 @@ export const POST: APIRoute = async ({ request }) => {
             headers: { "Content-Type": "application/json" },
           });
         }
-        await handleEmailOpened(data);
+        await handleEmailOpened(data, new URL(request.url).origin);
         break;
 
       case "email.clicked":
@@ -149,7 +149,7 @@ export const POST: APIRoute = async ({ request }) => {
 };
 
 // Handle email opened events
-async function handleEmailOpened(data: any) {
+async function handleEmailOpened(data: any, baseUrl?: string) {
   try {
     const { email } = data;
     console.log("📧 [RESEND-WEBHOOK] Processing email opened event:", { email });
@@ -198,19 +198,22 @@ async function handleEmailOpened(data: any) {
     const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
 
     try {
-      const updateResponse = await fetch(`${new URL(request.url).origin}/api/update-status`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          projectId: projectId,
-          status: nextStatus, // Pass the next status to update to
-          currentUserId: authorId,
-          oldStatus: parseInt(currentStatus),
-        }),
-        signal: controller.signal,
-      });
+      const updateResponse = await fetch(
+        `${baseUrl || "http://localhost:4322"}/api/update-status`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            projectId: projectId,
+            status: nextStatus, // Pass the next status to update to
+            currentUserId: authorId,
+            oldStatus: parseInt(currentStatus),
+          }),
+          signal: controller.signal,
+        }
+      );
 
       clearTimeout(timeoutId);
 
@@ -223,10 +226,11 @@ async function handleEmailOpened(data: any) {
       }
     } catch (fetchError) {
       clearTimeout(timeoutId);
-      if (fetchError.name === "AbortError") {
+      if (fetchError instanceof Error && fetchError.name === "AbortError") {
         console.error("📧 [RESEND-WEBHOOK] ❌ Status update timed out after 10 seconds");
       } else {
-        console.error("📧 [RESEND-WEBHOOK] ❌ Status update network error:", fetchError.message);
+        const errorMessage = fetchError instanceof Error ? fetchError.message : String(fetchError);
+        console.error("📧 [RESEND-WEBHOOK] ❌ Status update network error:", errorMessage);
       }
       // Don't throw error - just log it to prevent webhook retries
     }
@@ -271,7 +275,7 @@ export const GET: APIRoute = async ({ request }) => {
   console.log("🧪 [RESEND-WEBHOOK] Simulating email.opened event:", testEvent);
 
   // Call the handleEmailOpened function with test data
-  await handleEmailOpened(testEvent.data);
+  await handleEmailOpened(testEvent.data, new URL(request.url).origin);
 
   return new Response(
     JSON.stringify({
