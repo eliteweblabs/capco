@@ -8,10 +8,10 @@ export interface Props {
   className?: string;
 }
 
-const { file = "svg", link = "/dashboard", size = "md" } = Astro.props;
+const { file = "svg", link = "/", size = "md" } = Astro.props;
 
 // Get the logo SVG content with the current size
-const logoSvg = getCapcoLogoSvg(size);
+const logoSvg = getCapcoLogoSvg(size, file, link);
 
 // Return different types based on the file prop
 if (file === "string") {
@@ -27,4 +27,11 @@ if (file === "string") {
 }
 ---
 
-{file === "svg" && <div set:html={logoSvg} />}
+{
+  file === "svg" && link && (
+    <a href={link} title="Go to home page">
+      <div set:html={logoSvg} />
+    </a>
+  )
+}
+{file === "svg" && !link && <div set:html={logoSvg} />}
