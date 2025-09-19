@@ -180,11 +180,40 @@
   // Request notification permission
   async function requestPermission() {
     try {
+      console.log("🔔 [PUSH-DEMO] Starting permission request...");
+      console.log("🔔 [PUSH-DEMO] Current permission:", Notification.permission);
+      console.log("🔔 [PUSH-DEMO] Notification supported:", "Notification" in window);
+      console.log("🔔 [PUSH-DEMO] Is PWA:", window.navigator.standalone);
+
+      // Check if we can actually request permission
+      if (!("Notification" in window)) {
+        alert("This browser doesn't support notifications");
+        return;
+      }
+
+      // If already granted or denied, show appropriate message
+      if (Notification.permission === "granted") {
+        alert("✅ Notifications are already enabled!");
+        updatePermissionStatus();
+        return;
+      }
+
+      if (Notification.permission === "denied") {
+        alert(
+          "❌ Notifications are blocked. To enable:\n\n1. Tap the 'aA' icon in Safari's address bar\n2. Tap 'Website Settings'\n3. Enable 'Notifications'\n4. Refresh this page"
+        );
+        return;
+      }
+
+      // Request permission
+      console.log("🔔 [PUSH-DEMO] Requesting permission...");
       const permission = await Notification.requestPermission();
-      console.log("Permission result:", permission);
+      console.log("🔔 [PUSH-DEMO] Permission result:", permission);
+
       updatePermissionStatus();
 
       if (permission === "granted") {
+        alert("✅ Notifications enabled! You can now test push notifications.");
         // Also register for push if we want remote notifications later
         const registration = await navigator.serviceWorker.getRegistration();
         if (registration && registration.pushManager) {
@@ -201,10 +230,16 @@
             );
           }
         }
+      } else if (permission === "denied") {
+        alert(
+          "❌ Notifications blocked. You can enable them in Safari settings and refresh this page."
+        );
+      } else {
+        alert("⚠️ Permission request was dismissed. Try again when ready.");
       }
     } catch (error) {
-      console.error("Error requesting permission:", error);
-      alert("Error requesting permission: " + error);
+      console.error("❌ [PUSH-DEMO] Error requesting permission:", error);
+      alert("Error requesting permission: " + error.message);
     }
   }
 
