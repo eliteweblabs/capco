@@ -10,6 +10,7 @@ export const GET: APIRoute = async ({ url }) => {
     const types = url.searchParams.get("types") || "address";
     const components = url.searchParams.get("components") || "country:us";
     const locationBias = url.searchParams.get("locationBias");
+    const maxResults = parseInt(url.searchParams.get("maxResults") || "10");
 
     if (!input) {
       return new Response(
@@ -50,7 +51,6 @@ export const GET: APIRoute = async ({ url }) => {
     const requestBody: any = {
       input: input,
       includedRegionCodes: ["us"], // equivalent to components=country:us
-      // Don't restrict includedPrimaryTypes for addresses to get better results
     };
 
     // Add location bias if provided
@@ -95,22 +95,29 @@ export const GET: APIRoute = async ({ url }) => {
 
     console.log("🔍 [PLACES-PROXY] Google Places API response:", {
       status: data.error ? "ERROR" : "OK",
-      suggestions: data.suggestions?.length || 0,
+      totalSuggestions: data.suggestions?.length || 0,
+      maxResults: maxResults,
+      willReturn: Math.min(data.suggestions?.length || 0, maxResults),
       fullResponse: data, // Log the full response to see what we're getting
     });
 
     // Convert new API response to legacy format for compatibility
+    const allPredictions =
+      data.suggestions?.map((suggestion: any) => ({
+        place_id: suggestion.placePrediction?.placeId,
+        description: suggestion.placePrediction?.text?.text,
+        structured_formatting: {
+          main_text: suggestion.placePrediction?.text?.text,
+          secondary_text: suggestion.placePrediction?.text?.text,
+        },
+      })) || [];
+
+    // Limit results to maxResults parameter
+    const limitedPredictions = allPredictions.slice(0, maxResults);
+
     const legacyResponse = {
       status: data.error ? "REQUEST_DENIED" : "OK",
-      predictions:
-        data.suggestions?.map((suggestion: any) => ({
-          place_id: suggestion.placePrediction?.placeId,
-          description: suggestion.placePrediction?.text?.text,
-          structured_formatting: {
-            main_text: suggestion.placePrediction?.text?.text,
-            secondary_text: suggestion.placePrediction?.text?.text,
-          },
-        })) || [],
+      predictions: limitedPredictions,
       error_message: data.error?.message || null,
     };
 

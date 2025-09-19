@@ -510,7 +510,7 @@ const displayText = buttonText || selectedOption?.label || placeholder;
     // Helper function to create LI elements consistently
     function createOptionElement(option, index, isSelected = false) {
       const li = document.createElement("li");
-      li.className = spanClassName;
+      li.className = liClassName;
 
       // Base styles
       let baseStyles = `
@@ -567,7 +567,7 @@ const displayText = buttonText || selectedOption?.label || placeholder;
     // Helper function to create message LI elements
     function createMessageElement(message, isError = false) {
       const li = document.createElement("li");
-      li.className = spanClassName;
+      li.className = liClassName;
       li.style.cssText = `
         display: flex;
         align-items: center;
@@ -606,6 +606,11 @@ const displayText = buttonText || selectedOption?.label || placeholder;
       } else {
         const messageLi = createMessageElement("No results found");
         optionsList.appendChild(messageLi);
+      }
+
+      // Handle single item case - if there's only one option and no selection, select it by default
+      if (newSelectedIndex === -1 && optionsArray.length === 1) {
+        newSelectedIndex = 0;
       }
 
       return newSelectedIndex;
@@ -653,6 +658,7 @@ const displayText = buttonText || selectedOption?.label || placeholder;
     const closeButton = modal.querySelector(`#${id}-close-slot-modal`);
     const searchInput = modal.querySelector(`#${id}-slot-search-input`);
     const searchButton = modal.querySelector(`#${id}-slot-search-btn`);
+    const liClassName = "text-primary dark:text-primary-dark";
     const spanClassName = "slot-machine-item-text";
 
     // Add event listeners to buttons from the partial
@@ -724,7 +730,6 @@ const displayText = buttonText || selectedOption?.label || placeholder;
         justify-content: center;
         height: 3rem;
         text-align: center;
-        color: #111827;
         font-weight: 500;
         cursor: pointer;
         transition: all 0.2s;
@@ -977,8 +982,10 @@ const displayText = buttonText || selectedOption?.label || placeholder;
     // Add modal to DOM
     document.body.appendChild(modal);
 
-    // Don't default to first item - only select if there's a valid selectedValue
-    if (selectedIndex === -1) selectedIndex = -1;
+    // Handle single item case - if there's only one option, select it by default
+    if (selectedIndex === -1 && finalOptions.length === 1) {
+      selectedIndex = 0;
+    }
 
     // Debug logging for selection
     // // console.log("🎰 [SLOT-MACHINE] Selection debug:", {
@@ -1056,7 +1063,7 @@ const displayText = buttonText || selectedOption?.label || placeholder;
       const items = optionsList.querySelectorAll("li");
       items.forEach((item, index) => {
         if (index === selectedIndex && selectedIndex >= 0) {
-          item.classList.add("selected", "bg-primary-500");
+          item.classList.add("selected", "bg-primary-500", "text-white");
           // Reset and apply selected styles
           item.style.cssText = `
             display: flex;
@@ -1064,7 +1071,6 @@ const displayText = buttonText || selectedOption?.label || placeholder;
             justify-content: center;
             height: 3rem;
             text-align: center;
-            color: white;
             font-weight: 600;
             cursor: pointer;
             transition: all 0.2s;
@@ -1078,14 +1084,13 @@ const displayText = buttonText || selectedOption?.label || placeholder;
           addCheckmark(item);
           if (selectButton) selectButton.disabled = false;
         } else {
-          item.classList.remove("selected", "bg-primary-500");
+          item.classList.remove("selected", "bg-primary-500", "text-white");
           item.style.cssText = `
             display: flex;
             align-items: center;
             justify-content: center;
             height: 3rem;
             text-align: center;
-            color: #111827;
             font-weight: 500;
             cursor: pointer;
             transition: all 0.2s;
@@ -1148,8 +1153,9 @@ const displayText = buttonText || selectedOption?.label || placeholder;
           selectedIndex = Math.max(selectedIndex - 1, 0);
         }
 
-        // Smoothly center the selected item
+        // Smoothly center the selected item and update selection
         centerSelectedItem();
+        updateSelection();
       }
     });
 
@@ -1205,8 +1211,9 @@ const displayText = buttonText || selectedOption?.label || placeholder;
             selectedIndex = Math.max(selectedIndex - 1, 0);
           }
 
-          // Smoothly center the selected item
+          // Smoothly center the selected item and update selection
           centerSelectedItem();
+          updateSelection();
         }
       },
       { passive: false }
@@ -1232,6 +1239,61 @@ const displayText = buttonText || selectedOption?.label || placeholder;
         centerSelectedItem();
         // Apply full selection styling on touch
         updateSelection();
+      }
+    });
+
+    // Handle keyboard navigation
+    document.addEventListener("keydown", (e) => {
+      // Only handle keyboard events when modal is open
+      if (!modal || !document.body.contains(modal)) return;
+
+      const currentOptions = optionsList.querySelectorAll("li");
+      const maxIndex = currentOptions.length - 1;
+
+      switch (e.key) {
+        case "ArrowUp":
+          e.preventDefault();
+          selectedIndex = Math.max(selectedIndex - 1, 0);
+          centerSelectedItem();
+          updateSelection();
+          break;
+
+        case "ArrowDown":
+          e.preventDefault();
+          selectedIndex = Math.min(selectedIndex + 1, maxIndex);
+          centerSelectedItem();
+          updateSelection();
+          break;
+
+        case "Enter":
+          e.preventDefault();
+          if (selectedIndex >= 0 && selectedIndex <= maxIndex) {
+            // Trigger the same logic as clicking the select button
+            const selectedItem = currentOptions[selectedIndex];
+            if (selectedItem) {
+              const span = selectedItem.querySelector("span");
+              if (span) {
+                const value = span.dataset.value;
+                const label = span.dataset.label;
+
+                // Close modal and call handleSelect
+                cleanupModal();
+                modal.remove();
+
+                if (typeof window.handleSelect === "function") {
+                  window.handleSelect(value, label, id);
+                }
+              }
+            }
+          }
+          break;
+
+        case "Escape":
+          e.preventDefault();
+          // Close modal without selecting
+          cleanupModal();
+          modal.remove();
+          break;
       }
     });
 
