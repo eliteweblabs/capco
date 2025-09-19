@@ -51,14 +51,14 @@ export const navigation = (
         { label: "See Our Customers", href: "/customers" },
       ],
     },
-    {
-      label: "Pricing",
-      href: "/pricing",
-      roles: ["any"],
-      pageType: "frontend",
-      isPrimary: currentUrl.startsWith("/pricing"),
-      desktopOnly: true,
-    },
+    // {
+    //   label: "Pricing",
+    //   href: "/pricing",
+    //   roles: ["any"],
+    //   pageType: "frontend",
+    //   isPrimary: currentUrl.startsWith("/pricing"),
+    //   desktopOnly: true,
+    // },
     {
       label: "Book Demo",
       href: "/demo",
