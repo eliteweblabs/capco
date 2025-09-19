@@ -100,6 +100,8 @@ let statusesObject: any = {};
 let invoiceResult = { data: null, error: null };
 
 if (supabase) {
+  console.log("🔍 [PROJECT-DEBUG] Looking for project with ID:", id, "Type:", typeof id);
+
   // OPTIMIZED: Run all database queries in parallel for much faster loading
   const [projectResult, invoiceResultData, statusesResultData] = await Promise.all([
     // 1. Get project data
@@ -125,6 +127,10 @@ if (supabase) {
   // Assign the statuses result (legacy - will be replaced)
   statusesResult = statusesResultData;
 
+  console.log("🔍 [PROJECT-DEBUG] Project query result:", projectResult);
+  console.log("🔍 [PROJECT-DEBUG] Project data:", projectResult.data);
+  console.log("🔍 [PROJECT-DEBUG] Project error:", projectResult.error);
+
   project = projectResult.data;
   // console.log("🔍 [PROJECT] Project data:", project.featured_image_data);
   projectId = project?.id?.toString() || id || "";
@@ -132,7 +138,7 @@ if (supabase) {
   // Fetch project statuses using the unified API
   const statusApiUrl = new URL("/api/project-statuses", Astro.url.origin);
   statusApiUrl.searchParams.set("projectId", projectId);
-  statusApiUrl.searchParams.set("projectAddress", project.address || "");
+  statusApiUrl.searchParams.set("projectAddress", project?.address || "");
   statusApiUrl.searchParams.set(
     "clientName",
     (authorProfile as any)?.company_name ||

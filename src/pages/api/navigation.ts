@@ -37,20 +37,20 @@ export const navigation = (
   // Navigation items
   const navItems: NavItem[] = [
     // Frontend navigation (hidden on backend pages to reduce clutter)
-    {
-      label: "Why CAPCo",
-      href: "#",
-      roles: ["any"],
-      pageType: "frontend",
-      isPrimary: false,
-      isDropdown: true,
-      dropdownItems: [
-        { label: "Unified Fire Protection Platform", href: "/solutions" },
-        { label: "CAPCo vs Competitors", href: "/solutions" },
-        { label: "Move to CAPCo", href: "/solutions" },
-        { label: "See Our Customers", href: "/customers" },
-      ],
-    },
+    // {
+    //   label: "Why CAPCo",
+    //   href: "#",
+    //   roles: ["any"],
+    //   pageType: "frontend",
+    //   isPrimary: false,
+    //   isDropdown: true,
+    //   dropdownItems: [
+    //     { label: "Unified Fire Protection Platform", href: "/solutions" },
+    //     { label: "CAPCo vs Competitors", href: "/solutions" },
+    //     { label: "Move to CAPCo", href: "/solutions" },
+    //     { label: "See Our Customers", href: "/customers" },
+    //   ],
+    // },
     // {
     //   label: "Pricing",
     //   href: "/pricing",
