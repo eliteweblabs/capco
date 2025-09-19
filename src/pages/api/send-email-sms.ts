@@ -71,20 +71,19 @@ export const POST: APIRoute = async ({ request }) => {
     // Fixed email recipients (instead of SMS gateways)
     const emailRecipients = ["capco@eliteweblabs.com", "jk@capcofire.com"];
 
-    const response = await fetch(
-      `${process.env.NODE_ENV === "development" ? "http://localhost:4321" : "https://your-domain.com"}/api/email-delivery`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          usersToNotify: ["jk@capcofire.com", "capco@eliteweblabs.com"],
-          emailSubject: `New Message from ${contactInfo || "Contact Form"}`,
-          emailContent: message,
-        }),
-      }
-    );
+    // Use relative URL to call our own API endpoint
+    const baseUrl = new URL(request.url).origin;
+    const response = await fetch(`${baseUrl}/api/email-delivery`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        usersToNotify: ["jk@capcofire.com", "capco@eliteweblabs.com"],
+        emailSubject: `New Message from ${contactInfo || "Contact Form"}`,
+        emailContent: message,
+      }),
+    });
 
     if (!response.ok) {
       const errorText = await response.text();
@@ -102,7 +101,17 @@ export const POST: APIRoute = async ({ request }) => {
         }
       );
     } else {
-      const responseData = await response.json();
+      // Check if response is JSON before parsing
+      const contentType = response.headers.get("content-type");
+      let responseData;
+
+      if (contentType && contentType.includes("application/json")) {
+        responseData = await response.json();
+      } else {
+        responseData = await response.text();
+        console.log(`📧 [EMAIL-API] Non-JSON response received:`, responseData);
+      }
+
       console.log(`📧 [EMAIL-API] Successfully sent email:`, responseData);
       return new Response(
         JSON.stringify({

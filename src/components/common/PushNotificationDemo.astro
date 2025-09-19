@@ -137,7 +137,11 @@
     if (statusDiv) statusDiv.innerHTML = statusHTML;
 
     // Enable/disable buttons based on status
-    const canRequest = isSupported && permissionState === "default" && (!ios || standalone);
+    // Allow request button for both "default" and "denied" states (user can try again)
+    const canRequest =
+      isSupported &&
+      (permissionState === "default" || permissionState === "denied") &&
+      (!ios || standalone);
     const canSend = isSupported && permissionState === "granted" && (!ios || standalone);
 
     (document.getElementById("request-permission-btn") as HTMLButtonElement)!.disabled =
