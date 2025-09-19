@@ -303,21 +303,6 @@ console.log("🔍 [PAYMENT-FORM] Computed lastNameValue:", lastNameValue);
   </div>
 </Button>
 
-<!-- Payment Status -->
-<div id="payment-status" class="mt-4 hidden">
-  <div
-    id="payment-success"
-    class="hidden rounded border border-green-400 bg-green-100 p-4 text-green-700"
-  >
-    <p class="font-semibold">Payment Successful!</p>
-    <p>Your invoice has been paid and updated.</p>
-  </div>
-  <div id="payment-error" class="hidden rounded border border-red-400 bg-red-100 p-4 text-red-700">
-    <p class="font-semibold">Payment Failed</p>
-    <p id="error-message"></p>
-  </div>
-</div>
-
 <script
   define:vars={{
     invoiceId,
@@ -507,10 +492,6 @@ console.log("🔍 [PAYMENT-FORM] Computed lastNameValue:", lastNameValue);
     const submitButton = document.getElementById("submit-payment");
     const buttonText = document.getElementById("button-text");
     const spinner = document.getElementById("spinner");
-    const paymentStatus = document.getElementById("payment-status");
-    const paymentSuccess = document.getElementById("payment-success");
-    const paymentError = document.getElementById("payment-error");
-    const errorMessage = document.getElementById("error-message");
 
     let clientSecret = null;
     let paymentIntentId = null;
@@ -720,7 +701,6 @@ console.log("🔍 [PAYMENT-FORM] Computed lastNameValue:", lastNameValue);
           } catch (error) {
             console.error("❌ [PAYMENT-FORM] Error updating project status:", error);
             showError(
-              "Status Update Failed",
               "Payment was successful but failed to update project status. Please contact support."
             );
           }
@@ -728,10 +708,7 @@ console.log("🔍 [PAYMENT-FORM] Computed lastNameValue:", lastNameValue);
           showSuccess();
         } else {
           console.error("❌ [PAYMENT-FORM] Payment confirmation failed:", data.error);
-          showError(
-            "Payment Failed",
-            data.error || "Payment confirmation failed. Please try again."
-          );
+          showError(data.error || "Payment confirmation failed. Please try again.");
         }
       } catch (error) {
         console.error("Error confirming payment:", error);
@@ -755,18 +732,25 @@ console.log("🔍 [PAYMENT-FORM] Computed lastNameValue:", lastNameValue);
     }
 
     function showSuccess() {
-      paymentStatus?.classList.remove("hidden");
-      paymentSuccess?.classList.remove("hidden");
-      paymentError?.classList.add("hidden");
-      submitButton?.classList.add("hidden");
+      if (window.showModal) {
+        window.showModal(
+          "success",
+          "Payment Successful!",
+          "Your payment has been processed successfully and your invoice has been updated.",
+          5000,
+          { url: "/dashboard", delay: 3000, showCountdown: true }
+        );
+      }
     }
 
     function showError(message) {
-      paymentStatus?.classList.remove("hidden");
-      paymentError?.classList.remove("hidden");
-      paymentSuccess?.classList.add("hidden");
-      if (errorMessage) {
-        errorMessage.textContent = message;
+      if (window.showModal) {
+        window.showModal(
+          "error",
+          "Payment Failed",
+          message || "An error occurred while processing your payment. Please try again.",
+          0 // No auto-hide for errors
+        );
       }
     }
 

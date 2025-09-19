@@ -519,7 +519,6 @@ const displayText = buttonText || selectedOption?.label || placeholder;
         justify-content: center;
         height: 3rem;
         text-align: center;
-        color: #111827;
         font-weight: 500;
         cursor: pointer;
         transition: all 0.2s;
@@ -567,14 +566,13 @@ const displayText = buttonText || selectedOption?.label || placeholder;
     // Helper function to create message LI elements
     function createMessageElement(message, isError = false) {
       const li = document.createElement("li");
-      li.className = liClassName;
+      li.className = `${liClassName} ${isError ? "error-message" : "info-message"}`;
       li.style.cssText = `
         display: flex;
         align-items: center;
         justify-content: center;
         height: 3rem;
         text-align: center;
-        color: ${isError ? "#ef4444" : "#6b7280"};
         font-style: italic;
       `;
       li.textContent = message;
@@ -703,18 +701,31 @@ const displayText = buttonText || selectedOption?.label || placeholder;
           clearTimeout(searchTimeout);
         }
 
-        // If fetchOnLoad is true, filter existing options instead of making API calls
-        if (fetchOnLoad) {
+        // If fetchOnLoad is true OR we have pre-populated options without an API endpoint, filter existing options
+        if (
+          fetchOnLoad ||
+          (!apiEndpoint && (originalOptions.length > 0 || finalOptions.length > 0))
+        ) {
           // Store original options on first search
           if (originalOptions.length === 0) {
-            originalOptions = Array.from(optionsList.querySelectorAll("li")).map((li, index) => {
-              const span = li.querySelector("span");
-              return {
-                value: span?.dataset.value || "",
-                label: span?.dataset.label || "",
+            // If we have finalOptions (pre-populated from props), use those
+            if (finalOptions.length > 0) {
+              originalOptions = finalOptions.map((option, index) => ({
+                value: option[valueField] || option.value || "",
+                label: option[labelField] || option.label || "",
                 index: index,
-              };
-            });
+              }));
+            } else {
+              // Otherwise, get from DOM
+              originalOptions = Array.from(optionsList.querySelectorAll("li")).map((li, index) => {
+                const span = li.querySelector("span");
+                return {
+                  value: span?.dataset.value || "",
+                  label: span?.dataset.label || "",
+                  index: index,
+                };
+              });
+            }
           }
 
           // If search is cleared, restore all original options
@@ -1393,7 +1404,7 @@ const displayText = buttonText || selectedOption?.label || placeholder;
     }
   }
 
-  .slot-machine-item {
+  .slot-machine-item > span {
     user-select: none !important;
     -webkit-user-select: none !important;
     -moz-user-select: none !important;
@@ -1445,6 +1456,11 @@ const displayText = buttonText || selectedOption?.label || placeholder;
     color: white !important;
   }
 
+  /* Default option text color */
+  .slot-machine-item {
+    color: #111827;
+  }
+
   /* Checkmark pulse animation */
   @keyframes checkmarkPulse {
     0%,
@@ -1477,5 +1493,14 @@ const displayText = buttonText || selectedOption?.label || placeholder;
   /* Empty state styling */
   .slot-empty-state {
     transition: opacity 0.3s ease-in-out;
+  }
+
+  /* Message element styling */
+  .error-message {
+    color: #ef4444 !important;
+  }
+
+  .info-message {
+    color: #6b7280 !important;
   }
 </style>

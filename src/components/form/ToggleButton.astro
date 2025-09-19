@@ -1,21 +1,36 @@
 ---
 const { value, group, type, class: className } = Astro.props;
+import Button from "../common/Button.astro";
 ---
 
-<button
+<!-- class={`toggle-button px-3 py-2 text-sm rounded-full border border-border-light dark:border-border-dark bg-background-card dark:bg-background-card-dark text-black dark:text-white hover:bg-primary-700 dark:hover:bg-primary-dark-700 transition-colors ${className || ""}`} -->
+<Button
   type="button"
-  class={`toggle-button px-3 py-2 text-sm rounded-full border border-border-light dark:border-border-dark bg-background-card dark:bg-background-card-dark text-secondary dark:text-secondary-dark hover:bg-neutral-50 dark:hover:bg-neutral-600 transition-colors ${className || ""}`}
-  data-value={value}
-  data-group={group}
-  data-type={type}
+  dataAttributes={{
+    "data-value": value,
+    "data-group": group,
+    "data-type": type,
+  }}
+  class={`toggle-button ${className || ""}`}
+  variant="outline"
+  size="md"
+  fullWidth={false}
 >
   <slot />
-</button>
+</Button>
 
 <script>
   // ToggleButton functionality
   document.addEventListener("DOMContentLoaded", function () {
     const toggleButtons = document.querySelectorAll(".toggle-button");
+
+    // Initialize buttons that are already selected (from server-side rendering)
+    toggleButtons.forEach((button) => {
+      if (button.classList.contains("selected")) {
+        // Ensure all selection classes are present for server-side selected buttons
+        button.classList.add("bg-primary", "dark:bg-primary-dark", "text-white");
+      }
+    });
 
     toggleButtons.forEach((button) => {
       button.addEventListener("click", function (this: HTMLButtonElement) {
@@ -27,33 +42,11 @@ const { value, group, type, class: className } = Astro.props;
           // Radio behavior: deselect all others in the group, select this one
           const groupButtons = document.querySelectorAll(`[data-group="${group}"]`);
           groupButtons.forEach((btn) => {
-            btn.classList.remove(
-              "bg-primary",
-              "text-white",
-              "border-primary-600",
-              "dark:bg-primary-dark"
-            );
-            btn.classList.add(
-              "bg-white",
-              "dark:bg-gray-700",
-              "text-gray-700",
-              "dark:text-gray-300"
-            );
+            btn.classList.remove("selected", "bg-primary", "dark:bg-primary-dark", "text-white");
           });
 
           // Select this button
-          this.classList.remove(
-            "bg-white",
-            "dark:bg-gray-700",
-            "text-gray-700",
-            "dark:text-gray-300"
-          );
-          this.classList.add(
-            "bg-primary",
-            "text-white",
-            "border-primary-600",
-            "dark:bg-primary-dark"
-          );
+          this.classList.add("selected", "bg-primary", "dark:bg-primary-dark", "text-white");
 
           // Trigger custom event for radio selection
           this.dispatchEvent(
@@ -69,36 +62,14 @@ const { value, group, type, class: className } = Astro.props;
           );
         } else if (type === "multi-select") {
           // Multi-select behavior: toggle this button's state
-          const isSelected = this.classList.contains("bg-primary");
+          const isSelected = this.classList.contains("selected");
 
           if (isSelected) {
             // Deselect
-            this.classList.remove(
-              "bg-primary",
-              "text-white",
-              "border-primary-600",
-              "dark:bg-primary-dark"
-            );
-            this.classList.add(
-              "bg-white",
-              "dark:bg-gray-700",
-              "text-gray-700",
-              "dark:text-gray-300"
-            );
+            this.classList.remove("selected", "bg-primary", "dark:bg-primary-dark", "text-white");
           } else {
             // Select
-            this.classList.remove(
-              "bg-white",
-              "dark:bg-gray-700",
-              "text-gray-700",
-              "dark:text-gray-300"
-            );
-            this.classList.add(
-              "bg-primary",
-              "text-white",
-              "border-primary-600",
-              "dark:bg-primary-dark"
-            );
+            this.classList.add("selected", "bg-primary", "dark:bg-primary-dark", "text-white");
           }
 
           // Trigger custom event for multi-select toggle
@@ -121,7 +92,7 @@ const { value, group, type, class: className } = Astro.props;
             group as string,
             value as string,
             type as string,
-            !this.classList.contains("bg-white")
+            this.classList.contains("selected")
           );
         }
       });
@@ -167,6 +138,14 @@ const { value, group, type, class: className } = Astro.props;
     }
 
     input.value = JSON.stringify(currentValues);
+    console.log("🔘 [ToggleButton] Updated form data:", {
+      group,
+      value,
+      type,
+      isSelected,
+      currentValues,
+      finalValue: input.value,
+    });
   }
 
   // Global function to get selected values for a group
@@ -175,7 +154,7 @@ const { value, group, type, class: className } = Astro.props;
     const selectedValues: string[] = [];
 
     buttons.forEach((button) => {
-      if (button.classList.contains("bg-primary")) {
+      if (button.classList.contains("selected")) {
         const value = button.getAttribute("data-value");
         if (value) selectedValues.push(value);
       }
@@ -192,26 +171,9 @@ const { value, group, type, class: className } = Astro.props;
     buttons.forEach((button) => {
       const value = button.getAttribute("data-value");
       if (value && valueArray.includes(value)) {
-        button.classList.remove(
-          "bg-white",
-          "dark:bg-gray-700",
-          "text-gray-700",
-          "dark:text-gray-300"
-        );
-        button.classList.add(
-          "bg-primary",
-          "text-white",
-          "border-primary-600",
-          "dark:bg-primary-dark"
-        );
+        button.classList.add("selected", "bg-primary", "dark:bg-primary-dark", "text-white");
       } else {
-        button.classList.remove(
-          "bg-primary",
-          "text-white",
-          "border-primary-600",
-          "dark:bg-primary-dark"
-        );
-        button.classList.add("bg-white", "dark:bg-gray-700", "text-gray-700", "dark:text-gray-300");
+        button.classList.remove("selected", "bg-primary", "dark:bg-primary-dark", "text-white");
       }
     });
   };

@@ -7,11 +7,28 @@ export const POST: APIRoute = async ({ request }) => {
     const body = await request.json();
     console.log("📧 [ASSIGN-STAFF] API received:", body);
 
-    const { value: assigned_to_id, label: assigned_to_name, projectId } = body;
+    const { projectId, assigned_to_id } = body;
 
     console.log("📧 [ASSIGN-STAFF] Project ID:", projectId);
     console.log("📧 [ASSIGN-STAFF] Assigned to ID:", assigned_to_id);
-    console.log("📧 [ASSIGN-STAFF] Assigned to Name:", assigned_to_name);
+
+    // Get the assigned staff member's email, name, and company directly from database
+    let staffEmail = null;
+    let staffName = null;
+    if (assigned_to_id && supabase) {
+      const { data: staffData, error: staffError } = await supabase
+        .from("profiles")
+        .select("email, company_name")
+        .eq("id", assigned_to_id)
+        .single();
+
+      if (staffError) {
+        console.error("📧 [ASSIGN-STAFF] Error fetching assigned staff data:", staffError);
+      } else {
+        staffEmail = staffData?.email || null;
+        staffName = staffData?.company_name || null;
+      }
+    }
 
     if (!projectId) {
       return new Response(JSON.stringify({ error: "Project ID is required" }), {
@@ -54,7 +71,7 @@ export const POST: APIRoute = async ({ request }) => {
     // console.log("📧 [ASSIGN-STAFF] Project updated successfully:", projectData);
 
     // If a staff member was assigned (not unassigned), send email notification
-    if (assigned_to_id && assigned_to_name) {
+    if (assigned_to_id) {
       try {
         // Get project details for email
         const { data: projectDetails, error: projectDetailsError } = await supabase
@@ -83,21 +100,6 @@ export const POST: APIRoute = async ({ request }) => {
             console.log("📧 [ASSIGN-STAFF] Admin emails:", adminEmails);
           } else {
             console.error("📧 [ASSIGN-STAFF] Failed to fetch admin emails");
-          }
-
-          // Get the assigned staff member's email directly from database
-          let staffEmail = null;
-          const { data: staffData, error: staffError } = await supabase
-            .from("profiles")
-            .select("email")
-            .eq("id", assigned_to_id)
-            .single();
-
-          if (staffError) {
-            console.error("📧 [ASSIGN-STAFF] Error fetching assigned staff email:", staffError);
-          } else {
-            staffEmail = staffData?.email || null;
-            // console.log("📧 [ASSIGN-STAFF] Assigned staff email:", staffEmail);
           }
 
           // Send email to assigned staff member
@@ -136,8 +138,8 @@ export const POST: APIRoute = async ({ request }) => {
             // console.log("📧 [ASSIGN-STAFF] Sending admin email to:", adminEmails);
             const adminEmailData = {
               usersToNotify: adminEmails,
-              emailSubject: `Project Assigned → ${projectDetails.address} → ${assigned_to_name}`,
-              emailContent: `Project <b>${projectDetails.address}</b> has been assigned to <b>${assigned_to_name}</b>. Please monitor progress and provide support as needed.`,
+              emailSubject: `Project Assigned → ${projectDetails.address} → ${staffName}`,
+              emailContent: `Project <b>${projectDetails.address}</b> has been assigned to <b>${staffName}</b>. Please monitor progress and provide support as needed.`,
               buttonLink: `${baseUrl}/project/${projectId}`,
               buttonText: "View Project",
             };
@@ -171,14 +173,14 @@ export const POST: APIRoute = async ({ request }) => {
     return new Response(
       JSON.stringify({
         success: true,
-        message: `Project assigned to ${assigned_to_name || "Unassigned"}`,
+        message: `Project assigned to ${staffName || "Unassigned"}`,
         project: projectData,
         notificationData: {
           admin: {
             type: "success",
             title: "Staff Assigned",
-            message: `Project assigned to ${assigned_to_name || "Unassigned"}`,
-            duration: 3000,
+            message: `Project assigned to ${staffName || "Unassigned"}`,
+            duration: 1500,
             // redirect: {
             //   url: `${baseUrl}/project/${projectId}`,
             //   delay: 3,

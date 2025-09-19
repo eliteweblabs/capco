@@ -3,8 +3,17 @@ import { checkAuth } from "../../lib/auth";
 import { supabase } from "../../lib/supabase";
 import { supabaseAdmin } from "../../lib/supabase-admin";
 
-export const GET: APIRoute = async ({ request, cookies, url }) => {
+export const GET: APIRoute = async ({ request, cookies, url, params }) => {
   try {
+    // Check if this is a request for a specific project ID
+    const projectId = params?.id;
+
+    if (projectId) {
+      // Handle single project request (from /api/get-project/[id])
+      return await handleSingleProject(projectId, cookies);
+    }
+
+    // Handle multiple projects request (from /api/get-project)
     // Check authentication to get user role for filtering
     const { currentRole } = await checkAuth(cookies);
     const isClient = currentRole === "Client";
@@ -462,3 +471,140 @@ export const GET: APIRoute = async ({ request, cookies, url }) => {
     );
   }
 };
+
+// Handle single project request (from /api/get-project/[id])
+async function handleSingleProject(projectId: string, cookies: any) {
+  try {
+    // Check authentication
+    const { isAuth, currentUser } = await checkAuth(cookies);
+
+    if (!isAuth || !currentUser) {
+      console.log("📡 [GET-PROJECT-ID] User not authenticated");
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: "Authentication required",
+        }),
+        {
+          status: 401,
+          headers: { "Content-Type": "application/json" },
+        }
+      );
+    }
+
+    if (!supabase) {
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: "Database connection not available",
+        }),
+        {
+          status: 500,
+          headers: { "Content-Type": "application/json" },
+        }
+      );
+    }
+
+    // Get project data with RLS handling authorization
+    const { data: project, error: projectError } = await supabase
+      .from("projects")
+      .select("*")
+      .eq("id", projectId)
+      .single();
+
+    if (projectError) {
+      console.error("📡 [GET-PROJECT-ID] Database error:", projectError);
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: "Project not found or access denied",
+          details: projectError.message,
+        }),
+        {
+          status: 404,
+          headers: { "Content-Type": "application/json" },
+        }
+      );
+    }
+
+    if (!project) {
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: "Project not found",
+        }),
+        {
+          status: 404,
+          headers: { "Content-Type": "application/json" },
+        }
+      );
+    }
+
+    // Get project author's profile data
+    let projectAuthor = null;
+    if (project.author_id) {
+      const { data: authorProfile, error: authorError } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("id", project.author_id)
+        .single();
+
+      if (authorError) {
+        console.error("📡 [GET-PROJECT-ID] Error fetching author profile:", authorError);
+      } else {
+        projectAuthor = authorProfile;
+      }
+    }
+
+    // Get assigned user's profile data if project has an assigned user
+    if (project.assigned_to_id) {
+      const { data: assignedProfile, error: assignedError } = await supabase
+        .from("profiles")
+        .select("id, company_name")
+        .eq("id", project.assigned_to_id)
+        .maybeSingle();
+
+      if (assignedError) {
+        console.error("📡 [GET-PROJECT-ID] Error fetching assigned user profile:", assignedError);
+        project.assigned_to_name = null;
+      } else if (assignedProfile) {
+        // Add assigned user name to the project data
+        project.assigned_to_name = assignedProfile.company_name || assignedProfile.id;
+      } else {
+        // Profile not found for assigned user ID
+        console.log(
+          "📡 [GET-PROJECT-ID] No profile found for assigned user ID:",
+          project.assigned_to_id
+        );
+        project.assigned_to_name = null;
+      }
+    } else {
+      project.assigned_to_name = null;
+    }
+
+    return new Response(
+      JSON.stringify({
+        success: true,
+        project: project,
+        projectAuthor: projectAuthor,
+      }),
+      {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      }
+    );
+  } catch (error) {
+    console.error("📡 [GET-PROJECT-ID] Unexpected error:", error);
+    return new Response(
+      JSON.stringify({
+        success: false,
+        error: "Internal server error",
+        details: error instanceof Error ? error.message : "Unknown error",
+      }),
+      {
+        status: 500,
+        headers: { "Content-Type": "application/json" },
+      }
+    );
+  }
+}

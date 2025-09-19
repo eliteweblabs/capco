@@ -728,31 +728,6 @@ const {
       }
     }
 
-    // Helper function to create buttons using Button partial
-    async createButtonPartial(config) {
-      try {
-        const headers = new Headers();
-        Object.entries(config).forEach(([key, value]) => {
-          if (value !== undefined && value !== null) {
-            headers.set(`x-button-${key}`, value.toString());
-          }
-        });
-
-        const response = await fetch("/partials/button", {
-          headers: headers,
-        });
-
-        if (response.ok) {
-          return await response.text();
-        } else {
-          console.error("Failed to fetch button partial:", response.status);
-          return null;
-        }
-      } catch (error) {
-        console.error("Error creating button partial:", error);
-        return null;
-      }
-    }
 
     async populateFileTemplate(
       fileItem,
@@ -870,47 +845,31 @@ const {
 
       this.fileList.appendChild(fileItem);
 
-      // Load buttons using Button partial
-      await this.loadFileItemButtons(fileItem, file, fileName);
+      // Load buttons using direct DOM creation
+      this.loadFileItemButtons(fileItem, file, fileName);
     }
 
-    async loadFileItemButtons(fileItem, file, fileName) {
-      try {
-        // Load download button if file has public URL
-        const downloadContainer = fileItem.querySelector(".download-btn-container");
-        if (downloadContainer && file.public_url) {
-          const downloadButtonHtml = await this.createButtonPartial({
-            variant: "ghost",
-            size: "sm",
-            icon: "download",
-            class:
-              "download-btn p-2 text-green-600 hover:text-green-800 hover:bg-green-50 dark:hover:bg-green-900/20 rounded-full",
-            title: "Download file",
-            "data-file-path": file.file_path,
-            "data-file-name": fileName,
-          });
-          if (downloadButtonHtml) {
-            downloadContainer.innerHTML = downloadButtonHtml;
-          }
-        }
+    loadFileItemButtons(fileItem, file, fileName) {
+      // Create download button if file has public URL
+      const downloadContainer = fileItem.querySelector(".download-btn-container");
+      if (downloadContainer && file.public_url) {
+        const downloadButton = document.createElement("button");
+        downloadButton.className = "download-btn p-2 text-green-600 hover:text-green-800 hover:bg-green-50 dark:hover:bg-green-900/20 rounded-full";
+        downloadButton.title = "Download file";
+        downloadButton.setAttribute("data-file-path", file.file_path);
+        downloadButton.setAttribute("data-file-name", fileName);
+        downloadButton.innerHTML = '<i class="bx bx-download"></i>';
+        downloadContainer.appendChild(downloadButton);
+      }
 
-        // Load save metadata button
-        const saveContainer = fileItem.querySelector(".save-metadata-btn-container");
-        if (saveContainer) {
-          const saveButtonHtml = await this.createButtonPartial({
-            variant: "primary",
-            size: "sm",
-            icon: "check",
-            text: "Save Title & Comments",
-            class: "save-metadata-btn",
-            "data-file-id": file.id.toString(),
-          });
-          if (saveButtonHtml) {
-            saveContainer.innerHTML = saveButtonHtml;
-          }
-        }
-      } catch (error) {
-        console.error("Error loading file item buttons:", error);
+      // Create save metadata button
+      const saveContainer = fileItem.querySelector(".save-metadata-btn-container");
+      if (saveContainer) {
+        const saveButton = document.createElement("button");
+        saveButton.className = "save-metadata-btn bg-primary-500 hover:bg-primary-600 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors";
+        saveButton.setAttribute("data-file-id", file.id.toString());
+        saveButton.innerHTML = '<i class="bx bx-check mr-1"></i>Save Title & Comments';
+        saveContainer.appendChild(saveButton);
       }
     }
 

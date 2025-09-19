@@ -360,7 +360,8 @@ export const FORM_ACTIONS: FormActionConfig[] = [
     action: "buildProposal",
     allow: ["Admin", "Staff"], // Only admin and staff can build proposals
     hideAtStatus: [
-      0, 10, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170, 180, 190, 200,
+      0, 10, 30, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95, 100, 105, 110, 115, 120, 125, 130,
+      135, 140, 145, 150, 155, 160, 170, 180, 190, 200, 210, 220,
     ], // Only show when specs are received (status 10)
   },
   // {
@@ -375,32 +376,32 @@ export const FORM_ACTIONS: FormActionConfig[] = [
   //   allow: ["Admin", "Staff", "Client"], // All roles can view documents
   //   hideAtStatus: [0], // Hide on new projects
   // },
-  {
-    id: "view-deliverables",
-    type: "button",
-    label: "View Deliverables",
-    icon: "bx-package",
-    tab: "deliverables",
-    variant: "warning",
-    cssClass:
-      "flex-1 px-4 py-2 bg-purple-600 text-white text-sm font-medium rounded-full hover:bg-purple-700 transition-colors",
-    allow: ["Admin", "Staff", "Client"], // All roles can view deliverables
-    hideAtStatus: [
-      0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170, 180, 190,
-    ], // Only show when project is complete
-  },
-  {
-    id: "view-invoice",
-    type: "button",
-    label: "View Invoice",
-    icon: "bx-receipt",
-    tab: "final-invoice",
-    variant: "warning",
-    cssClass:
-      "flex-1 px-4 py-2 bg-orange-600 text-white text-sm font-medium rounded-full hover:bg-orange-700 transition-colors",
-    allow: ["Admin", "Staff", "Client"], // All roles can view invoices
-    hideAtStatus: [0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140], // Only show when final invoice is generated
-  },
+  // {
+  //   id: "view-deliverables",
+  //   type: "button",
+  //   label: "View Deliverables",
+  //   icon: "bx-package",
+  //   tab: "deliverables",
+  //   variant: "warning",
+  //   cssClass:
+  //     "flex-1 px-4 py-2 bg-purple-600 text-white text-sm font-medium rounded-full hover:bg-purple-700 transition-colors",
+  //   allow: ["Admin", "Staff", "Client"], // All roles can view deliverables
+  //   hideAtStatus: [
+  //     0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170, 180, 190,
+  //   ], // Only show when project is complete
+  // },
+  // {
+  //   id: "view-invoice",
+  //   type: "button",
+  //   label: "View Invoice",
+  //   icon: "bx-receipt",
+  //   tab: "final-invoice",
+  //   variant: "warning",
+  //   cssClass:
+  //     "flex-1 px-4 py-2 bg-orange-600 text-white text-sm font-medium rounded-full hover:bg-orange-700 transition-colors",
+  //   allow: ["Admin", "Staff", "Client"], // All roles can view invoices
+  //   hideAtStatus: [0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140], // Only show when final invoice is generated
+  // },
   // {
   //   id: "view-activity",
   //   type: "button",
@@ -614,61 +615,61 @@ export function generateFormFieldHTML(
   }
 }
 
-// Function to generate button group HTML
-export function generateButtonGroupHTML(group: ButtonGroupConfig, projectData: any = {}): string {
-  // Use project ID for unique button IDs
-  const projectId = projectData.id || "project-unknown";
-  let selectedValues: string[] = [];
+// // Function to generate button group HTML
+// export function generateButtonGroupHTML(group: ButtonGroupConfig, projectData: any = {}): string {
+//   // Use project ID for unique button IDs
+//   const projectId = projectData.id || "project-unknown";
+//   let selectedValues: string[] = [];
 
-  if (projectData[group.name]) {
-    if (Array.isArray(projectData[group.name])) {
-      // Already an array
-      selectedValues = projectData[group.name];
-    } else if (typeof projectData[group.name] === "string") {
-      // Could be a JSON string or comma-separated string
-      try {
-        // Try to parse as JSON first
-        const parsed = JSON.parse(projectData[group.name]);
-        selectedValues = Array.isArray(parsed) ? parsed : [projectData[group.name]];
-      } catch {
-        // If JSON parsing fails, treat as comma-separated string
-        selectedValues = projectData[group.name]
-          .split(",")
-          .map((s: string) => s.trim())
-          .filter((s: string) => s);
-      }
-    } else {
-      // Single value
-      selectedValues = [projectData[group.name]];
-    }
-  }
+//   if (projectData[group.name]) {
+//     if (Array.isArray(projectData[group.name])) {
+//       // Already an array
+//       selectedValues = projectData[group.name];
+//     } else if (typeof projectData[group.name] === "string") {
+//       // Could be a JSON string or comma-separated string
+//       try {
+//         // Try to parse as JSON first
+//         const parsed = JSON.parse(projectData[group.name]);
+//         selectedValues = Array.isArray(parsed) ? parsed : [projectData[group.name]];
+//       } catch {
+//         // If JSON parsing fails, treat as comma-separated string
+//         selectedValues = projectData[group.name]
+//           .split(",")
+//           .map((s: string) => s.trim())
+//           .filter((s: string) => s);
+//       }
+//     } else {
+//       // Single value
+//       selectedValues = [projectData[group.name]];
+//     }
+//   }
 
-  return `
-    <div class="space-y-3">
-      <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
-        ${group.label}
-      </label>
-      <div class="flex flex-wrap gap-2">
-        ${group.options
-          .map(
-            (option) => `
-          <button
-            type="button"
-            class="${group.cssClass} px-3 py-2 text-sm rounded-full border border-border-light dark:border-border-dark bg-background-card dark:bg-background-card-dark text-secondary dark:text-secondary-dark hover:bg-neutral-50 dark:hover:bg-neutral-600 transition-colors ${selectedValues.includes(option.value) ? "bg-primary-500 text-white border-primary-500" : ""}"
-            data-value="${option.value}"
-            data-group="${group.name}"
-            data-type="${group.type}"
-            data-project-id="${projectId}"
-          >
-            ${option.label}
-          </button>
-        `
-          )
-          .join("")}
-      </div>
-    </div>
-  `;
-}
+//   return `
+//     <div class="space-y-3">
+//       <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+//         ${group.label}
+//       </label>
+//       <div class="flex flex-wrap gap-2">
+//         ${group.options
+//           .map(
+//             (option) => `
+//           <button
+//             type="button"
+//             class="${group.cssClass} px-3 py-2 text-sm rounded-full border border-border-light dark:border-border-dark bg-background-card dark:bg-background-card-dark text-secondary dark:text-secondary-dark hover:bg-neutral-50 dark:hover:bg-neutral-600 transition-colors ${selectedValues.includes(option.value) ? "bg-primary-500 text-white border-primary-500" : ""}"
+//             data-value="${option.value}"
+//             data-group="${group.name}"
+//             data-type="${group.type}"
+//             data-project-id="${projectId}"
+//           >
+//             ${option.label}
+//           </button>
+//         `
+//           )
+//           .join("")}
+//       </div>
+//     </div>
+//   `;
+// }
 
 // Helper function to convert units to slider value (moved to UnitSlider component)
 // function getSliderValueFromUnits(units: number, options: string[]): number {
