@@ -45,7 +45,7 @@ const validTabs = [
   "proposal",
   "contract",
   "deposit",
-  "punchlist",
+  // "punchlist",
   "deliverables",
   "final-invoice",
   "activity-log",
@@ -283,7 +283,6 @@ if (supabase) {
       if (profileData && !profileError) {
         authorProfile = {
           id: profileData.id,
-          display_name: profileData.company_name || "Unknown User",
           role: profileData.role || "Unknown",
           company_name: profileData.company_name,
           email: profileData.email || "",
@@ -292,9 +291,8 @@ if (supabase) {
       } else {
         authorProfile = {
           id: project.author_id,
-          display_name: "Unknown User",
           role: "Unknown",
-          company_name: null,
+          company_name: project.company_name || null,
           email: "",
           profile: null,
         };
@@ -325,13 +323,15 @@ if (!project) {
 ---
 
 <App
-  title={i18n.SEO_TITLE}
-  description={i18n.SEO_DESCRIPTION}
+  title={`${project?.address || project?.title || "Untitled Project"} - CAPCo Fire Protection`}
+  description={`${project?.address || project?.title || "Untitled Project"} - CAPCo Fire Protection`}
   requireAuth={true}
   isAuth={!!currentUser}
   currentUser={currentUser}
   currentRole={currentRole || "Client"}
   session={null}
+  project={project}
+  projectId={projectId}
 >
   <!-- Add Supabase URL meta tag for image loading -->
   <meta name="supabase-url" content={import.meta.env.PUBLIC_SUPABASE_URL} />
@@ -404,14 +404,14 @@ if (!project) {
           variant: "anchor",
           onclick: "switchTab('deposit')",
         },
-        {
-          id: "status-punchlist",
-          label: "Punchlist",
-          icon: "check-square",
-          variant: "anchor",
-          dataAttributes: { "data-count": "0" },
-          onclick: "switchTab('punchlist')",
-        },
+        // {
+        //   id: "status-punchlist",
+        //   label: "Punchlist",
+        //   icon: "check-square",
+        //   variant: "anchor",
+        //   dataAttributes: { "data-count": "0" },
+        //   onclick: "switchTab('punchlist')",
+        // },
         {
           id: "status-deliverables",
           label: "Deliverables",
@@ -514,16 +514,13 @@ if (!project) {
       />
 
       <!-- Punchlist Tab -->
-      <TabPunchlist
+      <!-- <TabPunchlist
         project={project}
         currentRole={currentRole || undefined}
         currentUser={currentUser}
         projectId={projectId}
-        projectStatus={currentStatusInt}
-        projectStatusLabel={currentStatusName || undefined}
         authorProfile={authorProfile}
-        supabaseUrl={import.meta.env.PUBLIC_SUPABASE_URL}
-      />
+      /> -->
 
       <!-- Deliverables Tab -->
       <TabFinalDocuments

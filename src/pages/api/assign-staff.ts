@@ -7,7 +7,11 @@ export const POST: APIRoute = async ({ request }) => {
     const body = await request.json();
     console.log("📧 [ASSIGN-STAFF] API received:", body);
 
-    const { projectId, assigned_to_id, assigned_to_name } = body;
+    const { value: assigned_to_id, label: assigned_to_name, projectId } = body;
+
+    console.log("📧 [ASSIGN-STAFF] Project ID:", projectId);
+    console.log("📧 [ASSIGN-STAFF] Assigned to ID:", assigned_to_id);
+    console.log("📧 [ASSIGN-STAFF] Assigned to Name:", assigned_to_name);
 
     if (!projectId) {
       return new Response(JSON.stringify({ error: "Project ID is required" }), {
@@ -163,31 +167,6 @@ export const POST: APIRoute = async ({ request }) => {
         // Don't fail the assignment if email fails
       }
     }
-
-    // return new Response(
-    //   JSON.stringify({
-    //     success: true,
-    //     project: updatedProject,
-    //     newStatus: newStatus,
-    //     statusConfig: statusData.statusConfig,
-    //     mergedData: placeholderResult.mergedData,
-    //     placeholderData: placeholderResult.placeholderData,
-    //     processedMessages: placeholderResult.processedMessages,
-    //     notificationData: notificationData,
-    //     clientEmail: clientEmail,
-    //     clientProfile: profile,
-    //   }),
-    //   {
-    //     status: 200,
-    //     headers: {
-    //       "Content-Type": "application/json",
-    //       "Access-Control-Allow-Origin": "*",
-    //       "Access-Control-Allow-Methods": "POST, OPTIONS",
-    //       "Access-Control-Allow-Headers": "Content-Type",
-    //       "Access-Control-Allow-Credentials": "true",
-    //     },
-    //   }
-    // );
 
     return new Response(
       JSON.stringify({

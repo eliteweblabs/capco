@@ -1,57 +1,30 @@
 ---
 interface Props {
-  authorProfile?: any;
   currentRole?: string;
   currentUser?: any;
   project: any;
   projectId: string;
-  projectStatus?: number;
-  projectStatusLabel?: string;
   supabaseUrl?: string;
 }
 
-import BoxIcon from "../common/BoxIcon.astro";
-import Button from "../common/Button.astro";
-import SlideToggle from "../common/SlideToggle.astro";
+const { currentRole, currentUser, supabaseUrl, project } = Astro.props;
 
-const {
-  projectId,
-  authorProfile,
-  projectStatus,
-  currentRole,
-  currentUser,
-  projectStatusLabel,
-  supabaseUrl,
-} = Astro.props;
-
+const projectId = project.id;
 const placeholder =
   currentRole === "Admin" || currentRole === "Staff"
     ? "Write your punchlist item here... (Use @username to mention users)"
     : "Write your punchlist item here...";
+
+console.log("🔍 [TabPunchlist] props:", Astro.props);
 ---
 
-<div id="content-punchlist" class="tab-content hidden">
+<div id="content-punchlist">
   <div>
     <div id="punchlist-container" data-project-id={projectId}>
       <div class="mb-6 flex items-center justify-between">
         <h3 class="text-lg font-medium text-gray-900 dark:text-white">Project Punchlist</h3>
       </div>
 
-      <!-- Punchlist Item Form (hidden by default) -->
-      <div
-        id="punchlist-item-form"
-        class="mb-6 hidden rounded-lg border border-gray-200 p-4 dark:border-gray-700"
-      >
-        <div class="relative">
-          <textarea
-            id="punchlist-item-message"
-            placeholder={placeholder}
-            class="w-full resize-none rounded-lg border border-gray-300 p-3 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
-            rows="4"
-            required
-            readonly></textarea>
-        </div>
-      </div>
       <!-- Punchlist Items List -->
       <div id="punchlist-items-list" class="space-y-4">
         <!-- Punchlist items will be dynamically loaded here -->
@@ -60,7 +33,6 @@ const placeholder =
         <script
           define:vars={{
             projectId,
-            authorProfile,
             currentRole,
             currentUser,
             supabaseUrl,
@@ -71,7 +43,7 @@ const placeholder =
           let punchlistItems = [];
           let currentProjectId = projectId;
           let currentUserRole = currentRole;
-          let currentUserId = currentUser?.id || authorProfile.id;
+          let currentUserId = currentUser?.id;
 
           // console.log("🔔 [PUNCHLIST] Initial userRole:", currentUserRole);
 
@@ -86,6 +58,7 @@ const placeholder =
               });
               const data = await response.json();
 
+              console.log("🔍 [TabPunchlist] data:", data);
               if (data.success) {
                 punchlistItems = data.punchlist;
                 renderPunchlistItems();

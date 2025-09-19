@@ -1,5 +1,6 @@
 import type { APIRoute } from "astro";
 import { checkAuth } from "../../lib/auth";
+import { SimpleProjectLogger } from "../../lib/simple-logging";
 import { supabase } from "../../lib/supabase";
 import { supabaseAdmin } from "../../lib/supabase-admin";
 
@@ -105,6 +106,38 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     }
 
     console.log("✅ [UPDATE-DISCUSSION] Discussion updated successfully:", updateResult);
+
+    // Get discussion details for logging
+    const { data: discussionData, error: discussionError } = await supabaseAdmin
+      .from("discussion")
+      .select("project_id, message")
+      .eq("id", discussionIdNum)
+      .single();
+
+    // Log the discussion toggle to project activity
+    if (discussionData && !discussionError) {
+      try {
+        console.log("📝 [UPDATE-DISCUSSION] Logging discussion toggle:", {
+          projectId: discussionData.project_id,
+          discussionId: discussionIdNum,
+          isCompleted: mark_completed,
+          user: currentUser?.email || "Unknown",
+        });
+
+        await SimpleProjectLogger.logDiscussionToggle(
+          discussionData.project_id,
+          discussionIdNum,
+          mark_completed,
+          currentUser,
+          (discussionData.message?.substring(0, 50) || "No message") + "..."
+        );
+
+        console.log("✅ [UPDATE-DISCUSSION] Project logging completed successfully");
+      } catch (logError) {
+        console.error("❌ [UPDATE-DISCUSSION] Project logging failed:", logError);
+        // Don't fail the entire request if logging fails
+      }
+    }
 
     return new Response(
       JSON.stringify({

@@ -21,7 +21,6 @@ export interface UserInfo {
     created_at: string | null;
     updated_at: string | null;
   } | null;
-  display_name: string;
   role: string;
   company_name: string | null;
 }
@@ -82,15 +81,6 @@ export async function getUserInfoGET(userId: string): Promise<UserInfo> {
     console.error("Error fetching user info:", error);
     throw error;
   }
-}
-
-/**
- * Get display name for a user with fallbacks
- * @param userInfo - User information object
- * @returns string - Best available display name
- */
-export function getDisplayName(userInfo: UserInfo): string {
-  return userInfo.display_name;
 }
 
 /**

@@ -3,28 +3,38 @@ interface Props {
   title?: string;
   description?: string;
   requireAuth?: boolean;
-  requireRole?: string;
+  requireRole?: string | null;
   redirectTo?: string;
   isAuth?: boolean;
   currentUser?: any;
-  currentRole?: string;
+  currentRole?: string | null;
   session?: any;
+  project?: any;
+  projectId?: string;
+  supabaseUrl?: string;
+  supabaseAdmin?: any;
 }
 
 // Use props if provided, otherwise fetch auth state directly
-const { isAuth, currentUser, currentRole, session } = Astro.props;
+const {
+  title = undefined,
+  description = undefined,
+  requireAuth = false,
+  requireRole = "Client",
+  redirectTo = undefined,
+  isAuth = false,
+  currentUser = null,
+  currentRole = "Client",
+  session = null,
+  project = undefined,
+  projectId = undefined,
+  supabaseUrl = undefined,
+  supabaseAdmin = null,
+} = Astro.props;
 
 // If auth propse not provided, fetch them directly
 
 // Status data is now fetched in individual pages as needed
-
-import { getI18N } from "../../i18n";
-const { currentLocale } = Astro;
-const i18n = getI18N({ currentLocale });
-
-// Use provided props or fall back to i18n defaults
-const title = Astro.props.title || i18n.SEO_TITLE;
-const description = Astro.props.description || i18n.SEO_DESCRIPTION;
 
 // Import components
 import Preloader from "./Preloader.astro";
@@ -36,7 +46,6 @@ import SpeedDial from "./SpeedDial.astro";
 import "../../styles/boxicons.css"; // Import Boxicons CSS first
 import "../../styles/global.css"; // Import Tailwind CSS
 import { getLangFromUrl } from "../../i18n/utils";
-import { SimpleProjectLogger } from "../../lib/simple-logging";
 const lang = getLangFromUrl(Astro.url);
 // Get current URL and determine page type
 const currentUrl = Astro.url.pathname;
@@ -124,7 +133,7 @@ if ((currentUser?.id && currentRole === "Staff") || currentRole === "Admin") {
     <meta name="twitter:title" content={title} />
     <meta name="twitter:description" content={description} />
     <meta name="twitter:image" content="/img/capco-logo.png" />
-    <link rel="icon" href="/img/capco-favicon.png" sizes="any" />
+    <link rel="icon" href="/favicon.png" sizes="any" />
 
     <!-- <link
       rel="apple-touch-icon"
@@ -169,12 +178,7 @@ if ((currentUser?.id && currentRole === "Staff") || currentRole === "Admin") {
 
     <!-- ${currentUser ? `window.USER_DATA = ${JSON.stringify(currentUser)};` : ""}
     window.SUPABASE_URL = "${import.meta.env.SUPABASE_URL || ""}"; window.SUPABASE_ANON_KEY = "${(import.meta.env.SUPABASE_ANON_KEY || "").replace(/\s/g, "")}";  -->
-    <!-- SimpleProjectLogger Global Setup -->
-    <!-- <script define:vars={{ SimpleProjectLogger }}>
-      if (typeof window !== "undefined") {
-        (window as any).SimpleProjectLogger = SimpleProjectLogger;
-      }
-    </script> -->
+    <!-- SimpleProjectLogger is now handled server-side only -->
 
     <!-- Google Maps Places API - Load only if API key is available -->
     <script>
@@ -254,6 +258,8 @@ o       oter -->
         assignedProjects={assignedProjects}
         assignedProjectsCount={assignedProjectsCount}
         desktopNavigationHTML={desktopNavigationHTML}
+        project={project}
+        projectId={projectId}
       />
     </main>
 

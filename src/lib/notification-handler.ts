@@ -1,7 +1,9 @@
 /**
  * Centralized notification handler for update-status API responses
- * Handles role-based notification selection without fallbacks
+ * Handles role-based notification selection with placeholder processing
  */
+
+import { replacePlaceholders, type PlaceholderData } from "./placeholder-utils";
 
 interface NotificationData {
   admin?: {
@@ -23,6 +25,9 @@ interface NotificationData {
 interface UpdateStatusResponse {
   success: boolean;
   notificationData?: NotificationData;
+  project?: any;
+  statusConfig?: any;
+  clientProfile?: any;
   error?: string;
 }
 
@@ -49,11 +54,80 @@ export function handleUpdateStatusNotification(
     return;
   }
 
+  // Generate placeholder data for message processing
+  let processedNotificationData = response.notificationData;
+
+  if (response.project && response.statusConfig && response.clientProfile) {
+    console.log(`🔄 [${context || "NOTIFICATION"}] Processing placeholders for notifications`);
+
+    try {
+      // Use the same PlaceholderData format that works in email-delivery
+      const placeholderData: PlaceholderData = {
+        projectAddress: response.project.address || "No Address Provided",
+        clientName:
+          response.clientProfile.company_name ||
+          `${response.clientProfile.first_name || ""} ${response.clientProfile.last_name || ""}`.trim() ||
+          "Unknown Client",
+        clientEmail: response.clientProfile.email || "No Email Provided",
+        statusName: response.statusConfig.admin_status_name || "Unknown Status",
+        estTime: response.statusConfig.est_time || "TBD",
+        baseUrl: window.location.origin,
+        primaryColor: "#825bdd",
+        svgLogo: `<svg id="Layer_1" xmlns="http://www.w3.org/2000/svg" width="100" version="1.1" viewBox="0 0 400 143.7" class="h-auto"> <defs> <style>
+        .fill {
+          fill: black;
+        }
+      </style> </defs> <g> <path class="fill" d="M0 0h400v143.7H0z"/> <text x="200" y="80" text-anchor="middle" fill="white" font-family="Arial, sans-serif" font-size="24" font-weight="bold">CAPCo</text> </g> </svg>`,
+      };
+
+      console.log(`🔄 [${context || "NOTIFICATION"}] Placeholder data created:`, placeholderData);
+
+      // Process admin notification message using the working replacePlaceholders function
+      if (response.notificationData.admin?.message) {
+        const processedAdminMessage = replacePlaceholders(
+          response.notificationData.admin.message,
+          placeholderData,
+          false // no bold tags for notifications
+        );
+        processedNotificationData = {
+          ...processedNotificationData,
+          admin: {
+            ...processedNotificationData.admin!,
+            message: processedAdminMessage,
+          },
+        };
+      }
+
+      // Process client notification message using the working replacePlaceholders function
+      if (response.notificationData.client?.message) {
+        const processedClientMessage = replacePlaceholders(
+          response.notificationData.client.message,
+          placeholderData,
+          false // no bold tags for notifications
+        );
+        processedNotificationData = {
+          ...processedNotificationData,
+          client: {
+            ...processedNotificationData.client!,
+            message: processedClientMessage,
+          },
+        };
+      }
+
+      console.log(
+        `✅ [${context || "NOTIFICATION"}] Placeholders processed successfully using working replacePlaceholders function`
+      );
+    } catch (error) {
+      console.error(`❌ [${context || "NOTIFICATION"}] Error processing placeholders:`, error);
+      // Continue with unprocessed messages if placeholder processing fails
+    }
+  }
+
   // Determine user role
   const isAdminOrStaff = currentRole === "Admin" || currentRole === "Staff";
   const notification = isAdminOrStaff
-    ? response.notificationData.admin
-    : response.notificationData.client;
+    ? processedNotificationData.admin
+    : processedNotificationData.client;
 
   if (notification) {
     console.log(
