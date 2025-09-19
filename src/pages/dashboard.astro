@@ -26,6 +26,11 @@ if (currentUser?.id) {
     if (currentRole === "Staff") {
       apiUrl += `?assigned_to_id=${currentUser.id}`;
     }
+
+    // Add assigned_to_id parameter for Staff role
+    if (currentRole === "Client") {
+      apiUrl += `?author_id=${currentUser.id}`;
+    }
     // For Admin and Client, no additional parameters needed (API handles role-based filtering)
 
     // console.log("🏗️ [DASHBOARD] Fetching projects from API:", apiUrl);
@@ -79,8 +84,6 @@ if (supabaseAdmin) {
 <App
   title="Global Dashboard - CAPCo Fire Protection"
   description="View all projects."
-  requireAuth={true}
-  requireRole={currentRole || "Client"}
   isAuth={isAuth}
   currentUser={currentUser}
   currentRole={currentRole || "Client"}
@@ -107,4 +110,42 @@ if (supabaseAdmin) {
     currentUser={currentUser}
     currentRole={currentRole}
   />
+
+  <!-- Push Notification Permission Request for OAuth Users -->
+  <script>
+    // Request push notification permission for users who authenticated via OAuth
+    // (Registration form already handles this for new users)
+    document.addEventListener("DOMContentLoaded", () => {
+      console.log("🔔 [DASHBOARD] Checking notification permission...");
+      console.log("🔔 [DASHBOARD] Notification in window:", "Notification" in window);
+      console.log("🔔 [DASHBOARD] Current permission:", Notification.permission);
+
+      // Only request if user hasn't been prompted yet
+      if ("Notification" in window && Notification.permission === "default") {
+        console.log("🔔 [DASHBOARD] Requesting notification permission...");
+        // Wait a bit for the page to load, then request permission
+        setTimeout(() => {
+          Notification.requestPermission().then((permission) => {
+            console.log("🔔 [DASHBOARD] Permission result:", permission);
+            if (permission === "granted") {
+              console.log("🔔 Push notifications enabled for authenticated user!");
+              // Show a subtle notification
+              if (window.showModal) {
+                window.showModal(
+                  "info",
+                  "Notifications Enabled",
+                  "You'll receive push notifications for project updates!",
+                  3000
+                );
+              }
+            } else {
+              console.log("🔔 Push notifications declined by user");
+            }
+          });
+        }, 3000); // Wait 3 seconds after page load
+      } else {
+        console.log("🔔 [DASHBOARD] Not requesting permission - already handled or not available");
+      }
+    });
+  </script>
 </App>
