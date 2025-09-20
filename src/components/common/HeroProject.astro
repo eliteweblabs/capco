@@ -105,6 +105,15 @@ if (currentRole === "Admin" || currentRole === "Staff") {
 ---
 
 <SectionContainer>
+  <div id="map-background" class="absolute inset-0 -z-10">
+    <!-- Google Map will be rendered here -->
+  </div>
+
+  <!-- Pass project data to client-side script -->
+  <script define:vars={{ project }}>
+    // Make project data available to client-side scripts
+    window.projectData = project;
+  </script>
   <div class="relative mx-auto flex">
     <div class="mx-4 ml-0 flex flex-1 flex-col gap-2">
       <h1 class="text-2xl font-medium text-black dark:text-white" id="page-title" data-refresh>
@@ -185,3 +194,222 @@ if (currentRole === "Admin" || currentRole === "Staff") {
     </div>
   </div>
 </SectionContainer>
+
+<script>
+  // Google Maps integration for project address
+  let map: any = null;
+  let marker: any = null;
+  let mapInitializationAttempts = 0;
+  const maxAttempts = 50; // Maximum 5 seconds of retries (50 * 100ms)
+
+  // Get project data from the server-side script
+  const projectData = (window as any).projectData || null;
+
+  // Initialize map when Google Maps is loaded
+  function initializeMap() {
+    const mapContainer = document.getElementById("map-background");
+    if (!mapContainer || !projectData?.address) {
+      console.log("🔍 [HERO-MAP] No map container or project address found");
+      return;
+    }
+
+    // Check if Google Maps is fully loaded with all required properties
+    if (
+      !(window as any).google ||
+      !(window as any).google.maps ||
+      !(window as any).google.maps.MapTypeId ||
+      !(window as any).google.maps.Geocoder
+    ) {
+      mapInitializationAttempts++;
+      if (mapInitializationAttempts >= maxAttempts) {
+        console.error("❌ [HERO-MAP] Google Maps failed to load after maximum attempts");
+        return;
+      }
+      console.log(
+        `🔍 [HERO-MAP] Google Maps not fully loaded yet, retrying... (attempt ${mapInitializationAttempts}/${maxAttempts})`
+      );
+      setTimeout(initializeMap, 100);
+      return;
+    }
+
+    console.log("🗺️ [HERO-MAP] Initializing map for address:", projectData.address);
+
+    // Create map options
+    const mapOptions = {
+      zoom: 15,
+      center: { lat: 0, lng: 0 }, // Will be updated after geocoding
+      mapTypeId: (window as any).google?.maps?.MapTypeId?.ROADMAP || "roadmap", // Fallback to string if constant not available
+      disableDefaultUI: true,
+      zoomControl: true,
+      mapTypeControl: false,
+      scaleControl: false,
+      streetViewControl: false,
+      rotateControl: false,
+      fullscreenControl: false,
+      styles: [
+        {
+          featureType: "all",
+          elementType: "geometry.fill",
+          stylers: [{ weight: "2.00" }],
+        },
+        {
+          featureType: "all",
+          elementType: "geometry.stroke",
+          stylers: [{ color: "#9c9c9c" }],
+        },
+        {
+          featureType: "all",
+          elementType: "labels.text",
+          stylers: [{ visibility: "on" }],
+        },
+        {
+          featureType: "landscape",
+          elementType: "all",
+          stylers: [{ color: "#f2f2f2" }],
+        },
+        {
+          featureType: "landscape",
+          elementType: "geometry.fill",
+          stylers: [{ color: "#ffffff" }],
+        },
+        {
+          featureType: "landscape.man_made",
+          elementType: "geometry.fill",
+          stylers: [{ color: "#ffffff" }],
+        },
+        {
+          featureType: "poi",
+          elementType: "all",
+          stylers: [{ visibility: "off" }],
+        },
+        {
+          featureType: "road",
+          elementType: "all",
+          stylers: [{ saturation: -100 }, { lightness: 45 }],
+        },
+        {
+          featureType: "road",
+          elementType: "geometry.fill",
+          stylers: [{ color: "#eeeeee" }],
+        },
+        {
+          featureType: "road",
+          elementType: "labels.text.fill",
+          stylers: [{ color: "#7b7b7b" }],
+        },
+        {
+          featureType: "road",
+          elementType: "labels.text.stroke",
+          stylers: [{ color: "#ffffff" }],
+        },
+        {
+          featureType: "road.highway",
+          elementType: "all",
+          stylers: [{ visibility: "simplified" }],
+        },
+        {
+          featureType: "road.arterial",
+          elementType: "labels.icon",
+          stylers: [{ visibility: "off" }],
+        },
+        {
+          featureType: "transit",
+          elementType: "all",
+          stylers: [{ visibility: "off" }],
+        },
+        {
+          featureType: "water",
+          elementType: "all",
+          stylers: [{ color: "#46bcec" }, { visibility: "on" }],
+        },
+        {
+          featureType: "water",
+          elementType: "geometry.fill",
+          stylers: [{ color: "#c8d7d4" }],
+        },
+        {
+          featureType: "water",
+          elementType: "labels.text.fill",
+          stylers: [{ color: "#070707" }],
+        },
+        {
+          featureType: "water",
+          elementType: "labels.text.stroke",
+          stylers: [{ color: "#ffffff" }],
+        },
+      ],
+    };
+
+    // Create the map
+    map = new (window as any).google.maps.Map(mapContainer, mapOptions);
+
+    // Geocode the address to get coordinates
+    const geocoder = new (window as any).google.maps.Geocoder();
+    geocoder.geocode({ address: projectData.address }, (results: any, status: any) => {
+      if (status === "OK" && results && results[0]) {
+        const location = results[0].geometry.location;
+
+        // Update map center
+        map?.setCenter(location);
+
+        // Add marker
+        marker = new (window as any).google.maps.Marker({
+          position: location,
+          map: map,
+          title: projectData.address,
+          animation: (window as any).google.maps.Animation.DROP,
+        });
+
+        // Add info window
+        const infoWindow = new (window as any).google.maps.InfoWindow({
+          content: `
+            <div class="p-2">
+              <h3 class="font-semibold text-gray-900">${projectData.title || "Project Location"}</h3>
+              <p class="text-sm text-gray-600">${projectData.address}</p>
+            </div>
+          `,
+        });
+
+        // Show info window on marker click
+        marker.addListener("click", () => {
+          infoWindow.open(map, marker);
+        });
+
+        console.log("✅ [HERO-MAP] Map initialized successfully for:", projectData.address);
+      } else {
+        console.error("❌ [HERO-MAP] Geocoding failed:", status);
+        // Fallback: show a default location (San Francisco)
+        map?.setCenter({ lat: 37.7749, lng: -122.4194 });
+        map?.setZoom(10);
+      }
+    });
+  }
+
+  // Check if Google Maps API key is available
+  if (!(window as any).GOOGLE_MAPS_API_KEY || (window as any).GOOGLE_MAPS_API_KEY.trim() === "") {
+    console.warn("❌ [HERO-MAP] Google Maps API key not configured. Map will not be displayed.");
+    return;
+  }
+
+  // Wait for Google Maps to load
+  if (typeof (window as any).google !== "undefined" && (window as any).google.maps) {
+    // Google Maps is already loaded
+    console.log("🗺️ [HERO-MAP] Google Maps already loaded, initializing map");
+    initializeMap();
+  } else {
+    console.log("🗺️ [HERO-MAP] Waiting for Google Maps to load...");
+    // Wait for Google Maps to load
+    window.addEventListener("googleMapsLoaded", () => {
+      console.log("🗺️ [HERO-MAP] Google Maps loaded, initializing map");
+      initializeMap();
+    });
+  }
+
+  // Also try to initialize on DOM ready as fallback
+  document.addEventListener("DOMContentLoaded", () => {
+    if (typeof (window as any).google !== "undefined" && (window as any).google.maps && !map) {
+      console.log("🗺️ [HERO-MAP] DOM ready, initializing map");
+      initializeMap();
+    }
+  });
+</script>

@@ -153,13 +153,15 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     // Get status data after successful update
     // Get base URL using the proper utility function
     const baseUrl = getApiBaseUrl(request);
-    const statusDataResponse = await fetch(`${baseUrl}/api/get-project-status-data`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ status_code: newStatus }),
-    });
+    const statusDataResponse = await fetch(
+      `${baseUrl}/api/project-statuses?status_code=${newStatus}`,
+      {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      }
+    );
 
     if (statusDataResponse.ok) {
       const statusData = await statusDataResponse.json();

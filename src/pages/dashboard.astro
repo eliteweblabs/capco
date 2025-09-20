@@ -61,26 +61,26 @@ if (currentUser?.id) {
   }
 }
 
-import {
-  fetchProjectStatuses,
-  processProjectStatuses,
-  type ProjectStatus,
-} from "../lib/api/project-statuses";
+// Fetch project statuses using the unified API
+const statusApiUrl = new URL("/api/project-statuses", Astro.url.origin);
+const statusResponse = await fetch(statusApiUrl.toString(), {
+  method: "GET",
+  headers: {
+    Cookie: Astro.request.headers.get("Cookie") || "",
+  },
+});
 
-// Fetch project statuses
-if (supabaseAdmin) {
-  try {
-    const { statuses, statusesMap } = await fetchProjectStatuses(supabaseAdmin);
-    project_statuses = statuses as ProjectStatus[];
-    project_statuses_object = processProjectStatuses(statuses, currentRole || "Client");
-    // console.log(
-    //   "🏗️ [DASHBOARD] Project statuses fetched:",
-    //   project_statuses,
-    //   project_statuses_object
-    // );
-  } catch (error) {
-    console.error("🏗️ [DASHBOARD] Error fetching statuses:", error);
-  }
+let statusData: any = { success: false, roleBasedStatuses: {}, statusesMap: {} };
+if (statusResponse.ok) {
+  statusData = await statusResponse.json();
+  project_statuses = statusData.statuses || [];
+  project_statuses_object = statusData.roleBasedStatuses || {};
+} else {
+  console.error(
+    "🏗️ [DASHBOARD] Error fetching project statuses:",
+    statusResponse.status,
+    statusResponse.statusText
+  );
 }
 ---
 

@@ -6,13 +6,12 @@ import PhoneAndSMS from "../components/form/PhoneAndSMS.astro";
 import Button from "../components/common/Button.astro";
 import { getCarrierKeyFromGateway } from "../lib/sms-carriers";
 import ForgotPasswordModal from "../components/form/ForgetPasswordModal.astro";
-
-// Get auth data directly to pass to App component
-
 import { checkAuth } from "../lib/auth";
-import { supabaseAdmin } from "../lib/supabase-admin";
 
 const { isAuth = false, currentUser, currentRole, session } = await checkAuth(Astro.cookies);
+if (!isAuth) {
+  return redirect("/login");
+}
 const userProfile = currentUser?.profile || null;
 
 // Get the carrier key from the stored gateway domain
@@ -24,8 +23,6 @@ const storedCarrierKey = currentUser?.user_metadata?.mobile_carrier
 <App
   title="My Profile - CAPCo Fire Protection"
   description="Manage your profile and account settings."
-  requireAuth={true}
-  requireRole={currentRole || "Client"}
   isAuth={isAuth}
   currentUser={currentUser}
   currentRole={currentRole || "Client"}
@@ -76,26 +73,28 @@ const storedCarrierKey = currentUser?.user_metadata?.mobile_carrier
           </div> -->
 
           <!-- Company Name Field -->
-          <div>
-            <label
-              for="companyName"
-              class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300"
-            >
-              Company Name
-            </label>
-            <input
-              type="text"
-              id="company-name"
-              name="company_name"
-              value={userProfile?.company_name || ""}
-              class="w-full rounded-lg border border-gray-300 bg-background-card px-3 py-2.5 text-sm text-gray-900 focus:border-primary-500 focus:ring-2 focus:ring-primary-500 dark:border-gray-600 dark:bg-background-card-dark dark:text-white dark:focus:border-primary-400 dark:focus:ring-primary-400"
-              placeholder="Enter your company name"
-            />
+          <div class="grid grid-cols-1 gap-4 lg:grid-cols-1">
+            <div class="relative">
+              <label
+                for="companyName"
+                class="block text-sm font-medium text-gray-700 dark:text-gray-300"
+              >
+                Company Name
+              </label>
+              <input
+                type="text"
+                id="company-name"
+                name="company_name"
+                value={userProfile?.company_name || ""}
+                class="w-full rounded-lg border border-gray-300 bg-background-card px-3 py-2.5 text-sm text-gray-900 focus:border-primary-500 focus:ring-2 focus:ring-primary-500 dark:border-gray-600 dark:bg-background-card-dark dark:text-white dark:focus:border-primary-400 dark:focus:ring-primary-400"
+                placeholder="Enter your company name"
+              />
+            </div>
           </div>
 
           <!-- First Name and Last Name Fields -->
-          <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
-            <div>
+          <div class="grid grid-cols-1 gap-4 lg:grid-cols-2">
+            <div class="relative">
               <label
                 for="first-name"
                 class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300"
@@ -111,7 +110,7 @@ const storedCarrierKey = currentUser?.user_metadata?.mobile_carrier
                 placeholder="Enter your first name"
               />
             </div>
-            <div>
+            <div class="relative">
               <label
                 for="last-name"
                 class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300"
@@ -130,24 +129,32 @@ const storedCarrierKey = currentUser?.user_metadata?.mobile_carrier
           </div>
 
           <!-- Email Field (Read-only) -->
-          <div>
-            <label
-              for="email"
-              class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300"
-            >
-              Email Address
-            </label>
-            <input
-              type="email"
-              id="email"
-              name="email"
-              value={currentUser?.email || ""}
-              readonly
-              class="w-full rounded-lg border border-gray-300 bg-background-card px-3 py-2.5 text-sm text-gray-500 dark:border-gray-600 dark:bg-background-card-dark dark:text-gray-400"
-            />
-            <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
-              Email cannot be changed. Contact support if needed.
-            </p>
+          <div class="grid grid-cols-1 gap-4 lg:grid-cols-1">
+            <div class="relative">
+              <label
+                for="email"
+                class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300"
+              >
+                Email Address
+              </label>
+              <div class="relative">
+                <input
+                  type="email"
+                  id="email"
+                  name="email"
+                  required
+                  value={currentUser?.email || ""}
+                  readonly
+                  class="w-full rounded-lg border border-gray-300 bg-background-card px-3 py-2.5 text-sm text-gray-900 focus:border-primary-500 focus:ring-2 focus:ring-primary-500 dark:border-gray-600 dark:bg-background-card-dark dark:text-white dark:focus:border-primary-400 dark:focus:ring-primary-400"
+                  placeholder="Enter email address"
+                />
+                <BoxIcon
+                  id="email-lock-icon"
+                  name="lock"
+                  class="absolute right-3 top-1/2 -translate-y-1/2"
+                />
+              </div>
+            </div>
           </div>
 
           <!-- Phone and SMS -->
@@ -263,7 +270,7 @@ const storedCarrierKey = currentUser?.user_metadata?.mobile_carrier
               "success",
               "Profile Updated",
               "Your profile has been updated successfully.",
-              5000
+              2500
             );
           } else {
             console.log("🔔 [Profile Updated] Your profile has been updated successfully.");
