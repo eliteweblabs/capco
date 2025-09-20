@@ -260,9 +260,21 @@ const attributes = {
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.12);
   }
 
-  /* Hide button text on small screens (only for buttons without .preserve class) */
+  /* Hide button text on small screens only when there's an icon present */
   @media (max-width: 640px) {
-    :not(.preserve) > .button-text {
+    /* Hide text when button has an icon (indicated by BoxIcon presence) */
+    :not(.preserve) button:has(.boxicon),
+    :not(.preserve) a:has(.boxicon) {
+      .button-text {
+        display: none;
+      }
+    }
+
+    /* Alternative approach for browsers that don't support :has() */
+    :not(.preserve) button[class*="mr-2"] .button-text,
+    :not(.preserve) button[class*="ml-2"] .button-text,
+    :not(.preserve) a[class*="mr-2"] .button-text,
+    :not(.preserve) a[class*="ml-2"] .button-text {
       display: none;
     }
   }

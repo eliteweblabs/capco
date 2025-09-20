@@ -61,13 +61,13 @@ export const POST: APIRoute = async ({ request, redirect, cookies }) => {
     });
   }
 
-  console.log("🔐 [REGISTER] Attempting Supabase auth.signUp for:", email);
+  // console.log("🔐 [REGISTER] Attempting Supabase auth.signUp for:", email);
 
   // Use the current request URL to determine the base URL
   const currentUrl = new URL(request.url);
   const emailRedirectUrl = `${currentUrl.origin}/api/auth/verify`;
-  console.log("🔐 [AUTH] Email redirect URL:", emailRedirectUrl);
-  console.log("🔐 [AUTH] Current request origin:", currentUrl.origin);
+  // console.log("🔐 [AUTH] Email redirect URL:", emailRedirectUrl);
+  // console.log("🔐 [AUTH] Current request origin:", currentUrl.origin);
 
   const { data, error } = await supabase.auth.signUp({
     email,
@@ -86,12 +86,12 @@ export const POST: APIRoute = async ({ request, redirect, cookies }) => {
     },
   });
 
-  console.log("🔐 [REGISTER] Supabase signUp result:", {
-    success: !!data.user,
-    userId: data.user?.id,
-    needsConfirmation: !data.user?.email_confirmed_at,
-    error: error?.message,
-  });
+  // console.log("🔐 [REGISTER] Supabase signUp result:", {
+  //   success: !!data.user,
+  //   userId: data.user?.id,
+  //   needsConfirmation: !data.user?.email_confirmed_at,
+  //   error: error?.message,
+  // });
 
   if (error) {
     console.error("Registration error:", error);
@@ -130,17 +130,17 @@ export const POST: APIRoute = async ({ request, redirect, cookies }) => {
 
   // Create profile in the profiles table if user was created successfully
   if (data.user) {
-    console.log("Attempting to create profile for user:", data.user.id);
-    console.log("🔐 [REGISTER] Profile data being inserted:", {
-      id: data.user.id,
-      company_name: companyName,
-      first_name: firstName,
-      last_name: lastName,
-      phone: phone || null,
-      sms_alerts: smsAlerts,
-      mobile_carrier: smsAlerts ? getCarrierGateway(mobileCarrier || null) : null,
-      role: "Client",
-    });
+    // console.log("Attempting to create profile for user:", data.user.id);
+    // console.log("🔐 [REGISTER] Profile data being inserted:", {
+    //   id: data.user.id,
+    //   company_name: companyName,
+    //   first_name: firstName,
+    //   last_name: lastName,
+    //   phone: phone || null,
+    //   sms_alerts: smsAlerts,
+    //   mobile_carrier: smsAlerts ? getCarrierGateway(mobileCarrier || null) : null,
+    //   role: "Client",
+    // });
 
     // Wait a moment for the trigger to complete, then upsert the profile
     // The SQL trigger creates a basic profile, we upsert to handle race conditions
@@ -215,7 +215,7 @@ export const POST: APIRoute = async ({ request, redirect, cookies }) => {
       });
 
       if (emailResponse.ok) {
-        console.log("📧 [REGISTER] Welcome email sent successfully to:", email);
+        // console.log("📧 [REGISTER] Welcome email sent successfully to:", email);
         emailStatus.welcomeEmailSent = true;
       } else {
         const errorText = await emailResponse.text();
@@ -241,7 +241,7 @@ export const POST: APIRoute = async ({ request, redirect, cookies }) => {
       if (adminError) {
         console.error("📧 [REGISTER] Failed to fetch admin users:", adminError);
       } else {
-        console.log("📧 [REGISTER] Found admin users:", adminUsers?.length || 0);
+        // console.log("📧 [REGISTER] Found admin users:", adminUsers?.length || 0);
 
         // Prepare admin notification email content
         const adminEmailContent = `<p>New Account Created:<br></p>
