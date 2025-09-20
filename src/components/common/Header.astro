@@ -6,6 +6,8 @@ import Logo from "./Logo.astro";
 import ThemeToggle from "./ThemeToggle.astro";
 
 const { isAuth, currentUser, currentRole, session, desktopNavigationHTML } = Astro.props;
+
+const { id } = Astro.params;
 ---
 
 <header
@@ -15,18 +17,30 @@ const { isAuth, currentUser, currentRole, session, desktopNavigationHTML } = Ast
     <div class="flex h-16 items-center justify-between">
       {/* Logo */}
 
-      <div class="absolute left-0 top-4 flex items-center space-x-2">
-        <Button
-          href="/dashboard"
-          variant="anchor"
-          size="md"
-          icon="chevron-left"
-          class="disabled block text-black dark:text-white md:hidden"
-        />
-      </div>
-      <div class="flex-shrink-0">
-        <Logo link="/" file="svg" />
-      </div>
+      {
+        id && (
+          <div class="absolute -left-6 -top-1.5 flex items-center space-x-2">
+            <Button
+              href="/dashboard"
+              variant="anchor"
+              size="xl"
+              icon="chevron-left"
+              class="disabled block text-black dark:text-white"
+            />
+          </div>
+        )
+      }
+      {
+        id ? (
+          <div class="ml-6 flex-shrink-0 md:ml-0">
+            <Logo link="/" file="svg" />
+          </div>
+        ) : (
+          <div class="flex-shrink-0">
+            <Logo link="/" file="svg" />
+          </div>
+        )
+      }
 
       {/* Unified Navigation - Desktop */}
       <div class="hidden items-center space-x-8 md:flex" set:html={desktopNavigationHTML} />

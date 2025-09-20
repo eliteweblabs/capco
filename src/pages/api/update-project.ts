@@ -1,6 +1,4 @@
 import type { APIRoute } from "astro";
-import { buildUpdateData } from "../../lib/project-fields-config";
-import { SimpleProjectLogger } from "../../lib/simple-logging";
 import { supabase } from "../../lib/supabase";
 
 export const POST: APIRoute = async ({ request }) => {
@@ -61,43 +59,38 @@ export const POST: APIRoute = async ({ request }) => {
       isAdminOrStaff = false;
     }
 
-    // Check if this is a status change and get the old status
-
-    // Build update data using the template configuration
-    const {
-      core: coreUpdateData,
-      optional: optionalUpdateData,
-      newFields: newUpdateData,
-    } = buildUpdateData(updateFields);
+    // Simple validation - remove undefined values and empty strings
+    const cleanUpdateFields = Object.fromEntries(
+      Object.entries(updateFields).filter(([key, value]) => value !== undefined && value !== "")
+    );
 
     // Always update the updated_at timestamp when any field is modified
     const updateData = {
-      ...coreUpdateData,
-      ...optionalUpdateData,
+      ...cleanUpdateFields,
       updated_at: new Date().toISOString(),
     };
 
-    // console.log("Attempting to update project with core data:", updateData);
+    // console.log("Attempting to update project with data:", updateData);
 
-    // First, try to update with core fields
-    let coreUpdateQuery = supabase.from("projects").update(updateData).eq("id", projectId);
+    // Single update query for all fields
+    let updateQuery = supabase.from("projects").update(updateData).eq("id", projectId);
     if (!isAdminOrStaff) {
-      coreUpdateQuery = coreUpdateQuery.eq("author_id", user.id);
+      updateQuery = updateQuery.eq("author_id", user.id);
     }
-    const { data: coreData, error: coreError } = await coreUpdateQuery.select().single();
+    const { data: updatedData, error: updateError } = await updateQuery.select().single();
 
-    if (coreError) {
-      console.error("Supabase core update error:", coreError);
+    if (updateError) {
+      console.error("Supabase update error:", updateError);
       // If no rows were affected, return a friendlier message
       if (
-        coreError.code === "PGRST116" ||
-        /multiple \(or no\) rows returned|0 rows/i.test(coreError.message || "")
+        updateError.code === "PGRST116" ||
+        /multiple \(or no\) rows returned|0 rows/i.test(updateError.message || "")
       ) {
         return new Response(
           JSON.stringify({
             error: "No matching project found to update (check permissions or project ID)",
-            details: coreError.message,
-            code: coreError.code,
+            details: updateError.message,
+            code: updateError.code,
           }),
           {
             status: 404,
@@ -107,10 +100,10 @@ export const POST: APIRoute = async ({ request }) => {
       }
       return new Response(
         JSON.stringify({
-          error: `Failed to update project: ${coreError.message}`,
-          details: coreError.details,
-          hint: coreError.hint,
-          code: coreError.code,
+          error: `Failed to update project: ${updateError.message}`,
+          details: updateError.details,
+          hint: updateError.hint,
+          code: updateError.code,
         }),
         {
           status: 500,
@@ -119,31 +112,7 @@ export const POST: APIRoute = async ({ request }) => {
       );
     }
 
-    // If core update succeeded and we have new fields, try to update them
-    let finalData = coreData;
-    if (Object.keys(newUpdateData).length > 0) {
-      // console.log("Attempting to update new fields:", newUpdateData);
-
-      let newFieldsQuery = supabase.from("projects").update(newUpdateData).eq("id", projectId);
-      if (!isAdminOrStaff) {
-        newFieldsQuery = newFieldsQuery.eq("author_id", user.id);
-      }
-      const { data: newFieldsData, error: newFieldsError } = await newFieldsQuery.select().single();
-
-      if (newFieldsError) {
-        console.warn(
-          "New fields update failed (this is expected if columns don't exist yet):",
-          newFieldsError
-        );
-        // Don't fail the entire request - core fields were updated successfully
-      } else {
-        // console.log("New fields updated successfully");
-        finalData = newFieldsData;
-        await SimpleProjectLogger.logProjectChanges(projectId, user, finalData, newFieldsData);
-      }
-    }
-
-    const data = finalData;
+    const data = updatedData;
 
     // Return success response
     return new Response(
