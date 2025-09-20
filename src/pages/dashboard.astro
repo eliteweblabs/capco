@@ -120,6 +120,31 @@ if (supabaseAdmin) {
       console.log("🔔 [DASHBOARD] Notification in window:", "Notification" in window);
       console.log("🔔 [DASHBOARD] Current permission:", Notification.permission);
 
+      // Check if we're on mobile Safari
+      const isMobileSafari =
+        /iPad|iPhone|iPod/.test(navigator.userAgent) && /Safari/.test(navigator.userAgent);
+      console.log("🔔 [DASHBOARD] Mobile Safari detected:", isMobileSafari);
+
+      if (isMobileSafari) {
+        console.log(
+          "🔔 [DASHBOARD] Mobile Safari detected - push notifications work when installed as PWA"
+        );
+        console.log(
+          "🔔 [DASHBOARD] Install as PWA (Add to Home Screen) for full notification support"
+        );
+
+        // Check if running as PWA
+        const isStandalone =
+          window.matchMedia("(display-mode: standalone)").matches ||
+          window.navigator.standalone === true;
+        console.log("🔔 [DASHBOARD] Running as PWA:", isStandalone);
+
+        if (!isStandalone) {
+          console.log("💡 [DASHBOARD] Install as PWA for better notification support");
+          return;
+        }
+      }
+
       // Only request if user hasn't been prompted yet
       if ("Notification" in window && Notification.permission === "default") {
         console.log("🔔 [DASHBOARD] Requesting notification permission...");
@@ -146,6 +171,60 @@ if (supabaseAdmin) {
       } else {
         console.log("🔔 [DASHBOARD] Not requesting permission - already handled or not available");
       }
+    });
+
+    // Add notification reset function for debugging
+    window.resetNotifications = function () {
+      console.log("🔄 [DASHBOARD] Resetting notification permissions...");
+
+      // Check if we're on mobile Safari
+      const isMobileSafari =
+        /iPad|iPhone|iPod/.test(navigator.userAgent) && /Safari/.test(navigator.userAgent);
+
+      if (isMobileSafari) {
+        console.log(
+          "📱 [DASHBOARD] Mobile Safari detected - push notifications work when installed as PWA"
+        );
+        console.log(
+          "💡 [DASHBOARD] Install as PWA (Add to Home Screen) for full notification support"
+        );
+
+        // Check if running as PWA
+        const isStandalone =
+          window.matchMedia("(display-mode: standalone)").matches ||
+          window.navigator.standalone === true;
+        console.log("🔔 [DASHBOARD] Running as PWA:", isStandalone);
+
+        if (!isStandalone) {
+          console.log("💡 [DASHBOARD] Install as PWA for better notification support");
+          return;
+        }
+      }
+
+      console.log("🔄 [DASHBOARD] Current permission:", Notification.permission);
+
+      // Clear any stored permission state
+      localStorage.removeItem("notification-permission-requested");
+      sessionStorage.removeItem("notification-permission-requested");
+
+      // Force a new permission request
+      if ("Notification" in window) {
+        Notification.requestPermission().then((permission) => {
+          console.log("🔄 [DASHBOARD] Reset permission result:", permission);
+          if (permission === "granted") {
+            console.log("✅ Notifications re-enabled!");
+          } else {
+            console.log("❌ Notifications still denied");
+          }
+        });
+      }
+    };
+
+    // Log current state for debugging
+    console.log("🔔 [DASHBOARD] Current notification state:", {
+      permission: Notification.permission,
+      available: "Notification" in window,
+      resetFunction: "Call window.resetNotifications() to reset",
     });
   </script>
 </App>
