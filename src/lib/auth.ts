@@ -83,7 +83,33 @@ export async function checkAuth(cookies: any): Promise<AuthResult> {
 
             // console.log("🔐 [AUTH] currentUser role set:", role);
           } else {
-            console.warn("🔐 [AUTH] Failed to get currentUser profile:", profileError);
+            console.warn("🔐 [AUTH] Failed to get currentUser profile:", {
+              userId: currentUser.id,
+              userEmail: currentUser.email,
+              profileError: profileError,
+              errorCode: profileError?.code,
+              errorMessage: profileError?.message,
+            });
+
+            // If profile doesn't exist, we should create one or handle gracefully
+            if (profileError?.code === "PGRST116") {
+              console.error(
+                "🔐 [AUTH] User exists in auth but not in profiles table. User ID:",
+                currentUser.id
+              );
+
+              // Set default role for users without profiles
+              currentRole = "Client"; // Default role
+              currentUser.profile = {
+                id: currentUser.id,
+                role: "Client",
+                company_name: null,
+                name: currentUser.email?.split("@")[0] || "User",
+              };
+              currentUser.company_name = null;
+
+              console.warn("🔐 [AUTH] Using default profile for user without profile record");
+            }
           }
         }
       } else {

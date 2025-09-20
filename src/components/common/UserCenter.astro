@@ -93,28 +93,15 @@ if (!isAuth) {
         <div class="py-1">
           <Button
             href="/dashboard#new-project"
-            variant="secondary"
+            variant="primary"
             size="sm"
-            icon="plus"
+            icon="map-pin"
             iconPosition="left"
             fullWidth
             data-drawer-hide="drawer-user-center"
             aria-controls="drawer-user-center"
           >
             New Project
-          </Button>
-        </div>
-
-        <div class="py-1">
-          <Button
-            href="/dashboard"
-            variant="primary"
-            size="sm"
-            icon="dashboard"
-            iconPosition="left"
-            fullWidth
-          >
-            Dashboard
           </Button>
         </div>
       </div>
@@ -245,10 +232,33 @@ if (!isAuth) {
         // console.log("📋 [HEADER] Logout response status:", response.status);
 
         if (response.ok) {
-          // console.log("📋 [HEADER] Logout successful, redirecting...");
-          window.location.href = "/";
+          // console.log("📋 [HEADER] Logout successful, showing success modal...");
+
+          // Show success modal using unified notification system
+          if (window.showModal) {
+            window.showModal(
+              "success",
+              "Successfully Logged Out",
+              "You have been logged out successfully. Redirecting to home page...",
+              2000,
+              { url: "/", delay: 2000, showCountdown: true }
+            );
+          } else {
+            // Fallback if showModal is not available
+            window.location.href = "/";
+          }
         } else {
           // console.error("📋 [HEADER] Logout failed with status:", response.status);
+
+          // Show error modal if logout fails
+          if (window.showModal) {
+            window.showModal(
+              "error",
+              "Logout Failed",
+              "There was an error logging out. Please try again.",
+              0 // No auto-hide for errors
+            );
+          }
         }
       } catch (error) {
         console.error("📋 [HEADER] Logout error:", error);

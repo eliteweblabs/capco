@@ -39,7 +39,7 @@ export function getButtonClasses(config: ButtonStyleConfig = {}): string {
   // Variant classes using global color system
   const variantClasses = {
     primary:
-      "bg-primary-500 text-white hover:bg-primary-600 dark:bg-primary-500 dark:hover:bg-primary-600 shadow-lg hover:shadow-xl",
+      "border-2 border-primary-500 bg-primary-500 text-white hover:bg-primary-600 dark:bg-primary-500 dark:hover:bg-primary-600 shadow-lg hover:shadow-xl",
     secondary:
       "border-2 border-neutral-300 text-neutral-700 hover:text-white dark:border-neutral-600 dark:text-neutral-300 hover:bg-primary-500 dark:hover:bg-primary-500",
     success:

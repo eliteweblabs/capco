@@ -86,6 +86,17 @@ const buttonClasses = getButtonClasses({
   className,
 });
 
+// Map button size to icon size
+const iconSizeMap = {
+  xs: "sm",
+  sm: "sm",
+  md: "md",
+  lg: "md",
+  xl: "lg",
+} as const;
+
+const iconSize = iconSizeMap[size as keyof typeof iconSizeMap] || "md";
+
 // console.log(
 //   "🔘 [BUTTON] Size:",
 //   size,
@@ -139,9 +150,19 @@ const attributes = {
           />
         </svg>
       )}
-      {icon && iconPosition === "left" && !loading && <BoxIcon name={icon} class="mr-2" />}
-      {buttonText ? buttonText : <slot />}
-      {icon && iconPosition === "right" && !loading && <BoxIcon name={icon} class="ml-2" />}
+      {icon && iconPosition === "left" && !loading && (
+        <BoxIcon name={icon} size={iconSize} class="md:mr-2" />
+      )}
+      {buttonText ? (
+        buttonText
+      ) : (
+        <span class="button-text">
+          <slot />
+        </span>
+      )}
+      {icon && iconPosition === "right" && !loading && (
+        <BoxIcon name={icon} size={iconSize} class="md:ml-2" />
+      )}
       {dataAttributes?.["data-count"] && parseInt(dataAttributes["data-count"]) > 0 && (
         <span class="absolute -right-2 -top-2 flex h-5 w-5 items-center justify-center rounded-full border border-primary-500 bg-white text-xs font-medium text-primary-500 dark:border-primary-400 dark:bg-background-dark dark:text-primary-400">
           {dataAttributes["data-count"]}
@@ -167,9 +188,19 @@ const attributes = {
           />
         </svg>
       )}
-      {icon && iconPosition === "left" && !loading && <BoxIcon name={icon} class="mr-2" />}
-      {buttonText ? buttonText : <slot />}
-      {icon && iconPosition === "right" && !loading && <BoxIcon name={icon} class="ml-2" />}
+      {icon && iconPosition === "left" && !loading && (
+        <BoxIcon name={icon} size={iconSize} class="md:mr-2" />
+      )}
+      {buttonText ? (
+        buttonText
+      ) : (
+        <span class="button-text">
+          <slot />
+        </span>
+      )}
+      {icon && iconPosition === "right" && !loading && (
+        <BoxIcon name={icon} size={iconSize} class="md:ml-2" />
+      )}
       {dataAttributes?.["data-count"] && parseInt(dataAttributes["data-count"]) > 0 && (
         <span class="absolute right-0 top-0 flex h-5 w-5 items-center justify-center rounded-full border border-primary bg-white text-xs font-medium text-primary-500 dark:border-primary dark:bg-background-dark dark:text-primary-400">
           {dataAttributes["data-count"]}
@@ -212,7 +243,7 @@ const attributes = {
   /* Focus styles for better accessibility */
   button:focus-visible,
   a:focus-visible {
-    outline: 2px solid #3b82f6;
+    outline: 2px solid var(--primary);
     outline-offset: 2px;
   }
 
@@ -227,6 +258,19 @@ const attributes = {
   a:not([aria-disabled="true"]):not(.disabled):active {
     transform: translateY(0);
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.12);
+  }
+
+  /* Hide button text on small screens (only for buttons without .preserve class) */
+  @media (max-width: 640px) {
+    :not(.preserve) > .button-text {
+      display: none;
+    }
+  }
+
+  /* Ensure button text inherits proper color */
+  .button-text {
+    color: inherit;
+    font-weight: inherit;
   }
 </style>
 

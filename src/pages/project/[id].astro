@@ -31,7 +31,11 @@ const { id } = Astro.params;
 
 // Get auth data directly since App component handles auth requirements
 import { checkAuth } from "../../lib/auth";
-const { currentUser, currentRole = "Client" } = await checkAuth(Astro.cookies);
+const { currentUser, currentRole = "Client", isAuth } = await checkAuth(Astro.cookies);
+
+if (!isAuth) {
+  return Astro.redirect("/login");
+}
 
 // console.log("🚀 [PROJECT] Current user:", currentUser);
 // Removed getAuthorInfoServer function - using direct database queries for better performance
@@ -325,7 +329,6 @@ if (!project) {
 <App
   title={`${project?.address || project?.title || "Untitled Project"} - CAPCo Fire Protection`}
   description={`${project?.address || project?.title || "Untitled Project"} - CAPCo Fire Protection`}
-  requireAuth={true}
   isAuth={!!currentUser}
   currentUser={currentUser}
   currentRole={currentRole || "Client"}
@@ -830,4 +833,85 @@ if (!project) {
 
   // Make switchTab globally available for other components
   window.setPageLoadProjectStatus = setPageLoadProjectStatus;
+</script>
+
+<script>
+  // Function to clean up backdrop
+  function cleanupDrawerBackdrop() {
+    const backdrops = document.querySelectorAll("[drawer-backdrop]");
+    backdrops.forEach((backdrop) => {
+      backdrop.remove();
+    });
+  }
+
+  document.addEventListener("DOMContentLoaded", () => {
+    // Check if we should open the drawer (you can add conditions here)
+    const shouldOpenDrawer = true; // Add your condition here
+
+    if (shouldOpenDrawer) {
+      // Use Flowbite's proper Drawer API with right-side placement
+      const drawerElement = document.getElementById("drawer-user-center");
+      if (drawerElement && (window as any).Drawer) {
+        // Define options for right-side drawer
+        const options = {
+          placement: "right", // Positions the drawer on the right side
+          backdrop: true, // Enables the backdrop
+          bodyScrolling: false, // Disables body scrolling when the drawer is active
+          edge: false, // Disables the edge functionality
+          edgeOffset: "", // No offset for the edge
+          backdropClasses: "bg-gray-900/50 dark:bg-gray-900/80 fixed inset-0 z-30", // Custom backdrop classes
+          onHide: () => {
+            console.log("Drawer is hidden");
+
+            // Remove the manually created backdrop when drawer closes
+            const backdrop = document.querySelector("[drawer-backdrop]");
+            if (backdrop) {
+              backdrop.remove();
+            }
+          },
+          onShow: () => {
+            console.log("Drawer is shown");
+          },
+          onToggle: () => {
+            console.log("Drawer has been toggled");
+          },
+        };
+
+        // Initialize the drawer using Flowbite's API with options
+        const drawer = new (window as any).Drawer(drawerElement, options);
+
+        // Create backdrop element manually if it doesn't exist
+        let backdrop = document.querySelector("[drawer-backdrop]");
+        if (!backdrop) {
+          backdrop = document.createElement("div");
+          backdrop.setAttribute("drawer-backdrop", "");
+          backdrop.className = "bg-gray-900/50 dark:bg-gray-900/80 fixed inset-0 z-30";
+          document.body.appendChild(backdrop);
+        }
+
+        // Add event listeners for drawer close buttons
+        const closeButtons = document.querySelectorAll('[data-drawer-hide="drawer-user-center"]');
+        closeButtons.forEach((button) => {
+          button.addEventListener("click", cleanupDrawerBackdrop);
+        });
+
+        // Add event listener to backdrop for cleanup
+        if (backdrop) {
+          backdrop.addEventListener("click", () => {
+            // Backdrop click will be handled by Flowbite, but we can also clean up
+            setTimeout(cleanupDrawerBackdrop, 100);
+          });
+        }
+
+        // Open the drawer using Flowbite's method
+        drawer.show();
+      } else if (drawerElement) {
+        // Fallback if Flowbite API is not available
+        console.warn("Flowbite Drawer API not available, using manual approach");
+        drawerElement.classList.remove("translate-x-full");
+        drawerElement.classList.add("translate-x-0");
+        drawerElement.setAttribute("aria-hidden", "false");
+      }
+    }
+  });
 </script>

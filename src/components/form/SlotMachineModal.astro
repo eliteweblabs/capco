@@ -99,9 +99,10 @@ const displayText = buttonText || selectedOption?.label || placeholder;
   class={buttonClass || ""}
   icon={icon}
   iconPosition="right"
-  class="w-full"
+  class=""
   data-refresh={name}
   data-project-id={projectId}
+  size="sm"
 >
   {displayText}
 </Button>
@@ -1351,8 +1352,23 @@ const displayText = buttonText || selectedOption?.label || placeholder;
     // Find the button and update its text
     const button = document.getElementById(componentId);
     if (button) {
-      button.textContent = label;
-      console.log(`🎰 [SLOT-MACHINE] Updated button text to: ${label}`);
+      // Try to find the button-text span first
+      const buttonTextSpan = button.querySelector(".button-text");
+      if (buttonTextSpan) {
+        console.log(`🎰 [SLOT-MACHINE] Found button-text span, updating to: ${label}`);
+        buttonTextSpan.textContent = label;
+        console.log(`🎰 [SLOT-MACHINE] Button text span updated successfully`);
+        console.log(`🎰 [SLOT-MACHINE] Button text span computed styles:`, {
+          color: getComputedStyle(buttonTextSpan).color,
+          display: getComputedStyle(buttonTextSpan).display,
+          visibility: getComputedStyle(buttonTextSpan).visibility,
+        });
+      } else {
+        // Fallback to updating the entire button content
+        console.log(`🎰 [SLOT-MACHINE] Button-text span not found, updating entire button content`);
+        button.textContent = label;
+        console.log(`🎰 [SLOT-MACHINE] Updated button text to: ${label}`);
+      }
     } else {
       console.log(`🎰 [SLOT-MACHINE] Button ${componentId} not found`);
     }

@@ -50,9 +50,9 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     // buttonText: button_text,
     // buttonLink: button_link,
 
-    // Use the current request URL to determine the base URL
-    const currentUrl = new URL(request.url);
-    const baseUrl = currentUrl.origin;
+    // Use the proper base URL function to avoid localhost in production
+    const { getBaseUrl } = await import("../../lib/url-utils");
+    const baseUrl = getBaseUrl(request);
 
     const {
       usersToNotify,
