@@ -15,26 +15,30 @@ const {
   supabaseUrl,
 } = Astro.props;
 
+const { id } = Astro.params;
+
 const projectId = project?.id;
 
 // Early return if not authenticated - UserCenter only shows for logged-in users
 if (!isAuth) {
   return null;
 }
+
 // Fetch projects assigned to current user
 ---
 
 <div
   id="drawer-user-center"
-  class="fixed right-0 top-0 z-50 h-screen w-80 translate-x-full overflow-y-auto bg-white p-4 transition-transform dark:bg-gray-800"
+  class="fixed right-0 top-0 z-50 flex h-screen w-80 translate-x-full flex-col bg-white transition-transform dark:bg-gray-800"
   tabindex="-1"
   aria-labelledby="drawer-right-label"
 >
+  <!-- Close Button -->
   <button
     type="button"
     data-drawer-hide="drawer-user-center"
     aria-controls="drawer-user-center"
-    class="absolute end-2.5 top-2.5 inline-flex h-8 w-8 items-center justify-center rounded-lg bg-transparent text-sm text-gray-400 hover:bg-gray-200 hover:text-gray-900 dark:hover:bg-gray-600 dark:hover:text-white"
+    class="absolute end-2.5 top-2.5 z-10 inline-flex h-8 w-8 items-center justify-center rounded-lg bg-transparent text-sm text-gray-400 hover:bg-gray-200 hover:text-gray-900 dark:hover:bg-gray-600 dark:hover:text-white"
   >
     <svg
       class="h-3 w-3"
@@ -52,12 +56,12 @@ if (!isAuth) {
     </svg>
     <span class="sr-only">Close menu</span>
   </button>
-  <!-- Header -->
-  {
-    isAuth && (
-      <div class="mb-6">
-        {/* <!-- User Info Section --> */}
-        <div class="border-b border-gray-200 px-4 py-3 dark:border-gray-700">
+
+  <!-- Fixed Header Section -->
+  <div class="flex-shrink-0 border-b border-gray-200 p-4 dark:border-gray-700">
+    {
+      isAuth && (
+        <a href="/profile" class="block">
           <div class="flex items-center">
             <div class="flex-shrink-0">
               <img
@@ -67,7 +71,7 @@ if (!isAuth) {
                 class="h-10 w-10 rounded-full"
                 onerror="this.style.display='none'; this.nextElementSibling.style.display='block';"
               />
-              <BoxIcon name="user" style="display:none;" class="bx-sm text-gray-400" />
+              <BoxIcon name="user" customStyle="display:none;" class="bx-sm text-gray-400" />
             </div>
             <div class="ml-3">
               <p class="text-sm font-medium text-gray-900 dark:text-white">
@@ -79,50 +83,46 @@ if (!isAuth) {
               <p class="text-xs font-medium text-blue-600 dark:text-blue-400">
                 {currentRole || "User"}
               </p>
-              <p class="text-xs font-medium text-blue-600 dark:text-blue-400">
-                {currentRole?.user_metadata?.created_at.toLocaleDateString() || "User"}
-              </p>
-              <Button href="/profile" variant="anchor" class="disabled" size="sm">
-                Edit Profile
-              </Button>
             </div>
           </div>
-        </div>
-      </div>
-    )
-  }
+        </a>
+      )
+    }
+  </div>
 
-  {
-    isAuth && (
-      <div class="mb-6">
-        <div class="py-1">
-          <Button
-            href="/dashboard#new-project"
-            variant="primary"
-            size="sm"
-            icon="map-pin"
-            iconPosition="left"
-            fullWidth
-            data-drawer-hide="drawer-user-center"
-            aria-controls="drawer-user-center"
-          >
-            New Project
-          </Button>
+  <!-- Scrollable Content Section -->
+  <div class="flex-1 overflow-y-auto p-4">
+    {
+      isAuth && (
+        <div class="mb-6">
+          <div class="py-1">
+            <Button
+              href="/dashboard#new-project"
+              variant="primary"
+              size="sm"
+              icon="map-pin"
+              iconPosition="left"
+              fullWidth
+              data-drawer-hide="drawer-user-center"
+              aria-controls="drawer-user-center"
+            >
+              New Project
+            </Button>
+          </div>
         </div>
-      </div>
-    )
-  }
+      )
+    }
 
-  {
-    isAuth && currentRole !== "Client" && (
-      <div class="mb-6">
-        <div class="my-6 text-black dark:text-white">
-          <h3 class="text-lg font-medium text-gray-900 dark:text-white">
+    {
+      isAuth && currentRole !== "Client" && !id && (
+        <div class="mb-6">
+          <h3 class="mb-4 text-lg font-medium text-gray-900 dark:text-white">
             {currentRole === "Client" ? "Your Projects: " : "Assigned Projects: "}(
             {assignedProjectsCount})
           </h3>
+
           {assignedProjectsCount > 0 ? (
-            <div class="space-y-2 overflow-y-auto">
+            <div class="space-y-2">
               {assignedProjects.slice(0, 5).map((project: any) => (
                 <a
                   href={`/project/${project.id}`}
@@ -155,56 +155,34 @@ if (!isAuth) {
             </div>
           )}
         </div>
-      </div>
-    )
-  }
-
-  <!-- <nav class="mb-6 space-y-2">
-    {
-      visibleNavigation &&
-        visibleNavigation.map((item: any) =>
-          item.isPrimary ? (
-            <a
-              href={item.href}
-              class="block w-full px-4 py-3 text-center font-medium text-black dark:text-white"
-            >
-              {item.label}
-            </a>
-          ) : (
-            <a
-              href={item.href}
-              class="block w-full px-4 py-3 text-center font-medium text-black dark:text-white"
-            >
-              {item.label}
-            </a>
-          )
-        )
+      )
     }
-  </nav> -->
 
-  {
-    projectId && project && (
-      <TabPunchlist
-        project={project}
-        currentRole={currentRole || undefined}
-        currentUser={currentUser}
-        projectId={projectId}
-        supabaseUrl={supabaseUrl}
-      />
-    )
-  }
-  <!-- Alternative: Generated Navigation HTML (optional) -->
-  {
-    desktopNavigationHTML && (
-      <div class="mb-6 block md:hidden">
-        <div class="space-y-1" set:html={desktopNavigationHTML} />
-      </div>
-    )
-  }
+    {
+      projectId && project && (
+        <TabPunchlist
+          project={project}
+          currentRole={currentRole || undefined}
+          currentUser={currentUser}
+          projectId={projectId}
+          supabaseUrl={supabaseUrl}
+        />
+      )
+    }
 
-  {
-    isAuth && (
-      <div class="space-y-2">
+    {
+      desktopNavigationHTML && (
+        <div class="mb-6 block md:hidden">
+          <div class="space-y-1" set:html={desktopNavigationHTML} />
+        </div>
+      )
+    }
+  </div>
+
+  <!-- Fixed Footer Section -->
+  <div class="flex-shrink-0 border-t border-gray-200 p-4 dark:border-gray-700">
+    {
+      isAuth && (
         <Button
           id="logout-btn"
           variant="outline"
@@ -216,49 +194,57 @@ if (!isAuth) {
         >
           Logout
         </Button>
-      </div>
-    )
-  }
+      )
+    }
+  </div>
 </div>
 
 <script>
   // Universal drawer auto-close functionality
   document.addEventListener("DOMContentLoaded", () => {
-    const drawer = document.getElementById("drawer-user-center");
+    const drawer = document.getElementById("drawer-user-center") as HTMLDivElement;
     if (drawer) {
       // Close drawer on any link click (href elements)
-      const links = drawer.querySelectorAll("a[href]");
+      const links = drawer.querySelectorAll("a[href]") as NodeListOf<HTMLAnchorElement>;
       links.forEach((link) => {
         link.addEventListener("click", () => {
           // Use Flowbite's data attribute to close drawer
-          const closeBtn = drawer.querySelector('[data-drawer-hide="drawer-user-center"]');
-          if (closeBtn && closeBtn instanceof HTMLElement) {
+          const closeBtn = drawer.querySelector(
+            '[data-drawer-hide="drawer-user-center"]'
+          ) as HTMLButtonElement;
+          if (closeBtn) {
             closeBtn.click();
           }
         });
       });
 
       // Close drawer on logout button click
-      const logoutBtn = drawer.querySelector("#logout-btn");
+      const logoutBtn = drawer.querySelector("#logout-btn") as HTMLButtonElement;
       if (logoutBtn) {
         logoutBtn.addEventListener("click", () => {
           // Use Flowbite's data attribute to close drawer
-          const closeBtn = drawer.querySelector('[data-drawer-hide="drawer-user-center"]');
-          if (closeBtn && closeBtn instanceof HTMLElement) {
+          const closeBtn = drawer.querySelector(
+            '[data-drawer-hide="drawer-user-center"]'
+          ) as HTMLButtonElement;
+          if (closeBtn) {
             closeBtn.click();
           }
         });
       }
 
       // Close drawer on any button with onclick or data attributes that trigger navigation
-      const buttons = drawer.querySelectorAll("button[onclick], button[data-drawer-hide]");
+      const buttons = drawer.querySelectorAll(
+        "button[onclick], button[data-drawer-hide]"
+      ) as NodeListOf<HTMLButtonElement>;
       buttons.forEach((button) => {
         // Skip the close button itself to avoid double-closing
         if (!button.hasAttribute("data-drawer-hide")) {
           button.addEventListener("click", () => {
             // Use Flowbite's data attribute to close drawer
-            const closeBtn = drawer.querySelector('[data-drawer-hide="drawer-user-center"]');
-            if (closeBtn && closeBtn instanceof HTMLElement) {
+            const closeBtn = drawer.querySelector(
+              '[data-drawer-hide="drawer-user-center"]'
+            ) as HTMLButtonElement;
+            if (closeBtn) {
               closeBtn.click();
             }
           });
@@ -267,7 +253,17 @@ if (!isAuth) {
     }
   });
 
-  const logoutBtn = document.getElementById("logout-btn");
+  // Global function to close the drawer
+  (window as any).closeUserCenterDrawer = function () {
+    const closeBtn = document.querySelector(
+      '[data-drawer-hide="drawer-user-center"]'
+    ) as HTMLButtonElement;
+    if (closeBtn) {
+      closeBtn.click();
+    }
+  };
+
+  const logoutBtn = document.getElementById("logout-btn") as HTMLButtonElement;
 
   // Logout functionality (only if logout button exists - when authenticated)
   if (logoutBtn) {

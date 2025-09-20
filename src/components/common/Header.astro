@@ -3,6 +3,7 @@ import AuthIcon from "./AuthIcon.astro";
 import Button from "./Button.astro";
 import HamburgerIcon from "./Hamburger.astro";
 import Logo from "./Logo.astro";
+import SectionContainer from "./SectionContainer.astro";
 import ThemeToggle from "./ThemeToggle.astro";
 
 const { isAuth, currentUser, currentRole, session, desktopNavigationHTML } = Astro.props;
@@ -13,54 +14,62 @@ const { id } = Astro.params;
 <header
   class="sticky top-0 z-50 border-b border-border-light bg-background-light backdrop-blur-sm dark:border-border-dark dark:bg-background-dark"
 >
-  <nav class="mx-auto max-w-7xl">
-    <div class="flex h-16 items-center justify-between">
-      {/* Logo */}
+  <SectionContainer fullWidth={true} class="py-0 lg:py-0">
+    <nav>
+      <div class="flex h-16 items-center justify-between">
+        {/* Logo */}
 
-      {
-        id && (
-          <div class="absolute -left-6 -top-1.5 flex items-center space-x-2">
-            <Button
-              href="/dashboard"
-              variant="anchor"
-              size="xl"
-              icon="chevron-left"
-              class="disabled block text-black dark:text-white"
-            />
+        {
+          id && (
+            <div class="absolute -left-6 -top-1.5 flex items-center space-x-2">
+              <Button
+                href="/dashboard"
+                variant="anchor"
+                size="xl"
+                icon="chevron-left"
+                class="disabled block text-black dark:text-white"
+              />
+            </div>
+          )
+        }
+        {
+          id ? (
+            <div class="ml-12 flex-shrink-0">
+              <Logo link="/" file="svg" />
+            </div>
+          ) : (
+            <div class="flex-shrink-0">
+              <Logo link="/" file="svg" />
+            </div>
+          )
+        }
+
+        {/* Unified Navigation - Desktop */}
+        <div class="hidden items-center space-x-8 md:flex" set:html={desktopNavigationHTML} />
+
+        {/* Mobile Controls */}
+        <div class="flex items-center space-x-4">
+          <ThemeToggle />
+          {
+            !isAuth && (
+              <div class="block md:hidden">
+                <AuthIcon
+                  isAuth={isAuth}
+                  currentUser={currentUser}
+                  currentRole={currentRole}
+                  session={session}
+                  class=""
+                />
+              </div>
+            )
+          }
+
+          <!-- put hamburger icon here -->
+          <div class="block">
+            <HamburgerIcon />
           </div>
-        )
-      }
-      {
-        id ? (
-          <div class="ml-6 flex-shrink-0 md:ml-0">
-            <Logo link="/" file="svg" />
-          </div>
-        ) : (
-          <div class="flex-shrink-0">
-            <Logo link="/" file="svg" />
-          </div>
-        )
-      }
-
-      {/* Unified Navigation - Desktop */}
-      <div class="hidden items-center space-x-8 md:flex" set:html={desktopNavigationHTML} />
-
-      {/* Mobile Controls */}
-      <div class="flex items-center space-x-4">
-        <ThemeToggle />
-        <AuthIcon
-          isAuth={isAuth}
-          currentUser={currentUser}
-          currentRole={currentRole}
-          session={session}
-          class=""
-        />
-
-        <!-- put hamburger icon here -->
-        <div class="block md:hidden">
-          <HamburgerIcon />
         </div>
       </div>
-    </div>
-  </nav>
+    </nav>
+  </SectionContainer>
 </header>

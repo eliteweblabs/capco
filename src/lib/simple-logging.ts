@@ -407,6 +407,33 @@ export class SimpleProjectLogger {
     );
   }
 
+  static async logPunchlistToggle(
+    projectId: number,
+    punchlistId: number,
+    isCompleted: boolean,
+    currentUser: any,
+    messagePreview: string
+  ) {
+    const action = isCompleted ? "punchlist_completed" : "punchlist_incomplete";
+
+    // Extract company name from user object
+    const userName =
+      currentUser?.company_name ||
+      `${currentUser?.first_name || ""} ${currentUser?.last_name || ""}`.trim() ||
+      "Unknown User";
+
+    const details = `Punchlist item ${isCompleted ? "marked as completed" : "marked as incomplete"}: ${messagePreview}`;
+
+    return await this.addLogEntry(
+      projectId,
+      action,
+      userName,
+      details,
+      { punchlistId, completed: !isCompleted },
+      { punchlistId, completed: isCompleted }
+    );
+  }
+
   // ===== USER EVENT LOGGING METHODS =====
 
   /**

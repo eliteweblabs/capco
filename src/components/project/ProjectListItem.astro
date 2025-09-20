@@ -13,11 +13,11 @@ interface Props {
     new_construction: any;
     status: any;
     created_at: any;
+    company_name: any;
     updated_at: any;
     elapsed_time?: any;
     assigned_to_name?: any;
     assigned_to_id?: any;
-    company_name?: any;
     comment_count?: any;
     profiles?: any;
     assigned_profiles?: any;
@@ -168,7 +168,7 @@ function renderAlertIcons(count: number) {
 ---
 
 <div
-  class={`relative mt-2 min-h-[200px] rounded-lg bg-white shadow-sm dark:bg-gray-800`}
+  class={`relative mt-2 min-h-[200px] w-full max-w-full rounded-lg bg-white shadow-sm dark:bg-gray-800`}
   data-project-status={statusSlugOrId}
   data-project-id={project.id}
 >
@@ -186,7 +186,7 @@ function renderAlertIcons(count: number) {
       return (
         <a
           href={tabUrl}
-          class={`font-large absolute -right-4 -top-4 z-10 mb-4 cursor-pointer`}
+          class={`font-large z-1 absolute -right-4 -top-3.5 mb-4 cursor-pointer`}
           data-refresh="status_name"
           data-project-id={project.id}
           title={`Go to ${currentStatusName} tab`}
@@ -195,7 +195,7 @@ function renderAlertIcons(count: number) {
 
           <span class="relative top-1.5" set:html={renderAlertIcons(projectAlertIconCount)} />
           <span
-            class="rounded-full px-2.5 py-0.5 text-sm text-black transition-opacity hover:opacity-80"
+            class="rounded-full px-2.5 py-1 text-sm text-black transition-opacity hover:opacity-80"
             style={`background-color: ${statusColor};`}
           >
             {currentStatusName}
@@ -240,19 +240,9 @@ function renderAlertIcons(count: number) {
 
   <div class="p-3">
     <a href={`/project/${project.id}`} class="transition-opacity hover:opacity-80">
-      <div class="flex min-w-full items-center gap-2">
-        <h3
-          class="max-w-xs truncate text-lg font-semibold text-gray-900 dark:text-white"
-          data-searchable
-        >
-          {
-            currentRole !== "Client" && (
-              <span>
-                {project?.company_name || "Unknown Author"}
-                <span class="hidden text-gray-500 dark:text-gray-400 md:inline"> → </span>
-              </span>
-            )
-          }
+      <div class="flex items-center gap-2">
+        <h3 class="truncate text-lg font-semibold text-gray-900 dark:text-white" data-searchable>
+          {currentRole !== "Client" && (project.company_name + " → " || "Unknown Author")}
           {project.address}
         </h3>
       </div>
@@ -303,7 +293,7 @@ function renderAlertIcons(count: number) {
       }
 
       <Tooltip content={elapsedTime.toLocaleString()} id="project-created-at">
-        <BoxIcon name="time" size="lg" class="fill-current" />
+        <BoxIcon name="time" size="md" class="fill-current" />
       </Tooltip>
 
       <a
@@ -311,11 +301,11 @@ function renderAlertIcons(count: number) {
         class="relative ml-auto cursor-pointer transition-opacity hover:opacity-80"
         title={`${project.comment_count || 0} comments - Go to discussions`}
       >
-        <BoxIcon name="message-rounded" size="lg" class="fill-current" />
+        <BoxIcon name="message-rounded" size="md" class="fill-current" />
         <!-- {
           project.incomplete_discussions > 0 && ( -->
         <span
-          class="absolute right-2.5 top-2.5 inline-flex h-5 w-7 min-w-[1.25rem] items-center justify-center rounded-full text-xs"
+          class="absolute right-1.5 top-1.5 inline-flex h-4 min-w-[1.25rem] items-center justify-center rounded-full text-xs"
         >
           {project.incomplete_discussions > 99 ? "99+" : project.incomplete_discussions}/{
             project.comment_count > 99 ? "99+" : project.comment_count

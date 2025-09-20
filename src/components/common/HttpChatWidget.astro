@@ -2,7 +2,7 @@
 // HTTP-based Chat Widget Component - Fixed bottom-right floating chat
 // Only visible to Admin/Staff users
 
-import Button from "./Button.astro";
+import BoxIcon from "./BoxIcon.astro";
 
 interface Props {
   currentUser?: {
@@ -24,13 +24,14 @@ const { currentUser, currentRole } = Astro.props;
   data-user-name={currentUser?.company_name || "Unknown User"}
 >
   <!-- Chat Icon (Always Visible) -->
-  <Button
+  <BoxIcon
+    name="message-rounded-dots"
     variant="primary"
-    size="sm"
-    icon="message-rounded-dots"
-    iconPosition="left"
+    size="lg"
     id="chat-toggle"
     dataAttributes={{ "data-count": "0" }}
+    backgroundColor="primary"
+    shape="circle"
   />
 </div>
 
@@ -67,7 +68,7 @@ const { currentUser, currentRole } = Astro.props;
         </div>
       </div>
     </div>
-    <Button variant="outline" size="sm" icon="x" iconPosition="left" id="chat-close" />
+    <BoxIcon name="x" variant="outline" size="sm" id="chat-close" />
   </div>
 
   <!-- Chat Messages -->
@@ -177,6 +178,7 @@ const { currentUser, currentRole } = Astro.props;
     chatToggle?.addEventListener("click", () => {
       const chatPanel = document.getElementById("chat-panel");
       const isHidden = chatPanel?.classList.contains("hidden");
+      (window as any).closeUserCenterDrawer();
 
       if (isHidden) {
         // Opening chat

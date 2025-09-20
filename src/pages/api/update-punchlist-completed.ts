@@ -1,5 +1,6 @@
 import type { APIRoute } from "astro";
 import { checkAuth } from "../../lib/auth";
+import { SimpleProjectLogger } from "../../lib/simple-logging";
 import { supabase } from "../../lib/supabase";
 
 export const POST: APIRoute = async ({ request, cookies }) => {
@@ -107,7 +108,28 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
     console.log("✅ [UPDATE-PUNCHLIST-COMPLETED] Punchlist completion status updated successfully");
 
-    // Note: SimpleProjectLogger is client-side only, logging handled in frontend
+    // Log the punchlist toggle to project activity
+    try {
+      console.log("📝 [UPDATE-PUNCHLIST-COMPLETED] Logging punchlist toggle:", {
+        projectId: punchlistItem.project_id,
+        punchlistId: punchlistId,
+        isCompleted: mark_completed,
+        user: currentUser?.email || "Unknown",
+      });
+
+      await SimpleProjectLogger.logPunchlistToggle(
+        punchlistItem.project_id,
+        punchlistId,
+        mark_completed,
+        currentUser,
+        (punchlistItem.message?.substring(0, 50) || "No message") + "..."
+      );
+
+      console.log("✅ [UPDATE-PUNCHLIST-COMPLETED] Project logging completed successfully");
+    } catch (logError) {
+      console.error("❌ [UPDATE-PUNCHLIST-COMPLETED] Project logging failed:", logError);
+      // Don't fail the entire request if logging fails
+    }
 
     try {
       // Get discussion data from the local discussions array instead of querying Supabase
