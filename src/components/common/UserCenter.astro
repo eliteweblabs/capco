@@ -281,32 +281,26 @@ if (!isAuth) {
         // console.log("📋 [HEADER] Logout response status:", response.status);
 
         if (response.ok) {
-          // console.log("📋 [HEADER] Logout successful, showing success modal...");
+          // console.log("📋 [HEADER] Logout successful, redirecting...");
 
-          // Show success modal using unified notification system
-          if (window.showModal) {
-            window.showModal(
-              "success",
-              "Successfully Logged Out",
-              "You have been logged out successfully. Redirecting to home page...",
-              2000,
-              { url: "/", delay: 2, showCountdown: true }
-            );
-          } else {
-            // Fallback if showModal is not available
-            window.location.href = "/";
-          }
+          // Simple redirect to home page with success message
+          const url = new URL(window.location.origin);
+          url.searchParams.set("message", "logout_success");
+          window.location.href = url.toString();
         } else {
           // console.error("📋 [HEADER] Logout failed with status:", response.status);
 
           // Show error modal if logout fails
-          if (window.showModal) {
+          if (typeof window.showModal === "function") {
             window.showModal(
               "error",
               "Logout Failed",
               "There was an error logging out. Please try again.",
               0 // No auto-hide for errors
             );
+          } else {
+            // Fallback if showModal is not available
+            alert("There was an error logging out. Please try again.");
           }
         }
       } catch (error) {
