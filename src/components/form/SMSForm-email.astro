@@ -1,6 +1,7 @@
 ---
-// SMS Form Component using Email-to-SMS Gateway
-// This component allows sending SMS messages through carrier email gateways
+// Contact Form Component - Email Mode
+// SMS functionality disabled due to carrier gateway bounce issues
+// Messages now sent directly to email addresses
 import Button from "../common/Button.astro";
 
 export interface Props {
@@ -15,17 +16,22 @@ const { compact = false } = Astro.props;
     <div class="mb-6">
       <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Contact CAPCo</h3>
       <p class="text-sm text-gray-600 dark:text-gray-400">
-        Send a message directly to our team
+        Send a message directly to our team via email
       </p>
+      <div class="mt-2 rounded-lg bg-blue-50 p-3 dark:bg-blue-900/20">
+        {/* <p class="text-xs text-blue-700 dark:text-blue-300">
+          📧 <strong>Email Mode:</strong> Messages will be sent to capco@eliteweblabs.com and jk@capcofire.com
+        </p> */}
+      </div>
     </div>
   )}
 
   <form action="/api/send-email-sms" method="post" class="space-y-4">
-    <!-- Hidden fields for hardcoded phone numbers and carriers -->
-    <input type="hidden" name="phone1" value="5085799673" />
-    <input type="hidden" name="carrier1" value="@vtext.com" />
-    <input type="hidden" name="phone2" value="6176333533" />
-    <input type="hidden" name="carrier2" value="@vtext.com" />
+    <!-- SMS functionality disabled - email recipients are hardcoded in the API -->
+    <!-- 
+    Hidden fields removed - SMS gateway functionality disabled due to bounces
+    Messages now sent to: capco@eliteweblabs.com and jk@capcofire.com
+    -->
     
   
     
@@ -60,17 +66,15 @@ const { compact = false } = Astro.props;
         name="message"
         required
         rows="4"
-        maxlength="160"
+        maxlength="500"
         placeholder="Your message here..."
         class="w-full rounded-lg border border-gray-300 bg-gray-50 px-3 py-2 text-sm focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-600 focus:ring-opacity-60 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 dark:focus:bg-gray-900"
       ></textarea>
       <div class="mt-1 flex justify-between">
-        <p class="text-xs text-gray-500 dark:text-gray-400">Keep it short for better delivery</p>
-        <span id="char-count" class="text-xs text-gray-500 dark:text-gray-400">0/160</span>
+        <p class="text-xs text-gray-500 dark:text-gray-400">Your message will be sent via email</p>
+        <span id="char-count" class="text-xs text-gray-500 dark:text-gray-400">0/500</span>
       </div>
     </div>
-
-
 
     <!-- Submit Button -->
     <div class="pt-4">
@@ -79,7 +83,7 @@ const { compact = false } = Astro.props;
         variant="primary"
         size="md"
       >
-        Send Message to CAPCo
+        Send Email to CAPCo Team
       </Button>
     </div>
   </form>
@@ -99,13 +103,13 @@ const { compact = false } = Astro.props;
           </svg>
         </div>
         <div class="ml-3">
-          <h3 class="text-sm font-medium text-yellow-800 dark:text-yellow-200">Important Notes</h3>
+          <h3 class="text-sm font-medium text-yellow-800 dark:text-yellow-200">Email Delivery Info</h3>
           <div class="mt-2 text-sm text-yellow-700 dark:text-yellow-300">
             <ul class="list-disc space-y-1 pl-5">
-              <li>Delivery depends on carrier support and may not be immediate</li>
-              <li>Some carriers may block or delay these messages</li>
-              <li>Keep messages under 160 characters for best results</li>
-              <li>This method is free but less reliable than dedicated SMS services</li>
+              <li>Messages are sent directly to capco@eliteweblabs.com and jk@capcofire.com</li>
+              <li>Email delivery is reliable and immediate</li>
+              <li>No character limits - write as much as needed</li>
+              <li>SMS functionality temporarily disabled due to carrier issues</li>
             </ul>
           </div>
         </div>
@@ -127,12 +131,12 @@ const { compact = false } = Astro.props;
       function updateCharCount() {
         const length = (messageTextarea as HTMLTextAreaElement).value.length;
         if (charCount) {
-          charCount.textContent = `${length}/160`;
+          charCount.textContent = `${length}/500`;
 
           // Change color based on length
-          if (length > 140) {
+          if (length > 450) {
             charCount.className = "text-xs text-red-500";
-          } else if (length > 120) {
+          } else if (length > 400) {
             charCount.className = "text-xs text-yellow-500";
           } else {
             charCount.className = "text-xs text-gray-500 dark:text-gray-400";
@@ -170,7 +174,7 @@ const { compact = false } = Astro.props;
     function scrollToTopOnMobile() {
       // Check if device is mobile (screen width < 768px)
       if (window.innerWidth < 768) {
-        console.log("📱 [SMS-FORM] Scrolling to top on mobile device");
+        // console.log("📱 [SMS-FORM] Scrolling to top on mobile device");
         window.scrollTo({ top: 0, behavior: 'smooth' });
       }
     }
@@ -192,9 +196,9 @@ const { compact = false } = Astro.props;
         const message = (form.querySelector("#message") as HTMLTextAreaElement)?.value;
 
         // Check if modal notification function is available
-        console.log("📱 [SMS-FORM] Modal notification function available:", {
-          showModal: typeof (window as any).showModal
-        });
+        // console.log("📱 [SMS-FORM] Modal notification function available:", {
+        //   showModal: typeof (window as any).showModal
+        // });
 
         // Client-side validation - only check message since phone/carrier are hardcoded
         if (!message || message.trim().length === 0) {
@@ -203,20 +207,20 @@ const { compact = false } = Astro.props;
         }
 
         // Show loading notification as modal
-        showModalWithScroll("info", "Sending Message...", "Please wait while we send your message to CAPCo.", 0); // 0 = no auto-hide
+        // showModalWithScroll("info", "Sending Email...", "Please wait while we send your email to the CAPCo team.", 0); // 0 = no auto-hide
 
         try {
           // Create FormData from the form
           const formData = new FormData(form as HTMLFormElement);
           
-          console.log("📱 [SMS-FORM] Submitting form with data:", {
-            message: formData.get("message"),
-            contactInfo: formData.get("contact_info"),
-            phone1: formData.get("phone1"),
-            carrier1: formData.get("carrier1"),
-            phone2: formData.get("phone2"),
-            carrier2: formData.get("carrier2")
-          });
+          // console.log("📱 [SMS-FORM] Submitting form with data:", {
+          //   message: formData.get("message"),
+          //   contactInfo: formData.get("contact_info"),
+          //   phone1: formData.get("phone1"),
+          //   carrier1: formData.get("carrier1"),
+          //   phone2: formData.get("phone2"),
+          //   carrier2: formData.get("carrier2")
+          // });
           
           // Make the API call
           const response = await fetch("/api/send-email-sms", {
@@ -224,17 +228,17 @@ const { compact = false } = Astro.props;
             body: formData,
           });
 
-          console.log("📱 [SMS-FORM] API response status:", response.status);
-          console.log("📱 [SMS-FORM] API response ok:", response.ok);
+          // console.log("📱 [SMS-FORM] API response status:", response.status);
+          // console.log("📱 [SMS-FORM] API response ok:", response.ok);
 
           if (response.ok) {
             const result = await response.json();
-            console.log("📱 [SMS-FORM] API success result:", result);
+            // console.log("📱 [SMS-FORM] API success result:", result);
             
             // Check if emails were actually sent successfully
             if (result.totalSent && result.totalSent > 0) {
               // Success - emails were actually sent
-              showModalWithScroll("success", "Message Sent!", "Your message has been sent to CAPCo successfully.", 5000);
+              showModalWithScroll("success", "Email Sent!", "Your message has been sent to the CAPCo team successfully.", 5000);
               (form as HTMLFormElement).reset();
               
               // Dispatch custom event to close the SMS panel
