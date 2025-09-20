@@ -3,10 +3,36 @@ interface Props {
   name: string;
   class?: string;
   color?: string;
-  variant?: "regular" | "solid" | "logo";
+  variant?:
+    | "primary"
+    | "secondary"
+    | "success"
+    | "warning"
+    | "danger"
+    | "outline"
+    | "ghost"
+    | "link"
+    | "loading"
+    | "disabled"
+    | "selected"
+    | "anchor";
+  size?: "xs" | "sm" | "md" | "lg" | "xl";
+  backgroundColor?:
+    | "primary"
+    | "secondary"
+    | "success"
+    | "warning"
+    | "danger"
+    | "outline"
+    | "ghost"
+    | "link"
+    | "loading"
+    | "disabled"
+    | "selected"
+    | "anchor";
+  shape?: "circle" | "rounded" | "square";
   id?: string;
-  style?: string;
-  size?: "sm" | "md" | "lg";
+  customStyle?: string;
   dataAttributes?: Record<string, string>;
 }
 
@@ -14,24 +40,86 @@ const {
   name,
   class: className = "block",
   color = "currentColor",
-  variant = "regular",
-  id,
-  style,
+  variant,
   size = "sm",
+  backgroundColor,
+  shape,
+  id,
+  customStyle,
   dataAttributes = {},
   ...rest
 } = Astro.props;
 
-const prefix = variant === "solid" ? "bxs" : variant === "logo" ? "bxl" : "bx";
+const prefix = "bx";
 const iconClass = `${prefix} ${prefix}-${name}`;
-const iconStyle = style || `color: ${color};`;
-const sizeClass = size === "sm" ? "bx-sm" : size === "md" ? "bx-md" : "bx-lg";
+
+// Style variant classes - matching Button component exactly
+const styleClasses = {
+  primary: "text-primary-500 dark:text-primary-400",
+  secondary: "text-neutral-500 dark:text-neutral-400",
+  success: "text-success-500 dark:text-success-400",
+  warning: "text-warning-500 dark:text-warning-400",
+  danger: "text-danger-500 dark:text-danger-400",
+  outline:
+    "text-neutral-600 dark:text-neutral-300 border border-neutral-300 dark:border-neutral-600 rounded-full p-1",
+  ghost:
+    "text-neutral-500 dark:text-neutral-400 hover:text-primary-500 dark:hover:text-primary-400",
+  link: "text-primary-500 dark:text-primary-400 hover:text-primary-600 dark:hover:text-primary-300",
+  loading: "text-primary-500 dark:text-primary-400 animate-spin",
+  disabled: "text-neutral-400 dark:text-neutral-500 opacity-50",
+  selected: "text-primary-600 dark:text-primary-300 font-semibold",
+  anchor:
+    "text-primary-500 dark:text-primary-400 hover:text-primary-600 dark:hover:text-primary-300",
+};
+
+// Size classes
+const sizeClasses = {
+  xs: "bx-xs",
+  sm: "bx-sm",
+  md: "bx-md",
+  lg: "bx-lg",
+  xl: "bx-xl",
+};
+
+// Background color classes
+const backgroundColorClasses = {
+  primary: "bg-primary-500 dark:bg-primary-400 text-white",
+  secondary: "bg-neutral-500 dark:bg-neutral-400 text-white",
+  success: "bg-success-500 dark:bg-success-400 text-white",
+  warning: "bg-warning-500 dark:bg-warning-400 text-white",
+  danger: "bg-danger-500 dark:bg-danger-400 text-white",
+  outline:
+    "bg-transparent border border-neutral-300 dark:border-neutral-600 text-neutral-600 dark:text-neutral-300",
+  ghost:
+    "bg-transparent hover:bg-neutral-100 dark:hover:bg-neutral-800 text-neutral-500 dark:text-neutral-400",
+  link: "bg-transparent hover:bg-primary-50 dark:hover:bg-primary-900/20 text-primary-500 dark:text-primary-400",
+  loading: "bg-primary-500 dark:bg-primary-400 text-white animate-pulse",
+  disabled: "bg-neutral-300 dark:bg-neutral-600 text-neutral-500 dark:text-neutral-400 opacity-50",
+  selected: "bg-primary-600 dark:bg-primary-300 text-white font-semibold",
+  anchor:
+    "bg-transparent hover:bg-primary-50 dark:hover:bg-primary-900/20 text-primary-500 dark:text-primary-400",
+};
+
+// Shape classes
+const shapeClasses = {
+  circle: "rounded-full",
+  rounded: "rounded-lg",
+  square: "rounded-none",
+};
+
+const finalIconStyle = customStyle || (color !== "currentColor" ? `color: ${color};` : "");
 ---
 
 <i
   class={iconClass}
-  style={iconStyle}
-  class:list={[className, sizeClass]}
+  style={finalIconStyle}
+  class:list={[
+    className,
+    sizeClasses[size],
+    variant && styleClasses[variant],
+    backgroundColor && backgroundColorClasses[backgroundColor],
+    shape && shapeClasses[shape],
+  ]}
   id={id}
   {...Object.fromEntries(Object.entries(dataAttributes).map(([key, value]) => [key, value]))}
   {...rest}></i>

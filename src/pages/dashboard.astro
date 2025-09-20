@@ -9,6 +9,9 @@ import { checkAuth } from "../lib/auth";
 import { supabaseAdmin } from "../lib/supabase-admin";
 
 const { isAuth = false, currentUser, currentRole, session } = await checkAuth(Astro.cookies);
+if (!isAuth) {
+  return Astro.redirect("/login");
+}
 
 // console.log("🚀 [DASHBOARD] Current user:", currentUser);
 // Initialize data arrays
@@ -136,7 +139,7 @@ if (supabaseAdmin) {
         // Check if running as PWA
         const isStandalone =
           window.matchMedia("(display-mode: standalone)").matches ||
-          window.navigator.standalone === true;
+          (window.navigator as any).standalone === true;
         console.log("🔔 [DASHBOARD] Running as PWA:", isStandalone);
 
         if (!isStandalone) {
@@ -174,7 +177,7 @@ if (supabaseAdmin) {
     });
 
     // Add notification reset function for debugging
-    window.resetNotifications = function () {
+    (window as any).resetNotifications = function () {
       console.log("🔄 [DASHBOARD] Resetting notification permissions...");
 
       // Check if we're on mobile Safari
@@ -192,7 +195,7 @@ if (supabaseAdmin) {
         // Check if running as PWA
         const isStandalone =
           window.matchMedia("(display-mode: standalone)").matches ||
-          window.navigator.standalone === true;
+          (window.navigator as any).standalone === true;
         console.log("🔔 [DASHBOARD] Running as PWA:", isStandalone);
 
         if (!isStandalone) {
