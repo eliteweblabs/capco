@@ -47,11 +47,46 @@ export const onRequest = defineMiddleware(async ({ locals, url, cookies, redirec
 
     // Get user role from profile (profile created automatically by trigger)
     if (data.user) {
-      const { data: profile } = await supabase
+      let { data: profile, error: profileError } = await supabase
         .from("profiles")
         .select("role")
         .eq("id", data.user.id)
         .single();
+
+      // If profile doesn't exist, create it automatically
+      if (profileError && profileError.code === "PGRST116") {
+        console.log(
+          "🔐 [MIDDLEWARE] User profile not found, creating missing profile for user:",
+          data.user.id
+        );
+
+        const firstName = data.user.user_metadata?.first_name || "";
+        const lastName = data.user.user_metadata?.last_name || "";
+        const companyName =
+          data.user.user_metadata?.company_name ||
+          data.user.email?.split("@")[0] ||
+          "Unknown Company";
+
+        const { error: createProfileError } = await supabase.from("profiles").insert({
+          id: data.user.id,
+          email: data.user.email,
+          company_name: companyName,
+          role: "Client", // Default role for missing profiles
+          first_name: firstName,
+          last_name: lastName,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        });
+
+        if (createProfileError) {
+          console.error("🔐 [MIDDLEWARE] Error creating missing profile:", createProfileError);
+          // Continue with default role if profile creation fails
+          profile = { role: "Client" };
+        } else {
+          console.log("🔐 [MIDDLEWARE] Missing profile created successfully");
+          profile = { role: "Client" };
+        }
+      }
 
       locals.user = data.user;
       locals.email = data.user.email;

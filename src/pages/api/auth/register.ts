@@ -259,16 +259,15 @@ export const POST: APIRoute = async ({ request, redirect, cookies }) => {
         for (const admin of adminUsers || []) {
           try {
             // Get admin's email using admin client
-            const { data: authUser, error: authError } = await supabaseAdmin.auth.admin.getUserById(
-              admin.id
-            );
+            const { data: adminUserProfile, error: authError } =
+              await supabaseAdmin.auth.admin.getUserById(admin.id);
 
-            if (authError || !authUser?.user?.email) {
+            if (authError || !adminUserProfile?.user?.email) {
               console.log(`📧 [REGISTER] No email found for admin ${admin.id}, skipping`);
               continue;
             }
 
-            const adminEmail = authUser.user.email;
+            const adminEmail = adminUserProfile.user.email;
 
             // Send notification email to admin
             const adminEmailResponse = await fetch(`${baseUrl}/api/email-delivery`, {
@@ -278,7 +277,7 @@ export const POST: APIRoute = async ({ request, redirect, cookies }) => {
               },
               body: JSON.stringify({
                 usersToNotify: [adminEmail], // Array of email strings
-                emailSubject: `New User Registration on CAPCo Fire Protection > ${displayName}`,
+                emailSubject: `New User Registration → ${displayName}`,
                 emailContent: adminEmailContent,
                 buttonText: "Access Your Dashboard",
                 buttonLink: "/dashboard",

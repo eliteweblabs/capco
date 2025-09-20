@@ -1,7 +1,63 @@
 import type { APIRoute } from "astro";
 import { checkAuth } from "../../lib/auth";
+import { replacePlaceholders } from "../../lib/placeholder-utils";
 import { supabaseAdmin } from "../../lib/supabase-admin";
-import { filteredStatusObj } from "./process-client-status";
+
+// Function to process status objects for role-based filtering and placeholder replacement
+function filteredStatusObj(statusObj: any, role: string, placeholderData?: any) {
+  // console.log("🔍 [PROJECT-LIST-ITEM] Status object:", statusObj);
+  let filteredStatusObj: any = {};
+
+  // Check if statusObj is defined before accessing its properties
+  if (!statusObj) {
+    console.warn("⚠️ [PROJECT-LIST-ITEM] Status object is undefined");
+    return {
+      status_name: "Unknown Status",
+      status_tab: null,
+    };
+  }
+
+  // Function to generate slug from status name
+  function generateStatusSlug(statusName: string): string {
+    // Generate slug from status name
+    const slug = statusName
+      .toLowerCase()
+      .replace(/[^a-z0-9\s-]/g, "")
+      .replace(/\s+/g, "-")
+      .trim();
+
+    return slug;
+  }
+
+  // Use client_status_name for clients, admin_status_name for admins
+  if (role === "Client" && statusObj.client_status_name) {
+    filteredStatusObj.status_name = statusObj.client_status_name;
+    filteredStatusObj.status_slug = generateStatusSlug(statusObj.client_status_name);
+    filteredStatusObj.status_tab = statusObj.client_status_tab;
+    filteredStatusObj.project_action = statusObj.client_project_action || null;
+  } else if (statusObj.admin_status_name) {
+    filteredStatusObj.status_name = statusObj.admin_status_name;
+    filteredStatusObj.status_slug = generateStatusSlug(statusObj.admin_status_name);
+    filteredStatusObj.status_tab = statusObj.admin_status_tab;
+    filteredStatusObj.project_action = statusObj.admin_project_action || null;
+  }
+
+  // Always include project_action for the modal system
+  let projectAction = statusObj.project_action || null;
+
+  // Process placeholders if project_action exists and placeholder data is provided
+  if (projectAction && placeholderData) {
+    try {
+      projectAction = replacePlaceholders(projectAction, placeholderData);
+    } catch (error) {
+      console.warn("Failed to process placeholders in project_action:", error);
+    }
+  }
+
+  filteredStatusObj.project_action = projectAction;
+
+  return filteredStatusObj;
+}
 
 export interface UnifiedProjectStatus {
   status_code: number;
@@ -51,8 +107,37 @@ export const GET: APIRoute = async ({ request, cookies, url }) => {
     const projectAddress = url.searchParams.get("projectAddress");
     const clientName = url.searchParams.get("clientName");
     const clientEmail = url.searchParams.get("clientEmail");
+    const statusCode = url.searchParams.get("status_code");
 
-    // console.log("🔍 [PROJECT-STATUSES-API] Fetching statuses for role:", currentRole);
+    console.log("🔍 [PROJECT-STATUSES-API] Fetching statuses for role:", currentRole);
+
+    // If status_code is provided, return specific status data
+    if (statusCode) {
+      const { data: statusData, error: statusError } = await supabaseAdmin
+        .from("project_statuses")
+        .select("*")
+        .eq("status_code", statusCode)
+        .single();
+
+      if (statusError) {
+        console.error("❌ [PROJECT-STATUSES-API] Status not found:", statusError);
+        return new Response(JSON.stringify({ error: "Status not found" }), {
+          status: 404,
+          headers: { "Content-Type": "application/json" },
+        });
+      }
+
+      return new Response(
+        JSON.stringify({
+          success: true,
+          statusConfig: statusData,
+        }),
+        {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        }
+      );
+    }
 
     // Fetch all project statuses from database
     const { data: statusesData, error: statusesError } = await supabaseAdmin
@@ -116,6 +201,8 @@ export const GET: APIRoute = async ({ request, cookies, url }) => {
         status_slug: processedStatus.status_slug,
       };
 
+      console.log("🔍 [PROJECT-STATUSES-API] Processed status:", acc[status.status_code]);
+
       return acc;
     }, {});
 
@@ -125,12 +212,12 @@ export const GET: APIRoute = async ({ request, cookies, url }) => {
       label: status.status_name,
     }));
 
-    // console.log(
-    //   "✅ [PROJECT-STATUSES-API] Processed",
-    //   statuses.length,
-    //   "statuses for role:",
-    //   currentRole
-    // );
+    console.log(
+      "✅ [PROJECT-STATUSES-API] Processed",
+      statuses.length,
+      "statuses for role:",
+      currentRole
+    );
 
     const response: ProjectStatusesResponse = {
       success: true,
