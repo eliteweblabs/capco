@@ -79,11 +79,11 @@ export const navigation = (
     },
     {
       label: "Projects",
-      href: "#",
+      href: "/projects",
       roles: ["Client", "Admin", "Staff"],
-      pageType: "backend",
-      isPrimary: false,
-      isDrawer: true, // Special flag for drawer trigger
+      pageType: "frontend",
+      isDrawer: false, // Special flag for drawer trigger
+      isPrimary: currentUrl.startsWith("/projects"),
     },
     {
       label: "Discussions",
