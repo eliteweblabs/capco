@@ -387,6 +387,65 @@ export const POST: APIRoute = async ({ request, cookies }) => {
           console.error("📊 [UPDATE-STATUS] Failed to send admin emails");
         }
 
+        // TODO: Implement cross-user push notifications via Bird.com
+        // Currently commented out because:
+        // 1. Web push notifications only work for the current authenticated user
+        // 2. If user triggered the action, they already see the modal
+        // 3. Need to implement Bird.com integration for cross-user notifications
+        /*
+        // Send push notifications to all relevant users
+        try {
+          console.log("📱 [UPDATE-STATUS] Sending push notifications...");
+
+          // Prepare push notification data
+          const pushNotificationData = {
+            title: "Project Status Updated",
+            body: `${updatedProject.address} - ${statusData.statusConfig.status_name}`,
+            icon: "/favicon.svg",
+            badge: "/favicon.svg",
+            tag: `project-${projectId}`,
+            data: {
+              type: "project_status_update",
+              projectId: projectId,
+              newStatus: newStatus,
+              projectAddress: updatedProject.address,
+              statusName: statusData.statusConfig.status_name,
+              url: `${baseUrl}/project/${projectId}`,
+            },
+            actions: [
+              {
+                action: "view",
+                title: "View Project",
+                icon: "/favicon.svg",
+              },
+            ],
+          };
+
+          // Store notification in database for all users (admins, staff, and client)
+          const allUserEmails = [...adminStaffEmails, clientEmail];
+          const notificationResponse = await fetch(`${baseUrl}/api/store-notification`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              userEmails: allUserEmails,
+              notification: pushNotificationData,
+            }),
+          });
+
+          if (notificationResponse.ok) {
+            const notificationResult = await notificationResponse.json();
+            console.log("📱 [UPDATE-STATUS] Notifications stored:", notificationResult);
+          } else {
+            console.error("📱 [UPDATE-STATUS] Failed to store notifications");
+          }
+        } catch (pushError) {
+          console.error("📱 [UPDATE-STATUS] Push notification error:", pushError);
+          // Don't fail the entire request if push notifications fail
+        }
+        */
+
         return new Response(
           JSON.stringify({
             success: true,

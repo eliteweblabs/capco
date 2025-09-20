@@ -223,6 +223,51 @@ if (!isAuth) {
 </div>
 
 <script>
+  // Universal drawer auto-close functionality
+  document.addEventListener("DOMContentLoaded", () => {
+    const drawer = document.getElementById("drawer-user-center");
+    if (drawer) {
+      // Close drawer on any link click (href elements)
+      const links = drawer.querySelectorAll("a[href]");
+      links.forEach((link) => {
+        link.addEventListener("click", () => {
+          // Use Flowbite's data attribute to close drawer
+          const closeBtn = drawer.querySelector('[data-drawer-hide="drawer-user-center"]');
+          if (closeBtn && closeBtn instanceof HTMLElement) {
+            closeBtn.click();
+          }
+        });
+      });
+
+      // Close drawer on logout button click
+      const logoutBtn = drawer.querySelector("#logout-btn");
+      if (logoutBtn) {
+        logoutBtn.addEventListener("click", () => {
+          // Use Flowbite's data attribute to close drawer
+          const closeBtn = drawer.querySelector('[data-drawer-hide="drawer-user-center"]');
+          if (closeBtn && closeBtn instanceof HTMLElement) {
+            closeBtn.click();
+          }
+        });
+      }
+
+      // Close drawer on any button with onclick or data attributes that trigger navigation
+      const buttons = drawer.querySelectorAll("button[onclick], button[data-drawer-hide]");
+      buttons.forEach((button) => {
+        // Skip the close button itself to avoid double-closing
+        if (!button.hasAttribute("data-drawer-hide")) {
+          button.addEventListener("click", () => {
+            // Use Flowbite's data attribute to close drawer
+            const closeBtn = drawer.querySelector('[data-drawer-hide="drawer-user-center"]');
+            if (closeBtn && closeBtn instanceof HTMLElement) {
+              closeBtn.click();
+            }
+          });
+        }
+      });
+    }
+  });
+
   const logoutBtn = document.getElementById("logout-btn");
 
   // Logout functionality (only if logout button exists - when authenticated)
