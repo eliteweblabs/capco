@@ -181,10 +181,10 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       const authorName = discussion.company_name || "User";
 
       // Always indicate if it's internal or not in subject and content
-      const commentType = internal ? "Internal Comment" : "Public Comment";
+      const commentType = internal ? "Internal Discussion " : "Public Discussion ";
       const subjectLine = projectAddress
-        ? `New ${commentType} from ${authorName} -> ${projectAddress}`
-        : `New ${commentType} from ${authorName}`;
+        ? `${commentType} → ${authorName} → ${projectAddress}`
+        : `${commentType} → ${authorName}`;
 
       // Get admin and staff emails using reusable API
       // console.log("💬 [ADD-DISCUSSION] Fetching admin and staff emails...");
