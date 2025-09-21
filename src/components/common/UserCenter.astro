@@ -17,6 +17,8 @@ const {
 
 const { id } = Astro.params;
 
+console.log("🏗️ [USER CENTER] Desktop navigation HTML:", desktopNavigationHTML);
+
 const projectId = project?.id;
 
 // Early return if not authenticated - UserCenter only shows for logged-in users
@@ -92,6 +94,13 @@ const projectId = project?.id;
 
   <!-- Scrollable Content Section -->
   <div class="flex-1 overflow-y-auto p-4">
+    {
+      desktopNavigationHTML && (
+        <div id="desktop-navigation-html" class="mb-6">
+          <div class="space-y-1" set:html={desktopNavigationHTML} />
+        </div>
+      )
+    }
     {
       isAuth && (
         <div class="mb-6">
@@ -169,20 +178,12 @@ const projectId = project?.id;
         />
       )
     }
-
-    {
-      desktopNavigationHTML && (
-        <div class="mb-6 block md:hidden">
-          <div class="space-y-1" set:html={desktopNavigationHTML} />
-        </div>
-      )
-    }
   </div>
 
   <!-- Fixed Footer Section -->
-  <div class="flex-shrink-0 border-t border-gray-200 p-4 dark:border-gray-700">
-    {
-      isAuth && (
+  {
+    isAuth && (
+      <div class="flex-shrink-0 border-t border-gray-200 p-4 dark:border-gray-700">
         <Button
           id="logout-btn"
           variant="outline"
@@ -193,10 +194,10 @@ const projectId = project?.id;
           class="flex w-full items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-700"
         >
           Logout
-        </Button>
-      )
-    }
-  </div>
+        </Button>{" "}
+      </div>
+    )
+  }
 </div>
 
 <script>
