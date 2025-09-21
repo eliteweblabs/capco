@@ -1,0 +1,148 @@
+---
+// Flowbite Sidebar Component
+// Based on Flowbite dashboard design patterns
+
+interface Props {
+  isAuth: boolean;
+  currentUser: any;
+  currentRole: string;
+  session: any;
+}
+
+const { isAuth, currentUser, currentRole, session } = Astro.props;
+---
+
+<aside
+  id="sidebar"
+  class="fixed left-0 top-0 z-40 h-screen w-64 -translate-x-full border-r border-gray-200 bg-white transition-transform dark:border-gray-700 dark:bg-gray-800 sm:translate-x-0"
+  aria-label="Sidebar"
+>
+  <div class="h-full overflow-y-auto bg-white px-3 pb-4 dark:bg-gray-800">
+    <ul class="space-y-2 font-medium">
+      <!-- Dashboard -->
+      <li>
+        <a
+          href="/dashboard"
+          class="group flex items-center rounded-lg p-2 text-gray-900 hover:bg-gray-100 dark:text-white dark:hover:bg-gray-700"
+        >
+          <i
+            class="bx bx-home text-xl text-gray-500 group-hover:text-gray-900 dark:text-gray-400 dark:group-hover:text-white"
+          ></i>
+          <span class="ml-3">Dashboard</span>
+        </a>
+      </li>
+
+      <!-- Projects -->
+      <li>
+        <a
+          href="/projects"
+          class="group flex items-center rounded-lg p-2 text-gray-900 hover:bg-gray-100 dark:text-white dark:hover:bg-gray-700"
+        >
+          <i
+            class="bx bx-folder text-xl text-gray-500 group-hover:text-gray-900 dark:text-gray-400 dark:group-hover:text-white"
+          ></i>
+          <span class="ml-3">Projects</span>
+        </a>
+      </li>
+
+      <!-- Users (Admin only) -->
+      {
+        currentRole === "Admin" && (
+          <li>
+            <a
+              href="/users"
+              class="group flex items-center rounded-lg p-2 text-gray-900 hover:bg-gray-100 dark:text-white dark:hover:bg-gray-700"
+            >
+              <i class="bx bx-user text-xl text-gray-500 group-hover:text-gray-900 dark:text-gray-400 dark:group-hover:text-white" />
+              <span class="ml-3">Users</span>
+            </a>
+          </li>
+        )
+      }
+
+      <!-- Files -->
+      <li>
+        <a
+          href="/files"
+          class="group flex items-center rounded-lg p-2 text-gray-900 hover:bg-gray-100 dark:text-white dark:hover:bg-gray-700"
+        >
+          <i
+            class="bx bx-file text-xl text-gray-500 group-hover:text-gray-900 dark:text-gray-400 dark:group-hover:text-white"
+          ></i>
+          <span class="ml-3">Files</span>
+        </a>
+      </li>
+
+      <!-- Contact -->
+      <li>
+        <a
+          href="/contact"
+          class="group flex items-center rounded-lg p-2 text-gray-900 hover:bg-gray-100 dark:text-white dark:hover:bg-gray-700"
+        >
+          <i
+            class="bx bx-envelope text-xl text-gray-500 group-hover:text-gray-900 dark:text-gray-400 dark:group-hover:text-white"
+          ></i>
+          <span class="ml-3">Contact</span>
+        </a>
+      </li>
+
+      <!-- Divider -->
+      <li class="pt-4">
+        <div class="border-t border-gray-200 dark:border-gray-700"></div>
+      </li>
+
+      <!-- Settings -->
+      <li>
+        <a
+          href="/settings"
+          class="group flex items-center rounded-lg p-2 text-gray-900 hover:bg-gray-100 dark:text-white dark:hover:bg-gray-700"
+        >
+          <i
+            class="bx bx-cog text-xl text-gray-500 group-hover:text-gray-900 dark:text-gray-400 dark:group-hover:text-white"
+          ></i>
+          <span class="ml-3">Settings</span>
+        </a>
+      </li>
+
+      <!-- Logout -->
+      {
+        isAuth && (
+          <li>
+            <a
+              href="/logout"
+              class="group flex items-center rounded-lg p-2 text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20"
+            >
+              <i class="bx bx-log-out text-xl group-hover:text-red-700 dark:group-hover:text-red-300" />
+              <span class="ml-3">Logout</span>
+            </a>
+          </li>
+        )
+      }
+    </ul>
+  </div>
+</aside>
+
+<script>
+  // Sidebar toggle functionality
+  document.addEventListener("DOMContentLoaded", function () {
+    const sidebarToggle = document.getElementById("sidebar-toggle");
+    const sidebar = document.getElementById("sidebar");
+    const sidebarOverlay = document.getElementById("sidebar-overlay");
+
+    if (sidebarToggle && sidebar) {
+      sidebarToggle.addEventListener("click", function () {
+        sidebar.classList.toggle("-translate-x-full");
+        if (sidebarOverlay) {
+          sidebarOverlay.classList.toggle("hidden");
+        }
+      });
+    }
+
+    if (sidebarOverlay) {
+      sidebarOverlay.addEventListener("click", function () {
+        sidebar.classList.add("-translate-x-full");
+        sidebarOverlay.classList.add("hidden");
+      });
+    }
+  });
+</script>

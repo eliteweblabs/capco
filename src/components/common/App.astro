@@ -1,120 +1,77 @@
 ---
-interface Props {
-  title?: string;
-  description?: string;
-  redirectTo?: string;
-  isAuth?: boolean;
-  currentUser?: any;
-  currentRole?: string | null;
-  session?: any;
-  project?: any;
-  projectId?: string;
-  supabaseUrl?: string;
-  supabaseAdmin?: any;
-}
-
-// Use props if provided, otherwise fetch auth state directly
-const {
-  title = undefined,
-  description = undefined,
-  redirectTo = undefined,
-  isAuth = false,
-  currentUser = null,
-  currentRole = "Client",
-  session = null,
-  project = undefined,
-  projectId = undefined,
-  supabaseUrl = undefined,
-  supabaseAdmin = null,
-} = Astro.props;
-
-// If auth propse not provided, fetch them directly
-
-// Status data is now fetched in individual pages as needed
-
-// Import components
-
-import "../../styles/boxicons.css"; // Import Boxicons CSS first
-import "../../styles/global.css"; // Import Tailwind CSS
-import Preloader from "./Preloader.astro";
-import Header from "./Header.astro";
-import Footer from "./Footer.astro";
-import UnifiedNotification from "./UnifiedNotification.astro";
-import CookieBanner from "./CookieBanner.astro";
-import SpeedDial from "./SpeedDial.astro";
-
-// Get current URL and determine page type
-const currentUrl = Astro.url.pathname;
-const isBackend = isBackendPage(currentUrl);
 import { isBackendPage } from "../../pages/api/backend-page-check";
 import { navigation } from "@/pages/api/navigation";
 
-const navigationData = navigation(
-  currentUrl,
-  isAuth || false,
-  currentRole || "Client",
-  isBackend || false
-);
-const { desktopNavigationHTML, visibleNavItems } = navigationData;
-// console.log("🏗️ [APP] Desktop navigation HTML:", desktopNavigationHTML);
-// console.log("🏗️ [APP] Visible nav items:", visibleNavItems);
-
-let assignedProjectsCount = 0;
-let assignedProjects: any[] = [];
-
-if ((currentUser?.id && currentRole === "Staff") || currentRole === "Admin") {
-  // console.log("🏗️ [APP] Fetching assigned projects for user:", currentUser.id);
-  const baseUrl = Astro.url.origin;
-  const fullUrl = `${baseUrl}/api/get-project?assigned_to_id=${currentUser.id}`;
-  // console.log("🏗️ [APP] Full URL:", fullUrl);
-  try {
-    const response = await fetch(fullUrl);
-    if (response.ok) {
-      const data = await response.json();
-      // console.log("🏗️ [APP] Assigned projects:", data);
-      assignedProjects = data.projects || [];
-      assignedProjectsCount = data.projects.length || 0;
-    }
-  } catch (error) {
-    console.error("Error fetching assigned projects:", error);
-  }
-} else if (currentUser?.id && currentRole === "Client") {
-  const baseUrl = Astro.url.origin;
-  const fullUrl = `${baseUrl}/api/get-project?author_id=${currentUser.id}`;
-  // console.log("🏗️ [APP] Full URL:", fullUrl);
-  try {
-    const response = await fetch(fullUrl);
-    if (response.ok) {
-      const data = await response.json();
-      // console.log("🏗️ [APP] Assigned projects:", data);
-      assignedProjects = data.projects || [];
-      assignedProjectsCount = data.projects.length || 0;
-    }
-  } catch (error) {
-    console.error("Error fetching assigned projects:", error);
-  }
+interface Props {
+  title?: string;
+  description?: string;
+  currentUser?: any;
+  session?: any;
+  project?: any;
+  supabase?: any;
+  noNavigation?: boolean;
 }
 
-// Genee navigation HTML for desktop and mobile
-// const mobileNavigationHTML = (assignedProjects = []);
+const {
+  currentUser = undefined,
+  title = undefined,
+  description = undefined,
+  session = undefined,
+  project = undefined,
+  supabase = undefined,
+  noNavigation = false,
+} = Astro.props;
 
-// console.log("🏗️ [APP] App component loading...", user);
+// Derived properties (8 props → 13 total)
+const isAuth = currentUser ? true : false;
+const currentRole = currentUser?.role;
+const currentUserId = currentUser?.id;
+const projectId = project?.id;
+const currentUrl = Astro.url.pathname;
+const isBackend = isBackendPage(currentUrl);
+
+// Get navigation data
+const navigationData = navigation(currentUrl, isAuth, currentRole || "Client", isBackend);
+const { desktopNavigationHTML, visibleNavItems } = navigationData;
+
+import "../../styles/boxicons.css"; // this is sketchy
+import "../../styles/global.css"; // Import Tailwind CSS
+import Preloader from "./Preloader.astro";
+import Footer from "./Footer.astro";
+import UserCenter from "./UserCenter.astro";
+import UnifiedNotification from "./UnifiedNotification.astro";
+import CookieBanner from "./CookieBanner.astro";
+import SpeedDial from "./SpeedDial.astro";
+import FlowbiteNavbar from "./FlowbiteNavbar.astro";
+import FlowbiteAside from "./FlowbiteAside.astro";
 ---
 
 <!doctype html>
-<html lang="en">
+<html lang="en" class="v2fLMH8w3xgUEQcl63H9">
   <head>
-    <meta charset="UTF-8" />
-    <meta name="description" content={description} />
+    <meta charset="utf-8" />
     <meta
       name="viewport"
       content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover"
     />
+    <meta name="author" content="Tomsens+REKKO" />
+    <!-- <meta name="generator" content="Hugo 0.123.8" /> -->
+
     <!-- Safari 18 beta specific viewport fixes -->
     <meta name="format-detection" content="telephone=no" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+
+    <title>{title}</title>
+    <meta name="description" content={description} />
+
+    <link
+      rel="stylesheet"
+      href="https://www.unpkg.com/flowbite-datepicker@1.3.2/dist/css/datepicker.min.css"
+    />
+    <link rel="stylesheet" href="https://flowbite.com/application-ui/demo/app.css" />
+
     <link rel="icon" type="image/svg+xml" href="/img/favicon.svg" sizes="any" />
     <link rel="icon" type="image/png" href="/img/favicon.png" sizes="any" />
     <link rel="manifest" href="/manifest.json" />
@@ -137,57 +94,109 @@ if ((currentUser?.id && currentRole === "Staff") || currentRole === "Admin") {
     <meta name="twitter:description" content={description} />
     <meta name="twitter:image" content="/img/capco-logo.png" />
 
-    <!-- <link
-      rel="apple-touch-icon"
-      href="https://tomsens.com/wp-content/uploads/2025/05/tomsens-rekko-favicon.svg"
-    /> -->
-    <meta
-      name="description"
-      content="Saving small businesses money with workflow automation, generating leads for them with website design and giving them a professional look with full stack branding."
-    />
     <meta name="robots" content="max-image-preview:large" /><link
       rel="canonical"
-      href="https://capcofire.com"
-    /><meta name="generator" content="All in One SEO (AIOSEO) 4.8.6.1" /><meta
-      property="og:locale"
-      content="en_US"
-    /><meta property="og:site_name" content="CAPCo Fire" /><meta
+      href={currentUrl}
+    />
+    <meta property="og:site_name" content="CAPCo Fire" /><meta
       property="og:type"
       content="website"
-    /><meta property="og:title" content="CAPCo Fire" /><meta
-      property="og:description"
-      content="Fire protection project management and proposal system."
     />
-    <!-- sms -->
-    <meta name="twitter:card" content="summary_large_image" /><meta
-      name="twitter:title"
-      content="CAPCo Fire"
-    /><meta
+    <!-- <link rel="canonical" href="https://flowbite.com/application-ui/demo/" />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+
+    <link
+      rel="stylesheet"
+      href="https://www.unpkg.com/flowbite-datepicker@1.3.2/dist/css/datepicker.min.css"
+    />
+    <link rel="stylesheet" href="https://flowbite.com/application-ui/demo/app.css" />
+
+    <link
+      rel="apple-touch-icon"
+      sizes="180x180"
+      href="https://flowbite.com/application-ui/demo/apple-touch-icon.png"
+    />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="32x32"
+      href="https://flowbite.com/application-ui/demo/favicon-32x32.png"
+    />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="16x16"
+      href="https://flowbite.com/application-ui/demo/favicon-16x16.png"
+    />
+    <link rel="icon" type="image/png" href="https://flowbite.com/application-ui/demo/favicon.ico" />
+    <link rel="manifest" href="https://flowbite.com/application-ui/demo/site.webmanifest" />
+    <link
+      rel="mask-icon"
+      href="https://flowbite.com/application-ui/demo/safari-pinned-tab.svg"
+      color="#5bbad5"
+    />
+    <meta name="msapplication-TileColor" content="#ffffff" />
+    <meta name="theme-color" content="#ffffff" /> -->
+
+    <!-- Twitter -->
+    <!-- <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:site" content="@" />
+    <meta name="twitter:creator" content="@" />
+    <meta name="twitter:title" content="Tailwind CSS Dashboard - Flowbite" />
+    <meta
       name="twitter:description"
-      content="Fire protection project management and proposal system."
+      content="Get started with a premium admin dashboard interface built with Tailwind CSS and Flowbite featuring over 50 example pages of charts, calendars, kanban boards, dashboards, CRUD pages, mailing systems, and more."
     />
-    <!-- <meta
-      name="twitter:image"
-      content="https://tomsens.com/wp-content/uploads/2025/05/Screenshot-2025-05-15-at-9.57.05 PM.png"
-    /> -->
+    <meta name="twitter:image" content="https://flowbite.com/application-ui/demo/" /> -->
 
-    <title>{title}</title>
-
-    <!-- Inject environment variables for client-side use FIRST -->
-    <script
-      set:html={`window.GOOGLE_MAPS_API_KEY = "${import.meta.env.GOOGLE_MAPS_API_KEY || ""}"; window.GOOGLE_PLACES_API_KEY = "${import.meta.env.GOOGLE_PLACES_API_KEY || ""}"; window.STRIPE_PUBLISHABLE_KEY = "${import.meta.env.PUBLIC_STRIPE_PUBLISHABLE_KEY || ""}";`}
+    <!-- Facebook -->
+    <!-- <meta property="og:url" content="https://flowbite.com/application-ui/demo/" />
+    <meta property="og:title" content="Tailwind CSS Dashboard - Flowbite" />
+    <meta
+      property="og:description"
+      content="Get started with a premium admin dashboard interface built with Tailwind CSS and Flowbite featuring over 50 example pages of charts, calendars, kanban boards, dashboards, CRUD pages, mailing systems, and more."
     />
+    <meta property="og:type" content="website" />
+    <meta
+      property="og:image"
+      content="https://flowbite.com/application-ui/demo/images/og-image.jpg"
+    />
+    <meta property="og:image:type" content="image/png" /> -->
 
-    <!-- ${currentUser ? `window.USER_DATA = ${JSON.stringify(currentUser)};` : ""}
-    window.SUPABASE_URL = "${import.meta.env.SUPABASE_URL || ""}"; window.SUPABASE_ANON_KEY = "${(import.meta.env.SUPABASE_ANON_KEY || "").replace(/\s/g, "")}";  -->
-    <!-- SimpleProjectLogger is now handled server-side only -->
+    <script>
+      if (
+        localStorage.getItem("color-theme") === "dark" ||
+        (!("color-theme" in localStorage) &&
+          window.matchMedia("(prefers-color-scheme: dark)").matches)
+      ) {
+        document.documentElement.classList.add("v2fLMH8w3xgUEQcl63H9", "dark");
+      } else {
+        document.documentElement.classList.remove("v2fLMH8w3xgUEQcl63H9", "dark");
+      }
+    </script>
   </head>
-  <body class="h-min-screen bg-background-light dark:bg-background-dark md:flex md:justify-center">
+
+  <!-- Inject environment variables for client-side use FIRST -->
+  <script
+    set:html={`window.GOOGLE_MAPS_API_KEY = "${import.meta.env.GOOGLE_MAPS_API_KEY || ""}"; window.GOOGLE_PLACES_API_KEY = "${import.meta.env.GOOGLE_PLACES_API_KEY || ""}"; window.STRIPE_PUBLISHABLE_KEY = "${import.meta.env.PUBLIC_STRIPE_PUBLISHABLE_KEY || ""}";`}
+  />
+
+  <!-- ${currentUser ? `window.USER_DATA = ${JSON.stringify(currentUser)};` : ""}
+    window.SUPABASE_URL = "${import.meta.env.SUPABASE_URL || ""}"; window.SUPABASE_ANON_KEY = "${(import.meta.env.SUPABASE_ANON_KEY || "").replace(/\s/g, "")}";  -->
+  <!-- SimpleProjectLogger is now handled server-side only -->
+
+  <body class="jtAJHOc7mn7b4IKRO59D h8KYXnua2NT4kTVzieom KRANKvs7gs1E_d0fCA0k">
     <!-- Preloader -->
     <Preloader />
     <!-- Loading Overlay for Save Operations -->
-    <main class="section relative mx-auto w-full max-w-[2000px]">
-      <Header
+    <!-- <main class="main-content"> -->
+    <!-- <Header
         isAuth={isAuth}
         currentUser={currentUser}
         currentRole={currentRole || ""}
@@ -195,23 +204,41 @@ if ((currentUser?.id && currentRole === "Staff") || currentRole === "Admin") {
         assignedProjects={assignedProjects}
         assignedProjectsCount={assignedProjectsCount}
         desktopNavigationHTML={desktopNavigationHTML}
-      />
-      <slot />
-      <!-- F
-o       oter -->
-      <Footer
-        isAuth={isAuth}
-        session={session}
-        currentUser={currentUser}
-        currentRole={currentRole || ""}
-        assignedProjects={assignedProjects}
-        assignedProjectsCount={assignedProjectsCount}
-        desktopNavigationHTML={desktopNavigationHTML}
-        project={project}
-        projectId={projectId}
-      />
-    </main>
+      /> -->
+    {
+      !noNavigation ? (
+        <>
+          <FlowbiteNavbar
+            currentUrl={currentUrl}
+            desktopNavigationHTML={desktopNavigationHTML}
+            isAuth={isAuth}
+            currentUser={currentUser}
+            currentRole={currentRole}
+            session={session}
+            isBackend={isBackend}
+          />
 
+          <div class="YRrCJSr_j5nopfm4duUc wBVMFkIGfrKshbvi2gS1 jtAJHOc7mn7b4IKRO59D UZ9xFK4mqjHjj8e8yJwf h8KYXnua2NT4kTVzieom">
+            <FlowbiteAside />
+
+            <slot />
+          </div>
+        </>
+      ) : (
+        <slot />
+      )
+    }
+    <!-- Footer -->
+
+    <UserCenter
+      isAuth={isAuth}
+      currentUser={currentUser}
+      currentRole={currentRole || ""}
+      session={session}
+      visibleNavItems={visibleNavItems}
+      desktopNavigationHTML={desktopNavigationHTML}
+      project={project}
+    />
     <!-- Unified Notification System -->
     <UnifiedNotification />
     <!-- Cookie Banner -->
@@ -223,239 +250,220 @@ o       oter -->
       currentRole={currentRole || ""}
       isAuth={isAuth}
     />
+  </body>
 
-    <script>
-      // Import UX utilities
-      import {
-        debounce,
-        fixSafariViewport,
-        getViewportSize,
-        handleUrlNotification,
-        hideOnFormFocus,
-        hideOnMobileInput,
-        isDesktop,
-        isMobile,
-        isSafariIOS,
-        isTablet,
-        lockBodyScroll,
-        scrollToTop,
-        scrollToTopOnMobile,
-        setupViewportHandling,
-        throttle,
-        unlockBodyScroll,
-      } from "../../lib/ux-utils.ts";
+  <script src="../../assets/js/app.bundle.js"></script>
 
-      // Make UX utilities globally available
-      (window as any).scrollToTopOnMobile = scrollToTopOnMobile;
-      (window as any).scrollToTop = scrollToTop;
-      (window as any).isMobile = isMobile;
-      (window as any).isTablet = isTablet;
-      (window as any).isDesktop = isDesktop;
-      (window as any).isSafariIOS = isSafariIOS;
-      (window as any).fixSafariViewport = fixSafariViewport;
-      (window as any).setupViewportHandling = setupViewportHandling;
-      (window as any).getViewportSize = getViewportSize;
-      (window as any).debounce = debounce;
-      (window as any).throttle = throttle;
-      (window as any).handleUrlNotification = handleUrlNotification;
-      (window as any).hideOnFormFocus = hideOnFormFocus;
-      (window as any).hideOnMobileInput = hideOnMobileInput;
-      (window as any).lockBodyScroll = lockBodyScroll;
-      (window as any).unlockBodyScroll = unlockBodyScroll;
+  <!-- Flowbite JavaScript -->
+  <!-- <script src="https://unpkg.com/flowbite@2.5.2/dist/flowbite.min.js"></script> -->
 
-      // Initialize viewport handling for all elements
-      setupViewportHandling();
+  <script>
+    // Import UX utilities
+    import {
+      debounce,
+      fixSafariViewport,
+      getViewportSize,
+      handleUrlNotification,
+      hideOnFormFocus,
+      isDesktop,
+      isMobile,
+      isSafariIOS,
+      isTablet,
+      lockBodyScroll,
+      scrollToTop,
+      scrollToTopOnMobile,
+      setupViewportHandling,
+      throttle,
+      unlockBodyScroll,
+    } from "../../lib/ux-utils.ts";
 
-      document.addEventListener("DOMContentLoaded", () => {
-        const currentUrl = new URL(window.location.href);
-        const errorParam = currentUrl.searchParams.get("error");
-        const messageParam = currentUrl.searchParams.get("message");
+    // Make UX utilities globally available
+    (window as any).scrollToTopOnMobile = scrollToTopOnMobile;
+    (window as any).scrollToTop = scrollToTop;
+    (window as any).isMobile = isMobile;
+    (window as any).isTablet = isTablet;
+    (window as any).isDesktop = isDesktop;
+    (window as any).isSafariIOS = isSafariIOS;
+    (window as any).fixSafariViewport = fixSafariViewport;
+    (window as any).setupViewportHandling = setupViewportHandling;
+    (window as any).getViewportSize = getViewportSize;
+    (window as any).debounce = debounce;
+    (window as any).throttle = throttle;
+    (window as any).handleUrlNotification = handleUrlNotification;
+    (window as any).hideOnFormFocus = hideOnFormFocus;
+    (window as any).lockBodyScroll = lockBodyScroll;
+    (window as any).unlockBodyScroll = unlockBodyScroll;
 
-        // Handle error messages
-        if (errorParam) {
-          handleUrlNotification("error", errorParam);
-        }
+    // Initialize viewport handling for all elements
+    setupViewportHandling();
 
-        // Handle success messages
-        if (messageParam) {
-          handleUrlNotification("success", messageParam);
-        }
-      });
-    </script>
+    document.addEventListener("DOMContentLoaded", () => {
+      const currentUrl = new URL(window.location.href);
+      const errorParam = currentUrl.searchParams.get("error");
+      const messageParam = currentUrl.searchParams.get("message");
 
-    <!-- Expose centralized notification system to window object -->
-    <script>
-      // Suppress ResizeObserver loop warnings (they're usually harmless)
-      window.addEventListener("error", (e) => {
-        if (e.message === "ResizeObserver loop completed with undelivered notifications.") {
-          e.stopImmediatePropagation();
-        }
-      });
+      // Handle error messages
+      if (errorParam) {
+        handleUrlNotification("error", errorParam);
+      }
 
-      // Centralized notification handler for update-status API responses
-      (window as any).handleUpdateStatusNotification = function (response: any, context: any) {
-        if (!response.success) {
-          console.error(`❌ [${context || "NOTIFICATION"}] API call failed:`, response.error);
+      // Handle success messages
+      if (messageParam) {
+        handleUrlNotification("success", messageParam);
+      }
+    });
+  </script>
+
+  <!-- Expose centralized notification system to window object -->
+  <script>
+    // Suppress ResizeObserver loop warnings (they're usually harmless)
+    window.addEventListener("error", (e) => {
+      if (e.message === "ResizeObserver loop completed with undelivered notifications.") {
+        e.stopImmediatePropagation();
+      }
+    });
+
+    // Centralized notification handler for update-status API responses
+    (window as any).handleUpdateStatusNotification = function (response: any, context: any) {
+      if (!response.success) {
+        console.error(`❌ [${context || "NOTIFICATION"}] API call failed:`, response.error);
+        return;
+      }
+
+      if (!response.notificationData || !(window as any).showModal) {
+        console.warn(
+          `⚠️ [${context || "NOTIFICATION"}] No notification data or showModal function available`
+        );
+        return;
+      }
+
+      // Get user role from API response (more secure than frontend)
+      const currentUserRole = response.notificationData.currentUserRole || "Client";
+      const isAdminOrStaff = currentUserRole === "Admin" || currentUserRole === "Staff";
+      const notification = isAdminOrStaff
+        ? response.notificationData.admin
+        : response.notificationData.client;
+
+      if (notification) {
+        (window as any).showModal(
+          notification.type,
+          notification.title,
+          notification.message,
+          notification.duration,
+          notification.redirect
+        );
+      } else {
+        console.warn(
+          `⚠️ [${context || "NOTIFICATION"}] No ${isAdminOrStaff ? "admin" : "client"} notification found in response`
+        );
+      }
+    };
+  </script>
+
+  <!-- Magic Link Authentication Handler -->
+  <script>
+    // Global magic link authentication handler
+    (window as any).handleMagicLinkAuth = async function () {
+      try {
+        // Check if we have auth tokens in the URL fragment
+        const fragment = window.location.hash.substring(1);
+        if (!fragment) return;
+
+        const params = new URLSearchParams(fragment);
+        const accessToken = params.get("access_token");
+        const refreshToken = params.get("refresh_token");
+        const expiresIn = params.get("expires_in");
+        const tokenType = params.get("token_type");
+        const type = params.get("type");
+
+        // Only handle magic link callbacks
+        if (!accessToken || !refreshToken || type !== "magiclink") {
           return;
         }
 
-        if (!response.notificationData || !(window as any).showModal) {
-          console.warn(
-            `⚠️ [${context || "NOTIFICATION"}] No notification data or showModal function available`
+        console.log("🔐 [MAGIC-LINK] Processing magic link authentication...");
+
+        // Set auth cookies via API call
+        const response = await fetch("/api/auth/callback", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            access_token: accessToken,
+            refresh_token: refreshToken,
+            expires_in: parseInt(expiresIn || "3600"),
+            token_type: tokenType || "bearer",
+          }),
+        });
+
+        if (response.ok) {
+          console.log("✅ [MAGIC-LINK] Authentication successful, redirecting...");
+
+          // Clear the URL fragment to prevent reprocessing
+          window.history.replaceState(
+            {},
+            document.title,
+            window.location.pathname + window.location.search
           );
-          return;
-        }
 
-        // Get user role from API response (more secure than frontend)
-        const currentUserRole = response.notificationData.currentUserRole || "Client";
-        const isAdminOrStaff = currentUserRole === "Admin" || currentUserRole === "Staff";
-        const notification = isAdminOrStaff
-          ? response.notificationData.admin
-          : response.notificationData.client;
-
-        if (notification) {
-          // console.log(
-          //   `🔔 [${context || "NOTIFICATION"}] Showing ${isAdminOrStaff ? "admin" : "client"} notification:`,
-          //   {
-          //     type: notification.type,
-          //     title: notification.title,
-          //     message: notification.message,
-          //     redirect: notification.redirect,
-          //     userRole: currentUserRole,
-          //   }
-          // );
-
-          (window as any).showModal(
-            notification.type,
-            notification.title,
-            notification.message,
-            notification.duration,
-            notification.redirect
-          );
+          // Redirect to dashboard
+          window.location.href = "/dashboard";
         } else {
-          console.warn(
-            `⚠️ [${context || "NOTIFICATION"}] No ${isAdminOrStaff ? "admin" : "client"} notification found in response`
-          );
-        }
-      };
-    </script>
-
-    <!-- Magic Link Authentication Handler -->
-    <script>
-      // Global magic link authentication handler
-      (window as any).handleMagicLinkAuth = async function () {
-        try {
-          // Check if we have auth tokens in the URL fragment
-          const fragment = window.location.hash.substring(1);
-          if (!fragment) return;
-
-          const params = new URLSearchParams(fragment);
-          const accessToken = params.get("access_token");
-          const refreshToken = params.get("refresh_token");
-          const expiresIn = params.get("expires_in");
-          const tokenType = params.get("token_type");
-          const type = params.get("type");
-
-          // Only handle magic link callbacks
-          if (!accessToken || !refreshToken || type !== "magiclink") {
-            return;
-          }
-
-          console.log("🔐 [MAGIC-LINK] Processing magic link authentication...");
-
-          // Set auth cookies via API call
-          const response = await fetch("/api/auth/callback", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              access_token: accessToken,
-              refresh_token: refreshToken,
-              expires_in: parseInt(expiresIn || "3600"),
-              token_type: tokenType || "bearer",
-            }),
-          });
-
-          if (response.ok) {
-            console.log("✅ [MAGIC-LINK] Authentication successful, redirecting...");
-
-            // Clear the URL fragment to prevent reprocessing
-            window.history.replaceState(
-              {},
-              document.title,
-              window.location.pathname + window.location.search
-            );
-
-            // Redirect to dashboard
-            window.location.href = "/dashboard";
-          } else {
-            const errorData = await response.json();
-            console.error("❌ [MAGIC-LINK] Authentication failed:", errorData);
-
-            // Show error message to user
-            if (typeof (window as any).showModal === "function") {
-              (window as any).showModal(
-                "error",
-                "Login Failed",
-                "There was an error processing your login. Please try again."
-              );
-            }
-          }
-        } catch (error) {
-          console.error("❌ [MAGIC-LINK] Error processing magic link:", error);
+          const errorData = await response.json();
+          console.error("❌ [MAGIC-LINK] Authentication failed:", errorData);
 
           // Show error message to user
           if (typeof (window as any).showModal === "function") {
             (window as any).showModal(
               "error",
-              "Login Error",
-              "There was an unexpected error. Please try again."
+              "Login Failed",
+              "There was an error processing your login. Please try again."
             );
           }
         }
-      };
+      } catch (error) {
+        console.error("❌ [MAGIC-LINK] Error processing magic link:", error);
 
-      // Run magic link handler on page load
-      document.addEventListener("DOMContentLoaded", (window as any).handleMagicLinkAuth);
-
-      // Also run immediately in case DOM is already loaded
-      if (document.readyState === "loading") {
-        // DOM is still loading, event listener will handle it
-      } else {
-        // DOM is already loaded, run immediately
-        (window as any).handleMagicLinkAuth();
-      }
-    </script>
-
-    <!-- Flowbite JavaScript -->
-    <script src="https://unpkg.com/flowbite@2.5.2/dist/flowbite.min.js"></script>
-    <script>
-      // Initialize Flowbite components
-      document.addEventListener("DOMContentLoaded", function () {
-        if (typeof (window as any).initFlowbite === "function") {
-          (window as any).initFlowbite();
+        // Show error message to user
+        if (typeof (window as any).showModal === "function") {
+          (window as any).showModal(
+            "error",
+            "Login Error",
+            "There was an unexpected error. Please try again."
+          );
         }
-      });
-    </script>
-
-    <!-- Service Worker Registration for PWA -->
-    <script>
-      // Register service worker for PWA functionality
-      if ("serviceWorker" in navigator) {
-        window.addEventListener("load", () => {
-          navigator.serviceWorker
-            .register("/sw.js")
-            .then((registration) => {
-              console.log("✅ Service Worker registered successfully:", registration.scope);
-            })
-            .catch((error) => {
-              console.log("❌ Service Worker registration failed:", error);
-            });
-        });
-      } else {
-        console.log("❌ Service Worker not supported in this browser");
       }
-    </script>
-  </body>
+    };
+
+    // Run magic link handler on page load
+    document.addEventListener("DOMContentLoaded", (window as any).handleMagicLinkAuth);
+
+    // Also run immediately in case DOM is already loaded
+    if (document.readyState === "loading") {
+      // DOM is still loading, event listener will handle it
+    } else {
+      // DOM is already loaded, run immediately
+      (window as any).handleMagicLinkAuth();
+    }
+  </script>
+
+  <!-- Service Worker Registration for PWA -->
+  <script>
+    // Register service worker for PWA functionality
+    if ("serviceWorker" in navigator) {
+      window.addEventListener("load", () => {
+        navigator.serviceWorker
+          .register("/sw.js")
+          .then((registration) => {
+            console.log("✅ Service Worker registered successfully:", registration.scope);
+          })
+          .catch((error) => {
+            console.log("❌ Service Worker registration failed:", error);
+          });
+      });
+    } else {
+      console.log("❌ Service Worker not supported in this browser");
+    }
+  </script>
 </html>

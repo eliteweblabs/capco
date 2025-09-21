@@ -1,8 +1,45 @@
 ---
+// import { isBackendPage } from "../../pages/api/backend-page-check";
+// import { navigation } from "@/pages/api/navigation";
+
+// interface Props {
+//   requireAuthRedirect?: string;
+//   title?: string;
+//   description?: string;
+//   currentUser?: any;
+//   session?: any;
+//   project?: any;
+//   supabase?: any;
+//   supabaseAdmin?: any;
+// }
+
+// const {
+//   requireAuthRedirect = "",
+//   currentUser = undefined,
+//   title = undefined,
+//   description = undefined,
+//   session = undefined,
+//   project = undefined,
+//   supabase = undefined,
+//   supabaseAdmin = undefined,
+// } = Astro.props;
+
+const requireAuthRedirect = "/login";
+import { checkAuth } from "../../lib/auth";
+const { currentUser, session, supabase, refreshToken, accessToken } = await checkAuth(
+  Astro.cookies
+);
+// Handle auth redirect first
+if (requireAuthRedirect && (!session || !currentUser)) {
+  return Astro.redirect(requireAuthRedirect);
+}
+const currentRole = currentUser?.role;
+const currentUserId = currentUser?.id;
+const { id } = Astro.params;
+
 import App from "../../components/common/App.astro";
 import SectionContainer from "../../components/common/SectionContainer.astro";
 import HeroProject from "../../components/common/HeroProject.astro";
-
 import SlidingPillNav from "../../components/common/SlidingPillNav.astro";
 import TabDocuments from "../../components/project/TabDocuments.astro";
 import TabDiscussions from "../../components/project/TabDiscussions.astro";
@@ -14,24 +51,11 @@ import TabFinalInvoice from "../../components/project/TabFinalInvoice.astro";
 import TabActivityLog from "../../components/project/TabActivityLog.astro";
 import TabGeneratePdf from "../../components/project/TabGeneratePdf.astro";
 import { getI18N } from "@/i18n";
-import { supabase } from "../../lib/supabase";
 import "../../lib/refresh-manager.ts";
 
-const { currentLocale } = Astro;
-const i18n = getI18N({ currentLocale });
-
 // Get the project ID from the URL parameter
-const { id } = Astro.params;
 
 // console.log("🚀 [PROJECT] Front matter starting execution for project ID:", id);
-
-// Get auth data directly since App component handles auth requirements
-import { checkAuth } from "../../lib/auth";
-const { currentUser, currentRole = "Client", isAuth } = await checkAuth(Astro.cookies);
-
-if (!isAuth) {
-  return Astro.redirect("/login");
-}
 
 // console.log("🚀 [PROJECT] Current user:", currentUser);
 // Removed getAuthorInfoServer function - using direct database queries for better performance
@@ -109,12 +133,7 @@ if (supabase) {
       .single(),
 
     // 3. Get status labels (parallel with other queries)
-    supabase
-      .from("project_statuses")
-      .select(
-        "status_code, admin_status_name, client_status_name, client_project_action, admin_project_action, client_status_tab, admin_status_tab, status_color"
-      )
-      .order("status_code"),
+    supabase.from("project_statuses").select("*").order("status_code"),
   ]);
 
   const invoiceResult = invoiceResultData || { data: null, error: null };
@@ -335,26 +354,15 @@ if (!project) {
 <App
   title={`${project?.address || project?.title || "Untitled Project"} - CAPCo Fire Protection`}
   description={`${project?.address || project?.title || "Untitled Project"} - CAPCo Fire Protection`}
-  isAuth={!!currentUser}
   currentUser={currentUser}
-  currentRole={currentRole || "Client"}
-  session={null}
-  project={project}
-  projectId={projectId}
+  project={undefined}
+  session={session}
+  supabase={supabase}
 >
-  <!-- Add Supabase URL meta tag for image loading -->
-  <meta name="supabase-url" content={import.meta.env.PUBLIC_SUPABASE_URL} />
   <HeroProject
     title={project?.address || project?.title || "Untitled Project"}
-    description={`<div class="space-y-1">
-      <div class="inline-flex items-center">
-        <i class="bx bx-user mr-2 text-gray-500"></i>
-        <span class="font-medium">${project?.company_name || "Unknown Author"}</span>
-      </div>
-     
-    </div>`}
+    description={project?.company_name || "Unknown Author"}
     statusColor={currentStatusColor}
-    projectId={projectId}
     currentStatusInt={currentStatusInt.toString()}
     currentStatusName={currentStatusName || undefined}
     currentRole={currentRole || "Client"}
@@ -363,6 +371,7 @@ if (!project) {
     authorProfile={authorProfile}
     currentStatusTab={currentStatusTab || undefined}
   />
+
   <SectionContainer>
     <!-- Tab Navigation -->
     <SlidingPillNav
@@ -827,30 +836,14 @@ if (!project) {
           onHide: () => {
             console.log("Drawer is hidden");
 
-            // Remove drawer-open class from body
-            document.body.classList.remove("drawer-open");
-
             // Remove the manually created backdrop when drawer closes
             const backdrop = document.querySelector("[drawer-backdrop]");
             if (backdrop) {
               backdrop.remove();
             }
-
-            // Unlock body scroll when drawer closes
-            if (window.unlockBodyScroll) {
-              window.unlockBodyScroll();
-            }
           },
           onShow: () => {
             console.log("Drawer is shown");
-
-            // Add drawer-open class to body
-            document.body.classList.add("drawer-open");
-
-            // Lock body scroll when drawer opens
-            if (window.lockBodyScroll) {
-              window.lockBodyScroll();
-            }
           },
           onToggle: () => {
             console.log("Drawer has been toggled");
@@ -863,16 +856,7 @@ if (!project) {
         // Add event listeners for drawer close buttons
         const closeButtons = document.querySelectorAll('[data-drawer-hide="drawer-user-center"]');
         closeButtons.forEach((button) => {
-          button.addEventListener("click", () => {
-            // Remove drawer-open class from body
-            document.body.classList.remove("drawer-open");
-
-            cleanupDrawerBackdrop();
-            // Unlock body scroll when manually closing drawer
-            if (window.unlockBodyScroll) {
-              window.unlockBodyScroll();
-            }
-          });
+          button.addEventListener("click", cleanupDrawerBackdrop);
         });
 
         // Open the drawer using Flowbite's method
@@ -893,16 +877,7 @@ if (!project) {
           if (backdrop) {
             backdrop.addEventListener("click", () => {
               // Backdrop click will be handled by Flowbite, but we can also clean up
-              setTimeout(() => {
-                // Remove drawer-open class from body
-                document.body.classList.remove("drawer-open");
-
-                cleanupDrawerBackdrop();
-                // Unlock body scroll when backdrop is clicked
-                if (window.unlockBodyScroll) {
-                  window.unlockBodyScroll();
-                }
-              }, 100);
+              setTimeout(cleanupDrawerBackdrop, 100);
             });
           }
 

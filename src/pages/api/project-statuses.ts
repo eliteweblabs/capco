@@ -87,7 +87,7 @@ export interface ProjectStatusesResponse {
 export const GET: APIRoute = async ({ request, cookies, url }) => {
   try {
     // Check authentication and get user role
-    const { currentUser, currentRole } = await checkAuth(cookies);
+    const { currentUser } = await checkAuth(cookies);
     if (!currentUser) {
       return new Response(JSON.stringify({ error: "Authentication required" }), {
         status: 401,
@@ -108,8 +108,6 @@ export const GET: APIRoute = async ({ request, cookies, url }) => {
     const clientName = url.searchParams.get("clientName");
     const clientEmail = url.searchParams.get("clientEmail");
     const statusCode = url.searchParams.get("status_code");
-
-    console.log("🔍 [PROJECT-STATUSES-API] Fetching statuses for role:", currentRole);
 
     // If status_code is provided, return specific status data
     if (statusCode) {
@@ -142,9 +140,7 @@ export const GET: APIRoute = async ({ request, cookies, url }) => {
     // Fetch all project statuses from database
     const { data: statusesData, error: statusesError } = await supabaseAdmin
       .from("project_statuses")
-      .select(
-        "status_code, admin_status_name, client_status_name, admin_project_action, client_project_action, client_status_tab, admin_status_tab, status_color"
-      )
+      .select("*")
       .neq("status_code", 0)
       .order("status_code");
 
@@ -181,7 +177,11 @@ export const GET: APIRoute = async ({ request, cookies, url }) => {
     // Process statuses for the current user's role with placeholder processing
     const roleBasedStatuses = statuses.reduce((acc: any, status: any) => {
       // Get role-filtered status object
-      const processedStatus = filteredStatusObj(status, currentRole || "Client", placeholderData);
+      const processedStatus = filteredStatusObj(
+        status,
+        currentUser.role || "Client",
+        placeholderData
+      );
 
       // Create unified status object
       acc[status.status_code] = {
@@ -213,12 +213,7 @@ export const GET: APIRoute = async ({ request, cookies, url }) => {
       label: status.status_name,
     }));
 
-    console.log(
-      "✅ [PROJECT-STATUSES-API] Processed",
-      statuses.length,
-      "statuses for role:",
-      currentRole
-    );
+    console.log("✅ [PROJECT-STATUSES-API] Processed", statuses.length, "statuses for role:");
 
     const response: ProjectStatusesResponse = {
       success: true,
@@ -226,7 +221,7 @@ export const GET: APIRoute = async ({ request, cookies, url }) => {
       statusesMap, // Raw statuses as map
       roleBasedStatuses, // Role-processed statuses with placeholders
       selectOptions, // For form selects
-      userRole: currentRole || "Client",
+      userRole: currentUser.role || "Client",
     };
 
     return new Response(JSON.stringify(response), {

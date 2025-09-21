@@ -1,91 +1,17 @@
 ---
-import AuthIcon from "./AuthIcon.astro";
-import Button from "./Button.astro";
-import HamburgerIcon from "./Hamburger.astro";
-import Logo from "./Logo.astro";
-import SectionContainer from "./SectionContainer.astro";
-import ThemeToggle from "./ThemeToggle.astro";
+import FlowbiteNavbar from "./FlowbiteNavbar.astro";
 
-const { isAuth, currentUser, currentRole, session, desktopNavigationHTML } = Astro.props;
+const { isAuth, currentUser, currentRole, session, desktopNavigationHTML, isBackend } = Astro.props;
 
 const { id } = Astro.params;
 ---
 
-<header
-  class="sticky top-0 z-50 border-b border-border-light bg-background-light backdrop-blur-sm dark:border-border-dark dark:bg-background-dark"
->
-  <SectionContainer fullWidth={true} py="py-0 sm:py-0 md:py-0 lg:py-0 xl:py-0">
-    <nav>
-      <div class="flex h-16 items-center justify-between">
-        {/* Logo */}
-
-        {
-          id && (
-            <div class="absolute -left-6 -top-1.5 flex items-center space-x-2">
-              <Button
-                href="/dashboard"
-                variant="anchor"
-                size="xl"
-                icon="chevron-left"
-                class="disabled block text-black dark:text-white"
-              />
-            </div>
-          )
-        }
-        {
-          id ? (
-            <div class="ml-12 flex-shrink-0">
-              <Logo link="/" file="svg" />
-            </div>
-          ) : (
-            <div class="flex-shrink-0">
-              <Logo link="/" file="svg" />
-            </div>
-          )
-        }
-
-        {/* Unified Navigation - Desktop */}
-        <div class="hidden items-center space-x-8 md:flex" set:html={desktopNavigationHTML} />
-
-        {/* Mobile Controls */}
-        <div class="flex items-center space-x-4">
-          <ThemeToggle />
-          {
-            !isAuth ? (
-              <div class="block">
-                <AuthIcon
-                  isAuth={isAuth}
-                  currentUser={currentUser}
-                  currentRole={currentRole}
-                  session={session}
-                  class=""
-                />
-              </div>
-            ) : (
-              <div class="block md:hidden">
-                <AuthIcon
-                  isAuth={isAuth}
-                  currentUser={currentUser}
-                  currentRole={currentRole}
-                  session={session}
-                  class=""
-                />
-              </div>
-            )
-          }
-          {
-            !isAuth ? (
-              <div class="block md:hidden">
-                <HamburgerIcon />
-              </div>
-            ) : (
-              <div class="block">
-                <HamburgerIcon />
-              </div>
-            )
-          }
-        </div>
-      </div>
-    </nav>
-  </SectionContainer>
-</header>
+<FlowbiteNavbar
+  isAuth={isAuth}
+  currentUser={currentUser}
+  currentRole={currentRole}
+  session={session}
+  desktopNavigationHTML={desktopNavigationHTML}
+  id={id}
+  isBackend={isBackend}
+/>

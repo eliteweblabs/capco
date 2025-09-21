@@ -1,0 +1,87 @@
+---
+// User center component for header
+
+const { currentUser } = Astro.props;
+
+const currentRole = currentUser?.role;
+let assignedProjectsCount = 0;
+let assignedProjects: any[] = [];
+
+if (currentRole === "Staff" || currentRole === "Admin") {
+  // console.log("🏗️ [APP] Fetching assigned projects for user:", currentUser.id);
+  const baseUrl = Astro.url.origin;
+  const fullUrl = `${baseUrl}/api/get-project?assigned_to_id=${currentUser.id}`;
+  // console.log("🏗️ [APP] Full URL:", fullUrl);
+  try {
+    const response = await fetch(fullUrl);
+    if (response.ok) {
+      const data = await response.json();
+      // console.log("🏗️ [APP] Assigned projects:", data);
+      assignedProjects = data.projects || [];
+      assignedProjectsCount = data.projects.length || 0;
+    }
+  } catch (error) {
+    console.error("Error fetching assigned projects:", error);
+  }
+} else if (currentRole === "Client") {
+  const baseUrl = Astro.url.origin;
+  const fullUrl = `${baseUrl}/api/get-project?author_id=${currentUser.id}`;
+  // console.log("🏗️ [APP] Full URL:", fullUrl);
+  try {
+    const response = await fetch(fullUrl);
+    if (response.ok) {
+      const data = await response.json();
+      // console.log("🏗️ [APP] Assigned projects:", data);
+      assignedProjects = data.projects || [];
+      assignedProjectsCount = data.projects.length || 0;
+    }
+  } catch (error) {
+    console.error("Error fetching assigned projects:", error);
+  }
+}
+
+// Fetch projects assigned to current user
+---
+
+<div class="mb-6">
+  <h3 class="mb-4 text-lg font-medium text-gray-900 dark:text-white">
+    {currentRole === "Client" ? "Your Projects: " : "Assigned Projects: "}(
+    {assignedProjectsCount})
+  </h3>
+
+  {
+    assignedProjectsCount > 0 ? (
+      <div class="space-y-2">
+        {assignedProjects.slice(0, 5).map((project: any) => (
+          <a
+            href={`/project/${project.id}`}
+            class="block rounded-lg border border-gray-200 p-3 transition-colors hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-700"
+          >
+            <div class="flex items-start justify-between">
+              <div class="min-w-0 flex-1">
+                <p class="truncate text-sm font-medium text-gray-900 dark:text-white">
+                  {project.title || "Untitled Project"}
+                </p>
+                <p class="truncate text-xs text-gray-500 dark:text-gray-400">
+                  {project.address || "No address"}
+                </p>
+                <p class="text-xs text-gray-400 dark:text-gray-500">
+                  Status: {project.status || "Unknown"}
+                </p>
+              </div>
+              <div class="ml-2 flex-shrink-0">
+                <span class="inline-flex items-center rounded-full bg-blue-100 px-2 py-1 text-xs font-medium text-blue-800 dark:bg-blue-900 dark:text-blue-200">
+                  {project.comment_count || 0} comments
+                </span>
+              </div>
+            </div>
+          </a>
+        ))}
+      </div>
+    ) : (
+      <div class="py-4 text-center">
+        <p class="text-sm text-gray-500 dark:text-gray-400">No projects assigned to you</p>
+      </div>
+    )
+  }
+</div>

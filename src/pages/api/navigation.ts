@@ -37,20 +37,20 @@ export const navigation = (
   // Navigation items
   const navItems: NavItem[] = [
     // Frontend navigation (hidden on backend pages to reduce clutter)
-    // {
-    //   label: "Why CAPCo",
-    //   href: "#",
-    //   roles: ["any"],
-    //   pageType: "frontend",
-    //   isPrimary: false,
-    //   isDropdown: true,
-    //   dropdownItems: [
-    //     { label: "Unified Fire Protection Platform", href: "/solutions" },
-    //     { label: "CAPCo vs Competitors", href: "/solutions" },
-    //     { label: "Move to CAPCo", href: "/solutions" },
-    //     { label: "See Our Customers", href: "/customers" },
-    //   ],
-    // },
+    {
+      label: "Why CAPCo",
+      href: "#",
+      roles: ["any"],
+      pageType: "frontend",
+      isPrimary: false,
+      isDropdown: true,
+      dropdownItems: [
+        { label: "Unified Fire Protection Platform", href: "/solutions" },
+        { label: "CAPCo vs Competitors", href: "/solutions" },
+        { label: "Move to CAPCo", href: "/solutions" },
+        { label: "See Our Customers", href: "/customers" },
+      ],
+    },
     // {
     //   label: "Pricing",
     //   href: "/pricing",
@@ -59,26 +59,17 @@ export const navigation = (
     //   isPrimary: currentUrl.startsWith("/pricing"),
     //   desktopOnly: true,
     // },
-    {
-      label: "Book Demo",
-      href: "/demo",
-      roles: ["any"],
-      pageType: "frontend",
-      isPrimary: currentUrl.startsWith("/demo"),
-      buttonStyle: "primary",
-      desktopOnly: true,
-      hideWhenAuth: true,
-    },
-    {
-      label: "Email Your Project",
-      href: "mailto:project@new.capcofire.com",
-      roles: ["any"],
-      pageType: "frontend",
-      isPrimary: false,
-      buttonStyle: "outline",
-      desktopOnly: false,
-      hideWhenAuth: true,
-    },
+    // {
+    //   label: "Book Demo",
+    //   href: "/demo",
+    //   roles: ["any"],
+    //   pageType: "frontend",
+    //   isPrimary: currentUrl.startsWith("/demo"),
+    //   buttonStyle: "outline",
+    //   desktopOnly: true,
+    //   hideWhenAuth: true,
+    // },
+
     // Backend navigation (shown on backend pages)
     {
       label: "New Project",
@@ -94,6 +85,16 @@ export const navigation = (
       pageType: "frontend",
       isDrawer: false, // Special flag for drawer trigger
       isPrimary: currentUrl.startsWith("/projects"),
+    },
+    {
+      label: "Email Your Project",
+      href: "mailto:project@new.capcofire.com",
+      roles: ["any"],
+      pageType: "frontend",
+      isPrimary: false,
+      buttonStyle: "outline",
+      desktopOnly: false,
+      hideWhenAuth: true,
     },
     {
       label: "Discussions",
@@ -168,10 +169,9 @@ export const navigation = (
       // Handle dropdown items
       if (item.isDropdown && item.dropdownItems) {
         return `
-          <div class="group relative">
-            <button
-              type="button"
-              class="inline-flex items-center justify-center font-medium rounded-full transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed px-3 py-2 text-sm ${
+          <li class="group relative">
+            <a
+              class="block px-3 py-2 md:p-0 text-black hover:text-primary dark:text-white dark:hover:text-primary ${
                 item.isPrimary
                   ? "text-primary dark:text-primary-dark"
                   : "text-black dark:text-white"
@@ -179,7 +179,7 @@ export const navigation = (
             >
               ${item.label}
               <i class="bx bx-chevron-down ml-1 h-4 w-4"></i>
-            </button>
+            </a>
             <div class="invisible absolute left-0 mt-2 w-64 rounded-lg border border-border-light bg-background-card opacity-0 shadow-lg transition-all duration-200 group-hover:visible group-hover:opacity-100 dark:border-border-dark dark:bg-background-card-dark">
               <div class="py-1">
                 ${item.dropdownItems
@@ -187,7 +187,8 @@ export const navigation = (
                     (dropdownItem: DropdownItem) => `
                   <a
                     href="${dropdownItem.href}"
-                    class="block px-4 py-2 text-sm text-text-secondary hover:bg-neutral-100 dark:text-text-secondary-dark dark:hover:bg-neutral-700"
+                                class="block px-3 py-2 text-black hover:text-primary dark:text-white dark:hover:text-primary md:p-0"
+
                   >
                     ${dropdownItem.label}
                   </a>
@@ -196,7 +197,7 @@ export const navigation = (
                   .join("")}
               </div>
             </div>
-          </div>
+          </li>
         `;
       }
 
@@ -205,18 +206,18 @@ export const navigation = (
         // Since we can't use fetch() during SSR, create the button HTML manually
         // This matches the Button component's output structure
 
-        return `<a href="${item.href}" class="relative inline-flex items-center justify-center font-medium rounded-full transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed px-5 py-2.5 text-sm bg-primary-500 text-white hover:bg-primary-600 dark:bg-primary-500 dark:hover:bg-primary-600 shadow-lg hover:shadow-xl w-full">${item.label}</a>`;
+        return `<li><a href="${item.href}" class="relative inline-flex items-center justify-center font-medium rounded-full transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed px-3 py-1.5 text-sm bg-primary-500 text-white hover:bg-primary-600 dark:bg-primary-500 dark:hover:bg-primary-600 shadow-lg hover:shadow-xl w-full">${item.label}</a></li>`;
       }
 
       // Handle regular links
       return `<li>
         <a
           href="${item.href}"
-          class="px-3 py-2 text-sm font-medium transition-colors ${
-            item.isPrimary
-              ? "text-prim dark:text-primary-dark"
-              : "hover:text-primary dark:hover:text-primary-dark text-black dark:text-white"
-          }"
+            class="block px-3 py-2 md:p-0 ${
+              item.isPrimary
+                ? "text-primary dark:text-primary-dark"
+                : "text-black hover:text-primary dark:text-white dark:hover:text-primary"
+            }"
         >
           ${item.label}
         </a>

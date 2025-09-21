@@ -1,0 +1,127 @@
+---
+// Flowbite Drawer Component
+// Based on Flowbite dashboard design patterns
+
+interface Props {
+  id: string;
+  title?: string;
+  position?: "left" | "right";
+  size?: "sm" | "md" | "lg" | "xl";
+  showCloseButton?: boolean;
+}
+
+const {
+  id,
+  title = "Drawer",
+  position = "right",
+  size = "md",
+  showCloseButton = true,
+} = Astro.props;
+
+const sizeClasses = {
+  sm: "w-80",
+  md: "w-96",
+  lg: "w-1/2",
+  xl: "w-2/3",
+};
+
+const positionClasses = {
+  left: "left-0 -translate-x-full",
+  right: "right-0 translate-x-full",
+};
+---
+
+<!-- Drawer toggle button -->
+<button
+  type="button"
+  class="fixed bottom-6 left-6 me-2 inline-flex items-center rounded-full bg-blue-700 p-4 text-center text-sm font-medium text-white hover:bg-blue-800 focus:ring-4 focus:ring-blue-300 dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800"
+  data-drawer-target={id}
+  data-drawer-show={id}
+  aria-controls={id}
+>
+  <i class="bx bx-plus text-xl"></i>
+  <span class="sr-only">Open drawer</span>
+</button>
+
+<!-- Drawer backdrop -->
+<div
+  id={`${id}-backdrop`}
+  class="fixed inset-0 z-40 hidden bg-gray-900 bg-opacity-50"
+  data-drawer-backdrop={id}
+>
+</div>
+
+<!-- Drawer -->
+<div
+  id={id}
+  class={`fixed top-0 ${position === "left" ? "left-0" : "right-0"} z-50 h-screen p-4 overflow-y-auto transition-transform ${positionClasses[position]} bg-white ${sizeClasses[size]} dark:bg-gray-800`}
+  tabindex="-1"
+  aria-labelledby={`${id}-label`}
+>
+  <h5
+    id={`${id}-label`}
+    class="mb-4 inline-flex items-center text-base font-semibold text-gray-500 dark:text-gray-400"
+  >
+    <i class="bx bx-menu mr-2"></i>
+    {title}
+  </h5>
+
+  {
+    showCloseButton && (
+      <button
+        type="button"
+        data-drawer-hide={id}
+        aria-controls={id}
+        class="absolute end-2.5 top-2.5 inline-flex h-8 w-8 items-center justify-center rounded-lg bg-transparent text-sm text-gray-400 hover:bg-gray-200 hover:text-gray-900 dark:hover:bg-gray-600 dark:hover:text-white"
+      >
+        <i class="bx bx-x text-lg" />
+        <span class="sr-only">Close drawer</span>
+      </button>
+    )
+  }
+
+  <div class="space-y-4">
+    <slot />
+  </div>
+</div>
+
+<script>
+  // Flowbite drawer JavaScript
+  document.addEventListener("DOMContentLoaded", function () {
+    const drawerButton = document.querySelector(`[data-drawer-target="${id}"]`);
+    const drawer = document.getElementById(id);
+    const closeButton = document.querySelector(`[data-drawer-hide="${id}"]`);
+    const backdrop = document.getElementById(`${id}-backdrop`);
+
+    if (drawerButton && drawer) {
+      drawerButton.addEventListener("click", function () {
+        drawer.classList.remove(position === "left" ? "-translate-x-full" : "translate-x-full");
+        drawer.classList.add("translate-x-0");
+        if (backdrop) {
+          backdrop.classList.remove("hidden");
+        }
+        document.body.style.overflow = "hidden";
+      });
+    }
+
+    if (closeButton && drawer) {
+      closeButton.addEventListener("click", function () {
+        drawer.classList.add(position === "left" ? "-translate-x-full" : "translate-x-full");
+        drawer.classList.remove("translate-x-0");
+        if (backdrop) {
+          backdrop.classList.add("hidden");
+        }
+        document.body.style.overflow = "auto";
+      });
+    }
+
+    if (backdrop) {
+      backdrop.addEventListener("click", function () {
+        drawer.classList.add(position === "left" ? "-translate-x-full" : "translate-x-full");
+        drawer.classList.remove("translate-x-0");
+        backdrop.classList.add("hidden");
+        document.body.style.overflow = "auto";
+      });
+    }
+  });
+</script>
