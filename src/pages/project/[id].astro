@@ -852,16 +852,18 @@ if (!project) {
 
         // Open the drawer using Flowbite's method
         if (currentRole !== "Client") {
-          drawer.show();
-
-          // Create backdrop element manually if it doesn't exist
+          // Create backdrop element before showing drawer
           let backdrop = document.querySelector("[drawer-backdrop]");
           if (!backdrop) {
             backdrop = document.createElement("div");
             backdrop.setAttribute("drawer-backdrop", "");
             backdrop.className = "bg-gray-900/50 dark:bg-gray-900/80 fixed inset-0 z-30";
             document.body.appendChild(backdrop);
+            console.log("🔍 [DRAWER] Backdrop created:", backdrop);
+          } else {
+            console.log("🔍 [DRAWER] Backdrop already exists:", backdrop);
           }
+
           // Add event listener to backdrop for cleanup
           if (backdrop) {
             backdrop.addEventListener("click", () => {
@@ -869,6 +871,11 @@ if (!project) {
               setTimeout(cleanupDrawerBackdrop, 100);
             });
           }
+
+          // Show the drawer after backdrop is created with a small delay
+          setTimeout(() => {
+            drawer.show();
+          }, 10);
         }
       } else if (drawerElement) {
         // Fallback if Flowbite API is not available
