@@ -69,6 +69,16 @@ export const navigation = (
       desktopOnly: true,
       hideWhenAuth: true,
     },
+    {
+      label: "Email Your Project",
+      href: "mailto:project@new.capcofire.com",
+      roles: ["any"],
+      pageType: "frontend",
+      isPrimary: false,
+      buttonStyle: "outline",
+      desktopOnly: false,
+      hideWhenAuth: true,
+    },
     // Backend navigation (shown on backend pages)
     {
       label: "New Project",
@@ -80,7 +90,7 @@ export const navigation = (
     {
       label: "Projects",
       href: "/projects",
-      roles: ["Client", "Admin", "Staff"],
+      roles: ["any"],
       pageType: "frontend",
       isDrawer: false, // Special flag for drawer trigger
       isPrimary: currentUrl.startsWith("/projects"),
@@ -199,7 +209,7 @@ export const navigation = (
       }
 
       // Handle regular links
-      return `
+      return `<li>
         <a
           href="${item.href}"
           class="px-3 py-2 text-sm font-medium transition-colors ${
@@ -210,7 +220,7 @@ export const navigation = (
         >
           ${item.label}
         </a>
-      `;
+      </li>`;
     });
 
     return results.join("");
