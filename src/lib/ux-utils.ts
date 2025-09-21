@@ -96,12 +96,14 @@ export function throttle<T extends (...args: any[]) => any>(
 }
 
 /**
- * Hides elements when mobile users focus on form inputs
+ * Hides elements when users focus on form inputs
  * Useful for hiding floating elements like speed dials that get in the way
  * @param elementSelector - CSS selector for the element to hide (e.g., '#sticky-container')
+ * @param mobileOnly - If true, only hides on mobile devices (default: false)
  */
-export function hideOnMobileInput(elementSelector: string): void {
-  if (!isMobile()) return;
+export function hideOnFormFocus(elementSelector: string, mobileOnly: boolean = false): void {
+  // Check if we should only hide on mobile
+  if (mobileOnly && !isMobile()) return;
 
   const element = document.querySelector(elementSelector);
   if (!element) return;
@@ -117,7 +119,7 @@ export function hideOnMobileInput(elementSelector: string): void {
   };
 
   // Add event listeners to all form inputs
-  const inputs = document.querySelectorAll("input, textarea, select");
+  const inputs = document.querySelectorAll("input, textarea, select, [contenteditable]");
   inputs.forEach((input) => {
     input.addEventListener("focus", hideOnFocus);
     input.addEventListener("blur", showOnBlur);
@@ -129,7 +131,7 @@ export function hideOnMobileInput(elementSelector: string): void {
       mutation.addedNodes.forEach((node) => {
         if (node.nodeType === Node.ELEMENT_NODE) {
           const element = node as Element;
-          const newInputs = element.querySelectorAll("input, textarea, select");
+          const newInputs = element.querySelectorAll("input, textarea, select, [contenteditable]");
           newInputs.forEach((input) => {
             input.addEventListener("focus", hideOnFocus);
             input.addEventListener("blur", showOnBlur);
@@ -143,6 +145,122 @@ export function hideOnMobileInput(elementSelector: string): void {
     childList: true,
     subtree: true,
   });
+}
+
+/**
+ * Hides elements when mobile users focus on form inputs
+ * Useful for hiding floating elements like speed dials that get in the way
+ * @param elementSelector - CSS selector for the element to hide (e.g., '#sticky-container')
+ * @deprecated Use hideOnFormFocus with mobileOnly: true instead
+ */
+export function hideOnMobileInput(elementSelector: string): void {
+  hideOnFormFocus(elementSelector, true);
+}
+
+/**
+ * Detects if the current browser is Safari on iOS
+ * @returns true if running on Safari iOS
+ */
+export function isSafariIOS(): boolean {
+  const ua = navigator.userAgent;
+  const isIOS = /iPad|iPhone|iPod/.test(ua);
+  const isSafari = /Safari/.test(ua) && !/Chrome|CriOS|FxiOS|EdgiOS/.test(ua);
+  return isIOS && isSafari;
+}
+
+/**
+ * Locks body scroll to prevent background scrolling (especially for Safari iOS)
+ * Uses multiple techniques to ensure scroll is locked on all browsers
+ */
+export function lockBodyScroll(): void {
+  const body = document.body;
+  const html = document.documentElement;
+
+  // Store original values
+  const originalBodyOverflow = body.style.overflow;
+  const originalBodyPosition = body.style.position;
+  const originalBodyTop = body.style.top;
+  const originalBodyWidth = body.style.width;
+  const originalHtmlOverflow = html.style.overflow;
+
+  // Get current scroll position
+  const scrollY = window.scrollY;
+
+  // Apply multiple scroll lock techniques
+  body.style.overflow = "hidden";
+  body.style.position = "fixed";
+  body.style.top = `-${scrollY}px`;
+  body.style.width = "100%";
+  html.style.overflow = "hidden";
+
+  // Safari iOS specific fixes
+  if (isSafariIOS()) {
+    // Prevent elastic scrolling
+    (body as any).style.webkitOverflowScrolling = "auto";
+    body.style.overscrollBehavior = "none";
+
+    // Add touch-action prevention
+    body.style.touchAction = "none";
+
+    // Prevent zoom on double tap
+    const viewport = document.querySelector('meta[name="viewport"]');
+    if (viewport) {
+      viewport.setAttribute(
+        "content",
+        "width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+      );
+    }
+  }
+
+  // Store cleanup function on body for later use
+  (body as any).__scrollLockCleanup = () => {
+    body.style.overflow = originalBodyOverflow;
+    body.style.position = originalBodyPosition;
+    body.style.top = originalBodyTop;
+    body.style.width = originalBodyWidth;
+    html.style.overflow = originalHtmlOverflow;
+
+    if (isSafariIOS()) {
+      (body as any).style.webkitOverflowScrolling = "";
+      body.style.overscrollBehavior = "";
+      body.style.touchAction = "";
+
+      // Restore viewport
+      const viewport = document.querySelector('meta[name="viewport"]');
+      if (viewport) {
+        viewport.setAttribute("content", "width=device-width, initial-scale=1.0");
+      }
+    }
+
+    // Restore scroll position
+    window.scrollTo(0, scrollY);
+  };
+}
+
+/**
+ * Unlocks body scroll and restores original state
+ */
+export function unlockBodyScroll(): void {
+  const body = document.body;
+  const cleanup = (body as any).__scrollLockCleanup;
+
+  if (cleanup) {
+    cleanup();
+    delete (body as any).__scrollLockCleanup;
+  } else {
+    // Fallback cleanup
+    body.style.overflow = "";
+    body.style.position = "";
+    body.style.top = "";
+    body.style.width = "";
+    document.documentElement.style.overflow = "";
+
+    if (isSafariIOS()) {
+      (body as any).style.webkitOverflowScrolling = "";
+      body.style.overscrollBehavior = "";
+      body.style.touchAction = "";
+    }
+  }
 }
 
 /**
