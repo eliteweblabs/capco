@@ -96,6 +96,56 @@ export function throttle<T extends (...args: any[]) => any>(
 }
 
 /**
+ * Hides elements when mobile users focus on form inputs
+ * Useful for hiding floating elements like speed dials that get in the way
+ * @param elementSelector - CSS selector for the element to hide (e.g., '#sticky-container')
+ */
+export function hideOnMobileInput(elementSelector: string): void {
+  if (!isMobile()) return;
+
+  const element = document.querySelector(elementSelector);
+  if (!element) return;
+
+  // Hide on input focus
+  const hideOnFocus = () => {
+    (element as HTMLElement).style.display = "none";
+  };
+
+  // Show on input blur
+  const showOnBlur = () => {
+    (element as HTMLElement).style.display = "block";
+  };
+
+  // Add event listeners to all form inputs
+  const inputs = document.querySelectorAll("input, textarea, select");
+  inputs.forEach((input) => {
+    input.addEventListener("focus", hideOnFocus);
+    input.addEventListener("blur", showOnBlur);
+  });
+
+  // Also handle dynamic content
+  const observer = new MutationObserver((mutations) => {
+    mutations.forEach((mutation) => {
+      mutation.addedNodes.forEach((node) => {
+        if (node.nodeType === Node.ELEMENT_NODE) {
+          const element = node as Element;
+          const newInputs = element.querySelectorAll("input, textarea, select");
+          newInputs.forEach((input) => {
+            input.addEventListener("focus", hideOnFocus);
+            input.addEventListener("blur", showOnBlur);
+          });
+        }
+      });
+    });
+  });
+
+  observer.observe(document.body, {
+    childList: true,
+    subtree: true,
+  });
+}
+
+/**
  * Handles URL parameter notifications (errors and success messages)
  * @param type - Notification type ('error' | 'success')
  * @param param - URL parameter value
