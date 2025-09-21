@@ -112,7 +112,7 @@
   // Update permission status display
   function updatePermissionStatus() {
     const statusDiv = document.getElementById("permission-status");
-    const permissionState = Notification.permission;
+    const permissionState = "Notification" in window ? Notification.permission : "Not available";
     const isSupported = isPushSupported();
     const ios = isIOS();
     const standalone = isStandalone();
@@ -165,7 +165,7 @@
       displayMode: window.matchMedia("(display-mode: standalone)").matches
         ? "standalone"
         : "browser",
-      notificationPermission: Notification.permission,
+      notificationPermission: "Notification" in window ? Notification.permission : "Not available",
       pushSupported: isPushSupported(),
       serviceWorkerSupported: "serviceWorker" in navigator,
       location: window.location.href,
@@ -181,7 +181,10 @@
   async function requestPermission() {
     try {
       console.log("🔔 [PUSH-DEMO] Starting permission request...");
-      console.log("🔔 [PUSH-DEMO] Current permission:", Notification.permission);
+      console.log(
+        "🔔 [PUSH-DEMO] Current permission:",
+        "Notification" in window ? Notification.permission : "Not available"
+      );
       console.log("🔔 [PUSH-DEMO] Notification supported:", "Notification" in window);
       // console.log("🔔 [PUSH-DEMO] Is PWA:", window.navigator.standalone);
 
@@ -192,13 +195,13 @@
       }
 
       // If already granted or denied, show appropriate message
-      if (Notification.permission === "granted") {
+      if ("Notification" in window && Notification.permission === "granted") {
         alert("✅ Notifications are already enabled!");
         updatePermissionStatus();
         return;
       }
 
-      if (Notification.permission === "denied") {
+      if ("Notification" in window && Notification.permission === "denied") {
         alert(
           "❌ Notifications are blocked. To enable:\n\n1. Tap the 'aA' icon in Safari's address bar\n2. Tap 'Website Settings'\n3. Enable 'Notifications'\n4. Refresh this page"
         );
@@ -246,9 +249,12 @@
   // Send a local push notification
   function sendLocalPush(title: string, body: string, icon?: string) {
     console.log("🔔 [PUSH-DEMO] sendLocalPush called with:", { title, body, icon });
-    console.log("🔔 [PUSH-DEMO] Notification permission:", Notification.permission);
+    console.log(
+      "🔔 [PUSH-DEMO] Notification permission:",
+      "Notification" in window ? Notification.permission : "Not available"
+    );
 
-    if (Notification.permission === "granted") {
+    if ("Notification" in window && Notification.permission === "granted") {
       console.log("🔔 [PUSH-DEMO] Creating notification...");
       try {
         const notification = new Notification(title, {
@@ -276,7 +282,10 @@
         console.error("❌ [PUSH-DEMO] Error creating notification:", error);
       }
     } else {
-      console.log("❌ [PUSH-DEMO] Notification permission not granted:", Notification.permission);
+      console.log(
+        "❌ [PUSH-DEMO] Notification permission not granted:",
+        "Notification" in window ? Notification.permission : "Not available"
+      );
     }
   }
 
