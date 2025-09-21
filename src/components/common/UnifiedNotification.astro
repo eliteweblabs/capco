@@ -19,7 +19,7 @@
     duration?: number; // 0 = no auto-hide, >0 = auto-hide after ms
     redirect?: {
       url: string;
-      delay?: number; // Delay in seconds before redirect
+      delay?: number; // Delay in milliseconds before redirect
       showCountdown?: boolean; // Show countdown in message
     };
     actions?: Array<{
@@ -143,8 +143,9 @@
     private setupRedirect(id: string, redirect: NotificationOptions["redirect"]) {
       if (!redirect) return;
 
-      const delay = redirect.delay || 3; // Default 3 seconds
-      let countdown = delay;
+      const delayMs = redirect.delay || 3000; // Default 3 seconds in milliseconds
+      const delaySeconds = Math.ceil(delayMs / 1000); // Convert to seconds for countdown
+      let countdown = delaySeconds;
 
       const updateMessage = () => {
         const notification = this.notifications.get(id);
@@ -393,14 +394,6 @@
       | Array<{ label: string; action: () => void; primary?: boolean }>
       | { url: string; delay?: number; showCountdown?: boolean }
   ) => {
-    // console.log("🔔 [UNIFIED-NOTIFICATION] showModal called with:", {
-    //   type,
-    //   title,
-    //   message,
-    //   duration,
-    //   redirectOrActions,
-    // });
-
     // Validate notification type
     const validTypes = ["success", "error", "warning", "info"];
     if (!validTypes.includes(type)) {
@@ -428,12 +421,6 @@
         ? (redirectOrActions as { url: string; delay?: number; showCountdown?: boolean })
         : undefined,
     });
-
-    // Check if device is mobile (screen width < 768px)
-    if (window.innerWidth < 768) {
-      // console.log("📱 [SMS-FORM] Scrolling to top on mobile device");
-      window.scrollTo({ top: 0, behavior: "smooth" });
-    }
 
     // console.log("🔔 [UNIFIED-NOTIFICATION] showModal returning ID:", result);
     return result;
