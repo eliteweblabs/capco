@@ -3,27 +3,58 @@
 import BoxIcon from "./BoxIcon.astro";
 import Button from "./Button.astro";
 import Punchlist from "../project/Punchlist.astro";
+import AssignedProjects from "./AssignedProjects.astro";
 
 const {
   project,
   currentRole,
   currentUser,
-  assignedProjects,
-  assignedProjectsCount = 0,
   isAuth,
   desktopNavigationHTML,
   supabaseUrl,
+  isBackendPage,
 } = Astro.props;
 
-const { id } = Astro.params;
-
 const projectId = project?.id;
+const currentUserId = currentUser?.id;
 
-// Early return if not authenticated - UserCenter only shows for logged-in users
-// if (!isAuth) {
-//   return null;
-// }
+let assignedProjectsCount = 0;
+let assignedProjects: any[] = [];
 
+if ((currentUser?.id && currentRole === "Staff") || currentRole === "Admin") {
+  // console.log("🏗️ [APP] Fetching assigned projects for user:", currentUser.id);
+  const baseUrl = Astro.url.origin;
+  const fullUrl = `${baseUrl}/api/get-project?assigned_to_id=${currentUser.id}`;
+  // console.log("🏗️ [APP] Full URL:", fullUrl);
+  try {
+    const response = await fetch(fullUrl);
+    if (response.ok) {
+      const data = await response.json();
+      // console.log("🏗️ [APP] Assigned projects:", data);
+      assignedProjects = data.projects || [];
+      assignedProjectsCount = data.projects.length || 0;
+    }
+  } catch (error) {
+    console.error("Error fetching assigned projects:", error);
+  }
+} else if (currentUser?.id && currentRole === "Client") {
+  const baseUrl = Astro.url.origin;
+  const fullUrl = `${baseUrl}/api/get-project?author_id=${currentUser.id}`;
+  // console.log("🏗️ [APP] Full URL:", fullUrl);
+  try {
+    const response = await fetch(fullUrl);
+    if (response.ok) {
+      const data = await response.json();
+      // console.log("🏗️ [APP] Assigned projects:", data);
+      assignedProjects = data.projects || [];
+      assignedProjectsCount = data.projects.length || 0;
+    }
+  } catch (error) {
+    console.error("Error fetching assigned projects:", error);
+  }
+}
+
+return null;
 // Fetch projects assigned to current user
 ---
 
@@ -121,47 +152,15 @@ const projectId = project?.id;
     }
 
     {
-      isAuth && currentRole !== "Client" && !id && (
-        <div class="mb-6">
-          <h3 class="mb-4 text-lg font-medium text-gray-900 dark:text-white">
-            {currentRole === "Client" ? "Your Projects: " : "Assigned Projects: "}(
-            {assignedProjectsCount})
-          </h3>
-
-          {assignedProjectsCount > 0 ? (
-            <div class="space-y-2">
-              {assignedProjects.slice(0, 5).map((project: any) => (
-                <a
-                  href={`/project/${project.id}`}
-                  class="block rounded-lg border border-gray-200 p-3 transition-colors hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-700"
-                >
-                  <div class="flex items-start justify-between">
-                    <div class="min-w-0 flex-1">
-                      <p class="truncate text-sm font-medium text-gray-900 dark:text-white">
-                        {project.title || "Untitled Project"}
-                      </p>
-                      <p class="truncate text-xs text-gray-500 dark:text-gray-400">
-                        {project.address || "No address"}
-                      </p>
-                      <p class="text-xs text-gray-400 dark:text-gray-500">
-                        Status: {project.status || "Unknown"}
-                      </p>
-                    </div>
-                    <div class="ml-2 flex-shrink-0">
-                      <span class="inline-flex items-center rounded-full bg-blue-100 px-2 py-1 text-xs font-medium text-blue-800 dark:bg-blue-900 dark:text-blue-200">
-                        {project.comment_count || 0} comments
-                      </span>
-                    </div>
-                  </div>
-                </a>
-              ))}
-            </div>
-          ) : (
-            <div class="py-4 text-center">
-              <p class="text-sm text-gray-500 dark:text-gray-400">No projects assigned to you</p>
-            </div>
-          )}
-        </div>
+      isAuth && currentRole !== "Client" && !projectId && (
+        <AssignedProjects
+          assignedProjects={assignedProjects}
+          assignedProjectsCount={assignedProjectsCount}
+          currentRole={currentRole}
+          currentUser={currentUser}
+          projectId={projectId}
+          supabaseUrl={supabaseUrl}
+        />
       )
     }
 
@@ -177,96 +176,9 @@ const projectId = project?.id;
       )
     }
   </div>
-
-  <!-- Fixed Footer Section -->
-  {
-    isAuth && (
-      <div class="flex-shrink-0 border-t border-gray-200 p-4 dark:border-gray-700">
-        <Button
-          id="logout-btn"
-          variant="outline"
-          size="sm"
-          icon="log-out"
-          iconPosition="left"
-          fullWidth
-          class="flex w-full items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-700"
-        >
-          Logout
-        </Button>{" "}
-      </div>
-    )
-  }
 </div>
 
 <script>
-  // Universal drawer auto-close functionality
-  document.addEventListener("DOMContentLoaded", () => {
-    const drawer = document.getElementById("drawer-user-center") as HTMLDivElement;
-    if (drawer) {
-      // Close drawer on any link click (href elements)
-      const links = drawer.querySelectorAll("a[href]") as NodeListOf<HTMLAnchorElement>;
-      links.forEach((link) => {
-        link.addEventListener("click", () => {
-          // Use Flowbite's data attribute to close drawer
-          const closeBtn = drawer.querySelector(
-            '[data-drawer-hide="drawer-user-center"]'
-          ) as HTMLButtonElement;
-          if (closeBtn) {
-            closeBtn.click();
-            // Remove drawer-open class and unlock body scroll when link is clicked
-            document.body.classList.remove("drawer-open");
-            if (window.unlockBodyScroll) {
-              window.unlockBodyScroll();
-            }
-          }
-        });
-      });
-
-      // Close drawer on logout button click
-      const logoutBtn = drawer.querySelector("#logout-btn") as HTMLButtonElement;
-      if (logoutBtn) {
-        logoutBtn.addEventListener("click", () => {
-          // Use Flowbite's data attribute to close drawer
-          const closeBtn = drawer.querySelector(
-            '[data-drawer-hide="drawer-user-center"]'
-          ) as HTMLButtonElement;
-          if (closeBtn) {
-            closeBtn.click();
-            // Remove drawer-open class and unlock body scroll when logout is clicked
-            document.body.classList.remove("drawer-open");
-            if (window.unlockBodyScroll) {
-              window.unlockBodyScroll();
-            }
-          }
-        });
-      }
-
-      // Close drawer on any button with onclick or data attributes that trigger navigation
-      const buttons = drawer.querySelectorAll(
-        "button[onclick], button[data-drawer-hide]"
-      ) as NodeListOf<HTMLButtonElement>;
-      buttons.forEach((button) => {
-        // Skip the close button itself to avoid double-closing
-        if (!button.hasAttribute("data-drawer-hide")) {
-          button.addEventListener("click", () => {
-            // Use Flowbite's data attribute to close drawer
-            const closeBtn = drawer.querySelector(
-              '[data-drawer-hide="drawer-user-center"]'
-            ) as HTMLButtonElement;
-            if (closeBtn) {
-              closeBtn.click();
-              // Remove drawer-open class and unlock body scroll when button is clicked
-              document.body.classList.remove("drawer-open");
-              if (window.unlockBodyScroll) {
-                window.unlockBodyScroll();
-              }
-            }
-          });
-        }
-      });
-    }
-  });
-
   // Global function to close the drawer
   (window as any).closeUserCenterDrawer = function () {
     const closeBtn = document.querySelector(
@@ -274,53 +186,6 @@ const projectId = project?.id;
     ) as HTMLButtonElement;
     if (closeBtn) {
       closeBtn.click();
-      // Remove drawer-open class and unlock body scroll when globally closing drawer
-      document.body.classList.remove("drawer-open");
-      if (window.unlockBodyScroll) {
-        window.unlockBodyScroll();
-      }
     }
   };
-
-  const logoutBtn = document.getElementById("logout-btn") as HTMLButtonElement;
-
-  // Logout functionality (only if logout button exists - when authenticated)
-  if (logoutBtn) {
-    logoutBtn.addEventListener("click", async () => {
-      // console.log("📋 [HEADER] Logout button clicked");
-      try {
-        // console.log("📋 [HEADER] Sending logout request...");
-        const response = await fetch("/api/auth/signout", {
-          method: "POST",
-        });
-        // console.log("📋 [HEADER] Logout response status:", response.status);
-
-        if (response.ok) {
-          // console.log("📋 [HEADER] Logout successful, redirecting...");
-
-          // Simple redirect to home page with success message
-          const url = new URL(window.location.origin);
-          url.searchParams.set("message", "logout_success");
-          window.location.href = url.toString();
-        } else {
-          // console.error("📋 [HEADER] Logout failed with status:", response.status);
-
-          // Show error modal if logout fails
-          if (typeof window.showModal === "function") {
-            window.showModal(
-              "error",
-              "Logout Failed",
-              "There was an error logging out. Please try again.",
-              0 // No auto-hide for errors
-            );
-          } else {
-            // Fallback if showModal is not available
-            alert("There was an error logging out. Please try again.");
-          }
-        }
-      } catch (error) {
-        console.error("📋 [HEADER] Logout error:", error);
-      }
-    });
-  }
 </script>

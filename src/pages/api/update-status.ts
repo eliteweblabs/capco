@@ -52,7 +52,7 @@ export const OPTIONS: APIRoute = async () => {
 export const POST: APIRoute = async ({ request, cookies }) => {
   try {
     // Get current user from authentication
-    const { currentUser, currentRole } = await checkAuth(cookies);
+    const { currentUser } = await checkAuth(cookies);
 
     if (!currentUser) {
       return new Response(JSON.stringify({ error: "Authentication required" }), {
@@ -60,6 +60,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         headers: { "Content-Type": "application/json" },
       });
     }
+    const currentRole = currentUser.role;
 
     const body = await request.json();
     const { projectId, status: newStatus } = body;

@@ -1,0 +1,97 @@
+---
+// Flowbite Chart Component
+// Based on Flowbite dashboard design patterns
+
+interface Props {
+  title?: string;
+  type?: "line" | "bar" | "pie" | "area";
+  data?: any;
+  height?: string;
+  showLegend?: boolean;
+  showTooltip?: boolean;
+}
+
+const {
+  title = "Chart",
+  type = "line",
+  data = null,
+  height = "400px",
+  showLegend = true,
+  showTooltip = true,
+} = Astro.props;
+---
+
+<div
+  class="rounded-lg border border-gray-200 bg-white p-6 shadow dark:border-gray-700 dark:bg-gray-800"
+>
+  {
+    title && (
+      <div class="mb-4 flex items-center justify-between">
+        <h3 class="text-lg font-semibold text-gray-900 dark:text-white">{title}</h3>
+        <div class="flex items-center space-x-2">
+          <button
+            type="button"
+            class="inline-flex items-center rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-500 hover:bg-gray-100 hover:text-gray-700 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-white"
+          >
+            <i class="bx bx-download mr-2" />
+            Export
+          </button>
+          <button
+            type="button"
+            class="inline-flex items-center rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-500 hover:bg-gray-100 hover:text-gray-700 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-white"
+          >
+            <i class="bx bx-refresh mr-2" />
+            Refresh
+          </button>
+        </div>
+      </div>
+    )
+  }
+
+  <div class="relative" style={`height: ${height}`}>
+    <canvas id="chart-{Math.random().toString(36).substr(2, 9)}" class="h-full w-full"></canvas>
+  </div>
+
+  {
+    showLegend && (
+      <div class="mt-4 flex flex-wrap items-center justify-center space-x-6">
+        <div class="flex items-center">
+          <div class="mr-2 h-3 w-3 rounded-full bg-blue-500" />
+          <span class="text-sm text-gray-600 dark:text-gray-400">Series 1</span>
+        </div>
+        <div class="flex items-center">
+          <div class="mr-2 h-3 w-3 rounded-full bg-green-500" />
+          <span class="text-sm text-gray-600 dark:text-gray-400">Series 2</span>
+        </div>
+        <div class="flex items-center">
+          <div class="mr-2 h-3 w-3 rounded-full bg-yellow-500" />
+          <span class="text-sm text-gray-600 dark:text-gray-400">Series 3</span>
+        </div>
+      </div>
+    )
+  }
+</div>
+
+<script>
+  // Chart.js integration would go here
+  // For now, this is a placeholder that shows the structure
+  document.addEventListener("DOMContentLoaded", function () {
+    const canvas = document.querySelector("canvas");
+    if (canvas) {
+      const ctx = canvas.getContext("2d");
+
+      // Simple placeholder chart
+      ctx.fillStyle = "#f3f4f6";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      ctx.fillStyle = "#3b82f6";
+      ctx.fillRect(50, 100, 200, 100);
+
+      ctx.fillStyle = "#10b981";
+      ctx.fillRect(300, 150, 200, 50);
+
+      ctx.fillStyle = "#f59e0b";
+      ctx.fillRect(550, 80, 150, 120);
+    }
+  });
+</script>

@@ -1,20 +1,17 @@
 ---
-import { getI18N } from "@/i18n";
+import BoxIcon from "../common/BoxIcon.astro";
 import NoDataCard from "./NoDataCard.astro";
 import ProjectListItem from "./ProjectListItem.astro";
 
 interface Props {
   projects: any[];
-  currentRole: string | null;
+  currentUser: any;
   statusesObject: any;
 }
 
-const { currentLocale } = Astro;
-const i18n = getI18N({ currentLocale });
-
-const { projects, statusesObject, currentRole } = Astro.props;
-
-if (!projects || projects.length === 0) return;
+// const { currentLocale } = Astro;
+// const i18n = getI18N({ currentLocale });
+const { projects, statusesObject, currentUser } = Astro.props;
 
 // console.log("🔍 [DEBUG] ProjectList statusesObject:", statusesObject);
 // console.log("🔍 [DEBUG] ProjectList currentUser:", currentUser);
@@ -57,7 +54,7 @@ const processedProjects = projects.map((project: any) => {
         return (
           <ProjectListItem
             project={project}
-            currentRole={currentRole || ""}
+            currentRole={currentUser?.role || ""}
             projectStatusesObject={statusesObject}
             currentStatusName={project.currentStatusName}
             currentStatusInt={project.currentStatusInt}
@@ -68,30 +65,18 @@ const processedProjects = projects.map((project: any) => {
       })
     ) : (
       <NoDataCard
-        message={i18n.DELIVERY.empty.message}
-        subtitle={i18n.DELIVERY.empty.message2}
+        message="No projects to display."
+        subtitle="Create a new project to get started."
         imageSrc=""
       />
     )
   }
 
   <!-- No Projects Message for Status Filters -->
-  <div id="no-projects-message" class="hidden py-16 text-center text-gray-500 dark:text-gray-400">
+  <div id="no-projects-message" class="hidden py-16 text-center text-black dark:text-white">
     <div class="mx-auto max-w-md">
-      <svg
-        class="mx-auto mb-4 h-12 w-12 text-gray-300 dark:text-gray-600"
-        fill="none"
-        viewBox="0 0 24 24"
-        stroke="currentColor"
-      >
-        <path
-          stroke-linecap="round"
-          stroke-linejoin="round"
-          stroke-width="2"
-          d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-        ></path>
-      </svg>
-      <h3 class="mb-2 text-lg font-medium text-gray-900 dark:text-white">No Projects Found</h3>
+      <BoxIcon name="x" variant="outline" />
+      <h3 class="mb-2 text-lg font-medium">No Projects Found</h3>
       <p id="no-projects-text" class="text-sm">No projects currently at this status.</p>
     </div>
   </div>

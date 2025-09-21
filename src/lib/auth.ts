@@ -4,16 +4,15 @@ import { supabase } from "./supabase";
 
 export interface ExtendedUser extends User {
   profile?: any;
-  company_name?: string | null;
 }
 
 export interface AuthResult {
   isAuth: boolean;
   session: any;
   currentUser: ExtendedUser | null;
-  currentRole: string | null;
-  profile: any;
-  company_name: string | null;
+  accessToken: string | null;
+  refreshToken: string | null;
+  supabase: any;
 }
 
 export async function checkAuth(cookies: any): Promise<AuthResult> {
@@ -22,18 +21,9 @@ export async function checkAuth(cookies: any): Promise<AuthResult> {
   const accessToken = cookies.get("sb-access-token");
   const refreshToken = cookies.get("sb-refresh-token");
 
-  // console.log("🔐 [AUTH] Token check:", {
-  //   hasAccessToken: !!accessToken,
-  //   hasRefreshToken: !!refreshToken,
-  //   supabaseConfigured: !!supabase,
-  //   accessTokenValue: accessToken?.value?.substring(0, 20) + "...",
-  //   refreshTokenValue: refreshToken?.value?.substring(0, 20) + "...",
-  // });
-
   let isAuth = false;
   let session = null;
   let currentUser: ExtendedUser | null = null;
-  let currentRole = null;
 
   if (accessToken && refreshToken && supabase) {
     // console.log("🔐 [AUTH] Tokens found, attempting to set session...");
@@ -76,10 +66,8 @@ export async function checkAuth(cookies: any): Promise<AuthResult> {
           // });
 
           if (profile && !profileError) {
-            currentRole = profile.role;
             // Enhance currentUser object with profile data
             currentUser.profile = profile;
-            currentUser.company_name = profile.company_name;
 
             // console.log("🔐 [AUTH] currentUser role set:", role);
           } else {
@@ -99,14 +87,11 @@ export async function checkAuth(cookies: any): Promise<AuthResult> {
               );
 
               // Set default role for users without profiles
-              currentRole = "Client"; // Default role
               currentUser.profile = {
                 id: currentUser.id,
                 role: "Client",
-                company_name: null,
-                name: currentUser.email?.split("@")[0] || "User",
+                company_name: currentUser.email?.split("@")[0] || "Add Company Name",
               };
-              currentUser.company_name = null;
 
               console.warn("🔐 [AUTH] Using default profile for user without profile record");
             }
@@ -130,16 +115,10 @@ export async function checkAuth(cookies: any): Promise<AuthResult> {
     isAuth,
     session,
     currentUser: currentUser,
-    currentRole,
-    profile: currentUser?.profile || null,
-    company_name: currentUser?.company_name || null,
+    accessToken: accessToken,
+    refreshToken: refreshToken,
+    supabase: supabase,
   };
-  // console.log("🔐 [AUTH] Authentication check complete:", {
-  //   isAuth,
-  //   hasUser: !!currentUser,
-  //   currentRole,
-  //   userId: currentUser?.id || null,
-  // });
 
   return result;
 }

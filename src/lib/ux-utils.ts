@@ -183,6 +183,14 @@ export function isSafari18Beta(): boolean {
   return /Safari/.test(ua) && /Version\/18\./.test(ua) && !/Chrome|CriOS|FxiOS|EdgiOS/.test(ua);
 }
 
+export function isSafari18OrLater(): boolean {
+  const ua = navigator.userAgent;
+  // Safari 18+ (including final release) still has viewport bugs
+  return (
+    /Safari/.test(ua) && /Version\/(18|19|20)\./.test(ua) && !/Chrome|CriOS|FxiOS|EdgiOS/.test(ua)
+  );
+}
+
 /**
  * Fixes Safari viewport positioning issues (Safari 18 beta and earlier)
  * Only runs on Safari browsers to avoid unnecessary processing
@@ -279,6 +287,65 @@ export function fixSafariViewport(): void {
  * Handles resize, orientation change, and other viewport events
  */
 export function setupViewportHandling(): void {
+  // ONLY RUN ON iOS SAFARI - Skip all other browsers
+  if (!isSafariIOS()) {
+    console.log("🌐 [UX-UTILS] Not iOS Safari - Skipping viewport fixes");
+    return;
+  }
+
+  console.log("🍎 [UX-UTILS] iOS Safari detected - Applying viewport fixes");
+
+  // SAFARI 18+ DETECTION - Disable problematic features (including final release)
+  const isSafari18Plus = isSafari18OrLater();
+
+  if (isSafari18Plus) {
+    console.log("🍎 [UX-UTILS] Safari 18+ detected - Using fallback mode");
+
+    // Show user notification about Safari 18+ viewport issues
+    if (typeof (window as any).showModal === "function") {
+      (window as any).showModal(
+        "info",
+        "Safari Viewport Issues Detected",
+        "Safari 18+ has known viewport positioning bugs that affect sticky headers and fixed elements. This is a WebKit engine issue. For the best experience, please use Chrome, Firefox, or Safari 17.",
+        5000
+      );
+    }
+
+    // Disable sticky positioning on Safari 18+ (including final release)
+    const header = document.querySelector("header");
+    if (header) {
+      header.style.setProperty("position", "relative", "important");
+      header.style.setProperty("top", "0", "important");
+      console.log("🍎 [UX-UTILS] Header set to relative positioning");
+    }
+
+    const container = document.getElementById("sticky-container");
+    if (container) {
+      container.style.setProperty("position", "absolute", "important");
+      container.style.setProperty("bottom", "1.5rem", "important");
+      container.style.setProperty("left", "1.5rem", "important");
+      console.log("🍎 [UX-UTILS] Sticky container set to absolute positioning");
+    }
+
+    return; // Skip all other viewport handling
+  }
+
+  // SAFARI 18 BETA VIEWPORT FIX - Official workaround
+  const setViewportHeight = () => {
+    const vh = window.innerHeight * 0.01;
+    document.documentElement.style.setProperty("--vh", `${vh}px`);
+    console.log(`📐 [UX-UTILS] Setting viewport height: ${vh}px`);
+  };
+
+  // Set viewport height immediately
+  setViewportHeight();
+
+  // Recalculate on resize
+  window.addEventListener("resize", setViewportHeight);
+  window.addEventListener("orientationchange", () => {
+    setTimeout(setViewportHeight, 100);
+  });
+
   // NUCLEAR OPTION - Force elements to stay in place
   const forcePositioning = () => {
     console.log("🚀 [UX-UTILS] NUCLEAR OPTION - Forcing positioning");
@@ -318,15 +385,19 @@ export function setupViewportHandling(): void {
       }
     }
 
-    // Force header with same nuclear approach as sticky button
-    const headerElement = document.querySelector("header");
-    if (headerElement) {
-      // Remove all existing styles first
-      headerElement.removeAttribute("style");
+    // NUCLEAR HEADER FIX - Override everything
+    const header = document.querySelector("header");
+    if (header) {
+      console.log("🚨 [UX-UTILS] NUCLEAR HEADER FIX - Forcing header position");
 
-      // Apply nuclear positioning (same as sticky button)
-      headerElement.style.cssText = `
-        position: fixed !important;
+      // Remove ALL existing styles and classes
+      header.removeAttribute("style");
+      header.removeAttribute("class");
+
+      // Apply nuclear positioning with CSS text override
+      header.style.cssText = `
+        position: sticky !important;
+        position: -webkit-sticky !important;
         top: 0 !important;
         left: 0 !important;
         right: 0 !important;
@@ -344,11 +415,20 @@ export function setupViewportHandling(): void {
         border: none !important;
         outline: none !important;
         box-shadow: none !important;
-        min-height: auto !important;
-        max-height: none !important;
-        overflow: visible !important;
+        background: var(--background-light, #ffffff) !important;
+        backdrop-filter: blur(8px) !important;
+        -webkit-backdrop-filter: blur(8px) !important;
       `;
-      headerElement.setAttribute("data-fixed", "true");
+
+      // Force it to stay at top with JavaScript
+      const rect = header.getBoundingClientRect();
+      if (rect.top > 0) {
+        console.log("🚨 [UX-UTILS] Header moved, forcing back to top");
+        header.style.setProperty("top", "0", "important");
+        header.style.setProperty("transform", "translate3d(0, 0, 0)", "important");
+        header.style.setProperty("position", "sticky", "important");
+        header.style.setProperty("position", "-webkit-sticky", "important");
+      }
     }
   };
 
@@ -383,15 +463,30 @@ export function setupViewportHandling(): void {
       }
     }
 
-    // Monitor header with same approach as sticky button
-    const headerElement = document.querySelector("header");
-    if (headerElement) {
-      const rect = headerElement.getBoundingClientRect();
+    if (header) {
+      const rect = header.getBoundingClientRect();
       if (rect.top > 0) {
         console.log("🚨 [UX-UTILS] Header out of bounds, forcing position");
-        // Force header to fixed positioning (same as sticky button)
-        headerElement.style.cssText = `
-          position: fixed !important;
+        // Force header immediately
+        header.style.setProperty("position", "sticky", "important");
+        header.style.setProperty("position", "-webkit-sticky", "important");
+        header.style.setProperty("top", "0", "important");
+        header.style.setProperty("transform", "translate3d(0, 0, 0)", "important");
+        forcePositioning();
+      }
+    }
+  }, 250);
+
+  // EXTRA AGGRESSIVE header check every 100ms
+  setInterval(() => {
+    const header = document.querySelector("header");
+    if (header) {
+      const rect = header.getBoundingClientRect();
+      if (rect.top > 0) {
+        console.log("🚨 [UX-UTILS] EXTRA AGGRESSIVE - Header moved, forcing back");
+        header.style.cssText = `
+          position: sticky !important;
+          position: -webkit-sticky !important;
           top: 0 !important;
           left: 0 !important;
           right: 0 !important;
@@ -404,20 +499,10 @@ export function setupViewportHandling(): void {
           backface-visibility: hidden !important;
           -webkit-transform: translate3d(0, 0, 0) !important;
           -webkit-backface-visibility: hidden !important;
-          margin: 0 !important;
-          padding: 0 !important;
-          border: none !important;
-          outline: none !important;
-          box-shadow: none !important;
-          min-height: auto !important;
-          max-height: none !important;
-          overflow: visible !important;
         `;
-        headerElement.setAttribute("data-fixed", "true");
-        forcePositioning();
       }
     }
-  }, 250);
+  }, 100);
 
   // Responsive behavior for all elements
   window.addEventListener("resize", () => {
@@ -429,28 +514,28 @@ export function setupViewportHandling(): void {
   });
 
   // Use MutationObserver to catch DOM changes that might reset positioning
-  const observer = new MutationObserver((mutations) => {
-    let shouldFix = false;
-    mutations.forEach((mutation) => {
-      if (
-        mutation.type === "attributes" &&
-        (mutation.attributeName === "style" || mutation.attributeName === "class")
-      ) {
-        shouldFix = true;
-      }
-    });
+  // const observer = new MutationObserver((mutations) => {
+  //   let shouldFix = false;
+  //   mutations.forEach((mutation) => {
+  //     if (
+  //       mutation.type === "attributes" &&
+  //       (mutation.attributeName === "style" || mutation.attributeName === "class")
+  //     ) {
+  //       shouldFix = true;
+  //     }
+  //   });
 
-    if (shouldFix && isSafari()) {
-      // setTimeout(applySafariFix, 50);
-    }
-  });
+  //   if (shouldFix && isSafari()) {
+  //     setTimeout(applySafariFix, 50);
+  //   }
+  // });
 
-  // Start observing
-  observer.observe(document.body, {
-    attributes: true,
-    subtree: true,
-    attributeFilter: ["style", "class"],
-  });
+  // // Start observing
+  // observer.observe(document.body, {
+  //   attributes: true,
+  //   subtree: true,
+  //   attributeFilter: ["style", "class"],
+  // });
 }
 
 /**
@@ -501,8 +586,6 @@ export function ensureViewportBounds(
  * Uses multiple techniques to ensure scroll is locked on all browsers
  */
 export function lockBodyScroll(): void {
-  console.log("🔒 [UX-UTILS] AGGRESSIVE scroll lock");
-
   const body = document.body;
   const html = document.documentElement;
 
@@ -511,33 +594,26 @@ export function lockBodyScroll(): void {
   const originalBodyPosition = body.style.position;
   const originalBodyTop = body.style.top;
   const originalBodyWidth = body.style.width;
-  const originalBodyHeight = body.style.height;
   const originalHtmlOverflow = html.style.overflow;
 
   // Get current scroll position
   const scrollY = window.scrollY;
 
-  // AGGRESSIVE scroll lock techniques
-  body.style.setProperty("overflow", "hidden", "important");
-  body.style.setProperty("position", "fixed", "important");
-  body.style.setProperty("top", `-${scrollY}px`, "important");
-  body.style.setProperty("left", "0", "important");
-  body.style.setProperty("right", "0", "important");
-  body.style.setProperty("width", "100%", "important");
-  body.style.setProperty("height", "100%", "important");
-  body.style.setProperty("touch-action", "none", "important");
-  body.style.setProperty("overscroll-behavior", "none", "important");
-  body.style.setProperty("-webkit-overflow-scrolling", "touch", "important");
-
-  html.style.setProperty("overflow", "hidden", "important");
-  html.style.setProperty("touch-action", "none", "important");
+  // Apply multiple scroll lock techniques
+  body.style.overflow = "hidden";
+  body.style.position = "fixed";
+  body.style.top = `-${scrollY}px`;
+  body.style.width = "100%";
+  html.style.overflow = "hidden";
 
   // Safari iOS specific fixes
   if (isSafariIOS()) {
     // Prevent elastic scrolling
-    body.style.setProperty("-webkit-overflow-scrolling", "auto", "important");
-    body.style.setProperty("overscroll-behavior", "none", "important");
-    body.style.setProperty("touch-action", "none", "important");
+    (body as any).style.webkitOverflowScrolling = "auto";
+    body.style.overscrollBehavior = "none";
+
+    // Add touch-action prevention
+    body.style.touchAction = "none";
 
     // Prevent zoom on double tap
     const viewport = document.querySelector('meta[name="viewport"]');
@@ -551,23 +627,17 @@ export function lockBodyScroll(): void {
 
   // Store cleanup function on body for later use
   (body as any).__scrollLockCleanup = () => {
-    console.log("🔓 [UX-UTILS] Unlocking scroll");
-
     body.style.overflow = originalBodyOverflow;
     body.style.position = originalBodyPosition;
     body.style.top = originalBodyTop;
     body.style.width = originalBodyWidth;
-    body.style.height = originalBodyHeight;
-    body.style.left = "";
-    body.style.right = "";
-    body.style.touchAction = "";
-    body.style.overscrollBehavior = "";
-    // body.style.webkitOverflowScrolling = "";
-
     html.style.overflow = originalHtmlOverflow;
-    html.style.touchAction = "";
 
     if (isSafariIOS()) {
+      (body as any).style.webkitOverflowScrolling = "";
+      body.style.overscrollBehavior = "";
+      body.style.touchAction = "";
+
       // Restore viewport
       const viewport = document.querySelector('meta[name="viewport"]');
       if (viewport) {

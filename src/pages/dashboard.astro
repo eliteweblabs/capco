@@ -1,17 +1,51 @@
 ---
+// import { isBackendPage } from "../../pages/api/backend-page-check";
+// import { navigation } from "@/pages/api/navigation";
+
+// interface Props {
+//   requireAuthRedirect?: string;
+//   title?: string;
+//   description?: string;
+//   currentUser?: any;
+//   session?: any;
+//   project?: any;
+//   supabase?: any;
+//   supabaseAdmin?: any;
+// }
+
+// const {
+//   requireAuthRedirect = "",
+//   currentUser = undefined,
+//   title = undefined,
+//   description = undefined,
+//   session = undefined,
+//   project = undefined,
+//   supabase = undefined,
+//   supabaseAdmin = undefined,
+// } = Astro.props;
+
+const requireAuthRedirect = "/login";
+import { checkAuth } from "../lib/auth";
+const { currentUser, session, supabase, refreshToken, accessToken } = await checkAuth(
+  Astro.cookies
+);
+
+// Handle auth redirect first
+if (requireAuthRedirect && (!session || !currentUser)) {
+  return Astro.redirect(requireAuthRedirect);
+}
+const currentRole = currentUser?.role;
+const currentUserId = currentUser?.id;
+
 import App from "../components/common/App.astro";
-import DashboardComponent from "../components/common/Dashboard.astro";
+import SectionContainer from "../components/common/SectionContainer.astro";
 import HeroDashboard from "../components/common/HeroDashboard.astro";
+import ProjectList from "../components/project/ProjectList.astro";
+import ProjectForm from "../components/project/ProjectForm.astro";
+
 import ProjectNav from "../components/project/ProjectNav.astro";
 import "../lib/refresh-manager.ts";
 // Get auth data directly since App component handles auth requirements
-import { checkAuth } from "../lib/auth";
-import { supabaseAdmin } from "../lib/supabase-admin";
-
-const { isAuth = false, currentUser, currentRole, session } = await checkAuth(Astro.cookies);
-if (!isAuth) {
-  return Astro.redirect("/login");
-}
 
 // console.log("🚀 [DASHBOARD] Current user:", currentUser);
 // Initialize data arrays
@@ -87,10 +121,10 @@ if (statusResponse.ok) {
 <App
   title="Global Dashboard - CAPCo Fire Protection"
   description="View all projects."
-  isAuth={isAuth}
   currentUser={currentUser}
-  currentRole={currentRole || "Client"}
+  project={undefined}
   session={session}
+  supabase={supabase}
 >
   <HeroDashboard
     title="Project Dashboard"
@@ -99,20 +133,52 @@ if (statusResponse.ok) {
       : "Manage and track all fire protection projects"}
   />
 
-  <ProjectNav
-    currentRole={currentRole || "Client"}
-    projects={projects}
-    statuses={project_statuses}
-    currentUser={currentUser}
-  />
+  <ProjectNav projects={projects} statuses={project_statuses} currentUser={currentUser} />
 
-  <DashboardComponent
-    projects={projects}
-    project_statuses={project_statuses}
-    project_statuses_object={project_statuses_object}
-    currentUser={currentUser}
-    currentRole={currentRole}
-  />
+  <!-- Dashboard Container -->
+  <SectionContainer class="lg:pt-1" fullWidth={true}>
+    <div class="flex w-full flex-col gap-6 lg:flex-row">
+      {
+        projects && projects.length > 0 ? (
+          <>
+            {/* <!-- Projects List - 2/3 width on lg+ screens --> */}
+            <div class="w-full lg:w-2/3">
+              <ProjectList
+                projects={projects}
+                statusesObject={project_statuses_object}
+                currentUser={currentUser}
+              />
+            </div>
+            {/* <!-- Project Form - 1/3 width on lg+ screens --> */}
+            <div id="new-project" class="no-scrollbar w-full overflow-y-scroll lg:top-20 lg:w-1/3">
+              <div class="pb-6">
+                {/* <h2 class="text-2xl font-bold text-center uppercase text-gray-900 dark:text-white mb-8">Create a new project</h2> */}
+
+                <ProjectForm
+                  isNewProject={true}
+                  projectId=""
+                  projectStatus={0}
+                  currentUser={currentUser}
+                />
+              </div>
+            </div>
+          </>
+        ) : (
+          // <!-- No projects - show only form -->
+          <div id="new-project" class="w-full">
+            <div class="mx-auto max-w-2xl pb-6">
+              <ProjectForm
+                currentRole={currentRole}
+                isNewProject={true}
+                projectId=""
+                projectStatus={0}
+              />
+            </div>
+          </div>
+        )
+      }
+    </div>
+  </SectionContainer>
 
   <!-- Push Notification Permission Request for OAuth Users -->
   <script>
