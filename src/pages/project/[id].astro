@@ -827,14 +827,30 @@ if (!project) {
           onHide: () => {
             console.log("Drawer is hidden");
 
+            // Remove drawer-open class from body
+            document.body.classList.remove("drawer-open");
+
             // Remove the manually created backdrop when drawer closes
             const backdrop = document.querySelector("[drawer-backdrop]");
             if (backdrop) {
               backdrop.remove();
             }
+
+            // Unlock body scroll when drawer closes
+            if (window.unlockBodyScroll) {
+              window.unlockBodyScroll();
+            }
           },
           onShow: () => {
             console.log("Drawer is shown");
+
+            // Add drawer-open class to body
+            document.body.classList.add("drawer-open");
+
+            // Lock body scroll when drawer opens
+            if (window.lockBodyScroll) {
+              window.lockBodyScroll();
+            }
           },
           onToggle: () => {
             console.log("Drawer has been toggled");
@@ -847,7 +863,16 @@ if (!project) {
         // Add event listeners for drawer close buttons
         const closeButtons = document.querySelectorAll('[data-drawer-hide="drawer-user-center"]');
         closeButtons.forEach((button) => {
-          button.addEventListener("click", cleanupDrawerBackdrop);
+          button.addEventListener("click", () => {
+            // Remove drawer-open class from body
+            document.body.classList.remove("drawer-open");
+
+            cleanupDrawerBackdrop();
+            // Unlock body scroll when manually closing drawer
+            if (window.unlockBodyScroll) {
+              window.unlockBodyScroll();
+            }
+          });
         });
 
         // Open the drawer using Flowbite's method
@@ -868,7 +893,16 @@ if (!project) {
           if (backdrop) {
             backdrop.addEventListener("click", () => {
               // Backdrop click will be handled by Flowbite, but we can also clean up
-              setTimeout(cleanupDrawerBackdrop, 100);
+              setTimeout(() => {
+                // Remove drawer-open class from body
+                document.body.classList.remove("drawer-open");
+
+                cleanupDrawerBackdrop();
+                // Unlock body scroll when backdrop is clicked
+                if (window.unlockBodyScroll) {
+                  window.unlockBodyScroll();
+                }
+              }, 100);
             });
           }
 

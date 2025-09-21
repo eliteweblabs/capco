@@ -177,6 +177,12 @@ export function isSafari(): boolean {
   return /Safari/.test(ua) && !/Chrome|CriOS|FxiOS|EdgiOS/.test(ua);
 }
 
+export function isSafari18Beta(): boolean {
+  const ua = navigator.userAgent;
+  // Safari 18 beta has version 18.x.x
+  return /Safari/.test(ua) && /Version\/18\./.test(ua) && !/Chrome|CriOS|FxiOS|EdgiOS/.test(ua);
+}
+
 /**
  * Fixes Safari viewport positioning issues (Safari 18 beta and earlier)
  * Only runs on Safari browsers to avoid unnecessary processing
@@ -186,37 +192,85 @@ export function fixSafariViewport(): void {
     return; // Only run on Safari
   }
 
-  console.log("🍎 [UX-UTILS] Fixing Safari viewport positioning");
+  const isSafari18 = isSafari18Beta();
+  console.log(
+    `🍎 [UX-UTILS] Fixing Safari viewport positioning${isSafari18 ? " (Safari 18 Beta)" : ""}`
+  );
 
-  // Fix sticky container (SpeedDial) - LEFT ONLY
+  // AGGRESSIVE FIXES - Force all elements to stay in place
+
+  // Fix sticky container (SpeedDial) - FORCE POSITIONING
   const container = document.getElementById("sticky-container");
   if (container) {
-    container.style.setProperty("position", "fixed", "important");
-    container.style.setProperty("bottom", "1.5rem", "important");
-    container.style.setProperty("left", "1.5rem", "important");
-    container.style.removeProperty("right"); // Remove any right positioning
-    container.style.setProperty("z-index", "40", "important");
-    container.style.setProperty("transform", "translateZ(0)", "important");
+    let containerStyles = `
+      position: fixed !important;
+      bottom: 1.5rem !important;
+      left: 1.5rem !important;
+      z-index: 40 !important;
+      transform: translateZ(0) !important;
+      will-change: transform !important;
+      display: inline !important;
+    `;
+
+    // Safari 18 beta specific fixes
+    if (isSafari18) {
+      containerStyles += `
+        /* Safari 18 beta specific fixes */
+        contain: layout style paint !important;
+        isolation: isolate !important;
+        backface-visibility: hidden !important;
+        -webkit-transform: translateZ(0) !important;
+        -webkit-backface-visibility: hidden !important;
+      `;
+    }
+
+    container.style.cssText = containerStyles;
+    container.setAttribute("data-fixed", "true");
+    container.setAttribute("data-safari18", isSafari18 ? "true" : "false");
   }
 
-  // Fix SMS form panel - LEFT ONLY
+  // Fix SMS form panel - FORCE POSITIONING
   const panel = document.getElementById("sms-form-panel");
   if (panel) {
-    panel.style.setProperty("position", "fixed", "important");
-    panel.style.setProperty("bottom", "6rem", "important");
-    panel.style.setProperty("left", "1.5rem", "important");
-    panel.style.removeProperty("right"); // Remove any right positioning
-    panel.style.setProperty("z-index", "50", "important");
-    panel.style.setProperty("transform", "translateZ(0)", "important");
+    panel.style.cssText = `
+      position: fixed !important;
+      bottom: 6rem !important;
+      left: 1.5rem !important;
+      z-index: 50 !important;
+      transform: translateZ(0) !important;
+      will-change: transform !important;
+    `;
+    panel.setAttribute("data-fixed", "true");
   }
 
-  // Fix header positioning
+  // Fix header positioning - FORCE STICKY
   const header = document.querySelector("header");
   if (header) {
-    header.style.setProperty("position", "sticky", "important");
-    header.style.setProperty("top", "0", "important");
-    header.style.setProperty("z-index", "30", "important");
-    header.style.setProperty("transform", "translateZ(0)", "important");
+    let headerStyles = `
+      position: sticky !important;
+      top: 0 !important;
+      z-index: 30 !important;
+      transform: translateZ(0) !important;
+      will-change: transform !important;
+    `;
+
+    // Safari 18 beta specific fixes
+    if (isSafari18) {
+      headerStyles += `
+        /* Safari 18 beta specific fixes */
+        contain: layout style paint !important;
+        isolation: isolate !important;
+        backface-visibility: hidden !important;
+        -webkit-transform: translateZ(0) !important;
+        -webkit-backface-visibility: hidden !important;
+        /* Force header to stay at top */
+        position: -webkit-sticky !important;
+        position: sticky !important;
+      `;
+    }
+
+    header.style.cssText = headerStyles;
+    header.setAttribute("data-safari18", isSafari18 ? "true" : "false");
   }
 }
 
@@ -225,29 +279,145 @@ export function fixSafariViewport(): void {
  * Handles resize, orientation change, and other viewport events
  */
 export function setupViewportHandling(): void {
-  // Safari viewport fix
-  const applySafariFix = () => {
-    if (isSafari()) {
-      fixSafariViewport();
+  // NUCLEAR OPTION - Force elements to stay in place
+  const forcePositioning = () => {
+    console.log("🚀 [UX-UTILS] NUCLEAR OPTION - Forcing positioning");
+
+    // Force sticky container with multiple techniques
+    const container = document.getElementById("sticky-container");
+    if (container) {
+      // Remove all existing styles first
+      container.removeAttribute("style");
+      container.removeAttribute("class");
+
+      // Apply nuclear positioning
+      container.style.setProperty("position", "fixed", "important");
+      container.style.setProperty("bottom", "1.5rem", "important");
+      container.style.setProperty("left", "1.5rem", "important");
+      container.style.setProperty("z-index", "9999", "important");
+      container.style.setProperty("transform", "translate3d(0, 0, 0)", "important");
+      container.style.setProperty("will-change", "transform", "important");
+      container.style.setProperty("display", "inline-block", "important");
+      container.style.setProperty("width", "auto", "important");
+      container.style.setProperty("height", "auto", "important");
+      container.style.setProperty("max-width", "none", "important");
+      container.style.setProperty("max-height", "none", "important");
+      container.style.setProperty("contain", "layout style paint", "important");
+      container.style.setProperty("isolation", "isolate", "important");
+      container.style.setProperty("backface-visibility", "hidden", "important");
+      container.style.setProperty("-webkit-transform", "translate3d(0, 0, 0)", "important");
+      container.style.setProperty("-webkit-backface-visibility", "hidden", "important");
+
+      // Force it to stay in place with JavaScript
+      const rect = container.getBoundingClientRect();
+      if (rect.bottom > window.innerHeight || rect.left < 0 || rect.top < 0) {
+        container.style.setProperty("bottom", "1.5rem", "important");
+        container.style.setProperty("left", "1.5rem", "important");
+        container.style.setProperty("top", "auto", "important");
+        container.style.setProperty("right", "auto", "important");
+      }
+    }
+
+    // Force header with same nuclear approach as sticky button
+    const headerElement = document.querySelector("header");
+    if (headerElement) {
+      // Remove all existing styles first
+      headerElement.removeAttribute("style");
+
+      // Apply nuclear positioning (same as sticky button)
+      headerElement.style.cssText = `
+        position: fixed !important;
+        top: 0 !important;
+        left: 0 !important;
+        right: 0 !important;
+        width: 100% !important;
+        z-index: 9998 !important;
+        transform: translate3d(0, 0, 0) !important;
+        will-change: transform !important;
+        contain: layout style paint !important;
+        isolation: isolate !important;
+        backface-visibility: hidden !important;
+        -webkit-transform: translate3d(0, 0, 0) !important;
+        -webkit-backface-visibility: hidden !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        border: none !important;
+        outline: none !important;
+        box-shadow: none !important;
+        min-height: auto !important;
+        max-height: none !important;
+        overflow: visible !important;
+      `;
+      headerElement.setAttribute("data-fixed", "true");
     }
   };
 
-  // Apply on load
-  applySafariFix();
+  // Apply immediately
+  forcePositioning();
 
-  // Event listeners for Safari viewport fixes
-  window.addEventListener("resize", applySafariFix);
+  // Event listeners for viewport fixes
+  window.addEventListener("resize", forcePositioning);
   window.addEventListener("orientationchange", () => {
-    setTimeout(applySafariFix, 100);
+    setTimeout(forcePositioning, 100);
   });
-  window.addEventListener("scroll", applySafariFix);
-  window.addEventListener("focus", applySafariFix);
-  window.addEventListener("blur", applySafariFix);
+  window.addEventListener("scroll", forcePositioning);
+  window.addEventListener("focus", forcePositioning);
+  window.addEventListener("blur", forcePositioning);
+  window.addEventListener("touchstart", forcePositioning);
+  window.addEventListener("touchend", forcePositioning);
+  window.addEventListener("touchmove", forcePositioning);
 
-  // Periodic check for Safari (every 2 seconds)
-  if (isSafari()) {
-    setInterval(applySafariFix, 2000);
-  }
+  // NUCLEAR periodic check (every 500ms for ALL browsers)
+  setInterval(forcePositioning, 500);
+
+  // Additional nuclear checks
+  setInterval(() => {
+    const container = document.getElementById("sticky-container");
+    const header = document.querySelector("header");
+
+    if (container) {
+      const rect = container.getBoundingClientRect();
+      if (rect.bottom > window.innerHeight || rect.left < 0 || rect.top < 0) {
+        console.log("🚨 [UX-UTILS] Container out of bounds, forcing position");
+        forcePositioning();
+      }
+    }
+
+    // Monitor header with same approach as sticky button
+    const headerElement = document.querySelector("header");
+    if (headerElement) {
+      const rect = headerElement.getBoundingClientRect();
+      if (rect.top > 0) {
+        console.log("🚨 [UX-UTILS] Header out of bounds, forcing position");
+        // Force header to fixed positioning (same as sticky button)
+        headerElement.style.cssText = `
+          position: fixed !important;
+          top: 0 !important;
+          left: 0 !important;
+          right: 0 !important;
+          width: 100% !important;
+          z-index: 9998 !important;
+          transform: translate3d(0, 0, 0) !important;
+          will-change: transform !important;
+          contain: layout style paint !important;
+          isolation: isolate !important;
+          backface-visibility: hidden !important;
+          -webkit-transform: translate3d(0, 0, 0) !important;
+          -webkit-backface-visibility: hidden !important;
+          margin: 0 !important;
+          padding: 0 !important;
+          border: none !important;
+          outline: none !important;
+          box-shadow: none !important;
+          min-height: auto !important;
+          max-height: none !important;
+          overflow: visible !important;
+        `;
+        headerElement.setAttribute("data-fixed", "true");
+        forcePositioning();
+      }
+    }
+  }, 250);
 
   // Responsive behavior for all elements
   window.addEventListener("resize", () => {
@@ -271,7 +441,7 @@ export function setupViewportHandling(): void {
     });
 
     if (shouldFix && isSafari()) {
-      setTimeout(applySafariFix, 50);
+      // setTimeout(applySafariFix, 50);
     }
   });
 
@@ -331,6 +501,8 @@ export function ensureViewportBounds(
  * Uses multiple techniques to ensure scroll is locked on all browsers
  */
 export function lockBodyScroll(): void {
+  console.log("🔒 [UX-UTILS] AGGRESSIVE scroll lock");
+
   const body = document.body;
   const html = document.documentElement;
 
@@ -339,26 +511,33 @@ export function lockBodyScroll(): void {
   const originalBodyPosition = body.style.position;
   const originalBodyTop = body.style.top;
   const originalBodyWidth = body.style.width;
+  const originalBodyHeight = body.style.height;
   const originalHtmlOverflow = html.style.overflow;
 
   // Get current scroll position
   const scrollY = window.scrollY;
 
-  // Apply multiple scroll lock techniques
-  body.style.overflow = "hidden";
-  body.style.position = "fixed";
-  body.style.top = `-${scrollY}px`;
-  body.style.width = "100%";
-  html.style.overflow = "hidden";
+  // AGGRESSIVE scroll lock techniques
+  body.style.setProperty("overflow", "hidden", "important");
+  body.style.setProperty("position", "fixed", "important");
+  body.style.setProperty("top", `-${scrollY}px`, "important");
+  body.style.setProperty("left", "0", "important");
+  body.style.setProperty("right", "0", "important");
+  body.style.setProperty("width", "100%", "important");
+  body.style.setProperty("height", "100%", "important");
+  body.style.setProperty("touch-action", "none", "important");
+  body.style.setProperty("overscroll-behavior", "none", "important");
+  body.style.setProperty("-webkit-overflow-scrolling", "touch", "important");
+
+  html.style.setProperty("overflow", "hidden", "important");
+  html.style.setProperty("touch-action", "none", "important");
 
   // Safari iOS specific fixes
   if (isSafariIOS()) {
     // Prevent elastic scrolling
-    (body as any).style.webkitOverflowScrolling = "auto";
-    body.style.overscrollBehavior = "none";
-
-    // Add touch-action prevention
-    body.style.touchAction = "none";
+    body.style.setProperty("-webkit-overflow-scrolling", "auto", "important");
+    body.style.setProperty("overscroll-behavior", "none", "important");
+    body.style.setProperty("touch-action", "none", "important");
 
     // Prevent zoom on double tap
     const viewport = document.querySelector('meta[name="viewport"]');
@@ -372,17 +551,23 @@ export function lockBodyScroll(): void {
 
   // Store cleanup function on body for later use
   (body as any).__scrollLockCleanup = () => {
+    console.log("🔓 [UX-UTILS] Unlocking scroll");
+
     body.style.overflow = originalBodyOverflow;
     body.style.position = originalBodyPosition;
     body.style.top = originalBodyTop;
     body.style.width = originalBodyWidth;
+    body.style.height = originalBodyHeight;
+    body.style.left = "";
+    body.style.right = "";
+    body.style.touchAction = "";
+    body.style.overscrollBehavior = "";
+    // body.style.webkitOverflowScrolling = "";
+
     html.style.overflow = originalHtmlOverflow;
+    html.style.touchAction = "";
 
     if (isSafariIOS()) {
-      (body as any).style.webkitOverflowScrolling = "";
-      body.style.overscrollBehavior = "";
-      body.style.touchAction = "";
-
       // Restore viewport
       const viewport = document.querySelector('meta[name="viewport"]');
       if (viewport) {

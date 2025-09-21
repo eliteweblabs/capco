@@ -56,7 +56,10 @@
         window.scrollTo({ top: 0, behavior: "smooth" });
       }
 
-      const id = crypto.randomUUID();
+      // Generate unique ID with fallback for older browsers
+      const id = crypto.randomUUID
+        ? crypto.randomUUID()
+        : "notification-" + Math.random().toString(36).substr(2, 9) + Date.now();
       const fullNotification = { ...options, id };
 
       // console.log("🔔 [UNIFIED-NOTIFICATION] Creating notification with ID:", id);

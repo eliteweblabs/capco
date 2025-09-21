@@ -108,8 +108,13 @@ if ((currentUser?.id && currentRole === "Staff") || currentRole === "Admin") {
     <meta name="description" content={description} />
     <meta
       name="viewport"
-      content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no"
+      content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover"
     />
+    <!-- Safari 18 beta specific viewport fixes -->
+    <meta name="format-detection" content="telephone=no" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <link rel="icon" type="image/svg+xml" href="/img/favicon.svg" sizes="any" />
     <link rel="icon" type="image/png" href="/img/favicon.png" sizes="any" />
     <link rel="manifest" href="/manifest.json" />
@@ -257,6 +262,9 @@ o       oter -->
       (window as any).hideOnMobileInput = hideOnMobileInput;
       (window as any).lockBodyScroll = lockBodyScroll;
       (window as any).unlockBodyScroll = unlockBodyScroll;
+
+      // Initialize viewport handling for all elements
+      setupViewportHandling();
 
       document.addEventListener("DOMContentLoaded", () => {
         const currentUrl = new URL(window.location.href);
@@ -429,9 +437,6 @@ o       oter -->
           (window as any).initFlowbite();
         }
       });
-
-      // Initialize viewport handling for all elements
-      (window as any).setupViewportHandling();
     </script>
 
     <!-- Service Worker Registration for PWA -->
