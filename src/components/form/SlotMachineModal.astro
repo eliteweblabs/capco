@@ -614,8 +614,13 @@ const displayText = buttonText || selectedOption?.label || placeholder;
       return newSelectedIndex;
     }
 
-    // Lock body scroll to prevent background scrolling
-    document.body.style.overflow = "hidden";
+    // Lock body scroll to prevent background scrolling (Safari iOS compatible)
+    if (window.lockBodyScroll) {
+      window.lockBodyScroll();
+    } else {
+      // Fallback for older implementations
+      document.body.style.overflow = "hidden";
+    }
 
     // Create modal using partial route
     const headers = new Headers();
@@ -675,7 +680,7 @@ const displayText = buttonText || selectedOption?.label || placeholder;
     }
 
     // Focus search input after modal is fully rendered (only for non-fetchOnLoad modals)
-    if (searchInput && !fetchOnLoad) {
+    if (searchInput) {
       // Use setTimeout to ensure the modal is fully rendered
       setTimeout(() => {
         searchInput.focus();
@@ -1314,8 +1319,13 @@ const displayText = buttonText || selectedOption?.label || placeholder;
 
     // Cleanup function to restore body scroll
     function cleanupModal() {
-      // Unlock body scroll
-      document.body.style.overflow = "";
+      // Unlock body scroll (Safari iOS compatible)
+      if (window.unlockBodyScroll) {
+        window.unlockBodyScroll();
+      } else {
+        // Fallback for older implementations
+        document.body.style.overflow = "";
+      }
     }
 
     // Close modal when clicking outside
@@ -1326,8 +1336,13 @@ const displayText = buttonText || selectedOption?.label || placeholder;
       }
     });
 
-    // Prevent body scroll when modal is open
-    document.body.style.overflow = "hidden";
+    // Prevent body scroll when modal is open (Safari iOS compatible)
+    if (window.lockBodyScroll) {
+      window.lockBodyScroll();
+    } else {
+      // Fallback for older implementations
+      document.body.style.overflow = "hidden";
+    }
   }
 
   // Generic handleSelect function that works for any slot machine

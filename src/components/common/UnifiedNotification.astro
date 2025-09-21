@@ -42,8 +42,13 @@
     async show(options: NotificationOptions): Promise<string> {
       // console.log("🔔 [UNIFIED-NOTIFICATION] show() called with options:", options);
 
-      // Lock body scroll to prevent background scrolling
-      document.body.style.overflow = "hidden";
+      // Lock body scroll to prevent background scrolling (Safari iOS compatible)
+      if ((window as any).lockBodyScroll) {
+        (window as any).lockBodyScroll();
+      } else {
+        // Fallback for older implementations
+        document.body.style.overflow = "hidden";
+      }
 
       // Scroll to top before showing modal (only on mobile devices - fixes Safari positioning issues)
       const { isAnyMobile } = await import("../../lib/mobile-utils.ts");
@@ -113,8 +118,13 @@
     }
 
     hide(id?: string) {
-      // Unlock body scroll
-      document.body.style.overflow = "";
+      // Unlock body scroll (Safari iOS compatible)
+      if ((window as any).unlockBodyScroll) {
+        (window as any).unlockBodyScroll();
+      } else {
+        // Fallback for older implementations
+        document.body.style.overflow = "";
+      }
 
       if (id) {
         const notification = this.notifications.get(id);
