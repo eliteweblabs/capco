@@ -155,12 +155,7 @@ const isBackend = isBackendPage(currentUrl);
       }
     });
 
-    // Responsive behavior
-    window.addEventListener("resize", () => {
-      if (window.innerWidth >= 768 && isOpen && toggleBtn) {
-        toggleBtn.style.opacity = "1";
-      }
-    });
+    // Responsive behavior is now handled by setupViewportHandling() in UX utilities
 
     // Close panel when SMS form is submitted successfully
     if (formPanel) {
@@ -175,80 +170,8 @@ const isBackend = isBackendPage(currentUrl);
       }
     }
 
-    // Safari 18 beta fix - ensure proper positioning
-    function fixSafariViewport() {
-      const container = document.getElementById("sticky-container");
-      if (container) {
-        // Force re-apply positioning with !important
-        container.style.setProperty("position", "fixed", "important");
-        container.style.setProperty("bottom", "1.5rem", "important");
-        container.style.setProperty("right", "1.5rem", "important");
-        container.style.setProperty("z-index", "40", "important");
-
-        // Also fix the panel if it exists
-        const panel = document.getElementById("sms-form-panel");
-        if (panel) {
-          panel.style.setProperty("position", "fixed", "important");
-          panel.style.setProperty("bottom", "6rem", "important");
-          panel.style.setProperty("right", "1.5rem", "important");
-          panel.style.setProperty("z-index", "50", "important");
-        }
-      }
-    }
-
-    // Apply fix on load and multiple events
-    fixSafariViewport();
-
-    // Add multiple event listeners to catch Safari 18 beta resets
-    window.addEventListener("resize", fixSafariViewport);
-    window.addEventListener("orientationchange", () => {
-      setTimeout(fixSafariViewport, 100);
-    });
-    window.addEventListener("scroll", fixSafariViewport);
-    window.addEventListener("focus", fixSafariViewport);
-    window.addEventListener("blur", fixSafariViewport);
-
-    // Periodic check to ensure positioning stays correct (every 2 seconds)
-    setInterval(fixSafariViewport, 2000);
-
-    // Also fix when the panel is toggled
-    if (toggleBtn) {
-      toggleBtn.addEventListener("click", () => {
-        setTimeout(fixSafariViewport, 100);
-      });
-    }
-
-    // Use MutationObserver to catch DOM changes that might reset positioning
-    const observer = new MutationObserver((mutations) => {
-      let shouldFix = false;
-      mutations.forEach((mutation) => {
-        if (
-          mutation.type === "attributes" &&
-          (mutation.attributeName === "style" || mutation.attributeName === "class")
-        ) {
-          const target = mutation.target;
-          if (
-            target instanceof HTMLElement &&
-            (target.id === "sticky-container" || target.id === "sms-form-panel")
-          ) {
-            shouldFix = true;
-          }
-        }
-      });
-      if (shouldFix) {
-        setTimeout(fixSafariViewport, 50);
-      }
-    });
-
-    // Start observing
-    if (container) {
-      observer.observe(container, {
-        attributes: true,
-        attributeFilter: ["style", "class"],
-      });
-    }
-
-    console.log("📱 [STICKY-SMS] Component initialized with Safari 18 beta fix");
+    // All viewport handling is now centralized in setupViewportHandling() in UX utilities
+    console.log("📱 [STICKY-SMS] Component initialized - viewport handling managed globally");
   });
 </script>
 

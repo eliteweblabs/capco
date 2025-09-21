@@ -169,6 +169,164 @@ export function isSafariIOS(): boolean {
 }
 
 /**
+ * Detects if the current browser is Safari (any platform)
+ * @returns true if running on Safari
+ */
+export function isSafari(): boolean {
+  const ua = navigator.userAgent;
+  return /Safari/.test(ua) && !/Chrome|CriOS|FxiOS|EdgiOS/.test(ua);
+}
+
+/**
+ * Fixes Safari viewport positioning issues (Safari 18 beta and earlier)
+ * Only runs on Safari browsers to avoid unnecessary processing
+ */
+export function fixSafariViewport(): void {
+  if (!isSafari()) {
+    return; // Only run on Safari
+  }
+
+  console.log("🍎 [UX-UTILS] Fixing Safari viewport positioning");
+
+  // Fix sticky container (SpeedDial) - LEFT ONLY
+  const container = document.getElementById("sticky-container");
+  if (container) {
+    container.style.setProperty("position", "fixed", "important");
+    container.style.setProperty("bottom", "1.5rem", "important");
+    container.style.setProperty("left", "1.5rem", "important");
+    container.style.removeProperty("right"); // Remove any right positioning
+    container.style.setProperty("z-index", "40", "important");
+    container.style.setProperty("transform", "translateZ(0)", "important");
+  }
+
+  // Fix SMS form panel - LEFT ONLY
+  const panel = document.getElementById("sms-form-panel");
+  if (panel) {
+    panel.style.setProperty("position", "fixed", "important");
+    panel.style.setProperty("bottom", "6rem", "important");
+    panel.style.setProperty("left", "1.5rem", "important");
+    panel.style.removeProperty("right"); // Remove any right positioning
+    panel.style.setProperty("z-index", "50", "important");
+    panel.style.setProperty("transform", "translateZ(0)", "important");
+  }
+
+  // Fix header positioning
+  const header = document.querySelector("header");
+  if (header) {
+    header.style.setProperty("position", "sticky", "important");
+    header.style.setProperty("top", "0", "important");
+    header.style.setProperty("z-index", "30", "important");
+    header.style.setProperty("transform", "translateZ(0)", "important");
+  }
+}
+
+/**
+ * Sets up responsive viewport handling for all elements
+ * Handles resize, orientation change, and other viewport events
+ */
+export function setupViewportHandling(): void {
+  // Safari viewport fix
+  const applySafariFix = () => {
+    if (isSafari()) {
+      fixSafariViewport();
+    }
+  };
+
+  // Apply on load
+  applySafariFix();
+
+  // Event listeners for Safari viewport fixes
+  window.addEventListener("resize", applySafariFix);
+  window.addEventListener("orientationchange", () => {
+    setTimeout(applySafariFix, 100);
+  });
+  window.addEventListener("scroll", applySafariFix);
+  window.addEventListener("focus", applySafariFix);
+  window.addEventListener("blur", applySafariFix);
+
+  // Periodic check for Safari (every 2 seconds)
+  if (isSafari()) {
+    setInterval(applySafariFix, 2000);
+  }
+
+  // Responsive behavior for all elements
+  window.addEventListener("resize", () => {
+    // Handle responsive visibility
+    const container = document.getElementById("sticky-container");
+    if (container && window.innerWidth >= 768) {
+      container.style.opacity = "1";
+    }
+  });
+
+  // Use MutationObserver to catch DOM changes that might reset positioning
+  const observer = new MutationObserver((mutations) => {
+    let shouldFix = false;
+    mutations.forEach((mutation) => {
+      if (
+        mutation.type === "attributes" &&
+        (mutation.attributeName === "style" || mutation.attributeName === "class")
+      ) {
+        shouldFix = true;
+      }
+    });
+
+    if (shouldFix && isSafari()) {
+      setTimeout(applySafariFix, 50);
+    }
+  });
+
+  // Start observing
+  observer.observe(document.body, {
+    attributes: true,
+    subtree: true,
+    attributeFilter: ["style", "class"],
+  });
+}
+
+/**
+ * Ensures elements stay within viewport bounds
+ * @param elementId - ID of element to check
+ * @param fallbackPosition - Fallback positioning if element is out of bounds
+ */
+export function ensureViewportBounds(
+  elementId: string,
+  fallbackPosition: { top?: string; bottom?: string; left?: string; right?: string } = {}
+): void {
+  const element = document.getElementById(elementId);
+  if (!element) return;
+
+  const rect = element.getBoundingClientRect();
+  const viewport = {
+    width: window.innerWidth,
+    height: window.innerHeight,
+  };
+
+  // Check if element is out of viewport
+  const isOutOfBounds =
+    rect.right > viewport.width || rect.left < 0 || rect.bottom > viewport.height || rect.top < 0;
+
+  if (isOutOfBounds) {
+    console.log(
+      `📐 [UX-UTILS] Element ${elementId} is out of viewport, applying fallback positioning`
+    );
+
+    // Apply fallback positioning
+    if (fallbackPosition.top) {
+      element.style.setProperty("top", fallbackPosition.top, "important");
+    }
+    if (fallbackPosition.bottom) {
+      element.style.setProperty("bottom", fallbackPosition.bottom, "important");
+    }
+    if (fallbackPosition.left) {
+      element.style.setProperty("left", fallbackPosition.left, "important");
+    }
+    if (fallbackPosition.right) {
+      element.style.setProperty("right", fallbackPosition.right, "important");
+    }
+  }
+}
+
+/**
  * Locks body scroll to prevent background scrolling (especially for Safari iOS)
  * Uses multiple techniques to ensure scroll is locked on all browsers
  */
