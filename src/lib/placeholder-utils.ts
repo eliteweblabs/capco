@@ -54,6 +54,7 @@ export interface PlaceholderData {
   baseUrl?: string;
   primaryColor?: string;
   svgLogo?: string;
+  companyName?: string;
 }
 
 /**
@@ -135,6 +136,11 @@ export function replacePlaceholders(
     // );
     addBoldTags = false;
     result = result.replace(/\{\{\s*SVG_LOGO\s*\}\}/g, data.svgLogo);
+  }
+
+  if (data.companyName) {
+    // console.log(`🔄 [PLACEHOLDER-UTILS] Replacing {{COMPANY_NAME}} with: ${data.companyName}`);
+    result = result.replace(/\{\{\s*COMPANY_NAME\s*\}\}/g, data.companyName);
   }
 
   // console.log("🔄 [PLACEHOLDER-UTILS] Final result:", result);

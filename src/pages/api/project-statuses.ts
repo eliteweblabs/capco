@@ -174,6 +174,7 @@ export const GET: APIRoute = async ({ request, cookies, url }) => {
             clientEmail: clientEmail || "",
             contractUrl: projectId ? `/project/${projectId}?status=contract` : "",
             siteUrl: process.env.SITE_URL || "https://capcofire.com",
+            companyName: process.env.COMPANY_NAME || "CAPCo Fire",
           }
         : null;
 
