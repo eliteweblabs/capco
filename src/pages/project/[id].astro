@@ -2,7 +2,6 @@
 import App from "../../components/common/App.astro";
 import SectionContainer from "../../components/common/SectionContainer.astro";
 import HeroProject from "../../components/common/HeroProject.astro";
-
 import SlidingPillNav from "../../components/common/SlidingPillNav.astro";
 import TabDocuments from "../../components/project/TabDocuments.astro";
 import TabDiscussions from "../../components/project/TabDiscussions.astro";
@@ -13,28 +12,14 @@ import TabDeposit from "../../components/project/TabDeposit.astro";
 import TabFinalInvoice from "../../components/project/TabFinalInvoice.astro";
 import TabActivityLog from "../../components/project/TabActivityLog.astro";
 import TabGeneratePdf from "../../components/project/TabGeneratePdf.astro";
-import { getI18N } from "@/i18n";
-import { supabase } from "../../lib/supabase";
 import "../../lib/refresh-manager.ts";
 
-const { currentLocale } = Astro;
-const i18n = getI18N({ currentLocale });
-
-// Get the project ID from the URL parameter
 const { id } = Astro.params;
-
-// console.log("🚀 [PROJECT] Front matter starting execution for project ID:", id);
-
-// Get auth data directly since App component handles auth requirements
 import { checkAuth } from "../../lib/auth";
 const { currentUser, currentRole = "Client", isAuth } = await checkAuth(Astro.cookies);
-
 if (!isAuth) {
   return Astro.redirect("/login");
 }
-
-// console.log("🚀 [PROJECT] Current user:", currentUser);
-// Removed getAuthorInfoServer function - using direct database queries for better performance
 
 // Get the status parameter from URL query string
 const statusParam = Astro.url.searchParams.get("status");
@@ -66,14 +51,10 @@ const activeTabIndex =
     ? tabOrder.indexOf(defaultTab || "project-form")
     : 0;
 
-// Fetch project data and project author profile - RLS will handle authorization
+// Fetch project data and project author profile using get-project API
 let project = null;
-let authorProfile = null;
-// let invoiceData = null;
-let totalAmount = 0;
-let invoiceId = "0";
-let statusesResult: any = null;
-let statuses: any[] = [];
+let projectAuthor = null;
+let invoiceResult = { data: null, error: null };
 
 // Status-related variables (will be defined after data fetching)
 let projectId = "";
@@ -85,250 +66,104 @@ let currentStatusInt = 0;
 let currentStatusColor = "gray";
 let currentStatusProjectAction: string | null = null;
 let statusesObject: any = {};
+let statuses: any[] = [];
 
-// console.log("🚀 [PROJECT] About to start database queries, supabase available:", !!supabase);
-// console.log("🚀 [PROJECT] Supabase object:", supabase);
-// console.log("🚀 [PROJECT] SupabaseAdmin object:", supabaseAdmin);
+// Use get-project API to fetch project and author data
+const getProjectResponse = await fetch(`${Astro.url.origin}/api/get-project?id=${id}`, {
+  method: "GET",
+  credentials: "include",
+  headers: {
+    Cookie: Astro.request.headers.get("Cookie") || "",
+  },
+});
 
-// Initialize invoiceResult with default value
-let invoiceResult = { data: null, error: null };
-
-if (supabase) {
-  console.log("🔍 [PROJECT-DEBUG] Looking for project with ID:", id, "Type:", typeof id);
-
-  // OPTIMIZED: Run all database queries in parallel for much faster loading
-  const [projectResult, invoiceResultData, statusesResultData] = await Promise.all([
-    // 1. Get project data
-    supabase.from("projects").select("*").eq("id", id).single(),
-
-    // 2. Get invoice data (parallel with project query)
-    supabase
-      .from("invoices")
-      .select("id, catalog_line_items, status, project_id")
-      .eq("project_id", id)
-      .single(),
-
-    // 3. Get status labels (parallel with other queries)
-    supabase
-      .from("project_statuses")
-      .select(
-        "status_code, admin_status_name, client_status_name, client_project_action, admin_project_action, client_status_tab, admin_status_tab, status_color"
-      )
-      .order("status_code"),
-  ]);
-
-  const invoiceResult = invoiceResultData || { data: null, error: null };
-  // Assign the statuses result (legacy - will be replaced)
-  statusesResult = statusesResultData;
-
-  console.log("🔍 [PROJECT-DEBUG] Project query result:", projectResult);
-  console.log("🔍 [PROJECT-DEBUG] Project data:", projectResult.data);
-  console.log("🔍 [PROJECT-DEBUG] Project error:", projectResult.error);
-
-  project = projectResult.data;
-  // console.log("🔍 [PROJECT] Project data:", project.featured_image_data);
-  projectId = project?.id?.toString() || id || "";
-
-  // Fetch project statuses using the unified API
-  const statusApiUrl = new URL("/api/project-statuses", Astro.url.origin);
-  statusApiUrl.searchParams.set("projectId", projectId);
-  statusApiUrl.searchParams.set("projectAddress", project?.address || "");
-  statusApiUrl.searchParams.set(
-    "clientName",
-    (authorProfile as any)?.company_name ||
-      (authorProfile as any)?.first_name + " " + (authorProfile as any)?.last_name ||
-      "Client"
-  );
-  statusApiUrl.searchParams.set("clientEmail", (authorProfile as any)?.email || "");
-
-  const statusResponse = await fetch(statusApiUrl.toString(), {
-    method: "GET",
-    headers: {
-      Cookie: Astro.request.headers.get("Cookie") || "",
-    },
-  });
-
-  let statusData: any = { success: false, roleBasedStatuses: {}, statusesMap: {} };
-  if (statusResponse.ok) {
-    statusData = await statusResponse.json();
-    console.log("✅ [PROJECT] Unified status API response received:", statusData);
+if (getProjectResponse.ok) {
+  const projectData = await getProjectResponse.json();
+  console.log("🔍 [PROJECT-DEBUG] Get project API response:", projectData);
+  if (projectData.success) {
+    project = projectData.project;
+    projectAuthor = projectData.projectAuthor;
+    projectId = project?.id?.toString() || id || "";
+    console.log("🔍 [PROJECT-DEBUG] Project data loaded:", project);
+    console.log("🔍 [PROJECT-DEBUG] Project author:", projectAuthor);
   } else {
-    console.error(
-      "❌ [PROJECT] Status API failed:",
-      statusResponse.status,
-      statusResponse.statusText
-    );
-  }
-
-  // Use unified API data if available
-  if (statusData.success) {
-    statusesObject = statusData.roleBasedStatuses;
-    console.log(
-      "🔍 [PROJECT-SERVER] Looking for status code:",
-      project.status,
-      "type:",
-      typeof project.status
-    );
-    console.log("🔍 [PROJECT-SERVER] Available status codes:", Object.keys(statusesObject));
-    console.log(
-      "🔍 [PROJECT-SERVER] Available status codes types:",
-      Object.keys(statusesObject).map((k) => `${k} (${typeof k})`)
-    );
-    console.log(
-      "🔍 [PROJECT-SERVER] Status object for project.status:",
-      statusesObject[project.status]
-    );
-    console.log(
-      "🔍 [PROJECT-SERVER] Status object for project.status (string):",
-      statusesObject[project.status.toString()]
-    );
-    console.log(
-      "🔍 [PROJECT-SERVER] Status object for project.status (number):",
-      statusesObject[Number(project.status)]
-    );
-    currentStatusObj = statusesObject[project.status] || {};
-  }
-  currentStatusTab = currentStatusObj.status_tab || null;
-  currentStatusSlug = currentStatusObj.status_slug || null;
-  currentStatusName = currentStatusObj.status_name || null;
-  currentStatusInt = project.status || 0;
-  currentStatusColor = currentStatusObj.status_color || "gray";
-  currentStatusProjectAction = currentStatusObj.project_action || null;
-
-  console.log("🔍 [PROJECT] Current currentStatusObj:", currentStatusObj);
-  console.log("🔍 [PROJECT] Current currentStatusObj keys:", Object.keys(currentStatusObj));
-  console.log(
-    "🔍 [PROJECT] Current currentStatusObj.project_action:",
-    currentStatusObj.project_action
-  );
-  console.log("🔍 [PROJECT] Current currentStatusProjectAction:", currentStatusProjectAction);
-  console.log("🔍 [PROJECT] Project status:", project.status);
-  console.log("🔍 [PROJECT] StatusesObject keys:", Object.keys(statusesObject));
-  console.log("🔍 [PROJECT] StatusesObject values:", Object.values(statusesObject));
-
-  // Define variables for component props
-
-  // Convert statusesObject back to array for components that expect it
-  statuses = Object.values(statusesObject);
-
-  console.log("🔍 [PROJECT] Current statusesObject:", statusesObject);
-  console.log("🔍 [PROJECT] Current statuses:", statuses);
-
-  // console.log("🔍 [PROJECT] Current status object:", currentStatusObj);
-  // console.log("🔍 [PROJECT] Current status tab:", currentStatusTab);
-  // console.log("🔍 [PROJECT] Current status slug:", currentStatusSlug);
-  // console.log("🔍 [PROJECT] Current status name:", currentStatusName);
-  // console.log("🔍 [PROJECT] Current status int:", currentStatusInt);
-  // console.log("🔍 [PROJECT] Current status color:", currentStatusColor);
-  // console.log("🔍 [PROJECT] Current status project action:", currentStatusProjectAction);
-  // Check project query result
-  if (projectResult.error) {
-    console.error("Error fetching project:", projectResult.error);
+    console.error("🔍 [PROJECT-DEBUG] Get project API returned error:", projectData.error);
     console.log("🌐 [PROJECT] Project not found or no access, redirecting to dashboard");
     return Astro.redirect("/dashboard");
   }
-
-  // console.log("🔍 [PROJECT] Project data loaded:", {
-  //   id: project.id,
-  //   title: project.title,
-  //   author_id: project.author_id,
-  //   assigned_to_id: project.assigned_to_id,
-  //   hasAuthorId: !!project.author_id,
-  // });
-
-  // OPTIMIZED: Get author and assigned user profiles in parallel (only if needed)
-  // console.log("🔍 [PROJECT] Setting up profile queries:", {
-  //   hasAuthorId: !!project.author_id,
-  //   authorId: project.author_id,
-  //   hasAssignedId: !!project.assigned_to_id,
-  //   assignedId: project.assigned_to_id,
-  // });
-
-  if (project.author_id || project.assigned_to_id) {
-    const profileQueries = [];
-
-    if (project.author_id) {
-      // console.log("🔍 [PROJECT] Adding author profile query for:", project.author_id);
-      profileQueries.push(
-        supabase
-          .from("profiles")
-          .select("id, company_name, role, email")
-          .eq("id", project.author_id)
-          .maybeSingle()
-      );
-    }
-
-    // if (project.assigned_to_id) {
-    //   profileQueries.push(
-    //     supabase
-    //       .from("profiles")
-    //       .select("id, company_name, role, email")
-    //       .eq("id", project.assigned_to_id)
-    //       .maybeSingle()
-    //   );
-    // }
-
-    const profileResults = await Promise.all(profileQueries);
-
-    // Process author profile
-    // console.log("🔍 [PROJECT] Processing author profile:", {
-    //   hasAuthorId: !!project.author_id,
-    //   authorId: project.author_id,
-    //   profileResultsLength: profileResults.length,
-    //   profileResults: profileResults,
-    // });
-
-    if (project.author_id && profileResults[0]) {
-      const profileData = profileResults[0].data;
-      const profileError = profileResults[0].error;
-
-      // console.log("🔍 [PROJECT] Profile data:", {
-      //   profileData,
-      //   profileError,
-      //   hasData: !!profileData,
-      //   hasError: !!profileError,
-      //   currentRole,
-      // });
-
-      if (profileData && !profileError) {
-        authorProfile = {
-          id: profileData.id,
-          role: profileData.role || "Unknown",
-          company_name: profileData.company_name,
-          email: profileData.email || "",
-          profile: profileData,
-        };
-      } else {
-        authorProfile = {
-          id: project.author_id,
-          role: "Unknown",
-          company_name: project.company_name || null,
-          email: "",
-          profile: null,
-        };
-      }
-    }
-
-    // Process assigned user profile
-    if (project.assigned_to_id) {
-      const assignedIndex = project.author_id ? 1 : 0;
-      const assignedResult = profileResults[assignedIndex];
-
-      if (assignedResult?.data) {
-        project.assigned_to_name = assignedResult.data.company_name || assignedResult.data.id;
-      } else {
-        project.assigned_to_name = null;
-      }
-    }
-  }
 } else {
-  console.error("🚀 [PROJECT] Supabase not available - cannot fetch data");
-  console.error("🚀 [PROJECT] This will cause the page to fail");
+  console.error(
+    "🔍 [PROJECT-DEBUG] Get project API request failed with status:",
+    getProjectResponse.status
+  );
+  console.log("🌐 [PROJECT] Project API failed, redirecting to dashboard");
+  return Astro.redirect("/dashboard");
 }
 
-// Safety check - if no project was found, redirect to dashboard
-if (!project) {
-  return Astro.redirect("/dashboard");
+// Fetch invoice data if project was loaded successfully
+if (project) {
+  try {
+    const invoiceResponse = await fetch(
+      `${Astro.url.origin}/api/invoices?project_id=${projectId}`,
+      {
+        method: "GET",
+        credentials: "include",
+        headers: {
+          Cookie: Astro.request.headers.get("Cookie") || "",
+        },
+      }
+    );
+
+    if (invoiceResponse.ok) {
+      const invoiceData = await invoiceResponse.json();
+      if (invoiceData.success && invoiceData.invoices && invoiceData.invoices.length > 0) {
+        invoiceResult = { data: invoiceData.invoices[0], error: null };
+        console.log("🔍 [PROJECT-DEBUG] Invoice data loaded:", invoiceResult.data);
+      }
+    }
+  } catch (error) {
+    console.error("🔍 [PROJECT-DEBUG] Error fetching invoice data:", error);
+  }
+}
+
+// Fetch project statuses using the unified API with project data
+const statusApiUrl = new URL("/api/project-statuses", Astro.url.origin);
+statusApiUrl.searchParams.set("projectId", projectId);
+statusApiUrl.searchParams.set("projectAddress", project?.address || "");
+
+console.log("🔍 [PROJECT] Constructed Status API URL:", statusApiUrl.toString());
+
+const statusResponse = await fetch(statusApiUrl.toString(), {
+  method: "GET",
+  credentials: "include",
+  headers: {
+    Cookie: Astro.request.headers.get("Cookie") || "",
+  },
+});
+
+if (statusResponse.ok) {
+  const statusData = await statusResponse.json();
+  if (statusData.success) {
+    // Use the complete formatted data returned by the API
+    statusesObject = statusData.roleBasedStatuses;
+    statuses = statusData.statusesArray || [];
+
+    // Add selectOptions to statusesObject for form components
+    if (statusData.selectOptions) {
+      statusesObject.selectOptions = statusData.selectOptions;
+    }
+
+    // Use the current status object from the API
+    if (statusData.currentStatus) {
+      currentStatusObj = statusData.currentStatus;
+      currentStatusTab = statusData.currentStatus.status_tab || null;
+      currentStatusSlug = statusData.currentStatus.status_slug || null;
+      currentStatusName = statusData.currentStatus.status_name || null;
+      currentStatusInt = statusData.currentStatus.status_int || 0;
+      currentStatusColor = statusData.currentStatus.status_color || "gray";
+      currentStatusProjectAction = statusData.currentStatus.project_action || null;
+    }
+  }
 }
 ---
 
@@ -343,7 +178,7 @@ if (!project) {
   projectId={projectId}
 >
   <!-- Add Supabase URL meta tag for image loading -->
-  <meta name="supabase-url" content={import.meta.env.PUBLIC_SUPABASE_URL} />
+  <!-- <meta name="supabase-url" content={import.meta.env.PUBLIC_SUPABASE_URL} /> -->
   <HeroProject
     title={project?.address || project?.title || "Untitled Project"}
     description={`<div class="space-y-1">
@@ -359,8 +194,8 @@ if (!project) {
     currentStatusName={currentStatusName || undefined}
     currentRole={currentRole || "Client"}
     project={project}
-    statuses={statusesObject}
-    authorProfile={authorProfile}
+    statusesObject={statusesObject}
+    authorProfile={projectAuthor}
     currentStatusTab={currentStatusTab || undefined}
   />
   <SectionContainer>
@@ -439,7 +274,7 @@ if (!project) {
         projectId={projectId}
         projectStatus={currentStatusInt}
         projectStatusLabel={currentStatusName || undefined}
-        authorProfile={authorProfile}
+        authorProfile={projectAuthor}
       />
 
       <!-- Discussion Tab -->
@@ -451,7 +286,7 @@ if (!project) {
         projectId={projectId}
         projectStatus={currentStatusInt}
         projectStatusLabel={currentStatusName || undefined}
-        authorProfile={authorProfile}
+        authorProfile={projectAuthor}
         supabaseUrl={import.meta.env.PUBLIC_SUPABASE_URL}
       />
 
@@ -462,7 +297,7 @@ if (!project) {
         projectId={projectId}
         projectStatus={currentStatusInt}
         projectStatusLabel={currentStatusName || undefined}
-        authorProfile={authorProfile}
+        authorProfile={projectAuthor}
         fileType="media"
       />
 
@@ -473,7 +308,7 @@ if (!project) {
         projectId={projectId}
         projectStatus={currentStatusInt}
         projectStatusLabel={currentStatusName || undefined}
-        authorProfile={authorProfile}
+        authorProfile={projectAuthor}
         currentUser={currentUser}
         invoiceResult={invoiceResult || { data: null, error: null }}
       />
@@ -485,7 +320,7 @@ if (!project) {
         projectId={projectId}
         projectStatus={currentStatusInt}
         projectStatusLabel={currentStatusName || undefined}
-        authorProfile={authorProfile}
+        authorProfile={projectAuthor}
       />
 
       <!-- Deposit Tab -->
@@ -495,9 +330,7 @@ if (!project) {
         projectId={projectId}
         projectStatus={currentStatusInt}
         projectStatusLabel={currentStatusName || undefined}
-        authorProfile={authorProfile}
-        invoiceId={invoiceId || "0"}
-        totalAmount={totalAmount}
+        authorProfile={projectAuthor}
       />
 
       <!-- Final Invoice Tab -->
@@ -507,9 +340,7 @@ if (!project) {
         projectId={projectId}
         projectStatus={currentStatusInt}
         projectStatusLabel={currentStatusName || undefined}
-        authorProfile={authorProfile}
-        invoiceId={invoiceId || "0"}
-        totalAmount={totalAmount}
+        authorProfile={projectAuthor}
       />
 
       <TabActivityLog currentRole={currentRole || undefined} projectId={projectId} />
@@ -524,7 +355,7 @@ if (!project) {
   define:vars={{
     userRole: currentRole,
     projectData: project,
-    currentUserData: authorProfile,
+    currentUserData: projectAuthor,
     currentStatusInt: currentStatusInt.toString(),
     currentStatusName: currentStatusName,
     currentStatusProjectAction: currentStatusProjectAction,
@@ -808,6 +639,35 @@ if (!project) {
     });
   }
 
+  // Function to handle status update notifications
+  function handleUpdateStatusNotification(data, source) {
+    console.log(`🔔 [${source}] Handling notification:`, data);
+
+    if (data.notificationData) {
+      const { admin, client } = data.notificationData;
+      const userRole = "${currentRole}";
+
+      // Show appropriate notification based on user role
+      const notification = userRole === "Client" ? client : admin;
+
+      if (notification && window.showModal) {
+        window.showModal(
+          notification.type || "success",
+          notification.title || "Status Updated",
+          notification.message || "Project status updated successfully",
+          notification.duration || 5000
+        );
+      } else {
+        console.warn(`🔔 [${source}] No notification data or showModal function available`);
+      }
+    } else {
+      console.warn(`🔔 [${source}] No notification data in response`);
+    }
+  }
+
+  // Make function globally available
+  window.handleUpdateStatusNotification = handleUpdateStatusNotification;
+
   document.addEventListener("DOMContentLoaded", () => {
     // Check if we should open the drawer (you can add conditions here)
     const shouldOpenDrawer = true; // Add your condition here
@@ -852,16 +712,18 @@ if (!project) {
 
         // Open the drawer using Flowbite's method
         if (currentRole !== "Client") {
-          drawer.show();
-
-          // Create backdrop element manually if it doesn't exist
+          // Create backdrop element before showing drawer
           let backdrop = document.querySelector("[drawer-backdrop]");
           if (!backdrop) {
             backdrop = document.createElement("div");
             backdrop.setAttribute("drawer-backdrop", "");
             backdrop.className = "bg-gray-900/50 dark:bg-gray-900/80 fixed inset-0 z-30";
             document.body.appendChild(backdrop);
+            console.log("🔍 [DRAWER] Backdrop created:", backdrop);
+          } else {
+            console.log("🔍 [DRAWER] Backdrop already exists:", backdrop);
           }
+
           // Add event listener to backdrop for cleanup
           if (backdrop) {
             backdrop.addEventListener("click", () => {
@@ -869,6 +731,11 @@ if (!project) {
               setTimeout(cleanupDrawerBackdrop, 100);
             });
           }
+
+          // Show the drawer after backdrop is created with a small delay
+          setTimeout(() => {
+            drawer.show();
+          }, 10);
         }
       } else if (drawerElement) {
         // Fallback if Flowbite API is not available

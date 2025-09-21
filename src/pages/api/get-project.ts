@@ -5,11 +5,11 @@ import { supabaseAdmin } from "../../lib/supabase-admin";
 
 export const GET: APIRoute = async ({ request, cookies, url, params }) => {
   try {
-    // Check if this is a request for a specific project ID
-    const projectId = params?.id;
+    // Check if this is a request for a specific project ID via URL parameter
+    const projectId = url.searchParams.get("id");
 
     if (projectId) {
-      // Handle single project request (from /api/get-project/[id])
+      // Handle single project request (from /api/get-project?id=123)
       return await handleSingleProject(projectId, cookies);
     }
 

@@ -62,7 +62,10 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     }
 
     const body = await request.json();
-    const { projectId, status: newStatus } = body;
+    const { project, status: newStatus } = body;
+
+    console.log("📊 [UPDATE-STATUS] Received project:", project);
+    console.log("📊 [UPDATE-STATUS] Project ID:", project?.id);
 
     // Use the authenticated user's role
 
@@ -71,20 +74,14 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     // console.log("📊 [UPDATE-STATUS] Parsed projectId:", projectId, "(type:", typeof projectId, ")");
     // console.log("📊 [UPDATE-STATUS] Parsed newStatus:", newStatus, "(type:", typeof newStatus, ")");
 
-    if (!projectId || newStatus === undefined) {
+    if (!project || newStatus === undefined) {
       console.error("📊 [UPDATE-STATUS] Validation failed:", {
-        projectId,
         newStatus,
-        projectIdCheck: !projectId,
       });
       return new Response(
         JSON.stringify({
           error: "Project ID and new status are required",
-          received: { projectId, newStatus },
-          validation: {
-            projectIdMissing: !projectId,
-            newStatusMissing: newStatus === undefined,
-          },
+          received: { project, newStatus },
         }),
         {
           status: 400,
@@ -101,34 +98,32 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     }
 
     // Fetch current project status before updating
-    const { data: currentProject, error: fetchError } = await supabase
-      .from("projects")
-      .select("status")
-      .eq("id", projectId)
-      .single();
+    // const { data: currentProject, error: fetchError } = await supabase
+    //   .from("projects")
+    //   .select("status")
+    //   .eq("id", projectId)
+    //   .single();
 
-    if (fetchError) {
-      console.error("📊 [UPDATE-STATUS] Error fetching current project:", fetchError);
-      return new Response(JSON.stringify({ error: "Failed to fetch current project status" }), {
-        status: 500,
-        headers: { "Content-Type": "application/json" },
-      });
-    }
+    // if (fetchError) {
+    //   console.error("📊 [UPDATE-STATUS] Error fetching current project:", fetchError);
+    //   return new Response(JSON.stringify({ error: "Failed to fetch current project status" }), {
+    //     status: 500,
+    //     headers: { "Content-Type": "application/json" },
+    //   });
+    // }
 
-    const oldStatus = currentProject.status;
+    const oldStatus = project.status;
 
     // this used to use modal_auto_redirect_admin and modal_auto_redirect_client
 
-    console.log("📊 [UPDATE-STATUS] Updating project status:", { projectId, newStatus, oldStatus });
-
     // Update project status
-    const { data: updatedProject, error: updateError } = await supabase
+    const { data: projectData, error: updateError } = await supabase
       .from("projects")
       .update({
         status: newStatus,
         updated_at: new Date().toISOString(),
       })
-      .eq("id", projectId)
+      .eq("id", project.id)
       .select("id, status, author_id, address, proposal_signature")
       .single();
 
@@ -143,7 +138,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     // Log the status change using authenticated user
     try {
       // console.log("📊 [UPDATE-STATUS] Logging status change for user:", currentUser.id);
-      await SimpleProjectLogger.logStatusChange(projectId, currentUser, oldStatus, newStatus);
+      await SimpleProjectLogger.logStatusChange(project.id, currentUser, oldStatus, newStatus);
       // console.log("📊 [UPDATE-STATUS] Status change logged successfully");
     } catch (logError) {
       console.error("📊 [UPDATE-STATUS] Failed to log status change:", logError);
@@ -154,18 +149,19 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     // Get base URL using the proper utility function
     const baseUrl = getApiBaseUrl(request);
     const statusDataResponse = await fetch(
-      `${baseUrl}/api/project-statuses?status_code=${newStatus}`,
+      `${baseUrl}/api/project-statuses?projectId=${projectData.id}&status_code=${newStatus}`,
       {
         method: "GET",
         headers: {
           "Content-Type": "application/json",
+          Cookie: request.headers.get("Cookie") || "",
         },
       }
     );
 
     if (statusDataResponse.ok) {
       const statusData = await statusDataResponse.json();
-      // console.log("📊 [UPDATE-STATUS] Status data retrieved:", statusData);
+      console.log("📊 [UPDATE-STATUS] Status data retrieved:", statusData);
       // console.log("🔍 [UPDATE-STATUS] Button config debug:", {
       //   button_link: statusData.statusConfig.button_link,
       //   button_text: statusData.statusConfig.button_text,
@@ -175,7 +171,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
       // Merge project data with status config for placeholder replacement
       const mergedData = {
-        project: updatedProject,
+        project: projectData,
         statusConfig: statusData.statusConfig,
         newStatus: newStatus,
       };
@@ -183,63 +179,64 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       // console.log("📊 [UPDATE-STATUS] Merged data for placeholder replacement:", mergedData);
 
       // Get client profile data for placeholders
-      const { data: profiles, error: profileError } = await supabase
-        .from("profiles")
-        .select("id, company_name, first_name, last_name, role, email")
-        .eq("id", updatedProject.author_id);
+      // const { data: profiles, error: profileError } = await supabase
+      //   .from("profiles")
+      //   .select("id, company_name, first_name, last_name, role, email")
+      //   .eq("id", updatedProject.author_id);
 
-      if (profileError) {
-        console.error("📊 [UPDATE-STATUS] Profile query error:", profileError);
-        return new Response(JSON.stringify({ error: profileError.message }), {
-          status: 500,
-          headers: { "Content-Type": "application/json" },
-        });
-      }
+      // if (profileError) {
+      //   console.error("📊 [UPDATE-STATUS] Profile query error:", profileError);
+      //   return new Response(JSON.stringify({ error: profileError.message }), {
+      //     status: 500,
+      //     headers: { "Content-Type": "application/json" },
+      //   });
+      // }
 
-      if (!profiles || profiles.length === 0) {
-        console.warn(
-          "📊 [UPDATE-STATUS] No profile found for author_id:",
-          updatedProject.author_id
-        );
-        // Continue with empty profile data rather than failing
-      }
+      // if (!profiles || profiles.length === 0) {
+      //   console.warn(
+      //     "📊 [UPDATE-STATUS] No profile found for author_id:",
+      //     updatedProject.author_id
+      //   );
+      //   // Continue with empty profile data rather than failing
+      // }
 
-      const profile = profiles && profiles.length > 0 ? profiles[0] : null;
+      // const profile = profiles && profiles.length > 0 ? profiles[0] : null;
 
-      // Get client email from profiles table (already fetched above)
-      const clientEmail = profile?.email || "";
+      // // Get client email from profiles table (already fetched above)
+      // const clientEmail = profile?.email || "";
 
-      // Prepare placeholder data
-      const placeholderData = {
-        projectId: updatedProject.id,
-        siteUrl: baseUrl,
-        projectAddress: updatedProject.address,
-        clientName: profile?.company_name,
-        clientEmail: clientEmail,
-        statusName: statusData.statusConfig.admin_status_name,
-        estTime: statusData.statusConfig.est_time,
-        primaryColor: "#3b82f6", // Default primary color (can be made configurable later)
-      };
+      // // Prepare placeholder data
+      // const placeholderData = {
+      //   projectId: updatedProject.id,
+      //   siteUrl: baseUrl,
+      //   projectAddress: updatedProject.address,
+      //   clientName: profile?.company_name,
+      //   clientEmail: clientEmail,
+      //   statusName: statusData.statusConfig.admin_status_name,
+      //   estTime: statusData.statusConfig.est_time,
+      //   primaryColor: "#3b82f6", // Default primary color (can be made configurable later)
+      // };
 
       // console.log("📊 [UPDATE-STATUS] Placeholder data prepared:", placeholderData);
 
       // Call placeholder replacement API
-      const placeholderResponse = await fetch(`${baseUrl}/api/replace-placeholders`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ mergedData, placeholderData }),
-      });
+      // const placeholderResponse = await fetch(`${baseUrl}/api/replace-placeholders`, {
+      //   method: "POST",
+      //   headers: {
+      //     "Content-Type": "application/json",
+      //   },
+      //   body: JSON.stringify({ mergedData, placeholderData }),
+      // });
 
-      if (placeholderResponse.ok) {
-        const placeholderResult = await placeholderResponse.json();
-        console.log("📊 [UPDATE-STATUS] Placeholders replaced:", placeholderResult);
+      console.log("📊 [UPDATE-STATUS] Merged data:", mergedData);
+      if (mergedData) {
+        // const placeholderResult = await placeholderResponse.json();
+        // console.log("📊 [UPDATE-STATUS] Placeholders replaced:", placeholderResult);
 
         // Process redirect URLs to replace placeholders
         const processRedirectUrl = (url: string) => {
           if (!url) return undefined;
-          return url.replace(/\{\{PROJECT_ID\}\}/g, updatedProject.id.toString());
+          return url.replace(/\{\{PROJECT_ID\}\}/g, projectData.id.toString());
         };
 
         // Debug: Log the status configuration to see what's available
@@ -254,12 +251,11 @@ export const POST: APIRoute = async ({ request, cookies }) => {
           admin: {
             type: "success",
             title: "Project Updated",
-            message:
-              placeholderResult.processedMessages.modal_admin || "Project updated successfully",
+            message: mergedData.statusConfig.modal_admin || "Project updated successfully",
             duration: 5000, // 5 seconds
-            redirect: statusData.statusConfig.modal_auto_redirect_admin
+            redirect: mergedData.statusConfig.modal_auto_redirect_admin
               ? {
-                  url: processRedirectUrl(statusData.statusConfig.modal_auto_redirect_admin),
+                  url: processRedirectUrl(mergedData.statusConfig.modal_auto_redirect_admin),
                   delay: 3, // 3 seconds delay
                   showCountdown: true,
                 }
@@ -268,12 +264,11 @@ export const POST: APIRoute = async ({ request, cookies }) => {
           client: {
             type: "success",
             title: "Project Updated",
-            message:
-              placeholderResult.processedMessages.modal_client || "Project updated successfully",
+            message: mergedData.statusConfig.modal_client || "Project updated successfully",
             duration: 5000, // 5 seconds
-            redirect: statusData.statusConfig.modal_auto_redirect_client
+            redirect: mergedData.statusConfig.modal_auto_redirect_client
               ? {
-                  url: processRedirectUrl(statusData.statusConfig.modal_auto_redirect_client),
+                  url: processRedirectUrl(mergedData.statusConfig.modal_auto_redirect_client),
                   delay: 3, // 3 seconds delay
                   showCountdown: true,
                 }
@@ -313,24 +308,24 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         }
 
         // Process button link and text through placeholder replacement (without bold tags)
-        let processedButtonLink = statusData.statusConfig.button_link || "";
-        let processedButtonText = statusData.statusConfig.button_text || "";
+        // let processedButtonLink = mergedData.statusConfig.button_link || "";
+        // let processedButtonText = mergedData.statusConfig.button_text || "";
 
-        if (processedButtonLink) {
-          // Add # prefix if it doesn't start with http or #
-          if (!processedButtonLink.startsWith("http") && !processedButtonLink.startsWith("#")) {
-            processedButtonLink = "#" + processedButtonLink;
-          }
-          // Process placeholders without bold tags
-          const { replacePlaceholders } = await import("../../lib/placeholder-utils");
-          processedButtonLink = replacePlaceholders(processedButtonLink, placeholderData, false);
-        }
+        // if (processedButtonLink) {
+        //   // Add # prefix if it doesn't start with http or #
+        //   if (!processedButtonLink.startsWith("http") && !processedButtonLink.startsWith("#")) {
+        //     processedButtonLink = "#" + processedButtonLink;
+        //   }
+        //   // Process placeholders without bold tags
+        //   const { replacePlaceholders } = await import("../../lib/placeholder-utils");
+        //   processedButtonLink = replacePlaceholders(processedButtonLink, mergedData.statusConfig, false);
+        // }
 
-        if (processedButtonText) {
-          // Process placeholders without bold tags
-          const { replacePlaceholders } = await import("../../lib/placeholder-utils");
-          processedButtonText = replacePlaceholders(processedButtonText, placeholderData, false);
-        }
+        // if (processedButtonText) {
+        //   // Process placeholders without bold tags
+        //   const { replacePlaceholders } = await import("../../lib/placeholder-utils");
+        //   processedButtonText = replacePlaceholders(processedButtonText, placeholderData, false);
+        // }
 
         // console.log("🔍 [UPDATE-STATUS] Processed button config:", {
         //   originalLink: statusData.statusConfig.button_link,
@@ -347,14 +342,14 @@ export const POST: APIRoute = async ({ request, cookies }) => {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            usersToNotify: [clientEmail], // Use resolved client email
-            emailSubject: placeholderResult.processedMessages.client_email_subject,
-            emailContent: placeholderResult.processedMessages.client_email_content,
-            buttonLink: processedButtonLink,
-            buttonText: processedButtonText,
-            projectId: projectId,
+            usersToNotify: [mergedData.statusConfig.client_email], // Use resolved client email
+            emailSubject: mergedData.statusConfig.client_email_subject,
+            emailContent: mergedData.statusConfig.client_email_content,
+            buttonLink: mergedData.statusConfig.button_link, // Use processed button link
+            buttonText: mergedData.statusConfig.button_text, // Use processed button text
+            projectId: projectData.id,
             newStatus: newStatus,
-            authorId: updatedProject.author_id,
+            authorId: projectData.author_id,
             includeResendHeaders: true, // Only include webhook headers for client emails
           }),
         });
@@ -375,10 +370,10 @@ export const POST: APIRoute = async ({ request, cookies }) => {
           },
           body: JSON.stringify({
             usersToNotify: adminStaffEmails, // Use resolved admin/staff emails
-            emailSubject: placeholderResult.processedMessages.admin_email_subject,
-            emailContent: placeholderResult.processedMessages.admin_email_content,
-            buttonLink: processedButtonLink, // Use processed button link
-            buttonText: processedButtonText, // Use processed button text
+            emailSubject: mergedData.statusConfig.admin_email_subject,
+            emailContent: mergedData.statusConfig.admin_email_content,
+            buttonLink: mergedData.statusConfig.button_link, // Use processed button link
+            buttonText: mergedData.statusConfig.button_text, // Use processed button text
           }),
         });
 
@@ -451,15 +446,10 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         return new Response(
           JSON.stringify({
             success: true,
-            project: updatedProject,
+            project: projectData,
             newStatus: newStatus,
             statusConfig: statusData.statusConfig,
-            mergedData: placeholderResult.mergedData,
-            placeholderData: placeholderResult.placeholderData,
-            processedMessages: placeholderResult.processedMessages,
             notificationData: notificationData,
-            clientEmail: clientEmail,
-            clientProfile: profile,
           }),
           {
             status: 200,
@@ -473,24 +463,16 @@ export const POST: APIRoute = async ({ request, cookies }) => {
           }
         );
       } else {
-        console.error("📊 [UPDATE-STATUS] Failed to replace placeholders");
+        console.error("📊 [UPDATE-STATUS] Failed to get status data");
         return new Response(
           JSON.stringify({
             success: true,
-            project: updatedProject,
+            project: projectData,
             newStatus: newStatus,
-            statusConfig: statusData.statusConfig,
-            mergedData: mergedData,
           }),
           {
             status: 200,
-            headers: {
-              "Content-Type": "application/json",
-              "Access-Control-Allow-Origin": "*",
-              "Access-Control-Allow-Methods": "POST, OPTIONS",
-              "Access-Control-Allow-Headers": "Content-Type",
-              "Access-Control-Allow-Credentials": "true",
-            },
+            headers: { "Content-Type": "application/json" },
           }
         );
       }
@@ -499,18 +481,12 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       return new Response(
         JSON.stringify({
           success: true,
-          project: updatedProject,
+          project: projectData,
           newStatus: newStatus,
         }),
         {
           status: 200,
-          headers: {
-            "Content-Type": "application/json",
-            "Access-Control-Allow-Origin": "*",
-            "Access-Control-Allow-Methods": "POST, OPTIONS",
-            "Access-Control-Allow-Headers": "Content-Type",
-            "Access-Control-Allow-Credentials": "true",
-          },
+          headers: { "Content-Type": "application/json" },
         }
       );
     }

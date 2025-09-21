@@ -197,6 +197,19 @@ async function handleEmailOpened(data: any, baseUrl?: string) {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
 
+    const fullUrl = `${baseUrl}/api/get-project?author_id=${currentUser.id}`;
+    // console.log("🏗️ [APP] Full URL:", fullUrl);
+    try {
+      const response = await fetch(fullUrl);
+      if (response.ok) {
+        const data = await response.json();
+        // console.log("🏗️ [APP] Assigned projects:", data);
+        assignedProjects = data.projects || [];
+      }
+    } catch (error) {
+      console.error("Error fetching assigned projects:", error);
+    }
+
     try {
       const updateResponse = await fetch(
         `${baseUrl || "http://localhost:4322"}/api/update-status`,
@@ -206,10 +219,8 @@ async function handleEmailOpened(data: any, baseUrl?: string) {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            projectId: projectId,
+            project: project,
             status: nextStatus, // Pass the next status to update to
-            currentUserId: authorId,
-            oldStatus: parseInt(currentStatus),
           }),
           signal: controller.signal,
         }

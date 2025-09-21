@@ -1,6 +1,6 @@
 ---
 import BoxIcon from "./BoxIcon.astro";
-import SMSForm from "../form/SMSForm.astro";
+import Button from "../common/Button.astro";
 
 // Get current URL and determine page type (same logic as Header component)
 const currentUrl = Astro.url.pathname;
@@ -39,7 +39,112 @@ const isBackend = isBackendPage(currentUrl);
 
   <!-- Panel Content -->
   <div class="p-4">
-    <SMSForm compact={true} />
+
+
+<div class={compact ? "w-full" : "mx-auto w-full max-w-lg"}>
+  {!compact && (
+    <div class="mb-6">
+      <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Contact CAPCo</h3>
+      <p class="text-sm text-gray-600 dark:text-gray-400">
+        Send a message directly to our team
+      </p>
+    </div>
+  )}
+
+  <form action="/api/send-email-sms" method="post" class="space-y-4">
+    <!-- Hidden fields for hardcoded phone numbers and carriers -->
+    <input type="hidden" name="phone1" value="5085799673" />
+    <input type="hidden" name="carrier1" value="@vtext.com" />
+    <input type="hidden" name="phone2" value="6176333533" />
+    <input type="hidden" name="carrier2" value="@vtext.com" />
+    
+  
+    
+    <!-- Contact Information (Optional) -->
+    <div>
+      <label for="contact-info" class="mb-2 block text-sm font-medium text-gray-900 dark:text-gray-300">
+        Your Contact Info (Optional)
+      </label>
+      <input
+        type="text"
+        id="contact-info"
+        name="contact_info"
+        maxlength="50"
+        placeholder="Your name, email, or phone for response"
+        class="w-full rounded-lg border border-gray-300 bg-gray-50 px-3 py-2 text-sm focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-600 focus:ring-opacity-60 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 dark:focus:bg-gray-900"
+      />
+      <div class="mt-1 flex justify-between">
+        <!-- <p class="text-xs text-gray-500 dark:text-gray-400">
+          How should we respond? (Keep short - SMS has character limits)
+        </p> -->
+        <span id="contact-char-count" class="text-xs text-gray-500 dark:text-gray-400">0/50</span>
+      </div>
+    </div>
+
+    <!-- Message -->
+    <div>
+      <label for="message" class="mb-2 block text-sm font-medium text-gray-900 dark:text-gray-300">
+        Message <span class="text-red-500">*</span>
+      </label>
+      <textarea
+        id="message"
+        name="message"
+        required
+        rows="4"
+        maxlength="160"
+        placeholder="Your message here..."
+        class="w-full rounded-lg border border-gray-300 bg-gray-50 px-3 py-2 text-sm focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-600 focus:ring-opacity-60 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 dark:focus:bg-gray-900"
+      ></textarea>
+      <div class="mt-1 flex justify-between">
+        <p class="text-xs text-gray-500 dark:text-gray-400">Keep it short for better delivery</p>
+        <span id="char-count" class="text-xs text-gray-500 dark:text-gray-400">0/160</span>
+      </div>
+    </div>
+
+
+
+    <!-- Submit Button -->
+    <div class="pt-4">
+      <Button
+        type="submit"
+        variant="primary"
+        size="md"
+      >
+        Send Message to CAPCo
+      </Button>
+    </div>
+  </form>
+
+  {!compact && (
+    <!-- Information Box -->
+    <div
+      class="mt-6 rounded-full border border-yellow-200 bg-yellow-50 p-4 dark:border-yellow-700 dark:bg-yellow-900/20"
+    >
+      <div class="flex">
+        <div class="flex-shrink-0">
+          <svg class="h-5 w-5 text-yellow-400" viewBox="0 0 20 20" fill="currentColor">
+            <path
+              fill-rule="evenodd"
+              d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
+              clip-rule="evenodd"></path>
+          </svg>
+        </div>
+        <div class="ml-3">
+          <h3 class="text-sm font-medium text-yellow-800 dark:text-yellow-200">Important Notes</h3>
+          <div class="mt-2 text-sm text-yellow-700 dark:text-yellow-300">
+            <ul class="list-disc space-y-1 pl-5">
+              <li>Delivery depends on carrier support and may not be immediate</li>
+              <li>Some carriers may block or delay these messages</li>
+              <li>Keep messages under 160 characters for best results</li>
+              <li>This method is free but less reliable than dedicated SMS services</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  )}
+</div>
+
   </div>
 </div>
 

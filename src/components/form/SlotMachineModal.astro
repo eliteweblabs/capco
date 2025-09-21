@@ -24,6 +24,7 @@ interface Props {
   searchPlaceholder?: string; // Optional: Search input placeholder
   apiParams?: Record<string, any>; // Optional: Additional API parameters
   dataTransform?: string; // Optional: Function name to transform API response
+  project?: any; // Optional: Project for API calls
   showImages?: boolean; // Optional: Whether to show images (for places)
   imageField?: string; // Optional: Field name for image URLs
   valueField?: string; // Optional: Field name to use for the value (default: "value")
@@ -77,11 +78,12 @@ const {
   projectId,
   showNotification = false,
   buttonVariant = "primary",
-
+  project = {},
   // project = {},
 } = Astro.props;
 
 // Ensure options is always an array
+
 const optionsArray = Array.isArray(options) ? options : [];
 
 // Determine if search should be enabled (if searchText is provided)
@@ -103,7 +105,7 @@ const displayText = buttonText || selectedOption?.label || placeholder;
   data-project-id={projectId}
   size="sm"
 >
-  {displayText}
+  {displayText.replace(/<[^>]*>/g, "")}
 </Button>
 
 <!-- Hidden input to store the selected value -->
@@ -114,6 +116,7 @@ const displayText = buttonText || selectedOption?.label || placeholder;
   value={selectedValue}
   data-refresh={name}
   data-project-id={projectId}
+  data-project={JSON.stringify(project)}
 />
 
 <script
@@ -139,6 +142,7 @@ const displayText = buttonText || selectedOption?.label || placeholder;
     fetchOnLoad,
     projectId,
     noResultsText,
+    project,
     // project,
   }}
 >
@@ -281,33 +285,34 @@ const displayText = buttonText || selectedOption?.label || placeholder;
       // Format data based on the component type
       let requestBody;
 
+      // debugger;
       if (componentId === "update-status") {
         console.log(`🎰 [SLOT-MACHINE] Processing UPDATE-STATUS request`);
         console.log(`🎰 [SLOT-MACHINE] Raw projectId prop:`, projectId);
         console.log(`🎰 [SLOT-MACHINE] Raw value:`, value);
         console.log(`🎰 [SLOT-MACHINE] URL pathname:`, window.location.pathname);
 
-        const parsedProjectId =
-          parseInt(projectId) || parseInt(window.location.pathname.split("/").pop()) || null;
+        // const parsedProjectId =
+        //   parseInt(projectId) || parseInt(window.location.pathname.split("/").pop()) || null;
         const parsedStatus = parseInt(value);
 
-        console.log(
-          `🎰 [SLOT-MACHINE] Parsed projectId: ${parsedProjectId} (type: ${typeof parsedProjectId})`
-        );
-        console.log(
-          `🎰 [SLOT-MACHINE] Parsed status: ${parsedStatus} (type: ${typeof parsedStatus})`
-        );
+        // console.log(
+        //   `🎰 [SLOT-MACHINE] Parsed projectId: ${parsedProjectId} (type: ${typeof parsedProjectId})`
+        // );
+        // console.log(
+        //   `🎰 [SLOT-MACHINE] Parsed status: ${parsedStatus} (type: ${typeof parsedStatus})`
+        // );
 
         // Additional validation checks
-        if (!parsedProjectId) {
-          console.error(`🎰 [SLOT-MACHINE] ERROR: Could not parse projectId!`);
-          console.error(`🎰 [SLOT-MACHINE] projectId prop:`, projectId);
-          console.error(`🎰 [SLOT-MACHINE] URL pathname:`, window.location.pathname);
-          console.error(
-            `🎰 [SLOT-MACHINE] URL pathname split:`,
-            window.location.pathname.split("/")
-          );
-        }
+        // if (!parsedProjectId) {
+        //   console.error(`🎰 [SLOT-MACHINE] ERROR: Could not parse projectId!`);
+        //   console.error(`🎰 [SLOT-MACHINE] projectId prop:`, projectId);
+        //   console.error(`🎰 [SLOT-MACHINE] URL pathname:`, window.location.pathname);
+        //   console.error(
+        //     `🎰 [SLOT-MACHINE] URL pathname split:`,
+        //     window.location.pathname.split("/")
+        //   );
+        // }
 
         if (isNaN(parsedStatus)) {
           console.error(`🎰 [SLOT-MACHINE] ERROR: Could not parse status!`);
@@ -316,15 +321,29 @@ const displayText = buttonText || selectedOption?.label || placeholder;
         }
 
         // For status updates, send the format expected by update-status API
+        // Get project data from data attribute
+        const projectDataElement = document.getElementById(`${id}-value`);
+        const projectData = projectDataElement
+          ? JSON.parse(projectDataElement.getAttribute("data-project") || "{}")
+          : {};
+
+        console.log(`🎰 [SLOT-MACHINE] Project object for ${id}:`, projectData);
+        console.log(`🎰 [SLOT-MACHINE] Project keys:`, Object.keys(projectData || {}));
+
         requestBody = {
-          projectId: parsedProjectId,
+          project: projectData,
           status: parsedStatus, // Convert value to integer
         };
         console.log(`🎰 [SLOT-MACHINE] UPDATE-STATUS requestBody:`, requestBody);
       } else if (componentId === "assign-staff") {
         console.log(`🎰 [SLOT-MACHINE] Processing ASSIGN-STAFF request`);
+        // Get project data from data attribute
+        const projectDataElement = document.getElementById(`${id}-value`);
+        const projectData = projectDataElement
+          ? JSON.parse(projectDataElement.getAttribute("data-project") || "{}")
+          : {};
         const parsedProjectId =
-          parseInt(projectId) || parseInt(window.location.pathname.split("/").pop()) || null;
+          parseInt(projectData.id) || parseInt(window.location.pathname.split("/").pop()) || null;
         console.log(
           `🎰 [SLOT-MACHINE] Parsed projectId: ${parsedProjectId} (type: ${typeof parsedProjectId})`
         );
@@ -551,12 +570,12 @@ const displayText = buttonText || selectedOption?.label || placeholder;
       `;
 
       // Set content and data attributes
-      span.textContent =
+      const labelText =
         option[labelField] || option.label || option.name || option.description || option;
+      span.textContent = labelText;
       span.dataset.value =
         option[valueField] || option.value || option.place_id || option.id || option;
-      span.dataset.label =
-        option[labelField] || option.label || option.name || option.description || option;
+      span.dataset.label = labelText;
       span.dataset.index = index;
 
       li.appendChild(span);
@@ -575,7 +594,7 @@ const displayText = buttonText || selectedOption?.label || placeholder;
         text-align: center;
         font-style: italic;
       `;
-      li.textContent = message;
+      li.textContent = message.replace(/<[^>]*>/g, "");
       return li;
     }
 

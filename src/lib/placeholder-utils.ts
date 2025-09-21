@@ -42,7 +42,7 @@ function getBaseUrl(): string {
   }
 
   // Fallback for server-side
-  return "http://localhost:4321";
+  return process.env.SITE_URL || "http://XXXXXXXXXX:4321";
 }
 
 export interface PlaceholderData {
@@ -54,6 +54,9 @@ export interface PlaceholderData {
   baseUrl?: string;
   primaryColor?: string;
   svgLogo?: string;
+  projectId?: string;
+  contractUrl?: string;
+  siteUrl?: string;
 }
 
 /**
@@ -62,7 +65,7 @@ export interface PlaceholderData {
 export function replacePlaceholders(
   message: string,
   data: PlaceholderData,
-  addBoldTags: boolean = true
+  addBoldTags: boolean = false
 ): string {
   // // console.log("🔄 [PLACEHOLDER-UTILS] Starting placeholder replacement...");
   // // console.log("🔄 [PLACEHOLDER-UTILS] Original message:", message);
@@ -135,6 +138,27 @@ export function replacePlaceholders(
     // );
     addBoldTags = false;
     result = result.replace(/\{\{\s*SVG_LOGO\s*\}\}/g, data.svgLogo);
+  }
+
+  // Handle PROJECT_LINK with URL parameters (e.g., {{PROJECT_LINK?tab=documents}})
+  if (data.projectId) {
+    const projectLinkPattern = /\{\{\s*PROJECT_LINK(\?[^}]*)?\s*\}\}/g;
+    result = result.replace(projectLinkPattern, (match, urlParams) => {
+      const baseProjectUrl = `${baseUrl}/project/${data.projectId}`;
+      const params = urlParams ? urlParams : "";
+      const fullUrl = `${baseProjectUrl}${params}`;
+
+      // Extract the tab name from the URL parameters for the link text
+      let linkText = "project";
+      if (urlParams) {
+        const tabMatch = urlParams.match(/tab=([^&]+)/);
+        if (tabMatch) {
+          linkText = tabMatch[1];
+        }
+      }
+
+      return `<a href="${fullUrl}">${linkText}</a>`;
+    });
   }
 
   // console.log("🔄 [PLACEHOLDER-UTILS] Final result:", result);
