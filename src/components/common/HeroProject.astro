@@ -388,28 +388,28 @@ if (currentRole === "Admin" || currentRole === "Staff") {
   // Check if Google Maps API key is available
   if (!(window as any).GOOGLE_MAPS_API_KEY || (window as any).GOOGLE_MAPS_API_KEY.trim() === "") {
     console.warn("❌ [HERO-MAP] Google Maps API key not configured. Map will not be displayed.");
-    return;
-  }
-
-  // Wait for Google Maps to load
-  if (typeof (window as any).google !== "undefined" && (window as any).google.maps) {
-    // Google Maps is already loaded
-    console.log("🗺️ [HERO-MAP] Google Maps already loaded, initializing map");
-    initializeMap();
+    // Exit early if no API key
   } else {
-    console.log("🗺️ [HERO-MAP] Waiting for Google Maps to load...");
     // Wait for Google Maps to load
-    window.addEventListener("googleMapsLoaded", () => {
-      console.log("🗺️ [HERO-MAP] Google Maps loaded, initializing map");
+    if (typeof (window as any).google !== "undefined" && (window as any).google.maps) {
+      // Google Maps is already loaded
+      console.log("🗺️ [HERO-MAP] Google Maps already loaded, initializing map");
       initializeMap();
-    });
-  }
-
-  // Also try to initialize on DOM ready as fallback
-  document.addEventListener("DOMContentLoaded", () => {
-    if (typeof (window as any).google !== "undefined" && (window as any).google.maps && !map) {
-      console.log("🗺️ [HERO-MAP] DOM ready, initializing map");
-      initializeMap();
+    } else {
+      console.log("🗺️ [HERO-MAP] Waiting for Google Maps to load...");
+      // Wait for Google Maps to load
+      window.addEventListener("googleMapsLoaded", () => {
+        console.log("🗺️ [HERO-MAP] Google Maps loaded, initializing map");
+        initializeMap();
+      });
     }
-  });
+
+    // Also try to initialize on DOM ready as fallback
+    document.addEventListener("DOMContentLoaded", () => {
+      if (typeof (window as any).google !== "undefined" && (window as any).google.maps && !map) {
+        console.log("🗺️ [HERO-MAP] DOM ready, initializing map");
+        initializeMap();
+      }
+    });
+  } // Close the else block
 </script>
