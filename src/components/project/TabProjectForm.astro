@@ -2,23 +2,29 @@
 import ProjectForm from "./ProjectForm.astro";
 
 interface Props {
-  authorProfile?: any;
-  currentRole?: string;
+  currentUser?: any;
   project: any;
-  projectId: string;
   projectStatus?: number;
   projectStatusLabel?: string;
 }
 
-const { project, currentRole, projectId, projectStatus = 0, projectStatusLabel } = Astro.props;
+const { project, projectStatus = 0, projectStatusLabel, currentUser } = Astro.props;
+
+// Debug logging
+console.log("📝 [TabProjectForm] Component initialized:", {
+  hasProject: !!project,
+  projectId: project?.id,
+  projectStatus,
+  hasCurrentUser: !!currentUser,
+  currentRole: currentUser?.profile?.role,
+});
 ---
 
 <div id="content-project-form" class="tab-content">
   <ProjectForm
     project={project}
-    projectId={projectId}
     isNewProject={false}
-    currentRole={currentRole}
+    currentUser={currentUser}
     projectStatus={projectStatus}
   />
 </div>
