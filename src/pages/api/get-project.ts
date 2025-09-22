@@ -1,7 +1,188 @@
+/**
+ * Enhanced Get Project API with Advanced Filtering and Search
+ *
+ * This API supports comprehensive filtering, searching, and pagination for projects.
+ *
+ * Query Parameters:
+ * - assigned_to_id: Filter by assigned user ID
+ * - author_id: Filter by project author ID
+ * - search: Search across title, address, company_name, subject, building, project, service fields
+ * - status: Filter by project status (integer)
+ * - building: Filter by building type (partial match)
+ * - project: Filter by project type (partial match)
+ * - service: Filter by service type (partial match)
+ * - new_construction: Filter by new construction (true/false)
+ * - date_from: Filter projects created after this date (ISO format)
+ * - date_to: Filter projects created before this date (ISO format)
+ * - due_date_from: Filter projects with due_date after this date (ISO format)
+ * - due_date_to: Filter projects with due_date before this date (ISO format)
+ * - overdue: Filter for overdue projects (true/false)
+ * - sort_by: Sort field (default: updated_at)
+ * - sort_order: Sort direction (asc/desc, default: desc)
+ * - limit: Number of results to return (default: no limit)
+ * - offset: Number of results to skip (default: 0)
+ *
+ * Examples:
+ * - /api/get-project?search=fire&status=1&limit=10
+ * - /api/get-project?author_id=123&sort_by=created_at&sort_order=asc
+ * - /api/get-project?building=residential&date_from=2024-01-01&date_to=2024-12-31
+ * - /api/get-project?overdue=true&sort_by=due_date&sort_order=asc
+ *
+ * Response includes:
+ * - projects: Array of project objects with enhanced data
+ * - count: Number of projects returned
+ * - filtered_by: Human-readable description of applied filters
+ * - pagination: Pagination metadata
+ * - filters_applied: Object containing all applied filter values
+ */
+
 import type { APIRoute } from "astro";
 import { checkAuth } from "../../lib/auth";
 import { supabase } from "../../lib/supabase";
 import { supabaseAdmin } from "../../lib/supabase-admin";
+
+// Filter interface for type safety
+interface FilterParams {
+  assignedToId?: string | null;
+  authorId?: string | null;
+  search?: string | null;
+  status?: string | null;
+  building?: string | null;
+  project?: string | null;
+  service?: string | null;
+  newConstruction?: string | null;
+  dateFrom?: string | null;
+  dateTo?: string | null;
+  dueDateFrom?: string | null;
+  dueDateTo?: string | null;
+  overdue?: string | null;
+  sortBy?: string;
+  sortOrder?: string;
+  limit?: number;
+  offset?: number;
+}
+
+// Apply filters to the query
+function applyFilters(query: any, filters: FilterParams) {
+  const {
+    assignedToId,
+    authorId,
+    search,
+    status,
+    building,
+    project,
+    service,
+    newConstruction,
+    dateFrom,
+    dateTo,
+    dueDateFrom,
+    dueDateTo,
+    overdue,
+    sortBy,
+    sortOrder,
+    limit,
+    offset,
+  } = filters;
+
+  // Filter by assigned_to_id if provided
+  if (assignedToId) {
+    console.log(`📡 [API] Adding filter for assigned_to_id: ${assignedToId}`);
+    query = query.eq("assigned_to_id", assignedToId);
+  }
+
+  // Filter by author_id if provided
+  if (authorId) {
+    console.log(`📡 [API] Adding filter for author_id: ${authorId}`);
+    query = query.eq("author_id", authorId);
+  }
+
+  // Search functionality - searches across multiple fields
+  if (search) {
+    console.log(`📡 [API] Adding search filter: ${search}`);
+    query = query.or(
+      `title.ilike.%${search}%,address.ilike.%${search}%,company_name.ilike.%${search}%,subject.ilike.%${search}%,building.ilike.%${search}%,project.ilike.%${search}%,service.ilike.%${search}%`
+    );
+  }
+
+  // Filter by status if provided
+  if (status) {
+    console.log(`📡 [API] Adding filter for status: ${status}`);
+    query = query.eq("status", status);
+  }
+
+  // Filter by building if provided
+  if (building) {
+    console.log(`📡 [API] Adding filter for building: ${building}`);
+    query = query.ilike("building", `%${building}%`);
+  }
+
+  // Filter by project if provided
+  if (project) {
+    console.log(`📡 [API] Adding filter for project: ${project}`);
+    query = query.ilike("project", `%${project}%`);
+  }
+
+  // Filter by service if provided
+  if (service) {
+    console.log(`📡 [API] Adding filter for service: ${service}`);
+    query = query.ilike("service", `%${service}%`);
+  }
+
+  // Filter by new_construction if provided
+  if (newConstruction !== null && newConstruction !== undefined) {
+    console.log(`📡 [API] Adding filter for new_construction: ${newConstruction}`);
+    query = query.eq("new_construction", newConstruction === "true");
+  }
+
+  // Date range filters
+  if (dateFrom) {
+    console.log(`📡 [API] Adding filter for date_from: ${dateFrom}`);
+    query = query.gte("created_at", dateFrom);
+  }
+
+  if (dateTo) {
+    console.log(`📡 [API] Adding filter for date_to: ${dateTo}`);
+    query = query.lte("created_at", dateTo);
+  }
+
+  // Due date range filters
+  if (dueDateFrom) {
+    console.log(`📡 [API] Adding filter for due_date_from: ${dueDateFrom}`);
+    query = query.gte("due_date", dueDateFrom);
+  }
+
+  if (dueDateTo) {
+    console.log(`📡 [API] Adding filter for due_date_to: ${dueDateTo}`);
+    query = query.lte("due_date", dueDateTo);
+  }
+
+  // Overdue filter
+  if (overdue === "true") {
+    console.log(`📡 [API] Adding filter for overdue: true`);
+    query = query.lt("due_date", new Date().toISOString());
+  } else if (overdue === "false") {
+    console.log(`📡 [API] Adding filter for overdue: false`);
+    query = query.gte("due_date", new Date().toISOString());
+  }
+
+  // Sorting
+  const ascending = sortOrder === "asc";
+  console.log(`📡 [API] Adding sort: ${sortBy} ${sortOrder}`);
+  query = query.order(sortBy, { ascending });
+
+  // Pagination
+  if (limit && limit > 0) {
+    console.log(`📡 [API] Adding limit: ${limit}`);
+    query = query.limit(limit);
+  }
+
+  if (offset && offset > 0) {
+    console.log(`📡 [API] Adding offset: ${offset}`);
+    query = query.range(offset, offset + (limit && limit > 0 ? limit - 1 : 1000));
+  }
+
+  return query;
+}
 
 export const GET: APIRoute = async ({ request, cookies, url, params }) => {
   try {
@@ -15,12 +196,28 @@ export const GET: APIRoute = async ({ request, cookies, url, params }) => {
 
     // Handle multiple projects request (from /api/get-project)
     // Check authentication to get user role for filtering
-    const { currentRole } = await checkAuth(cookies);
+    const { currentUser } = await checkAuth(cookies);
+    const currentRole = currentUser?.profile?.role;
     const isClient = currentRole === "Client";
 
     // Get filter parameters from query
     const assignedToId = url.searchParams.get("assigned_to_id");
     const authorId = url.searchParams.get("author_id");
+    const search = url.searchParams.get("search");
+    const status = url.searchParams.get("status");
+    const building = url.searchParams.get("building");
+    const project = url.searchParams.get("project");
+    const service = url.searchParams.get("service");
+    const newConstruction = url.searchParams.get("new_construction");
+    const dateFrom = url.searchParams.get("date_from");
+    const dateTo = url.searchParams.get("date_to");
+    const dueDateFrom = url.searchParams.get("due_date_from");
+    const dueDateTo = url.searchParams.get("due_date_to");
+    const overdue = url.searchParams.get("overdue");
+    const sortBy = url.searchParams.get("sort_by") || "updated_at";
+    const sortOrder = url.searchParams.get("sort_order") || "desc";
+    const limit = parseInt(url.searchParams.get("limit") || "0");
+    const offset = parseInt(url.searchParams.get("offset") || "0");
 
     if (!supabase) {
       return new Response(JSON.stringify({ error: "Database connection not available" }), {
@@ -35,23 +232,28 @@ export const GET: APIRoute = async ({ request, cookies, url, params }) => {
       console.error("📡 [API] CRITICAL: supabaseAdmin is null - check SUPABASE_SERVICE_ROLE_KEY");
       console.log("📡 [API] Falling back to regular supabase client");
       // Fallback to regular client if admin client is not available
-      let query = supabase
-        .from("projects")
-        .select("*")
-        .neq("id", 0) // Exclude system log project
-        .order("updated_at", { ascending: false });
+      let query = supabase.from("projects").select("*").neq("id", 0); // Exclude system log project
 
-      // Filter by assigned_to_id if provided
-      if (assignedToId) {
-        console.log(`📡 [API] Adding filter for assigned_to_id: ${assignedToId}`);
-        query = query.eq("assigned_to_id", assignedToId);
-      }
-
-      // Filter by author_id if provided
-      if (authorId) {
-        console.log(`📡 [API] Adding filter for author_id: ${authorId}`);
-        query = query.eq("author_id", authorId);
-      }
+      // Apply all filters
+      query = applyFilters(query, {
+        assignedToId,
+        authorId,
+        search,
+        status,
+        building,
+        project,
+        service,
+        newConstruction,
+        dateFrom,
+        dateTo,
+        dueDateFrom,
+        dueDateTo,
+        overdue,
+        sortBy,
+        sortOrder,
+        limit,
+        offset,
+      });
 
       const result = await query;
       projects = result.data || [];
@@ -61,23 +263,28 @@ export const GET: APIRoute = async ({ request, cookies, url, params }) => {
 
       // Use admin client to bypass RLS policies for project listing
       // Now includes featured_image_data for optimized queries
-      let query = supabaseAdmin
-        .from("projects")
-        .select("*, featured_image_data")
-        .neq("id", 0) // Exclude system log project
-        .order("updated_at", { ascending: false });
+      let query = supabaseAdmin.from("projects").select("*, featured_image_data").neq("id", 0); // Exclude system log project
 
-      // Filter by assigned_to_id if provided
-      if (assignedToId) {
-        // console.log(`📡 [API] Adding filter for assigned_to_id: ${assignedToId}`);
-        query = query.eq("assigned_to_id", assignedToId);
-      }
-
-      // Filter by author_id if provided
-      if (authorId) {
-        // console.log(`📡 [API] Adding filter for author_id: ${authorId}`);
-        query = query.eq("author_id", authorId);
-      }
+      // Apply all filters
+      query = applyFilters(query, {
+        assignedToId,
+        authorId,
+        search,
+        status,
+        building,
+        project,
+        service,
+        newConstruction,
+        dateFrom,
+        dateTo,
+        dueDateFrom,
+        dueDateTo,
+        overdue,
+        sortBy,
+        sortOrder,
+        limit,
+        offset,
+      });
 
       const result = await query;
       projects = result.data || [];
@@ -443,6 +650,18 @@ export const GET: APIRoute = async ({ request, cookies, url, params }) => {
     const filters = [];
     if (assignedToId) filters.push(`assigned_to_id: ${assignedToId}`);
     if (authorId) filters.push(`author_id: ${authorId}`);
+    if (search) filters.push(`search: ${search}`);
+    if (status) filters.push(`status: ${status}`);
+    if (building) filters.push(`building: ${building}`);
+    if (project) filters.push(`project: ${project}`);
+    if (service) filters.push(`service: ${service}`);
+    if (newConstruction !== null && newConstruction !== undefined)
+      filters.push(`new_construction: ${newConstruction}`);
+    if (dateFrom) filters.push(`date_from: ${dateFrom}`);
+    if (dateTo) filters.push(`date_to: ${dateTo}`);
+    if (dueDateFrom) filters.push(`due_date_from: ${dueDateFrom}`);
+    if (dueDateTo) filters.push(`due_date_to: ${dueDateTo}`);
+    if (overdue) filters.push(`overdue: ${overdue}`);
     const filteredBy = filters.length > 0 ? filters.join(", ") : null;
 
     return new Response(
@@ -451,6 +670,28 @@ export const GET: APIRoute = async ({ request, cookies, url, params }) => {
         projects: projects || [],
         count: projects?.length || 0,
         filtered_by: filteredBy,
+        pagination: {
+          limit: limit || null,
+          offset: offset || 0,
+          has_more: limit > 0 && projects?.length === limit,
+        },
+        filters_applied: {
+          assigned_to_id: assignedToId,
+          author_id: authorId,
+          search: search,
+          status: status,
+          building: building,
+          project: project,
+          service: service,
+          new_construction: newConstruction,
+          date_from: dateFrom,
+          date_to: dateTo,
+          due_date_from: dueDateFrom,
+          due_date_to: dueDateTo,
+          overdue: overdue,
+          sort_by: sortBy,
+          sort_order: sortOrder,
+        },
       }),
       {
         status: 200,

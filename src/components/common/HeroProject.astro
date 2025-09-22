@@ -28,6 +28,7 @@ const {
 } = Astro.props;
 
 import SlotMachineModal from "../form/SlotMachineModal.astro";
+import BoxIcon from "./BoxIcon.astro";
 import Button from "./Button.astro";
 import SectionContainer from "./SectionContainer.astro";
 
@@ -111,7 +112,26 @@ if (currentRole === "Admin" || currentRole === "Staff") {
 ---
 
 <SectionContainer>
-  <div id="map-background" class="absolute inset-0 -z-10">
+  {
+    project.featured_image_data?.public_url && (
+      <div id="featured-image-background" class="absolute inset-0 -z-10">
+        <img
+          src={project.featured_image_data.public_url}
+          alt={`Featured image for ${project.address}`}
+          class="h-32 w-full rounded-lg rounded-b-none object-cover transition-transform duration-200 hover:scale-105"
+          loading="lazy"
+          referrerpolicy="strict-origin-when-cross-origin"
+          crossorigin="anonymous"
+          onerror="console.warn('Featured image failed to load:', this.src, 'Project ID:', this.closest('[data-project-id]')?.dataset.projectId); this.style.display='none'; const fallback = this.parentElement.querySelector('.featured-image-fallback'); if (fallback) fallback.style.display='flex';"
+        />
+        <div class="featured-image-fallback hidden text-center">
+          <BoxIcon name="image-x" class="mx-auto mb-2 h-8 w-8" />
+          <p class="text-xs">Image failed to load</p>
+        </div>
+      </div>
+    )
+  }
+  <div id="map-background" class="absolute inset-0 -z-10 hidden">
     <!-- Google Map will be rendered here -->
   </div>
 
