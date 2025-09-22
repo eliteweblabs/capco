@@ -281,7 +281,7 @@ async function sendDemoBookingEmails(booking: any, request: Request) {
         body: JSON.stringify({
           usersToNotify: adminEmails,
           emailType: "demo_booking_admin",
-          emailSubject: `New Demo Booking Request - ${booking.name}`,
+          emailSubject: `New Demo Request → ${booking.name}`,
           emailContent: adminEmailContent,
           buttonText: "View Dashboard",
           buttonLink: "/dashboard",
