@@ -174,21 +174,33 @@ export function isSafariIOS(): boolean {
  */
 export function isSafari(): boolean {
   const ua = navigator.userAgent;
-  return /Safari/.test(ua) && !/Chrome|CriOS|FxiOS|EdgiOS/.test(ua);
+  // More strict Chrome detection to avoid false positives
+  const isChrome = /Chrome/.test(ua) && /Safari/.test(ua);
+  const isSafari = /Safari/.test(ua) && !/Chrome|CriOS|FxiOS|EdgiOS|Edg/.test(ua);
+
+  return isSafari && !isChrome;
 }
 
 export function isSafari18Beta(): boolean {
   const ua = navigator.userAgent;
   // Safari 18 beta has version 18.x.x
-  return /Safari/.test(ua) && /Version\/18\./.test(ua) && !/Chrome|CriOS|FxiOS|EdgiOS/.test(ua);
+  // More strict Chrome detection to avoid false positives
+  const isChrome = /Chrome/.test(ua) && /Safari/.test(ua);
+  const isSafari = /Safari/.test(ua) && !/Chrome|CriOS|FxiOS|EdgiOS|Edg/.test(ua);
+  const isSafari18Beta = /Version\/18\./.test(ua);
+
+  return isSafari && isSafari18Beta && !isChrome;
 }
 
 export function isSafari18OrLater(): boolean {
   const ua = navigator.userAgent;
   // Safari 18+ (including final release) still has viewport bugs
-  return (
-    /Safari/.test(ua) && /Version\/(18|19|20)\./.test(ua) && !/Chrome|CriOS|FxiOS|EdgiOS/.test(ua)
-  );
+  // More strict Chrome detection to avoid false positives
+  const isChrome = /Chrome/.test(ua) && /Safari/.test(ua);
+  const isSafari = /Safari/.test(ua) && !/Chrome|CriOS|FxiOS|EdgiOS|Edg/.test(ua);
+  const isSafari18Plus = /Version\/(18|19|20)\./.test(ua);
+
+  return isSafari && isSafari18Plus && !isChrome;
 }
 
 /**

@@ -17,7 +17,6 @@ import Button from "../common/Button.astro";
 
 interface Props {
   project?: any;
-  projectId?: string | null;
   currentUser?: any;
   supabaseUrl?: string;
   isNewProject?: boolean;
@@ -26,7 +25,6 @@ interface Props {
 
 const {
   project = {},
-  projectId = "",
   currentUser = {},
   isNewProject = true,
   projectStatus = null,
@@ -34,8 +32,18 @@ const {
 } = Astro.props;
 
 const currentRole = currentUser?.profile?.role;
+const projectId = project?.id;
 // Generate a temporary ID for new projects
 const formId = isNewProject ? `new-project-${Date.now()}` : projectId || "";
+
+// Early debug logging
+console.log("📝 [ProjectForm] Component initialized:", {
+  hasProject: !!project,
+  projectId,
+  currentRole,
+  isNewProject,
+  projectStatus,
+});
 
 // Use currentRole prop if provided, otherwise use authenticated role
 
@@ -48,29 +56,40 @@ const buttonGroups = getFilteredButtonGroups(currentRole, isNewProject, projectS
 // Get filtered form actions based on user role and project status
 const formActions = getFilteredFormActions(currentRole, isNewProject, projectStatus);
 
-// Debug logging
-// console.log("📝 [ProjectForm] Debug info:", {
-//   isNewProject,
-//   projectStatus,
-//   formFieldsCount: formFields.length,
-//   buttonGroupsCount: buttonGroups.length,
-//   formActionsCount: formActions.length,
-//   formFields: formFields.map((f) => ({
-//     id: f.id,
-//     name: f.name,
-//     allow: f.allow,
-//   })),
-//   buttonGroups: buttonGroups.map((g) => ({
-//     id: g.id,
-//     name: g.name,
-//     allow: g.allow,
-//   })),
-//   formActions: formActions.map((a) => ({
-//     id: a.id,
-//     label: a.label,
-//     allow: a.allow,
-//   })),
-// });
+// Debug logging - Server-side
+console.log("📝 [ProjectForm] Server-side debug:", {
+  currentRole,
+  isNewProject,
+  projectStatus,
+  formFieldsCount: formFields.length,
+  buttonGroupsCount: buttonGroups.length,
+  formActionsCount: formActions.length,
+});
+
+// Debug logging - Client-side
+console.log("📝 [ProjectForm] Client-side debug:", {
+  currentRole,
+  isNewProject,
+  projectStatus,
+  formFieldsCount: formFields.length,
+  buttonGroupsCount: buttonGroups.length,
+  formActionsCount: formActions.length,
+  formFields: formFields.map((f) => ({
+    id: f.id,
+    name: f.name,
+    allow: f.allow,
+  })),
+  buttonGroups: buttonGroups.map((g) => ({
+    id: g.id,
+    name: g.name,
+    allow: g.allow,
+  })),
+  formActions: formActions.map((a) => ({
+    id: a.id,
+    label: a.label,
+    allow: a.allow,
+  })),
+});
 
 // Debug new client fields specifically
 // const newClientFieldsInForm = formFields.filter(
@@ -118,6 +137,8 @@ const formActions = getFilteredFormActions(currentRole, isNewProject, projectSta
         imageField=""
         noResultsText="Type to search addresses..."
         skipSaveToAPI={true}
+        currentUser={currentUser}
+        project={project}
       />
     )
   }
