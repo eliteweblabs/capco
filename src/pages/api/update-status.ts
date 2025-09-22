@@ -60,7 +60,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         headers: { "Content-Type": "application/json" },
       });
     }
-    const currentRole = currentUser.role;
+    const currentRole = currentUser?.profile?.role;
 
     const body = await request.json();
     const { projectId, status: newStatus } = body;
@@ -154,12 +154,17 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     // Get status data after successful update
     // Get base URL using the proper utility function
     const baseUrl = getApiBaseUrl(request);
+    
+    // Extract cookies from the original request to pass to the internal API call
+    const cookieHeader = request.headers.get("cookie");
+    
     const statusDataResponse = await fetch(
       `${baseUrl}/api/project-statuses?status_code=${newStatus}`,
       {
         method: "GET",
         headers: {
           "Content-Type": "application/json",
+          ...(cookieHeader && { "Cookie": cookieHeader }),
         },
       }
     );

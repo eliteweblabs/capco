@@ -1,19 +1,23 @@
 ---
-import App from "../components/common/App.astro";
-import BoxIcon from "../components/common/BoxIcon.astro";
-import SectionContainer from "../components/common/SectionContainer.astro";
-import StaffCreationForm from "../components/form/StaffCreationForm.astro";
-import Button from "../components/common/Button.astro";
-
-// Get auth data directly since App component handles auth requirements
+const requireAuthRedirect = "/login";
 import { checkAuth } from "../lib/auth";
-const { isAuth, currentUser, currentRole, session } = await checkAuth(Astro.cookies);
+const { currentUser, session, supabase, refreshToken, accessToken } = await checkAuth(
+  Astro.cookies
+);
 
-// After the requireAuth check
-if (!isAuth || currentRole !== "Admin") return Astro.redirect("/login");
+// Handle auth redirect first
+if (requireAuthRedirect && (!session || !currentUser)) {
+  return Astro.redirect(requireAuthRedirect);
+}
 
-import { supabase } from "../lib/supabase";
-import { supabaseAdmin } from "../lib/supabase-admin";
+import { isBackendPage } from "../pages/api/backend-page-check";
+
+import App from "../components/common/App.astro";
+import Footer from "../components/common/Footer.astro";
+import BoxIcon from "../components/common/BoxIcon.astro";
+import Button from "../components/common/Button.astro";
+import StaffCreationForm from "../components/form/StaffCreationForm.astro";
+import "../lib/refresh-manager.ts";
 
 // Fetch all users for the admin panel
 let users: any[] = [];
@@ -32,7 +36,7 @@ try {
       error = profilesError.message;
     } else if (allProfiles) {
       // Email and phone are already available in profiles table
-      const profilesWithEmails = allProfiles.map((profile) => {
+      const profilesWithEmails = allProfiles.map((profile: any) => {
         return {
           ...profile,
           email: profile.email || "No email found",
@@ -59,363 +63,393 @@ const userCounts = {
 ---
 
 <App
-  title="User Management - CAPCo Fire Protection"
-  description="Manage system users"
-  session={session}
-  isAuth={isAuth}
-  currentRole={currentRole}
+  title="CAPCo Fire Protection Systems - Build, manage, and track fire protection systems effortlessly"
+  description="CAPCo powers the world's most reliable fire protection systems. We make compliance easy."
   currentUser={currentUser}
-  session={session}
+  session={session || undefined}
+  project={undefined}
+  supabase={supabase}
 >
-  <SectionContainer class="mx-auto max-w-7xl">
-    <!-- Page Header -->
-    <div class="mb-8">
-      <h1 class="mb-2 text-3xl font-bold text-gray-900 dark:text-white">User Management</h1>
-      <p class="text-secondary dark:text-secondary-dark">
-        Create, view, and manage all system users
-      </p>
-    </div>
-
-    <!-- User Statistics Cards -->
-    <div class="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-      <div
-        class="rounded-lg bg-white p-6 shadow-sm ring-1 ring-gray-200 dark:bg-gray-800 dark:ring-gray-700"
-      >
-        <div class="flex items-center">
-          <div class="flex-shrink-0">
-            <BoxIcon name="group" class="h-8 w-8 text-blue-600" />
-          </div>
-          <div class="ml-4">
-            <dt class="text-muted dark:text-muted text-sm font-medium">Total Users</dt>
-            <dd class="text-2xl font-semibold text-gray-900 dark:text-white">{userCounts.Total}</dd>
-          </div>
-        </div>
-      </div>
-
-      <div
-        class="rounded-lg bg-white p-6 shadow-sm ring-1 ring-gray-200 dark:bg-gray-800 dark:ring-gray-700"
-      >
-        <div class="flex items-center">
-          <div class="flex-shrink-0">
-            <BoxIcon name="shield-check" class="h-8 w-8 text-red-600" />
-          </div>
-          <div class="ml-4">
-            <dt class="text-muted dark:text-muted text-sm font-medium">Admins</dt>
-            <dd class="text-2xl font-semibold text-gray-900 dark:text-white">{userCounts.Admin}</dd>
-          </div>
-        </div>
-      </div>
-
-      <div
-        class="rounded-lg bg-white p-6 shadow-sm ring-1 ring-gray-200 dark:bg-gray-800 dark:ring-gray-700"
-      >
-        <div class="flex items-center">
-          <div class="flex-shrink-0">
-            <BoxIcon name="user-check" class="h-8 w-8 text-green-600" />
-          </div>
-          <div class="ml-4">
-            <dt class="text-muted dark:text-muted text-sm font-medium">Staff</dt>
-            <dd class="text-2xl font-semibold text-gray-900 dark:text-white">{userCounts.Staff}</dd>
-          </div>
-        </div>
-      </div>
-
-      <div
-        class="rounded-lg bg-white p-6 shadow-sm ring-1 ring-gray-200 dark:bg-gray-800 dark:ring-gray-700"
-      >
-        <div class="flex items-center">
-          <div class="flex-shrink-0">
-            <BoxIcon name="user" class="h-8 w-8 text-purple-600" />
-          </div>
-          <div class="ml-4">
-            <dt class="text-muted dark:text-muted text-sm font-medium">Clients</dt>
-            <dd class="text-2xl font-semibold text-gray-900 dark:text-white">
-              {userCounts.Client}
-            </dd>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Main Content Grid -->
-    <div class="grid grid-cols-1 gap-8 lg:grid-cols-3">
-      <!-- User List (Left Side - 2 columns) -->
-      <div class="lg:col-span-2">
+  <div
+    id="main-content"
+    class="ahOqFrhzLjivRe8a1kX_ uLPch_bqyJDXwe5tynMV t6gkcSf0Bt4MLItXvDJ_ pdl952ted2i71qBLPIcQ jtAJHOc7mn7b4IKRO59D h8KYXnua2NT4kTVzieom MKeLnCkZhCbipNorZ2hW"
+  >
+    <main>
+      <div class="RZmKBZs1E1eXw8vkE6jY p_2EXc_a2sDA_h41l8QU">
         <div
-          class="rounded-lg bg-white shadow-sm ring-1 ring-gray-200 dark:bg-gray-800 dark:ring-gray-700"
+          class="mveJTCIb2WII7J4sY22F _Ybd3WwuTVljUT4vEaM3 _wYiJGbRZyFZeCc8y7Sf mngKhi_Rv06PF57lblDI _1jTZ8KXRZul60S6czNi LSIxp7RSuOKhsg28v_u3"
         >
-          <!-- Header with Search and Filters -->
-          <div class="border-b border-border-light p-6 dark:border-border-dark">
-            <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-              <div class="flex items-center gap-4">
-                <h2 class="text-lg font-semibold text-gray-900 dark:text-white">All Users</h2>
-              </div>
-
-              <div class="flex flex-col gap-2 sm:flex-row sm:items-center">
-                <!-- Search -->
-                <div class="relative">
-                  <BoxIcon
-                    name="search"
-                    class="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400"
-                  />
-                  <input
-                    type="text"
-                    id="user-search"
-                    placeholder="Search by name or email..."
-                    class="w-full rounded-lg border border-border-light bg-background-card py-2 pl-10 pr-4 text-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500 dark:border-border-dark dark:bg-background-card-dark dark:text-white dark:focus:border-primary-400"
-                  />
-                </div>
-
-                <!-- Role Filter -->
-                <select
-                  id="role-filter"
-                  class="rounded-lg border border-border-light bg-background-card px-3 py-2 text-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500 dark:border-border-dark dark:bg-background-card-dark dark:text-white dark:focus:border-primary-400"
-                >
-                  <option value="">All Roles</option>
-                  <option value="Admin">Admin</option>
-                  <option value="Staff">Staff</option>
-                  <option value="Client">Client</option>
-                </select>
-              </div>
-            </div>
-          </div>
-
-          <!-- Users Table -->
-          <div class="overflow-hidden">
-            <div class="overflow-x-auto">
-              <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                <thead class="bg-neutral-50 dark:bg-neutral-900">
-                  <tr>
-                    <th
-                      class="text-muted dark:text-muted dark:hover:text-primary-dark cursor-pointer px-6 py-3 text-left text-xs font-medium uppercase tracking-wider hover:text-primary"
-                      data-sort="name"
-                    >
-                      <div class="flex items-center gap-1">
-                        Name
-                        <BoxIcon name="chevron-up-down" class="h-3 w-3" />
-                      </div>
-                    </th>
-                    <th
-                      class="text-muted dark:text-muted dark:hover:text-primary-dark cursor-pointer px-6 py-3 text-left text-xs font-medium uppercase tracking-wider hover:text-primary"
-                      data-sort="email"
-                    >
-                      <div class="flex items-center gap-1">
-                        Email
-                        <BoxIcon name="chevron-up-down" class="h-3 w-3" />
-                      </div>
-                    </th>
-                    <th
-                      class="text-muted dark:text-muted dark:hover:text-primary-dark cursor-pointer px-6 py-3 text-left text-xs font-medium uppercase tracking-wider hover:text-primary"
-                      data-sort="role"
-                    >
-                      <div class="flex items-center gap-1">
-                        Role
-                        <BoxIcon name="chevron-up-down" class="h-3 w-3" />
-                      </div>
-                    </th>
-                    <th
-                      class="text-muted dark:text-muted dark:hover:text-primary-dark cursor-pointer px-6 py-3 text-left text-xs font-medium uppercase tracking-wider hover:text-primary"
-                      data-sort="created"
-                    >
-                      <div class="flex items-center gap-1">
-                        Created
-                        <BoxIcon name="chevron-up-down" class="h-3 w-3" />
-                      </div>
-                    </th>
-                    <th
-                      class="text-muted dark:text-muted px-6 py-3 text-right text-xs font-medium uppercase tracking-wider"
-                    >
-                      Actions
-                    </th>
-                  </tr>
-                </thead>
-                <tbody
-                  id="users-table-body"
-                  class="divide-y divide-gray-200 bg-white dark:divide-gray-700 dark:bg-gray-800"
-                >
-                  {
-                    users.map((user) => {
-                      const fullName = `${user.first_name || ""} ${user.last_name || ""}`.trim();
-                      const displayName = fullName || user.company_name || "Unknown User";
-                      const createdDate = new Date(user.created_at).toLocaleDateString();
-
-                      return (
-                        <tr
-                          class="user-row hover:bg-gray-50 dark:hover:bg-gray-700"
-                          data-role={user.role}
-                          data-name={displayName.toLowerCase()}
-                        >
-                          <td class="whitespace-nowrap px-6 py-4">
-                            <div class="flex items-center">
-                              <div class="flex-shrink-0">
-                                <div
-                                  class={`flex h-10 w-10 items-center justify-center rounded-lg ${
-                                    user.role === "Admin"
-                                      ? "bg-red-100 dark:bg-red-900/30"
-                                      : user.role === "Staff"
-                                        ? "bg-green-100 dark:bg-green-900/30"
-                                        : "bg-purple-100 dark:bg-purple-900/30"
-                                  }`}
-                                >
-                                  <BoxIcon
-                                    name={
-                                      user.role === "Admin"
-                                        ? "shield-check"
-                                        : user.role === "Staff"
-                                          ? "user-check"
-                                          : "user"
-                                    }
-                                    class={`h-5 w-5 ${
-                                      user.role === "Admin"
-                                        ? "text-red-600 dark:text-red-400"
-                                        : user.role === "Staff"
-                                          ? "text-green-600 dark:text-green-400"
-                                          : "text-purple-600 dark:text-purple-400"
-                                    }`}
-                                  />
-                                </div>
-                              </div>
-                              <div class="ml-4">
-                                <div class="text-sm font-medium text-gray-900 dark:text-white">
-                                  {displayName}
-                                </div>
-                                {user.phone && (
-                                  <div class="text-muted dark:text-muted text-sm">{user.phone}</div>
-                                )}
-                              </div>
-                            </div>
-                          </td>
-                          <td class="whitespace-nowrap px-6 py-4">
-                            <div class="text-sm text-gray-900 dark:text-white">{user.email}</div>
-                          </td>
-                          <td class="whitespace-nowrap px-6 py-4">
-                            <span
-                              class={`inline-flex rounded-lg px-2 py-1 text-xs font-semibold ${
-                                user.role === "Admin"
-                                  ? "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400"
-                                  : user.role === "Staff"
-                                    ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400"
-                                    : "bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400"
-                              }`}
-                            >
-                              {user.role}
-                            </span>
-                          </td>
-                          <td class="text-muted dark:text-muted whitespace-nowrap px-6 py-4 text-sm">
-                            {createdDate}
-                          </td>
-                          <td class="whitespace-nowrap px-6 py-4 text-right text-sm font-medium">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              class="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"
-                              onclick={`confirmDeleteUser('${user.id}', '${displayName}')`}
-                              title="Delete user"
-                              icon="trash"
-                            />
-                          </td>
-                        </tr>
-                      );
-                    })
-                  }
-                </tbody>
-              </table>
-
-              {
-                users.length === 0 && (
-                  <div class="py-12 text-center">
-                    <BoxIcon name="users" class="mx-auto h-12 w-12 text-gray-400" />
-                    <h3 class="mt-2 text-sm font-medium text-gray-900 dark:text-white">
-                      No users found
-                    </h3>
-                    <p class="text-muted dark:text-muted mt-1 text-sm">
-                      {error ? `Error: ${error}` : "Get started by creating a new user."}
-                    </p>
-                  </div>
-                )
-              }
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Create User Form (Right Side - 1 column) -->
-      <div class="lg:col-span-1">
-        <div
-          class="rounded-lg bg-white p-6 shadow-sm ring-1 ring-gray-200 dark:bg-gray-800 dark:ring-gray-700"
-        >
-          <!-- Header -->
-          <div class="mb-6">
-            <h2 class="mb-2 text-lg font-semibold text-gray-900 dark:text-white">
-              Create New User
-            </h2>
-            <p class="text-secondary dark:text-secondary-dark text-sm">
-              Add a new user to the system
+          <!-- Page Header -->
+          <div class="mb-8">
+            <h1 class="mb-2 text-3xl font-bold text-gray-900 dark:text-white">User Management</h1>
+            <p class="text-secondary dark:text-secondary-dark">
+              Create, view, and manage all system users
             </p>
           </div>
 
-          <!-- Create User Form -->
-          <form id="create-user-form" class="space-y-4">
-            <StaffCreationForm />
-
-            <!-- Submit Button -->
-            <div class="pt-2">
-              <Button type="submit" id="submit-btn" variant="primary" size="md" fullWidth>
-                <span id="submit-text">Create User</span>
-                <BoxIcon name="loader-alt" id="submit-spinner" class="ml-2 hidden animate-spin" />
-              </Button>
-            </div>
-
-            <!-- Info Box -->
+          <!-- User Statistics Cards -->
+          <div class="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <div
-              class="rounded-lg border border-blue-200 bg-blue-50 p-4 dark:border-blue-800 dark:bg-blue-900/20"
+              class="rounded-lg bg-white p-6 shadow-sm ring-1 ring-gray-200 dark:bg-gray-800 dark:ring-gray-700"
             >
-              <div class="flex items-start">
-                <BoxIcon
-                  name="info-circle"
-                  class="mr-2 mt-0.5 text-lg text-blue-600 dark:text-blue-400"
-                />
-                <div class="text-sm text-blue-800 dark:text-blue-400">
-                  <p class="mb-1 font-medium">Account Setup:</p>
-                  <ol class="list-inside list-decimal space-y-1 text-xs">
-                    <li>An invitation email will be sent</li>
-                    <li>User can set up authentication</li>
-                    <li>User will appear in the list immediately</li>
-                  </ol>
+              <div class="flex items-center">
+                <div class="flex-shrink-0">
+                  <BoxIcon name="group" class="h-8 w-8 text-blue-600" />
+                </div>
+                <div class="ml-4">
+                  <dt class="text-muted dark:text-muted text-sm font-medium">Total Users</dt>
+                  <dd class="text-2xl font-semibold text-gray-900 dark:text-white">
+                    {userCounts.Total}
+                  </dd>
                 </div>
               </div>
             </div>
-          </form>
-        </div>
-      </div>
-    </div>
-  </SectionContainer>
 
-  <!-- Delete Confirmation Modal -->
-  <div
-    id="delete-modal"
-    class="fixed inset-0 z-50 hidden items-center justify-center bg-black bg-opacity-50"
-  >
-    <div class="mx-4 w-full max-w-md rounded-lg bg-white p-6 dark:bg-gray-800">
-      <div class="flex items-center">
-        <div class="flex-shrink-0">
-          <BoxIcon name="error" class="h-6 w-6 text-red-600" />
+            <div
+              class="rounded-lg bg-white p-6 shadow-sm ring-1 ring-gray-200 dark:bg-gray-800 dark:ring-gray-700"
+            >
+              <div class="flex items-center">
+                <div class="flex-shrink-0">
+                  <BoxIcon name="shield-check" class="h-8 w-8 text-red-600" />
+                </div>
+                <div class="ml-4">
+                  <dt class="text-muted dark:text-muted text-sm font-medium">Admins</dt>
+                  <dd class="text-2xl font-semibold text-gray-900 dark:text-white">
+                    {userCounts.Admin}
+                  </dd>
+                </div>
+              </div>
+            </div>
+
+            <div
+              class="rounded-lg bg-white p-6 shadow-sm ring-1 ring-gray-200 dark:bg-gray-800 dark:ring-gray-700"
+            >
+              <div class="flex items-center">
+                <div class="flex-shrink-0">
+                  <BoxIcon name="user-check" class="h-8 w-8 text-green-600" />
+                </div>
+                <div class="ml-4">
+                  <dt class="text-muted dark:text-muted text-sm font-medium">Staff</dt>
+                  <dd class="text-2xl font-semibold text-gray-900 dark:text-white">
+                    {userCounts.Staff}
+                  </dd>
+                </div>
+              </div>
+            </div>
+
+            <div
+              class="rounded-lg bg-white p-6 shadow-sm ring-1 ring-gray-200 dark:bg-gray-800 dark:ring-gray-700"
+            >
+              <div class="flex items-center">
+                <div class="flex-shrink-0">
+                  <BoxIcon name="user" class="h-8 w-8 text-purple-600" />
+                </div>
+                <div class="ml-4">
+                  <dt class="text-muted dark:text-muted text-sm font-medium">Clients</dt>
+                  <dd class="text-2xl font-semibold text-gray-900 dark:text-white">
+                    {userCounts.Client}
+                  </dd>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Main Content Grid -->
+          <div class="grid grid-cols-1 gap-8 lg:grid-cols-3">
+            <!-- User List (Left Side - 2 columns) -->
+            <div class="lg:col-span-2">
+              <div
+                class="rounded-lg bg-white shadow-sm ring-1 ring-gray-200 dark:bg-gray-800 dark:ring-gray-700"
+              >
+                <!-- Header with Search and Filters -->
+                <div class="border-b border-border-light p-6 dark:border-border-dark">
+                  <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                    <div class="flex items-center gap-4">
+                      <h2 class="text-lg font-semibold text-gray-900 dark:text-white">All Users</h2>
+                    </div>
+
+                    <div class="flex flex-col gap-2 sm:flex-row sm:items-center">
+                      <!-- Search -->
+                      <div class="relative">
+                        <BoxIcon
+                          name="search"
+                          class="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400"
+                        />
+                        <input
+                          type="text"
+                          id="user-search"
+                          placeholder="Search by name or email..."
+                          class="_1jTZ8KXRZul60S6czNi w-full rounded-lg border border-border-light bg-background-card py-2 pl-10 pr-4 text-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500 dark:border-border-dark dark:text-white dark:focus:border-primary-400"
+                        />
+                      </div>
+
+                      <!-- Role Filter -->
+                      <select
+                        id="role-filter"
+                        class="_1jTZ8KXRZul60S6czNi rounded-lg border border-border-light bg-background-card px-3 py-2 text-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500 dark:border-border-dark dark:text-white dark:focus:border-primary-400"
+                      >
+                        <option value="">All Roles</option>
+                        <option value="Admin">Admin</option>
+                        <option value="Staff">Staff</option>
+                        <option value="Client">Client</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Users Table -->
+                <div class="overflow-hidden">
+                  <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                      <thead class="bg-neutral-50 dark:bg-neutral-900">
+                        <tr>
+                          <th
+                            class="text-muted dark:text-muted dark:hover:text-primary-dark cursor-pointer px-6 py-3 text-left text-xs font-medium uppercase tracking-wider hover:text-primary"
+                            data-sort="name"
+                          >
+                            <div class="flex items-center gap-1">
+                              Name
+                              <BoxIcon name="chevron-up-down" class="h-3 w-3" />
+                            </div>
+                          </th>
+                          <th
+                            class="text-muted dark:text-muted dark:hover:text-primary-dark cursor-pointer px-6 py-3 text-left text-xs font-medium uppercase tracking-wider hover:text-primary"
+                            data-sort="email"
+                          >
+                            <div class="flex items-center gap-1">
+                              Email
+                              <BoxIcon name="chevron-up-down" class="h-3 w-3" />
+                            </div>
+                          </th>
+                          <th
+                            class="text-muted dark:text-muted dark:hover:text-primary-dark cursor-pointer px-6 py-3 text-left text-xs font-medium uppercase tracking-wider hover:text-primary"
+                            data-sort="role"
+                          >
+                            <div class="flex items-center gap-1">
+                              Role
+                              <BoxIcon name="chevron-up-down" class="h-3 w-3" />
+                            </div>
+                          </th>
+                          <th
+                            class="text-muted dark:text-muted dark:hover:text-primary-dark cursor-pointer px-6 py-3 text-left text-xs font-medium uppercase tracking-wider hover:text-primary"
+                            data-sort="created"
+                          >
+                            <div class="flex items-center gap-1">
+                              Created
+                              <BoxIcon name="chevron-up-down" class="h-3 w-3" />
+                            </div>
+                          </th>
+                          <th
+                            class="text-muted dark:text-muted px-6 py-3 text-right text-xs font-medium uppercase tracking-wider"
+                          >
+                            Actions
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody
+                        id="users-table-body"
+                        class="divide-y divide-gray-200 bg-white dark:divide-gray-700 dark:bg-gray-800"
+                      >
+                        {
+                          users.map((user) => {
+                            const fullName =
+                              `${user.first_name || ""} ${user.last_name || ""}`.trim();
+                            const displayName = fullName || user.company_name || "Unknown User";
+                            const createdDate = new Date(user.created_at).toLocaleDateString();
+
+                            return (
+                              <tr
+                                class="user-row hover:bg-gray-50 dark:hover:bg-gray-700"
+                                data-role={user.role}
+                                data-name={displayName.toLowerCase()}
+                              >
+                                <td class="whitespace-nowrap px-6 py-4">
+                                  <div class="flex items-center">
+                                    <div class="flex-shrink-0">
+                                      <div
+                                        class={`flex h-10 w-10 items-center justify-center rounded-lg ${
+                                          user.role === "Admin"
+                                            ? "bg-red-100 dark:bg-red-900/30"
+                                            : user.role === "Staff"
+                                              ? "bg-green-100 dark:bg-green-900/30"
+                                              : "bg-purple-100 dark:bg-purple-900/30"
+                                        }`}
+                                      >
+                                        <BoxIcon
+                                          name={
+                                            user.role === "Admin"
+                                              ? "shield-check"
+                                              : user.role === "Staff"
+                                                ? "user-check"
+                                                : "user"
+                                          }
+                                          class={`h-5 w-5 ${
+                                            user.role === "Admin"
+                                              ? "text-red-600 dark:text-red-400"
+                                              : user.role === "Staff"
+                                                ? "text-green-600 dark:text-green-400"
+                                                : "text-purple-600 dark:text-purple-400"
+                                          }`}
+                                        />
+                                      </div>
+                                    </div>
+                                    <div class="ml-4">
+                                      <div class="text-sm font-medium text-gray-900 dark:text-white">
+                                        {displayName}
+                                      </div>
+                                      {user.phone && (
+                                        <div class="text-muted dark:text-muted text-sm">
+                                          {user.phone}
+                                        </div>
+                                      )}
+                                    </div>
+                                  </div>
+                                </td>
+                                <td class="whitespace-nowrap px-6 py-4">
+                                  <div class="text-sm text-gray-900 dark:text-white">
+                                    {user.email}
+                                  </div>
+                                </td>
+                                <td class="whitespace-nowrap px-6 py-4">
+                                  <span
+                                    class={`inline-flex rounded-lg px-2 py-1 text-xs font-semibold ${
+                                      user.role === "Admin"
+                                        ? "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400"
+                                        : user.role === "Staff"
+                                          ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400"
+                                          : "bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400"
+                                    }`}
+                                  >
+                                    {user.role}
+                                  </span>
+                                </td>
+                                <td class="text-muted dark:text-muted whitespace-nowrap px-6 py-4 text-sm">
+                                  {createdDate}
+                                </td>
+                                <td class="whitespace-nowrap px-6 py-4 text-right text-sm font-medium">
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    class="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"
+                                    onclick={`confirmDeleteUser('${user.id}', '${displayName}')`}
+                                    title="Delete user"
+                                    icon="trash"
+                                  />
+                                </td>
+                              </tr>
+                            );
+                          })
+                        }
+                      </tbody>
+                    </table>
+
+                    {
+                      users.length === 0 && (
+                        <div class="py-12 text-center">
+                          <BoxIcon name="users" class="mx-auto h-12 w-12 text-gray-400" />
+                          <h3 class="mt-2 text-sm font-medium text-gray-900 dark:text-white">
+                            No users found
+                          </h3>
+                          <p class="text-muted dark:text-muted mt-1 text-sm">
+                            {error ? `Error: ${error}` : "Get started by creating a new user."}
+                          </p>
+                        </div>
+                      )
+                    }
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Create User Form (Right Side - 1 column) -->
+            <div class="lg:col-span-1">
+              <div
+                class="rounded-lg bg-white p-6 shadow-sm ring-1 ring-gray-200 dark:bg-gray-800 dark:ring-gray-700"
+              >
+                <!-- Header -->
+                <div class="mb-6">
+                  <h2 class="mb-2 text-lg font-semibold text-gray-900 dark:text-white">
+                    Create New User
+                  </h2>
+                  <p class="text-secondary dark:text-secondary-dark text-sm">
+                    Add a new user to the system
+                  </p>
+                </div>
+
+                <!-- Create User Form -->
+                <form id="create-user-form" class="space-y-4">
+                  <StaffCreationForm />
+
+                  <!-- Submit Button -->
+                  <div class="pt-2">
+                    <Button type="submit" id="submit-btn" variant="primary" size="md" fullWidth>
+                      <span id="submit-text">Create User</span>
+                      <BoxIcon
+                        name="loader-alt"
+                        id="submit-spinner"
+                        class="ml-2 hidden animate-spin"
+                      />
+                    </Button>
+                  </div>
+
+                  <!-- Info Box -->
+                  <div
+                    class="rounded-lg border border-blue-200 bg-blue-50 p-4 dark:border-blue-800 dark:bg-blue-900/20"
+                  >
+                    <div class="flex items-start">
+                      <BoxIcon
+                        name="info-circle"
+                        class="mr-2 mt-0.5 text-lg text-blue-600 dark:text-blue-400"
+                      />
+                      <div class="text-sm text-blue-800 dark:text-blue-400">
+                        <p class="mb-1 font-medium">Account Setup:</p>
+                        <ol class="list-inside list-decimal space-y-1 text-xs">
+                          <li>An invitation email will be sent</li>
+                          <li>User can set up authentication</li>
+                          <li>User will appear in the list immediately</li>
+                        </ol>
+                      </div>
+                    </div>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </div>
         </div>
-        <div class="ml-3">
-          <h3 class="text-lg font-medium text-gray-900 dark:text-white">Delete User</h3>
+
+        <!-- Delete Confirmation Modal -->
+        <div
+          id="delete-modal"
+          class="fixed inset-0 z-50 hidden items-center justify-center bg-black bg-opacity-50"
+        >
+          <div class="mx-4 w-full max-w-md rounded-lg bg-white p-6 dark:bg-gray-800">
+            <div class="flex items-center">
+              <div class="flex-shrink-0">
+                <BoxIcon name="error" class="h-6 w-6 text-red-600" />
+              </div>
+              <div class="ml-3">
+                <h3 class="text-lg font-medium text-gray-900 dark:text-white">Delete User</h3>
+              </div>
+            </div>
+            <div class="mt-4">
+              <p class="text-muted dark:text-muted text-sm">
+                Are you sure you want to delete <span id="delete-user-name" class="font-medium"
+                ></span>? This action cannot be undone.
+              </p>
+            </div>
+            <div class="mt-6 flex justify-end gap-3">
+              <Button type="button" id="cancel-delete" variant="secondary" size="sm">
+                Cancel
+              </Button>
+              <Button type="button" id="confirm-delete" variant="danger" size="sm">
+                Delete User
+              </Button>
+            </div>
+          </div>
         </div>
       </div>
-      <div class="mt-4">
-        <p class="text-muted dark:text-muted text-sm">
-          Are you sure you want to delete <span id="delete-user-name" class="font-medium"></span>?
-          This action cannot be undone.
-        </p>
-      </div>
-      <div class="mt-6 flex justify-end gap-3">
-        <Button type="button" id="cancel-delete" variant="secondary" size="sm"> Cancel </Button>
-        <Button type="button" id="confirm-delete" variant="danger" size="sm"> Delete User </Button>
-      </div>
-    </div>
+    </main>
+    <Footer />
   </div>
 </App>
 

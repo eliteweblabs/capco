@@ -1,6 +1,9 @@
 ---
-import { isBackendPage } from "../../pages/api/backend-page-check";
-import { navigation } from "@/pages/api/navigation";
+// Handle OAuth callback if code is present
+const authCode = Astro.url.searchParams.get("code");
+if (authCode) {
+  return Astro.redirect(`/api/auth/callback?code=${authCode}`);
+}
 
 interface Props {
   title?: string;
@@ -9,29 +12,44 @@ interface Props {
   session?: any;
   project?: any;
   supabase?: any;
+  supabaseUrl?: string;
   noNavigation?: boolean;
+  projects?: any;
+  isBackend?: boolean;
+  id?: string;
 }
 
 const {
-  currentUser = undefined,
   title = undefined,
   description = undefined,
+  currentUser = undefined,
   session = undefined,
   project = undefined,
   supabase = undefined,
+  supabaseUrl = undefined,
   noNavigation = false,
+  projects = undefined,
+  isBackend = false,
+  id = undefined,
 } = Astro.props;
+
+console.log("[App] currentUser:", currentUser);
+console.log("[App] session:", session);
+console.log("[App] project:", project);
+console.log("[App] supabase:", supabase);
+console.log("🔍 [App] supabaseUrl:", supabaseUrl);
+console.log("🔍 [App] noNavigation:", noNavigation);
 
 // Derived properties (8 props → 13 total)
 const isAuth = currentUser ? true : false;
-const currentRole = currentUser?.role;
-const currentUserId = currentUser?.id;
-const projectId = project?.id;
+const currentUserId = currentUser?.id || undefined;
+const currentRole = currentUser?.profile.role || undefined;
+const projectId = project?.id || undefined;
 const currentUrl = Astro.url.pathname;
-const isBackend = isBackendPage(currentUrl);
 
 // Get navigation data
-const navigationData = navigation(currentUrl, isAuth, currentRole || "Client", isBackend);
+import { navigation } from "@/pages/api/navigation";
+const navigationData = navigation(currentUrl, isAuth, currentRole || "Client", isBackend || false);
 const { desktopNavigationHTML, visibleNavItems } = navigationData;
 
 import "../../styles/boxicons.css"; // this is sketchy
@@ -42,8 +60,8 @@ import UserCenter from "./UserCenter.astro";
 import UnifiedNotification from "./UnifiedNotification.astro";
 import CookieBanner from "./CookieBanner.astro";
 import SpeedDial from "./SpeedDial.astro";
-import FlowbiteNavbar from "./FlowbiteNavbar.astro";
-import FlowbiteAside from "./FlowbiteAside.astro";
+import Navbar from "./Navbar.astro";
+import Aside from "./Aside.astro";
 ---
 
 <!doctype html>
@@ -187,39 +205,35 @@ import FlowbiteAside from "./FlowbiteAside.astro";
     set:html={`window.GOOGLE_MAPS_API_KEY = "${import.meta.env.GOOGLE_MAPS_API_KEY || ""}"; window.GOOGLE_PLACES_API_KEY = "${import.meta.env.GOOGLE_PLACES_API_KEY || ""}"; window.STRIPE_PUBLISHABLE_KEY = "${import.meta.env.PUBLIC_STRIPE_PUBLISHABLE_KEY || ""}";`}
   />
 
-  <!-- ${currentUser ? `window.USER_DATA = ${JSON.stringify(currentUser)};` : ""}
-    window.SUPABASE_URL = "${import.meta.env.SUPABASE_URL || ""}"; window.SUPABASE_ANON_KEY = "${(import.meta.env.SUPABASE_ANON_KEY || "").replace(/\s/g, "")}";  -->
+  <!-- User data and Supabase config handled server-side -->
   <!-- SimpleProjectLogger is now handled server-side only -->
 
   <body class="jtAJHOc7mn7b4IKRO59D h8KYXnua2NT4kTVzieom KRANKvs7gs1E_d0fCA0k">
     <!-- Preloader -->
     <Preloader />
-    <!-- Loading Overlay for Save Operations -->
-    <!-- <main class="main-content"> -->
-    <!-- <Header
-        isAuth={isAuth}
-        currentUser={currentUser}
-        currentRole={currentRole || ""}
-        session={session}
-        assignedProjects={assignedProjects}
-        assignedProjectsCount={assignedProjectsCount}
-        desktopNavigationHTML={desktopNavigationHTML}
-      /> -->
+
     {
       !noNavigation ? (
         <>
-          <FlowbiteNavbar
-            currentUrl={currentUrl}
+          <Navbar
             desktopNavigationHTML={desktopNavigationHTML}
-            isAuth={isAuth}
             currentUser={currentUser}
-            currentRole={currentRole}
             session={session}
+            supabaseUrl={supabaseUrl}
+            id={id}
+            projects={projects}
+            project={project}
             isBackend={isBackend}
           />
 
           <div class="YRrCJSr_j5nopfm4duUc wBVMFkIGfrKshbvi2gS1 jtAJHOc7mn7b4IKRO59D UZ9xFK4mqjHjj8e8yJwf h8KYXnua2NT4kTVzieom">
-            <FlowbiteAside />
+            <Aside
+              isAuth={isAuth}
+              currentUser={currentUser}
+              currentRole={currentRole || ""}
+              session={session}
+              navigationData={navigationData}
+            />
 
             <slot />
           </div>
@@ -230,7 +244,7 @@ import FlowbiteAside from "./FlowbiteAside.astro";
     }
     <!-- Footer -->
 
-    <UserCenter
+    <!-- <UserCenter
       isAuth={isAuth}
       currentUser={currentUser}
       currentRole={currentRole || ""}
@@ -238,18 +252,14 @@ import FlowbiteAside from "./FlowbiteAside.astro";
       visibleNavItems={visibleNavItems}
       desktopNavigationHTML={desktopNavigationHTML}
       project={project}
-    />
+    /> -->
     <!-- Unified Notification System -->
     <UnifiedNotification />
     <!-- Cookie Banner -->
     <CookieBanner />
 
     <!-- Speed Dial -->
-    <SpeedDial
-      currentUser={currentUser || undefined}
-      currentRole={currentRole || ""}
-      isAuth={isAuth}
-    />
+    <SpeedDial currentUser={currentUser || undefined} isBackend={isBackend} />
   </body>
 
   <script src="../../assets/js/app.bundle.js"></script>
@@ -326,13 +336,13 @@ import FlowbiteAside from "./FlowbiteAside.astro";
     // Centralized notification handler for update-status API responses
     (window as any).handleUpdateStatusNotification = function (response: any, context: any) {
       if (!response.success) {
-        console.error(`❌ [${context || "NOTIFICATION"}] API call failed:`, response.error);
+        console.error(`ERROR [${context || "NOTIFICATION"}] API call failed:`, response.error);
         return;
       }
 
       if (!response.notificationData || !(window as any).showModal) {
         console.warn(
-          `⚠️ [${context || "NOTIFICATION"}] No notification data or showModal function available`
+          `WARNING [${context || "NOTIFICATION"}] No notification data or showModal function available`
         );
         return;
       }
@@ -354,7 +364,7 @@ import FlowbiteAside from "./FlowbiteAside.astro";
         );
       } else {
         console.warn(
-          `⚠️ [${context || "NOTIFICATION"}] No ${isAdminOrStaff ? "admin" : "client"} notification found in response`
+          `WARNING [${context || "NOTIFICATION"}] No ${isAdminOrStaff ? "admin" : "client"} notification found in response`
         );
       }
     };
@@ -465,5 +475,49 @@ import FlowbiteAside from "./FlowbiteAside.astro";
     } else {
       console.log("❌ Service Worker not supported in this browser");
     }
+
+    // iOS Safari Mobile Beta Detection and CSS Application
+    function isSafariIOS(): boolean {
+      const ua = navigator.userAgent;
+      const isIOS = /iPad|iPhone|iPod/.test(ua);
+      const isSafari = /Safari/.test(ua) && !/Chrome|CriOS|FxiOS|EdgiOS/.test(ua);
+      return isIOS && isSafari;
+    }
+
+    function isSafari18Beta(): boolean {
+      const ua = navigator.userAgent;
+      return /Safari/.test(ua) && /Version\/18\./.test(ua) && !/Chrome|CriOS|FxiOS|EdgiOS/.test(ua);
+    }
+
+    function isMobile(): boolean {
+      return window.innerWidth < 768;
+    }
+
+    // Apply iOS Safari Mobile Beta specific CSS
+    if (isSafariIOS() && isSafari18Beta() && isMobile()) {
+      console.log("🍎 [APP] iOS Safari Mobile Beta detected - Applying specific CSS fixes");
+
+      // Add iOS Safari Mobile Beta class to body
+      document.body.classList.add("ios-safari-mobile-beta");
+
+      // Apply the specific CSS class to the target element
+      const targetElement = document.querySelector(
+        ".YRrCJSr_j5nopfm4duUc.wBVMFkIGfrKshbvi2gS1.jtAJHOc7mn7b4IKRO59D.UZ9xFK4mqjHjj8e8yJwf.h8KYXnua2NT4kTVzieom"
+      );
+      if (targetElement) {
+        targetElement.classList.add("ios-safari-mobile-beta-fix");
+        console.log("🍎 [APP] Applied iOS Safari Mobile Beta CSS fix to target element");
+      }
+    } else {
+      console.log("🌐 [APP] Not iOS Safari Mobile Beta - Skipping specific CSS fixes");
+    }
   </script>
 </html>
+
+<style>
+  /* iOS Safari Mobile Beta specific CSS - Only applied when detected */
+  .ios-safari-mobile-beta-fix {
+    height: 100dvh !important;
+    overflow-y: scroll !important;
+  }
+</style>

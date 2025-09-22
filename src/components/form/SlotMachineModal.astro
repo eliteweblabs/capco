@@ -29,9 +29,8 @@ interface Props {
   valueField?: string; // Optional: Field name to use for the value (default: "value")
   labelField?: string; // Optional: Field name to use for the label (default: "label")
   fetchOnLoad?: boolean; // Optional: Whether to fetch data immediately on modal open (default: false)
-  projectId?: string; // Optional: Project ID for API calls
   showNotification?: boolean; // Optional: Whether to show notification (default: true)
-  // project: any; // Optional: Status for API calls
+  project?: any; // Optional: Project for API calls
   icon?: string; // Optional: Icon name for the button (default: "")
   buttonVariant?:
     | "primary"
@@ -74,13 +73,13 @@ const {
   valueField = "value",
   labelField = "label",
   fetchOnLoad = false,
-  projectId,
   showNotification = false,
   buttonVariant = "primary",
-
+  project,
   // project = {},
 } = Astro.props;
 
+const projectId = project?.id || "";
 // Ensure options is always an array
 const optionsArray = Array.isArray(options) ? options : [];
 
@@ -532,9 +531,10 @@ const displayText = buttonText || selectedOption?.label || placeholder;
       if (isSelected) {
         baseStyles += `
           background: bg-primary-500 !important;
-          color: text-white !important;
+          color: text-white !important; 
           border-radius: 8px !important;
           margin: 0 8px !important;
+          color: white !important;
         `;
         li.classList.add("selected");
       }
@@ -661,7 +661,7 @@ const displayText = buttonText || selectedOption?.label || placeholder;
     const closeButton = modal.querySelector(`#${id}-close-slot-modal`);
     const searchInput = modal.querySelector(`#${id}-slot-search-input`);
     const searchButton = modal.querySelector(`#${id}-slot-search-btn`);
-    const liClassName = "text-primary dark:text-primary-dark";
+    const liClassName = "text-black dark:text-white";
     const spanClassName = "slot-machine-item-text";
 
     // Add event listeners to buttons from the partial

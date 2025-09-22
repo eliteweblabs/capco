@@ -170,7 +170,7 @@ export const GET: APIRoute = async ({ request, cookies, url }) => {
             clientEmail: clientEmail || "",
             contractUrl: projectId ? `/project/${projectId}?status=contract` : "",
             siteUrl: process.env.SITE_URL || "https://capcofire.com",
-            companyName: process.env.COMPANY_NAME || "CAPCo Fire",
+            companyName: process.env.GLOBAL_COMPANY_NAME || "CAPCo Fire",
           }
         : null;
 
@@ -179,7 +179,7 @@ export const GET: APIRoute = async ({ request, cookies, url }) => {
       // Get role-filtered status object
       const processedStatus = filteredStatusObj(
         status,
-        currentUser.role || "Client",
+        currentUser?.profile?.role || "Client",
         placeholderData
       );
 
@@ -194,6 +194,7 @@ export const GET: APIRoute = async ({ request, cookies, url }) => {
         admin_status_tab: status.admin_status_tab,
         client_status_tab: status.client_status_tab,
         status_color: status.status_color,
+        est_time: status.est_time,
 
         // Role-processed values
         status_name: processedStatus.status_name,
@@ -221,7 +222,7 @@ export const GET: APIRoute = async ({ request, cookies, url }) => {
       statusesMap, // Raw statuses as map
       roleBasedStatuses, // Role-processed statuses with placeholders
       selectOptions, // For form selects
-      userRole: currentUser.role || "Client",
+      userRole: currentUser?.profile?.role || "Client",
     };
 
     return new Response(JSON.stringify(response), {

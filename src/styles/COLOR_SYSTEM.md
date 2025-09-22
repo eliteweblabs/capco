@@ -25,7 +25,7 @@ Use the custom color names defined in `tailwind.config.mjs`:
 
 <!-- Background Colors -->
 <div class="bg-background-light dark:bg-background-dark">Adaptive Background</div>
-<div class="bg-background-card dark:bg-background-card-dark">Card Background</div>
+<div class="_1jTZ8KXRZul60S6czNi bg-background-card">Card Background</div>
 
 <!-- Text Colors -->
 <div class="dark:text-light text-black">Primary Text</div>
@@ -81,7 +81,7 @@ Use the predefined utility classes:
 <div class="border-primary">Primary Border</div>
 
 <!-- Hover States -->
-<button class="bg-primary hover-bg-primary text-white">Hover Button</button>
+<button class="hover-bg-primary bg-primary text-white">Hover Button</button>
 ```
 
 ## Color Palette
@@ -123,7 +123,7 @@ All colors automatically adapt to dark mode using the `dark:` prefix in Tailwind
 
 ```html
 <div
-  class="rounded-lg border border-border-light bg-background-card p-6 dark:border-border-dark dark:bg-background-card-dark"
+  class="_1jTZ8KXRZul60S6czNi rounded-lg border border-border-light bg-background-card p-6 dark:border-border-dark"
 >
   <h3 class="dark:text-light mb-2 text-xl font-semibold text-black">Card Title</h3>
   <p class="text-secondary dark:text-secondary-dark">Card content goes here.</p>

@@ -2,16 +2,15 @@
 // console.log("🏗️ [PROJECTS] Projects showcase page loading...");
 
 import App from "../components/common/App.astro";
-import SectionContainer from "../components/common/SectionContainer.astro";
+import Footer from "../components/common/Footer.astro";
 import BoxIcon from "../components/common/BoxIcon.astro";
 import Button from "../components/common/Button.astro";
-import { supabase } from "../lib/supabase";
-import { supabaseAdmin } from "../lib/supabase-admin";
+import { checkAuth } from "../lib/auth";
 
 // Para cambiar idioma de textos
-import { getI18N } from "../i18n";
-const { currentLocale } = Astro;
-const i18n = getI18N({ currentLocale });
+const { currentUser, session, supabase, refreshToken, accessToken } = await checkAuth(
+  Astro.cookies
+);
 
 // Fetch featured projects directly from database to avoid DNS issues
 interface Project {
@@ -24,92 +23,47 @@ interface Project {
   completedAt: string;
   featured: boolean;
   featured_image_url: string;
+  featured_image_data: {
+    public_url: string;
+  };
+  createdAt: string;
 }
 
 let featuredProjects: Project[] = [];
 let error: string | null = null;
 
 try {
-  // console.log("🏗️ [PROJECTS] Fetching featured projects directly from database");
+  const baseUrl = Astro.url.origin || "http://localhost:4321";
+  let apiUrl = `${baseUrl}/api/get-project`;
 
-  if (supabase) {
-    // Fetch projects for display (completed projects with status 220)
-    const { data: projects, error: dbError } = supabaseAdmin
-      ? await supabaseAdmin
-          .from("projects")
-          .select(
-            `
-          id,
-          address,
-          title,
-          description,
-          sq_ft,
-          new_construction,
-          status,
-          created_at,
-          updated_at,
-          featured,
-          featured_image_url,
-          featured_image_data
-        `
-          )
-          // .eq("status", 220) // Only completed projects
-          .not("address", "is", null) // Has address
-          .eq("featured", true) // Has featured
-          .neq("id", 0) // Exclude system log project
-          .order("updated_at", { ascending: false })
-          .limit(6)
-      : await supabase
-          .from("projects")
-          .select(
-            `
-          id,
-          address,
-          title,
-          description,
-          sq_ft,
-          new_construction,
-          status,
-          created_at,
-          updated_at,
-          featured,
-          featured_image_url,
-          featured_image_data
-        `
-          )
-          .eq("status", 220) // Only completed projects
-          .not("address", "is", null) // Has address
-          .eq("featured", "yes") // Has featured
-          .neq("id", 0) // Exclude system log project
-          .order("updated_at", { ascending: false })
-          .limit(6);
+  // For Admin and Client, no additional parameters needed (API handles role-based filtering)
 
-    if (dbError) {
-      error = "Failed to load projects from database";
-      console.error("🏗️ [PROJECTS] Database error:", dbError);
-    } else {
-      // Transform data to match expected format
-      featuredProjects = (projects || []).map((project: any) => ({
-        id: project.id,
-        title: project.title,
-        address: project.address,
-        description: project.description,
-        squareFootage: project.sq_ft,
-        isNewConstruction: project.new_construction,
-        completedAt: project.updated_at,
-        featured: project.featured,
-        featured_image_url: project.featured_image_url,
-      }));
+  // console.log("🏗️ [DASHBOARD] Fetching projects from API:", apiUrl);
+  const response = await fetch(apiUrl);
 
-      // console.log(`🏗️ [PROJECTS] Loaded ${featuredProjects.length} featured projects`);
-    }
+  if (response.ok) {
+    const data = await response.json();
+    const projects = data.projects || [];
+
+    featuredProjects = (projects || []).map((project: any) => ({
+      id: project.id,
+      title: project.title,
+      address: project.address,
+      description: project.description,
+      squareFootage: project.sq_ft,
+      isNewConstruction: project.new_construction,
+      completedAt: project.updated_at,
+      featured: project.featured,
+      featured_image_url: project.featured_image_url,
+      featured_image_data: project.featured_image_data,
+      createdAt: project.created_at,
+      updatedAt: project.updated_at,
+    }));
   } else {
-    error = "Database connection not available";
-    console.error("🏗️ [PROJECTS] Supabase client not available");
+    console.error("🏗️ [DASHBOARD] Error fetching projects:", response.status, response.statusText);
   }
-} catch (fetchError) {
-  error = "Failed to connect to database";
-  console.error("🏗️ [PROJECTS] Fetch error:", fetchError);
+} catch (error) {
+  console.error("🏗️ [DASHBOARD] Error fetching projects:", error);
 }
 
 // Helper function to format square footage
@@ -130,235 +84,249 @@ function formatDate(dateString: string | null | undefined): string {
 ---
 
 <App
-  title="Featured Projects - CAPCo Fire Protection"
-  description="Explore our completed fire protection system projects showcasing innovative safety solutions and regulatory compliance."
+  title="CAPCo Fire Protection Systems - Build, manage, and track fire protection systems effortlessly"
+  description="CAPCo powers the world's most reliable fire protection systems. We make compliance easy."
+  currentUser={currentUser}
+  session={session || undefined}
+  project={undefined}
+  supabase={supabase}
 >
-  <!-- Header Section -->
-  <SectionContainer
-    class="mt-0 bg-gradient-to-r from-red-50 to-orange-50 px-6 py-16 dark:from-red-900/20 dark:to-orange-900/20"
+  <div
+    id="main-content"
+    class="ahOqFrhzLjivRe8a1kX_ uLPch_bqyJDXwe5tynMV t6gkcSf0Bt4MLItXvDJ_ pdl952ted2i71qBLPIcQ jtAJHOc7mn7b4IKRO59D h8KYXnua2NT4kTVzieom MKeLnCkZhCbipNorZ2hW"
   >
-    <div class="mx-auto max-w-6xl text-center">
-      <h1 class="mb-6 text-4xl font-bold text-gray-900 dark:text-white md:text-5xl">
-        Featured <span class="text-red-600 dark:text-red-400">Projects</span>
-      </h1>
-      <p class="text-secondary dark:text-secondary-dark mx-auto mb-8 max-w-3xl text-xl">
-        Discover our completed fire protection system installations. Each project represents our
-        commitment to safety, innovation, and regulatory compliance.
-      </p>
-
-      <!-- Navigation -->
-      <div class="flex justify-center gap-4">
-        <Button href="/" variant="secondary" icon="home" iconPosition="left"> Home </Button>
-        <Button
-          href="/dashboard"
-          variant="primary"
-          icon="grid"
-          iconPosition="left"
-          class="bg-red-600 hover:bg-red-700 focus:ring-red-500"
+    <main>
+      <div class="RZmKBZs1E1eXw8vkE6jY p_2EXc_a2sDA_h41l8QU">
+        <div
+          class="mveJTCIb2WII7J4sY22F _Ybd3WwuTVljUT4vEaM3 _wYiJGbRZyFZeCc8y7Sf mngKhi_Rv06PF57lblDI _1jTZ8KXRZul60S6czNi LSIxp7RSuOKhsg28v_u3"
         >
-          Dashboard
-        </Button>
-      </div>
-    </div>
-  </SectionContainer>
-
-  <!-- Projects Grid -->
-  <SectionContainer class="px-6 py-16">
-    <div class="mx-auto max-w-7xl">
-      {
-        error ? (
-          <div class="py-16 text-center">
-            <div class="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-red-100 dark:bg-red-900/30">
-              <BoxIcon name="error-circle" class="bx-md text-red-600 dark:text-red-400" />
-            </div>
-            <h2 class="mb-4 text-2xl font-bold text-gray-900 dark:text-white">No Projects Found</h2>
-            <p class="text-secondary dark:text-secondary-dark mb-6">{error}</p>
-            <Button
-              onclick="window.location.reload()"
-              variant="danger"
-              icon="refresh"
-              iconPosition="left"
-            >
-              Try Again
-            </Button>
-          </div>
-        ) : featuredProjects.length === 0 ? (
-          <div class="py-16 text-center">
-            <div class="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-blue-100 dark:bg-blue-900/30">
-              <BoxIcon name="building" class="bx-md h-8 w-8 text-blue-600 dark:text-blue-400" />
-            </div>
-            <h2 class="mb-4 text-2xl font-bold text-gray-900 dark:text-white">
-              No Featured Projects Yet
-            </h2>
-            <p class="mb-6 text-gray-600 dark:text-gray-300">
-              We're working on exciting fire protection projects. Check back soon to see our latest
-              completed work!
+          <div class="mx-auto max-w-6xl text-center">
+            <h1 class="mb-6 text-4xl font-bold text-gray-900 dark:text-white md:text-5xl">
+              Featured <span class="text-primary-600 dark:text-primary-400">Projects</span>
+            </h1>
+            <p class="text-secondary dark:text-secondary-dark mx-auto mb-8 max-w-3xl text-xl">
+              Discover our completed fire protection system installations. Each project represents
+              our commitment to safety, innovation, and regulatory compliance.
             </p>
-            <Button href="/" variant="primary" icon="home" iconPosition="left">
-              Back to Home
-            </Button>
+
+            <!-- Navigation -->
+            <!-- <div class="flex justify-center gap-4">
+              <Button href="/" variant="secondary" icon="home" iconPosition="left"> Home </Button>
+              <Button
+                href="/dashboard"
+                variant="primary"
+                icon="grid"
+                iconPosition="left"
+                class="bg-primary-600 hover:bg-primary-700 focus:ring-primary-500"
+              >
+                Dashboard
+              </Button> -->
+            <!-- </div> -->
           </div>
-        ) : (
-          <div class="projects-container">
-            <div class="mb-12 text-center">
-              <h2 class="mb-4 text-3xl font-bold text-gray-900 dark:text-white">
-                Completed Projects
-              </h2>
-              <p class="text-gray-600 dark:text-gray-300">
-                {featuredProjects.length} featured project{featuredProjects.length !== 1 ? "s" : ""}{" "}
-                showcasing our expertise
-              </p>
-            </div>
 
-            <div class="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
-              {featuredProjects.map((project) => (
-                <div class="group overflow-hidden rounded-xl bg-background-card shadow-lg transition-all duration-300 hover:shadow-xl dark:bg-background-card-dark">
-                  <div class="border-b border-border-light p-6 dark:border-border-dark">
-                    <div class="mb-4 flex items-start justify-between">
-                      <div class="flex-1">
-                        <h3 class="mb-2 text-xl font-bold text-gray-900 transition-colors group-hover:text-red-600 dark:text-white dark:group-hover:text-red-400">
-                          {project.address}
-                        </h3>
-                      </div>
-                      <div class="ml-4 flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-red-100 text-black dark:bg-red-900/30 dark:text-white">
-                        <BoxIcon name="building" class="bx-md" />
-                      </div>
-                    </div>
+          <div class="mx-auto max-w-7xl">
+            {
+              error ? (
+                <div class="py-16 text-center">
+                  <div class="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-primary-100 dark:bg-primary-900/30">
+                    <BoxIcon
+                      name="error-circle"
+                      class="bx-md text-primary-600 dark:text-primary-400"
+                    />
+                  </div>
+                  <h2 class="mb-4 text-2xl font-bold text-gray-900 dark:text-white">
+                    No Projects Found
+                  </h2>
+                  <p class="text-secondary dark:text-secondary-dark mb-6">{error}</p>
+                  <Button
+                    onclick="window.location.reload()"
+                    variant="danger"
+                    icon="refresh"
+                    iconPosition="left"
+                  >
+                    Try Again
+                  </Button>
+                </div>
+              ) : featuredProjects.length === 0 ? (
+                <div class="py-16 text-center">
+                  <div class="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-blue-100 dark:bg-blue-900/30">
+                    <BoxIcon
+                      name="building"
+                      class="bx-md h-8 w-8 text-blue-600 dark:text-blue-400"
+                    />
+                  </div>
+                  <h2 class="mb-4 text-2xl font-bold text-gray-900 dark:text-white">
+                    No Featured Projects Yet
+                  </h2>
+                  <p class="mb-6 text-gray-600 dark:text-gray-300">
+                    We're working on exciting fire protection projects. Check back soon to see our
+                    latest completed work!
+                  </p>
+                  <Button href="/" variant="primary" icon="home" iconPosition="left">
+                    Back to Home
+                  </Button>
+                </div>
+              ) : (
+                <div class="projects-container">
+                  <div class="mb-12 text-center">
+                    {/* <h2 class="mb-4 text-3xl font-bold text-gray-900 dark:text-white">
+                      Completed Projects
+                    </h2> */}
+                    {/* <p class="text-gray-600 dark:text-gray-300">
+                      {featuredProjects.length} featured project
+                      {featuredProjects.length !== 1 ? "s" : ""} showcasing our expertise
+                    </p> */}
+                  </div>
 
-                    {project.featured_image_url ? (
-                      <div class="relative mb-3 overflow-hidden rounded-lg">
-                        <img
-                          src={project.featured_image_url}
-                          alt={`Featured image for ${project.address}`}
-                          class="h-32 w-full object-cover transition-transform duration-200 hover:scale-105"
-                          loading="lazy"
-                          referrerpolicy="strict-origin-when-cross-origin"
-                          crossorigin="anonymous"
-                          onerror="console.warn('Featured image failed to load:', this.src); this.style.display='none'; this.nextElementSibling.style.display='flex';"
-                        />
-                        <div class="flex hidden h-32 w-full items-center justify-center bg-neutral-100 dark:bg-neutral-700">
-                          <div class="text-center text-gray-400 dark:text-gray-500">
-                            <BoxIcon name="image" class="mx-auto mb-2 h-8 w-8" />
-                            <p class="text-xs">Image unavailable</p>
+                  <div class="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
+                    {featuredProjects.map((project) => (
+                      <div class="_1jTZ8KXRZul60S6czNi group overflow-hidden rounded-xl bg-background-card shadow-lg transition-all duration-300 hover:shadow-xl">
+                        <div class="border-b border-border-light p-6 dark:border-border-dark">
+                          <div class="mb-4 flex items-start justify-between">
+                            <div class="flex-1">
+                              <h3 class="mb-2 text-xl font-bold text-gray-900 transition-colors group-hover:text-primary-600 dark:text-white dark:group-hover:text-primary-400">
+                                {project.address}
+                              </h3>
+                            </div>
+                            <div class="ml-4 flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-primary-100 text-black dark:bg-primary-900/30 dark:text-white">
+                              <BoxIcon name="building" class="bx-md" />
+                            </div>
+                          </div>
+
+                          {project.featured_image_data?.public_url ? (
+                            <div class="relative mb-3 overflow-hidden rounded-lg">
+                              <img
+                                src={project.featured_image_data.public_url}
+                                alt={`Featured image for ${project.address}`}
+                                class="h-32 w-full object-cover transition-transform duration-200 hover:scale-105"
+                                loading="lazy"
+                                referrerpolicy="strict-origin-when-cross-origin"
+                                crossorigin="anonymous"
+                                onerror="console.warn('Featured image failed to load:', this.src); this.style.display='none'; this.nextElementSibling.style.display='flex';"
+                              />
+                              <div class="flex hidden h-32 w-full items-center justify-center bg-neutral-100 dark:bg-neutral-700">
+                                <div class="text-center text-gray-400 dark:text-gray-500">
+                                  <BoxIcon name="image" class="mx-auto mb-2 h-8 w-8" />
+                                  <p class="text-xs">Image unavailable</p>
+                                </div>
+                              </div>
+                              <div class="absolute right-2 top-2 flex items-center gap-1 rounded-full bg-yellow-500 px-2 py-1 text-xs font-medium text-white">
+                                <BoxIcon name="star" class="h-3 w-3" />
+                                Featured
+                              </div>
+                            </div>
+                          ) : (
+                            <div class="mb-3 flex h-32 items-center justify-center rounded-lg bg-neutral-100 dark:bg-neutral-700">
+                              <div class="text-center text-gray-400 dark:text-gray-500">
+                                <BoxIcon name="image" class="mx-auto mb-2 h-8 w-8" />
+                                <p class="text-xs">No featured image</p>
+                              </div>
+                            </div>
+                          )}
+
+                          {project.description && (
+                            <p class="line-clamp-3 text-sm text-gray-600 dark:text-gray-400">
+                              {project.description}
+                            </p>
+                          )}
+                        </div>
+
+                        <div class="space-y-4 p-6">
+                          <div class="grid grid-cols-2 gap-4">
+                            <div class="flex items-center space-x-2">
+                              <BoxIcon name="expand" class="h-4 w-4 text-gray-400" />
+                              <div>
+                                <p class="text-xs text-gray-500 dark:text-gray-400">Size</p>
+                                <p class="text-sm font-medium text-gray-900 dark:text-white">
+                                  {formatSquareFootage(project.squareFootage)}
+                                </p>
+                              </div>
+                            </div>
+                            <div class="flex items-center space-x-2">
+                              <BoxIcon
+                                name={project.isNewConstruction ? "plus-circle" : "edit"}
+                                class="h-4 w-4 text-gray-400"
+                              />
+                              <div>
+                                <p class="text-xs text-gray-500 dark:text-gray-400">Type</p>
+                                <p class="text-sm font-medium text-gray-900 dark:text-white">
+                                  {project.isNewConstruction ? "New Construction" : "Renovation"}
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+
+                          <div class="flex items-center space-x-2 border-t border-border-light pt-2 dark:border-border-dark">
+                            <BoxIcon name="calendar-check" class="h-4 w-4 text-green-500" />
+                            <div>
+                              <p class="text-xs text-gray-500 dark:text-gray-400">Completed</p>
+                              <p class="text-sm font-medium text-gray-900 dark:text-white">
+                                {formatDate(project.completedAt)}
+                              </p>
+                            </div>
                           </div>
                         </div>
-                        <div class="absolute right-2 top-2 flex items-center gap-1 rounded-full bg-yellow-500 px-2 py-1 text-xs font-medium text-white">
-                          <BoxIcon name="star" class="h-3 w-3" />
-                          Featured
+
+                        <div class="bg-neutral-50 px-6 py-4 dark:bg-neutral-900/50">
+                          <div class="flex items-center justify-between">
+                            <div class="flex items-center space-x-2">
+                              <div class="h-2 w-2 rounded-full bg-green-500" />
+                              <span class="text-sm font-medium text-green-600 dark:text-green-400">
+                                Project Complete
+                              </span>
+                            </div>
+                            <BoxIcon name="shield-check" class="h-5 w-5 text-green-500" />
+                          </div>
                         </div>
                       </div>
-                    ) : (
-                      <div class="mb-3 flex h-32 items-center justify-center rounded-lg bg-neutral-100 dark:bg-neutral-700">
-                        <div class="text-center text-gray-400 dark:text-gray-500">
-                          <BoxIcon name="image" class="mx-auto mb-2 h-8 w-8" />
-                          <p class="text-xs">No featured image</p>
-                        </div>
-                      </div>
-                    )}
-
-                    {project.description && (
-                      <p class="line-clamp-3 text-sm text-gray-600 dark:text-gray-400">
-                        {project.description}
-                      </p>
-                    )}
-                  </div>
-
-                  <div class="space-y-4 p-6">
-                    <div class="grid grid-cols-2 gap-4">
-                      <div class="flex items-center space-x-2">
-                        <BoxIcon name="expand" class="h-4 w-4 text-gray-400" />
-                        <div>
-                          <p class="text-xs text-gray-500 dark:text-gray-400">Size</p>
-                          <p class="text-sm font-medium text-gray-900 dark:text-white">
-                            {formatSquareFootage(project.squareFootage)}
-                          </p>
-                        </div>
-                      </div>
-                      <div class="flex items-center space-x-2">
-                        <BoxIcon
-                          name={project.isNewConstruction ? "plus-circle" : "edit"}
-                          class="h-4 w-4 text-gray-400"
-                        />
-                        <div>
-                          <p class="text-xs text-gray-500 dark:text-gray-400">Type</p>
-                          <p class="text-sm font-medium text-gray-900 dark:text-white">
-                            {project.isNewConstruction ? "New Construction" : "Renovation"}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div class="flex items-center space-x-2 border-t border-border-light pt-2 dark:border-border-dark">
-                      <BoxIcon name="calendar-check" class="h-4 w-4 text-green-500" />
-                      <div>
-                        <p class="text-xs text-gray-500 dark:text-gray-400">Completed</p>
-                        <p class="text-sm font-medium text-gray-900 dark:text-white">
-                          {formatDate(project.completedAt)}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div class="bg-neutral-50 px-6 py-4 dark:bg-neutral-900/50">
-                    <div class="flex items-center justify-between">
-                      <div class="flex items-center space-x-2">
-                        <div class="h-2 w-2 rounded-full bg-green-500" />
-                        <span class="text-sm font-medium text-green-600 dark:text-green-400">
-                          Project Complete
-                        </span>
-                      </div>
-                      <BoxIcon name="shield-check" class="h-5 w-5 text-green-500" />
-                    </div>
+                    ))}
                   </div>
                 </div>
-              ))}
+              )
+            }
+          </div>
+
+          <div class="mx-auto mt-12 max-w-4xl text-center">
+            <h2 class="mb-6 text-3xl font-bold text-gray-900 dark:text-white">
+              Ready to Start Your Fire Protection Project?
+            </h2>
+            <p class="mb-8 text-xl text-gray-600 dark:text-gray-300">
+              Join our satisfied clients and ensure your building meets all safety requirements with
+              our expert fire protection services.
+            </p>
+            <div class="flex flex-col justify-center gap-4 sm:flex-row">
+              <Button
+                href="/login"
+                variant="primary"
+                size="lg"
+                icon="plus-circle"
+                iconPosition="left"
+                class="bg-primary-600 shadow-lg hover:bg-primary-700 hover:shadow-xl focus:ring-primary-500"
+              >
+                Start New Project
+              </Button>
+              <Button
+                href="/login?tab=register"
+                variant="secondary"
+                size="lg"
+                icon="user-plus"
+                iconPosition="left"
+              >
+                Create Account
+              </Button>
             </div>
           </div>
-        )
-      }
-    </div>
-  </SectionContainer>
-
-  <!-- Call to Action -->
-  <SectionContainer class="bg-neutral-50 px-6 py-16 dark:bg-neutral-900">
-    <div class="mx-auto max-w-4xl text-center">
-      <h2 class="mb-6 text-3xl font-bold text-gray-900 dark:text-white">
-        Ready to Start Your Fire Protection Project?
-      </h2>
-      <p class="mb-8 text-xl text-gray-600 dark:text-gray-300">
-        Join our satisfied clients and ensure your building meets all safety requirements with our
-        expert fire protection services.
-      </p>
-      <div class="flex flex-col justify-center gap-4 sm:flex-row">
-        <Button
-          href="/login"
-          variant="primary"
-          size="lg"
-          icon="plus-circle"
-          iconPosition="left"
-          class="bg-red-600 shadow-lg hover:bg-red-700 hover:shadow-xl focus:ring-red-500"
-        >
-          Start New Project
-        </Button>
-        <Button
-          href="/login?tab=register"
-          variant="secondary"
-          size="lg"
-          icon="user-plus"
-          iconPosition="left"
-        >
-          Create Account
-        </Button>
+        </div>
+        <Footer />
       </div>
-    </div>
-  </SectionContainer>
+    </main>
+  </div>
+  <style>
+    .line-clamp-3 {
+      display: -webkit-box;
+      -webkit-line-clamp: 3;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+  </style>
 </App>
-
-<style>
-  .line-clamp-3 {
-    display: -webkit-box;
-    -webkit-line-clamp: 3;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-  }
-</style>

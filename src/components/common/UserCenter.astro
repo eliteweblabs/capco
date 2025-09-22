@@ -18,43 +18,6 @@ const {
 const projectId = project?.id;
 const currentUserId = currentUser?.id;
 
-let assignedProjectsCount = 0;
-let assignedProjects: any[] = [];
-
-if ((currentUser?.id && currentRole === "Staff") || currentRole === "Admin") {
-  // console.log("🏗️ [APP] Fetching assigned projects for user:", currentUser.id);
-  const baseUrl = Astro.url.origin;
-  const fullUrl = `${baseUrl}/api/get-project?assigned_to_id=${currentUser.id}`;
-  // console.log("🏗️ [APP] Full URL:", fullUrl);
-  try {
-    const response = await fetch(fullUrl);
-    if (response.ok) {
-      const data = await response.json();
-      // console.log("🏗️ [APP] Assigned projects:", data);
-      assignedProjects = data.projects || [];
-      assignedProjectsCount = data.projects.length || 0;
-    }
-  } catch (error) {
-    console.error("Error fetching assigned projects:", error);
-  }
-} else if (currentUser?.id && currentRole === "Client") {
-  const baseUrl = Astro.url.origin;
-  const fullUrl = `${baseUrl}/api/get-project?author_id=${currentUser.id}`;
-  // console.log("🏗️ [APP] Full URL:", fullUrl);
-  try {
-    const response = await fetch(fullUrl);
-    if (response.ok) {
-      const data = await response.json();
-      // console.log("🏗️ [APP] Assigned projects:", data);
-      assignedProjects = data.projects || [];
-      assignedProjectsCount = data.projects.length || 0;
-    }
-  } catch (error) {
-    console.error("Error fetching assigned projects:", error);
-  }
-}
-
-return null;
 // Fetch projects assigned to current user
 ---
 
@@ -135,7 +98,7 @@ return null;
         <div class="mb-6">
           <div class="py-1">
             <Button
-              href="/dashboard#new-project"
+              href="/new-project"
               variant="primary"
               size="sm"
               icon="map-pin"
@@ -166,13 +129,7 @@ return null;
 
     {
       projectId && project && (
-        <Punchlist
-          project={project}
-          currentRole={currentRole || undefined}
-          currentUser={currentUser}
-          projectId={projectId}
-          supabaseUrl={supabaseUrl}
-        />
+        <Punchlist project={project} currentUser={currentUser} supabaseUrl={supabaseUrl} />
       )
     }
   </div>

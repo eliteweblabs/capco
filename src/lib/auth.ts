@@ -69,7 +69,12 @@ export async function checkAuth(cookies: any): Promise<AuthResult> {
             // Enhance currentUser object with profile data
             currentUser.profile = profile;
 
-            // console.log("🔐 [AUTH] currentUser role set:", role);
+            console.log("🔐 [AUTH] Profile successfully attached:", {
+              userId: currentUser.id,
+              role: profile.role,
+              profileKeys: Object.keys(profile),
+              fullProfile: profile,
+            });
           } else {
             console.warn("🔐 [AUTH] Failed to get currentUser profile:", {
               userId: currentUser.id,
@@ -77,6 +82,13 @@ export async function checkAuth(cookies: any): Promise<AuthResult> {
               profileError: profileError,
               errorCode: profileError?.code,
               errorMessage: profileError?.message,
+            });
+
+            console.log("🔐 [AUTH] currentUser object after failed profile query:", {
+              hasCurrentUser: !!currentUser,
+              currentUserKeys: Object.keys(currentUser),
+              hasProfile: !!currentUser.profile,
+              profileValue: currentUser.profile,
             });
 
             // If profile doesn't exist, we should create one or handle gracefully

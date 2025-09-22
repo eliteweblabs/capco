@@ -2,7 +2,9 @@
 import HttpChatWidget from "./HttpChatWidget.astro";
 import StickySMS from "./StickySMS.astro";
 
-const { isAuth, currentUser, currentRole } = Astro.props;
+const { currentUser, isBackend } = Astro.props;
+
+const currentRole = currentUser?.profile?.role;
 
 // Speed dial component for quick actions
 ---
@@ -10,16 +12,9 @@ const { isAuth, currentUser, currentRole } = Astro.props;
 <div id="sticky-container" class="fixed bottom-6 left-6 z-40">
   {
     currentRole === "Admin" || currentRole === "Staff" ? (
-      <HttpChatWidget
-        currentUser={{
-          id: currentUser.id,
-          email: currentUser.email || "",
-          company_name: currentUser.company_name || "User",
-        }}
-        currentRole={currentRole || ""}
-      />
+      <HttpChatWidget currentUser={currentUser} />
     ) : (
-      <StickySMS isAuth={isAuth} currentUser={currentUser} currentRole={currentRole} />
+      <StickySMS isBackend={isBackend} />
     )
   }
 </div>
