@@ -45,20 +45,26 @@ try {
     const data = await response.json();
     const projects = data.projects || [];
 
-    featuredProjects = (projects || []).map((project: any) => ({
-      id: project.id,
-      title: project.title,
-      address: project.address,
-      description: project.description,
-      squareFootage: project.sq_ft,
-      isNewConstruction: project.new_construction,
-      completedAt: project.updated_at,
-      featured: project.featured,
-      featured_image_url: project.featured_image_url,
-      featured_image_data: project.featured_image_data,
-      createdAt: project.created_at,
-      updatedAt: project.updated_at,
-    }));
+    featuredProjects = (projects || [])
+      .filter((project: any) => project.featured_image_data?.public_url)
+      .filter((project: any) => project.featured === "yes")
+      .map((project: any) => ({
+        id: project.id,
+        title: project.title,
+        address: project.address,
+        description: project.description,
+        squareFootage: project.sq_ft,
+        isNewConstruction: project.new_construction,
+        completedAt: project.updated_at,
+        featured: project.featured,
+        featured_image_url: project.featured_image_url,
+        featured_image_data: project.featured_image_data,
+        createdAt: project.created_at,
+        updatedAt: project.updated_at,
+      }));
+
+    console.log("🔍 [PROJECTS] featuredProjects.length:", featuredProjects.length);
+    console.log("🔍 [PROJECTS] featuredProjects:", featuredProjects);
   } else {
     console.error("🏗️ [DASHBOARD] Error fetching projects:", response.status, response.statusText);
   }
@@ -84,7 +90,7 @@ function formatDate(dateString: string | null | undefined): string {
 ---
 
 <App
-  title="CAPCo Fire Protection Systems - Build, manage, and track fire protection systems effortlessly"
+  title="CAPCO Design Group - Build, manage, and track fire protection systems effortlessly"
   description="CAPCo powers the world's most reliable fire protection systems. We make compliance easy."
   currentUser={currentUser}
   session={session || undefined}

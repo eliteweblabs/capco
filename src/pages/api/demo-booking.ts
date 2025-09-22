@@ -298,7 +298,7 @@ async function sendDemoBookingEmails(booking: any, request: Request) {
     // Send confirmation email to customer
     const customerEmailContent = `
       <h2>Demo Booking Confirmation</h2>
-      <p>Thank you for your interest in CAPCo Fire Protection Systems!</p>
+      <p>Thank you for your interest in CAPCO Design Group!</p>
       
       <div style="background-color: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;">
         <h3>Your Demo Booking Details:</h3>
@@ -327,7 +327,7 @@ async function sendDemoBookingEmails(booking: any, request: Request) {
       body: JSON.stringify({
         usersToNotify: [booking.email],
         emailType: "demo_booking_customer",
-        emailSubject: "Demo Booking Confirmation - CAPCo Fire Protection Systems",
+        emailSubject: "Demo Booking Confirmation - CAPCO Design Group",
         emailContent: customerEmailContent,
         buttonText: "Learn More",
         buttonLink: "/solutions",
