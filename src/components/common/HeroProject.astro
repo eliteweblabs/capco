@@ -37,7 +37,7 @@ if (Object.keys(statuses).length > 0) {
   // Use provided statuses (legacy support)
   statusOptions = Object.values(statuses).map((status: any) => ({
     value: status.status_code?.toString() || "",
-    label: status.admin_status_name || "",
+    label: status.admin_status_name + " " + status.est_time || "",
   }));
 } else {
   // Fetch from unified API
@@ -79,8 +79,11 @@ if (currentRole === "Admin" || currentRole === "Staff") {
         staffOptions = [
           { value: "", label: "Unassigned" },
           ...staffData.staffUsers.map((staff: any) => ({
-            value: staff.id,
-            label: staff.company_name || staff.name || "Unknown Staff",
+            value: staff.id || "",
+            label:
+              staff.company_name ||
+              `${staff.first_name || ""} ${staff.last_name || ""}`.trim() ||
+              "Unknown Staff",
           })),
         ];
       }

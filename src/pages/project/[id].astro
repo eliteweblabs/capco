@@ -33,12 +33,25 @@ const { currentUser, session, supabase, refreshToken, accessToken } = await chec
 if (requireAuthRedirect && (!session || !currentUser)) {
   return Astro.redirect(requireAuthRedirect);
 }
-const currentRole = currentUser?.role;
+
+import { isBackendPage } from "../../pages/api/backend-page-check";
+
+// Debug: Let's see what's actually in currentUser
+console.log("🔍 [PROJECT PAGE] currentUser object:", {
+  hasCurrentUser: !!currentUser,
+  currentUserId: currentUser?.id,
+  hasProfile: !!currentUser?.profile,
+  profileKeys: currentUser?.profile ? Object.keys(currentUser.profile) : "no profile",
+  role: currentUser?.profile?.role,
+  fullProfile: currentUser?.profile,
+});
+
+const currentRole = currentUser?.profile?.role;
 const currentUserId = currentUser?.id;
 const { id } = Astro.params;
 
 import App from "../../components/common/App.astro";
-import SectionContainer from "../../components/common/SectionContainer.astro";
+import Footer from "../../components/common/Footer.astro";
 import HeroProject from "../../components/common/HeroProject.astro";
 import SlidingPillNav from "../../components/common/SlidingPillNav.astro";
 import TabDocuments from "../../components/project/TabDocuments.astro";
@@ -50,7 +63,6 @@ import TabDeposit from "../../components/project/TabDeposit.astro";
 import TabFinalInvoice from "../../components/project/TabFinalInvoice.astro";
 import TabActivityLog from "../../components/project/TabActivityLog.astro";
 import TabGeneratePdf from "../../components/project/TabGeneratePdf.astro";
-import { getI18N } from "@/i18n";
 import "../../lib/refresh-manager.ts";
 
 // Get the project ID from the URL parameter
@@ -355,177 +367,192 @@ if (!project) {
   title={`${project?.address || project?.title || "Untitled Project"} - CAPCo Fire Protection`}
   description={`${project?.address || project?.title || "Untitled Project"} - CAPCo Fire Protection`}
   currentUser={currentUser}
-  project={undefined}
+  project={project}
   session={session}
   supabase={supabase}
+  supabaseUrl={import.meta.env.PUBLIC_SUPABASE_URL}
+  noNavigation={false}
+  isBackend={true}
+  id={id}
 >
-  <HeroProject
-    title={project?.address || project?.title || "Untitled Project"}
-    description={project?.company_name || "Unknown Author"}
-    statusColor={currentStatusColor}
-    currentStatusInt={currentStatusInt.toString()}
-    currentStatusName={currentStatusName || undefined}
-    currentRole={currentRole || "Client"}
-    project={project}
-    statuses={statusesObject}
-    authorProfile={authorProfile}
-    currentStatusTab={currentStatusTab || undefined}
-  />
+  <div
+    id="main-content"
+    class="ahOqFrhzLjivRe8a1kX_ uLPch_bqyJDXwe5tynMV t6gkcSf0Bt4MLItXvDJ_ pdl952ted2i71qBLPIcQ jtAJHOc7mn7b4IKRO59D h8KYXnua2NT4kTVzieom MKeLnCkZhCbipNorZ2hW"
+  >
+    <main>
+      <div class="RZmKBZs1E1eXw8vkE6jY p_2EXc_a2sDA_h41l8QU">
+        <div
+          class="mveJTCIb2WII7J4sY22F _Ybd3WwuTVljUT4vEaM3 _wYiJGbRZyFZeCc8y7Sf mngKhi_Rv06PF57lblDI _1jTZ8KXRZul60S6czNi LSIxp7RSuOKhsg28v_u3"
+        >
+          <HeroProject
+            title={project?.address || project?.title || "Untitled Project"}
+            description={project?.company_name || "Unknown Author"}
+            statusColor={currentStatusColor}
+            projectId={id}
+            currentStatusInt={currentStatusInt.toString()}
+            currentStatusName={currentStatusName || undefined}
+            currentRole={currentRole || "Client"}
+            project={project}
+            statuses={statusesObject}
+            authorProfile={authorProfile}
+            currentStatusTab={currentStatusTab || undefined}
+          />
 
-  <SectionContainer>
-    <!-- Tab Navigation -->
-    <SlidingPillNav
-      navId="project-tab-nav"
-      navClass="my-4 dark:border-gray-700"
-      activeItem={activeTabIndex}
-      items={[
-        {
-          id: "status-project-form",
-          label: "Project Form",
-          icon: "edit",
-          variant: "anchor",
-          onclick: "switchTab('project-form')",
-        },
-        {
-          id: "status-discussion",
-          label: "Discussion",
-          icon: "message-rounded-dots",
-          variant: "anchor",
-          dataAttributes: { "data-count": "0" },
-          onclick: "switchTab('discussion')",
-        },
-        {
-          id: "status-documents",
-          label: "Documents",
-          icon: "file",
-          variant: "anchor",
-          onclick: "switchTab('documents')",
-        },
-        {
-          id: "status-proposal",
-          label: "Proposal",
-          icon: "grid",
-          variant: "anchor",
-          onclick: "switchTab('proposal')",
-        },
-        {
-          id: "status-contract",
-          label: "Contract",
-          icon: "pencil",
-          variant: "anchor",
-          onclick: "switchTab('contract')",
-        },
-        {
-          id: "status-deposit",
-          label: "Deposit",
-          icon: "credit-card",
-          variant: "anchor",
-          onclick: "switchTab('deposit')",
-        },
-        {
-          id: "status-activity-log",
-          label: "Activity Log",
-          icon: "history",
-          variant: "anchor",
-          onclick: "switchTab('activity-log')",
-        },
-        {
-          id: "status-generate-pdf",
-          label: "Generate PDF",
-          icon: "history",
-          variant: "anchor",
-          onclick: "switchTab('generate-pdf')",
-        },
-      ]}
-    />
+          <!-- Tab Navigation -->
+          <SlidingPillNav
+            navId="project-tab-nav"
+            navClass="my-4 dark:border-gray-700"
+            activeItem={activeTabIndex}
+            items={[
+              {
+                id: "status-project-form",
+                label: "Project Form",
+                icon: "edit",
+                variant: "anchor",
+                onclick: "switchTab('project-form')",
+              },
+              {
+                id: "status-discussion",
+                label: "Discussion",
+                icon: "message-rounded-dots",
+                variant: "anchor",
+                dataAttributes: { "data-count": "0" },
+                onclick: "switchTab('discussion')",
+              },
+              {
+                id: "status-documents",
+                label: "Documents",
+                icon: "file",
+                variant: "anchor",
+                onclick: "switchTab('documents')",
+              },
+              {
+                id: "status-proposal",
+                label: "Proposal",
+                icon: "grid",
+                variant: "anchor",
+                onclick: "switchTab('proposal')",
+              },
+              {
+                id: "status-contract",
+                label: "Contract",
+                icon: "pencil",
+                variant: "anchor",
+                onclick: "switchTab('contract')",
+              },
+              {
+                id: "status-deposit",
+                label: "Deposit",
+                icon: "credit-card",
+                variant: "anchor",
+                onclick: "switchTab('deposit')",
+              },
+              {
+                id: "status-activity-log",
+                label: "Activity Log",
+                icon: "history",
+                variant: "anchor",
+                onclick: "switchTab('activity-log')",
+              },
+              {
+                id: "status-generate-pdf",
+                label: "Generate PDF",
+                icon: "history",
+                variant: "anchor",
+                onclick: "switchTab('generate-pdf')",
+              },
+            ]}
+          />
 
-    <!-- Tab Content -->
-    <div class="grid grid-cols-1 gap-6 lg:grid-cols-1">
-      <!-- Project Form Tab -->
-      <TabProjectForm
-        project={project}
-        currentRole={currentRole || undefined}
-        projectId={projectId}
-        projectStatus={currentStatusInt}
-        projectStatusLabel={currentStatusName || undefined}
-        authorProfile={authorProfile}
-      />
+          <!-- Tab Content -->
+          <!-- <div class="grid grid-cols-1 gap-6 lg:grid-cols-1"> -->
+          <!-- Project Form Tab -->
+          <TabProjectForm
+            project={project}
+            currentRole={currentRole || undefined}
+            projectId={projectId}
+            projectStatus={currentStatusInt}
+            projectStatusLabel={currentStatusName || undefined}
+            authorProfile={authorProfile}
+          />
 
-      <!-- Discussion Tab -->
+          <!-- Discussion Tab -->
 
-      <TabDiscussions
-        project={project}
-        currentRole={currentRole || undefined}
-        currentUser={currentUser}
-        projectId={projectId}
-        projectStatus={currentStatusInt}
-        projectStatusLabel={currentStatusName || undefined}
-        authorProfile={authorProfile}
-        supabaseUrl={import.meta.env.PUBLIC_SUPABASE_URL}
-      />
+          <TabDiscussions
+            project={project}
+            currentRole={currentRole || undefined}
+            currentUser={currentUser}
+            projectId={projectId}
+            projectStatus={currentStatusInt}
+            projectStatusLabel={currentStatusName || undefined}
+            authorProfile={authorProfile}
+            supabaseUrl={import.meta.env.PUBLIC_SUPABASE_URL}
+          />
 
-      <!-- Documents Tab -->
-      <TabDocuments
-        project={project}
-        currentRole={currentRole || undefined}
-        projectId={projectId}
-        projectStatus={currentStatusInt}
-        projectStatusLabel={currentStatusName || undefined}
-        authorProfile={authorProfile}
-        fileType="media"
-      />
+          <!-- Documents Tab -->
+          <TabDocuments
+            project={project}
+            currentUser={currentUser}
+            projectStatus={currentStatusInt}
+            projectStatusLabel={currentStatusName || undefined}
+            fileType="media"
+          />
 
-      <!-- Proposal Tab -->
-      <TabProposal
-        project={project}
-        currentRole={currentRole || undefined}
-        projectId={projectId}
-        projectStatus={currentStatusInt}
-        projectStatusLabel={currentStatusName || undefined}
-        authorProfile={authorProfile}
-        currentUser={currentUser}
-        invoiceResult={invoiceResult || { data: null, error: null }}
-      />
+          <!-- Proposal Tab -->
+          <TabProposal
+            project={project}
+            currentRole={currentRole || undefined}
+            projectId={projectId}
+            projectStatus={currentStatusInt}
+            projectStatusLabel={currentStatusName || undefined}
+            authorProfile={authorProfile}
+            currentUser={currentUser}
+            invoiceResult={invoiceResult || { data: null, error: null }}
+          />
 
-      <!-- Contract Tab -->
-      <TabContract
-        project={project}
-        currentRole={currentRole || undefined}
-        projectId={projectId}
-        projectStatus={currentStatusInt}
-        projectStatusLabel={currentStatusName || undefined}
-        authorProfile={authorProfile}
-      />
+          <!-- Contract Tab -->
+          <TabContract
+            project={project}
+            currentRole={currentRole || undefined}
+            projectId={projectId}
+            projectStatus={currentStatusInt}
+            projectStatusLabel={currentStatusName || undefined}
+            authorProfile={authorProfile}
+          />
 
-      <!-- Deposit Tab -->
-      <TabDeposit
-        project={project}
-        currentRole={currentRole || undefined}
-        projectId={projectId}
-        projectStatus={currentStatusInt}
-        projectStatusLabel={currentStatusName || undefined}
-        authorProfile={authorProfile}
-        invoiceId={invoiceId || "0"}
-        totalAmount={totalAmount}
-      />
+          <!-- Deposit Tab -->
+          <TabDeposit
+            project={project}
+            currentRole={currentRole || undefined}
+            projectId={projectId}
+            projectStatus={currentStatusInt}
+            projectStatusLabel={currentStatusName || undefined}
+            authorProfile={authorProfile}
+            invoiceId={invoiceId || "0"}
+            totalAmount={totalAmount}
+          />
 
-      <!-- Final Invoice Tab -->
-      <TabFinalInvoice
-        project={project}
-        currentRole={currentRole || undefined}
-        projectId={projectId}
-        projectStatus={currentStatusInt}
-        projectStatusLabel={currentStatusName || undefined}
-        authorProfile={authorProfile}
-        invoiceId={invoiceId || "0"}
-        totalAmount={totalAmount}
-      />
+          <!-- Final Invoice Tab -->
+          <TabFinalInvoice
+            project={project}
+            currentRole={currentRole || undefined}
+            projectId={projectId}
+            projectStatus={currentStatusInt}
+            projectStatusLabel={currentStatusName || undefined}
+            authorProfile={authorProfile}
+            invoiceId={invoiceId || "0"}
+            totalAmount={totalAmount}
+          />
 
-      <TabActivityLog currentRole={currentRole || undefined} projectId={projectId} />
+          <TabActivityLog currentRole={currentRole || undefined} projectId={projectId} />
 
-      <TabGeneratePdf projectId={projectId} currentRole={currentRole || undefined} />
-    </div>
-  </SectionContainer>
+          <TabGeneratePdf projectId={projectId} currentRole={currentRole || undefined} />
+          <!-- </div> -->
+        </div>
+      </div>
+    </main>
+    <Footer />
+  </div>
 </App>
 
 <script

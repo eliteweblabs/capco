@@ -74,7 +74,7 @@ export const POST: APIRoute = async ({ request }) => {
         .replace(/\{\{CLIENT_EMAIL\}\}/g, "<b>" + (data.clientEmail || "") + "</b>")
         .replace(/\{\{STATUS_NAME\}\}/g, "<b>" + (data.statusName || "") + "</b>")
         .replace(/\{\{EST_TIME\}\}/g, "<b>" + (data.estTime || "") + "</b>")
-        .replace(/\{\{COMPANY_NAME\}\}/g, "<b>" + (data.companyName || "") + "</b>")
+        .replace(/\{\{GLOBAL_COMPANY_NAME\}\}/g, "<b>" + (data.companyName || "") + "</b>")
         .replace(/\{\{CONTRACT_URL\}\}/g, data.contractUrl || "")
         .replace(
           /\{\{PRIMARY_COLOR\}\}/g,

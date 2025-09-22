@@ -73,10 +73,10 @@ export const navigation = (
     // Backend navigation (shown on backend pages)
     {
       label: "New Project",
-      href: "/dashboard#new-project",
+      href: "/new-project",
       roles: ["Client", "Admin", "Staff"],
       pageType: "backend",
-      isPrimary: currentUrl.startsWith("/dashboard#new-project"),
+      isPrimary: currentUrl.startsWith("/new-project"),
     },
     {
       label: "Projects",
@@ -86,16 +86,16 @@ export const navigation = (
       isDrawer: false, // Special flag for drawer trigger
       isPrimary: currentUrl.startsWith("/projects"),
     },
-    {
-      label: "Email Your Project",
-      href: "mailto:project@new.capcofire.com",
-      roles: ["any"],
-      pageType: "frontend",
-      isPrimary: false,
-      buttonStyle: "outline",
-      desktopOnly: false,
-      hideWhenAuth: true,
-    },
+    // {
+    //   label: "Email Your Project",
+    //   href: "mailto:project@new.capcofire.com",
+    //   roles: ["any"],
+    //   pageType: "frontend",
+    //   isPrimary: false,
+    //   buttonStyle: "outline",
+    //   desktopOnly: false,
+    //   hideWhenAuth: true,
+    // },
     {
       label: "Discussions",
       href: "/discussions",
@@ -180,7 +180,7 @@ export const navigation = (
               ${item.label}
               <i class="bx bx-chevron-down ml-1 h-4 w-4"></i>
             </a>
-            <div class="invisible absolute left-0 mt-2 w-64 rounded-lg border border-border-light bg-background-card opacity-0 shadow-lg transition-all duration-200 group-hover:visible group-hover:opacity-100 dark:border-border-dark dark:bg-background-card-dark">
+            <div class="invisible absolute left-0 mt-2 w-64 rounded-lg border border-border-light bg-background-card opacity-0 shadow-lg transition-all duration-200 group-hover:visible group-hover:opacity-100 dark:border-border-dark _1jTZ8KXRZul60S6czNi">
               <div class="py-1">
                 ${item.dropdownItems
                   .map(

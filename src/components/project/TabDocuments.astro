@@ -3,25 +3,24 @@ import BoxIcon from "../common/BoxIcon.astro";
 import Button from "../common/Button.astro";
 import SlideToggle from "../common/SlideToggle.astro";
 interface Props {
-  authorProfile?: any;
-  currentRole?: string;
   project: any;
-  projectId: string;
   projectStatus?: number;
   projectStatusLabel?: string;
-
+  currentUser?: any;
   fileType?: string;
 }
 
 const {
   project,
-  currentRole,
-  projectId,
-  authorProfile,
   projectStatus,
   fileType = "media",
   projectStatusLabel,
+  currentUser,
 } = Astro.props;
+
+const currentRole = currentUser?.profile?.role;
+const projectId = project?.id;
+const authorProfile = currentUser?.profile;
 ---
 
 <div
@@ -287,13 +286,14 @@ const {
   }
 </div>
 
-<script define:vars={{ projectId, fileType, authorProfile, currentRole, projectStatus }}>
+<script define:vars={{ projectId, fileType, authorProfile, currentRole, projectStatus, currentUser }}>
   class PDFUpload {
     constructor() {
       this.projectId = projectId;
       this.fileType = fileType;
       this.projectStatus = projectStatus;
       this.currentRole = currentRole;
+      this.currentUser = currentUser;
       this.isMobile = window.innerWidth <= 768;
       this.initialized = false;
       this.isFileDialogOpen = false; // Flag to prevent multiple file dialogs

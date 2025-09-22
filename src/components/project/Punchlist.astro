@@ -1,19 +1,18 @@
 ---
 interface Props {
-  currentRole?: string;
   currentUser?: any;
   project: any;
-  projectId: string;
   supabaseUrl?: string;
 }
 
-const { currentRole, currentUser, supabaseUrl, project } = Astro.props;
+const { currentUser, project, supabaseUrl } = Astro.props;
+
+if (!project || !project.id) {
+  return null;
+}
 
 const projectId = project.id;
-const placeholder =
-  currentRole === "Admin" || currentRole === "Staff"
-    ? "Write your punchlist item here... (Use @username to mention users)"
-    : "Write your punchlist item here...";
+const currentRole = currentUser?.role;
 
 console.log("🔍 [TabPunchlist] props:", Astro.props);
 ---

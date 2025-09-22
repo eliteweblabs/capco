@@ -559,7 +559,7 @@ export function generateFormFieldHTML(
             id="${fieldId}"
             name="${field.name}"
             value="${value}"
-            class="w-full py-2 px-3 text-sm border border-border-light dark:border-border-dark rounded-full bg-background-card dark:bg-background-card-dark text-black dark:text-light focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:focus:ring-primary-400 dark:focus:border-primary-400"
+            class="w-full py-2 px-3 text-sm border border-border-light dark:border-border-dark rounded-full bg-background-card _1jTZ8KXRZul60S6czNi text-black dark:text-light focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:focus:ring-primary-400 dark:focus:border-primary-400"
             placeholder="${field.placeholder || ""}"
             ${field.required ? "required" : ""}
             ${field.min !== undefined ? `min="${field.min}"` : ""}
@@ -579,7 +579,7 @@ export function generateFormFieldHTML(
             id="${fieldId}"
             name="${field.name}"
             rows="3"
-            class="w-full py-2 px-3 text-sm border border-border-light dark:border-border-dark rounded-full bg-background-card dark:bg-background-card-dark text-black dark:text-light focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:focus:ring-primary-400 dark:focus:border-primary-400"
+            class="w-full py-2 px-3 text-sm border border-border-light dark:border-border-dark rounded-full bg-background-card _1jTZ8KXRZul60S6czNi text-black dark:text-light focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:focus:ring-primary-400 dark:focus:border-primary-400"
             placeholder="${field.placeholder || ""}"
             data-project-id="${projectId}"
           >${value}</textarea>
@@ -655,7 +655,7 @@ export function generateFormFieldHTML(
 //             (option) => `
 //           <button
 //             type="button"
-//             class="${group.cssClass} px-3 py-2 text-sm rounded-full border border-border-light dark:border-border-dark bg-background-card dark:bg-background-card-dark text-secondary dark:text-secondary-dark hover:bg-neutral-50 dark:hover:bg-neutral-600 transition-colors ${selectedValues.includes(option.value) ? "bg-primary-500 text-white border-primary-500" : ""}"
+//             class="${group.cssClass} px-3 py-2 text-sm rounded-full border border-border-light dark:border-border-dark bg-background-card _1jTZ8KXRZul60S6czNi text-secondary dark:text-secondary-dark hover:bg-neutral-50 dark:hover:bg-neutral-600 transition-colors ${selectedValues.includes(option.value) ? "bg-primary-500 text-white border-primary-500" : ""}"
 //             data-value="${option.value}"
 //             data-group="${group.name}"
 //             data-type="${group.type}"

@@ -34,15 +34,14 @@ const { currentUser, session, supabase, refreshToken, accessToken } = await chec
 if (requireAuthRedirect && (!session || !currentUser)) {
   return Astro.redirect(requireAuthRedirect);
 }
-const currentRole = currentUser?.role;
-const currentUserId = currentUser?.id;
+
+import { isBackendPage } from "../pages/api/backend-page-check";
 
 import App from "../components/common/App.astro";
-import SectionContainer from "../components/common/SectionContainer.astro";
+import Footer from "../components/common/Footer.astro";
 import HeroDashboard from "../components/common/HeroDashboard.astro";
 import ProjectList from "../components/project/ProjectList.astro";
 import ProjectForm from "../components/project/ProjectForm.astro";
-
 import ProjectNav from "../components/project/ProjectNav.astro";
 import "../lib/refresh-manager.ts";
 // Get auth data directly since App component handles auth requirements
@@ -60,12 +59,12 @@ if (currentUser?.id) {
     let apiUrl = `${baseUrl}/api/get-project`;
 
     // Add assigned_to_id parameter for Staff role
-    if (currentRole === "Staff") {
+    if (currentUser?.profile?.role === "Staff") {
       apiUrl += `?assigned_to_id=${currentUser.id}`;
     }
 
     // Add assigned_to_id parameter for Staff role
-    if (currentRole === "Client") {
+    if (currentUser?.profile?.role === "Client") {
       apiUrl += `?author_id=${currentUser.id}`;
     }
     // For Admin and Client, no additional parameters needed (API handles role-based filtering)
@@ -125,181 +124,176 @@ if (statusResponse.ok) {
   project={undefined}
   session={session}
   supabase={supabase}
+  projects={projects}
+  isBackend={true}
 >
-  <HeroDashboard
-    title="Project Dashboard"
-    description={currentRole === "Client"
-      ? "Manage and track your fire protection projects"
-      : "Manage and track all fire protection projects"}
-  />
-
-  <ProjectNav projects={projects} statuses={project_statuses} currentUser={currentUser} />
-
   <!-- Dashboard Container -->
-  <SectionContainer class="lg:pt-1" fullWidth={true}>
-    <div class="flex w-full flex-col gap-6 lg:flex-row">
-      {
-        projects && projects.length > 0 ? (
-          <>
-            {/* <!-- Projects List - 2/3 width on lg+ screens --> */}
-            <div class="w-full lg:w-2/3">
-              <ProjectList
-                projects={projects}
-                statusesObject={project_statuses_object}
-                currentUser={currentUser}
-              />
-            </div>
-            {/* <!-- Project Form - 1/3 width on lg+ screens --> */}
-            <div id="new-project" class="no-scrollbar w-full overflow-y-scroll lg:top-20 lg:w-1/3">
-              <div class="pb-6">
-                {/* <h2 class="text-2xl font-bold text-center uppercase text-gray-900 dark:text-white mb-8">Create a new project</h2> */}
 
+  <div
+    id="main-content"
+    class="ahOqFrhzLjivRe8a1kX_ uLPch_bqyJDXwe5tynMV t6gkcSf0Bt4MLItXvDJ_ pdl952ted2i71qBLPIcQ jtAJHOc7mn7b4IKRO59D h8KYXnua2NT4kTVzieom MKeLnCkZhCbipNorZ2hW"
+  >
+    <main>
+      <div class="RZmKBZs1E1eXw8vkE6jY p_2EXc_a2sDA_h41l8QU">
+        <HeroDashboard
+          title="Project Dashboard"
+          description={currentUser?.profile?.role === "Client"
+            ? "Manage and track your fire protection projects"
+            : "Manage and track all fire protection projects"}
+        />
+
+        <ProjectNav projects={projects} statuses={project_statuses} currentUser={currentUser} />
+        <!-- <div
+          class="mveJTCIb2WII7J4sY22F _Ybd3WwuTVljUT4vEaM3 _wYiJGbRZyFZeCc8y7Sf mngKhi_Rv06PF57lblDI _1jTZ8KXRZul60S6czNi LSIxp7RSuOKhsg28v_u3"
+        > -->
+        {
+          projects && projects.length > 0 ? (
+            <ProjectList
+              projects={projects}
+              statusesObject={project_statuses_object}
+              currentUser={currentUser}
+            />
+          ) : (
+            // <!-- No projects - show only form -->
+            <div id="new-project" class="w-full">
+              <div class="mx-auto max-w-2xl pb-6">
                 <ProjectForm
+                  currentUser={currentUser}
                   isNewProject={true}
                   projectId=""
                   projectStatus={0}
-                  currentUser={currentUser}
                 />
               </div>
             </div>
-          </>
-        ) : (
-          // <!-- No projects - show only form -->
-          <div id="new-project" class="w-full">
-            <div class="mx-auto max-w-2xl pb-6">
-              <ProjectForm
-                currentRole={currentRole}
-                isNewProject={true}
-                projectId=""
-                projectStatus={0}
-              />
-            </div>
-          </div>
-        )
-      }
-    </div>
-  </SectionContainer>
+          )
+        }
+      </div>
+      <!-- </div> -->
+    </main>
+    <Footer />
+  </div>
+</App>
+<!-- </SectionContainer> -->
 
-  <!-- Push Notification Permission Request for OAuth Users -->
-  <script>
-    // Request push notification permission for users who authenticated via OAuth
-    // (Registration form already handles this for new users)
-    document.addEventListener("DOMContentLoaded", () => {
-      console.log("🔔 [DASHBOARD] Checking notification permission...");
-      console.log("🔔 [DASHBOARD] Notification in window:", "Notification" in window);
+<!-- Push Notification Permission Request for OAuth Users -->
+<script>
+  // Request push notification permission for users who authenticated via OAuth
+  // (Registration form already handles this for new users)
+  document.addEventListener("DOMContentLoaded", () => {
+    console.log("🔔 [DASHBOARD] Checking notification permission...");
+    console.log("🔔 [DASHBOARD] Notification in window:", "Notification" in window);
+    console.log(
+      "🔔 [DASHBOARD] Current permission:",
+      "Notification" in window ? Notification.permission : "Not available"
+    );
+
+    // Check if we're on mobile Safari
+    const isMobileSafari =
+      /iPad|iPhone|iPod/.test(navigator.userAgent) && /Safari/.test(navigator.userAgent);
+    console.log("🔔 [DASHBOARD] Mobile Safari detected:", isMobileSafari);
+
+    if (isMobileSafari) {
       console.log(
-        "🔔 [DASHBOARD] Current permission:",
-        "Notification" in window ? Notification.permission : "Not available"
+        "🔔 [DASHBOARD] Mobile Safari detected - push notifications work when installed as PWA"
+      );
+      console.log(
+        "🔔 [DASHBOARD] Install as PWA (Add to Home Screen) for full notification support"
       );
 
-      // Check if we're on mobile Safari
-      const isMobileSafari =
-        /iPad|iPhone|iPod/.test(navigator.userAgent) && /Safari/.test(navigator.userAgent);
-      console.log("🔔 [DASHBOARD] Mobile Safari detected:", isMobileSafari);
+      // Check if running as PWA
+      const isStandalone =
+        window.matchMedia("(display-mode: standalone)").matches ||
+        (window.navigator as any).standalone === true;
+      console.log("🔔 [DASHBOARD] Running as PWA:", isStandalone);
 
-      if (isMobileSafari) {
-        console.log(
-          "🔔 [DASHBOARD] Mobile Safari detected - push notifications work when installed as PWA"
-        );
-        console.log(
-          "🔔 [DASHBOARD] Install as PWA (Add to Home Screen) for full notification support"
-        );
-
-        // Check if running as PWA
-        const isStandalone =
-          window.matchMedia("(display-mode: standalone)").matches ||
-          (window.navigator as any).standalone === true;
-        console.log("🔔 [DASHBOARD] Running as PWA:", isStandalone);
-
-        if (!isStandalone) {
-          console.log("💡 [DASHBOARD] Install as PWA for better notification support");
-          return;
-        }
+      if (!isStandalone) {
+        console.log("💡 [DASHBOARD] Install as PWA for better notification support");
+        return;
       }
+    }
 
-      // Only request if user hasn't been prompted yet
-      if ("Notification" in window && Notification.permission === "default") {
-        console.log("🔔 [DASHBOARD] Requesting notification permission...");
-        // Wait a bit for the page to load, then request permission
-        setTimeout(() => {
-          Notification.requestPermission().then((permission) => {
-            console.log("🔔 [DASHBOARD] Permission result:", permission);
-            if (permission === "granted") {
-              console.log("🔔 Push notifications enabled for authenticated user!");
-              // Show a subtle notification
-              if (window.showModal) {
-                window.showModal(
-                  "info",
-                  "Notifications Enabled",
-                  "You'll receive push notifications for project updates!",
-                  3000
-                );
-              }
-            } else {
-              console.log("🔔 Push notifications declined by user");
-            }
-          });
-        }, 3000); // Wait 3 seconds after page load
-      } else {
-        console.log("🔔 [DASHBOARD] Not requesting permission - already handled or not available");
-      }
-    });
-
-    // Add notification reset function for debugging
-    (window as any).resetNotifications = function () {
-      console.log("🔄 [DASHBOARD] Resetting notification permissions...");
-
-      // Check if we're on mobile Safari
-      const isMobileSafari =
-        /iPad|iPhone|iPod/.test(navigator.userAgent) && /Safari/.test(navigator.userAgent);
-
-      if (isMobileSafari) {
-        console.log(
-          "📱 [DASHBOARD] Mobile Safari detected - push notifications work when installed as PWA"
-        );
-        console.log(
-          "💡 [DASHBOARD] Install as PWA (Add to Home Screen) for full notification support"
-        );
-
-        // Check if running as PWA
-        const isStandalone =
-          window.matchMedia("(display-mode: standalone)").matches ||
-          (window.navigator as any).standalone === true;
-        console.log("🔔 [DASHBOARD] Running as PWA:", isStandalone);
-
-        if (!isStandalone) {
-          console.log("💡 [DASHBOARD] Install as PWA for better notification support");
-          return;
-        }
-      }
-
-      console.log(
-        "🔄 [DASHBOARD] Current permission:",
-        "Notification" in window ? Notification.permission : "Not available"
-      );
-
-      // Clear any stored permission state
-      localStorage.removeItem("notification-permission-requested");
-      sessionStorage.removeItem("notification-permission-requested");
-
-      // Force a new permission request
-      if ("Notification" in window) {
+    // Only request if user hasn't been prompted yet
+    if ("Notification" in window && Notification.permission === "default") {
+      console.log("🔔 [DASHBOARD] Requesting notification permission...");
+      // Wait a bit for the page to load, then request permission
+      setTimeout(() => {
         Notification.requestPermission().then((permission) => {
-          console.log("🔄 [DASHBOARD] Reset permission result:", permission);
+          console.log("🔔 [DASHBOARD] Permission result:", permission);
           if (permission === "granted") {
-            console.log("✅ Notifications re-enabled!");
+            console.log("🔔 Push notifications enabled for authenticated user!");
+            // Show a subtle notification
+            if (window.showModal) {
+              window.showModal(
+                "info",
+                "Notifications Enabled",
+                "You'll receive push notifications for project updates!",
+                3000
+              );
+            }
           } else {
-            console.log("❌ Notifications still denied");
+            console.log("🔔 Push notifications declined by user");
           }
         });
-      }
-    };
+      }, 3000); // Wait 3 seconds after page load
+    } else {
+      console.log("🔔 [DASHBOARD] Not requesting permission - already handled or not available");
+    }
+  });
 
-    // Log current state for debugging
-    console.log("🔔 [DASHBOARD] Current notification state:", {
-      permission: "Notification" in window ? Notification.permission : "Not available",
-      available: "Notification" in window,
-      resetFunction: "Call window.resetNotifications() to reset",
-    });
-  </script>
-</App>
+  // Add notification reset function for debugging
+  (window as any).resetNotifications = function () {
+    console.log("🔄 [DASHBOARD] Resetting notification permissions...");
+
+    // Check if we're on mobile Safari
+    const isMobileSafari =
+      /iPad|iPhone|iPod/.test(navigator.userAgent) && /Safari/.test(navigator.userAgent);
+
+    if (isMobileSafari) {
+      console.log(
+        "📱 [DASHBOARD] Mobile Safari detected - push notifications work when installed as PWA"
+      );
+      console.log(
+        "💡 [DASHBOARD] Install as PWA (Add to Home Screen) for full notification support"
+      );
+
+      // Check if running as PWA
+      const isStandalone =
+        window.matchMedia("(display-mode: standalone)").matches ||
+        (window.navigator as any).standalone === true;
+      console.log("🔔 [DASHBOARD] Running as PWA:", isStandalone);
+
+      if (!isStandalone) {
+        console.log("💡 [DASHBOARD] Install as PWA for better notification support");
+        return;
+      }
+    }
+
+    console.log(
+      "🔄 [DASHBOARD] Current permission:",
+      "Notification" in window ? Notification.permission : "Not available"
+    );
+
+    // Clear any stored permission state
+    localStorage.removeItem("notification-permission-requested");
+    sessionStorage.removeItem("notification-permission-requested");
+
+    // Force a new permission request
+    if ("Notification" in window) {
+      Notification.requestPermission().then((permission) => {
+        console.log("🔄 [DASHBOARD] Reset permission result:", permission);
+        if (permission === "granted") {
+          console.log("✅ Notifications re-enabled!");
+        } else {
+          console.log("❌ Notifications still denied");
+        }
+      });
+    }
+  };
+
+  // Log current state for debugging
+  console.log("🔔 [DASHBOARD] Current notification state:", {
+    permission: "Notification" in window ? Notification.permission : "Not available",
+    available: "Notification" in window,
+    resetFunction: "Call window.resetNotifications() to reset",
+  });
+</script>

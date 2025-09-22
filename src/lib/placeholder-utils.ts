@@ -138,10 +138,10 @@ export function replacePlaceholders(
     result = result.replace(/\{\{\s*SVG_LOGO\s*\}\}/g, data.svgLogo);
   }
 
-  if (data.companyName) {
-    // console.log(`🔄 [PLACEHOLDER-UTILS] Replacing {{COMPANY_NAME}} with: ${data.companyName}`);
-    result = result.replace(/\{\{\s*COMPANY_NAME\s*\}\}/g, data.companyName);
-  }
+  // Always replace GLOBAL_COMPANY_NAME with the environment variable
+  const globalCompanyName = process.env.GLOBAL_COMPANY_NAME || "Edit Company Name Here";
+  // console.log(`🔄 [PLACEHOLDER-UTILS] Replacing {{GLOBAL_COMPANY_NAME}} with: ${globalCompanyName}`);
+  result = result.replace(/\{\{\s*GLOBAL_COMPANY_NAME\s*\}\}/g, globalCompanyName);
 
   // console.log("🔄 [PLACEHOLDER-UTILS] Final result:", result);
   return addBoldTags ? "<b>" + result + "</b>" : result;
