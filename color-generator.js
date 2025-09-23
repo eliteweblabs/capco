@@ -1,11 +1,9 @@
 /**
- * Color utility functions for generating Tailwind color palettes
+ * Simple color palette generator for Tailwind config
+ * Generates all color shades from a single hex color
  */
 
-/**
- * Convert hex color to HSL
- */
-function hexToHsl(hex: string): [number, number, number] {
+function hexToHsl(hex) {
   // Remove # if present
   hex = hex.replace("#", "");
 
@@ -41,15 +39,12 @@ function hexToHsl(hex: string): [number, number, number] {
   return [h * 360, s * 100, l * 100];
 }
 
-/**
- * Convert HSL to hex
- */
-function hslToHex(h: number, s: number, l: number): string {
+function hslToHex(h, s, l) {
   h /= 360;
   s /= 100;
   l /= 100;
 
-  const hue2rgb = (p: number, q: number, t: number): number => {
+  const hue2rgb = (p, q, t) => {
     if (t < 0) t += 1;
     if (t > 1) t -= 1;
     if (t < 1 / 6) return p + (q - p) * 6 * t;
@@ -70,7 +65,7 @@ function hslToHex(h: number, s: number, l: number): string {
     b = hue2rgb(p, q, h - 1 / 3);
   }
 
-  const toHex = (c: number): string => {
+  const toHex = (c) => {
     const hex = Math.round(c * 255).toString(16);
     return hex.length === 1 ? "0" + hex : hex;
   };
@@ -78,20 +73,17 @@ function hslToHex(h: number, s: number, l: number): string {
   return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
 }
 
-/**
- * Generate a complete Tailwind color palette from a base color
- */
 export function generateColorPalette(baseColor) {
   // Ensure we have a valid hex color
   if (!baseColor || !baseColor.match(/^#[0-9A-F]{6}$/i)) {
     console.warn("Invalid base color, using default:", baseColor);
-    baseColor = "#825BDD"; // Default fallback
+    baseColor = "#3b82f6"; // Default blue
   }
 
   const [h, s, l] = hexToHsl(baseColor);
 
   // Generate Tailwind-style color palette
-  const palette = {
+  return {
     DEFAULT: baseColor,
     50: hslToHex(h, Math.max(s - 20, 10), Math.min(l + 45, 95)),
     100: hslToHex(h, Math.max(s - 15, 15), Math.min(l + 40, 90)),
@@ -105,54 +97,4 @@ export function generateColorPalette(baseColor) {
     900: hslToHex(h, Math.min(s + 20, 100), Math.max(l - 40, 10)),
     950: hslToHex(h, Math.min(s + 25, 100), Math.max(l - 50, 5)),
   };
-
-  return palette;
-}
-
-/**
- * Generate RGB values from hex color
- */
-export function hexToRgb(hex: string): string {
-  const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-  if (!result) return "0, 0, 0";
-
-  return [parseInt(result[1], 16), parseInt(result[2], 16), parseInt(result[3], 16)].join(", ");
-}
-
-/**
- * Get primary color from environment or default
- */
-export function getPrimaryColor(): string {
-  // Check various environment variable sources
-  if (typeof process !== "undefined" && process.env && process.env.PRIMARY_COLOR) {
-    return process.env.PRIMARY_COLOR;
-  }
-
-  // Try import.meta.env if available (Vite/Astro environment)
-  try {
-    if (import.meta && import.meta.env && import.meta.env.PRIMARY_COLOR) {
-      return import.meta.env.PRIMARY_COLOR;
-    }
-  } catch (e) {
-    // import.meta might not be available in all contexts
-  }
-
-  return "#825BDD"; // Fallback
-}
-
-/**
- * Get the complete primary color palette for Tailwind
- */
-export function getPrimaryColorPalette(): Record<string | number, string> {
-  const primaryColor = getPrimaryColor();
-  console.log("🎨 [COLOR-UTILS] Generating color palette from:", primaryColor);
-
-  const palette = generateColorPalette(primaryColor);
-  console.log("🎨 [COLOR-UTILS] Generated palette:", {
-    primary: palette[500],
-    light: palette[200],
-    dark: palette[700],
-  });
-
-  return palette;
 }

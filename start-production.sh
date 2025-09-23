@@ -12,24 +12,18 @@ echo "EMAIL_LOGO_LIGHT: $EMAIL_LOGO_LIGHT"
 echo "COMPANY_LOGO_LIGHT: $COMPANY_LOGO_LIGHT"
 echo "PRIMARY_COLOR: $PRIMARY_COLOR"
 
-# Start Socket.io server in the background
-echo "Starting Socket.io server..."
-node socketio-chat-server.js &
-SOCKET_PID=$!
-echo "Socket.io server started with PID: $SOCKET_PID"
-
-# Start Astro application
+# For now, only start Astro application (Socket.io integration needed)
 echo "Starting Astro application..."
 node ./dist/server/entry.mjs &
 ASTRO_PID=$!
 echo "Astro application started with PID: $ASTRO_PID"
 
+# TODO: Integrate Socket.io with Astro server instead of running separately
+# The separate Socket.io server on port 3001 is not accessible from Railway
+
 # Function to gracefully shut down processes
 cleanup() {
   echo "Shutting down processes..."
-  if [ ! -z "$SOCKET_PID" ]; then
-    kill $SOCKET_PID 2>/dev/null
-  fi
   if [ ! -z "$ASTRO_PID" ]; then
     kill $ASTRO_PID 2>/dev/null
   fi
