@@ -277,7 +277,7 @@ export class SimpleProjectLogger {
     const userName = user?.company_name || user?.first_name || user?.last_name || "Unknown User";
     // Detect status changes
     if (oldData.status !== newData.status) {
-      // console.log(
+      console.log(
         `📝 [LOGGING] Status change detected for project ${projectId}: ${oldData.status} -> ${newData.status}`
       );
       await this.logStatusChange(projectId, userName, oldData.status, newData.status);
@@ -581,7 +581,7 @@ export class SimpleProjectLogger {
         return false;
       }
 
-      // console.log(`📝 [USER-LOG] ${action}: ${details} by ${userEmail}`);
+      console.log(`📝 [USER-LOG] ${action}: ${details} by ${userEmail}`);
       return true;
     } catch (error) {
       console.error("Error in addUserLogEntry:", error);
@@ -619,7 +619,7 @@ export class SimpleProjectLogger {
         if (createError) {
           console.error("Error creating system log project:", createError);
         } else {
-          // console.log("📝 [SYSTEM] Created system log project (ID: 0)");
+          console.log("📝 [SYSTEM] Created system log project (ID: 0)");
         }
       }
     } catch (error) {

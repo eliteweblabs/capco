@@ -10,7 +10,7 @@
 export function scrollToTopOnMobile(): void {
   // Check if device is mobile (screen width < 768px)
   if (window.innerWidth < 768) {
-    // console.log("📱 [UX-UTILS] Scrolling to top on mobile device");
+    console.log("📱 [UX-UTILS] Scrolling to top on mobile device");
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 }
@@ -20,7 +20,7 @@ export function scrollToTopOnMobile(): void {
  * @param behavior - Scroll behavior ('smooth' | 'instant' | 'auto')
  */
 export function scrollToTop(behavior: ScrollBehavior = "smooth"): void {
-  // console.log("📱 [UX-UTILS] Scrolling to top");
+  console.log("📱 [UX-UTILS] Scrolling to top");
   window.scrollTo({ top: 0, behavior });
 }
 
@@ -201,7 +201,7 @@ export function fixSafariViewport(): void {
   }
 
   const isSafari18 = isSafari18Beta();
-  // console.log(
+  console.log(
     `🍎 [UX-UTILS] Fixing Safari viewport positioning${isSafari18 ? " (Safari 18 Beta)" : ""}`
   );
 
@@ -292,13 +292,13 @@ export function immediateSafariViewportFix(): void {
     return;
   }
 
-  // console.log("🚀 [UX-UTILS] IMMEDIATE Safari viewport fix - Running before DOM ready");
+  console.log("🚀 [UX-UTILS] IMMEDIATE Safari viewport fix - Running before DOM ready");
 
   // Force viewport height calculation immediately
   const setViewportHeight = () => {
     const vh = window.innerHeight * 0.01;
     document.documentElement.style.setProperty("--vh", `${vh}px`);
-    // console.log(`📐 [UX-UTILS] IMMEDIATE viewport height: ${vh}px`);
+    console.log(`📐 [UX-UTILS] IMMEDIATE viewport height: ${vh}px`);
   };
 
   // Set viewport height immediately
@@ -306,7 +306,7 @@ export function immediateSafariViewportFix(): void {
 
   // Force sticky elements to work immediately
   const forceImmediatePositioning = () => {
-    // console.log("🚀 [UX-UTILS] IMMEDIATE positioning fix");
+    console.log("🚀 [UX-UTILS] IMMEDIATE positioning fix");
 
     // Fix header immediately if it exists
     const header = document.querySelector("header");
@@ -324,7 +324,7 @@ export function immediateSafariViewportFix(): void {
         -webkit-transform: translate3d(0, 0, 0) !important;
         -webkit-backface-visibility: hidden !important;
       `;
-      // console.log("🚀 [UX-UTILS] IMMEDIATE header fix applied");
+      console.log("🚀 [UX-UTILS] IMMEDIATE header fix applied");
     }
 
     // Fix sticky container immediately if it exists
@@ -343,7 +343,7 @@ export function immediateSafariViewportFix(): void {
         -webkit-transform: translate3d(0, 0, 0) !important;
         -webkit-backface-visibility: hidden !important;
       `;
-      // console.log("🚀 [UX-UTILS] IMMEDIATE container fix applied");
+      console.log("🚀 [UX-UTILS] IMMEDIATE container fix applied");
     }
   };
 
@@ -372,17 +372,17 @@ export function immediateSafariViewportFix(): void {
 export function setupViewportHandling(): void {
   // ONLY RUN ON iOS SAFARI - Skip all other browsers
   if (!isSafariIOS()) {
-    // console.log("🌐 [UX-UTILS] Not iOS Safari - Skipping viewport fixes");
+    console.log("🌐 [UX-UTILS] Not iOS Safari - Skipping viewport fixes");
     return;
   }
 
-  // console.log("🍎 [UX-UTILS] iOS Safari detected - Applying viewport fixes");
+  console.log("🍎 [UX-UTILS] iOS Safari detected - Applying viewport fixes");
 
   // SAFARI 18+ DETECTION - Disable problematic features (including final release)
   const isSafari18Plus = isSafari18OrLater();
 
   if (isSafari18Plus) {
-    // console.log("🍎 [UX-UTILS] Safari 18+ detected - Using fallback mode");
+    console.log("🍎 [UX-UTILS] Safari 18+ detected - Using fallback mode");
 
     // Show user notification about Safari 18+ viewport issues
     if (typeof (window as any).showModal === "function") {
@@ -399,7 +399,7 @@ export function setupViewportHandling(): void {
     if (header) {
       header.style.setProperty("position", "relative", "important");
       header.style.setProperty("top", "0", "important");
-      // console.log("🍎 [UX-UTILS] Header set to relative positioning");
+      console.log("🍎 [UX-UTILS] Header set to relative positioning");
     }
 
     const container = document.getElementById("sticky-container");
@@ -407,7 +407,7 @@ export function setupViewportHandling(): void {
       container.style.setProperty("position", "absolute", "important");
       container.style.setProperty("bottom", "1.5rem", "important");
       container.style.setProperty("left", "1.5rem", "important");
-      // console.log("🍎 [UX-UTILS] Sticky container set to absolute positioning");
+      console.log("🍎 [UX-UTILS] Sticky container set to absolute positioning");
     }
 
     return; // Skip all other viewport handling
@@ -417,7 +417,7 @@ export function setupViewportHandling(): void {
   const setViewportHeight = () => {
     const vh = window.innerHeight * 0.01;
     document.documentElement.style.setProperty("--vh", `${vh}px`);
-    // console.log(`📐 [UX-UTILS] Setting viewport height: ${vh}px`);
+    console.log(`📐 [UX-UTILS] Setting viewport height: ${vh}px`);
   };
 
   // Set viewport height immediately
@@ -431,7 +431,7 @@ export function setupViewportHandling(): void {
 
   // NUCLEAR OPTION - Force elements to stay in place
   const forcePositioning = () => {
-    // console.log("🚀 [UX-UTILS] NUCLEAR OPTION - Forcing positioning");
+    console.log("🚀 [UX-UTILS] NUCLEAR OPTION - Forcing positioning");
 
     // Force sticky container with multiple techniques
     const container = document.getElementById("sticky-container");
@@ -471,7 +471,7 @@ export function setupViewportHandling(): void {
     // NUCLEAR HEADER FIX - Override everything
     const header = document.querySelector("header");
     if (header) {
-      // console.log("🚨 [UX-UTILS] NUCLEAR HEADER FIX - Forcing header position");
+      console.log("🚨 [UX-UTILS] NUCLEAR HEADER FIX - Forcing header position");
 
       // Remove ALL existing styles and classes
       header.removeAttribute("style");
@@ -506,7 +506,7 @@ export function setupViewportHandling(): void {
       // Force it to stay at top with JavaScript
       const rect = header.getBoundingClientRect();
       if (rect.top > 0) {
-        // console.log("🚨 [UX-UTILS] Header moved, forcing back to top");
+        console.log("🚨 [UX-UTILS] Header moved, forcing back to top");
         header.style.setProperty("top", "0", "important");
         header.style.setProperty("transform", "translate3d(0, 0, 0)", "important");
         header.style.setProperty("position", "sticky", "important");
@@ -541,7 +541,7 @@ export function setupViewportHandling(): void {
     if (container) {
       const rect = container.getBoundingClientRect();
       if (rect.bottom > window.innerHeight || rect.left < 0 || rect.top < 0) {
-        // console.log("🚨 [UX-UTILS] Container out of bounds, forcing position");
+        console.log("🚨 [UX-UTILS] Container out of bounds, forcing position");
         forcePositioning();
       }
     }
@@ -549,7 +549,7 @@ export function setupViewportHandling(): void {
     if (header) {
       const rect = header.getBoundingClientRect();
       if (rect.top > 0) {
-        // console.log("🚨 [UX-UTILS] Header out of bounds, forcing position");
+        console.log("🚨 [UX-UTILS] Header out of bounds, forcing position");
         // Force header immediately
         header.style.setProperty("position", "sticky", "important");
         header.style.setProperty("position", "-webkit-sticky", "important");
@@ -566,7 +566,7 @@ export function setupViewportHandling(): void {
     if (header) {
       const rect = header.getBoundingClientRect();
       if (rect.top > 0) {
-        // console.log("🚨 [UX-UTILS] EXTRA AGGRESSIVE - Header moved, forcing back");
+        console.log("🚨 [UX-UTILS] EXTRA AGGRESSIVE - Header moved, forcing back");
         header.style.cssText = `
           position: sticky !important;
           position: -webkit-sticky !important;
@@ -644,7 +644,7 @@ export function ensureViewportBounds(
     rect.right > viewport.width || rect.left < 0 || rect.bottom > viewport.height || rect.top < 0;
 
   if (isOutOfBounds) {
-    // console.log(
+    console.log(
       `📐 [UX-UTILS] Element ${elementId} is out of viewport, applying fallback positioning`
     );
 

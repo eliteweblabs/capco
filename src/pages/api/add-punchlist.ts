@@ -5,7 +5,7 @@ import { supabase } from "../../lib/supabase";
 export const POST: APIRoute = async ({ request, cookies }) => {
   try {
     // Check authentication
-    const { currentUser } = await checkAuth(cookies);
+    const { currentUser, currentRole } = await checkAuth(cookies);
     if (!currentUser) {
       return new Response(JSON.stringify({ error: "Authentication required" }), {
         status: 401,
@@ -31,13 +31,13 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       });
     }
 
-    // console.log("🔔 [ADD-PUNCHLIST] Adding punchlist item:", {
-    //   projectId,
-    //   message: message.substring(0, 50) + "...",
-    //   internal,
-    //   parentId,
-    //   userId: currentUser.id,
-    // });
+    console.log("🔔 [ADD-PUNCHLIST] Adding punchlist item:", {
+      projectId,
+      message: message.substring(0, 50) + "...",
+      internal,
+      parentId,
+      userId: currentUser.id,
+    });
 
     // Get user profile for company_name
     const { data: profile } = await supabase
@@ -80,11 +80,11 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       );
     }
 
-    // console.log("✅ [ADD-PUNCHLIST] Punchlist item created successfully:", punchlistData.id);
+    console.log("✅ [ADD-PUNCHLIST] Punchlist item created successfully:", punchlistData.id);
 
     // Log the punchlist item creation
-    if (typeof window !== "undefined" && (window as any).SimpleProjectLogger) {
-      (window as any).SimpleProjectLogger.logPunchlistAdd(
+    if (typeof window !== "undefined" && window.SimpleProjectLogger) {
+      window.SimpleProjectLogger.logPunchlistAdd(
         projectId,
         punchlistData.id,
         currentUser,

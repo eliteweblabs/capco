@@ -86,19 +86,19 @@ function applyFilters(query: any, filters: FilterParams) {
 
   // Filter by assigned_to_id if provided
   if (assignedToId) {
-    // console.log(`📡 [API] Adding filter for assigned_to_id: ${assignedToId}`);
+    console.log(`📡 [API] Adding filter for assigned_to_id: ${assignedToId}`);
     query = query.eq("assigned_to_id", assignedToId);
   }
 
   // Filter by author_id if provided
   if (authorId) {
-    // console.log(`📡 [API] Adding filter for author_id: ${authorId}`);
+    console.log(`📡 [API] Adding filter for author_id: ${authorId}`);
     query = query.eq("author_id", authorId);
   }
 
   // Search functionality - searches across multiple fields
   if (search) {
-    // console.log(`📡 [API] Adding search filter: ${search}`);
+    console.log(`📡 [API] Adding search filter: ${search}`);
     query = query.or(
       `title.ilike.%${search}%,address.ilike.%${search}%,company_name.ilike.%${search}%,subject.ilike.%${search}%,building.ilike.%${search}%,project.ilike.%${search}%,service.ilike.%${search}%`
     );
@@ -106,78 +106,78 @@ function applyFilters(query: any, filters: FilterParams) {
 
   // Filter by status if provided
   if (status) {
-    // console.log(`📡 [API] Adding filter for status: ${status}`);
+    console.log(`📡 [API] Adding filter for status: ${status}`);
     query = query.eq("status", status);
   }
 
   // Filter by building if provided
   if (building) {
-    // console.log(`📡 [API] Adding filter for building: ${building}`);
+    console.log(`📡 [API] Adding filter for building: ${building}`);
     query = query.ilike("building", `%${building}%`);
   }
 
   // Filter by project if provided
   if (project) {
-    // console.log(`📡 [API] Adding filter for project: ${project}`);
+    console.log(`📡 [API] Adding filter for project: ${project}`);
     query = query.ilike("project", `%${project}%`);
   }
 
   // Filter by service if provided
   if (service) {
-    // console.log(`📡 [API] Adding filter for service: ${service}`);
+    console.log(`📡 [API] Adding filter for service: ${service}`);
     query = query.ilike("service", `%${service}%`);
   }
 
   // Filter by new_construction if provided
   if (newConstruction !== null && newConstruction !== undefined) {
-    // console.log(`📡 [API] Adding filter for new_construction: ${newConstruction}`);
+    console.log(`📡 [API] Adding filter for new_construction: ${newConstruction}`);
     query = query.eq("new_construction", newConstruction === "true");
   }
 
   // Date range filters
   if (dateFrom) {
-    // console.log(`📡 [API] Adding filter for date_from: ${dateFrom}`);
+    console.log(`📡 [API] Adding filter for date_from: ${dateFrom}`);
     query = query.gte("created_at", dateFrom);
   }
 
   if (dateTo) {
-    // console.log(`📡 [API] Adding filter for date_to: ${dateTo}`);
+    console.log(`📡 [API] Adding filter for date_to: ${dateTo}`);
     query = query.lte("created_at", dateTo);
   }
 
   // Due date range filters
   if (dueDateFrom) {
-    // console.log(`📡 [API] Adding filter for due_date_from: ${dueDateFrom}`);
+    console.log(`📡 [API] Adding filter for due_date_from: ${dueDateFrom}`);
     query = query.gte("due_date", dueDateFrom);
   }
 
   if (dueDateTo) {
-    // console.log(`📡 [API] Adding filter for due_date_to: ${dueDateTo}`);
+    console.log(`📡 [API] Adding filter for due_date_to: ${dueDateTo}`);
     query = query.lte("due_date", dueDateTo);
   }
 
   // Overdue filter
   if (overdue === "true") {
-    // console.log(`📡 [API] Adding filter for overdue: true`);
+    console.log(`📡 [API] Adding filter for overdue: true`);
     query = query.lt("due_date", new Date().toISOString());
   } else if (overdue === "false") {
-    // console.log(`📡 [API] Adding filter for overdue: false`);
+    console.log(`📡 [API] Adding filter for overdue: false`);
     query = query.gte("due_date", new Date().toISOString());
   }
 
   // Sorting
   const ascending = sortOrder === "asc";
-  // console.log(`📡 [API] Adding sort: ${sortBy} ${sortOrder}`);
+  console.log(`📡 [API] Adding sort: ${sortBy} ${sortOrder}`);
   query = query.order(sortBy, { ascending });
 
   // Pagination
   if (limit && limit > 0) {
-    // console.log(`📡 [API] Adding limit: ${limit}`);
+    console.log(`📡 [API] Adding limit: ${limit}`);
     query = query.limit(limit);
   }
 
   if (offset && offset > 0) {
-    // console.log(`📡 [API] Adding offset: ${offset}`);
+    console.log(`📡 [API] Adding offset: ${offset}`);
     query = query.range(offset, offset + (limit && limit > 0 ? limit - 1 : 1000));
   }
 
@@ -230,7 +230,7 @@ export const GET: APIRoute = async ({ request, cookies, url, params }) => {
 
     if (!supabaseAdmin) {
       console.error("📡 [API] CRITICAL: supabaseAdmin is null - check SUPABASE_SERVICE_ROLE_KEY");
-      // console.log("📡 [API] Falling back to regular supabase client");
+      console.log("📡 [API] Falling back to regular supabase client");
       // Fallback to regular client if admin client is not available
       let query = supabase.from("projects").select("*").neq("id", 0); // Exclude system log project
 
@@ -292,7 +292,7 @@ export const GET: APIRoute = async ({ request, cookies, url, params }) => {
 
       // Debug: Log sample project data to see what fields are available
       // if (projects.length > 0) {
-      // console.log("📡 [GET-PROJECT] Sample project raw data:", {
+      //   console.log("📡 [GET-PROJECT] Sample project raw data:", {
       //     id: projects[0].id,
       //     title: projects[0].title,
       //     featured_image: projects[0].featured_image,
@@ -423,7 +423,7 @@ export const GET: APIRoute = async ({ request, cookies, url, params }) => {
             //   profile: authorProfile,
             // });
           } else {
-            // console.log("📡 [API] No profile found for author:", project.author_id);
+            console.log("📡 [API] No profile found for author:", project.author_id);
           }
         }
         if (project.assigned_to_id) {
@@ -720,7 +720,7 @@ async function handleSingleProject(projectId: string, cookies: any) {
     const { isAuth, currentUser } = await checkAuth(cookies);
 
     if (!isAuth || !currentUser) {
-      // console.log("📡 [GET-PROJECT-ID] User not authenticated");
+      console.log("📡 [GET-PROJECT-ID] User not authenticated");
       return new Response(
         JSON.stringify({
           success: false,
@@ -813,7 +813,7 @@ async function handleSingleProject(projectId: string, cookies: any) {
         project.assigned_to_name = assignedProfile.company_name || assignedProfile.id;
       } else {
         // Profile not found for assigned user ID
-        // console.log(
+        console.log(
           "📡 [GET-PROJECT-ID] No profile found for assigned user ID:",
           project.assigned_to_id
         );

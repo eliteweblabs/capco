@@ -336,6 +336,7 @@ const formActions = getFilteredFormActions(currentRole, isNewProject, projectSta
       hideNotification?: any;
       currentProjectData?: any;
       handleUpdateStatusNotification?: any;
+      showSuccess?: any;
       switchTab?: any;
       resetForm?: any;
       clipboardData?: any;
@@ -358,7 +359,7 @@ const formActions = getFilteredFormActions(currentRole, isNewProject, projectSta
     //   try {
     //     const projectData = JSON.parse(projectDataAttr);
     //     window.currentProjectData = projectData;
-    // console.log("Project data loaded:", projectData);
+    //     // console.log("Project data loaded:", projectData);
     //   } catch (error) {
     //     console.error("Error parsing project data:", error);
     //   }
@@ -429,6 +430,7 @@ const formActions = getFilteredFormActions(currentRole, isNewProject, projectSta
         let response;
         if (isNewProject) {
           // Create new project
+          // console.log("📝 [ProjectForm] Creating new project");
           response = await fetch("/api/create-project", {
             method: "POST",
             headers: {
@@ -438,6 +440,7 @@ const formActions = getFilteredFormActions(currentRole, isNewProject, projectSta
           });
         } else {
           // Update existing project
+          // console.log("📝 [ProjectForm] Updating existing project:", projectId);
           const updateData = {
             ...projectData,
             projectId: projectId
@@ -464,13 +467,17 @@ const formActions = getFilteredFormActions(currentRole, isNewProject, projectSta
         }
 
         const result = await response.json();
-    
+        // console.log("📝 [ProjectForm] API response:", result);
+        // console.log("📝 [ProjectForm] Response status:", response.status);
+        // console.log("📝 [ProjectForm] Response ok:", response.ok);
 
         if (result.success) {
           if (isNewProject) {
             // For new projects, update status to 10 (Project Created) to trigger database-driven notifications
-         
+            // console.log("📝 [ProjectForm] Updating status to 10 for new project");
+            // console.log("📝 [ProjectForm] About to make fetch call to test endpoint");
             try {
+              // console.log("📝 [ProjectForm] Making fetch call now...");
               const statusResponse = await fetch("/api/update-status", {
                 method: "POST",
                 headers: {
@@ -484,9 +491,12 @@ const formActions = getFilteredFormActions(currentRole, isNewProject, projectSta
                 }),
               });
 
-           
+              // console.log("📝 [ProjectForm] Fetch call completed, status:", statusResponse.status);
               const statusResult = await statusResponse.json();
-            
+              // console.log("📝 [ProjectForm] Response parsed successfully");
+              // console.log("📝 [ProjectForm] Status update response:", statusResult);
+              // console.log("📝 [ProjectForm] Status update response status:", statusResponse.status);
+              // console.log("📝 [ProjectForm] Status update response ok:", statusResponse.ok);
 
               // Store response in localStorage for debugging
               localStorage.setItem(
@@ -521,10 +531,12 @@ const formActions = getFilteredFormActions(currentRole, isNewProject, projectSta
             }
           } else {
             // For existing projects, just show success and refresh
-            if (window.showModal) {
-              window.showModal("Project Updated", "Project has been updated successfully!", "success", 2000);
+            if (window.showSuccess) {
+              window.showSuccess("Project Updated", "Project has been updated successfully!");
             }
-           
+            setTimeout(() => {
+              window.location.reload();
+            }, 1000);
           }
         } else {
           console.error("📝 [ProjectForm] API returned success: false");
@@ -558,7 +570,12 @@ const formActions = getFilteredFormActions(currentRole, isNewProject, projectSta
       deleteBtn?.addEventListener("click", () => {
         deleteProject(projectId);
       });
-     
+      // console.log("Delete button setup:", {
+      //   deleteBtn: !!deleteBtn,
+      //   projectId,
+      //   isNewProject,
+      //   formId: form.getAttribute("data-project-id"),
+      // });
     }
 
     // Handle other action buttons
@@ -585,6 +602,7 @@ const formActions = getFilteredFormActions(currentRole, isNewProject, projectSta
   let isDeleting = false; // Flag to prevent multiple delete operations
 
   function deleteProject(projectId: any) {
+    // console.log("deleteProject called with projectId:", projectId, "type:", typeof projectId);
 
     // Prevent multiple delete operations
     if (isDeleting) {
@@ -633,6 +651,7 @@ const formActions = getFilteredFormActions(currentRole, isNewProject, projectSta
               }
 
               // Make API call to delete project
+              console.log("Sending delete request for project:", projectId);
               fetch(`/api/delete-project`, {
                 method: "DELETE",
                 headers: {
@@ -641,7 +660,9 @@ const formActions = getFilteredFormActions(currentRole, isNewProject, projectSta
                 body: JSON.stringify({ projectId }),
               })
                 .then(async (response) => {
+                  // console.log("Delete response status:", response.status);
                   const data = await response.json();
+                  // console.log("Delete response data:", data);
 
                   if (!response.ok) {
                     throw new Error(data.error || "Failed to delete project");
