@@ -32,12 +32,12 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     }
 
     // console.log("🔔 [ADD-PUNCHLIST] Adding punchlist item:", {
-      projectId,
-      message: message.substring(0, 50) + "...",
-      internal,
-      parentId,
-      userId: currentUser.id,
-    });
+    //   projectId,
+    //   message: message.substring(0, 50) + "...",
+    //   internal,
+    //   parentId,
+    //   userId: currentUser.id,
+    // });
 
     // Get user profile for company_name
     const { data: profile } = await supabase
