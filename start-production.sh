@@ -34,7 +34,7 @@ cleanup() {
 # Trap signals to ensure graceful shutdown
 trap cleanup TERM INT
 
-echo "Both servers started. Waiting for processes to finish..."
+echo "Astro server started. Waiting for process to finish..."
 
-# Keep the script running and wait for both processes
-wait
+# Keep the script running and wait for the process
+wait $ASTRO_PID
