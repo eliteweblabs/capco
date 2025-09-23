@@ -43,7 +43,7 @@ export async function sendSmsViaEmail(
     // Get carrier info for logging
     const carrierInfo = getCarrierInfo(carrierKey);
 
-    console.log(`📱 [SMS] Sending SMS to ${smsMessage.to} via ${carrierInfo?.name}:`, {
+    // console.log(`📱 [SMS] Sending SMS to ${smsMessage.to} via ${carrierInfo?.name}:`, {
       emailAddress,
       messageLength: smsMessage.message.length,
       subject: smsMessage.subject || "SMS Message",

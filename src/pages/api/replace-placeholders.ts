@@ -2,7 +2,10 @@ import type { APIRoute } from "astro";
 
 // 🚧 DEAD STOP - 2024-12-19: Potentially unused API endpoint
 // If you see this log after a few days, this endpoint can likely be deleted
-console.log("🚧 [DEAD-STOP-2024-12-19] replace-placeholders.ts accessed - may be unused");
+// console.log("🚧 [DEAD-STOP-2024-12-19] replace-placeholders.ts accessed - may be unused");
+
+// 🔍 PLACEHOLDER DEBUG - Status Action Fields
+// console.log("🔍 [PLACEHOLDER-DEBUG] replace-placeholders.ts - Checking for status action fields");
 
 export const OPTIONS: APIRoute = async () => {
   return new Response(null, {
@@ -31,7 +34,7 @@ export const POST: APIRoute = async ({ request }) => {
       );
     }
 
-    console.log("🔄 [REPLACE-PLACEHOLDERS] Received data:", { mergedData, placeholderData });
+    // console.log("🔄 [REPLACE-PLACEHOLDERS] Received data:", { mergedData, placeholderData });
 
     // Replace placeholders in modal messages
     const replacePlaceholders = (message: string, data: any) => {
@@ -66,6 +69,12 @@ export const POST: APIRoute = async ({ request }) => {
         }
       );
 
+      const globalCompanyName = process.env.GLOBAL_COMPANY_NAME || "Edit Company Name Here";
+
+      const globalCompanySlogan = process.env.GLOBAL_COMPANY_SLOGAN || "Edit Company Slogan Here";
+
+      const year = new Date().getFullYear().toString();
+      // console.log(`🔄 [PLACEHOLDER-UTILS] Replacing {{YEAR}} with: ${year}`);
       // Replace other placeholders
       processedMessage = processedMessage
         .replace(/\{\{PROJECT_ADDRESS\}\}/g, "<b>" + (data.projectAddress || "") + "</b>")
@@ -74,7 +83,9 @@ export const POST: APIRoute = async ({ request }) => {
         .replace(/\{\{CLIENT_EMAIL\}\}/g, "<b>" + (data.clientEmail || "") + "</b>")
         .replace(/\{\{STATUS_NAME\}\}/g, "<b>" + (data.statusName || "") + "</b>")
         .replace(/\{\{EST_TIME\}\}/g, "<b>" + (data.estTime || "") + "</b>")
-        .replace(/\{\{GLOBAL_COMPANY_NAME\}\}/g, "<b>" + (data.companyName || "") + "</b>")
+        .replace(/\{\{GLOBAL_COMPANY_NAME\}\}/g, "<b>" + (globalCompanyName || "") + "</b>")
+        .replace(/\{\{GLOBAL_COMPANY_SLOGAN\}\}/g, "<b>" + (globalCompanySlogan || "") + "</b>")
+        .replace(/\{\{YEAR\}\}/g, "<b>" + (year || "") + "</b>")
         .replace(/\{\{CONTRACT_URL\}\}/g, data.contractUrl || "")
         .replace(
           /\{\{PRIMARY_COLOR\}\}/g,
@@ -112,10 +123,18 @@ export const POST: APIRoute = async ({ request }) => {
         mergedData.statusConfig.client_email_content,
         placeholderData
       ),
-      project_action: replacePlaceholders(mergedData.statusConfig.project_action, placeholderData),
+      admin_status_action: replacePlaceholders(
+        mergedData.statusConfig.admin_status_action,
+        placeholderData
+      ),
+      client_status_action: replacePlaceholders(
+        mergedData.statusConfig.client_status_action,
+        placeholderData
+      ),
+      status_action: replacePlaceholders(mergedData.statusConfig.status_action, placeholderData),
     };
 
-    console.log("🔄 [REPLACE-PLACEHOLDERS] Processed messages:", processedMessages);
+    // console.log("🔄 [REPLACE-PLACEHOLDERS] Processed messages:", processedMessages);
 
     return new Response(
       JSON.stringify({

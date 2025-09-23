@@ -3,7 +3,7 @@ import { supabase } from "../../../lib/supabase";
 
 export const GET: APIRoute = async ({ request }) => {
   try {
-    console.log(`📄 [PDF-TEMPLATES] Fetching available templates`);
+    // console.log(`📄 [PDF-TEMPLATES] Fetching available templates`);
 
     if (!supabase) {
       return new Response(
@@ -41,7 +41,7 @@ export const GET: APIRoute = async ({ request }) => {
       );
     }
 
-    console.log(`✅ [PDF-TEMPLATES] Found ${templates?.length || 0} templates`);
+    // console.log(`✅ [PDF-TEMPLATES] Found ${templates?.length || 0} templates`);
 
     return new Response(
       JSON.stringify({
@@ -92,7 +92,7 @@ export const POST: APIRoute = async ({ request }) => {
       );
     }
 
-    console.log(`📄 [PDF-TEMPLATES] Creating new template: ${name}`);
+    // console.log(`📄 [PDF-TEMPLATES] Creating new template: ${name}`);
 
     if (!supabase) {
       return new Response(
@@ -126,7 +126,7 @@ export const POST: APIRoute = async ({ request }) => {
       );
     }
 
-    console.log(`✅ [PDF-TEMPLATES] Successfully created template: ${template.id}`);
+    // console.log(`✅ [PDF-TEMPLATES] Successfully created template: ${template.id}`);
 
     return new Response(
       JSON.stringify({

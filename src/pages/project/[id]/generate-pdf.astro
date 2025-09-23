@@ -5,10 +5,11 @@ import { checkAuth } from "../../../lib/auth";
 const { id } = Astro.params;
 
 // Get auth data directly since App component handles auth requirements
-const { currentUser = undefined, currentRole = "Client" } = await checkAuth(Astro.cookies);
+const { currentUser = undefined } = await checkAuth(Astro.cookies);
+const currentRole = currentUser?.profile?.role || "Client";
 
-console.log("🏗️ [GENERATE-PDF] Current user:", currentUser);
-console.log("🏗️ [GENERATE-PDF] Current role:", currentRole);
+// console.log("🏗️ [GENERATE-PDF] Current user:", currentUser);
+// console.log("🏗️ [GENERATE-PDF] Current role:", currentRole);
 
 if (!currentUser) {
   return Astro.redirect("/login");
@@ -25,12 +26,12 @@ if (!projectResponse.ok) {
   return Astro.redirect("/dashboard");
 }
 
-console.log("🏗️ [GENERATE-PDF] Project response:", projectResponse);
+// console.log("🏗️ [GENERATE-PDF] Project response:", projectResponse);
 const projectResult = await projectResponse.json();
 if (!projectResult.success || !projectResult.project) {
   return Astro.redirect("/dashboard");
 }
-console.log("🏗️ [GENERATE-PDF] Project result:", projectResult);
+// console.log("🏗️ [GENERATE-PDF] Project result:", projectResult);
 
 const project = projectResult.project;
 const projectAuthor = projectResult.projectAuthor;
@@ -47,12 +48,7 @@ const projectId = id;
 const projectTitle = project.title || "Untitled Project";
 ---
 
-<App
-  title={`Generate PDF - ${projectTitle}`}
-  currentUser={currentUser}
-  currentRole={currentUser?.profile?.role}
-  isAuth={true}
->
+<App title={`Generate PDF - ${projectTitle}`} currentUser={currentUser}>
   <div class="min-h-screen bg-gray-50 dark:bg-gray-900">
     <div class="container mx-auto px-4 py-8">
       <!-- Header -->
@@ -168,7 +164,7 @@ const projectTitle = project.title || "Untitled Project";
               <!-- Zoom Controls -->
               <div
                 id="zoomControls"
-                class="flex hidden items-center justify-between rounded-lg border border-gray-300 bg-white p-3 dark:border-gray-600 dark:bg-gray-800"
+                class="hidden items-center justify-between rounded-lg border border-gray-300 bg-white p-3 dark:border-gray-600 dark:bg-gray-800"
               >
                 <div class="flex items-center space-x-2">
                   <button
@@ -281,7 +277,7 @@ const projectTitle = project.title || "Untitled Project";
     // Template selection handler
     document.getElementById("templateSelect").addEventListener("change", async (e) => {
       const templateId = e.target.value;
-      console.log(`🔧 [PDF-TEMPLATE] Template changed to: ${templateId}`);
+      // console.log(`🔧 [PDF-TEMPLATE] Template changed to: ${templateId}`);
       if (templateId) {
         selectedTemplate = templateId;
         await loadComponents(templateId);
@@ -297,12 +293,12 @@ const projectTitle = project.title || "Untitled Project";
 
     async function loadComponents(templateId) {
       try {
-        console.log(`🔧 [PDF-COMPONENTS] Loading components for template ${templateId}`);
+        // console.log(`🔧 [PDF-COMPONENTS] Loading components for template ${templateId}`);
         const response = await fetch(`/api/pdf/components?templateId=${templateId}`);
         const result = await response.json();
 
         if (result.success) {
-          console.log(
+          // console.log(
             `🔧 [PDF-COMPONENTS] Found ${result.components.length} components for template ${templateId}`
           );
           const componentList = document.getElementById("componentList");

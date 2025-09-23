@@ -62,7 +62,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     }
 
     // Since subject is in invoices table, we need to find or create a "proposal invoice" for this project
-    console.log("Looking for existing proposal invoice for project:", projectId);
+    // console.log("Looking for existing proposal invoice for project:", projectId);
 
     // First, check if there's already a "proposal" type invoice for this project
     const { data: existingInvoice, error: findError } = await supabase
@@ -72,7 +72,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       .eq("status", "proposal") // Assuming "proposal" is a status type
       .single();
 
-    console.log("Existing proposal invoice search:", { existingInvoice, findError });
+    // console.log("Existing proposal invoice search:", { existingInvoice, findError });
 
     let invoiceId;
     let updatedInvoice;
@@ -81,7 +81,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     if (existingInvoice) {
       // Update existing proposal invoice
       invoiceId = existingInvoice.id;
-      console.log("Updating existing proposal invoice:", invoiceId);
+      // console.log("Updating existing proposal invoice:", invoiceId);
 
       const result = await supabase
         .from("invoices")
@@ -97,7 +97,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       updateError = result.error;
     } else if (findError?.code === "PGRST116") {
       // No proposal invoice exists, create one
-      console.log("Creating new proposal invoice for project:", projectId);
+      // console.log("Creating new proposal invoice for project:", projectId);
 
       const result = await supabase
         .from("invoices")
@@ -131,7 +131,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       );
     }
 
-    console.log("Invoice update result:", { updatedInvoice, updateError, invoiceId });
+    // console.log("Invoice update result:", { updatedInvoice, updateError, invoiceId });
 
     if (updateError) {
       console.error("Error updating proposal subject:", updateError);

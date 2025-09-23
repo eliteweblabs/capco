@@ -45,7 +45,7 @@ try {
       });
 
       users = profilesWithEmails;
-      console.log(`Fetched ${users.length} users with emails for admin panel`);
+      // console.log(`Fetched ${users.length} users with emails for admin panel`);
     }
   }
 } catch (fetchError) {
@@ -63,12 +63,13 @@ const userCounts = {
 ---
 
 <App
-  title="CAPCO Design Group - Build, manage, and track fire protection systems effortlessly"
-  description="CAPCo powers the world's most reliable fire protection systems. We make compliance easy."
+  title=""
+  description=""
   currentUser={currentUser}
   session={session || undefined}
   project={undefined}
   supabase={supabase}
+  isBackend={true}
 >
   <div
     id="main-content"
@@ -77,11 +78,11 @@ const userCounts = {
     <main>
       <div class="RZmKBZs1E1eXw8vkE6jY p_2EXc_a2sDA_h41l8QU">
         <div
-          class="mveJTCIb2WII7J4sY22F _Ybd3WwuTVljUT4vEaM3 _wYiJGbRZyFZeCc8y7Sf mngKhi_Rv06PF57lblDI _1jTZ8KXRZul60S6czNi LSIxp7RSuOKhsg28v_u3"
+          class="mveJTCIb2WII7J4sY22F _Ybd3WwuTVljUT4vEaM3 _wYiJGbRZyFZeCc8y7Sf mngKhi_Rv06PF57lblDI _1jTZ8KXRZul60S6czNi LSIxp7RSuOKhsg28v_u3 text-black dark:text-white"
         >
           <!-- Page Header -->
           <div class="mb-8">
-            <h1 class="mb-2 text-3xl font-bold text-gray-900 dark:text-white">User Management</h1>
+            <h1 class="mb-2 text-3xl font-bold">User Management</h1>
             <p class="text-secondary dark:text-secondary-dark">
               Create, view, and manage all system users
             </p>
@@ -382,13 +383,15 @@ const userCounts = {
 
                   <!-- Submit Button -->
                   <div class="pt-2">
-                    <Button type="submit" id="submit-btn" variant="primary" size="md" fullWidth>
+                    <Button
+                      type="submit"
+                      id="submit-btn"
+                      variant="primary"
+                      size="md"
+                      fullWidth
+                      loading={true}
+                    >
                       <span id="submit-text">Create User</span>
-                      <BoxIcon
-                        name="loader-alt"
-                        id="submit-spinner"
-                        class="ml-2 hidden animate-spin"
-                      />
                     </Button>
                   </div>
 
@@ -564,7 +567,6 @@ const userCounts = {
     const form = document.getElementById("create-user-form");
     const submitBtn = document.getElementById("submit-btn");
     const submitText = document.getElementById("submit-text");
-    const submitSpinner = document.getElementById("submit-spinner");
 
     if (!form || !submitBtn) return;
 
@@ -718,11 +720,9 @@ const userCounts = {
       if (loading) {
         (submitBtn as HTMLButtonElement).disabled = true;
         (submitText as HTMLElement).textContent = "Creating...";
-        (submitSpinner as HTMLElement).classList.remove("hidden");
       } else {
         (submitBtn as HTMLButtonElement).disabled = false;
         (submitText as HTMLElement).textContent = "Create User";
-        (submitSpinner as HTMLElement).classList.add("hidden");
       }
     }
   }

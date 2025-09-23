@@ -69,12 +69,12 @@ export async function checkAuth(cookies: any): Promise<AuthResult> {
             // Enhance currentUser object with profile data
             currentUser.profile = profile;
 
-            console.log("🔐 [AUTH] Profile successfully attached:", {
-              userId: currentUser.id,
-              role: profile.role,
-              profileKeys: Object.keys(profile),
-              fullProfile: profile,
-            });
+            // console.log("🔐 [AUTH] Profile successfully attached:", {
+            //   userId: currentUser.id,
+            //   role: profile.role,
+            //   profileKeys: Object.keys(profile),
+            //   fullProfile: profile,
+            // });
           } else {
             console.warn("🔐 [AUTH] Failed to get currentUser profile:", {
               userId: currentUser.id,
@@ -84,7 +84,7 @@ export async function checkAuth(cookies: any): Promise<AuthResult> {
               errorMessage: profileError?.message,
             });
 
-            console.log("🔐 [AUTH] currentUser object after failed profile query:", {
+            // console.log("🔐 [AUTH] currentUser object after failed profile query:", {
               hasCurrentUser: !!currentUser,
               currentUserKeys: Object.keys(currentUser),
               hasProfile: !!currentUser.profile,

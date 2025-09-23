@@ -15,7 +15,7 @@ export const GET: APIRoute = async ({ url, cookies }) => {
       );
     }
 
-    console.log("👤 [GET-USER-PROFILE] Fetching profile for user:", userId);
+    // console.log("👤 [GET-USER-PROFILE] Fetching profile for user:", userId);
 
     // Get user profile from Supabase
     const { data: profile, error } = await supabaseAdmin
@@ -46,7 +46,7 @@ export const GET: APIRoute = async ({ url, cookies }) => {
       );
     }
 
-    console.log("👤 [GET-USER-PROFILE] Profile fetched successfully:", {
+    // console.log("👤 [GET-USER-PROFILE] Profile fetched successfully:", {
       id: profile.id,
       name: `${profile.first_name} ${profile.last_name}`,
       company: profile.company_name,

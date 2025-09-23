@@ -18,7 +18,6 @@ import Button from "../common/Button.astro";
 interface Props {
   project?: any;
   currentUser?: any;
-  supabaseUrl?: string;
   isNewProject?: boolean;
   projectStatus?: number | null;
 }
@@ -28,78 +27,21 @@ const {
   currentUser = {},
   isNewProject = true,
   projectStatus = null,
-  supabaseUrl = "",
 } = Astro.props;
 
 const currentRole = currentUser?.profile?.role;
 const projectId = project?.id;
 // Generate a temporary ID for new projects
 const formId = isNewProject ? `new-project-${Date.now()}` : projectId || "";
-
-// Early debug logging
-console.log("📝 [ProjectForm] Component initialized:", {
-  hasProject: !!project,
-  projectId,
-  currentRole,
-  isNewProject,
-  projectStatus,
-});
-
-// Use currentRole prop if provided, otherwise use authenticated role
-
 // Filter fields based on user role and project status
 const formFields = getFilteredFormFields(currentRole, isNewProject, projectStatus);
-
 // Get filtered button groups based on user role and project status
 const buttonGroups = getFilteredButtonGroups(currentRole, isNewProject, projectStatus);
-
 // Get filtered form actions based on user role and project status
 const formActions = getFilteredFormActions(currentRole, isNewProject, projectStatus);
 
-// Debug logging - Server-side
-console.log("📝 [ProjectForm] Server-side debug:", {
-  currentRole,
-  isNewProject,
-  projectStatus,
-  formFieldsCount: formFields.length,
-  buttonGroupsCount: buttonGroups.length,
-  formActionsCount: formActions.length,
-});
 
-// Debug logging - Client-side
-console.log("📝 [ProjectForm] Client-side debug:", {
-  currentRole,
-  isNewProject,
-  projectStatus,
-  formFieldsCount: formFields.length,
-  buttonGroupsCount: buttonGroups.length,
-  formActionsCount: formActions.length,
-  formFields: formFields.map((f) => ({
-    id: f.id,
-    name: f.name,
-    allow: f.allow,
-  })),
-  buttonGroups: buttonGroups.map((g) => ({
-    id: g.id,
-    name: g.name,
-    allow: g.allow,
-  })),
-  formActions: formActions.map((a) => ({
-    id: a.id,
-    label: a.label,
-    allow: a.allow,
-  })),
-});
 
-// Debug new client fields specifically
-// const newClientFieldsInForm = formFields.filter(
-//   (field) =>
-//     field.name === "first_name" ||
-//     field.name === "last_name" ||
-//     field.name === "company_name" ||
-//     field.name === "email"
-// );
-// console.log("New client fields found:", newClientFieldsInForm.length, newClientFieldsInForm);
 ---
 
 <form
@@ -110,6 +52,10 @@ console.log("📝 [ProjectForm] Client-side debug:", {
   data-project-data={JSON.stringify(project || {})}
   autocomplete="off"
 >
+
+<!-- Address Input -->
+<div class="grid grid-cols-1 gap-4 lg:grid-cols-1">
+
   {
     isNewProject && (
       <SlotMachineModal
@@ -144,10 +90,11 @@ console.log("📝 [ProjectForm] Client-side debug:", {
   }
   <!-- Client Information (Admin/Staff Only) -->
   {
-    isNewProject && (currentRole === "Admin" || currentRole === "Staff") ? (
+    isNewProject && (currentRole === "Admin" || currentRole === "Staff") && (
       <IsNewOrExistingClient />
-    ) : null
+    )
   }
+</div>
 
   <!-- Other Core Fields Grid -->
   <div class="grid grid-cols-1 gap-4 lg:grid-cols-2">
@@ -250,9 +197,7 @@ console.log("📝 [ProjectForm] Client-side debug:", {
   <div class="grid grid-cols-1 gap-4 lg:grid-cols-2">
     <!-- Construction Type -->
     <div>
-      <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300"
-        >Construction Type</label
-      >
+      <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">Construction Type</label>
       <div class="flex gap-4">
         {
           formFields
@@ -391,7 +336,6 @@ console.log("📝 [ProjectForm] Client-side debug:", {
       hideNotification?: any;
       currentProjectData?: any;
       handleUpdateStatusNotification?: any;
-      showSuccess?: any;
       switchTab?: any;
       resetForm?: any;
       clipboardData?: any;
@@ -414,7 +358,7 @@ console.log("📝 [ProjectForm] Client-side debug:", {
     //   try {
     //     const projectData = JSON.parse(projectDataAttr);
     //     window.currentProjectData = projectData;
-    //     // console.log("Project data loaded:", projectData);
+    // console.log("Project data loaded:", projectData);
     //   } catch (error) {
     //     console.error("Error parsing project data:", error);
     //   }
@@ -467,13 +411,13 @@ console.log("📝 [ProjectForm] Client-side debug:", {
         }
       }
 
-      console.log("📝 [ProjectForm] Form data:", projectData);
-      console.log("📝 [ProjectForm] Button group data:", {
-        building: projectData.building,
-        project: projectData.project,
-        service: projectData.service,
-        requested_docs: projectData.requested_docs,
-      });
+      // console.log("📝 [ProjectForm] Form data:", projectData);
+      // console.log("📝 [ProjectForm] Button group data:", {
+      //   building: projectData.building,
+      //   project: projectData.project,
+      //   service: projectData.service,
+      //   requested_docs: projectData.requested_docs,
+      // });
 
       try {
         const submitBtn = form.querySelector('button[type="submit"]') as HTMLButtonElement;
@@ -485,7 +429,6 @@ console.log("📝 [ProjectForm] Client-side debug:", {
         let response;
         if (isNewProject) {
           // Create new project
-          // console.log("📝 [ProjectForm] Creating new project");
           response = await fetch("/api/create-project", {
             method: "POST",
             headers: {
@@ -495,7 +438,6 @@ console.log("📝 [ProjectForm] Client-side debug:", {
           });
         } else {
           // Update existing project
-          // console.log("📝 [ProjectForm] Updating existing project:", projectId);
           const updateData = {
             ...projectData,
             projectId: projectId
@@ -522,17 +464,13 @@ console.log("📝 [ProjectForm] Client-side debug:", {
         }
 
         const result = await response.json();
-        // console.log("📝 [ProjectForm] API response:", result);
-        // console.log("📝 [ProjectForm] Response status:", response.status);
-        // console.log("📝 [ProjectForm] Response ok:", response.ok);
+    
 
         if (result.success) {
           if (isNewProject) {
             // For new projects, update status to 10 (Project Created) to trigger database-driven notifications
-            // console.log("📝 [ProjectForm] Updating status to 10 for new project");
-            // console.log("📝 [ProjectForm] About to make fetch call to test endpoint");
+         
             try {
-              // console.log("📝 [ProjectForm] Making fetch call now...");
               const statusResponse = await fetch("/api/update-status", {
                 method: "POST",
                 headers: {
@@ -546,12 +484,9 @@ console.log("📝 [ProjectForm] Client-side debug:", {
                 }),
               });
 
-              // console.log("📝 [ProjectForm] Fetch call completed, status:", statusResponse.status);
+           
               const statusResult = await statusResponse.json();
-              // console.log("📝 [ProjectForm] Response parsed successfully");
-              // console.log("📝 [ProjectForm] Status update response:", statusResult);
-              // console.log("📝 [ProjectForm] Status update response status:", statusResponse.status);
-              // console.log("📝 [ProjectForm] Status update response ok:", statusResponse.ok);
+            
 
               // Store response in localStorage for debugging
               localStorage.setItem(
@@ -586,12 +521,10 @@ console.log("📝 [ProjectForm] Client-side debug:", {
             }
           } else {
             // For existing projects, just show success and refresh
-            if (window.showSuccess) {
-              window.showSuccess("Project Updated", "Project has been updated successfully!");
+            if (window.showModal) {
+              window.showModal("Project Updated", "Project has been updated successfully!", "success", 2000);
             }
-            setTimeout(() => {
-              window.location.reload();
-            }, 1000);
+           
           }
         } else {
           console.error("📝 [ProjectForm] API returned success: false");
@@ -625,12 +558,7 @@ console.log("📝 [ProjectForm] Client-side debug:", {
       deleteBtn?.addEventListener("click", () => {
         deleteProject(projectId);
       });
-      // console.log("Delete button setup:", {
-      //   deleteBtn: !!deleteBtn,
-      //   projectId,
-      //   isNewProject,
-      //   formId: form.getAttribute("data-project-id"),
-      // });
+     
     }
 
     // Handle other action buttons
@@ -657,7 +585,6 @@ console.log("📝 [ProjectForm] Client-side debug:", {
   let isDeleting = false; // Flag to prevent multiple delete operations
 
   function deleteProject(projectId: any) {
-    // console.log("deleteProject called with projectId:", projectId, "type:", typeof projectId);
 
     // Prevent multiple delete operations
     if (isDeleting) {
@@ -706,7 +633,6 @@ console.log("📝 [ProjectForm] Client-side debug:", {
               }
 
               // Make API call to delete project
-              console.log("Sending delete request for project:", projectId);
               fetch(`/api/delete-project`, {
                 method: "DELETE",
                 headers: {
@@ -715,9 +641,7 @@ console.log("📝 [ProjectForm] Client-side debug:", {
                 body: JSON.stringify({ projectId }),
               })
                 .then(async (response) => {
-                  // console.log("Delete response status:", response.status);
                   const data = await response.json();
-                  // console.log("Delete response data:", data);
 
                   if (!response.ok) {
                     throw new Error(data.error || "Failed to delete project");

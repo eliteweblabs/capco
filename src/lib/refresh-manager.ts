@@ -45,7 +45,7 @@ export class RefreshManager {
    * Update a specific field across all elements with matching data-refresh attribute
    */
   public updateField(fieldName: string, newValue: any, projectId?: string | number): void {
-    console.log(
+    // console.log(
       `🔄 [REFRESH-MANAGER] Updating field '${fieldName}' to:`,
       newValue,
       projectId ? `for project ${projectId}` : ""
@@ -65,13 +65,13 @@ export class RefreshManager {
     }
 
     if (elements.length === 0) {
-      console.log(
+      // console.log(
         `🔄 [REFRESH-MANAGER] No elements found with data-refresh="${fieldName}"${projectId ? ` for project ${projectId}` : ""}`
       );
       return;
     }
 
-    console.log(`🔄 [REFRESH-MANAGER] Found ${elements.length} elements to update`);
+    // console.log(`🔄 [REFRESH-MANAGER] Found ${elements.length} elements to update`);
 
     elements.forEach((element, index) => {
       try {
@@ -84,7 +84,7 @@ export class RefreshManager {
           this.defaultUpdate(element, newValue);
         }
 
-        console.log(`🔄 [REFRESH-MANAGER] Updated element ${index + 1}/${elements.length}`);
+        // console.log(`🔄 [REFRESH-MANAGER] Updated element ${index + 1}/${elements.length}`);
       } catch (error) {
         console.error(`🔄 [REFRESH-MANAGER] Error updating element ${index + 1}:`, error);
       }
@@ -95,7 +95,7 @@ export class RefreshManager {
    * Update multiple fields at once
    */
   public updateFields(updates: Record<string, any>): void {
-    console.log(`🔄 [REFRESH-MANAGER] Updating multiple fields:`, updates);
+    // console.log(`🔄 [REFRESH-MANAGER] Updating multiple fields:`, updates);
 
     Object.entries(updates).forEach(([fieldName, value]) => {
       this.updateField(fieldName, value);
@@ -183,14 +183,14 @@ export class RefreshManager {
    */
   public debugRefreshableElements(): void {
     const elements = this.getRefreshableElements();
-    console.log(`🔄 [REFRESH-MANAGER] Found ${elements.length} refreshable elements:`);
+    // console.log(`🔄 [REFRESH-MANAGER] Found ${elements.length} refreshable elements:`);
 
     elements.forEach((element, index) => {
       const fieldName = element.getAttribute("data-refresh");
       const tagName = element.tagName.toLowerCase();
       const id = element.id || `element-${index}`;
 
-      console.log(`  ${index + 1}. ${tagName}#${id} -> data-refresh="${fieldName}"`);
+      // console.log(`  ${index + 1}. ${tagName}#${id} -> data-refresh="${fieldName}"`);
     });
   }
 
@@ -199,12 +199,12 @@ export class RefreshManager {
    */
   public startAutoRefresh(): void {
     if (this.isActive) {
-      console.log(`🔄 [REFRESH-MANAGER] Auto-refresh is already active`);
+      // console.log(`🔄 [REFRESH-MANAGER] Auto-refresh is already active`);
       return;
     }
 
     this.isActive = true;
-    console.log(
+    // console.log(
       `🔄 [REFRESH-MANAGER] Starting auto-refresh cycle every ${this.refreshIntervalMs / 1000} seconds`
     );
 
@@ -218,7 +218,7 @@ export class RefreshManager {
    */
   public stopAutoRefresh(): void {
     if (!this.isActive) {
-      console.log(`🔄 [REFRESH-MANAGER] Auto-refresh is not active`);
+      // console.log(`🔄 [REFRESH-MANAGER] Auto-refresh is not active`);
       return;
     }
 
@@ -227,7 +227,7 @@ export class RefreshManager {
       clearInterval(this.refreshInterval);
       this.refreshInterval = null;
     }
-    console.log(`🔄 [REFRESH-MANAGER] Stopped auto-refresh cycle`);
+    // console.log(`🔄 [REFRESH-MANAGER] Stopped auto-refresh cycle`);
   }
 
   /**
@@ -235,7 +235,7 @@ export class RefreshManager {
    */
   public setRefreshInterval(intervalMs: number): void {
     this.refreshIntervalMs = intervalMs;
-    console.log(`🔄 [REFRESH-MANAGER] Refresh interval set to ${intervalMs / 1000} seconds`);
+    // console.log(`🔄 [REFRESH-MANAGER] Refresh interval set to ${intervalMs / 1000} seconds`);
 
     // Restart if currently active
     if (this.isActive) {
@@ -255,15 +255,15 @@ export class RefreshManager {
    * Cycle through all refreshable elements and check for updates
    */
   private async cycleAndRefresh(): Promise<void> {
-    console.log(`🔄 [REFRESH-MANAGER] Starting refresh cycle...`);
+    // console.log(`🔄 [REFRESH-MANAGER] Starting refresh cycle...`);
 
     const elements = this.getRefreshableElements();
     if (elements.length === 0) {
-      console.log(`🔄 [REFRESH-MANAGER] No refreshable elements found`);
+      // console.log(`🔄 [REFRESH-MANAGER] No refreshable elements found`);
       return;
     }
 
-    console.log(`🔄 [REFRESH-MANAGER] Found ${elements.length} refreshable elements to check`);
+    // console.log(`🔄 [REFRESH-MANAGER] Found ${elements.length} refreshable elements to check`);
 
     // Group elements by project/user and field type for efficient API calls
     const groupedElements = this.groupElementsByContext(elements);
@@ -273,7 +273,7 @@ export class RefreshManager {
       await this.refreshContextGroup(contextKey, fieldGroups);
     }
 
-    console.log(`🔄 [REFRESH-MANAGER] Refresh cycle completed`);
+    // console.log(`🔄 [REFRESH-MANAGER] Refresh cycle completed`);
   }
 
   /**
@@ -326,7 +326,7 @@ export class RefreshManager {
   ): Promise<void> {
     const [contextType, contextId] = contextKey.split(":");
 
-    console.log(
+    // console.log(
       `🔄 [REFRESH-MANAGER] Refreshing ${contextType} ${contextId} with ${fieldGroups.size} field types`
     );
 
@@ -339,7 +339,7 @@ export class RefreshManager {
       );
 
       if (!currentData) {
-        console.log(`🔄 [REFRESH-MANAGER] No data found for ${contextKey}`);
+        // console.log(`🔄 [REFRESH-MANAGER] No data found for ${contextKey}`);
         return;
       }
 
@@ -355,7 +355,7 @@ export class RefreshManager {
         });
 
         if (needsUpdate) {
-          console.log(`🔄 [REFRESH-MANAGER] Updating ${fieldName} from database:`, currentValue);
+          // console.log(`🔄 [REFRESH-MANAGER] Updating ${fieldName} from database:`, currentValue);
           this.updateField(
             fieldName,
             currentValue,
@@ -385,7 +385,7 @@ export class RefreshManager {
         apiUrl = `/api/get-user/${contextId}`;
       } else {
         // For global context, we might need a different approach
-        console.log(`🔄 [REFRESH-MANAGER] Global context refresh not implemented yet`);
+        // console.log(`🔄 [REFRESH-MANAGER] Global context refresh not implemented yet`);
         return null;
       }
 
@@ -448,7 +448,7 @@ export class RefreshManager {
    * Force a manual refresh cycle (useful for testing)
    */
   public async forceRefresh(): Promise<void> {
-    console.log(`🔄 [REFRESH-MANAGER] Force refresh requested`);
+    // console.log(`🔄 [REFRESH-MANAGER] Force refresh requested`);
     await this.cycleAndRefresh();
   }
 }

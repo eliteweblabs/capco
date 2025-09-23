@@ -223,20 +223,46 @@ const tabUrl = `/project/${project.id}?status=${currentStatusTab}`;
   </td>
   <th scope="row" class="BHrWGjM1Iab_fAz0_91H RZmKBZs1E1eXw8vkE6jY b9aD6g2qw84oyZNsMO8j"
     ><a
-      href="../project-summary"
-      class="ezMFUVl744lvw6ht0lFe __9sbu0yrzdhGIkLWNXl oJZU4OQzzfXeLbF7UKZ_ OyABRrnTV_kvHV7dJ0uE"
-      >Upload feed and Reels in Instagram</a
+      href={`/project/${project.id}`}
+      class="ezMFUVl744lvw6ht0lFe __9sbu0yrzdhGIkLWNXl oJZU4OQzzfXeLbF7UKZ_ OyABRrnTV_kvHV7dJ0uE relative"
+      >{project.address || "No address"}
+      {
+        (() => {
+          // For clients, make status label clickable if client_status_tab exists
+          // if (currentRole === "Client" && currentStatusTab) {
+          // Get status color from API data
+          // const statusColorClasses = `bg-${statusColor}-100 text-${statusColor}-800 dark:bg-${statusColor}-700 dark:text-${statusColor}-300`;
+
+          return (
+            <a
+              href={tabUrl}
+              class={`font-large z-1 absolute -right-4 -top-3.5 mb-4 cursor-pointer`}
+              data-refresh="status_name"
+              data-project-id={project.id}
+              title={`Go to ${currentStatusName} tab`}
+            >
+              {/* Debug: Show alert count */}
+
+              <span class="relative top-1.5" set:html={renderAlertIcons(projectAlertIconCount)} />
+
+              <span data-time-since-update data-updated-at={project.updated_at}>
+                {timeSinceUpdate}
+              </span>
+            </a>
+          );
+        })()
+      }</a
     ></th
   >
   <td class="BHrWGjM1Iab_fAz0_91H RZmKBZs1E1eXw8vkE6jY b9aD6g2qw84oyZNsMO8j">
     <span
       class="Y3FxyuXtj2gecrGXvLEI YccXYy5sNIz6FJlLxw0D St_AVDyTHE88JaawJoRQ Zs2BLzUMh0_yTpU6xCcU gMXmdpOPfqG_3CKkL0VD ezMFUVl744lvw6ht0lFe mbOxN7eW74XygTKQC_r3 V9HgZms3_2W5sanRatci Uq09bvia_7yL7hYv2uSO"
-      >In progress</span
+      >{currentStatusName}</span
     >
   </td>
   <td class="BHrWGjM1Iab_fAz0_91H RZmKBZs1E1eXw8vkE6jY b9aD6g2qw84oyZNsMO8j">
     <div class="YRrCJSr_j5nopfm4duUc IxVXJAn2ZWxXpcIHvPnh XrB0f1gZzjK6cEODacjg">
-      <img
+      <!-- <img
         src="https://flowbite.com/application-ui/demo/images/users/avatar-10.png"
         alt=""
         class="Mln3CkDzLcoVQAC3Uqsd hlT3pgfpx11BUFMWNdhc _VPh6kIywCMfXFfQLas4 RpVwy4sO7Asb86CncKJ_ b0rXX23llDSn6PZwxAyx MGZ9bvBP5fgetIhNCD_o _JnjhZbEHpDJUKJAU8Cw"
@@ -255,14 +281,27 @@ const tabUrl = `/project/${project.id}?status=${currentStatusTab}`;
         href="#"
         class="YRrCJSr_j5nopfm4duUc Mln3CkDzLcoVQAC3Uqsd hlT3pgfpx11BUFMWNdhc _VPh6kIywCMfXFfQLas4 Q_jg_EPdNf9eDMn1mLI2 Nm7xMnguzOx6J5Ao7yCU RpVwy4sO7Asb86CncKJ_ b0rXX23llDSn6PZwxAyx MGZ9bvBP5fgetIhNCD_o foDHZclRWUf2bqma2a8U gMXmdpOPfqG_3CKkL0VD ezMFUVl744lvw6ht0lFe y6GKdvUrd7vp_pxsFb57 btSG3Q4vfhdH0rmixNRx _JnjhZbEHpDJUKJAU8Cw jqg6J89cvxmDiFpnV56r RzANcaqunVvlLrO6_tal"
         >+5</a
-      >
+      > -->
+    </div>
+  </td>
+  <td class="BHrWGjM1Iab_fAz0_91H RZmKBZs1E1eXw8vkE6jY b9aD6g2qw84oyZNsMO8j ezMFUVl744lvw6ht0lFe">
+    <div class="Z3N7I2IDDsoXK6xJ1cSW YRrCJSr_j5nopfm4duUc URF_PdoDtDpDi8BZQL94">
+      <span data-searchable>
+        {
+          project.assigned_to_name ? (
+            <span data-searchable>{project.assigned_to_name}</span>
+          ) : (
+            <span class="text-danger-500">UNASSIGNED</span>
+          )
+        }
+      </span>
     </div>
   </td>
   <td class="BHrWGjM1Iab_fAz0_91H RZmKBZs1E1eXw8vkE6jY b9aD6g2qw84oyZNsMO8j ezMFUVl744lvw6ht0lFe">
     <div class="Z3N7I2IDDsoXK6xJ1cSW YRrCJSr_j5nopfm4duUc URF_PdoDtDpDi8BZQL94">
       <span
         class="gMXmdpOPfqG_3CKkL0VD ezMFUVl744lvw6ht0lFe PeR2JZ9BZHYIH8Ea3F36 XIIs8ZOri3wm8Wnj9N_y"
-        >75%</span
+        >{((project.status / 220) * 100).toFixed(0)}%</span
       >
     </div>
     <div
@@ -270,7 +309,7 @@ const tabUrl = `/project/${project.id}?status=${currentStatusTab}`;
     >
       <div
         class="Q_MJbqFAgVV93n0S3SFL RpVwy4sO7Asb86CncKJ_ HstV_RZX_OUMWsk6ZYSX"
-        style="width: 75%"
+        style=`width: ${(project.status / 220 * 100).toFixed(0)}%`
       >
       </div>
     </div>
@@ -297,7 +336,7 @@ const tabUrl = `/project/${project.id}?status=${currentStatusTab}`;
           d="M18 14v4.8a1.2 1.2 0 0 1-1.2 1.2H5.2A1.2 1.2 0 0 1 4 18.8V7.2A1.2 1.2 0 0 1 5.2 6h4.6m4.4-2H20v5.8m-7.9 2L20 4.2"
         ></path>
       </svg>
-      Website
+      {elapsedTime.toLocaleString()}
     </a>
   </td>
   <td
@@ -447,44 +486,253 @@ const tabUrl = `/project/${project.id}?status=${currentStatusTab}`;
   </td>
 </tr>
 
-<!-- Featured Image Display -->
-
-{
-  (() => {
-    // For clients, make status label clickable if client_status_tab exists
-    // if (currentRole === "Client" && currentStatusTab) {
-    // Get status color from API data
-    // const statusColorClasses = `bg-${statusColor}-100 text-${statusColor}-800 dark:bg-${statusColor}-700 dark:text-${statusColor}-300`;
-
-    return (
-      <a
-        href={tabUrl}
-        class={`font-large z-1 absolute -right-4 -top-3.5 mb-4 cursor-pointer`}
-        data-refresh="status_name"
-        data-project-id={project.id}
-        title={`Go to ${currentStatusName} tab`}
+<tr
+  class="EpUSgjHdM6oyMXUiK_8_ _7KA5gD55t2lxf9Jkj20 _JnjhZbEHpDJUKJAU8Cw iIDqXVKz6wdYnAVfRsN2 relative hidden"
+  data-project-status={statusSlugOrId}
+  data-project-id={project.id}
+>
+  <td class="E9GV5sZJIbfO_GEQ_moc RZmKBZs1E1eXw8vkE6jY b9aD6g2qw84oyZNsMO8j">
+    <div class="YRrCJSr_j5nopfm4duUc Q_jg_EPdNf9eDMn1mLI2 hidden">
+      <input
+        id="checkbox-table-search-1"
+        type="checkbox"
+        onclick="event.stopPropagation()"
+        class="_o2IXcpM0qnG3JPReKus E9GV5sZJIbfO_GEQ_moc Y3FxyuXtj2gecrGXvLEI vpDN1VEJLu5FmLkr5WCk _9dH7mrOkzM4RTmidHTs _6MyV8SXoSWq_PQ6KWI6 _q0p_O8QLU1paqtuqmI2 GdTcGtoKP5_bET3syLDl Mmx5lX7HVdrWCgh3EpTP jqg6J89cvxmDiFpnV56r _GL8_lXmAgroY9ZBWGLH BO8JrKgx4qkHG27c4wVR"
+      />
+      <label for="checkbox-table-search-1" class="_DVAfiyo21kM68EUVzEQ">checkbox</label>
+    </div>
+  </td>
+  <th scope="row" class="BHrWGjM1Iab_fAz0_91H RZmKBZs1E1eXw8vkE6jY b9aD6g2qw84oyZNsMO8j"
+    ><a
+      href={`/project/${project.id}`}
+      class="ezMFUVl744lvw6ht0lFe __9sbu0yrzdhGIkLWNXl oJZU4OQzzfXeLbF7UKZ_ OyABRrnTV_kvHV7dJ0uE"
+      >{project.address || "No address"}</a
+    ></th
+  >
+  <td class="BHrWGjM1Iab_fAz0_91H RZmKBZs1E1eXw8vkE6jY b9aD6g2qw84oyZNsMO8j">
+    <span
+      class="Y3FxyuXtj2gecrGXvLEI YccXYy5sNIz6FJlLxw0D St_AVDyTHE88JaawJoRQ Zs2BLzUMh0_yTpU6xCcU gMXmdpOPfqG_3CKkL0VD ezMFUVl744lvw6ht0lFe mbOxN7eW74XygTKQC_r3 V9HgZms3_2W5sanRatci Uq09bvia_7yL7hYv2uSO"
+      >{currentStatusName}</span
+    >
+  </td>
+  <td class="BHrWGjM1Iab_fAz0_91H RZmKBZs1E1eXw8vkE6jY b9aD6g2qw84oyZNsMO8j">
+    <div class="YRrCJSr_j5nopfm4duUc IxVXJAn2ZWxXpcIHvPnh XrB0f1gZzjK6cEODacjg">
+      <span data-searchable>
+        {
+          project.assigned_to_name ? (
+            <span data-searchable>{project.assigned_to_name}</span>
+          ) : (
+            <span class="text-danger-500">UNASSIGNED</span>
+          )
+        }
+      </span>
+      <!-- <img
+        src="https://flowbite.com/application-ui/demo/images/users/avatar-10.png"
+        alt=""
+        class="Mln3CkDzLcoVQAC3Uqsd hlT3pgfpx11BUFMWNdhc _VPh6kIywCMfXFfQLas4 RpVwy4sO7Asb86CncKJ_ b0rXX23llDSn6PZwxAyx MGZ9bvBP5fgetIhNCD_o _JnjhZbEHpDJUKJAU8Cw"
+      />-->
+    </div>
+  </td>
+  <td class="BHrWGjM1Iab_fAz0_91H RZmKBZs1E1eXw8vkE6jY b9aD6g2qw84oyZNsMO8j ezMFUVl744lvw6ht0lFe">
+    <div class="Z3N7I2IDDsoXK6xJ1cSW YRrCJSr_j5nopfm4duUc URF_PdoDtDpDi8BZQL94">
+      <span
+        class="gMXmdpOPfqG_3CKkL0VD ezMFUVl744lvw6ht0lFe PeR2JZ9BZHYIH8Ea3F36 XIIs8ZOri3wm8Wnj9N_y"
+        >75%</span
       >
-        {/* Debug: Show alert count */}
+    </div>
+    <div
+      class="Q_MJbqFAgVV93n0S3SFL t6gkcSf0Bt4MLItXvDJ_ RpVwy4sO7Asb86CncKJ_ WwS1mve_UI16RedcVHEs jqg6J89cvxmDiFpnV56r"
+    >
+      <div
+        class="Q_MJbqFAgVV93n0S3SFL RpVwy4sO7Asb86CncKJ_ HstV_RZX_OUMWsk6ZYSX"
+        style="width: 75%"
+      >
+      </div>
+    </div>
+  </td>
+  <td
+    class="BHrWGjM1Iab_fAz0_91H RZmKBZs1E1eXw8vkE6jY b9aD6g2qw84oyZNsMO8j ezMFUVl744lvw6ht0lFe __9sbu0yrzdhGIkLWNXl OyABRrnTV_kvHV7dJ0uE"
+  >
+    <a
+      href="#"
+      class="_k0lTW0vvzboctTxDi2R Q_jg_EPdNf9eDMn1mLI2 ezMFUVl744lvw6ht0lFe _6MyV8SXoSWq_PQ6KWI6 oJZU4OQzzfXeLbF7UKZ_ fZf6W_ZtzEh6EEqmWMA9"
+    >
+      <svg
+        class="_x10ClrjYfqGxZTMmpBl OEd3yuKfmszRdDeW_2zu _AA3rO_G7gzZSX90mzZi"
+        aria-hidden="true"
+        xmlns="http://www.w3.org/2000/svg"
+        fill="none"
+        viewBox="0 0 24 24"
+      >
+        <path
+          stroke="currentColor"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          stroke-width="2"
+          d="M18 14v4.8a1.2 1.2 0 0 1-1.2 1.2H5.2A1.2 1.2 0 0 1 4 18.8V7.2A1.2 1.2 0 0 1 5.2 6h4.6m4.4-2H20v5.8m-7.9 2L20 4.2"
+        ></path>
+      </svg>
+      Website
+    </a>
+  </td>
+  <td
+    class="BHrWGjM1Iab_fAz0_91H RZmKBZs1E1eXw8vkE6jY b9aD6g2qw84oyZNsMO8j __9sbu0yrzdhGIkLWNXl OyABRrnTV_kvHV7dJ0uE"
+  >
+    <div
+      class="_k0lTW0vvzboctTxDi2R Q_jg_EPdNf9eDMn1mLI2 mveJTCIb2WII7J4sY22F pXhVRBC8yaUNllmIWxln _Ybd3WwuTVljUT4vEaM3 _bVaO2NfVVP88LtHWYlv _GSNszqbCuS9hoWd_f_m ODwQB_Ntbd93L5eefCAa gMXmdpOPfqG_3CKkL0VD ezMFUVl744lvw6ht0lFe Mmx5lX7HVdrWCgh3EpTP jqg6J89cvxmDiFpnV56r"
+    >
+      <svg
+        class="IRKzgyPj4qWOh2vq2xBg _o2IXcpM0qnG3JPReKus E9GV5sZJIbfO_GEQ_moc _JmTNv5EiHqK2A1jcQSf"
+        aria-hidden="true"
+        xmlns="http://www.w3.org/2000/svg"
+        fill="currentColor"
+        viewBox="0 0 24 24"
+      >
+        <path
+          fill-rule="evenodd"
+          d="M2 12a10 10 0 1 1 20 0 10 10 0 0 1-20 0Zm11-4a1 1 0 1 0-2 0v4c0 .3.1.5.3.7l3 3a1 1 0 0 0 1.4-1.4L13 11.6V8Z"
+          clip-rule="evenodd"></path>
+      </svg>
+      <span class="_slPOgYG58UZfxi9teaV">6:47</span>
+      /8:00
+      <button
+        class="oA7zcT_42jVeFuWTXQnq W5n_NSFnC6y2nqoHw_5x YJ3MjahAXRIwyTJETpB3 sQaK4IH7BIQSgBTGX8Pe y6GKdvUrd7vp_pxsFb57 ju_X9EEcwk2iiyib1u97"
+      >
+        <svg
+          class="_o2IXcpM0qnG3JPReKus E9GV5sZJIbfO_GEQ_moc"
+          aria-hidden="true"
+          xmlns="http://www.w3.org/2000/svg"
+          fill="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            fill-rule="evenodd"
+            d="M8 5a2 2 0 0 0-2 2v10c0 1.1.9 2 2 2h1a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2H8Zm7 0a2 2 0 0 0-2 2v10c0 1.1.9 2 2 2h1a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-1Z"
+            clip-rule="evenodd"></path>
+        </svg>
+      </button>
+    </div>
+  </td>
+  <td
+    class="BHrWGjM1Iab_fAz0_91H RZmKBZs1E1eXw8vkE6jY b9aD6g2qw84oyZNsMO8j gMXmdpOPfqG_3CKkL0VD ezMFUVl744lvw6ht0lFe __9sbu0yrzdhGIkLWNXl OyABRrnTV_kvHV7dJ0uE"
+    >23 Nov 2025</td
+  >
+  <td class="RZmKBZs1E1eXw8vkE6jY b9aD6g2qw84oyZNsMO8j">
+    <button
+      id="project-dropdown-button"
+      type="button"
+      data-dropdown-toggle="project-dropdown"
+      class="_k0lTW0vvzboctTxDi2R Q_jg_EPdNf9eDMn1mLI2 mveJTCIb2WII7J4sY22F sQaK4IH7BIQSgBTGX8Pe ijrOHNoSVGATsWYKl4Id c8dCx6gnV43hTOLV6ks5 ezMFUVl744lvw6ht0lFe PeR2JZ9BZHYIH8Ea3F36 lBgPGkku8NiP5ReH09_2 ZnBoTVi7VOJdCLSSU62n BkIbg_JwkgiyRW804Hhu XIIs8ZOri3wm8Wnj9N_y OPrb_iG5WDy_7F05BDOX dMTOiA3mf3FTjlHu6DqW"
+    >
+      <svg
+        class="rxe6apEJoEk8r75xaVNG ADSeKHR1DvUUA48Chci_"
+        aria-hidden="true"
+        xmlns="http://www.w3.org/2000/svg"
+        fill="none"
+        viewBox="0 0 24 24"
+      >
+        <path stroke="currentColor" stroke-linecap="round" stroke-width="4" d="M6 12h0m6 0h0m6 0h0"
+        ></path>
+      </svg>
+    </button>
+    <div
+      id="project-dropdown"
+      class="QhmQ_v3mmDFIP9VaVOfb _SmdlCf6eUKB_V9S5IDj fScvmu_bLBCkoXb3Xml3 Zy1Pypi71Xu6guex6urN z30cepEEBLSTPSvWeVPH mveJTCIb2WII7J4sY22F _Ybd3WwuTVljUT4vEaM3 mngKhi_Rv06PF57lblDI PoeKYEQfG4WfmL9xM6vu jqg6J89cvxmDiFpnV56r"
+      data-popper-placement="bottom"
+      style="position: absolute; inset: 0px auto auto 0px; margin: 0px; transform: translate3d(1448px, 374.5px, 0px);"
+      data-popper-reference-hidden=""
+      data-popper-escaped=""
+    >
+      <ul
+        class="FJRldeiG2gFGZfuKgp88 c8dCx6gnV43hTOLV6ks5 ezMFUVl744lvw6ht0lFe PeR2JZ9BZHYIH8Ea3F36 XIIs8ZOri3wm8Wnj9N_y"
+        aria-labelledby="project-dropdown-button"
+      >
+        <li>
+          <!-- data-modal-target="editProjectModal"
+            data-modal-toggle="editProjectModal" -->
+          <button
+            type="button"
+            id="editProjectButton"
+            class="_k0lTW0vvzboctTxDi2R t6gkcSf0Bt4MLItXvDJ_ Q_jg_EPdNf9eDMn1mLI2 W5n_NSFnC6y2nqoHw_5x _Cj_M6jt2eLjDgkBBNgI b9aD6g2qw84oyZNsMO8j _7KA5gD55t2lxf9Jkj20 ZnBoTVi7VOJdCLSSU62n RzANcaqunVvlLrO6_tal dMTOiA3mf3FTjlHu6DqW"
+          >
+            <svg
+              class="IRKzgyPj4qWOh2vq2xBg _o2IXcpM0qnG3JPReKus E9GV5sZJIbfO_GEQ_moc"
+              aria-hidden="true"
+              xmlns="http://www.w3.org/2000/svg"
+              fill="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                fill-rule="evenodd"
+                d="M11.3 6.2H5a2 2 0 0 0-2 2V19a2 2 0 0 0 2 2h11c1.1 0 2-1 2-2.1V11l-4 4.2c-.3.3-.7.6-1.2.7l-2.7.6c-1.7.3-3.3-1.3-3-3.1l.6-2.9c.1-.5.4-1 .7-1.3l3-3.1Z"
+                clip-rule="evenodd"></path>
+              <path
+                fill-rule="evenodd"
+                d="M19.8 4.3a2.1 2.1 0 0 0-1-1.1 2 2 0 0 0-2.2.4l-.6.6 2.9 3 .5-.6a2.1 2.1 0 0 0 .6-1.5c0-.2 0-.5-.2-.8Zm-2.4 4.4-2.8-3-4.8 5-.1.3-.7 3c0 .3.3.7.6.6l2.7-.6.3-.1 4.7-5Z"
+                clip-rule="evenodd"></path>
+            </svg>
+            Edit
+          </button>
+        </li>
+        <li>
+          <a
+            href="../project-summary"
+            class="_k0lTW0vvzboctTxDi2R t6gkcSf0Bt4MLItXvDJ_ Q_jg_EPdNf9eDMn1mLI2 W5n_NSFnC6y2nqoHw_5x _Cj_M6jt2eLjDgkBBNgI b9aD6g2qw84oyZNsMO8j _7KA5gD55t2lxf9Jkj20 ZnBoTVi7VOJdCLSSU62n RzANcaqunVvlLrO6_tal dMTOiA3mf3FTjlHu6DqW"
+          >
+            <svg
+              class="IRKzgyPj4qWOh2vq2xBg _o2IXcpM0qnG3JPReKus E9GV5sZJIbfO_GEQ_moc"
+              aria-hidden="true"
+              xmlns="http://www.w3.org/2000/svg"
+              fill="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                fill-rule="evenodd"
+                d="M5 7.8C6.7 6.3 9.2 5 12 5s5.3 1.3 7 2.8a12.7 12.7 0 0 1 2.7 3.2c.2.2.3.6.3 1s-.1.8-.3 1a2 2 0 0 1-.6 1 12.7 12.7 0 0 1-9.1 5c-2.8 0-5.3-1.3-7-2.8A12.7 12.7 0 0 1 2.3 13c-.2-.2-.3-.6-.3-1s.1-.8.3-1c.1-.4.3-.7.6-1 .5-.7 1.2-1.5 2.1-2.2Zm7 7.2a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z"
+                clip-rule="evenodd"></path>
+            </svg>
+            View
+          </a>
+        </li>
+      </ul>
+      <div class="FJRldeiG2gFGZfuKgp88">
+        <button
+          type="button"
+          id="deleteProjectButton"
+          class="_k0lTW0vvzboctTxDi2R t6gkcSf0Bt4MLItXvDJ_ Q_jg_EPdNf9eDMn1mLI2 W5n_NSFnC6y2nqoHw_5x _Cj_M6jt2eLjDgkBBNgI b9aD6g2qw84oyZNsMO8j c8dCx6gnV43hTOLV6ks5 ezMFUVl744lvw6ht0lFe m_WzesDEb91pTPmX64rt _7KA5gD55t2lxf9Jkj20 Sz97zU8r72z_pjE9zQnR RzANcaqunVvlLrO6_tal"
+        >
+          <!-- data-modal-target="deleteProjectModal"
+          data-modal-toggle="deleteProjectModal" -->
+          <svg
+            class="IRKzgyPj4qWOh2vq2xBg _o2IXcpM0qnG3JPReKus E9GV5sZJIbfO_GEQ_moc"
+            aria-hidden="true"
+            xmlns="http://www.w3.org/2000/svg"
+            fill="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              fill-rule="evenodd"
+              d="M8.6 2.6A2 2 0 0 1 10 2h4a2 2 0 0 1 2 2v2h3a1 1 0 1 1 0 2v12a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V8a1 1 0 0 1 0-2h3V4c0-.5.2-1 .6-1.4ZM10 6h4V4h-4v2Zm1 4a1 1 0 1 0-2 0v8a1 1 0 1 0 2 0v-8Zm4 0a1 1 0 1 0-2 0v8a1 1 0 1 0 2 0v-8Z"
+              clip-rule="evenodd"></path>
+          </svg>
+          Delete
+        </button>
+      </div>
+    </div>
+  </td>
+</tr>
 
-        <span class="relative top-1.5" set:html={renderAlertIcons(projectAlertIconCount)} />
-
-        <span data-time-since-update data-updated-at={project.updated_at}>
-          {timeSinceUpdate}
-        </span>
-      </a>
-    );
-  })()
-}
+<!-- Featured Image Display -->
 
 <a
   href={`/project/${project.id}`}
   data-refresh="featured_image_data:public_url"
   data-project-id={project.id}
-  class="flex h-32 items-center justify-center overflow-hidden rounded-t-lg bg-gray-100 dark:bg-gray-700"
+  class="hidden h-32 items-center justify-center overflow-hidden rounded-t-lg bg-gray-100 dark:bg-gray-700"
 >
 </a>
 
-<div class="p-3">
+<div class="hidden p-3">
   <a href={`/project/${project.id}`} class="transition-opacity hover:opacity-80">
     <div class="flex items-center gap-2">
       <h3 class="truncate text-lg font-semibold" data-searchable>

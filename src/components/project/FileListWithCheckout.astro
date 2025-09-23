@@ -1,0 +1,295 @@
+---
+// File List Component with Checkout Status
+// Shows files with their checkout/assignment status
+
+interface Props {
+  projectId: number;
+  currentUser: any;
+  currentRole: string;
+}
+
+const { projectId, currentUser, currentRole } = Astro.props;
+---
+
+<div id="file-list-with-checkout" class="space-y-4">
+  <div class="flex items-center justify-between">
+    <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Project Files</h3>
+    <div class="text-sm text-gray-500 dark:text-gray-400">
+      <span id="file-count">Loading...</span>
+    </div>
+  </div>
+
+  <!-- File List -->
+  <div id="files-container" class="space-y-3">
+    <div class="py-8 text-center text-gray-500 dark:text-gray-400">Loading files...</div>
+  </div>
+</div>
+
+<script define:vars={{ projectId, currentUser, currentRole }} type="module">
+  // File List with Checkout Status JavaScript
+  let currentProjectId = projectId;
+  let currentUserId = currentUser?.id;
+  let currentUserRole = currentRole;
+  let files = [];
+
+  // Initialize the component
+  async function initializeFileList() {
+    // console.log("📁 [FILE-LIST] Initializing file list with checkout status");
+
+    // Load files for this project
+    await loadProjectFiles();
+
+    // Render files
+    renderFiles();
+  }
+
+  // Load files for the project using media.ts system
+  async function loadProjectFiles() {
+    try {
+      const response = await fetch(
+        `/api/media?projectId=${currentProjectId}&targetLocation=documents`
+      );
+      const data = await response.json();
+
+      if (data.success) {
+        files = data.media || [];
+        updateFileCount();
+      } else {
+        console.error("Failed to load files:", data.error);
+        showError("Failed to load project files");
+      }
+    } catch (error) {
+      console.error("Error loading files:", error);
+      showError("Error loading project files");
+    }
+  }
+
+  // Update file count display
+  function updateFileCount() {
+    const countElement = document.getElementById("file-count");
+    if (countElement) {
+      countElement.textContent = `${files.length} file${files.length !== 1 ? "s" : ""}`;
+    }
+  }
+
+  // Render files list
+  function renderFiles() {
+    const container = document.getElementById("files-container");
+    if (!container) return;
+
+    if (files.length === 0) {
+      container.innerHTML = `
+        <div class="text-center py-8 text-gray-500 dark:text-gray-400">
+          <i class="bx bx-file text-4xl mb-2"></i>
+          <p>No files uploaded yet</p>
+        </div>
+      `;
+      return;
+    }
+
+    container.innerHTML = files.map((file) => createFileCard(file)).join("");
+  }
+
+  // Create file card HTML with media system integration
+  function createFileCard(file) {
+    // Temporarily disable checkout system until SQL migration is run
+    // TODO: Re-enable after running sql-queriers/add-file-checkout-system.sql
+    const hasCheckoutColumns = false; // Disabled until migration
+    const isCheckedOut = false;
+    const isAssigned = false;
+    const isCheckedOutByMe = false;
+
+    let statusBadge = "";
+    let statusColor = "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300";
+
+    if (isCheckedOut) {
+      if (isCheckedOutByMe) {
+        statusBadge = "Checked out by you";
+        statusColor = "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300";
+      } else {
+        statusBadge = `Checked out by ${file.checked_out_by_name || "Unknown"}`;
+        statusColor = "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300";
+      }
+    } else if (isAssigned) {
+      statusBadge = `Assigned to ${file.assigned_to_name || "Unknown"}`;
+      statusColor = "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300";
+    } else {
+      statusBadge = "Available";
+      statusColor = "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300";
+    }
+
+    // Use media system properties
+    const fileName = file.fileName || file.file_name || "Unknown file";
+    const fileSize = file.fileSize || file.file_size || 0;
+    const uploadedAt = file.uploadedAt || file.uploaded_at;
+    const fileIcon = getFileIcon(file.fileType || file.file_type);
+
+    return `
+      <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4 hover:shadow-md transition-shadow">
+        <div class="flex items-start justify-between">
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center space-x-3">
+              <div class="flex-shrink-0">
+                ${fileIcon}
+              </div>
+              <div class="flex-1 min-w-0">
+                <h4 class="text-sm font-medium text-gray-900 dark:text-white truncate">
+                  ${fileName}
+                </h4>
+                <p class="text-xs text-gray-500 dark:text-gray-400">
+                  ${formatFileSize(fileSize)} • Uploaded ${new Date(uploadedAt).toLocaleDateString()}
+                </p>
+              </div>
+            </div>
+          </div>
+          
+          <div class="flex items-center space-x-2">
+            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${statusColor}">
+              ${statusBadge}
+            </span>
+            
+            <!-- Download button -->
+            <button 
+              class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+              onclick="downloadFile('${file.publicUrl || ""}', '${fileName}', ${file.id})"
+              title="${isCheckedOut && !isCheckedOutByMe ? "File is checked out by someone else" : "Download File"}"
+              ${!file.publicUrl || (isCheckedOut && !isCheckedOutByMe) ? "disabled" : ""}
+            >
+              <i class="bx bx-download text-lg"></i>
+            </button>
+            
+            ${
+              currentUserRole === "Admin" || currentUserRole === "Staff"
+                ? `
+              <button 
+                class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                onclick="openFileCheckout(${file.id})"
+                title="Manage file checkout"
+              >
+                <i class="bx bx-cog text-lg"></i>
+              </button>
+            `
+                : ""
+            }
+          </div>
+        </div>
+        
+        ${
+          file.checkout_notes
+            ? `
+          <div class="mt-2 text-xs text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-700 p-2 rounded">
+            <strong>Notes:</strong> ${file.checkout_notes}
+          </div>
+        `
+            : ""
+        }
+      </div>
+    `;
+  }
+
+  // Utility functions from media.ts system
+  function formatFileSize(bytes) {
+    if (bytes === 0) return "0 Bytes";
+    const k = 1024;
+    const sizes = ["Bytes", "KB", "MB", "GB"];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
+  }
+
+  function getFileIcon(fileType) {
+    const type = (fileType || "").toLowerCase();
+
+    // PDF files
+    if (type.includes("pdf")) {
+      return `<svg class="h-6 w-6 text-red-500" fill="currentColor" viewBox="0 0 24 24">
+        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zm-1 1v5h5v10H6V3h7z"/>
+        <path d="M9 12h6v2H9zm0 4h6v2H9z"/>
+      </svg>`;
+    }
+
+    // Image files
+    if (
+      type.includes("image") ||
+      type.includes("png") ||
+      type.includes("jpg") ||
+      type.includes("jpeg") ||
+      type.includes("gif") ||
+      type.includes("webp")
+    ) {
+      return `<svg class="h-6 w-6 text-blue-500" fill="currentColor" viewBox="0 0 24 24">
+        <path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/>
+      </svg>`;
+    }
+
+    // CAD files
+    if (type.includes("dwg") || type.includes("dxf") || type.includes("cad")) {
+      return `<svg class="h-6 w-6 text-green-500" fill="currentColor" viewBox="0 0 24 24">
+        <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/>
+      </svg>`;
+    }
+
+    // Document files
+    if (
+      type.includes("doc") ||
+      type.includes("docx") ||
+      type.includes("txt") ||
+      type.includes("rtf")
+    ) {
+      return `<svg class="h-6 w-6 text-blue-600" fill="currentColor" viewBox="0 0 24 24">
+        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zm-1 1v5h5v10H6V3h7z"/>
+        <path d="M9 12h6v2H9zm0 4h6v2H9z"/>
+      </svg>`;
+    }
+
+    // Default file icon
+    return `<svg class="h-6 w-6 text-gray-500" fill="currentColor" viewBox="0 0 24 24">
+      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zm-1 1v5h5v10H6V3h7z"/>
+    </svg>`;
+  }
+
+  // Download file function
+  async function downloadFile(publicUrl, fileName, fileId) {
+    if (!publicUrl) {
+      showError("File download URL not available");
+      return;
+    }
+
+    // TODO: Re-enable checkout checks after running sql-queriers/add-file-checkout-system.sql
+    // For now, allow all downloads since checkout system is disabled
+
+    try {
+      // Create a temporary link and trigger download
+      const link = document.createElement("a");
+      link.href = publicUrl;
+      link.download = fileName;
+      // Remove target="_blank" to prevent new tab opening
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch (error) {
+      console.error("Error downloading file:", error);
+      showError(`Failed to download ${fileName}`);
+    }
+  }
+
+  // Open file checkout manager (for Admin/Staff)
+  function openFileCheckout(fileId) {
+    // This would open a modal or navigate to a checkout page
+    // For now, we'll just show an alert
+    alert(
+      `File checkout management for file ID: ${fileId}\n\nThis would open a modal with checkout controls.`
+    );
+  }
+
+  // Show error message
+  function showError(message) {
+    if (window.showModal) {
+      window.showModal("Error", message, "error", 5000);
+    } else {
+      alert(message);
+    }
+  }
+
+  // Initialize when DOM is ready
+  document.addEventListener("DOMContentLoaded", initializeFileList);
+</script>

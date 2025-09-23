@@ -46,8 +46,8 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       });
     }
 
-    console.log("📱 [STORE-NOTIFICATION] Storing notifications for:", userEmails);
-    console.log("📱 [STORE-NOTIFICATION] Sent by:", currentUser.email, `(${currentRole})`);
+    // console.log("📱 [STORE-NOTIFICATION] Storing notifications for:", userEmails);
+    // console.log("📱 [STORE-NOTIFICATION] Sent by:", currentUser.email, `(${currentRole})`);
 
     // Get user IDs from emails
     const { data: users, error: userError } = await supabase
@@ -103,7 +103,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       });
     }
 
-    console.log("📱 [STORE-NOTIFICATION] Stored notifications:", storedNotifications?.length);
+    // console.log("📱 [STORE-NOTIFICATION] Stored notifications:", storedNotifications?.length);
 
     return new Response(
       JSON.stringify({
