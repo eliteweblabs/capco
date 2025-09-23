@@ -47,7 +47,7 @@ import ProjectNav from "../components/project/ProjectNav.astro";
 import "../lib/refresh-manager.ts";
 // Get auth data directly since App component handles auth requirements
 
-// // console.log("🚀 [DASHBOARD] Current user:", currentUser);
+// console.log("🚀 [DASHBOARD] Current user:", currentUser);
 // Initialize data arrays
 let projects: any[] = [];
 let project_statuses: any[] = [];
@@ -70,14 +70,14 @@ if (currentUser?.id) {
     }
     // For Admin and Client, no additional parameters needed (API handles role-based filtering)
 
-    // // console.log("🏗️ [DASHBOARD] Fetching projects from API:", apiUrl);
+    // console.log("🏗️ [DASHBOARD] Fetching projects from API:", apiUrl);
     const response = await fetch(apiUrl);
 
     if (response.ok) {
       const data = await response.json();
       projects = data.projects || [];
-      // // console.log("🏗️ [DASHBOARD] Projects fetched with discussion counts:", projects.length);
-      // // console.log("🏗️ [DASHBOARD] Sample project data:", {
+      // console.log("🏗️ [DASHBOARD] Projects fetched with discussion counts:", projects.length);
+      // console.log("🏗️ [DASHBOARD] Sample project data:", {
       //   id: projects[0]?.id,
       //   title: projects[0]?.title,
       //   comment_count: projects[0]?.comment_count,
@@ -2336,9 +2336,9 @@ if (statusResponse.ok) {
   // Request push notification permission for users who authenticated via OAuth
   // (Registration form already handles this for new users)
   document.addEventListener("DOMContentLoaded", () => {
-    // // console.log("🔔 [DASHBOARD] Checking notification permission...");
-    // // console.log("🔔 [DASHBOARD] Notification in window:", "Notification" in window);
-    // // console.log(
+    // console.log("🔔 [DASHBOARD] Checking notification permission...");
+    // console.log("🔔 [DASHBOARD] Notification in window:", "Notification" in window);
+    // console.log(
       "🔔 [DASHBOARD] Current permission:",
       "Notification" in window ? Notification.permission : "Not available"
     );
@@ -2346,13 +2346,13 @@ if (statusResponse.ok) {
     // Check if we're on mobile Safari
     const isMobileSafari =
       /iPad|iPhone|iPod/.test(navigator.userAgent) && /Safari/.test(navigator.userAgent);
-    // // console.log("🔔 [DASHBOARD] Mobile Safari detected:", isMobileSafari);
+    // console.log("🔔 [DASHBOARD] Mobile Safari detected:", isMobileSafari);
 
     if (isMobileSafari) {
-      // // console.log(
+      // console.log(
         "🔔 [DASHBOARD] Mobile Safari detected - push notifications work when installed as PWA"
       );
-      // // console.log(
+      // console.log(
         "🔔 [DASHBOARD] Install as PWA (Add to Home Screen) for full notification support"
       );
 
@@ -2360,23 +2360,23 @@ if (statusResponse.ok) {
       const isStandalone =
         window.matchMedia("(display-mode: standalone)").matches ||
         (window.navigator as any).standalone === true;
-      // // console.log("🔔 [DASHBOARD] Running as PWA:", isStandalone);
+      // console.log("🔔 [DASHBOARD] Running as PWA:", isStandalone);
 
       if (!isStandalone) {
-        // // console.log("💡 [DASHBOARD] Install as PWA for better notification support");
+        // console.log("💡 [DASHBOARD] Install as PWA for better notification support");
         return;
       }
     }
 
     // Only request if user hasn't been prompted yet
     if ("Notification" in window && Notification.permission === "default") {
-      // // console.log("🔔 [DASHBOARD] Requesting notification permission...");
+      // console.log("🔔 [DASHBOARD] Requesting notification permission...");
       // Wait a bit for the page to load, then request permission
       setTimeout(() => {
         Notification.requestPermission().then((permission) => {
-          // // console.log("🔔 [DASHBOARD] Permission result:", permission);
+          // console.log("🔔 [DASHBOARD] Permission result:", permission);
           if (permission === "granted") {
-            // // console.log("🔔 Push notifications enabled for authenticated user!");
+            // console.log("🔔 Push notifications enabled for authenticated user!");
             // Show a subtle notification
             if (window.showModal) {
               window.showModal(
@@ -2387,28 +2387,28 @@ if (statusResponse.ok) {
               );
             }
           } else {
-            // // console.log("🔔 Push notifications declined by user");
+            // console.log("🔔 Push notifications declined by user");
           }
         });
       }, 3000); // Wait 3 seconds after page load
     } else {
-      // // console.log("🔔 [DASHBOARD] Not requesting permission - already handled or not available");
+      // console.log("🔔 [DASHBOARD] Not requesting permission - already handled or not available");
     }
   });
 
   // Add notification reset function for debugging
   (window as any).resetNotifications = function () {
-    // // console.log("🔄 [DASHBOARD] Resetting notification permissions...");
+    // console.log("🔄 [DASHBOARD] Resetting notification permissions...");
 
     // Check if we're on mobile Safari
     const isMobileSafari =
       /iPad|iPhone|iPod/.test(navigator.userAgent) && /Safari/.test(navigator.userAgent);
 
     if (isMobileSafari) {
-      // // console.log(
+      // console.log(
         "📱 [DASHBOARD] Mobile Safari detected - push notifications work when installed as PWA"
       );
-      // // console.log(
+      // console.log(
         "💡 [DASHBOARD] Install as PWA (Add to Home Screen) for full notification support"
       );
 
@@ -2416,15 +2416,15 @@ if (statusResponse.ok) {
       const isStandalone =
         window.matchMedia("(display-mode: standalone)").matches ||
         (window.navigator as any).standalone === true;
-      // // console.log("🔔 [DASHBOARD] Running as PWA:", isStandalone);
+      // console.log("🔔 [DASHBOARD] Running as PWA:", isStandalone);
 
       if (!isStandalone) {
-        // // console.log("💡 [DASHBOARD] Install as PWA for better notification support");
+        // console.log("💡 [DASHBOARD] Install as PWA for better notification support");
         return;
       }
     }
 
-    // // console.log(
+    // console.log(
       "🔄 [DASHBOARD] Current permission:",
       "Notification" in window ? Notification.permission : "Not available"
     );
@@ -2436,18 +2436,18 @@ if (statusResponse.ok) {
     // Force a new permission request
     if ("Notification" in window) {
       Notification.requestPermission().then((permission) => {
-        // // console.log("🔄 [DASHBOARD] Reset permission result:", permission);
+        // console.log("🔄 [DASHBOARD] Reset permission result:", permission);
         if (permission === "granted") {
-          // // console.log("✅ Notifications re-enabled!");
+          // console.log("✅ Notifications re-enabled!");
         } else {
-          // // console.log("❌ Notifications still denied");
+          // console.log("❌ Notifications still denied");
         }
       });
     }
   };
 
   // Log current state for debugging
-  // // console.log("🔔 [DASHBOARD] Current notification state:", {
+  // console.log("🔔 [DASHBOARD] Current notification state:", {
     permission: "Notification" in window ? Notification.permission : "Not available",
     available: "Notification" in window,
     resetFunction: "Call window.resetNotifications() to reset",

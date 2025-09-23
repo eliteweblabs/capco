@@ -8,7 +8,7 @@ export const GET: APIRoute = async ({ url, cookies }) => {
     // Check authentication to get user role for filtering
     const { currentRole } = await checkAuth(cookies);
     const isClient = currentRole === "Client";
-    // // console.log("📡 [GET-DISCUSSIONS] User role:", currentRole, "isClient:", isClient);
+    // console.log("📡 [GET-DISCUSSIONS] User role:", currentRole, "isClient:", isClient);
 
     const projectId = url.searchParams.get("projectId");
 

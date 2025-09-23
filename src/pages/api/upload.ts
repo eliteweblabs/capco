@@ -2,7 +2,7 @@ import type { APIRoute } from "astro";
 import { SimpleProjectLogger } from "../../lib/simple-logging";
 
 export const POST: APIRoute = async ({ request, cookies }) => {
-  // // // console.log("Upload API called");
+  // console.log("Upload API called");
   try {
     const formData = await request.formData();
     const fileType = formData.get("fileType") as string;
@@ -44,9 +44,9 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       });
     }
 
-    // // // console.log("Upload request from user:", user.id);
+    // console.log("Upload request from user:", user.id);
 
-    // // console.log("Upload request data:", {
+    // console.log("Upload request data:", {
       fileType,
       projectId,
       hasFile: formData.has("file"),
@@ -110,7 +110,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         });
       }
 
-      // // // console.log("Project access verified:", { projectId, userRole, isProjectOwner });
+      // console.log("Project access verified:", { projectId, userRole, isProjectOwner });
     } catch (error) {
       console.error("Error verifying project access:", error);
       return new Response(JSON.stringify({ error: "Project access verification failed" }), {
@@ -176,7 +176,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
           (isDwgFile || isDmgFile) &&
           (file.type === "application/octet-stream" || file.type === ""));
 
-      // // // console.log(
+      // console.log(
         `File validation: ${file.name}, type: "${file.type}", isDwg: ${isDwgFile}, isDmg: ${isDmgFile}, allowed: ${isAllowedType}`
       );
 
@@ -245,7 +245,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         }
       }
 
-      // // // console.log("project-documents bucket is accessible");
+      // console.log("project-documents bucket is accessible");
     } catch (error) {
       console.error("Error checking storage bucket access:", error);
       return new Response(JSON.stringify({ error: "Storage configuration error" }), {
@@ -258,7 +258,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
     for (const file of files) {
       try {
-        // // console.log(`Processing file: ${file.name} (${file.type}, ${file.size} bytes)`);
+        // console.log(`Processing file: ${file.name} (${file.type}, ${file.size} bytes)`);
 
         // Generate unique file path
         const timestamp = Date.now();
@@ -277,7 +277,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
         const filePath = `${pathPrefix}/${projectId}/${fileName}`;
 
-        // // // console.log(`Uploading to bucket: ${bucket}, path: ${filePath}`);
+        // console.log(`Uploading to bucket: ${bucket}, path: ${filePath}`);
 
         // Upload to Supabase Storage
         const { data: uploadData, error: uploadError } = await supabase.storage

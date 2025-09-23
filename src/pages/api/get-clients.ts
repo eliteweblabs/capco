@@ -3,7 +3,7 @@ import { supabaseAdmin } from "../../lib/supabase-admin";
 
 export const GET: APIRoute = async ({ cookies }) => {
   try {
-    // // console.log("👥 [GET-CLIENTS] Fetching all client profiles...");
+    // console.log("👥 [GET-CLIENTS] Fetching all client profiles...");
 
     if (!supabaseAdmin) {
       return new Response(JSON.stringify({ error: "Database connection not available" }), {
@@ -31,7 +31,7 @@ export const GET: APIRoute = async ({ cookies }) => {
       );
     }
 
-    // // console.log("👥 [GET-CLIENTS] Fetched profiles:", profiles?.length || 0);
+    // console.log("👥 [GET-CLIENTS] Fetched profiles:", profiles?.length || 0);
 
     return new Response(
       JSON.stringify({

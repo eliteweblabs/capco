@@ -54,23 +54,23 @@ export class GlobalServices {
   private eventTarget: EventTarget;
 
   constructor() {
-    // // console.log("🌐 [GLOBAL] GlobalServices constructor called");
+    // console.log("🌐 [GLOBAL] GlobalServices constructor called");
     this.eventTarget = new EventTarget();
-    // // console.log("🌐 [GLOBAL] GlobalServices initialized");
+    // console.log("🌐 [GLOBAL] GlobalServices initialized");
   }
 
   static getInstance(): GlobalServices {
     if (!GlobalServices.instance) {
-      // // console.log("🌐 [GLOBAL] Creating new GlobalServices instance");
+      // console.log("🌐 [GLOBAL] Creating new GlobalServices instance");
       GlobalServices.instance = new GlobalServices();
     } else {
-      // // console.log("🌐 [GLOBAL] Returning existing GlobalServices instance");
+      // console.log("🌐 [GLOBAL] Returning existing GlobalServices instance");
     }
     return GlobalServices.instance;
   }
 
   emit(type: string, data: any, source?: string) {
-    // // console.log("🌐 [GLOBAL] Emitting event:", { type, data, source });
+    // console.log("🌐 [GLOBAL] Emitting event:", { type, data, source });
     const event = new CustomEvent("global-service", {
       detail: { type, data, source } as GlobalServiceEvent,
     });
@@ -78,16 +78,16 @@ export class GlobalServices {
 
     // Also dispatch to window for cross-component access
     if (typeof window !== "undefined") {
-      // // console.log("🌐 [GLOBAL] Dispatching to window:", `global:${type}`);
+      // console.log("🌐 [GLOBAL] Dispatching to window:", `global:${type}`);
       window.dispatchEvent(new CustomEvent(`global:${type}`, { detail: data }));
     }
   }
 
   on(type: string, callback: (data: any) => void) {
-    // // console.log("🌐 [GLOBAL] Registering event listener for:", type);
+    // console.log("🌐 [GLOBAL] Registering event listener for:", type);
     const handler = (event: CustomEvent<GlobalServiceEvent>) => {
       if (event.detail.type === type) {
-        // // console.log("🌐 [GLOBAL] Event handler called:", {
+        // console.log("🌐 [GLOBAL] Event handler called:", {
         //   type,
         //   data: event.detail.data,
         // });
@@ -160,7 +160,7 @@ export class GlobalServices {
       }
 
       this.emit("auth:signout", {});
-      // // console.log("🌐 [GLOBAL] User signed out successfully");
+      // console.log("🌐 [GLOBAL] User signed out successfully");
     } catch (error) {
       // console.error("🌐 [GLOBAL] Error in signOut:", error);
       throw error;

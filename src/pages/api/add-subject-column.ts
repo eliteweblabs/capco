@@ -27,7 +27,7 @@ export const POST: APIRoute = async ({ cookies }) => {
       });
     }
 
-    // // // console.log("🔧 Adding subject column to invoices table...");
+    // console.log("🔧 Adding subject column to invoices table...");
 
     // Check if column already exists
     const { data: columnCheck, error: checkError } = await supabase
@@ -51,7 +51,7 @@ export const POST: APIRoute = async ({ cookies }) => {
     }
 
     if (columnCheck && columnCheck.length > 0) {
-      // // // console.log("✅ Subject column already exists");
+      // console.log("✅ Subject column already exists");
       return new Response(
         JSON.stringify({
           success: true,
@@ -88,7 +88,7 @@ export const POST: APIRoute = async ({ cookies }) => {
         );
       }
 
-      // // // console.log("✅ Subject column added successfully");
+      // console.log("✅ Subject column added successfully");
 
       // Add index for better performance
       const addIndexSQL = `
@@ -98,9 +98,9 @@ export const POST: APIRoute = async ({ cookies }) => {
       const { error: indexError } = await supabase.rpc("exec_sql", { sql: addIndexSQL });
 
       if (indexError) {
-        // // // console.log("⚠️ Warning: Could not add index:", indexError.message);
+        // console.log("⚠️ Warning: Could not add index:", indexError.message);
       } else {
-        // // // console.log("✅ Index added successfully");
+        // console.log("✅ Index added successfully");
       }
 
       return new Response(

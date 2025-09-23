@@ -12,7 +12,7 @@ export const POST: APIRoute = async ({ request }) => {
       });
     }
 
-    // // // console.log("Deleting line item:", itemId, "from invoice:", invoiceId);
+    // console.log("Deleting line item:", itemId, "from invoice:", invoiceId);
 
     // Get current invoice
     const { data: invoice, error: fetchError } = await supabase

@@ -3,7 +3,7 @@ import { supabase } from "../../lib/supabase";
 
 // 🚧 DEAD STOP - 2024-12-19: Potentially unused API endpoint
 // If you see this log after a few days, this endpoint can likely be deleted
-// // console.log("🚧 [DEAD-STOP-2024-12-19] get-invoice-details.ts accessed - may be unused");
+// console.log("🚧 [DEAD-STOP-2024-12-19] get-invoice-details.ts accessed - may be unused");
 
 export const GET: APIRoute = async ({ url, cookies }) => {
   try {
@@ -46,7 +46,7 @@ export const GET: APIRoute = async ({ url, cookies }) => {
       });
     }
 
-    // // console.log("🔍 [GET-INVOICE-DETAILS] Fetching invoice details for ID:", id);
+    // console.log("🔍 [GET-INVOICE-DETAILS] Fetching invoice details for ID:", id);
 
     // Get invoice with project data
     const { data: invoice, error: invoiceError } = await supabase
@@ -77,7 +77,7 @@ export const GET: APIRoute = async ({ url, cookies }) => {
       );
     }
 
-    // // console.log("✅ [GET-INVOICE-DETAILS] Found invoice:", invoice.id);
+    // console.log("✅ [GET-INVOICE-DETAILS] Found invoice:", invoice.id);
 
     return new Response(JSON.stringify({ success: true, invoice }), {
       status: 200,

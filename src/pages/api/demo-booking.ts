@@ -173,7 +173,7 @@ export const POST: APIRoute = async ({ request }) => {
     }
 
     // Log successful booking for admin notification
-    // // // console.log("New demo booking created:", {
+    // console.log("New demo booking created:", {
       id: booking.id,
       name: booking.name,
       email: booking.email,
@@ -229,12 +229,12 @@ export const POST: APIRoute = async ({ request }) => {
 
 // Function to send demo booking email notifications
 async function sendDemoBookingEmails(booking: any, request: Request) {
-  // // // console.log("📧 [DEMO-BOOKING] Starting email notifications for booking:", booking.id);
+  // console.log("📧 [DEMO-BOOKING] Starting email notifications for booking:", booking.id);
 
   try {
     // Get admin emails
     const adminEmails = await getAdminEmails();
-    // // // console.log("📧 [DEMO-BOOKING] Found admin emails:", adminEmails);
+    // console.log("📧 [DEMO-BOOKING] Found admin emails:", adminEmails);
 
     // Get the base URL for links
     const currentUrl = new URL(request.url);
@@ -289,7 +289,7 @@ async function sendDemoBookingEmails(booking: any, request: Request) {
       });
 
       if (adminEmailResponse.ok) {
-        // // // console.log("📧 [DEMO-BOOKING] Admin notification emails sent successfully");
+        // console.log("📧 [DEMO-BOOKING] Admin notification emails sent successfully");
       } else {
         console.error("📧 [DEMO-BOOKING] Failed to send admin notification emails");
       }
@@ -335,7 +335,7 @@ async function sendDemoBookingEmails(booking: any, request: Request) {
     });
 
     if (customerEmailResponse.ok) {
-      // // // console.log("📧 [DEMO-BOOKING] Customer confirmation email sent successfully");
+      // console.log("📧 [DEMO-BOOKING] Customer confirmation email sent successfully");
     } else {
       console.error("📧 [DEMO-BOOKING] Failed to send customer confirmation email");
     }

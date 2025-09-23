@@ -5,7 +5,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
   try {
     const { filePath, fileName, projectId } = await request.json();
 
-    // // // console.log("Download API called with:", { filePath, fileName, projectId });
+    // console.log("Download API called with:", { filePath, fileName, projectId });
 
     if (!filePath || !fileName || !projectId) {
       return new Response(
@@ -81,7 +81,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     }
 
     // First, get the file record from the database to get the correct bucket and path
-    // // // console.log("Looking up file record for:", { filePath, projectId });
+    // console.log("Looking up file record for:", { filePath, projectId });
 
     const { data: fileRecord, error: fileError } = await supabase
       .from("files")
@@ -105,7 +105,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       );
     }
 
-    // // // console.log("Found file record:", fileRecord);
+    // console.log("Found file record:", fileRecord);
 
     // Download file from the correct bucket using the stored path
     const { data: fileData, error: downloadError } = await supabase.storage

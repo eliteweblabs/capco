@@ -3,15 +3,15 @@ import Stripe from "stripe";
 // Server-side Stripe instance
 const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
 
-// // console.log("🔧 [STRIPE] Environment check:");
-// // console.log("STRIPE_SECRET_KEY exists:", !!stripeSecretKey);
-// // console.log(
+// console.log("🔧 [STRIPE] Environment check:");
+// console.log("STRIPE_SECRET_KEY exists:", !!stripeSecretKey);
+// console.log(
 //   "STRIPE_SECRET_KEY value:",
 //   stripeSecretKey ? `${stripeSecretKey.substring(0, 15)}...` : "undefined"
 // );
-// // console.log("STRIPE_SECRET_KEY starts with sk_:", stripeSecretKey?.startsWith("sk_"));
-// // console.log("PUBLIC_STRIPE_PUBLISHABLE_KEY exists:", !!process.env.PUBLIC_STRIPE_PUBLISHABLE_KEY);
-// // console.log(
+// console.log("STRIPE_SECRET_KEY starts with sk_:", stripeSecretKey?.startsWith("sk_"));
+// console.log("PUBLIC_STRIPE_PUBLISHABLE_KEY exists:", !!process.env.PUBLIC_STRIPE_PUBLISHABLE_KEY);
+// console.log(
 //   "All process.env keys containing STRIPE:",
 //   Object.keys(process.env).filter((key) => key.includes("STRIPE"))
 // );
