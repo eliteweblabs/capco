@@ -283,6 +283,89 @@ export function fixSafariViewport(): void {
 }
 
 /**
+ * IMMEDIATE Safari viewport fix - runs before DOM is ready
+ * This fixes the initial load issue where sticky elements don't work
+ */
+export function immediateSafariViewportFix(): void {
+  // ONLY RUN ON iOS SAFARI - Skip all other browsers
+  if (!isSafariIOS()) {
+    return;
+  }
+
+  console.log("🚀 [UX-UTILS] IMMEDIATE Safari viewport fix - Running before DOM ready");
+
+  // Force viewport height calculation immediately
+  const setViewportHeight = () => {
+    const vh = window.innerHeight * 0.01;
+    document.documentElement.style.setProperty("--vh", `${vh}px`);
+    console.log(`📐 [UX-UTILS] IMMEDIATE viewport height: ${vh}px`);
+  };
+
+  // Set viewport height immediately
+  setViewportHeight();
+
+  // Force sticky elements to work immediately
+  const forceImmediatePositioning = () => {
+    console.log("🚀 [UX-UTILS] IMMEDIATE positioning fix");
+
+    // Fix header immediately if it exists
+    const header = document.querySelector("header");
+    if (header) {
+      header.style.cssText = `
+        position: sticky !important;
+        position: -webkit-sticky !important;
+        top: 0 !important;
+        z-index: 9998 !important;
+        transform: translate3d(0, 0, 0) !important;
+        will-change: transform !important;
+        contain: layout style paint !important;
+        isolation: isolate !important;
+        backface-visibility: hidden !important;
+        -webkit-transform: translate3d(0, 0, 0) !important;
+        -webkit-backface-visibility: hidden !important;
+      `;
+      console.log("🚀 [UX-UTILS] IMMEDIATE header fix applied");
+    }
+
+    // Fix sticky container immediately if it exists
+    const container = document.getElementById("sticky-container");
+    if (container) {
+      container.style.cssText = `
+        position: fixed !important;
+        bottom: 1.5rem !important;
+        left: 1.5rem !important;
+        z-index: 9999 !important;
+        transform: translate3d(0, 0, 0) !important;
+        will-change: transform !important;
+        contain: layout style paint !important;
+        isolation: isolate !important;
+        backface-visibility: hidden !important;
+        -webkit-transform: translate3d(0, 0, 0) !important;
+        -webkit-backface-visibility: hidden !important;
+      `;
+      console.log("🚀 [UX-UTILS] IMMEDIATE container fix applied");
+    }
+  };
+
+  // Apply immediately
+  forceImmediatePositioning();
+
+  // Re-apply on orientation change with delay
+  window.addEventListener("orientationchange", () => {
+    setTimeout(() => {
+      setViewportHeight();
+      forceImmediatePositioning();
+    }, 100);
+  });
+
+  // Re-apply on resize
+  window.addEventListener("resize", () => {
+    setViewportHeight();
+    forceImmediatePositioning();
+  });
+}
+
+/**
  * Sets up responsive viewport handling for all elements
  * Handles resize, orientation change, and other viewport events
  */

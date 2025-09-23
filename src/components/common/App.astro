@@ -81,6 +81,39 @@ import Aside from "./Aside.astro";
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 
+    <!-- IMMEDIATE Safari viewport fix - runs before any other scripts -->
+    <script>
+      (function () {
+        // Check if iOS Safari immediately
+        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+        const isSafari =
+          /Safari/.test(navigator.userAgent) &&
+          !/Chrome|CriOS|FxiOS|EdgiOS/.test(navigator.userAgent);
+
+        if (isIOS && isSafari) {
+          console.log("🚀 [IMMEDIATE] iOS Safari detected - Applying immediate viewport fix");
+
+          // Set viewport height immediately
+          const setViewportHeight = () => {
+            const vh = window.innerHeight * 0.01;
+            document.documentElement.style.setProperty("--vh", vh + "px");
+            console.log("📐 [IMMEDIATE] Viewport height set to:", vh + "px");
+          };
+
+          // Apply immediately
+          setViewportHeight();
+
+          // Re-apply on orientation change
+          window.addEventListener("orientationchange", function () {
+            setTimeout(setViewportHeight, 100);
+          });
+
+          // Re-apply on resize
+          window.addEventListener("resize", setViewportHeight);
+        }
+      })();
+    </script>
+
     <title>{title}</title>
     <meta name="description" content={description} />
 
@@ -277,6 +310,7 @@ import Aside from "./Aside.astro";
       handleUrlNotification,
       hideOnFormFocus,
       isDesktop,
+      immediateSafariViewportFix,
       isMobile,
       isSafariIOS,
       isTablet,
@@ -304,6 +338,9 @@ import Aside from "./Aside.astro";
     (window as any).hideOnFormFocus = hideOnFormFocus;
     (window as any).lockBodyScroll = lockBodyScroll;
     (window as any).unlockBodyScroll = unlockBodyScroll;
+
+    // IMMEDIATE Safari viewport fix - runs before DOM is ready
+    immediateSafariViewportFix();
 
     // Initialize viewport handling for all elements
     setupViewportHandling();
