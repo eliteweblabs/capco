@@ -208,6 +208,17 @@ export const POST: APIRoute = async ({ request, cookies }) => {
               "{{GLOBAL_COMPANY_NAME}}",
               process.env.GLOBAL_COMPANY_NAME || "No Company Name"
             );
+
+            emailHtml = emailHtml.replace(
+              "{{GLOBAL_COMPANY_NAME}}",
+              process.env.GLOBAL_COMPANY_NAME || "No Company Name"
+            );
+
+            emailHtml = emailHtml.replace(
+              "{{PRIMARY_COLOR}}",
+              process.env.PRIMARY_COLOR || "#3b82f6"
+            );
+
             emailHtml = emailHtml.replace("{{YEAR}}", process.env.YEAR || "No Year");
 
             emailHtml = emailHtml.replace(
