@@ -280,13 +280,11 @@ if (currentRole !== "Admin" && currentRole !== "Staff") {
       console.log("🔧 [UNIFIED-CHAT] Current hostname:", window.location.hostname);
       console.log("🔧 [UNIFIED-CHAT] Is localhost?", window.location.hostname === "localhost");
 
-      // Temporarily disable Socket.io in production until we integrate it with the main server
-      if (window.location.hostname !== "localhost" && window.location.hostname !== "127.0.0.1") {
-        console.log("🔧 [UNIFIED-CHAT] Socket.io chat disabled in production - integration needed");
-        return;
-      }
-
-      const socketUrl = "http://localhost:3001";
+      // Use the main server URL for Socket.io (integrated approach)
+      const socketUrl =
+        window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"
+          ? "http://localhost:3001" // Local development still uses separate server
+          : window.location.origin; // Production uses integrated server
 
       console.log("🔧 [UNIFIED-CHAT] Connecting to socket server:", socketUrl);
 
