@@ -122,7 +122,7 @@ export function replacePlaceholders(
       }
 
       // Return button on new line
-      return `<a href="${fullUrl}" style="display: inline-block; background-color: #3b82f6; color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: 600; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.1); transition: background-color 0.2s;">${displayText}</a>`;
+      return `<br><br><a href="${fullUrl}" style="display: inline-block; background-color: #3b82f6; color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: 600; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.1); transition: background-color 0.2s;">${displayText}</a>`;
     });
   }
 
