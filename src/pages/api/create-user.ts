@@ -34,7 +34,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       company_name,
       email,
       phone,
-      role,
+      staffRole,
       mobile_carrier,
       sms_alerts,
       password;
@@ -48,7 +48,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         company_name,
         email,
         phone,
-        role,
+        role: staffRole,
         mobile_carrier,
         sms_alerts,
         password,
@@ -78,12 +78,12 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
     // Validate required fields
     // console.log("8. Validating required fields...");
-    if (!first_name?.trim() || !last_name?.trim() || !email?.trim() || !role?.trim()) {
+    if (!first_name?.trim() || !last_name?.trim() || !email?.trim() || !staffRole?.trim()) {
       console.log("ERROR: Missing required fields:", {
         first_name: !!first_name?.trim(),
         last_name: !!last_name?.trim(),
         email: !!email?.trim(),
-        role: !!role?.trim(),
+        role: !!staffRole?.trim(),
       });
       return new Response(
         JSON.stringify({
@@ -125,7 +125,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     }
 
     // Validate role
-    if (!["Admin", "Staff", "Client"].includes(role)) {
+    if (!["Admin", "Staff", "Client"].includes(staffRole)) {
       return new Response(
         JSON.stringify({
           success: false,
@@ -160,7 +160,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         phone: phone?.trim() || null,
         mobile_carrier: mobile_carrier?.trim() || null,
         sms_alerts: sms_alerts || false,
-        role: role,
+        role: staffRole,
         email: email.trim().toLowerCase(),
         created_by_admin: true,
         must_change_password: true,
@@ -222,7 +222,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       phone: phone?.trim() || null,
       mobile_carrier: mobile_carrier?.trim() || null,
       sms_alerts: sms_alerts || false,
-      role: role,
+      role: staffRole,
       updated_at: new Date().toISOString(),
     };
 
@@ -275,7 +275,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       const { data: adminAndStaffUsers, error: userError } = await supabase
         .from("profiles")
         .select("id, first_name, last_name, role")
-        .in("role", ["Admin", "Staff"]);
+        .in("role", ["Admin"]);
 
       if (userError) {
         console.error("📧 [CREATE-USER] Failed to fetch admin and staff users:", userError);
@@ -327,7 +327,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
               body: JSON.stringify({
                 usersToNotify: [adminEmail], // Use resolved user email
-                emailSubject: `New User → ${displayName} → ${role}`,
+                emailSubject: `New User → ${displayName} → ${staffRole}`,
                 emailContent: adminContent,
                 buttonText: "Access Your Dashboard",
                 buttonLink: "/dashboard",
@@ -349,6 +349,8 @@ export const POST: APIRoute = async ({ request, cookies }) => {
             );
           }
         }
+
+        // this is to the new user
 
         // this is to the new user
 
@@ -386,8 +388,6 @@ There is much more in the works, but this is a big step forward and should have 
 
 Please leave any feedback via the feedback widget on the bottom right of the screen.<br><br>
 
-If you have any questions, please don't hesitate to contact our team.<br><br>
-
 Your account has been created successfully:<br><br>
 
 <b>User Name:</b> ${displayName}<br>
@@ -396,7 +396,7 @@ Your account has been created successfully:<br><br>
 <b>Last Name:</b> ${last_name}<br>
 <b>Phone:</b> ${phone || "Not provided"}<br><br>`;
 
-        const welcomeContent = role === "Client" ? newClientContent : newStaffContent;
+        const welcomeContent = staffRole === "Client" ? newClientContent : newStaffContent;
 
         // Send welcome email using the email delivery API with full URL
         const userEmailResponse = await fetch(`${baseUrl}/api/email-delivery`, {
@@ -406,7 +406,7 @@ Your account has been created successfully:<br><br>
           },
           body: JSON.stringify({
             usersToNotify: [email], // Array of email strings
-            emailSubject: `Welcome to CAPCo Fire Protection → ${displayName}`,
+            emailSubject: `Welcome to ${process.env.GLOBAL_COMPANY_NAME} → ${displayName}`,
             emailContent: welcomeContent,
             buttonText: "Access Your Account",
             buttonLink: "/dashboard",
@@ -434,7 +434,7 @@ Your account has been created successfully:<br><br>
       await SimpleProjectLogger.logAdminUserCreation(
         currentUser?.email || "unknown_admin",
         email,
-        role,
+        staffRole,
         {
           userId: authData.user.id,
           firstName: first_name.trim(),
@@ -458,14 +458,14 @@ Your account has been created successfully:<br><br>
           email: authData.user.email,
           first_name: first_name.trim(),
           last_name: last_name.trim(),
-          role: role,
+          role: staffRole,
         },
         // Add notification data for client-side modal
         notification: {
           type: "success",
           title: "User Created Successfully",
-          message: `${displayName} has been created as ${role}. They will receive a magic link to access their account.`,
-          duration: 2000,
+          message: `${displayName} has been created as ${staffRole}. They will receive a magic link to access their account.`,
+          duration: 5000,
         },
       }),
       {
