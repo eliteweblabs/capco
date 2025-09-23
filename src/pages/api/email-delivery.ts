@@ -198,13 +198,19 @@ export const POST: APIRoute = async ({ request, cookies }) => {
           } else {
             // Replace template variables for regular emails
             emailHtml = emailTemplate.replace("{{CONTENT}}", emailContent);
+
+            // Debug: Log environment variables for email template
+            console.log("📧 [EMAIL-DELIVERY] Template environment variables:");
+            console.log("📧 [EMAIL-DELIVERY] EMAIL_LOGO_LIGHT:", process.env.EMAIL_LOGO_LIGHT);
+            console.log("📧 [EMAIL-DELIVERY] PRIMARY_COLOR:", process.env.PRIMARY_COLOR);
+
             emailHtml = emailHtml.replace(
               "{{COMPANY_LOGO_LIGHT}}",
               process.env.EMAIL_LOGO_LIGHT || "No Logo Img"
             );
             emailHtml = emailHtml.replace(
               "{{COMPANY_LOGO_DARK}}",
-              process.env.EMAIL_LOGO_LIGHT || "No Logo Img"
+              process.env.EMAIL_LOGO_DARK || "No Logo Img"
             );
             emailHtml = emailHtml.replace(
               "{{PRIMARY_COLOR}}",
@@ -217,12 +223,15 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
           if (buttonLink && buttonLink.includes("/dashboard") && !isSmsGateway) {
             try {
+              const redirectUrl = `${baseUrl}${buttonLink}`;
+              console.log("🔗 [EMAIL-DELIVERY] Magic link redirect URL:", redirectUrl);
+
               const { data: magicLinkData, error: magicLinkError } =
                 await supabaseAdmin.auth.admin.generateLink({
                   type: "magiclink",
                   email: userEmail,
                   options: {
-                    redirectTo: `${baseUrl}${buttonLink}`,
+                    redirectTo: redirectUrl,
                   },
                 });
 

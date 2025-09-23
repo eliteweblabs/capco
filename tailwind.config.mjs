@@ -1,5 +1,8 @@
 /** @type {import('tailwindcss').Config} */
 
+// Get primary color from environment variable or use default
+const primaryColor = process.env.PRIMARY_COLOR || "#825BDD";
+
 export default {
   content: ["./src/**/*.{astro,js,ts,jsx,tsx,vue,svelte}", "./node_modules/flowbite/**/*.js"],
   darkMode: "class", // Esto permite usar 'dark:' en clases
@@ -37,15 +40,15 @@ export default {
           600: "#525252", // Secondary text (gray)
           400: "#a3a3a3", // Secondary text (dark mode)
         },
-        // Brand Colors - Our purple theme
+        // Brand Colors - Using primary color from environment variable
         primary: {
-          DEFAULT: "#825BDD", // Default primary color for bg-primary, text-primary, etc.
+          DEFAULT: primaryColor, // Default primary color for bg-primary, text-primary, etc.
           50: "#f3f0ff",
           100: "#e9e3ff",
           200: "#d6ccff",
           300: "#b8a6ff",
           400: "#9375ff",
-          500: "#825BDD", // Main primary
+          500: primaryColor, // Main primary (from env var)
           600: "#6b3dd1",
           700: "#5327BA", // Main secondary
           800: "#4520a0",

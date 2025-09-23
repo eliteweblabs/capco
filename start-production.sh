@@ -2,6 +2,16 @@
 
 echo "Starting Astro application and Socket.io server..."
 
+# Debug: Print runtime environment variables
+echo "🔍 RUNTIME ENV CHECK:"
+echo "SITE_URL: $SITE_URL"
+echo "NODE_ENV: $NODE_ENV"
+echo "SUPABASE_URL: $SUPABASE_URL"
+echo "PORT: $PORT"
+echo "EMAIL_LOGO_LIGHT: $EMAIL_LOGO_LIGHT"
+echo "COMPANY_LOGO_LIGHT: $COMPANY_LOGO_LIGHT"
+echo "PRIMARY_COLOR: $PRIMARY_COLOR"
+
 # Start Socket.io server in the background
 echo "Starting Socket.io server..."
 node socketio-chat-server.js &
