@@ -498,6 +498,28 @@ export async function getMedia(params: GetMediaParams): Promise<{
           );
         }
 
+        // Fetch user names if needed (optional - can be removed if not required)
+        let assigned_to_name = null;
+        let checked_out_by_name = null;
+
+        if (file.assigned_to) {
+          const { data: assignedProfile } = await supabaseAdmin
+            .from("profiles")
+            .select("company_name")
+            .eq("id", file.assigned_to)
+            .single();
+          assigned_to_name = assignedProfile?.company_name || null;
+        }
+
+        if (file.checked_out_by) {
+          const { data: checkedOutProfile } = await supabaseAdmin
+            .from("profiles")
+            .select("company_name")
+            .eq("id", file.checked_out_by)
+            .single();
+          checked_out_by_name = checkedOutProfile?.company_name || null;
+        }
+
         return {
           id: file.id,
           fileName: file.file_name,
@@ -512,6 +534,9 @@ export async function getMedia(params: GetMediaParams): Promise<{
           assigned_to: file.assigned_to,
           assigned_at: file.assigned_at,
           checkout_notes: file.checkout_notes,
+          // Add the user names from separate queries
+          assigned_to_name,
+          checked_out_by_name,
           targetLocation: file.target_location,
           bucketName: file.bucket_name,
           publicUrl: urlData?.signedUrl || null,
