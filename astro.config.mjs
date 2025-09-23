@@ -73,6 +73,9 @@ export default defineConfig({
       "process.env.PRIMARY_COLOR": JSON.stringify(env.PRIMARY_COLOR),
       "process.env.PRIMARY_COLOR_RGB": JSON.stringify(env.PRIMARY_COLOR_RGB),
       "process.env.SECONDARY_COLOR": JSON.stringify(env.SECONDARY_COLOR),
+      "process.env.GLOBAL_COMPANY_NAME": JSON.stringify(env.GLOBAL_COMPANY_NAME),
+      "process.env.GLOBAL_COMPANY_SLOGAN": JSON.stringify(env.GLOBAL_COMPANY_SLOGAN),
+      "process.env.YEAR": JSON.stringify(env.YEAR),
     },
   },
 });
