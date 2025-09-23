@@ -42,7 +42,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     const gateway = carrierGateways[carrier] || "@vtext.com";
     const smsEmail = `${cleanPhone}${gateway}`;
 
-    // // // console.log(`🧪 [SMS-TEST] Testing SMS gateway: ${smsEmail}`);
+    // console.log(`🧪 [SMS-TEST] Testing SMS gateway: ${smsEmail}`);
 
     // Test different message formats
     const testFormats = [
@@ -91,7 +91,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     // Test each format
     for (const format of testFormats) {
       try {
-        // // // console.log(`🧪 [SMS-TEST] Testing ${format.name}:`, format.payload);
+        // console.log(`🧪 [SMS-TEST] Testing ${format.name}:`, format.payload);
 
         const response = await fetch("https://api.resend.com/emails", {
           method: "POST",
@@ -112,7 +112,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
           payload: format.payload,
         });
 
-        // // // console.log(`🧪 [SMS-TEST] ${format.name} result:`, {
+        // console.log(`🧪 [SMS-TEST] ${format.name} result:`, {
           success: response.ok,
           status: response.status,
         });

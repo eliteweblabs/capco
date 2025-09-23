@@ -97,7 +97,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       last_name: profile.last_name || null,
     };
 
-    // // // console.log("🔔 [USER-INFO] Fetched user info for:", userId);
+    // console.log("🔔 [USER-INFO] Fetched user info for:", userId);
 
     return new Response(
       JSON.stringify({
@@ -219,7 +219,7 @@ export const GET: APIRoute = async ({ url, cookies }) => {
       last_name: profile.last_name || null,
     };
 
-    // // // console.log("🔔 [USER-INFO] Fetched user info for:", userId);
+    // console.log("🔔 [USER-INFO] Fetched user info for:", userId);
 
     return new Response(
       JSON.stringify({

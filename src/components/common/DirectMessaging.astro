@@ -12,7 +12,7 @@ const { currentUser } = Astro.props;
 const currentRole = currentUser?.profile?.role;
 
 // Debug logging
-// // // console.log("💬 [DIRECT-MESSAGING] Component props:", {
+// console.log("💬 [DIRECT-MESSAGING] Component props:", {
   hasCurrentUser: !!currentUser,
   currentRole,
   userId: currentUser?.id,
@@ -20,11 +20,11 @@ const currentRole = currentUser?.profile?.role;
 });
 
 if (currentRole !== "Admin" && currentRole !== "Staff") {
-  // // // console.log("💬 [DIRECT-MESSAGING] User not Admin/Staff, hiding component");
+  // console.log("💬 [DIRECT-MESSAGING] User not Admin/Staff, hiding component");
   return null;
 }
 
-// // // console.log("💬 [DIRECT-MESSAGING] User is Admin/Staff, showing component");
+// console.log("💬 [DIRECT-MESSAGING] User is Admin/Staff, showing component");
 ---
 
 <!-- Direct Messaging Widget -->
@@ -166,15 +166,15 @@ if (currentRole !== "Admin" && currentRole !== "Staff") {
   // Initialize direct messaging
   function initializeDirectMessaging() {
     if (isInitialized) {
-      // // // console.log("💬 [DIRECT-MESSAGING] Already initialized");
+      // console.log("💬 [DIRECT-MESSAGING] Already initialized");
       return;
     }
 
-    // // // console.log("💬 [DIRECT-MESSAGING] Initializing direct messaging");
+    // console.log("💬 [DIRECT-MESSAGING] Initializing direct messaging");
 
     const widget = document.getElementById("direct-messaging-widget");
     if (!widget) {
-      // // // console.log("💬 [DIRECT-MESSAGING] Widget not found");
+      // console.log("💬 [DIRECT-MESSAGING] Widget not found");
       return;
     }
 
@@ -183,7 +183,7 @@ if (currentRole !== "Admin" && currentRole !== "Staff") {
     const userName = widget.dataset.userName || "Unknown User";
 
     if (userRole !== "Admin" && userRole !== "Staff") {
-      // // // console.log("💬 [DIRECT-MESSAGING] User not Admin/Staff, hiding widget");
+      // console.log("💬 [DIRECT-MESSAGING] User not Admin/Staff, hiding widget");
       widget.classList.add("hidden");
       return;
     }
@@ -194,7 +194,7 @@ if (currentRole !== "Admin" && currentRole !== "Staff") {
       role: userRole,
     };
 
-    // // // console.log("💬 [DIRECT-MESSAGING] Current user:", currentUser);
+    // console.log("💬 [DIRECT-MESSAGING] Current user:", currentUser);
 
     // Initialize Socket.io connection
     initializeSocket();
@@ -206,7 +206,7 @@ if (currentRole !== "Admin" && currentRole !== "Staff") {
     loadUsers();
 
     isInitialized = true;
-    // // // console.log("💬 [DIRECT-MESSAGING] Initialization complete");
+    // console.log("💬 [DIRECT-MESSAGING] Initialization complete");
   }
 
   // Initialize Socket.io connection
@@ -225,7 +225,7 @@ if (currentRole !== "Admin" && currentRole !== "Staff") {
 
       // Connection events
       socket.on("connect", () => {
-        // // // console.log("✅ [DIRECT-MESSAGING] Connected to server");
+        // console.log("✅ [DIRECT-MESSAGING] Connected to server");
         socket.emit("join_dm", {
           userId: currentUser.id,
           userName: currentUser.name,
@@ -234,24 +234,24 @@ if (currentRole !== "Admin" && currentRole !== "Staff") {
       });
 
       socket.on("disconnect", () => {
-        // // // console.log("❌ [DIRECT-MESSAGING] Disconnected from server");
+        // console.log("❌ [DIRECT-MESSAGING] Disconnected from server");
       });
 
       // Direct messaging events
       socket.on("dm_user_list", (users: any) => {
-        // // // console.log("💬 [DIRECT-MESSAGING] Online users:", users.length);
+        // console.log("💬 [DIRECT-MESSAGING] Online users:", users.length);
         onlineUsers = users;
         updateUserList();
         updateOnlineCount();
       });
 
       socket.on("dm_message", (message: any) => {
-        // // // console.log("💬 [DIRECT-MESSAGING] New direct message:", message);
+        // console.log("💬 [DIRECT-MESSAGING] New direct message:", message);
         handleDirectMessage(message);
       });
 
       socket.on("dm_conversation_history", (data: any) => {
-        // // // console.log("💬 [DIRECT-MESSAGING] Conversation history:", data.messages.length);
+        // console.log("💬 [DIRECT-MESSAGING] Conversation history:", data.messages.length);
         loadConversationHistory(data.messages);
       });
 
@@ -499,7 +499,7 @@ if (currentRole !== "Admin" && currentRole !== "Staff") {
   // Handle typing indicator
   function handleTypingIndicator(data: any) {
     // You can implement typing indicators here
-    // // // console.log("💬 [DIRECT-MESSAGING] User typing:", data);
+    // console.log("💬 [DIRECT-MESSAGING] User typing:", data);
   }
 
   // Update online count
@@ -515,7 +515,7 @@ if (currentRole !== "Admin" && currentRole !== "Staff") {
 
   // Initialize when DOM is ready
   document.addEventListener("DOMContentLoaded", () => {
-    // // // console.log("💬 [DIRECT-MESSAGING] DOM Content Loaded");
+    // console.log("💬 [DIRECT-MESSAGING] DOM Content Loaded");
     setTimeout(initializeDirectMessaging, 1000);
   });
 

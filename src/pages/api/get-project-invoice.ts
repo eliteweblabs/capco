@@ -3,7 +3,7 @@ import { supabase } from "../../lib/supabase";
 
 // 🚧 DEAD STOP - 2024-12-19: Potentially unused API endpoint
 // If you see this log after a few days, this endpoint can likely be deleted
-// // // console.log("🚧 [DEAD-STOP-2024-12-19] get-project-invoice.ts accessed - may be unused");
+// console.log("🚧 [DEAD-STOP-2024-12-19] get-project-invoice.ts accessed - may be unused");
 
 export const GET: APIRoute = async ({ url, cookies }) => {
   try {
@@ -46,7 +46,7 @@ export const GET: APIRoute = async ({ url, cookies }) => {
       });
     }
 
-    // // // console.log("🔍 [GET-PROJECT-INVOICE] Looking for invoice for project:", projectId);
+    // console.log("🔍 [GET-PROJECT-INVOICE] Looking for invoice for project:", projectId);
 
     // Get invoice by project ID
     const { data: invoice, error: invoiceError } = await supabase
@@ -70,7 +70,7 @@ export const GET: APIRoute = async ({ url, cookies }) => {
     if (invoiceError) {
       if (invoiceError.code === "PGRST116") {
         // No rows found - this is expected for new projects
-        // // // console.log("ℹ️ [GET-PROJECT-INVOICE] No existing invoice found for project:", projectId);
+        // console.log("ℹ️ [GET-PROJECT-INVOICE] No existing invoice found for project:", projectId);
         return new Response(JSON.stringify({ success: true, invoice: null }), {
           status: 200,
           headers: { "Content-Type": "application/json" },
@@ -87,7 +87,7 @@ export const GET: APIRoute = async ({ url, cookies }) => {
       }
     }
 
-    // // // console.log("✅ [GET-PROJECT-INVOICE] Found existing invoice:", invoice.id);
+    // console.log("✅ [GET-PROJECT-INVOICE] Found existing invoice:", invoice.id);
 
     return new Response(JSON.stringify({ success: true, invoice }), {
       status: 200,

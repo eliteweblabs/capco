@@ -4,16 +4,16 @@ import { supabaseAdmin } from "../../lib/supabase-admin";
 
 // 🚧 DEAD STOP - 2024-12-19: Potentially unused API endpoint
 // If you see this log after a few days, this endpoint can likely be deleted
-// // console.log("🚧 [DEAD-STOP-2024-12-19] get-team-users.ts accessed - may be unused");
+// console.log("🚧 [DEAD-STOP-2024-12-19] get-team-users.ts accessed - may be unused");
 
 export const GET: APIRoute = async ({ request, cookies }) => {
-  // // console.log("📡 [API] GET /api/get-staff-users called");
+  // console.log("📡 [API] GET /api/get-staff-users called");
 
   try {
-    // // console.log("📡 [API] Checking Supabase configuration...");
+    // console.log("📡 [API] Checking Supabase configuration...");
 
     if (!supabase) {
-      // // console.log("📡 [API] Supabase not configured, returning demo staff users");
+      // console.log("📡 [API] Supabase not configured, returning demo staff users");
 
       // // Return demo staff users when database is not configured
       // const demoStaffUsers = [
@@ -62,7 +62,7 @@ export const GET: APIRoute = async ({ request, cookies }) => {
       // );
     }
 
-    // // console.log("📡 [API] Getting current user...");
+    // console.log("📡 [API] Getting current user...");
 
     if (!supabase) {
       return new Response(JSON.stringify({ error: "Database not configured" }), {
@@ -75,7 +75,7 @@ export const GET: APIRoute = async ({ request, cookies }) => {
     const accessToken = cookies.get("sb-access-token")?.value;
     const refreshToken = cookies.get("sb-refresh-token")?.value;
 
-    // // console.log("📡 [API] Auth check:", {
+    // console.log("📡 [API] Auth check:", {
     //   hasAccessToken: !!accessToken,
     //   hasRefreshToken: !!refreshToken,
     // });
@@ -93,7 +93,7 @@ export const GET: APIRoute = async ({ request, cookies }) => {
       error: userError,
     } = await supabase.auth.getUser();
 
-    // // console.log("📡 [API] User auth result:", {
+    // console.log("📡 [API] User auth result:", {
     //   hasUser: !!user,
     //   userId: user?.id || null,
     //   userEmail: user?.email || null,
@@ -102,7 +102,7 @@ export const GET: APIRoute = async ({ request, cookies }) => {
     // });
 
     if (userError || !user) {
-      // // console.log("📡 [API] No authenticated user, returning demo staff users");
+      // console.log("📡 [API] No authenticated user, returning demo staff users");
 
       // Return demo staff for unauthenticated users
       const demoStaffUsers = [
@@ -127,7 +127,7 @@ export const GET: APIRoute = async ({ request, cookies }) => {
       );
     }
 
-    // // console.log("📡 [API] Getting user profile for role...");
+    // console.log("📡 [API] Getting user profile for role...");
 
     // Get user profile to check permissions
     const { data: profile } = await supabase
@@ -137,14 +137,14 @@ export const GET: APIRoute = async ({ request, cookies }) => {
       .single();
 
     const userRole = profile?.role;
-    // // console.log("📡 [API] User role:", userRole);
+    // console.log("📡 [API] User role:", userRole);
 
     // Only admins and staff can view staff list
     if (userRole !== "Admin" && userRole !== "Staff") {
-      // // console.log(`📡 [API] User role is: ${userRole}, denying access to staff list`);
+      // console.log(`📡 [API] User role is: ${userRole}, denying access to staff list`);
 
       // TEMPORARY: Allow all users to view staff list for debugging
-      // // console.log("📡 [API] TEMPORARY: Allowing access for debugging purposes");
+      // console.log("📡 [API] TEMPORARY: Allowing access for debugging purposes");
 
       // Uncomment the return statement below to restore proper authorization
       /*
@@ -163,14 +163,14 @@ export const GET: APIRoute = async ({ request, cookies }) => {
     }
 
     // Fetch staff users from database
-    // // console.log("📡 [API] Fetching staff users from database...");
+    // console.log("📡 [API] Fetching staff users from database...");
     const { data: staffUsers, error } = await supabase
       .from("profiles")
       .select("id, company_name, role, created_at")
       .neq("role", "Client")
       .order("company_name", { ascending: true });
 
-    // // console.log("📡 [API] Staff users query result:", { staffUsers, error });
+    // console.log("📡 [API] Staff users query result:", { staffUsers, error });
 
     // Try direct SQL query to bypass RLS
     const { data: directStaffUsers, error: directError } = await supabase.rpc(
@@ -178,7 +178,7 @@ export const GET: APIRoute = async ({ request, cookies }) => {
       {}
     );
 
-    // // console.log("📡 [API] Direct SQL staff users result:", {
+    // console.log("📡 [API] Direct SQL staff users result:", {
     //   directStaffUsers,
     //   directError,
     // });
@@ -222,7 +222,7 @@ export const GET: APIRoute = async ({ request, cookies }) => {
       }
     }
 
-    // // console.log("📡 [API] Staff users from all profiles:", staffUsersFromAll);
+    // console.log("📡 [API] Staff users from all profiles:", staffUsersFromAll);
 
     if (error) {
       console.error("📡 [API] Database error:", error);
@@ -247,14 +247,14 @@ export const GET: APIRoute = async ({ request, cookies }) => {
       : "No staff members found";
 
     if (!staffUsers || staffUsers.length === 0) {
-      // // console.log(
+      // console.log(
       //   "📡 [API] No staff users found with regular query, trying alternative approach..."
       // );
 
       if (staffUsersFromAll && staffUsersFromAll.length > 0) {
         finalStaffUsers = staffUsersFromAll;
         message = `Found ${staffUsersFromAll.length} staff member(s) via alternative query`;
-        // // console.log("📡 [API] Using alternative query results for staff users");
+        // console.log("📡 [API] Using alternative query results for staff users");
       }
     }
 

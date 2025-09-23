@@ -3,7 +3,7 @@
  */
 
 // 🔍 PLACEHOLDER DEBUG - Status Action Fields
-// // console.log("🔍 [PLACEHOLDER-DEBUG] placeholder-utils.ts - Checking for status action fields");
+// console.log("🔍 [PLACEHOLDER-DEBUG] placeholder-utils.ts - Checking for status action fields");
 
 /**
  * Get the CAPCo logo SVG as a string
@@ -71,12 +71,12 @@ export function replacePlaceholders(
   data: PlaceholderData,
   addBoldTags: boolean = true
 ): string {
-  // // // console.log("🔄 [PLACEHOLDER-UTILS] Starting placeholder replacement...");
-  // // // console.log("🔄 [PLACEHOLDER-UTILS] Original message:", message);
-  // // // console.log("🔄 [PLACEHOLDER-UTILS] Placeholder data:", data);
+  // console.log("🔄 [PLACEHOLDER-UTILS] Starting placeholder replacement...");
+  // console.log("🔄 [PLACEHOLDER-UTILS] Original message:", message);
+  // console.log("🔄 [PLACEHOLDER-UTILS] Placeholder data:", data);
 
   if (!message || !data) {
-    // // console.log("🔄 [PLACEHOLDER-UTILS] No message or data, returning original");
+    // console.log("🔄 [PLACEHOLDER-UTILS] No message or data, returning original");
     return message;
   }
 
@@ -86,19 +86,19 @@ export function replacePlaceholders(
   // Get base URL from data or environment
   const baseUrl = data.baseUrl || getBaseUrl();
   if (baseUrl) {
-    // // // console.log(`🔄 [PLACEHOLDER-UTILS] Replacing {{BASE_URL}} with: ${baseUrl}`);
+    // console.log(`🔄 [PLACEHOLDER-UTILS] Replacing {{BASE_URL}} with: ${baseUrl}`);
     result = result.replace(/\{\{BASE_URL\}\}/g, baseUrl);
   } else {
-    // // console.log("🔄 [PLACEHOLDER-UTILS] ⚠️ No baseUrl available");
+    // console.log("🔄 [PLACEHOLDER-UTILS] ⚠️ No baseUrl available");
   }
 
   data.baseProjectLink = `${process.env.SITE_URL}/project/${data.projectId}`;
 
   if (data.baseProjectLink) {
-    // // // console.log(`🔄 [PLACEHOLDER-UTILS] Replacing {{BASE_URL}} with: ${baseUrl}`);
+    // console.log(`🔄 [PLACEHOLDER-UTILS] Replacing {{BASE_URL}} with: ${baseUrl}`);
     result = result.replace(/\{\{BASE_URL\}\}/g, baseUrl);
   } else {
-    // // console.log("🔄 [PLACEHOLDER-UTILS] ⚠️ No baseUrl available");
+    // console.log("🔄 [PLACEHOLDER-UTILS] ⚠️ No baseUrl available");
   }
 
   // Process PROJECT_LINK placeholders
@@ -127,52 +127,52 @@ export function replacePlaceholders(
   }
 
   // if (data.projectLink) {
-  //   // // // console.log(
+  //   // console.log(
   //   //   `🔄 [PLACEHOLDER-UTILS] Replacing {{PROJECT_ADDRESS}} with: ${data.projectAddress}`
   //   // );
   //   result = result.replace(/\{\{\s*PROJECT_LINK\s*\}\}/g, data.projectLink);
   // } else {
-  //   // // console.log("🔄 [PLACEHOLDER-UTILS] ⚠️ No projectAddress data available");
+  // console.log("🔄 [PLACEHOLDER-UTILS] ⚠️ No projectAddress data available");
   // }
 
   if (data.projectAddress) {
-    // // // console.log(
+    // console.log(
     //   `🔄 [PLACEHOLDER-UTILS] Replacing {{PROJECT_ADDRESS}} with: ${data.projectAddress}`
     // );
     result = result.replace(/\{\{\s*PROJECT_ADDRESS\s*\}\}/g, data.projectAddress);
   } else {
-    // // console.log("🔄 [PLACEHOLDER-UTILS] ⚠️ No projectAddress data available");
+    // console.log("🔄 [PLACEHOLDER-UTILS] ⚠️ No projectAddress data available");
   }
 
   if (data.clientName) {
-    // // // console.log(`🔄 [PLACEHOLDER-UTILS] Replacing {{CLIENT_NAME}} with: ${data.clientName}`);
+    // console.log(`🔄 [PLACEHOLDER-UTILS] Replacing {{CLIENT_NAME}} with: ${data.clientName}`);
     result = result.replace(/\{\{\s*CLIENT_NAME\s*\}\}/g, data.clientName);
   } else {
-    // // console.log("🔄 [PLACEHOLDER-UTILS] ⚠️ No clientName data available");
+    // console.log("🔄 [PLACEHOLDER-UTILS] ⚠️ No clientName data available");
   }
 
   if (data.clientEmail) {
-    // // // console.log(`🔄 [PLACEHOLDER-UTILS] Replacing {{CLIENT_EMAIL}} with: ${data.clientEmail}`);
+    // console.log(`🔄 [PLACEHOLDER-UTILS] Replacing {{CLIENT_EMAIL}} with: ${data.clientEmail}`);
     result = result.replace(/\{\{\s*CLIENT_EMAIL\s*\}\}/g, data.clientEmail);
     addBoldTags = false;
   } else {
-    // // console.log("🔄 [PLACEHOLDER-UTILS] ⚠️ No clientEmail data available");
+    // console.log("🔄 [PLACEHOLDER-UTILS] ⚠️ No clientEmail data available");
   }
 
   if (data.statusName) {
-    // // console.log(`🔄 [PLACEHOLDER-UTILS] Replacing {{STATUS_NAME}} with: ${data.statusName}`);
+    // console.log(`🔄 [PLACEHOLDER-UTILS] Replacing {{STATUS_NAME}} with: ${data.statusName}`);
     result = result.replace(/\{\{\s*STATUS_NAME\s*\}\}/g, data.statusName);
   }
 
   if (data.estTime) {
-    // // console.log(`🔄 [PLACEHOLDER-UTILS] Replacing {{EST_TIME}} with: ${data.estTime}`);
+    // console.log(`🔄 [PLACEHOLDER-UTILS] Replacing {{EST_TIME}} with: ${data.estTime}`);
     result = result.replace(/\{\{\s*EST_TIME\s*\}\}/g, data.estTime);
   }
 
   data.primaryColor = process.env.PRIMARY_COLOR || "#3b82f6";
 
   if (data.primaryColor) {
-    // // console.log(`🔄 [PLACEHOLDER-UTILS] Replacing {{PRIMARY_COLOR}} with: ${data.primaryColor}`);
+    // console.log(`🔄 [PLACEHOLDER-UTILS] Replacing {{PRIMARY_COLOR}} with: ${data.primaryColor}`);
     // Ensure primary color starts with # for hexadecimal format
     let hexColor = data.primaryColor;
     if (!hexColor.startsWith("#")) {
@@ -185,7 +185,7 @@ export function replacePlaceholders(
   data.svgLogo = process.env.COMPANY_LOGO_LIGHT || "No Logo Img";
 
   if (data.svgLogo) {
-    // // console.log(
+    // console.log(
     //   `🔄 [PLACEHOLDER-UTILS] Replacing {{SVG_LOGO}} with: ${data.svgLogo.substring(0, 50)}...`
     // );
     addBoldTags = false;
@@ -194,17 +194,17 @@ export function replacePlaceholders(
 
   // Always replace GLOBAL_COMPANY_NAME with the environment variable
   const globalCompanyName = process.env.GLOBAL_COMPANY_NAME || "Edit Company Name Here";
-  // // console.log(`🔄 [PLACEHOLDER-UTILS] Replacing {{GLOBAL_COMPANY_NAME}} with: ${globalCompanyName}`);
+  // console.log(`🔄 [PLACEHOLDER-UTILS] Replacing {{GLOBAL_COMPANY_NAME}} with: ${globalCompanyName}`);
   result = result.replace(/\{\{\s*GLOBAL_COMPANY_NAME\s*\}\}/g, globalCompanyName);
 
   const globalCompanySlogan = process.env.GLOBAL_COMPANY_SLOGAN || "Edit Company Slogan Here";
-  // // console.log(`🔄 [PLACEHOLDER-UTILS] Replacing {{GLOBAL_COMPANY_SLOGAN}} with: ${globalCompanySlogan}`);
+  // console.log(`🔄 [PLACEHOLDER-UTILS] Replacing {{GLOBAL_COMPANY_SLOGAN}} with: ${globalCompanySlogan}`);
   result = result.replace(/\{\{\s*GLOBAL_COMPANY_SLOGAN\s*\}\}/g, globalCompanySlogan);
 
   const year = new Date().getFullYear();
-  // // console.log(`🔄 [PLACEHOLDER-UTILS] Replacing {{YEAR}} with: ${year}`);
+  // console.log(`🔄 [PLACEHOLDER-UTILS] Replacing {{YEAR}} with: ${year}`);
   result = result.replace(/\{\{\s*YEAR\s*\}\}/g, year.toString());
 
-  // // console.log("🔄 [PLACEHOLDER-UTILS] Final result:", result);
+  // console.log("🔄 [PLACEHOLDER-UTILS] Final result:", result);
   return addBoldTags ? "<b>" + result + "</b>" : result;
 }

@@ -3,13 +3,13 @@ import { supabase } from "../../lib/supabase";
 import { supabaseAdmin } from "../../lib/supabase-admin";
 
 export const POST: APIRoute = async ({ request }) => {
-  // // console.log("📧 [GET-USER-EMAILS-BY-ROLE] API called");
+  // console.log("📧 [GET-USER-EMAILS-BY-ROLE] API called");
 
   try {
     const body = await request.json();
     const { roles, userIds } = body;
 
-    // // console.log("📧 [GET-USER-EMAILS-BY-ROLE] Request data:", {
+    // console.log("📧 [GET-USER-EMAILS-BY-ROLE] Request data:", {
     //   roles: roles || [],
     //   userIds: userIds || [],
     // });
@@ -19,7 +19,7 @@ export const POST: APIRoute = async ({ request }) => {
 
     // Get emails by roles
     if (roles && roles.length > 0) {
-      // // console.log("📧 [GET-USER-EMAILS-BY-ROLE] Fetching emails for roles:", roles);
+      // console.log("📧 [GET-USER-EMAILS-BY-ROLE] Fetching emails for roles:", roles);
 
       if (!supabaseAdmin || !supabase) {
         return new Response(JSON.stringify({ error: "Database connection not available" }), {
@@ -64,7 +64,7 @@ export const POST: APIRoute = async ({ request }) => {
         console.error("📧 [GET-USER-EMAILS-BY-ROLE] Error fetching users by roles:", roleError);
       } else if (fetchedRoleUsers) {
         roleUsers = fetchedRoleUsers; // Assign to the outer scope variable
-        // // console.log("📧 [GET-USER-EMAILS-BY-ROLE] Found users by roles:", roleUsers);
+        // console.log("📧 [GET-USER-EMAILS-BY-ROLE] Found users by roles:", roleUsers);
         for (const user of roleUsers) {
           try {
             if (user.email) {
@@ -82,7 +82,7 @@ export const POST: APIRoute = async ({ request }) => {
 
     // Get emails by specific user IDs
     if (userIds && userIds.length > 0) {
-      // // console.log("📧 [GET-USER-EMAILS-BY-ROLE] Fetching emails for user IDs:", userIds);
+      // console.log("📧 [GET-USER-EMAILS-BY-ROLE] Fetching emails for user IDs:", userIds);
 
       if (!supabaseAdmin) {
         return new Response(JSON.stringify({ error: "Database connection not available" }), {
@@ -101,11 +101,11 @@ export const POST: APIRoute = async ({ request }) => {
         for (const user of users) {
           if (user.email) {
             emails.push(user.email);
-            // // console.log(
+            // console.log(
             //   `📧 [GET-USER-EMAILS-BY-ROLE] Found email for user ID ${user.id}: ${user.email}`
             // );
           } else {
-            // // console.log(`📧 [GET-USER-EMAILS-BY-ROLE] No email found for user ID ${user.id}`);
+            // console.log(`📧 [GET-USER-EMAILS-BY-ROLE] No email found for user ID ${user.id}`);
           }
         }
       }
@@ -114,7 +114,7 @@ export const POST: APIRoute = async ({ request }) => {
     // Remove duplicates
     const uniqueEmails = [...new Set(emails)];
 
-    // // console.log("📧 [GET-USER-EMAILS-BY-ROLE] Final unique emails:", uniqueEmails);
+    // console.log("📧 [GET-USER-EMAILS-BY-ROLE] Final unique emails:", uniqueEmails);
 
     // Also return the full user data for staff dropdowns
     const staffUsers = roleUsers || [];

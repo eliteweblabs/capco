@@ -22,7 +22,7 @@ export function setAuthCookies(cookies: AstroCookies, accessToken: string, refre
     maxAge: 60 * 60 * 24 * 30, // 30 days
   });
 
-  // // console.log("🍪 [AUTH-COOKIES] Auth cookies set successfully");
+  // console.log("🍪 [AUTH-COOKIES] Auth cookies set successfully");
 }
 
 export function clearAuthCookies(cookies: AstroCookies) {

@@ -15,7 +15,7 @@ const { projectId, currentUser, currentRole, projectAuthorId } = Astro.props;
 // Only show for Admin/Staff
 const showManagement = currentRole === "Admin" || currentRole === "Staff";
 
-// // console.log("🔧 [FILE-MANAGER] Component initialized with props:", {
+// console.log("🔧 [FILE-MANAGER] Component initialized with props:", {
 //   projectId,
 //   currentUser: currentUser ? {
 //     id: currentUser.id,
@@ -146,17 +146,17 @@ const showManagement = currentRole === "Admin" || currentRole === "Staff";
 
 <script define:vars={{ projectId, currentUser, currentRole, showManagement, projectAuthorId }}>
   // File Manager Component with Checkout System - EXTENSIVE DEBUGGING
-  // // console.log("🔧 [FILE-MANAGER] Script initialized with variables:", {
-    projectId,
-    currentUser: currentUser ? {
-      id: currentUser.id,
-      email: currentUser.email,
-      profile: currentUser.profile
-    } : null,
-    currentRole,
-    projectAuthorId,
-    showManagement
-  });
+  // console.log("🔧 [FILE-MANAGER] Script initialized with variables:", {
+  //   projectId,
+  //   currentUser: currentUser ? {
+  //     id: currentUser.id,
+  //     email: currentUser.email,
+  //     profile: currentUser.profile
+  //   } : null,
+  //   currentRole,
+  //   projectAuthorId,
+  //   showManagement
+  // });
 
   let files = [];
   let staffUsers = [];
@@ -164,11 +164,11 @@ const showManagement = currentRole === "Admin" || currentRole === "Staff";
   let currentUserId = currentUser?.id;
 
   function initializeFileManager() {
-    // // console.log("🚀 [FILE-MANAGER] Initializing file manager");
-    // // console.log("🔧 [FILE-MANAGER] Current project ID:", currentProjectId);
-    // // console.log("🔧 [FILE-MANAGER] Current user ID:", currentUserId);
-    // // console.log("🔧 [FILE-MANAGER] Current role:", currentRole);
-    // // console.log("🔧 [FILE-MANAGER] Show management:", showManagement);
+    // console.log("🚀 [FILE-MANAGER] Initializing file manager");
+    // console.log("🔧 [FILE-MANAGER] Current project ID:", currentProjectId);
+    // console.log("🔧 [FILE-MANAGER] Current user ID:", currentUserId);
+    // console.log("🔧 [FILE-MANAGER] Current role:", currentRole);
+    // console.log("🔧 [FILE-MANAGER] Show management:", showManagement);
     
     // Check if required elements exist
     const uploadArea = document.getElementById('upload-dropzone');
@@ -176,49 +176,49 @@ const showManagement = currentRole === "Admin" || currentRole === "Staff";
     const browseBtn = document.getElementById('browse-files-btn');
     const filesContainer = document.getElementById('files-container');
     
-    // // console.log("🔧 [FILE-MANAGER] DOM elements found:", {
-      uploadArea: !!uploadArea,
-      fileInput: !!fileInput,
-      browseBtn: !!browseBtn,
-      filesContainer: !!filesContainer
-    });
+    // console.log("🔧 [FILE-MANAGER] DOM elements found:", {
+    //   uploadArea: !!uploadArea,
+    //   fileInput: !!fileInput,
+    //   browseBtn: !!browseBtn,
+    //   filesContainer: !!filesContainer
+    // });
     
     loadProjectFiles();
     
     // Load users for assignment (only Admin and Staff can assign files)
     if (currentRole === "Admin" || currentRole === "Staff") {
-      // // console.log("🔧 [FILE-MANAGER] Loading users for assignment for role:", currentRole);
+      // console.log("🔧 [FILE-MANAGER] Loading users for assignment for role:", currentRole);
       loadStaffUsers();
     } else {
-      // // console.log("🔧 [FILE-MANAGER] Assignment disabled for role:", currentRole);
+      // console.log("🔧 [FILE-MANAGER] Assignment disabled for role:", currentRole);
     }
     
     if (showManagement) {
-      // // console.log("🔧 [FILE-MANAGER] Management panel enabled for role:", currentRole);
+      // console.log("🔧 [FILE-MANAGER] Management panel enabled for role:", currentRole);
     } else {
-      // // console.log("🔧 [FILE-MANAGER] Management panel disabled for role:", currentRole);
+      // console.log("🔧 [FILE-MANAGER] Management panel disabled for role:", currentRole);
     }
   }
 
   // Load files for the project
   async function loadProjectFiles() {
-    // // console.log("📁 [FILE-MANAGER] Loading project files for project:", currentProjectId);
+    // console.log("📁 [FILE-MANAGER] Loading project files for project:", currentProjectId);
     
     try {
       const url = `/api/media?projectId=${currentProjectId}&targetLocation=documents`;
-      // // console.log("🔧 [FILE-MANAGER] Fetching from URL:", url);
+      // console.log("🔧 [FILE-MANAGER] Fetching from URL:", url);
       
       const response = await fetch(url);
-      // // console.log("🔧 [FILE-MANAGER] Response status:", response.status);
-      // // console.log("🔧 [FILE-MANAGER] Response headers:", Object.fromEntries(response.headers.entries()));
+      // console.log("🔧 [FILE-MANAGER] Response status:", response.status);
+      // console.log("🔧 [FILE-MANAGER] Response headers:", Object.fromEntries(response.headers.entries()));
       
       const data = await response.json();
-      // // console.log("🔧 [FILE-MANAGER] Response data:", data);
+      // console.log("🔧 [FILE-MANAGER] Response data:", data);
       
       if (data.success) {
         files = data.media || [];
-        // // console.log("✅ [FILE-MANAGER] Files loaded successfully:", files.length, "files");
-        // // console.log("🔧 [FILE-MANAGER] Files data:", files);
+        // console.log("✅ [FILE-MANAGER] Files loaded successfully:", files.length, "files");
+        // console.log("🔧 [FILE-MANAGER] Files data:", files);
         updateFileCount();
         renderFiles();
         if (showManagement) {
@@ -241,14 +241,14 @@ const showManagement = currentRole === "Admin" || currentRole === "Staff";
 
   // Load users for assignment dropdown (Admin and Staff can assign to all user types)
   async function loadStaffUsers() {
-    // // console.log("👥 [FILE-MANAGER] Loading users for assignment");
-    // // console.log("🔧 [FILE-MANAGER] Project author ID:", projectAuthorId);
+    // console.log("👥 [FILE-MANAGER] Loading users for assignment");
+    // console.log("🔧 [FILE-MANAGER] Project author ID:", projectAuthorId);
     
     try {
       // Admin and Staff can assign files to Admin, Staff, and Client users
       const rolesToLoad = ["Admin", "Staff", "Client"];
       
-      // // console.log("🔧 [FILE-MANAGER] Loading users for roles:", rolesToLoad);
+      // console.log("🔧 [FILE-MANAGER] Loading users for roles:", rolesToLoad);
       
       const response = await fetch("/api/get-user-emails-by-role", {
         method: "POST",
@@ -256,37 +256,37 @@ const showManagement = currentRole === "Admin" || currentRole === "Staff";
         body: JSON.stringify({ roles: rolesToLoad }),
       });
       
-      // // console.log("🔧 [FILE-MANAGER] Users response status:", response.status);
+      // console.log("🔧 [FILE-MANAGER] Users response status:", response.status);
       const data = await response.json();
-      // // console.log("🔧 [FILE-MANAGER] Users response data:", data);
+      // console.log("🔧 [FILE-MANAGER] Users response data:", data);
       
       if (data.success) {
         let allUsers = data.staffUsers || [];
-        // // console.log("🔧 [FILE-MANAGER] All users loaded:", allUsers.length, "users");
+        // console.log("🔧 [FILE-MANAGER] All users loaded:", allUsers.length, "users");
         
         // Filter users based on role and project author ID
         staffUsers = allUsers.filter(user => {
           // Always include Admin and Staff users
           if (user.role === "Admin" || user.role === "Staff") {
-            // // console.log("✅ [FILE-MANAGER] Including Admin/Staff user:", user.email, "Role:", user.role);
+            // console.log("✅ [FILE-MANAGER] Including Admin/Staff user:", user.email, "Role:", user.role);
             return true;
           }
           
           // For Client users, only include the project author
           if (user.role === "Client") {
             const isProjectAuthor = user.id === projectAuthorId;
-            // // console.log("🔧 [FILE-MANAGER] Client user check:", {
-              userEmail: user.email,
-              userId: user.id,
-              projectAuthorId: projectAuthorId,
-              isProjectAuthor: isProjectAuthor
-            });
+            // console.log("🔧 [FILE-MANAGER] Client user check:", {
+            //   userEmail: user.email,
+            //   userId: user.id,
+            //   projectAuthorId: projectAuthorId,
+            //   isProjectAuthor: isProjectAuthor
+            // });
             
             if (isProjectAuthor) {
-              // // console.log("✅ [FILE-MANAGER] Including project author client:", user.email);
+              // console.log("✅ [FILE-MANAGER] Including project author client:", user.email);
               return true;
             } else {
-              // // console.log("❌ [FILE-MANAGER] Excluding non-author client:", user.email);
+              // console.log("❌ [FILE-MANAGER] Excluding non-author client:", user.email);
               return false;
             }
           }
@@ -294,8 +294,8 @@ const showManagement = currentRole === "Admin" || currentRole === "Staff";
           return false;
         });
         
-        // // console.log("✅ [FILE-MANAGER] Filtered users loaded:", staffUsers.length, "users");
-        // // console.log("🔧 [FILE-MANAGER] Final users data:", staffUsers);
+        // console.log("✅ [FILE-MANAGER] Filtered users loaded:", staffUsers.length, "users");
+        // console.log("🔧 [FILE-MANAGER] Final users data:", staffUsers);
       } else {
         console.error("❌ [FILE-MANAGER] Failed to load users:", data.error);
       }
@@ -311,11 +311,11 @@ const showManagement = currentRole === "Admin" || currentRole === "Staff";
 
   // Update file count display
   function updateFileCount() {
-    // // console.log("🔢 [FILE-MANAGER] Updating file count:", files.length);
+    // console.log("🔢 [FILE-MANAGER] Updating file count:", files.length);
     const fileCountElement = document.getElementById("file-count");
     if (fileCountElement) {
       fileCountElement.textContent = `${files.length} file${files.length !== 1 ? 's' : ''}`;
-      // // console.log("✅ [FILE-MANAGER] File count updated to:", fileCountElement.textContent);
+      // console.log("✅ [FILE-MANAGER] File count updated to:", fileCountElement.textContent);
     } else {
       console.error("❌ [FILE-MANAGER] File count element not found");
     }
@@ -323,7 +323,7 @@ const showManagement = currentRole === "Admin" || currentRole === "Staff";
 
   // Render files with extensive debugging
   function renderFiles() {
-    // // console.log("🎨 [FILE-MANAGER] Rendering files");
+    // console.log("🎨 [FILE-MANAGER] Rendering files");
     const container = document.getElementById("files-container");
     
     if (!container) {
@@ -331,10 +331,10 @@ const showManagement = currentRole === "Admin" || currentRole === "Staff";
       return;
     }
     
-    // // console.log("🔧 [FILE-MANAGER] Files container found, rendering", files.length, "files");
+    // console.log("🔧 [FILE-MANAGER] Files container found, rendering", files.length, "files");
 
     if (files.length === 0) {
-      // // console.log("📭 [FILE-MANAGER] No files to display, showing empty state");
+      // console.log("📭 [FILE-MANAGER] No files to display, showing empty state");
       container.innerHTML = `
         <div class="py-8 text-center text-gray-500 dark:text-gray-400">
           <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -346,20 +346,20 @@ const showManagement = currentRole === "Admin" || currentRole === "Staff";
       return;
     }
 
-    // // console.log("🔧 [FILE-MANAGER] Creating file cards for", files.length, "files");
+    // console.log("🔧 [FILE-MANAGER] Creating file cards for", files.length, "files");
     const fileCards = files.map((file, index) => {
-      // // console.log(`🔧 [FILE-MANAGER] Creating card for file ${index + 1}:`, file);
+      // console.log(`🔧 [FILE-MANAGER] Creating card for file ${index + 1}:`, file);
       return createFileCard(file);
     });
     
     container.innerHTML = fileCards.join('');
-    // // console.log("✅ [FILE-MANAGER] Files rendered successfully");
+    // console.log("✅ [FILE-MANAGER] Files rendered successfully");
   }
 
   // Create file card with extensive debugging
   function createFileCard(file) {
-    // // console.log("🎴 [FILE-MANAGER] Creating file card for:", file.fileName);
-    // // console.log("🔧 [FILE-MANAGER] File data:", file);
+    // console.log("🎴 [FILE-MANAGER] Creating file card for:", file.fileName);
+    // console.log("🔧 [FILE-MANAGER] File data:", file);
     
     // Temporarily disable checkout system until SQL migration is run
     const hasCheckoutColumns = false; // Disabled until migration
@@ -386,13 +386,7 @@ const showManagement = currentRole === "Admin" || currentRole === "Staff";
       statusColor = "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300";
     }
 
-    // // console.log("🔧 [FILE-MANAGER] File status:", {
-      statusBadge,
-      statusColor,
-      isCheckedOut,
-      isAssigned,
-      isCheckedOutByMe
-    });
+  
 
     const fileCard = `
       <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4 hover:shadow-md transition-shadow">
@@ -449,13 +443,13 @@ const showManagement = currentRole === "Admin" || currentRole === "Staff";
       </div>
     `;
     
-    // // console.log("✅ [FILE-MANAGER] File card created for:", file.fileName);
+    // console.log("✅ [FILE-MANAGER] File card created for:", file.fileName);
     return fileCard;
   }
 
   // Upload functionality with extensive debugging
   function initializeUpload() {
-    // // console.log("📤 [FILE-MANAGER] Initializing upload functionality");
+    // console.log("📤 [FILE-MANAGER] Initializing upload functionality");
     
     const uploadArea = document.querySelector('#file-manager .rounded-lg.border-dashed');
     const fileInput = document.getElementById('file-input');
@@ -464,48 +458,30 @@ const showManagement = currentRole === "Admin" || currentRole === "Staff";
     const progressBar = document.getElementById('progress-bar');
     const statusText = document.getElementById('upload-status');
 
-    // // console.log("🔧 [FILE-MANAGER] Upload elements found:", {
-      uploadArea: !!uploadArea,
-      fileInput: !!fileInput,
-      browseBtn: !!browseBtn,
-      progressDiv: !!progressDiv,
-      progressBar: !!progressBar,
-      statusText: !!statusText
-    });
+    
 
 
-    uploadArea?.addEventListener('click', () => {
-      // // console.log("🖱️ [FILE-MANAGER] Upload area clicked");
-      fileInput?.click();
-    });
 
     // Drag and drop
     uploadArea?.addEventListener('dragover', (e) => {
-      // // console.log("🎯 [FILE-MANAGER] File dragged over upload area");
+      // console.log("🎯 [FILE-MANAGER] File dragged over upload area");
       e.preventDefault();
       uploadArea.classList.add('border-blue-400', 'bg-blue-50');
     });
 
     uploadArea?.addEventListener('dragleave', (e) => {
-      // // console.log("🎯 [FILE-MANAGER] File dragged away from upload area");
+      // console.log("🎯 [FILE-MANAGER] File dragged away from upload area");
       e.preventDefault();
       uploadArea.classList.remove('border-blue-400', 'bg-blue-50');
     });
 
     uploadArea?.addEventListener('drop', (e) => {
-      // // console.log("🎯 [FILE-MANAGER] Files dropped on upload area");
+      // console.log("🎯 [FILE-MANAGER] Files dropped on upload area");
       e.preventDefault();
       uploadArea.classList.remove('border-blue-400', 'bg-blue-50');
       
       const files = Array.from(e.dataTransfer.files);
-      // // console.log("🔧 [FILE-MANAGER] Dropped files:", files.length, "files");
-      files.forEach((file, index) => {
-        // // console.log(`🔧 [FILE-MANAGER] Dropped file ${index + 1}:`, {
-          name: file.name,
-          size: file.size,
-          type: file.type
-        });
-      });
+     
       
       if (files.length > 0) {
         handleFileUpload(files);
@@ -514,16 +490,11 @@ const showManagement = currentRole === "Admin" || currentRole === "Staff";
 
     // File input change
     fileInput?.addEventListener('change', (e) => {
-      // // console.log("📁 [FILE-MANAGER] File input changed");
+      // console.log("📁 [FILE-MANAGER] File input changed");
       const files = Array.from(e.target.files);
-      // // console.log("🔧 [FILE-MANAGER] Selected files:", files.length, "files");
-      files.forEach((file, index) => {
-        // // console.log(`🔧 [FILE-MANAGER] Selected file ${index + 1}:`, {
-          name: file.name,
-          size: file.size,
-          type: file.type
-        });
-      });
+      // console.log("🔧 [FILE-MANAGER] Selected files:", files.length, "files");
+   
+      
       
       if (files.length > 0) {
         handleFileUpload(files);
@@ -531,11 +502,9 @@ const showManagement = currentRole === "Admin" || currentRole === "Staff";
     });
 
     async function handleFileUpload(files) {
-      // // console.log("📤 [FILE-MANAGER] Starting file upload process");
-      // // console.log("🔧 [FILE-MANAGER] Files to upload:", files.length);
+    
       
       if (!files || files.length === 0) {
-        // // console.log("⚠️ [FILE-MANAGER] No files to upload");
         return;
       }
 
@@ -543,24 +512,23 @@ const showManagement = currentRole === "Admin" || currentRole === "Staff";
       progressDiv?.classList.remove('hidden');
       progressBar.style.width = '0%';
       statusText.textContent = 'Preparing upload...';
-      // // console.log("🔧 [FILE-MANAGER] Progress UI shown");
 
       let uploadedCount = 0;
       const totalFiles = files.length;
 
       for (let i = 0; i < files.length; i++) {
         const file = files[i];
-        // // console.log(`📤 [FILE-MANAGER] Processing file ${i + 1}/${totalFiles}:`, file.name);
+        // console.log(`📤 [FILE-MANAGER] Processing file ${i + 1}/${totalFiles}:`, file.name);
         
         try {
           statusText.textContent = `Uploading ${file.name}...`;
-          // // console.log("🔧 [FILE-MANAGER] Converting file to base64:", file.name);
+          // console.log("🔧 [FILE-MANAGER] Converting file to base64:", file.name);
           
           // Convert file to base64
           const reader = new FileReader();
           const fileData = await new Promise((resolve, reject) => {
             reader.onload = () => {
-              // // console.log("✅ [FILE-MANAGER] File converted to base64, length:", reader.result?.length);
+              // console.log("✅ [FILE-MANAGER] File converted to base64, length:", reader.result?.length);
               resolve(reader.result);
             };
             reader.onerror = (error) => {
@@ -570,7 +538,7 @@ const showManagement = currentRole === "Admin" || currentRole === "Staff";
             reader.readAsDataURL(file);
           });
 
-          // // console.log("🔧 [FILE-MANAGER] Uploading to media API:", file.name);
+          // console.log("🔧 [FILE-MANAGER] Uploading to media API:", file.name);
           
           // Upload using media system
           const response = await fetch("/api/media", {
@@ -588,7 +556,7 @@ const showManagement = currentRole === "Admin" || currentRole === "Staff";
             })
           });
 
-          // // console.log("🔧 [FILE-MANAGER] Upload response status:", response.status);
+          // console.log("🔧 [FILE-MANAGER] Upload response status:", response.status);
           
           if (!response.ok) {
             const errorData = await response.json();
@@ -597,13 +565,13 @@ const showManagement = currentRole === "Admin" || currentRole === "Staff";
           }
 
           const result = await response.json();
-          // // console.log("✅ [FILE-MANAGER] Upload successful:", result);
+          // console.log("✅ [FILE-MANAGER] Upload successful:", result);
 
           uploadedCount++;
           const progress = (uploadedCount / totalFiles) * 100;
           progressBar.style.width = `${progress}%`;
           statusText.textContent = `Uploaded ${uploadedCount}/${totalFiles} files...`;
-          // // console.log(`🔧 [FILE-MANAGER] Progress: ${uploadedCount}/${totalFiles} files (${progress.toFixed(1)}%)`);
+          // console.log(`🔧 [FILE-MANAGER] Progress: ${uploadedCount}/${totalFiles} files (${progress.toFixed(1)}%)`);
 
         } catch (error) {
           console.error(`❌ [FILE-MANAGER] Error uploading ${file.name}:`, error);
@@ -618,7 +586,7 @@ const showManagement = currentRole === "Admin" || currentRole === "Staff";
 
       // Hide progress and refresh files
       setTimeout(() => {
-        // // console.log("🔧 [FILE-MANAGER] Upload process completed, hiding progress");
+        // console.log("🔧 [FILE-MANAGER] Upload process completed, hiding progress");
         progressDiv?.classList.add('hidden');
         loadProjectFiles();
         renderFiles();
@@ -635,23 +603,16 @@ const showManagement = currentRole === "Admin" || currentRole === "Staff";
         } else {
           showSuccess(`Successfully uploaded ${uploadedCount} file(s)`);
         }
-        // // console.log("✅ [FILE-MANAGER] Upload process finished successfully");
+        // console.log("✅ [FILE-MANAGER] Upload process finished successfully");
       }, 1000);
     }
   }
 
   // Update management panel
   function updateManagementPanel() {
-    // // console.log("📊 [FILE-MANAGER] Updating management panel");
+    // console.log("📊 [FILE-MANAGER] Updating management panel");
     const checkedOutCount = files.filter(f => f.checked_out_by).length;
     const assignedCount = files.filter(f => f.assigned_to).length;
-    
-    // // console.log("🔧 [FILE-MANAGER] Management panel stats:", {
-      checkedOutCount,
-      assignedCount,
-      totalFiles: files.length
-    });
-    
     const checkedOutElement = document.getElementById("checked-out-count");
     const assignedElement = document.getElementById("assigned-count");
     const statusTextElement = document.getElementById("overall-status-text");
@@ -659,14 +620,14 @@ const showManagement = currentRole === "Admin" || currentRole === "Staff";
     
     if (checkedOutElement) {
       checkedOutElement.textContent = checkedOutCount;
-      // // console.log("✅ [FILE-MANAGER] Checked out count updated");
+      // console.log("✅ [FILE-MANAGER] Checked out count updated");
     } else {
       console.error("❌ [FILE-MANAGER] Checked out count element not found");
     }
     
     if (assignedElement) {
       assignedElement.textContent = assignedCount;
-      // // console.log("✅ [FILE-MANAGER] Assigned count updated");
+      // console.log("✅ [FILE-MANAGER] Assigned count updated");
     } else {
       console.error("❌ [FILE-MANAGER] Assigned count element not found");
     }
@@ -689,7 +650,7 @@ const showManagement = currentRole === "Admin" || currentRole === "Staff";
           statusIndicatorElement.className = "h-3 w-3 rounded-full bg-green-400";
         }
       }
-      // // console.log("✅ [FILE-MANAGER] Status text updated:", statusTextElement.textContent);
+      // console.log("✅ [FILE-MANAGER] Status text updated:", statusTextElement.textContent);
     } else {
       console.error("❌ [FILE-MANAGER] Status text element not found");
     }
@@ -726,7 +687,7 @@ const showManagement = currentRole === "Admin" || currentRole === "Staff";
   }
 
   function downloadFile(publicUrl, fileName, fileId) {
-    // // console.log("📥 [FILE-MANAGER] Download requested:", { publicUrl, fileName, fileId });
+    // console.log("📥 [FILE-MANAGER] Download requested:", { publicUrl, fileName, fileId });
     
     if (!publicUrl) {
       console.error("❌ [FILE-MANAGER] No public URL provided for download");
@@ -735,7 +696,7 @@ const showManagement = currentRole === "Admin" || currentRole === "Staff";
     }
 
     try {
-      // // console.log("🔧 [FILE-MANAGER] Creating download link");
+      // console.log("🔧 [FILE-MANAGER] Creating download link");
       const link = document.createElement("a");
       link.href = publicUrl;
       link.download = fileName;
@@ -743,7 +704,7 @@ const showManagement = currentRole === "Admin" || currentRole === "Staff";
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-      // // console.log("✅ [FILE-MANAGER] Download initiated successfully");
+      // console.log("✅ [FILE-MANAGER] Download initiated successfully");
     } catch (error) {
       console.error("❌ [FILE-MANAGER] Error downloading file:", error);
       showError(`Failed to download ${fileName}`);
@@ -762,7 +723,7 @@ const showManagement = currentRole === "Admin" || currentRole === "Staff";
 
   // Make functions globally available
   window.openFileCheckout = function(fileId) {
-    // // console.log("🔧 [FILE-MANAGER] File checkout requested for file:", fileId);
+    // console.log("🔧 [FILE-MANAGER] File checkout requested for file:", fileId);
     
     // Find the file data
     const file = files.find(f => f.id === fileId);
@@ -772,7 +733,7 @@ const showManagement = currentRole === "Admin" || currentRole === "Staff";
       return;
     }
     
-    // // console.log("🔧 [FILE-MANAGER] Opening checkout modal for file:", file.fileName);
+    // console.log("🔧 [FILE-MANAGER] Opening checkout modal for file:", file.fileName);
     
     // Create checkout modal
     const modal = document.createElement('div');
@@ -850,7 +811,7 @@ const showManagement = currentRole === "Admin" || currentRole === "Staff";
   
   // Handle file checkout operations
   window.handleFileCheckout = async function(fileId, action) {
-    // // console.log("🔧 [FILE-MANAGER] Handling file checkout:", { fileId, action });
+    // console.log("🔧 [FILE-MANAGER] Handling file checkout:", { fileId, action });
     
     const notes = document.getElementById(`checkout-notes-${fileId}`)?.value || "";
     const assignedTo = document.getElementById(`assign-select-${fileId}`)?.value;
@@ -874,7 +835,7 @@ const showManagement = currentRole === "Admin" || currentRole === "Staff";
       });
       
       const data = await response.json();
-      // // console.log("🔧 [FILE-MANAGER] Checkout response:", data);
+      // console.log("🔧 [FILE-MANAGER] Checkout response:", data);
       
       if (data.success) {
         if (window.showModal) {
@@ -901,9 +862,9 @@ const showManagement = currentRole === "Admin" || currentRole === "Staff";
 
   // Initialize when DOM is ready
   document.addEventListener("DOMContentLoaded", () => {
-    // // console.log("🚀 [FILE-MANAGER] DOM loaded, initializing components");
+    // console.log("🚀 [FILE-MANAGER] DOM loaded, initializing components");
     initializeFileManager();
     initializeUpload();
-    // // console.log("✅ [FILE-MANAGER] All components initialized");
+    // console.log("✅ [FILE-MANAGER] All components initialized");
   });
 </script>

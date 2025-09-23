@@ -8,8 +8,8 @@ const { id } = Astro.params;
 const { currentUser = undefined } = await checkAuth(Astro.cookies);
 const currentRole = currentUser?.profile?.role || "Client";
 
-// // // console.log("🏗️ [GENERATE-PDF] Current user:", currentUser);
-// // // console.log("🏗️ [GENERATE-PDF] Current role:", currentRole);
+// console.log("🏗️ [GENERATE-PDF] Current user:", currentUser);
+// console.log("🏗️ [GENERATE-PDF] Current role:", currentRole);
 
 if (!currentUser) {
   return Astro.redirect("/login");
@@ -26,12 +26,12 @@ if (!projectResponse.ok) {
   return Astro.redirect("/dashboard");
 }
 
-// // // console.log("🏗️ [GENERATE-PDF] Project response:", projectResponse);
+// console.log("🏗️ [GENERATE-PDF] Project response:", projectResponse);
 const projectResult = await projectResponse.json();
 if (!projectResult.success || !projectResult.project) {
   return Astro.redirect("/dashboard");
 }
-// // // console.log("🏗️ [GENERATE-PDF] Project result:", projectResult);
+// console.log("🏗️ [GENERATE-PDF] Project result:", projectResult);
 
 const project = projectResult.project;
 const projectAuthor = projectResult.projectAuthor;
@@ -277,7 +277,7 @@ const projectTitle = project.title || "Untitled Project";
     // Template selection handler
     document.getElementById("templateSelect").addEventListener("change", async (e) => {
       const templateId = e.target.value;
-      // // // console.log(`🔧 [PDF-TEMPLATE] Template changed to: ${templateId}`);
+      // console.log(`🔧 [PDF-TEMPLATE] Template changed to: ${templateId}`);
       if (templateId) {
         selectedTemplate = templateId;
         await loadComponents(templateId);
@@ -293,12 +293,12 @@ const projectTitle = project.title || "Untitled Project";
 
     async function loadComponents(templateId) {
       try {
-        // // // console.log(`🔧 [PDF-COMPONENTS] Loading components for template ${templateId}`);
+        // console.log(`🔧 [PDF-COMPONENTS] Loading components for template ${templateId}`);
         const response = await fetch(`/api/pdf/components?templateId=${templateId}`);
         const result = await response.json();
 
         if (result.success) {
-          // // // console.log(
+          // console.log(
             `🔧 [PDF-COMPONENTS] Found ${result.components.length} components for template ${templateId}`
           );
           const componentList = document.getElementById("componentList");

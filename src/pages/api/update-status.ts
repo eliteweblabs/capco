@@ -68,9 +68,9 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     // Use the authenticated user's role
 
     // Debug logging for parameter validation
-    // // console.log("📊 [UPDATE-STATUS] Request body:", body);
-    // // console.log("📊 [UPDATE-STATUS] Parsed projectId:", projectId, "(type:", typeof projectId, ")");
-    // // console.log("📊 [UPDATE-STATUS] Parsed newStatus:", newStatus, "(type:", typeof newStatus, ")");
+    // console.log("📊 [UPDATE-STATUS] Request body:", body);
+    // console.log("📊 [UPDATE-STATUS] Parsed projectId:", projectId, "(type:", typeof projectId, ")");
+    // console.log("📊 [UPDATE-STATUS] Parsed newStatus:", newStatus, "(type:", typeof newStatus, ")");
 
     if (!projectId || newStatus === undefined) {
       console.error("📊 [UPDATE-STATUS] Validation failed:", {
@@ -120,7 +120,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
     // this used to use modal_auto_redirect_admin and modal_auto_redirect_client
 
-    // // console.log("📊 [UPDATE-STATUS] Updating project status:", { projectId, newStatus, oldStatus });
+    // console.log("📊 [UPDATE-STATUS] Updating project status:", { projectId, newStatus, oldStatus });
 
     // Update project status
     const { data: updatedProject, error: updateError } = await supabase
@@ -143,9 +143,9 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
     // Log the status change using authenticated user
     try {
-      // // console.log("📊 [UPDATE-STATUS] Logging status change for user:", currentUser.id);
+      // console.log("📊 [UPDATE-STATUS] Logging status change for user:", currentUser.id);
       await SimpleProjectLogger.logStatusChange(projectId, currentUser, oldStatus, newStatus);
-      // // console.log("📊 [UPDATE-STATUS] Status change logged successfully");
+      // console.log("📊 [UPDATE-STATUS] Status change logged successfully");
     } catch (logError) {
       console.error("📊 [UPDATE-STATUS] Failed to log status change:", logError);
       // Don't fail the entire request if logging fails
@@ -171,8 +171,8 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
     if (statusDataResponse.ok) {
       const statusData = await statusDataResponse.json();
-      // // console.log("📊 [UPDATE-STATUS] Status data retrieved:", statusData);
-      // // console.log("🔍 [UPDATE-STATUS] Button config debug:", {
+      // console.log("📊 [UPDATE-STATUS] Status data retrieved:", statusData);
+      // console.log("🔍 [UPDATE-STATUS] Button config debug:", {
       //   button_link: statusData.statusConfig.button_link,
       //   button_text: statusData.statusConfig.button_text,
       //   hasButtonLink: !!statusData.statusConfig.button_link,
@@ -186,7 +186,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         newStatus: newStatus,
       };
 
-      // // console.log("📊 [UPDATE-STATUS] Merged data for placeholder replacement:", mergedData);
+      // console.log("📊 [UPDATE-STATUS] Merged data for placeholder replacement:", mergedData);
 
       // Get client profile data for placeholders
       const { data: profiles, error: profileError } = await supabase
@@ -227,17 +227,17 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         primaryColor: "#3b82f6", // Default primary color (can be made configurable later)
       };
 
-      // // console.log("📊 [UPDATE-STATUS] Placeholder data prepared:", placeholderData);
+      // console.log("📊 [UPDATE-STATUS] Placeholder data prepared:", placeholderData);
 
       // [DOES THIS NEED PLACEHOLDER UTIL?] - Check if this API call is still necessary
-      // // console.log("🔍 [PLACEHOLDER-DEBUG] About to call replace-placeholders API");
-      // // console.log("🔍 [PLACEHOLDER-DEBUG] mergedData keys:", Object.keys(mergedData));
-      // // console.log("🔍 [PLACEHOLDER-DEBUG] placeholderData keys:", Object.keys(placeholderData));
-      // // console.log(
+      // console.log("🔍 [PLACEHOLDER-DEBUG] About to call replace-placeholders API");
+      // console.log("🔍 [PLACEHOLDER-DEBUG] mergedData keys:", Object.keys(mergedData));
+      // console.log("🔍 [PLACEHOLDER-DEBUG] placeholderData keys:", Object.keys(placeholderData));
+      // console.log(
         "🔍 [PLACEHOLDER-DEBUG] modal_admin before API:",
         mergedData.statusConfig?.modal_admin
       );
-      // // console.log(
+      // console.log(
         "🔍 [PLACEHOLDER-DEBUG] modal_client before API:",
         mergedData.statusConfig?.modal_client
       );
@@ -253,12 +253,12 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
       if (placeholderResponse.ok) {
         const placeholderResult = await placeholderResponse.json();
-        // // console.log("📊 [UPDATE-STATUS] Placeholders replaced:", placeholderResult);
-        // // console.log(
+        // console.log("📊 [UPDATE-STATUS] Placeholders replaced:", placeholderResult);
+        // console.log(
           "🔍 [PLACEHOLDER-DEBUG] modal_admin after API:",
           placeholderResult.processedMessages?.modal_admin
         );
-        // // console.log(
+        // console.log(
           "🔍 [PLACEHOLDER-DEBUG] modal_client after API:",
           placeholderResult.processedMessages?.modal_client
         );
@@ -270,7 +270,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         };
 
         // Debug: Log the status configuration to see what's available
-        // // console.log("🔍 [UPDATE-STATUS] Status config for status", newStatus, ":", {
+        // console.log("🔍 [UPDATE-STATUS] Status config for status", newStatus, ":", {
         //   modal_admin: statusData.statusConfig.modal_admin,
         //   modal_client: statusData.statusConfig.modal_client,
         //   processedMessages: placeholderResult.processedMessages,
@@ -310,15 +310,15 @@ export const POST: APIRoute = async ({ request, cookies }) => {
           currentUserRole: currentRole,
         };
 
-        // // console.log("📊 [UPDATE-STATUS] Notification data prepared:", {
+        // console.log("📊 [UPDATE-STATUS] Notification data prepared:", {
         //   adminRedirect: statusData.statusConfig.modal_auto_redirect_admin,
         //   clientRedirect: statusData.statusConfig.modal_auto_redirect_client,
         //   projectId: updatedProject.id,
         //   notificationData,
         // });
 
-        // // console.log("📊 [UPDATE-STATUS] About to fetch admin and staff emails...");
-        // // console.log(
+        // console.log("📊 [UPDATE-STATUS] About to fetch admin and staff emails...");
+        // console.log(
         //   "📊 [UPDATE-STATUS] Final notification data:",
         //   JSON.stringify(notificationData, null, 2)
         // );
@@ -334,7 +334,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         if (adminStaffResponse.ok) {
           const adminStaffData = await adminStaffResponse.json();
           adminStaffEmails = adminStaffData.emails || [];
-          // // console.log("📊 [UPDATE-STATUS] Admin/Staff emails:", adminStaffEmails);
+          // console.log("📊 [UPDATE-STATUS] Admin/Staff emails:", adminStaffEmails);
         } else {
           console.error("📊 [UPDATE-STATUS] Failed to fetch admin/staff emails");
         }
@@ -359,7 +359,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
           processedButtonText = replacePlaceholders(processedButtonText, placeholderData, false);
         }
 
-        // // console.log("🔍 [UPDATE-STATUS] Processed button config:", {
+        // console.log("🔍 [UPDATE-STATUS] Processed button config:", {
         //   originalLink: statusData.statusConfig.button_link,
         //   processedLink: processedButtonLink,
         //   originalText: statusData.statusConfig.button_text,
@@ -367,7 +367,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         // });
 
         // Send client email using original email delivery API
-        // // console.log("📊 [UPDATE-STATUS] Sending client email...");
+        // console.log("📊 [UPDATE-STATUS] Sending client email...");
         const clientEmailResponse = await fetch(`${baseUrl}/api/email-delivery`, {
           method: "POST",
           headers: {
@@ -388,13 +388,13 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
         if (clientEmailResponse.ok) {
           const clientEmailResult = await clientEmailResponse.json();
-          // // console.log("📊 [UPDATE-STATUS] Client email sent:", clientEmailResult);
+          // console.log("📊 [UPDATE-STATUS] Client email sent:", clientEmailResult);
         } else {
           console.error("📊 [UPDATE-STATUS] Failed to send client email");
         }
 
         // Send admin emails using original email delivery API
-        // // console.log("📊 [UPDATE-STATUS] Sending admin emails...");
+        // console.log("📊 [UPDATE-STATUS] Sending admin emails...");
         const adminEmailResponse = await fetch(`${baseUrl}/api/email-delivery`, {
           method: "POST",
           headers: {
@@ -411,7 +411,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
         if (adminEmailResponse.ok) {
           const adminEmailResult = await adminEmailResponse.json();
-          // // console.log("📊 [UPDATE-STATUS] Admin emails sent:", adminEmailResult);
+          // console.log("📊 [UPDATE-STATUS] Admin emails sent:", adminEmailResult);
         } else {
           console.error("📊 [UPDATE-STATUS] Failed to send admin emails");
         }
@@ -424,7 +424,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         /*
         // Send push notifications to all relevant users
         try {
-          // // console.log("📱 [UPDATE-STATUS] Sending push notifications...");
+          // console.log("📱 [UPDATE-STATUS] Sending push notifications...");
 
           // Prepare push notification data
           const pushNotificationData = {
@@ -465,7 +465,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
           if (notificationResponse.ok) {
             const notificationResult = await notificationResponse.json();
-            // // console.log("📱 [UPDATE-STATUS] Notifications stored:", notificationResult);
+            // console.log("📱 [UPDATE-STATUS] Notifications stored:", notificationResult);
           } else {
             console.error("📱 [UPDATE-STATUS] Failed to store notifications");
           }

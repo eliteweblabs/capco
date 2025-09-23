@@ -6,7 +6,7 @@ export const GET: APIRoute = async ({ request, url }) => {
     const templateId = url.searchParams.get("templateId");
     const componentType = url.searchParams.get("type");
 
-    // // // console.log(
+    // console.log(
       `📄 [PDF-COMPONENTS] Fetching components${templateId ? ` for template ${templateId}` : ""}${componentType ? ` of type ${componentType}` : ""}`
     );
 
@@ -61,7 +61,7 @@ export const GET: APIRoute = async ({ request, url }) => {
       );
     }
 
-    // // // console.log(`✅ [PDF-COMPONENTS] Found ${components?.length || 0} components`);
+    // console.log(`✅ [PDF-COMPONENTS] Found ${components?.length || 0} components`);
 
     return new Response(
       JSON.stringify({
@@ -103,7 +103,7 @@ export const POST: APIRoute = async ({ request }) => {
       );
     }
 
-    // // // console.log(`📄 [PDF-COMPONENTS] Creating new component: ${name}`);
+    // console.log(`📄 [PDF-COMPONENTS] Creating new component: ${name}`);
 
     if (!supabase) {
       return new Response(
@@ -139,7 +139,7 @@ export const POST: APIRoute = async ({ request }) => {
       );
     }
 
-    // // // console.log(`✅ [PDF-COMPONENTS] Successfully created component: ${component.id}`);
+    // console.log(`✅ [PDF-COMPONENTS] Successfully created component: ${component.id}`);
 
     return new Response(
       JSON.stringify({

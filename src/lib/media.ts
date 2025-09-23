@@ -103,7 +103,7 @@ const getBucketAndPath = (
 
 // SAVE MEDIA FUNCTION
 export async function saveMedia(params: SaveMediaParams): Promise<MediaFile> {
-  // // console.log("🔧 [MEDIA-VERSIONING] saveMedia called:", {
+  // console.log("🔧 [MEDIA-VERSIONING] saveMedia called:", {
     fileName: params.fileName,
     fileType: params.fileType,
     projectId: params.projectId,
@@ -125,14 +125,14 @@ export async function saveMedia(params: SaveMediaParams): Promise<MediaFile> {
     params.currentUser.id
   );
 
-  // // console.log("🔧 [MEDIA-VERSIONING] Bucket routing:", { bucket, pathPrefix });
+  // console.log("🔧 [MEDIA-VERSIONING] Bucket routing:", { bucket, pathPrefix });
 
   // Convert base64 to file if needed
   let fileBuffer: ArrayBuffer;
   let contentType = params.fileType;
 
   if (typeof params.mediaData === "string" && params.mediaData.startsWith("data:")) {
-    // // console.log("🔧 [MEDIA-VERSIONING] Processing base64 data...");
+    // console.log("🔧 [MEDIA-VERSIONING] Processing base64 data...");
     const [header, base64Data] = params.mediaData.split(",");
     const mimeMatch = header.match(/data:([^;]+)/);
     if (mimeMatch) {
@@ -152,7 +152,7 @@ export async function saveMedia(params: SaveMediaParams): Promise<MediaFile> {
   // Check for existing file with same name in the same project/location
   let existingFile = null;
   if (params.projectId && params.targetLocation) {
-    // // console.log("🔧 [MEDIA-VERSIONING] Checking for existing file with same name...");
+    // console.log("🔧 [MEDIA-VERSIONING] Checking for existing file with same name...");
     const { data: existingFiles, error: existingError } = await supabaseAdmin
       .from("files")
       .select("*")
@@ -167,7 +167,7 @@ export async function saveMedia(params: SaveMediaParams): Promise<MediaFile> {
       console.error("🔧 [MEDIA-VERSIONING] Error checking existing files:", existingError);
     } else if (existingFiles) {
       existingFile = existingFiles;
-      // // console.log(
+      // console.log(
         "🔧 [MEDIA-VERSIONING] Found existing file:",
         existingFile.id,
         "version:",
@@ -182,7 +182,7 @@ export async function saveMedia(params: SaveMediaParams): Promise<MediaFile> {
   const uniqueFileName = `${timestamp}-${sanitizedFileName}`;
   const fullPath = `${pathPrefix}${uniqueFileName}`;
 
-  // // console.log("🔧 [MEDIA-VERSIONING] Final path:", fullPath);
+  // console.log("🔧 [MEDIA-VERSIONING] Final path:", fullPath);
 
   // Upload to Supabase Storage
   const { data: uploadData, error: uploadError } = await supabaseAdmin.storage
@@ -206,7 +206,7 @@ export async function saveMedia(params: SaveMediaParams): Promise<MediaFile> {
     versionNumber = existingFile.version_number + 1;
     previousVersionId = existingFile.id;
 
-    // // console.log("🔧 [MEDIA-VERSIONING] Creating new version:", {
+    // console.log("🔧 [MEDIA-VERSIONING] Creating new version:", {
       existingVersion: existingFile.version_number,
       newVersion: versionNumber,
       previousFileId: previousVersionId,
@@ -258,7 +258,7 @@ export async function saveMedia(params: SaveMediaParams): Promise<MediaFile> {
     is_current_version: true,
   };
 
-  // // console.log("🔧 [MEDIA-VERSIONING] Inserting database record:", fileRecord);
+  // console.log("🔧 [MEDIA-VERSIONING] Inserting database record:", fileRecord);
 
   const { data: dbData, error: dbError } = await supabaseAdmin
     .from("files")
@@ -280,7 +280,7 @@ export async function saveMedia(params: SaveMediaParams): Promise<MediaFile> {
     console.warn("🔧 [MEDIA-VERSIONING] Failed to generate signed URL:", urlError);
   }
 
-  // // console.log("🔧 [MEDIA-VERSIONING] Media saved successfully:", {
+  // console.log("🔧 [MEDIA-VERSIONING] Media saved successfully:", {
     id: dbData.id,
     version: versionNumber,
     isNewVersion: !!existingFile,
@@ -309,7 +309,7 @@ export async function getMedia(params: GetMediaParams): Promise<{
   count?: number;
   message: string;
 }> {
-  // // console.log("🐛 [MEDIA] getMedia called:", params);
+  // console.log("🐛 [MEDIA] getMedia called:", params);
 
   const { supabaseAdmin } = await import("./supabase-admin");
 
@@ -319,7 +319,7 @@ export async function getMedia(params: GetMediaParams): Promise<{
 
   // Handle featured image requests
   if (params.mediaType === "featured_image" && params.projectId) {
-    // // console.log("🐛 [MEDIA] Getting featured image for project:", params.projectId);
+    // console.log("🐛 [MEDIA] Getting featured image for project:", params.projectId);
 
     const { data: projectData, error: projectError } = await supabaseAdmin
       .from("projects")
@@ -333,7 +333,7 @@ export async function getMedia(params: GetMediaParams): Promise<{
 
     // Use denormalized data if available, but generate signed URL
     if (projectData?.featured_image_data) {
-      // // console.log("🐛 [MEDIA] Using denormalized featured image data");
+      // console.log("🐛 [MEDIA] Using denormalized featured image data");
 
       const featuredData = projectData.featured_image_data;
 
@@ -409,7 +409,7 @@ export async function getMedia(params: GetMediaParams): Promise<{
 
   // Handle specific file requests
   if (params.fileId) {
-    // // console.log("🐛 [MEDIA] Getting specific file:", params.fileId);
+    // console.log("🐛 [MEDIA] Getting specific file:", params.fileId);
 
     const { data: fileData, error: fileError } = await supabaseAdmin
       .from("files")
@@ -452,7 +452,7 @@ export async function getMedia(params: GetMediaParams): Promise<{
 
   // Handle project file lists
   if (params.projectId) {
-    // // console.log("🐛 [MEDIA] Getting project files:", params.projectId);
+    // console.log("🐛 [MEDIA] Getting project files:", params.projectId);
 
     // Get project's featured_image_id for marking files as featured
     const { data: projectData, error: projectError } = await supabaseAdmin
@@ -544,7 +544,7 @@ export async function deleteMedia(
     filePath: string;
   };
 }> {
-  // // console.log("🐛 [MEDIA] deleteMedia called:", fileId);
+  // console.log("🐛 [MEDIA] deleteMedia called:", fileId);
 
   const { supabaseAdmin } = await import("./supabase-admin");
 
@@ -563,7 +563,7 @@ export async function deleteMedia(
     throw new Error(`File not found: ${fileError.message}`);
   }
 
-  // // console.log("🐛 [MEDIA] File to delete:", fileData.file_path);
+  // console.log("🐛 [MEDIA] File to delete:", fileData.file_path);
 
   // Delete from storage
   const { error: storageError } = await supabaseAdmin.storage
@@ -590,7 +590,7 @@ export async function deleteMedia(
       .eq("featured_image_id", fileId);
   }
 
-  // // console.log("🐛 [MEDIA] Media deleted successfully:", fileId);
+  // console.log("🐛 [MEDIA] Media deleted successfully:", fileId);
 
   return {
     success: true,
@@ -613,7 +613,7 @@ export async function updateFeaturedImage(
   success: boolean;
   message: string;
 }> {
-  // // console.log("🐛 [MEDIA] updateFeaturedImage called:", { projectId, fileId, isActive });
+  // console.log("🐛 [MEDIA] updateFeaturedImage called:", { projectId, fileId, isActive });
 
   const { supabaseAdmin } = await import("./supabase-admin");
 
@@ -634,7 +634,7 @@ export async function updateFeaturedImage(
     throw new Error(`Database error: ${updateError.message}`);
   }
 
-  // // console.log("🐛 [MEDIA] Featured image updated successfully");
+  // console.log("🐛 [MEDIA] Featured image updated successfully");
 
   return {
     success: true,

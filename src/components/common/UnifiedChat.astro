@@ -12,10 +12,10 @@ const { currentUser } = Astro.props;
 const currentRole = currentUser?.profile?.role;
 
 // Debug logging
-// // // console.log("🔧 [UNIFIED-CHAT] Current user object:", currentUser);
-// // // console.log("🔧 [UNIFIED-CHAT] Current role:", currentRole);
-// // // console.log("🔧 [UNIFIED-CHAT] User ID:", currentUser?.id);
-// // // console.log("🔧 [UNIFIED-CHAT] Company name:", currentUser?.profile?.company_name);
+// console.log("🔧 [UNIFIED-CHAT] Current user object:", currentUser);
+// console.log("🔧 [UNIFIED-CHAT] Current role:", currentRole);
+// console.log("🔧 [UNIFIED-CHAT] User ID:", currentUser?.id);
+// console.log("🔧 [UNIFIED-CHAT] Company name:", currentUser?.profile?.company_name);
 
 if (currentRole !== "Admin" && currentRole !== "Staff") {
   return null;
@@ -219,15 +219,15 @@ if (currentRole !== "Admin" && currentRole !== "Staff") {
   // Initialize unified chat
   function initializeUnifiedChat() {
     if (isInitialized) {
-      // // // console.log("💬 [UNIFIED-CHAT] Already initialized");
+      // console.log("💬 [UNIFIED-CHAT] Already initialized");
       return;
     }
 
-    // // // console.log("💬 [UNIFIED-CHAT] Initializing unified chat");
+    // console.log("💬 [UNIFIED-CHAT] Initializing unified chat");
 
     const widget = document.getElementById("unified-chat-widget");
     if (!widget) {
-      // // // console.log("💬 [UNIFIED-CHAT] Widget not found");
+      // console.log("💬 [UNIFIED-CHAT] Widget not found");
       return;
     }
 
@@ -235,14 +235,14 @@ if (currentRole !== "Admin" && currentRole !== "Staff") {
     const userId = widget.dataset.userId || "unknown";
     const userName = widget.dataset.userName || "Unknown User";
 
-    // // // console.log("🔧 [UNIFIED-CHAT] Widget data attributes:", {
+    // console.log("🔧 [UNIFIED-CHAT] Widget data attributes:", {
       userRole: widget.dataset.userRole,
       userId: widget.dataset.userId,
       userName: widget.dataset.userName,
     });
 
     if (userRole !== "Admin" && userRole !== "Staff") {
-      // // // console.log("💬 [UNIFIED-CHAT] User not Admin/Staff, hiding widget");
+      // console.log("💬 [UNIFIED-CHAT] User not Admin/Staff, hiding widget");
       widget.classList.add("hidden");
       return;
     }
@@ -253,7 +253,7 @@ if (currentRole !== "Admin" && currentRole !== "Staff") {
       role: userRole,
     };
 
-    // // // console.log("💬 [UNIFIED-CHAT] Current user:", currentUser);
+    // console.log("💬 [UNIFIED-CHAT] Current user:", currentUser);
 
     // Initialize Socket.io connection
     initializeSocket();
@@ -265,7 +265,7 @@ if (currentRole !== "Admin" && currentRole !== "Staff") {
     loadUsers();
 
     isInitialized = true;
-    // // // console.log("💬 [UNIFIED-CHAT] Initialization complete");
+    // console.log("💬 [UNIFIED-CHAT] Initialization complete");
   }
 
   // Initialize Socket.io connection
@@ -282,7 +282,7 @@ if (currentRole !== "Admin" && currentRole !== "Staff") {
           ? "http://localhost:3001"
           : `https://${window.location.hostname}:3001`;
 
-      // // // console.log("🔧 [UNIFIED-CHAT] Connecting to socket server:", socketUrl);
+      // console.log("🔧 [UNIFIED-CHAT] Connecting to socket server:", socketUrl);
 
       socket = (window as any).io(socketUrl, {
         transports: ["websocket", "polling"],
@@ -293,9 +293,9 @@ if (currentRole !== "Admin" && currentRole !== "Staff") {
 
       // Connection events
       socket.on("connect", () => {
-        // // // console.log("✅ [UNIFIED-CHAT] Connected to server");
-        // // // console.log("🔧 [UNIFIED-CHAT] Socket ID:", socket.id);
-        // // // console.log("🔧 [UNIFIED-CHAT] Current user:", currentUser);
+        // console.log("✅ [UNIFIED-CHAT] Connected to server");
+        // console.log("🔧 [UNIFIED-CHAT] Socket ID:", socket.id);
+        // console.log("🔧 [UNIFIED-CHAT] Current user:", currentUser);
 
         // Join both group chat and direct messaging
         socket.emit("join", {
@@ -322,43 +322,43 @@ if (currentRole !== "Admin" && currentRole !== "Staff") {
       });
 
       socket.on("disconnect", (reason: any) => {
-        // // // console.log("❌ [UNIFIED-CHAT] Disconnected from server:", reason);
+        // console.log("❌ [UNIFIED-CHAT] Disconnected from server:", reason);
       });
 
       // Group chat events
       socket.on("chat_history", (messages: any) => {
-        // // // console.log("💬 [UNIFIED-CHAT] Group chat history:", messages.length);
+        // console.log("💬 [UNIFIED-CHAT] Group chat history:", messages.length);
         loadGroupChatHistory(messages);
       });
 
       socket.on("new_message", (message: any) => {
-        // // // console.log("💬 [UNIFIED-CHAT] New group message:", message);
+        // console.log("💬 [UNIFIED-CHAT] New group message:", message);
         addGroupMessage(message);
       });
 
       socket.on("user_list", (users: any) => {
-        // // // console.log("💬 [UNIFIED-CHAT] Online users:", users.length);
-        // // // console.log("🔧 [UNIFIED-CHAT] Users data:", users);
+        // console.log("💬 [UNIFIED-CHAT] Online users:", users.length);
+        // console.log("🔧 [UNIFIED-CHAT] Users data:", users);
         onlineUsers = users;
         updateOnlineCount();
       });
 
       // Direct messaging events
       socket.on("dm_user_list", (users: any) => {
-        // // // console.log("💬 [UNIFIED-CHAT] DM users:", users.length);
-        // // // console.log("🔧 [UNIFIED-CHAT] DM users data:", users);
+        // console.log("💬 [UNIFIED-CHAT] DM users:", users.length);
+        // console.log("🔧 [UNIFIED-CHAT] DM users data:", users);
         onlineUsers = users;
         updateUserList();
         updateOnlineCount();
       });
 
       socket.on("dm_message", (message: any) => {
-        // // // console.log("💬 [UNIFIED-CHAT] New direct message:", message);
+        // console.log("💬 [UNIFIED-CHAT] New direct message:", message);
         handleDirectMessage(message);
       });
 
       socket.on("dm_conversation_history", (data: any) => {
-        // // // console.log("💬 [UNIFIED-CHAT] DM conversation history:", data.messages.length);
+        // console.log("💬 [UNIFIED-CHAT] DM conversation history:", data.messages.length);
         loadConversationHistory(data.messages);
       });
     } catch (error) {
@@ -538,8 +538,8 @@ if (currentRole !== "Admin" && currentRole !== "Staff") {
     const userList = document.getElementById("dm-user-list");
     if (!userList) return;
 
-    // // // console.log("🔧 [UNIFIED-CHAT] Updating user list with:", users.length, "users");
-    // // // console.log("🔧 [UNIFIED-CHAT] Online users:", onlineUsers.length);
+    // console.log("🔧 [UNIFIED-CHAT] Updating user list with:", users.length, "users");
+    // console.log("🔧 [UNIFIED-CHAT] Online users:", onlineUsers.length);
 
     if (users.length === 0) {
       userList.innerHTML = `
@@ -556,7 +556,7 @@ if (currentRole !== "Admin" && currentRole !== "Staff") {
         const isOnline = onlineUsers.some((u) => u.userId === user.id || u.id === user.id);
         const unreadCount = conversations[user.id]?.unreadCount || 0;
 
-        // // // console.log(
+        // console.log(
           `🔧 [UNIFIED-CHAT] User ${user.company_name || user.email}: online=${isOnline}`
         );
 
@@ -688,13 +688,13 @@ if (currentRole !== "Admin" && currentRole !== "Staff") {
 
   // Initialize when DOM is ready
   document.addEventListener("DOMContentLoaded", () => {
-    // // // console.log("💬 [UNIFIED-CHAT] DOM Content Loaded");
+    // console.log("💬 [UNIFIED-CHAT] DOM Content Loaded");
     setTimeout(initializeUnifiedChat, 1000);
 
     // Periodic refresh of user list every 30 seconds
     setInterval(() => {
       if (socket && socket.connected) {
-        // // // console.log("🔄 [UNIFIED-CHAT] Refreshing user list");
+        // console.log("🔄 [UNIFIED-CHAT] Refreshing user list");
         socket.emit("join_dm", {
           userId: currentUser?.id,
           userName: currentUser?.name,
