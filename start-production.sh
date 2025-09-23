@@ -12,20 +12,17 @@ echo "EMAIL_LOGO_LIGHT: $EMAIL_LOGO_LIGHT"
 echo "COMPANY_LOGO_LIGHT: $COMPANY_LOGO_LIGHT"
 echo "PRIMARY_COLOR: $PRIMARY_COLOR"
 
-# For now, only start Astro application (Socket.io integration needed)
-echo "Starting Astro application..."
-node ./dist/server/entry.mjs &
-ASTRO_PID=$!
-echo "Astro application started with PID: $ASTRO_PID"
-
-# TODO: Integrate Socket.io with Astro server instead of running separately
-# The separate Socket.io server on port 3001 is not accessible from Railway
+# Start integrated Astro + Socket.io server
+echo "Starting integrated Astro + Socket.io server..."
+node server.mjs &
+SERVER_PID=$!
+echo "Integrated server started with PID: $SERVER_PID"
 
 # Function to gracefully shut down processes
 cleanup() {
   echo "Shutting down processes..."
-  if [ ! -z "$ASTRO_PID" ]; then
-    kill $ASTRO_PID 2>/dev/null
+  if [ ! -z "$SERVER_PID" ]; then
+    kill $SERVER_PID 2>/dev/null
   fi
   echo "Processes shut down."
   exit 0
@@ -34,7 +31,7 @@ cleanup() {
 # Trap signals to ensure graceful shutdown
 trap cleanup TERM INT
 
-echo "Astro server started. Waiting for process to finish..."
+echo "Integrated server started. Waiting for process to finish..."
 
 # Keep the script running and wait for the process
-wait $ASTRO_PID
+wait $SERVER_PID
