@@ -13,11 +13,11 @@ RUN npm install
 # Copy source code
 COPY . .
 
-# Copy the production startup script
-COPY start-production.sh ./
-RUN chmod +x start-production.sh
+# Ensure the production startup script has execute permissions and verify it exists
+RUN ls -la start-production.sh && chmod +x start-production.sh && ls -la start-production.sh
 
 # Build the application with environment variables
+# Accept build-time arguments (Railway passes these automatically)
 ARG SUPABASE_URL
 ARG SUPABASE_ANON_KEY
 ARG SUPABASE_SERVICE_ROLE_KEY
@@ -29,6 +29,8 @@ ARG GOOGLE_MAPS_API_KEY
 ARG PUBLIC_STRIPE_PUBLISHABLE_KEY
 ARG STRIPE_SECRET_KEY
 ARG SITE_URL
+
+# Set environment variables for build (required for Astro build)
 ENV SUPABASE_URL=$SUPABASE_URL
 ENV SUPABASE_ANON_KEY=$SUPABASE_ANON_KEY
 ENV SUPABASE_SERVICE_ROLE_KEY=$SUPABASE_SERVICE_ROLE_KEY
@@ -42,6 +44,14 @@ ENV STRIPE_SECRET_KEY=$STRIPE_SECRET_KEY
 ENV SITE_URL=$SITE_URL
 ENV PUBLIC_SUPABASE_URL=$SUPABASE_URL
 ENV CHAT_PORT=3001
+
+# Debug: Print environment variables during build
+RUN echo "🔍 BUILD-TIME ENV CHECK:"
+RUN echo "SITE_URL: $SITE_URL"
+RUN echo "NODE_ENV: $NODE_ENV"
+RUN echo "SUPABASE_URL: $SUPABASE_URL"
+
+# Build the application
 RUN npm run build
 
 # Expose ports (Railway uses dynamic PORT for main app, 3001 for Socket.io)
@@ -54,4 +64,4 @@ ENV HOST=0.0.0.0
 ENV PORT=$PORT
 
 # Start both the Astro application and Socket.io server
-CMD ["./start-production.sh"] 
+CMD ["/bin/sh", "./start-production.sh"] 

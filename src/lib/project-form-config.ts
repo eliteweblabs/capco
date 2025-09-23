@@ -655,7 +655,7 @@ export function generateFormFieldHTML(
 //             (option) => `
 //           <button
 //             type="button"
-//             class="${group.cssClass} px-3 py-2 text-sm rounded-full border border-border-light dark:border-border-dark bg-background-card _1jTZ8KXRZul60S6czNi text-secondary dark:text-secondary-dark hover:bg-neutral-50 dark:hover:bg-neutral-600 transition-colors ${selectedValues.includes(option.value) ? "bg-primary-500 text-white border-primary-500" : ""}"
+//             class="${group.cssClass} px-3 py-2 text-sm rounded-full border border-border-light dark:border-border-dark bg-background-card _1jTZ8KXRZul60S6czNi text-gray-800 dark:text-gray-200 hover:bg-neutral-50 dark:hover:bg-neutral-600 transition-colors ${selectedValues.includes(option.value) ? "bg-primary-500 text-white border-primary-500" : ""}"
 //             data-value="${option.value}"
 //             data-group="${group.name}"
 //             data-type="${group.type}"

@@ -52,6 +52,14 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     // Use the proper base URL function to avoid localhost in production
     const { getBaseUrl } = await import("../../lib/url-utils");
     const baseUrl = getBaseUrl(request);
+    
+    // DEBUG: Log URL information to troubleshoot magic link localhost issue
+    console.log("🌐 [EMAIL-DELIVERY] URL DEBUG INFO:");
+    console.log("🌐 [EMAIL-DELIVERY] Request URL:", request.url);
+    console.log("🌐 [EMAIL-DELIVERY] Request Origin:", new URL(request.url).origin);
+    console.log("🌐 [EMAIL-DELIVERY] process.env.SITE_URL:", process.env.SITE_URL);
+    console.log("🌐 [EMAIL-DELIVERY] import.meta.env.SITE_URL:", import.meta.env.SITE_URL);
+    console.log("🌐 [EMAIL-DELIVERY] Final baseUrl:", baseUrl);
 
     const {
       usersToNotify,
@@ -190,6 +198,18 @@ export const POST: APIRoute = async ({ request, cookies }) => {
           } else {
             // Replace template variables for regular emails
             emailHtml = emailTemplate.replace("{{CONTENT}}", emailContent);
+            emailHtml = emailHtml.replace(
+              "{{COMPANY_LOGO_LIGHT}}",
+              process.env.EMAIL_LOGO_LIGHT || "No Logo Img"
+            );
+            emailHtml = emailHtml.replace(
+              "{{COMPANY_LOGO_DARK}}",
+              process.env.EMAIL_LOGO_LIGHT || "No Logo Img"
+            );
+            emailHtml = emailHtml.replace(
+              "{{PRIMARY_COLOR}}",
+              process.env.PRIMARY_COLOR || "#3b82f6"
+            );
           }
 
           // Override buttonLink with magic link for authentication

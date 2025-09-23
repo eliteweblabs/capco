@@ -29,7 +29,7 @@ Use the custom color names defined in `tailwind.config.mjs`:
 
 <!-- Text Colors -->
 <div class="dark:text-light text-black">Primary Text</div>
-<div class="text-secondary dark:text-secondary-dark">Secondary Text</div>
+<div class="text-gray-800 dark:text-gray-200">Secondary Text</div>
 
 <!-- Border Colors -->
 <div class="border border-border-light dark:border-border-dark">Adaptive Border</div>
@@ -126,7 +126,7 @@ All colors automatically adapt to dark mode using the `dark:` prefix in Tailwind
   class="_1jTZ8KXRZul60S6czNi rounded-lg border border-border-light bg-background-card p-6 dark:border-border-dark"
 >
   <h3 class="dark:text-light mb-2 text-xl font-semibold text-black">Card Title</h3>
-  <p class="text-secondary dark:text-secondary-dark">Card content goes here.</p>
+  <p class="text-gray-800 dark:text-gray-200">Card content goes here.</p>
 </div>
 ```
 
