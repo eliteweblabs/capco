@@ -90,7 +90,7 @@ export async function getProjectsByAuthor(
       return project;
     });
 
-    // console.log(
+    // // console.log(
     //   `🏗️ [PROJECTS-API] Retrieved ${projectsWithImageData.length} projects for author ${authorId}`
     // );
     return projectsWithImageData;
@@ -130,7 +130,7 @@ export async function getProjectsByAssignedToId(
       return project;
     });
 
-    // console.log(
+    // // console.log(
     //   `🏗️ [PROJECTS-API] Retrieved ${projectsWithImageData.length} projects for author ${assignedToId}`
     // );
     return projectsWithImageData;

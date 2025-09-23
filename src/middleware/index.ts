@@ -55,7 +55,7 @@ export const onRequest = defineMiddleware(async ({ locals, url, cookies, redirec
 
       // If profile doesn't exist, create it automatically
       if (profileError && profileError.code === "PGRST116") {
-        console.log(
+        // // // console.log(
           "🔐 [MIDDLEWARE] User profile not found, creating missing profile for user:",
           data.user.id
         );
@@ -83,7 +83,7 @@ export const onRequest = defineMiddleware(async ({ locals, url, cookies, redirec
           // Continue with default role if profile creation fails
           profile = { role: "Client" };
         } else {
-          console.log("🔐 [MIDDLEWARE] Missing profile created successfully");
+          // // // console.log("🔐 [MIDDLEWARE] Missing profile created successfully");
           profile = { role: "Client" };
         }
       }

@@ -4,7 +4,7 @@ import { userInfoCache } from "../../lib/user-utils";
 
 // 🚧 DEAD STOP - 2024-12-19: Potentially unused API endpoint
 // If you see this log after a few days, this endpoint can likely be deleted
-console.log("🚧 [DEAD-STOP-2024-12-19] clear-cache.ts accessed - may be unused");
+// // // console.log("🚧 [DEAD-STOP-2024-12-19] clear-cache.ts accessed - may be unused");
 
 export const POST: APIRoute = async ({ request }) => {
   try {
@@ -17,7 +17,7 @@ export const POST: APIRoute = async ({ request }) => {
     // Get cache statistics before clearing (for logging)
     const stats = apiCache.getStats();
 
-    console.log("🧹 [CLEAR-CACHE] Cache cleared successfully:", {
+    // // console.log("🧹 [CLEAR-CACHE] Cache cleared successfully:", {
       previousCacheSize: stats.size,
       previousProfileCacheSize: stats.profileCacheSize,
       timestamp: new Date().toISOString(),
@@ -66,7 +66,7 @@ export const GET: APIRoute = async () => {
     // Get cache statistics
     const stats = apiCache.getStats();
 
-    console.log("🧹 [CLEAR-CACHE] Cache cleared via GET request");
+    // // // console.log("🧹 [CLEAR-CACHE] Cache cleared via GET request");
 
     return new Response(
       JSON.stringify({

@@ -12,7 +12,7 @@ const canManageProposals = currentRole === "Admin" || currentRole === "Staff";
 // Check if there's already an invoice for this project
 let existingInvoice = null;
 try {
-  // console.log("🔍 [ProposalManager] Checking for existing invoice for project:", projectId);
+  // // console.log("🔍 [ProposalManager] Checking for existing invoice for project:", projectId);
 
   if (!supabase) {
     console.error("❌ [ProposalManager] Database not configured");
@@ -30,18 +30,18 @@ try {
     .order("created_at", { ascending: false })
     .limit(1);
   
-  // console.log("🔍 [ProposalManager] Invoice query result:", { invoices, error });
+  // // console.log("🔍 [ProposalManager] Invoice query result:", { invoices, error });
   
   if (!error && invoices && invoices.length > 0) {
     existingInvoice = invoices[0]; // Get the most recent proposal
-    // console.log("✅ [ProposalManager] Found existing invoice:", existingInvoice);
-    // console.log("🔍 [ProposalManager] Invoice catalog_line_items:", existingInvoice.catalog_line_items);
-    // console.log("🔍 [ProposalManager] Invoice catalog_line_items length:", existingInvoice.catalog_line_items?.length);
-    // console.log("🔍 [ProposalManager] Invoice catalog_line_items type:", typeof existingInvoice.catalog_line_items);
+    // // console.log("✅ [ProposalManager] Found existing invoice:", existingInvoice);
+    // // console.log("🔍 [ProposalManager] Invoice catalog_line_items:", existingInvoice.catalog_line_items);
+    // // console.log("🔍 [ProposalManager] Invoice catalog_line_items length:", existingInvoice.catalog_line_items?.length);
+    // // console.log("🔍 [ProposalManager] Invoice catalog_line_items type:", typeof existingInvoice.catalog_line_items);
     
     // Let's also check if there are line items directly
     if (existingInvoice.id) {
-      // console.log("🔍 [ProposalManager] Checking for line items directly for invoice ID:", existingInvoice.id);
+      // // console.log("🔍 [ProposalManager] Checking for line items directly for invoice ID:", existingInvoice.id);
       let catalogItemIds = [];
       if (existingInvoice.catalog_line_items) {
         for (let i = 0; i < existingInvoice.catalog_line_items.length; i++) {
@@ -53,10 +53,10 @@ try {
         .select("*")
         .in("id", catalogItemIds);
       
-      // console.log("🔍 [ProposalManager] Direct line items query:", { directLineItems, lineItemsError });
+      // // console.log("🔍 [ProposalManager] Direct line items query:", { directLineItems, lineItemsError });
     }
   } else {
-    // console.log("❌ [ProposalManager] No existing invoice found:", error);
+    // // console.log("❌ [ProposalManager] No existing invoice found:", error);
   }
 } catch (error) {
   console.error("❌ [ProposalManager] Error checking for existing invoice:", error);
@@ -360,13 +360,13 @@ const hasExistingProposal = !!existingInvoice;
   // Define ProposalManager class directly in the script (following working pattern from PDF uploader)
   class ProposalManager {
     constructor(projectId, project, projectAuthor, projectStatus, currentUser) {
-      console.log("🔧 [PROPOSAL-MANAGER] Constructor called with projectId:", projectId);
+      // // console.log("🔧 [PROPOSAL-MANAGER] Constructor called with projectId:", projectId);
       this.projectId = projectId;
       this.project = project;
       this.projectAuthor = projectAuthor;
       this.projectStatus = projectStatus;
       this.currentUser = currentUser;
-      console.log("🔧 [PROPOSAL-MANAGER] Constructor set this.projectId to:", this.projectId);
+      // // console.log("🔧 [PROPOSAL-MANAGER] Constructor set this.projectId to:", this.projectId);
       this.isEditMode = false;
       this.cachedLineItems = null;
       this.cachedTotal = null;
@@ -378,7 +378,7 @@ const hasExistingProposal = !!existingInvoice;
     }
 
     async buildProposal() {
-      console.log("🔧 [PROPOSAL-MANAGER] Building proposal for project:", this.projectId);
+      // // console.log("🔧 [PROPOSAL-MANAGER] Building proposal for project:", this.projectId);
 
       if (!this.project) {
         console.error("Project data not available");
@@ -407,13 +407,13 @@ const hasExistingProposal = !!existingInvoice;
       // Ensure totals are calculated after everything is loaded
       setTimeout(() => {
         updateProposalTotal();
-        console.log("🔧 [PROPOSAL-MANAGER] Updated totals after building proposal");
+        // // console.log("🔧 [PROPOSAL-MANAGER] Updated totals after building proposal");
       }, 100);
     }
 
     async ensureInvoiceExists() {
       try {
-        console.log("🔍 [PROPOSAL-MANAGER] Ensuring invoice exists for project:", this.projectId);
+        // // console.log("🔍 [PROPOSAL-MANAGER] Ensuring invoice exists for project:", this.projectId);
         
         // Check if invoice already exists
         const response = await fetch(`/api/get-project-invoice?projectId=${this.projectId}`);
@@ -421,7 +421,7 @@ const hasExistingProposal = !!existingInvoice;
         
         if (data.success && data.invoice) {
           this.invoiceId = parseInt(data.invoice.id);
-          console.log("✅ [PROPOSAL-MANAGER] Found existing invoice:", this.invoiceId);
+          // // console.log("✅ [PROPOSAL-MANAGER] Found existing invoice:", this.invoiceId);
         } else {
           // Create new invoice
           const createResponse = await fetch("/api/create-invoice", {
@@ -441,7 +441,7 @@ const hasExistingProposal = !!existingInvoice;
           const createData = await createResponse.json();
           if (createData.success) {
             this.invoiceId = parseInt(createData.invoice.id);
-            console.log("✅ [PROPOSAL-MANAGER] Created new invoice:", this.invoiceId);
+            // // console.log("✅ [PROPOSAL-MANAGER] Created new invoice:", this.invoiceId);
           } else {
             console.error("❌ [PROPOSAL-MANAGER] Failed to create invoice:", createData.error);
           }
@@ -453,12 +453,12 @@ const hasExistingProposal = !!existingInvoice;
 
     async loadDataFromDatabase() {
       if (!this.invoiceId) {
-        console.log("❌ [PROPOSAL-MANAGER] No invoice ID, cannot load data");
+        // // console.log("❌ [PROPOSAL-MANAGER] No invoice ID, cannot load data");
         return;
       }
       
       try {
-        console.log("🔍 [PROPOSAL-MANAGER] Loading data from database for invoice:", this.invoiceId);
+        // // console.log("🔍 [PROPOSAL-MANAGER] Loading data from database for invoice:", this.invoiceId);
         
         const response = await fetch(`/api/get-invoice-details?id=${this.invoiceId}`);
         const data = await response.json();
@@ -466,7 +466,7 @@ const hasExistingProposal = !!existingInvoice;
         if (data.success && data.invoice) {
           const invoice = data.invoice;
           
-          console.log("🔍 [PROPOSAL-MANAGER] Invoice data received:", {
+          // // console.log("🔍 [PROPOSAL-MANAGER] Invoice data received:", {
             id: invoice.id,
             created_at: invoice.created_at,
             subject: invoice.subject,
@@ -492,12 +492,12 @@ const hasExistingProposal = !!existingInvoice;
               // Replace skeleton with actual subject text
               subjectTextElement.className = "text-2xl font-medium text-gray-800 dark:text-gray-200"; // Restore original styling
               subjectTextElement.textContent = invoice.subject;
-              console.log("✅ [PROPOSAL-MANAGER] Loaded subject:", invoice.subject);
+              // // console.log("✅ [PROPOSAL-MANAGER] Loaded subject:", invoice.subject);
             } else {
               // No subject in database, show default
               subjectTextElement.className = "text-2xl font-medium text-gray-800 dark:text-gray-200"; // Restore original styling
               subjectTextElement.textContent = "Fire Protection Services Proposal";
-              console.log("✅ [PROPOSAL-MANAGER] No subject in database, using default");
+              // // console.log("✅ [PROPOSAL-MANAGER] No subject in database, using default");
             }
             
             if (hiddenInput) {
@@ -517,7 +517,7 @@ const hasExistingProposal = !!existingInvoice;
                 month: 'long',
                 day: 'numeric'
               });
-              console.log("✅ [PROPOSAL-MANAGER] Using invoice creation date:", dateToShow);
+              // // console.log("✅ [PROPOSAL-MANAGER] Using invoice creation date:", dateToShow);
             } else {
               // No date in database, use current time
               const now = new Date();
@@ -526,11 +526,11 @@ const hasExistingProposal = !!existingInvoice;
                 month: 'long',
                 day: 'numeric'
               });
-              console.log("✅ [PROPOSAL-MANAGER] No invoice date, using current date:", dateToShow);
+              // // console.log("✅ [PROPOSAL-MANAGER] No invoice date, using current date:", dateToShow);
             }
             proposalDateElement.textContent = dateToShow;
           } else {
-            console.log("❌ [PROPOSAL-MANAGER] proposal-date element not found");
+            // // console.log("❌ [PROPOSAL-MANAGER] proposal-date element not found");
           }
           
           // Load proposal notes from invoice
@@ -538,13 +538,13 @@ const hasExistingProposal = !!existingInvoice;
           if (notesElement) {
             if (invoice.proposal_notes) {
               notesElement.value = invoice.proposal_notes;
-              console.log("✅ [PROPOSAL-MANAGER] Loaded notes:", invoice.proposal_notes);
+              // // console.log("✅ [PROPOSAL-MANAGER] Loaded notes:", invoice.proposal_notes);
             } else {
               notesElement.value = "";
-              console.log("✅ [PROPOSAL-MANAGER] No notes in database, using empty string");
+              // // console.log("✅ [PROPOSAL-MANAGER] No notes in database, using empty string");
             }
           } else {
-            console.log("❌ [PROPOSAL-MANAGER] proposal-notes element not found");
+            // // console.log("❌ [PROPOSAL-MANAGER] proposal-notes element not found");
           }
           
           // If no line items, initialize with defaults
@@ -553,7 +553,7 @@ const hasExistingProposal = !!existingInvoice;
             await this.saveToDatabase(); // Save the defaults
           }
           
-          console.log("✅ [PROPOSAL-MANAGER] Loaded line items:", this.cachedLineItems);
+          // // console.log("✅ [PROPOSAL-MANAGER] Loaded line items:", this.cachedLineItems);
         } else {
           // Failed to load data, show default subject
           const subjectTextElement = document.getElementById("proposal-subject-text");
@@ -587,7 +587,7 @@ const hasExistingProposal = !!existingInvoice;
     }
 
     initializeProposalForm() {
-      console.log("🔧 [PROPOSAL-MANAGER] Initializing proposal form...");
+      // // console.log("🔧 [PROPOSAL-MANAGER] Initializing proposal form...");
       
       // Set project details in the form
 
@@ -595,7 +595,7 @@ const hasExistingProposal = !!existingInvoice;
       const clientName = document.getElementById("proposal-client-name");
       const proposalDate = document.getElementById("proposal-date");
       
-      console.log("🔍 [PROPOSAL-MANAGER] Found elements:", {
+      // // console.log("🔍 [PROPOSAL-MANAGER] Found elements:", {
         
 
         projectAddress: !!projectAddress,
@@ -630,7 +630,7 @@ const hasExistingProposal = !!existingInvoice;
     renderLineItems() {
       const tbody = document.getElementById("proposal-line-items");
       if (!tbody || !this.cachedLineItems) {
-        console.log("❌ [PROPOSAL-MANAGER] Cannot render line items:", { tbody: !!tbody, cachedLineItems: !!this.cachedLineItems });
+        // // console.log("❌ [PROPOSAL-MANAGER] Cannot render line items:", { tbody: !!tbody, cachedLineItems: !!this.cachedLineItems });
         return;
       }
 
@@ -638,7 +638,7 @@ const hasExistingProposal = !!existingInvoice;
       
       // Render each line item
       this.cachedLineItems.forEach((item, index) => {
-        console.log(`🔧 [PROPOSAL-MANAGER] Rendering item ${index}:`, {
+        // // console.log(`🔧 [PROPOSAL-MANAGER] Rendering item ${index}:`, {
           name: item.name,
           description: item.description,
           quantity: item.quantity,
@@ -714,12 +714,12 @@ const hasExistingProposal = !!existingInvoice;
         this.cachedLineItems[index][field] = value;
       }
       
-      console.log(`🔧 [PROPOSAL-MANAGER] Updated ${field} for item ${index}:`, value);
+      // // console.log(`🔧 [PROPOSAL-MANAGER] Updated ${field} for item ${index}:`, value);
       
       // Update totals after a small delay to ensure DOM is ready
       setTimeout(() => {
         updateProposalTotal();
-        console.log("🔧 [PROPOSAL-MANAGER] Updated totals after line item change");
+        // // console.log("🔧 [PROPOSAL-MANAGER] Updated totals after line item change");
       }, 50);
       
       // Schedule save to database with debounce
@@ -748,7 +748,7 @@ const hasExistingProposal = !!existingInvoice;
       const field = inputElement.getAttribute('data-field');
       const value = inputElement.value;
       
-      console.log("🔍 [PROPOSAL-MANAGER] updateLineItemFromInput:", { rowIndex, field, value });
+      // // console.log("🔍 [PROPOSAL-MANAGER] updateLineItemFromInput:", { rowIndex, field, value });
       
       if (rowIndex !== null && field && this.cachedLineItems && this.cachedLineItems[rowIndex]) {
         this.updateLineItem(rowIndex, field, value);
@@ -779,12 +779,12 @@ const hasExistingProposal = !!existingInvoice;
         }
       });
       
-      console.log("🔍 [PROPOSAL-MANAGER] Saved DOM values to cache:", this.cachedLineItems);
+      // // console.log("🔍 [PROPOSAL-MANAGER] Saved DOM values to cache:", this.cachedLineItems);
     }
 
 
     addProposalRow() {
-      console.log("➕ [PROPOSAL-MANAGER] Adding new line item");
+      // // console.log("➕ [PROPOSAL-MANAGER] Adding new line item");
       
       if (!this.cachedLineItems) this.cachedLineItems = [];
       
@@ -801,7 +801,7 @@ const hasExistingProposal = !!existingInvoice;
       // Update totals after a small delay to ensure DOM is ready
       setTimeout(() => {
         updateProposalTotal();
-        console.log("🔧 [PROPOSAL-MANAGER] Updated totals after adding new row");
+        // // console.log("🔧 [PROPOSAL-MANAGER] Updated totals after adding new row");
       }, 100);
       
       // Schedule save to database
@@ -849,18 +849,18 @@ const hasExistingProposal = !!existingInvoice;
     }
 
     deleteProposalRow(index) {
-      console.log("🗑️ [PROPOSAL-MANAGER] Deleting line item at index:", index);
-      console.log("🗑️ [PROPOSAL-MANAGER] Before deletion, cachedLineItems:", this.cachedLineItems);
+      // // console.log("🗑️ [PROPOSAL-MANAGER] Deleting line item at index:", index);
+      // // console.log("🗑️ [PROPOSAL-MANAGER] Before deletion, cachedLineItems:", this.cachedLineItems);
       
       if (!this.cachedLineItems || !this.cachedLineItems[index]) {
-        console.log("❌ [PROPOSAL-MANAGER] Cannot delete - no item at index:", index);
+        // // console.log("❌ [PROPOSAL-MANAGER] Cannot delete - no item at index:", index);
         return;
       }
       
       // Delete the line item immediately
       const deletedItem = this.cachedLineItems.splice(index, 1)[0];
-      console.log("🗑️ [PROPOSAL-MANAGER] Deleted item:", deletedItem);
-      console.log("🗑️ [PROPOSAL-MANAGER] After deletion, cachedLineItems:", this.cachedLineItems);
+      // // console.log("🗑️ [PROPOSAL-MANAGER] Deleted item:", deletedItem);
+      // // console.log("🗑️ [PROPOSAL-MANAGER] After deletion, cachedLineItems:", this.cachedLineItems);
       
       this.renderLineItems();
       updateProposalTotal();
@@ -870,22 +870,22 @@ const hasExistingProposal = !!existingInvoice;
     }
 
     updateRowTotal(index) {
-      console.log("🔍 [PROPOSAL-MANAGER] updateRowTotal called");
+      // // console.log("🔍 [PROPOSAL-MANAGER] updateRowTotal called");
       updateProposalTotal();
     }
 
     async loadExistingInvoice(invoice) {
-      console.log("🔧 [PROPOSAL-MANAGER] Loading existing invoice:", invoice);
+      // // console.log("🔧 [PROPOSAL-MANAGER] Loading existing invoice:", invoice);
       
       if (!invoice) {
-        console.log("❌ [PROPOSAL-MANAGER] No invoice data provided");
+        // // console.log("❌ [PROPOSAL-MANAGER] No invoice data provided");
         return;
       }
       
       try {
         // Set the invoice ID
         this.invoiceId = parseInt(invoice.id);
-        console.log("✅ [PROPOSAL-MANAGER] Set invoice ID:", this.invoiceId);
+        // // console.log("✅ [PROPOSAL-MANAGER] Set invoice ID:", this.invoiceId);
         
         // Show the proposal content (hide placeholder)
         const placeholder = document.getElementById("proposal-placeholder");
@@ -906,10 +906,10 @@ const hasExistingProposal = !!existingInvoice;
         // Ensure totals are calculated after everything is loaded
         setTimeout(() => {
           updateProposalTotal();
-          console.log("🔧 [PROPOSAL-MANAGER] Updated totals after loading existing invoice");
+          // // console.log("🔧 [PROPOSAL-MANAGER] Updated totals after loading existing invoice");
         }, 100);
         
-        console.log("✅ [PROPOSAL-MANAGER] Successfully loaded existing invoice and showed proposal");
+        // // console.log("✅ [PROPOSAL-MANAGER] Successfully loaded existing invoice and showed proposal");
       } catch (error) {
         console.error("❌ [PROPOSAL-MANAGER] Error loading existing invoice:", error);
         throw error;
@@ -917,12 +917,12 @@ const hasExistingProposal = !!existingInvoice;
     }
 
     regenerateProposal() {
-      console.log("🔧 [PROPOSAL-MANAGER] Regenerating proposal");
+      // // console.log("🔧 [PROPOSAL-MANAGER] Regenerating proposal");
       this.buildProposal();
     }
 
     sendProposal() {
-      console.log("🔧 [PROPOSAL-MANAGER] Sending proposal");
+      // // console.log("🔧 [PROPOSAL-MANAGER] Sending proposal");
       // Implementation for sending proposal
     }
 
@@ -937,28 +937,28 @@ const hasExistingProposal = !!existingInvoice;
         this.saveToDatabase();
       }, this.saveBuffer);
       
-      console.log("⏰ [PROPOSAL-MANAGER] Save scheduled in", this.saveBuffer, "ms");
+      // // console.log("⏰ [PROPOSAL-MANAGER] Save scheduled in", this.saveBuffer, "ms");
     }
 
     async saveToDatabase() {
-      console.log("🔍 [PROPOSAL-MANAGER] saveToDatabase called with projectId:", this.projectId, "invoiceId:", this.invoiceId);
+      // // console.log("🔍 [PROPOSAL-MANAGER] saveToDatabase called with projectId:", this.projectId, "invoiceId:", this.invoiceId);
       
       if (!this.projectId) {
-        console.log("❌ [PROPOSAL-MANAGER] No project ID, cannot save");
+        // // console.log("❌ [PROPOSAL-MANAGER] No project ID, cannot save");
         return;
       }
       
       if (!this.invoiceId) {
-        console.log("❌ [PROPOSAL-MANAGER] No invoice ID, cannot save. Ensuring invoice exists...");
+        // // console.log("❌ [PROPOSAL-MANAGER] No invoice ID, cannot save. Ensuring invoice exists...");
         await this.ensureInvoiceExists();
         if (!this.invoiceId) {
-          console.log("❌ [PROPOSAL-MANAGER] Failed to create/get invoice ID");
+          // // console.log("❌ [PROPOSAL-MANAGER] Failed to create/get invoice ID");
           return;
         }
       }
       
       try {
-        console.log("💾 [PROPOSAL-MANAGER] Saving to database...");
+        // // console.log("💾 [PROPOSAL-MANAGER] Saving to database...");
         
         const lineItems = this.getLineItemsDataForDatabase();
         
@@ -966,7 +966,7 @@ const hasExistingProposal = !!existingInvoice;
         const notesElement = document.getElementById("proposal-notes");
         const notes = notesElement?.value || "";
         
-        console.log("🔍 [PROPOSAL-MANAGER] Sending data:", {
+        // // console.log("🔍 [PROPOSAL-MANAGER] Sending data:", {
           invoiceId: this.invoiceId,
           lineItemsCount: lineItems?.length || 0,
           lineItems: lineItems,
@@ -986,7 +986,7 @@ const hasExistingProposal = !!existingInvoice;
         const data = await response.json();
         
         if (data.success) {
-          console.log("✅ [PROPOSAL-MANAGER] Saved successfully to database");
+          // // console.log("✅ [PROPOSAL-MANAGER] Saved successfully to database");
         } else {
           console.error("❌ [PROPOSAL-MANAGER] Failed to save:", data.error);
         }
@@ -999,10 +999,10 @@ const hasExistingProposal = !!existingInvoice;
 
     // Get line items data formatted for database storage
     getLineItemsDataForDatabase() {
-      console.log("🔍 [PROPOSAL-MANAGER] getLineItemsDataForDatabase - cachedLineItems:", this.cachedLineItems);
+      // // console.log("🔍 [PROPOSAL-MANAGER] getLineItemsDataForDatabase - cachedLineItems:", this.cachedLineItems);
       
       if (!this.cachedLineItems) {
-        console.log("❌ [PROPOSAL-MANAGER] No cachedLineItems found");
+        // // console.log("❌ [PROPOSAL-MANAGER] No cachedLineItems found");
         return [];
       }
       
@@ -1014,13 +1014,13 @@ const hasExistingProposal = !!existingInvoice;
         catalog_item_id: item.catalog_item_id || null  // Include the ID as the key
       }));
       
-      console.log("🔍 [PROPOSAL-MANAGER] getLineItemsDataForDatabase - result:", result);
+      // // console.log("🔍 [PROPOSAL-MANAGER] getLineItemsDataForDatabase - result:", result);
       return result;
     }
 
     // Autocomplete functionality
     initializeAutocomplete() {
-      console.log("🔍 [AUTOCOMPLETE] Initializing autocomplete for ProposalManager");
+      // // console.log("🔍 [AUTOCOMPLETE] Initializing autocomplete for ProposalManager");
       
       // Only set up event delegation once
       if (!this.autocompleteInitialized) {
@@ -1034,7 +1034,7 @@ const hasExistingProposal = !!existingInvoice;
       document.addEventListener('focus', (e) => {
         const target = e.target;
         if (target && target.classList && target.classList.contains('line-item-name')) {
-          console.log("🔍 [AUTOCOMPLETE] Focus on description field detected");
+          // // console.log("🔍 [AUTOCOMPLETE] Focus on description field detected");
           const row = target.closest('tr');
           if (row) {
             // Look for existing dropdown or create one
@@ -1046,7 +1046,7 @@ const hasExistingProposal = !!existingInvoice;
                 dropdown = document.createElement('div');
                 dropdown.className = 'autocomplete-dropdown overflow-y-auto absolute z-50 w-66 h-80 mt-1 bg-white border border-gray-300 rounded-lg shadow-lg dark:bg-gray-700 dark:border-gray-600 hidden';
                 inputContainer.appendChild(dropdown);
-                console.log("🔍 [AUTOCOMPLETE] Created dropdown for row");
+                // // console.log("🔍 [AUTOCOMPLETE] Created dropdown for row");
               }
             }
             
@@ -1063,15 +1063,15 @@ const hasExistingProposal = !!existingInvoice;
       document.addEventListener('input', (e) => {
         const target = e.target;
         if (target && target.classList && target.classList.contains('line-item-name')) {
-          console.log("🔍 [AUTOCOMPLETE] Input on description field detected:", target);
+          // // console.log("🔍 [AUTOCOMPLETE] Input on description field detected:", target);
           const row = target.closest('tr');
           if (row) {
             const dropdown = row.querySelector('.autocomplete-dropdown');
             if (dropdown) {
-              console.log("🔍 [AUTOCOMPLETE] Filtering catalog items for dropdown");
+              // // console.log("🔍 [AUTOCOMPLETE] Filtering catalog items for dropdown");
               this.filterCatalogItemsForRow(dropdown, target.value);
             } else {
-              console.log("❌ [AUTOCOMPLETE] No dropdown found in row for input");
+              // // console.log("❌ [AUTOCOMPLETE] No dropdown found in row for input");
             }
           }
         }
@@ -1099,7 +1099,7 @@ const hasExistingProposal = !!existingInvoice;
       document.addEventListener('input', (e) => {
         const target = e.target;
         if (target && target.id === 'proposal-notes') {
-          console.log("🔍 [PROPOSAL-MANAGER] Notes field changed, scheduling save");
+          // // console.log("🔍 [PROPOSAL-MANAGER] Notes field changed, scheduling save");
           if (window.proposalManager) {
             window.proposalManager.scheduleSave();
           }
@@ -1115,7 +1115,7 @@ const hasExistingProposal = !!existingInvoice;
         if (data.success && data.items) {
           this.displaySuggestionsForRow(dropdown, data.items);
         } else {
-          console.log("🔍 [AUTOCOMPLETE] No catalog items available");
+          // // console.log("🔍 [AUTOCOMPLETE] No catalog items available");
           dropdown.innerHTML = '<div class="p-3 text-gray-500 text-sm">No line items available</div>';
         }
       } catch (error) {
@@ -1148,9 +1148,9 @@ const hasExistingProposal = !!existingInvoice;
     }
 
     displaySuggestionsForRow(dropdown, items) {
-      console.log("🔍 [AUTOCOMPLETE] displaySuggestionsForRow called with", items.length, "items");
+      // // console.log("🔍 [AUTOCOMPLETE] displaySuggestionsForRow called with", items.length, "items");
       if (items.length === 0) {
-        console.log("🔍 [AUTOCOMPLETE] No items to display, hiding dropdown");
+        // // console.log("🔍 [AUTOCOMPLETE] No items to display, hiding dropdown");
         dropdown.classList.add("hidden");
         return;
       }
@@ -1171,15 +1171,15 @@ const hasExistingProposal = !!existingInvoice;
         };
         dropdown.appendChild(suggestion);
       });
-      console.log("🔍 [AUTOCOMPLETE] Showing dropdown with", items.length, "items");
+      // // console.log("🔍 [AUTOCOMPLETE] Showing dropdown with", items.length, "items");
       dropdown.classList.remove("hidden");
     }
 
     selectSuggestionForRow(dropdown, item) {
       const row = dropdown.closest('tr');
       if (row) {
-        console.log("🔍 [AUTOCOMPLETE] Selecting suggestion for row:", item);
-        console.log("🔍 [AUTOCOMPLETE] Item structure:", {
+        // // console.log("🔍 [AUTOCOMPLETE] Selecting suggestion for row:", item);
+        // // console.log("🔍 [AUTOCOMPLETE] Item structure:", {
           name: item.name,
           description: item.description,
           unit_price: item.unit_price,
@@ -1192,7 +1192,7 @@ const hasExistingProposal = !!existingInvoice;
         const unitPriceInput = row.querySelector('.line-item-price');
         const quantityInput = row.querySelector('.line-item-quantity');
         
-        console.log("🔍 [AUTOCOMPLETE] Found inputs:", {
+        // // console.log("🔍 [AUTOCOMPLETE] Found inputs:", {
           name: !!nameInput,
           description: !!descriptionInput,
           unitPrice: !!unitPriceInput,
@@ -1201,17 +1201,17 @@ const hasExistingProposal = !!existingInvoice;
 
         if (nameInput) {
           nameInput.value = item.name;
-          console.log("🔍 [AUTOCOMPLETE] Set name to:", item.name);
+          // // console.log("🔍 [AUTOCOMPLETE] Set name to:", item.name);
         }
         
         if (descriptionInput) {
           descriptionInput.value = item.description || "";
-          console.log("🔍 [AUTOCOMPLETE] Set description to:", item.description);
+          // // console.log("🔍 [AUTOCOMPLETE] Set description to:", item.description);
         }
         
         if (unitPriceInput) {
           unitPriceInput.value = item.unit_price || 0;
-          console.log("🔍 [AUTOCOMPLETE] Set unit price to:", item.unit_price);
+          // // console.log("🔍 [AUTOCOMPLETE] Set unit price to:", item.unit_price);
         }
         
         // Also update the cached line items data structure
@@ -1221,12 +1221,12 @@ const hasExistingProposal = !!existingInvoice;
           this.cachedLineItems[rowIndex].description = item.description || "";
           this.cachedLineItems[rowIndex].unitPrice = item.unit_price || 0;
           this.cachedLineItems[rowIndex].catalog_item_id = item.id; // Store the ID as the key
-          console.log("🔍 [AUTOCOMPLETE] Updated cached line item:", this.cachedLineItems[rowIndex]);
+          // // console.log("🔍 [AUTOCOMPLETE] Updated cached line item:", this.cachedLineItems[rowIndex]);
         }
         
         if (quantityInput && quantityInput.value === "0") {
           quantityInput.value = "1";
-          console.log("🔍 [AUTOCOMPLETE] Set quantity to 1");
+          // // console.log("🔍 [AUTOCOMPLETE] Set quantity to 1");
         }
 
         // Hide dropdown
@@ -1235,27 +1235,27 @@ const hasExistingProposal = !!existingInvoice;
         // Update the total for this row
         this.updateRowTotal();
         
-        console.log("✅ [AUTOCOMPLETE] Item selected and fields populated");
+        // // console.log("✅ [AUTOCOMPLETE] Item selected and fields populated");
       }
     }
   }
 
   // Initialize the ProposalManager
   async function initializeProposalManager(projectId, project, projectAuthor, projectStatus, currentUser) {
-    console.log("🔧 [PROPOSAL-MANAGER] Initializing ProposalManager for project:", projectId);
+    // // console.log("🔧 [PROPOSAL-MANAGER] Initializing ProposalManager for project:", projectId);
     
     // Create the proposal manager instance
     window.proposalManager = new ProposalManager(projectId, project, projectAuthor, projectStatus, currentUser);
     
-    console.log("✅ [PROPOSAL-MANAGER] ProposalManager initialized successfully");
+    // // console.log("✅ [PROPOSAL-MANAGER] ProposalManager initialized successfully");
   }
 
   // Define the updateRowTotalDirect function globally first
   function updateRowTotalDirect(inputElement) {
-    // console.log("🔍 [DIRECT] updateRowTotalDirect called with input:", inputElement, "value:", inputElement.value);
+    // // console.log("🔍 [DIRECT] updateRowTotalDirect called with input:", inputElement, "value:", inputElement.value);
     const row = inputElement.closest('tr');
     if (!row) {
-      console.log("❌ [DIRECT] No row found for input element");
+      // // console.log("❌ [DIRECT] No row found for input element");
       return;
     }
 
@@ -1278,7 +1278,7 @@ const hasExistingProposal = !!existingInvoice;
 
     const totalSpan = row.querySelector('.row-total, .line-item-total');
 
-    // console.log("🔍 [DIRECT] Found elements:", {
+    // // console.log("🔍 [DIRECT] Found elements:", {
     //   qtyInput: !!qtyInput,
     //   priceInput: !!priceInput,
     //   totalSpan: !!totalSpan,
@@ -1292,7 +1292,7 @@ const hasExistingProposal = !!existingInvoice;
       const unitPrice = parseFloat(priceInput.value) || 0;
       const total = quantity * unitPrice;
 
-      // console.log("🔍 [DIRECT] Calculating total:", { quantity, unitPrice, total });
+      // // console.log("🔍 [DIRECT] Calculating total:", { quantity, unitPrice, total });
       totalSpan.textContent = `$${total.toFixed(2)}`;
 
       // Update grand total
@@ -1300,7 +1300,7 @@ const hasExistingProposal = !!existingInvoice;
         window.updateProposalTotal();
       }
     } else {
-      console.log("❌ [DIRECT] Missing required elements for total calculation");
+      // // console.log("❌ [DIRECT] Missing required elements for total calculation");
     }
   }
 
@@ -1316,7 +1316,7 @@ const hasExistingProposal = !!existingInvoice;
       
       // Use cachedLineItems from the proposal manager if available
       if (window.proposalManager && window.proposalManager.cachedLineItems) {
-        console.log("🔍 [PROPOSAL-MANAGER] Calculating total from cachedLineItems:", window.proposalManager.cachedLineItems.length, "items");
+        // // console.log("🔍 [PROPOSAL-MANAGER] Calculating total from cachedLineItems:", window.proposalManager.cachedLineItems.length, "items");
         
         window.proposalManager.cachedLineItems.forEach((item, index) => {
           const quantity = parseFloat(item.quantity) || 0;
@@ -1324,7 +1324,7 @@ const hasExistingProposal = !!existingInvoice;
           const rowTotal = quantity * unitPrice;
           total += rowTotal;
           
-          console.log(`🔍 [PROPOSAL-MANAGER] Item ${index}: qty=${quantity}, price=${unitPrice}, total=${rowTotal}`);
+          // // console.log(`🔍 [PROPOSAL-MANAGER] Item ${index}: qty=${quantity}, price=${unitPrice}, total=${rowTotal}`);
           
           // Update the row total display in the DOM
           const tbody = document.getElementById("proposal-line-items");
@@ -1343,7 +1343,7 @@ const hasExistingProposal = !!existingInvoice;
         window.proposalManager.cachedTotal = total;
       } else {
         // Fallback: calculate from DOM inputs
-        console.log("🔍 [PROPOSAL-MANAGER] Fallback: calculating total from DOM inputs");
+        // // console.log("🔍 [PROPOSAL-MANAGER] Fallback: calculating total from DOM inputs");
       const lineItemsContainer = document.getElementById("proposal-line-items");
       if (lineItemsContainer) {
         const rows = lineItemsContainer.querySelectorAll("tr");
@@ -1367,7 +1367,7 @@ const hasExistingProposal = !!existingInvoice;
         }
       }
       
-      console.log("🔍 [PROPOSAL-MANAGER] Final calculated total:", total);
+      // // console.log("🔍 [PROPOSAL-MANAGER] Final calculated total:", total);
 
       // Update total display in header (if exists)
       const totalElement = document.getElementById("proposal-total");
@@ -1399,9 +1399,9 @@ const hasExistingProposal = !!existingInvoice;
       await initializeProposalManager(projectId, project, authorProfile, projectStatus, currentUser);
       
       // If there's an existing invoice, load it automatically
-      // console.log("🔍 [Client] Checking if should load existing invoice:", { hasExistingProposal, existingInvoice, proposalManager: !!window.proposalManager });
+      // // console.log("🔍 [Client] Checking if should load existing invoice:", { hasExistingProposal, existingInvoice, proposalManager: !!window.proposalManager });
       if (hasExistingProposal && existingInvoice && window.proposalManager) {
-        // console.log("✅ [Client] Loading existing proposal invoice:", existingInvoice);
+        // // console.log("✅ [Client] Loading existing proposal invoice:", existingInvoice);
         window.proposalManager.loadExistingInvoice(existingInvoice).then(() => {
           // Recalculate total after loading existing invoice to ensure interactive elements work
           updateProposalTotal();
@@ -1409,7 +1409,7 @@ const hasExistingProposal = !!existingInvoice;
           console.error("❌ [Client] Error loading existing invoice:", error);
         });
       } else {
-        console.log("❌ [Client] Not loading existing invoice - missing data or manager");
+        // // console.log("❌ [Client] Not loading existing invoice - missing data or manager");
       }
     }
 
@@ -1417,7 +1417,7 @@ const hasExistingProposal = !!existingInvoice;
     window.buildProposal = (id) => window.proposalManager?.buildProposal();
     window.regenerateProposal = () => window.proposalManager?.regenerateProposal();
     window.sendProposal = async () => {
-      console.log("🔧 [PROPOSAL-MANAGER] Send proposal button clicked");
+      // // console.log("🔧 [PROPOSAL-MANAGER] Send proposal button clicked");
       
       if (!projectId) {
         console.error("Project ID not available");
@@ -1452,10 +1452,10 @@ const hasExistingProposal = !!existingInvoice;
         });
 
         const data = await response.json();
-        // console.log("🔍 [PROPOSAL-MANAGER] Full API response:", data);
+        // // console.log("🔍 [PROPOSAL-MANAGER] Full API response:", data);
 
         if (data.success) {
-          // console.log("✅ [PROPOSAL-MANAGER] Proposal sent successfully");
+          // // console.log("✅ [PROPOSAL-MANAGER] Proposal sent successfully");
           
           // Hide loading modal
           if (window.hideNotification) {
@@ -1598,11 +1598,11 @@ const hasExistingProposal = !!existingInvoice;
       
       // Add event listeners to mark row as edited when inputs change
       const inputs = row.querySelectorAll('input');
-      // console.log(`🔍 [PROPOSAL-MANAGER] Adding edit listeners to ${inputs.length} inputs for row with catalog ID: ${item.catalog_item_id}`);
+      // // console.log(`🔍 [PROPOSAL-MANAGER] Adding edit listeners to ${inputs.length} inputs for row with catalog ID: ${item.catalog_item_id}`);
       inputs.forEach((input, inputIndex) => {
         input.addEventListener('input', () => {
           row.setAttribute("data-edited", "true");
-          // console.log(`🔍 [PROPOSAL-MANAGER] Row marked as edited (input ${inputIndex})`);
+          // // console.log(`🔍 [PROPOSAL-MANAGER] Row marked as edited (input ${inputIndex})`);
         });
       });
       
@@ -1668,7 +1668,7 @@ const hasExistingProposal = !!existingInvoice;
 
     // Autocomplete functionality
     function initializeAutocomplete() {
-      // console.log("🔍 [AUTOCOMPLETE] Initializing autocomplete for all line item rows");
+      // // console.log("🔍 [AUTOCOMPLETE] Initializing autocomplete for all line item rows");
       
       // Initialize autocomplete for existing rows
       initializeAutocompleteForRows();
@@ -1684,7 +1684,7 @@ const hasExistingProposal = !!existingInvoice;
       // Listen for focus events on description inputs
       document.addEventListener('focus', (e) => {
         const target = e.target;
-        // console.log("🔍 [AUTOCOMPLETE] Focus event triggered on:", target);
+        // // console.log("🔍 [AUTOCOMPLETE] Focus event triggered on:", target);
         
         // Check for both new class names and existing data attributes
         const isDescriptionField = (target && target instanceof HTMLElement && 
@@ -1692,7 +1692,7 @@ const hasExistingProposal = !!existingInvoice;
            target.getAttribute('data-field') === 'description'));
            
         if (isDescriptionField) {
-          // console.log("🔍 [AUTOCOMPLETE] Focus on description field detected");
+          // // console.log("🔍 [AUTOCOMPLETE] Focus on description field detected");
           const row = target.closest('tr');
           if (row) {
             // Look for existing dropdown or create one
@@ -1705,18 +1705,18 @@ const hasExistingProposal = !!existingInvoice;
                 dropdown.className = 'autocomplete-dropdown overflow-y-auto absolute z-50 w-66 h-80 mt-1 bg-white border border-gray-300 rounded-lg shadow-lg dark:bg-gray-700 dark:border-gray-600 hidden';
                 // inputContainer.style.position = 'relative';
                 inputContainer.appendChild(dropdown);
-                // console.log("🔍 [AUTOCOMPLETE] Created dropdown for row");
+                // // console.log("🔍 [AUTOCOMPLETE] Created dropdown for row");
               }
             }
             
             if (dropdown) {
-              // console.log("🔍 [AUTOCOMPLETE] Loading catalog items for dropdown");
+              // // console.log("🔍 [AUTOCOMPLETE] Loading catalog items for dropdown");
               loadAllCatalogItemsForRow(dropdown);
             } else {
-              // console.log("❌ [AUTOCOMPLETE] Could not create or find dropdown");
+              // // console.log("❌ [AUTOCOMPLETE] Could not create or find dropdown");
             }
           } else {
-            // console.log("❌ [AUTOCOMPLETE] No row found");
+            // // console.log("❌ [AUTOCOMPLETE] No row found");
           }
         }
       }, true);
@@ -1731,18 +1731,18 @@ const hasExistingProposal = !!existingInvoice;
            target.getAttribute('data-field') === 'description'));
            
         if (isDescriptionField) {
-          console.log("🔍 [AUTOCOMPLETE] Input on description field detected:", target);
+          // // console.log("🔍 [AUTOCOMPLETE] Input on description field detected:", target);
           const row = target.closest('tr');
           if (row) {
             const dropdown = row.querySelector('.autocomplete-dropdown') ;
             if (dropdown) {
-              console.log("🔍 [AUTOCOMPLETE] Filtering catalog items for dropdown");
+              // // console.log("🔍 [AUTOCOMPLETE] Filtering catalog items for dropdown");
               filterCatalogItemsForRow(dropdown, (target ).value);
             } else {
-              console.log("❌ [AUTOCOMPLETE] No dropdown found in row for input");
+              // // console.log("❌ [AUTOCOMPLETE] No dropdown found in row for input");
             }
           } else {
-            console.log("❌ [AUTOCOMPLETE] No row found for input");
+            // // console.log("❌ [AUTOCOMPLETE] No row found for input");
           }
         }
         // Don't interfere with other input events - let them bubble normally
@@ -1775,16 +1775,16 @@ const hasExistingProposal = !!existingInvoice;
 
     // Load all catalog items (shared function)
     async function loadAllCatalogItemsForRow(dropdown) {
-      console.log("🔍 [AUTOCOMPLETE] loadAllCatalogItemsForRow called");
+      // // console.log("🔍 [AUTOCOMPLETE] loadAllCatalogItemsForRow called");
       if (globalCatalogItems.length === 0) {
-        console.log("🔍 [AUTOCOMPLETE] Loading catalog items from API");
+        // // console.log("🔍 [AUTOCOMPLETE] Loading catalog items from API");
         try {
           const url = `/api/line-items-catalog?limit=50`;
           const response = await fetch(url, { credentials: 'include' });
           if (response.ok) {
             const result = await response.json();
             globalCatalogItems = result.items || result;
-            console.log("🔍 [AUTOCOMPLETE] Loaded", globalCatalogItems.length, "catalog items");
+            // // console.log("🔍 [AUTOCOMPLETE] Loaded", globalCatalogItems.length, "catalog items");
           } else {
             console.error("❌ [AUTOCOMPLETE] API error:", response.status);
           }
@@ -1792,7 +1792,7 @@ const hasExistingProposal = !!existingInvoice;
           console.error("❌ [AUTOCOMPLETE] Error loading catalog items:", error);
         }
       } else {
-        console.log("🔍 [AUTOCOMPLETE] Using cached catalog items:", globalCatalogItems.length);
+        // // console.log("🔍 [AUTOCOMPLETE] Using cached catalog items:", globalCatalogItems.length);
       }
       displaySuggestionsForRow(dropdown, globalCatalogItems);
     }
@@ -1814,9 +1814,9 @@ const hasExistingProposal = !!existingInvoice;
 
     // Display suggestions for a specific row
     function displaySuggestionsForRow(dropdown, items) {
-      console.log("🔍 [AUTOCOMPLETE] displaySuggestionsForRow called with", items.length, "items");
+      // // console.log("🔍 [AUTOCOMPLETE] displaySuggestionsForRow called with", items.length, "items");
       if (items.length === 0) {
-        console.log("🔍 [AUTOCOMPLETE] No items to display, hiding dropdown");
+        // // console.log("🔍 [AUTOCOMPLETE] No items to display, hiding dropdown");
         dropdown.classList.add("hidden");
         return;
       }
@@ -1837,7 +1837,7 @@ const hasExistingProposal = !!existingInvoice;
         };
         dropdown.appendChild(suggestion);
       });
-      console.log("🔍 [AUTOCOMPLETE] Showing dropdown with", items.length, "items");
+      // // console.log("🔍 [AUTOCOMPLETE] Showing dropdown with", items.length, "items");
       dropdown.classList.remove("hidden");
     }
 
@@ -1845,7 +1845,7 @@ const hasExistingProposal = !!existingInvoice;
     function selectSuggestionForRow(dropdown, item) {
       const row = dropdown.closest('tr');
       if (row) {
-        console.log("🔍 [AUTOCOMPLETE] Selecting suggestion for row:", item);
+        // // console.log("🔍 [AUTOCOMPLETE] Selecting suggestion for row:", item);
         
         // Try to find inputs using both new class names and existing data attributes
         const nameInput = row.querySelector('.line-item-name, input[data-field="name"]') ;
@@ -1853,7 +1853,7 @@ const hasExistingProposal = !!existingInvoice;
         const unitPriceInput = row.querySelector('.line-item-unit-price, input[data-field="unitPrice"]') ;
         const quantityInput = row.querySelector('.line-item-quantity, input[data-field="quantity"]') ;
         
-        console.log("🔍 [AUTOCOMPLETE] Found inputs:", {
+        // // console.log("🔍 [AUTOCOMPLETE] Found inputs:", {
           name: !!nameInput,
           description: !!descriptionInput,
           unitPrice: !!unitPriceInput,
@@ -1862,17 +1862,17 @@ const hasExistingProposal = !!existingInvoice;
 
         if (nameInput) {
           nameInput.value = item.name;
-          console.log("🔍 [AUTOCOMPLETE] Set name to:", item.name);
+          // // console.log("🔍 [AUTOCOMPLETE] Set name to:", item.name);
         }
         
         if (descriptionInput && item.description) {
           descriptionInput.value = item.description;
-          console.log("🔍 [AUTOCOMPLETE] Set description to:", item.description);
+          // // console.log("🔍 [AUTOCOMPLETE] Set description to:", item.description);
         }
         
         if (unitPriceInput) {
           unitPriceInput.value = item.unit_price.toString();
-          console.log("🔍 [AUTOCOMPLETE] Set unit price to:", item.unit_price);
+          // // console.log("🔍 [AUTOCOMPLETE] Set unit price to:", item.unit_price);
         }
         
         // Update total - try to find total display using both methods
@@ -1882,7 +1882,7 @@ const hasExistingProposal = !!existingInvoice;
           const unitPrice = parseFloat(unitPriceInput?.value || "0") || 0;
           const total = quantity * unitPrice;
           totalDisplay.textContent = `$${total.toFixed(2)}`;
-          console.log("🔍 [AUTOCOMPLETE] Updated total to:", total);
+          // // console.log("🔍 [AUTOCOMPLETE] Updated total to:", total);
         }
         
         // Trigger input events to update any other calculations
@@ -1933,9 +1933,9 @@ const hasExistingProposal = !!existingInvoice;
 
     // Get data from DOM or global variables
     private getProjectData() {
-      console.log("🔍 [PROPOSAL-HELPER] Getting project data...");
-      console.log("🔍 [PROPOSAL-HELPER] window.proposalManager exists:", !!window.proposalManager);
-      console.log("🔍 [PROPOSAL-HELPER] window.proposalManager.projectId:", window.proposalManager?.projectId);
+      // // console.log("🔍 [PROPOSAL-HELPER] Getting project data...");
+      // // console.log("🔍 [PROPOSAL-HELPER] window.proposalManager exists:", !!window.proposalManager);
+      // // console.log("🔍 [PROPOSAL-HELPER] window.proposalManager.projectId:", window.proposalManager?.projectId);
       
       // Try to get projectId from multiple sources
       const projectId = window.proposalManager?.projectId || 
@@ -1943,7 +1943,7 @@ const hasExistingProposal = !!existingInvoice;
                        new URLSearchParams(window.location.search).get('projectId') ||
                        window.location.pathname.split('/').pop();
       
-      console.log("🔍 [PROPOSAL-HELPER] Resolved projectId:", projectId);
+      // // console.log("🔍 [PROPOSAL-HELPER] Resolved projectId:", projectId);
       
       const projectData = {
         projectId: projectId,
@@ -1953,7 +1953,7 @@ const hasExistingProposal = !!existingInvoice;
         hasExistingProposal: window.PROPOSAL_HAS_EXISTING_INVOICE || false
       };
       
-      console.log("🔍 [PROPOSAL-HELPER] Final project data:", projectData);
+      // // console.log("🔍 [PROPOSAL-HELPER] Final project data:", projectData);
       return projectData;
     }
 
@@ -1972,7 +1972,7 @@ const hasExistingProposal = !!existingInvoice;
 
     // Add new line item method
     public addNewLineItem() {
-      console.log("➕ [PROPOSAL-MANAGER] Adding new line item");
+      // // console.log("➕ [PROPOSAL-MANAGER] Adding new line item");
       
       // Create new row for desktop view
       const lineItemsContainer = document.getElementById("proposal-line-items");
@@ -1987,7 +1987,7 @@ const hasExistingProposal = !!existingInvoice;
         // Add the new row to the table
         if (newRow) {
           lineItemsContainer.appendChild(newRow);
-          console.log("✅ [PROPOSAL-MANAGER] Added new row to desktop table");
+          // // console.log("✅ [PROPOSAL-MANAGER] Added new row to desktop table");
         }
       }
       
@@ -2471,8 +2471,8 @@ const hasExistingProposal = !!existingInvoice;
         `;
 
         const { projectId, projectStatus } = this.projectData;
-        console.log("🔔 [PROPOSAL-MANAGER] Accepting proposal for project:", projectId);
-        console.log("🔔 [PROPOSAL-MANAGER] Project status:", projectStatus);
+        // // console.log("🔔 [PROPOSAL-MANAGER] Accepting proposal for project:", projectId);
+        // // console.log("🔔 [PROPOSAL-MANAGER] Project status:", projectStatus);
 
         // Validate projectId
         if (!projectId) {
@@ -2524,7 +2524,7 @@ const hasExistingProposal = !!existingInvoice;
         const result = await response.json();
 
         if (response.ok && result.success) {
-          console.log("✅ [PROPOSAL-MANAGER] Proposal accepted successfully");
+          // // console.log("✅ [PROPOSAL-MANAGER] Proposal accepted successfully");
           
           // Show notification using new modal system
           window.handleUpdateStatusNotification(result, "PROPOSAL-MANAGER");
@@ -2574,7 +2574,7 @@ let invoiceId = "0";
 let totalAmount = 0;
 
 
-console.log("🔍 [IS THIS NEEDED???] Invoice result:", invoiceResult);
+// // console.log("🔍 [IS THIS NEEDED???] Invoice result:", invoiceResult);
 
   //   // Process invoice data
   //   if (!invoiceResult.error && invoiceResult.data) {

@@ -22,7 +22,7 @@ export const POST: APIRoute = async ({ request }) => {
       );
     }
 
-    console.log(`📄 [PDF-GENERATE] Starting PDF generation for project ${projectId}`);
+    // // // console.log(`📄 [PDF-GENERATE] Starting PDF generation for project ${projectId}`);
 
     if (!supabase) {
       return new Response(
@@ -179,7 +179,7 @@ export const POST: APIRoute = async ({ request }) => {
         }
       }
 
-      console.log(`✅ [PDF-GENERATE] Successfully generated document ${documentId}`);
+      // // // console.log(`✅ [PDF-GENERATE] Successfully generated document ${documentId}`);
 
       return new Response(
         JSON.stringify({

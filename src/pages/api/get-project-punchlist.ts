@@ -29,7 +29,7 @@ export const GET: APIRoute = async ({ url, cookies }) => {
       });
     }
 
-    // console.log(
+    // // console.log(
     //   "🔍 [GET-PROJECT-PUNCHLIST] Fetching punchlist for project:",
     //   projectId,
     //   "User role:",
@@ -37,12 +37,12 @@ export const GET: APIRoute = async ({ url, cookies }) => {
     // );
 
     // First, let's test if we can access the punchlist table at all
-    // console.log("🔍 [GET-PROJECT-PUNCHLIST] Testing punchlist table access...");
+    // // console.log("🔍 [GET-PROJECT-PUNCHLIST] Testing punchlist table access...");
 
     try {
       const testQuery = await supabase.from("punchlist").select("count", { count: "exact" });
 
-      // console.log("🔍 [GET-PROJECT-PUNCHLIST] Table access test result:", testQuery);
+      // // console.log("🔍 [GET-PROJECT-PUNCHLIST] Table access test result:", testQuery);
     } catch (testError) {
       console.error("🔍 [GET-PROJECT-PUNCHLIST] Table access test failed:", testError);
     }
@@ -100,7 +100,7 @@ export const GET: APIRoute = async ({ url, cookies }) => {
       company_name: item.company_name || "Unknown User",
     }));
 
-    // console.log(
+    // // console.log(
     //   "✅ [GET-PROJECT-PUNCHLIST] Retrieved",
     //   processedPunchlist.length,
     //   "punchlist items"

@@ -86,19 +86,19 @@ function applyFilters(query: any, filters: FilterParams) {
 
   // Filter by assigned_to_id if provided
   if (assignedToId) {
-    console.log(`📡 [API] Adding filter for assigned_to_id: ${assignedToId}`);
+    // // console.log(`📡 [API] Adding filter for assigned_to_id: ${assignedToId}`);
     query = query.eq("assigned_to_id", assignedToId);
   }
 
   // Filter by author_id if provided
   if (authorId) {
-    console.log(`📡 [API] Adding filter for author_id: ${authorId}`);
+    // // console.log(`📡 [API] Adding filter for author_id: ${authorId}`);
     query = query.eq("author_id", authorId);
   }
 
   // Search functionality - searches across multiple fields
   if (search) {
-    console.log(`📡 [API] Adding search filter: ${search}`);
+    // // console.log(`📡 [API] Adding search filter: ${search}`);
     query = query.or(
       `title.ilike.%${search}%,address.ilike.%${search}%,company_name.ilike.%${search}%,subject.ilike.%${search}%,building.ilike.%${search}%,project.ilike.%${search}%,service.ilike.%${search}%`
     );
@@ -106,78 +106,78 @@ function applyFilters(query: any, filters: FilterParams) {
 
   // Filter by status if provided
   if (status) {
-    console.log(`📡 [API] Adding filter for status: ${status}`);
+    // // console.log(`📡 [API] Adding filter for status: ${status}`);
     query = query.eq("status", status);
   }
 
   // Filter by building if provided
   if (building) {
-    console.log(`📡 [API] Adding filter for building: ${building}`);
+    // // console.log(`📡 [API] Adding filter for building: ${building}`);
     query = query.ilike("building", `%${building}%`);
   }
 
   // Filter by project if provided
   if (project) {
-    console.log(`📡 [API] Adding filter for project: ${project}`);
+    // // console.log(`📡 [API] Adding filter for project: ${project}`);
     query = query.ilike("project", `%${project}%`);
   }
 
   // Filter by service if provided
   if (service) {
-    console.log(`📡 [API] Adding filter for service: ${service}`);
+    // // console.log(`📡 [API] Adding filter for service: ${service}`);
     query = query.ilike("service", `%${service}%`);
   }
 
   // Filter by new_construction if provided
   if (newConstruction !== null && newConstruction !== undefined) {
-    console.log(`📡 [API] Adding filter for new_construction: ${newConstruction}`);
+    // // console.log(`📡 [API] Adding filter for new_construction: ${newConstruction}`);
     query = query.eq("new_construction", newConstruction === "true");
   }
 
   // Date range filters
   if (dateFrom) {
-    console.log(`📡 [API] Adding filter for date_from: ${dateFrom}`);
+    // // console.log(`📡 [API] Adding filter for date_from: ${dateFrom}`);
     query = query.gte("created_at", dateFrom);
   }
 
   if (dateTo) {
-    console.log(`📡 [API] Adding filter for date_to: ${dateTo}`);
+    // // console.log(`📡 [API] Adding filter for date_to: ${dateTo}`);
     query = query.lte("created_at", dateTo);
   }
 
   // Due date range filters
   if (dueDateFrom) {
-    console.log(`📡 [API] Adding filter for due_date_from: ${dueDateFrom}`);
+    // // console.log(`📡 [API] Adding filter for due_date_from: ${dueDateFrom}`);
     query = query.gte("due_date", dueDateFrom);
   }
 
   if (dueDateTo) {
-    console.log(`📡 [API] Adding filter for due_date_to: ${dueDateTo}`);
+    // // console.log(`📡 [API] Adding filter for due_date_to: ${dueDateTo}`);
     query = query.lte("due_date", dueDateTo);
   }
 
   // Overdue filter
   if (overdue === "true") {
-    console.log(`📡 [API] Adding filter for overdue: true`);
+    // // console.log(`📡 [API] Adding filter for overdue: true`);
     query = query.lt("due_date", new Date().toISOString());
   } else if (overdue === "false") {
-    console.log(`📡 [API] Adding filter for overdue: false`);
+    // // console.log(`📡 [API] Adding filter for overdue: false`);
     query = query.gte("due_date", new Date().toISOString());
   }
 
   // Sorting
   const ascending = sortOrder === "asc";
-  console.log(`📡 [API] Adding sort: ${sortBy} ${sortOrder}`);
+  // // console.log(`📡 [API] Adding sort: ${sortBy} ${sortOrder}`);
   query = query.order(sortBy, { ascending });
 
   // Pagination
   if (limit && limit > 0) {
-    console.log(`📡 [API] Adding limit: ${limit}`);
+    // // console.log(`📡 [API] Adding limit: ${limit}`);
     query = query.limit(limit);
   }
 
   if (offset && offset > 0) {
-    console.log(`📡 [API] Adding offset: ${offset}`);
+    // // console.log(`📡 [API] Adding offset: ${offset}`);
     query = query.range(offset, offset + (limit && limit > 0 ? limit - 1 : 1000));
   }
 
@@ -230,7 +230,7 @@ export const GET: APIRoute = async ({ request, cookies, url, params }) => {
 
     if (!supabaseAdmin) {
       console.error("📡 [API] CRITICAL: supabaseAdmin is null - check SUPABASE_SERVICE_ROLE_KEY");
-      console.log("📡 [API] Falling back to regular supabase client");
+      // // console.log("📡 [API] Falling back to regular supabase client");
       // Fallback to regular client if admin client is not available
       let query = supabase.from("projects").select("*").neq("id", 0); // Exclude system log project
 
@@ -259,7 +259,7 @@ export const GET: APIRoute = async ({ request, cookies, url, params }) => {
       projects = result.data || [];
       error = result.error;
     } else {
-      // console.log("📡 [API] Using supabaseAdmin client to bypass RLS policies");
+      // // console.log("📡 [API] Using supabaseAdmin client to bypass RLS policies");
 
       // Use admin client to bypass RLS policies for project listing
       // Now includes featured_image_data for optimized queries
@@ -292,7 +292,7 @@ export const GET: APIRoute = async ({ request, cookies, url, params }) => {
 
       // Debug: Log sample project data to see what fields are available
       // if (projects.length > 0) {
-      //   console.log("📡 [GET-PROJECT] Sample project raw data:", {
+      //   // console.log("📡 [GET-PROJECT] Sample project raw data:", {
       //     id: projects[0].id,
       //     title: projects[0].title,
       //     featured_image: projects[0].featured_image,
@@ -355,9 +355,9 @@ export const GET: APIRoute = async ({ request, cookies, url, params }) => {
         hint: error.hint,
       });
     } else {
-      // console.log("📡 [API] Successfully fetched projects:", projects?.length || 0);
+      // // console.log("📡 [API] Successfully fetched projects:", projects?.length || 0);
       if (projects && projects.length > 0) {
-        // console.log("📡 [API] Sample project:", {
+        // // console.log("📡 [API] Sample project:", {
         //   id: projects[0].id,
         //   title: projects[0].title,
         //   author_id: projects[0].author_id,
@@ -380,7 +380,7 @@ export const GET: APIRoute = async ({ request, cookies, url, params }) => {
       );
     }
 
-    // console.log("📡 [API] Projects fetched:", projects?.length || 0);
+    // // console.log("📡 [API] Projects fetched:", projects?.length || 0);
 
     // Optimize: Batch fetch author profiles to eliminate N+1 queries
     if (projects && projects.length > 0) {
@@ -388,9 +388,9 @@ export const GET: APIRoute = async ({ request, cookies, url, params }) => {
       const uniqueAssignedIds = [...new Set(projects.map((p) => p.assigned_to_id).filter(Boolean))];
       const allUserIds = [...new Set([...uniqueAuthorIds, ...uniqueAssignedIds])];
 
-      // console.log("📡 [API] Fetching profiles for users:", allUserIds.length);
-      // console.log("📡 [API] Unique author IDs:", uniqueAuthorIds);
-      // console.log("📡 [API] Sample project author_id:", projects[0]?.author_id);
+      // // console.log("📡 [API] Fetching profiles for users:", allUserIds.length);
+      // // console.log("📡 [API] Unique author IDs:", uniqueAuthorIds);
+      // // console.log("📡 [API] Sample project author_id:", projects[0]?.author_id);
 
       let profilesMap = new Map();
       if (allUserIds.length > 0) {
@@ -403,8 +403,8 @@ export const GET: APIRoute = async ({ request, cookies, url, params }) => {
           profiles.forEach((profile) => {
             profilesMap.set(profile.id, profile);
           });
-          // console.log("📡 [API] Successfully fetched profiles:", profiles.length);
-          // console.log("📡 [API] Sample profile:", profiles[0]);
+          // // console.log("📡 [API] Successfully fetched profiles:", profiles.length);
+          // // console.log("📡 [API] Sample profile:", profiles[0]);
         } else {
           console.error("📡 [API] Error fetching profiles:", profilesError);
         }
@@ -416,14 +416,14 @@ export const GET: APIRoute = async ({ request, cookies, url, params }) => {
           const authorProfile = profilesMap.get(project.author_id);
           project.profiles = authorProfile || null;
           if (authorProfile) {
-            // console.log("📡 [API] Attached profile to project:", {
+            // // console.log("📡 [API] Attached profile to project:", {
             //   projectId: project.id,
             //   authorId: project.author_id,
             //   companyName: authorProfile.company_name,
             //   profile: authorProfile,
             // });
           } else {
-            console.log("📡 [API] No profile found for author:", project.author_id);
+            // // console.log("📡 [API] No profile found for author:", project.author_id);
           }
         }
         if (project.assigned_to_id) {
@@ -530,9 +530,9 @@ export const GET: APIRoute = async ({ request, cookies, url, params }) => {
         if (isClient) {
           totalCountQuery = totalCountQuery.eq("internal", false);
           incompleteCountQuery = incompleteCountQuery.eq("internal", false);
-          // console.log("📡 [GET-PROJECT] Client filter applied - excluding internal discussions");
+          // // console.log("📡 [GET-PROJECT] Client filter applied - excluding internal discussions");
         } else {
-          // console.log("📡 [GET-PROJECT] Admin/Staff - showing all discussions");
+          // // console.log("📡 [GET-PROJECT] Admin/Staff - showing all discussions");
         }
 
         // Execute both queries in parallel
@@ -541,7 +541,7 @@ export const GET: APIRoute = async ({ request, cookies, url, params }) => {
           { data: incompleteDiscussions, error: incompleteError },
         ] = await Promise.all([totalCountQuery, incompleteCountQuery]);
 
-        // console.log("📡 [GET-PROJECT] Discussion query results:", {
+        // // console.log("📡 [GET-PROJECT] Discussion query results:", {
         //   totalDiscussionsFound: totalDiscussions?.length || 0,
         //   incompleteDiscussionsFound: incompleteDiscussions?.length || 0,
         //   totalError: totalError?.message || null,
@@ -569,8 +569,8 @@ export const GET: APIRoute = async ({ request, cookies, url, params }) => {
               (incompleteCountsByProject[discussion.project_id] || 0) + 1;
           });
 
-          // console.log("📡 [GET-PROJECT] Total discussion counts by project:", totalCountsByProject);
-          // console.log(
+          // // console.log("📡 [GET-PROJECT] Total discussion counts by project:", totalCountsByProject);
+          // // console.log(
           //   "📡 [GET-PROJECT] Incomplete discussion counts by project:",
           //   incompleteCountsByProject
           // );
@@ -585,7 +585,7 @@ export const GET: APIRoute = async ({ request, cookies, url, params }) => {
         }
 
         if (!totalError && !incompleteError && discussionCounts) {
-          // console.log("📡 [GET-PROJECT] Processing discussion counts:", discussionCounts.length);
+          // // console.log("📡 [GET-PROJECT] Processing discussion counts:", discussionCounts.length);
 
           // Create lookup maps for both counts
           const totalCountsByProject: Record<number, number> = {};
@@ -596,7 +596,7 @@ export const GET: APIRoute = async ({ request, cookies, url, params }) => {
             incompleteCountsByProject[item.project_id] = item.incomplete_count;
           });
 
-          // console.log("📡 [GET-PROJECT] Lookup maps created:", {
+          // // console.log("📡 [GET-PROJECT] Lookup maps created:", {
           //   totalCountsByProject,
           //   incompleteCountsByProject,
           // });
@@ -613,8 +613,8 @@ export const GET: APIRoute = async ({ request, cookies, url, params }) => {
             project.discussion_ratio = `${incompleteCount}/${totalCount}`;
           });
 
-          // console.log("📡 [GET-PROJECT] Discussion counts added efficiently");
-          // console.log("📡 [GET-PROJECT] Sample project with counts:", {
+          // // console.log("📡 [GET-PROJECT] Discussion counts added efficiently");
+          // // console.log("📡 [GET-PROJECT] Sample project with counts:", {
           //   id: projects[0]?.id,
           //   title: projects[0]?.title,
           //   comment_count: projects[0]?.comment_count,
@@ -720,7 +720,7 @@ async function handleSingleProject(projectId: string, cookies: any) {
     const { isAuth, currentUser } = await checkAuth(cookies);
 
     if (!isAuth || !currentUser) {
-      console.log("📡 [GET-PROJECT-ID] User not authenticated");
+      // // console.log("📡 [GET-PROJECT-ID] User not authenticated");
       return new Response(
         JSON.stringify({
           success: false,
@@ -813,7 +813,7 @@ async function handleSingleProject(projectId: string, cookies: any) {
         project.assigned_to_name = assignedProfile.company_name || assignedProfile.id;
       } else {
         // Profile not found for assigned user ID
-        console.log(
+        // // console.log(
           "📡 [GET-PROJECT-ID] No profile found for assigned user ID:",
           project.assigned_to_id
         );

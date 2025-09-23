@@ -180,13 +180,13 @@
   // Request notification permission
   async function requestPermission() {
     try {
-      console.log("🔔 [PUSH-DEMO] Starting permission request...");
-      console.log(
+      // // console.log("🔔 [PUSH-DEMO] Starting permission request...");
+      // // console.log(
         "🔔 [PUSH-DEMO] Current permission:",
         "Notification" in window ? Notification.permission : "Not available"
       );
-      console.log("🔔 [PUSH-DEMO] Notification supported:", "Notification" in window);
-      // console.log("🔔 [PUSH-DEMO] Is PWA:", window.navigator.standalone);
+      // // console.log("🔔 [PUSH-DEMO] Notification supported:", "Notification" in window);
+      // // console.log("🔔 [PUSH-DEMO] Is PWA:", window.navigator.standalone);
 
       // Check if we can actually request permission
       if (!("Notification" in window)) {
@@ -209,9 +209,9 @@
       }
 
       // Request permission
-      console.log("🔔 [PUSH-DEMO] Requesting permission...");
+      // // console.log("🔔 [PUSH-DEMO] Requesting permission...");
       const permission = await Notification.requestPermission();
-      console.log("🔔 [PUSH-DEMO] Permission result:", permission);
+      // // console.log("🔔 [PUSH-DEMO] Permission result:", permission);
 
       updatePermissionStatus();
 
@@ -225,9 +225,9 @@
               userVisibleOnly: true,
               applicationServerKey: null, // We'll add VAPID keys later for remote push
             });
-            console.log("Push subscription:", subscription);
+            // // console.log("Push subscription:", subscription);
           } catch (pushError) {
-            console.log(
+            // // console.log(
               "Push subscription failed (this is OK for local notifications):",
               pushError
             );
@@ -248,14 +248,14 @@
 
   // Send a local push notification
   function sendLocalPush(title: string, body: string, icon?: string) {
-    console.log("🔔 [PUSH-DEMO] sendLocalPush called with:", { title, body, icon });
-    console.log(
+    // // console.log("🔔 [PUSH-DEMO] sendLocalPush called with:", { title, body, icon });
+    // // console.log(
       "🔔 [PUSH-DEMO] Notification permission:",
       "Notification" in window ? Notification.permission : "Not available"
     );
 
     if ("Notification" in window && Notification.permission === "granted") {
-      console.log("🔔 [PUSH-DEMO] Creating notification...");
+      // // console.log("🔔 [PUSH-DEMO] Creating notification...");
       try {
         const notification = new Notification(title, {
           body: body,
@@ -265,16 +265,16 @@
           requireInteraction: false,
         });
 
-        console.log("✅ [PUSH-DEMO] Notification created successfully");
+        // // console.log("✅ [PUSH-DEMO] Notification created successfully");
 
         // Auto-close after 5 seconds
         setTimeout(() => {
-          console.log("🔔 [PUSH-DEMO] Auto-closing notification");
+          // // console.log("🔔 [PUSH-DEMO] Auto-closing notification");
           notification.close();
         }, 5000);
 
         notification.onclick = function () {
-          console.log("🔔 [PUSH-DEMO] Notification clicked");
+          // // console.log("🔔 [PUSH-DEMO] Notification clicked");
           window.focus();
           notification.close();
         };
@@ -282,7 +282,7 @@
         console.error("❌ [PUSH-DEMO] Error creating notification:", error);
       }
     } else {
-      console.log(
+      // // console.log(
         "❌ [PUSH-DEMO] Notification permission not granted:",
         "Notification" in window ? Notification.permission : "Not available"
       );
@@ -291,45 +291,45 @@
 
   // Initialize the component
   function initPushDemo() {
-    console.log("🔔 [PUSH-DEMO] Initializing push notification demo...");
+    // // console.log("🔔 [PUSH-DEMO] Initializing push notification demo...");
 
     updatePermissionStatus();
     updateDebugInfo();
 
     // Set up event listeners with debugging
     const requestBtn = document.getElementById("request-permission-btn") as HTMLButtonElement;
-    console.log(
+    // // console.log(
       "🔔 [PUSH-DEMO] Request button found:",
       !!requestBtn,
       "disabled:",
       requestBtn?.disabled
     );
     requestBtn?.addEventListener("click", () => {
-      console.log("🔔 [PUSH-DEMO] Request permission button clicked");
+      // // console.log("🔔 [PUSH-DEMO] Request permission button clicked");
       requestPermission();
     });
 
     const testLocalBtn = document.getElementById("test-local-push-btn") as HTMLButtonElement;
-    console.log(
+    // // console.log(
       "🔔 [PUSH-DEMO] Test local button found:",
       !!testLocalBtn,
       "disabled:",
       testLocalBtn?.disabled
     );
     testLocalBtn?.addEventListener("click", () => {
-      console.log("🔔 [PUSH-DEMO] Test local push button clicked");
+      // // console.log("🔔 [PUSH-DEMO] Test local push button clicked");
       sendLocalPush("🔔 Test Notification", "This is a test push notification from CAPCo Fire!");
     });
 
     const testProjectBtn = document.getElementById("test-project-update-btn") as HTMLButtonElement;
-    console.log(
+    // // console.log(
       "🔔 [PUSH-DEMO] Test project button found:",
       !!testProjectBtn,
       "disabled:",
       testProjectBtn?.disabled
     );
     testProjectBtn?.addEventListener("click", () => {
-      console.log("🔔 [PUSH-DEMO] Test project update button clicked");
+      // // console.log("🔔 [PUSH-DEMO] Test project update button clicked");
       sendLocalPush(
         "📋 Project Update",
         "Your fire protection project status has been updated to 'Under Review'",
@@ -340,14 +340,14 @@
     const testDeadlineBtn = document.getElementById(
       "test-deadline-reminder-btn"
     ) as HTMLButtonElement;
-    console.log(
+    // // console.log(
       "🔔 [PUSH-DEMO] Test deadline button found:",
       !!testDeadlineBtn,
       "disabled:",
       testDeadlineBtn?.disabled
     );
     testDeadlineBtn?.addEventListener("click", () => {
-      console.log("🔔 [PUSH-DEMO] Test deadline reminder button clicked");
+      // // console.log("🔔 [PUSH-DEMO] Test deadline reminder button clicked");
       sendLocalPush(
         "⏰ Deadline Reminder",
         "Don't forget: Your project documentation is due in 2 days",
@@ -363,16 +363,16 @@
   }
 
   // Run when DOM is ready
-  console.log("🔔 [PUSH-DEMO] Script loaded, document.readyState:", document.readyState);
+  // // console.log("🔔 [PUSH-DEMO] Script loaded, document.readyState:", document.readyState);
 
   if (document.readyState === "loading") {
-    console.log("🔔 [PUSH-DEMO] DOM still loading, adding event listener");
+    // // console.log("🔔 [PUSH-DEMO] DOM still loading, adding event listener");
     document.addEventListener("DOMContentLoaded", () => {
-      console.log("🔔 [PUSH-DEMO] DOMContentLoaded fired");
+      // // console.log("🔔 [PUSH-DEMO] DOMContentLoaded fired");
       initPushDemo();
     });
   } else {
-    console.log("🔔 [PUSH-DEMO] DOM already loaded, initializing immediately");
+    // // console.log("🔔 [PUSH-DEMO] DOM already loaded, initializing immediately");
     initPushDemo();
   }
 </script>
