@@ -3,11 +3,11 @@ import { supabase } from "../../lib/supabase";
 
 // 🚧 DEAD STOP - 2024-12-19: Potentially unused API endpoint
 // If you see this log after a few days, this endpoint can likely be deleted
-console.log("🚧 [DEAD-STOP-2024-12-19] get-featured-projects.ts accessed - may be unused");
+// // // console.log("🚧 [DEAD-STOP-2024-12-19] get-featured-projects.ts accessed - may be unused");
 
 export const GET: APIRoute = async () => {
   try {
-    console.log("🏗️ [FEATURED-PROJECTS] API called, checking supabase connection...");
+    // // // console.log("🏗️ [FEATURED-PROJECTS] API called, checking supabase connection...");
 
     if (!supabase) {
       console.error(
@@ -19,7 +19,7 @@ export const GET: APIRoute = async () => {
       });
     }
 
-    console.log("🏗️ [FEATURED-PROJECTS] Supabase client exists, attempting to query projects...");
+    // // // console.log("🏗️ [FEATURED-PROJECTS] Supabase client exists, attempting to query projects...");
 
     // First, let's try a simple query to test database connection
     const { data: testData, error: testError } = await supabase
@@ -38,7 +38,7 @@ export const GET: APIRoute = async () => {
       );
     }
 
-    console.log("🏗️ [FEATURED-PROJECTS] Basic connection test passed, fetching projects...");
+    // // // console.log("🏗️ [FEATURED-PROJECTS] Basic connection test passed, fetching projects...");
 
     // Fetch projects for display (since there might not be completed projects yet)
     // Try completed projects first (status 220), then fall back to any projects with content
@@ -64,14 +64,14 @@ export const GET: APIRoute = async () => {
       .order("updated_at", { ascending: false })
       .limit(0);
 
-    console.log("🏗️ [FEATURED-PROJECTS] Featured query result:", {
+    // // // console.log("🏗️ [FEATURED-PROJECTS] Featured query result:", {
       projects: projects?.length,
       error,
     });
 
     // If no completed projects found, get any projects for demo
     if (!error && (!projects || projects.length === 0)) {
-      console.log(
+      // // // console.log(
         "🏗️ [FEATURED-PROJECTS] No completed projects found, fetching any projects for demo..."
       );
 
@@ -100,7 +100,7 @@ export const GET: APIRoute = async () => {
       //   error = fallbackError;
       // } else {
       //   projects = fallbackProjects;
-      //   console.log(
+      //   // console.log(
       //     `🏗️ [FEATURED-PROJECTS] Using ${projects?.length || 0} demo projects (fallback query - no featured filter)`
       //   );
       // }
@@ -117,7 +117,7 @@ export const GET: APIRoute = async () => {
       );
     }
 
-    console.log(`🏗️ [FEATURED-PROJECTS] Query successful, found ${projects?.length || 0} projects`);
+    // // // console.log(`🏗️ [FEATURED-PROJECTS] Query successful, found ${projects?.length || 0} projects`);
 
     // Transform data for public consumption (remove sensitive info if needed)
     const featuredProjects =

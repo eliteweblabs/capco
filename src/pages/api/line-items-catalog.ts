@@ -168,7 +168,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
           }
         );
       }
-      console.log("🔍 [LINE-ITEMS-CATALOG] Database connection test successful");
+      // // // console.log("🔍 [LINE-ITEMS-CATALOG] Database connection test successful");
     } catch (testError) {
       console.error("🔍 [LINE-ITEMS-CATALOG] Database connection test error:", testError);
       return new Response(
@@ -181,7 +181,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     }
 
     const requestBody = await request.json();
-    console.log("🔍 [LINE-ITEMS-CATALOG] Received request body:", requestBody);
+    // // // console.log("🔍 [LINE-ITEMS-CATALOG] Received request body:", requestBody);
 
     const { name, description, unit_price, category } = requestBody;
 
@@ -195,7 +195,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       );
     }
 
-    console.log("🔍 [LINE-ITEMS-CATALOG] Creating catalog item with data:", {
+    // // console.log("🔍 [LINE-ITEMS-CATALOG] Creating catalog item with data:", {
       name: name.trim(),
       description: description.trim(),
       unit_price: parseFloat(unit_price),

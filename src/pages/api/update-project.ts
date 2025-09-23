@@ -4,7 +4,7 @@ import { supabase } from "../../lib/supabase";
 export const POST: APIRoute = async ({ request }) => {
   try {
     const body = await request.json();
-    // console.log("Update project API received:", body);
+    // // console.log("Update project API received:", body);
 
     const { projectId, ...updateFields } = body;
 
@@ -70,7 +70,7 @@ export const POST: APIRoute = async ({ request }) => {
       updated_at: new Date().toISOString(),
     };
 
-    // console.log("Attempting to update project with data:", updateData);
+    // // console.log("Attempting to update project with data:", updateData);
 
     // Single update query for all fields
     let updateQuery = supabase.from("projects").update(updateData).eq("id", projectId);

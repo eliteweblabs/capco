@@ -19,8 +19,8 @@ export const POST: APIRoute = async ({ request, cookies, redirect }) => {
     // Use the current request URL to determine the base URL
     const currentUrl = new URL(request.url);
     const redirectUrl = `${currentUrl.origin}/api/auth/callback`;
-    // console.log("🔐 [AUTH] OAuth redirect URL:", redirectUrl);
-    // console.log("🔐 [AUTH] Current request origin:", currentUrl.origin);
+    // // console.log("🔐 [AUTH] OAuth redirect URL:", redirectUrl);
+    // // console.log("🔐 [AUTH] Current request origin:", currentUrl.origin);
 
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider: provider as Provider,

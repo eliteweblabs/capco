@@ -2,7 +2,7 @@ import type { APIRoute } from "astro";
 import { supabase } from "../../lib/supabase";
 
 export const POST: APIRoute = async ({ request, cookies }) => {
-  console.log("📡 [API] POST /api/update-file-metadata called");
+  // // // console.log("📡 [API] POST /api/update-file-metadata called");
 
   try {
     if (!supabase) {
@@ -137,7 +137,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       );
     }
 
-    console.log("📡 [API] File metadata updated successfully for file:", fileId);
+    // // // console.log("📡 [API] File metadata updated successfully for file:", fileId);
 
     return new Response(
       JSON.stringify({

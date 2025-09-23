@@ -18,8 +18,8 @@ const corsHeaders = {
 
 export const POST: APIRoute = async ({ request }) => {
   try {
-    // console.log("🔔 [CHAT-API] ===== CHAT API CALLED =====");
-    // console.log("🔔 [CHAT-API] API called, checking supabase connection...");
+    // // console.log("🔔 [CHAT-API] ===== CHAT API CALLED =====");
+    // // console.log("🔔 [CHAT-API] API called, checking supabase connection...");
 
     if (!supabase) {
       console.error("🔔 [CHAT-API] Supabase client is null - database connection not available");
@@ -31,7 +31,7 @@ export const POST: APIRoute = async ({ request }) => {
 
     const body = await request.json();
     const { action, userId, userName, userRole, message } = body;
-    // console.log("🔔 [CHAT-API] Request data:", {
+    // // console.log("🔔 [CHAT-API] Request data:", {
     //   action,
     //   userId,
     //   userName,
@@ -95,7 +95,7 @@ export const POST: APIRoute = async ({ request }) => {
         );
 
       case "message":
-        console.log("🔔 [CHAT-API] Saving message:", { userId, userName, userRole, message });
+        // // console.log("🔔 [CHAT-API] Saving message:", { userId, userName, userRole, message });
 
         if (!supabaseAdmin) {
           console.error(
@@ -134,7 +134,7 @@ export const POST: APIRoute = async ({ request }) => {
           );
         }
 
-        console.log("✅ [CHAT-API] Message saved successfully:", savedMessage);
+        // // console.log("✅ [CHAT-API] Message saved successfully:", savedMessage);
 
         // Update user's last seen
         if (activeConnections.has(userId)) {

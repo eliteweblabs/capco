@@ -13,7 +13,7 @@ export const POST: APIRoute = async ({ request }) => {
       });
     }
 
-    console.log("📄 [GENERATE-CONTRACT-PDF] Starting PDF generation for project:", projectId);
+    // // // console.log("📄 [GENERATE-CONTRACT-PDF] Starting PDF generation for project:", projectId);
 
     if (!supabase) {
       return new Response(JSON.stringify({ error: "Database connection not available" }), {
@@ -63,7 +63,7 @@ export const POST: APIRoute = async ({ request }) => {
       );
     }
 
-    console.log("✅ [GENERATE-CONTRACT-PDF] Contract PDF generated successfully:", contractUrl);
+    // // // console.log("✅ [GENERATE-CONTRACT-PDF] Contract PDF generated successfully:", contractUrl);
 
     return new Response(
       JSON.stringify({
@@ -92,7 +92,7 @@ async function generateContractPDF(
   signedAt: string
 ): Promise<string> {
   try {
-    console.log("📄 [GENERATE-CONTRACT-PDF] Generating contract PDF for project:", project.id);
+    // // // console.log("📄 [GENERATE-CONTRACT-PDF] Generating contract PDF for project:", project.id);
 
     // Launch Puppeteer
     const browser = await puppeteer.launch({
@@ -279,7 +279,7 @@ async function generateContractPDF(
 
     // Generate unique filename for the contract
     const fileName = `contract-${project.id}-${Date.now()}.pdf`;
-    console.log("📄 [GENERATE-CONTRACT-PDF] Generated filename:", fileName);
+    // // // console.log("📄 [GENERATE-CONTRACT-PDF] Generated filename:", fileName);
 
     // Use unified media system to save contract
     const { saveMedia } = await import("../../lib/media");
@@ -302,7 +302,7 @@ async function generateContractPDF(
       } as any, // Type assertion to bypass strict User type checking
     });
 
-    console.log(
+    // // // console.log(
       "📄 [GENERATE-CONTRACT-PDF] Contract saved to unified media system:",
       contractFile.id
     );

@@ -4,7 +4,7 @@ import { supabase } from "../../lib/supabase";
 import { supabaseAdmin } from "../../lib/supabase-admin";
 
 export const POST: APIRoute = async ({ request, cookies }) => {
-  console.log("=== USER IMPORT API CALLED ===");
+  // // // console.log("=== USER IMPORT API CALLED ===");
 
   try {
     // Check authentication and ensure user is Admin
@@ -72,7 +72,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
     // Parse header row
     const headers = lines[0].split(",").map((h) => h.trim().replace(/"/g, ""));
-    console.log("CSV Headers:", headers);
+    // // // console.log("CSV Headers:", headers);
 
     // Parse data rows
     const users = [];
@@ -181,7 +181,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       }
     }
 
-    console.log("Import Results:", importResults);
+    // // // console.log("Import Results:", importResults);
 
     return new Response(
       JSON.stringify({

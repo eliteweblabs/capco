@@ -46,9 +46,9 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       });
     }
 
-    console.log("📱 [PUSH-NOTIFICATION] Sending push notifications to:", userEmails);
-    console.log("📱 [PUSH-NOTIFICATION] Sent by:", currentUser.email, `(${currentRole})`);
-    console.log("📱 [PUSH-NOTIFICATION] Notification data:", notification);
+    // // // console.log("📱 [PUSH-NOTIFICATION] Sending push notifications to:", userEmails);
+    // // console.log("📱 [PUSH-NOTIFICATION] Sent by:", currentUser.email, `(${currentRole})`);
+    // // // console.log("📱 [PUSH-NOTIFICATION] Notification data:", notification);
 
     // Get user IDs from emails
     const { data: users, error: userError } = await supabase
@@ -79,7 +79,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       );
     }
 
-    console.log("📱 [PUSH-NOTIFICATION] Found users:", users.length);
+    // // // console.log("📱 [PUSH-NOTIFICATION] Found users:", users.length);
 
     // For now, we'll just log the notification data
     // In a real implementation, you would:
@@ -89,7 +89,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
     // Log the notification for debugging
     users.forEach((user) => {
-      console.log(`📱 [PUSH-NOTIFICATION] Would send to ${user.email} (${user.id}):`, {
+      // // console.log(`📱 [PUSH-NOTIFICATION] Would send to ${user.email} (${user.id}):`, {
         title: notification.title,
         body: notification.body,
         data: notification.data,
