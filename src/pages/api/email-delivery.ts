@@ -205,6 +205,16 @@ export const POST: APIRoute = async ({ request, cookies }) => {
             console.log("📧 [EMAIL-DELIVERY] PRIMARY_COLOR:", process.env.PRIMARY_COLOR);
 
             emailHtml = emailHtml.replace(
+              "{{GLOBAL_COMPANY_NAME}}",
+              process.env.GLOBAL_COMPANY_NAME || "No Company Name"
+            );
+            emailHtml = emailHtml.replace("{{YEAR}}", process.env.YEAR || "No Year");
+
+            emailHtml = emailHtml.replace(
+              "{{GLOBAL_COMPANY_SLOGAN}}",
+              process.env.GLOBAL_COMPANY_SLOGAN || "No Company Slogan"
+            );
+            emailHtml = emailHtml.replace(
               "{{COMPANY_LOGO_LIGHT}}",
               process.env.EMAIL_LOGO_LIGHT || "No Logo Img"
             );
