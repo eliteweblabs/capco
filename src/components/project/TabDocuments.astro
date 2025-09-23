@@ -6,7 +6,10 @@ interface Props {
   currentUser?: any;
   fileType?: string;
 }
+
 import FileManager from "./FileManager.astro";
+import Button from "../common/Button.astro";
+
 const { project, projectStatus, fileType = "media", projectStatusLabel, currentUser } = Astro.props;
 
 const currentRole = currentUser?.profile?.role;
@@ -16,17 +19,163 @@ const authorProfile = currentUser?.profile;
 
 <div id="content-documents" class="tab-content hidden">
   {
-    projectStatus === 10 ||
-    projectStatus === 20 ||
-    projectStatus === 30 ||
-    projectStatus === 40 ||
-    projectStatus === 50 ? (
+    (projectStatus === 10 ||
+      projectStatus === 20 ||
+      projectStatus === 30 ||
+      projectStatus === 40 ||
+      projectStatus === 50) && (
       <FileManager
         projectId={project.id}
         currentUser={currentUser}
         currentRole={currentUser?.profile?.role}
         projectAuthorId={project.author_id}
       />
-    ) : null
+    )
+  }
+
+  <!-- All Documents Uploaded Button (Clients Only) -->
+  {
+    projectStatus === 10 && (
+      <div class="mt-6 border-t border-gray-200 pt-6 dark:border-gray-700">
+        <div class="text-center">
+          <Button
+            id="all-documents-uploaded-btn"
+            variant="success"
+            size="md"
+            icon="check"
+            iconPosition="right"
+            class="focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
+          >
+            Finished Uploading Documents
+          </Button>
+        </div>
+      </div>
+    )
   }
 </div>
+
+<script define:vars={{ projectId, projectStatus }}>
+  // Only initialize if the button exists (projectStatus === 10)
+  if (projectStatus === 10) {
+    class PDFUpload {
+      constructor() {
+        this.allDocumentsUploadedBtn = document.getElementById("all-documents-uploaded-btn");
+        this.projectId = projectId;
+        this.projectStatus = projectStatus;
+        this.initialized = false;
+        this.init();
+      }
+
+      init() {
+        if (this.initialized) {
+          console.log("📱 [PDF-UPLOAD] Already initialized, skipping...");
+          return;
+        }
+
+        this.setupElements();
+        this.setupEventListeners();
+        this.loadExistingFiles();
+        this.initialized = true;
+      }
+
+      setupElements() {
+        // Setup any required elements
+      }
+
+      setupEventListeners() {
+        if (this.allDocumentsUploadedBtn) {
+          this.allDocumentsUploadedBtn.addEventListener("click", () => {
+            this.markAllDocumentsUploaded();
+          });
+        }
+      }
+
+      loadExistingFiles() {
+        // Load existing files if needed
+      }
+
+      async markAllDocumentsUploaded() {
+        try {
+          // Disable button and show loading state
+          this.allDocumentsUploadedBtn.disabled = true;
+          this.allDocumentsUploadedBtn.innerHTML = `
+            <svg class="animate-spin mr-2 h-5 w-5" fill="none" viewBox="0 0 24 24">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            Updating Status...
+          `;
+
+          const response = await fetch("/api/update-status", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            credentials: "include",
+            body: JSON.stringify({
+              projectId: this.projectId,
+              status: 20, // Status 20 - All Documents Uploaded
+              oldStatus: this.projectStatus,
+            }),
+          });
+
+          console.log("🔔 [PDF-UPLOAD] API response status:", response.status);
+
+          if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.error || "Failed to update project status");
+          }
+
+          const result = await response.json();
+
+          if (result.success) {
+            console.log("📊 [PDF-UPLOAD] Status updated successfully:", result);
+
+            // Show success notification using notificationData from API
+            window.handleUpdateStatusNotification(result, "PDF-UPLOAD");
+
+            // Update button to show completion
+            this.allDocumentsUploadedBtn.innerHTML = `
+              <svg class="mr-2 h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+              </svg>
+              Documents Submitted ✓
+            `;
+            this.allDocumentsUploadedBtn.classList.remove("bg-green-600", "hover:bg-green-700");
+            this.allDocumentsUploadedBtn.classList.add("bg-gray-600", "cursor-not-allowed");
+            this.allDocumentsUploadedBtn.disabled = true;
+          }
+        } catch (error) {
+          console.error("Error updating project status:", error);
+          this.showError(`Failed to update project status: ${error.message}`);
+
+          // Reset button to original state
+          this.allDocumentsUploadedBtn.disabled = false;
+          this.allDocumentsUploadedBtn.innerHTML = `
+            <svg class="mr-2 h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+            </svg>
+            All Documents Uploaded
+          `;
+        }
+      }
+
+      showError(message) {
+        console.error("PDF Upload Error:", message);
+        // You can implement a proper error display here
+      }
+    }
+
+    // Initialize the PDF upload component
+    document.addEventListener("DOMContentLoaded", () => {
+      console.log("📁 [PDF-UPLOAD] DOMContentLoaded event fired");
+
+      // Check if already initialized
+      if (window.pdfUploadDocuments && window.pdfUploadDocuments.initialized) {
+        console.log("📁 [PDF-UPLOAD] PDFUpload already initialized, skipping");
+        return;
+      }
+
+      console.log("📁 [PDF-UPLOAD] Initializing PDFUpload component for Documents");
+      window.pdfUploadDocuments = new PDFUpload();
+    });
+  }
+</script>
