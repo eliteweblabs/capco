@@ -1,41 +1,27 @@
 ---
-// import { isBackendPage } from "../../pages/api/backend-page-check";
-// import { navigation } from "@/pages/api/navigation";
-
-// interface Props {
-//   requireAuthRedirect?: string;
-//   title?: string;
-//   description?: string;
-//   currentUser?: any;
-//   session?: any;
-//   project?: any;
-//   supabase?: any;
-//   supabaseAdmin?: any;
-// }
-
+// Define requireAuthRedirect
 const requireAuthRedirect = undefined;
+// Make sure to check above value before redirecting
 import { checkAuth } from "../lib/auth";
-
 // Handle OAuth callback if code is present
-const authCode = Astro.url.searchParams.get("code");
-if (authCode) {
-  return Astro.redirect(`/api/auth/callback?code=${authCode}`);
-}
-
-const { currentUser, session, supabase, refreshToken, accessToken } = await checkAuth(
-  Astro.cookies
-);
+const { currentUser, session, supabase } = await checkAuth(Astro.cookies);
 // Handle auth redirect first
 if (requireAuthRedirect && (!session || !currentUser)) {
   return Astro.redirect(requireAuthRedirect);
 }
-const currentRole = currentUser?.role;
-const currentUserId = currentUser?.id;
+
+const companyName = process.env.GLOBAL_COMPANY_NAME;
+const companySlogan = process.env.GLOBAL_COMPANY_SLOGAN;
+const globalSecondaryTextClasses = process.env.GLOBAL_SECONDARY_TEXT_CLASSES;
+const globalPrimaryTextClasses = process.env.GLOBAL_PRIMARY_TEXT_CLASSES;
 
 import App from "../components/common/App.astro";
+
+import Features from "../components/common/Features.astro";
 import FlowbiteStatsGrid from "../components/common/FlowbiteStatsGrid.astro";
 import Footer from "../components/common/Footer.astro";
 import Hero from "../components/common/Hero.astro";
+import Testimonials from "../components/common/Testimonials.astro";
 
 // Get auth data for conditional rendering
 
@@ -72,12 +58,14 @@ const stats = [
 ---
 
 <App
-  title="CAPCO Design Group - Build, manage, and track fire protection systems effortlessly"
-  description="CAPCo powers the world's most reliable fire protection systems. We make compliance easy."
+  title={`${companyName} - ${companySlogan}`}
+  description={companySlogan}
   currentUser={currentUser}
   session={session || undefined}
   project={undefined}
   supabase={supabase}
+  companyName={companyName}
+  globalSecondaryTextClasses={globalSecondaryTextClasses || ""}
 >
   <div
     id="main-content"
@@ -88,22 +76,41 @@ const stats = [
         <div
           class="mveJTCIb2WII7J4sY22F _Ybd3WwuTVljUT4vEaM3 _wYiJGbRZyFZeCc8y7Sf mngKhi_Rv06PF57lblDI _1jTZ8KXRZul60S6czNi LSIxp7RSuOKhsg28v_u3"
         >
-          <Hero
-            title="CAPCO Design Group"
-            description="Build, manage, and track fire protection systems effortlessly"
-          />
+          <!-- Hero Section -->
+
+          <Hero title={companyName || ""} description={companySlogan || ""} />
+        </div>
+      </div>
+
+      <div class="RZmKBZs1E1eXw8vkE6jY p_2EXc_a2sDA_h41l8QU">
+        <div
+          class="mveJTCIb2WII7J4sY22F _Ybd3WwuTVljUT4vEaM3 _wYiJGbRZyFZeCc8y7Sf mngKhi_Rv06PF57lblDI _1jTZ8KXRZul60S6czNi LSIxp7RSuOKhsg28v_u3"
+        >
           <FlowbiteStatsGrid stats={stats} columns={3} />
+        </div>
+      </div>
+
+      <div class="RZmKBZs1E1eXw8vkE6jY p_2EXc_a2sDA_h41l8QU">
+        <div
+          class="mveJTCIb2WII7J4sY22F _Ybd3WwuTVljUT4vEaM3 _wYiJGbRZyFZeCc8y7Sf mngKhi_Rv06PF57lblDI _1jTZ8KXRZul60S6czNi LSIxp7RSuOKhsg28v_u3"
+        >
+          <!-- Features Section -->
+          <Features globalSecondaryTextClasses={globalSecondaryTextClasses || ""} />
+        </div>
+      </div>
+
+      <div class="RZmKBZs1E1eXw8vkE6jY p_2EXc_a2sDA_h41l8QU">
+        <div
+          class="mveJTCIb2WII7J4sY22F _Ybd3WwuTVljUT4vEaM3 _wYiJGbRZyFZeCc8y7Sf mngKhi_Rv06PF57lblDI _1jTZ8KXRZul60S6czNi LSIxp7RSuOKhsg28v_u3"
+        >
+          <!-- Testimonials Section -->
+          <Testimonials
+            companyName={companyName || ""}
+            globalSecondaryTextClasses={globalSecondaryTextClasses || ""}
+          />
         </div>
       </div>
     </main>
     <Footer />
   </div>
 </App>
-
-<!-- Hero Section -->
-<!-- -->
-<!-- Features Section -->
-<!-- <Features /> -->
-
-<!-- Testimonials Section -->
-<!-- <Testimonials /> -->

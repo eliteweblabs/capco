@@ -1,40 +1,19 @@
 ---
-// import { isBackendPage } from "../../pages/api/backend-page-check";
-// import { navigation } from "@/pages/api/navigation";
-
-// interface Props {
-//   requireAuthRedirect?: string;
-//   title?: string;
-//   description?: string;
-//   currentUser?: any;
-//   session?: any;
-//   project?: any;
-//   supabase?: any;
-//   supabaseAdmin?: any;
-// }
-
-// const {
-//   requireAuthRedirect = "",
-//   currentUser = undefined,
-//   title = undefined,
-//   description = undefined,
-//   session = undefined,
-//   project = undefined,
-//   supabase = undefined,
-//   supabaseAdmin = undefined,
-// } = Astro.props;
-
-const requireAuthRedirect = undefined;
+// Define requireAuthRedirect
+const requireAuthRedirect = "/login";
+// Make sure to check above value before redirecting
 import { checkAuth } from "../lib/auth";
-const { currentUser, session, supabase, refreshToken, accessToken } = await checkAuth(
-  Astro.cookies
-);
+// Handle OAuth callback if code is present
+const { currentUser, session, supabase } = await checkAuth(Astro.cookies);
 // Handle auth redirect first
 if (requireAuthRedirect && (!session || !currentUser)) {
   return Astro.redirect(requireAuthRedirect);
 }
-const currentRole = currentUser?.role;
-const currentUserId = currentUser?.id;
+
+const companyName = process.env.GLOBAL_COMPANY_NAME;
+const companySlogan = process.env.GLOBAL_COMPANY_SLOGAN;
+const globalSecondaryTextClasses = process.env.GLOBAL_SECONDARY_TEXT_CLASSES;
+const globalPrimaryTextClasses = process.env.GLOBAL_PRIMARY_TEXT_CLASSES;
 
 import App from "../components/common/App.astro";
 import Footer from "../components/common/Footer.astro";

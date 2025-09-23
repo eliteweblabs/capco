@@ -1,30 +1,37 @@
 ---
-import App from "@/components/common/App.astro";
-import { getLangFromUrl, useTranslatedPath } from "@/i18n/utils";
+// Define requireAuthRedirect
+const requireAuthRedirect = undefined;
+// Make sure to check above value before redirecting
+import { checkAuth } from "../lib/auth";
+// Handle OAuth callback if code is present
+const { currentUser, session, supabase } = await checkAuth(Astro.cookies);
+// Handle auth redirect first
+if (requireAuthRedirect && (!session || !currentUser)) {
+  return Astro.redirect(requireAuthRedirect);
+}
+
+const companyName = process.env.GLOBAL_COMPANY_NAME;
+const companySlogan = process.env.GLOBAL_COMPANY_SLOGAN;
+const globalSecondaryTextClasses = process.env.GLOBAL_SECONDARY_TEXT_CLASSES;
+const globalPrimaryTextClasses = process.env.GLOBAL_PRIMARY_TEXT_CLASSES;
+
+import App from "../components/common/App.astro";
 import BoxIcon from "../components/common/BoxIcon.astro";
-import SectionContainer from "../components/common/SectionContainer.astro";
-
-//para cambiar entre idiomas y traducir rutas
-const lang = getLangFromUrl(Astro.url);
-const translatePath = useTranslatedPath(lang);
-
 //Para cambiar idioma de textos
 // const { currentLocale } = Astro;
 // const i18n = getI18N({ currentLocale });
 ---
 
 <App title="404" description="404">
-  <SectionContainer>
-    <div class="mb-12 flex content-center items-center justify-center">
-      <h1 class="text-2xl font-bold text-gray-900 dark:text-white">404</h1>
-    </div>
-    <div class="flex content-center items-center justify-center">
-      <a
-        href="/"
-        class="inline-flex items-center rounded-full bg-gray-500 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-gray-600"
-      >
-        <BoxIcon name="arrow-back" />
-      </a>
-    </div>
-  </SectionContainer>
+  <div class="mb-12 flex content-center items-center justify-center">
+    <h1 class="text-2xl font-bold text-gray-900 dark:text-white">404</h1>
+  </div>
+  <div class="flex content-center items-center justify-center">
+    <a
+      href="/"
+      class="inline-flex items-center rounded-full bg-gray-500 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-gray-600"
+    >
+      <BoxIcon name="arrow-back" />
+    </a>
+  </div>
 </App>
