@@ -302,7 +302,7 @@ import Aside from "./Aside.astro";
   <!-- <script src="https://unpkg.com/flowbite@2.5.2/dist/flowbite.min.js"></script> -->
 
   <script>
-    // Import UX utilities
+    // Import UX utilities and console interceptor
     import {
       debounce,
       fixSafariViewport,
@@ -322,6 +322,8 @@ import Aside from "./Aside.astro";
       unlockBodyScroll,
     } from "../../lib/ux-utils.ts";
 
+    import { setupConsoleInterceptor } from "../../lib/console-interceptor.ts";
+
     // Make UX utilities globally available
     (window as any).scrollToTopOnMobile = scrollToTopOnMobile;
     (window as any).scrollToTop = scrollToTop;
@@ -338,6 +340,9 @@ import Aside from "./Aside.astro";
     (window as any).hideOnFormFocus = hideOnFormFocus;
     (window as any).lockBodyScroll = lockBodyScroll;
     (window as any).unlockBodyScroll = unlockBodyScroll;
+
+    // Setup console interceptor (disables console.log in production)
+    setupConsoleInterceptor();
 
     // IMMEDIATE Safari viewport fix - runs before DOM is ready
     immediateSafariViewportFix();
