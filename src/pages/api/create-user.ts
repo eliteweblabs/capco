@@ -352,9 +352,9 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
         // this is to the new user
 
-        const welcomeContent = `Welcome to the new CAPCo Fire Protection App!<br><br>
+        const welcomeContent = `Welcome to the new {{GLOBAL_COMPANY_NAME}} App!<br><br>
 
-CAPCo Fire has a new website that allows you to submit fire protection project requests, upload documents, track the status of your projects, and download completed documents all in one place.<br><br>
+{{GLOBAL_COMPANY_NAME}} has a new website that allows you to submit fire protection project requests, upload documents, track the status of your projects, and download completed documents all in one place.<br><br>
 
 Our fire protection services will be even faster and more secure with this new web application.<br><br>
 
@@ -366,9 +366,7 @@ Your account has been created successfully:<br><br>
 <b>Email:</b> ${email}<br>
 <b>First Name:</b> ${first_name}<br>
 <b>Last Name:</b> ${last_name}<br>
-<b>Phone:</b> ${phone || "Not provided"}<br><br>
-
-Click the button below to access your account.`;
+<b>Phone:</b> ${phone || "Not provided"}<br><br>`;
 
         // Send welcome email using the email delivery API with full URL
         const userEmailResponse = await fetch(`${baseUrl}/api/email-delivery`, {

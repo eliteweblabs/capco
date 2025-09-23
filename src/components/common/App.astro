@@ -62,6 +62,40 @@ import CookieBanner from "./CookieBanner.astro";
 import SpeedDial from "./SpeedDial.astro";
 import Navbar from "./Navbar.astro";
 import Aside from "./Aside.astro";
+import DebugPanel from "./DebugPanel.astro";
+
+// Prepare debug data for admin users
+const debugData = {
+  // Original props
+  title,
+  description,
+  currentUser,
+  session,
+  project,
+  supabase,
+  supabaseUrl,
+  noNavigation,
+  projects,
+  isBackend,
+  id,
+  // Derived properties
+  isAuth,
+  currentUserId,
+  currentRole,
+  projectId,
+  currentUrl,
+  // Navigation data
+  navigationData,
+  desktopNavigationHTML,
+  visibleNavItems,
+  // Additional context
+  astroUrl: Astro.url,
+  astroRequest: {
+    method: Astro.request.method,
+    headers: Object.fromEntries(Astro.request.headers.entries()),
+    url: Astro.request.url,
+  },
+};
 ---
 
 <!doctype html>
@@ -294,6 +328,8 @@ import Aside from "./Aside.astro";
 
     <!-- Speed Dial -->
     <SpeedDial currentUser={currentUser || undefined} isBackend={isBackend} />
+    <!-- Debug Panel (Admin Only) -->
+    <DebugPanel debugData={debugData} currentRole={currentRole} />
   </body>
 
   <script src="../../assets/js/app.bundle.js"></script>

@@ -1,0 +1,300 @@
+---
+// Debug Panel Component - Admin Only
+// Shows all App component parameters in an accordion modal
+
+interface Props {
+  debugData: Record<string, any>;
+  currentRole?: string;
+}
+
+const { debugData, currentRole } = Astro.props;
+
+// Only show for Admin users
+const isAdmin = currentRole === "Admin";
+
+if (!isAdmin) {
+  // Return empty component for non-admin users
+  return;
+}
+
+// Helper function to format values for display
+function formatValue(value: any): string {
+  if (value === null) return "null";
+  if (value === undefined) return "undefined";
+  if (typeof value === "boolean") return value.toString();
+  if (typeof value === "string") return `"${value}"`;
+  if (typeof value === "number") return value.toString();
+  if (typeof value === "object") {
+    try {
+      return JSON.stringify(value, null, 2);
+    } catch {
+      return "[Object - cannot stringify]";
+    }
+  }
+  return String(value);
+}
+
+// Get data type for styling
+function getDataType(value: any): string {
+  if (value === null) return "null";
+  if (value === undefined) return "undefined";
+  if (Array.isArray(value)) return "array";
+  return typeof value;
+}
+
+// Group data by categories
+const categories = {
+  "Basic Info": ["title", "description", "currentUrl"],
+  "User & Auth": ["currentUser", "session", "isAuth", "currentUserId", "currentRole"],
+  "Project Data": ["project", "projectId", "projects"],
+  "System Config": ["supabase", "supabaseUrl", "isBackend", "noNavigation"],
+  "Navigation": ["navigationData", "desktopNavigationHTML", "visibleNavItems"],
+  "Other": []
+};
+
+// Categorize the debug data
+const categorizedData: Record<string, Array<[string, any]>> = {};
+const usedKeys = new Set<string>();
+
+// First, categorize known keys
+Object.entries(categories).forEach(([category, keys]) => {
+  categorizedData[category] = [];
+  keys.forEach(key => {
+    if (key in debugData) {
+      categorizedData[category].push([key, debugData[key]]);
+      usedKeys.add(key);
+    }
+  });
+});
+
+// Add remaining keys to "Other"
+categorizedData["Other"] = Object.entries(debugData)
+  .filter(([key]) => !usedKeys.has(key))
+  .sort(([a], [b]) => a.localeCompare(b));
+
+// Remove empty categories
+Object.keys(categorizedData).forEach(category => {
+  if (categorizedData[category].length === 0) {
+    delete categorizedData[category];
+  }
+});
+---
+
+<!-- Debug Sticky Button (Admin Only) -->
+<div id="debug-panel-container" class="fixed bottom-4 right-4 z-50">
+  <!-- Sticky Debug Button -->
+  <button
+    id="debug-toggle-btn"
+    type="button"
+    class="group bg-red-500 hover:bg-red-600 text-white p-2 rounded-full shadow-lg transition-all duration-200 hover:scale-110"
+    title="Debug Panel (Admin Only)"
+  >
+    <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 100 4m0-4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 100 4m0-4v2m0-6V4"></path>
+    </svg>
+  </button>
+</div>
+
+<!-- Debug Modal -->
+<div
+  id="debug-modal"
+  class="fixed inset-0 z-50 hidden overflow-y-auto"
+  aria-labelledby="debug-modal-title"
+  role="dialog"
+  aria-modal="true"
+>
+  <!-- Backdrop -->
+  <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+    <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true"></div>
+
+    <!-- Modal panel -->
+    <div class="inline-block align-bottom bg-white dark:bg-gray-800 rounded-lg px-4 pt-5 pb-4 text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-4xl sm:w-full sm:p-6">
+      <!-- Header -->
+      <div class="flex items-center justify-between mb-4">
+        <div class="flex items-center space-x-2">
+          <div class="flex-shrink-0">
+            <svg class="h-6 w-6 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 100 4m0-4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 100 4m0-4v2m0-6V4"></path>
+            </svg>
+          </div>
+          <h3 class="text-lg leading-6 font-medium text-gray-900 dark:text-white" id="debug-modal-title">
+            Debug Panel - App Component Parameters
+          </h3>
+          <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200">
+            Admin Only
+          </span>
+        </div>
+        <button
+          id="debug-close-btn"
+          type="button"
+          class="bg-white dark:bg-gray-800 rounded-md text-gray-400 hover:text-gray-500 dark:hover:text-gray-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+        >
+          <span class="sr-only">Close</span>
+          <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+
+      <!-- Content -->
+      <div class="max-h-96 overflow-y-auto">
+        <div class="space-y-2">
+          {Object.entries(categorizedData).map(([category, items]) => (
+            <div class="border border-gray-200 dark:border-gray-700 rounded-lg">
+              <!-- Accordion Header -->
+              <button
+                type="button"
+                class="debug-accordion-header w-full px-4 py-3 text-left text-sm font-medium text-gray-700 dark:text-gray-200 bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-red-500 flex items-center justify-between rounded-lg"
+                data-category={category}
+              >
+                <span class="flex items-center space-x-2">
+                  <span>{category}</span>
+                  <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-200 text-gray-800 dark:bg-gray-600 dark:text-gray-200">
+                    {items.length}
+                  </span>
+                </span>
+                <svg class="debug-accordion-icon h-5 w-5 transform transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                </svg>
+              </button>
+              
+              <!-- Accordion Content -->
+              <div class="debug-accordion-content hidden px-4 py-3 border-t border-gray-200 dark:border-gray-600">
+                <div class="space-y-3">
+                  {items.map(([key, value]) => {
+                    const dataType = getDataType(value);
+                    const formattedValue = formatValue(value);
+                    
+                    return (
+                      <div class="bg-gray-50 dark:bg-gray-700 rounded-md p-3">
+                        <div class="flex items-start justify-between mb-2">
+                          <div class="flex items-center space-x-2">
+                            <span class="text-sm font-mono font-semibold text-blue-600 dark:text-blue-400">{key}</span>
+                            <span class={`inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium ${
+                              dataType === 'string' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' :
+                              dataType === 'number' ? 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200' :
+                              dataType === 'boolean' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200' :
+                              dataType === 'object' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' :
+                              dataType === 'array' ? 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200' :
+                              'bg-gray-100 text-gray-800 dark:bg-gray-600 dark:text-gray-200'
+                            }`}>
+                              {dataType}
+                            </span>
+                          </div>
+                          <button
+                            type="button"
+                            class="debug-copy-btn text-xs text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
+                            data-value={formattedValue}
+                            title="Copy to clipboard"
+                          >
+                            Copy
+                          </button>
+                        </div>
+                        <pre class="text-xs text-gray-600 dark:text-gray-300 whitespace-pre-wrap break-all bg-white dark:bg-gray-800 p-2 rounded border max-h-32 overflow-y-auto">{formattedValue}</pre>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <!-- Footer -->
+      <div class="mt-5 sm:mt-6 flex justify-between items-center">
+        <div class="text-sm text-gray-500 dark:text-gray-400">
+          Total parameters: {Object.keys(debugData).length}
+        </div>
+        <button
+          id="debug-close-btn-2"
+          type="button"
+          class="inline-flex justify-center px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+        >
+          Close
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Debug Panel JavaScript
+  document.addEventListener('DOMContentLoaded', function() {
+    const toggleBtn = document.getElementById('debug-toggle-btn');
+    const modal = document.getElementById('debug-modal');
+    const closeBtns = [document.getElementById('debug-close-btn'), document.getElementById('debug-close-btn-2')];
+    const backdrop = modal?.querySelector('.fixed.inset-0');
+
+    // Toggle modal
+    function toggleModal() {
+      if (modal) {
+        modal.classList.toggle('hidden');
+        document.body.style.overflow = modal.classList.contains('hidden') ? '' : 'hidden';
+      }
+    }
+
+    // Open modal
+    toggleBtn?.addEventListener('click', toggleModal);
+
+    // Close modal
+    closeBtns.forEach(btn => {
+      btn?.addEventListener('click', toggleModal);
+    });
+
+    // Close on backdrop click
+    backdrop?.addEventListener('click', toggleModal);
+
+    // Close on Escape key
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape' && !modal?.classList.contains('hidden')) {
+        toggleModal();
+      }
+    });
+
+    // Accordion functionality
+    const accordionHeaders = document.querySelectorAll('.debug-accordion-header');
+    accordionHeaders.forEach(header => {
+      header.addEventListener('click', function(this: HTMLElement) {
+        const category = this.getAttribute('data-category');
+        const content = this.nextElementSibling;
+        const icon = this.querySelector('.debug-accordion-icon') as HTMLElement;
+        
+        if (content && icon) {
+          const isHidden = content.classList.contains('hidden');
+          
+          if (isHidden) {
+            content.classList.remove('hidden');
+            icon.style.transform = 'rotate(180deg)';
+          } else {
+            content.classList.add('hidden');
+            icon.style.transform = 'rotate(0deg)';
+          }
+        }
+      });
+    });
+
+    // Copy to clipboard functionality
+    const copyBtns = document.querySelectorAll('.debug-copy-btn');
+    copyBtns.forEach(btn => {
+      btn.addEventListener('click', async function(this: HTMLElement, e: Event) {
+        e.stopPropagation();
+        const value = this.getAttribute('data-value');
+        
+        try {
+          await navigator.clipboard.writeText(value || '');
+          this.textContent = 'Copied!';
+          setTimeout(() => {
+            this.textContent = 'Copy';
+          }, 2000);
+        } catch (err) {
+          console.error('Failed to copy to clipboard:', err);
+          this.textContent = 'Failed';
+          setTimeout(() => {
+            this.textContent = 'Copy';
+          }, 2000);
+        }
+      });
+    });
+  });
+</script>
