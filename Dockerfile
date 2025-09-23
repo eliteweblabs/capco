@@ -1,5 +1,5 @@
-# Use Node.js 20.16.0 for PDF.js compatibility
-FROM node:20.16.0-alpine
+# Use Node.js 22.15.0 to match local development environment
+FROM node:22.15.0-alpine
 
 # Set working directory
 WORKDIR /app
@@ -28,6 +28,7 @@ ARG SITE_URL
 ENV SUPABASE_URL=$SUPABASE_URL
 ENV SUPABASE_ANON_KEY=$SUPABASE_ANON_KEY
 ENV SUPABASE_SERVICE_ROLE_KEY=$SUPABASE_SERVICE_ROLE_KEY
+ENV PUBLIC_SUPABASE_URL=$SUPABASE_URL
 ENV EMAIL_PROVIDER=$EMAIL_PROVIDER
 ENV EMAIL_API_KEY=$EMAIL_API_KEY
 ENV FROM_EMAIL=$FROM_EMAIL
@@ -36,15 +37,17 @@ ENV GOOGLE_MAPS_API_KEY=$GOOGLE_MAPS_API_KEY
 ENV PUBLIC_STRIPE_PUBLISHABLE_KEY=$PUBLIC_STRIPE_PUBLISHABLE_KEY
 ENV STRIPE_SECRET_KEY=$STRIPE_SECRET_KEY
 ENV SITE_URL=$SITE_URL
+ENV CHAT_PORT=3001
 RUN npm run build
 
-# Expose port (Railway uses dynamic PORT)
+# Expose ports (Railway uses dynamic PORT for main app, 3001 for Socket.io)
 EXPOSE $PORT
+EXPOSE 3001
 
 # Set environment variables for production
 ENV NODE_ENV=production
 ENV HOST=0.0.0.0
 ENV PORT=$PORT
 
-# Start the application
-CMD ["node", "./dist/server/entry.mjs"] 
+# Start both the main application and Socket.io chat server
+CMD ["./start-production.sh"] 

@@ -5,7 +5,7 @@ import { supabase } from "../../lib/supabase";
 export const POST: APIRoute = async ({ request, cookies }) => {
   try {
     // Check authentication
-    const { currentUser, currentRole } = await checkAuth(cookies);
+    const { currentUser } = await checkAuth(cookies);
     if (!currentUser) {
       return new Response(JSON.stringify({ error: "Authentication required" }), {
         status: 401,
@@ -83,8 +83,8 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     console.log("✅ [ADD-PUNCHLIST] Punchlist item created successfully:", punchlistData.id);
 
     // Log the punchlist item creation
-    if (typeof window !== "undefined" && window.SimpleProjectLogger) {
-      window.SimpleProjectLogger.logPunchlistAdd(
+    if (typeof window !== "undefined" && (window as any).SimpleProjectLogger) {
+      (window as any).SimpleProjectLogger.logPunchlistAdd(
         projectId,
         punchlistData.id,
         currentUser,
