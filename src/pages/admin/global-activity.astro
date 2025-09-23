@@ -2,10 +2,11 @@
 // console.log("🔍 [GLOBAL ACTIVITY] Global activity feed page loading...");
 
 import { checkAuth } from "../../lib/auth";
-const { isAuth, currentUser, currentRole, session } = await checkAuth(Astro.cookies);
-
+const { currentUser, session } = await checkAuth(Astro.cookies);
+const currentRole = currentUser?.profile?.role;
+const isAuth = !!currentUser;
 // Redirect to login if not authenticated
-if (!isAuth || !session) {
+if (!currentUser || !session) {
   return Astro.redirect("/login");
 }
 
@@ -15,7 +16,7 @@ if (currentRole !== "Admin") {
 }
 
 import App from "../../components/common/App.astro";
-import SectionContainer from "../../components/common/SectionContainer.astro";
+import Footer from "../../components/common/Footer.astro";
 import GlobalActivityFeed from "../../components/common/GlobalActivityFeed.astro";
 import BoxIcon from "../../components/common/BoxIcon.astro";
 
@@ -23,128 +24,136 @@ import BoxIcon from "../../components/common/BoxIcon.astro";
 ---
 
 <App
-  title="Global Activity Feed - CAPCo Fire Protection"
-  description="Monitor all site activity and project changes in real-time."
-  isAuth={isAuth}
+  title="Global Dashboard - CAPCo Fire Protection"
+  description="View all projects."
   currentUser={currentUser}
-  currentRole={currentRole}
+  project={undefined}
   session={session}
+  isBackend={true}
 >
-  <!-- Page Header -->
-  <SectionContainer class="py-8">
-    <div class="mx-auto max-w-7xl">
-      <!-- Header -->
-      <div class="mb-8">
-        <div class="flex items-center justify-between">
-          <div>
-            <h1 class="text-3xl font-bold text-gray-900 dark:text-white">
-              <BoxIcon name="pulse" class="mr-3 inline text-blue-600 dark:text-blue-400" />
-              Global Activity Feed
-            </h1>
-            <p class="mt-2 text-gray-600 dark:text-gray-400">
-              Monitor all project activities, status changes, and user actions across the platform.
-            </p>
-          </div>
+  <!-- Dashboard Container -->
 
-          <!-- Quick Actions -->
-          <div class="flex space-x-3">
-            <a
-              href="/dashboard"
-              class="inline-flex items-center rounded-full border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
-            >
-              <BoxIcon name="arrow-left" class="mr-2 text-sm" />
-              Back to Dashboard
-            </a>
-
-            <a
-              href="/projects"
-              class="inline-flex items-center rounded-full bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600"
-            >
-              <BoxIcon name="building" class="mr-2 text-sm" />
-              View Projects
-            </a>
-          </div>
-        </div>
-      </div>
-
-      <!-- Activity Overview Cards -->
-      <div class="mb-8 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
-        <!-- Total Projects -->
-        <div class="rounded-full bg-white p-5 shadow dark:bg-gray-800">
-          <div class="flex items-center">
-            <div class="flex-shrink-0">
-              <BoxIcon name="building" class="h-8 w-8 text-blue-600 dark:text-blue-400" />
-            </div>
-            <div class="ml-3 w-0 flex-1">
-              <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Total Projects</p>
-              <p id="total-projects" class="text-lg font-semibold text-gray-900 dark:text-white">
-                <span
-                  class="inline-block h-4 w-8 animate-pulse rounded bg-gray-200 dark:bg-gray-700"
-                ></span>
+  <div
+    id="main-content"
+    class="ahOqFrhzLjivRe8a1kX_ uLPch_bqyJDXwe5tynMV t6gkcSf0Bt4MLItXvDJ_ pdl952ted2i71qBLPIcQ jtAJHOc7mn7b4IKRO59D h8KYXnua2NT4kTVzieom MKeLnCkZhCbipNorZ2hW"
+  >
+    <main>
+      <div class="RZmKBZs1E1eXw8vkE6jY p_2EXc_a2sDA_h41l8QU">
+        <!-- Header -->
+        <div class="mb-8">
+          <div class="flex items-center justify-between">
+            <div>
+              <h1 class="text-3xl font-bold text-gray-900 dark:text-white">
+                <BoxIcon name="pulse" class="mr-3 inline text-blue-600 dark:text-blue-400" />
+                Global Activity Feed
+              </h1>
+              <p class="mt-2 text-gray-600 dark:text-gray-400">
+                Monitor all project activities, status changes, and user actions across the
+                platform.
               </p>
             </div>
-          </div>
-        </div>
 
-        <!-- Active Projects -->
-        <div class="rounded-full bg-white p-5 shadow dark:bg-gray-800">
-          <div class="flex items-center">
-            <div class="flex-shrink-0">
-              <BoxIcon name="trending-up" class="h-8 w-8 text-green-600 dark:text-green-400" />
-            </div>
-            <div class="ml-3 w-0 flex-1">
-              <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Active Projects</p>
-              <p id="active-projects" class="text-lg font-semibold text-gray-900 dark:text-white">
-                <span
-                  class="inline-block h-4 w-8 animate-pulse rounded bg-gray-200 dark:bg-gray-700"
-                ></span>
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <!-- Recent Activity -->
-        <div class="rounded-full bg-white p-5 shadow dark:bg-gray-800">
-          <div class="flex items-center">
-            <div class="flex-shrink-0">
-              <BoxIcon name="time" class="h-8 w-8 text-yellow-600 dark:text-yellow-400" />
-            </div>
-            <div class="ml-3 w-0 flex-1">
-              <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Last 24h</p>
-              <p id="recent-activity" class="text-lg font-semibold text-gray-900 dark:text-white">
-                <span
-                  class="inline-block h-4 w-8 animate-pulse rounded bg-gray-200 dark:bg-gray-700"
-                ></span>
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <!-- Active Users -->
-        <div class="rounded-full bg-white p-5 shadow dark:bg-gray-800">
-          <div class="flex items-center">
-            <div class="flex-shrink-0">
-              <BoxIcon name="group" class="h-8 w-8 text-purple-600 dark:text-purple-400" />
-            </div>
-            <div class="ml-3 w-0 flex-1">
-              <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Active Users</p>
-              <p
-                id="active-users-header"
-                class="text-lg font-semibold text-gray-900 dark:text-white"
+            <!-- Quick Actions -->
+            <div class="flex space-x-3">
+              <a
+                href="/dashboard"
+                class="inline-flex items-center rounded-full border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
               >
-                <span
-                  class="inline-block h-4 w-8 animate-pulse rounded bg-gray-200 dark:bg-gray-700"
-                ></span>
-              </p>
+                <BoxIcon name="arrow-left" class="mr-2 text-sm" />
+                Back to Dashboard
+              </a>
+
+              <a
+                href="/projects"
+                class="inline-flex items-center rounded-full bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600"
+              >
+                <BoxIcon name="building" class="mr-2 text-sm" />
+                View Projects
+              </a>
             </div>
           </div>
         </div>
-      </div>
 
-      <!-- Global Activity Feed Component -->
-      <GlobalActivityFeed limit={100} />
-    </div>
-  </SectionContainer>
+        <!-- Activity Overview Cards -->
+        <div class="mb-8 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
+          <!-- Total Projects -->
+          <div class="rounded-full bg-white p-5 shadow dark:bg-gray-800">
+            <div class="flex items-center">
+              <div class="flex-shrink-0">
+                <BoxIcon name="building" class="h-8 w-8 text-blue-600 dark:text-blue-400" />
+              </div>
+              <div class="ml-3 w-0 flex-1">
+                <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Total Projects</p>
+                <p id="total-projects" class="text-lg font-semibold text-gray-900 dark:text-white">
+                  <span
+                    class="inline-block h-4 w-8 animate-pulse rounded bg-gray-200 dark:bg-gray-700"
+                  ></span>
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Active Projects -->
+          <div class="rounded-full bg-white p-5 shadow dark:bg-gray-800">
+            <div class="flex items-center">
+              <div class="flex-shrink-0">
+                <BoxIcon name="trending-up" class="h-8 w-8 text-green-600 dark:text-green-400" />
+              </div>
+              <div class="ml-3 w-0 flex-1">
+                <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Active Projects</p>
+                <p id="active-projects" class="text-lg font-semibold text-gray-900 dark:text-white">
+                  <span
+                    class="inline-block h-4 w-8 animate-pulse rounded bg-gray-200 dark:bg-gray-700"
+                  ></span>
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Recent Activity -->
+          <div class="rounded-full bg-white p-5 shadow dark:bg-gray-800">
+            <div class="flex items-center">
+              <div class="flex-shrink-0">
+                <BoxIcon name="time" class="h-8 w-8 text-yellow-600 dark:text-yellow-400" />
+              </div>
+              <div class="ml-3 w-0 flex-1">
+                <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Last 24h</p>
+                <p id="recent-activity" class="text-lg font-semibold text-gray-900 dark:text-white">
+                  <span
+                    class="inline-block h-4 w-8 animate-pulse rounded bg-gray-200 dark:bg-gray-700"
+                  ></span>
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Active Users -->
+          <div class="rounded-full bg-white p-5 shadow dark:bg-gray-800">
+            <div class="flex items-center">
+              <div class="flex-shrink-0">
+                <BoxIcon name="group" class="h-8 w-8 text-purple-600 dark:text-purple-400" />
+              </div>
+              <div class="ml-3 w-0 flex-1">
+                <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Active Users</p>
+                <p
+                  id="active-users-header"
+                  class="text-lg font-semibold text-gray-900 dark:text-white"
+                >
+                  <span
+                    class="inline-block h-4 w-8 animate-pulse rounded bg-gray-200 dark:bg-gray-700"
+                  ></span>
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Global Activity Feed Component -->
+        <GlobalActivityFeed limit={100} />
+      </div>
+    </main>
+    <Footer />
+  </div>
 </App>
 
 <script is:inline>
