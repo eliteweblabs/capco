@@ -34,7 +34,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       company_name,
       email,
       phone,
-      staffRole,
+      role,
       mobile_carrier,
       sms_alerts,
       password;
@@ -48,7 +48,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         company_name,
         email,
         phone,
-        role: staffRole,
+        role,
         mobile_carrier,
         sms_alerts,
         password,
@@ -78,12 +78,12 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
     // Validate required fields
     // console.log("8. Validating required fields...");
-    if (!first_name?.trim() || !last_name?.trim() || !email?.trim() || !staffRole?.trim()) {
+    if (!first_name?.trim() || !last_name?.trim() || !email?.trim() || !role?.trim()) {
       console.log("ERROR: Missing required fields:", {
         first_name: !!first_name?.trim(),
         last_name: !!last_name?.trim(),
         email: !!email?.trim(),
-        role: !!staffRole?.trim(),
+        role: !!role?.trim(),
       });
       return new Response(
         JSON.stringify({
@@ -125,7 +125,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     }
 
     // Validate role
-    if (!["Admin", "Staff", "Client"].includes(staffRole)) {
+    if (!["Admin", "Staff", "Client"].includes(role)) {
       return new Response(
         JSON.stringify({
           success: false,
@@ -160,7 +160,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         phone: phone?.trim() || null,
         mobile_carrier: mobile_carrier?.trim() || null,
         sms_alerts: sms_alerts || false,
-        role: staffRole,
+        role: role,
         email: email.trim().toLowerCase(),
         created_by_admin: true,
         must_change_password: true,
@@ -222,7 +222,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       phone: phone?.trim() || null,
       mobile_carrier: mobile_carrier?.trim() || null,
       sms_alerts: sms_alerts || false,
-      role: staffRole,
+      role: role,
       updated_at: new Date().toISOString(),
     };
 
@@ -327,7 +327,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
               body: JSON.stringify({
                 usersToNotify: [adminEmail], // Use resolved user email
-                emailSubject: `New User → ${displayName} → ${staffRole}`,
+                emailSubject: `New User → ${displayName} → ${role}`,
                 emailContent: adminContent,
                 buttonText: "Access Your Dashboard",
                 buttonLink: "/dashboard",
@@ -352,7 +352,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
         // this is to the new user
 
-        const welcomeContent = `Welcome to the new {{GLOBAL_COMPANY_NAME}} App!<br><br>
+        const newClientContent = `Welcome to the new {{GLOBAL_COMPANY_NAME}} website!<br><br>
 
 {{GLOBAL_COMPANY_NAME}} has a new website that allows you to submit fire protection project requests, upload documents, track the status of your projects, and download completed documents all in one place.<br><br>
 
@@ -367,6 +367,36 @@ Your account has been created successfully:<br><br>
 <b>First Name:</b> ${first_name}<br>
 <b>Last Name:</b> ${last_name}<br>
 <b>Phone:</b> ${phone || "Not provided"}<br><br>`;
+
+        const newStaffContent = `Welcome to the new {{GLOBAL_COMPANY_NAME}} website!<br><br>
+
+{{GLOBAL_COMPANY_NAME}} has a new website that allows you to manage fire protection projects, upload / checkout / assign project documents, track the status of your projects, and communicate with the team.<br><br>
+
+Please use discussions section on projects to communicate, and live chat widget on the bottom left.<br><br>
+
+The project dashboard is still being improved, but you should have access to all your projects and the ability to create new ones.<br><br>
+
+Look for project checklist in the header of projects to see what needs to be done for a project to be completed.<br><br>
+
+Please use documents section on projects to manage, share, and checkout files. This simple repository ensures that changes made to files are never lost. When you upload a file after it is checked out, as long as the file name remains the same, a new version and record will be added.<br><br>
+
+There is a new proposal manager that allows you to generate a proposal for a project. Once documents have been received and submitted, the proposal section will automatically generate a default proposal.<br><br>
+
+There is much more in the works, but this is a big step forward and should have everything you need to get started managing your projects.<br><br>
+
+Please leave any feedback via the feedback widget on the bottom right of the screen.<br><br>
+
+If you have any questions, please don't hesitate to contact our team.<br><br>
+
+Your account has been created successfully:<br><br>
+
+<b>User Name:</b> ${displayName}<br>
+<b>Email:</b> ${email}<br>
+<b>First Name:</b> ${first_name}<br>
+<b>Last Name:</b> ${last_name}<br>
+<b>Phone:</b> ${phone || "Not provided"}<br><br>`;
+
+        const welcomeContent = role === "Client" ? newClientContent : newStaffContent;
 
         // Send welcome email using the email delivery API with full URL
         const userEmailResponse = await fetch(`${baseUrl}/api/email-delivery`, {
@@ -404,7 +434,7 @@ Your account has been created successfully:<br><br>
       await SimpleProjectLogger.logAdminUserCreation(
         currentUser?.email || "unknown_admin",
         email,
-        staffRole,
+        role,
         {
           userId: authData.user.id,
           firstName: first_name.trim(),
@@ -428,14 +458,14 @@ Your account has been created successfully:<br><br>
           email: authData.user.email,
           first_name: first_name.trim(),
           last_name: last_name.trim(),
-          role: staffRole,
+          role: role,
         },
         // Add notification data for client-side modal
         notification: {
           type: "success",
           title: "User Created Successfully",
-          message: `${displayName} has been created as ${staffRole}. They will receive a magic link to access their account.`,
-          duration: 2500,
+          message: `${displayName} has been created as ${role}. They will receive a magic link to access their account.`,
+          duration: 2000,
         },
       }),
       {

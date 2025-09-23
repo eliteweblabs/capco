@@ -1,4 +1,16 @@
 ---
+// Feedback Widget Component
+// Similar to chat widget but for feedback/comments
+
+interface Props {
+  currentUser?: any;
+  currentRole?: string;
+}
+
+const { debugData, currentRole, currentUser } = Astro.props;
+// Only show for authenticated users
+const isAuthenticated = currentUser && currentUser.id;
+
 // Debug Panel Component - Admin Only
 // Shows all App component parameters in an accordion modal
 
@@ -7,7 +19,6 @@ interface Props {
   currentRole?: string;
 }
 
-const { debugData, currentRole } = Astro.props;
 
 // Only show for Admin users
 const isAdmin = currentRole === "Admin";
@@ -81,7 +92,7 @@ Object.keys(categorizedData).forEach(category => {
 ---
 
 <!-- Debug Sticky Button (Admin Only) -->
-<div id="debug-panel-container" class="fixed bottom-4 right-4 z-50">
+<div id="debug-panel-container" class="fixed bottom-4 right-20 z-50">
   <!-- Sticky Debug Button -->
   <button
     id="debug-toggle-btn"
@@ -298,3 +309,357 @@ Object.keys(categorizedData).forEach(category => {
     });
   });
 </script>
+
+
+{isAuthenticated && (
+    
+  <div id="feedback-widget" class="fixed bottom-4 right-4 z-50">
+    {/* <!-- Feedback Button --> */}
+    <button
+      id="feedback-button"
+      class="bg-blue-600 hover:bg-blue-700 text-white rounded-full p-3 shadow-lg transition-all duration-200 hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+      title="Leave Feedback"
+      aria-label="Open feedback form"
+    >
+      <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z"></path>
+      </svg>
+    </button>
+
+    {/* <!-- Feedback Modal --> */}
+    <div
+      id="feedback-modal"
+      class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 items-center justify-center p-4"
+      role="dialog"
+      aria-labelledby="feedback-modal-title"
+      aria-hidden="true"
+    >
+      <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full max-h-[90vh] overflow-hidden">
+        {/* <!-- Modal Header --> */}
+        <div class="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
+          <h3 id="feedback-modal-title" class="text-lg font-semibold text-gray-900 dark:text-white">
+            Leave Feedback
+          </h3>
+          <button
+            id="feedback-close"
+            class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+            aria-label="Close feedback form"
+          >
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+            </svg>
+          </button>
+        </div>
+
+        <!-- Modal Body -->
+        <div class="p-4">
+          <form id="feedback-form" class="space-y-4">
+            <!-- Feedback Type -->
+            <div>
+              <label for="feedback-type" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Type of Feedback
+              </label>
+              <select
+                id="feedback-type"
+                name="type"
+                required
+                class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+              >
+                <option value="">Select feedback type...</option>
+                <option value="bug">🐛 Bug Report</option>
+                <option value="feature">💡 Feature Request</option>
+                <option value="improvement">⚡ Improvement</option>
+                <option value="design">🎨 Design Feedback</option>
+                <option value="general">💬 General Comment</option>
+              </select>
+            </div>
+
+            <!-- Priority -->
+            <div>
+              <label for="feedback-priority" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Priority
+              </label>
+              <select
+                id="feedback-priority"
+                name="priority"
+                required
+                class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+              >
+                <option value="low">🟢 Low</option>
+                <option value="medium" selected>🟡 Medium</option>
+                <option value="high">🟠 High</option>
+                <option value="urgent">🔴 Urgent</option>
+              </select>
+            </div>
+
+            <!-- Subject -->
+            <div>
+              <label for="feedback-subject" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Subject
+              </label>
+              <input
+                type="text"
+                id="feedback-subject"
+                name="subject"
+                required
+                maxlength="100"
+                placeholder="Brief description of your feedback..."
+                class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+              />
+            </div>
+
+            <!-- Message -->
+            <div>
+              <label for="feedback-message" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Message
+              </label>
+              <textarea
+                id="feedback-message"
+                name="message"
+                required
+                rows="4"
+                maxlength="1000"
+                placeholder="Please provide detailed feedback..."
+                class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white resize-none"
+              ></textarea>
+              <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                <span id="message-count">0</span>/1000 characters
+              </div>
+            </div>
+
+            <!-- Anonymous Option -->
+            <div class="flex items-center">
+              <input
+                type="checkbox"
+                id="feedback-anonymous"
+                name="anonymous"
+                class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 dark:border-gray-600 rounded"
+              />
+              <label for="feedback-anonymous" class="ml-2 block text-sm text-gray-700 dark:text-gray-300">
+                Submit anonymously
+              </label>
+            </div>
+          </form>
+        </div>
+
+        <!-- Modal Footer -->
+        <div class="flex justify-end space-x-3 p-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700">
+          <button
+            type="button"
+            id="feedback-cancel"
+            class="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded-md hover:bg-gray-50 dark:hover:bg-gray-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors"
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            id="feedback-submit"
+            form="feedback-form"
+            class="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          >
+            <span class="submit-text">Submit Feedback</span>
+            <span class="loading-text hidden">Submitting...</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+)}
+
+<script>
+  // Feedback Widget JavaScript
+  document.addEventListener('DOMContentLoaded', function() {
+    const feedbackButton = document.getElementById('feedback-button') as HTMLButtonElement;
+    const feedbackModal = document.getElementById('feedback-modal') as HTMLDivElement;
+    const feedbackClose = document.getElementById('feedback-close') as HTMLButtonElement;
+    const feedbackCancel = document.getElementById('feedback-cancel') as HTMLButtonElement;
+    const feedbackForm = document.getElementById('feedback-form') as HTMLFormElement;
+    const feedbackSubmit = document.getElementById('feedback-submit') as HTMLButtonElement;
+    const messageTextarea = document.getElementById('feedback-message') as HTMLTextAreaElement;
+    const messageCount = document.getElementById('message-count') as HTMLSpanElement;
+
+    // Show modal
+    function showModal() {
+      feedbackModal.classList.remove('hidden');
+      feedbackModal.classList.add('flex');
+      feedbackModal.setAttribute('aria-hidden', 'false');
+      document.body.style.overflow = 'hidden';
+      
+      // Focus first input
+      const firstInput = feedbackForm.querySelector('input, select, textarea') as HTMLElement;
+      if (firstInput) {
+        setTimeout(() => firstInput.focus(), 100);
+      }
+    }
+
+    // Hide modal
+    function hideModal() {
+      feedbackModal.classList.add('hidden');
+      feedbackModal.classList.remove('flex');
+      feedbackModal.setAttribute('aria-hidden', 'true');
+      document.body.style.overflow = '';
+      
+      // Reset form
+      feedbackForm.reset();
+      updateMessageCount();
+    }
+
+    // Update character count
+    function updateMessageCount() {
+      if (!messageTextarea || !messageCount) return;
+      
+      const count = messageTextarea.value.length;
+      messageCount.textContent = count.toString();
+      
+      if (count > 900) {
+        messageCount.classList.add('text-red-500');
+      } else {
+        messageCount.classList.remove('text-red-500');
+      }
+    }
+
+    // Event listeners
+    feedbackButton?.addEventListener('click', showModal);
+    feedbackClose?.addEventListener('click', hideModal);
+    feedbackCancel?.addEventListener('click', hideModal);
+    messageTextarea?.addEventListener('input', updateMessageCount);
+
+    // Close modal on backdrop click
+    feedbackModal?.addEventListener('click', function(e) {
+      if (e.target === feedbackModal) {
+        hideModal();
+      }
+    });
+
+    // Close modal on Escape key
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape' && !feedbackModal.classList.contains('hidden')) {
+        hideModal();
+      }
+    });
+
+    // Form submission
+    feedbackForm?.addEventListener('submit', async function(e) {
+      e.preventDefault();
+      
+      if (!feedbackSubmit) return;
+      
+      const submitText = feedbackSubmit.querySelector('.submit-text') as HTMLElement;
+      const loadingText = feedbackSubmit.querySelector('.loading-text') as HTMLElement;
+      
+      // Show loading state
+      feedbackSubmit.disabled = true;
+      submitText?.classList.add('hidden');
+      loadingText?.classList.remove('hidden');
+
+      try {
+        const formData = new FormData(feedbackForm);
+        const feedbackData = {
+          type: formData.get('type'),
+          priority: formData.get('priority'),
+          subject: formData.get('subject'),
+          message: formData.get('message'),
+          anonymous: formData.get('anonymous') === 'on'
+        };
+
+        const response = await fetch('/api/feedback', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(feedbackData)
+        });
+
+        const result = await response.json();
+
+        if (response.ok) {
+          // Show success notification
+          if ((window as any).showNotification) {
+            (window as any).showNotification({
+              type: 'success',
+              title: 'Feedback Submitted',
+              message: 'Thank you for your feedback! We appreciate your input.',
+              duration: 3000
+            });
+          } else {
+            alert('Feedback submitted successfully! Thank you for your input.');
+          }
+          
+          hideModal();
+        } else {
+          throw new Error(result.error || 'Failed to submit feedback');
+        }
+      } catch (error) {
+        console.error('Feedback submission error:', error);
+        
+        // Show error notification
+        if ((window as any).showNotification) {
+          (window as any).showNotification({
+            type: 'error',
+            title: 'Submission Failed',
+            message: 'Failed to submit feedback. Please try again.',
+            duration: 5000
+          });
+        } else {
+          alert('Failed to submit feedback. Please try again.');
+        }
+      } finally {
+        // Reset button state
+        feedbackSubmit.disabled = false;
+        submitText?.classList.remove('hidden');
+        loadingText?.classList.add('hidden');
+      }
+    });
+
+    // Initialize character count
+    updateMessageCount();
+  });
+</script>
+
+<style>
+  /* Custom styles for feedback widget */
+  #feedback-widget {
+    font-family: inherit;
+  }
+
+  #feedback-modal {
+    backdrop-filter: blur(4px);
+  }
+
+  #feedback-modal .bg-white {
+    animation: slideIn 0.3s ease-out;
+  }
+
+  @keyframes slideIn {
+    from {
+      opacity: 0;
+      transform: translateY(-20px) scale(0.95);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+  }
+
+  /* Focus styles for accessibility */
+  #feedback-button:focus,
+  #feedback-close:focus,
+  #feedback-cancel:focus,
+  #feedback-submit:focus {
+    outline: 2px solid #3b82f6;
+    outline-offset: 2px;
+  }
+
+  /* Form validation styles */
+  #feedback-form input:invalid,
+  #feedback-form select:invalid,
+  #feedback-form textarea:invalid {
+    border-color: #ef4444;
+  }
+
+  #feedback-form input:valid,
+  #feedback-form select:valid,
+  #feedback-form textarea:valid {
+    border-color: #10b981;
+  }
+</style>
