@@ -8,7 +8,7 @@ export const GET: APIRoute = async ({ request }) => {
     const clientId = url.searchParams.get("id");
     const searchQuery = url.searchParams.get("input");
 
-    // console.log(
+    console.log(
       `📡 [API] Fetching clients with role: ${role}${clientId ? `, specific ID: ${clientId}` : ""}${searchQuery ? `, search: ${searchQuery}` : ""}`
     );
 
@@ -57,7 +57,7 @@ export const GET: APIRoute = async ({ request }) => {
       );
     }
 
-    // console.log(`✅ [API] Found ${profiles?.length || 0} clients`);
+    console.log(`✅ [API] Found ${profiles?.length || 0} clients`);
 
     // Return the raw profile data
     const clients = profiles || [];

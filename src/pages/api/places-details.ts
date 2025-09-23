@@ -2,7 +2,7 @@ import type { APIRoute } from "astro";
 
 // 🚧 DEAD STOP - 2024-12-19: Potentially unused API endpoint
 // If you see this log after a few days, this endpoint can likely be deleted
-// console.log("🚧 [DEAD-STOP-2024-12-19] places-details.ts accessed - may be unused");
+console.log("🚧 [DEAD-STOP-2024-12-19] places-details.ts accessed - may be unused");
 
 export const GET: APIRoute = async ({ url }) => {
   try {
@@ -44,7 +44,7 @@ export const GET: APIRoute = async ({ url }) => {
     const googleApiUrl = new URL(`https://places.googleapis.com/v1/places/${placeId}`);
     googleApiUrl.searchParams.set("fields", fields);
 
-    // console.log(
+    console.log(
       "🔍 [PLACES-DETAILS-PROXY] Making request to Google Places API (New):",
       googleApiUrl.toString()
     );
@@ -57,7 +57,7 @@ export const GET: APIRoute = async ({ url }) => {
     });
     const data = await response.json();
 
-    // console.log("🔍 [PLACES-DETAILS-PROXY] Google Places API response:", {
+    console.log("🔍 [PLACES-DETAILS-PROXY] Google Places API response:", {
       status: data.error ? "ERROR" : "OK",
       result: !!data,
     });

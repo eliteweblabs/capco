@@ -3,7 +3,7 @@
  */
 
 // 🔍 PLACEHOLDER DEBUG - Status Action Fields
-// console.log("🔍 [PLACEHOLDER-DEBUG] placeholder-utils.ts - Checking for status action fields");
+console.log("🔍 [PLACEHOLDER-DEBUG] placeholder-utils.ts - Checking for status action fields");
 
 /**
  * Get the CAPCo logo SVG as a string
@@ -71,9 +71,9 @@ export function replacePlaceholders(
   data: PlaceholderData,
   addBoldTags: boolean = true
 ): string {
-  // console.log("🔄 [PLACEHOLDER-UTILS] Starting placeholder replacement...");
-  // console.log("🔄 [PLACEHOLDER-UTILS] Original message:", message);
-  // console.log("🔄 [PLACEHOLDER-UTILS] Placeholder data:", data);
+  // // console.log("🔄 [PLACEHOLDER-UTILS] Starting placeholder replacement...");
+  // // console.log("🔄 [PLACEHOLDER-UTILS] Original message:", message);
+  // // console.log("🔄 [PLACEHOLDER-UTILS] Placeholder data:", data);
 
   if (!message || !data) {
     // console.log("🔄 [PLACEHOLDER-UTILS] No message or data, returning original");
@@ -86,7 +86,7 @@ export function replacePlaceholders(
   // Get base URL from data or environment
   const baseUrl = data.baseUrl || getBaseUrl();
   if (baseUrl) {
-    // console.log(`🔄 [PLACEHOLDER-UTILS] Replacing {{BASE_URL}} with: ${baseUrl}`);
+    // // console.log(`🔄 [PLACEHOLDER-UTILS] Replacing {{BASE_URL}} with: ${baseUrl}`);
     result = result.replace(/\{\{BASE_URL\}\}/g, baseUrl);
   } else {
     // console.log("🔄 [PLACEHOLDER-UTILS] ⚠️ No baseUrl available");
@@ -95,7 +95,7 @@ export function replacePlaceholders(
   data.baseProjectLink = `${process.env.SITE_URL}/project/${data.projectId}`;
 
   if (data.baseProjectLink) {
-    // console.log(`🔄 [PLACEHOLDER-UTILS] Replacing {{BASE_URL}} with: ${baseUrl}`);
+    // // console.log(`🔄 [PLACEHOLDER-UTILS] Replacing {{BASE_URL}} with: ${baseUrl}`);
     result = result.replace(/\{\{BASE_URL\}\}/g, baseUrl);
   } else {
     // console.log("🔄 [PLACEHOLDER-UTILS] ⚠️ No baseUrl available");
@@ -127,16 +127,16 @@ export function replacePlaceholders(
   }
 
   // if (data.projectLink) {
-  //   // console.log(
+  //   // // console.log(
   //   //   `🔄 [PLACEHOLDER-UTILS] Replacing {{PROJECT_ADDRESS}} with: ${data.projectAddress}`
   //   // );
   //   result = result.replace(/\{\{\s*PROJECT_LINK\s*\}\}/g, data.projectLink);
   // } else {
-  // console.log("🔄 [PLACEHOLDER-UTILS] ⚠️ No projectAddress data available");
+  //   // console.log("🔄 [PLACEHOLDER-UTILS] ⚠️ No projectAddress data available");
   // }
 
   if (data.projectAddress) {
-    // console.log(
+    // // console.log(
     //   `🔄 [PLACEHOLDER-UTILS] Replacing {{PROJECT_ADDRESS}} with: ${data.projectAddress}`
     // );
     result = result.replace(/\{\{\s*PROJECT_ADDRESS\s*\}\}/g, data.projectAddress);
@@ -145,14 +145,14 @@ export function replacePlaceholders(
   }
 
   if (data.clientName) {
-    // console.log(`🔄 [PLACEHOLDER-UTILS] Replacing {{CLIENT_NAME}} with: ${data.clientName}`);
+    // // console.log(`🔄 [PLACEHOLDER-UTILS] Replacing {{CLIENT_NAME}} with: ${data.clientName}`);
     result = result.replace(/\{\{\s*CLIENT_NAME\s*\}\}/g, data.clientName);
   } else {
     // console.log("🔄 [PLACEHOLDER-UTILS] ⚠️ No clientName data available");
   }
 
   if (data.clientEmail) {
-    // console.log(`🔄 [PLACEHOLDER-UTILS] Replacing {{CLIENT_EMAIL}} with: ${data.clientEmail}`);
+    // // console.log(`🔄 [PLACEHOLDER-UTILS] Replacing {{CLIENT_EMAIL}} with: ${data.clientEmail}`);
     result = result.replace(/\{\{\s*CLIENT_EMAIL\s*\}\}/g, data.clientEmail);
     addBoldTags = false;
   } else {

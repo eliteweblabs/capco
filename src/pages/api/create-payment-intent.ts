@@ -37,7 +37,7 @@ export const POST: APIRoute = async ({ request }) => {
     const { projectId, invoiceId, paymentType, paymentMethod, billingDetails, amount } =
       await request.json();
 
-    // console.log("🔍 [CREATE-PAYMENT-INTENT] Received request:", {
+    console.log("🔍 [CREATE-PAYMENT-INTENT] Received request:", {
       projectId,
       invoiceId,
       paymentType,
@@ -50,7 +50,7 @@ export const POST: APIRoute = async ({ request }) => {
     // const id = invoiceId;
     // const isProjectPayment = !!projectId;
 
-    // console.log("🔍 [CREATE-PAYMENT-INTENT] Debug values:", {
+    console.log("🔍 [CREATE-PAYMENT-INTENT] Debug values:", {
       projectId,
       invoiceId,
       paymentType,
@@ -119,7 +119,7 @@ export const POST: APIRoute = async ({ request }) => {
         projects: project,
       };
 
-      // console.log("🔍 [CREATE-PAYMENT-INTENT] Created project invoice object:", {
+      console.log("🔍 [CREATE-PAYMENT-INTENT] Created project invoice object:", {
         invoiceId: invoice.id,
         projectId: invoice.project_id,
         totalAmount: invoice.total_amount,
@@ -220,7 +220,7 @@ export const POST: APIRoute = async ({ request }) => {
     }
 
     // Create payment intent
-    // console.log("🔍 [CREATE-PAYMENT-INTENT] About to call Stripe with:", {
+    console.log("🔍 [CREATE-PAYMENT-INTENT] About to call Stripe with:", {
       amount: amountInCents,
       currency: "usd",
       amountType: typeof amountInCents,

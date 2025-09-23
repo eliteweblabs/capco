@@ -40,7 +40,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     });
 
     if (sessionError || !session.session?.user) {
-      // console.log("📝 [CREATE-PROJECT] Session error:", sessionError);
+      console.log("📝 [CREATE-PROJECT] Session error:", sessionError);
       return new Response(JSON.stringify({ error: "Invalid session" }), {
         status: 401,
       });
@@ -60,7 +60,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       .single();
 
     if (profileError) {
-      // console.log("📝 [CREATE-PROJECT] Error fetching user profile:", profileError);
+      console.log("📝 [CREATE-PROJECT] Error fetching user profile:", profileError);
       return new Response(JSON.stringify({ error: "Failed to get user profile" }), {
         status: 500,
       });
@@ -135,7 +135,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
           // });
 
           if (hasChanges) {
-            // console.log("📝 [CREATE-PROJECT] Profile data has changed, updating profile:", {
+            console.log("📝 [CREATE-PROJECT] Profile data has changed, updating profile:", {
               old: {
                 first_name: currentProfile.first_name,
                 last_name: currentProfile.last_name,
@@ -252,7 +252,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
             // });
 
             if (hasChanges) {
-              // console.log("📝 [CREATE-PROJECT] Profile data has changed, updating profile:", {
+              console.log("📝 [CREATE-PROJECT] Profile data has changed, updating profile:", {
                 old: {
                   first_name: currentProfile.first_name,
                   last_name: currentProfile.last_name,
@@ -350,7 +350,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     const buttonGroupFields = ["building", "project", "service", "requested_docs"];
 
     // buttonGroupFields.forEach((fieldName) => {
-    // console.log(`📝 [CREATE-PROJECT] Debug ${fieldName} field:`, {
+    //   console.log(`📝 [CREATE-PROJECT] Debug ${fieldName} field:`, {
     //     value: body[fieldName],
     //     type: typeof body[fieldName],
     //     isArray: Array.isArray(body[fieldName]),
@@ -491,7 +491,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     //     projectId: project.id,
     //   });
     // } else {
-    // console.log(
+    //   console.log(
     //     "📝 [CREATE-PROJECT] ✅ Project created with correct initial status:",
     //     project.status
     //   );

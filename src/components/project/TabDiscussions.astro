@@ -182,7 +182,7 @@ const placeholder =
 
               if (data.success) {
                 discussions = data.discussions;
-                // console.log("🔍 [DISCUSSIONS] Loaded discussions data:", discussions.map(d => ({
+                //       console.log("🔍 [DISCUSSIONS] Loaded discussions data:", discussions.map(d => ({
                 //         // id: d.id,
                 //         // author_id: d.author_id,
                 //         // company_name: d.company_name,
@@ -301,7 +301,7 @@ const placeholder =
                 comment.author_id === currentUserId;
 
               if (!canSeeComment) {
-                // console.log("🔍 [DEBUG] Hiding internal comment from user:", comment.id);
+                console.log("🔍 [DEBUG] Hiding internal comment from user:", comment.id);
                 continue;
               }
 
@@ -468,7 +468,7 @@ const placeholder =
           }
 
           function toggleCommentForm() {
-            // console.log("🔔 [DISCUSSION] toggleCommentForm called");
+            console.log("🔔 [DISCUSSION] toggleCommentForm called");
             const commentForm = document.getElementById("comment-form");
             const newCommentBtn = document.getElementById("new-comment-btn");
 
@@ -510,7 +510,7 @@ const placeholder =
 
           // Cancel reply form
           function cancelReply(parentCommentId) {
-            // console.log("🔔 [DISCUSSION] Canceling reply for comment:", parentCommentId);
+            console.log("🔔 [DISCUSSION] Canceling reply for comment:", parentCommentId);
 
             const replyForm = document.querySelector(
               `[data-discussion-id="${parentCommentId}"]`
@@ -525,7 +525,7 @@ const placeholder =
 
           // Submit reply
           async function submitReply(parentCommentId) {
-            // console.log("🔔 [DISCUSSION] Submitting reply for comment:", parentCommentId);
+            console.log("🔔 [DISCUSSION] Submitting reply for comment:", parentCommentId);
 
             const replyForm = document.querySelector(
               `[data-discussion-id="${parentCommentId}"]`
@@ -577,7 +577,7 @@ const placeholder =
               const data = await response.json();
 
               if (data.success) {
-                // console.log("✅ Reply submitted successfully");
+                console.log("✅ Reply submitted successfully");
                 // Remove the reply form
                 replyForm.remove();
                 // Reload discussions
@@ -767,7 +767,7 @@ const placeholder =
 
           // Image modal functionality
           function openImageModal(imageUrl) {
-            // console.log("🖼️ [DISCUSSION] openImageModal called with:", imageUrl);
+            console.log("🖼️ [DISCUSSION] openImageModal called with:", imageUrl);
 
             // Create modal overlay
             const modal = document.createElement("div");
@@ -870,7 +870,7 @@ const placeholder =
                 let uploadErrors = [];
 
                 if (selectedImages.length > 0) {
-                  // console.log(
+                  console.log(
                     "📸 Uploading",
                     selectedImages.length,
                     "images for discussion",
@@ -915,7 +915,7 @@ const placeholder =
                       const uploadedFile = uploadResult.file;
 
                       uploadedImageCount++;
-                      // console.log("✅ File uploaded:", uploadedFile.fileName);
+                      console.log("✅ File uploaded:", uploadedFile.fileName);
                     } catch (error) {
                       console.error("❌ Upload error for", file.name, ":", error);
                       uploadErrors.push(`Failed to upload ${file.name}: ${error.message}`);
@@ -935,7 +935,7 @@ const placeholder =
                   }
                 }
 
-                // console.log("✅ Comment submitted successfully");
+                console.log("✅ Comment submitted successfully");
 
                 // Clear form and hide it
                 messageInput.value = "";
@@ -1166,7 +1166,7 @@ const placeholder =
           function initializeDiscussion() {
             // Set user role from server-side data (already set via define:vars)
             currentUserRole = window.PROJECT_USER_ROLE || "Client";
-            // console.log("🔔 [DISCUSSION] User role set to:", currentUserRole);
+            console.log("🔔 [DISCUSSION] User role set to:", currentUserRole);
 
             // Make user role available globally for reply forms
             window.currentUserRole = currentUserRole;
@@ -1194,7 +1194,7 @@ const placeholder =
               newBtn.addEventListener("click", function (e) {
                 e.preventDefault();
                 e.stopPropagation();
-                // console.log("🔔 [DISCUSSION] New comment button clicked!");
+                console.log("🔔 [DISCUSSION] New comment button clicked!");
                 toggleCommentForm();
               });
             }
@@ -1273,29 +1273,29 @@ const placeholder =
 
             // Add event delegation for completed toggles (only in project context)
             document.addEventListener("change", (e) => {
-              // console.log("🔔 [TAB-DISCUSSIONS] Change event fired on:", e.target);
+              console.log("🔔 [TAB-DISCUSSIONS] Change event fired on:", e.target);
               const target = e.target;
               // Only handle toggles when we're in a project discussion context
               if (
                 target.classList.contains("completed-toggle") &&
                 document.getElementById("discussion-container")
               ) {
-                // console.log("🔔 [TAB-DISCUSSIONS] Found completed-toggle, processing...");
+                console.log("🔔 [TAB-DISCUSSIONS] Found completed-toggle, processing...");
                 const discussionId = parseInt(target.getAttribute("data-discussion-id") || "0");
                 const isCompleted = target.checked;
-                // console.log("🔔 [TAB-DISCUSSIONS] Toggle details:", {
+                console.log("🔔 [TAB-DISCUSSIONS] Toggle details:", {
                   discussionId,
                   isCompleted,
                   targetClasses: target.className,
                 });
                 if (discussionId) {
-                  // console.log("🔔 [TAB-DISCUSSIONS] Calling toggleDiscussionCompleted...");
+                  console.log("🔔 [TAB-DISCUSSIONS] Calling toggleDiscussionCompleted...");
                   toggleDiscussionCompleted(discussionId, isCompleted);
                 } else {
                   console.warn("🔔 [TAB-DISCUSSIONS] No valid discussion ID found");
                 }
               } else {
-                // console.log("🔔 [TAB-DISCUSSIONS] Change event not for completed-toggle, ignoring");
+                console.log("🔔 [TAB-DISCUSSIONS] Change event not for completed-toggle, ignoring");
               }
             });
 
@@ -1305,7 +1305,7 @@ const placeholder =
 
               // Only log clicks on buttons or elements that might be reply-related
               // if (target.tagName === 'BUTTON' || target.closest('button') || target.classList.contains('reply-button')) {
-              // console.log("🔔 [DISCUSSION] Click event on:", target.tagName, target.className, target.textContent?.trim());
+              //   console.log("🔔 [DISCUSSION] Click event on:", target.tagName, target.className, target.textContent?.trim());
               // }
 
               if (target.classList.contains("reply-button") || target.closest(".reply-button")) {
@@ -1418,7 +1418,7 @@ const placeholder =
           // Toggle discussion completed status
           async function toggleDiscussionCompleted(discussionId, isCompleted) {
             try {
-              // console.log("🔔 [DISCUSSION] Toggling completed status:", {
+              console.log("🔔 [DISCUSSION] Toggling completed status:", {
                 discussionId,
                 isCompleted,
               });
@@ -1438,7 +1438,7 @@ const placeholder =
               const data = await response.json();
 
               if (data.success) {
-                // console.log("✅ [DISCUSSION] Discussion completed status updated successfully");
+                console.log("✅ [DISCUSSION] Discussion completed status updated successfully");
                 // Update the local discussion data
                 const discussion = discussions.find((d) => d.id === discussionId);
                 if (discussion) {
@@ -1487,7 +1487,7 @@ const placeholder =
                 }
 
                 // Note: Project logging is handled server-side in the update-discussion-completed API
-                // console.log("📝 [TAB-DISCUSSIONS] Discussion toggle logged server-side");
+                console.log("📝 [TAB-DISCUSSIONS] Discussion toggle logged server-side");
 
                 // Update the incomplete comments count
                 updateIncompleteCommentsCount();
@@ -1525,7 +1525,7 @@ const placeholder =
 
           // Initialize discussion functionality when component loads
           document.addEventListener("DOMContentLoaded", function () {
-            // console.log("🔔 [DISCUSSION] Discussions component loaded, initializing...");
+            console.log("🔔 [DISCUSSION] Discussions component loaded, initializing...");
             setTimeout(initializeDiscussion, 100);
           });
 

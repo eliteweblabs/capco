@@ -28,7 +28,7 @@ export const GET: APIRoute = async ({ cookies }) => {
       reputation_status: "unknown",
     };
 
-    // console.log("🔍 [REPUTATION-CHECK] Starting sender reputation analysis...");
+    console.log("🔍 [REPUTATION-CHECK] Starting sender reputation analysis...");
 
     // 1. Check domain verification status
     try {
@@ -187,7 +187,7 @@ export const GET: APIRoute = async ({ cookies }) => {
       ],
     };
 
-    // console.log("✅ [REPUTATION-CHECK] Analysis complete:", results.reputation_status);
+    console.log("✅ [REPUTATION-CHECK] Analysis complete:", results.reputation_status);
 
     return new Response(JSON.stringify(results, null, 2), {
       status: 200,

@@ -19,7 +19,7 @@ export const GET: APIRoute = async ({ request, cookies }) => {
       );
     }
 
-    // console.log("🔍 [GET-INVOICE-LINE-ITEMS] Fetching line items for invoice ID:", invoiceId);
+    console.log("🔍 [GET-INVOICE-LINE-ITEMS] Fetching line items for invoice ID:", invoiceId);
 
     if (!supabase) {
       console.error("❌ [GET-INVOICE-LINE-ITEMS] Database not configured");
@@ -59,9 +59,9 @@ export const GET: APIRoute = async ({ request, cookies }) => {
     // Use the stored catalog line items directly (no need to fetch from catalog)
     const lineItems = invoice?.catalog_line_items || [];
 
-    // console.log("🔍 [GET-INVOICE-LINE-ITEMS] Query result:", { lineItems });
+    console.log("🔍 [GET-INVOICE-LINE-ITEMS] Query result:", { lineItems });
 
-    // console.log("✅ [GET-INVOICE-LINE-ITEMS] Found line items:", lineItems?.length || 0);
+    console.log("✅ [GET-INVOICE-LINE-ITEMS] Found line items:", lineItems?.length || 0);
 
     return new Response(
       JSON.stringify({

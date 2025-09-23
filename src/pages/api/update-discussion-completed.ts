@@ -5,11 +5,11 @@ import { supabase } from "../../lib/supabase";
 import { supabaseAdmin } from "../../lib/supabase-admin";
 
 export const POST: APIRoute = async ({ request, cookies }) => {
-  // console.log("🔔 [UPDATE-DISCUSSION] API endpoint called");
+  console.log("🔔 [UPDATE-DISCUSSION] API endpoint called");
   try {
     // Check authentication
     const { isAuth, currentUser } = await checkAuth(cookies);
-    // console.log("🔔 [UPDATE-DISCUSSION] Auth check result:", {
+    console.log("🔔 [UPDATE-DISCUSSION] Auth check result:", {
       isAuth,
       hasUser: !!currentUser,
     });
@@ -22,12 +22,12 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     }
 
     const body = await request.json();
-    // console.log("🔔 [UPDATE-DISCUSSION] Request body:", body);
+    console.log("🔔 [UPDATE-DISCUSSION] Request body:", body);
     const { discussionId, mark_completed } = body;
 
     // Ensure discussionId is a number
     const discussionIdNum = parseInt(discussionId, 10);
-    // console.log(
+    console.log(
       "🔔 [UPDATE-DISCUSSION] Parsed discussionId:",
       discussionIdNum,
       "Original:",
@@ -48,7 +48,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     }
 
     // First, check if the discussion exists and get its current state
-    // console.log(
+    console.log(
       "🔍 [UPDATE-DISCUSSION] Looking for discussion with ID:",
       discussionIdNum,
       "Type:",
@@ -79,7 +79,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       );
     }
 
-    // console.log("🔍 [UPDATE-DISCUSSION] Found existing discussion:", existingDiscussion);
+    console.log("🔍 [UPDATE-DISCUSSION] Found existing discussion:", existingDiscussion);
 
     // Update the discussion using admin client to bypass RLS
     const { data: updateResult, error } = await supabaseAdmin
@@ -105,7 +105,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       );
     }
 
-    // console.log("✅ [UPDATE-DISCUSSION] Discussion updated successfully:", updateResult);
+    console.log("✅ [UPDATE-DISCUSSION] Discussion updated successfully:", updateResult);
 
     // Get discussion details for logging
     const { data: discussionData, error: discussionError } = await supabaseAdmin
@@ -117,7 +117,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     // Log the discussion toggle to project activity
     if (discussionData && !discussionError) {
       try {
-        // console.log("📝 [UPDATE-DISCUSSION] Logging discussion toggle:", {
+        console.log("📝 [UPDATE-DISCUSSION] Logging discussion toggle:", {
           projectId: discussionData.project_id,
           discussionId: discussionIdNum,
           isCompleted: mark_completed,
@@ -132,7 +132,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
           (discussionData.message?.substring(0, 50) || "No message") + "..."
         );
 
-        // console.log("✅ [UPDATE-DISCUSSION] Project logging completed successfully");
+        console.log("✅ [UPDATE-DISCUSSION] Project logging completed successfully");
       } catch (logError) {
         console.error("❌ [UPDATE-DISCUSSION] Project logging failed:", logError);
         // Don't fail the entire request if logging fails
