@@ -435,7 +435,7 @@ Your account has been created successfully:<br><br>
           type: "success",
           title: "User Created Successfully",
           message: `${displayName} has been created as ${staffRole}. They will receive a magic link to access their account.`,
-          duration: 5000,
+          duration: 2500,
         },
       }),
       {
