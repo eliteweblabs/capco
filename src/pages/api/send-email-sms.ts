@@ -9,6 +9,7 @@ export const POST: APIRoute = async ({ request }) => {
     const carrier2 = formData.get("carrier2") as string;
     const message = formData.get("message") as string;
     const contactInfo = formData.get("contact_info") as string;
+    const globalCompanyName = import.meta.env.GLOBAL_COMPANY_NAME || "Edit Company Name Here";
 
     console.log("📱 [SMS-API] SMS request received:", {
       phone1: phone1 ? "***" + phone1.slice(-4) : "none",
@@ -58,10 +59,10 @@ export const POST: APIRoute = async ({ request }) => {
 
     // Format the message with context - put contact info first to avoid truncation
     // Keep it simple for SMS gateways
-    let emailContent = `CAPCo Contact`;
+    let emailContent = `${globalCompanyName} → New Web Inquiry →`;
 
     if (contactInfo) {
-      emailContent += ` from ${contactInfo}`;
+      emailContent += ` ${contactInfo}`;
     }
 
     emailContent += `: ${message}`;

@@ -4,21 +4,14 @@ import ImportManager from "../components/common/ImportManager.astro";
 import { checkAuth } from "../lib/auth";
 
 // Check if user is authenticated and is Admin
-const { isAuth, currentRole, currentUser, session } = await checkAuth(Astro.cookies);
+const { isAuth, currentUser, session } = await checkAuth(Astro.cookies);
 
-if (!isAuth || currentRole !== "Admin") {
+if (!isAuth || currentUser?.profile?.role !== "Admin") {
   return Astro.redirect("/login");
 }
 ---
 
-<App
-  title="Import Data - CAPCo Fire Protection"
-  requireAuth={true}
-  isAuth={isAuth}
-  currentUser={currentUser}
-  currentRole={currentRole}
-  session={session}
->
+<App title="Import Data - CAPCo Fire Protection" currentUser={currentUser} session={session}>
   <main class="min-h-screen bg-gray-50 dark:bg-gray-900">
     <div class="container mx-auto px-4 py-8">
       <ImportManager />

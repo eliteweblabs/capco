@@ -2,6 +2,9 @@
  * Simple placeholder replacement utility
  */
 
+// 🔍 PLACEHOLDER DEBUG - Status Action Fields
+console.log("🔍 [PLACEHOLDER-DEBUG] placeholder-utils.ts - Checking for status action fields");
+
 /**
  * Get the CAPCo logo SVG as a string
  * This function extracts the SVG content from the Logo component
@@ -142,6 +145,14 @@ export function replacePlaceholders(
   const globalCompanyName = process.env.GLOBAL_COMPANY_NAME || "Edit Company Name Here";
   // console.log(`🔄 [PLACEHOLDER-UTILS] Replacing {{GLOBAL_COMPANY_NAME}} with: ${globalCompanyName}`);
   result = result.replace(/\{\{\s*GLOBAL_COMPANY_NAME\s*\}\}/g, globalCompanyName);
+
+  const globalCompanySlogan = process.env.GLOBAL_COMPANY_SLOGAN || "Edit Company Slogan Here";
+  // console.log(`🔄 [PLACEHOLDER-UTILS] Replacing {{GLOBAL_COMPANY_SLOGAN}} with: ${globalCompanySlogan}`);
+  result = result.replace(/\{\{\s*GLOBAL_COMPANY_SLOGAN\s*\}\}/g, globalCompanySlogan);
+
+  const year = new Date().getFullYear();
+  // console.log(`🔄 [PLACEHOLDER-UTILS] Replacing {{YEAR}} with: ${year}`);
+  result = result.replace(/\{\{\s*YEAR\s*\}\}/g, year.toString());
 
   // console.log("🔄 [PLACEHOLDER-UTILS] Final result:", result);
   return addBoldTags ? "<b>" + result + "</b>" : result;

@@ -15,6 +15,9 @@
 
 const requireAuthRedirect = undefined;
 import { checkAuth } from "../lib/auth";
+import { isBackendPage } from "../pages/api/backend-page-check";
+
+const isBackend = isBackendPage(Astro.url.pathname);
 
 // Handle OAuth callback if code is present
 const authCode = Astro.url.searchParams.get("code");
@@ -41,12 +44,13 @@ import ProjectForm from "../components/project/ProjectForm.astro";
 ---
 
 <App
-  title="CAPCO Design Group - Build, manage, and track fire protection systems effortlessly"
-  description="CAPCo powers the world's most reliable fire protection systems. We make compliance easy."
+  title=""
+  description=""
   currentUser={currentUser}
   session={session || undefined}
   project={undefined}
   supabase={supabase}
+  isBackend={isBackend}
 >
   <div
     id="main-content"
@@ -58,14 +62,14 @@ import ProjectForm from "../components/project/ProjectForm.astro";
           class="mveJTCIb2WII7J4sY22F _Ybd3WwuTVljUT4vEaM3 _wYiJGbRZyFZeCc8y7Sf mngKhi_Rv06PF57lblDI _1jTZ8KXRZul60S6czNi LSIxp7RSuOKhsg28v_u3"
         >
           <Hero
-            title="CAPCO Design Group - Build, manage, and track fire protection systems effortlessly"
-            description="CAPCo powers the world's most reliable fire protection systems. We make compliance easy."
+            title="Create a New Project"
+            description="Add a new client or select an existing client to create a new project."
           />
 
           <ProjectForm
             currentUser={currentUser}
             isNewProject={true}
-            projectId=""
+            project={undefined}
             projectStatus={0}
           />
         </div>
@@ -74,11 +78,3 @@ import ProjectForm from "../components/project/ProjectForm.astro";
     <Footer />
   </div>
 </App>
-
-<!-- Hero Section -->
-<!-- -->
-<!-- Features Section -->
-<!-- <Features /> -->
-
-<!-- Testimonials Section -->
-<!-- <Testimonials /> -->

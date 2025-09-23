@@ -45,6 +45,7 @@ const supabase = createClient(supabaseUrl, supabaseServiceKey);
 // In-memory storage for active users and messages
 const activeUsers = new Map();
 const chatHistory = [];
+const directMessages = new Map(); // Store direct messages by conversation ID
 
 // Load recent messages from database on startup
 async function loadRecentMessages() {
@@ -80,6 +81,18 @@ io.on("connection", (socket) => {
     const { userId, userName, userRole } = userData;
 
     console.log(`🔔 [SOCKETIO-CHAT] User joining: ${userName} (${userRole})`);
+    console.log(`🔧 [SOCKETIO-CHAT] User data received:`, {
+      userId,
+      userName,
+      userRole,
+      socketId: socket.id,
+    });
+
+    // Check if userId is valid
+    if (!userId || userId === "unknown" || userId === "undefined") {
+      console.error("❌ [SOCKETIO-CHAT] Invalid userId received:", userId);
+      console.error("🔧 [SOCKETIO-CHAT] Full userData:", userData);
+    }
 
     // Store user info
     activeUsers.set(socket.id, {
@@ -93,8 +106,13 @@ io.on("connection", (socket) => {
     // Send chat history to the new user
     socket.emit("chat_history", chatHistory);
 
-    // Broadcast updated user list
+    // Broadcast updated user list to all users
     const userList = Array.from(activeUsers.values());
+    console.log(
+      `🔧 [SOCKETIO-CHAT] Broadcasting user list to all users:`,
+      userList.length,
+      "users"
+    );
     io.emit("user_list", userList);
 
     // Broadcast user joined message
@@ -105,6 +123,33 @@ io.on("connection", (socket) => {
     });
 
     console.log(`✅ [SOCKETIO-CHAT] User ${userName} joined successfully`);
+  });
+
+  // Handle direct messaging join
+  socket.on("join_dm", async (userData) => {
+    const { userId, userName, userRole } = userData;
+
+    console.log(`💬 [DIRECT-MESSAGING] User joining DM: ${userName} (${userRole})`);
+
+    // Store user info (same as regular join)
+    activeUsers.set(socket.id, {
+      userId,
+      userName,
+      userRole,
+      socketId: socket.id,
+      joinedAt: new Date(),
+    });
+
+    // Send DM user list to all connected users
+    const userList = Array.from(activeUsers.values());
+    console.log(
+      `🔧 [DIRECT-MESSAGING] Broadcasting user list to all users:`,
+      userList.length,
+      "users"
+    );
+    io.emit("dm_user_list", userList);
+
+    console.log(`✅ [DIRECT-MESSAGING] User ${userName} joined DM successfully`);
   });
 
   // Handle new messages
@@ -159,6 +204,152 @@ io.on("connection", (socket) => {
     io.emit("new_message", messageObj);
   });
 
+  // Handle direct messages
+  socket.on("dm_message", async (messageData) => {
+    const user = activeUsers.get(socket.id);
+    if (!user) {
+      console.error("❌ [DIRECT-MESSAGING] User not found for socket:", socket.id);
+      return;
+    }
+
+    const { to, message } = messageData;
+    const messageObj = {
+      id: Date.now().toString(),
+      from: user.userId,
+      from_name: user.userName,
+      to: to,
+      message: message,
+      timestamp: new Date().toISOString(),
+      created_at: new Date().toISOString(),
+    };
+
+    console.log(`💬 [DIRECT-MESSAGING] DM from ${user.userName} to ${to}: ${message}`);
+    console.log(`🔧 [DIRECT-MESSAGING] User data:`, {
+      userId: user.userId,
+      userName: user.userName,
+      userRole: user.userRole,
+    });
+
+    // Store in direct messages
+    const conversationId = [user.userId, to].sort().join("-");
+    if (!directMessages.has(conversationId)) {
+      directMessages.set(conversationId, []);
+    }
+    directMessages.get(conversationId).push(messageObj);
+
+    // Keep only last 50 messages per conversation
+    const conversation = directMessages.get(conversationId);
+    if (conversation.length > 50) {
+      conversation.shift();
+    }
+
+    // Save to database
+    try {
+      console.log("🔧 [DIRECT-MESSAGING] Attempting to save DM to database:", {
+        from_user: user.userId,
+        from_name: user.userName,
+        to_user: to,
+        message: message,
+        message_timestamp: messageObj.timestamp,
+      });
+
+      // First check if both users exist in auth.users
+      const { data: fromUser, error: fromUserError } = await supabase
+        .from("auth.users")
+        .select("id")
+        .eq("id", user.userId)
+        .single();
+
+      const { data: toUser, error: toUserError } = await supabase
+        .from("auth.users")
+        .select("id")
+        .eq("id", to)
+        .single();
+
+      if (fromUserError || toUserError) {
+        console.error("❌ [DIRECT-MESSAGING] User validation failed:", {
+          fromUserError: fromUserError?.message,
+          toUserError: toUserError?.message,
+          fromUserId: user.userId,
+          toUserId: to,
+        });
+        return;
+      }
+
+      const { error } = await supabase.from("direct_messages").insert({
+        from_user: user.userId,
+        from_name: user.userName,
+        to_user: to,
+        message: message,
+        message_timestamp: messageObj.timestamp,
+      });
+
+      if (error) {
+        console.error("❌ [DIRECT-MESSAGING] Error saving DM to database:", error);
+        console.error("🔧 [DIRECT-MESSAGING] Error details:", {
+          message: error.message,
+          details: error.details,
+          hint: error.hint,
+          code: error.code,
+        });
+      } else {
+        console.log("✅ [DIRECT-MESSAGING] DM saved to database");
+      }
+    } catch (error) {
+      console.error("❌ [DIRECT-MESSAGING] Error saving DM:", error);
+      console.error("🔧 [DIRECT-MESSAGING] Error details:", {
+        message: error.message,
+        stack: error.stack,
+      });
+    }
+
+    // Send to recipient if online
+    const recipientSocket = Array.from(activeUsers.entries()).find(
+      ([_, userData]) => userData.userId === to
+    );
+    if (recipientSocket) {
+      recipientSocket[0].emit("dm_message", messageObj);
+    }
+
+    // Send back to sender for confirmation
+    socket.emit("dm_message", messageObj);
+  });
+
+  // Handle DM conversation history request
+  socket.on("get_dm_history", (data) => {
+    const user = activeUsers.get(socket.id);
+    if (!user) return;
+
+    const { userId } = data;
+    const conversationId = [user.userId, userId].sort().join("-");
+    const conversation = directMessages.get(conversationId) || [];
+
+    console.log(
+      `💬 [DIRECT-MESSAGING] Sending DM history to ${user.userName}: ${conversation.length} messages`
+    );
+    socket.emit("dm_conversation_history", { messages: conversation });
+  });
+
+  // Handle DM typing indicators
+  socket.on("dm_typing", (data) => {
+    const user = activeUsers.get(socket.id);
+    if (!user) return;
+
+    const { to, isTyping } = data;
+
+    // Send typing indicator to recipient
+    const recipientSocket = Array.from(activeUsers.entries()).find(
+      ([_, userData]) => userData.userId === to
+    );
+    if (recipientSocket) {
+      recipientSocket[0].emit("dm_user_typing", {
+        from: user.userId,
+        from_name: user.userName,
+        isTyping: isTyping,
+      });
+    }
+  });
+
   // Handle typing indicators
   socket.on("typing", (data) => {
     const user = activeUsers.get(socket.id);
@@ -179,8 +370,13 @@ io.on("connection", (socket) => {
       // Remove from active users
       activeUsers.delete(socket.id);
 
-      // Broadcast updated user list
+      // Broadcast updated user list to all users
       const userList = Array.from(activeUsers.values());
+      console.log(
+        `🔧 [SOCKETIO-CHAT] Broadcasting updated user list after disconnect:`,
+        userList.length,
+        "users"
+      );
       io.emit("user_list", userList);
 
       // Broadcast user left message

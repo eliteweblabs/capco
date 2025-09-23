@@ -20,6 +20,9 @@ export interface MediaFile {
   title?: string;
   comments?: string;
   is_featured?: boolean;
+  version_number?: number;
+  is_current_version?: boolean;
+  previous_version_id?: number;
 }
 
 export interface SaveMediaParams {
@@ -100,13 +103,13 @@ const getBucketAndPath = (
 
 // SAVE MEDIA FUNCTION
 export async function saveMedia(params: SaveMediaParams): Promise<MediaFile> {
-  // console.log("🐛 [MEDIA] saveMedia called:", {
-  //   fileName: params.fileName,
-  //   fileType: params.fileType,
-  //   projectId: params.projectId,
-  //   targetLocation: params.targetLocation,
-  //   targetId: params.targetId,
-  // });
+  console.log("🔧 [MEDIA-VERSIONING] saveMedia called:", {
+    fileName: params.fileName,
+    fileType: params.fileType,
+    projectId: params.projectId,
+    targetLocation: params.targetLocation,
+    targetId: params.targetId,
+  });
 
   const { supabaseAdmin } = await import("./supabase-admin");
 
@@ -122,14 +125,14 @@ export async function saveMedia(params: SaveMediaParams): Promise<MediaFile> {
     params.currentUser.id
   );
 
-  // console.log("🐛 [MEDIA] Bucket routing:", { bucket, pathPrefix });
+  console.log("🔧 [MEDIA-VERSIONING] Bucket routing:", { bucket, pathPrefix });
 
   // Convert base64 to file if needed
   let fileBuffer: ArrayBuffer;
   let contentType = params.fileType;
 
   if (typeof params.mediaData === "string" && params.mediaData.startsWith("data:")) {
-    // console.log("🐛 [MEDIA] Processing base64 data...");
+    console.log("🔧 [MEDIA-VERSIONING] Processing base64 data...");
     const [header, base64Data] = params.mediaData.split(",");
     const mimeMatch = header.match(/data:([^;]+)/);
     if (mimeMatch) {
@@ -146,13 +149,40 @@ export async function saveMedia(params: SaveMediaParams): Promise<MediaFile> {
     fileBuffer = params.mediaData as ArrayBuffer;
   }
 
-  // Generate unique file path
+  // Check for existing file with same name in the same project/location
+  let existingFile = null;
+  if (params.projectId && params.targetLocation) {
+    console.log("🔧 [MEDIA-VERSIONING] Checking for existing file with same name...");
+    const { data: existingFiles, error: existingError } = await supabaseAdmin
+      .from("files")
+      .select("*")
+      .eq("project_id", parseInt(params.projectId))
+      .eq("target_location", params.targetLocation)
+      .eq("file_name", params.fileName)
+      .eq("is_current_version", true)
+      .single();
+
+    if (existingError && existingError.code !== "PGRST116") {
+      // PGRST116 = no rows found
+      console.error("🔧 [MEDIA-VERSIONING] Error checking existing files:", existingError);
+    } else if (existingFiles) {
+      existingFile = existingFiles;
+      console.log(
+        "🔧 [MEDIA-VERSIONING] Found existing file:",
+        existingFile.id,
+        "version:",
+        existingFile.version_number
+      );
+    }
+  }
+
+  // Generate file path
   const timestamp = Date.now();
   const sanitizedFileName = params.fileName.replace(/[^a-zA-Z0-9.-]/g, "_");
   const uniqueFileName = `${timestamp}-${sanitizedFileName}`;
   const fullPath = `${pathPrefix}${uniqueFileName}`;
 
-  // console.log("🐛 [MEDIA] Final path:", fullPath);
+  console.log("🔧 [MEDIA-VERSIONING] Final path:", fullPath);
 
   // Upload to Supabase Storage
   const { data: uploadData, error: uploadError } = await supabaseAdmin.storage
@@ -163,8 +193,49 @@ export async function saveMedia(params: SaveMediaParams): Promise<MediaFile> {
     });
 
   if (uploadError) {
-    console.error("🐛 [MEDIA] Upload error:", uploadError);
+    console.error("🔧 [MEDIA-VERSIONING] Upload error:", uploadError);
     throw new Error(`Storage upload failed: ${uploadError.message}`);
+  }
+
+  // Handle versioning logic
+  let versionNumber = 1;
+  let previousVersionId = null;
+
+  if (existingFile) {
+    // This is a new version of an existing file
+    versionNumber = existingFile.version_number + 1;
+    previousVersionId = existingFile.id;
+
+    console.log("🔧 [MEDIA-VERSIONING] Creating new version:", {
+      existingVersion: existingFile.version_number,
+      newVersion: versionNumber,
+      previousFileId: previousVersionId,
+    });
+
+    // Mark the existing file as not current version
+    const { error: updateError } = await supabaseAdmin
+      .from("files")
+      .update({ is_current_version: false })
+      .eq("id", existingFile.id);
+
+    if (updateError) {
+      console.error("🔧 [MEDIA-VERSIONING] Error updating previous version:", updateError);
+    }
+
+    // Store the previous version in file_versions table
+    const { error: versionError } = await supabaseAdmin.from("file_versions").insert({
+      file_id: existingFile.id,
+      version_number: existingFile.version_number,
+      file_path: existingFile.file_path,
+      file_size: existingFile.file_size,
+      file_type: existingFile.file_type,
+      uploaded_by: existingFile.author_id,
+      notes: existingFile.checkout_notes || null,
+    });
+
+    if (versionError) {
+      console.error("🔧 [MEDIA-VERSIONING] Error storing previous version:", versionError);
+    }
   }
 
   // Log file in database
@@ -182,9 +253,12 @@ export async function saveMedia(params: SaveMediaParams): Promise<MediaFile> {
     target_location: params.targetLocation,
     target_id: params.targetId ? parseInt(params.targetId) : null,
     uploaded_at: new Date().toISOString(),
+    version_number: versionNumber,
+    previous_version_id: previousVersionId,
+    is_current_version: true,
   };
 
-  // console.log("🐛 [MEDIA] Inserting database record:", fileRecord);
+  console.log("🔧 [MEDIA-VERSIONING] Inserting database record:", fileRecord);
 
   const { data: dbData, error: dbError } = await supabaseAdmin
     .from("files")
@@ -193,7 +267,7 @@ export async function saveMedia(params: SaveMediaParams): Promise<MediaFile> {
     .single();
 
   if (dbError) {
-    console.error("🐛 [MEDIA] Database error:", dbError);
+    console.error("🔧 [MEDIA-VERSIONING] Database error:", dbError);
     throw new Error(`Database error: ${dbError.message}`);
   }
 
@@ -203,10 +277,14 @@ export async function saveMedia(params: SaveMediaParams): Promise<MediaFile> {
     .createSignedUrl(fullPath, 3600);
 
   if (urlError) {
-    console.warn("🐛 [MEDIA] Failed to generate signed URL:", urlError);
+    console.warn("🔧 [MEDIA-VERSIONING] Failed to generate signed URL:", urlError);
   }
 
-  // console.log("🐛 [MEDIA] Media saved successfully:", dbData.id);
+  console.log("🔧 [MEDIA-VERSIONING] Media saved successfully:", {
+    id: dbData.id,
+    version: versionNumber,
+    isNewVersion: !!existingFile,
+  });
 
   return {
     id: dbData.id,
@@ -435,6 +513,9 @@ export async function getMedia(params: GetMediaParams): Promise<{
           title: file.title,
           comments: file.comments,
           is_featured: featuredImageId && file.id === parseInt(featuredImageId),
+          version_number: file.version_number || 1,
+          is_current_version: file.is_current_version !== false,
+          previous_version_id: file.previous_version_id,
         };
       })
     );

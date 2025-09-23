@@ -5,7 +5,8 @@ import { checkAuth } from "../../../lib/auth";
 const { id } = Astro.params;
 
 // Get auth data directly since App component handles auth requirements
-const { currentUser = undefined, currentRole = "Client" } = await checkAuth(Astro.cookies);
+const { currentUser = undefined } = await checkAuth(Astro.cookies);
+const currentRole = currentUser?.profile?.role || "Client";
 
 console.log("🏗️ [GENERATE-PDF] Current user:", currentUser);
 console.log("🏗️ [GENERATE-PDF] Current role:", currentRole);
@@ -47,12 +48,7 @@ const projectId = id;
 const projectTitle = project.title || "Untitled Project";
 ---
 
-<App
-  title={`Generate PDF - ${projectTitle}`}
-  currentUser={currentUser}
-  currentRole={currentUser?.profile?.role}
-  isAuth={true}
->
+<App title={`Generate PDF - ${projectTitle}`} currentUser={currentUser}>
   <div class="min-h-screen bg-gray-50 dark:bg-gray-900">
     <div class="container mx-auto px-4 py-8">
       <!-- Header -->
@@ -168,7 +164,7 @@ const projectTitle = project.title || "Untitled Project";
               <!-- Zoom Controls -->
               <div
                 id="zoomControls"
-                class="flex hidden items-center justify-between rounded-lg border border-gray-300 bg-white p-3 dark:border-gray-600 dark:bg-gray-800"
+                class="hidden items-center justify-between rounded-lg border border-gray-300 bg-white p-3 dark:border-gray-600 dark:bg-gray-800"
               >
                 <div class="flex items-center space-x-2">
                   <button
