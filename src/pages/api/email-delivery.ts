@@ -52,7 +52,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     // Use the proper base URL function to avoid localhost in production
     const { getBaseUrl } = await import("../../lib/url-utils");
     const baseUrl = getBaseUrl(request);
-    
+
     // DEBUG: Log URL information to troubleshoot magic link localhost issue
     console.log("🌐 [EMAIL-DELIVERY] URL DEBUG INFO:");
     console.log("🌐 [EMAIL-DELIVERY] Request URL:", request.url);
