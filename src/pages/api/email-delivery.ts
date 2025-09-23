@@ -276,10 +276,10 @@ export const POST: APIRoute = async ({ request, cookies }) => {
               emailHtml = emailHtml.replace("{{BUTTON_LINK}}", finalButtonLink);
             } else {
               // Remove button section entirely
-              emailHtml = emailHtml.replace(
-                /<!-- Call to Action Button -->[\s\S]*?<!-- \/Call to Action Button -->/g,
-                ""
-              );
+              // emailHtml = emailHtml.replace(
+              //   /<!-- Call to Action Button -->[\s\S]*?<!-- \/Call to Action Button -->/g,
+              //   ""
+              // );
               emailHtml = emailHtml.replace("{{BUTTON_TEXT}}", "");
               emailHtml = emailHtml.replace("{{BUTTON_LINK}}", "");
             }
