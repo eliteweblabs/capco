@@ -27,25 +27,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       );
     }
 
-    // console.log("3. Checking authentication...");
-    const { isAuth, currentRole, currentUser } = await checkAuth(cookies);
-    // console.log("4. Auth result:", { isAuth, role: currentRole });
-
-    // if (!isAuth && currentRole !== "Admin" && currentRole !== "Staff") {
-    //   console.log("5. AUTH FAILED - User not authorized:", { isAuth, role: currentRole });
-    //   return new Response(
-    //     JSON.stringify({
-    //       success: false,
-    //       error: "Unauthorized. Admin access required.",
-    //     }),
-    //     {
-    //       status: 403,
-    //       headers: { "Content-Type": "application/json" },
-    //     }
-    //   );
-    // }
-
-    console.log("5. Auth successful, parsing request body...");
+    const { currentUser } = await checkAuth(cookies);
     let body;
     let first_name,
       last_name,

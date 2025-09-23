@@ -34,27 +34,50 @@ function filteredStatusObj(statusObj: any, role: string, placeholderData?: any) 
     filteredStatusObj.status_name = statusObj.client_status_name;
     filteredStatusObj.status_slug = generateStatusSlug(statusObj.client_status_name);
     filteredStatusObj.status_tab = statusObj.client_status_tab;
-    filteredStatusObj.project_action = statusObj.client_project_action || null;
+    // Apply placeholder replacement to client status action
+    const originalAction = statusObj.client_status_action || "";
+    filteredStatusObj.status_action = placeholderData
+      ? replacePlaceholders(originalAction, placeholderData)
+      : originalAction || null;
+
+    console.log("🔍 [PROJECT-STATUSES-API] Client status action replacement:", {
+      original: originalAction,
+      replaced: filteredStatusObj.status_action,
+      hasPlaceholderData: !!placeholderData,
+    });
   } else if (statusObj.admin_status_name) {
     filteredStatusObj.status_name = statusObj.admin_status_name;
     filteredStatusObj.status_slug = generateStatusSlug(statusObj.admin_status_name);
     filteredStatusObj.status_tab = statusObj.admin_status_tab;
-    filteredStatusObj.project_action = statusObj.admin_project_action || null;
+    // Apply placeholder replacement to admin status action
+    const originalAction = statusObj.admin_status_action || "";
+    filteredStatusObj.status_action = placeholderData
+      ? replacePlaceholders(originalAction, placeholderData)
+      : originalAction || null;
+
+    console.log("🔍 [PROJECT-STATUSES-API] Admin status action replacement:", {
+      original: originalAction,
+      replaced: filteredStatusObj.status_action,
+      hasPlaceholderData: !!placeholderData,
+    });
   }
 
-  // Always include project_action for the modal system
-  let projectAction = statusObj.project_action || null;
+  // Also handle final_status_action if it exists
+  if (statusObj.final_status_action && placeholderData) {
+    const originalFinalAction = statusObj.final_status_action;
+    filteredStatusObj.final_status_action = replacePlaceholders(
+      originalFinalAction,
+      placeholderData
+    );
 
-  // Process placeholders if project_action exists and placeholder data is provided
-  if (projectAction && placeholderData) {
-    try {
-      projectAction = replacePlaceholders(projectAction, placeholderData);
-    } catch (error) {
-      console.warn("Failed to process placeholders in project_action:", error);
-    }
+    console.log("🔍 [PROJECT-STATUSES-API] Final status action replacement:", {
+      original: originalFinalAction,
+      replaced: filteredStatusObj.final_status_action,
+      hasPlaceholderData: !!placeholderData,
+    });
+  } else if (statusObj.final_status_action) {
+    filteredStatusObj.final_status_action = statusObj.final_status_action;
   }
-
-  filteredStatusObj.project_action = projectAction;
 
   return filteredStatusObj;
 }
@@ -63,15 +86,16 @@ export interface UnifiedProjectStatus {
   status_code: number;
   admin_status_name: string;
   client_status_name: string;
-  admin_project_action: string | null;
-  client_project_action: string | null;
+  admin_status_action: string | null;
+  client_status_action: string | null;
+  final_status_action?: string | null;
   admin_status_tab: string;
   client_status_tab: string;
   status_color: string;
   // Role-based processed values
   status_name: string;
   status_tab: string;
-  project_action: string | null;
+  status_action: string | null;
   status_slug: string;
 }
 
@@ -171,8 +195,12 @@ export const GET: APIRoute = async ({ request, cookies, url }) => {
             contractUrl: projectId ? `/project/${projectId}?status=contract` : "",
             siteUrl: process.env.SITE_URL || "https://capcofire.com",
             companyName: process.env.GLOBAL_COMPANY_NAME || "CAPCo Fire",
+            globalCompanySlogan: process.env.GLOBAL_COMPANY_SLOGAN || "CAPCo Fire",
+            year: new Date().getFullYear().toString(),
           }
         : null;
+
+    console.log("🔍 [PROJECT-STATUSES-API] Placeholder data:", placeholderData);
 
     // Process statuses for the current user's role with placeholder processing
     const roleBasedStatuses = statuses.reduce((acc: any, status: any) => {
@@ -189,8 +217,9 @@ export const GET: APIRoute = async ({ request, cookies, url }) => {
         status_code: status.status_code,
         admin_status_name: status.admin_status_name,
         client_status_name: status.client_status_name,
-        admin_project_action: status.admin_project_action,
-        client_project_action: status.client_project_action,
+        admin_status_action: status.admin_status_action,
+        client_status_action: status.client_status_action,
+        final_status_action: processedStatus.final_status_action || status.final_status_action,
         admin_status_tab: status.admin_status_tab,
         client_status_tab: status.client_status_tab,
         status_color: status.status_color,
@@ -199,11 +228,11 @@ export const GET: APIRoute = async ({ request, cookies, url }) => {
         // Role-processed values
         status_name: processedStatus.status_name,
         status_tab: processedStatus.status_tab,
-        project_action: processedStatus.project_action, // Already processed with placeholders
+        status_action: processedStatus.status_action, // Already processed with placeholders
         status_slug: processedStatus.status_slug,
       };
 
-      console.log("🔍 [PROJECT-STATUSES-API] Processed status:", acc[status.status_code]);
+      console.log("🔍 [PROJECT-STATUSES-API] Processed status:", acc);
 
       return acc;
     }, {});
@@ -214,7 +243,7 @@ export const GET: APIRoute = async ({ request, cookies, url }) => {
       label: status.status_name,
     }));
 
-    console.log("✅ [PROJECT-STATUSES-API] Processed", statuses.length, "statuses for role:");
+    // console.log("✅ [PROJECT-STATUSES-API] Processed", statuses.length, "statuses for role:");
 
     const response: ProjectStatusesResponse = {
       success: true,

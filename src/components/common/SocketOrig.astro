@@ -1,0 +1,610 @@
+---
+// Socket.io-based Chat Widget Component - Real-time chat with WebSocket connections
+// Only visible to Admin/Staff users
+
+import BoxIcon from "./BoxIcon.astro";
+
+interface Props {
+  currentUser?: any;
+}
+
+const { currentUser } = Astro.props;
+const currentRole = currentUser?.profile?.role;
+---
+
+<div
+  id="socket-chat-widget"
+  class="fixed bottom-4 right-4 z-50"
+  data-user-role={currentRole || "Client"}
+  data-user-id={currentUser?.id || "unknown"}
+  data-user-name={currentUser?.company_name || "Unknown User"}
+>
+  <!-- Chat Icon (Always Visible) -->
+  <BoxIcon
+    name="message-rounded-dots"
+    variant="primary"
+    size="lg"
+    id="socket-chat-toggle"
+    dataAttributes={{ "data-count": "0" }}
+    backgroundColor="primary"
+    shape="circle"
+  />
+</div>
+
+<!-- Chat Widget (Hidden by Default) -->
+<div
+  id="socket-chat-panel"
+  class="h-100 absolute bottom-16 right-0 hidden w-80 rounded-lg border border-gray-200 bg-white shadow-xl dark:border-gray-700 dark:bg-gray-800"
+>
+  <!-- Chat Header -->
+  <div
+    class="flex items-center justify-between rounded-t-lg border-b border-gray-200 bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-700"
+  >
+    <div class="flex items-center space-x-2">
+      <div
+        class="flex h-8 w-8 items-center justify-center rounded-lg bg-primary-100 dark:bg-primary-900/30"
+      >
+        <i class="bx bx-message-rounded-dots text-primary-600 dark:text-primary-400"></i>
+      </div>
+      <div>
+        <h3 class="text-sm font-medium text-gray-900 dark:text-white">Socket.io Chat</h3>
+        <div class="group relative">
+          <p class="cursor-help text-xs text-gray-500 dark:text-gray-400" id="socket-online-count">
+            0 online
+          </p>
+          <!-- Online users tooltip -->
+          <div
+            class="absolute bottom-full left-0 z-50 mb-2 hidden min-w-32 rounded-lg bg-gray-800 p-2 text-xs text-white shadow-lg group-hover:block"
+          >
+            <div class="mb-1 font-medium">Online Users:</div>
+            <div id="socket-online-users-list" class="space-y-1">
+              <div class="text-gray-300">No users online</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <BoxIcon name="x" variant="outline" size="sm" id="socket-chat-close" />
+  </div>
+
+  <!-- Chat Messages -->
+  <div class="h-64 flex-1 space-y-3 overflow-y-auto p-4" id="socket-chat-messages">
+    <div class="py-8 text-center text-sm text-gray-500 dark:text-gray-400">
+      <i class="bx bx-message-rounded-dots mx-auto mb-2 text-2xl"></i>
+      <p>Connecting to real-time chat...</p>
+    </div>
+  </div>
+
+  <!-- Typing Indicator -->
+  <div
+    id="socket-typing-indicator"
+    class="hidden px-4 py-2 text-xs text-gray-500 dark:text-gray-400"
+  >
+    <span id="socket-typing-text"></span>
+  </div>
+
+  <!-- Chat Input -->
+  <div class="border-t border-gray-200 p-4 dark:border-gray-700">
+    <div class="flex space-x-2">
+      <input
+        type="text"
+        id="socket-chat-input"
+        placeholder="Type your message..."
+        class="flex-1 rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-transparent focus:ring-2 focus:ring-primary-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+        maxlength="500"
+      />
+      <button
+        id="socket-chat-send"
+        class="rounded-full bg-primary-600 px-4 py-2 text-sm text-white transition-colors hover:bg-primary-700 disabled:cursor-not-allowed disabled:opacity-50"
+        disabled
+      >
+        <i class="bx bx-send"></i>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Socket.io Client Library -->
+<script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+
+<script>
+  // Declare global io variable for TypeScript
+  declare const io: any;
+  // Socket.io-based Chat Widget Functionality
+  let socket: any = null;
+  let currentUser: any = null;
+  let onlineUsers: any[] = [];
+  let isInitialized = false;
+  let unreadCount = 0;
+  let isChatOpen = false;
+  let typingTimeout: any = null;
+  let isTyping = false;
+
+  // Initialize chat widget
+  function initializeSocketChat() {
+    if (isInitialized) {
+      console.log("🔔 [SOCKETIO-CHAT] Chat widget already initialized, skipping");
+      return;
+    }
+
+    console.log("🔔 [SOCKETIO-CHAT] Initializing Socket.io chat widget");
+
+    // Check if user is Admin/Staff
+    const chatWidget = document.getElementById("socket-chat-widget");
+    if (!chatWidget) {
+      console.log("🔔 [SOCKETIO-CHAT] Chat widget element not found!");
+      return;
+    }
+
+    const userRole = chatWidget.dataset.userRole || "Client";
+    const userId = chatWidget.dataset.userId || "unknown";
+    const userName = chatWidget.dataset.userName || "Unknown User";
+
+    console.log("🔔 [SOCKETIO-CHAT] User role:", userRole);
+    console.log("🔔 [SOCKETIO-CHAT] User ID:", userId);
+    console.log("🔔 [SOCKETIO-CHAT] User name:", userName);
+
+    if (userRole !== "Admin" && userRole !== "Staff") {
+      console.log("🔔 [SOCKETIO-CHAT] User not Admin/Staff, hiding chat widget");
+      chatWidget.classList.add("hidden");
+      return;
+    }
+
+    console.log("🔔 [SOCKETIO-CHAT] User is Admin/Staff, showing chat widget");
+
+    // Get current user info
+    currentUser = {
+      id: userId,
+      name: userName,
+      role: userRole,
+    };
+
+    console.log("🔔 [SOCKETIO-CHAT] Current user:", currentUser);
+
+    // Initialize Socket.io connection
+    initializeSocket();
+
+    // Setup event listeners
+    setupSocketChatEvents();
+
+    // Check if chat should be open from cookie
+    checkSocketChatStateFromCookie();
+
+    isInitialized = true;
+    console.log("🔔 [SOCKETIO-CHAT] Socket.io chat widget initialization complete");
+  }
+
+  // Initialize Socket.io connection
+  function initializeSocket() {
+    try {
+      // Check if Socket.io is available
+      if (typeof (window as any).io === "undefined") {
+        console.error("❌ [SOCKETIO-CHAT] Socket.io library not loaded");
+        showConnectionStatus("Socket.io library not loaded", "error");
+        return;
+      }
+
+      // Connect to Socket.io server
+      socket = (window as any).io("http://localhost:3001", {
+        transports: ["websocket", "polling"],
+        timeout: 20000,
+        forceNew: true,
+      });
+
+      // Connection events
+      socket.on("connect", () => {
+        console.log("✅ [SOCKETIO-CHAT] Connected to chat server");
+
+        // Join chat room
+        socket.emit("join", {
+          userId: currentUser.id,
+          userName: currentUser.name,
+          userRole: currentUser?.role,
+        });
+      });
+
+      socket.on("disconnect", () => {
+        console.log("❌ [SOCKETIO-CHAT] Disconnected from chat server");
+        showConnectionStatus("Disconnected", "error");
+      });
+
+      socket.on("connect_error", (error: any) => {
+        console.error("❌ [SOCKETIO-CHAT] Connection error:", error);
+        showConnectionStatus("Connection failed", "error");
+      });
+
+      // Chat events
+      socket.on("chat_history", (messages: any) => {
+        console.log("🔔 [SOCKETIO-CHAT] Received chat history:", messages.length, "messages");
+        loadSocketChatHistory(messages);
+      });
+
+      socket.on("new_message", (message: any) => {
+        console.log("🔔 [SOCKETIO-CHAT] New message received:", message);
+        addSocketMessage(message);
+      });
+
+      socket.on("user_list", (users: any) => {
+        console.log("🔔 [SOCKETIO-CHAT] Online users updated:", users.length);
+        onlineUsers = users;
+        updateSocketOnlineCount();
+      });
+
+      socket.on("user_joined", (data: any) => {
+        console.log("🔔 [SOCKETIO-CHAT] User joined:", data.userName);
+        showSystemMessage(`${data.userName} joined the chat`);
+      });
+
+      socket.on("user_left", (data: any) => {
+        console.log("🔔 [SOCKETIO-CHAT] User left:", data.userName);
+        showSystemMessage(`${data.userName} left the chat`);
+      });
+
+      socket.on("user_typing", (data: any) => {
+        handleTypingIndicator(data);
+      });
+
+      socket.on("pong", () => {
+        console.log("🔔 [SOCKETIO-CHAT] Pong received");
+      });
+    } catch (error) {
+      console.error("❌ [SOCKETIO-CHAT] Error initializing socket:", error);
+      showConnectionStatus("Failed to connect", "error");
+    }
+  }
+
+  // Setup chat event listeners
+  function setupSocketChatEvents() {
+    const chatToggle = document.getElementById("socket-chat-toggle");
+    const chatClose = document.getElementById("socket-chat-close");
+    const chatInput = document.getElementById("socket-chat-input");
+    const chatSend = document.getElementById("socket-chat-send");
+
+    // Toggle chat panel
+    chatToggle?.addEventListener("click", () => {
+      const chatPanel = document.getElementById("socket-chat-panel");
+      const isHidden = chatPanel?.classList.contains("hidden");
+      // (window as any).closeUserCenterDrawer();
+
+      if (isHidden) {
+        // Opening chat
+        chatPanel?.classList.remove("hidden");
+        isChatOpen = true;
+        chatInput?.focus();
+        // Reset unread count when opening
+        resetSocketUnreadCount();
+        // Save chat state to cookie
+        saveSocketChatStateToCookie(true);
+      } else {
+        // Closing chat
+        chatPanel?.classList.add("hidden");
+        isChatOpen = false;
+        // Save chat state to cookie
+        saveSocketChatStateToCookie(false);
+      }
+    });
+
+    // Close chat panel
+    chatClose?.addEventListener("click", () => {
+      document.getElementById("socket-chat-panel")?.classList.add("hidden");
+      isChatOpen = false;
+      // Save chat state to cookie
+      saveSocketChatStateToCookie(false);
+    });
+
+    // Handle input changes
+    chatInput?.addEventListener("input", (e) => {
+      const target = e.target as HTMLInputElement;
+      const sendBtn = document.getElementById("socket-chat-send") as HTMLButtonElement;
+      sendBtn.disabled = !target.value.trim();
+
+      // Handle typing indicator
+      if (target.value.trim() && !isTyping) {
+        isTyping = true;
+        socket?.emit("typing", { isTyping: true });
+      } else if (!target.value.trim() && isTyping) {
+        isTyping = false;
+        socket?.emit("typing", { isTyping: false });
+      }
+
+      // Clear typing timeout
+      if (typingTimeout) {
+        clearTimeout(typingTimeout);
+      }
+
+      // Set timeout to stop typing indicator
+      typingTimeout = setTimeout(() => {
+        if (isTyping) {
+          isTyping = false;
+          socket?.emit("typing", { isTyping: false });
+        }
+      }, 1000);
+    });
+
+    // Handle send button
+    chatSend?.addEventListener("click", sendSocketMessage);
+
+    // Handle Enter key
+    chatInput?.addEventListener("keypress", (e) => {
+      if (e.key === "Enter" && !e.shiftKey) {
+        e.preventDefault();
+        sendSocketMessage();
+      }
+    });
+  }
+
+  // Send message
+  function sendSocketMessage() {
+    const input = document.getElementById("socket-chat-input") as HTMLInputElement;
+    const message = input.value.trim();
+
+    if (!message || !socket) return;
+
+    // Disable input while sending
+    input.disabled = true;
+    const sendBtn = document.getElementById("socket-chat-send") as HTMLButtonElement;
+    if (sendBtn) {
+      sendBtn.disabled = true;
+    }
+
+    try {
+      console.log("🔔 [SOCKETIO-CHAT] Sending message:", message);
+
+      // Send message via socket
+      socket.emit("message", { message });
+
+      // Clear input
+      input.value = "";
+
+      // Stop typing indicator
+      if (isTyping) {
+        isTyping = false;
+        socket.emit("typing", { isTyping: false });
+      }
+
+      console.log("✅ [SOCKETIO-CHAT] Message sent successfully");
+    } catch (error) {
+      console.error("🔔 [SOCKETIO-CHAT] Error sending message:", error);
+      // Show error to user
+      if (window.showModal) {
+        window.showModal("Error", "Failed to send message. Please try again.", "error");
+      }
+    } finally {
+      // Re-enable input
+      input.disabled = false;
+      if (sendBtn) {
+        sendBtn.disabled = false;
+      }
+    }
+  }
+
+  // Load chat history
+  function loadSocketChatHistory(messages: any) {
+    const messagesContainer = document.getElementById("socket-chat-messages");
+    if (!messagesContainer) return;
+
+    // Clear existing messages
+    messagesContainer.innerHTML = "";
+
+    // Add each message
+    messages.forEach((msg: any) => {
+      addSocketMessage(msg);
+    });
+
+    console.log("🔔 [SOCKETIO-CHAT] Chat history loaded:", messages.length, "messages");
+  }
+
+  // Add message to chat
+  function addSocketMessage(data: any) {
+    const messagesContainer = document.getElementById("socket-chat-messages");
+    if (!messagesContainer) return;
+
+    const userName = data.user_name || data.userName || "Unknown User";
+    const userId = data.user_id || data.userId || "unknown";
+    const message = data.message || "";
+    const timestamp = data.timestamp || data.created_at || new Date().toISOString();
+
+    const isOwnMessage = userId === currentUser.id;
+    const messageElement = document.createElement("div");
+    messageElement.className = `flex ${isOwnMessage ? "justify-end" : "justify-start"}`;
+    messageElement.setAttribute("data-message-id", data.id || "unknown");
+
+    messageElement.innerHTML = `
+      <div class="max-w-xs ${isOwnMessage ? "bg-primary-600 text-white" : "bg-gray-100 dark:bg-gray-600 text-gray-900 dark:text-white"} rounded-lg px-3 py-2">
+        <div class="flex items-center space-x-2 mb-1">
+          <span class="text-xs font-medium">${userName}</span>
+          <span class="text-xs opacity-75">${new Date(timestamp).toLocaleTimeString()}</span>
+        </div>
+        <p class="text-sm">${message}</p>
+      </div>
+    `;
+
+    messagesContainer.appendChild(messageElement);
+    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+
+    // Update notification count if message is not from current user and chat is closed
+    if (!isOwnMessage && !isChatOpen) {
+      incrementSocketUnreadCount();
+    }
+  }
+
+  // Show system message
+  function showSystemMessage(message: any) {
+    const messagesContainer = document.getElementById("socket-chat-messages");
+    if (!messagesContainer) return;
+
+    const systemElement = document.createElement("div");
+    systemElement.className = "flex justify-center";
+    systemElement.innerHTML = `
+      <div class="text-xs text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded">
+        ${message}
+      </div>
+    `;
+
+    messagesContainer.appendChild(systemElement);
+    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+  }
+
+  // Handle typing indicator
+  function handleTypingIndicator(data: any) {
+    const typingIndicator = document.getElementById("socket-typing-indicator");
+    const typingText = document.getElementById("socket-typing-text");
+
+    if (data.isTyping) {
+      typingIndicator?.classList.remove("hidden");
+      if (typingText) {
+        typingText.textContent = `${data.userName} is typing...`;
+      }
+    } else {
+      typingIndicator?.classList.add("hidden");
+    }
+  }
+
+  // Show connection status
+  function showConnectionStatus(message: any, type = "info") {
+    const messagesContainer = document.getElementById("socket-chat-messages");
+    if (!messagesContainer) return;
+
+    const statusElement = document.createElement("div");
+    statusElement.className = "flex justify-center";
+    const colorClass = type === "error" ? "text-red-500" : "text-blue-500";
+    statusElement.innerHTML = `
+      <div class="text-xs ${colorClass} bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded">
+        ${message}
+      </div>
+    `;
+
+    messagesContainer.appendChild(statusElement);
+    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+  }
+
+  // Update online count and show usernames
+  function updateSocketOnlineCount() {
+    const countElement = document.getElementById("socket-online-count");
+    const usersListElement = document.getElementById("socket-online-users-list");
+
+    if (countElement) {
+      if (onlineUsers.length === 0) {
+        countElement.textContent = "0 online";
+      } else if (onlineUsers.length === 1) {
+        const user = onlineUsers[0];
+        countElement.textContent = `${user.userName || user.user_name} online`;
+      } else if (onlineUsers.length === 2) {
+        const users = onlineUsers;
+        countElement.textContent = `${users[0].userName || users[0].user_name} and ${users[1].userName || users[1].user_name} online`;
+      } else {
+        const users = onlineUsers;
+        const firstTwo = users
+          .slice(0, 2)
+          .map((u) => u.userName || u.user_name)
+          .join(", ");
+        countElement.textContent = `${firstTwo} and ${onlineUsers.length - 2} more online`;
+      }
+    }
+
+    // Update the online users list in the tooltip
+    if (usersListElement) {
+      if (onlineUsers.length === 0) {
+        usersListElement.innerHTML = '<div class="text-gray-300">No users online</div>';
+      } else {
+        const users = onlineUsers;
+        usersListElement.innerHTML = users
+          .map(
+            (user) =>
+              `<div class="flex items-center space-x-2">
+            <div class="w-2 h-2 bg-green-400 rounded-lg"></div>
+            <span>${user.userName || user.user_name}</span>
+            <span class="text-gray-400 text-xs">(${user.userRole || user.user_role})</span>
+          </div>`
+          )
+          .join("");
+      }
+    }
+  }
+
+  // Notification count management
+  function incrementSocketUnreadCount() {
+    unreadCount++;
+    updateSocketNotificationCount();
+  }
+
+  function resetSocketUnreadCount() {
+    unreadCount = 0;
+    updateSocketNotificationCount();
+  }
+
+  function updateSocketNotificationCount() {
+    const chatToggle = document.getElementById("socket-chat-toggle");
+    if (chatToggle) {
+      // Remove existing count bubble if it exists
+      const existingBubble = chatToggle.querySelector(".count-bubble");
+      if (existingBubble) {
+        existingBubble.remove();
+      }
+
+      if (unreadCount > 0) {
+        // Create count bubble manually
+        const countBubble = document.createElement("span");
+        countBubble.className =
+          "count-bubble absolute -right-2 -top-2 flex h-5 w-5 items-center justify-center rounded-full border border-primary-500 bg-white text-xs font-medium text-primary-500 dark:border-primary-400 dark:bg-background-dark dark:text-primary-400";
+        countBubble.textContent = unreadCount > 99 ? "99+" : unreadCount.toString();
+        chatToggle.appendChild(countBubble);
+      }
+    }
+  }
+
+  // Cookie management for chat state
+  function saveSocketChatStateToCookie(isOpen: boolean) {
+    try {
+      const expires = new Date();
+      expires.setTime(expires.getTime() + 24 * 60 * 60 * 1000); // 24 hours
+      document.cookie = `socketChatOpen=${isOpen}; expires=${expires.toUTCString()}; path=/`;
+      console.log("🔔 [SOCKETIO-CHAT] Chat state saved to cookie:", isOpen);
+    } catch (error) {
+      console.error("🔔 [SOCKETIO-CHAT] Error saving chat state to cookie:", error);
+    }
+  }
+
+  function checkSocketChatStateFromCookie() {
+    try {
+      const cookies = document.cookie.split(";");
+      const chatOpenCookie = cookies.find((cookie) => cookie.trim().startsWith("socketChatOpen="));
+
+      if (chatOpenCookie) {
+        const isOpen = chatOpenCookie.split("=")[1] === "true";
+        console.log("🔔 [SOCKETIO-CHAT] Chat state from cookie:", isOpen);
+
+        if (isOpen) {
+          const chatPanel = document.getElementById("socket-chat-panel");
+          chatPanel?.classList.remove("hidden");
+          isChatOpen = true;
+        }
+      }
+    } catch (error) {
+      console.error("🔔 [SOCKETIO-CHAT] Error reading chat state from cookie:", error);
+    }
+  }
+
+  // Initialize when DOM is ready
+  document.addEventListener("DOMContentLoaded", () => {
+    console.log("🔔 [SOCKETIO-CHAT] DOM Content Loaded");
+    setTimeout(initializeSocketChat, 1000);
+  });
+
+  // Also initialize when window loads (fallback)
+  window.addEventListener("load", () => {
+    console.log("🔔 [SOCKETIO-CHAT] Window Loaded");
+    if (!isInitialized) {
+      setTimeout(initializeSocketChat, 500);
+    }
+  });
+
+  // Cleanup on page unload
+  window.addEventListener("beforeunload", () => {
+    if (socket) {
+      socket.disconnect();
+    }
+    // Save current chat state
+    saveSocketChatStateToCookie(isChatOpen);
+  });
+</script>

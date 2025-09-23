@@ -271,22 +271,22 @@ const displayText = buttonText || selectedOption?.label || placeholder;
   // Auto-save function that uses component ID to determine API endpoint
   async function saveToAPI(componentId, value, label) {
     try {
-      console.log(`🎰 [SLOT-MACHINE] ===== SAVE TO API START =====`);
-      console.log(`🎰 [SLOT-MACHINE] Component ID: ${componentId}`);
-      console.log(`🎰 [SLOT-MACHINE] Value: ${value} (type: ${typeof value})`);
-      console.log(`🎰 [SLOT-MACHINE] Label: ${label} (type: ${typeof label})`);
-      console.log(`🎰 [SLOT-MACHINE] ProjectId prop: ${projectId} (type: ${typeof projectId})`);
-      console.log(`🎰 [SLOT-MACHINE] Current URL: ${window.location.href}`);
-      console.log(`🎰 [SLOT-MACHINE] URL pathname: ${window.location.pathname}`);
+      // console.log(`🎰 [SLOT-MACHINE] ===== SAVE TO API START =====`);
+      // console.log(`🎰 [SLOT-MACHINE] Component ID: ${componentId}`);
+      // console.log(`🎰 [SLOT-MACHINE] Value: ${value} (type: ${typeof value})`);
+      // console.log(`🎰 [SLOT-MACHINE] Label: ${label} (type: ${typeof label})`);
+      // console.log(`🎰 [SLOT-MACHINE] ProjectId prop: ${projectId} (type: ${typeof projectId})`);
+      // console.log(`🎰 [SLOT-MACHINE] Current URL: ${window.location.href}`);
+      // console.log(`🎰 [SLOT-MACHINE] URL pathname: ${window.location.pathname}`);
 
       // Format data based on the component type
       let requestBody;
 
       if (componentId === "update-status") {
-        console.log(`🎰 [SLOT-MACHINE] Processing UPDATE-STATUS request`);
-        console.log(`🎰 [SLOT-MACHINE] Raw projectId prop:`, projectId);
-        console.log(`🎰 [SLOT-MACHINE] Raw value:`, value);
-        console.log(`🎰 [SLOT-MACHINE] URL pathname:`, window.location.pathname);
+        // console.log(`🎰 [SLOT-MACHINE] Processing UPDATE-STATUS request`);
+        // console.log(`🎰 [SLOT-MACHINE] Raw projectId prop:`, projectId);
+        // console.log(`🎰 [SLOT-MACHINE] Raw value:`, value);
+        // console.log(`🎰 [SLOT-MACHINE] URL pathname:`, window.location.pathname);
 
         const parsedProjectId =
           parseInt(projectId) || parseInt(window.location.pathname.split("/").pop()) || null;
@@ -604,8 +604,15 @@ const displayText = buttonText || selectedOption?.label || placeholder;
           optionsList.appendChild(li);
         });
       } else {
-        const messageLi = createMessageElement("No results found");
-        optionsList.appendChild(messageLi);
+        // const messageLi = createMessageElement("No results found");
+        // document.getElementById("no-results-message").innerHTML = noResultsText;
+        // optionsList.appendChild(messageLi);
+
+        const modal = document.getElementById(`${id}-slot-machine-modal`);
+        const emptyState = modal?.querySelector(".slot-empty-state");
+        if (emptyState) {
+          emptyState.classList.remove("hidden");
+        }
       }
 
       // Handle single item case - if there's only one option and no selection, select it by default
@@ -1337,14 +1344,6 @@ const displayText = buttonText || selectedOption?.label || placeholder;
         modal.remove();
       }
     });
-
-    // Prevent body scroll when modal is open (Safari iOS compatible)
-    if (window.lockBodyScroll) {
-      window.lockBodyScroll();
-    } else {
-      // Fallback for older implementations
-      document.body.style.overflow = "hidden";
-    }
   }
 
   // Generic handleSelect function that works for any slot machine

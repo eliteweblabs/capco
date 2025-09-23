@@ -4,7 +4,6 @@
 import type { APIRoute } from "astro";
 import { readFileSync } from "fs";
 import { join } from "path";
-import { replacePlaceholders, type PlaceholderData } from "../../lib/placeholder-utils";
 import { supabase } from "../../lib/supabase";
 import { supabaseAdmin } from "../../lib/supabase-admin";
 
@@ -65,12 +64,30 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       newStatus,
       authorId,
       includeResendHeaders = false,
+      trackLinks = true, // Default to true for backward compatibility
     } = body;
 
     // console.log("📧 [EMAIL-DELIVERY] Parameter validation:");
     // console.log("  - emailType:", emailType);
     // console.log("  - usersToNotify count:", usersToNotify?.length || 0);
     // console.log("📧 [EMAIL-DELIVERY] Email type:", emailType);
+
+    // Determine if click tracking should be disabled based on email type
+    // Magic link emails should not be tracked to prevent URL wrapping
+    const shouldDisableTracking =
+      emailType === "magic_link" ||
+      emailType === "authentication" ||
+      emailType === "login" ||
+      (buttonLink && buttonLink.includes("/dashboard") && !trackLinks);
+
+    const finalTrackLinks = shouldDisableTracking ? false : trackLinks;
+
+    // Debug logging for tracking configuration
+    if (shouldDisableTracking) {
+      console.log("📧 [EMAIL-DELIVERY] Click tracking disabled for email type:", emailType);
+    } else {
+      console.log("📧 [EMAIL-DELIVERY] Click tracking enabled for email type:", emailType);
+    }
 
     // Simple validation - just need projectId and usersToNotify
     if (!usersToNotify || !emailContent || !emailSubject) {
@@ -173,18 +190,6 @@ export const POST: APIRoute = async ({ request, cookies }) => {
           } else {
             // Replace template variables for regular emails
             emailHtml = emailTemplate.replace("{{CONTENT}}", emailContent);
-
-            // Replace brand/design placeholders using centralized system
-            const placeholderData: PlaceholderData = {
-              primaryColor: "#825bdd",
-              svgLogo: `<svg id="Layer_1" xmlns="http://www.w3.org/2000/svg" width="100" version="1.1" viewBox="0 0 400 143.7" class="h-auto"> <defs> <style>
-        .fill {
-          fill: black;
-        }
-      </style> </defs> <g> <path class="fill" d="M0 0h400v143.7H0z"/> <text x="200" y="80" text-anchor="middle" fill="white" font-family="Arial, sans-serif" font-size="24" font-weight="bold">CAPCo</text> </g> </svg>`,
-            };
-
-            emailHtml = replacePlaceholders(emailHtml, placeholderData);
           }
 
           // Override buttonLink with magic link for authentication
@@ -267,6 +272,9 @@ export const POST: APIRoute = async ({ request, cookies }) => {
                 subject: cleanSubject,
                 html: emailHtml,
                 text: emailContent,
+                // Configure click tracking based on email type
+                // Disable for magic links, enable for status updates and other emails
+                track_links: finalTrackLinks,
                 // Add proper content type and custom headers (only if values exist)
                 headers: {
                   "Content-Type": "text/html; charset=UTF-8",
