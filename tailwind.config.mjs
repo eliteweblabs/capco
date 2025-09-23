@@ -1,7 +1,18 @@
 /** @type {import('tailwindcss').Config} */
 
+// Import color generation utility
+import { generateColorPalette } from "./color-generator.js";
+
 // Get primary color from environment variable or use default
 const primaryColor = process.env.PRIMARY_COLOR || "#825BDD";
+
+// Generate complete color palette automatically from the hex color
+const primaryColorPalette = generateColorPalette(primaryColor);
+
+// Debug: Log what color is being used
+console.log("🎨 [TAILWIND] PRIMARY_COLOR from env:", process.env.PRIMARY_COLOR);
+console.log("🎨 [TAILWIND] Using primary color:", primaryColor);
+console.log("🎨 [TAILWIND] Generated palette:", primaryColorPalette);
 
 export default {
   content: ["./src/**/*.{astro,js,ts,jsx,tsx,vue,svelte}", "./node_modules/flowbite/**/*.js"],
@@ -40,21 +51,8 @@ export default {
           600: "#525252", // Secondary text (gray)
           400: "#a3a3a3", // Secondary text (dark mode)
         },
-        // Brand Colors - Using primary color from environment variable
-        primary: {
-          DEFAULT: primaryColor, // Default primary color for bg-primary, text-primary, etc.
-          50: "#f3f0ff",
-          100: "#e9e3ff",
-          200: "#d6ccff",
-          300: "#b8a6ff",
-          400: "#9375ff",
-          500: primaryColor, // Main primary (from env var)
-          600: "#6b3dd1",
-          700: "#5327BA", // Main secondary
-          800: "#4520a0",
-          900: "#3a1a85",
-          950: "#230e5a",
-        },
+        // Brand Colors - Automatically generated from PRIMARY_COLOR environment variable
+        primary: primaryColorPalette,
         secondary: {
           50: "#f0f9ff",
           100: "#e0f2fe",
