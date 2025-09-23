@@ -408,7 +408,7 @@ Your account has been created successfully:<br><br>
             usersToNotify: [email], // Array of email strings
             emailSubject: `Welcome to ${process.env.GLOBAL_COMPANY_NAME} → ${displayName}`,
             emailContent: welcomeContent,
-            buttonText: "Access Your Account",
+            buttonText: "Let's Get Started →",
             buttonLink: "/dashboard",
           }),
         });

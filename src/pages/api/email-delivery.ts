@@ -199,40 +199,31 @@ export const POST: APIRoute = async ({ request, cookies }) => {
             // Replace template variables for regular emails
             emailHtml = emailTemplate.replace("{{CONTENT}}", emailContent);
 
-            // Debug: Log environment variables for email template
+            // must process LOGO before COMPANY_NAME for title tag
 
             emailHtml = emailHtml.replace(
-              "{{GLOBAL_COMPANY_NAME}}",
+              /{{GLOBAL_COMPANY_NAME}}/g,
               process.env.GLOBAL_COMPANY_NAME || "No Company Name"
             );
 
             emailHtml = emailHtml.replace(
-              "{{GLOBAL_COMPANY_NAME}}",
-              process.env.GLOBAL_COMPANY_NAME || "No Company Name"
-            );
-
-            emailHtml = emailHtml.replace(
-              "{{PRIMARY_COLOR}}",
+              /{{PRIMARY_COLOR}}/g,
               process.env.PRIMARY_COLOR || "#3b82f6"
             );
 
-            emailHtml = emailHtml.replace("{{YEAR}}", process.env.YEAR || "No Year");
+            emailHtml = emailHtml.replace(/{{YEAR}}/g, process.env.YEAR || "No Year");
 
             emailHtml = emailHtml.replace(
-              "{{GLOBAL_COMPANY_SLOGAN}}",
+              /{{GLOBAL_COMPANY_SLOGAN}}/g,
               process.env.GLOBAL_COMPANY_SLOGAN || "No Company Slogan"
             );
             emailHtml = emailHtml.replace(
-              "{{COMPANY_LOGO_LIGHT}}",
+              /{{COMPANY_LOGO_LIGHT}}/g,
               process.env.COMPANY_LOGO_LIGHT || "No Logo Img"
             );
             emailHtml = emailHtml.replace(
-              "{{COMPANY_LOGO_DARK}}",
+              /{{COMPANY_LOGO_DARK}}/g,
               process.env.COMPANY_LOGO_DARK || "No Logo Img"
-            );
-            emailHtml = emailHtml.replace(
-              "{{PRIMARY_COLOR}}",
-              process.env.PRIMARY_COLOR || "#3b82f6"
             );
           }
 
@@ -304,7 +295,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
           // For SMS gateways, send only plain text (no HTML)
           const emailPayload = isSmsGateway
             ? {
-                from: `CAPCo Fire <noreply@capcofire.com>`, // Consistent verified sender
+                from: `${process.env.FROM_NAME} <${process.env.FROM_EMAIL}>`, // Consistent verified sender
                 to: userEmail,
                 subject: "", // Empty subject for SMS gateways
                 text: emailContent.substring(0, 160), // Limit to 160 characters for SMS
