@@ -37,8 +37,8 @@ const lastNameValue =
   authorProfile?.profile?.name?.split(" ").slice(1).join(" ") ||
   "";
 
-console.log("🔍 [PAYMENT-FORM] Computed firstNameValue:", firstNameValue);
-console.log("🔍 [PAYMENT-FORM] Computed lastNameValue:", lastNameValue);
+// console.log("🔍 [PAYMENT-FORM] Computed firstNameValue:", firstNameValue);
+// console.log("🔍 [PAYMENT-FORM] Computed lastNameValue:", lastNameValue);
 
 // Stripe publishable key will be injected via window object by App.astro
 // This matches the pattern used for Google Maps API key
@@ -477,7 +477,7 @@ console.log("🔍 [PAYMENT-FORM] Computed lastNameValue:", lastNameValue);
       // Debug: Check form values after DOM loads
       const firstNameField = document.getElementById("first-name");
       const lastNameField = document.getElementById("last-name");
-      console.log("🔍 [PAYMENT-FORM] Form values after DOM load:", {
+      // console.log("🔍 [PAYMENT-FORM] Form values after DOM load:", {
         firstName: firstNameField?.value,
         lastName: lastNameField?.value,
         firstNameElement: firstNameField,
@@ -508,7 +508,7 @@ console.log("🔍 [PAYMENT-FORM] Computed lastNameValue:", lastNameValue);
       }
 
       try {
-        console.log("🔍 [PAYMENT-FORM] Debug values:", {
+        // console.log("🔍 [PAYMENT-FORM] Debug values:", {
           invoiceId,
           projectId,
           paymentType,
@@ -535,7 +535,7 @@ console.log("🔍 [PAYMENT-FORM] Computed lastNameValue:", lastNameValue);
           throw new Error(`Invalid project ID: ${invoiceId}. Expected a positive number.`);
         }
 
-        console.log("🔍 [PAYMENT-FORM] Creating payment intent with ID:", invoiceId);
+        // console.log("🔍 [PAYMENT-FORM] Creating payment intent with ID:", invoiceId);
         const response = await fetch("/api/create-payment-intent", {
           method: "POST",
           headers: {
@@ -653,7 +653,7 @@ console.log("🔍 [PAYMENT-FORM] Computed lastNameValue:", lastNameValue);
     // Confirm payment with backend
     async function confirmPayment() {
       try {
-        console.log("🔍 [PAYMENT-FORM] Confirming payment with:", {
+        // console.log("🔍 [PAYMENT-FORM] Confirming payment with:", {
           paymentIntentId,
           invoiceId,
           projectId,
@@ -670,9 +670,9 @@ console.log("🔍 [PAYMENT-FORM] Computed lastNameValue:", lastNameValue);
           }),
         });
 
-        console.log("🔍 [PAYMENT-FORM] Confirm payment response status:", response.status);
+        // console.log("🔍 [PAYMENT-FORM] Confirm payment response status:", response.status);
         const data = await response.json();
-        console.log("🔍 [PAYMENT-FORM] Confirm payment response data:", data);
+        // console.log("🔍 [PAYMENT-FORM] Confirm payment response data:", data);
 
         if (data.success) {
           const newStatus = paymentType === "deposit" ? 70 : 170;
@@ -755,17 +755,17 @@ console.log("🔍 [PAYMENT-FORM] Computed lastNameValue:", lastNameValue);
     }
 
     // Initialize payment intent only if we have a valid ID
-    console.log("🔍 [PAYMENT-FORM] Checking invoice ID:", {
+    // console.log("🔍 [PAYMENT-FORM] Checking invoice ID:", {
       invoiceId,
       type: typeof invoiceId,
       isValid: invoiceId && !isNaN(invoiceId) && invoiceId > 0,
     });
 
     if (invoiceId && !isNaN(invoiceId) && invoiceId > 0) {
-      console.log("🔍 [PAYMENT-FORM] Creating payment intent with ID:", invoiceId);
+      // console.log("🔍 [PAYMENT-FORM] Creating payment intent with ID:", invoiceId);
       createPaymentIntent();
     } else {
-      console.log(
+      // console.log(
         "🔍 [PAYMENT-FORM] Skipping payment intent creation - no valid invoice ID:",
         invoiceId
       );
@@ -778,10 +778,10 @@ console.log("🔍 [PAYMENT-FORM] Computed lastNameValue:", lastNameValue);
     });
 
     // Apple Pay setup - Debug and improved checks
-    console.log("🍎 [APPLE PAY] Checking Apple Pay availability...");
-    console.log("🍎 [APPLE PAY] ApplePaySession available:", !!window.ApplePaySession);
-    console.log("🍎 [APPLE PAY] Protocol:", window.location.protocol);
-    console.log("🍎 [APPLE PAY] Hostname:", window.location.hostname);
+    // console.log("🍎 [APPLE PAY] Checking Apple Pay availability...");
+    // console.log("🍎 [APPLE PAY] ApplePaySession available:", !!window.ApplePaySession);
+    // console.log("🍎 [APPLE PAY] Protocol:", window.location.protocol);
+    // console.log("🍎 [APPLE PAY] Hostname:", window.location.hostname);
 
     // Allow localhost for testing (Apple Pay works on localhost in development)
     const isSecure =
@@ -789,19 +789,19 @@ console.log("🔍 [PAYMENT-FORM] Computed lastNameValue:", lastNameValue);
 
     // Apple Pay requires HTTPS even for localhost - only show on actual HTTPS
     if (window.ApplePaySession && window.location.protocol === "https:") {
-      console.log("🍎 [APPLE PAY] Checking canMakePayments...");
+      // console.log("🍎 [APPLE PAY] Checking canMakePayments...");
 
       try {
         const canMakePayments = window.ApplePaySession.canMakePayments();
-        console.log("🍎 [APPLE PAY] Can make payments:", canMakePayments);
+        // console.log("🍎 [APPLE PAY] Can make payments:", canMakePayments);
 
         if (canMakePayments) {
           const applePayButton = document.getElementById("apple-pay-button");
-          console.log("🍎 [APPLE PAY] Apple Pay button element:", applePayButton);
+          // console.log("🍎 [APPLE PAY] Apple Pay button element:", applePayButton);
 
           if (applePayButton) {
             applePayButton.classList.remove("hidden");
-            console.log("🍎 [APPLE PAY] Apple Pay button shown!");
+            // console.log("🍎 [APPLE PAY] Apple Pay button shown!");
 
             applePayButton.addEventListener("click", async () => {
               const paymentRequest = {
@@ -828,31 +828,31 @@ console.log("🔍 [PAYMENT-FORM] Computed lastNameValue:", lastNameValue);
               };
 
               session.oncancel = () => {
-                console.log("Apple Pay cancelled");
+                // console.log("Apple Pay cancelled");
               };
 
               session.begin();
             });
           } else {
-            console.log("🍎 [APPLE PAY] Apple Pay button element not found in DOM");
+            // console.log("🍎 [APPLE PAY] Apple Pay button element not found in DOM");
           }
         } else {
-          console.log("🍎 [APPLE PAY] Device cannot make Apple Pay payments");
+          // console.log("🍎 [APPLE PAY] Device cannot make Apple Pay payments");
         }
       } catch (error) {
         console.error("🍎 [APPLE PAY] Error checking Apple Pay availability:", error);
       }
     } else {
       if (!window.ApplePaySession) {
-        console.log(
+        // console.log(
           "🍎 [APPLE PAY] ApplePaySession not available (not Safari or not supported device)"
         );
       } else if (window.location.protocol !== "https:") {
-        console.log(
+        // console.log(
           "🍎 [APPLE PAY] Apple Pay requires HTTPS. Current protocol:",
           window.location.protocol
         );
-        console.log(
+        // console.log(
           "🍎 [APPLE PAY] To test Apple Pay, deploy to HTTPS or use a tunneling service like ngrok"
         );
       }
@@ -867,7 +867,7 @@ console.log("🔍 [PAYMENT-FORM] Computed lastNameValue:", lastNameValue);
         googlePayButton.addEventListener("click", async () => {
           // Google Pay implementation
           // This would require additional Google Pay setup
-          console.log("Google Pay clicked");
+          // console.log("Google Pay clicked");
         });
       }
     }
@@ -891,7 +891,7 @@ console.log("🔍 [PAYMENT-FORM] Computed lastNameValue:", lastNameValue);
 
         linkPayButton.addEventListener("click", async () => {
           try {
-            console.log("💳 [LINK-PAY] Processing Link payment...");
+            // console.log("💳 [LINK-PAY] Processing Link payment...");
 
             // Create Link payment method
             const { error, paymentMethod } = await stripe.createPaymentMethod({
@@ -904,7 +904,7 @@ console.log("🔍 [PAYMENT-FORM] Computed lastNameValue:", lastNameValue);
               return;
             }
 
-            console.log("✅ [LINK-PAY] Payment method created:", paymentMethod.id);
+            // console.log("✅ [LINK-PAY] Payment method created:", paymentMethod.id);
             await handlePayment(paymentMethod.id);
           } catch (error) {
             console.error("❌ [LINK-PAY] Link payment error:", error);
@@ -912,7 +912,7 @@ console.log("🔍 [PAYMENT-FORM] Computed lastNameValue:", lastNameValue);
           }
         });
       } else {
-        console.log("🔗 [LINK-PAY] Link not available, hiding button");
+        // console.log("🔗 [LINK-PAY] Link not available, hiding button");
         linkPayButton.style.display = "none";
       }
     }

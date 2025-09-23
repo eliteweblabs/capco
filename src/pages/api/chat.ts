@@ -95,7 +95,7 @@ export const POST: APIRoute = async ({ request }) => {
         );
 
       case "message":
-        console.log("🔔 [CHAT-API] Saving message:", { userId, userName, userRole, message });
+        // console.log("🔔 [CHAT-API] Saving message:", { userId, userName, userRole, message });
 
         if (!supabaseAdmin) {
           console.error(
@@ -134,7 +134,7 @@ export const POST: APIRoute = async ({ request }) => {
           );
         }
 
-        console.log("✅ [CHAT-API] Message saved successfully:", savedMessage);
+        // console.log("✅ [CHAT-API] Message saved successfully:", savedMessage);
 
         // Update user's last seen
         if (activeConnections.has(userId)) {

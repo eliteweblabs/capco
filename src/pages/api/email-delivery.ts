@@ -84,9 +84,9 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
     // Debug logging for tracking configuration
     if (shouldDisableTracking) {
-      console.log("📧 [EMAIL-DELIVERY] Click tracking disabled for email type:", emailType);
+      // console.log("📧 [EMAIL-DELIVERY] Click tracking disabled for email type:", emailType);
     } else {
-      console.log("📧 [EMAIL-DELIVERY] Click tracking enabled for email type:", emailType);
+      // console.log("📧 [EMAIL-DELIVERY] Click tracking enabled for email type:", emailType);
     }
 
     // Simple validation - just need projectId and usersToNotify
@@ -316,7 +316,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
             failedEmails.push({ email: userEmail, error: errorText });
           } else {
             const responseData = await response.json();
-            console.log(
+            // console.log(
               // `📧 [EMAIL-DELIVERY] Email sent successfully to ${userEmail}:`,
               responseData
             );

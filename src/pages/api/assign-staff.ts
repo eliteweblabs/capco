@@ -5,12 +5,12 @@ import { getApiBaseUrl } from "../../lib/url-utils";
 export const POST: APIRoute = async ({ request }) => {
   try {
     const body = await request.json();
-    console.log("📧 [ASSIGN-STAFF] API received:", body);
+    // console.log("📧 [ASSIGN-STAFF] API received:", body);
 
     const { projectId, assigned_to_id } = body;
 
-    console.log("📧 [ASSIGN-STAFF] Project ID:", projectId);
-    console.log("📧 [ASSIGN-STAFF] Assigned to ID:", assigned_to_id);
+    // console.log("📧 [ASSIGN-STAFF] Project ID:", projectId);
+    // console.log("📧 [ASSIGN-STAFF] Assigned to ID:", assigned_to_id);
 
     // Get the assigned staff member's email, name, and company directly from database
     let staffEmail = null;
@@ -84,7 +84,7 @@ export const POST: APIRoute = async ({ request }) => {
           console.error("📧 [ASSIGN-STAFF] Error fetching project details:", projectDetailsError);
         } else {
           // Get admin emails only
-          console.log("📧 [ASSIGN-STAFF] Fetching admin emails...");
+          // console.log("📧 [ASSIGN-STAFF] Fetching admin emails...");
           const baseUrl = getApiBaseUrl(request);
 
           const adminResponse = await fetch(`${baseUrl}/api/get-user-emails-by-role`, {
@@ -97,7 +97,7 @@ export const POST: APIRoute = async ({ request }) => {
           if (adminResponse.ok) {
             const adminData = await adminResponse.json();
             adminEmails = adminData.emails || [];
-            console.log("📧 [ASSIGN-STAFF] Admin emails:", adminEmails);
+            // console.log("📧 [ASSIGN-STAFF] Admin emails:", adminEmails);
           } else {
             console.error("📧 [ASSIGN-STAFF] Failed to fetch admin emails");
           }
@@ -124,13 +124,13 @@ export const POST: APIRoute = async ({ request }) => {
 
             if (staffEmailResponse.ok) {
               const staffEmailResult = await staffEmailResponse.json();
-              console.log("📧 [ASSIGN-STAFF] Staff email sent successfully:", staffEmailResult);
+              // console.log("📧 [ASSIGN-STAFF] Staff email sent successfully:", staffEmailResult);
             } else {
               const errorText = await staffEmailResponse.text();
               console.error("📧 [ASSIGN-STAFF] Failed to send staff email:", errorText);
             }
           } else {
-            console.log("📧 [ASSIGN-STAFF] No staff email to send - staffEmail is null");
+            // console.log("📧 [ASSIGN-STAFF] No staff email to send - staffEmail is null");
           }
 
           // Send email to admins
@@ -143,7 +143,7 @@ export const POST: APIRoute = async ({ request }) => {
               buttonLink: `${baseUrl}/project/${projectId}`,
               buttonText: "View Project",
             };
-            console.log("📧 [ASSIGN-STAFF] Admin email data:", adminEmailData);
+            // console.log("📧 [ASSIGN-STAFF] Admin email data:", adminEmailData);
 
             const adminEmailResponse = await fetch(`${baseUrl}/api/email-delivery`, {
               method: "POST",
@@ -161,7 +161,7 @@ export const POST: APIRoute = async ({ request }) => {
               console.error("📧 [ASSIGN-STAFF] Failed to send admin email:", errorText);
             }
           } else {
-            console.log("📧 [ASSIGN-STAFF] No admin emails to send - adminEmails array is empty");
+            // console.log("📧 [ASSIGN-STAFF] No admin emails to send - adminEmails array is empty");
           }
         }
       } catch (emailError) {

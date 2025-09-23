@@ -26,7 +26,7 @@ export async function createMissingUserProfile(user: User): Promise<void> {
       .single();
 
     if (existingProfile) {
-      console.log("Profile already exists for user:", user.id, "- no action needed");
+      // console.log("Profile already exists for user:", user.id, "- no action needed");
       return;
     }
 
@@ -41,7 +41,7 @@ export async function createMissingUserProfile(user: User): Promise<void> {
     const lastName = user.user_metadata?.last_name || "";
     const companyName = user.user_metadata?.company_name || "";
 
-    console.log("Creating missing profile for user:", user.id, "with data:", {
+    // console.log("Creating missing profile for user:", user.id, "with data:", {
       email: user.email,
       company_name: companyName,
       firstName,
@@ -68,7 +68,7 @@ export async function createMissingUserProfile(user: User): Promise<void> {
       return;
     }
 
-    console.log("Missing profile created successfully:", newProfile);
+    // console.log("Missing profile created successfully:", newProfile);
   } catch (error) {
     console.error("Unexpected error in createMissingUserProfile:", error);
   }

@@ -123,16 +123,16 @@ const currentRole = currentUser?.profile?.role;
   // Initialize chat widget
   function initializeSocketChat() {
     if (isInitialized) {
-      console.log("🔔 [SOCKETIO-CHAT] Chat widget already initialized, skipping");
+      // console.log("🔔 [SOCKETIO-CHAT] Chat widget already initialized, skipping");
       return;
     }
 
-    console.log("🔔 [SOCKETIO-CHAT] Initializing Socket.io chat widget");
+    // console.log("🔔 [SOCKETIO-CHAT] Initializing Socket.io chat widget");
 
     // Check if user is Admin/Staff
     const chatWidget = document.getElementById("socket-chat-widget");
     if (!chatWidget) {
-      console.log("🔔 [SOCKETIO-CHAT] Chat widget element not found!");
+      // console.log("🔔 [SOCKETIO-CHAT] Chat widget element not found!");
       return;
     }
 
@@ -140,17 +140,17 @@ const currentRole = currentUser?.profile?.role;
     const userId = chatWidget.dataset.userId || "unknown";
     const userName = chatWidget.dataset.userName || "Unknown User";
 
-    console.log("🔔 [SOCKETIO-CHAT] User role:", userRole);
-    console.log("🔔 [SOCKETIO-CHAT] User ID:", userId);
-    console.log("🔔 [SOCKETIO-CHAT] User name:", userName);
+    // console.log("🔔 [SOCKETIO-CHAT] User role:", userRole);
+    // console.log("🔔 [SOCKETIO-CHAT] User ID:", userId);
+    // console.log("🔔 [SOCKETIO-CHAT] User name:", userName);
 
     if (userRole !== "Admin" && userRole !== "Staff") {
-      console.log("🔔 [SOCKETIO-CHAT] User not Admin/Staff, hiding chat widget");
+      // console.log("🔔 [SOCKETIO-CHAT] User not Admin/Staff, hiding chat widget");
       chatWidget.classList.add("hidden");
       return;
     }
 
-    console.log("🔔 [SOCKETIO-CHAT] User is Admin/Staff, showing chat widget");
+    // console.log("🔔 [SOCKETIO-CHAT] User is Admin/Staff, showing chat widget");
 
     // Get current user info
     currentUser = {
@@ -159,7 +159,7 @@ const currentRole = currentUser?.profile?.role;
       role: userRole,
     };
 
-    console.log("🔔 [SOCKETIO-CHAT] Current user:", currentUser);
+    // console.log("🔔 [SOCKETIO-CHAT] Current user:", currentUser);
 
     // Initialize Socket.io connection
     initializeSocket();
@@ -171,7 +171,7 @@ const currentRole = currentUser?.profile?.role;
     checkSocketChatStateFromCookie();
 
     isInitialized = true;
-    console.log("🔔 [SOCKETIO-CHAT] Socket.io chat widget initialization complete");
+    // console.log("🔔 [SOCKETIO-CHAT] Socket.io chat widget initialization complete");
   }
 
   // Initialize Socket.io connection
@@ -193,7 +193,7 @@ const currentRole = currentUser?.profile?.role;
 
       // Connection events
       socket.on("connect", () => {
-        console.log("✅ [SOCKETIO-CHAT] Connected to chat server");
+        // console.log("✅ [SOCKETIO-CHAT] Connected to chat server");
 
         // Join chat room
         socket.emit("join", {
@@ -204,7 +204,7 @@ const currentRole = currentUser?.profile?.role;
       });
 
       socket.on("disconnect", () => {
-        console.log("❌ [SOCKETIO-CHAT] Disconnected from chat server");
+        // console.log("❌ [SOCKETIO-CHAT] Disconnected from chat server");
         showConnectionStatus("Disconnected", "error");
       });
 
@@ -215,28 +215,28 @@ const currentRole = currentUser?.profile?.role;
 
       // Chat events
       socket.on("chat_history", (messages: any) => {
-        console.log("🔔 [SOCKETIO-CHAT] Received chat history:", messages.length, "messages");
+        // console.log("🔔 [SOCKETIO-CHAT] Received chat history:", messages.length, "messages");
         loadSocketChatHistory(messages);
       });
 
       socket.on("new_message", (message: any) => {
-        console.log("🔔 [SOCKETIO-CHAT] New message received:", message);
+        // console.log("🔔 [SOCKETIO-CHAT] New message received:", message);
         addSocketMessage(message);
       });
 
       socket.on("user_list", (users: any) => {
-        console.log("🔔 [SOCKETIO-CHAT] Online users updated:", users.length);
+        // console.log("🔔 [SOCKETIO-CHAT] Online users updated:", users.length);
         onlineUsers = users;
         updateSocketOnlineCount();
       });
 
       socket.on("user_joined", (data: any) => {
-        console.log("🔔 [SOCKETIO-CHAT] User joined:", data.userName);
+        // console.log("🔔 [SOCKETIO-CHAT] User joined:", data.userName);
         showSystemMessage(`${data.userName} joined the chat`);
       });
 
       socket.on("user_left", (data: any) => {
-        console.log("🔔 [SOCKETIO-CHAT] User left:", data.userName);
+        // console.log("🔔 [SOCKETIO-CHAT] User left:", data.userName);
         showSystemMessage(`${data.userName} left the chat`);
       });
 
@@ -245,7 +245,7 @@ const currentRole = currentUser?.profile?.role;
       });
 
       socket.on("pong", () => {
-        console.log("🔔 [SOCKETIO-CHAT] Pong received");
+        // console.log("🔔 [SOCKETIO-CHAT] Pong received");
       });
     } catch (error) {
       console.error("❌ [SOCKETIO-CHAT] Error initializing socket:", error);
@@ -348,7 +348,7 @@ const currentRole = currentUser?.profile?.role;
     }
 
     try {
-      console.log("🔔 [SOCKETIO-CHAT] Sending message:", message);
+      // console.log("🔔 [SOCKETIO-CHAT] Sending message:", message);
 
       // Send message via socket
       socket.emit("message", { message });
@@ -362,7 +362,7 @@ const currentRole = currentUser?.profile?.role;
         socket.emit("typing", { isTyping: false });
       }
 
-      console.log("✅ [SOCKETIO-CHAT] Message sent successfully");
+      // console.log("✅ [SOCKETIO-CHAT] Message sent successfully");
     } catch (error) {
       console.error("🔔 [SOCKETIO-CHAT] Error sending message:", error);
       // Show error to user
@@ -391,7 +391,7 @@ const currentRole = currentUser?.profile?.role;
       addSocketMessage(msg);
     });
 
-    console.log("🔔 [SOCKETIO-CHAT] Chat history loaded:", messages.length, "messages");
+    // console.log("🔔 [SOCKETIO-CHAT] Chat history loaded:", messages.length, "messages");
   }
 
   // Add message to chat
@@ -559,7 +559,7 @@ const currentRole = currentUser?.profile?.role;
       const expires = new Date();
       expires.setTime(expires.getTime() + 24 * 60 * 60 * 1000); // 24 hours
       document.cookie = `socketChatOpen=${isOpen}; expires=${expires.toUTCString()}; path=/`;
-      console.log("🔔 [SOCKETIO-CHAT] Chat state saved to cookie:", isOpen);
+      // console.log("🔔 [SOCKETIO-CHAT] Chat state saved to cookie:", isOpen);
     } catch (error) {
       console.error("🔔 [SOCKETIO-CHAT] Error saving chat state to cookie:", error);
     }
@@ -572,7 +572,7 @@ const currentRole = currentUser?.profile?.role;
 
       if (chatOpenCookie) {
         const isOpen = chatOpenCookie.split("=")[1] === "true";
-        console.log("🔔 [SOCKETIO-CHAT] Chat state from cookie:", isOpen);
+        // console.log("🔔 [SOCKETIO-CHAT] Chat state from cookie:", isOpen);
 
         if (isOpen) {
           const chatPanel = document.getElementById("socket-chat-panel");
@@ -587,13 +587,13 @@ const currentRole = currentUser?.profile?.role;
 
   // Initialize when DOM is ready
   document.addEventListener("DOMContentLoaded", () => {
-    console.log("🔔 [SOCKETIO-CHAT] DOM Content Loaded");
+    // console.log("🔔 [SOCKETIO-CHAT] DOM Content Loaded");
     setTimeout(initializeSocketChat, 1000);
   });
 
   // Also initialize when window loads (fallback)
   window.addEventListener("load", () => {
-    console.log("🔔 [SOCKETIO-CHAT] Window Loaded");
+    // console.log("🔔 [SOCKETIO-CHAT] Window Loaded");
     if (!isInitialized) {
       setTimeout(initializeSocketChat, 500);
     }

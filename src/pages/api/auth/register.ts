@@ -13,7 +13,7 @@ function getCarrierGateway(carrierKey: string | null): string | null {
 }
 
 export const POST: APIRoute = async ({ request, redirect, cookies }) => {
-  console.log("🔐 [REGISTER] Registration API called");
+  // console.log("🔐 [REGISTER] Registration API called");
 
   // Check if Supabase is configured
   if (!supabase || !supabaseAdmin) {
@@ -31,7 +31,7 @@ export const POST: APIRoute = async ({ request, redirect, cookies }) => {
   const smsAlerts = formData.get("sms_alerts") === "on"; // Checkbox returns "on" when checked
   const mobileCarrier = formData.get("mobile_carrier")?.toString();
 
-  console.log("🔐 [REGISTER] Form data:", {
+  // console.log("🔐 [REGISTER] Form data:", {
     email,
     firstName,
     lastName,
@@ -177,7 +177,7 @@ export const POST: APIRoute = async ({ request, redirect, cookies }) => {
       // Don't fail the registration if profile creation fails
       // The user can still log in and we can create the profile later
     } else {
-      console.log("Profile created successfully for user:", data.user.id);
+      // console.log("Profile created successfully for user:", data.user.id);
     }
 
     // Send welcome email to the new user
@@ -263,7 +263,7 @@ export const POST: APIRoute = async ({ request, redirect, cookies }) => {
               await supabaseAdmin.auth.admin.getUserById(admin.id);
 
             if (authError || !adminUserProfile?.user?.email) {
-              console.log(`📧 [REGISTER] No email found for admin ${admin.id}, skipping`);
+              // console.log(`📧 [REGISTER] No email found for admin ${admin.id}, skipping`);
               continue;
             }
 
@@ -285,7 +285,7 @@ export const POST: APIRoute = async ({ request, redirect, cookies }) => {
             });
 
             if (adminEmailResponse.ok) {
-              console.log(`📧 [REGISTER] Admin notification sent to: ${adminEmail}`);
+              // console.log(`📧 [REGISTER] Admin notification sent to: ${adminEmail}`);
               emailStatus.adminEmailsSent++;
             } else {
               const adminErrorText = await adminEmailResponse.text();
@@ -314,11 +314,11 @@ export const POST: APIRoute = async ({ request, redirect, cookies }) => {
     }
   }
 
-  console.log("User registration successful:", !!data.user);
+  // console.log("User registration successful:", !!data.user);
 
   // Sign in the user immediately after registration
   if (data.user) {
-    console.log("🔐 [REGISTER] Signing in user after registration:", data.user.email);
+    // console.log("🔐 [REGISTER] Signing in user after registration:", data.user.email);
 
     const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
       email,
@@ -329,13 +329,13 @@ export const POST: APIRoute = async ({ request, redirect, cookies }) => {
       console.error("🔐 [REGISTER] Sign-in error after registration:", signInError);
       // Don't fail the registration, but log the error
     } else {
-      console.log("🔐 [REGISTER] User signed in successfully after registration");
+      // console.log("🔐 [REGISTER] User signed in successfully after registration");
 
       // Set auth cookies to maintain the session
       if (signInData.session) {
         const { access_token, refresh_token } = signInData.session;
         setAuthCookies(cookies, access_token, refresh_token);
-        console.log("🔐 [REGISTER] Auth cookies set successfully");
+        // console.log("🔐 [REGISTER] Auth cookies set successfully");
       }
     }
   }
