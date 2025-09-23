@@ -297,13 +297,7 @@ const debugData = {
     {
       !noNavigation ? (
         <div class="YRrCJSr_j5nopfm4duUc wBVMFkIGfrKshbvi2gS1 jtAJHOc7mn7b4IKRO59D UZ9xFK4mqjHjj8e8yJwf h8KYXnua2NT4kTVzieom">
-          <Aside
-            isAuth={isAuth}
-            currentUser={currentUser}
-            currentRole={currentRole || ""}
-            session={session}
-            navigationData={navigationData}
-          />
+          <Aside currentUser={currentUser} />
           <slot />
         </div>
       ) : (
@@ -343,19 +337,14 @@ const debugData = {
       debounce,
       fixSafariViewport,
       getViewportSize,
-      handleUrlNotification,
       hideOnFormFocus,
       isDesktop,
-      immediateSafariViewportFix,
       isMobile,
       isSafariIOS,
       isTablet,
-      lockBodyScroll,
       scrollToTop,
       scrollToTopOnMobile,
-      setupViewportHandling,
       throttle,
-      unlockBodyScroll,
     } from "../../lib/ux-utils.ts";
 
     import { setupConsoleInterceptor } from "../../lib/console-interceptor.ts";
@@ -368,39 +357,13 @@ const debugData = {
     (window as any).isDesktop = isDesktop;
     (window as any).isSafariIOS = isSafariIOS;
     (window as any).fixSafariViewport = fixSafariViewport;
-    (window as any).setupViewportHandling = setupViewportHandling;
     (window as any).getViewportSize = getViewportSize;
     (window as any).debounce = debounce;
     (window as any).throttle = throttle;
-    (window as any).handleUrlNotification = handleUrlNotification;
     (window as any).hideOnFormFocus = hideOnFormFocus;
-    (window as any).lockBodyScroll = lockBodyScroll;
-    (window as any).unlockBodyScroll = unlockBodyScroll;
 
     // Setup console interceptor (disables console.log in production)
     setupConsoleInterceptor();
-
-    // IMMEDIATE Safari viewport fix - runs before DOM is ready
-    immediateSafariViewportFix();
-
-    // Initialize viewport handling for all elements
-    setupViewportHandling();
-
-    document.addEventListener("DOMContentLoaded", () => {
-      const currentUrl = new URL(window.location.href);
-      const errorParam = currentUrl.searchParams.get("error");
-      const messageParam = currentUrl.searchParams.get("message");
-
-      // Handle error messages
-      if (errorParam) {
-        handleUrlNotification("error", errorParam);
-      }
-
-      // Handle success messages
-      if (messageParam) {
-        handleUrlNotification("success", messageParam);
-      }
-    });
   </script>
 
   <!-- Expose centralized notification system to window object -->

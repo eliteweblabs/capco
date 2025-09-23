@@ -1,9 +1,9 @@
-import { handler as ssrHandler } from './dist/server/entry.mjs';
-import { createServer } from 'http';
-import { Server } from 'socket.io';
-import { createClient } from '@supabase/supabase-js';
-import express from 'express';
-import cors from 'cors';
+// import { createClient } from "@supabase/supabase-js";
+import cors from "cors";
+import express from "express";
+import { createServer } from "http";
+// import { Server } from "socket.io";
+import { handler as ssrHandler } from "./dist/server/entry.mjs";
 
 // Create Express app
 const app = express();
@@ -13,7 +13,7 @@ const server = createServer(app);
 const corsOptions = {
   origin: [
     "http://localhost:4321",
-    "http://localhost:3000", 
+    "http://localhost:3000",
     "https://capcofire.com",
     process.env.SITE_URL,
   ].filter(Boolean),
@@ -22,171 +22,199 @@ const corsOptions = {
 
 app.use(cors(corsOptions));
 
-// Initialize Socket.io with CORS
-const io = new Server(server, {
-  cors: corsOptions,
-  transports: ["websocket", "polling"],
-  path: "/socket.io/"
-});
+// Socket.io temporarily disabled
+// const io = new Server(server, {
+//   cors: corsOptions,
+//   transports: ["websocket", "polling"],
+//   path: "/socket.io/",
+// });
 
-// Initialize Supabase client
-const supabaseUrl = process.env.PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL;
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+// Supabase client temporarily disabled
+// const supabaseUrl = process.env.PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL;
+// const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-if (!supabaseUrl || !supabaseServiceKey) {
-  console.error("❌ [SOCKETIO-INTEGRATION] Missing Supabase environment variables");
-  console.error("Required: PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY");
-}
+// if (!supabaseUrl || !supabaseServiceKey) {
+//   console.error("❌ [SOCKETIO-INTEGRATION] Missing Supabase environment variables");
+//   console.error("Required: PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY");
+// }
 
-const supabase = createClient(supabaseUrl, supabaseServiceKey);
+// const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-// In-memory storage for active users and messages
-const activeUsers = new Map();
-const chatHistory = [];
-const directMessages = new Map();
+// Socket.io data storage temporarily disabled
+// const activeUsers = new Map();
+// const chatHistory = [];
+// const directMessages = new Map();
 
-// Load recent messages from database on startup
-async function loadRecentMessages() {
-  try {
-    console.log("🔔 [SOCKETIO-INTEGRATION] Loading recent messages from database...");
-    
-    const { data: messages, error } = await supabase
-      .from('chat_messages')
-      .select('*')
-      .order('created_at', { ascending: false })
-      .limit(50);
+// Load recent messages from database on startup - temporarily disabled
+// async function loadRecentMessages() {
+//   try {
+//     console.log("🔔 [SOCKETIO-INTEGRATION] Loading recent messages from database...");
 
-    if (error) {
-      console.error("❌ [SOCKETIO-INTEGRATION] Error loading messages:", error);
-      return;
-    }
+//     const { data: messages, error } = await supabase
+//       .from("chat_messages")
+//       .select("*")
+//       .order("created_at", { ascending: false })
+//       .limit(50);
 
-    // Reverse to get chronological order
-    chatHistory.push(...(messages || []).reverse());
-    console.log(`✅ [SOCKETIO-INTEGRATION] Loaded ${chatHistory.length} messages from database`);
-  } catch (error) {
-    console.error("❌ [SOCKETIO-INTEGRATION] Error in loadRecentMessages:", error);
-  }
-}
+//     if (error) {
+//       console.error("❌ [SOCKETIO-INTEGRATION] Error loading messages:", error);
+//       return;
+//     }
 
-// Socket.io connection handling
-io.on('connection', (socket) => {
-  console.log(`🔔 [SOCKETIO-INTEGRATION] User connected: ${socket.id}`);
+//     // Reverse to get chronological order
+//     chatHistory.push(...(messages || []).reverse());
+//     console.log(`✅ [SOCKETIO-INTEGRATION] Loaded ${chatHistory.length} messages from database`);
+//   } catch (error) {
+//     console.error("❌ [SOCKETIO-INTEGRATION] Error in loadRecentMessages:", error);
+//   }
+// }
 
-  // Handle user joining
-  socket.on('join', (data) => {
-    console.log(`🔔 [SOCKETIO-INTEGRATION] User joined:`, data);
-    
-    activeUsers.set(socket.id, {
-      ...data,
-      socketId: socket.id,
-      joinedAt: new Date().toISOString(),
-    });
+// Socket.io connection handling - temporarily disabled
+// io.on("connection", (socket) => {
+//   console.log(`🔔 [SOCKETIO-INTEGRATION] User connected: ${socket.id}`);
 
-    // Send chat history to new user
-    socket.emit('chat_history', chatHistory);
-    
-    // Update user list for all clients
-    io.emit('user_list', Array.from(activeUsers.values()));
-    
-    // Notify others of new user
-    socket.broadcast.emit('user_joined', data);
-  });
+//   // Handle user joining
+//   socket.on("join", (data) => {
+//     console.log(`🔔 [SOCKETIO-INTEGRATION] User joined:`, data);
 
-  // Handle new messages
-  socket.on('send_message', async (messageData) => {
-    try {
-      const user = activeUsers.get(socket.id);
-      if (!user) {
-        console.error("❌ [SOCKETIO-INTEGRATION] User not found for socket:", socket.id);
-        return;
-      }
+//     activeUsers.set(socket.id, {
+//       ...data,
+//       socketId: socket.id,
+//       joinedAt: new Date().toISOString(),
+//     });
 
-      const message = {
-        id: Date.now().toString(),
-        message: messageData.message,
-        user_id: user.userId,
-        user_name: user.userName,
-        user_role: user.userRole,
-        created_at: new Date().toISOString(),
-      };
+//     // Send chat history to new user
+//     socket.emit("chat_history", chatHistory);
 
-      // Save to database
-      const { error } = await supabase
-        .from('chat_messages')
-        .insert([message]);
+//     // Update user list for all clients
+//     io.emit("user_list", Array.from(activeUsers.values()));
 
-      if (error) {
-        console.error("❌ [SOCKETIO-INTEGRATION] Error saving message:", error);
-      }
+//     // Notify others of new user
+//     socket.broadcast.emit("user_joined", data);
+//   });
 
-      // Add to local history
-      chatHistory.push(message);
-      
-      // Keep only last 50 messages in memory
-      if (chatHistory.length > 50) {
-        chatHistory.shift();
-      }
+//   // Handle new messages
+//   socket.on("send_message", async (messageData) => {
+//     try {
+//       const user = activeUsers.get(socket.id);
+//       if (!user) {
+//         console.error("❌ [SOCKETIO-INTEGRATION] User not found for socket:", socket.id);
+//         return;
+//       }
 
-      // Broadcast to all users
-      io.emit('new_message', message);
-      
-      console.log(`💬 [SOCKETIO-INTEGRATION] Message from ${user.userName}: ${messageData.message}`);
-    } catch (error) {
-      console.error("❌ [SOCKETIO-INTEGRATION] Error handling message:", error);
-    }
-  });
+//       const message = {
+//         id: Date.now().toString(),
+//         message: messageData.message,
+//         user_id: user.userId,
+//         user_name: user.userName,
+//         user_role: user.userRole,
+//         created_at: new Date().toISOString(),
+//       };
 
-  // Handle typing indicators
-  socket.on('typing_start', () => {
-    const user = activeUsers.get(socket.id);
-    if (user) {
-      socket.broadcast.emit('user_typing', { 
-        userId: user.userId, 
-        userName: user.userName,
-        isTyping: true 
-      });
-    }
-  });
+//       // Save to database
+//       const { error } = await supabase.from("chat_messages").insert([message]);
 
-  socket.on('typing_stop', () => {
-    const user = activeUsers.get(socket.id);
-    if (user) {
-      socket.broadcast.emit('user_typing', { 
-        userId: user.userId, 
-        userName: user.userName,
-        isTyping: false 
-      });
-    }
-  });
+//       if (error) {
+//         console.error("❌ [SOCKETIO-INTEGRATION] Error saving message:", error);
+//       }
 
-  // Handle disconnection
-  socket.on('disconnect', () => {
-    console.log(`🔔 [SOCKETIO-INTEGRATION] User disconnected: ${socket.id}`);
-    
-    const user = activeUsers.get(socket.id);
-    if (user) {
-      activeUsers.delete(socket.id);
-      
-      // Update user list for remaining clients
-      io.emit('user_list', Array.from(activeUsers.values()));
-      
-      // Notify others of user leaving
-      socket.broadcast.emit('user_left', user);
-    }
-  });
-});
+//       // Add to local history
+//       chatHistory.push(message);
+
+//       // Keep only last 50 messages in memory
+//       if (chatHistory.length > 50) {
+//         chatHistory.shift();
+//       }
+
+//       // Broadcast to all users
+//       io.emit("new_message", message);
+
+//       console.log(
+//         `💬 [SOCKETIO-INTEGRATION] Message from ${user.userName}: ${messageData.message}`
+//       );
+//     } catch (error) {
+//       console.error("❌ [SOCKETIO-INTEGRATION] Error handling message:", error);
+//     }
+//   });
+
+//   // Handle typing indicators
+//   socket.on("typing_start", () => {
+//     const user = activeUsers.get(socket.id);
+//     if (user) {
+//       socket.broadcast.emit("user_typing", {
+//         userId: user.userId,
+//         userName: user.userName,
+//         isTyping: true,
+//       });
+//     }
+//   });
+
+//   socket.on("typing_stop", () => {
+//     const user = activeUsers.get(socket.id);
+//     if (user) {
+//       socket.broadcast.emit("user_typing", {
+//         userId: user.userId,
+//         userName: user.userName,
+//         isTyping: false,
+//       });
+//     }
+//   });
+
+//   // Handle disconnection
+//   socket.on("disconnect", () => {
+//     console.log(`🔔 [SOCKETIO-INTEGRATION] User disconnected: ${socket.id}`);
+
+//     const user = activeUsers.get(socket.id);
+//     if (user) {
+//       activeUsers.delete(socket.id);
+
+//       // Update user list for remaining clients
+//       io.emit("user_list", Array.from(activeUsers.values()));
+
+//       // Notify others of user leaving
+//       socket.broadcast.emit("user_left", user);
+//     }
+//   });
+// });
 
 // Use Astro's SSR handler for all other requests
 app.use(ssrHandler);
 
 // Start the server
-const PORT = process.env.PORT || 4321;
+// Railway provides PORT via environment variable, fallback to 8080 for other deployments
+const PORT = process.env.PORT || 8080;
+console.log(
+  `🔧 [SERVER] Using port: ${PORT} (from ${process.env.PORT ? "environment" : "default"})`
+);
+console.log(`⚠️ [SERVER] Socket.io is temporarily disabled`);
 
-// Load messages and start server
-loadRecentMessages().then(() => {
-  server.listen(PORT, () => {
-    console.log(`🚀 [SOCKETIO-INTEGRATION] Server running on port ${PORT}`);
-    console.log(`🔗 [SOCKETIO-INTEGRATION] Socket.io enabled with CORS: ${corsOptions.origin.join(", ")}`);
+// Load messages and start server - Socket.io disabled, start server directly
+// loadRecentMessages().then(() => {
+server
+  .listen(PORT, () => {
+    console.log(`🚀 [SERVER] Server running on port ${PORT}`);
+    console.log(`🔗 [SERVER] CORS enabled for: ${corsOptions.origin.join(", ")}`);
+  })
+  .on("error", (err) => {
+    if (err.code === "EADDRINUSE") {
+      console.error(`❌ [SERVER] Port ${PORT} is already in use`);
+      console.log(`💡 [SERVER] Trying alternative port...`);
+
+      // Try alternative ports
+      const altPort = PORT + 1;
+      server
+        .listen(altPort, () => {
+          console.log(`🚀 [SERVER] Server running on alternative port ${altPort}`);
+          console.log(`🔗 [SERVER] CORS enabled for: ${corsOptions.origin.join(", ")}`);
+        })
+        .on("error", (altErr) => {
+          console.error(`❌ [SERVER] Alternative port ${altPort} also in use`);
+          console.error(`💥 [SERVER] Server failed to start:`, altErr.message);
+          process.exit(1);
+        });
+    } else {
+      console.error(`💥 [SERVER] Server failed to start:`, err.message);
+      process.exit(1);
+    }
   });
-});
+// });
