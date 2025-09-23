@@ -17,8 +17,8 @@ const corsOptions = {
     "http://localhost:4321",
     "http://localhost:3000",
     "https://capcofire.com",
-    "https://your-domain.com", // Add your production domain
-  ],
+    process.env.SITE_URL, // Production domain from environment
+  ].filter(Boolean), // Remove any undefined values
   credentials: true,
 };
 

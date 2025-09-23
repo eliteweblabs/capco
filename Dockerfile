@@ -1,5 +1,5 @@
-# Use Node.js 20.16.0 for PDF.js compatibility
-FROM node:20.16.0-alpine
+# Use Node.js 22.15.0 to match local environment
+FROM node:22.15.0-alpine
 
 # Set working directory
 WORKDIR /app
@@ -12,6 +12,10 @@ RUN npm install
 
 # Copy source code
 COPY . .
+
+# Copy the production startup script
+COPY start-production.sh ./
+RUN chmod +x start-production.sh
 
 # Build the application with environment variables
 ARG SUPABASE_URL
@@ -36,15 +40,18 @@ ENV GOOGLE_MAPS_API_KEY=$GOOGLE_MAPS_API_KEY
 ENV PUBLIC_STRIPE_PUBLISHABLE_KEY=$PUBLIC_STRIPE_PUBLISHABLE_KEY
 ENV STRIPE_SECRET_KEY=$STRIPE_SECRET_KEY
 ENV SITE_URL=$SITE_URL
+ENV PUBLIC_SUPABASE_URL=$SUPABASE_URL
+ENV CHAT_PORT=3001
 RUN npm run build
 
-# Expose port (Railway uses dynamic PORT)
+# Expose ports (Railway uses dynamic PORT for main app, 3001 for Socket.io)
 EXPOSE $PORT
+EXPOSE 3001
 
 # Set environment variables for production
 ENV NODE_ENV=production
 ENV HOST=0.0.0.0
 ENV PORT=$PORT
 
-# Start the application
-CMD ["node", "./dist/server/entry.mjs"] 
+# Start both the Astro application and Socket.io server
+CMD ["./start-production.sh"] 
