@@ -20,7 +20,13 @@ import tailwind from "@astrojs/tailwind";
 
 // Load environment variables
 import { loadEnv } from "vite";
+import { hexToRgb } from "./src/lib/color-utils.ts";
+
 const env = loadEnv(process.env.NODE_ENV || "development", process.cwd(), "");
+
+// Generate RGB version of primary color automatically
+const primaryColor = env.PRIMARY_COLOR || "#825BDD";
+const primaryColorRgb = hexToRgb(primaryColor);
 
 // https://astro.build/config
 export default defineConfig({
@@ -57,6 +63,9 @@ export default defineConfig({
       "process.env.GOOGLE_MAPS_API_KEY": JSON.stringify(env.GOOGLE_MAPS_API_KEY),
       // Site URL for proper redirects
       "process.env.SITE_URL": JSON.stringify(env.SITE_URL || "https://capcofire.com"),
+      // Email template variables
+      "process.env.EMAIL_LOGO_LIGHT": JSON.stringify(env.EMAIL_LOGO_LIGHT),
+      "process.env.COMPANY_LOGO_LIGHT": JSON.stringify(env.COMPANY_LOGO_LIGHT),
       // Stripe environment variables
       "process.env.STRIPE_SECRET_KEY": JSON.stringify(env.STRIPE_SECRET_KEY),
       "process.env.STRIPE_PUBLISHABLE_KEY": JSON.stringify(env.PUBLIC_STRIPE_PUBLISHABLE_KEY),
