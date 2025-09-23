@@ -13,7 +13,8 @@ import { supabase } from "../lib/supabase";
 
 // Get auth data directly since App component handles auth requirements
 import { checkAuth } from "../lib/auth";
-const { isAuth, currentUser, currentRole, session } = await checkAuth(Astro.cookies);
+const { isAuth, currentUser, session } = await checkAuth(Astro.cookies);
+const currentRole = currentUser?.profile?.role || "";
 
 // Auth data comes from props (already set up above)
 
@@ -100,9 +101,7 @@ function getAuthorName(discussion: any): string {
 <App 
   title="Global Discussions - CAPCo Fire Protection" 
   description="View all project discussions and comments across all projects." 
-  isAuth={isAuth || false}
   currentUser={currentUser || null}
-  currentRole={currentRole || ""}
   session={session || null}
 >
   <!-- Header Section -->
