@@ -18,9 +18,9 @@ export function lockBodyScroll(): void {
     body.style.top = `-${originalScrollY}px`;
     body.classList.add("modal-open");
 
-    console.log("🔒 [SCROLL-LOCK] Body scroll locked at position:", originalScrollY);
+    // console.log("🔒 [SCROLL-LOCK] Body scroll locked at position:", originalScrollY);
   } else {
-    console.log("🔒 [SCROLL-LOCK] Additional modal opened, scroll already locked");
+    // console.log("🔒 [SCROLL-LOCK] Additional modal opened, scroll already locked");
   }
 }
 
@@ -40,9 +40,9 @@ export function unlockBodyScroll(): void {
       window.scrollTo(0, originalScrollY);
     }
 
-    console.log("🔓 [SCROLL-LOCK] Body scroll unlocked, restored to position:", originalScrollY);
+    // console.log("🔓 [SCROLL-LOCK] Body scroll unlocked, restored to position:", originalScrollY);
   } else {
-    console.log("🔓 [SCROLL-LOCK] Modal closed, but other modals still open");
+    // console.log("🔓 [SCROLL-LOCK] Modal closed, but other modals still open");
   }
 }
 
@@ -54,7 +54,7 @@ export function forceUnlockBodyScroll(): void {
   body.classList.remove("modal-open");
   body.style.top = "";
 
-  console.log("🔓 [SCROLL-LOCK] Force unlocked body scroll");
+  // console.log("🔓 [SCROLL-LOCK] Force unlocked body scroll");
 }
 
 // Auto-cleanup on page unload

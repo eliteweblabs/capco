@@ -35,7 +35,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       );
     }
 
-    console.log("🔔 [UPDATE-PUNCHLIST-COMPLETED] Updating punchlist completion status:", {
+    // console.log("🔔 [UPDATE-PUNCHLIST-COMPLETED] Updating punchlist completion status:", {
       punchlistId,
       mark_completed,
       userId: currentUser.id,
@@ -106,11 +106,11 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       );
     }
 
-    console.log("✅ [UPDATE-PUNCHLIST-COMPLETED] Punchlist completion status updated successfully");
+    // console.log("✅ [UPDATE-PUNCHLIST-COMPLETED] Punchlist completion status updated successfully");
 
     // Log the punchlist toggle to project activity
     try {
-      console.log("📝 [UPDATE-PUNCHLIST-COMPLETED] Logging punchlist toggle:", {
+      // console.log("📝 [UPDATE-PUNCHLIST-COMPLETED] Logging punchlist toggle:", {
         projectId: punchlistItem.project_id,
         punchlistId: punchlistId,
         isCompleted: mark_completed,
@@ -125,7 +125,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         (punchlistItem.message?.substring(0, 50) || "No message") + "..."
       );
 
-      console.log("✅ [UPDATE-PUNCHLIST-COMPLETED] Project logging completed successfully");
+      // console.log("✅ [UPDATE-PUNCHLIST-COMPLETED] Project logging completed successfully");
     } catch (logError) {
       console.error("❌ [UPDATE-PUNCHLIST-COMPLETED] Project logging failed:", logError);
       // Don't fail the entire request if logging fails

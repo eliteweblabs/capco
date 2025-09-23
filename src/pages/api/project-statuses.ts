@@ -40,7 +40,7 @@ function filteredStatusObj(statusObj: any, role: string, placeholderData?: any) 
       ? replacePlaceholders(originalAction, placeholderData)
       : originalAction || null;
 
-    console.log("🔍 [PROJECT-STATUSES-API] Client status action replacement:", {
+    // console.log("🔍 [PROJECT-STATUSES-API] Client status action replacement:", {
       original: originalAction,
       replaced: filteredStatusObj.status_action,
       hasPlaceholderData: !!placeholderData,
@@ -55,7 +55,7 @@ function filteredStatusObj(statusObj: any, role: string, placeholderData?: any) 
       ? replacePlaceholders(originalAction, placeholderData)
       : originalAction || null;
 
-    console.log("🔍 [PROJECT-STATUSES-API] Admin status action replacement:", {
+    // console.log("🔍 [PROJECT-STATUSES-API] Admin status action replacement:", {
       original: originalAction,
       replaced: filteredStatusObj.status_action,
       hasPlaceholderData: !!placeholderData,
@@ -70,7 +70,7 @@ function filteredStatusObj(statusObj: any, role: string, placeholderData?: any) 
       placeholderData
     );
 
-    console.log("🔍 [PROJECT-STATUSES-API] Final status action replacement:", {
+    // console.log("🔍 [PROJECT-STATUSES-API] Final status action replacement:", {
       original: originalFinalAction,
       replaced: filteredStatusObj.final_status_action,
       hasPlaceholderData: !!placeholderData,
@@ -200,7 +200,7 @@ export const GET: APIRoute = async ({ request, cookies, url }) => {
           }
         : null;
 
-    console.log("🔍 [PROJECT-STATUSES-API] Placeholder data:", placeholderData);
+    // console.log("🔍 [PROJECT-STATUSES-API] Placeholder data:", placeholderData);
 
     // Process statuses for the current user's role with placeholder processing
     const roleBasedStatuses = statuses.reduce((acc: any, status: any) => {
@@ -232,7 +232,7 @@ export const GET: APIRoute = async ({ request, cookies, url }) => {
         status_slug: processedStatus.status_slug,
       };
 
-      console.log("🔍 [PROJECT-STATUSES-API] Processed status:", acc);
+      // console.log("🔍 [PROJECT-STATUSES-API] Processed status:", acc);
 
       return acc;
     }, {});

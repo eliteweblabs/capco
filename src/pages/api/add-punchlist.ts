@@ -31,13 +31,13 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       });
     }
 
-    console.log("🔔 [ADD-PUNCHLIST] Adding punchlist item:", {
-      projectId,
-      message: message.substring(0, 50) + "...",
-      internal,
-      parentId,
-      userId: currentUser.id,
-    });
+    // console.log("🔔 [ADD-PUNCHLIST] Adding punchlist item:", {
+    //   projectId,
+    //   message: message.substring(0, 50) + "...",
+    //   internal,
+    //   parentId,
+    //   userId: currentUser.id,
+    // });
 
     // Get user profile for company_name
     const { data: profile } = await supabase
@@ -80,7 +80,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       );
     }
 
-    console.log("✅ [ADD-PUNCHLIST] Punchlist item created successfully:", punchlistData.id);
+    // console.log("✅ [ADD-PUNCHLIST] Punchlist item created successfully:", punchlistData.id);
 
     // Log the punchlist item creation
     if (typeof window !== "undefined" && (window as any).SimpleProjectLogger) {

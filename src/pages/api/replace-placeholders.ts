@@ -2,10 +2,10 @@ import type { APIRoute } from "astro";
 
 // 🚧 DEAD STOP - 2024-12-19: Potentially unused API endpoint
 // If you see this log after a few days, this endpoint can likely be deleted
-console.log("🚧 [DEAD-STOP-2024-12-19] replace-placeholders.ts accessed - may be unused");
+// console.log("🚧 [DEAD-STOP-2024-12-19] replace-placeholders.ts accessed - may be unused");
 
 // 🔍 PLACEHOLDER DEBUG - Status Action Fields
-console.log("🔍 [PLACEHOLDER-DEBUG] replace-placeholders.ts - Checking for status action fields");
+// console.log("🔍 [PLACEHOLDER-DEBUG] replace-placeholders.ts - Checking for status action fields");
 
 export const OPTIONS: APIRoute = async () => {
   return new Response(null, {
@@ -34,7 +34,7 @@ export const POST: APIRoute = async ({ request }) => {
       );
     }
 
-    console.log("🔄 [REPLACE-PLACEHOLDERS] Received data:", { mergedData, placeholderData });
+    // console.log("🔄 [REPLACE-PLACEHOLDERS] Received data:", { mergedData, placeholderData });
 
     // Replace placeholders in modal messages
     const replacePlaceholders = (message: string, data: any) => {
@@ -134,7 +134,7 @@ export const POST: APIRoute = async ({ request }) => {
       status_action: replacePlaceholders(mergedData.statusConfig.status_action, placeholderData),
     };
 
-    console.log("🔄 [REPLACE-PLACEHOLDERS] Processed messages:", processedMessages);
+    // console.log("🔄 [REPLACE-PLACEHOLDERS] Processed messages:", processedMessages);
 
     return new Response(
       JSON.stringify({

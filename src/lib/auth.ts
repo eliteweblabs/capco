@@ -84,7 +84,7 @@ export async function checkAuth(cookies: any): Promise<AuthResult> {
               errorMessage: profileError?.message,
             });
 
-            console.log("🔐 [AUTH] currentUser object after failed profile query:", {
+            // console.log("🔐 [AUTH] currentUser object after failed profile query:", {
               hasCurrentUser: !!currentUser,
               currentUserKeys: Object.keys(currentUser),
               hasProfile: !!currentUser.profile,

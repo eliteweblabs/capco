@@ -4,7 +4,7 @@ import { supabaseAdmin } from "../../lib/supabase-admin";
 
 // 🚧 DEAD STOP - 2024-12-19: Potentially unused API endpoint
 // If you see this log after a few days, this endpoint can likely be deleted
-console.log("🚧 [DEAD-STOP-2024-12-19] get-team-users.ts accessed - may be unused");
+// console.log("🚧 [DEAD-STOP-2024-12-19] get-team-users.ts accessed - may be unused");
 
 export const GET: APIRoute = async ({ request, cookies }) => {
   // console.log("📡 [API] GET /api/get-staff-users called");
@@ -13,7 +13,7 @@ export const GET: APIRoute = async ({ request, cookies }) => {
     // console.log("📡 [API] Checking Supabase configuration...");
 
     if (!supabase) {
-      console.log("📡 [API] Supabase not configured, returning demo staff users");
+      // console.log("📡 [API] Supabase not configured, returning demo staff users");
 
       // // Return demo staff users when database is not configured
       // const demoStaffUsers = [
@@ -102,7 +102,7 @@ export const GET: APIRoute = async ({ request, cookies }) => {
     // });
 
     if (userError || !user) {
-      console.log("📡 [API] No authenticated user, returning demo staff users");
+      // console.log("📡 [API] No authenticated user, returning demo staff users");
 
       // Return demo staff for unauthenticated users
       const demoStaffUsers = [
@@ -141,10 +141,10 @@ export const GET: APIRoute = async ({ request, cookies }) => {
 
     // Only admins and staff can view staff list
     if (userRole !== "Admin" && userRole !== "Staff") {
-      console.log(`📡 [API] User role is: ${userRole}, denying access to staff list`);
+      // console.log(`📡 [API] User role is: ${userRole}, denying access to staff list`);
 
       // TEMPORARY: Allow all users to view staff list for debugging
-      console.log("📡 [API] TEMPORARY: Allowing access for debugging purposes");
+      // console.log("📡 [API] TEMPORARY: Allowing access for debugging purposes");
 
       // Uncomment the return statement below to restore proper authorization
       /*
@@ -254,7 +254,7 @@ export const GET: APIRoute = async ({ request, cookies }) => {
       if (staffUsersFromAll && staffUsersFromAll.length > 0) {
         finalStaffUsers = staffUsersFromAll;
         message = `Found ${staffUsersFromAll.length} staff member(s) via alternative query`;
-        console.log("📡 [API] Using alternative query results for staff users");
+        // console.log("📡 [API] Using alternative query results for staff users");
       }
     }
 

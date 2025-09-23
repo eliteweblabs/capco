@@ -4,7 +4,7 @@ import { supabaseAdmin } from "../../lib/supabase-admin";
 
 export const DELETE: APIRoute = async ({ request, cookies }) => {
   try {
-    console.log("Delete project API called");
+    // console.log("Delete project API called");
 
     // Check if Supabase is configured
     if (!supabase) {
@@ -19,8 +19,8 @@ export const DELETE: APIRoute = async ({ request, cookies }) => {
     const accessToken = cookies.get("sb-access-token")?.value;
     const refreshToken = cookies.get("sb-refresh-token")?.value;
 
-    console.log("Access token:", accessToken ? "Present" : "Missing");
-    console.log("Refresh token:", refreshToken ? "Present" : "Missing");
+    // console.log("Access token:", accessToken ? "Present" : "Missing");
+    // console.log("Refresh token:", refreshToken ? "Present" : "Missing");
 
     if (!accessToken || !refreshToken) {
       console.error("Not authenticated - missing tokens");
@@ -31,7 +31,7 @@ export const DELETE: APIRoute = async ({ request, cookies }) => {
     }
 
     // Set up session with regular supabase client
-    console.log("Setting up session...");
+    // console.log("Setting up session...");
     const {
       data: { user },
       error: authError,
@@ -51,13 +51,13 @@ export const DELETE: APIRoute = async ({ request, cookies }) => {
       );
     }
 
-    console.log("User authenticated:", user.id);
+    // console.log("User authenticated:", user.id);
 
     // Get the request body
     let requestBody;
     try {
       requestBody = await request.json();
-      console.log("Request body:", requestBody);
+      // console.log("Request body:", requestBody);
     } catch (parseError) {
       console.error("Error parsing request body:", parseError);
       return new Response(JSON.stringify({ error: "Invalid request body format" }), {
@@ -87,10 +87,10 @@ export const DELETE: APIRoute = async ({ request, cookies }) => {
       });
     }
 
-    console.log("Project ID:", projectIdNum);
+    // console.log("Project ID:", projectIdNum);
 
     // Check if project exists and user has permission to delete it
-    console.log("Looking up project:", projectIdNum);
+    // console.log("Looking up project:", projectIdNum);
     const { data: project, error: projectError } = await supabase
       .from("projects")
       .select("id, author_id")
@@ -135,7 +135,7 @@ export const DELETE: APIRoute = async ({ request, cookies }) => {
     }
 
     // Delete associated files first (cascade delete)
-    console.log("Deleting associated files...");
+    // console.log("Deleting associated files...");
 
     if (!supabaseAdmin) {
       console.error("Database not configured - supabase admin client not available");
@@ -153,12 +153,12 @@ export const DELETE: APIRoute = async ({ request, cookies }) => {
     if (filesQueryError) {
       console.error("Error querying project files:", filesQueryError);
     } else {
-      console.log(`Found ${projectFiles?.length || 0} files to delete`);
+      // console.log(`Found ${projectFiles?.length || 0} files to delete`);
 
       // Delete files from storage
       if (projectFiles && projectFiles.length > 0) {
         const filePaths = projectFiles.map((file) => file.file_path);
-        console.log("Deleting files from storage:", filePaths);
+        // console.log("Deleting files from storage:", filePaths);
 
         const { error: storageDeleteError } = await supabase.storage
           .from("project-media")
@@ -167,7 +167,7 @@ export const DELETE: APIRoute = async ({ request, cookies }) => {
         if (storageDeleteError) {
           console.error("Error deleting files from storage:", storageDeleteError);
         } else {
-          console.log("Files deleted from storage successfully");
+          // console.log("Files deleted from storage successfully");
         }
       }
     }
@@ -181,11 +181,11 @@ export const DELETE: APIRoute = async ({ request, cookies }) => {
     if (filesDeleteError) {
       console.error("Error deleting project files from database:", filesDeleteError);
     } else {
-      console.log("File records deleted from database successfully");
+      // console.log("File records deleted from database successfully");
     }
 
     // Delete the project using admin client to bypass RLS
-    console.log("Deleting project...");
+    // console.log("Deleting project...");
     const { error: deleteError } = await supabaseAdmin
       .from("projects")
       .delete()

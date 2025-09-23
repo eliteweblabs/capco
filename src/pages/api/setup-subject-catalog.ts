@@ -28,7 +28,7 @@ export const POST: APIRoute = async ({ cookies }) => {
       });
     }
 
-    console.log("🔧 Setting up subject_catalog table...");
+    // console.log("🔧 Setting up subject_catalog table...");
 
     // Try to insert default subjects
     const defaultSubjects = [
@@ -84,7 +84,7 @@ export const POST: APIRoute = async ({ cookies }) => {
       },
     ];
 
-    console.log("📝 Inserting default subjects...");
+    // console.log("📝 Inserting default subjects...");
     const { error: insertError } = await supabase
       .from("subject_catalog")
       .upsert(defaultSubjects, { onConflict: "subject" });
@@ -103,7 +103,7 @@ export const POST: APIRoute = async ({ cookies }) => {
       );
     }
 
-    console.log("✅ Default subjects inserted successfully");
+    // console.log("✅ Default subjects inserted successfully");
 
     return new Response(
       JSON.stringify({

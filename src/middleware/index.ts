@@ -56,9 +56,15 @@ export const onRequest = defineMiddleware(async ({ locals, url, cookies, redirec
       // If profile doesn't exist, create it automatically
       if (profileError && profileError.code === "PGRST116") {
         // console.log(
+<<<<<<< HEAD
         //   "🔐 [MIDDLEWARE] User profile not found, creating missing profile for user:",
         //   data.user.id
         // );
+=======
+          "🔐 [MIDDLEWARE] User profile not found, creating missing profile for user:",
+          data.user.id
+        );
+>>>>>>> 0ecd353db3dfed7cd138b6c46f450566f027a497
 
         const firstName = data.user.user_metadata?.first_name || "";
         const lastName = data.user.user_metadata?.last_name || "";
