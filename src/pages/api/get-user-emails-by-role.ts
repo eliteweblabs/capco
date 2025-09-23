@@ -105,7 +105,7 @@ export const POST: APIRoute = async ({ request }) => {
             //   `📧 [GET-USER-EMAILS-BY-ROLE] Found email for user ID ${user.id}: ${user.email}`
             // );
           } else {
-            console.log(`📧 [GET-USER-EMAILS-BY-ROLE] No email found for user ID ${user.id}`);
+            // console.log(`📧 [GET-USER-EMAILS-BY-ROLE] No email found for user ID ${user.id}`);
           }
         }
       }

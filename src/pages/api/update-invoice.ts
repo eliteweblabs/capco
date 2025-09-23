@@ -3,7 +3,7 @@ import { supabase } from "../../lib/supabase";
 
 // 🚧 DEAD STOP - 2024-12-19: Potentially unused API endpoint
 // If you see this log after a few days, this endpoint can likely be deleted
-console.log("🚧 [DEAD-STOP-2024-12-19] update-invoice.ts accessed - may be unused");
+// console.log("🚧 [DEAD-STOP-2024-12-19] update-invoice.ts accessed - may be unused");
 
 export const POST: APIRoute = async ({ request }) => {
   try {
@@ -16,7 +16,7 @@ export const POST: APIRoute = async ({ request }) => {
       });
     }
 
-    console.log("Updating invoice:", { invoiceId, lineItems, notes });
+    // console.log("Updating invoice:", { invoiceId, lineItems, notes });
 
     if (!supabase) {
       return new Response(JSON.stringify({ error: "Database connection not available" }), {

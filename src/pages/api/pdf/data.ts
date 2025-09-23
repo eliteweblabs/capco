@@ -15,7 +15,7 @@ export const GET: APIRoute = async ({ request, url }) => {
       );
     }
 
-    console.log(`📄 [PDF-DATA] Fetching data for project: ${projectId}`);
+    // console.log(`📄 [PDF-DATA] Fetching data for project: ${projectId}`);
 
     if (!supabase) {
       return new Response(
@@ -110,7 +110,7 @@ export const GET: APIRoute = async ({ request, url }) => {
       console.error("❌ [PDF-DATA] Error fetching files:", filesError);
     }
 
-    console.log(`✅ [PDF-DATA] Successfully prepared placeholder data for project ${projectId}`);
+    // console.log(`✅ [PDF-DATA] Successfully prepared placeholder data for project ${projectId}`);
 
     return new Response(
       JSON.stringify({

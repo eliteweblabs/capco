@@ -3,7 +3,7 @@ import { setAuthCookies } from "../../../lib/auth-cookies";
 import { supabase } from "../../../lib/supabase";
 
 export const GET: APIRoute = async ({ url, cookies, redirect }) => {
-  console.log("Auth callback started");
+  // console.log("Auth callback started");
 
   // Check if Supabase is configured
   if (!supabase) {
@@ -13,16 +13,16 @@ export const GET: APIRoute = async ({ url, cookies, redirect }) => {
 
   // Get the auth code from the URL
   const authCode = url.searchParams.get("code");
-  console.log("Auth code received:", authCode ? "present" : "missing");
+  // console.log("Auth code received:", authCode ? "present" : "missing");
 
   if (!authCode) {
-    console.log("No auth code provided, redirecting to home");
+    // console.log("No auth code provided, redirecting to home");
     return redirect("/");
   }
 
   try {
-    console.log("Attempting to exchange code for session...");
-    console.log("Full URL params:", Object.fromEntries(url.searchParams.entries()));
+    // console.log("Attempting to exchange code for session...");
+    // console.log("Full URL params:", Object.fromEntries(url.searchParams.entries()));
 
     // Exchange the code for a session
     const { data, error } = await supabase.auth.exchangeCodeForSession(authCode);
@@ -36,7 +36,7 @@ export const GET: APIRoute = async ({ url, cookies, redirect }) => {
 
       // If it's a PKCE error, redirect to home with error message
       if (error.message.includes("code verifier")) {
-        console.log("PKCE error detected, redirecting to home");
+        // console.log("PKCE error detected, redirecting to home");
         return redirect("/?error=oauth_failed");
       }
 
@@ -45,21 +45,21 @@ export const GET: APIRoute = async ({ url, cookies, redirect }) => {
       });
     }
 
-    console.log("Session exchange successful:", !!data.session);
+    // console.log("Session exchange successful:", !!data.session);
 
     if (!data.session) {
       return new Response("No session created", { status: 400 });
     }
 
     const { access_token, refresh_token } = data.session;
-    console.log("Tokens received:", !!access_token, !!refresh_token);
+    // console.log("Tokens received:", !!access_token, !!refresh_token);
 
     // Profile will be automatically created by database trigger
 
     // Use shared utility for consistent cookie handling
     setAuthCookies(cookies, access_token, refresh_token);
 
-    console.log("Cookies set, redirecting to dashboard");
+    // console.log("Cookies set, redirecting to dashboard");
     return redirect("/dashboard");
   } catch (error) {
     console.error("Unexpected error in auth callback:", error);
@@ -71,7 +71,7 @@ export const GET: APIRoute = async ({ url, cookies, redirect }) => {
 };
 
 export const POST: APIRoute = async ({ request, cookies }) => {
-  console.log("🔐 [MAGIC-LINK] POST callback started");
+  // console.log("🔐 [MAGIC-LINK] POST callback started");
 
   // Check if Supabase is configured
   if (!supabase) {
@@ -86,7 +86,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     const body = await request.json();
     const { access_token, refresh_token, expires_in, token_type } = body;
 
-    console.log("🔐 [MAGIC-LINK] Received tokens:", {
+    // console.log("🔐 [MAGIC-LINK] Received tokens:", {
       hasAccessToken: !!access_token,
       hasRefreshToken: !!refresh_token,
       expiresIn: expires_in,
@@ -123,12 +123,12 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       });
     }
 
-    console.log("✅ [MAGIC-LINK] Session verified for user:", data.user?.email);
+    // console.log("✅ [MAGIC-LINK] Session verified for user:", data.user?.email);
 
     // Set auth cookies using the verified session tokens
     setAuthCookies(cookies, data.session.access_token, data.session.refresh_token);
 
-    console.log("✅ [MAGIC-LINK] Auth cookies set successfully");
+    // console.log("✅ [MAGIC-LINK] Auth cookies set successfully");
 
     return new Response(
       JSON.stringify({

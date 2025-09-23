@@ -16,7 +16,7 @@ export const POST: APIRoute = async ({ request }) => {
       );
     }
 
-    console.log(`📄 [PDF-DOWNLOAD] Generating PDF for: ${documentName}`);
+    // console.log(`📄 [PDF-DOWNLOAD] Generating PDF for: ${documentName}`);
 
     // Launch Puppeteer
     const browser = await puppeteer.launch({
@@ -47,7 +47,7 @@ export const POST: APIRoute = async ({ request }) => {
 
       await browser.close();
 
-      console.log(`✅ [PDF-DOWNLOAD] Successfully generated PDF for: ${documentName}`);
+      // console.log(`✅ [PDF-DOWNLOAD] Successfully generated PDF for: ${documentName}`);
 
       // Return the PDF as a downloadable file
       const sanitizedFileName = documentName.replace(/[^a-zA-Z0-9\s-_]/g, "_");

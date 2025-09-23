@@ -120,7 +120,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
     // this used to use modal_auto_redirect_admin and modal_auto_redirect_client
 
-    console.log("📊 [UPDATE-STATUS] Updating project status:", { projectId, newStatus, oldStatus });
+    // console.log("📊 [UPDATE-STATUS] Updating project status:", { projectId, newStatus, oldStatus });
 
     // Update project status
     const { data: updatedProject, error: updateError } = await supabase
@@ -154,17 +154,17 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     // Get status data after successful update
     // Get base URL using the proper utility function
     const baseUrl = getApiBaseUrl(request);
-    
+
     // Extract cookies from the original request to pass to the internal API call
     const cookieHeader = request.headers.get("cookie");
-    
+
     const statusDataResponse = await fetch(
       `${baseUrl}/api/project-statuses?status_code=${newStatus}`,
       {
         method: "GET",
         headers: {
           "Content-Type": "application/json",
-          ...(cookieHeader && { "Cookie": cookieHeader }),
+          ...(cookieHeader && { Cookie: cookieHeader }),
         },
       }
     );
@@ -229,6 +229,19 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
       // console.log("📊 [UPDATE-STATUS] Placeholder data prepared:", placeholderData);
 
+      // [DOES THIS NEED PLACEHOLDER UTIL?] - Check if this API call is still necessary
+      // console.log("🔍 [PLACEHOLDER-DEBUG] About to call replace-placeholders API");
+      // console.log("🔍 [PLACEHOLDER-DEBUG] mergedData keys:", Object.keys(mergedData));
+      // console.log("🔍 [PLACEHOLDER-DEBUG] placeholderData keys:", Object.keys(placeholderData));
+      // console.log(
+        "🔍 [PLACEHOLDER-DEBUG] modal_admin before API:",
+        mergedData.statusConfig?.modal_admin
+      );
+      // console.log(
+        "🔍 [PLACEHOLDER-DEBUG] modal_client before API:",
+        mergedData.statusConfig?.modal_client
+      );
+
       // Call placeholder replacement API
       const placeholderResponse = await fetch(`${baseUrl}/api/replace-placeholders`, {
         method: "POST",
@@ -240,7 +253,15 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
       if (placeholderResponse.ok) {
         const placeholderResult = await placeholderResponse.json();
-        console.log("📊 [UPDATE-STATUS] Placeholders replaced:", placeholderResult);
+        // console.log("📊 [UPDATE-STATUS] Placeholders replaced:", placeholderResult);
+        // console.log(
+          "🔍 [PLACEHOLDER-DEBUG] modal_admin after API:",
+          placeholderResult.processedMessages?.modal_admin
+        );
+        // console.log(
+          "🔍 [PLACEHOLDER-DEBUG] modal_client after API:",
+          placeholderResult.processedMessages?.modal_client
+        );
 
         // Process redirect URLs to replace placeholders
         const processRedirectUrl = (url: string) => {
@@ -403,7 +424,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         /*
         // Send push notifications to all relevant users
         try {
-          console.log("📱 [UPDATE-STATUS] Sending push notifications...");
+          // console.log("📱 [UPDATE-STATUS] Sending push notifications...");
 
           // Prepare push notification data
           const pushNotificationData = {
@@ -444,7 +465,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
           if (notificationResponse.ok) {
             const notificationResult = await notificationResponse.json();
-            console.log("📱 [UPDATE-STATUS] Notifications stored:", notificationResult);
+            // console.log("📱 [UPDATE-STATUS] Notifications stored:", notificationResult);
           } else {
             console.error("📱 [UPDATE-STATUS] Failed to store notifications");
           }

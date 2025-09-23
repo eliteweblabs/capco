@@ -21,7 +21,7 @@ try {
     data: { user },
   } = await supabase.auth.getUser();
 
-  console.log("🔔 [SOCKETIO-TEST] Auth user:", user);
+  // console.log("🔔 [SOCKETIO-TEST] Auth user:", user);
 
   if (user) {
     // Get user profile data (should exist due to middleware)
@@ -31,8 +31,8 @@ try {
       .eq("id", user.id)
       .single();
 
-    console.log("🔔 [SOCKETIO-TEST] Profile data:", profile);
-    console.log("🔔 [SOCKETIO-TEST] Profile error:", profileError);
+    // console.log("🔔 [SOCKETIO-TEST] Profile data:", profile);
+    // console.log("🔔 [SOCKETIO-TEST] Profile error:", profileError);
 
     if (profileError) {
       console.error(
@@ -56,10 +56,10 @@ try {
       currentRole = profile.role || "Client";
     }
 
-    console.log("🔔 [SOCKETIO-TEST] Final user data:", currentUser);
-    console.log("🔔 [SOCKETIO-TEST] Final role:", currentRole);
+    // console.log("🔔 [SOCKETIO-TEST] Final user data:", currentUser);
+    // console.log("🔔 [SOCKETIO-TEST] Final role:", currentRole);
   } else {
-    console.log("🔔 [SOCKETIO-TEST] No authenticated user, using fallback");
+    // console.log("🔔 [SOCKETIO-TEST] No authenticated user, using fallback");
     // Fallback to test data if no authenticated user
     currentUser = {
       id: "test-user-123",
@@ -344,7 +344,7 @@ try {
   </div>
 
   <!-- Socket.io Chat Widget -->
-  <SocketChatWidget currentUser={currentUser} currentRole={currentRole} />
+  <SocketChatWidget currentUser={currentUser} />
 </App>
 
 <script>
@@ -368,7 +368,7 @@ try {
   document.addEventListener("DOMContentLoaded", () => {
     // Check if Socket.io is available
     if (typeof (window as any).io !== "undefined") {
-      console.log("🔔 [SOCKETIO-TEST] Socket.io library loaded");
+      // console.log("🔔 [SOCKETIO-TEST] Socket.io library loaded");
 
       // Try to connect to test server status
       const testSocket = (window as any).io("http://localhost:3001", {
@@ -377,13 +377,13 @@ try {
       });
 
       testSocket.on("connect", () => {
-        console.log("✅ [SOCKETIO-TEST] Test connection successful");
+        // console.log("✅ [SOCKETIO-TEST] Test connection successful");
         updateConnectionStatus(true);
         testSocket.disconnect();
       });
 
       testSocket.on("connect_error", (error: any) => {
-        console.log("❌ [SOCKETIO-TEST] Test connection failed:", error.message);
+        // console.log("❌ [SOCKETIO-TEST] Test connection failed:", error.message);
         updateConnectionStatus(false);
       });
 
@@ -394,7 +394,7 @@ try {
         }
       }, 5000);
     } else {
-      console.log("❌ [SOCKETIO-TEST] Socket.io library not loaded");
+      // console.log("❌ [SOCKETIO-TEST] Socket.io library not loaded");
       updateConnectionStatus(false);
     }
   });

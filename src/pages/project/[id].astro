@@ -37,7 +37,7 @@ if (requireAuthRedirect && (!session || !currentUser)) {
 import { isBackendPage } from "../../pages/api/backend-page-check";
 
 // Debug: Let's see what's actually in currentUser
-console.log("🔍 [PROJECT PAGE] currentUser object:", {
+// console.log("🔍 [PROJECT PAGE] currentUser object:", {
   hasCurrentUser: !!currentUser,
   currentUserId: currentUser?.id,
   hasProfile: !!currentUser?.profile,
@@ -130,7 +130,7 @@ let statusesObject: any = {};
 let invoiceResult = { data: null, error: null };
 
 if (supabase) {
-  console.log("🔍 [PROJECT-DEBUG] Looking for project with ID:", id, "Type:", typeof id);
+  // console.log("🔍 [PROJECT-DEBUG] Looking for project with ID:", id, "Type:", typeof id);
 
   // OPTIMIZED: Run all database queries in parallel for much faster loading
   const [projectResult, invoiceResultData, statusesResultData] = await Promise.all([
@@ -152,9 +152,9 @@ if (supabase) {
   // Assign the statuses result (legacy - will be replaced)
   statusesResult = statusesResultData;
 
-  console.log("🔍 [PROJECT-DEBUG] Project query result:", projectResult);
-  console.log("🔍 [PROJECT-DEBUG] Project data:", projectResult.data);
-  console.log("🔍 [PROJECT-DEBUG] Project error:", projectResult.error);
+  // console.log("🔍 [PROJECT-DEBUG] Project query result:", projectResult);
+  // console.log("🔍 [PROJECT-DEBUG] Project data:", projectResult.data);
+  // console.log("🔍 [PROJECT-DEBUG] Project error:", projectResult.error);
 
   project = projectResult.data;
   // console.log("🔍 [PROJECT] Project data:", project.featured_image_data);
@@ -182,7 +182,7 @@ if (supabase) {
   let statusData: any = { success: false, roleBasedStatuses: {}, statusesMap: {} };
   if (statusResponse.ok) {
     statusData = await statusResponse.json();
-    console.log("✅ [PROJECT] Unified status API response received:", statusData);
+    // console.log("✅ [PROJECT] Unified status API response received:", statusData);
   } else {
     console.error(
       "❌ [PROJECT] Status API failed:",
@@ -191,29 +191,30 @@ if (supabase) {
     );
   }
 
+  // console.log("🔍 [PROJECT] Status data:", statusData);
   // Use unified API data if available
   if (statusData.success) {
     statusesObject = statusData.roleBasedStatuses;
-    console.log(
+    // console.log(
       "🔍 [PROJECT-SERVER] Looking for status code:",
       project.status,
       "type:",
       typeof project.status
     );
-    console.log("🔍 [PROJECT-SERVER] Available status codes:", Object.keys(statusesObject));
-    console.log(
+    // console.log("🔍 [PROJECT-SERVER] Available status codes:", Object.keys(statusesObject));
+    // console.log(
       "🔍 [PROJECT-SERVER] Available status codes types:",
       Object.keys(statusesObject).map((k) => `${k} (${typeof k})`)
     );
-    console.log(
+    // console.log(
       "🔍 [PROJECT-SERVER] Status object for project.status:",
       statusesObject[project.status]
     );
-    console.log(
+    // console.log(
       "🔍 [PROJECT-SERVER] Status object for project.status (string):",
       statusesObject[project.status.toString()]
     );
-    console.log(
+    // console.log(
       "🔍 [PROJECT-SERVER] Status object for project.status (number):",
       statusesObject[Number(project.status)]
     );
@@ -224,26 +225,15 @@ if (supabase) {
   currentStatusName = currentStatusObj.status_name || null;
   currentStatusInt = project.status || 0;
   currentStatusColor = currentStatusObj.status_color || "gray";
-  currentStatusProjectAction = currentStatusObj.project_action || null;
-
-  console.log("🔍 [PROJECT] Current currentStatusObj:", currentStatusObj);
-  console.log("🔍 [PROJECT] Current currentStatusObj keys:", Object.keys(currentStatusObj));
-  console.log(
-    "🔍 [PROJECT] Current currentStatusObj.project_action:",
-    currentStatusObj.project_action
-  );
-  console.log("🔍 [PROJECT] Current currentStatusProjectAction:", currentStatusProjectAction);
-  console.log("🔍 [PROJECT] Project status:", project.status);
-  console.log("🔍 [PROJECT] StatusesObject keys:", Object.keys(statusesObject));
-  console.log("🔍 [PROJECT] StatusesObject values:", Object.values(statusesObject));
+  currentStatusProjectAction = currentStatusObj.status_action || null;
 
   // Define variables for component props
 
   // Convert statusesObject back to array for components that expect it
   statuses = Object.values(statusesObject);
 
-  console.log("🔍 [PROJECT] Current statusesObject:", statusesObject);
-  console.log("🔍 [PROJECT] Current statuses:", statuses);
+  // console.log("🔍 [PROJECT] Current statusesObject:", statusesObject);
+  // console.log("🔍 [PROJECT] Current statuses:", statuses);
 
   // console.log("🔍 [PROJECT] Current status object:", currentStatusObj);
   // console.log("🔍 [PROJECT] Current status tab:", currentStatusTab);
@@ -255,7 +245,7 @@ if (supabase) {
   // Check project query result
   if (projectResult.error) {
     console.error("Error fetching project:", projectResult.error);
-    console.log("🌐 [PROJECT] Project not found or no access, redirecting to dashboard");
+    // console.log("🌐 [PROJECT] Project not found or no access, redirecting to dashboard");
     return Astro.redirect("/dashboard");
   }
 
@@ -775,10 +765,10 @@ if (!project) {
 
   // Check for project action modal on page load
   function checkProjectActionModal() {
-    console.log("🔍 [PROJECT] Checking for project action:", currentStatusProjectAction);
+    // console.log("🔍 [PROJECT] Checking for project action:", currentStatusProjectAction);
 
     if (currentStatusProjectAction && currentStatusProjectAction.trim() !== "") {
-      console.log("🚀 [PROJECT] Found project action, showing modal:", currentStatusProjectAction);
+      // console.log("🚀 [PROJECT] Found project action, showing modal:", currentStatusProjectAction);
 
       // Show modal with project action content
       if (typeof window.showModal === "function") {
@@ -793,7 +783,7 @@ if (!project) {
         alert(`Project Status Update:\n\n${currentStatusProjectAction}`);
       }
     } else {
-      console.log("🔍 [PROJECT] No project action to display");
+      // console.log("🔍 [PROJECT] No project action to display");
     }
   }
 
@@ -859,7 +849,7 @@ if (!project) {
           edgeOffset: "", // No offset for the edge
           backdropClasses: "bg-gray-900/50 dark:bg-gray-900/80 fixed inset-0 z-30", // Custom backdrop classes
           onHide: () => {
-            console.log("Drawer is hidden");
+            // console.log("Drawer is hidden");
 
             // Remove the manually created backdrop when drawer closes
             const backdrop = document.querySelector("[drawer-backdrop]");
@@ -868,10 +858,10 @@ if (!project) {
             }
           },
           onShow: () => {
-            console.log("Drawer is shown");
+            // console.log("Drawer is shown");
           },
           onToggle: () => {
-            console.log("Drawer has been toggled");
+            // console.log("Drawer has been toggled");
           },
         };
 
@@ -893,9 +883,9 @@ if (!project) {
             backdrop.setAttribute("drawer-backdrop", "");
             backdrop.className = "bg-gray-900/50 dark:bg-gray-900/80 fixed inset-0 z-30";
             document.body.appendChild(backdrop);
-            console.log("🔍 [DRAWER] Backdrop created:", backdrop);
+            // console.log("🔍 [DRAWER] Backdrop created:", backdrop);
           } else {
-            console.log("🔍 [DRAWER] Backdrop already exists:", backdrop);
+            // console.log("🔍 [DRAWER] Backdrop already exists:", backdrop);
           }
 
           // Add event listener to backdrop for cleanup
