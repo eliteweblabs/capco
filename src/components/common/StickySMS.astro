@@ -12,40 +12,44 @@ const isBackend = isBackendPage(currentUrl);
 ---
 
 <!-- SMS Button (collapsed state) -->
-<BoxIcon
-  name="message-rounded"
-  id="sms-toggle-btn"
-  variant="primary"
-  size="md"
-  class="text-white"
-  shape="circle"
-  backgroundColor="primary"
-/>
-<!-- SMS Form Panel (expanded state) -->
-<div
-  id="sms-form-panel"
-  class="absolute bottom-16 left-0 hidden w-80 max-w-[calc(100vw-3rem)] transform rounded-lg border border-gray-200 bg-white shadow-2xl transition-all duration-300 dark:border-gray-700 dark:bg-gray-800"
->
-  <!-- Panel Header -->
-  <div class="flex items-center justify-between border-b border-gray-200 p-4 dark:border-gray-700">
-    <h3 class="text-lg font-semibold text-gray-900 dark:text-white">💬 Contact CAPCo</h3>
-    <button
-      id="sms-close-btn"
-      aria-label="Close SMS panel"
-      class="flex h-8 w-8 items-center justify-center rounded-full text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-700 dark:hover:text-gray-300"
+<div id="sms-toggle-btn-container">
+  <BoxIcon
+    name="message-rounded"
+    id="sms-toggle-btn"
+    variant="primary"
+    size="md"
+    class="text-white"
+    shape="circle"
+    backgroundColor="primary"
+  />
+  <!-- SMS Form Panel (expanded state) -->
+  <div
+    id="sms-form-panel"
+    class="absolute bottom-16 left-0 hidden w-80 max-w-[calc(100vw-3rem)] transform rounded-lg border border-gray-200 bg-white shadow-2xl transition-all duration-300 dark:border-gray-700 dark:bg-gray-800"
+  >
+    <!-- Panel Header -->
+    <div
+      class="flex items-center justify-between border-b border-gray-200 p-4 dark:border-gray-700"
     >
-      <BoxIcon name="x" />
-    </button>
+      <h3 class="text-lg font-semibold text-gray-900 dark:text-white">💬 Contact CAPCo</h3>
+      <button
+        id="sms-close-btn"
+        aria-label="Close SMS panel"
+        class="flex h-8 w-8 items-center justify-center rounded-full text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-700 dark:hover:text-gray-300"
+      >
+        <BoxIcon name="x" />
+      </button>
+    </div>
+
+    <!-- Panel Content -->
+    <div class="p-4">
+      <SMSForm compact={true} />
+    </div>
   </div>
 
-  <!-- Panel Content -->
-  <div class="p-4">
-    <SMSForm compact={true} />
-  </div>
+  <!-- Backdrop for mobile -->
+  <div id="sms-backdrop" class="fixed inset-0 z-[-1] hidden bg-black bg-opacity-50 md:hidden"></div>
 </div>
-
-<!-- Backdrop for mobile -->
-<div id="sms-backdrop" class="fixed inset-0 z-[-1] hidden bg-black bg-opacity-50 md:hidden"></div>
 
 <script>
   // Global function to trigger SMS form
@@ -59,15 +63,20 @@ const isBackend = isBackendPage(currentUrl);
     }
   };
 </script>
-<script is:inline>
+<script>
   document.addEventListener("DOMContentLoaded", () => {
+    const container = document.getElementById("sms-toggle-btn-container");
     const toggleBtn = document.getElementById("sms-toggle-btn");
     const formPanel = document.getElementById("sms-form-panel");
     const closeBtn = document.getElementById("sms-close-btn");
     const backdrop = document.getElementById("sms-backdrop");
 
-    if (!toggleBtn || !formPanel || !closeBtn || !backdrop) {
+    if (!toggleBtn || !formPanel || !closeBtn || !backdrop || !container) {
       return; // Component not rendered (backend page)
+    }
+
+    if ((window as any).hideOnFormFocus) {
+      (window as any).hideOnFormFocus("#sms-toggle-btn-container", true);
     }
 
     let isOpen = false;
