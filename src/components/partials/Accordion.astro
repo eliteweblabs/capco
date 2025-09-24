@@ -35,8 +35,17 @@ if (isPartial) {
   class={`bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg ${className}`}
 >
   <!-- Accordion Header -->
-  <div class={`flex items-center justify-between p-4 ${headerClass}`}>
-    <div class="flex-1">
+  <div class={`flex items-center justify-between ${headerClass}`}>
+    <!-- Clickable header area -->
+    <div
+      class="flex-1 cursor-pointer rounded-lg p-4 transition-colors hover:bg-gray-50 dark:hover:bg-gray-700"
+      data-accordion-target={`#accordion-${id}`}
+      aria-expanded={open}
+      aria-controls={`accordion-${id}`}
+      role="button"
+      tabindex="0"
+      onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click();}"
+    >
       <h3 class="text-lg font-medium text-gray-900 dark:text-white">
         {title}
       </h3>
@@ -83,9 +92,9 @@ if (isPartial) {
     const accordionButtons = document.querySelectorAll("[data-accordion-target]");
 
     accordionButtons.forEach((button) => {
-      button.addEventListener("click", function () {
+      button.addEventListener("click", function (this: HTMLElement) {
         const targetId = this.getAttribute("data-accordion-target");
-        const target = document.querySelector(targetId);
+        const target = document.querySelector(targetId as string);
         const isExpanded = this.getAttribute("aria-expanded") === "true";
 
         if (target) {
@@ -98,10 +107,22 @@ if (isPartial) {
             this.setAttribute("aria-expanded", "true");
           }
 
-          // Toggle arrow rotation
+          // Update both the main header and the toggle button
           const arrow = this.querySelector("svg");
           if (arrow) {
             arrow.classList.toggle("rotate-180");
+          }
+
+          // Also update the toggle button if it exists and is different from this element
+          const toggleButton = document.querySelector(
+            `button[data-accordion-target="${targetId}"]`
+          );
+          if (toggleButton && toggleButton !== this) {
+            const toggleArrow = toggleButton.querySelector("svg");
+            if (toggleArrow) {
+              toggleArrow.classList.toggle("rotate-180");
+            }
+            toggleButton.setAttribute("aria-expanded", String(!isExpanded));
           }
         }
       });

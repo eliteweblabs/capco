@@ -1,15 +1,17 @@
 ---
-import HttpChatWidget from "./HttpChatWidget.astro";
 import StickySMS from "./StickySMS.astro";
+import DebugPanel from "./DebugPanel.astro";
 
-const { currentUser, isBackend } = Astro.props;
+const { currentUser, isBackend, debugData } = Astro.props;
 
 const currentRole = currentUser?.profile?.role;
 
 // Speed dial component for quick actions
 ---
 
-<div id="sticky-container" class="fixed bottom-6 left-6 z-40">
+<div id="speed-dial-container" class="fixed bottom-6 left-6 z-40">
+  <DebugPanel currentUser={currentUser} debugData={debugData} currentRole={currentRole} />
+
   {currentRole !== "Admin" && currentRole !== "Staff" && <StickySMS isBackend={isBackend} />}
 </div>
 

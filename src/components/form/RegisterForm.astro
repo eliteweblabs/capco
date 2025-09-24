@@ -2,9 +2,16 @@
 // RegisterForm component for registration
 import PhoneAndSMS from "./PhoneAndSMS.astro";
 import Button from "../common/Button.astro";
+const globalInputClasses =
+  process.env.GLOBAL_INPUT_CLASSES ||
+  "w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm text-gray-900 focus:border-primary-500 focus:ring-2 focus:ring-primary-500 dark:border-gray-600 dark:text-white dark:focus:border-primary-400 dark:focus:ring-primary-400 bg-background-card";
+const globalSecondaryTextClasses =
+  process.env.GLOBAL_SECONDARY_TEXT_CLASSES || "text-gray-600 dark:text-gray-400";
+const globalPrimaryTextClasses =
+  process.env.GLOBAL_PRIMARY_TEXT_CLASSES || "text-gray-900 dark:text-white";
 ---
 
-<div class="mx-auto my-12 w-full max-w-lg">
+<div class="mx-auto my-6 w-full max-w-lg md:my-12">
   <form action="/api/auth/signin" method="post" class="mt-6 flex w-full flex-col gap-2">
     <Button
       type="submit"
@@ -45,7 +52,7 @@ import Button from "../common/Button.astro";
 <p class="-mt-2.5 text-center text-xs text-zinc-500 dark:text-zinc-400">
   <span class="_1jTZ8KXRZul60S6czNi bg-background-light px-4">Or</span>
 </p>
-<div class="mx-auto my-12 w-full max-w-lg">
+<div class="mx-auto my-6 w-full max-w-lg md:my-12">
   <form action="/api/auth/register" method="post" class="grid w-full grid-cols-1 gap-3">
     <!-- Name Fields -->
     <div class="grid grid-cols-2 gap-3">
@@ -62,7 +69,7 @@ import Button from "../common/Button.astro";
           id="first-name"
           placeholder="Enter your first name"
           required
-          class="_1jTZ8KXRZul60S6czNi w-full rounded-lg border border-gray-300 bg-background-card px-3 py-2.5 text-sm text-gray-900 focus:border-primary-500 focus:ring-2 focus:ring-primary-500 dark:border-gray-600 dark:text-white dark:focus:border-primary-400 dark:focus:ring-primary-400"
+          class=`${globalInputClasses}`
         />
       </div>
 
@@ -79,7 +86,7 @@ import Button from "../common/Button.astro";
           id="last-name"
           placeholder="Enter your last name"
           required
-          class="_1jTZ8KXRZul60S6czNi w-full rounded-lg border border-gray-300 bg-background-card px-3 py-2.5 text-sm text-gray-900 focus:border-primary-500 focus:ring-2 focus:ring-primary-500 dark:border-gray-600 dark:text-white dark:focus:border-primary-400 dark:focus:ring-primary-400"
+          class=`${globalInputClasses}`
         />
       </div>
     </div>
@@ -98,7 +105,7 @@ import Button from "../common/Button.astro";
         id="company-name"
         placeholder="Enter your company name"
         required
-        class="_1jTZ8KXRZul60S6czNi w-full rounded-lg border border-gray-300 bg-background-card px-3 py-2.5 text-sm text-gray-900 focus:border-primary-500 focus:ring-2 focus:ring-primary-500 dark:border-gray-600 dark:text-white dark:focus:border-primary-400 dark:focus:ring-primary-400"
+        class=`${globalInputClasses}`
       />
     </div>
 
@@ -116,7 +123,7 @@ import Button from "../common/Button.astro";
         id="register_email"
         placeholder="Enter your email address"
         required
-        class="_1jTZ8KXRZul60S6czNi w-full rounded-lg border border-gray-300 bg-background-card px-3 py-2.5 text-sm text-gray-900 focus:border-primary-500 focus:ring-2 focus:ring-primary-500 dark:border-gray-600 dark:text-white dark:focus:border-primary-400 dark:focus:ring-primary-400"
+        class=`${globalInputClasses}`
       />
     </div>
 
@@ -138,7 +145,7 @@ import Button from "../common/Button.astro";
         placeholder="Enter your password"
         required
         minlength="6"
-        class="_1jTZ8KXRZul60S6czNi w-full rounded-lg border border-gray-300 bg-background-card px-3 py-2.5 text-sm text-gray-900 focus:border-primary-500 focus:ring-2 focus:ring-primary-500 dark:border-gray-600 dark:text-white dark:focus:border-primary-400 dark:focus:ring-primary-400"
+        class=`${globalInputClasses}`
       />
       <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">6 characters minimum</p>
     </div>
@@ -245,16 +252,16 @@ import Button from "../common/Button.astro";
         }
 
         // Show loading notification
-        // if (window.showModal) {
-        //   window.showModal(
-        //     "info",
-        //     "Creating Account...",
-        //     "Please wait while we set up your account.",
-        //     500
-        //   );
-        // } else {
-        //   console.log("🔔 [Creating Account...] Please wait while we set up your account.");
-        // }
+        if (window.showModal) {
+          window.showModal(
+            "info",
+            "Creating Account...",
+            "Please wait while we set up your account.",
+            500
+          );
+        } else {
+          console.log("🔔 [Creating Account...] Please wait while we set up your account.");
+        }
 
         // Submit form data via fetch
         try {
@@ -271,14 +278,6 @@ import Button from "../common/Button.astro";
             formData.set("mobile_carrier", mobileCarrier);
           }
 
-          console.log("🔐 [REGISTER-FORM] FormData contents:", {
-            smsAlerts,
-            mobileCarrier,
-            hasSmsAlerts: formData.has("sms_alerts"),
-            smsAlertsValue: formData.get("sms_alerts"),
-            mobileCarrierValue: formData.get("mobile_carrier"),
-          });
-
           const response = await fetch("/api/auth/register", {
             method: "POST",
             body: formData,
@@ -290,9 +289,9 @@ import Button from "../common/Button.astro";
             // Show error notification
             if (window.showModal) {
               window.showModal(
+                "error",
                 "Registration Failed",
                 result.error || "Failed to create account. Please try again.",
-                "error",
                 5000
               );
             } else {
@@ -386,9 +385,9 @@ import Button from "../common/Button.astro";
           console.error("Registration error:", error);
           if (window.showModal) {
             window.showModal(
+              "error",
               "Registration Failed",
               "An unexpected error occurred. Please try again.",
-              "error",
               5000
             );
           } else {

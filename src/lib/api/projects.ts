@@ -1,5 +1,49 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
+/**
+ * Fetch punchlist statistics for a list of projects
+ */
+export async function fetchPunchlistStats(
+  supabaseAdmin: SupabaseClient,
+  projectIds: number[]
+): Promise<Record<number, { completed: number; total: number }>> {
+  if (projectIds.length === 0) return {};
+
+  try {
+    const { data: punchlistData, error } = await supabaseAdmin
+      .from("punchlist")
+      .select("project_id, mark_completed")
+      .in("project_id", projectIds);
+
+    if (error) {
+      console.error("🏗️ [PUNCHLIST-STATS] Database error:", error);
+      return {};
+    }
+
+    // Group by project_id and count completed vs total
+    const stats: Record<number, { completed: number; total: number }> = {};
+
+    projectIds.forEach((projectId) => {
+      stats[projectId] = { completed: 0, total: 0 };
+    });
+
+    (punchlistData || []).forEach((item) => {
+      if (!stats[item.project_id]) {
+        stats[item.project_id] = { completed: 0, total: 0 };
+      }
+      stats[item.project_id].total++;
+      if (item.mark_completed) {
+        stats[item.project_id].completed++;
+      }
+    });
+
+    return stats;
+  } catch (error) {
+    console.error("🏗️ [PUNCHLIST-STATS] Error fetching punchlist stats:", error);
+    return {};
+  }
+}
+
 export interface Project {
   id: number;
   author_id: string;
@@ -16,6 +60,11 @@ export interface Project {
   project_type?: string;
   estimated_completion?: string;
   budget?: number;
+  // Punchlist data
+  punchlistItems?: {
+    completed: number;
+    total: number;
+  };
 }
 
 export interface ProjectWithStatus extends Project {
@@ -40,17 +89,26 @@ export async function fetchProjects(
       return [];
     }
 
-    // Add featured_image_data for projects with featured_image_url
+    // Get project IDs for punchlist stats
+    const projectIds = (allProjects || []).map((p) => p.id);
+    const punchlistStats = await fetchPunchlistStats(supabaseAdmin, projectIds);
+
+    // Add featured_image_data and punchlist data for projects
     const projects = (allProjects || []).map((project) => {
+      const projectWithData = {
+        ...project,
+        punchlistItems: punchlistStats[project.id] || { completed: 0, total: 0 },
+      };
+
       if (project.featured_image_data) {
         return {
-          ...project,
+          ...projectWithData,
           featured_image_data: {
             public_url: project.featured_image_data.public_url,
           },
         };
       }
-      return project;
+      return projectWithData;
     });
 
     return projects;
@@ -77,23 +135,32 @@ export async function getProjectsByAuthor(
       return [];
     }
 
-    // Add featured_image_data for projects with featured_image_url
-    const projectsWithImageData = (projects || []).map((project) => {
+    // Get project IDs for punchlist stats
+    const projectIds = (projects || []).map((p) => p.id);
+    const punchlistStats = await fetchPunchlistStats(supabaseAdmin, projectIds);
+
+    // Add featured_image_data and punchlist data for projects
+    const projectsWithData = (projects || []).map((project) => {
+      const projectWithData = {
+        ...project,
+        punchlistItems: punchlistStats[project.id] || { completed: 0, total: 0 },
+      };
+
       if (project.featured_image_data) {
         return {
-          ...project,
+          ...projectWithData,
           featured_image_data: {
             public_url: project.featured_image_data.public_url,
           },
         };
       }
-      return project;
+      return projectWithData;
     });
 
     // console.log(
-    //   `🏗️ [PROJECTS-API] Retrieved ${projectsWithImageData.length} projects for author ${authorId}`
+    //   `🏗️ [PROJECTS-API] Retrieved ${projectsWithData.length} projects for author ${authorId}`
     // );
-    return projectsWithImageData;
+    return projectsWithData;
   } catch (error) {
     console.error("🏗️ [PROJECTS-API] Error fetching projects by author:", error);
     return [];
@@ -117,23 +184,32 @@ export async function getProjectsByAssignedToId(
       return [];
     }
 
-    // Add featured_image_data for projects with featured_image_url
-    const projectsWithImageData = (projects || []).map((project) => {
+    // Get project IDs for punchlist stats
+    const projectIds = (projects || []).map((p) => p.id);
+    const punchlistStats = await fetchPunchlistStats(supabaseAdmin, projectIds);
+
+    // Add featured_image_data and punchlist data for projects
+    const projectsWithData = (projects || []).map((project) => {
+      const projectWithData = {
+        ...project,
+        punchlistItems: punchlistStats[project.id] || { completed: 0, total: 0 },
+      };
+
       if (project.featured_image_url) {
         return {
-          ...project,
+          ...projectWithData,
           featured_image_data: {
             public_url: project.featured_image_url,
           },
         };
       }
-      return project;
+      return projectWithData;
     });
 
     // console.log(
-    //   `🏗️ [PROJECTS-API] Retrieved ${projectsWithImageData.length} projects for author ${assignedToId}`
+    //   `🏗️ [PROJECTS-API] Retrieved ${projectsWithData.length} projects for author ${assignedToId}`
     // );
-    return projectsWithImageData;
+    return projectsWithData;
   } catch (error) {
     console.error("🏗️ [PROJECTS-API] Error fetching projects by author:", error);
     return [];

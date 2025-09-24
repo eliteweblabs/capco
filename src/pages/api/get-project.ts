@@ -646,6 +646,56 @@ export const GET: APIRoute = async ({ request, cookies, url, params }) => {
       }
     }
 
+    // Add punchlist statistics to projects
+    if (projects && projects.length > 0) {
+      const projectIds = projects.map((p) => p.id);
+
+      try {
+        // Get punchlist stats for all projects
+        const { data: punchlistData, error: punchlistError } = await (supabaseAdmin || supabase)
+          .from("punchlist")
+          .select("project_id, mark_completed")
+          .in("project_id", projectIds);
+
+        if (!punchlistError && punchlistData) {
+          // Group by project_id and count completed vs total
+          const punchlistStats: Record<number, { completed: number; total: number }> = {};
+
+          projectIds.forEach((projectId) => {
+            punchlistStats[projectId] = { completed: 0, total: 0 };
+          });
+
+          punchlistData.forEach((item) => {
+            if (!punchlistStats[item.project_id]) {
+              punchlistStats[item.project_id] = { completed: 0, total: 0 };
+            }
+            punchlistStats[item.project_id].total++;
+            if (item.mark_completed) {
+              punchlistStats[item.project_id].completed++;
+            }
+          });
+
+          // Add punchlist stats to projects
+          projects.forEach((project: any) => {
+            project.punchlistItems = punchlistStats[project.id] || { completed: 0, total: 0 };
+          });
+
+          // console.log("📡 [GET-PROJECT] Punchlist stats added to projects");
+        } else {
+          console.error("Error fetching punchlist stats:", punchlistError);
+          // Set default punchlist stats to 0 if there's an error
+          projects.forEach((project: any) => {
+            project.punchlistItems = { completed: 0, total: 0 };
+          });
+        }
+      } catch (error) {
+        console.error("Error in punchlist stats processing:", error);
+        projects.forEach((project: any) => {
+          project.punchlistItems = { completed: 0, total: 0 };
+        });
+      }
+    }
+
     // Build filter description for response
     const filters = [];
     if (assignedToId) filters.push(`assigned_to_id: ${assignedToId}`);
