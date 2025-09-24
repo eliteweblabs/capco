@@ -18,6 +18,11 @@ export const GET: APIRoute = async ({ url, cookies }) => {
     console.log("👤 [GET-USER-PROFILE] Fetching profile for user:", userId);
 
     // Get user profile from Supabase
+    if (!supabaseAdmin) {
+      return new Response(JSON.stringify({ error: "Database connection not available" }), {
+        status: 500,
+      });
+    }
     const { data: profile, error } = await supabaseAdmin
       .from("profiles")
       .select("id, first_name, last_name, company_name, email, phone, role")

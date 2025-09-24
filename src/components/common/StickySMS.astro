@@ -6,6 +6,7 @@ import SMSForm from "../form/SMSForm.astro";
 const currentUrl = Astro.url.pathname;
 import { isBackendPage } from "../../pages/api/backend-page-check";
 const isBackend = isBackendPage(currentUrl);
+const { globalInputClasses } = Astro.props;
 
 // Don't show on backend pages or SMS demo page
 // const shouldShow = !currentUrl.startsWith("/sms-demo");
@@ -18,7 +19,7 @@ const isBackend = isBackendPage(currentUrl);
     id="sms-toggle-btn"
     variant="primary"
     size="md"
-    class="text-white"
+    class="text-white dark:text-white"
     shape="circle"
     backgroundColor="primary"
   />
@@ -43,7 +44,7 @@ const isBackend = isBackendPage(currentUrl);
 
     <!-- Panel Content -->
     <div class="p-4">
-      <SMSForm compact={true} />
+      <SMSForm compact={true} globalInputClasses={globalInputClasses} />
     </div>
   </div>
 
@@ -90,6 +91,10 @@ const isBackend = isBackendPage(currentUrl);
         backdrop.classList.remove("hidden");
       }
 
+      if ((window as any).unlockBodyScroll) {
+        (window as any).unlockBodyScroll();
+      }
+
       // Add animation classes
       requestAnimationFrame(() => {
         if (formPanel) {
@@ -102,7 +107,7 @@ const isBackend = isBackendPage(currentUrl);
 
       // Hide button on mobile for better UX
       if (window.innerWidth < 768 && toggleBtn) {
-        toggleBtn.style.opacity = "0.3";
+        toggleBtn.style.height = "0";
       }
     }
 
@@ -117,6 +122,9 @@ const isBackend = isBackendPage(currentUrl);
         backdrop.classList.add("animate-fade-out");
       }
 
+      if ((window as any).lockBodyScroll) {
+        (window as any).unlockBodyScroll();
+      }
       setTimeout(() => {
         if (formPanel) {
           formPanel.classList.add("hidden");
@@ -127,7 +135,7 @@ const isBackend = isBackendPage(currentUrl);
           backdrop.classList.remove("animate-fade-in", "animate-fade-out");
         }
         if (toggleBtn) {
-          toggleBtn.style.opacity = "1";
+          toggleBtn.style.height = "auto";
         }
       }, 300);
     }

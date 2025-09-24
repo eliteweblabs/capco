@@ -59,11 +59,6 @@ export default defineConfig({
       "process.env.FROM_NAME": JSON.stringify(env.FROM_NAME),
       "process.env.GLOBAL_COMPANY_NAME": JSON.stringify(env.GLOBAL_COMPANY_NAME),
       "process.env.GLOBAL_COMPANY_SLOGAN": JSON.stringify(env.GLOBAL_COMPANY_SLOGAN),
-      "process.env.GLOBAL_INPUT_CLASSES": JSON.stringify(env.GLOBAL_INPUT_CLASSES),
-      "process.env.GLOBAL_PRIMARY_TEXT_CLASSES": JSON.stringify(env.GLOBAL_PRIMARY_TEXT_CLASSES),
-      "process.env.GLOBAL_SECONDARY_TEXT_CLASSES": JSON.stringify(
-        env.GLOBAL_SECONDARY_TEXT_CLASSES
-      ),
       "process.env.GOOGLE_MAPS_API_KEY": JSON.stringify(env.GOOGLE_MAPS_API_KEY),
       "process.env.GOOGLE_PLACES_API_KEY": JSON.stringify(env.GOOGLE_PLACES_API_KEY),
       "process.env.GOOGLE_PLACES_API_SECRET_KEY": JSON.stringify(env.GOOGLE_PLACES_API_SECRET_KEY),

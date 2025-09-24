@@ -17,6 +17,7 @@
     title: string;
     message: string;
     duration?: number; // 0 = no auto-hide, >0 = auto-hide after ms
+    persist?: boolean; // false = close existing modals, true = keep existing modals
     redirect?: {
       url: string;
       delay?: number; // Delay in milliseconds before redirect
@@ -41,6 +42,11 @@
 
     async show(options: NotificationOptions): Promise<string> {
       // console.log("🔔 [UNIFIED-NOTIFICATION] show() called with options:", options);
+
+      // Clear existing notifications unless persist is true
+      if (options.persist !== true) {
+        this.hide(); // Clear all existing notifications
+      }
 
       // Lock body scroll to prevent background scrolling (Safari iOS compatible)
       if ((window as any).lockBodyScroll) {
@@ -405,7 +411,8 @@
     duration?: number,
     redirectOrActions?:
       | Array<{ label: string; action: () => void; primary?: boolean }>
-      | { url: string; delay?: number; showCountdown?: boolean }
+      | { url: string; delay?: number; showCountdown?: boolean },
+    persist?: boolean
   ) => {
     // Validate notification type
     const validTypes = ["success", "error", "warning", "info"];
@@ -427,6 +434,7 @@
       title,
       message,
       duration: duration, // No default - only auto-hide if duration is explicitly provided
+      persist: persist, // Pass through the persist parameter
       actions: isRedirect
         ? undefined
         : (redirectOrActions as Array<{ label: string; action: () => void; primary?: boolean }>),

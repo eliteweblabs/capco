@@ -1,180 +1,167 @@
 ---
 import Button from "./Button.astro";
-import SectionContainer from "./SectionContainer.astro";
-const globalInputClasses = process.env.GLOBAL_INPUT_CLASSES;
-const globalSecondaryTextClasses = process.env.GLOBAL_SECONDARY_TEXT_CLASSES;
-const globalPrimaryTextClasses = process.env.GLOBAL_PRIMARY_TEXT_CLASSES;
+const { globalInputClasses, globalSecondaryTextClasses, globalPrimaryTextClasses } = Astro.props;
 
 // BookingDemo component for demo scheduling
 ---
 
-<SectionContainer>
-  <div class="grid grid-cols-1 gap-8 md:grid-cols-2">
-    <!-- Calendar/Time Selection -->
-    <div
-      class="_1jTZ8KXRZul60S6czNi rounded-lg border border-border-light bg-background-card p-6 dark:border-border-dark"
-    >
-      <h3 class="mb-4 text-lg font-semibold text-gray-900 dark:text-white">Select a Time</h3>
+<div class="grid grid-cols-1 gap-8 md:grid-cols-2">
+  <!-- Calendar/Time Selection -->
+  <div
+    class="_1jTZ8KXRZul60S6czNi rounded-lg border border-border-light bg-background-card p-6 dark:border-border-dark"
+  >
+    <h3 class="mb-4 text-lg font-semibold text-gray-900 dark:text-white">Select a Time</h3>
 
-      <!-- Date Picker -->
-      <div class="mb-6">
+    <!-- Date Picker -->
+    <div class="mb-6">
+      <label
+        for="demo-date"
+        class="mb-2 block text-sm font-medium text-gray-800 dark:text-gray-200"
+      >
+        Choose a date
+      </label>
+      <input type="date" id="demo-date" name="demo-date" min="" class={`${globalInputClasses}`} />
+    </div>
+
+    <!-- Time Slots -->
+    <div class="mb-6">
+      <label class="mb-3 block text-sm font-medium text-gray-800 dark:text-gray-200">
+        Available times
+      </label>
+      <div id="time-slots" class="grid grid-cols-2 gap-2">
+        <!-- Time slots will be populated by JavaScript -->
+      </div>
+    </div>
+
+    <!-- Hidden Button Template for Time Slots -->
+    <div class="hidden">
+      <Button
+        id="time-slot-template"
+        type="button"
+        variant="secondary"
+        size="sm"
+        class="rounded-full"
+        selectedClasses="bg-blue-600 text-white dark:bg-blue-600 dark:border-blue-600"
+      >
+        Template
+      </Button>
+    </div>
+
+    <!-- Selected Time Display -->
+    <div class="hidden">
+      <div
+        id="selected-time"
+        class="hidden rounded-full border border-blue-200 bg-blue-50 p-3 dark:border-blue-800 dark:bg-blue-900/20"
+      >
+        <p class="text-sm text-blue-800 dark:text-blue-200">
+          <span class="font-medium">Selected:</span>
+          <span id="selected-time-text"></span>
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Contact Form -->
+  <div
+    class="_1jTZ8KXRZul60S6czNi rounded-lg border border-border-light bg-background-card p-6 dark:border-border-dark"
+  >
+    <h3 class="mb-4 text-lg font-semibold text-gray-900 dark:text-white">Your Information</h3>
+
+    <form id="demo-booking-form" class="space-y-4">
+      <div>
         <label
-          for="demo-date"
-          class="mb-2 block text-sm font-medium text-gray-800 dark:text-gray-200"
+          for="demo-name"
+          class="mb-1 block text-sm font-medium text-gray-800 dark:text-gray-200"
         >
-          Choose a date
+          Full Name <span class="text-red-500">*</span>
         </label>
         <input
-          type="date"
-          id="demo-date"
-          name="demo-date"
-          min=""
-          class="_1jTZ8KXRZul60S6czNi w-full rounded-lg border border-border-light px-3 py-2 text-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500 dark:border-border-dark dark:text-white dark:focus:border-primary-400"
+          type="text"
+          id="demo-name"
+          name="name"
+          placeholder="Enter your full name"
+          required
+          class={`${globalInputClasses}`}
         />
       </div>
 
-      <!-- Time Slots -->
-      <div class="mb-6">
-        <label class="mb-3 block text-sm font-medium text-gray-800 dark:text-gray-200">
-          Available times
+      <div>
+        <label
+          for="demo-email"
+          class="mb-1 block text-sm font-medium text-gray-800 dark:text-gray-200"
+        >
+          Email Address <span class="text-red-500">*</span>
         </label>
-        <div id="time-slots" class="grid grid-cols-2 gap-2">
-          <!-- Time slots will be populated by JavaScript -->
-        </div>
+        <input
+          type="email"
+          id="demo-email"
+          name="email"
+          placeholder="Enter your email address"
+          required
+        />
       </div>
 
-      <!-- Hidden Button Template for Time Slots -->
-      <div class="hidden">
-        <Button
-          id="time-slot-template"
-          type="button"
-          variant="secondary"
-          size="sm"
-          class="rounded-full"
-          selectedClasses="bg-blue-600 text-white dark:bg-blue-600 dark:border-blue-600"
+      <div>
+        <label
+          for="demo-company"
+          class="mb-1 block text-sm font-medium text-gray-800 dark:text-gray-200"
         >
-          Template
-        </Button>
+          Company Name
+        </label>
+        <input
+          type="text"
+          id="demo-company"
+          name="company"
+          placeholder="Enter your company name"
+          class={`${globalInputClasses}`}
+        />
       </div>
 
-      <!-- Selected Time Display -->
-      <div class="hidden">
-        <div
-          id="selected-time"
-          class="hidden rounded-full border border-blue-200 bg-blue-50 p-3 dark:border-blue-800 dark:bg-blue-900/20"
+      <div>
+        <label
+          for="demo-phone"
+          class="mb-1 block text-sm font-medium text-gray-800 dark:text-gray-200"
         >
-          <p class="text-sm text-blue-800 dark:text-blue-200">
-            <span class="font-medium">Selected:</span>
-            <span id="selected-time-text"></span>
-          </p>
-        </div>
+          Phone Number
+        </label>
+        <input
+          type="tel"
+          id="demo-phone"
+          name="phone"
+          placeholder="Enter your phone number"
+          class={`${globalInputClasses}`}
+        />
       </div>
-    </div>
 
-    <!-- Contact Form -->
-    <div
-      class="_1jTZ8KXRZul60S6czNi rounded-lg border border-border-light bg-background-card p-6 dark:border-border-dark"
-    >
-      <h3 class="mb-4 text-lg font-semibold text-gray-900 dark:text-white">Your Information</h3>
-
-      <form id="demo-booking-form" class="space-y-4">
-        <div>
-          <label
-            for="demo-name"
-            class="mb-1 block text-sm font-medium text-gray-800 dark:text-gray-200"
-          >
-            Full Name <span class="text-red-500">*</span>
-          </label>
-          <input
-            type="text"
-            id="demo-name"
-            name="name"
-            placeholder="Enter your full name"
-            required
-            class="_1jTZ8KXRZul60S6czNi w-full rounded-lg border border-border-light px-3 py-2 text-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500 dark:border-border-dark dark:text-white dark:focus:border-primary-400"
-          />
-        </div>
-
-        <div>
-          <label
-            for="demo-email"
-            class="mb-1 block text-sm font-medium text-gray-800 dark:text-gray-200"
-          >
-            Email Address <span class="text-red-500">*</span>
-          </label>
-          <input
-            type="email"
-            id="demo-email"
-            name="email"
-            placeholder="Enter your email address"
-            required
-            class="_1jTZ8KXRZul60S6czNi w-full rounded-lg border border-border-light px-3 py-2 text-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500 dark:border-border-dark dark:text-white dark:focus:border-primary-400"
-          />
-        </div>
-
-        <div>
-          <label
-            for="demo-company"
-            class="mb-1 block text-sm font-medium text-gray-800 dark:text-gray-200"
-          >
-            Company Name
-          </label>
-          <input
-            type="text"
-            id="demo-company"
-            name="company"
-            placeholder="Enter your company name"
-            class="_1jTZ8KXRZul60S6czNi w-full rounded-lg border border-border-light px-3 py-2 text-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500 dark:border-border-dark dark:text-white dark:focus:border-primary-400"
-          />
-        </div>
-
-        <div>
-          <label
-            for="demo-phone"
-            class="mb-1 block text-sm font-medium text-gray-800 dark:text-gray-200"
-          >
-            Phone Number
-          </label>
-          <input
-            type="tel"
-            id="demo-phone"
-            name="phone"
-            placeholder="Enter your phone number"
-            class="_1jTZ8KXRZul60S6czNi w-full rounded-lg border border-border-light px-3 py-2 text-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500 dark:border-border-dark dark:text-white dark:focus:border-primary-400"
-          />
-        </div>
-
-        <div>
-          <label
-            for="demo-message"
-            class="mb-1 block text-sm font-medium text-gray-800 dark:text-gray-200"
-          >
-            Additional Notes
-          </label>
-          <textarea
-            id="demo-message"
-            name="message"
-            rows="3"
-            placeholder="Tell us about your specific needs or questions..."
-            class="_1jTZ8KXRZul60S6czNi w-full rounded-lg border border-border-light px-3 py-2 text-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500 dark:border-border-dark dark:text-white dark:focus:border-primary-400"
-          ></textarea>
-        </div>
-
-        <Button
-          type="submit"
-          id="book-demo-btn"
-          variant="primary"
-          size="md"
-          fullWidth
-          disabled
-          class="rounded-full"
+      <div>
+        <label
+          for="demo-message"
+          class="mb-1 block text-sm font-medium text-gray-800 dark:text-gray-200"
         >
-          Book Demo
-        </Button>
-      </form>
-    </div>
+          Additional Notes
+        </label>
+        <textarea
+          id="demo-message"
+          name="message"
+          rows="3"
+          placeholder="Tell us about your specific needs or questions..."
+          class={`${globalInputClasses}`}></textarea>
+      </div>
+
+      <Button
+        type="submit"
+        id="book-demo-btn"
+        variant="primary"
+        size="md"
+        fullWidth
+        disabled
+        class="rounded-full"
+      >
+        Book Demo
+      </Button>
+    </form>
   </div>
-</SectionContainer>
+</div>
 
 <script>
   document.addEventListener("DOMContentLoaded", function () {

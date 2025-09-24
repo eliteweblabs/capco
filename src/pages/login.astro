@@ -36,6 +36,24 @@ if (isAuth) {
   return Astro.redirect("/dashboard");
 }
 
+import { globalCompanyData } from "../pages/api/global-company-data";
+const {
+  companyName,
+  companySlogan,
+  year,
+  companyAddress,
+  companyPhone,
+  companyEmail,
+  companyWebsite,
+  companyLogo,
+  companyLogoDark,
+  companyLogoLight,
+} = globalCompanyData();
+
+import { globalClasses } from "../pages/api/global-classes";
+const { globalInputClasses, globalPrimaryTextClasses, globalSecondaryTextClasses } =
+  globalClasses();
+
 // Check for tab query parameter
 const urlParams = new URLSearchParams(Astro.url.search);
 const activeTab = urlParams.get("tab") || "login";
@@ -100,7 +118,7 @@ import BoxIcon from "../components/common/BoxIcon.astro";
               id="login-form"
               class={activeTab === "login" ? "auth-form-content" : "auth-form-content hidden"}
             >
-              <AuthForm />
+              <AuthForm globalInputClasses={globalInputClasses} />
             </div>
 
             <!-- Register Form -->
@@ -108,7 +126,7 @@ import BoxIcon from "../components/common/BoxIcon.astro";
               id="register-form"
               class={activeTab === "register" ? "auth-form-content" : "auth-form-content hidden"}
             >
-              <RegisterForm />
+              <RegisterForm globalInputClasses={globalInputClasses} />
             </div>
             <form
               class="XJih04pKHf8Cekga6Hj3 UYOSZJ1_pv3B5nt1ujCP r5KuxJZQn7b3JA3UD_k_ CH8t8DqOvljTiy3xWnXb hidden"
@@ -310,7 +328,6 @@ import BoxIcon from "../components/common/BoxIcon.astro";
         </div>
       </div>
     </main>
-    <Footer />
   </div>
 </App>
 

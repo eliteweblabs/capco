@@ -10,13 +10,25 @@ if (requireAuthRedirect && (!session || !currentUser)) {
   return Astro.redirect(requireAuthRedirect);
 }
 
-const companyName = process.env.GLOBAL_COMPANY_NAME;
-const companySlogan = process.env.GLOBAL_COMPANY_SLOGAN;
-const globalSecondaryTextClasses = process.env.GLOBAL_SECONDARY_TEXT_CLASSES;
-const globalPrimaryTextClasses = process.env.GLOBAL_PRIMARY_TEXT_CLASSES;
+import { globalCompanyData } from "../pages/api/global-company-data";
+const {
+  companyName,
+  companySlogan,
+  year,
+  companyAddress,
+  companyPhone,
+  companyEmail,
+  companyWebsite,
+  companyLogo,
+  companyLogoDark,
+  companyLogoLight,
+} = globalCompanyData();
+
+import { globalClasses } from "../pages/api/global-classes";
+const { globalInputClasses, globalPrimaryTextClasses, globalSecondaryTextClasses } =
+  globalClasses();
 
 import App from "../components/common/App.astro";
-import Footer from "../components/common/Footer.astro";
 ---
 
 <App
@@ -264,7 +276,7 @@ import Footer from "../components/common/Footer.astro";
                   <input
                     type="text"
                     id="search-input-contacts"
-                    class="_Vb9igHms0hI1PQcvp_S t6gkcSf0Bt4MLItXvDJ_ mveJTCIb2WII7J4sY22F pXhVRBC8yaUNllmIWxln vpDN1VEJLu5FmLkr5WCk jtAJHOc7mn7b4IKRO59D olxDi3yL6f0gpdsOFDhx CZURRWrw0Zimq2s_t6jr c8dCx6gnV43hTOLV6ks5 __9sbu0yrzdhGIkLWNXl LceKfSImrGKQrtDGkpBV GdTcGtoKP5_bET3syLDl Mmx5lX7HVdrWCgh3EpTP jqg6J89cvxmDiFpnV56r OyABRrnTV_kvHV7dJ0uE B6xjPKbspU6m_EWVKPv2 q6szSHqGtBufkToFe_s5 KpCMWe32PQyrSFbZVput"
+                    class={`${globalInputClasses}`}
                     placeholder="Search for messages or contacts"
                   />
                 </div>
@@ -4683,6 +4695,5 @@ import Footer from "../components/common/Footer.astro";
         </div>
       </div>
     </main>
-    <Footer />
   </div>
 </App>

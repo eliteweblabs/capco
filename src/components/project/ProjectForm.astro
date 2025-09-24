@@ -8,6 +8,7 @@ import {
   isFieldReadOnly,
   isButtonGroupReadOnly,
 } from "../../lib/project-form-config";
+
 import ToggleButton from "../form/ToggleButton.astro";
 import UnitSlider from "../form/UnitSlider.astro";
 // import GooglePlacesSlotmachine from "../form/GooglePlacesSlotmachine.astro";
@@ -20,6 +21,9 @@ interface Props {
   currentUser?: any;
   isNewProject?: boolean;
   projectStatus?: number | null;
+  globalInputClasses?: string;
+  globalSecondaryTextClasses?: string;
+  globalPrimaryTextClasses?: string;
 }
 
 const {
@@ -27,21 +31,21 @@ const {
   currentUser = {},
   isNewProject = true,
   projectStatus = null,
+  globalInputClasses,
+  globalSecondaryTextClasses,
+  globalPrimaryTextClasses,
 } = Astro.props;
 
 const currentRole = currentUser?.profile?.role;
 const projectId = project?.id;
 // Generate a temporary ID for new projects
-const formId = isNewProject ? `new-project-${Date.now()}` : projectId || "";
+const formId = isNewProject ? `Yeah-${Date.now()}` : projectId || "";
 // Filter fields based on user role and project status
 const formFields = getFilteredFormFields(currentRole, isNewProject, projectStatus);
 // Get filtered button groups based on user role and project status
 const buttonGroups = getFilteredButtonGroups(currentRole, isNewProject, projectStatus);
 // Get filtered form actions based on user role and project status
 const formActions = getFilteredFormActions(currentRole, isNewProject, projectStatus);
-
-
-
 ---
 
 <form
@@ -52,49 +56,52 @@ const formActions = getFilteredFormActions(currentRole, isNewProject, projectSta
   data-project-data={JSON.stringify(project || {})}
   autocomplete="off"
 >
-
-<!-- Address Input -->
-<div class="grid grid-cols-1 gap-4 lg:grid-cols-1">
-
-  {
-    isNewProject && (
-      <SlotMachineModal
-        id="address"
-        icon="map-pin"
-        title="Select Address"
-        options={[]}
-        selectedValue={project?.address || ""}
-        placeholder="Search for an address..."
-        showCloseButton={true}
-        showCancelButton={true}
-        fetchOnLoad={false}
-        buttonText="Select Address *"
-        buttonClass="w-full"
-        searchText="Search Address"
-        searchPlaceholder="Type to search addresses..."
-        apiEndpoint="/api/places-autocomplete"
-        apiParams={{
-          types: "address",
-          components: "country:us",
-          locationBias: "circle:100@42.3601,-71.0589",
-        }}
-        valueField="description"
-        showImages={true}
-        imageField=""
-        noResultsText="Type to search addresses..."
-        skipSaveToAPI={true}
-        currentUser={currentUser}
-        project={project}
-      />
-    )
-  }
-  <!-- Client Information (Admin/Staff Only) -->
-  {
-    isNewProject && (currentRole === "Admin" || currentRole === "Staff") && (
-      <IsNewOrExistingClient />
-    )
-  }
-</div>
+  <!-- Address Input -->
+  <div class="grid grid-cols-1 gap-4 lg:grid-cols-1">
+    {
+      isNewProject && (
+        <SlotMachineModal
+          id="address"
+          icon="map-pin"
+          title="Select Address"
+          options={[]}
+          selectedValue={project?.address || ""}
+          placeholder="Search for an address..."
+          showCloseButton={true}
+          showCancelButton={true}
+          fetchOnLoad={false}
+          buttonText="Select Address *"
+          buttonClass="w-full"
+          searchText="Search Address"
+          searchPlaceholder="Type to search addresses..."
+          fetchApiEndpoint="/api/places-autocomplete"
+          apiParams={{
+            types: "address",
+            components: "country:us",
+            locationBias: "circle:100@42.3601,-71.0589",
+          }}
+          valueField="description"
+          showImages={true}
+          imageField=""
+          noResultsText="Type to search addresses..."
+          skipSaveToAPI={true}
+          currentUser={currentUser}
+          project={project}
+        />
+      )
+    }
+    <!-- Client Information (Admin/Staff Only) -->
+    {
+      isNewProject && (currentRole === "Admin" || currentRole === "Staff") && (
+        <IsNewOrExistingClient 
+          globalInputClasses={globalInputClasses}
+          globalSecondaryTextClasses={globalSecondaryTextClasses}
+          globalPrimaryTextClasses={globalPrimaryTextClasses}
+       
+        />
+      )
+    }
+  </div>
 
   <!-- Other Core Fields Grid -->
   <div class="grid grid-cols-1 gap-4 lg:grid-cols-2">
@@ -127,10 +134,8 @@ const formActions = getFilteredFormActions(currentRole, isNewProject, projectSta
                     id={`${field.id}`}
                     name={field.name}
                     value={project?.[field.name] || ""}
-                    class={`w-full rounded-lg border border-gray-300 px-3 py-2.5 pr-12 text-sm text-gray-900 focus:border-primary-500 focus:ring-2 focus:ring-primary-500 dark:border-gray-600 dark:text-white dark:focus:border-primary-400 dark:focus:ring-primary-400 ${
-                      isReadOnly
-                        ? "cursor-not-allowed bg-gray-100 dark:bg-gray-800"
-                        : "bg-background-card _1jTZ8KXRZul60S6czNi"
+                    class={`${globalInputClasses} ${
+                      isReadOnly ? "cursor-not-allowed bg-gray-100 dark:bg-gray-800" : ""
                     }`}
                     placeholder={field.placeholder || ""}
                     required={field.required}
@@ -151,9 +156,7 @@ const formActions = getFilteredFormActions(currentRole, isNewProject, projectSta
                   name={field.name}
                   value={project?.[field.name] || ""}
                   class={`w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm text-gray-900 focus:border-primary-500 focus:ring-2 focus:ring-primary-500 dark:border-gray-600 dark:text-white dark:focus:border-primary-400 dark:focus:ring-primary-400 ${
-                    isReadOnly
-                      ? "cursor-not-allowed bg-gray-100 dark:bg-gray-800"
-                      : "bg-background-card _1jTZ8KXRZul60S6czNi"
+                    isReadOnly ? "cursor-not-allowed bg-gray-100 dark:bg-gray-800" : ""
                   }`}
                   placeholder={field.placeholder || ""}
                   required={field.required}
@@ -197,7 +200,9 @@ const formActions = getFilteredFormActions(currentRole, isNewProject, projectSta
   <div class="grid grid-cols-1 gap-4 lg:grid-cols-2">
     <!-- Construction Type -->
     <div>
-      <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">Construction Type</label>
+      <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300"
+        >Construction Type</label
+      >
       <div class="flex gap-4">
         {
           formFields
@@ -340,7 +345,6 @@ const formActions = getFilteredFormActions(currentRole, isNewProject, projectSta
       switchTab?: any;
       resetForm?: any;
       clipboardData?: any;
-      
     }
   }
 
@@ -413,20 +417,14 @@ const formActions = getFilteredFormActions(currentRole, isNewProject, projectSta
         }
       }
 
-      // console.log("📝 [ProjectForm] Form data:", projectData);
-      // console.log("📝 [ProjectForm] Button group data:", {
-      //   building: projectData.building,
-      //   project: projectData.project,
-      //   service: projectData.service,
-      //   requested_docs: projectData.requested_docs,
-      // });
-
       try {
         const submitBtn = form.querySelector('button[type="submit"]') as HTMLButtonElement;
         if (submitBtn) {
           submitBtn.disabled = true;
           submitBtn.innerHTML = '<i class="bx bx-loader-alt animate-spin mr-1"></i>Saving...';
         }
+
+        window.showModal("alert", "Verifying project data...", projectData["address"]);
 
         let response;
         if (isNewProject) {
@@ -444,7 +442,7 @@ const formActions = getFilteredFormActions(currentRole, isNewProject, projectSta
           // console.log("📝 [ProjectForm] Updating existing project:", projectId);
           const updateData = {
             ...projectData,
-            projectId: projectId
+            projectId: projectId,
           };
           response = await fetch(`/api/update-project`, {
             method: "POST",
@@ -462,9 +460,11 @@ const formActions = getFilteredFormActions(currentRole, isNewProject, projectSta
           console.error("📝 [ProjectForm] Non-JSON response received:", {
             status: response.status,
             contentType,
-            body: textResponse.substring(0, 200) + "..."
+            body: textResponse.substring(0, 200) + "...",
           });
-          throw new Error(`API returned non-JSON response (${response.status}): ${textResponse.substring(0, 100)}`);
+          throw new Error(
+            `API returned non-JSON response (${response.status}): ${textResponse.substring(0, 100)}`
+          );
         }
 
         const result = await response.json();
