@@ -76,6 +76,12 @@ export default defineConfig({
       "process.env.GLOBAL_COMPANY_NAME": JSON.stringify(env.GLOBAL_COMPANY_NAME),
       "process.env.GLOBAL_COMPANY_SLOGAN": JSON.stringify(env.GLOBAL_COMPANY_SLOGAN),
       "process.env.YEAR": JSON.stringify(env.YEAR),
+      // Global CSS classes
+      "process.env.GLOBAL_INPUT_CLASSES": JSON.stringify(env.GLOBAL_INPUT_CLASSES),
+      "process.env.GLOBAL_SECONDARY_TEXT_CLASSES": JSON.stringify(
+        env.GLOBAL_SECONDARY_TEXT_CLASSES
+      ),
+      "process.env.GLOBAL_PRIMARY_TEXT_CLASSES": JSON.stringify(env.GLOBAL_PRIMARY_TEXT_CLASSES),
     },
   },
 });
