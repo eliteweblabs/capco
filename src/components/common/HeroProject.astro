@@ -70,6 +70,45 @@ if (Object.keys(statuses).length > 0) {
   }
 }
 
+const dueDate = project?.due_date;
+
+// Create array of 36 datetime options (9 days × 4 times per day)
+const createDueDateOptions = () => {
+  const options = [];
+  const now = new Date();
+  const times = [8, 12, 16, 20]; // 8am, 12pm, 4pm, 8pm
+
+  for (let day = 0; day < 9; day++) {
+    for (const hour of times) {
+      const date = new Date(now);
+      date.setDate(date.getDate() + day);
+      date.setHours(hour, 0, 0, 0); // Set to exact hour, 0 minutes/seconds
+
+      const dateStr = date.toISOString();
+      const displayDate = date.toLocaleDateString();
+      const displayTime = date.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+
+      let label;
+      if (day === 0) {
+        label = `Today at ${displayTime}`;
+      } else if (day === 1) {
+        label = `Tomorrow at ${displayTime}`;
+      } else {
+        label = `${displayDate} at ${displayTime}`;
+      }
+
+      options.push({
+        value: dateStr,
+        label: label,
+      });
+    }
+  }
+
+  return options;
+};
+
+const dueDateOptions = createDueDateOptions();
+
 // Debug logging for HeroProject component props
 // console.log("🎯 [HERO-PROJECT] HeroProject component props:", {
 //   currentStatusTab,
@@ -124,25 +163,6 @@ if (Object.keys(statuses).length > 0) {
       {
         currentRole === "Admin" || currentRole === "Staff" ? (
           <>
-            <div class="relative flex">
-              <SlotMachineModal
-                id="update-status"
-                title="Select Status"
-                options={statusOptions}
-                selectedValue={currentStatusInt || ""}
-                placeholder="Choose status"
-                buttonText={currentStatusName}
-                saveApiEndpoint="update-status"
-                showCloseButton={true}
-                showCancelButton={true}
-                skipSaveToAPI={false}
-                project={project}
-                showNotification={true}
-                icon="code"
-                searchText="Search status..."
-              />
-            </div>
-
             <div class="relative flex flex-row-reverse">
               <SlotMachineModal
                 id="assign-staff"
@@ -166,6 +186,52 @@ if (Object.keys(statuses).length > 0) {
                 icon="user"
                 searchText="Search staff..."
                 buttonVariant="outline"
+              />
+            </div>
+
+            <div class="relative flex flex-row-reverse">
+              <SlotMachineModal
+                id="update-status"
+                title="Select Status"
+                options={statusOptions}
+                selectedValue={currentStatusInt || ""}
+                placeholder="Choose status"
+                buttonText={currentStatusName}
+                saveApiEndpoint="update-status"
+                showCloseButton={true}
+                showCancelButton={true}
+                skipSaveToAPI={false}
+                project={project}
+                showNotification={true}
+                icon="code"
+                searchText="Search status..."
+              />
+            </div>
+
+            <div class="relative flex flex-row-reverse">
+              <SlotMachineModal
+                id="due-date"
+                title="Select Due Date"
+                options={dueDateOptions}
+                selectedValue={currentStatusInt || ""}
+                placeholder="Choose due date"
+                buttonText={
+                  new Date(project?.due_date).toLocaleDateString(undefined, {
+                    year: "numeric",
+                    month: "long",
+                    day: "numeric",
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  }) || "No due date"
+                }
+                saveApiEndpoint="update-project"
+                showCloseButton={true}
+                showCancelButton={true}
+                skipSaveToAPI={false}
+                project={project}
+                showNotification={true}
+                icon="clock"
+                searchText="Choose due date..."
               />
             </div>
           </>
