@@ -19,12 +19,6 @@ import { isBackendPage } from "../pages/api/backend-page-check";
 
 const isBackend = isBackendPage(Astro.url.pathname);
 
-// Handle OAuth callback if code is present
-const authCode = Astro.url.searchParams.get("code");
-if (authCode) {
-  return Astro.redirect(`/api/auth/callback?code=${authCode}`);
-}
-
 const { currentUser, session, supabase, refreshToken, accessToken } = await checkAuth(
   Astro.cookies
 );
@@ -32,11 +26,29 @@ const { currentUser, session, supabase, refreshToken, accessToken } = await chec
 if (requireAuthRedirect && (!session || !currentUser)) {
   return Astro.redirect(requireAuthRedirect);
 }
+
+import { globalCompanyData } from "../pages/api/global-company-data";
+const {
+  companyName,
+  companySlogan,
+  year,
+  companyAddress,
+  companyPhone,
+  companyEmail,
+  companyWebsite,
+  companyLogo,
+  companyLogoDark,
+  companyLogoLight,
+} = globalCompanyData();
+
+import { globalClasses } from "../pages/api/global-classes";
+const { globalInputClasses, globalPrimaryTextClasses, globalSecondaryTextClasses } =
+  globalClasses();
+
 const currentRole = currentUser?.role;
 const currentUserId = currentUser?.id;
 
 import App from "../components/common/App.astro";
-import Footer from "../components/common/Footer.astro";
 import Hero from "../components/common/Hero.astro";
 import ProjectForm from "../components/project/ProjectForm.astro";
 
@@ -51,6 +63,9 @@ import ProjectForm from "../components/project/ProjectForm.astro";
   project={undefined}
   supabase={supabase}
   isBackend={isBackend}
+  year={year.toString()}
+  globalCompanyName={companyName}
+  globalCompanySlogan={companySlogan}
 >
   <div
     id="main-content"
@@ -65,16 +80,26 @@ import ProjectForm from "../components/project/ProjectForm.astro";
             title="Create a New Project"
             description="Add a new client or select an existing client to create a new project."
           />
+        </div>
 
-          <ProjectForm
-            currentUser={currentUser}
-            isNewProject={true}
-            project={undefined}
-            projectStatus={0}
-          />
+        <div class="RZmKBZs1E1eXw8vkE6jY p_2EXc_a2sDA_h41l8QU">
+          <div
+            class="veJTCIb2WII7J4sY22F _Ybd3WwuTVljUT4vEaM3 _wYiJGbRZyFZeCc8y7Sf mngKhi_Rv06PF57lblDI _1jTZ8KXRZul60S6czNi LSIxp7RSuOKhsg28v_u3 mx-auto max-w-2xl"
+          >
+            <div class="w-full max-w-2xl">
+              <ProjectForm
+                currentUser={currentUser}
+                isNewProject={true}
+                project={undefined}
+                projectStatus={0}
+                globalInputClasses={globalInputClasses}
+                globalSecondaryTextClasses={globalSecondaryTextClasses}
+                globalPrimaryTextClasses={globalPrimaryTextClasses}
+              />
+            </div>
+          </div>
         </div>
       </div>
     </main>
-    <Footer />
   </div>
 </App>

@@ -12,6 +12,14 @@ export const GET: APIRoute = async ({ url }) => {
     const locationBias = url.searchParams.get("locationBias");
     const maxResults = parseInt(url.searchParams.get("maxResults") || "10");
 
+    console.log("🔍 [PLACES-PROXY] Received parameters:", {
+      input,
+      types,
+      components,
+      locationBias,
+      maxResults,
+    });
+
     if (!input) {
       return new Response(
         JSON.stringify({
@@ -46,12 +54,21 @@ export const GET: APIRoute = async ({ url }) => {
     // Build the Google Places API URL (New Places API)
     const googleApiUrl = new URL("https://places.googleapis.com/v1/places:autocomplete");
 
-    // Prepare request body for new API
-    // For addresses, don't restrict primary types - let Google return all relevant results
+    // Prepare request body for new API using passed parameters
     const requestBody: any = {
       input: input,
-      includedRegionCodes: ["us"], // equivalent to components=country:us
     };
+
+    // Handle components parameter (e.g., "country:us" -> ["us"])
+    if (components && components.includes("country:")) {
+      const countryCode = components.split(":")[1];
+      requestBody.includedRegionCodes = [countryCode];
+    }
+
+    // Handle types parameter if provided
+    if (types && types !== "address") {
+      requestBody.includedPrimaryTypes = [types];
+    }
 
     // Add location bias if provided
     if (locationBias) {

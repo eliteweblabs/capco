@@ -10,10 +10,23 @@ if (requireAuthRedirect && (!session || !currentUser)) {
   return Astro.redirect(requireAuthRedirect);
 }
 
-const companyName = process.env.GLOBAL_COMPANY_NAME;
-const companySlogan = process.env.GLOBAL_COMPANY_SLOGAN;
-const globalSecondaryTextClasses = process.env.GLOBAL_SECONDARY_TEXT_CLASSES;
-const globalPrimaryTextClasses = process.env.GLOBAL_PRIMARY_TEXT_CLASSES;
+import { globalCompanyData } from "../pages/api/global-company-data";
+const {
+  companyName,
+  companySlogan,
+  year,
+  companyAddress,
+  companyPhone,
+  companyEmail,
+  companyWebsite,
+  companyLogo,
+  companyLogoDark,
+  companyLogoLight,
+} = globalCompanyData();
+
+import { globalClasses } from "../pages/api/global-classes";
+const { globalInputClasses, globalPrimaryTextClasses, globalSecondaryTextClasses } =
+  globalClasses();
 
 import App from "../components/common/App.astro";
 
@@ -66,6 +79,8 @@ const stats = [
   supabase={supabase}
   companyName={companyName}
   globalSecondaryTextClasses={globalSecondaryTextClasses || ""}
+  globalInputClasses={globalInputClasses || ""}
+  globalPrimaryTextClasses={globalPrimaryTextClasses || ""}
 >
   <div
     id="main-content"
@@ -78,7 +93,13 @@ const stats = [
         >
           <!-- Hero Section -->
 
-          <Hero title={companyName || ""} description={companySlogan || ""} />
+          <Hero
+            title={companyName || ""}
+            description={companySlogan || ""}
+            globalPrimaryTextClasses={globalPrimaryTextClasses}
+            globalSecondaryTextClasses={globalSecondaryTextClasses}
+            globalInputClasses={globalInputClasses}
+          />
         </div>
       </div>
 
@@ -86,7 +107,13 @@ const stats = [
         <div
           class="mveJTCIb2WII7J4sY22F _Ybd3WwuTVljUT4vEaM3 _wYiJGbRZyFZeCc8y7Sf mngKhi_Rv06PF57lblDI _1jTZ8KXRZul60S6czNi LSIxp7RSuOKhsg28v_u3"
         >
-          <FlowbiteStatsGrid stats={stats} columns={3} />
+          <FlowbiteStatsGrid
+            stats={stats}
+            columns={3}
+            globalPrimaryTextClasses={globalPrimaryTextClasses}
+            globalSecondaryTextClasses={globalSecondaryTextClasses}
+            globalInputClasses={globalInputClasses}
+          />
         </div>
       </div>
 
@@ -95,7 +122,11 @@ const stats = [
           class="mveJTCIb2WII7J4sY22F _Ybd3WwuTVljUT4vEaM3 _wYiJGbRZyFZeCc8y7Sf mngKhi_Rv06PF57lblDI _1jTZ8KXRZul60S6czNi LSIxp7RSuOKhsg28v_u3"
         >
           <!-- Features Section -->
-          <Features globalSecondaryTextClasses={globalSecondaryTextClasses || ""} />
+          <Features
+            globalPrimaryTextClasses={globalPrimaryTextClasses}
+            globalSecondaryTextClasses={globalSecondaryTextClasses}
+            globalInputClasses={globalInputClasses}
+          />
         </div>
       </div>
 
@@ -106,11 +137,17 @@ const stats = [
           <!-- Testimonials Section -->
           <Testimonials
             companyName={companyName || ""}
-            globalSecondaryTextClasses={globalSecondaryTextClasses || ""}
+            globalPrimaryTextClasses={globalPrimaryTextClasses}
+            globalSecondaryTextClasses={globalSecondaryTextClasses}
+            globalInputClasses={globalInputClasses}
           />
         </div>
       </div>
     </main>
-    <Footer />
+    <Footer
+      globalPrimaryTextClasses={globalPrimaryTextClasses}
+      globalSecondaryTextClasses={globalSecondaryTextClasses}
+      globalInputClasses={globalInputClasses}
+    />
   </div>
 </App>

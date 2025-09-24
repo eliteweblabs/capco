@@ -10,6 +10,24 @@ if (requireAuthRedirect && (!session || !currentUser)) {
   return Astro.redirect(requireAuthRedirect);
 }
 
+import { globalCompanyData } from "../pages/api/global-company-data";
+const {
+  companyName,
+  companySlogan,
+  year,
+  companyAddress,
+  companyPhone,
+  companyEmail,
+  companyWebsite,
+  companyLogo,
+  companyLogoDark,
+  companyLogoLight,
+} = globalCompanyData();
+
+import { globalClasses } from "../pages/api/global-classes";
+const { globalInputClasses, globalPrimaryTextClasses, globalSecondaryTextClasses } =
+  globalClasses();
+
 import App from "../components/common/App.astro";
 import { getCarrierKeyFromGateway } from "../lib/sms-carriers";
 import BoxIcon from "../components/common/BoxIcon.astro";
@@ -18,7 +36,6 @@ import PhoneAndSMS from "../components/form/PhoneAndSMS.astro";
 import Button from "../components/common/Button.astro";
 import ForgotPasswordModal from "../components/form/ForgetPasswordModal.astro";
 const userProfile = currentUser?.profile || null;
-const globalInputClasses = process.env.GLOBAL_INPUT_CLASSES;
 
 // Get the carrier key from the stored gateway domain
 const storedCarrierKey = currentUser?.user_metadata?.mobile_carrier

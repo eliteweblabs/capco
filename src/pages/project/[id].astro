@@ -10,12 +10,23 @@ if (requireAuthRedirect && (!session || !currentUser)) {
   return Astro.redirect(requireAuthRedirect);
 }
 
-const companyName = process.env.GLOBAL_COMPANY_NAME;
-const companySlogan = process.env.GLOBAL_COMPANY_SLOGAN;
-const globalSecondaryTextClasses =
-  process.env.GLOBAL_SECONDARY_TEXT_CLASSES || "text-gray-600 dark:text-gray-400";
-const globalPrimaryTextClasses =
-  process.env.GLOBAL_PRIMARY_TEXT_CLASSES || "text-gray-900 dark:text-white";
+import { globalCompanyData } from "../../pages/api/global-company-data";
+const {
+  companyName,
+  companySlogan,
+  year,
+  companyAddress,
+  companyPhone,
+  companyEmail,
+  companyWebsite,
+  companyLogo,
+  companyLogoDark,
+  companyLogoLight,
+} = globalCompanyData();
+
+import { globalClasses } from "../../pages/api/global-classes";
+const { globalInputClasses, globalPrimaryTextClasses, globalSecondaryTextClasses } =
+  globalClasses();
 
 import App from "../../components/common/App.astro";
 
@@ -57,7 +68,7 @@ import "../../lib/refresh-manager.ts";
 // Removed getAuthorInfoServer function - using direct database queries for better performance
 
 // Get the status parameter from URL query string
-const statusParam = Astro.url.searchParams.get("status");
+const statusParam = Astro.url.searchParams.get("status") || "project-form";
 const validTabs = [
   "project-form",
   "discussion",
@@ -135,54 +146,17 @@ if (supabase) {
 
   const invoiceResult = invoiceResultData || { data: null, error: null };
 
-  console.log("🔍 [PROJECT-DEBUG] Project query result:", projectResult);
-  console.log("🔍 [PROJECT-DEBUG] Project data:", projectResult.data);
-  console.log("🔍 [PROJECT-DEBUG] Project error:", projectResult.error);
-
   project = projectResult.data;
-  // console.log("🔍 [PROJECT] Project data:", project.featured_image_data);
   projectId = project?.id?.toString() || id || "";
-
-  // Status data will be processed after API call
-
-  // Define variables for component props
 
   // Convert statusesObject back to array for components that expect it
   statuses = Object.values(statusesObject);
 
-  // console.log("🔍 [PROJECT] Current statusesObject:", statusesObject);
-  // console.log("🔍 [PROJECT] Current statuses:", statuses);
-
-  console.log("🔍 [PROJECT] Current statusesObject:", statusesObject);
-  // console.log("🔍 [PROJECT] Current status object:", currentStatusObj);
-  // console.log("🔍 [PROJECT] Current status tab:", currentStatusTab);
-  // console.log("🔍 [PROJECT] Current status slug:", currentStatusSlug);
-  // console.log("🔍 [PROJECT] Current status name:", currentStatusName);
-  // console.log("🔍 [PROJECT] Current status int:", currentStatusInt);
-  // console.log("🔍 [PROJECT] Current status color:", currentStatusColor);
-  // console.log("🔍 [PROJECT] Current status project action:", currentStatusProjectAction);
-  // Check project query result
   if (projectResult.error) {
     console.error("Error fetching project:", projectResult.error);
     console.log("🌐 [PROJECT] Project not found or no access, redirecting to dashboard");
     return Astro.redirect("/dashboard");
   }
-
-  // console.log("🔍 [PROJECT] Project data loaded:", {
-  //   id: project.id,
-  //   title: project.title,
-  //   author_id: project.author_id,
-  //   assigned_to_id: project.assigned_to_id,
-  //   hasAuthorId: !!project.author_id,
-  // });
-
-  // OPTIMIZED: Get author and assigned user profiles in parallel (only if needed)
-  // console.log("🔍 [PROJECT] Setting up profile queries:", {
-  //   hasAuthorId: !!project.author_id,
-  //   authorId: project.author_id,
-  //   hasAssignedId: !!project.assigned_to_id,
-  //   assignedId: project.assigned_to_id,
-  // });
 
   if (project.author_id || project.assigned_to_id) {
     const profileQueries = [];
@@ -198,37 +172,11 @@ if (supabase) {
       );
     }
 
-    // if (project.assigned_to_id) {
-    //   profileQueries.push(
-    //     supabase
-    //       .from("profiles")
-    //       .select("id, company_name, role, email")
-    //       .eq("id", project.assigned_to_id)
-    //       .maybeSingle()
-    //   );
-    // }
-
     const profileResults = await Promise.all(profileQueries);
-
-    // Process author profile
-    // console.log("🔍 [PROJECT] Processing author profile:", {
-    //   hasAuthorId: !!project.author_id,
-    //   authorId: project.author_id,
-    //   profileResultsLength: profileResults.length,
-    //   profileResults: profileResults,
-    // });
 
     if (project.author_id && profileResults[0]) {
       const profileData = profileResults[0].data;
       const profileError = profileResults[0].error;
-
-      // console.log("🔍 [PROJECT] Profile data:", {
-      //   profileData,
-      //   profileError,
-      //   hasData: !!profileData,
-      //   hasError: !!profileError,
-      //   currentRole,
-      // });
 
       if (profileData && !profileError) {
         authorProfile = {
@@ -266,14 +214,6 @@ if (supabase) {
   console.error("🚀 [PROJECT] This will cause the page to fail");
 }
 
-// Fetch project statuses using the unified API with project data (after authorProfile is set)
-console.log("🔍 [PROJECT-PAGE] About to call project-statuses API with:", {
-  hasProject: !!project,
-  hasAuthorProfile: !!authorProfile,
-  projectId: project?.id,
-  authorProfileCompany: (authorProfile as any)?.company_name,
-});
-
 const statusResponse = await fetch(`${Astro.url.origin}/api/project-statuses`, {
   method: "POST",
   headers: {
@@ -285,8 +225,6 @@ const statusResponse = await fetch(`${Astro.url.origin}/api/project-statuses`, {
     authorProfile: authorProfile,
   }),
 });
-
-console.log("🔍 [PROJECT-PAGE] API response status:", statusResponse.status);
 
 let statusData: any = { success: false, roleBasedStatuses: {}, statusesMap: {} };
 if (statusResponse.ok) {
@@ -303,29 +241,6 @@ if (statusResponse.ok) {
 // Process status data after API call
 if (statusData.success) {
   statusesObject = statusData.roleBasedStatuses;
-  console.log(
-    "🔍 [PROJECT-SERVER] Looking for status code:",
-    project.status,
-    "type:",
-    typeof project.status
-  );
-  console.log("🔍 [PROJECT-SERVER] Available status codes:", Object.keys(statusesObject));
-  console.log(
-    "🔍 [PROJECT-SERVER] Available status codes types:",
-    Object.keys(statusesObject).map((k) => `${k} (${typeof k})`)
-  );
-  console.log(
-    "🔍 [PROJECT-SERVER] Status object for project.status:",
-    statusesObject[project.status]
-  );
-  console.log(
-    "🔍 [PROJECT-SERVER] Status object for project.status (string):",
-    statusesObject[project.status.toString()]
-  );
-  console.log(
-    "🔍 [PROJECT-SERVER] Status object for project.status (number):",
-    statusesObject[Number(project.status)]
-  );
   currentStatusObj = statusesObject[project.status] || {};
 }
 currentStatusTab = currentStatusObj.status_tab || null;
@@ -334,6 +249,14 @@ currentStatusName = currentStatusObj.status_name || null;
 currentStatusInt = project.status || 0;
 currentStatusColor = currentStatusObj.status_color || "gray";
 currentStatusProjectAction = currentStatusObj.status_action || null;
+
+console.log("🔍 [PROJECT] currentStatusProjectAction:", statusParam, currentStatusProjectAction);
+
+// search currentStatusProjectAction for "status=" + statusParam
+const statusParamIndex = currentStatusProjectAction?.indexOf("status=" + statusParam) || 0;
+if (statusParamIndex !== -1) {
+  currentStatusProjectAction = null;
+}
 
 // Safety check - if no project was found, redirect to dashboard
 if (!project) {
@@ -388,6 +311,7 @@ if (currentRole === "Admin" || currentRole === "Staff") {
   id={id}
   globalPrimaryTextClasses={globalPrimaryTextClasses}
   globalSecondaryTextClasses={globalSecondaryTextClasses}
+  globalInputClasses={globalInputClasses}
 >
   <div
     id="main-content"
@@ -586,7 +510,6 @@ if (currentRole === "Admin" || currentRole === "Staff") {
         </div>
       </div>
     </main>
-    <Footer />
   </div>
 </App>
 

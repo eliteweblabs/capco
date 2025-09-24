@@ -20,8 +20,15 @@ interface Props {
   companyName?: string;
   globalPrimaryTextClasses?: string;
   globalSecondaryTextClasses?: string;
+  globalInputClasses?: string;
+
+  year?: string;
+  globalCompanyName?: string;
+  globalCompanySlogan?: string;
   staffOptions?: any;
 }
+
+// Global CSS Classes will be defined in client-side script
 
 const {
   title = undefined,
@@ -36,9 +43,13 @@ const {
   isBackend = false,
   id = undefined,
   companyName = undefined,
-  globalPrimaryTextClasses = undefined,
-  globalSecondaryTextClasses = undefined,
+  globalPrimaryTextClasses = "",
+  globalSecondaryTextClasses = "",
+  globalInputClasses = "",
   staffOptions = undefined,
+  year = undefined,
+  globalCompanyName = undefined,
+  globalCompanySlogan = undefined,
 } = Astro.props;
 
 // console.log("[App] currentUser:", currentUser);
@@ -87,6 +98,9 @@ const debugData = {
   projects,
   isBackend,
   id,
+  year,
+  globalCompanyName,
+  globalCompanySlogan,
   // Derived properties
   isAuth,
   currentUserId,
@@ -330,8 +344,16 @@ const debugData = {
       <Aside currentUser={currentUser} />
       <slot />
     </div>
-    <!-- Footer -->
 
+    <!-- Footer -->
+    <Footer
+      globalInputClasses={globalInputClasses}
+      globalSecondaryTextClasses={globalSecondaryTextClasses}
+      globalPrimaryTextClasses={globalPrimaryTextClasses}
+      currentUser={currentUser}
+      year={year}
+      globalCompanyName={globalCompanyName}
+    />
     <!-- <UserCenter
       isAuth={isAuth}
       currentUser={currentUser}
@@ -348,7 +370,14 @@ const debugData = {
     <CookieBanner />
 
     <!-- Speed Dial -->
-    <SpeedDial currentUser={currentUser || undefined} isBackend={isBackend} debugData={debugData} />
+    <SpeedDial
+      currentUser={currentUser || undefined}
+      isBackend={isBackend}
+      debugData={debugData}
+      globalPrimaryTextClasses={globalPrimaryTextClasses}
+      globalSecondaryTextClasses={globalSecondaryTextClasses}
+      globalInputClasses={globalInputClasses}
+    />
     <!-- Debug Panel (Admin Only) -->
   </body>
 
@@ -368,8 +397,10 @@ const debugData = {
       isMobile,
       isSafariIOS,
       isTablet,
+      lockBodyScroll,
       scrollToTop,
       throttle,
+      unlockBodyScroll,
     } from "../../lib/ux-utils.ts";
 
     import { setupConsoleInterceptor } from "../../lib/console-interceptor.ts";
@@ -384,6 +415,14 @@ const debugData = {
     (window as any).getViewportSize = getViewportSize;
     (window as any).debounce = debounce;
     (window as any).throttle = throttle;
+    (window as any).lockBodyScroll = lockBodyScroll;
+    (window as any).unlockBodyScroll = unlockBodyScroll;
+
+    // Global CSS Classes - Single source of truth
+    (window as any).GLOBAL_INPUT_CLASSES =
+      "w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm text-gray-900 focus:border-primary-500 focus:ring-2 focus:ring-primary-500 dark:border-gray-600 dark:text-white dark:focus:border-primary-400 dark:focus:ring-primary-400 bg-background-card";
+    (window as any).GLOBAL_PRIMARY_TEXT_CLASSES = "text-black dark:text-white";
+    (window as any).GLOBAL_SECONDARY_TEXT_CLASSES = "text-gray-800 dark:text-gray-200";
 
     // Setup console interceptor (disables console.log in production)
     setupConsoleInterceptor();
