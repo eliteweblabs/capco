@@ -1,22 +1,10 @@
 import { defineConfig } from "astro/config";
 // import node from "@astrojs/node";
-// import tailwind from "@astrojs/tailwind";
 // import solidJs from "@astrojs/solid-js";
-
-// // https://astro.build/config
-// export default defineConfig({
-//   site: "https://astro-supabase-auth.vercel.app",
-//   output: "server",
-//   adapter: node({
-//     mode: "standalone",
-//   }),
-//   integrations: [tailwind(), solidJs()],
-// });
 
 // @ts-check
 import node from "@astrojs/node";
 import tailwind from "@astrojs/tailwind";
-// import { defineConfig } from "astro/config";
 
 // Load environment variables
 import { loadEnv } from "vite";
@@ -55,33 +43,52 @@ export default defineConfig({
   vite: {
     define: {
       "process.env.NODE_ENV": JSON.stringify(process.env.NODE_ENV || "production"),
-      // Ensure environment variables are available in server context
-      "process.env.EMAIL_PROVIDER": JSON.stringify(env.EMAIL_PROVIDER),
+      // Environment variables in alphabetical order
+      "process.env.BIRD_ACCESS_KEY": JSON.stringify(env.BIRD_ACCESS_KEY),
+      "process.env.BIRD_IDENTITY_SIGNING_KEY": JSON.stringify(env.BIRD_IDENTITY_SIGNING_KEY),
+      "process.env.BIRD_ISSUER": JSON.stringify(env.BIRD_ISSUER),
+      "process.env.BIRD_ORIGIN": JSON.stringify(env.BIRD_ORIGIN),
+      "process.env.CHAT_PORT": JSON.stringify(env.CHAT_PORT),
+      "process.env.COMPANY_LOGO_DARK": JSON.stringify(env.COMPANY_LOGO_DARK),
+      "process.env.COMPANY_LOGO_LIGHT": JSON.stringify(env.COMPANY_LOGO_LIGHT),
       "process.env.EMAIL_API_KEY": JSON.stringify(env.EMAIL_API_KEY),
+      "process.env.EMAIL_LOGO_LIGHT": JSON.stringify(env.EMAIL_LOGO_LIGHT),
+      "process.env.EMAIL_PROVIDER": JSON.stringify(env.EMAIL_PROVIDER),
+      "process.env.FALLBACK_MODE": JSON.stringify(env.FALLBACK_MODE),
       "process.env.FROM_EMAIL": JSON.stringify(env.FROM_EMAIL),
       "process.env.FROM_NAME": JSON.stringify(env.FROM_NAME),
-      "process.env.GOOGLE_MAPS_API_KEY": JSON.stringify(env.GOOGLE_MAPS_API_KEY),
-      // Site URL for proper redirects
-      "process.env.SITE_URL": JSON.stringify(env.SITE_URL || "https://capcofire.com"),
-      // Email template variables
-      "process.env.EMAIL_LOGO_LIGHT": JSON.stringify(env.EMAIL_LOGO_LIGHT),
-      "process.env.COMPANY_LOGO_LIGHT": JSON.stringify(env.COMPANY_LOGO_LIGHT),
-      // Stripe environment variables
-      "process.env.STRIPE_SECRET_KEY": JSON.stringify(env.STRIPE_SECRET_KEY),
-      "process.env.STRIPE_PUBLISHABLE_KEY": JSON.stringify(env.PUBLIC_STRIPE_PUBLISHABLE_KEY),
-      // Brand colors
-      "process.env.PRIMARY_COLOR": JSON.stringify(env.PRIMARY_COLOR),
-      "process.env.PRIMARY_COLOR_RGB": JSON.stringify(env.PRIMARY_COLOR_RGB),
-      "process.env.SECONDARY_COLOR": JSON.stringify(env.SECONDARY_COLOR),
       "process.env.GLOBAL_COMPANY_NAME": JSON.stringify(env.GLOBAL_COMPANY_NAME),
       "process.env.GLOBAL_COMPANY_SLOGAN": JSON.stringify(env.GLOBAL_COMPANY_SLOGAN),
-      "process.env.YEAR": JSON.stringify(env.YEAR),
-      // Global CSS classes
       "process.env.GLOBAL_INPUT_CLASSES": JSON.stringify(env.GLOBAL_INPUT_CLASSES),
+      "process.env.GLOBAL_PRIMARY_TEXT_CLASSES": JSON.stringify(env.GLOBAL_PRIMARY_TEXT_CLASSES),
       "process.env.GLOBAL_SECONDARY_TEXT_CLASSES": JSON.stringify(
         env.GLOBAL_SECONDARY_TEXT_CLASSES
       ),
-      "process.env.GLOBAL_PRIMARY_TEXT_CLASSES": JSON.stringify(env.GLOBAL_PRIMARY_TEXT_CLASSES),
+      "process.env.GOOGLE_MAPS_API_KEY": JSON.stringify(env.GOOGLE_MAPS_API_KEY),
+      "process.env.GOOGLE_PLACES_API_KEY": JSON.stringify(env.GOOGLE_PLACES_API_KEY),
+      "process.env.GOOGLE_PLACES_API_SECRET_KEY": JSON.stringify(env.GOOGLE_PLACES_API_SECRET_KEY),
+      "process.env.GOOGLE_VOICE": JSON.stringify(env.GOOGLE_VOICE),
+      "process.env.MAILGUN_API": JSON.stringify(env.MAILGUN_API),
+      "process.env.MAILGUN_BASE_URL": JSON.stringify(env.MAILGUN_BASE_URL),
+      "process.env.MAILGUN_SANDBOX_DOMAIN": JSON.stringify(env.MAILGUN_SANDBOX_DOMAIN),
+      "process.env.MAILGUN_WEBHOOK_SIGNING_KEY": JSON.stringify(env.MAILGUN_WEBHOOK_SIGNING_KEY),
+      "process.env.PRIMARY_COLOR": JSON.stringify(env.PRIMARY_COLOR),
+      "process.env.PRIMARY_COLOR_RGB": JSON.stringify(env.PRIMARY_COLOR_RGB),
+      "process.env.PUBLIC_GOOGLE_MAPS_API_KEY": JSON.stringify(env.PUBLIC_GOOGLE_MAPS_API_KEY),
+      "process.env.PUBLIC_STRIPE_PUBLISHABLE_KEY": JSON.stringify(
+        env.PUBLIC_STRIPE_PUBLISHABLE_KEY
+      ),
+      "process.env.PUBLIC_SUPABASE_ANON_KEY": JSON.stringify(env.PUBLIC_SUPABASE_ANON_KEY),
+      "process.env.PUBLIC_SUPABASE_URL": JSON.stringify(env.PUBLIC_SUPABASE_URL),
+      "process.env.RESEND_WEBHOOK_SECRET": JSON.stringify(env.RESEND_WEBHOOK_SECRET),
+      "process.env.SECONDARY_COLOR": JSON.stringify(env.SECONDARY_COLOR),
+      "process.env.SITE_URL": JSON.stringify(env.SITE_URL || "https://capcofire.com"),
+      "process.env.STRIPE_DOMAIN_ID": JSON.stringify(env.STRIPE_DOMAIN_ID),
+      "process.env.STRIPE_SECRET_KEY": JSON.stringify(env.STRIPE_SECRET_KEY),
+      "process.env.SUPABASE_ANON_KEY": JSON.stringify(env.SUPABASE_ANON_KEY),
+      "process.env.SUPABASE_SERVICE_ROLE_KEY": JSON.stringify(env.SUPABASE_SERVICE_ROLE_KEY),
+      "process.env.SUPABASE_URL": JSON.stringify(env.SUPABASE_URL),
+      "process.env.YEAR": JSON.stringify(env.YEAR),
     },
   },
 });
