@@ -288,7 +288,7 @@ const debugData = {
     <!-- Preloader -->
     <Preloader />
 
-    {
+    <!-- {
       !noNavigation && (
         <Navbar
           desktopNavigationHTML={desktopNavigationHTML}
@@ -312,7 +312,24 @@ const debugData = {
       ) : (
         <slot />
       )
-    }
+    } -->
+
+    <Navbar
+      desktopNavigationHTML={desktopNavigationHTML}
+      currentUser={currentUser}
+      session={session}
+      supabaseUrl={supabaseUrl}
+      id={id}
+      projects={projects}
+      project={project}
+      isBackend={isBackend}
+    />
+    <div
+      class="YRrCJSr_j5nopfm4duUc wBVMFkIGfrKshbvi2gS1 jtAJHOc7mn7b4IKRO59D UZ9xFK4mqjHjj8e8yJwf h8KYXnua2NT4kTVzieom"
+    >
+      <Aside currentUser={currentUser} />
+      <slot />
+    </div>
     <!-- Footer -->
 
     <!-- <UserCenter
@@ -333,8 +350,6 @@ const debugData = {
     <!-- Speed Dial -->
     <SpeedDial currentUser={currentUser || undefined} isBackend={isBackend} />
     <!-- Debug Panel (Admin Only) -->
-
-    <DebugPanel currentUser={currentUser} debugData={debugData} currentRole={currentRole} />
   </body>
 
   <script src="../../assets/js/app.bundle.js"></script>
@@ -348,20 +363,19 @@ const debugData = {
       debounce,
       fixSafariViewport,
       getViewportSize,
+      handleUrlNotification,
       hideOnFormFocus,
       isDesktop,
       isMobile,
       isSafariIOS,
       isTablet,
       scrollToTop,
-      scrollToTopOnMobile,
       throttle,
     } from "../../lib/ux-utils.ts";
 
     import { setupConsoleInterceptor } from "../../lib/console-interceptor.ts";
 
     // Make UX utilities globally available
-    (window as any).scrollToTopOnMobile = scrollToTopOnMobile;
     (window as any).scrollToTop = scrollToTop;
     (window as any).isMobile = isMobile;
     (window as any).isTablet = isTablet;
@@ -375,6 +389,44 @@ const debugData = {
 
     // Setup console interceptor (disables console.log in production)
     setupConsoleInterceptor();
+
+    // Handle URL parameter notifications (errors and success messages)
+    function processUrlNotifications() {
+      const urlParams = new URLSearchParams(window.location.search);
+      const errorParam = urlParams.get("error");
+      const successParam = urlParams.get("success");
+
+      if (errorParam) {
+        console.log("🔔 [URL-NOTIFICATION] Processing error parameter:", errorParam);
+        handleUrlNotification("error", errorParam);
+
+        // Clean up URL by removing the error parameter
+        const newUrl = new URL(window.location.href);
+        newUrl.searchParams.delete("error");
+        window.history.replaceState({}, document.title, newUrl.pathname + newUrl.search);
+      }
+
+      if (successParam) {
+        console.log("🔔 [URL-NOTIFICATION] Processing success parameter:", successParam);
+        handleUrlNotification("success", successParam);
+
+        // Clean up URL by removing the success parameter
+        const newUrl = new URL(window.location.href);
+        newUrl.searchParams.delete("success");
+        window.history.replaceState({}, document.title, newUrl.pathname + newUrl.search);
+      }
+    }
+
+    // Process URL notifications on page load
+    document.addEventListener("DOMContentLoaded", processUrlNotifications);
+
+    // Also run immediately in case DOM is already loaded
+    if (document.readyState === "loading") {
+      // DOM is still loading, event listener will handle it
+    } else {
+      // DOM is already loaded, run immediately
+      processUrlNotifications();
+    }
   </script>
 
   <!-- Expose centralized notification system to window object -->
@@ -424,7 +476,7 @@ const debugData = {
   </script>
 
   <!-- Magic Link Authentication Handler -->
-  <script>
+  <!-- <script>
     // Global magic link authentication handler
     (window as any).handleMagicLinkAuth = async function () {
       try {
@@ -509,7 +561,7 @@ const debugData = {
       // DOM is already loaded, run immediately
       (window as any).handleMagicLinkAuth();
     }
-  </script>
+  </script> -->
 
   <!-- Service Worker Registration for PWA -->
   <script>

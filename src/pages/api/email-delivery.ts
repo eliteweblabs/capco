@@ -4,27 +4,17 @@
 import type { APIRoute } from "astro";
 import { readFileSync } from "fs";
 import { join } from "path";
+import { SimpleProjectLogger } from "../../lib/simple-logging";
 import { supabase } from "../../lib/supabase";
 import { supabaseAdmin } from "../../lib/supabase-admin";
 
-// 🚧 DEAD STOP - 2024-12-19: Potentially unused API endpoint
-// If you see this log after a few days, this endpoint can likely be deleted
-
 export const POST: APIRoute = async ({ request, cookies }) => {
-  // console.log("📧 little bit bigger API endpoint called");
-  // console.log("📧 [EMAIL-DELIVERY] ==========================================");
-  // console.log("📧 [EMAIL-DELIVERY] Timestamp:", new Date().toISOString());
-  // console.log("📧 [EMAIL-DELIVERY] Request method:", request.method);
-  // console.log("📧 [EMAIL-DELIVERY] Request URL:", request.url);
-
   // Log to file for debugging
   const fs = await import("fs");
   const logEntry = `[${new Date().toISOString()}] EMAIL-DELIVERY API called\n`;
   fs.appendFileSync("/tmp/astro-email.log", logEntry);
 
   try {
-    // console.log("📧 [EMAIL-DELIVERY] Starting email delivery process");
-
     if (!supabase || !supabaseAdmin) {
       console.error("📧 [EMAIL-DELIVERY] Database clients not available");
       return new Response(
@@ -40,26 +30,15 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     }
 
     const body = await request.json();
-    // console.log("📧 [EMAIL-DELIVERY] Request body:", JSON.stringify(body, null, 2));
-
-    // emailType: "client_comment",
-    // usersToNotify: usersToNotify,
-    // emailSubject: subjectLine,
-    // emailContent: message.trim(),
-    // buttonText: button_text,
-    // buttonLink: button_link,
 
     // Use the proper base URL function to avoid localhost in production
     const { getBaseUrl } = await import("../../lib/url-utils");
     const baseUrl = getBaseUrl(request);
-
-    // DEBUG: Log URL information to troubleshoot magic link localhost issue
-    console.log("🌐 [EMAIL-DELIVERY] URL DEBUG INFO:");
-    console.log("🌐 [EMAIL-DELIVERY] Request URL:", request.url);
-    console.log("🌐 [EMAIL-DELIVERY] Request Origin:", new URL(request.url).origin);
-    console.log("🌐 [EMAIL-DELIVERY] process.env.SITE_URL:", process.env.SITE_URL);
-    console.log("🌐 [EMAIL-DELIVERY] import.meta.env.SITE_URL:", import.meta.env.SITE_URL);
-    console.log("🌐 [EMAIL-DELIVERY] Final baseUrl:", baseUrl);
+    const emailProvider = import.meta.env.EMAIL_PROVIDER;
+    const emailApiKey = import.meta.env.EMAIL_API_KEY;
+    const fromEmail = import.meta.env.FROM_EMAIL;
+    const fromName = import.meta.env.FROM_NAME;
+    let emailTemplate: string;
 
     const {
       usersToNotify,
@@ -74,11 +53,6 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       includeResendHeaders = false,
       trackLinks = true, // Default to true for backward compatibility
     } = body;
-
-    // console.log("📧 [EMAIL-DELIVERY] Parameter validation:");
-    // console.log("  - emailType:", emailType);
-    // console.log("  - usersToNotify count:", usersToNotify?.length || 0);
-    // console.log("📧 [EMAIL-DELIVERY] Email type:", emailType);
 
     // Determine if click tracking should be disabled based on email type
     // Magic link emails should not be tracked to prevent URL wrapping
@@ -97,38 +71,15 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       console.log("📧 [EMAIL-DELIVERY] Click tracking enabled for email type:", emailType);
     }
 
-    // Simple validation - just need projectId and usersToNotify
-    if (!usersToNotify || !emailContent || !emailSubject) {
-      console.error("📧 [EMAIL-DELIVERY] Missing required parameters");
-      return new Response(
-        JSON.stringify({
-          success: false,
-          error: "Missing required parameters",
-        }),
-        {
-          status: 400,
-          headers: { "Content-Type": "application/json" },
-        }
-      );
-    }
-
-    // Resolve users to notify - convert role/id references to actual user objects with emails
-    // console.log("📧 [EMAIL-DELIVERY] Resolving users to notify:", usersToNotify);
-    // const resolvedUsers = [];
-
-    // Get environment variables for email
-    const emailProvider = import.meta.env.EMAIL_PROVIDER;
-    const emailApiKey = import.meta.env.EMAIL_API_KEY;
-    const fromEmail = import.meta.env.FROM_EMAIL;
-    const fromName = import.meta.env.FROM_NAME;
-
-    // console.log("📧 [EMAIL-DELIVERY] Environment variables:");
-    // console.log("  - EMAIL_PROVIDER:", emailProvider ? "Set" : "Missing");
-    // console.log("  - EMAIL_API_KEY:", emailApiKey ? "Set" : "Missing");
-    // console.log("  - FROM_EMAIL:", fromEmail);
-    // console.log("  - FROM_NAME:", fromName);
-
-    if (!emailProvider || !emailApiKey || !fromEmail) {
+    // Simple validation
+    if (
+      !usersToNotify ||
+      !emailContent ||
+      !emailSubject ||
+      !emailProvider ||
+      !emailApiKey ||
+      !fromEmail
+    ) {
       console.error("📧 [EMAIL-DELIVERY] Email configuration not available");
       return new Response(
         JSON.stringify({
@@ -143,15 +94,10 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     }
 
     // Read email template
-    // console.log("📧 [EMAIL-DELIVERY] Reading email template...");
-
-    let emailTemplate: string;
     try {
       const templatePath = join(process.cwd(), "src", "templates-email", "template.html");
-      // console.log("📧 [EMAIL-DELIVERY] Template path:", templatePath);
 
       emailTemplate = readFileSync(templatePath, "utf-8");
-      // console.log("📧 [EMAIL-DELIVERY] Email template loaded, length:", emailTemplate.length);
 
       if (!emailTemplate || emailTemplate.length === 0) {
         throw new Error("Email template is empty");
@@ -168,69 +114,46 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     const sentEmails = [];
     const failedEmails = [];
 
-    // console.log("📧 [EMAIL-DELIVERY] About to send emails to:", usersToNotify.length, "recipients");
-    // console.log("📧 [EMAIL-DELIVERY] Recipients:", usersToNotify);
-
     try {
       // Send emails to each user
       for (let i = 0; i < usersToNotify.length; i++) {
         const userEmail = usersToNotify[i];
-        // console.log(
-        //   `📧 [EMAIL-DELIVERY] Processing email ${i + 1}/${usersToNotify.length}: ${userEmail}`
-        // );
-
-        // Check if this is an SMS gateway email
-        const isSmsGateway =
-          userEmail.includes("@vtext.com") ||
-          userEmail.includes("@txt.att.net") ||
-          userEmail.includes("@messaging.sprintpcs.com") ||
-          userEmail.includes("@tmomail.net") ||
-          userEmail.includes("@smsmyboostmobile.com") ||
-          userEmail.includes("@sms.cricketwireless.net");
-
-        // console.log(`📧 [EMAIL-DELIVERY] Is SMS gateway: ${isSmsGateway} for ${userEmail}`);
 
         let emailHtml: string;
         try {
-          // For SMS gateways, skip HTML template processing
-          if (isSmsGateway) {
-            emailHtml = ""; // No HTML needed for SMS gateways
-          } else {
-            // Replace template variables for regular emails
-            emailHtml = emailTemplate.replace("{{CONTENT}}", emailContent);
+          // Replace template variables for regular emails
+          emailHtml = emailTemplate.replace("{{CONTENT}}", emailContent);
 
-            // must process LOGO before COMPANY_NAME for title tag
+          // must process LOGO before COMPANY_NAME for title tag
+          emailHtml = emailHtml.replace(
+            /{{GLOBAL_COMPANY_NAME}}/g,
+            process.env.GLOBAL_COMPANY_NAME || "No Company Name"
+          );
 
-            emailHtml = emailHtml.replace(
-              /{{GLOBAL_COMPANY_NAME}}/g,
-              process.env.GLOBAL_COMPANY_NAME || "No Company Name"
-            );
+          emailHtml = emailHtml.replace(
+            /{{PRIMARY_COLOR}}/g,
+            process.env.PRIMARY_COLOR || "#3b82f6"
+          );
 
-            emailHtml = emailHtml.replace(
-              /{{PRIMARY_COLOR}}/g,
-              process.env.PRIMARY_COLOR || "#3b82f6"
-            );
+          emailHtml = emailHtml.replace(/{{YEAR}}/g, process.env.YEAR || "No Year");
 
-            emailHtml = emailHtml.replace(/{{YEAR}}/g, process.env.YEAR || "No Year");
-
-            emailHtml = emailHtml.replace(
-              /{{GLOBAL_COMPANY_SLOGAN}}/g,
-              process.env.GLOBAL_COMPANY_SLOGAN || "No Company Slogan"
-            );
-            emailHtml = emailHtml.replace(
-              /{{COMPANY_LOGO_LIGHT}}/g,
-              process.env.COMPANY_LOGO_LIGHT || "No Logo Img"
-            );
-            emailHtml = emailHtml.replace(
-              /{{COMPANY_LOGO_DARK}}/g,
-              process.env.COMPANY_LOGO_DARK || "No Logo Img"
-            );
-          }
+          emailHtml = emailHtml.replace(
+            /{{GLOBAL_COMPANY_SLOGAN}}/g,
+            process.env.GLOBAL_COMPANY_SLOGAN || "No Company Slogan"
+          );
+          emailHtml = emailHtml.replace(
+            /{{COMPANY_LOGO_LIGHT}}/g,
+            process.env.COMPANY_LOGO_LIGHT || "No Logo Img"
+          );
+          emailHtml = emailHtml.replace(
+            /{{COMPANY_LOGO_DARK}}/g,
+            process.env.COMPANY_LOGO_DARK || "No Logo Img"
+          );
 
           // Override buttonLink with magic link for authentication
           let finalButtonLink = buttonLink;
 
-          if (buttonLink && buttonLink.includes("/dashboard") && !isSmsGateway) {
+          if (buttonLink && buttonLink.includes("/dashboard")) {
             try {
               const redirectUrl = `${baseUrl}${buttonLink}`;
               console.log("🔗 [EMAIL-DELIVERY] Magic link redirect URL:", redirectUrl);
@@ -253,35 +176,11 @@ export const POST: APIRoute = async ({ request, cookies }) => {
             } catch (error) {
               console.error("📧 [EMAIL-DELIVERY] Error generating magic link:", error);
             }
-          } else if (isSmsGateway) {
-            // console.log(
-            //   "📧 [EMAIL-DELIVERY] Skipping magic link generation for SMS gateway:",
-            //   userEmail
-            // );
           }
 
-          // Apply button configuration (skip for SMS gateways)
-          // console.log("🔍 [EMAIL-DELIVERY] Button debug for", {
-          //   buttonText,
-          //   buttonLink,
-          //   finalButtonLink,
-          //   isSmsGateway,
-          //   hasButton: !!(buttonText && finalButtonLink),
-          // });
-
-          if (!isSmsGateway) {
-            if (buttonText && finalButtonLink) {
-              emailHtml = emailHtml.replace("{{BUTTON_TEXT}}", buttonText);
-              emailHtml = emailHtml.replace("{{BUTTON_LINK}}", finalButtonLink);
-            } else {
-              // Remove button section entirely
-              // emailHtml = emailHtml.replace(
-              //   /<!-- Call to Action Button -->[\s\S]*?<!-- \/Call to Action Button -->/g,
-              //   ""
-              // );
-              emailHtml = emailHtml.replace("{{BUTTON_TEXT}}", "");
-              emailHtml = emailHtml.replace("{{BUTTON_LINK}}", "");
-            }
+          if (buttonText && finalButtonLink) {
+            emailHtml = emailHtml.replace("{{BUTTON_TEXT}}", buttonText);
+            emailHtml = emailHtml.replace("{{BUTTON_LINK}}", finalButtonLink);
           }
 
           // // Validate from field
@@ -292,47 +191,25 @@ export const POST: APIRoute = async ({ request, cookies }) => {
           // Strip HTML from email subject line
           const cleanSubject = emailSubject.replace(/<[^>]*>/g, "").trim();
 
-          // For SMS gateways, send only plain text (no HTML)
-          const emailPayload = isSmsGateway
-            ? {
-                from: `${process.env.FROM_NAME} <${process.env.FROM_EMAIL}>`, // Consistent verified sender
-                to: userEmail,
-                subject: "", // Empty subject for SMS gateways
-                text: emailContent.substring(0, 160), // Limit to 160 characters for SMS
-                headers: {
-                  "X-SMS-Gateway": "true",
-                  "Content-Type": "text/plain; charset=UTF-8",
-                },
-              }
-            : {
-                from: `${validFromName} <${validFromEmail}>`,
-                to: userEmail,
-                subject: cleanSubject,
-                html: emailHtml,
-                text: emailContent,
-                // Configure click tracking based on email type
-                // Disable for magic links, enable for status updates and other emails
-                track_links: finalTrackLinks,
-                // Add proper content type and custom headers (only if values exist)
-                headers: {
-                  "Content-Type": "text/html; charset=UTF-8",
-                  ...(includeResendHeaders && projectId && { "X-Project-ID": String(projectId) }),
-                  ...(includeResendHeaders &&
-                    newStatus !== undefined &&
-                    newStatus !== null && { "X-Project-Status": String(newStatus) }),
-                  ...(includeResendHeaders && authorId && { "X-Author-ID": String(authorId) }),
-                },
-              };
-
-          // Debug logging for SMS gateways
-          if (isSmsGateway) {
-            // console.log("📧 [EMAIL-DELIVERY] Sending SMS gateway email:", {
-            //   to: userEmail,
-            //   subject: cleanSubject,
-            //   contentLength: emailContent.length,
-            //   payloadKeys: Object.keys(emailPayload),
-            // });
-          }
+          const emailPayload = {
+            from: `${validFromName} <${validFromEmail}>`,
+            to: userEmail,
+            subject: cleanSubject,
+            html: emailHtml,
+            text: emailContent,
+            // Configure click tracking based on email type
+            // Disable for magic links, enable for status updates and other emails
+            track_links: finalTrackLinks,
+            // Add proper content type and custom headers (only if values exist)
+            headers: {
+              "Content-Type": "text/html; charset=UTF-8",
+              ...(includeResendHeaders && projectId && { "X-Project-ID": String(projectId) }),
+              ...(includeResendHeaders &&
+                newStatus !== undefined &&
+                newStatus !== null && { "X-Project-Status": String(newStatus) }),
+              ...(includeResendHeaders && authorId && { "X-Author-ID": String(authorId) }),
+            },
+          };
 
           const response = await fetch("https://api.resend.com/emails", {
             method: "POST",
@@ -352,6 +229,20 @@ export const POST: APIRoute = async ({ request, cookies }) => {
               JSON.stringify(emailPayload, null, 2)
             );
             failedEmails.push({ email: userEmail, error: errorText });
+
+            // Log failed email delivery
+            try {
+              await SimpleProjectLogger.addLogEntry(
+                projectId || 0,
+                "email_delivery_failed",
+                { email: userEmail, name: "System" },
+                `Email delivery failed to ${userEmail} - Type: ${emailType}, Subject: ${emailSubject}, Error: ${errorText}`,
+                null,
+                { emailType, emailSubject, error: errorText, status: response.status }
+              );
+            } catch (logError) {
+              console.error("📧 [EMAIL-DELIVERY] Error logging failed email delivery:", logError);
+            }
           } else {
             const responseData = await response.json();
             console.log(
@@ -359,6 +250,23 @@ export const POST: APIRoute = async ({ request, cookies }) => {
               responseData
             );
             sentEmails.push(userEmail);
+
+            // Log successful email delivery
+            try {
+              await SimpleProjectLogger.addLogEntry(
+                projectId || 0,
+                "email_delivery_success",
+                { email: userEmail, name: "System" },
+                `Email sent successfully to ${userEmail} - Type: ${emailType}, Subject: ${emailSubject}`,
+                null,
+                { emailType, emailSubject, responseId: responseData.id }
+              );
+            } catch (logError) {
+              console.error(
+                "📧 [EMAIL-DELIVERY] Error logging successful email delivery:",
+                logError
+              );
+            }
           }
         } catch (userError) {
           console.error(
@@ -369,12 +277,29 @@ export const POST: APIRoute = async ({ request, cookies }) => {
             message: userError instanceof Error ? userError.message : "Unknown error",
             stack: userError instanceof Error ? userError.stack : undefined,
             userEmail,
-            isSmsGateway,
           });
           failedEmails.push({
             email: userEmail,
             error: userError instanceof Error ? userError.message : "Unknown error",
           });
+
+          // Log failed email delivery (catch block)
+          try {
+            await SimpleProjectLogger.addLogEntry(
+              projectId || 0,
+              "email_delivery_error",
+              { email: userEmail, name: "System" },
+              `Email delivery error to ${userEmail} - Type: ${emailType}, Subject: ${emailSubject}, Error: ${userError instanceof Error ? userError.message : "Unknown error"}`,
+              null,
+              {
+                emailType,
+                emailSubject,
+                error: userError instanceof Error ? userError.message : "Unknown error",
+              }
+            );
+          } catch (logError) {
+            console.error("📧 [EMAIL-DELIVERY] Error logging email delivery error:", logError);
+          }
         }
       }
     } catch (emailSendingError) {
@@ -405,6 +330,26 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     // console.log("  - Failed emails:", failedEmails);
     // console.log("  - Total sent:", sentEmails.length);
     // console.log("  - Total failed:", failedEmails.length);
+
+    // Log overall email delivery completion
+    try {
+      await SimpleProjectLogger.addLogEntry(
+        projectId || 0,
+        "email_delivery_completed",
+        { email: "System", name: "System" },
+        `Email delivery batch completed - Type: ${emailType}, Total sent: ${sentEmails.length}, Total failed: ${failedEmails.length}`,
+        null,
+        {
+          emailType,
+          totalSent: sentEmails.length,
+          totalFailed: failedEmails.length,
+          sentEmails: sentEmails,
+          failedEmails: failedEmails,
+        }
+      );
+    } catch (logError) {
+      console.error("📧 [EMAIL-DELIVERY] Error logging email delivery completion:", logError);
+    }
 
     return new Response(
       JSON.stringify({
