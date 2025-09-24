@@ -15,7 +15,7 @@ const isAuthenticated = currentUser && currentUser.id;
 // Shows all App component parameters in an accordion modal
 
 interface Props {
-  debugData: Record<string, any>;
+  debugData?: Record<string, any>;
   currentRole?: string;
 }
 
@@ -67,21 +67,27 @@ const categories = {
 const categorizedData: Record<string, Array<[string, any]>> = {};
 const usedKeys = new Set<string>();
 
-// First, categorize known keys
-Object.entries(categories).forEach(([category, keys]) => {
-  categorizedData[category] = [];
-  keys.forEach(key => {
-    if (key in debugData) {
-      categorizedData[category].push([key, debugData[key]]);
-      usedKeys.add(key);
-    }
+// Check if debugData exists
+if (debugData && typeof debugData === 'object') {
+  // First, categorize known keys
+  Object.entries(categories).forEach(([category, keys]) => {
+    categorizedData[category] = [];
+    keys.forEach(key => {
+      if (key in debugData) {
+        categorizedData[category].push([key, debugData[key]]);
+        usedKeys.add(key);
+      }
+    });
   });
-});
 
-// Add remaining keys to "Other"
-categorizedData["Other"] = Object.entries(debugData)
-  .filter(([key]) => !usedKeys.has(key))
-  .sort(([a], [b]) => a.localeCompare(b));
+  // Add remaining keys to "Other"
+  categorizedData["Other"] = Object.entries(debugData)
+    .filter(([key]) => !usedKeys.has(key))
+    .sort(([a], [b]) => a.localeCompare(b));
+} else {
+  // If debugData is undefined or not an object, show a message
+  categorizedData["Debug Info"] = [["debugData", "No debug data available"]];
+}
 
 // Remove empty categories
 Object.keys(categorizedData).forEach(category => {
@@ -215,7 +221,7 @@ Object.keys(categorizedData).forEach(category => {
       <!-- Footer -->
       <div class="mt-5 sm:mt-6 flex justify-between items-center">
         <div class="text-sm text-gray-500 dark:text-gray-400">
-          Total parameters: {Object.keys(debugData).length}
+          Total parameters: {debugData ? Object.keys(debugData).length : 0}
         </div>
         <button
           id="debug-close-btn-2"
