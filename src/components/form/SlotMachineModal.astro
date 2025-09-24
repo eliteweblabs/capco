@@ -14,12 +14,13 @@ interface Props {
   showCloseButton?: boolean; // Optional: Show X close button (default: true)
   showCancelButton?: boolean; // Optional: Show Cancel button (default: true)
   addNewOption?: boolean; // Optional: Show add new option button (default: false)
-  skipSaveToAPI?: boolean; // Optional: Skip saving to API (default: false)
+  skipSaveToAPI?: boolean; // Optional: Skip saving to API when used inside forms (default: false)
   name?: string; // Optional: Form field name (defaults to id)
   buttonClass?: string; // Optional: Custom button class (defaults to "")
   noResultsText?: string; // Optional: No results text (defaults to "No results found")
   // NEW FLEXIBLE PROPS:
-  apiEndpoint?: string; // Optional: API endpoint for dynamic data
+  fetchApiEndpoint?: string; // Optional: API endpoint for fetching/searching data
+  saveApiEndpoint?: string; // Optional: API endpoint for saving data (defaults to id if not provided)
   searchText?: string; // Optional: Search input label (if provided, enables search)
   searchPlaceholder?: string; // Optional: Search input placeholder
   apiParams?: Record<string, any>; // Optional: Additional API parameters
@@ -65,7 +66,8 @@ const {
   icon = "chevron-down",
   currentUser,
   // NEW FLEXIBLE PROPS:
-  apiEndpoint,
+  fetchApiEndpoint,
+  saveApiEndpoint,
   searchText = "Search Options",
   searchPlaceholder = "Type to search options...",
   apiParams = {},
@@ -80,6 +82,11 @@ const {
   project,
   // project = {},
 } = Astro.props;
+
+// Debug logging for saveApiEndpoint
+console.log("🔧 [SLOT-MACHINE] Props received:", { saveApiEndpoint, fetchApiEndpoint, id });
+console.log("🔧 [SLOT-MACHINE] saveApiEndpoint type:", typeof saveApiEndpoint);
+console.log("🔧 [SLOT-MACHINE] saveApiEndpoint value:", JSON.stringify(saveApiEndpoint));
 
 const projectId = project?.id || "";
 // Ensure options is always an array
@@ -98,8 +105,6 @@ const displayText = buttonText || selectedOption?.label || placeholder;
   id={id}
   variant={buttonVariant || "outline"}
   class={buttonClass || ""}
-  icon={icon}
-  iconPosition="right"
   data-refresh={name}
   data-project-id={projectId}
   size="sm"
@@ -127,7 +132,8 @@ const displayText = buttonText || selectedOption?.label || placeholder;
     showCancelButton,
     skipSaveToAPI,
     enableSearch,
-    apiEndpoint,
+    fetchApiEndpoint,
+    saveApiEndpoint,
     searchText,
     searchPlaceholder,
     showNotification,
@@ -143,6 +149,9 @@ const displayText = buttonText || selectedOption?.label || placeholder;
     // project,
   }}
 >
+  // Debug logging in script
+  console.log("🔧 [SLOT-MACHINE] Script variables:", { saveApiEndpoint, fetchApiEndpoint, id });
+
   // Initialize the slot machine picker
   document.addEventListener("DOMContentLoaded", function () {
     const trigger = document.getElementById(id);
@@ -196,28 +205,40 @@ const displayText = buttonText || selectedOption?.label || placeholder;
           console.log(`🎰 [SLOT-MACHINE] Selected value: ${value} (type: ${typeof value})`);
           console.log(`🎰 [SLOT-MACHINE] Selected label: ${label} (type: ${typeof label})`);
           console.log(`🎰 [SLOT-MACHINE] Component ID: ${id}`);
-          console.log(`🎰 [SLOT-MACHINE] Skip save to API: ${skipSaveToAPI}`);
+          console.log(`🎰 [SLOT-MACHINE] Skip save to API (form context): ${skipSaveToAPI}`);
 
           // Call the generic handleSelect function
           if (typeof window.handleSelect === "function") {
             console.log(`🎰 [SLOT-MACHINE] Calling window.handleSelect function`);
-            window.handleSelect(value, label, id);
+            window.handleSelect(value, label, id, saveApiEndpoint);
           } else {
             console.log(`🎰 [SLOT-MACHINE] No window.handleSelect function found`);
           }
 
-          // Auto-save to API endpoint using the component ID
-          if (!skipSaveToAPI) {
-            console.log(`🎰 [SLOT-MACHINE] Calling saveToAPI with:`, { id, value, label });
-            saveToAPI(id, value, label);
+          // Auto-save to API endpoint if saveApiEndpoint is provided or legacy component IDs
+          if (
+            saveApiEndpoint ||
+            id === "update-status" ||
+            id.startsWith("assign-staff-") ||
+            id === "assign-staff"
+          ) {
+            console.log(`🎰 [SLOT-MACHINE] Calling saveToAPI with:`, {
+              saveApiEndpoint,
+              id,
+              value,
+              label,
+            });
+            const apiIdentifier = saveApiEndpoint || id;
+            console.log(`🎰 [SLOT-MACHINE] API identifier being passed:`, apiIdentifier);
+            saveToAPI(apiIdentifier, value, label);
           } else {
-            console.log(`🎰 [SLOT-MACHINE] Skipping saveToAPI because skipSaveToAPI is true`);
+            console.log(`🎰 [SLOT-MACHINE] Not auto-saving to API for component: ${id}`);
           }
 
           console.log(`🎰 [SLOT-MACHINE] Selection process completed`);
         },
         enableSearch: enableSearch,
-        apiEndpoint: apiEndpoint,
+        fetchApiEndpoint: fetchApiEndpoint,
         searchText: searchText,
         searchPlaceholder: searchPlaceholder,
         apiParams: apiParams,
@@ -268,11 +289,13 @@ const displayText = buttonText || selectedOption?.label || placeholder;
     checkUrlParameters();
   });
 
-  // Auto-save function that uses component ID to determine API endpoint
-  async function saveToAPI(componentId, value, label) {
+  // Auto-save function that uses saveApiEndpoint or falls back to component ID
+  async function saveToAPI(apiEndpoint, value, label) {
     try {
-      // console.log(`🎰 [SLOT-MACHINE] ===== SAVE TO API START =====`);
-      // console.log(`🎰 [SLOT-MACHINE] Component ID: ${componentId}`);
+      console.log(`🎰 [SLOT-MACHINE] ===== SAVE TO API START =====`);
+      console.log(`🎰 [SLOT-MACHINE] API Endpoint received: ${apiEndpoint}`);
+      console.log(`🎰 [SLOT-MACHINE] Value: ${value} (type: ${typeof value})`);
+      console.log(`🎰 [SLOT-MACHINE] Label: ${label} (type: ${typeof label})`);
       // console.log(`🎰 [SLOT-MACHINE] Value: ${value} (type: ${typeof value})`);
       // console.log(`🎰 [SLOT-MACHINE] Label: ${label} (type: ${typeof label})`);
       // console.log(`🎰 [SLOT-MACHINE] ProjectId prop: ${projectId} (type: ${typeof projectId})`);
@@ -282,7 +305,8 @@ const displayText = buttonText || selectedOption?.label || placeholder;
       // Format data based on the component type
       let requestBody;
 
-      if (componentId === "update-status") {
+      console.log(`🎰 [XXXSLOT-MACHINE] API Endpoint: ${apiEndpoint}`);
+      if (apiEndpoint === "update-status") {
         // console.log(`🎰 [SLOT-MACHINE] Processing UPDATE-STATUS request`);
         // console.log(`🎰 [SLOT-MACHINE] Raw projectId prop:`, projectId);
         // console.log(`🎰 [SLOT-MACHINE] Raw value:`, value);
@@ -322,7 +346,7 @@ const displayText = buttonText || selectedOption?.label || placeholder;
           status: parsedStatus, // Convert value to integer
         };
         console.log(`🎰 [SLOT-MACHINE] UPDATE-STATUS requestBody:`, requestBody);
-      } else if (componentId === "assign-staff") {
+      } else if (apiEndpoint.startsWith("assign-staff-") || apiEndpoint === "assign-staff") {
         console.log(`🎰 [SLOT-MACHINE] Processing ASSIGN-STAFF request`);
         const parsedProjectId =
           parseInt(projectId) || parseInt(window.location.pathname.split("/").pop()) || null;
@@ -351,9 +375,14 @@ const displayText = buttonText || selectedOption?.label || placeholder;
       }
 
       console.log(`🎰 [SLOT-MACHINE] Final request body:`, requestBody);
-      console.log(`🎰 [SLOT-MACHINE] Making fetch request to: /api/${componentId}`);
 
-      const response = await fetch(`/api/${componentId}`, {
+      // Use the passed apiEndpoint directly
+      console.log(`🎰 [SLOT-MACHINE] Using API endpoint: ${apiEndpoint}`);
+      const finalApiEndpoint = `/api/${apiEndpoint}`;
+      console.log(`🎰 [SLOT-MACHINE] Final API endpoint: ${finalApiEndpoint}`);
+      console.log(`🎰 [SLOT-MACHINE] Making fetch request to: ${finalApiEndpoint}`);
+
+      const response = await fetch(finalApiEndpoint, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -370,7 +399,7 @@ const displayText = buttonText || selectedOption?.label || placeholder;
       );
 
       if (response.ok) {
-        const result = await response.json();
+        const result = await response.clone().json();
         console.log(`🎰 [SLOT-MACHINE] ===== API SUCCESS RESPONSE =====`);
         console.log(`🎰 [SLOT-MACHINE] API response:`, result);
 
@@ -409,11 +438,11 @@ const displayText = buttonText || selectedOption?.label || placeholder;
 
         let errorData;
         try {
-          errorData = await response.json();
+          errorData = await response.clone().json();
           console.log(`🎰 [SLOT-MACHINE] Error response body:`, errorData);
         } catch (parseError) {
           console.log(`🎰 [SLOT-MACHINE] Could not parse error response as JSON:`, parseError);
-          const textResponse = await response.text();
+          const textResponse = await response.clone().text();
           console.log(`🎰 [SLOT-MACHINE] Error response as text:`, textResponse);
           errorData = { error: textResponse };
         }
@@ -475,7 +504,7 @@ const displayText = buttonText || selectedOption?.label || placeholder;
       showCancelButton = true,
       onSelect,
       enableSearch = false,
-      apiEndpoint,
+      fetchApiEndpoint,
       searchText,
       searchPlaceholder,
       apiParams = {},
@@ -718,7 +747,7 @@ const displayText = buttonText || selectedOption?.label || placeholder;
         // If fetchOnLoad is true OR we have pre-populated options without an API endpoint, filter existing options
         if (
           fetchOnLoad ||
-          (!apiEndpoint && (originalOptions.length > 0 || finalOptions.length > 0))
+          (!fetchApiEndpoint && (originalOptions.length > 0 || finalOptions.length > 0))
         ) {
           // Store original options on first search
           if (originalOptions.length === 0) {
@@ -830,7 +859,7 @@ const displayText = buttonText || selectedOption?.label || placeholder;
         }
 
         // Original API-based search for non-fetchOnLoad cases
-        if (apiEndpoint && query.length >= 2) {
+        if (fetchApiEndpoint && query.length >= 2) {
           searchTimeout = setTimeout(async () => {
             try {
               console.log(`🔍 [SLOT-MACHINE] Searching for: ${query}`);
@@ -841,7 +870,7 @@ const displayText = buttonText || selectedOption?.label || placeholder;
                 ...apiParams,
               });
 
-              const response = await fetch(`${apiEndpoint}?${searchParams}`);
+              const response = await fetch(`${fetchApiEndpoint}?${searchParams}`);
               if (!response.ok) {
                 throw new Error(`Search failed: ${response.status}`);
               }
@@ -910,13 +939,13 @@ const displayText = buttonText || selectedOption?.label || placeholder;
     }
 
     // Fetch data on load if fetchOnLoad is true
-    if (fetchOnLoad && apiEndpoint && optionsList) {
+    if (fetchOnLoad && fetchApiEndpoint && optionsList) {
       try {
-        console.log(`🔄 [SLOT-MACHINE] Fetching data on load for: ${apiEndpoint}`);
+        console.log(`🔄 [SLOT-MACHINE] Fetching data on load for: ${fetchApiEndpoint}`);
 
         // Build URL with API params
         const searchParams = new URLSearchParams(apiParams);
-        const response = await fetch(`${apiEndpoint}?${searchParams}`);
+        const response = await fetch(`${fetchApiEndpoint}?${searchParams}`);
 
         if (!response.ok) {
           throw new Error(`Fetch failed: ${response.status}`);
@@ -1347,11 +1376,13 @@ const displayText = buttonText || selectedOption?.label || placeholder;
   }
 
   // Generic handleSelect function that works for any slot machine
-  window.handleSelect = function (value, label, componentId) {
+  window.handleSelect = function (value, label, componentId, passedSaveApiEndpoint) {
     console.log(`🎰 [SLOT-MACHINE] ===== WINDOW.HANDLESELECT CALLED =====`);
     console.log(`🎰 [SLOT-MACHINE] Value: ${value} (type: ${typeof value})`);
     console.log(`🎰 [SLOT-MACHINE] Label: ${label} (type: ${typeof label})`);
     console.log(`🎰 [SLOT-MACHINE] Component ID: ${componentId}`);
+    console.log(`🎰 [SLOT-MACHINE] Passed Save API Endpoint: ${passedSaveApiEndpoint}`);
+    console.log(`🎰 [SLOT-MACHINE] Global saveApiEndpoint: ${saveApiEndpoint}`);
 
     // Find the hidden input for this component
     const hiddenInput = document.getElementById(`${componentId}-value`);
@@ -1390,11 +1421,31 @@ const displayText = buttonText || selectedOption?.label || placeholder;
 
     console.log(`✅ [SLOT-MACHINE] Selected: ${label} (${value}) for component: ${componentId}`);
 
-    // Check if we should auto-save to API
-    // For update-status and assign-staff, we should auto-save
-    if (componentId === "update-status" || componentId === "assign-staff") {
-      console.log(`🎰 [SLOT-MACHINE] Auto-saving to API for component: ${componentId}`);
-      saveToAPI(componentId, value, label);
+    // Auto-save to API if saveApiEndpoint is provided or legacy component IDs
+    console.log(`🐛 [SLOT-MACHINE] Debugging auto-save condition:`);
+    console.log(`🐛   - passedSaveApiEndpoint:`, passedSaveApiEndpoint);
+    console.log(`🐛   - componentId:`, componentId);
+    console.log(
+      `🐛   - componentId.startsWith("assign-staff"):`,
+      componentId.startsWith("assign-staff")
+    );
+    console.log(`🐛   - componentId === "update-status":`, componentId === "update-status");
+
+    if (
+      passedSaveApiEndpoint ||
+      componentId === "update-status" ||
+      componentId.startsWith("assign-staff-") ||
+      componentId === "assign-staff"
+    ) {
+      console.log(
+        `🎰 [SLOT-MACHINE] Auto-saving to API for passedSaveApiEndpoint: ${passedSaveApiEndpoint}`
+      );
+      // Pass the correct saveApiEndpoint to saveToAPI
+      const correctSaveApiEndpoint = passedSaveApiEndpoint || componentId;
+      console.log(
+        `🎰 [SLOT-MACHINE] Calling saveToAPI with correct endpoint: ${correctSaveApiEndpoint}`
+      );
+      saveToAPI(correctSaveApiEndpoint, value, label);
     } else {
       console.log(`🎰 [SLOT-MACHINE] Not auto-saving to API for component: ${componentId}`);
     }

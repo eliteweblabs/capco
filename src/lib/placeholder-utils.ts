@@ -139,14 +139,16 @@ export function replacePlaceholders(
     // // console.log(
     //   `🔄 [PLACEHOLDER-UTILS] Replacing {{PROJECT_ADDRESS}} with: ${data.projectAddress}`
     // );
-    result = result.replace(/\{\{\s*PROJECT_ADDRESS\s*\}\}/g, data.projectAddress);
+    result = result.replace(/\{\{\s*PROJECT_ADDRESS\s*\}\}/g, "<b>" + data.projectAddress + "</b>");
+    addBoldTags = true;
   } else {
     // console.log("🔄 [PLACEHOLDER-UTILS] ⚠️ No projectAddress data available");
   }
 
   if (data.clientName) {
     // // console.log(`🔄 [PLACEHOLDER-UTILS] Replacing {{CLIENT_NAME}} with: ${data.clientName}`);
-    result = result.replace(/\{\{\s*CLIENT_NAME\s*\}\}/g, data.clientName);
+    result = result.replace(/\{\{\s*CLIENT_NAME\s*\}\}/g, "<b>" + data.clientName + "</b>");
+    addBoldTags = true;
   } else {
     // console.log("🔄 [PLACEHOLDER-UTILS] ⚠️ No clientName data available");
   }
@@ -161,12 +163,14 @@ export function replacePlaceholders(
 
   if (data.statusName) {
     // console.log(`🔄 [PLACEHOLDER-UTILS] Replacing {{STATUS_NAME}} with: ${data.statusName}`);
-    result = result.replace(/\{\{\s*STATUS_NAME\s*\}\}/g, data.statusName);
+    result = result.replace(/\{\{\s*STATUS_NAME\s*\}\}/g, "<b>" + data.statusName + "</b>");
+    addBoldTags = true;
   }
 
   if (data.estTime) {
     // console.log(`🔄 [PLACEHOLDER-UTILS] Replacing {{EST_TIME}} with: ${data.estTime}`);
     result = result.replace(/\{\{\s*EST_TIME\s*\}\}/g, data.estTime);
+    addBoldTags = true;
   }
 
   data.primaryColor = process.env.PRIMARY_COLOR || "#3b82f6";

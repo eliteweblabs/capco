@@ -29,6 +29,7 @@ import { checkAuth } from "../lib/auth";
 const { currentUser, session, supabase, refreshToken, accessToken } = await checkAuth(
   Astro.cookies
 );
+const currentRole = currentUser?.profile?.role || "Client";
 
 // Handle auth redirect first
 if (requireAuthRedirect && (!session || !currentUser)) {
@@ -115,6 +116,40 @@ if (statusResponse.ok) {
     statusResponse.statusText
   );
 }
+
+// Fetch staff data for staff selection
+let staffOptions: any[] = [];
+if (currentRole === "Admin" || currentRole === "Staff") {
+  try {
+    const staffResponse = await fetch(`${Astro.url.origin}/api/get-user-emails-by-role`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        roles: ["Admin", "Staff"],
+      }),
+    });
+    if (staffResponse.ok) {
+      const staffData = await staffResponse.json();
+      if (staffData.success && staffData.staffUsers) {
+        staffOptions = [
+          { value: "", label: "Unassigned" },
+          ...staffData.staffUsers.map((staff: any) => ({
+            value: staff.id || "",
+            label:
+              staff.company_name ||
+              `${staff.first_name || ""} ${staff.last_name || ""}`.trim() ||
+              "Unknown Staff",
+          })),
+        ];
+      }
+    }
+  } catch (error) {
+    console.error("Failed to fetch staff data:", error);
+    staffOptions = [{ value: "", label: "Unassigned" }];
+  }
+}
 ---
 
 <App
@@ -126,6 +161,7 @@ if (statusResponse.ok) {
   supabase={supabase}
   projects={projects}
   isBackend={true}
+  staffOptions={staffOptions}
 >
   <!-- Dashboard Container -->
 
@@ -152,6 +188,7 @@ if (statusResponse.ok) {
               projects={projects}
               statusesObject={project_statuses_object}
               currentUser={currentUser}
+              staffOptions={staffOptions}
             />
           ) : (
             // <!-- No projects - show only form -->

@@ -6,7 +6,8 @@ import { supabase } from "../../lib/supabase";
 export const POST: APIRoute = async ({ request, cookies }) => {
   try {
     // Check authentication
-    const { currentUser, currentRole } = await checkAuth(cookies);
+    const { currentUser } = await checkAuth(cookies);
+    const currentRole = currentUser?.profile?.role;
     if (!currentUser) {
       return new Response(JSON.stringify({ error: "Authentication required" }), {
         status: 401,
@@ -64,10 +65,9 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     }
 
     // Check permissions - Admin/Staff can update any, Clients can only update their own
-    const canUpdate =
-      currentRole === "Admin" ||
-      currentRole === "Staff" ||
-      punchlistItem.author_id === currentUser.id;
+    const canUpdate = currentRole === "Admin" || currentRole === "Staff";
+    // ||
+    // punchlistItem.author_id === currentUser.id;
 
     if (!canUpdate) {
       return new Response(
@@ -140,7 +140,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         // Continue with the response instead of returning
       }
 
-      const adminContent = ` ${punchlistMessage} marked complete by ${currentUser.company_name}:<br><br>`;
+      const adminContent = ` ${punchlistMessage} marked complete by ${currentUser.profile.company_name}:<br><br>`;
 
       // THIS IS TO THE ADMINS EMAIL
       // Send email using the email delivery API
@@ -152,7 +152,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
         body: JSON.stringify({
           usersToNotify: ["jk@capcofire.com", "capco@eliteweblabs.com"], // Use resolved user email
-          emailSubject: `Punchlist Item Completed → ${punchlistMessage.message} → ${currentUser.company_name}`,
+          emailSubject: `Punchlist Item Completed → ${punchlistMessage.message} → ${currentUser.profile.company_name}`,
           emailContent: adminContent,
           buttonText: "Access Your Dashboard",
           buttonLink: "/dashboard",

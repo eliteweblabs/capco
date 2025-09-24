@@ -12,8 +12,10 @@ if (requireAuthRedirect && (!session || !currentUser)) {
 
 const companyName = process.env.GLOBAL_COMPANY_NAME;
 const companySlogan = process.env.GLOBAL_COMPANY_SLOGAN;
-const globalSecondaryTextClasses = process.env.GLOBAL_SECONDARY_TEXT_CLASSES;
-const globalPrimaryTextClasses = process.env.GLOBAL_PRIMARY_TEXT_CLASSES;
+const globalSecondaryTextClasses =
+  process.env.GLOBAL_SECONDARY_TEXT_CLASSES || "text-gray-600 dark:text-gray-400";
+const globalPrimaryTextClasses =
+  process.env.GLOBAL_PRIMARY_TEXT_CLASSES || "text-gray-900 dark:text-white";
 
 import App from "../../components/common/App.astro";
 
@@ -114,8 +116,8 @@ let invoiceResult = { data: null, error: null };
 if (supabase) {
   console.log("🔍 [PROJECT-DEBUG] Looking for project with ID:", id, "Type:", typeof id);
 
-  // OPTIMIZED: Run all database queries in parallel for much faster loading
-  const [projectResult, invoiceResultData, statusesResultData] = await Promise.all([
+  // OPTIMIZED: Run database queries in parallel for much faster loading
+  const [projectResult, invoiceResultData] = await Promise.all([
     // 1. Get project data
     supabase.from("projects").select("*").eq("id", id).single(),
 
@@ -125,14 +127,9 @@ if (supabase) {
       .select("id, catalog_line_items, status, project_id")
       .eq("project_id", id)
       .single(),
-
-    // 3. Get status labels (parallel with other queries)
-    supabase.from("project_statuses").select("*").order("status_code"),
   ]);
 
   const invoiceResult = invoiceResultData || { data: null, error: null };
-  // Assign the statuses result (legacy - will be replaced)
-  statusesResult = statusesResultData;
 
   console.log("🔍 [PROJECT-DEBUG] Project query result:", projectResult);
   console.log("🔍 [PROJECT-DEBUG] Project data:", projectResult.data);
@@ -142,72 +139,7 @@ if (supabase) {
   // console.log("🔍 [PROJECT] Project data:", project.featured_image_data);
   projectId = project?.id?.toString() || id || "";
 
-  // Fetch project statuses using the unified API
-  const statusApiUrl = new URL("/api/project-statuses", Astro.url.origin);
-  statusApiUrl.searchParams.set("projectId", projectId);
-  statusApiUrl.searchParams.set("projectAddress", project?.address || "");
-  statusApiUrl.searchParams.set(
-    "clientName",
-    (authorProfile as any)?.company_name ||
-      (authorProfile as any)?.first_name + " " + (authorProfile as any)?.last_name ||
-      "Client"
-  );
-  statusApiUrl.searchParams.set("clientEmail", (authorProfile as any)?.email || "");
-
-  const statusResponse = await fetch(statusApiUrl.toString(), {
-    method: "GET",
-    headers: {
-      Cookie: Astro.request.headers.get("Cookie") || "",
-    },
-  });
-
-  let statusData: any = { success: false, roleBasedStatuses: {}, statusesMap: {} };
-  if (statusResponse.ok) {
-    statusData = await statusResponse.json();
-    console.log("✅ [PROJECT] Unified status API response received:", statusData);
-  } else {
-    console.error(
-      "❌ [PROJECT] Status API failed:",
-      statusResponse.status,
-      statusResponse.statusText
-    );
-  }
-
-  console.log("🔍 [PROJECT] Status data:", statusData);
-  // Use unified API data if available
-  if (statusData.success) {
-    statusesObject = statusData.roleBasedStatuses;
-    console.log(
-      "🔍 [PROJECT-SERVER] Looking for status code:",
-      project.status,
-      "type:",
-      typeof project.status
-    );
-    console.log("🔍 [PROJECT-SERVER] Available status codes:", Object.keys(statusesObject));
-    console.log(
-      "🔍 [PROJECT-SERVER] Available status codes types:",
-      Object.keys(statusesObject).map((k) => `${k} (${typeof k})`)
-    );
-    console.log(
-      "🔍 [PROJECT-SERVER] Status object for project.status:",
-      statusesObject[project.status]
-    );
-    console.log(
-      "🔍 [PROJECT-SERVER] Status object for project.status (string):",
-      statusesObject[project.status.toString()]
-    );
-    console.log(
-      "🔍 [PROJECT-SERVER] Status object for project.status (number):",
-      statusesObject[Number(project.status)]
-    );
-    currentStatusObj = statusesObject[project.status] || {};
-  }
-  currentStatusTab = currentStatusObj.status_tab || null;
-  currentStatusSlug = currentStatusObj.status_slug || null;
-  currentStatusName = currentStatusObj.status_name || null;
-  currentStatusInt = project.status || 0;
-  currentStatusColor = currentStatusObj.status_color || "gray";
-  currentStatusProjectAction = currentStatusObj.status_action || null;
+  // Status data will be processed after API call
 
   // Define variables for component props
 
@@ -329,9 +261,112 @@ if (supabase) {
   console.error("🚀 [PROJECT] This will cause the page to fail");
 }
 
+// Fetch project statuses using the unified API with project data (after authorProfile is set)
+console.log("🔍 [PROJECT-PAGE] About to call project-statuses API with:", {
+  hasProject: !!project,
+  hasAuthorProfile: !!authorProfile,
+  projectId: project?.id,
+  authorProfileCompany: (authorProfile as any)?.company_name,
+});
+
+const statusResponse = await fetch(`${Astro.url.origin}/api/project-statuses`, {
+  method: "POST",
+  headers: {
+    "Content-Type": "application/json",
+    Cookie: Astro.request.headers.get("Cookie") || "",
+  },
+  body: JSON.stringify({
+    project: project,
+    authorProfile: authorProfile,
+  }),
+});
+
+console.log("🔍 [PROJECT-PAGE] API response status:", statusResponse.status);
+
+let statusData: any = { success: false, roleBasedStatuses: {}, statusesMap: {} };
+if (statusResponse.ok) {
+  statusData = await statusResponse.json();
+  console.log("✅ [PROJECT] Unified status API response received:", statusData);
+} else {
+  console.error(
+    "❌ [PROJECT] Status API failed:",
+    statusResponse.status,
+    statusResponse.statusText
+  );
+}
+
+// Process status data after API call
+if (statusData.success) {
+  statusesObject = statusData.roleBasedStatuses;
+  console.log(
+    "🔍 [PROJECT-SERVER] Looking for status code:",
+    project.status,
+    "type:",
+    typeof project.status
+  );
+  console.log("🔍 [PROJECT-SERVER] Available status codes:", Object.keys(statusesObject));
+  console.log(
+    "🔍 [PROJECT-SERVER] Available status codes types:",
+    Object.keys(statusesObject).map((k) => `${k} (${typeof k})`)
+  );
+  console.log(
+    "🔍 [PROJECT-SERVER] Status object for project.status:",
+    statusesObject[project.status]
+  );
+  console.log(
+    "🔍 [PROJECT-SERVER] Status object for project.status (string):",
+    statusesObject[project.status.toString()]
+  );
+  console.log(
+    "🔍 [PROJECT-SERVER] Status object for project.status (number):",
+    statusesObject[Number(project.status)]
+  );
+  currentStatusObj = statusesObject[project.status] || {};
+}
+currentStatusTab = currentStatusObj.status_tab || null;
+currentStatusSlug = currentStatusObj.status_slug || null;
+currentStatusName = currentStatusObj.status_name || null;
+currentStatusInt = project.status || 0;
+currentStatusColor = currentStatusObj.status_color || "gray";
+currentStatusProjectAction = currentStatusObj.status_action || null;
+
 // Safety check - if no project was found, redirect to dashboard
 if (!project) {
   return Astro.redirect("/dashboard");
+}
+
+// Fetch staff data for staff selection
+let staffOptions: any[] = [];
+if (currentRole === "Admin" || currentRole === "Staff") {
+  try {
+    const staffResponse = await fetch(`${Astro.url.origin}/api/get-user-emails-by-role`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        roles: ["Admin", "Staff"],
+      }),
+    });
+    if (staffResponse.ok) {
+      const staffData = await staffResponse.json();
+      if (staffData.success && staffData.staffUsers) {
+        staffOptions = [
+          { value: "", label: "Unassigned" },
+          ...staffData.staffUsers.map((staff: any) => ({
+            value: staff.id || "",
+            label:
+              staff.company_name ||
+              `${staff.first_name || ""} ${staff.last_name || ""}`.trim() ||
+              "Unknown Staff",
+          })),
+        ];
+      }
+    }
+  } catch (error) {
+    console.error("Failed to fetch staff data:", error);
+    staffOptions = [{ value: "", label: "Unassigned" }];
+  }
 }
 ---
 
@@ -346,6 +381,8 @@ if (!project) {
   noNavigation={false}
   isBackend={true}
   id={id}
+  globalPrimaryTextClasses={globalPrimaryTextClasses}
+  globalSecondaryTextClasses={globalSecondaryTextClasses}
 >
   <div
     id="main-content"
@@ -368,6 +405,9 @@ if (!project) {
             statuses={statusesObject}
             authorProfile={authorProfile}
             currentStatusTab={currentStatusTab || undefined}
+            staffOptions={staffOptions}
+            globalSecondaryTextClasses={globalSecondaryTextClasses}
+            globalPrimaryTextClasses={globalPrimaryTextClasses}
           />
 
           <!-- Tab Navigation -->
@@ -466,6 +506,8 @@ if (!project) {
             projectStatus={currentStatusInt}
             projectStatusLabel={currentStatusName || undefined}
             fileType="media"
+            globalSecondaryTextClasses={globalSecondaryTextClasses}
+            globalPrimaryTextClasses={globalPrimaryTextClasses}
           />
 
           <!-- Proposal Tab -->
@@ -478,6 +520,8 @@ if (!project) {
             authorProfile={authorProfile}
             currentUser={currentUser}
             invoiceResult={invoiceResult || { data: null, error: null }}
+            globalSecondaryTextClasses={globalSecondaryTextClasses}
+            globalPrimaryTextClasses={globalPrimaryTextClasses}
           />
 
           <!-- Contract Tab -->
@@ -488,6 +532,8 @@ if (!project) {
             projectStatus={currentStatusInt}
             projectStatusLabel={currentStatusName || undefined}
             authorProfile={authorProfile}
+            globalSecondaryTextClasses={globalSecondaryTextClasses}
+            globalPrimaryTextClasses={globalPrimaryTextClasses}
           />
 
           <!-- Deposit Tab -->
@@ -500,6 +546,8 @@ if (!project) {
             authorProfile={authorProfile}
             invoiceId={invoiceId || "0"}
             totalAmount={totalAmount}
+            globalSecondaryTextClasses={globalSecondaryTextClasses}
+            globalPrimaryTextClasses={globalPrimaryTextClasses}
           />
 
           <!-- Final Invoice Tab -->
@@ -512,11 +560,23 @@ if (!project) {
             authorProfile={authorProfile}
             invoiceId={invoiceId || "0"}
             totalAmount={totalAmount}
+            globalSecondaryTextClasses={globalSecondaryTextClasses}
+            globalPrimaryTextClasses={globalPrimaryTextClasses}
           />
 
-          <TabActivityLog currentRole={currentRole || undefined} projectId={projectId} />
+          <TabActivityLog
+            currentRole={currentRole || undefined}
+            projectId={projectId}
+            globalSecondaryTextClasses={globalSecondaryTextClasses}
+            globalPrimaryTextClasses={globalPrimaryTextClasses}
+          />
 
-          <TabGeneratePdf projectId={projectId} currentRole={currentRole || undefined} />
+          <TabGeneratePdf
+            projectId={projectId}
+            currentRole={currentRole || undefined}
+            globalSecondaryTextClasses={globalSecondaryTextClasses}
+            globalPrimaryTextClasses={globalPrimaryTextClasses}
+          />
           <!-- </div> -->
         </div>
       </div>
@@ -758,7 +818,7 @@ if (!project) {
           "info",
           "Project Status Update",
           currentStatusProjectAction,
-          0 // No auto-hide
+          2000 // No auto-hide
         );
       } else {
         // Fallback alert if modal function not available

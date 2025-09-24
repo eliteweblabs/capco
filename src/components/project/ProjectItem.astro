@@ -1,5 +1,6 @@
 ---
 import BoxIcon from "../common/BoxIcon.astro";
+import SlotMachineModal from "../form/SlotMachineModal.astro";
 import Tooltip from "../common/Tooltip.astro";
 interface Props {
   project: {
@@ -21,6 +22,7 @@ interface Props {
     comment_count?: any;
     profiles?: any;
     assigned_profiles?: any;
+    assigned_to_avatar?: any;
     featured_image_data?: {
       id: any;
       file_path: string;
@@ -37,6 +39,7 @@ interface Props {
   currentStatusSlug?: string;
   currentStatusTab?: string;
   currentStatusEstTime?: string;
+  staffOptions?: any;
 }
 
 const {
@@ -48,8 +51,10 @@ const {
   currentStatusSlug,
   currentStatusTab,
   currentStatusEstTime,
+  staffOptions,
 } = Astro.props;
 
+console.log("🔍 [PROJECT-ITEM] Project:", project);
 const description = project?.description || "No description";
 
 // console.log("🔍 [PROJECT-feater] Project:", project.featured_image_data);
@@ -188,7 +193,7 @@ function renderAlertIcons(count: number) {
   let html = "";
   for (let i = 0; i < count; i++) {
     html +=
-      '<span class="rounded-full bg-white inline-block"><i class="bx bx-error-circle text-red-500 bx-xs rounded-full bg-white dark:bg-gray-800 block"></i></span>';
+      '<i class="bx bx-error-circle text-red-500 bx-xs rounded-full bg-white dark:bg-gray-800 block"></i>';
   }
   return html;
 }
@@ -221,14 +226,14 @@ const tabUrl = `/project/${project.id}?status=${currentStatusTab}`;
       <label for="checkbox-table-search-1" class="_DVAfiyo21kM68EUVzEQ">checkbox</label>
     </div>
   </td>
-  <th scope="row" class="BHrWGjM1Iab_fAz0_91H RZmKBZs1E1eXw8vkE6jY b9aD6g2qw84oyZNsMO8j"
+  <th scope="row" class="BHrWGjM1Iab_fAz0_91H RZmKBZs1E1eXw8vkE6jY b9aD6g2qw84oyZNsMO8j relative"
     ><a
       href={`/project/${project.id}`}
-      class="ezMFUVl744lvw6ht0lFe __9sbu0yrzdhGIkLWNXl oJZU4OQzzfXeLbF7UKZ_ OyABRrnTV_kvHV7dJ0uE relative"
+      class="ezMFUVl744lvw6ht0lFe __9sbu0yrzdhGIkLWNXl oJZU4OQzzfXeLbF7UKZ_ OyABRrnTV_kvHV7dJ0uE"
       >{project.address || "No address"}
 
       <span
-        class={`font-large z-1 absolute -right-4 -top-3.5 mb-4 cursor-pointer`}
+        class={`font-large z-1 absolute right-0 top-0 mb-4 cursor-pointer`}
         set:html={renderAlertIcons(projectAlertIconCount)}
       />
     </a></th
@@ -241,13 +246,54 @@ const tabUrl = `/project/${project.id}?status=${currentStatusTab}`;
     >
   </td>
   <td class="BHrWGjM1Iab_fAz0_91H RZmKBZs1E1eXw8vkE6jY b9aD6g2qw84oyZNsMO8j">
-    <div class="YRrCJSr_j5nopfm4duUc IxVXJAn2ZWxXpcIHvPnh XrB0f1gZzjK6cEODacjg">
-      <!-- <img
-        src="https://flowbite.com/application-ui/demo/images/users/avatar-10.png"
-        alt=""
-        class="Mln3CkDzLcoVQAC3Uqsd hlT3pgfpx11BUFMWNdhc _VPh6kIywCMfXFfQLas4 RpVwy4sO7Asb86CncKJ_ b0rXX23llDSn6PZwxAyx MGZ9bvBP5fgetIhNCD_o _JnjhZbEHpDJUKJAU8Cw"
+    <div class="YRrCJSr_j5nopfm4duUc IxVXJAn2ZWxXpcIHvPnh XrB0f1gZzjK6cEODacjg"></div>
+  </td>
+  <td class="BHrWGjM1Iab_fAz0_91H RZmKBZs1E1eXw8vkE6jY b9aD6g2qw84oyZNsMO8j ezMFUVl744lvw6ht0lFe">
+    <div class="Z3N7I2IDDsoXK6xJ1cSW YRrCJSr_j5nopfm4duUc URF_PdoDtDpDi8BZQL94">
+      <SlotMachineModal
+        id={`assign-staff-${project.id}`}
+        title="Assign Staff Member"
+        options={staffOptions}
+        selectedValue={project?.assigned_to_id || ""}
+        placeholder="Assign staff..."
+        buttonText={(() => {
+          if (!project?.assigned_to_id) return "Unassigned";
+          const assignedStaff = staffOptions.find(
+            (staff: any) => staff.value === project.assigned_to_id
+          );
+          return assignedStaff?.label || "Unknown Staff";
+        })()}
+        saveApiEndpoint="assign-staff"
+        showCloseButton={true}
+        showCancelButton={true}
+        skipSaveToAPI={false}
+        project={project}
+        showNotification={true}
+        icon="user"
+        searchText="Search staff..."
+        buttonVariant="outline"
       />
-      <img
+
+      <!-- <span data-searchable>
+        {
+          project.assigned_to_name ? (
+            <span data-searchable>{project.assigned_to_name}</span>
+          ) : (
+            <span class="text-danger-500">UNASSIGNED</span>
+          )
+        }
+      </span> -->
+      {
+        project.assigned_to_avatar && (
+          <img
+            src={project.assigned_to_avatar}
+            alt=""
+            class="Mln3CkDzLcoVQAC3Uqsd hlT3pgfpx11BUFMWNdhc _VPh6kIywCMfXFfQLas4 RpVwy4sO7Asb86CncKJ_ b0rXX23llDSn6PZwxAyx MGZ9bvBP5fgetIhNCD_o _JnjhZbEHpDJUKJAU8Cw"
+          />
+        )
+      }
+
+      <!-- <img
         src="https://flowbite.com/application-ui/demo/images/users/avatar-1.png"
         alt=""
         class="Mln3CkDzLcoVQAC3Uqsd hlT3pgfpx11BUFMWNdhc _VPh6kIywCMfXFfQLas4 RpVwy4sO7Asb86CncKJ_ b0rXX23llDSn6PZwxAyx MGZ9bvBP5fgetIhNCD_o _JnjhZbEHpDJUKJAU8Cw"
@@ -262,19 +308,6 @@ const tabUrl = `/project/${project.id}?status=${currentStatusTab}`;
         class="YRrCJSr_j5nopfm4duUc Mln3CkDzLcoVQAC3Uqsd hlT3pgfpx11BUFMWNdhc _VPh6kIywCMfXFfQLas4 Q_jg_EPdNf9eDMn1mLI2 Nm7xMnguzOx6J5Ao7yCU RpVwy4sO7Asb86CncKJ_ b0rXX23llDSn6PZwxAyx MGZ9bvBP5fgetIhNCD_o foDHZclRWUf2bqma2a8U gMXmdpOPfqG_3CKkL0VD ezMFUVl744lvw6ht0lFe y6GKdvUrd7vp_pxsFb57 btSG3Q4vfhdH0rmixNRx _JnjhZbEHpDJUKJAU8Cw jqg6J89cvxmDiFpnV56r RzANcaqunVvlLrO6_tal"
         >+5</a
       > -->
-    </div>
-  </td>
-  <td class="BHrWGjM1Iab_fAz0_91H RZmKBZs1E1eXw8vkE6jY b9aD6g2qw84oyZNsMO8j ezMFUVl744lvw6ht0lFe">
-    <div class="Z3N7I2IDDsoXK6xJ1cSW YRrCJSr_j5nopfm4duUc URF_PdoDtDpDi8BZQL94">
-      <span data-searchable>
-        {
-          project.assigned_to_name ? (
-            <span data-searchable>{project.assigned_to_name}</span>
-          ) : (
-            <span class="text-danger-500">UNASSIGNED</span>
-          )
-        }
-      </span>
     </div>
   </td>
   <td class="BHrWGjM1Iab_fAz0_91H RZmKBZs1E1eXw8vkE6jY b9aD6g2qw84oyZNsMO8j ezMFUVl744lvw6ht0lFe">

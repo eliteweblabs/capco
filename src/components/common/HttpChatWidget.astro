@@ -3,21 +3,27 @@
 // Only visible to Admin/Staff users
 
 import BoxIcon from "./BoxIcon.astro";
-
 interface Props {
-  currentUser?: any;
+  currentUser?: {
+    id: string;
+    email: string;
+    company_name: string;
+    profile: {
+      role: string;
+    };
+  };
+  currentRole?: string;
 }
 
 const { currentUser } = Astro.props;
-const currentRole = currentUser?.profile?.role;
+const currentRole = currentUser?.profile?.role || "Client";
 ---
 
 <div
   id="chat-widget"
   data-user-role={currentRole || "Client"}
   data-user-id={currentUser?.id || "unknown"}
-  data-user-name={currentUser?.profile?.company_name || "Unknown User"}
-  class="absolute -bottom-2 left-0"
+  data-user-name={currentUser?.company_name || "Unknown User"}
 >
   <!-- Chat Icon (Always Visible) -->
   <BoxIcon
@@ -27,16 +33,14 @@ const currentRole = currentUser?.profile?.role;
     id="chat-toggle"
     dataAttributes={{ "data-count": "0" }}
     backgroundColor="primary"
-    shape="square"
-    class:list={"relative"}
-    ><span class="count-bubble"></span>
-  </BoxIcon>
+    shape="circle"
+  />
 </div>
 
 <!-- Chat Widget (Hidden by Default) -->
 <div
   id="chat-panel"
-  class="h-100 w-fullounded-lg absolute bottom-0 left-0 right-0 border border-gray-200 bg-white shadow-xl dark:border-gray-700 dark:bg-gray-800"
+  class="h-100 absolute bottom-0 left-0 right-0 hidden rounded-lg border border-gray-200 bg-white shadow-xl dark:border-gray-700 dark:bg-gray-800"
 >
   <!-- Chat Header -->
   <div
@@ -176,7 +180,7 @@ const currentRole = currentUser?.profile?.role;
     chatToggle?.addEventListener("click", () => {
       const chatPanel = document.getElementById("chat-panel");
       const isHidden = chatPanel?.classList.contains("hidden");
-      // (window as any).closeUserCenterDrawer();
+      (window as any).closeUserCenterDrawer();
 
       if (isHidden) {
         // Opening chat

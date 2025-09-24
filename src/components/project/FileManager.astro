@@ -7,13 +7,31 @@ interface Props {
   currentUser: any;
   currentRole: string;
   projectAuthorId?: string;
+  projectStatus?: number;
+  globalSecondaryTextClasses?: string;  
+  globalPrimaryTextClasses?: string;
 }
 
 import BoxIcon from "../common/BoxIcon.astro";
-const { projectId, currentUser, currentRole, projectAuthorId } = Astro.props;
+const { projectId, currentUser, currentRole, projectAuthorId, projectStatus = 0, globalSecondaryTextClasses, globalPrimaryTextClasses } = Astro.props;
+
+// Debug logging for props
+console.log("🔍 [FILE-MANAGER] Props received:", {
+  projectId,
+  currentRole,
+  projectStatus,
+  globalSecondaryTextClasses,
+  globalPrimaryTextClasses,
+  hasCurrentUser: !!currentUser
+});
 
 // Only show for Admin/Staff
 const showManagement = currentRole === "Admin" || currentRole === "Staff";
+
+// Project status-based restrictions
+const canCheckoutFiles = projectStatus >= 20;
+const canUploadFiles = projectStatus >= 20;
+const canDeleteFiles = currentRole === "Admin"; // Only admins can delete regardless of status
 
 console.log("🔧 [FILE-MANAGER] Component initialized with props:", {
   projectId,
@@ -24,7 +42,11 @@ console.log("🔧 [FILE-MANAGER] Component initialized with props:", {
   } : null,
   currentRole,
   projectAuthorId,
-  showManagement
+  projectStatus,
+  showManagement,
+  canCheckoutFiles,
+  canUploadFiles,
+  canDeleteFiles
 });
 ---
 
@@ -57,10 +79,11 @@ console.log("🔧 [FILE-MANAGER] Component initialized with props:", {
         <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
           Upload supports PDF, images, CAD files, and documents (max 10MB each)
         </p>
-        <BoxIcon name="alert-triangle" class="bx-lg mx-auto" />
-        <p>Do Not Change File Names</p>
-          
-        </p>
+        {projectStatus >= 20 && (
+        <BoxIcon name="alert-circle" class="bx-lg mx-auto" />
+        <h2 class={`${globalSecondaryTextClasses} mb-4`}>Do Not Change File Names</h2>
+        
+        )}
       </div>
       <button
         id="browse-files-btn"
@@ -103,8 +126,8 @@ console.log("🔧 [FILE-MANAGER] Component initialized with props:", {
     <div class="py-8 text-center text-gray-500 dark:text-gray-400">Loading files...</div>
   </div>
 
-  <!-- Management Panel (Admin/Staff only) -->
-  {showManagement && (
+  <!-- Management Panel (Admin/Staff only, Status 20+) -->
+  {showManagement && canCheckoutFiles && (
     <div id="management-panel" class="mt-6 rounded-lg bg-gray-50 p-4 dark:bg-gray-800">
       <h4 class="mb-4 text-sm font-medium text-gray-700 dark:text-gray-300">File Management</h4>
       
@@ -132,7 +155,7 @@ console.log("🔧 [FILE-MANAGER] Component initialized with props:", {
   )}
 </div>
 
-<script define:vars={{ projectId, currentUser, currentRole, showManagement, projectAuthorId }}>
+<script define:vars={{ projectId, currentUser, currentRole, showManagement, projectAuthorId, projectStatus, canCheckoutFiles, canUploadFiles, canDeleteFiles }}>
   // File Manager Component with Checkout System - EXTENSIVE DEBUGGING
   console.log("🔧 [FILE-MANAGER] Script initialized with variables:", {
     projectId,
@@ -143,7 +166,11 @@ console.log("🔧 [FILE-MANAGER] Component initialized with props:", {
     } : null,
     currentRole,
     projectAuthorId,
-    showManagement
+    projectStatus,
+    showManagement,
+    canCheckoutFiles,
+    canUploadFiles,
+    canDeleteFiles
   });
 
   let files = [];
@@ -186,10 +213,17 @@ console.log("🔧 [FILE-MANAGER] Component initialized with props:", {
     console.log("📁 [FILE-MANAGER] Loading project files for project:", currentProjectId);
     
     try {
-      const url = `/api/media?projectId=${currentProjectId}&targetLocation=documents`;
+      const url = `/api/media?projectId=${currentProjectId}&targetLocation=documents&_t=${Date.now()}`;
       console.log("🔧 [FILE-MANAGER] Fetching from URL:", url);
       
-      const response = await fetch(url);
+      const response = await fetch(url, {
+        cache: 'no-cache',
+        headers: {
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache',
+          'Expires': '0'
+        }
+      });
       console.log("🔧 [FILE-MANAGER] Response status:", response.status);
       console.log("🔧 [FILE-MANAGER] Response headers:", Object.fromEntries(response.headers.entries()));
       
@@ -200,6 +234,14 @@ console.log("🔧 [FILE-MANAGER] Component initialized with props:", {
         files = data.media || [];
         console.log("✅ [FILE-MANAGER] Files loaded successfully:", files.length, "files");
         console.log("🔧 [FILE-MANAGER] Files data:", files);
+        
+        // Debug: Check for any files with invalid URLs
+        files.forEach((file, index) => {
+          if (file.publicUrl && file.publicUrl.includes('undefined') || file.publicUrl === '') {
+            console.warn(`⚠️ [FILE-MANAGER] File ${index} has invalid URL:`, file);
+          }
+        });
+        
         updateFileCount();
         renderFiles();
         if (showManagement) {
@@ -376,6 +418,7 @@ console.log("🔧 [FILE-MANAGER] Component initialized with props:", {
                 </h4>
                 <p class="text-xs text-gray-500 dark:text-gray-400">
                   ${formatFileSize(file.fileSize)} • Uploaded ${new Date(file.uploadedAt).toLocaleDateString()}
+                  ${file.uploaded_by_name ? ` • by ${file.uploaded_by_name}` : ''}
                   ${file.version_number && file.version_number > 1 ? ` • Version ${file.version_number}` : ''}
                 </p>
               </div>
@@ -383,15 +426,17 @@ console.log("🔧 [FILE-MANAGER] Component initialized with props:", {
           </div>
           
           <div class="flex items-center space-x-2">
+            ${canCheckoutFiles ? `
             <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${statusColor}">
               ${statusBadge}
             </span>
+            ` : ''}
             
-            <!-- Download button -->
+            <!-- Download/Checkout button -->
             <button 
               class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
               onclick="downloadFile('${file.publicUrl || ""}', '${file.fileName}', ${file.id})"
-              title="Download File"
+              title="${canCheckoutFiles ? 'Download & Check Out File' : 'Download File'}"
               ${!file.publicUrl ? "disabled" : ""}
             >
               <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -399,15 +444,14 @@ console.log("🔧 [FILE-MANAGER] Component initialized with props:", {
               </svg>
             </button>
             
-            ${showManagement ? `
+            ${canDeleteFiles ? `
               <button 
-                class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
-                onclick="openFileCheckout(${file.id})"
-                title="Manage file checkout"
+                class="text-red-400 hover:text-red-600 dark:hover:text-red-300"
+                onclick="deleteFile(${file.id}, '${file.fileName}')"
+                title="Delete file (Admin only)"
               >
                 <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
                 </svg>
               </button>
             ` : ''}
@@ -423,6 +467,14 @@ console.log("🔧 [FILE-MANAGER] Component initialized with props:", {
   // Upload functionality with extensive debugging
   function initializeUpload() {
     console.log("📤 [FILE-MANAGER] Initializing upload functionality");
+    console.log("📤 [FILE-MANAGER] Can upload files:", canUploadFiles);
+    console.log("📤 [FILE-MANAGER] Project status:", projectStatus);
+    
+    // Only initialize upload if allowed
+    if (!canUploadFiles) {
+      console.log("📤 [FILE-MANAGER] Upload disabled - project status too low");
+      return;
+    }
     
     const uploadArea = document.querySelector('#file-manager .rounded-lg.border-dashed');
     const fileInput = document.getElementById('file-input');
@@ -584,6 +636,13 @@ console.log("🔧 [FILE-MANAGER] Component initialized with props:", {
       setTimeout(() => {
         console.log("🔧 [FILE-MANAGER] Upload process completed, hiding progress");
         progressDiv?.classList.add('hidden');
+        
+        // Auto-check-in (unlock) any previously checked out files when new version is uploaded
+        if (canCheckoutFiles && uploadedCount > 0) {
+          console.log("🔧 [FILE-MANAGER] Auto-checking in previous file versions");
+          autoCheckInPreviousVersions();
+        }
+        
         loadProjectFiles();
         renderFiles();
         if (showManagement) {
@@ -607,6 +666,13 @@ console.log("🔧 [FILE-MANAGER] Component initialized with props:", {
   // Update management panel
   function updateManagementPanel() {
     console.log("📊 [FILE-MANAGER] Updating management panel");
+    
+    // Only update management panel if project status allows it
+    if (projectStatus < 20) {
+      console.log("📊 [FILE-MANAGER] Skipping management panel update - project status too low");
+      return;
+    }
+    
     const checkedOutCount = files.filter(f => f.checked_out_by).length;
     const assignedCount = files.filter(f => f.assigned_to).length;
 
@@ -691,8 +757,21 @@ console.log("🔧 [FILE-MANAGER] Component initialized with props:", {
       showError("File download URL not available");
       return;
     }
+    
+    // Check if the URL contains 'undefined' or is empty
+    if (publicUrl.includes('undefined') || publicUrl === '') {
+      console.error("❌ [FILE-MANAGER] Invalid file URL:", publicUrl);
+      showError("File is no longer available for download");
+      return;
+    }
 
     try {
+      // Auto-checkout the file when downloading (if project status allows)
+      if (canCheckoutFiles && currentUser?.id) {
+        console.log("🔧 [FILE-MANAGER] Auto-checking out file for download");
+        handleFileCheckout(fileId, "checkout");
+      }
+      
       console.log("🔧 [FILE-MANAGER] Creating download link");
       const link = document.createElement("a");
       link.href = publicUrl;
@@ -714,6 +793,23 @@ console.log("🔧 [FILE-MANAGER] Component initialized with props:", {
       window.showError("File Upload Error", message, 0);
     } else {
       console.error("🔔 [File Upload Error] " + message);
+    }
+  }
+
+  // Auto-check-in previous versions when new files are uploaded
+  async function autoCheckInPreviousVersions() {
+    console.log("🔧 [FILE-MANAGER] Auto-checking in previous file versions");
+    
+    // Find all currently checked out files and check them in
+    const checkedOutFiles = files.filter(f => f.checked_out_by);
+    
+    for (const file of checkedOutFiles) {
+      try {
+        console.log(`🔧 [FILE-MANAGER] Auto-checking in file: ${file.fileName}`);
+        await handleFileCheckout(file.id, "checkin");
+      } catch (error) {
+        console.error(`❌ [FILE-MANAGER] Error auto-checking in file ${file.fileName}:`, error);
+      }
     }
   }
 
@@ -767,12 +863,6 @@ console.log("🔧 [FILE-MANAGER] Component initialized with props:", {
               class="flex-1 rounded-lg bg-blue-600 px-4 py-2 text-white hover:bg-blue-700"
             >
               Check Out File
-            </button>
-            <button 
-              onclick="handleFileCheckout(${fileId}, 'checkin')"
-              class="flex-1 rounded-lg bg-green-600 px-4 py-2 text-white hover:bg-green-700"
-            >
-              Check In File
             </button>
           </div>
           
@@ -853,6 +943,142 @@ console.log("🔧 [FILE-MANAGER] Component initialized with props:", {
     } catch (error) {
       console.error("❌ [FILE-MANAGER] File checkout error:", error);
       showError(`Error ${action}ing file: ${error.message}`);
+    }
+  };
+
+  // Delete file function (Admin only) - using same pattern as project deletion
+  let isDeletingFile = false; // Flag to prevent multiple delete operations
+
+  window.deleteFile = function(fileId, fileName) {
+    console.log("🗑️ [FILE-MANAGER] Delete file requested:", { fileId, fileName });
+    
+    // Prevent multiple delete operations
+    if (isDeletingFile) {
+      console.log("Delete operation already in progress, ignoring request");
+      return;
+    }
+
+    // Validate file ID
+    if (!fileId || fileId <= 0) {
+      console.error("Invalid file ID for deletion:", fileId);
+      if (window.showModal) {
+        window.showModal(
+          "error",
+          "Delete Failed",
+          "Invalid file ID. Cannot delete this file.",
+          5000
+        );
+      }
+      return;
+    }
+
+    // Show confirmation modal with action buttons (same pattern as project deletion)
+    if (window.showModal) {
+      window.showModal(
+        "warning",
+        "Delete File",
+        `Are you sure you want to delete "${fileName}"? This action cannot be undone.`,
+        6000000, // 6000 seconds timeout
+        [
+          {
+            label: "Cancel",
+            action: () => {
+              console.log("❌ [FILE-MANAGER] File deletion cancelled by user");
+            },
+          },
+          {
+            label: "Delete",
+            action: () => {
+              // Set deleting flag to prevent multiple operations
+              isDeletingFile = true;
+
+              // Show loading state on delete button
+              const deleteBtn = document.querySelector(`button[onclick="deleteFile(${fileId}, '${fileName}')"]`);
+              if (deleteBtn) {
+                deleteBtn.disabled = true;
+                deleteBtn.innerHTML = '<svg class="h-5 w-5 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>';
+              }
+
+              // Make API call to delete file
+              console.log("🔧 [FILE-MANAGER] Sending delete request for file:", fileId);
+              fetch("/api/delete-file", {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                },
+                credentials: "include",
+                body: JSON.stringify({
+                  file_id: fileId,
+                  project_id: currentProjectId
+                })
+              })
+                .then(async (response) => {
+                  console.log("🔧 [FILE-MANAGER] Delete response status:", response.status);
+                  const data = await response.json();
+                  console.log("🔧 [FILE-MANAGER] Delete response data:", data);
+
+                  if (!response.ok) {
+                    throw new Error(data.error || "Failed to delete file");
+                  }
+
+                  // Show success modal
+                  if (window.showModal) {
+                    window.showModal(
+                      "success",
+                      "File Deleted!",
+                      data.message || `"${fileName}" has been deleted successfully.`,
+                      3000
+                    );
+                  }
+
+                  // Reset deleting flag
+                  isDeletingFile = false;
+
+                  // Refresh the file list after a short delay
+                  setTimeout(async () => {
+                    console.log("🔄 [FILE-MANAGER] Refreshing file list after deletion");
+                    // Clear any cached file references
+                    files = [];
+                    
+                    // Clear any cached file references in the DOM
+                    const filesContainer = document.getElementById("files-container");
+                    if (filesContainer) {
+                      filesContainer.innerHTML = "";
+                    }
+                    
+                    // Force reload the file list
+                    await loadProjectFiles();
+                    renderFiles();
+                    if (showManagement) {
+                      updateManagementPanel();
+                    }
+                    console.log("✅ [FILE-MANAGER] File list refreshed successfully");
+                  }, 1000);
+                })
+                .catch((error) => {
+                  console.error("❌ [FILE-MANAGER] Error deleting file:", error);
+
+                  // Show error modal with specific error message
+                  if (window.showModal) {
+                    window.showModal(
+                      "error",
+                      "Delete Failed",
+                      error.message || "Failed to delete file. Please try again.",
+                      6000000 // 6000 seconds timeout
+                    );
+                  }
+
+                  // Reset deleting flag and button state
+                  isDeletingFile = false;
+                  if (deleteBtn) {
+                    deleteBtn.disabled = false;
+                    deleteBtn.innerHTML = '<svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>';
+                  }
+                });
+            },
+          },
+        ]
+      );
     }
   };
 
