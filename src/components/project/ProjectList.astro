@@ -1,4 +1,5 @@
 ---
+import BoxIcon from "../common/BoxIcon.astro";
 import ProjectItem from "./ProjectItem.astro";
 
 interface Props {
@@ -34,6 +35,43 @@ const processedProjects = projects.map((project: any) => {
     currentStatusTab: currentStatusObj.status_tab,
   };
 });
+
+// Create array of 36 datetime options (9 days × 4 times per day)
+const createDueDateOptions = () => {
+  const options = [];
+  const now = new Date();
+  const times = [8, 12, 16, 20]; // 8am, 12pm, 4pm, 8pm
+
+  for (let day = 0; day < 9; day++) {
+    for (const hour of times) {
+      const date = new Date(now);
+      date.setDate(date.getDate() + day);
+      date.setHours(hour, 0, 0, 0); // Set to exact hour, 0 minutes/seconds
+
+      const dateStr = date.toISOString();
+      const displayDate = date.toLocaleDateString();
+      const displayTime = date.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+
+      let label;
+      if (day === 0) {
+        label = `Today at ${displayTime}`;
+      } else if (day === 1) {
+        label = `Tomorrow at ${displayTime}`;
+      } else {
+        label = `${displayDate} at ${displayTime}`;
+      }
+
+      options.push({
+        value: dateStr,
+        label: label,
+      });
+    }
+  }
+
+  return options;
+};
+
+const dueDateOptions = createDueDateOptions();
 ---
 
 <!-- Project List-->
@@ -45,7 +83,7 @@ const processedProjects = projects.map((project: any) => {
     class="jtAJHOc7mn7b4IKRO59D gMXmdpOPfqG_3CKkL0VD sdSaZcRa4_We5kKaX4pf PeR2JZ9BZHYIH8Ea3F36 _1jTZ8KXRZul60S6czNi XIIs8ZOri3wm8Wnj9N_y"
   >
     <tr>
-      <th scope="col" class="_wYiJGbRZyFZeCc8y7Sf">
+      <!-- <th scope="col" class="_wYiJGbRZyFZeCc8y7Sf">
         <div class="YRrCJSr_j5nopfm4duUc Q_jg_EPdNf9eDMn1mLI2">
           <input
             id="checkbox-all"
@@ -54,15 +92,16 @@ const processedProjects = projects.map((project: any) => {
           />
           <label for="checkbox-all" class="_DVAfiyo21kM68EUVzEQ">checkbox</label>
         </div>
-      </th>
+      </th> -->
       <th scope="col" class="RZmKBZs1E1eXw8vkE6jY i8v96MUlFwGv9qJUkAx7 yM_AorRf2jSON3pDsdrz"
         >Name</th
       >
-      <th scope="col" class="RZmKBZs1E1eXw8vkE6jY i8v96MUlFwGv9qJUkAx7 yM_AorRf2jSON3pDsdrz"
-        >Status</th
-      >
+
       <th scope="col" class="RZmKBZs1E1eXw8vkE6jY i8v96MUlFwGv9qJUkAx7 yM_AorRf2jSON3pDsdrz"
         >Company</th
+      >
+      <th scope="col" class="RZmKBZs1E1eXw8vkE6jY i8v96MUlFwGv9qJUkAx7 yM_AorRf2jSON3pDsdrz"
+        >Status</th
       >
       <th scope="col" class="RZmKBZs1E1eXw8vkE6jY i8v96MUlFwGv9qJUkAx7 yM_AorRf2jSON3pDsdrz"
         >Files</th
@@ -76,10 +115,10 @@ const processedProjects = projects.map((project: any) => {
         >Progress</th
       >
       <th scope="col" class="RZmKBZs1E1eXw8vkE6jY i8v96MUlFwGv9qJUkAx7 yM_AorRf2jSON3pDsdrz"
-        >Elapsed Time</th
+        ><span class="button-text">Elapsed Time</span><BoxIcon name="time" size="xs" class="" /></th
       >
       <th scope="col" class="RZmKBZs1E1eXw8vkE6jY i8v96MUlFwGv9qJUkAx7 yM_AorRf2jSON3pDsdrz"
-        >Time Tracking</th
+        >Updated</th
       >
       <th scope="col" class="RZmKBZs1E1eXw8vkE6jY i8v96MUlFwGv9qJUkAx7 yM_AorRf2jSON3pDsdrz"
         >Due Date</th
@@ -109,6 +148,7 @@ const processedProjects = projects.map((project: any) => {
               currentStatusSlug={project.currentStatusSlug}
               currentStatusTab={project.currentStatusTab}
               staffOptions={staffOptions}
+              dueDateOptions={dueDateOptions}
             />
           );
         })

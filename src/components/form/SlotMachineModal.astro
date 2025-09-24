@@ -108,9 +108,10 @@ const displayText = buttonText || selectedOption?.label || placeholder;
   data-refresh={name}
   data-project-id={projectId}
   size="sm"
+  icon={icon || "chevron-down"}
+  iconPosition="right"
 >
   {displayText}
-  <BoxIcon name={icon || "chevron-down"} variant="primary" size="sm" />
 </Button>
 
 <!-- Hidden input to store the selected value -->
@@ -229,7 +230,20 @@ const displayText = buttonText || selectedOption?.label || placeholder;
               value,
               label,
             });
-            const apiIdentifier = saveApiEndpoint || id;
+
+            // Determine the correct API endpoint - saveApiEndpoint takes priority
+            let apiIdentifier;
+            if (saveApiEndpoint) {
+              // Use the provided saveApiEndpoint (highest priority)
+              apiIdentifier = saveApiEndpoint;
+            } else if (id.startsWith("assign-staff-") || id === "assign-staff") {
+              // For assign-staff components without saveApiEndpoint, use the generic assign-staff endpoint
+              apiIdentifier = "assign-staff";
+            } else {
+              // For other components without saveApiEndpoint, use the component ID
+              apiIdentifier = id;
+            }
+
             console.log(`🎰 [SLOT-MACHINE] API identifier being passed:`, apiIdentifier);
             saveToAPI(apiIdentifier, value, label);
           } else {
@@ -365,12 +379,12 @@ const displayText = buttonText || selectedOption?.label || placeholder;
         };
         console.log(`🎰 [SLOT-MACHINE] ASSIGN-STAFF requestBody:`, requestBody);
       } else {
-        console.log(`🎰 [SLOT-MACHINE] Processing GENERIC request for component: ${componentId}`);
+        console.log(`🎰 [SLOT-MACHINE] Processing GENERIC request for component: ${apiEndpoint}`);
         // For other components, use generic format
         requestBody = {
           value: value,
           label: label,
-          componentId: componentId,
+          componentId: apiEndpoint,
         };
         console.log(`🎰 [SLOT-MACHINE] GENERIC requestBody:`, requestBody);
       }
@@ -427,7 +441,7 @@ const displayText = buttonText || selectedOption?.label || placeholder;
 
         // Close the modal after success
         setTimeout(() => {
-          const modal = document.querySelector(`[data-modal-backdrop="${componentId}-modal"]`);
+          const modal = document.querySelector(`[data-modal-backdrop="${apiEndpoint}-modal"]`);
           if (modal) {
             modal.click(); // Click the backdrop to close
           }
@@ -449,7 +463,7 @@ const displayText = buttonText || selectedOption?.label || placeholder;
         }
 
         console.error(`🎰 [SLOT-MACHINE] API error:`, errorData);
-        throw new Error(errorData.error || `Failed to save ${componentId}`);
+        throw new Error(errorData.error || `Failed to save ${apiEndpoint}`);
       }
     } catch (error) {
       console.log(`🎰 [SLOT-MACHINE] ===== CATCH BLOCK =====`);
@@ -1441,8 +1455,20 @@ const displayText = buttonText || selectedOption?.label || placeholder;
       console.log(
         `🎰 [SLOT-MACHINE] Auto-saving to API for passedSaveApiEndpoint: ${passedSaveApiEndpoint}`
       );
-      // Pass the correct saveApiEndpoint to saveToAPI
-      const correctSaveApiEndpoint = passedSaveApiEndpoint || componentId;
+
+      // Determine the correct API endpoint - passedSaveApiEndpoint takes priority
+      let correctSaveApiEndpoint;
+      if (passedSaveApiEndpoint) {
+        // Use the passed saveApiEndpoint if provided (highest priority)
+        correctSaveApiEndpoint = passedSaveApiEndpoint;
+      } else if (componentId.startsWith("assign-staff-") || componentId === "assign-staff") {
+        // For assign-staff components without saveApiEndpoint, use the generic assign-staff endpoint
+        correctSaveApiEndpoint = "assign-staff";
+      } else {
+        // For other components without saveApiEndpoint, use the component ID
+        correctSaveApiEndpoint = componentId;
+      }
+
       console.log(
         `🎰 [SLOT-MACHINE] Calling saveToAPI with correct endpoint: ${correctSaveApiEndpoint}`
       );
