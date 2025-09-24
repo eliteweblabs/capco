@@ -12,6 +12,7 @@ interface Props {
 // // const { currentLocale } = Astro;
 // // const i18n = getI18N({ currentLocale });
 const { projects, statusesObject, currentUser, staffOptions } = Astro.props;
+const currentRole = currentUser?.profile?.role;
 
 // console.log("🔍 [DEBUG] ProjectList statusesObject:", statusesObject);
 // console.log("🔍 [DEBUG] ProjectList currentUser:", currentUser);
@@ -97,22 +98,38 @@ const dueDateOptions = createDueDateOptions();
         >Name</th
       >
 
-      <th scope="col" class="RZmKBZs1E1eXw8vkE6jY i8v96MUlFwGv9qJUkAx7 yM_AorRf2jSON3pDsdrz"
-        >Company</th
-      >
+      {
+        currentRole !== "Client" && (
+          <th scope="col" class="RZmKBZs1E1eXw8vkE6jY i8v96MUlFwGv9qJUkAx7 yM_AorRf2jSON3pDsdrz">
+            Company
+          </th>
+        )
+      }
+
       <th scope="col" class="RZmKBZs1E1eXw8vkE6jY i8v96MUlFwGv9qJUkAx7 yM_AorRf2jSON3pDsdrz"
         >Status</th
       >
       <th scope="col" class="RZmKBZs1E1eXw8vkE6jY i8v96MUlFwGv9qJUkAx7 yM_AorRf2jSON3pDsdrz"
         >Files</th
       >
-      <th scope="col" class="RZmKBZs1E1eXw8vkE6jY i8v96MUlFwGv9qJUkAx7 yM_AorRf2jSON3pDsdrz"
-        >Assigned To</th
-      >
+
+      {
+        currentRole !== "Client" && (
+          <th scope="col" class="RZmKBZs1E1eXw8vkE6jY i8v96MUlFwGv9qJUkAx7 yM_AorRf2jSON3pDsdrz">
+            Assigned To
+          </th>
+        )
+      }
+
       <th
         scope="col"
         class="Gfdanp5CT9GnXJoD8ykd RZmKBZs1E1eXw8vkE6jY i8v96MUlFwGv9qJUkAx7 yM_AorRf2jSON3pDsdrz"
         >Progress</th
+      >
+      <th
+        scope="col"
+        class="Gfdanp5CT9GnXJoD8ykd RZmKBZs1E1eXw8vkE6jY i8v96MUlFwGv9qJUkAx7 yM_AorRf2jSON3pDsdrz"
+        >Checklist</th
       >
       <th scope="col" class="RZmKBZs1E1eXw8vkE6jY i8v96MUlFwGv9qJUkAx7 yM_AorRf2jSON3pDsdrz"
         ><span class="button-text">Elapsed Time</span><BoxIcon name="time" size="xs" class="" /></th
@@ -140,8 +157,8 @@ const dueDateOptions = createDueDateOptions();
           // });
           return (
             <ProjectItem
+              currentUser={currentUser}
               project={project}
-              currentRole={currentUser?.role || ""}
               projectStatusesObject={statusesObject}
               currentStatusName={project.currentStatusName}
               currentStatusInt={project.currentStatusInt}

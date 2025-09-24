@@ -7,20 +7,21 @@ interface Props {
 
 const { currentUser, project, supabaseUrl } = Astro.props;
 const id = Astro.params.id;
-const isAuth = currentUser ? true : false;
 
-if (!project || !project.id) {
+const currentRole = currentUser?.profile?.role;
+
+if (!project || !project.id || currentRole === "Client") {
   return null;
 }
 
 const projectId = project.id;
-const currentRole = currentUser?.role;
 import BoxIcon from "../common/BoxIcon.astro";
 
 console.log("🔍 [TabPunchlist] props:", Astro.props);
+
 ---
 
-{isAuth && id && (
+{projectId && (
   <>
     <button
       type="button"

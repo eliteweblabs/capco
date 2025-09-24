@@ -8,13 +8,18 @@
  * This preserves console.error, console.warn, etc.
  */
 export function disableConsoleLogs(): void {
-  if (typeof window !== "undefined") {
-    // Browser environment
-    console.log = () => {};
-  } else {
-    // Node.js/server environment
-    console.log = () => {};
-  }
+  // Store original console.log for potential restoration
+  const originalLog = console.log;
+
+  // Override console.log with empty function
+  console.log = () => {};
+
+  // Also disable console.debug and console.info in production
+  console.debug = () => {};
+  console.info = () => {};
+
+  // Keep console.error and console.warn intact
+  // console.error and console.warn are NOT modified
 }
 
 /**
@@ -40,12 +45,35 @@ export function disableConsoleDebug(): void {
  * Conditional console disabling based on environment
  */
 export function setupConsoleInterceptor(): void {
-  // Only disable in production
-  if (import.meta.env.PROD || process.env.NODE_ENV === "production") {
+  // Check if we're in production
+  const isProduction = import.meta.env.PROD || process.env.NODE_ENV === "production";
+  const isServer = typeof window === "undefined";
+
+  // Debug logging
+  if (!isProduction) {
+    console.log(
+      `🔍 [CONSOLE-INTERCEPTOR] ${isServer ? "Server" : "Client"}-side environment check:`
+    );
+    console.log("  - import.meta.env.PROD:", import.meta.env.PROD);
+    console.log("  - process.env.NODE_ENV:", process.env.NODE_ENV);
+    console.log("  - isProduction:", isProduction);
+    console.log("  - isServer:", isServer);
+  }
+
+  // Only disable console.log in production (both server and client)
+  if (isProduction) {
     disableConsoleLogs();
-    console.warn("🔇 Console.log statements disabled in production");
+    if (isServer) {
+      console.warn("🔇 [SERVER] Console.log statements disabled in production");
+    } else {
+      console.warn("🔇 [CLIENT] Console.log statements disabled in production");
+    }
   } else {
-    console.log("🔊 Console.log statements enabled in development");
+    if (isServer) {
+      console.log("🔊 [SERVER] Console.log statements enabled in development");
+    } else {
+      console.log("🔊 [CLIENT] Console.log statements enabled in development");
+    }
   }
 }
 
