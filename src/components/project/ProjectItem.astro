@@ -23,6 +23,7 @@ interface Props {
     profiles?: any;
     assigned_profiles?: any;
     assigned_to_avatar?: any;
+    due_date?: any;
     featured_image_data?: {
       id: any;
       file_path: string;
@@ -40,6 +41,7 @@ interface Props {
   currentStatusTab?: string;
   currentStatusEstTime?: string;
   staffOptions?: any;
+  dueDateOptions?: any;
 }
 
 const {
@@ -52,6 +54,7 @@ const {
   currentStatusTab,
   currentStatusEstTime,
   staffOptions,
+  dueDateOptions,
 } = Astro.props;
 
 console.log("🔍 [PROJECT-ITEM] Project:", project);
@@ -199,7 +202,6 @@ function renderAlertIcons(count: number) {
 }
 
 const statusColor = projectStatusesObject?.[project.status]?.status_color || "gray";
-const tabUrl = `/project/${project.id}?status=${currentStatusTab}`;
 
 // // Convert to days, hours, and minutes
 // const days = Math.floor(timeDifference / (1000 * 60 * 60 * 24));
@@ -215,7 +217,7 @@ const tabUrl = `/project/${project.id}?status=${currentStatusTab}`;
   data-project-status={statusSlugOrId}
   data-project-id={project.id}
 >
-  <td class="E9GV5sZJIbfO_GEQ_moc RZmKBZs1E1eXw8vkE6jY b9aD6g2qw84oyZNsMO8j">
+  <!-- <td class="E9GV5sZJIbfO_GEQ_moc RZmKBZs1E1eXw8vkE6jY b9aD6g2qw84oyZNsMO8j">
     <div class="YRrCJSr_j5nopfm4duUc Q_jg_EPdNf9eDMn1mLI2">
       <input
         id="checkbox-table-search-1"
@@ -225,7 +227,8 @@ const tabUrl = `/project/${project.id}?status=${currentStatusTab}`;
       />
       <label for="checkbox-table-search-1" class="_DVAfiyo21kM68EUVzEQ">checkbox</label>
     </div>
-  </td>
+  </td> -->
+
   <th scope="row" class="BHrWGjM1Iab_fAz0_91H RZmKBZs1E1eXw8vkE6jY b9aD6g2qw84oyZNsMO8j relative"
     ><a
       href={`/project/${project.id}`}
@@ -239,15 +242,14 @@ const tabUrl = `/project/${project.id}?status=${currentStatusTab}`;
     </a></th
   >
   <td class="BHrWGjM1Iab_fAz0_91H RZmKBZs1E1eXw8vkE6jY b9aD6g2qw84oyZNsMO8j">
-    <span
-      class="Y3FxyuXtj2gecrGXvLEI YccXYy5sNIz6FJlLxw0D St_AVDyTHE88JaawJoRQ Zs2BLzUMh0_yTpU6xCcU gMXmdpOPfqG_3CKkL0VD ezMFUVl744lvw6ht0lFe mbOxN7eW74XygTKQC_r3 V9HgZms3_2W5sanRatci Uq09bvia_7yL7hYv2uSO"
-      >{project.company_name}</span
-    >
+    {project.company_name}
   </td>
   <td class="BHrWGjM1Iab_fAz0_91H RZmKBZs1E1eXw8vkE6jY b9aD6g2qw84oyZNsMO8j">
-    <span
+    <a
+      href={`/project/${project.id}?status=${currentStatusTab}`}
+      style={`background-color: ${statusColor};`}
       class="Y3FxyuXtj2gecrGXvLEI YccXYy5sNIz6FJlLxw0D St_AVDyTHE88JaawJoRQ Zs2BLzUMh0_yTpU6xCcU gMXmdpOPfqG_3CKkL0VD ezMFUVl744lvw6ht0lFe mbOxN7eW74XygTKQC_r3 V9HgZms3_2W5sanRatci Uq09bvia_7yL7hYv2uSO"
-      >{currentStatusName}</span
+      >{currentStatusName}</a
     >
   </td>
   <td class="BHrWGjM1Iab_fAz0_91H RZmKBZs1E1eXw8vkE6jY b9aD6g2qw84oyZNsMO8j">
@@ -274,9 +276,8 @@ const tabUrl = `/project/${project.id}?status=${currentStatusTab}`;
         skipSaveToAPI={false}
         project={project}
         showNotification={true}
-        icon="user"
         searchText="Search staff..."
-        buttonVariant="outline"
+        buttonVariant="anchor"
       />
 
       <!-- <span data-searchable>
@@ -339,7 +340,7 @@ const tabUrl = `/project/${project.id}?status=${currentStatusTab}`;
       href="#"
       class="_k0lTW0vvzboctTxDi2R Q_jg_EPdNf9eDMn1mLI2 ezMFUVl744lvw6ht0lFe _6MyV8SXoSWq_PQ6KWI6 oJZU4OQzzfXeLbF7UKZ_ fZf6W_ZtzEh6EEqmWMA9"
     >
-      <svg
+      <!-- <svg
         class="_x10ClrjYfqGxZTMmpBl OEd3yuKfmszRdDeW_2zu _AA3rO_G7gzZSX90mzZi"
         aria-hidden="true"
         xmlns="http://www.w3.org/2000/svg"
@@ -353,7 +354,7 @@ const tabUrl = `/project/${project.id}?status=${currentStatusTab}`;
           stroke-width="2"
           d="M18 14v4.8a1.2 1.2 0 0 1-1.2 1.2H5.2A1.2 1.2 0 0 1 4 18.8V7.2A1.2 1.2 0 0 1 5.2 6h4.6m4.4-2H20v5.8m-7.9 2L20 4.2"
         ></path>
-      </svg>
+      </svg> -->
       {project.elapsed_time}
     </a>
   </td>
@@ -363,7 +364,8 @@ const tabUrl = `/project/${project.id}?status=${currentStatusTab}`;
     <div
       class="_k0lTW0vvzboctTxDi2R Q_jg_EPdNf9eDMn1mLI2 mveJTCIb2WII7J4sY22F pXhVRBC8yaUNllmIWxln _Ybd3WwuTVljUT4vEaM3 _bVaO2NfVVP88LtHWYlv _GSNszqbCuS9hoWd_f_m ODwQB_Ntbd93L5eefCAa gMXmdpOPfqG_3CKkL0VD ezMFUVl744lvw6ht0lFe Mmx5lX7HVdrWCgh3EpTP jqg6J89cvxmDiFpnV56r"
     >
-      <svg
+      {timeSinceUpdate}
+      <!-- <svg
         class="IRKzgyPj4qWOh2vq2xBg _o2IXcpM0qnG3JPReKus E9GV5sZJIbfO_GEQ_moc _JmTNv5EiHqK2A1jcQSf"
         aria-hidden="true"
         xmlns="http://www.w3.org/2000/svg"
@@ -392,13 +394,35 @@ const tabUrl = `/project/${project.id}?status=${currentStatusTab}`;
             d="M8 5a2 2 0 0 0-2 2v10c0 1.1.9 2 2 2h1a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2H8Zm7 0a2 2 0 0 0-2 2v10c0 1.1.9 2 2 2h1a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-1Z"
             clip-rule="evenodd"></path>
         </svg>
-      </button>
+      </button> -->
     </div>
   </td>
   <td
     class="BHrWGjM1Iab_fAz0_91H RZmKBZs1E1eXw8vkE6jY b9aD6g2qw84oyZNsMO8j gMXmdpOPfqG_3CKkL0VD ezMFUVl744lvw6ht0lFe __9sbu0yrzdhGIkLWNXl OyABRrnTV_kvHV7dJ0uE"
-    >23 Nov 2025</td
   >
+    <SlotMachineModal
+      id="due-date"
+      title="Select Due Date"
+      options={dueDateOptions}
+      selectedValue={currentStatusInt || ""}
+      placeholder="Choose due date"
+      buttonText={new Date(project?.due_date).toLocaleDateString(undefined, {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+      }) || "No due date"}
+      saveApiEndpoint="update-project"
+      showCloseButton={true}
+      showCancelButton={true}
+      skipSaveToAPI={false}
+      project={project}
+      showNotification={true}
+      icon="time"
+      searchText="Choose due date..."
+    />
+  </td>
   <td class="RZmKBZs1E1eXw8vkE6jY b9aD6g2qw84oyZNsMO8j">
     <!-- <button
       id="project-dropdown-button"
@@ -508,7 +532,7 @@ const tabUrl = `/project/${project.id}?status=${currentStatusTab}`;
     data-project-status={statusSlugOrId}
     data-project-id={project.id}
   >
-    <td class="E9GV5sZJIbfO_GEQ_moc RZmKBZs1E1eXw8vkE6jY b9aD6g2qw84oyZNsMO8j">
+    <!-- <td class="E9GV5sZJIbfO_GEQ_moc RZmKBZs1E1eXw8vkE6jY b9aD6g2qw84oyZNsMO8j">
       <div class="YRrCJSr_j5nopfm4duUc Q_jg_EPdNf9eDMn1mLI2 hidden">
         <input
           id="checkbox-table-search-1"
@@ -518,7 +542,7 @@ const tabUrl = `/project/${project.id}?status=${currentStatusTab}`;
         />
         <label for="checkbox-table-search-1" class="_DVAfiyo21kM68EUVzEQ">checkbox</label>
       </div>
-    </td>
+    </td> -->
     <td scope="row" class="BHrWGjM1Iab_fAz0_91H RZmKBZs1E1eXw8vkE6jY b9aD6g2qw84oyZNsMO8j"
       ><a
         href={`/project/${project.id}`}

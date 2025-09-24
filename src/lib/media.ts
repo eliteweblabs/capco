@@ -24,6 +24,7 @@ export interface MediaFile {
   is_current_version?: boolean;
   previous_version_id?: number;
   uploaded_by_name?: string;
+  is_private?: boolean;
 }
 
 export interface SaveMediaParams {
@@ -239,6 +240,24 @@ export async function saveMedia(params: SaveMediaParams): Promise<MediaFile> {
     }
   }
 
+  // Determine if file should be private based on project status
+  let isPrivate = false;
+  if (params.projectId) {
+    try {
+      const { data: projectData } = await supabaseAdmin
+        .from("projects")
+        .select("status")
+        .eq("id", parseInt(params.projectId))
+        .single();
+
+      // Files uploaded when project status < 30 should be public (not private)
+      // Files uploaded when project status >= 30 should be private by default
+      isPrivate = projectData?.status >= 30;
+    } catch (error) {
+      console.warn("Could not determine project status, defaulting to public:", error);
+    }
+  }
+
   // Log file in database
   const fileRecord = {
     project_id: params.projectId ? parseInt(params.projectId) : null,
@@ -257,6 +276,7 @@ export async function saveMedia(params: SaveMediaParams): Promise<MediaFile> {
     version_number: versionNumber,
     previous_version_id: previousVersionId,
     is_current_version: true,
+    is_private: isPrivate,
   };
 
   console.log("🔧 [MEDIA-VERSIONING] Inserting database record:", fileRecord);
@@ -480,11 +500,32 @@ export async function getMedia(params: GetMediaParams): Promise<{
       query = query.eq("target_id", parseInt(params.targetId));
     }
 
+    // Get user role to determine if they can see private files
+    const { data: userProfile } = await supabaseAdmin
+      .from("profiles")
+      .select("role")
+      .eq("id", params.currentUser.id)
+      .single();
+
+    const userRole = userProfile?.role;
+    console.log("🔧 [MEDIA] User role for file filtering:", userRole);
+
+    // If user is not Admin or Staff, filter out private files
+    if (userRole !== "Admin" && userRole !== "Staff") {
+      console.log("🔧 [MEDIA] Filtering out private files for client user");
+      // Only filter if is_private column exists (for backward compatibility)
+      query = query.or("is_private.is.null,is_private.eq.false");
+    }
+
     const { data: files, error: filesError } = await query;
 
     if (filesError) {
+      console.error("❌ [MEDIA] Database error:", filesError);
       throw new Error(`Database error: ${filesError.message}`);
     }
+
+    console.log("🔧 [MEDIA] Files found:", files?.length || 0);
+    console.log("🔧 [MEDIA] Files data:", files);
 
     const mediaFiles = await Promise.all(
       (files || []).map(async (file) => {
@@ -558,6 +599,7 @@ export async function getMedia(params: GetMediaParams): Promise<{
           version_number: file.version_number || 1,
           is_current_version: file.is_current_version !== false,
           previous_version_id: file.previous_version_id,
+          is_private: file.is_private || false,
         };
       })
     );

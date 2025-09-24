@@ -87,10 +87,10 @@ console.log("🔍 [TabPunchlist] props:", Astro.props);
 
   async function loadPunchlistItems(projectId) {
     try {
-      const response = await fetch(`/api/get-project-punchlist?projectId=${projectId}`, {
-        credentials: "include",
-      });
-      const data = await response.json();
+      // Import the utility function dynamically
+      const { fetchPunchlistData, updatePunchlistCount, showPunchlistError: showError } = await import("/src/lib/punchlist-utils.ts");
+      
+      const data = await fetchPunchlistData(projectId);
 
       console.log("🔍 [TabPunchlist] data:", data);
       if (data.success) {
@@ -102,7 +102,7 @@ console.log("🔍 [TabPunchlist] props:", Astro.props);
 
         // Show specific error message if table doesn't exist
         if (data.migration_needed || data.error?.includes("does not exist")) {
-          showPunchlistError(
+          showError(
             `Punchlist feature setup required<br><br>
                     <strong>Admin Action Needed:</strong><br>
                     Please run the SQL script:<br>
@@ -110,7 +110,7 @@ console.log("🔍 [TabPunchlist] props:", Astro.props);
                     in your Supabase SQL Editor to enable punchlist functionality.`
           );
         } else {
-          showPunchlistError("Failed to load punchlist items: " + (data.details || data.error));
+          showError("Failed to load punchlist items: " + (data.details || data.error));
         }
       }
     } catch (error) {
@@ -120,46 +120,14 @@ console.log("🔍 [TabPunchlist] props:", Astro.props);
   }
 
   // Update incomplete punchlist items count in the punchlist tab
-  function updateIncompletePunchlistItemsCount() {
+  async function updateIncompletePunchlistItemsCount() {
     const incompleteCount = punchlistItems.filter((item) => !item.mark_completed).length;
-    const countElement = document.querySelector(".incomplete-punchlist-items-count");
-    const tabButton = document.querySelector("[data-count]");
-
-    if (tabButton) {
-      // Create or update count bubble
-      let countBubble = tabButton.querySelector(".punchlist-count-bubble");
-
-      if (incompleteCount > 0) {
-        if (!countBubble) {
-          // Create count bubble if it doesn't exist
-          countBubble = document.createElement("span");
-          countBubble.className =
-            "absolute -right-2 -top-2 flex h-5 w-5 items-center justify-center rounded-full bg-primary-500 text-xs text-bold font-medium text-white dark:bg-primary-dark";
-          tabButton.style.position = "relative";
-          tabButton.appendChild(countBubble);
-        }
-        countBubble.textContent = incompleteCount.toString();
-        countBubble.style.display = "flex";
-        tabButton.setAttribute("data-count", incompleteCount.toString());
-      } else {
-        if (countBubble) {
-          countBubble.style.display = "none";
-        }
-        tabButton.setAttribute("data-count", "0");
-      }
-
-      // Also update the old count element if it exists
-      if (countElement) {
-        if (incompleteCount > 0) {
-          countElement.textContent = incompleteCount.toString();
-          countElement.classList.remove("hidden");
-        } else {
-          countElement.classList.add("hidden");
-        }
-      }
-
-      // console.log("🔍 [PUNCHLIST] Incomplete punchlist items count updated:", incompleteCount);
-    }
+    
+    // Use the utility function for consistent behavior
+    const { updatePunchlistCount } = await import("/src/lib/punchlist-utils.ts");
+    updatePunchlistCount(incompleteCount);
+    
+    // console.log("🔍 [PUNCHLIST] Incomplete punchlist items count updated:", incompleteCount);
   }
 
   async function renderPunchlistItems() {
