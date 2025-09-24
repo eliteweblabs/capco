@@ -8,7 +8,36 @@ import { SimpleProjectLogger } from "../../lib/simple-logging";
 import { supabase } from "../../lib/supabase";
 import { supabaseAdmin } from "../../lib/supabase-admin";
 
-export const POST: APIRoute = async ({ request, cookies }) => {
+// TypeScript interfaces for request data structure
+interface EmailDeliveryRequest {
+  usersToNotify: string[];
+  emailType: string;
+  emailSubject: string;
+  emailContent: string;
+  buttonLink?: string;
+  buttonText?: string;
+  projectId?: number;
+  newStatus?: number;
+  authorId?: string;
+  includeResendHeaders?: boolean;
+  trackLinks?: boolean;
+}
+
+interface FailedEmail {
+  email: string;
+  error: string;
+}
+
+interface EmailDeliveryResponse {
+  success: boolean;
+  error?: string;
+  sentEmails?: string[];
+  failedEmails?: FailedEmail[];
+  totalSent?: number;
+  totalFailed?: number;
+}
+
+export const POST: APIRoute = async ({ request, cookies }): Promise<Response> => {
   // Log to file for debugging
   const fs = await import("fs");
   const logEntry = `[${new Date().toISOString()}] EMAIL-DELIVERY API called\n`;
@@ -17,19 +46,17 @@ export const POST: APIRoute = async ({ request, cookies }) => {
   try {
     if (!supabase || !supabaseAdmin) {
       console.error("📧 [EMAIL-DELIVERY] Database clients not available");
-      return new Response(
-        JSON.stringify({
-          success: false,
-          error: "Database not configured",
-        }),
-        {
-          status: 500,
-          headers: { "Content-Type": "application/json" },
-        }
-      );
+      const errorResponse: EmailDeliveryResponse = {
+        success: false,
+        error: "Database not configured",
+      };
+      return new Response(JSON.stringify(errorResponse), {
+        status: 500,
+        headers: { "Content-Type": "application/json" },
+      });
     }
 
-    const body = await request.json();
+    const body: EmailDeliveryRequest = await request.json();
 
     // Use the proper base URL function to avoid localhost in production
     const { getBaseUrl } = await import("../../lib/url-utils");
@@ -81,16 +108,14 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       !fromEmail
     ) {
       console.error("📧 [EMAIL-DELIVERY] Email configuration not available");
-      return new Response(
-        JSON.stringify({
-          success: false,
-          error: "Email configuration not available",
-        }),
-        {
-          status: 500,
-          headers: { "Content-Type": "application/json" },
-        }
-      );
+      const errorResponse: EmailDeliveryResponse = {
+        success: false,
+        error: "Email configuration not available",
+      };
+      return new Response(JSON.stringify(errorResponse), {
+        status: 500,
+        headers: { "Content-Type": "application/json" },
+      });
     }
 
     // Read email template
@@ -310,19 +335,16 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       });
 
       // If we have a critical error, return failure
-      return new Response(
-        JSON.stringify({
-          success: false,
-          error: "Failed to send email notifications",
-          details: emailSendingError instanceof Error ? emailSendingError.message : "Unknown error",
-          totalSent: 0,
-          totalFailed: usersToNotify.length,
-        }),
-        {
-          status: 500,
-          headers: { "Content-Type": "application/json" },
-        }
-      );
+      const errorResponse: EmailDeliveryResponse = {
+        success: false,
+        error: "Failed to send email notifications",
+        totalSent: 0,
+        totalFailed: usersToNotify.length,
+      };
+      return new Response(JSON.stringify(errorResponse), {
+        status: 500,
+        headers: { "Content-Type": "application/json" },
+      });
     }
 
     // console.log("📧 [EMAIL-DELIVERY] Email delivery completed:");
@@ -351,36 +373,31 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       console.error("📧 [EMAIL-DELIVERY] Error logging email delivery completion:", logError);
     }
 
-    return new Response(
-      JSON.stringify({
-        success: true,
-        sentEmails,
-        failedEmails,
-        totalSent: sentEmails.length,
-        totalFailed: failedEmails.length,
-      }),
-      {
-        status: 200,
-        headers: { "Content-Type": "application/json" },
-      }
-    );
+    const successResponse: EmailDeliveryResponse = {
+      success: true,
+      sentEmails,
+      failedEmails,
+      totalSent: sentEmails.length,
+      totalFailed: failedEmails.length,
+    };
+    return new Response(JSON.stringify(successResponse), {
+      status: 200,
+      headers: { "Content-Type": "application/json" },
+    });
   } catch (error) {
     console.error("📧 [EMAIL-DELIVERY] Top-level error:", error);
     console.error(
       "📧 [EMAIL-DELIVERY] Error stack:",
       error instanceof Error ? error.stack : "No stack trace"
     );
-    return new Response(
-      JSON.stringify({
-        success: false,
-        error: "Failed to send email notifications",
-        details: error instanceof Error ? error.message : "Unknown error",
-      }),
-      {
-        status: 500,
-        headers: { "Content-Type": "application/json" },
-      }
-    );
+    const errorResponse: EmailDeliveryResponse = {
+      success: false,
+      error: "Failed to send email notifications",
+    };
+    return new Response(JSON.stringify(errorResponse), {
+      status: 500,
+      headers: { "Content-Type": "application/json" },
+    });
   }
 };
 
