@@ -5,16 +5,35 @@ interface Props {
   projectStatusLabel?: string;
   currentUser?: any;
   fileType?: string;
+  globalSecondaryTextClasses?: string;
+  globalPrimaryTextClasses?: string;
 }
 
 import FileManager from "./FileManager.astro";
 import Button from "../common/Button.astro";
 
-const { project, projectStatus, fileType = "media", projectStatusLabel, currentUser } = Astro.props;
+const {
+  project,
+  projectStatus,
+  fileType = "media",
+  projectStatusLabel,
+  currentUser,
+  globalSecondaryTextClasses,
+  globalPrimaryTextClasses,
+} = Astro.props;
 
-const currentRole = currentUser?.profile?.role;
 const projectId = project?.id;
-const authorProfile = currentUser?.profile;
+
+// Debug logging for props
+console.log("🔍 [TAB-DOCUMENTS] Props received:", {
+  hasProject: !!project,
+  projectStatus,
+  hasCurrentUser: !!currentUser,
+  globalSecondaryTextClasses,
+  globalPrimaryTextClasses,
+  fileType,
+  projectStatusLabel,
+});
 ---
 
 <div id="content-documents" class="tab-content hidden">
@@ -29,6 +48,9 @@ const authorProfile = currentUser?.profile;
         currentUser={currentUser}
         currentRole={currentUser?.profile?.role}
         projectAuthorId={project.author_id}
+        projectStatus={projectStatus}
+        globalSecondaryTextClasses={globalSecondaryTextClasses}
+        globalPrimaryTextClasses={globalPrimaryTextClasses}
       />
     )
   }

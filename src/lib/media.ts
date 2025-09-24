@@ -23,6 +23,7 @@ export interface MediaFile {
   version_number?: number;
   is_current_version?: boolean;
   previous_version_id?: number;
+  uploaded_by_name?: string;
 }
 
 export interface SaveMediaParams {
@@ -501,6 +502,7 @@ export async function getMedia(params: GetMediaParams): Promise<{
         // Fetch user names if needed (optional - can be removed if not required)
         let assigned_to_name = null;
         let checked_out_by_name = null;
+        let uploaded_by_name = null;
 
         if (file.assigned_to) {
           const { data: assignedProfile } = await supabaseAdmin
@@ -520,6 +522,15 @@ export async function getMedia(params: GetMediaParams): Promise<{
           checked_out_by_name = checkedOutProfile?.company_name || null;
         }
 
+        if (file.author_id) {
+          const { data: uploaderProfile } = await supabaseAdmin
+            .from("profiles")
+            .select("company_name")
+            .eq("id", file.author_id)
+            .single();
+          uploaded_by_name = uploaderProfile?.company_name || null;
+        }
+
         return {
           id: file.id,
           fileName: file.file_name,
@@ -537,6 +548,7 @@ export async function getMedia(params: GetMediaParams): Promise<{
           // Add the user names from separate queries
           assigned_to_name,
           checked_out_by_name,
+          uploaded_by_name,
           targetLocation: file.target_location,
           bucketName: file.bucket_name,
           publicUrl: urlData?.signedUrl || null,

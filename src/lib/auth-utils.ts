@@ -40,12 +40,14 @@ export async function createMissingUserProfile(user: User): Promise<void> {
     const firstName = user.user_metadata?.first_name || "";
     const lastName = user.user_metadata?.last_name || "";
     const companyName = user.user_metadata?.company_name || "";
+    const avatarUrl = user.user_metadata?.avatar_url || user.user_metadata?.picture || null;
 
     console.log("Creating missing profile for user:", user.id, "with data:", {
       email: user.email,
       company_name: companyName,
       firstName,
       lastName,
+      avatarUrl,
     });
 
     const { data: newProfile, error: createError } = await supabase
@@ -57,6 +59,7 @@ export async function createMissingUserProfile(user: User): Promise<void> {
         role: "Client",
         first_name: firstName,
         last_name: lastName,
+        avatar_url: avatarUrl,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       })

@@ -74,6 +74,8 @@ export const onRequest = defineMiddleware(async ({ locals, url, cookies, redirec
           role: "Client", // Default role for missing profiles
           first_name: firstName,
           last_name: lastName,
+          avatar_url:
+            data.user.user_metadata?.avatar_url || data.user.user_metadata?.picture || null,
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
         });

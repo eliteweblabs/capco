@@ -11,6 +11,9 @@ interface Props {
   project?: any;
   statuses?: any; // Accept statuses object for slot machine picker
   authorProfile?: any;
+  staffOptions?: any;
+  globalSecondaryTextClasses?: string;
+  globalPrimaryTextClasses?: string;
 }
 
 const {
@@ -25,6 +28,9 @@ const {
   authorProfile,
   project,
   statuses = {},
+  staffOptions = [],
+  globalSecondaryTextClasses = "",
+  globalPrimaryTextClasses = "",
 } = Astro.props;
 
 import SlotMachineModal from "../form/SlotMachineModal.astro";
@@ -61,40 +67,6 @@ if (Object.keys(statuses).length > 0) {
     }
   } catch (error) {
     console.error("Failed to fetch status options:", error);
-  }
-}
-
-// Fetch staff data for staff selection
-let staffOptions: any[] = [];
-if (currentRole === "Admin" || currentRole === "Staff") {
-  try {
-    const staffResponse = await fetch(`${Astro.url.origin}/api/get-user-emails-by-role`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        roles: ["Admin", "Staff"],
-      }),
-    });
-    if (staffResponse.ok) {
-      const staffData = await staffResponse.json();
-      if (staffData.success && staffData.staffUsers) {
-        staffOptions = [
-          { value: "", label: "Unassigned" },
-          ...staffData.staffUsers.map((staff: any) => ({
-            value: staff.id || "",
-            label:
-              staff.company_name ||
-              `${staff.first_name || ""} ${staff.last_name || ""}`.trim() ||
-              "Unknown Staff",
-          })),
-        ];
-      }
-    }
-  } catch (error) {
-    console.error("Failed to fetch staff data:", error);
-    staffOptions = [{ value: "", label: "Unassigned" }];
   }
 }
 
@@ -160,11 +132,12 @@ if (currentRole === "Admin" || currentRole === "Staff") {
                 selectedValue={currentStatusInt || ""}
                 placeholder="Choose status"
                 buttonText={currentStatusName}
+                saveApiEndpoint="update-status"
                 showCloseButton={true}
                 showCancelButton={true}
                 skipSaveToAPI={false}
                 project={project}
-                showNotification={false}
+                showNotification={true}
                 icon="code"
                 searchText="Search status..."
               />
@@ -180,10 +153,11 @@ if (currentRole === "Admin" || currentRole === "Staff") {
                 buttonText={(() => {
                   if (!project?.assigned_to_id) return "Unassigned";
                   const assignedStaff = staffOptions.find(
-                    (staff) => staff.value === project.assigned_to_id
+                    (staff: any) => staff.value === project.assigned_to_id
                   );
                   return assignedStaff?.label || "Unknown Staff";
                 })()}
+                saveApiEndpoint="assign-staff"
                 showCloseButton={true}
                 showCancelButton={true}
                 skipSaveToAPI={false}
