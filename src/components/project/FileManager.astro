@@ -193,13 +193,7 @@ console.log("🔧 [FILE-MANAGER] Component initialized with props:", {
 
     loadProjectFiles();
     
-    // Load users for assignment (only Admin and Staff can assign files)
-    if (currentRole === "Admin" || currentRole === "Staff") {
-      console.log("🔧 [FILE-MANAGER] Loading users for assignment for role:", currentRole);
-      loadStaffUsers();
-    } else {
-      console.log("🔧 [FILE-MANAGER] Assignment disabled for role:", currentRole);
-    }
+    // No need to load staff users for simplified workflow
     
     if (showManagement) {
       console.log("🔧 [FILE-MANAGER] Management panel enabled for role:", currentRole);
@@ -749,7 +743,7 @@ console.log("🔧 [FILE-MANAGER] Component initialized with props:", {
     </svg>`;
   }
 
-  function downloadFile(publicUrl, fileName, fileId) {
+  async function downloadFile(publicUrl, fileName, fileId) {
     console.log("📥 [FILE-MANAGER] Download requested:", { publicUrl, fileName, fileId });
     
     if (!publicUrl) {
@@ -766,11 +760,11 @@ console.log("🔧 [FILE-MANAGER] Component initialized with props:", {
     }
 
     try {
-      // Auto-checkout the file when downloading (if project status allows)
-      if (canCheckoutFiles && currentUser?.id) {
-        console.log("🔧 [FILE-MANAGER] Auto-checking out file for download");
-        handleFileCheckout(fileId, "checkout");
-      }
+    // Auto-checkout the file when downloading (if project status allows)
+    if (canCheckoutFiles && currentUser?.id) {
+      console.log("🔧 [FILE-MANAGER] Auto-checking out file for download");
+      await handleFileCheckout(fileId, "checkout");
+    }
       
       console.log("🔧 [FILE-MANAGER] Creating download link");
       const link = document.createElement("a");
@@ -813,99 +807,13 @@ console.log("🔧 [FILE-MANAGER] Component initialized with props:", {
     }
   }
 
-  // Make functions globally available
-  window.openFileCheckout = function(fileId) {
-    console.log("🔧 [FILE-MANAGER] File checkout requested for file:", fileId);
-    
-    // Find the file data
-    const file = files.find(f => f.id === fileId);
-    if (!file) {
-      console.error("❌ [FILE-MANAGER] File not found:", fileId);
-      showError("File not found");
-      return;
-    }
-    
-    console.log("🔧 [FILE-MANAGER] Opening checkout modal for file:", file.fileName);
-    
-    // Create checkout modal
-    const modal = document.createElement('div');
-    modal.className = 'fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50';
-    modal.innerHTML = `
-      <div class="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full mx-4">
-        <div class="flex items-center justify-between mb-4">
-          <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Manage File</h3>
-          <button onclick="this.closest('.fixed').remove()" class="text-gray-400 hover:text-gray-600">
-            <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-            </svg>
-          </button>
-        </div>
-        
-        <div class="space-y-4">
-          <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">File:</label>
-            <p class="text-sm text-gray-600 dark:text-gray-400">${file.fileName}</p>
-          </div>
-          
-          <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Notes:</label>
-            <textarea 
-              id="checkout-notes-${fileId}"
-              class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
-              rows="3"
-              placeholder="Add notes about this checkout..."
-            ></textarea>
-          </div>
-          
-          <div class="flex space-x-2">
-            <button 
-              onclick="handleFileCheckout(${fileId}, 'checkout')"
-              class="flex-1 rounded-lg bg-blue-600 px-4 py-2 text-white hover:bg-blue-700"
-            >
-              Check Out File
-            </button>
-          </div>
-          
-          ${(currentRole === "Admin" || currentRole === "Staff") ? `
-            <div class="space-y-2">
-              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Assign to:</label>
-              <select id="assign-select-${fileId}" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-white">
-                <option value="">Select user...</option>
-                ${staffUsers.map(user => `
-                  <option value="${user.id}">
-                    ${user.company_name || user.email} 
-                    <span class="text-xs text-gray-500">(${user.role || 'Unknown'})</span>
-                  </option>
-                `).join('')}
-              </select>
-              <button 
-                onclick="handleFileCheckout(${fileId}, 'assign')"
-                class="w-full rounded-lg bg-purple-600 px-4 py-2 text-white hover:bg-purple-700"
-              >
-                Assign File
-              </button>
-            </div>
-          ` : ''}
-        </div>
-      </div>
-    `;
-    
-    document.body.appendChild(modal);
-  };
+  // Simplified checkout - no modal needed
   
   window.downloadFile = downloadFile;
   
-  // Handle file checkout operations
+  // Handle file checkout operations (simplified - no modal)
   window.handleFileCheckout = async function(fileId, action) {
     console.log("🔧 [FILE-MANAGER] Handling file checkout:", { fileId, action });
-    
-    const notes = document.getElementById(`checkout-notes-${fileId}`)?.value || "";
-    const assignedTo = document.getElementById(`assign-select-${fileId}`)?.value;
-    
-    if (action === "assign" && !assignedTo) {
-      showError("Please select a user to assign to");
-      return;
-    }
     
     try {
       const response = await fetch("/api/file-checkout", {
@@ -915,8 +823,7 @@ console.log("🔧 [FILE-MANAGER] Component initialized with props:", {
           action: action,
           file_id: fileId,
           user_id: currentUserId,
-          assigned_to: assignedTo,
-          notes: notes
+          notes: `Auto-${action} on ${new Date().toLocaleString()}`
         })
       });
       
@@ -924,20 +831,16 @@ console.log("🔧 [FILE-MANAGER] Component initialized with props:", {
       console.log("🔧 [FILE-MANAGER] Checkout response:", data);
       
       if (data.success) {
-        if (window.showModal) {
-          window.showModal("success", `File ${action} successful`, "", 2000);
-        } else {
-          showSuccess(`File ${action} successful`);
-        }
+        console.log(`✅ [FILE-MANAGER] File ${action} successful`);
         
-        // Close modal and refresh
-        document.querySelector('.fixed')?.remove();
+        // Refresh file list
         await loadProjectFiles();
         renderFiles();
         if (showManagement) {
           updateManagementPanel();
         }
       } else {
+        console.error("❌ [FILE-MANAGER] Checkout failed:", data.error);
         showError(data.error || `Failed to ${action} file`);
       }
     } catch (error) {
