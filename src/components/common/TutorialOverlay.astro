@@ -1,0 +1,859 @@
+---
+export interface Props {
+  currentUserId?: string;
+  tutorialId?: string;
+  autoStart?: boolean;
+}
+
+const { currentUserId = "", tutorialId = "default", autoStart = false } = Astro.props;
+---
+
+<div id="tutorial-overlay" class="tutorial-overlay hidden" data-auto-start="{autoStart}">
+  <!-- Tutorial Mask -->
+  <div id="tutorial-mask" class="tutorial-mask"></div>
+
+  <!-- Tutorial Popover -->
+  <div id="tutorial-popover" class="tutorial-popover hidden">
+    <div class="tutorial-popover-content">
+      <!-- Header -->
+      <div class="tutorial-header">
+        <div class="tutorial-progress">
+          <div class="tutorial-progress-bar">
+            <div id="tutorial-progress-fill" class="tutorial-progress-fill"></div>
+          </div>
+          <span id="tutorial-step-counter" class="tutorial-step-counter">1 of 5</span>
+        </div>
+        <button id="tutorial-close" class="tutorial-close" title="Close tutorial">
+          <i class="bx bx-x"></i>
+        </button>
+      </div>
+
+      <!-- Content -->
+      <div class="tutorial-body">
+        <div id="tutorial-icon" class="tutorial-icon">
+          <i class="bx bx-info-circle"></i>
+        </div>
+        <div class="tutorial-content">
+          <h3 id="tutorial-title" class="tutorial-title">Welcome!</h3>
+          <p id="tutorial-message" class="tutorial-message">
+            Let's take a quick tour to help you get started.
+          </p>
+        </div>
+      </div>
+
+      <!-- Actions -->
+      <div class="tutorial-actions">
+        <div class="tutorial-actions-left">
+          <button id="tutorial-skip" class="tutorial-btn tutorial-btn-secondary">
+            Skip Tutorial
+          </button>
+        </div>
+        <div class="tutorial-actions-right">
+          <button id="tutorial-prev" class="tutorial-btn tutorial-btn-secondary hidden">
+            <i class="bx bx-chevron-left"></i>
+            Previous
+          </button>
+          <button id="tutorial-next" class="tutorial-btn tutorial-btn-primary">
+            Next
+            <i class="bx bx-chevron-right"></i>
+          </button>
+          <button id="tutorial-finish" class="tutorial-btn tutorial-btn-primary hidden">
+            <i class="bx bx-check"></i>
+            Finish
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tutorial Arrow -->
+    <div id="tutorial-arrow" class="tutorial-arrow"></div>
+  </div>
+</div>
+
+<!-- Tutorial Trigger Button -->
+<button id="tutorial-trigger" class="tutorial-trigger hidden" title="Start Tutorial">
+  <i class="bx bx-help-circle"></i>
+  <span>Help</span>
+</button>
+
+<script>
+  interface TutorialStep {
+    element: string;
+    title: string;
+    message: string;
+    position?: "top" | "bottom" | "left" | "right" | "center";
+    icon?: string;
+    action?: string;
+  }
+
+  interface TutorialConfig {
+    id: string;
+    userId: string;
+    steps: TutorialStep[];
+    completed: boolean;
+    dismissed: boolean;
+    lastStep: number;
+  }
+
+  class TutorialManager {
+    private overlay: HTMLElement | null = null;
+    private mask: HTMLElement | null = null;
+    private popover: HTMLElement | null = null;
+    private trigger: HTMLElement | null = null;
+    private currentStep: number = 0;
+    private steps: TutorialStep[] = [];
+    private config: TutorialConfig | null = null;
+    private isActive: boolean = false;
+    private currentUserId: string;
+    private tutorialId: string;
+
+    constructor(userId: string, tutorialId: string) {
+      this.currentUserId = userId;
+      this.tutorialId = tutorialId;
+      this.init();
+    }
+
+    private async init() {
+      this.overlay = document.getElementById("tutorial-overlay");
+      this.mask = document.getElementById("tutorial-mask");
+      this.popover = document.getElementById("tutorial-popover");
+      this.trigger = document.getElementById("tutorial-trigger");
+
+      if (!this.overlay || !this.mask || !this.popover || !this.trigger) {
+        console.error("Tutorial elements not found");
+        return;
+      }
+
+      await this.loadTutorialConfig();
+      this.setupEventListeners();
+      this.collectTutorialSteps();
+
+      // Show trigger if tutorial hasn't been completed
+      if (!this.config?.completed && !this.config?.dismissed) {
+        this.trigger?.classList.remove("hidden");
+      }
+    }
+
+    private async loadTutorialConfig() {
+      try {
+        const response = await fetch("/api/tutorial-config", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            userId: this.currentUserId,
+            tutorialId: this.tutorialId,
+          }),
+        });
+
+        if (response.ok) {
+          this.config = await response.json();
+        } else {
+          // Create default config
+          this.config = {
+            id: this.tutorialId,
+            userId: this.currentUserId,
+            steps: [],
+            completed: false,
+            dismissed: false,
+            lastStep: 0,
+          };
+        }
+      } catch (error) {
+        console.error("Error loading tutorial config:", error);
+        this.config = {
+          id: this.tutorialId,
+          userId: this.currentUserId,
+          steps: [],
+          completed: false,
+          dismissed: false,
+          lastStep: 0,
+        };
+      }
+    }
+
+    private collectTutorialSteps() {
+      const tutorialElements = document.querySelectorAll("[data-welcome]");
+      this.steps = [];
+
+      tutorialElements.forEach((element, index) => {
+        const dataWelcome = element.getAttribute("data-welcome");
+        if (dataWelcome) {
+          try {
+            const welcomeData = JSON.parse(dataWelcome);
+            this.steps.push({
+              element: `[data-welcome="${dataWelcome}"]`,
+              title: welcomeData.title || `Step ${index + 1}`,
+              message: welcomeData.msg || "Welcome!",
+              position: welcomeData.position || "bottom",
+              icon: welcomeData.icon || "bx-info-circle",
+              action: welcomeData.action,
+            });
+          } catch (error) {
+            console.error("Error parsing tutorial data:", error);
+          }
+        }
+      });
+
+      // If we have saved progress, start from last step
+      if (this.config && this.config.lastStep > 0 && this.config.lastStep < this.steps.length) {
+        this.currentStep = this.config.lastStep;
+      }
+    }
+
+    private setupEventListeners() {
+      // Trigger button
+      this.trigger?.addEventListener("click", () => {
+        this.startTutorial();
+      });
+
+      // Close button
+      document.getElementById("tutorial-close")?.addEventListener("click", () => {
+        this.dismissTutorial();
+      });
+
+      // Skip button
+      document.getElementById("tutorial-skip")?.addEventListener("click", () => {
+        this.dismissTutorial();
+      });
+
+      // Navigation buttons
+      document.getElementById("tutorial-prev")?.addEventListener("click", () => {
+        this.previousStep();
+      });
+
+      document.getElementById("tutorial-next")?.addEventListener("click", () => {
+        this.nextStep();
+      });
+
+      document.getElementById("tutorial-finish")?.addEventListener("click", () => {
+        this.finishTutorial();
+      });
+
+      // Click outside to close
+      this.mask?.addEventListener("click", (e) => {
+        if (e.target === this.mask) {
+          this.dismissTutorial();
+        }
+      });
+
+      // Keyboard navigation
+      document.addEventListener("keydown", (e) => {
+        if (!this.isActive) return;
+
+        switch (e.key) {
+          case "Escape":
+            this.dismissTutorial();
+            break;
+          case "ArrowLeft":
+            this.previousStep();
+            break;
+          case "ArrowRight":
+            this.nextStep();
+            break;
+        }
+      });
+    }
+
+    public startTutorial() {
+      if (this.steps.length === 0) {
+        console.warn("No tutorial steps found");
+        return;
+      }
+
+      this.isActive = true;
+      this.overlay?.classList.remove("hidden");
+      this.trigger?.classList.add("hidden");
+      this.showStep(this.currentStep);
+    }
+
+    private showStep(stepIndex: number) {
+      if (stepIndex < 0 || stepIndex >= this.steps.length) return;
+
+      const step = this.steps[stepIndex];
+      const targetElement = document.querySelector(step.element);
+
+      if (!targetElement) {
+        console.warn(`Tutorial step target not found: ${step.element}`);
+        this.nextStep();
+        return;
+      }
+
+      // Update content
+      this.updatePopoverContent(step);
+      this.updateProgress(stepIndex);
+      this.updateNavigation(stepIndex);
+
+      // Position popover
+      this.positionPopover(targetElement as HTMLElement, step.position || "bottom");
+
+      // Highlight target element
+      this.highlightElement(targetElement as HTMLElement);
+
+      // Execute step action if provided
+      if (step.action) {
+        this.executeAction(step.action);
+      }
+    }
+
+    private updatePopoverContent(step: TutorialStep) {
+      const titleEl = document.getElementById("tutorial-title");
+      const messageEl = document.getElementById("tutorial-message");
+      const iconEl = document.getElementById("tutorial-icon");
+
+      if (titleEl) titleEl.textContent = step.title;
+      if (messageEl) messageEl.textContent = step.message;
+      if (iconEl && step.icon) {
+        iconEl.innerHTML = `<i class="${step.icon}"></i>`;
+      }
+    }
+
+    private updateProgress(stepIndex: number) {
+      const progressFill = document.getElementById("tutorial-progress-fill");
+      const stepCounter = document.getElementById("tutorial-step-counter");
+
+      if (progressFill) {
+        const progress = ((stepIndex + 1) / this.steps.length) * 100;
+        progressFill.style.width = `${progress}%`;
+      }
+
+      if (stepCounter) {
+        stepCounter.textContent = `${stepIndex + 1} of ${this.steps.length}`;
+      }
+    }
+
+    private updateNavigation(stepIndex: number) {
+      const prevBtn = document.getElementById("tutorial-prev");
+      const nextBtn = document.getElementById("tutorial-next");
+      const finishBtn = document.getElementById("tutorial-finish");
+
+      // Previous button
+      if (prevBtn) {
+        prevBtn.classList.toggle("hidden", stepIndex === 0);
+      }
+
+      // Next/Finish buttons
+      if (nextBtn && finishBtn) {
+        const isLastStep = stepIndex === this.steps.length - 1;
+        nextBtn.classList.toggle("hidden", isLastStep);
+        finishBtn.classList.toggle("hidden", !isLastStep);
+      }
+    }
+
+    private positionPopover(targetElement: HTMLElement, position: string) {
+      if (!this.popover) return;
+
+      const targetRect = targetElement.getBoundingClientRect();
+      const popoverRect = this.popover.getBoundingClientRect();
+      const viewportWidth = window.innerWidth;
+      const viewportHeight = window.innerHeight;
+
+      let top = 0;
+      let left = 0;
+
+      // Calculate position based on preference and available space
+      switch (position) {
+        case "top":
+          top = targetRect.top - popoverRect.height - 20;
+          left = targetRect.left + targetRect.width / 2 - popoverRect.width / 2;
+          break;
+        case "bottom":
+          top = targetRect.bottom + 20;
+          left = targetRect.left + targetRect.width / 2 - popoverRect.width / 2;
+          break;
+        case "left":
+          top = targetRect.top + targetRect.height / 2 - popoverRect.height / 2;
+          left = targetRect.left - popoverRect.width - 20;
+          break;
+        case "right":
+          top = targetRect.top + targetRect.height / 2 - popoverRect.height / 2;
+          left = targetRect.right + 20;
+          break;
+        case "center":
+          top = viewportHeight / 2 - popoverRect.height / 2;
+          left = viewportWidth / 2 - popoverRect.width / 2;
+          break;
+      }
+
+      // Ensure popover stays within viewport
+      top = Math.max(10, Math.min(top, viewportHeight - popoverRect.height - 10));
+      left = Math.max(10, Math.min(left, viewportWidth - popoverRect.width - 10));
+
+      this.popover.style.top = `${top}px`;
+      this.popover.style.left = `${left}px`;
+
+      // Update arrow position
+      this.updateArrow(targetElement, position);
+    }
+
+    private updateArrow(targetElement: HTMLElement, position: string) {
+      const arrow = document.getElementById("tutorial-arrow");
+      if (!arrow) return;
+
+      const targetRect = targetElement.getBoundingClientRect();
+      const popoverRect = this.popover!.getBoundingClientRect();
+
+      arrow.className = `tutorial-arrow tutorial-arrow-${position}`;
+
+      switch (position) {
+        case "top":
+          arrow.style.top = "100%";
+          arrow.style.left = `${targetRect.left + targetRect.width / 2 - popoverRect.left - 8}px`;
+          break;
+        case "bottom":
+          arrow.style.top = "-8px";
+          arrow.style.left = `${targetRect.left + targetRect.width / 2 - popoverRect.left - 8}px`;
+          break;
+        case "left":
+          arrow.style.top = `${targetRect.top + targetRect.height / 2 - popoverRect.top - 8}px`;
+          arrow.style.left = "100%";
+          break;
+        case "right":
+          arrow.style.top = `${targetRect.top + targetRect.height / 2 - popoverRect.top - 8}px`;
+          arrow.style.left = "-8px";
+          break;
+      }
+    }
+
+    private highlightElement(element: HTMLElement) {
+      // Remove previous highlights
+      document.querySelectorAll(".tutorial-highlight").forEach((el) => {
+        el.classList.remove("tutorial-highlight");
+      });
+
+      // Add highlight to current element
+      element.classList.add("tutorial-highlight");
+
+      // Create mask cutout
+      this.createMaskCutout(element);
+    }
+
+    private createMaskCutout(targetElement: HTMLElement) {
+      if (!this.mask) return;
+
+      const targetRect = targetElement.getBoundingClientRect();
+      const maskRect = this.mask.getBoundingClientRect();
+
+      // Calculate cutout position relative to mask
+      const cutout = {
+        top: targetRect.top - maskRect.top,
+        left: targetRect.left - maskRect.left,
+        width: targetRect.width,
+        height: targetRect.height,
+      };
+
+      // Create cutout using CSS clip-path or box-shadow
+      this.mask.style.setProperty("--cutout-top", `${cutout.top}px`);
+      this.mask.style.setProperty("--cutout-left", `${cutout.left}px`);
+      this.mask.style.setProperty("--cutout-width", `${cutout.width}px`);
+      this.mask.style.setProperty("--cutout-height", `${cutout.height}px`);
+    }
+
+    private executeAction(action: string) {
+      // Execute custom actions for tutorial steps
+      switch (action) {
+        case "click":
+          // Simulate click on target element
+          break;
+        case "focus":
+          // Focus on target element
+          break;
+        case "scroll":
+          // Scroll to target element
+          break;
+      }
+    }
+
+    private nextStep() {
+      if (this.currentStep < this.steps.length - 1) {
+        this.currentStep++;
+        this.showStep(this.currentStep);
+        this.saveProgress();
+      }
+    }
+
+    private previousStep() {
+      if (this.currentStep > 0) {
+        this.currentStep--;
+        this.showStep(this.currentStep);
+        this.saveProgress();
+      }
+    }
+
+    private async finishTutorial() {
+      this.isActive = false;
+      this.overlay?.classList.add("hidden");
+
+      // Mark as completed
+      if (this.config) {
+        this.config.completed = true;
+        this.config.lastStep = this.currentStep;
+        await this.saveTutorialConfig();
+      }
+
+      // Show completion message
+      this.showCompletionMessage();
+    }
+
+    private async dismissTutorial() {
+      this.isActive = false;
+      this.overlay?.classList.add("hidden");
+
+      // Mark as dismissed
+      if (this.config) {
+        this.config.dismissed = true;
+        this.config.lastStep = this.currentStep;
+        await this.saveTutorialConfig();
+      }
+    }
+
+    private async saveProgress() {
+      if (this.config) {
+        this.config.lastStep = this.currentStep;
+        await this.saveTutorialConfig();
+      }
+    }
+
+    private async saveTutorialConfig() {
+      if (!this.config) return;
+
+      try {
+        await fetch("/api/tutorial-config", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(this.config),
+        });
+      } catch (error) {
+        console.error("Error saving tutorial config:", error);
+      }
+    }
+
+    private showCompletionMessage() {
+      // You can implement a toast notification here
+      console.log("Tutorial completed!");
+    }
+
+    public resetTutorial() {
+      if (this.config) {
+        this.config.completed = false;
+        this.config.dismissed = false;
+        this.config.lastStep = 0;
+        this.saveTutorialConfig();
+        this.trigger?.classList.remove("hidden");
+      }
+    }
+  }
+
+  // Initialize tutorial system
+  if (typeof window !== "undefined") {
+    const tutorialManager = new TutorialManager("{currentUserId}", "{tutorialId}");
+
+    // Make it globally accessible
+    (window as any).tutorialManager = tutorialManager;
+
+    // Auto-start if enabled
+    try {
+      const overlay = this.overlay as HTMLElement | null;
+      if (overlay && overlay.dataset && overlay.dataset.autoStart) {
+        const shouldAutoStart = overlay.dataset.autoStart === "true";
+        if (shouldAutoStart) {
+          document.addEventListener("DOMContentLoaded", () => {
+            setTimeout(() => tutorialManager.startTutorial(), 1000);
+          });
+        }
+      }
+    } catch (error) {
+      // Ignore errors during initialization
+    }
+  }
+</script>
+
+<style>
+  .tutorial-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: 9999;
+    pointer-events: none;
+  }
+
+  .tutorial-mask {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(2px);
+    pointer-events: all;
+    clip-path: polygon(
+      0% 0%,
+      0% 100%,
+      var(--cutout-left, 0) 100%,
+      var(--cutout-left, 0) var(--cutout-top, 0),
+      calc(var(--cutout-left, 0) + var(--cutout-width, 0)) var(--cutout-top, 0),
+      calc(var(--cutout-left, 0) + var(--cutout-width, 0))
+        calc(var(--cutout-top, 0) + var(--cutout-height, 0)),
+      var(--cutout-left, 0) calc(var(--cutout-top, 0) + var(--cutout-height, 0)),
+      var(--cutout-left, 0) 100%,
+      100% 100%,
+      100% 0%
+    );
+  }
+
+  .tutorial-popover {
+    position: absolute;
+    background: white;
+    border-radius: 12px;
+    box-shadow:
+      0 20px 25px -5px rgba(0, 0, 0, 0.1),
+      0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    max-width: 400px;
+    min-width: 300px;
+    pointer-events: all;
+    z-index: 10000;
+  }
+
+  .tutorial-popover-content {
+    padding: 0;
+  }
+
+  .tutorial-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 20px 12px;
+    border-bottom: 1px solid #e5e7eb;
+  }
+
+  .tutorial-progress {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .tutorial-progress-bar {
+    width: 120px;
+    height: 4px;
+    background: #e5e7eb;
+    border-radius: 2px;
+    overflow: hidden;
+  }
+
+  .tutorial-progress-fill {
+    height: 100%;
+    background: #3b82f6;
+    border-radius: 2px;
+    transition: width 0.3s ease;
+  }
+
+  .tutorial-step-counter {
+    font-size: 12px;
+    color: #6b7280;
+    font-weight: 500;
+  }
+
+  .tutorial-close {
+    background: none;
+    border: none;
+    color: #6b7280;
+    cursor: pointer;
+    padding: 4px;
+    border-radius: 4px;
+    transition: all 0.2s;
+  }
+
+  .tutorial-close:hover {
+    background: #f3f4f6;
+    color: #374151;
+  }
+
+  .tutorial-body {
+    display: flex;
+    gap: 16px;
+    padding: 20px;
+  }
+
+  .tutorial-icon {
+    flex-shrink: 0;
+    width: 40px;
+    height: 40px;
+    background: #dbeafe;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #3b82f6;
+    font-size: 20px;
+  }
+
+  .tutorial-content {
+    flex: 1;
+  }
+
+  .tutorial-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: #111827;
+    margin: 0 0 8px 0;
+  }
+
+  .tutorial-message {
+    font-size: 14px;
+    color: #6b7280;
+    line-height: 1.5;
+    margin: 0;
+  }
+
+  .tutorial-actions {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 20px;
+    border-top: 1px solid #e5e7eb;
+    background: #f9fafb;
+    border-radius: 0 0 12px 12px;
+  }
+
+  .tutorial-actions-left {
+    display: flex;
+    gap: 8px;
+  }
+
+  .tutorial-actions-right {
+    display: flex;
+    gap: 8px;
+  }
+
+  .tutorial-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 16px;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    border: none;
+  }
+
+  .tutorial-btn-primary {
+    background: #3b82f6;
+    color: white;
+  }
+
+  .tutorial-btn-primary:hover {
+    background: #2563eb;
+  }
+
+  .tutorial-btn-secondary {
+    background: white;
+    color: #374151;
+    border: 1px solid #d1d5db;
+  }
+
+  .tutorial-btn-secondary:hover {
+    background: #f9fafb;
+    border-color: #9ca3af;
+  }
+
+  .tutorial-arrow {
+    position: absolute;
+    width: 16px;
+    height: 16px;
+    background: white;
+    border: 1px solid #e5e7eb;
+    transform: rotate(45deg);
+  }
+
+  .tutorial-arrow-top {
+    border-right: none;
+    border-bottom: none;
+  }
+
+  .tutorial-arrow-bottom {
+    border-left: none;
+    border-top: none;
+  }
+
+  .tutorial-arrow-left {
+    border-right: none;
+    border-bottom: none;
+  }
+
+  .tutorial-arrow-right {
+    border-left: none;
+    border-top: none;
+  }
+
+  .tutorial-highlight {
+    position: relative;
+    z-index: 10001;
+    box-shadow: 0 0 0 3px #3b82f6;
+    border-radius: 4px;
+  }
+
+  .tutorial-trigger {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    background: #3b82f6;
+    color: white;
+    border: none;
+    border-radius: 50px;
+    padding: 12px 20px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+    transition: all 0.2s;
+    z-index: 1000;
+  }
+
+  .tutorial-trigger:hover {
+    background: #2563eb;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(59, 130, 246, 0.4);
+  }
+
+  .tutorial-trigger i {
+    font-size: 16px;
+  }
+
+  /* Dark mode support */
+  @media (prefers-color-scheme: dark) {
+    .tutorial-popover {
+      background: #1f2937;
+      color: #f9fafb;
+    }
+
+    .tutorial-header {
+      border-bottom-color: #374151;
+    }
+
+    .tutorial-actions {
+      background: #111827;
+      border-top-color: #374151;
+    }
+
+    .tutorial-btn-secondary {
+      background: #374151;
+      color: #f9fafb;
+      border-color: #4b5563;
+    }
+
+    .tutorial-btn-secondary:hover {
+      background: #4b5563;
+    }
+
+    .tutorial-icon {
+      background: #1e3a8a;
+      color: #93c5fd;
+    }
+  }
+</style>

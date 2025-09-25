@@ -21,6 +21,7 @@ interface EmailDeliveryRequest {
   authorId?: string;
   includeResendHeaders?: boolean;
   trackLinks?: boolean;
+  currentUser?: any;
 }
 
 interface FailedEmail {
@@ -39,9 +40,9 @@ interface EmailDeliveryResponse {
 
 export const POST: APIRoute = async ({ request, cookies }): Promise<Response> => {
   // Log to file for debugging
-  const fs = await import("fs");
-  const logEntry = `[${new Date().toISOString()}] EMAIL-DELIVERY API called\n`;
-  fs.appendFileSync("/tmp/astro-email.log", logEntry);
+  // const fs = await import("fs");
+  // const logEntry = `[${new Date().toISOString()}] EMAIL-DELIVERY API called\n`;
+  // fs.appendFileSync("/tmp/astro-email.log", logEntry);
 
   try {
     if (!supabase || !supabaseAdmin) {
@@ -57,7 +58,6 @@ export const POST: APIRoute = async ({ request, cookies }): Promise<Response> =>
     }
 
     const body: EmailDeliveryRequest = await request.json();
-
     // Use the proper base URL function to avoid localhost in production
     const { getBaseUrl } = await import("../../lib/url-utils");
     const baseUrl = getBaseUrl(request);
@@ -65,6 +65,8 @@ export const POST: APIRoute = async ({ request, cookies }): Promise<Response> =>
     const emailApiKey = import.meta.env.EMAIL_API_KEY;
     const fromEmail = import.meta.env.FROM_EMAIL;
     const fromName = import.meta.env.FROM_NAME;
+    const sentEmails = [];
+    const failedEmails = [];
     let emailTemplate: string;
 
     const {
@@ -79,6 +81,7 @@ export const POST: APIRoute = async ({ request, cookies }): Promise<Response> =>
       authorId,
       includeResendHeaders = false,
       trackLinks = true, // Default to true for backward compatibility
+      currentUser,
     } = body;
 
     // Determine if click tracking should be disabled based on email type
@@ -92,11 +95,11 @@ export const POST: APIRoute = async ({ request, cookies }): Promise<Response> =>
     const finalTrackLinks = shouldDisableTracking ? false : trackLinks;
 
     // Debug logging for tracking configuration
-    if (shouldDisableTracking) {
-      console.log("📧 [EMAIL-DELIVERY] Click tracking disabled for email type:", emailType);
-    } else {
-      console.log("📧 [EMAIL-DELIVERY] Click tracking enabled for email type:", emailType);
-    }
+    // if (shouldDisableTracking) {
+    //   console.log("📧 [EMAIL-DELIVERY] Click tracking disabled for email type:", emailType);
+    // } else {
+    //   console.log("📧 [EMAIL-DELIVERY] Click tracking enabled for email type:", emailType);
+    // }
 
     // Simple validation
     if (
@@ -135,9 +138,6 @@ export const POST: APIRoute = async ({ request, cookies }): Promise<Response> =>
       });
       throw templateError;
     }
-
-    const sentEmails = [];
-    const failedEmails = [];
 
     try {
       // Send emails to each user
@@ -260,7 +260,7 @@ export const POST: APIRoute = async ({ request, cookies }): Promise<Response> =>
               await SimpleProjectLogger.addLogEntry(
                 projectId || 0,
                 "email_delivery_failed",
-                { email: userEmail, name: "System" },
+                currentUser || { email: "System", name: "System" },
                 `Email delivery failed to ${userEmail} - Type: ${emailType}, Subject: ${emailSubject}, Error: ${errorText}`,
                 null,
                 { emailType, emailSubject, error: errorText, status: response.status }
@@ -281,7 +281,7 @@ export const POST: APIRoute = async ({ request, cookies }): Promise<Response> =>
               await SimpleProjectLogger.addLogEntry(
                 projectId || 0,
                 "email_delivery_success",
-                { email: userEmail, name: "System" },
+                currentUser || { email: "System", name: "System" },
                 `Email sent successfully to ${userEmail} - Type: ${emailType}, Subject: ${emailSubject}`,
                 null,
                 { emailType, emailSubject, responseId: responseData.id }
@@ -313,7 +313,7 @@ export const POST: APIRoute = async ({ request, cookies }): Promise<Response> =>
             await SimpleProjectLogger.addLogEntry(
               projectId || 0,
               "email_delivery_error",
-              { email: userEmail, name: "System" },
+              currentUser,
               `Email delivery error to ${userEmail} - Type: ${emailType}, Subject: ${emailSubject}, Error: ${userError instanceof Error ? userError.message : "Unknown error"}`,
               null,
               {
@@ -353,12 +353,18 @@ export const POST: APIRoute = async ({ request, cookies }): Promise<Response> =>
     // console.log("  - Total sent:", sentEmails.length);
     // console.log("  - Total failed:", failedEmails.length);
 
+    // projectId: number,
+    // action: string,
+    // user: any,
+    // details: string,
+    // oldValue?: any,
+    // newValue?: any
     // Log overall email delivery completion
     try {
       await SimpleProjectLogger.addLogEntry(
         projectId || 0,
         "email_delivery_completed",
-        { email: "System", name: "System" },
+        currentUser || { email: "System", name: "System" },
         `Email delivery batch completed - Type: ${emailType}, Total sent: ${sentEmails.length}, Total failed: ${failedEmails.length}`,
         null,
         {
