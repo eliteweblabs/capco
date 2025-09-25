@@ -1,0 +1,43 @@
+---
+// Reusable Accordion component following Flowbite design
+export const partial = true;
+
+// Detect if this is being used as a partial
+const isPartial = Astro.request.headers.has("x-accordion-id");
+import BoxIcon from "../common/BoxIcon.astro";
+let id, title, description, content, open, className, headerClass, contentClass;
+
+if (isPartial) {
+  // Extract props from headers when used as partial
+  id = Astro.request.headers.get("x-accordion-id") || "";
+  title = Astro.request.headers.get("x-accordion-title") || "";
+  description = Astro.request.headers.get("x-accordion-description") || "";
+  content = Astro.request.headers.get("x-accordion-content") || "";
+  open = Astro.request.headers.get("x-accordion-open") === "true";
+  className = Astro.request.headers.get("x-accordion-class") || "";
+  headerClass = Astro.request.headers.get("x-accordion-header-class") || "";
+  contentClass = Astro.request.headers.get("x-accordion-content-class") || "";
+} else {
+  // Use regular props when used as a component
+  const props = Astro.props;
+  id = props.id;
+  title = props.title;
+  description = props.description;
+  content = props.content;
+  open = props.open || false;
+  className = props.class || "";
+  headerClass = props.headerClass || "";
+  contentClass = props.contentClass || "";
+}
+---
+
+<div
+  class="mb-4 rounded-lg border border-blue-200 bg-blue-50 p-4 dark:border-blue-800 dark:bg-blue-900/20"
+>
+  <div class="flex items-start">
+    <BoxIcon name="info-circle" class="mr-2 mt-0.5 text-lg text-blue-600 dark:text-blue-400" />
+    <div class="text-sm text-blue-800 dark:text-blue-400">
+      {title}
+    </div>
+  </div>
+</div>

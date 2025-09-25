@@ -26,37 +26,21 @@ const {
 
 const projectId = project?.id;
 
-// Debug logging for props
-console.log("🔍 [TAB-DOCUMENTS] Props received:", {
-  hasProject: !!project,
-  projectStatus,
-  hasCurrentUser: !!currentUser,
-  globalSecondaryTextClasses,
-  globalPrimaryTextClasses,
-  fileType,
-  projectStatusLabel,
-});
+const currentRole = currentUser?.profile?.role;
 ---
 
 <div id="content-documents" class="tab-content hidden">
-  {
-    (projectStatus === 10 ||
-      projectStatus === 20 ||
-      projectStatus === 30 ||
-      projectStatus === 40 ||
-      projectStatus === 50) && (
-      <FileManager
-        projectId={project.id}
-        currentUser={currentUser}
-        currentRole={currentUser?.profile?.role}
-        projectAuthorId={project.author_id}
-        projectStatus={projectStatus}
-        globalSecondaryTextClasses={globalSecondaryTextClasses}
-        globalPrimaryTextClasses={globalPrimaryTextClasses}
-        globalInputClasses={globalInputClasses}
-      />
-    )
-  }
+  <!-- File Manager for all users - PDF preview works for everyone -->
+  <FileManager
+    projectId={project.id}
+    currentUser={currentUser}
+    currentRole={currentUser?.profile?.role}
+    projectAuthorId={project.author_id}
+    projectStatus={projectStatus}
+    globalSecondaryTextClasses={globalSecondaryTextClasses}
+    globalPrimaryTextClasses={globalPrimaryTextClasses}
+    globalInputClasses={globalInputClasses}
+  />
 
   <!-- All Documents Uploaded Button (Clients Only) -->
   {
@@ -69,9 +53,8 @@ console.log("🔍 [TAB-DOCUMENTS] Props received:", {
             size="md"
             icon="check"
             iconPosition="right"
-            class="focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
           >
-            Finished Uploading Documents
+            Finished Uploading Documents / Request Review
           </Button>
         </div>
       </div>
@@ -138,6 +121,8 @@ console.log("🔍 [TAB-DOCUMENTS] Props received:", {
             </svg>
             Updating Status...
           `;
+
+          window.showModal("alert", "Reviewing Documents, Please Wait...", "", 2000);
 
           const response = await fetch("/api/update-status", {
             method: "POST",
