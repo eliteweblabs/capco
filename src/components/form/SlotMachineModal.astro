@@ -218,14 +218,11 @@ const displayText = buttonText || selectedOption?.label || placeholder;
           }
 
           // Auto-save to API endpoint if saveApiEndpoint is provided or legacy component IDs
-          console.log(`🎰 [SLOT-MACHINE] ===== AUTO-SAVE CHECK =====`);
-          console.log(`🎰 [SLOT-MACHINE] saveApiEndpoint: ${saveApiEndpoint}`);
-          console.log(`🎰 [SLOT-MACHINE] id: ${id}`);
-          console.log(`🎰 [SLOT-MACHINE] skipSaveToAPI: ${skipSaveToAPI}`);
-
           if (
             saveApiEndpoint ||
             id === "update-status" ||
+            id === "due-date" ||
+            id.startsWith("due-date") ||
             id.startsWith("assign-staff-") ||
             id === "assign-staff"
           ) {
@@ -242,6 +239,10 @@ const displayText = buttonText || selectedOption?.label || placeholder;
               // Use the provided saveApiEndpoint (highest priority)
               apiIdentifier = saveApiEndpoint;
               console.log(`🎰 [SLOT-MACHINE] Using saveApiEndpoint: ${apiIdentifier}`);
+            } else if (id.startsWith("due-date") || id === "due-date") {
+              // For due-date components, use update-project endpoint
+              apiIdentifier = "update-project";
+              console.log(`🎰 [SLOT-MACHINE] Using due-date fallback: ${apiIdentifier}`);
             } else if (id.startsWith("assign-staff-") || id === "assign-staff") {
               // For assign-staff components without saveApiEndpoint, use the generic assign-staff endpoint
               apiIdentifier = "assign-staff";

@@ -8,25 +8,6 @@ import { SimpleProjectLogger } from "../../lib/simple-logging";
 import { supabase } from "../../lib/supabase";
 import { supabaseAdmin } from "../../lib/supabase-admin";
 
-// Notification system interfaces
-interface NotificationData {
-  userId: string;
-  title: string;
-  message: string;
-  type?: "info" | "success" | "warning" | "error";
-  priority?: "low" | "normal" | "high" | "urgent";
-  expiresAt?: Date;
-  metadata?: Record<string, any>;
-  actionUrl?: string;
-  actionText?: string;
-}
-
-interface NotificationResponse {
-  success: boolean;
-  notificationId?: number;
-  error?: string;
-}
-
 // TypeScript interfaces for request data structure
 interface EmailDeliveryRequest {
   usersToNotify: string[];
@@ -54,282 +35,6 @@ interface EmailDeliveryResponse {
   failedEmails?: FailedEmail[];
   totalSent?: number;
   totalFailed?: number;
-}
-
-// Notification system functions
-export async function createNotification(
-  notificationData: NotificationData
-): Promise<NotificationResponse> {
-  try {
-    if (!supabaseAdmin) {
-      return {
-        success: false,
-        error: "Database not configured",
-      };
-    }
-
-    const { data, error } = await supabaseAdmin
-      .from("notifications")
-      .insert({
-        user_id: notificationData.userId,
-        title: notificationData.title,
-        message: notificationData.message,
-        type: notificationData.type || "info",
-        priority: notificationData.priority || "normal",
-        expires_at: notificationData.expiresAt?.toISOString() || null,
-        metadata: notificationData.metadata || {},
-        action_url: notificationData.actionUrl || null,
-        action_text: notificationData.actionText || null,
-      })
-      .select("id")
-      .single();
-
-    if (error) {
-      console.error("❌ [NOTIFICATIONS] Error creating notification:", error);
-      return {
-        success: false,
-        error: error.message,
-      };
-    }
-
-    console.log("✅ [NOTIFICATIONS] Created notification:", data.id);
-    return {
-      success: true,
-      notificationId: data.id,
-    };
-  } catch (error) {
-    console.error("❌ [NOTIFICATIONS] Error creating notification:", error);
-    return {
-      success: false,
-      error: "Failed to create notification",
-    };
-  }
-}
-
-export async function createBulkNotifications(
-  notifications: NotificationData[]
-): Promise<{ success: boolean; created: number; errors: string[] }> {
-  try {
-    if (!supabaseAdmin) {
-      return {
-        success: false,
-        created: 0,
-        errors: ["Database not configured"],
-      };
-    }
-
-    const insertData = notifications.map((notification) => ({
-      user_id: notification.userId,
-      title: notification.title,
-      message: notification.message,
-      type: notification.type || "info",
-      priority: notification.priority || "normal",
-      expires_at: notification.expiresAt?.toISOString() || null,
-      metadata: notification.metadata || {},
-      action_url: notification.actionUrl || null,
-      action_text: notification.actionText || null,
-    }));
-
-    const { data, error } = await supabaseAdmin
-      .from("notifications")
-      .insert(insertData)
-      .select("id");
-
-    if (error) {
-      console.error("❌ [NOTIFICATIONS] Error creating bulk notifications:", error);
-      return {
-        success: false,
-        created: 0,
-        errors: [error.message],
-      };
-    }
-
-    console.log("✅ [NOTIFICATIONS] Created bulk notifications:", data.length);
-    return {
-      success: true,
-      created: data.length,
-      errors: [],
-    };
-  } catch (error) {
-    console.error("❌ [NOTIFICATIONS] Error creating bulk notifications:", error);
-    return {
-      success: false,
-      created: 0,
-      errors: ["Failed to create bulk notifications"],
-    };
-  }
-}
-
-export async function markNotificationAsViewed(
-  notificationId: number,
-  userId: string
-): Promise<boolean> {
-  try {
-    if (!supabase) {
-      return false;
-    }
-
-    const { error } = await supabase
-      .from("notifications")
-      .update({ viewed: true })
-      .eq("id", notificationId)
-      .eq("user_id", userId);
-
-    if (error) {
-      console.error("❌ [NOTIFICATIONS] Error marking notification as viewed:", error);
-      return false;
-    }
-
-    return true;
-  } catch (error) {
-    console.error("❌ [NOTIFICATIONS] Error marking notification as viewed:", error);
-    return false;
-  }
-}
-
-export async function markMultipleNotificationsAsViewed(
-  notificationIds: number[],
-  userId: string
-): Promise<boolean> {
-  try {
-    if (!supabase) {
-      return false;
-    }
-
-    const { error } = await supabase
-      .from("notifications")
-      .update({ viewed: true })
-      .in("id", notificationIds)
-      .eq("user_id", userId);
-
-    if (error) {
-      console.error("❌ [NOTIFICATIONS] Error marking multiple notifications as viewed:", error);
-      return false;
-    }
-
-    return true;
-  } catch (error) {
-    console.error("❌ [NOTIFICATIONS] Error marking multiple notifications as viewed:", error);
-    return false;
-  }
-}
-
-// Helper function to create internal notifications
-async function createInternalNotification(
-  userEmail: string,
-  emailType: string,
-  emailSubject: string,
-  emailContent: string,
-  projectId?: number,
-  newStatus?: number,
-  buttonLink?: string
-): Promise<void> {
-  try {
-    if (!supabaseAdmin) {
-      console.error("📧 [NOTIFICATIONS] Database not configured");
-      return;
-    }
-
-    // Get user ID from email
-    const { data: userData, error: userError } = await supabaseAdmin
-      .from("profiles")
-      .select("id")
-      .eq("email", userEmail)
-      .single();
-
-    if (userError || !userData) {
-      console.error("📧 [NOTIFICATIONS] User not found for email:", userEmail);
-      return;
-    }
-
-    // Determine notification type and priority based on email type
-    let notificationType: "info" | "success" | "warning" | "error" = "info";
-    let priority: "low" | "normal" | "high" | "urgent" = "normal";
-    let title = emailSubject;
-    let message = emailContent;
-
-    // Customize notification based on email type
-    switch (emailType) {
-      case "proposal_submitted":
-        notificationType = "success";
-        priority = "high";
-        title = "New Proposal Submitted";
-        message = `A new proposal has been submitted for your project.`;
-        break;
-      case "proposal_approved":
-        notificationType = "success";
-        priority = "high";
-        title = "Proposal Approved";
-        message = `Your proposal has been approved and is ready for next steps.`;
-        break;
-      case "proposal_rejected":
-        notificationType = "warning";
-        priority = "high";
-        title = "Proposal Requires Changes";
-        message = `Your proposal needs some adjustments before it can be approved.`;
-        break;
-      case "payment_received":
-        notificationType = "success";
-        priority = "normal";
-        title = "Payment Received";
-        message = `We have received your payment. Thank you!`;
-        break;
-      case "project_status_change":
-        notificationType = "info";
-        priority = "normal";
-        title = "Project Status Updated";
-        message = `Your project status has been updated.`;
-        break;
-      case "document_uploaded":
-        notificationType = "info";
-        priority = "normal";
-        title = "New Document Uploaded";
-        message = `A new document has been uploaded to your project.`;
-        break;
-      case "system_alert":
-        notificationType = "warning";
-        priority = "high";
-        title = "System Alert";
-        message = emailContent;
-        break;
-      default:
-        // Use email subject and content as-is
-        break;
-    }
-
-    // Create notification
-    const notificationData: NotificationData = {
-      userId: userData.id,
-      title,
-      message,
-      type: notificationType,
-      priority,
-      metadata: {
-        emailType,
-        projectId,
-        newStatus,
-        originalSubject: emailSubject,
-      },
-      actionUrl: buttonLink,
-      actionText: "View Details",
-    };
-
-    const result = await createNotification(notificationData);
-
-    if (result.success) {
-      console.log(
-        `✅ [NOTIFICATIONS] Created notification for ${userEmail}:`,
-        result.notificationId
-      );
-    } else {
-      console.error(
-        `❌ [NOTIFICATIONS] Failed to create notification for ${userEmail}:`,
-        result.error
-      );
-    }
-  } catch (error) {
-    console.error("❌ [NOTIFICATIONS] Error creating internal notification:", error);
-  }
 }
 
 export const POST: APIRoute = async ({ request, cookies }): Promise<Response> => {
@@ -555,7 +260,7 @@ export const POST: APIRoute = async ({ request, cookies }): Promise<Response> =>
               await SimpleProjectLogger.addLogEntry(
                 projectId || 0,
                 "email_delivery_failed",
-                `System (${userEmail})`,
+                { email: userEmail, name: "System" },
                 `Email delivery failed to ${userEmail} - Type: ${emailType}, Subject: ${emailSubject}, Error: ${errorText}`,
                 null,
                 { emailType, emailSubject, error: errorText, status: response.status }
@@ -576,7 +281,7 @@ export const POST: APIRoute = async ({ request, cookies }): Promise<Response> =>
               await SimpleProjectLogger.addLogEntry(
                 projectId || 0,
                 "email_delivery_success",
-                `System (${userEmail})`,
+                { email: userEmail, name: "System" },
                 `Email sent successfully to ${userEmail} - Type: ${emailType}, Subject: ${emailSubject}`,
                 null,
                 { emailType, emailSubject, responseId: responseData.id }
@@ -585,24 +290,6 @@ export const POST: APIRoute = async ({ request, cookies }): Promise<Response> =>
               console.error(
                 "📧 [EMAIL-DELIVERY] Error logging successful email delivery:",
                 logError
-              );
-            }
-
-            // Create internal notification for the user
-            try {
-              await this.createInternalNotification(
-                userEmail,
-                emailType,
-                emailSubject,
-                emailContent,
-                projectId,
-                newStatus,
-                buttonLink
-              );
-            } catch (notificationError) {
-              console.error(
-                "📧 [EMAIL-DELIVERY] Error creating internal notification:",
-                notificationError
               );
             }
           }
@@ -626,7 +313,7 @@ export const POST: APIRoute = async ({ request, cookies }): Promise<Response> =>
             await SimpleProjectLogger.addLogEntry(
               projectId || 0,
               "email_delivery_error",
-              `System (${userEmail})`,
+              { email: userEmail, name: "System" },
               `Email delivery error to ${userEmail} - Type: ${emailType}, Subject: ${emailSubject}, Error: ${userError instanceof Error ? userError.message : "Unknown error"}`,
               null,
               {
@@ -671,11 +358,11 @@ export const POST: APIRoute = async ({ request, cookies }): Promise<Response> =>
       await SimpleProjectLogger.addLogEntry(
         projectId || 0,
         "email_delivery_completed",
-        "System",
+        { email: "System", name: "System" },
         `Email delivery batch completed - Type: ${emailType}, Total sent: ${sentEmails.length}, Total failed: ${failedEmails.length}`,
-        `System (${sentEmails.length} sent, ${failedEmails.length} failed)`,
+        null,
         {
-          emailType: emailType || "Unknown",
+          emailType,
           totalSent: sentEmails.length,
           totalFailed: failedEmails.length,
           sentEmails: sentEmails,

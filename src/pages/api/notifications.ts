@@ -39,6 +39,26 @@ export const GET: APIRoute = async ({ cookies, url }) => {
 
     if (error) {
       console.error("❌ [NOTIFICATIONS] Error fetching notifications:", error);
+
+      // Check if the error is due to table not existing
+      if (error.message && error.message.includes('relation "notifications" does not exist')) {
+        return new Response(
+          JSON.stringify({
+            error: "Notifications table not found. Please run the database migration.",
+            migrationRequired: true,
+            instructions: [
+              "1. Go to your Supabase dashboard",
+              "2. Navigate to SQL Editor",
+              "3. Run the SQL script from: sql-queriers/create-notifications-table.sql",
+            ],
+          }),
+          {
+            status: 503,
+            headers: { "Content-Type": "application/json" },
+          }
+        );
+      }
+
       return new Response(JSON.stringify({ error: "Failed to fetch notifications" }), {
         status: 500,
         headers: { "Content-Type": "application/json" },

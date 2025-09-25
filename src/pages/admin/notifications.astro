@@ -1,0 +1,362 @@
+---
+import { checkAuth } from "../../lib/auth";
+import { supabaseAdmin } from "../../lib/supabase-admin";
+import App from "../../components/common/App.astro";
+import Footer from "../../components/common/Footer.astro";
+
+// Check authentication
+const { currentUser, session, supabase } = await checkAuth(Astro.cookies);
+
+if (!currentUser) {
+  return Astro.redirect("/login");
+}
+
+// Check if user is admin
+const { data: profile } = await supabase
+  .from("profiles")
+  .select("role")
+  .eq("id", currentUser.id)
+  .single();
+
+if (profile?.role !== "Admin") {
+  return Astro.redirect("/dashboard");
+}
+
+// Get all users for the dropdown
+let allUsers: any[] = [];
+if (supabaseAdmin) {
+  const { data: users } = await supabaseAdmin
+    .from("profiles")
+    .select("id, name, email, role")
+    .order("name");
+  allUsers = users || [];
+}
+
+// Get recent notifications for display
+let recentNotifications = [];
+if (supabaseAdmin) {
+  const { data: notifications } = await supabaseAdmin
+    .from("notifications")
+    .select("*")
+    .order("created_at", { ascending: false })
+    .limit(10);
+  recentNotifications = notifications || [];
+}
+---
+
+<App
+  title="Send Notifications - CAPCo Fire Protection"
+  description="Send custom notifications to users"
+  currentUser={currentUser}
+  session={session}
+  supabase={supabase}
+  supabaseUrl={import.meta.env.PUBLIC_SUPABASE_URL}
+  noNavigation={false}
+  isBackend={true}
+>
+  <div class="min-h-screen bg-gray-50 py-8">
+    <div class="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
+      <!-- Header -->
+      <div class="mb-8">
+        <h1 class="text-3xl font-bold text-gray-900">Send Notifications</h1>
+        <p class="mt-2 text-gray-600">Send custom notifications to users</p>
+      </div>
+
+      <!-- Notification Form -->
+      <div class="rounded-lg bg-white shadow">
+        <div class="border-b border-gray-200 px-6 py-4">
+          <h2 class="text-lg font-medium text-gray-900">Create Notification</h2>
+        </div>
+
+        <form id="notification-form" class="space-y-6 p-6">
+          <!-- Recipients -->
+          <div>
+            <label for="recipients" class="mb-2 block text-sm font-medium text-gray-700">
+              Recipients
+            </label>
+            <select
+              id="recipients"
+              name="recipients"
+              multiple
+              class="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              required
+            >
+              <option value="all">All Users</option>
+              {
+                allUsers.map((user) => (
+                  <option value={user.id} data-email={user.email}>
+                    {user.name} ({user.email}) - {user.role}
+                  </option>
+                ))
+              }
+            </select>
+            <p class="mt-1 text-sm text-gray-500">Hold Ctrl/Cmd to select multiple users</p>
+          </div>
+
+          <!-- Notification Type -->
+          <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <div>
+              <label for="type" class="mb-2 block text-sm font-medium text-gray-700"> Type </label>
+              <select
+                id="type"
+                name="type"
+                class="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="info">Info</option>
+                <option value="success">Success</option>
+                <option value="warning">Warning</option>
+                <option value="error">Error</option>
+              </select>
+            </div>
+
+            <div>
+              <label for="priority" class="mb-2 block text-sm font-medium text-gray-700">
+                Priority
+              </label>
+              <select
+                id="priority"
+                name="priority"
+                class="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="low">Low</option>
+                <option value="normal" selected>Normal</option>
+                <option value="high">High</option>
+                <option value="urgent">Urgent</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Title -->
+          <div>
+            <label for="title" class="mb-2 block text-sm font-medium text-gray-700">
+              Title *
+            </label>
+            <input
+              type="text"
+              id="title"
+              name="title"
+              required
+              class="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="Notification title"
+            />
+          </div>
+
+          <!-- Message -->
+          <div>
+            <label for="message" class="mb-2 block text-sm font-medium text-gray-700">
+              Message *
+            </label>
+            <textarea
+              id="message"
+              name="message"
+              rows="4"
+              required
+              class="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="Notification message"></textarea>
+          </div>
+
+          <!-- Action URL (Optional) -->
+          <div>
+            <label for="actionUrl" class="mb-2 block text-sm font-medium text-gray-700">
+              Action URL (Optional)
+            </label>
+            <input
+              type="url"
+              id="actionUrl"
+              name="actionUrl"
+              class="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="https://example.com/action"
+            />
+          </div>
+
+          <!-- Action Text (Optional) -->
+          <div>
+            <label for="actionText" class="mb-2 block text-sm font-medium text-gray-700">
+              Action Button Text (Optional)
+            </label>
+            <input
+              type="text"
+              id="actionText"
+              name="actionText"
+              class="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="View Details"
+            />
+          </div>
+
+          <!-- Submit Button -->
+          <div class="flex justify-end">
+            <button
+              type="submit"
+              id="submit-btn"
+              class="rounded-md bg-blue-600 px-6 py-2 text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              Send Notifications
+            </button>
+          </div>
+        </form>
+      </div>
+
+      <!-- Recent Notifications -->
+      <div class="mt-8 rounded-lg bg-white shadow">
+        <div class="border-b border-gray-200 px-6 py-4">
+          <h2 class="text-lg font-medium text-gray-900">Recent Notifications</h2>
+        </div>
+        <div id="recent-notifications" class="p-6">
+          {
+            recentNotifications.length > 0 ? (
+              <div class="space-y-4">
+                {recentNotifications.map((notification) => (
+                  <div class="border-l-4 border-blue-500 bg-blue-50 p-4">
+                    <div class="flex justify-between">
+                      <div>
+                        <h3 class="font-medium text-blue-900">{notification.title}</h3>
+                        <p class="text-blue-700">{notification.message}</p>
+                      </div>
+                      <div class="text-sm text-blue-600">
+                        {new Date(notification.created_at).toLocaleDateString()}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p class="text-gray-500">No notifications sent yet</p>
+            )
+          }
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    class NotificationManager {
+      constructor() {
+        this.init();
+      }
+
+      init() {
+        this.bindEvents();
+      }
+
+      bindEvents() {
+        const form = document.getElementById("notification-form");
+        if (form) {
+          form.addEventListener("submit", (e) => this.handleSubmit(e));
+        }
+      }
+
+      async handleSubmit(e: Event) {
+        e.preventDefault();
+
+        const submitBtn = document.getElementById("submit-btn") as HTMLButtonElement;
+        const originalText = submitBtn?.textContent;
+
+        try {
+          if (submitBtn) {
+            submitBtn.disabled = true;
+            submitBtn.textContent = "Sending...";
+          }
+
+          const form = e.target as HTMLFormElement;
+          const formData = new FormData(form);
+          const recipientsSelect = document.getElementById("recipients") as HTMLSelectElement;
+          const recipients = Array.from(recipientsSelect?.selectedOptions || []);
+
+          if (recipients.length === 0) {
+            alert("Please select at least one recipient");
+            return;
+          }
+
+          // Check if "All Users" is selected
+          const isAllUsers = recipients.some((option: HTMLOptionElement) => option.value === "all");
+
+          let notifications = [];
+
+          if (isAllUsers) {
+            // Send to all users
+            const allUsersResponse = await fetch("/api/notifications/create", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                allUsers: true,
+                title: formData.get("title"),
+                message: formData.get("message"),
+                type: formData.get("type"),
+                priority: formData.get("priority"),
+                actionUrl: formData.get("actionUrl") || undefined,
+                actionText: formData.get("actionText") || undefined,
+              }),
+            });
+
+            if (allUsersResponse.ok) {
+              const result = await allUsersResponse.json();
+              notifications = [{ status: "fulfilled", value: allUsersResponse }];
+            } else {
+              notifications = [{ status: "rejected", reason: "Failed to send to all users" }];
+            }
+          } else {
+            // Send to specific users
+            notifications = recipients.map((option: HTMLOptionElement) => ({
+              userId: option.value,
+              title: formData.get("title"),
+              message: formData.get("message"),
+              type: formData.get("type"),
+              priority: formData.get("priority"),
+              actionUrl: formData.get("actionUrl") || undefined,
+              actionText: formData.get("actionText") || undefined,
+            }));
+
+            // Send notifications
+            const results = await Promise.allSettled(
+              notifications.map((notification) =>
+                fetch("/api/notifications/create", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify(notification),
+                })
+              )
+            );
+            notifications = results;
+          }
+
+          const successful = notifications.filter(
+            (r: any) => r.status === "fulfilled" && r.value?.ok
+          ).length;
+          const failed = notifications.length - successful;
+
+          if (successful > 0) {
+            alert(
+              `✅ Successfully sent ${successful} notification(s)${failed > 0 ? `, ${failed} failed` : ""}`
+            );
+            if (e.target) {
+              (e.target as HTMLFormElement).reset();
+            }
+            this.loadRecentNotifications();
+          } else {
+            alert("❌ Failed to send notifications");
+          }
+        } catch (error) {
+          console.error("Error sending notifications:", error);
+          alert("❌ Error sending notifications");
+        } finally {
+          if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.textContent = originalText || "Send Notifications";
+          }
+        }
+      }
+
+      async loadRecentNotifications() {
+        // Reload the page to show updated notifications
+        window.location.reload();
+      }
+    }
+
+    // Initialize when DOM is loaded
+    document.addEventListener("DOMContentLoaded", () => {
+      new NotificationManager();
+    });
+  </script>
+</App>
+
+<Footer />
