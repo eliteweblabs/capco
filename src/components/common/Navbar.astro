@@ -9,6 +9,7 @@ import Punchlist from "../project/Punchlist.astro";
 import ToggleSidebar from "./ToggleSidebar.astro";
 import BoxIcon from "./BoxIcon.astro";
 import SearchForm from "./SearchForm.astro";
+import NotificationDropdown from "./NotificationDropdown.astro";
 
 interface Props {
   currentUser?: any;
@@ -35,7 +36,7 @@ const {
 const currentUrl = Astro.url.pathname;
 
 const isAuth = currentUser ? true : false;
-const currentRole = currentUser?.role;
+const currentRole = currentUser?.profile?.role;
 ---
 
 <nav
@@ -59,10 +60,8 @@ const currentRole = currentUser?.role;
     }
     <!-- Search Form -->
     {
-      currentUrl === "/dashboard" && !id && isBackend ? (
+      currentUrl === "/dashboard" && currentRole !== "Client" && (
         <ProjectSearch projects={projects} />
-      ) : (
-        <SearchForm />
       )
     }
     <div class="YRrCJSr_j5nopfm4duUc Q_jg_EPdNf9eDMn1mLI2 WD962RTivt8M5sMg7WrS">
@@ -130,6 +129,9 @@ const currentRole = currentUser?.role;
   >
     <!-- seperator -->
   </div>
+
+  <!-- Notifications Dropdown -->
+  {isAuth && <NotificationDropdown userId={currentUser?.id} />}
 
   <AuthIcon currentUser={currentUser} session={session} />
 

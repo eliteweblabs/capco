@@ -391,8 +391,8 @@ export class SimpleProjectLogger {
 
     // Extract company name from user object
     const userName =
-      currentUser?.company_name ||
-      `${currentUser?.first_name || ""} ${currentUser?.last_name || ""}`.trim() ||
+      currentUser?.profile?.company_name ||
+      `${currentUser?.profile?.first_name || ""} ${currentUser?.profile?.last_name || ""}`.trim() ||
       "Unknown User";
 
     const details = `Discussion ${isCompleted ? "marked as completed" : "marked as incomplete"}: ${messagePreview}`;
@@ -418,8 +418,8 @@ export class SimpleProjectLogger {
 
     // Extract company name from user object
     const userName =
-      currentUser?.company_name ||
-      `${currentUser?.first_name || ""} ${currentUser?.last_name || ""}`.trim() ||
+      currentUser?.profile?.company_name ||
+      `${currentUser?.profile?.first_name || ""} ${currentUser?.profile?.last_name || ""}`.trim() ||
       "Unknown User";
 
     const details = `Punchlist item ${isCompleted ? "marked as completed" : "marked as incomplete"}: ${messagePreview}`;

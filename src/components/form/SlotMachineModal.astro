@@ -218,13 +218,18 @@ const displayText = buttonText || selectedOption?.label || placeholder;
           }
 
           // Auto-save to API endpoint if saveApiEndpoint is provided or legacy component IDs
+          console.log(`🎰 [SLOT-MACHINE] ===== AUTO-SAVE CHECK =====`);
+          console.log(`🎰 [SLOT-MACHINE] saveApiEndpoint: ${saveApiEndpoint}`);
+          console.log(`🎰 [SLOT-MACHINE] id: ${id}`);
+          console.log(`🎰 [SLOT-MACHINE] skipSaveToAPI: ${skipSaveToAPI}`);
+
           if (
             saveApiEndpoint ||
             id === "update-status" ||
             id.startsWith("assign-staff-") ||
             id === "assign-staff"
           ) {
-            console.log(`🎰 [SLOT-MACHINE] Calling saveToAPI with:`, {
+            console.log(`🎰 [SLOT-MACHINE] ✅ AUTO-SAVE TRIGGERED - Calling saveToAPI with:`, {
               saveApiEndpoint,
               id,
               value,
@@ -236,18 +241,33 @@ const displayText = buttonText || selectedOption?.label || placeholder;
             if (saveApiEndpoint) {
               // Use the provided saveApiEndpoint (highest priority)
               apiIdentifier = saveApiEndpoint;
+              console.log(`🎰 [SLOT-MACHINE] Using saveApiEndpoint: ${apiIdentifier}`);
             } else if (id.startsWith("assign-staff-") || id === "assign-staff") {
               // For assign-staff components without saveApiEndpoint, use the generic assign-staff endpoint
               apiIdentifier = "assign-staff";
+              console.log(`🎰 [SLOT-MACHINE] Using assign-staff fallback: ${apiIdentifier}`);
             } else {
               // For other components without saveApiEndpoint, use the component ID
               apiIdentifier = id;
+              console.log(`🎰 [SLOT-MACHINE] Using component ID fallback: ${apiIdentifier}`);
             }
 
-            console.log(`🎰 [SLOT-MACHINE] API identifier being passed:`, apiIdentifier);
+            console.log(`🎰 [SLOT-MACHINE] Final API identifier: ${apiIdentifier}`);
+            console.log(
+              `🎰 [SLOT-MACHINE] Calling saveToAPI(${apiIdentifier}, ${value}, ${label})`
+            );
             saveToAPI(apiIdentifier, value, label);
           } else {
-            console.log(`🎰 [SLOT-MACHINE] Not auto-saving to API for component: ${id}`);
+            console.log(
+              `🎰 [SLOT-MACHINE] ❌ NOT AUTO-SAVING - No matching conditions for component: ${id}`
+            );
+            console.log(`🎰 [SLOT-MACHINE] Conditions checked:`);
+            console.log(`🎰 [SLOT-MACHINE]   - saveApiEndpoint: ${!!saveApiEndpoint}`);
+            console.log(`🎰 [SLOT-MACHINE]   - id === "update-status": ${id === "update-status"}`);
+            console.log(
+              `🎰 [SLOT-MACHINE]   - id.startsWith("assign-staff-"): ${id.startsWith("assign-staff-")}`
+            );
+            console.log(`🎰 [SLOT-MACHINE]   - id === "assign-staff": ${id === "assign-staff"}`);
           }
 
           console.log(`🎰 [SLOT-MACHINE] Selection process completed`);
@@ -378,6 +398,92 @@ const displayText = buttonText || selectedOption?.label || placeholder;
           assigned_to_name: label, // Staff member name
         };
         console.log(`🎰 [SLOT-MACHINE] ASSIGN-STAFF requestBody:`, requestBody);
+      } else if (apiEndpoint === "update-project") {
+        console.log(`🎰 [SLOT-MACHINE] ===== UPDATE-PROJECT REQUEST START =====`);
+        console.log(`🎰 [SLOT-MACHINE] Processing UPDATE-PROJECT request`);
+        console.log(`🎰 [SLOT-MACHINE] Component ID: ${id}`);
+        console.log(`🎰 [SLOT-MACHINE] API Endpoint: ${apiEndpoint}`);
+        console.log(`🎰 [SLOT-MACHINE] Project ID prop: ${projectId}`);
+        console.log(`🎰 [SLOT-MACHINE] Current URL: ${window.location.href}`);
+
+        const parsedProjectId =
+          parseInt(projectId) || parseInt(window.location.pathname.split("/").pop()) || null;
+        console.log(
+          `🎰 [SLOT-MACHINE] Parsed projectId: ${parsedProjectId} (type: ${typeof parsedProjectId})`
+        );
+        console.log(`🎰 [SLOT-MACHINE] Field value: ${value} (type: ${typeof value})`);
+        console.log(`🎰 [SLOT-MACHINE] Field label: ${label} (type: ${typeof label})`);
+
+        // For generic project updates, determine the field name from the component ID or context
+        let fieldName = "value"; // Default field name
+
+        // Try to determine field name from component ID or context
+        if (id.includes("due-date") || id.includes("due_date")) {
+          fieldName = "due_date";
+          console.log(`🎰 [SLOT-MACHINE] Detected field name: ${fieldName} (due-date component)`);
+        } else if (id.includes("title")) {
+          fieldName = "title";
+          console.log(`🎰 [SLOT-MACHINE] Detected field name: ${fieldName} (title component)`);
+        } else if (id.includes("address")) {
+          fieldName = "address";
+          console.log(`🎰 [SLOT-MACHINE] Detected field name: ${fieldName} (address component)`);
+        } else if (id.includes("description")) {
+          fieldName = "description";
+          console.log(
+            `🎰 [SLOT-MACHINE] Detected field name: ${fieldName} (description component)`
+          );
+        } else if (id.includes("sq_ft") || id.includes("sqft")) {
+          fieldName = "sq_ft";
+          console.log(`🎰 [SLOT-MACHINE] Detected field name: ${fieldName} (sq_ft component)`);
+        } else if (id.includes("units")) {
+          fieldName = "units";
+          console.log(`🎰 [SLOT-MACHINE] Detected field name: ${fieldName} (units component)`);
+        } else if (id.includes("building")) {
+          fieldName = "building";
+          console.log(`🎰 [SLOT-MACHINE] Detected field name: ${fieldName} (building component)`);
+        } else if (id.includes("tier")) {
+          fieldName = "tier";
+          console.log(`🎰 [SLOT-MACHINE] Detected field name: ${fieldName} (tier component)`);
+        } else if (id.includes("project")) {
+          fieldName = "project";
+          console.log(`🎰 [SLOT-MACHINE] Detected field name: ${fieldName} (project component)`);
+        } else if (id.includes("service")) {
+          fieldName = "service";
+          console.log(`🎰 [SLOT-MACHINE] Detected field name: ${fieldName} (service component)`);
+        } else if (id.includes("architect")) {
+          fieldName = "architect";
+          console.log(`🎰 [SLOT-MACHINE] Detected field name: ${fieldName} (architect component)`);
+        } else if (id.includes("requested_docs")) {
+          fieldName = "requested_docs";
+          console.log(
+            `🎰 [SLOT-MACHINE] Detected field name: ${fieldName} (requested_docs component)`
+          );
+        } else {
+          console.log(
+            `🎰 [SLOT-MACHINE] Using default field name: ${fieldName} (no specific component detected)`
+          );
+        }
+
+        // For due_date, convert to proper date format if needed
+        let fieldValue = value;
+        if (fieldName === "due_date" && value) {
+          console.log(`🎰 [SLOT-MACHINE] Processing due_date field with value: ${value}`);
+          // Ensure the date is in ISO format
+          const date = new Date(value);
+          if (!isNaN(date.getTime())) {
+            fieldValue = date.toISOString().split("T")[0]; // YYYY-MM-DD format
+            console.log(`🎰 [SLOT-MACHINE] Converted due_date to: ${fieldValue}`);
+          } else {
+            console.log(`🎰 [SLOT-MACHINE] Invalid date value: ${value}`);
+          }
+        }
+
+        requestBody = {
+          projectId: parsedProjectId,
+          [fieldName]: fieldValue,
+        };
+        console.log(`🎰 [SLOT-MACHINE] UPDATE-PROJECT requestBody:`, requestBody);
+        console.log(`🎰 [SLOT-MACHINE] ===== UPDATE-PROJECT REQUEST END =====`);
       } else {
         console.log(`🎰 [SLOT-MACHINE] Processing GENERIC request for component: ${apiEndpoint}`);
         // For other components, use generic format
@@ -539,6 +645,21 @@ const displayText = buttonText || selectedOption?.label || placeholder;
     // Initialize selectedIndex early to avoid reference errors
     let selectedIndex = finalOptions.findIndex((option) => {
       const optionValue = option[valueField] || option.value || option.place_id || option.id;
+
+      // Special handling for date fields (due-date components)
+      if (id.includes("due-date") || id.includes("due_date")) {
+        if (optionValue && selectedValue) {
+          // Normalize both dates to ISO strings for comparison
+          const optionDate = new Date(optionValue);
+          const selectedDate = new Date(selectedValue);
+
+          // Check if both are valid dates and compare their time values
+          if (!isNaN(optionDate.getTime()) && !isNaN(selectedDate.getTime())) {
+            return optionDate.getTime() === selectedDate.getTime();
+          }
+        }
+      }
+
       return optionValue && selectedValue && optionValue.toString() === selectedValue.toString();
     });
 

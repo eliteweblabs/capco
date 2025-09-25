@@ -10,6 +10,7 @@ interface Props {
   projectStatus?: number;
   globalSecondaryTextClasses?: string;
   globalPrimaryTextClasses?: string;
+  globalInputClasses?: string;
 }
 
 const {
@@ -20,17 +21,10 @@ const {
   projectStatus = 0,
   globalSecondaryTextClasses,
   globalPrimaryTextClasses,
+  globalInputClasses,
 } = Astro.props;
 
 // Debug logging for props
-console.log("🔍 [FILE-MANAGER] Props received:", {
-  projectId,
-  currentRole,
-  projectStatus,
-  globalSecondaryTextClasses,
-  globalPrimaryTextClasses,
-  hasCurrentUser: !!currentUser,
-});
 
 import BoxIcon from "../common/BoxIcon.astro";
 import Button from "../common/Button.astro";
@@ -103,12 +97,7 @@ console.log("🔧 [FILE-MANAGER] Component initialized with props:", {
           )
         }
       </div>
-      <Button
-        id="browse-files-btn"
-        class="inline-flex items-center rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-      >
-        <BoxIcon name="folder-open" class="mr-2" />
-
+      <Button id="browse-files-btn" icon="folder-open" iconPosition="left" variant="outline">
         Browse Files
       </Button>
     </div>
@@ -183,8 +172,36 @@ console.log("🔧 [FILE-MANAGER] Component initialized with props:", {
     canCheckoutFiles,
     canUploadFiles,
     canDeleteFiles,
+    globalInputClasses,
   }}
 >
+  // Helper function to create button using partial
+  async function createButtonPartial(config) {
+    try {
+      const headers = new Headers();
+      Object.entries(config).forEach(([key, value]) => {
+        if (value !== undefined && value !== null) {
+          headers.set(`x-button-${key}`, value.toString());
+        }
+      });
+
+      const response = await fetch("/partials/button", {
+        headers: headers,
+      });
+
+      if (response.ok) {
+        const buttonHTML = await response.text();
+        return buttonHTML;
+      } else {
+        console.error("Failed to fetch button partial:", response.status);
+        return null;
+      }
+    } catch (error) {
+      console.error("Error fetching button partial:", error);
+      return null;
+    }
+  }
+
   // File Manager Component with Checkout System - EXTENSIVE DEBUGGING
   console.log("🔧 [FILE-MANAGER] Script initialized with variables:", {
     projectId,
@@ -427,6 +444,36 @@ console.log("🔧 [FILE-MANAGER] Component initialized with props:", {
 
     // Initialize accordions after rendering (using Accordion partial structure)
     initAccordions();
+
+    // Load button partials for each file
+    loadButtonPartials();
+  }
+
+  // Load button partials for each file
+  async function loadButtonPartials() {
+    console.log("🔧 [FILE-MANAGER] Loading button partials for", files.length, "files");
+
+    for (const file of files) {
+      try {
+        const buttonHTML = await createButtonPartial({
+          variant: "primary",
+          size: "sm",
+          children: "Save Changes",
+          onclick: `saveFileDetails(${file.id})`,
+          id: `save-button-${file.id}`,
+        });
+
+        if (buttonHTML) {
+          const buttonContainer = document.getElementById(`save-button-${file.id}`);
+          if (buttonContainer) {
+            buttonContainer.innerHTML = buttonHTML;
+            console.log(`✅ [FILE-MANAGER] Button loaded for file ${file.id}`);
+          }
+        }
+      } catch (error) {
+        console.error(`❌ [FILE-MANAGER] Error loading button for file ${file.id}:`, error);
+      }
+    }
   }
 
   // Helper function to create accordion HTML using Accordion partial structure
@@ -567,12 +614,7 @@ console.log("🔧 [FILE-MANAGER] Component initialized with props:", {
         
         <!-- Save Button -->
         <div class="flex justify-end">
-          <button 
-            onclick="saveFileDetails(${file.id})"
-            class="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 focus:ring-2 focus:ring-blue-500"
-          >
-            Save Changes
-          </button>
+          <div id="save-button-${file.id}"></div>
         </div>
       </div>
     `;
@@ -807,7 +849,7 @@ console.log("🔧 [FILE-MANAGER] Component initialized with props:", {
               projectId: currentProjectId.toString(),
               targetLocation: "documents",
               title: file.name,
-              description: `Uploaded file`,
+              description: ``,
             }),
           });
 

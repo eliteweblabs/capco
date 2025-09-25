@@ -29,6 +29,11 @@ export interface PunchlistResponse {
   error?: string;
   details?: string;
   migration_needed?: boolean;
+  // Dashboard format compatibility
+  punchlistItems?: {
+    completed: number;
+    total: number;
+  };
 }
 
 /**
@@ -37,12 +42,19 @@ export interface PunchlistResponse {
  * @returns Promise<PunchlistResponse>
  */
 export async function fetchPunchlistData(projectId: string | number): Promise<PunchlistResponse> {
+  console.log("🔍 [PUNCHLIST-UTILS] fetchPunchlistData called with projectId:", projectId);
   try {
     const response = await fetch(`/api/get-punchlist?projectId=${projectId}`, {
       credentials: "include",
     });
 
     const data = await response.json();
+    console.log("🔍 [PUNCHLIST-UTILS] API response received:", {
+      success: data.success,
+      incompleteCount: data.incompleteCount,
+      totalCount: data.totalCount,
+      punchlistLength: data.punchlist?.length || 0,
+    });
 
     if (!response.ok) {
       console.error("Failed to fetch punchlist data:", data);
@@ -54,6 +66,21 @@ export async function fetchPunchlistData(projectId: string | number): Promise<Pu
       };
     }
 
+    // Transform the response to include dashboard-compatible format
+    if (data.success && data.incompleteCount !== undefined && data.totalCount !== undefined) {
+      data.punchlistItems = {
+        completed: data.totalCount - data.incompleteCount,
+        total: data.totalCount,
+      };
+      console.log("🔍 [PUNCHLIST-UTILS] Transformed data for dashboard:", data.punchlistItems);
+    }
+
+    console.log("🔍 [PUNCHLIST-UTILS] Returning final data:", {
+      success: data.success,
+      punchlistItems: data.punchlistItems,
+      incompleteCount: data.incompleteCount,
+      totalCount: data.totalCount,
+    });
     return data;
   } catch (error) {
     console.error("Error fetching punchlist data:", error);
@@ -71,17 +98,21 @@ export async function fetchPunchlistData(projectId: string | number): Promise<Pu
  * @param selector - CSS selector for the count element (optional)
  */
 export function updatePunchlistCount(incompleteCount: number, selector?: string) {
+  console.log("🔍 [PUNCHLIST-UTILS] updatePunchlistCount called with:", {
+    incompleteCount,
+    selector,
+  });
   const countElement = document.querySelector(selector || ".incomplete-punchlist-items-count");
-  const tabButton = document.querySelector("[data-count]");
+  const tabButton = document.querySelector("[data-count]") as HTMLElement;
 
   if (tabButton) {
     // Create or update count bubble
-    let countBubble = tabButton.querySelector(".punchlist-count-bubble");
+    let countBubble = tabButton.querySelector(".punchlist-count-bubble") as HTMLSpanElement;
 
     if (incompleteCount > 0) {
       if (!countBubble) {
         // Create count bubble if it doesn't exist
-        countBubble = document.createElement("span");
+        countBubble = document.createElement("span") as HTMLSpanElement;
         countBubble.className =
           "absolute -right-2 -top-2 flex h-5 w-5 items-center justify-center rounded-full bg-primary-500 text-xs text-bold font-medium text-white dark:bg-primary-dark";
         tabButton.style.position = "relative";
@@ -115,6 +146,7 @@ export function updatePunchlistCount(incompleteCount: number, selector?: string)
  * @param containerId - ID of the container to show error in (default: "punchlist-items-list")
  */
 export function showPunchlistError(message: string, containerId: string = "punchlist-items-list") {
+  console.log("🔍 [PUNCHLIST-UTILS] showPunchlistError called with:", { message, containerId });
   const container = document.getElementById(containerId);
   if (container) {
     container.innerHTML = `

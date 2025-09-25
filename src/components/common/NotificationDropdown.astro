@@ -1,0 +1,470 @@
+---
+export interface Props {
+  userId?: string;
+  class?: string;
+}
+
+const { userId, class: className = "" } = Astro.props;
+---
+
+<div class={`relative ${className}`}>
+  <!-- Notification Bell Button -->
+  <button
+    id="notification-bell"
+    class="relative p-2 text-gray-600 transition-colors hover:text-gray-900 dark:text-gray-300 dark:hover:text-white"
+    title="Notifications"
+  >
+    <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        stroke-width="2"
+        d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"
+      ></path>
+    </svg>
+
+    <!-- Unread Count Badge -->
+    <span
+      id="notification-badge"
+      class="absolute -right-1 -top-1 flex hidden h-5 w-5 items-center justify-center rounded-full bg-red-500 text-xs text-white"
+    >
+      0
+    </span>
+  </button>
+
+  <!-- Dropdown Menu -->
+  <div
+    id="notification-dropdown"
+    class="absolute right-0 z-50 mt-2 hidden w-80 rounded-lg border border-gray-200 bg-white shadow-lg dark:border-gray-700 dark:bg-gray-800"
+  >
+    <!-- Header -->
+    <div class="border-b border-gray-200 px-4 py-3 dark:border-gray-700">
+      <div class="flex items-center justify-between">
+        <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Notifications</h3>
+        <button
+          id="mark-all-read"
+          class="text-sm text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
+        >
+          Mark all read
+        </button>
+      </div>
+    </div>
+
+    <!-- Loading State -->
+    <div id="notification-loading" class="p-4 text-center">
+      <div class="flex items-center justify-center space-x-2 text-gray-500 dark:text-gray-400">
+        <div class="h-4 w-4 animate-spin rounded-full border-2 border-gray-300 border-t-blue-600">
+        </div>
+        <span>Loading notifications...</span>
+      </div>
+    </div>
+
+    <!-- Empty State -->
+    <div id="notification-empty" class="hidden p-6 text-center">
+      <svg
+        class="mx-auto h-12 w-12 text-gray-400 dark:text-gray-600"
+        fill="none"
+        stroke="currentColor"
+        viewBox="0 0 24 24"
+      >
+        <path
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          stroke-width="2"
+          d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"
+        ></path>
+      </svg>
+      <h3 class="mt-2 text-sm font-medium text-gray-900 dark:text-white">No notifications</h3>
+      <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">You're all caught up!</p>
+    </div>
+
+    <!-- Notifications List -->
+    <div id="notification-list" class="max-h-96 overflow-y-auto">
+      <!-- Notifications will be populated here -->
+    </div>
+
+    <!-- Footer -->
+    <div class="border-t border-gray-200 px-4 py-3 dark:border-gray-700">
+      <button
+        id="view-all-notifications"
+        class="w-full text-center text-sm text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
+      >
+        View all notifications
+      </button>
+    </div>
+  </div>
+</div>
+
+<script>
+  class NotificationManager {
+    constructor() {
+      this.isOpen = false;
+      this.notifications = [];
+      this.viewedNotifications = new Set();
+      this.userId = null;
+      this.pollingInterval = null;
+
+      this.init();
+    }
+
+    async init() {
+      // Get user ID from global variable or data attribute
+      this.userId =
+        window.currentUser?.id ||
+        document.querySelector("[data-user-id]")?.getAttribute("data-user-id");
+
+      if (!this.userId) {
+        console.error("❌ [NOTIFICATIONS] No user ID found");
+        return;
+      }
+
+      this.bindEvents();
+      await this.loadNotifications();
+      this.startPolling();
+    }
+
+    bindEvents() {
+      const bell = document.getElementById("notification-bell");
+      const dropdown = document.getElementById("notification-dropdown");
+      const markAllRead = document.getElementById("mark-all-read");
+      const viewAll = document.getElementById("view-all-notifications");
+
+      // Toggle dropdown
+      bell?.addEventListener("click", (e) => {
+        e.stopPropagation();
+        this.toggleDropdown();
+      });
+
+      // Mark all as read
+      markAllRead?.addEventListener("click", () => {
+        this.markAllAsRead();
+      });
+
+      // View all notifications
+      viewAll?.addEventListener("click", () => {
+        this.viewAllNotifications();
+      });
+
+      // Close dropdown when clicking outside
+      document.addEventListener("click", (e) => {
+        if (!dropdown?.contains(e.target) && !bell?.contains(e.target)) {
+          this.closeDropdown();
+        }
+      });
+
+      // Mark notifications as viewed when scrolling
+      const notificationList = document.getElementById("notification-list");
+      notificationList?.addEventListener("scroll", () => {
+        this.handleScroll();
+      });
+    }
+
+    toggleDropdown() {
+      if (this.isOpen) {
+        this.closeDropdown();
+      } else {
+        this.openDropdown();
+      }
+    }
+
+    openDropdown() {
+      const dropdown = document.getElementById("notification-dropdown");
+      if (dropdown) {
+        dropdown.classList.remove("hidden");
+        this.isOpen = true;
+        this.loadNotifications(); // Refresh notifications when opening
+      }
+    }
+
+    closeDropdown() {
+      const dropdown = document.getElementById("notification-dropdown");
+      if (dropdown) {
+        dropdown.classList.add("hidden");
+        this.isOpen = false;
+        this.markViewedNotificationsAsRead();
+      }
+    }
+
+    async loadNotifications() {
+      try {
+        this.showLoading();
+
+        const response = await fetch("/api/notifications?limit=20");
+        const data = await response.json();
+
+        if (data.success) {
+          this.notifications = data.notifications || [];
+          this.updateBadge(data.unreadCount || 0);
+          this.renderNotifications();
+        } else {
+          console.error("❌ [NOTIFICATIONS] Failed to load notifications:", data.error);
+          this.showEmpty();
+        }
+      } catch (error) {
+        console.error("❌ [NOTIFICATIONS] Error loading notifications:", error);
+        this.showEmpty();
+      }
+    }
+
+    renderNotifications() {
+      const list = document.getElementById("notification-list");
+      const empty = document.getElementById("notification-empty");
+      const loading = document.getElementById("notification-loading");
+
+      if (!list) return;
+
+      // Hide loading and empty states
+      loading?.classList.add("hidden");
+      empty?.classList.add("hidden");
+
+      if (this.notifications.length === 0) {
+        empty?.classList.remove("hidden");
+        return;
+      }
+
+      list.innerHTML = "";
+
+      this.notifications.forEach((notification) => {
+        const notificationElement = this.createNotificationElement(notification);
+        list.appendChild(notificationElement);
+      });
+    }
+
+    createNotificationElement(notification) {
+      const div = document.createElement("div");
+      div.className = `p-4 border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors ${!notification.viewed ? "bg-blue-50 dark:bg-blue-900/20" : ""}`;
+      div.dataset.notificationId = notification.id;
+
+      const typeColors = {
+        info: "text-blue-600 dark:text-blue-400",
+        success: "text-green-600 dark:text-green-400",
+        warning: "text-yellow-600 dark:text-yellow-400",
+        error: "text-red-600 dark:text-red-400",
+      };
+
+      const typeIcons = {
+        info: "M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z",
+        success: "M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z",
+        warning:
+          "M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z",
+        error: "M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z",
+      };
+
+      const timeAgo = this.formatTimeAgo(notification.created_at);
+      const typeColor = typeColors[notification.type] || typeColors.info;
+      const typeIcon = typeIcons[notification.type] || typeIcons.info;
+
+      div.innerHTML = `
+        <div class="flex items-start space-x-3">
+          <div class="flex-shrink-0">
+            <div class="w-2 h-2 bg-blue-500 rounded-full ${notification.viewed ? "hidden" : ""}"></div>
+            <svg class="w-5 h-5 ${typeColor}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="${typeIcon}"></path>
+            </svg>
+          </div>
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center justify-between">
+              <p class="text-sm font-medium text-gray-900 dark:text-white truncate">
+                ${notification.title}
+              </p>
+              <p class="text-xs text-gray-500 dark:text-gray-400 ml-2">${timeAgo}</p>
+            </div>
+            <p class="mt-1 text-sm text-gray-600 dark:text-gray-300">
+              ${notification.message}
+            </p>
+            ${
+              notification.action_url
+                ? `
+              <div class="mt-2">
+                <a href="${notification.action_url}" class="text-sm text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300">
+                  ${notification.action_text || "View Details"}
+                </a>
+              </div>
+            `
+                : ""
+            }
+          </div>
+          <button
+            class="flex-shrink-0 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+            onclick="notificationManager.deleteNotification(${notification.id})"
+            title="Delete notification"
+          >
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+            </svg>
+          </button>
+        </div>
+      `;
+
+      // Mark as viewed when rendered
+      if (!notification.viewed) {
+        this.viewedNotifications.add(notification.id);
+      }
+
+      return div;
+    }
+
+    handleScroll() {
+      // Mark visible notifications as viewed
+      const list = document.getElementById("notification-list");
+      if (!list) return;
+
+      const rect = list.getBoundingClientRect();
+      const notifications = list.querySelectorAll("[data-notification-id]");
+
+      notifications.forEach((element) => {
+        const elementRect = element.getBoundingClientRect();
+        const isVisible = elementRect.top >= rect.top && elementRect.bottom <= rect.bottom;
+
+        if (isVisible) {
+          const notificationId = parseInt(element.dataset.notificationId);
+          this.viewedNotifications.add(notificationId);
+        }
+      });
+    }
+
+    async markViewedNotificationsAsRead() {
+      if (this.viewedNotifications.size === 0) return;
+
+      try {
+        const response = await fetch("/api/notifications", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            notificationIds: Array.from(this.viewedNotifications),
+          }),
+        });
+
+        if (response.ok) {
+          this.viewedNotifications.clear();
+          await this.loadNotifications(); // Refresh to update counts
+        }
+      } catch (error) {
+        console.error("❌ [NOTIFICATIONS] Error marking notifications as read:", error);
+      }
+    }
+
+    async markAllAsRead() {
+      try {
+        const unreadIds = this.notifications.filter((n) => !n.viewed).map((n) => n.id);
+
+        if (unreadIds.length === 0) return;
+
+        const response = await fetch("/api/notifications", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ notificationIds: unreadIds }),
+        });
+
+        if (response.ok) {
+          await this.loadNotifications();
+        }
+      } catch (error) {
+        console.error("❌ [NOTIFICATIONS] Error marking all as read:", error);
+      }
+    }
+
+    async deleteNotification(notificationId) {
+      try {
+        const response = await fetch("/api/notifications", {
+          method: "DELETE",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ notificationId }),
+        });
+
+        if (response.ok) {
+          await this.loadNotifications();
+        }
+      } catch (error) {
+        console.error("❌ [NOTIFICATIONS] Error deleting notification:", error);
+      }
+    }
+
+    viewAllNotifications() {
+      // Navigate to full notifications page
+      window.location.href = "/notifications";
+    }
+
+    updateBadge(count) {
+      const badge = document.getElementById("notification-badge");
+      if (badge) {
+        if (count > 0) {
+          badge.textContent = count > 99 ? "99+" : count.toString();
+          badge.classList.remove("hidden");
+        } else {
+          badge.classList.add("hidden");
+        }
+      }
+    }
+
+    showLoading() {
+      const loading = document.getElementById("notification-loading");
+      const empty = document.getElementById("notification-empty");
+      const list = document.getElementById("notification-list");
+
+      loading?.classList.remove("hidden");
+      empty?.classList.add("hidden");
+      list?.classList.add("hidden");
+    }
+
+    showEmpty() {
+      const loading = document.getElementById("notification-loading");
+      const empty = document.getElementById("notification-empty");
+      const list = document.getElementById("notification-list");
+
+      loading?.classList.add("hidden");
+      empty?.classList.remove("hidden");
+      list?.classList.add("hidden");
+    }
+
+    startPolling() {
+      // Poll for new notifications every 30 seconds
+      this.pollingInterval = setInterval(() => {
+        if (!this.isOpen) {
+          this.loadNotifications();
+        }
+      }, 30000);
+    }
+
+    formatTimeAgo(dateString) {
+      const date = new Date(dateString);
+      const now = new Date();
+      const diffInMinutes = Math.floor((now.getTime() - date.getTime()) / (1000 * 60));
+
+      if (diffInMinutes < 1) return "Just now";
+      if (diffInMinutes < 60) return `${diffInMinutes}m ago`;
+
+      const diffInHours = Math.floor(diffInMinutes / 60);
+      if (diffInHours < 24) return `${diffInHours}h ago`;
+
+      const diffInDays = Math.floor(diffInHours / 24);
+      if (diffInDays < 7) return `${diffInDays}d ago`;
+
+      return date.toLocaleDateString();
+    }
+  }
+
+  // Initialize notification manager
+  const notificationManager = new NotificationManager();
+  window.notificationManager = notificationManager;
+</script>
+
+<style>
+  /* Custom scrollbar for notification list */
+  #notification-list::-webkit-scrollbar {
+    width: 4px;
+  }
+
+  #notification-list::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  #notification-list::-webkit-scrollbar-thumb {
+    background: #d1d5db;
+    border-radius: 2px;
+  }
+
+  #notification-list::-webkit-scrollbar-thumb:hover {
+    background: #9ca3af;
+  }
+</style>
