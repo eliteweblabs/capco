@@ -18,8 +18,8 @@ const corsHeaders = {
 
 export const POST: APIRoute = async ({ request }) => {
   try {
-    // console.log("🔔 [CHAT-API] ===== CHAT API CALLED =====");
-    // console.log("🔔 [CHAT-API] API called, checking supabase connection...");
+    console.log("🔔 [CHAT-API] ===== CHAT API CALLED =====");
+    console.log("🔔 [CHAT-API] API called, checking supabase connection...");
 
     if (!supabase) {
       console.error("🔔 [CHAT-API] Supabase client is null - database connection not available");
@@ -31,13 +31,13 @@ export const POST: APIRoute = async ({ request }) => {
 
     const body = await request.json();
     const { action, userId, userName, userRole, message } = body;
-    // console.log("🔔 [CHAT-API] Request data:", {
-    //   action,
-    //   userId,
-    //   userName,
-    //   userRole,
-    //   message: message ? message.substring(0, 50) + "..." : "N/A",
-    // });
+    console.log("🔔 [CHAT-API] Request data:", {
+      action,
+      userId,
+      userName,
+      userRole,
+      message: message ? message.substring(0, 50) + "..." : "N/A",
+    });
 
     switch (action) {
       case "join":
@@ -48,6 +48,8 @@ export const POST: APIRoute = async ({ request }) => {
           userRole,
           lastSeen: new Date(),
         });
+        console.log("🔔 [CHAT-API] User joined:", { userId, userName, userRole });
+        console.log("🔔 [CHAT-API] Total active connections:", activeConnections.size);
 
         if (!supabaseAdmin) {
           console.error(
@@ -81,18 +83,19 @@ export const POST: APIRoute = async ({ request }) => {
           }
         }
 
-        return new Response(
-          JSON.stringify({
-            success: true,
-            action: "joined",
-            chatHistory: messages?.reverse() || [],
-            onlineUsers: Array.from(activeConnections.values()),
-          }),
-          {
-            status: 200,
-            headers: { "Content-Type": "application/json", ...corsHeaders },
-          }
-        );
+        const responseData = {
+          success: true,
+          action: "joined",
+          chatHistory: messages?.reverse() || [],
+          onlineUsers: Array.from(activeConnections.values()),
+        };
+
+        console.log("🔔 [CHAT-API] Join response data:", responseData);
+
+        return new Response(JSON.stringify(responseData), {
+          status: 200,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        });
 
       case "message":
         console.log("🔔 [CHAT-API] Saving message:", { userId, userName, userRole, message });
@@ -125,6 +128,10 @@ export const POST: APIRoute = async ({ request }) => {
           console.error("❌ [CHAT-API] Error message:", messageError.message);
           console.error("❌ [CHAT-API] Error details:", messageError.details);
           console.error("❌ [CHAT-API] Error hint:", messageError.hint);
+          console.error("❌ [CHAT-API] User ID being inserted:", userId);
+          console.error("❌ [CHAT-API] User name being inserted:", userName);
+          console.error("❌ [CHAT-API] User role being inserted:", userRole);
+          console.error("❌ [CHAT-API] Message being inserted:", message);
           return new Response(
             JSON.stringify({ error: "Failed to save message", details: messageError.message }),
             {
@@ -160,7 +167,13 @@ export const POST: APIRoute = async ({ request }) => {
         if (activeConnections.has(userId)) {
           const connection = activeConnections.get(userId)!;
           connection.lastSeen = new Date();
+          console.log("🔔 [CHAT-API] Updated heartbeat for user:", userId);
+        } else {
+          console.log("🔔 [CHAT-API] User not found in active connections:", userId);
         }
+
+        console.log("🔔 [CHAT-API] Active connections:", Array.from(activeConnections.keys()));
+        console.log("🔔 [CHAT-API] Online users:", Array.from(activeConnections.values()));
 
         return new Response(
           JSON.stringify({
@@ -222,7 +235,7 @@ export const POST: APIRoute = async ({ request }) => {
     console.error("❌ [CHAT-API] Error:", error);
     return new Response(JSON.stringify({ error: "Internal server error" }), {
       status: 500,
-      headers: { 
+      headers: {
         "Content-Type": "application/json",
         "Access-Control-Allow-Origin": "*",
         "Access-Control-Allow-Methods": "POST, OPTIONS",
