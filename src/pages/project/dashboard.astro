@@ -1,0 +1,298 @@
+---
+const requireAuthRedirect = "/login";
+import { checkAuth } from "../../lib/auth";
+const { currentUser, session, supabase, refreshToken, accessToken } = await checkAuth(
+  Astro.cookies
+);
+const currentRole = currentUser?.profile?.role || "Client";
+
+// Handle auth redirect first
+if (requireAuthRedirect && (!session || !currentUser)) {
+  return Astro.redirect(requireAuthRedirect);
+}
+
+import { globalCompanyData } from "../../pages/api/global-company-data";
+const {
+  globalCompanyName,
+  globalCompanySlogan,
+  globalCompanyAddress,
+  globalCompanyPhone,
+  globalCompanyEmail,
+  globalCompanyWebsite,
+  globalCompanyLogo,
+  globalCompanyLogoDark,
+  globalCompanyLogoLight,
+} = globalCompanyData();
+
+import { globalClasses } from "../../pages/api/global-classes";
+const { globalInputClasses, globalPrimaryTextClasses, globalSecondaryTextClasses } =
+  globalClasses();
+
+import App from "../../components/common/App.astro";
+import Button from "../../components/common/Button.astro";
+import Footer from "../../components/common/Footer.astro";
+import HeroDashboard from "../../components/common/HeroDashboard.astro";
+import ProjectList from "../../components/project/ProjectList.astro";
+import ProjectNav from "../../components/project/ProjectNav.astro";
+import "../../lib/refresh-manager.ts";
+// Get auth data directly since App component handles auth requirements
+
+// console.log("🚀 [DASHBOARD] Current user:", currentUser);
+// Initialize data arrays
+let projects: any[] = [];
+let project_statuses: any[] = [];
+let project_statuses_object: any = {};
+
+// Fetch projects using the API endpoint that includes discussion counts
+if (currentUser?.id) {
+  try {
+    const baseUrl = Astro.url.origin || "http://localhost:4321";
+    let apiUrl = `${baseUrl}/api/get-project`;
+
+    // Add assigned_to_id parameter for Staff role
+    // if (currentUser?.profile?.role === "Staff") {
+    //   apiUrl += `?assigned_to_id=${currentUser.id}`;
+    // }
+
+    // Add assigned_to_id parameter for Staff role
+    if (currentUser?.profile?.role === "Client") {
+      apiUrl += `?author_id=${currentUser.id}`;
+    }
+    // For Admin and Client, no additional parameters needed (API handles role-based filtering)
+
+    // console.log("🏗️ [DASHBOARD] Fetching projects from API:", apiUrl);
+    const response = await fetch(apiUrl);
+
+    if (response.ok) {
+      const data = await response.json();
+      projects = data.projects || [];
+      // console.log("🏗️ [DASHBOARD] Projects fetched with discussion counts:", projects.length);
+      // console.log("🏗️ [DASHBOARD] Sample project data:", {
+      //   id: projects[0]?.id,
+      //   title: projects[0]?.title,
+      //   comment_count: projects[0]?.comment_count,
+      //   incomplete_discussions: projects[0]?.i,
+      // });
+    } else {
+      console.error(
+        "🏗️ [DASHBOARD] Error fetching projects:",
+        response.status,
+        response.statusText
+      );
+    }
+  } catch (error) {
+    console.error("🏗️ [DASHBOARD] Error fetching projects:", error);
+  }
+}
+
+// Fetch project statuses using the unified API
+const statusApiUrl = new URL("/api/project-statuses", Astro.url.origin);
+const statusResponse = await fetch(statusApiUrl.toString(), {
+  method: "GET",
+  headers: {
+    Cookie: Astro.request.headers.get("Cookie") || "",
+  },
+});
+
+let statusData: any = { success: false, roleBasedStatuses: {}, statusesMap: {} };
+if (statusResponse.ok) {
+  statusData = await statusResponse.json();
+  project_statuses = statusData.statuses || [];
+  project_statuses_object = statusData.roleBasedStatuses || {};
+} else {
+  console.error(
+    "🏗️ [DASHBOARD] Error fetching project statuses:",
+    statusResponse.status,
+    statusResponse.statusText
+  );
+}
+---
+
+<App
+  title="Global Dashboard - CAPCo Fire Protection"
+  description="View all projects."
+  currentUser={currentUser}
+  session={session}
+  supabase={supabase}
+  projects={projects}
+  globalCompanyName={globalCompanyName}
+  globalCompanySlogan={globalCompanySlogan}
+  globalPrimaryTextClasses={globalPrimaryTextClasses}
+  globalSecondaryTextClasses={globalSecondaryTextClasses}
+  globalInputClasses={globalInputClasses}
+  globalCompanyAddress={globalCompanyAddress}
+  globalCompanyPhone={globalCompanyPhone}
+  globalCompanyEmail={globalCompanyEmail}
+  globalCompanyWebsite={globalCompanyWebsite}
+  globalCompanyLogo={globalCompanyLogo}
+  globalCompanyLogoDark={globalCompanyLogoDark}
+  globalCompanyLogoLight={globalCompanyLogoLight}
+>
+  <!-- Dashboard Container -->
+
+  <div
+    class="xCPtuxM4_gihvpPwv9bX wDF2ls8Apmy3KGiCbxI_ iHPddplqYvrN6qWgvntn _Ybd3WwuTVljUT4vEaM3 h8KYXnua2NT4kTVzieom"
+  >
+    <HeroDashboard
+      title="Project Dashboard"
+      description={currentUser?.profile?.role === "Client"
+        ? "Manage and track your fire protection projects"
+        : "Manage and track all fire protection projects"}
+    />
+
+    <!-- <ProjectNav projects={projects} statuses={project_statuses} currentUser={currentUser} /> -->
+    <!-- <div
+          class="mveJTCIb2WII7J4sY22F _Ybd3WwuTVljUT4vEaM3 _wYiJGbRZyFZeCc8y7Sf mngKhi_Rv06PF57lblDI _1jTZ8KXRZul60S6czNi LSIxp7RSuOKhsg28v_u3"
+        > -->
+    {
+      projects && projects.length > 0 ? (
+        <ProjectList
+          projects={projects}
+          statusesObject={project_statuses_object}
+          currentUser={currentUser}
+        />
+      ) : (
+        // <!-- No projects - show only form -->
+
+        <div class="RZmKBZs1E1eXw8vkE6jY p_2EXc_a2sDA_h41l8QU mx-auto flex h-[60dvh] max-w-2xl items-center justify-center pb-6">
+          <div class="inset-0 mx-auto flex max-w-2xl items-center justify-center pb-6">
+            <Button
+              href="/project/new"
+              variant="primary"
+              size="lg"
+              icon="plus"
+              iconPosition="left"
+              class="w-full"
+            >
+              New Project
+            </Button>
+          </div>
+        </div>
+      )
+    }
+  </div>
+</App>
+<!-- </SectionContainer> -->
+
+<!-- Push Notification Permission Request for OAuth Users -->
+<script>
+  // Request push notification permission for users who authenticated via OAuth
+  // (Registration form already handles this for new users)
+  document.addEventListener("DOMContentLoaded", () => {
+    console.log("🔔 [DASHBOARD] Checking notification permission...");
+    console.log("🔔 [DASHBOARD] Notification in window:", "Notification" in window);
+    console.log(
+      "🔔 [DASHBOARD] Current permission:",
+      "Notification" in window ? Notification.permission : "Not available"
+    );
+
+    // Check if we're on mobile Safari
+    const isMobileSafari =
+      /iPad|iPhone|iPod/.test(navigator.userAgent) && /Safari/.test(navigator.userAgent);
+    console.log("🔔 [DASHBOARD] Mobile Safari detected:", isMobileSafari);
+
+    if (isMobileSafari) {
+      console.log(
+        "🔔 [DASHBOARD] Mobile Safari detected - push notifications work when installed as PWA"
+      );
+      console.log(
+        "🔔 [DASHBOARD] Install as PWA (Add to Home Screen) for full notification support"
+      );
+
+      // Check if running as PWA
+      const isStandalone =
+        window.matchMedia("(display-mode: standalone)").matches ||
+        (window.navigator as any).standalone === true;
+      console.log("🔔 [DASHBOARD] Running as PWA:", isStandalone);
+
+      if (!isStandalone) {
+        console.log("💡 [DASHBOARD] Install as PWA for better notification support");
+        return;
+      }
+    }
+
+    // Only request if user hasn't been prompted yet
+    if ("Notification" in window && Notification.permission === "default") {
+      console.log("🔔 [DASHBOARD] Requesting notification permission...");
+      // Wait a bit for the page to load, then request permission
+      setTimeout(() => {
+        Notification.requestPermission().then((permission) => {
+          console.log("🔔 [DASHBOARD] Permission result:", permission);
+          if (permission === "granted") {
+            console.log("🔔 Push notifications enabled for authenticated user!");
+            // Show a subtle notification
+            if (window.showModal) {
+              window.showModal(
+                "info",
+                "Notifications Enabled",
+                "You'll receive push notifications for project updates!",
+                3000
+              );
+            }
+          } else {
+            console.log("🔔 Push notifications declined by user");
+          }
+        });
+      }, 3000); // Wait 3 seconds after page load
+    } else {
+      console.log("🔔 [DASHBOARD] Not requesting permission - already handled or not available");
+    }
+  });
+
+  // Add notification reset function for debugging
+  (window as any).resetNotifications = function () {
+    console.log("🔄 [DASHBOARD] Resetting notification permissions...");
+
+    // Check if we're on mobile Safari
+    const isMobileSafari =
+      /iPad|iPhone|iPod/.test(navigator.userAgent) && /Safari/.test(navigator.userAgent);
+
+    if (isMobileSafari) {
+      console.log(
+        "📱 [DASHBOARD] Mobile Safari detected - push notifications work when installed as PWA"
+      );
+      console.log(
+        "💡 [DASHBOARD] Install as PWA (Add to Home Screen) for full notification support"
+      );
+
+      // Check if running as PWA
+      const isStandalone =
+        window.matchMedia("(display-mode: standalone)").matches ||
+        (window.navigator as any).standalone === true;
+      console.log("🔔 [DASHBOARD] Running as PWA:", isStandalone);
+
+      if (!isStandalone) {
+        console.log("💡 [DASHBOARD] Install as PWA for better notification support");
+        return;
+      }
+    }
+
+    console.log(
+      "🔄 [DASHBOARD] Current permission:",
+      "Notification" in window ? Notification.permission : "Not available"
+    );
+
+    // Clear any stored permission state
+    localStorage.removeItem("notification-permission-requested");
+    sessionStorage.removeItem("notification-permission-requested");
+
+    // Force a new permission request
+    if ("Notification" in window) {
+      Notification.requestPermission().then((permission) => {
+        console.log("🔄 [DASHBOARD] Reset permission result:", permission);
+        if (permission === "granted") {
+          console.log("✅ Notifications re-enabled!");
+        } else {
+          console.log("❌ Notifications still denied");
+        }
+      });
+    }
+  };
+
+  // Log current state for debugging
+  console.log("🔔 [DASHBOARD] Current notification state:", {
+    permission: "Notification" in window ? Notification.permission : "Not available",
+    available: "Notification" in window,
+    resetFunction: "Call window.resetNotifications() to reset",
+  });
+</script>

@@ -1,0 +1,15 @@
+#!/bin/bash
+
+echo "🔧 Adding PDF MIME type support to Supabase storage bucket..."
+echo ""
+echo "Please run the following SQL in your Supabase dashboard:"
+echo ""
+echo "1. Go to your Supabase project dashboard"
+echo "2. Navigate to SQL Editor"
+echo "3. Copy and paste the contents of: sql-queriers/add-pdf-support-to-storage.sql"
+echo "4. Click 'Run' to execute the SQL"
+echo ""
+echo "This will add support for PDF files in the project-media storage bucket."
+echo "After running this SQL, your generated PDF documents will be saved as actual PDF files."
+echo ""
+echo "📁 SQL file location: sql-queriers/add-pdf-support-to-storage.sql"

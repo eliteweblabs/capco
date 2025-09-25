@@ -1,5 +1,6 @@
 import type { APIRoute } from "astro";
-import { supabase } from "../../../lib/supabase";
+import { readFileSync } from "fs";
+import { join } from "path";
 
 export const GET: APIRoute = async ({ request, url }) => {
   try {
@@ -10,63 +11,54 @@ export const GET: APIRoute = async ({ request, url }) => {
       `📄 [PDF-COMPONENTS] Fetching components${templateId ? ` for template ${templateId}` : ""}${componentType ? ` of type ${componentType}` : ""}`
     );
 
-    if (!supabase) {
-      return new Response(
-        JSON.stringify({
-          success: false,
-          message: "Supabase client not initialized",
-        }),
-        { status: 500 }
-      );
-    }
-    let query;
+    // Read templates configuration
+    const templatesConfigPath = join(process.cwd(), "src/templates/pdf/templates.json");
+    const templatesConfig = JSON.parse(readFileSync(templatesConfigPath, "utf-8"));
 
-    // If templateId is specified, join with template_component_mapping to get only components for that template
+    let components = templatesConfig.components;
+
+    // Filter by template if specified
     if (templateId) {
-      query = supabase
-        .from("pdf_components")
-        .select(
-          `
-          *,
-          template_mapping:template_component_mapping!inner(
-            insertion_point,
-            display_order,
-            is_required
-          )
-        `
-        )
-        .eq("is_active", true)
-        .eq("template_mapping.template_id", templateId);
-    } else {
-      // If no templateId, get all components
-      query = supabase.from("pdf_components").select("*").eq("is_active", true);
+      const template = templatesConfig.templates.find((t: any) => t.id === templateId);
+      if (template && template.components) {
+        const allowedComponentIds = [
+          ...(template.components.header || []),
+          ...(template.components.content || []),
+          ...(template.components.footer || []),
+        ];
+        components = components.filter((c: any) => allowedComponentIds.includes(c.id));
+      }
     }
 
     // Filter by component type if specified
     if (componentType) {
-      query = query.eq("component_type", componentType);
+      components = components.filter((c: any) => c.type === componentType);
     }
 
-    const { data: components, error } = await query.order("name", { ascending: true });
+    // Process components to include HTML content
+    const processedComponents = components.map((component: any) => {
+      const componentPath = join(process.cwd(), "src/templates/pdf", component.file);
+      const htmlContent = readFileSync(componentPath, "utf-8");
 
-    if (error) {
-      console.error("❌ [PDF-COMPONENTS] Error fetching components:", error);
-      return new Response(
-        JSON.stringify({
-          success: false,
-          message: "Failed to fetch components",
-          error: error.message,
-        }),
-        { status: 500 }
-      );
-    }
+      return {
+        id: component.id,
+        name: component.name,
+        description: component.description,
+        html_content: htmlContent,
+        component_type: component.type,
+        is_active: true,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        created_by: null,
+      };
+    });
 
-    console.log(`✅ [PDF-COMPONENTS] Found ${components?.length || 0} components`);
+    console.log(`✅ [PDF-COMPONENTS] Found ${processedComponents.length} components`);
 
     return new Response(
       JSON.stringify({
         success: true,
-        components: components || [],
+        components: processedComponents,
       }),
       {
         status: 200,

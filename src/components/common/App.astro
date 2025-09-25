@@ -17,15 +17,20 @@ interface Props {
   projects?: any;
   isBackend?: boolean;
   id?: string;
-  companyName?: string;
   globalPrimaryTextClasses?: string;
   globalSecondaryTextClasses?: string;
   globalInputClasses?: string;
-
   year?: string;
   globalCompanyName?: string;
   globalCompanySlogan?: string;
-  staffOptions?: any;
+  noFooter?: boolean;
+  globalCompanyAddress?: string;
+  globalCompanyPhone?: string;
+  globalCompanyEmail?: string;
+  globalCompanyWebsite?: string;
+  globalCompanyLogo?: string;
+  globalCompanyLogoDark?: string;
+  globalCompanyLogoLight?: string;
 }
 
 // Global CSS Classes will be defined in client-side script
@@ -40,16 +45,19 @@ const {
   supabaseUrl = undefined,
   noNavigation = false,
   projects = undefined,
-  isBackend = false,
   id = undefined,
-  companyName = undefined,
   globalPrimaryTextClasses = "",
   globalSecondaryTextClasses = "",
   globalInputClasses = "",
-  staffOptions = undefined,
-  year = undefined,
   globalCompanyName = undefined,
   globalCompanySlogan = undefined,
+  globalCompanyAddress = undefined,
+  globalCompanyPhone = undefined,
+  globalCompanyEmail = undefined,
+  globalCompanyWebsite = undefined,
+  globalCompanyLogo = undefined,
+  globalCompanyLogoDark = undefined,
+  globalCompanyLogoLight = undefined,
 } = Astro.props;
 
 // console.log("[App] currentUser:", currentUser);
@@ -68,6 +76,8 @@ const currentUrl = Astro.url.pathname;
 
 // Get navigation data
 import { navigation } from "@/pages/api/navigation";
+import { isBackendPage } from "@/pages/api/backend-page-check";
+const isBackend = isBackendPage(currentUrl);
 const navigationData = navigation(currentUrl, isAuth, currentRole || "Client", isBackend || false);
 const { desktopNavigationHTML, visibleNavItems } = navigationData;
 
@@ -98,9 +108,15 @@ const debugData = {
   projects,
   isBackend,
   id,
-  year,
   globalCompanyName,
   globalCompanySlogan,
+  globalCompanyAddress,
+  globalCompanyPhone,
+  globalCompanyEmail,
+  globalCompanyWebsite,
+  globalCompanyLogo,
+  globalCompanyLogoDark,
+  globalCompanyLogoLight,
   // Derived properties
   isAuth,
   currentUserId,
@@ -301,35 +317,9 @@ const debugData = {
   <!-- User data and Supabase config handled server-side -->
   <!-- SimpleProjectLogger is now handled server-side only -->
 
-  <body class="jtAJHOc7mn7b4IKRO59D h8KYXnua2NT4kTVzieom KRANKvs7gs1E_d0fCA0k">
+  <body class="h8KYXnua2NT4kTVzieom KRANKvs7gs1E_d0fCA0k">
     <!-- Preloader -->
     <Preloader />
-
-    <!-- {
-      !noNavigation && (
-        <Navbar
-          desktopNavigationHTML={desktopNavigationHTML}
-          currentUser={currentUser}
-          session={session}
-          supabaseUrl={supabaseUrl}
-          id={id}
-          projects={projects}
-          project={project}
-          isBackend={isBackend}
-        />
-      )
-    }
-
-    {
-      !noNavigation ? (
-        <div class="YRrCJSr_j5nopfm4duUc wBVMFkIGfrKshbvi2gS1 jtAJHOc7mn7b4IKRO59D UZ9xFK4mqjHjj8e8yJwf h8KYXnua2NT4kTVzieom">
-          <Aside currentUser={currentUser} />
-          <slot />
-        </div>
-      ) : (
-        <slot />
-      )
-    } -->
 
     <Navbar
       desktopNavigationHTML={desktopNavigationHTML}
@@ -341,15 +331,17 @@ const debugData = {
       project={project}
       isBackend={isBackend}
     />
+
     <div
       class="YRrCJSr_j5nopfm4duUc wBVMFkIGfrKshbvi2gS1 jtAJHOc7mn7b4IKRO59D UZ9xFK4mqjHjj8e8yJwf h8KYXnua2NT4kTVzieom"
     >
-      <Aside currentUser={currentUser} />
+      <Aside currentUser={currentUser} project={project} />
+
       <div
         id="main-content"
         class="ahOqFrhzLjivRe8a1kX_ uLPch_bqyJDXwe5tynMV t6gkcSf0Bt4MLItXvDJ_ pdl952ted2i71qBLPIcQ jtAJHOc7mn7b4IKRO59D h8KYXnua2NT4kTVzieom flex min-h-screen flex-col"
       >
-        <main class="flex-grow">
+        <main class="grow">
           <slot />
         </main>
         <!-- Footer -->
@@ -358,8 +350,14 @@ const debugData = {
           globalSecondaryTextClasses={globalSecondaryTextClasses}
           globalPrimaryTextClasses={globalPrimaryTextClasses}
           currentUser={currentUser}
-          year={year}
           globalCompanyName={globalCompanyName}
+          globalCompanyAddress={globalCompanyAddress}
+          globalCompanyPhone={globalCompanyPhone}
+          globalCompanyEmail={globalCompanyEmail}
+          globalCompanyWebsite={globalCompanyWebsite}
+          globalCompanyLogo={globalCompanyLogo}
+          globalCompanyLogoDark={globalCompanyLogoDark}
+          globalCompanyLogoLight={globalCompanyLogoLight}
         />
       </div>
     </div>

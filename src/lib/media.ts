@@ -37,6 +37,7 @@ export interface SaveMediaParams {
   title?: string;
   description?: string;
   currentUser: User;
+  customVersionNumber?: number; // Allow custom version number for generated files
 }
 
 export interface GetMediaParams {
@@ -200,11 +201,15 @@ export async function saveMedia(params: SaveMediaParams): Promise<MediaFile> {
   }
 
   // Handle versioning logic
-  let versionNumber = 1;
+  let versionNumber = params.customVersionNumber || 1;
   let previousVersionId = null;
 
-  if (existingFile) {
-    // This is a new version of an existing file
+  if (params.customVersionNumber) {
+    console.log(`🔧 [MEDIA-VERSIONING] Using custom version number: ${params.customVersionNumber}`);
+  }
+
+  if (existingFile && !params.customVersionNumber) {
+    // This is a new version of an existing file (only if no custom version specified)
     versionNumber = existingFile.version_number + 1;
     previousVersionId = existingFile.id;
 

@@ -1,52 +1,41 @@
 import type { APIRoute } from "astro";
+import { readFileSync } from "fs";
+import { join } from "path";
 import { supabase } from "../../../lib/supabase";
 
 export const GET: APIRoute = async ({ request }) => {
   try {
-    console.log(`📄 [PDF-TEMPLATES] Fetching available templates`);
+    console.log(`📄 [PDF-TEMPLATES] Fetching available templates from files`);
 
-    if (!supabase) {
-      return new Response(
-        JSON.stringify({
-          success: false,
-          message: "Supabase client not initialized",
-        }),
-        { status: 500 }
-      );
-    }
-    const { data: templates, error } = await supabase
-      .from("pdf_templates")
-      .select(
-        `
-        *,
-        created_by_profile:profiles!pdf_templates_created_by_fkey(
-          first_name,
-          last_name,
-          company_name
-        )
-      `
-      )
-      .eq("is_active", true)
-      .order("name", { ascending: true });
+    // Read templates configuration
+    const templatesConfigPath = join(process.cwd(), "src/templates/pdf/templates.json");
+    const templatesConfig = JSON.parse(readFileSync(templatesConfigPath, "utf-8"));
 
-    if (error) {
-      console.error("❌ [PDF-TEMPLATES] Error fetching templates:", error);
-      return new Response(
-        JSON.stringify({
-          success: false,
-          message: "Failed to fetch templates",
-          error: error.message,
-        }),
-        { status: 500 }
-      );
-    }
+    // Process templates to include HTML content
+    const templates = templatesConfig.templates.map((template: any) => {
+      const templatePath = join(process.cwd(), "src/templates/pdf", template.file);
+      const htmlContent = readFileSync(templatePath, "utf-8");
 
-    console.log(`✅ [PDF-TEMPLATES] Found ${templates?.length || 0} templates`);
+      return {
+        id: template.id,
+        name: template.name,
+        description: template.description,
+        html_content: htmlContent,
+        is_active: true,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        created_by: null,
+        created_by_profile: null,
+        components: template.components,
+      };
+    });
+
+    console.log(`✅ [PDF-TEMPLATES] Found ${templates.length} templates`);
 
     return new Response(
       JSON.stringify({
         success: true,
-        templates: templates || [],
+        templates: templates,
       }),
       {
         status: 200,

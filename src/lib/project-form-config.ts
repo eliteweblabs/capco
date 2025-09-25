@@ -336,6 +336,10 @@ export const FORM_ACTIONS: FormActionConfig[] = [
     allow: ["Admin", "Staff", "Client"], // All roles can save
     // No status restriction - can save project at any status
     // displayOnNew undefined - shows on both new and existing projects
+    hideAtStatus: [
+      30, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95, 100, 105, 110, 115, 120, 125, 130, 135,
+      140, 145, 150, 155, 160, 170, 180, 190, 200, 210, 220,
+    ], // Only show when specs are received (status 10)
   },
   {
     id: "delete-project",

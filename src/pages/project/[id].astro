@@ -20,16 +20,15 @@ if (!currentUser) {
 
 import { globalCompanyData } from "../../pages/api/global-company-data";
 const {
-  companyName,
-  companySlogan,
-  year,
-  companyAddress,
-  companyPhone,
-  companyEmail,
-  companyWebsite,
-  companyLogo,
-  companyLogoDark,
-  companyLogoLight,
+  globalCompanyName,
+  globalCompanySlogan,
+  globalCompanyAddress,
+  globalCompanyPhone,
+  globalCompanyEmail,
+  globalCompanyWebsite,
+  globalCompanyLogo,
+  globalCompanyLogoDark,
+  globalCompanyLogoLight,
 } = globalCompanyData();
 
 import { globalClasses } from "../../pages/api/global-classes";
@@ -193,8 +192,9 @@ if (currentStatusInt && project_statuses_object[currentStatusInt]) {
 
   // search currentStatusProjectAction for "status=" + statusParam
   const statusParamIndex = currentStatusProjectAction?.indexOf("status=" + statusParam) || 0;
-  if (statusParamIndex !== -1) {
-    currentStatusProjectAction = null;
+  if (statusParamIndex !== -1 && currentStatusProjectAction) {
+    // remove HTML tags from currentStatusProjectAction
+    currentStatusProjectAction = currentStatusProjectAction.replace(/<[^>]*>?/g, "");
   }
 
   console.log("✅ [PROJECT] Current status config:", {

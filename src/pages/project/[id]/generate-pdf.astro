@@ -1,5 +1,6 @@
 ---
 import App from "../../../components/common/App.astro";
+import PDFPreview from "../../../components/common/PDFPreview.astro";
 import { checkAuth } from "../../../lib/auth";
 
 const { id } = Astro.params;
@@ -10,28 +11,51 @@ const currentRole = currentUser?.profile?.role || "Client";
 
 console.log("🏗️ [GENERATE-PDF] Current user:", currentUser);
 console.log("🏗️ [GENERATE-PDF] Current role:", currentRole);
+console.log("🏗️ [GENERATE-PDF] Project ID:", id);
+console.log("🏗️ [GENERATE-PDF] API URL:", `${Astro.url.origin}/api/get-project?id=${id}`);
 
 if (!currentUser) {
+  console.error("🏗️ [GENERATE-PDF] No authenticated user, redirecting to login");
   return Astro.redirect("/login");
 }
 
 // Fetch project data using existing API
-const projectResponse = await fetch(`${Astro.url.origin}/api/get-project/${id}`, {
-  headers: {
-    Cookie: Astro.request.headers.get("cookie") || "",
-  },
-});
+let projectResponse;
+try {
+  projectResponse = await fetch(`${Astro.url.origin}/api/get-project?id=${id}`, {
+    headers: {
+      Cookie: Astro.request.headers.get("cookie") || "",
+    },
+  });
+} catch (error) {
+  console.error("🏗️ [GENERATE-PDF] Fetch error:", error);
+  return Astro.redirect("/dashboard");
+}
 
 if (!projectResponse.ok) {
+  console.error(
+    "🏗️ [GENERATE-PDF] API response not OK:",
+    projectResponse.status,
+    projectResponse.statusText
+  );
+  // Try to get the error response body
+  try {
+    const errorBody = await projectResponse.text();
+    console.error("🏗️ [GENERATE-PDF] Error response body:", errorBody);
+  } catch (e) {
+    console.error("🏗️ [GENERATE-PDF] Could not read error response body:", e);
+  }
   return Astro.redirect("/dashboard");
 }
 
 console.log("🏗️ [GENERATE-PDF] Project response:", projectResponse);
 const projectResult = await projectResponse.json();
+console.log("🏗️ [GENERATE-PDF] Project result:", projectResult);
+
 if (!projectResult.success || !projectResult.project) {
+  console.error("🏗️ [GENERATE-PDF] Project result failed:", projectResult);
   return Astro.redirect("/dashboard");
 }
-console.log("🏗️ [GENERATE-PDF] Project result:", projectResult);
 
 const project = projectResult.project;
 const projectAuthor = projectResult.projectAuthor;
@@ -159,72 +183,15 @@ const projectTitle = project.title || "Untitled Project";
               </div>
             </div>
 
-            <!-- Preview Area -->
-            <div class="space-y-3">
-              <!-- Zoom Controls -->
-              <div
-                id="zoomControls"
-                class="hidden items-center justify-between rounded-lg border border-gray-300 bg-white p-3 dark:border-gray-600 dark:bg-gray-800"
-              >
-                <div class="flex items-center space-x-2">
-                  <button
-                    id="zoomOut"
-                    class="flex h-8 w-8 items-center justify-center rounded border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
-                    title="Zoom Out"
-                  >
-                    <i class="bx bx-minus text-sm"></i>
-                  </button>
-                  <span
-                    id="zoomLevel"
-                    class="min-w-12 text-center text-sm font-medium text-gray-700 dark:text-gray-300"
-                    >100%</span
-                  >
-                  <button
-                    id="zoomIn"
-                    class="flex h-8 w-8 items-center justify-center rounded border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
-                    title="Zoom In"
-                  >
-                    <i class="bx bx-plus text-sm"></i>
-                  </button>
-                  <button
-                    id="resetZoom"
-                    class="ml-2 rounded border border-gray-300 bg-white px-3 py-1 text-xs text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
-                    title="Reset Zoom"
-                  >
-                    Reset
-                  </button>
-                </div>
-                <div class="flex items-center space-x-2">
-                  <button
-                    id="fitToWidth"
-                    class="rounded border border-gray-300 bg-white px-3 py-1 text-xs text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
-                    title="Fit to Width"
-                  >
-                    Fit Width
-                  </button>
-                  <button
-                    id="fitToPage"
-                    class="rounded border border-gray-300 bg-white px-3 py-1 text-xs text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
-                    title="Fit to Page"
-                  >
-                    Fit Page
-                  </button>
-                </div>
-              </div>
-
-              <!-- Preview Container -->
-              <div
-                id="previewArea"
-                class="min-h-96 rounded-lg border border-gray-300 bg-gray-50 dark:border-gray-600 dark:bg-gray-900"
-              >
-                <div class="flex h-96 items-center justify-center text-gray-500 dark:text-gray-400">
-                  <div class="text-center">
-                    <i class="bx bx-file-blank mb-2 text-4xl"></i>
-                    <p>Select a template to see preview</p>
-                  </div>
-                </div>
-              </div>
-            </div>
+            <!-- PDF Preview Component -->
+            <PDFPreview
+              htmlContent=""
+              documentName="PDF Preview"
+              showZoomControls={true}
+              containerClass="min-h-96 rounded-lg border border-gray-300 bg-gray-50 dark:border-gray-600 dark:bg-gray-900"
+              iframeClass="border-0"
+              height="600px"
+            />
           </div>
         </div>
       </div>
@@ -243,7 +210,7 @@ const projectTitle = project.title || "Untitled Project";
     </div>
   </div>
 
-  <script define:vars={{ projectId, projectTitle }}>
+  <script define:vars={{ projectId, projectTitle, currentUser }}>
     let selectedTemplate = null;
     let selectedComponents = [];
     let generatedDocument = null;
@@ -255,39 +222,62 @@ const projectTitle = project.title || "Untitled Project";
 
     async function loadTemplates() {
       try {
+        console.log("🔧 [PDF-TEMPLATES] Loading templates...");
         const response = await fetch("/api/pdf/templates");
         const result = await response.json();
 
+        console.log("🔧 [PDF-TEMPLATES] API response:", result);
+
         if (result.success) {
           const templateSelect = document.getElementById("templateSelect");
+          if (!templateSelect) {
+            console.error("🔧 [PDF-TEMPLATES] Template select element not found!");
+            return;
+          }
+
           templateSelect.innerHTML = '<option value="">Select a template...</option>';
 
           result.templates.forEach((template) => {
+            console.log("🔧 [PDF-TEMPLATES] Adding template:", template.name, template.id);
             const option = document.createElement("option");
             option.value = template.id;
             option.textContent = template.name;
             templateSelect.appendChild(option);
           });
+
+          console.log("🔧 [PDF-TEMPLATES] Templates loaded successfully");
+        } else {
+          console.error("🔧 [PDF-TEMPLATES] API returned error:", result.message);
         }
       } catch (error) {
-        console.error("Error loading templates:", error);
+        console.error("🔧 [PDF-TEMPLATES] Error loading templates:", error);
       }
     }
 
     // Template selection handler
-    document.getElementById("templateSelect").addEventListener("change", async (e) => {
-      const templateId = e.target.value;
-      console.log(`🔧 [PDF-TEMPLATE] Template changed to: ${templateId}`);
-      if (templateId) {
-        selectedTemplate = templateId;
-        await loadComponents(templateId);
-        updateGenerateButton();
+    document.addEventListener("DOMContentLoaded", () => {
+      const templateSelect = document.getElementById("templateSelect");
+      if (templateSelect) {
+        templateSelect.addEventListener("change", async (e) => {
+          const templateId = e.target.value;
+          console.log(`🔧 [PDF-TEMPLATE] Template changed to: ${templateId}`);
+          if (templateId) {
+            selectedTemplate = templateId;
+            await loadComponents(templateId);
+            updateGenerateButton();
+          } else {
+            selectedTemplate = null;
+            selectedComponents = [];
+            const componentList = document.getElementById("componentList");
+            if (componentList) {
+              componentList.innerHTML =
+                '<div class="text-gray-500 dark:text-gray-400 text-sm">Select a template to see available components</div>';
+            }
+            updateGenerateButton();
+          }
+        });
       } else {
-        selectedTemplate = null;
-        selectedComponents = [];
-        document.getElementById("componentList").innerHTML =
-          '<div class="text-gray-500 dark:text-gray-400 text-sm">Select a template to see available components</div>';
-        updateGenerateButton();
+        console.error("🔧 [PDF-TEMPLATE] Template select element not found for event listener!");
       }
     });
 
@@ -390,6 +380,7 @@ const projectTitle = project.title || "Untitled Project";
             templateId: selectedTemplate,
             documentName,
             selectedComponents,
+            userId: currentUser?.id || null,
           }),
         });
 
@@ -409,8 +400,8 @@ const projectTitle = project.title || "Untitled Project";
             window.showModal(
               "success",
               "PDF Generated",
-              "Your document has been generated successfully!",
-              3000
+              "Your document has been generated and saved to the file manager!",
+              4000
             );
           }
         } else {
@@ -431,77 +422,17 @@ const projectTitle = project.title || "Untitled Project";
     let previewIframe = null;
 
     function showPreview(htmlContent) {
-      const previewArea = document.getElementById("previewArea");
-      const zoomControls = document.getElementById("zoomControls");
+      console.log("🔧 [PDF-PREVIEW] Showing preview with HTML content length:", htmlContent.length);
 
-      // Show zoom controls
-      zoomControls.classList.remove("hidden");
-
-      previewArea.innerHTML = `
-        <div id="previewContainer" class="overflow-auto border-0 rounded-lg" style="height: 600px;">
-          <iframe 
-            id="previewIframe"
-            srcdoc="${htmlContent.replace(/"/g, "&quot;")}" 
-            class="border-0"
-            style="width: 100%; height: 100%; transform-origin: top left;"
-          ></iframe>
-        </div>
-      `;
-
-      previewIframe = document.getElementById("previewIframe");
-      updateZoom();
-    }
-
-    function updateZoom() {
-      if (previewIframe) {
-        previewIframe.style.transform = `scale(${currentZoom / 100})`;
-        previewIframe.style.width = `${100 / (currentZoom / 100)}%`;
-        previewIframe.style.height = `${600 / (currentZoom / 100)}px`;
-        document.getElementById("zoomLevel").textContent = `${currentZoom}%`;
+      // Use the PDFPreview component's API
+      if (window.PDFPreview) {
+        window.PDFPreview.setContent(htmlContent);
+      } else {
+        console.error("🔧 [PDF-PREVIEW] PDFPreview component not available");
       }
     }
 
-    function zoomIn() {
-      if (currentZoom < 300) {
-        currentZoom += 25;
-        updateZoom();
-      }
-    }
-
-    function zoomOut() {
-      if (currentZoom > 25) {
-        currentZoom -= 25;
-        updateZoom();
-      }
-    }
-
-    function resetZoom() {
-      currentZoom = 100;
-      updateZoom();
-    }
-
-    function fitToWidth() {
-      if (previewIframe) {
-        const container = document.getElementById("previewContainer");
-        const containerWidth = container.clientWidth;
-        // Assuming document width is around 800px (A4 width)
-        currentZoom = Math.round((containerWidth / 800) * 100);
-        updateZoom();
-      }
-    }
-
-    function fitToPage() {
-      if (previewIframe) {
-        const container = document.getElementById("previewContainer");
-        const containerWidth = container.clientWidth;
-        const containerHeight = container.clientHeight;
-        // Assuming document size is 800x600
-        const widthZoom = (containerWidth / 800) * 100;
-        const heightZoom = (containerHeight / 600) * 100;
-        currentZoom = Math.round(Math.min(widthZoom, heightZoom));
-        updateZoom();
-      }
-    }
+    // Zoom functions are now handled by the PDFPreview component
 
     // Download handler
     document.getElementById("downloadBtn").addEventListener("click", async () => {
@@ -573,12 +504,7 @@ const projectTitle = project.title || "Untitled Project";
       }
     });
 
-    // Zoom control event listeners
-    document.getElementById("zoomIn").addEventListener("click", zoomIn);
-    document.getElementById("zoomOut").addEventListener("click", zoomOut);
-    document.getElementById("resetZoom").addEventListener("click", resetZoom);
-    document.getElementById("fitToWidth").addEventListener("click", fitToWidth);
-    document.getElementById("fitToPage").addEventListener("click", fitToPage);
+    // Zoom control event listeners are now managed by the PDFPreview component
 
     // Keyboard shortcuts for zoom
     document.addEventListener("keydown", (e) => {
