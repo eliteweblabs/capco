@@ -1,5 +1,5 @@
 ---
-const requireAuthRedirect = "/login";
+const requireAuthRedirect = "/project/dashboard";
 import { checkAuth } from "../lib/auth";
 const { currentUser, session, supabase, refreshToken, accessToken } = await checkAuth(
   Astro.cookies
@@ -7,7 +7,7 @@ const { currentUser, session, supabase, refreshToken, accessToken } = await chec
 const currentRole = currentUser?.profile?.role || "Client";
 
 // Handle auth redirect first
-if (requireAuthRedirect && (!session || !currentUser)) {
+if (requireAuthRedirect && (!session || !currentUser || currentRole !== "Admin")) {
   return Astro.redirect(requireAuthRedirect);
 }
 

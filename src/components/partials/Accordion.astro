@@ -59,6 +59,7 @@ if (isPartial) {
       aria-expanded={open}
       aria-controls={`accordion-${id}`}
       type="button"
+      popover-target={`#accordion-${id}-popover`}
     >
       <svg
         class={`w-3 h-3 transition-transform duration-200 ${open ? "rotate-180" : ""}`}
@@ -70,6 +71,11 @@ if (isPartial) {
         ></path>
       </svg>
     </button>
+    <div id={`accordion-${id}-popover`} class="hidden">
+      <div class="p-4">
+        <div set:html={"Open for editing"} />
+      </div>
+    </div>
   </div>
 
   <!-- Accordion Content -->
@@ -84,48 +90,48 @@ if (isPartial) {
       </div>
     </div>
   </div>
-</div>
 
-<script>
-  // Accordion functionality
-  document.addEventListener("DOMContentLoaded", function () {
-    const accordionButtons = document.querySelectorAll("[data-accordion-target]");
+  <script>
+    // Accordion functionality
+    document.addEventListener("DOMContentLoaded", function () {
+      const accordionButtons = document.querySelectorAll("[data-accordion-target]");
 
-    accordionButtons.forEach((button) => {
-      button.addEventListener("click", function (this: HTMLElement) {
-        const targetId = this.getAttribute("data-accordion-target");
-        const target = document.querySelector(targetId as string);
-        const isExpanded = this.getAttribute("aria-expanded") === "true";
+      accordionButtons.forEach((button) => {
+        button.addEventListener("click", function (this: HTMLElement) {
+          const targetId = this.getAttribute("data-accordion-target");
+          const target = document.querySelector(targetId as string);
+          const isExpanded = this.getAttribute("aria-expanded") === "true";
 
-        if (target) {
-          // Toggle visibility
-          if (isExpanded) {
-            target.classList.add("hidden");
-            this.setAttribute("aria-expanded", "false");
-          } else {
-            target.classList.remove("hidden");
-            this.setAttribute("aria-expanded", "true");
-          }
-
-          // Update both the main header and the toggle button
-          const arrow = this.querySelector("svg");
-          if (arrow) {
-            arrow.classList.toggle("rotate-180");
-          }
-
-          // Also update the toggle button if it exists and is different from this element
-          const toggleButton = document.querySelector(
-            `button[data-accordion-target="${targetId}"]`
-          );
-          if (toggleButton && toggleButton !== this) {
-            const toggleArrow = toggleButton.querySelector("svg");
-            if (toggleArrow) {
-              toggleArrow.classList.toggle("rotate-180");
+          if (target) {
+            // Toggle visibility
+            if (isExpanded) {
+              target.classList.add("hidden");
+              this.setAttribute("aria-expanded", "false");
+            } else {
+              target.classList.remove("hidden");
+              this.setAttribute("aria-expanded", "true");
             }
-            toggleButton.setAttribute("aria-expanded", String(!isExpanded));
+
+            // Update both the main header and the toggle button
+            const arrow = this.querySelector("svg");
+            if (arrow) {
+              arrow.classList.toggle("rotate-180");
+            }
+
+            // Also update the toggle button if it exists and is different from this element
+            const toggleButton = document.querySelector(
+              `button[data-accordion-target="${targetId}"]`
+            );
+            if (toggleButton && toggleButton !== this) {
+              const toggleArrow = toggleButton.querySelector("svg");
+              if (toggleArrow) {
+                toggleArrow.classList.toggle("rotate-180");
+              }
+              toggleButton.setAttribute("aria-expanded", String(!isExpanded));
+            }
           }
-        }
+        });
       });
     });
-  });
-</script>
+  </script>
+</div>

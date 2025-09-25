@@ -1,0 +1,264 @@
+---
+// PDF Preview Partial - Can be loaded dynamically via TypeScript
+// This is a simplified version of the PDFPreview component for use in FileManager
+
+interface Props {
+  htmlContent: string;
+  documentName?: string;
+  showZoomControls?: boolean;
+  containerClass?: string;
+  iframeClass?: string;
+  height?: string;
+}
+
+const {
+  htmlContent,
+  documentName = "PDF Preview",
+  showZoomControls = true,
+  containerClass = "overflow-auto border-0 rounded-lg",
+  iframeClass = "border-0",
+  height = "600px",
+} = Astro.props;
+---
+
+<div class="pdf-preview-container" data-document-name={documentName}>
+  {
+    showZoomControls && (
+      <div
+        id="zoomControls"
+        class="mb-4 flex items-center justify-between rounded-lg bg-gray-50 p-3 dark:bg-gray-800"
+      >
+        <div class="flex items-center space-x-2">
+          <button
+            id="zoomOut"
+            class="rounded bg-gray-200 px-3 py-1 text-sm hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600"
+            title="Zoom Out"
+          >
+            −
+          </button>
+          <span
+            id="zoomLevel"
+            class="px-3 py-1 text-sm font-medium text-gray-700 dark:text-gray-300"
+          >
+            100%
+          </span>
+          <button
+            id="zoomIn"
+            class="rounded bg-gray-200 px-3 py-1 text-sm hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600"
+            title="Zoom In"
+          >
+            +
+          </button>
+          <button
+            id="resetZoom"
+            class="rounded bg-blue-500 px-3 py-1 text-sm text-white hover:bg-blue-600"
+            title="Reset Zoom"
+          >
+            Reset
+          </button>
+        </div>
+        <div class="flex items-center space-x-2">
+          <button
+            id="fitToWidth"
+            class="rounded bg-green-500 px-3 py-1 text-sm text-white hover:bg-green-600"
+            title="Fit to Width"
+          >
+            Fit Width
+          </button>
+          <button
+            id="fitToPage"
+            class="rounded bg-purple-500 px-3 py-1 text-sm text-white hover:bg-purple-600"
+            title="Fit to Page"
+          >
+            Fit Page
+          </button>
+        </div>
+      </div>
+    )
+  }
+
+  <div id="previewArea" class={containerClass} style={`height: ${height}; background: #f5f5f5;`}>
+    <div class="py-8 text-center text-gray-500 dark:text-gray-400">
+      <div class="mx-auto mb-4 h-8 w-8 animate-spin rounded-full border-b-2 border-blue-600"></div>
+      <p>Loading PDF preview...</p>
+    </div>
+  </div>
+</div>
+
+<script define:vars={{ htmlContent, documentName, showZoomControls }}>
+  let currentZoom = 100;
+  let previewIframe = null;
+
+  // Initialize the PDF preview
+  function initializePDFPreview() {
+    console.log("🔧 [PDF-PREVIEW-PARTIAL] Initializing PDF preview for:", documentName);
+    showPreview(htmlContent);
+  }
+
+  function showPreview(htmlContent) {
+    console.log(
+      "🔧 [PDF-PREVIEW-PARTIAL] Showing preview with HTML content length:",
+      htmlContent.length
+    );
+
+    const previewArea = document.getElementById("previewArea");
+    const zoomControls = document.getElementById("zoomControls");
+
+    if (!previewArea) {
+      console.error("🔧 [PDF-PREVIEW-PARTIAL] Preview area not found");
+      return;
+    }
+
+    // Show zoom controls if enabled
+    if (showZoomControls && zoomControls) {
+      zoomControls.classList.remove("hidden");
+    }
+
+    // Create a blob URL for the HTML content
+    const blob = new Blob([htmlContent], { type: "text/html" });
+    const blobUrl = URL.createObjectURL(blob);
+
+    previewArea.innerHTML = `
+      <div id="previewContainer" class="overflow-auto border-0 rounded-lg" style="height: 100%; background: #f5f5f5;">
+        <iframe 
+          id="previewIframe"
+          src="${blobUrl}" 
+          class="${iframeClass}"
+          style="width: 100%; height: 100%; transform-origin: top left;"
+          sandbox="allow-same-origin"
+        ></iframe>
+      </div>
+    `;
+
+    // Initialize zoom
+    previewIframe = document.getElementById("previewIframe");
+    if (previewIframe) {
+      console.log("🔧 [PDF-PREVIEW-PARTIAL] Iframe created successfully with blob URL");
+      updateZoom();
+
+      // Clean up blob URL after iframe loads
+      previewIframe.onload = () => {
+        console.log("🔧 [PDF-PREVIEW-PARTIAL] Iframe loaded successfully");
+        // Don't revoke the URL immediately as the iframe needs it
+        setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
+      };
+    } else {
+      console.error("🔧 [PDF-PREVIEW-PARTIAL] Failed to create iframe");
+      URL.revokeObjectURL(blobUrl);
+    }
+  }
+
+  function updateZoom() {
+    if (previewIframe) {
+      previewIframe.style.transform = `scale(${currentZoom / 100})`;
+      previewIframe.style.width = `${100 / (currentZoom / 100)}%`;
+      previewIframe.style.height = `${600 / (currentZoom / 100)}px`;
+      const zoomLevel = document.getElementById("zoomLevel");
+      if (zoomLevel) {
+        zoomLevel.textContent = `${currentZoom}%`;
+      }
+    }
+  }
+
+  function zoomIn() {
+    if (currentZoom < 300) {
+      currentZoom += 25;
+      updateZoom();
+    }
+  }
+
+  function zoomOut() {
+    if (currentZoom > 25) {
+      currentZoom -= 25;
+      updateZoom();
+    }
+  }
+
+  function resetZoom() {
+    currentZoom = 100;
+    updateZoom();
+  }
+
+  function fitToWidth() {
+    if (previewIframe) {
+      const container = document.getElementById("previewContainer");
+      if (container) {
+        const containerWidth = container.clientWidth;
+        // Assuming document width is around 800px (A4 width)
+        currentZoom = Math.round((containerWidth / 800) * 100);
+        updateZoom();
+      }
+    }
+  }
+
+  function fitToPage() {
+    if (previewIframe) {
+      const container = document.getElementById("previewContainer");
+      if (container) {
+        const containerWidth = container.clientWidth;
+        const containerHeight = container.clientHeight;
+        // Assuming document size is 800x600
+        const widthZoom = (containerWidth / 800) * 100;
+        const heightZoom = (containerHeight / 600) * 100;
+        currentZoom = Math.round(Math.min(widthZoom, heightZoom));
+        updateZoom();
+      }
+    }
+  }
+
+  // Event listeners for zoom controls
+  document.addEventListener("DOMContentLoaded", () => {
+    initializePDFPreview();
+
+    if (showZoomControls) {
+      const zoomInBtn = document.getElementById("zoomIn");
+      const zoomOutBtn = document.getElementById("zoomOut");
+      const resetZoomBtn = document.getElementById("resetZoom");
+      const fitToWidthBtn = document.getElementById("fitToWidth");
+      const fitToPageBtn = document.getElementById("fitToPage");
+
+      if (zoomInBtn) zoomInBtn.addEventListener("click", zoomIn);
+      if (zoomOutBtn) zoomOutBtn.addEventListener("click", zoomOut);
+      if (resetZoomBtn) resetZoomBtn.addEventListener("click", resetZoom);
+      if (fitToWidthBtn) fitToWidthBtn.addEventListener("click", fitToWidth);
+      if (fitToPageBtn) fitToPageBtn.addEventListener("click", fitToPage);
+    }
+  });
+
+  // Public API for external control
+  window.PDFPreviewPartial = {
+    setContent: (newHtmlContent) => {
+      htmlContent = newHtmlContent;
+      showPreview(htmlContent);
+    },
+    zoomIn,
+    zoomOut,
+    resetZoom,
+    fitToWidth,
+    fitToPage,
+    getCurrentZoom: () => currentZoom,
+    setZoom: (zoom) => {
+      currentZoom = Math.max(25, Math.min(300, zoom));
+      updateZoom();
+    },
+  };
+</script>
+
+<style>
+  .pdf-preview-container {
+    position: relative;
+  }
+
+  .pdf-preview-container #zoomControls {
+    transition: all 0.2s ease;
+  }
+
+  .pdf-preview-container #previewIframe {
+    transition: transform 0.2s ease;
+  }
+
+  /* Hide zoom controls if showZoomControls is false */
+  .pdf-preview-container:not([data-show-zoom="true"]) #zoomControls {
+    display: none;
+  }
+</style>

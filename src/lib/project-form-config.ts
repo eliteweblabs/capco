@@ -261,7 +261,7 @@ export const PROJECT_FORM_FIELDS: FormFieldConfig[] = [
     allow: ["Admin", "Staff", "Client"], // Only admin and staff can see architect
     hideAtStatus: [], // Hide after proposal is signed off
     readOnlyAtStatus: [
-      30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170, 180, 190, 200,
+      20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170, 180, 190, 200,
     ], // Read-only after proposal is viewed but before signed off
   },
   {
@@ -278,7 +278,7 @@ export const PROJECT_FORM_FIELDS: FormFieldConfig[] = [
     allow: ["Admin", "Staff", "Client"], // All roles can see square footage
     hideAtStatus: [], // Hide after proposal is signed off
     readOnlyAtStatus: [
-      30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170, 180, 190, 200,
+      20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170, 180, 190, 200,
     ], // Read-only after proposal is viewed but before signed off
   },
   {
@@ -290,7 +290,7 @@ export const PROJECT_FORM_FIELDS: FormFieldConfig[] = [
     allow: ["Admin", "Staff", "Client"], // Only admin and staff can see description
     hideAtStatus: [50, 60, 70, 80, 90], // Hide after proposal is viewed
     readOnlyAtStatus: [
-      30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170, 180, 190, 200,
+      20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170, 180, 190, 200,
     ], // Read-only after proposal is viewed but before signed off
   },
   {
@@ -300,7 +300,7 @@ export const PROJECT_FORM_FIELDS: FormFieldConfig[] = [
     label: "New",
     allow: ["Admin", "Staff", "Client"], // All roles can see new construction
     readOnlyAtStatus: [
-      30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170, 180, 190, 200,
+      20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170, 180, 190, 200,
     ], // Read-only after proposal is viewed but before signed off
   },
   // Units slider is now handled by UnitSlider.astro component
@@ -318,7 +318,7 @@ export const PROJECT_FORM_FIELDS: FormFieldConfig[] = [
     allow: ["Admin", "Staff", "Client"], // Only admin and staff can see units slider
     // hideAtStatus: [0, 60, 70, 80, 90], // Hide on new projects and after proposal is signed off
     readOnlyAtStatus: [
-      30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170, 180, 190, 200,
+      20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170, 180, 190, 200,
     ], // Read-only after proposal is viewed but before signed off
   },
 ];
@@ -337,8 +337,8 @@ export const FORM_ACTIONS: FormActionConfig[] = [
     // No status restriction - can save project at any status
     // displayOnNew undefined - shows on both new and existing projects
     hideAtStatus: [
-      30, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95, 100, 105, 110, 115, 120, 125, 130, 135,
-      140, 145, 150, 155, 160, 170, 180, 190, 200, 210, 220,
+      20, 30, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95, 100, 105, 110, 115, 120, 125, 130,
+      135, 140, 145, 150, 155, 160, 170, 180, 190, 200, 210, 220,
     ], // Only show when specs are received (status 10)
   },
   {
