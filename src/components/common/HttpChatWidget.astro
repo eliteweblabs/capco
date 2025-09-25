@@ -7,9 +7,9 @@ interface Props {
   currentUser?: {
     id: string;
     email: string;
-    company_name: string;
     profile: {
       role: string;
+      company_name: string;
     };
   };
   currentRole?: string;
@@ -17,14 +17,20 @@ interface Props {
 
 const { currentUser } = Astro.props;
 const currentRole = currentUser?.profile?.role || "Client";
+
+// Debug logging
+console.log("🔧 [HTTP-CHAT-WIDGET] Current user object:", currentUser);
+console.log("🔧 [HTTP-CHAT-WIDGET] Current role:", currentRole);
+console.log("🔧 [HTTP-CHAT-WIDGET] User ID:", currentUser?.id);
+console.log("🔧 [HTTP-CHAT-WIDGET] Company name:", currentUser?.profile?.company_name);
 ---
 
 <div
   id="chat-widget"
   data-user-role={currentRole || "Client"}
   data-user-id={currentUser?.id || "unknown"}
-  data-user-name={currentUser?.company_name || "Unknown User"}
-  class="hidden"
+  data-user-name={currentUser?.profile?.company_name || "Unknown User"}
+  class={currentRole === "Admin" || currentRole === "Staff" ? "" : "hidden"}
 >
   <!-- Chat Icon (Always Visible) -->
   <BoxIcon
@@ -124,7 +130,7 @@ const currentRole = currentUser?.profile?.role || "Client";
       return;
     }
 
-    // console.log("🔔 [HTTP-CHAT] Initializing HTTP chat widget");
+    console.log("🔔 [HTTP-CHAT] Initializing HTTP chat widget");
 
     // Check if user is Admin/Staff
     const chatWidget = document.getElementById("chat-widget");
@@ -137,17 +143,17 @@ const currentRole = currentUser?.profile?.role || "Client";
     const userId = chatWidget.dataset.userId || "unknown";
     const userName = chatWidget.dataset.userName || "Unknown User";
 
-    // console.log("🔔 [HTTP-CHAT] User role:", userRole);
-    // console.log("🔔 [HTTP-CHAT] User ID:", userId);
-    // console.log("🔔 [HTTP-CHAT] User name:", userName);
+    console.log("🔔 [HTTP-CHAT] User role:", userRole);
+    console.log("🔔 [HTTP-CHAT] User ID:", userId);
+    console.log("🔔 [HTTP-CHAT] User name:", userName);
 
     if (userRole !== "Admin" && userRole !== "Staff") {
-      // console.log("🔔 [HTTP-CHAT] User not Admin/Staff, hiding chat widget");
+      console.log("🔔 [HTTP-CHAT] User not Admin/Staff, hiding chat widget");
       chatWidget.classList.add("hidden");
       return;
     }
 
-    // console.log("🔔 [HTTP-CHAT] User is Admin/Staff, showing chat widget");
+    console.log("🔔 [HTTP-CHAT] User is Admin/Staff, showing chat widget");
 
     // Get current user info
     currentUser = {
@@ -156,7 +162,7 @@ const currentRole = currentUser?.profile?.role || "Client";
       role: userRole,
     };
 
-    // console.log("🔔 [HTTP-CHAT] Current user:", currentUser);
+    console.log("🔔 [HTTP-CHAT] Current user:", currentUser);
 
     // Setup event listeners
     setupChatEvents();
@@ -171,7 +177,7 @@ const currentRole = currentUser?.profile?.role || "Client";
     startHeartbeat();
 
     isInitialized = true;
-    // console.log("🔔 [HTTP-CHAT] HTTP chat widget initialization complete");
+    console.log("🔔 [HTTP-CHAT] HTTP chat widget initialization complete");
   }
 
   // Setup chat event listeners
@@ -235,7 +241,7 @@ const currentRole = currentUser?.profile?.role || "Client";
   // Join chat
   async function joinChat() {
     try {
-      // console.log("🔔 [HTTP-CHAT] Joining chat...");
+      console.log("🔔 [HTTP-CHAT] Joining chat...");
 
       const response = await fetch("/api/chat", {
         method: "POST",
@@ -255,7 +261,7 @@ const currentRole = currentUser?.profile?.role || "Client";
       }
 
       const data = await response.json();
-      // console.log("🔔 [HTTP-CHAT] Join response:", data);
+      console.log("🔔 [HTTP-CHAT] Join response:", data);
 
       if (data.success) {
         // Load chat history
@@ -270,7 +276,7 @@ const currentRole = currentUser?.profile?.role || "Client";
           updateOnlineCount();
         }
 
-        // console.log("🔔 [HTTP-CHAT] Successfully joined chat");
+        console.log("🔔 [HTTP-CHAT] Successfully joined chat");
       }
     } catch (error) {
       console.error("🔔 [HTTP-CHAT] Error joining chat:", error);
