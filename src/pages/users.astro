@@ -12,16 +12,15 @@ if (requireAuthRedirect && (!session || !currentUser || currentUser.profile.role
 
 import { globalCompanyData } from "../pages/api/global-company-data";
 const {
-  companyName,
-  companySlogan,
-  year,
-  companyAddress,
-  companyPhone,
-  companyEmail,
-  companyWebsite,
-  companyLogo,
-  companyLogoDark,
-  companyLogoLight,
+  globalCompanyName,
+  globalCompanySlogan,
+  globalCompanyAddress,
+  globalCompanyPhone,
+  globalCompanyEmail,
+  globalCompanyWebsite,
+  globalCompanyLogo,
+  globalCompanyLogoDark,
+  globalCompanyLogoLight,
 } = globalCompanyData();
 
 import { globalClasses } from "../pages/api/global-classes";
@@ -79,16 +78,23 @@ const userCounts = {
 ---
 
 <App
-  title=""
-  description=""
+  title={`User Management - ${globalCompanyName}`}
+  description={`Manage all system users for ${globalCompanyName}`}
   currentUser={currentUser}
   session={session || undefined}
   supabase={supabase}
-  globalCompanyName={companyName}
-  globalCompanySlogan={companySlogan}
   globalPrimaryTextClasses={globalPrimaryTextClasses}
   globalSecondaryTextClasses={globalSecondaryTextClasses}
   globalInputClasses={globalInputClasses}
+  globalCompanyName={globalCompanyName}
+  globalCompanySlogan={globalCompanySlogan}
+  globalCompanyAddress={globalCompanyAddress}
+  globalCompanyPhone={globalCompanyPhone}
+  globalCompanyEmail={globalCompanyEmail}
+  globalCompanyWebsite={globalCompanyWebsite}
+  globalCompanyLogo={globalCompanyLogo}
+  globalCompanyLogoDark={globalCompanyLogoDark}
+  globalCompanyLogoLight={globalCompanyLogoLight}
 >
   <div
     id="main-content"
@@ -221,7 +227,9 @@ const userCounts = {
                 <div class="overflow-hidden">
                   <div class="overflow-x-auto">
                     <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                      <thead class="bg-neutral-50 dark:bg-neutral-900">
+                      <thead
+                        class="bg-gray-50 text-xs uppercase text-gray-700 dark:bg-gray-700 dark:text-gray-400"
+                      >
                         <tr>
                           <th
                             class="text-muted dark:text-muted dark:hover:text-primary-dark cursor-pointer px-6 py-3 text-left text-xs font-medium uppercase tracking-wider hover:text-primary"
@@ -414,12 +422,12 @@ const userCounts = {
                       fullWidth
                       loading={true}
                     >
-                      Create User
+                      <span id="submit-text">Create User</span>
                     </Button>
                   </div>
 
                   <!-- Info Box -->
-                  <div
+                  <!-- <div
                     class="rounded-lg border border-blue-200 bg-blue-50 p-4 dark:border-blue-800 dark:bg-blue-900/20"
                   >
                     <div class="flex items-start">
@@ -436,7 +444,7 @@ const userCounts = {
                         </ol>
                       </div>
                     </div>
-                  </div>
+                  </div> -->
                 </form>
               </div>
             </div>
@@ -599,7 +607,7 @@ const userCounts = {
       const userData = {
         email: formData.get("email") as string,
         phone: formData.get("phone") as string,
-        role: formData.get("role") as string,
+        role: formData.get("role-select") as string,
         first_name: formData.get("first_name") as string,
         last_name: formData.get("last_name") as string,
         company_name: formData.get("company_name") as string,

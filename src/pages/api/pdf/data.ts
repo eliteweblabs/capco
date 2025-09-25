@@ -1,5 +1,17 @@
 import type { APIRoute } from "astro";
 import { supabase } from "../../../lib/supabase";
+import { globalCompanyData } from "../global-company-data";
+const {
+  globalCompanyName,
+  globalCompanySlogan,
+  globalCompanyAddress,
+  globalCompanyPhone,
+  globalCompanyEmail,
+  globalCompanyWebsite,
+  globalCompanyLogo,
+  globalCompanyLogoDark,
+  globalCompanyLogoLight,
+} = globalCompanyData();
 
 export const GET: APIRoute = async ({ request, url }) => {
   try {
@@ -109,6 +121,40 @@ export const GET: APIRoute = async ({ request, url }) => {
     if (filesError) {
       console.error("❌ [PDF-DATA] Error fetching files:", filesError);
     }
+
+    // Create placeholder data for PDF generation
+    const placeholderData = {
+      PROJECT_TITLE: project.title || project.address || "Untitled Project",
+      PROJECT_ADDRESS: project.address || "No address provided",
+      PROJECT_DESCRIPTION: project.description || "No description provided",
+      PROJECT_SQ_FT: project.sq_ft || "N/A",
+      PROJECT_NEW_CONSTRUCTION: project.new_construction ? "Yes" : "No",
+      PROJECT_CREATED_DATE: project.created_at
+        ? new Date(project.created_at).toLocaleDateString()
+        : "N/A",
+      CLIENT_NAME: projectAuthor?.name || "Unknown Client",
+      CLIENT_COMPANY: projectAuthor?.company || "N/A",
+      CLIENT_EMAIL: projectAuthor?.email || "N/A",
+      CLIENT_PHONE: projectAuthor?.phone || "N/A",
+      ASSIGNED_STAFF_NAME: assignedStaff?.name || "Unassigned",
+      ASSIGNED_STAFF_EMAIL: assignedStaff?.email || "N/A",
+      ASSIGNED_STAFF_PHONE: assignedStaff?.phone || "N/A",
+      STATUS_NAME: statusData?.name || "Unknown Status",
+      STATUS_DESCRIPTION: statusData?.description || "No status description",
+      EST_TIME: project.est_time || "TBD",
+      BUILDING_TYPE: project.building_type || "N/A",
+      CURRENT_DATE: new Date().toLocaleDateString(),
+      CURRENT_YEAR: new Date().getFullYear().toString(),
+      DOCUMENT_ID: `DOC-${Date.now()}`,
+      DOCUMENT_VERSION: "1.0",
+      COMPANY_NAME: globalCompanyName,
+      COMPANY_SLOGAN: globalCompanySlogan,
+      COMPANY_ADDRESS: globalCompanyAddress,
+      COMPANY_PHONE: globalCompanyPhone,
+      COMPANY_EMAIL: globalCompanyEmail,
+      COMPANY_WEBSITE: globalCompanyWebsite,
+      COMPANY_LOGO_URL: globalCompanyLogo,
+    };
 
     console.log(`✅ [PDF-DATA] Successfully prepared placeholder data for project ${projectId}`);
 

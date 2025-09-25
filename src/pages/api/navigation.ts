@@ -63,10 +63,10 @@ export const navigation = (
     // Backend navigation (shown on backend pages)
     {
       label: "New Project",
-      href: "/new-project",
+      href: "/project/new",
       roles: ["Client", "Admin", "Staff"],
       pageType: "backend",
-      isPrimary: currentUrl.startsWith("/new-project"),
+      isPrimary: currentUrl.startsWith("/project/new"),
     },
     {
       label: "Projects",

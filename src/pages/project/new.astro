@@ -1,5 +1,4 @@
 ---
-// import { isBackendPage } from "../../pages/api/backend-page-check";
 // import { navigation } from "@/pages/api/navigation";
 
 // interface Props {
@@ -14,8 +13,8 @@
 // }
 
 const requireAuthRedirect = undefined;
-import { checkAuth } from "../lib/auth";
-import { isBackendPage } from "../pages/api/backend-page-check";
+import { checkAuth } from "../../lib/auth";
+import { isBackendPage } from "../../pages/api/backend-page-check";
 
 const isBackend = isBackendPage(Astro.url.pathname);
 
@@ -27,30 +26,29 @@ if (requireAuthRedirect && (!session || !currentUser)) {
   return Astro.redirect(requireAuthRedirect);
 }
 
-import { globalCompanyData } from "../pages/api/global-company-data";
+import { globalCompanyData } from "../../pages/api/global-company-data";
 const {
-  companyName,
-  companySlogan,
-  year,
-  companyAddress,
-  companyPhone,
-  companyEmail,
-  companyWebsite,
-  companyLogo,
-  companyLogoDark,
-  companyLogoLight,
+  globalCompanyName,
+  globalCompanySlogan,
+  globalCompanyAddress,
+  globalCompanyPhone,
+  globalCompanyEmail,
+  globalCompanyWebsite,
+  globalCompanyLogo,
+  globalCompanyLogoDark,
+  globalCompanyLogoLight,
 } = globalCompanyData();
 
-import { globalClasses } from "../pages/api/global-classes";
+import { globalClasses } from "../../pages/api/global-classes";
 const { globalInputClasses, globalPrimaryTextClasses, globalSecondaryTextClasses } =
   globalClasses();
 
 const currentRole = currentUser?.profile.role;
 const currentUserId = currentUser?.id;
 
-import App from "../components/common/App.astro";
-import Hero from "../components/common/Hero.astro";
-import ProjectForm from "../components/project/ProjectForm.astro";
+import App from "../../components/common/App.astro";
+import Hero from "../../components/common/Hero.astro";
+import ProjectForm from "../../components/project/ProjectForm.astro";
 
 // Get auth data for conditional rendering
 ---
@@ -63,9 +61,8 @@ import ProjectForm from "../components/project/ProjectForm.astro";
   project={undefined}
   supabase={supabase}
   isBackend={isBackend}
-  year={year.toString()}
-  globalCompanyName={companyName}
-  globalCompanySlogan={companySlogan}
+  globalCompanyName={globalCompanyName}
+  globalCompanySlogan={globalCompanySlogan}
   globalPrimaryTextClasses={globalPrimaryTextClasses}
   globalSecondaryTextClasses={globalSecondaryTextClasses}
   globalInputClasses={globalInputClasses}

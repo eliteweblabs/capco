@@ -6,18 +6,51 @@ interface Props {
   projects: any[];
   currentUser: any;
   statusesObject: any;
-  staffOptions: any;
 }
 
 // // const { currentLocale } = Astro;
 // // const i18n = getI18N({ currentLocale });
-const { projects, statusesObject, currentUser, staffOptions } = Astro.props;
+const { projects, statusesObject, currentUser } = Astro.props;
 const currentRole = currentUser?.profile?.role;
 
 // console.log("🔍 [DEBUG] ProjectList statusesObject:", statusesObject);
 // console.log("🔍 [DEBUG] ProjectList currentUser:", currentUser);
 // console.log("🔍 [DEBUG] ProjectList currentRole:", currentRole);
 // console.log("🔍 [DEBUG] ProjectList projects:", projects);
+
+// Fetch staff data for staff selection
+let staffOptions: any[] = [];
+if (currentRole === "Admin" || currentRole === "Staff") {
+  try {
+    const staffResponse = await fetch(`${Astro.url.origin}/api/get-user-emails-by-role`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        roles: ["Admin", "Staff"],
+      }),
+    });
+    if (staffResponse.ok) {
+      const staffData = await staffResponse.json();
+      if (staffData.success && staffData.staffUsers) {
+        staffOptions = [
+          { value: "", label: "Unassigned" },
+          ...staffData.staffUsers.map((staff: any) => ({
+            value: staff.id || "",
+            label:
+              staff.company_name ||
+              `${staff.first_name || ""} ${staff.last_name || ""}`.trim() ||
+              "Unknown Staff",
+          })),
+        ];
+      }
+    }
+  } catch (error) {
+    console.error("Failed to fetch staff data:", error);
+    staffOptions = [{ value: "", label: "Unassigned" }];
+  }
+}
 
 // Process each project's status in the frontmatter
 const processedProjects = projects.map((project: any) => {
@@ -75,105 +108,88 @@ const createDueDateOptions = () => {
 const dueDateOptions = createDueDateOptions();
 ---
 
-<!-- Project List-->
-<table
-  id="project-list"
-  class="t6gkcSf0Bt4MLItXvDJ_ upQp7iWehfaU8VTbfx_w c8dCx6gnV43hTOLV6ks5 PeR2JZ9BZHYIH8Ea3F36 XIIs8ZOri3wm8Wnj9N_y"
->
-  <thead
-    class="jtAJHOc7mn7b4IKRO59D gMXmdpOPfqG_3CKkL0VD sdSaZcRa4_We5kKaX4pf PeR2JZ9BZHYIH8Ea3F36 _1jTZ8KXRZul60S6czNi XIIs8ZOri3wm8Wnj9N_y"
+<div class="ahOqFrhzLjivRe8a1kX_ EWLTGduHCjFnjN6tLCXV">
+  <!-- Project List-->
+  <table
+    id="project-list"
+    class="t6gkcSf0Bt4MLItXvDJ_ upQp7iWehfaU8VTbfx_w c8dCx6gnV43hTOLV6ks5 PeR2JZ9BZHYIH8Ea3F36 XIIs8ZOri3wm8Wnj9N_y"
   >
-    <tr>
-      <!-- <th scope="col" class="_wYiJGbRZyFZeCc8y7Sf">
-        <div class="YRrCJSr_j5nopfm4duUc Q_jg_EPdNf9eDMn1mLI2">
-          <input
-            id="checkbox-all"
-            type="checkbox"
-            class="_o2IXcpM0qnG3JPReKus E9GV5sZJIbfO_GEQ_moc Y3FxyuXtj2gecrGXvLEI vpDN1VEJLu5FmLkr5WCk _9dH7mrOkzM4RTmidHTs _6MyV8SXoSWq_PQ6KWI6 _q0p_O8QLU1paqtuqmI2 GdTcGtoKP5_bET3syLDl Mmx5lX7HVdrWCgh3EpTP jqg6J89cvxmDiFpnV56r _GL8_lXmAgroY9ZBWGLH BO8JrKgx4qkHG27c4wVR"
-          />
-          <label for="checkbox-all" class="_DVAfiyo21kM68EUVzEQ">checkbox</label>
-        </div>
-      </th> -->
-      <th scope="col" class="RZmKBZs1E1eXw8vkE6jY i8v96MUlFwGv9qJUkAx7 yM_AorRf2jSON3pDsdrz"
-        >Name</th
-      >
+    <thead
+      class="jtAJHOc7mn7b4IKRO59D gMXmdpOPfqG_3CKkL0VD sdSaZcRa4_We5kKaX4pf PeR2JZ9BZHYIH8Ea3F36 _1jTZ8KXRZul60S6czNi XIIs8ZOri3wm8Wnj9N_y"
+    >
+      <tr>
+        <th scope="col" class="RZmKBZs1E1eXw8vkE6jY i8v96MUlFwGv9qJUkAx7 yM_AorRf2jSON3pDsdrz"
+          >Name</th
+        >
 
+        {
+          currentRole !== "Client" && (
+            <th scope="col" class="RZmKBZs1E1eXw8vkE6jY i8v96MUlFwGv9qJUkAx7 yM_AorRf2jSON3pDsdrz">
+              Company
+            </th>
+          )
+        }
+
+        <th scope="col" class="RZmKBZs1E1eXw8vkE6jY i8v96MUlFwGv9qJUkAx7 yM_AorRf2jSON3pDsdrz"
+          >Status</th
+        >
+        <th scope="col" class="RZmKBZs1E1eXw8vkE6jY i8v96MUlFwGv9qJUkAx7 yM_AorRf2jSON3pDsdrz"
+          >Files</th
+        >
+
+        {
+          currentRole !== "Client" && (
+            <th scope="col" class="RZmKBZs1E1eXw8vkE6jY i8v96MUlFwGv9qJUkAx7 yM_AorRf2jSON3pDsdrz">
+              Assigned To
+            </th>
+          )
+        }
+
+        <th scope="col" class="RZmKBZs1E1eXw8vkE6jY i8v96MUlFwGv9qJUkAx7 yM_AorRf2jSON3pDsdrz"
+          >Progress</th
+        >
+        <th scope="col" class="RZmKBZs1E1eXw8vkE6jY i8v96MUlFwGv9qJUkAx7 yM_AorRf2jSON3pDsdrz"
+          >Checklist</th
+        >
+        <th scope="col" class="RZmKBZs1E1eXw8vkE6jY i8v96MUlFwGv9qJUkAx7 yM_AorRf2jSON3pDsdrz"
+          ><span class="button-text">Elapsed Time</span><BoxIcon name="time" size="xs" class="" />
+        </th>
+        <th scope="col" class="RZmKBZs1E1eXw8vkE6jY i8v96MUlFwGv9qJUkAx7 yM_AorRf2jSON3pDsdrz"
+          >Updated</th
+        >
+        <th scope="col" class="RZmKBZs1E1eXw8vkE6jY i8v96MUlFwGv9qJUkAx7 yM_AorRf2jSON3pDsdrz"
+          >Due Date</th
+        >
+        <th scope="col" class="RZmKBZs1E1eXw8vkE6jY i8v96MUlFwGv9qJUkAx7 yM_AorRf2jSON3pDsdrz">
+          <span class="_DVAfiyo21kM68EUVzEQ">Actions</span>
+        </th>
+      </tr>
+    </thead>
+    <tbody>
       {
-        currentRole !== "Client" && (
-          <th scope="col" class="RZmKBZs1E1eXw8vkE6jY i8v96MUlFwGv9qJUkAx7 yM_AorRf2jSON3pDsdrz">
-            Company
-          </th>
-        )
+        projects.length > 0 &&
+          processedProjects.map((project: any) => {
+            // console.log("🔍 [DEBUG] ProjectList passing project to ProjectListItem:", {
+            //   id: project.id,
+            //   title: project.title,
+            //   featured_image: project.featured_image,
+            //   featured_image_data: project.featured_image_data,
+            // });
+            return (
+              <ProjectItem
+                currentUser={currentUser}
+                project={project}
+                projectStatusesObject={statusesObject}
+                currentStatusName={project.currentStatusName}
+                currentStatusInt={project.currentStatusInt}
+                currentStatusSlug={project.currentStatusSlug}
+                currentStatusTab={project.currentStatusTab}
+                staffOptions={staffOptions}
+                dueDateOptions={dueDateOptions}
+              />
+            );
+          })
       }
-
-      <th scope="col" class="RZmKBZs1E1eXw8vkE6jY i8v96MUlFwGv9qJUkAx7 yM_AorRf2jSON3pDsdrz"
-        >Status</th
-      >
-      <th scope="col" class="RZmKBZs1E1eXw8vkE6jY i8v96MUlFwGv9qJUkAx7 yM_AorRf2jSON3pDsdrz"
-        >Files</th
-      >
-
-      {
-        currentRole !== "Client" && (
-          <th scope="col" class="RZmKBZs1E1eXw8vkE6jY i8v96MUlFwGv9qJUkAx7 yM_AorRf2jSON3pDsdrz">
-            Assigned To
-          </th>
-        )
-      }
-
-      <th scope="col" class="RZmKBZs1E1eXw8vkE6jY i8v96MUlFwGv9qJUkAx7 yM_AorRf2jSON3pDsdrz"
-        >Progress</th
-      >
-      <th scope="col" class="RZmKBZs1E1eXw8vkE6jY i8v96MUlFwGv9qJUkAx7 yM_AorRf2jSON3pDsdrz"
-        >Checklist</th
-      >
-      <th scope="col" class="RZmKBZs1E1eXw8vkE6jY i8v96MUlFwGv9qJUkAx7 yM_AorRf2jSON3pDsdrz"
-        ><span class="button-text">Elapsed Time</span><BoxIcon name="time" size="xs" class="" />
-      </th>
-      <th scope="col" class="RZmKBZs1E1eXw8vkE6jY i8v96MUlFwGv9qJUkAx7 yM_AorRf2jSON3pDsdrz"
-        >Updated</th
-      >
-      <th scope="col" class="RZmKBZs1E1eXw8vkE6jY i8v96MUlFwGv9qJUkAx7 yM_AorRf2jSON3pDsdrz"
-        >Due Date</th
-      >
-      <th scope="col" class="RZmKBZs1E1eXw8vkE6jY i8v96MUlFwGv9qJUkAx7 yM_AorRf2jSON3pDsdrz">
-        <span class="_DVAfiyo21kM68EUVzEQ">Actions</span>
-      </th>
-    </tr>
-  </thead>
-  <tbody>
-    {
-      projects.length > 0 &&
-        processedProjects.map((project: any) => {
-          // console.log("🔍 [DEBUG] ProjectList passing project to ProjectListItem:", {
-          //   id: project.id,
-          //   title: project.title,
-          //   featured_image: project.featured_image,
-          //   featured_image_data: project.featured_image_data,
-          // });
-          return (
-            <ProjectItem
-              currentUser={currentUser}
-              project={project}
-              projectStatusesObject={statusesObject}
-              currentStatusName={project.currentStatusName}
-              currentStatusInt={project.currentStatusInt}
-              currentStatusSlug={project.currentStatusSlug}
-              currentStatusTab={project.currentStatusTab}
-              staffOptions={staffOptions}
-              dueDateOptions={dueDateOptions}
-            />
-          );
-        })
-    }
-  </tbody>
-</table>
-<!-- No Projects Message for Status Filters -->
-<!-- <div id="no-projects-message" class="hidden py-16 text-center text-black dark:text-white">
-    <div class="mx-auto max-w-md">
-      <BoxIcon name="x" variant="outline" />
-      <h3 class="mb-2 text-lg font-medium">No Projects Found</h3>
-      <p id="no-projects-text" class="text-sm">No projects currently at this status.</p>
-    </div>
-  </div>
-</div> -->
+    </tbody>
+  </table>
+</div>
