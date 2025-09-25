@@ -1,10 +1,8 @@
 ---
-// console.log("🔍 [GLOBAL ACTIVITY] Global activity feed page loading...");
-
 import { checkAuth } from "../../lib/auth";
-const { currentUser, session } = await checkAuth(Astro.cookies);
+const { currentUser, session, supabase } = await checkAuth(Astro.cookies);
 const currentRole = currentUser?.profile?.role;
-const isAuth = !!currentUser;
+
 // Redirect to login if not authenticated
 if (!currentUser || !session) {
   return Astro.redirect("/login");
@@ -16,212 +14,130 @@ if (currentRole !== "Admin") {
 }
 
 import App from "../../components/common/App.astro";
-import Footer from "../../components/common/Footer.astro";
+import HeroDashboard from "../../components/common/HeroDashboard.astro";
 import GlobalActivityFeed from "../../components/common/GlobalActivityFeed.astro";
 import BoxIcon from "../../components/common/BoxIcon.astro";
+import Button from "../../components/common/Button.astro";
 
-// console.log(`🔍 [GLOBAL ACTIVITY] Admin ${currentUser?.email} accessing global activity feed`);
+// Fetch projects for overview stats
+let projects: any[] = [];
+if (currentUser?.id) {
+  try {
+    const baseUrl = Astro.url.origin || "http://localhost:4321";
+    const apiUrl = `${baseUrl}/api/get-project`;
+    const response = await fetch(apiUrl);
+
+    if (response.ok) {
+      const data = await response.json();
+      projects = data.projects || [];
+    }
+  } catch (error) {
+    console.error("Error fetching projects:", error);
+  }
+}
 ---
 
 <App
-  title="Global Dashboard - CAPCo Fire Protection"
-  description="View all projects."
+  title="Global Activity Feed - CAPCo Fire Protection"
+  description="Monitor all project activities and user actions."
   currentUser={currentUser}
   project={undefined}
   session={session}
+  supabase={supabase}
+  projects={projects}
   isBackend={true}
 >
   <!-- Dashboard Container -->
+  <HeroDashboard
+    title="Global Activity Feed"
+    description="Monitor all project activities, status changes, and user actions across the platform."
+  />
 
-  <div
-    id="main-content"
-    class="ahOqFrhzLjivRe8a1kX_ uLPch_bqyJDXwe5tynMV t6gkcSf0Bt4MLItXvDJ_ pdl952ted2i71qBLPIcQ jtAJHOc7mn7b4IKRO59D h8KYXnua2NT4kTVzieom 12rem-REMOVED"
-  >
-    <main>
-      <div class="RZmKBZs1E1eXw8vkE6jY p_2EXc_a2sDA_h41l8QU">
-        <!-- Header -->
-        <div class="mb-8">
-          <div class="flex items-center justify-between">
-            <div>
-              <h1 class="text-3xl font-bold text-gray-900 dark:text-white">
-                <BoxIcon name="pulse" class="mr-3 inline text-blue-600 dark:text-blue-400" />
-                Global Activity Feed
-              </h1>
-              <p class="mt-2 text-gray-600 dark:text-gray-400">
-                Monitor all project activities, status changes, and user actions across the
-                platform.
-              </p>
-            </div>
-
-            <!-- Quick Actions -->
-            <div class="flex space-x-3">
-              <a
-                href="/dashboard"
-                class="inline-flex items-center rounded-full border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
-              >
-                <BoxIcon name="arrow-left" class="mr-2 text-sm" />
-                Back to Dashboard
-              </a>
-
-              <a
-                href="/projects"
-                class="inline-flex items-center rounded-full bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600"
-              >
-                <BoxIcon name="building" class="mr-2 text-sm" />
-                View Projects
-              </a>
-            </div>
-          </div>
+  <!-- Activity Overview Cards -->
+  <div class="mb-8 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
+    <!-- Total Projects -->
+    <div class="rounded-lg bg-white p-6 shadow dark:bg-gray-800">
+      <div class="flex items-center">
+        <div class="flex-shrink-0">
+          <BoxIcon name="building" class="h-8 w-8 text-blue-600 dark:text-blue-400" />
         </div>
-
-        <!-- Activity Overview Cards -->
-        <div class="mb-8 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
-          <!-- Total Projects -->
-          <div class="rounded-full bg-white p-5 shadow dark:bg-gray-800">
-            <div class="flex items-center">
-              <div class="flex-shrink-0">
-                <BoxIcon name="building" class="h-8 w-8 text-blue-600 dark:text-blue-400" />
-              </div>
-              <div class="ml-3 w-0 flex-1">
-                <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Total Projects</p>
-                <p id="total-projects" class="text-lg font-semibold text-gray-900 dark:text-white">
-                  <span
-                    class="inline-block h-4 w-8 animate-pulse rounded bg-gray-200 dark:bg-gray-700"
-                  ></span>
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <!-- Active Projects -->
-          <div class="rounded-full bg-white p-5 shadow dark:bg-gray-800">
-            <div class="flex items-center">
-              <div class="flex-shrink-0">
-                <BoxIcon name="trending-up" class="h-8 w-8 text-green-600 dark:text-green-400" />
-              </div>
-              <div class="ml-3 w-0 flex-1">
-                <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Active Projects</p>
-                <p id="active-projects" class="text-lg font-semibold text-gray-900 dark:text-white">
-                  <span
-                    class="inline-block h-4 w-8 animate-pulse rounded bg-gray-200 dark:bg-gray-700"
-                  ></span>
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <!-- Recent Activity -->
-          <div class="rounded-full bg-white p-5 shadow dark:bg-gray-800">
-            <div class="flex items-center">
-              <div class="flex-shrink-0">
-                <BoxIcon name="time" class="h-8 w-8 text-yellow-600 dark:text-yellow-400" />
-              </div>
-              <div class="ml-3 w-0 flex-1">
-                <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Last 24h</p>
-                <p id="recent-activity" class="text-lg font-semibold text-gray-900 dark:text-white">
-                  <span
-                    class="inline-block h-4 w-8 animate-pulse rounded bg-gray-200 dark:bg-gray-700"
-                  ></span>
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <!-- Active Users -->
-          <div class="rounded-full bg-white p-5 shadow dark:bg-gray-800">
-            <div class="flex items-center">
-              <div class="flex-shrink-0">
-                <BoxIcon name="group" class="h-8 w-8 text-purple-600 dark:text-purple-400" />
-              </div>
-              <div class="ml-3 w-0 flex-1">
-                <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Active Users</p>
-                <p
-                  id="active-users-header"
-                  class="text-lg font-semibold text-gray-900 dark:text-white"
-                >
-                  <span
-                    class="inline-block h-4 w-8 animate-pulse rounded bg-gray-200 dark:bg-gray-700"
-                  ></span>
-                </p>
-              </div>
-            </div>
-          </div>
+        <div class="ml-3 w-0 flex-1">
+          <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Total Projects</p>
+          <p id="total-projects" class="text-lg font-semibold text-gray-900 dark:text-white">
+            {projects.length}
+          </p>
         </div>
-
-        <!-- Global Activity Feed Component -->
-        <GlobalActivityFeed limit={100} />
       </div>
-    </main>
-    <Footer />
+    </div>
+
+    <!-- Active Projects -->
+    <div class="rounded-lg bg-white p-6 shadow dark:bg-gray-800">
+      <div class="flex items-center">
+        <div class="flex-shrink-0">
+          <BoxIcon name="trending-up" class="h-8 w-8 text-green-600 dark:text-green-400" />
+        </div>
+        <div class="ml-3 w-0 flex-1">
+          <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Active Projects</p>
+          <p id="active-projects" class="text-lg font-semibold text-gray-900 dark:text-white">
+            {projects.filter((p) => p.status > 0 && p.status < 90).length}
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Recent Activity -->
+    <div class="rounded-lg bg-white p-6 shadow dark:bg-gray-800">
+      <div class="flex items-center">
+        <div class="flex-shrink-0">
+          <BoxIcon name="time" class="h-8 w-8 text-yellow-600 dark:text-yellow-400" />
+        </div>
+        <div class="ml-3 w-0 flex-1">
+          <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Last 24h</p>
+          <p id="recent-activity" class="text-lg font-semibold text-gray-900 dark:text-white">
+            <span class="inline-block h-4 w-8 animate-pulse rounded bg-gray-200 dark:bg-gray-700"
+            ></span>
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Active Users -->
+    <div class="rounded-lg bg-white p-6 shadow dark:bg-gray-800">
+      <div class="flex items-center">
+        <div class="flex-shrink-0">
+          <BoxIcon name="group" class="h-8 w-8 text-purple-600 dark:text-purple-400" />
+        </div>
+        <div class="ml-3 w-0 flex-1">
+          <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Active Users</p>
+          <p id="active-users-header" class="text-lg font-semibold text-gray-900 dark:text-white">
+            <span class="inline-block h-4 w-8 animate-pulse rounded bg-gray-200 dark:bg-gray-700"
+            ></span>
+          </p>
+        </div>
+      </div>
+    </div>
   </div>
+
+  <!-- Global Activity Feed Component -->
+  <GlobalActivityFeed limit={100} />
 </App>
 
 <script is:inline>
-  // Load overview statistics
-  async function loadOverviewStats() {
-    try {
-      // Load project statistics
-      const projectResponse = await fetch("/api/get-project", {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-          user_id: window.USER_DATA?.id || "",
-          role: "Admin",
-        },
-      });
-
-      if (projectResponse.ok) {
-        const projectData = await projectResponse.json();
-        if (projectData.success && projectData.projects) {
-          const projects = Object.values(projectData.projects);
-
-          // Update total projects count
-          const totalProjectsEl = document.getElementById("total-projects");
-          if (totalProjectsEl) {
-            totalProjectsEl.textContent = projects.length.toString();
-          }
-
-          // Count active projects (status > 0 and < 90)
-          const activeProjects = projects.filter((p) => p.status > 0 && p.status < 90);
-          const activeProjectsEl = document.getElementById("active-projects");
-          if (activeProjectsEl) {
-            activeProjectsEl.textContent = activeProjects.length.toString();
-          }
-        }
-      }
-
-      // The global activity feed component will handle its own stats
-      // But we can listen for when it loads to update our header stats
-      setTimeout(() => {
-        const recentCountEl = document.getElementById("recent-count");
-        const activeUsersEl = document.getElementById("active-users");
-        const headerRecentEl = document.getElementById("recent-activity");
-        const headerActiveUsersEl = document.getElementById("active-users-header");
-
-        if (recentCountEl && headerRecentEl && recentCountEl.textContent) {
-          headerRecentEl.textContent = recentCountEl.textContent;
-        }
-        if (activeUsersEl && headerActiveUsersEl && activeUsersEl.textContent) {
-          headerActiveUsersEl.textContent = activeUsersEl.textContent;
-        }
-      }, 2000); // Wait for global feed to load
-    } catch (error) {
-      console.error("Error loading overview stats:", error);
-      // Set fallback values
-      const totalProjectsEl = document.getElementById("total-projects");
-      const activeProjectsEl = document.getElementById("active-projects");
-      const recentActivityEl = document.getElementById("recent-activity");
-      const activeUsersHeaderEl = document.getElementById("active-users-header");
-
-      if (totalProjectsEl) totalProjectsEl.textContent = "-";
-      if (activeProjectsEl) activeProjectsEl.textContent = "-";
-      if (recentActivityEl) recentActivityEl.textContent = "-";
-      if (activeUsersHeaderEl) activeUsersHeaderEl.textContent = "-";
-    }
-  }
-
-  // Load stats when page loads
+  // Update dynamic stats when the activity feed loads
   document.addEventListener("DOMContentLoaded", () => {
-    loadOverviewStats();
+    // Wait for the global activity feed to load its stats
+    setTimeout(() => {
+      const recentCountEl = document.getElementById("recent-count");
+      const activeUsersEl = document.getElementById("active-users");
+      const headerRecentEl = document.getElementById("recent-activity");
+      const headerActiveUsersEl = document.getElementById("active-users-header");
+
+      if (recentCountEl && headerRecentEl && recentCountEl.textContent) {
+        headerRecentEl.textContent = recentCountEl.textContent;
+      }
+      if (activeUsersEl && headerActiveUsersEl && activeUsersEl.textContent) {
+        headerActiveUsersEl.textContent = activeUsersEl.textContent;
+      }
+    }, 2000); // Wait for global feed to load
   });
 </script>

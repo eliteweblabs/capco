@@ -4,17 +4,79 @@ export interface Props {
   class?: string;
 }
 
+import BoxIcon from "../common/BoxIcon.astro";
 const { userId, class: className = "" } = Astro.props;
 ---
 
-<div class={`relative ${className}`}>
-  <!-- Notification Bell Button -->
-  <button
+<!-- Notification Bell Button --><!-- <button
     id="notification-bell"
     class="relative p-2 text-gray-600 transition-colors hover:text-gray-900 dark:text-gray-300 dark:hover:text-white"
     title="Notifications"
+    data-tooltip-target="tooltip-notification"
+  > -->
+<BoxIcon
+  name="bell"
+  size="sm"
+  id="notification-bell"
+  variant="secondary"
+  dataAttributes={{
+    "data-count": "1",
+    "data-dropdown-toggle": "notification-dropdown",
+    "data-tooltip-target": "tooltip-notification",
+  }}
+  class="mveJTCIb2WII7J4sY22F Z4DH5a4vmjReSFRBpPgz c8dCx6gnV43hTOLV6ks5 PeR2JZ9BZHYIH8Ea3F36 _7KA5gD55t2lxf9Jkj20 BkIbg_JwkgiyRW804Hhu _q0p_O8QLU1paqtuqmI2 _6wdnQrxT_dGdAdNk5AQ XIIs8ZOri3wm8Wnj9N_y OPrb_iG5WDy_7F05BDOX yChACvAr1v8czJ2VO22j"
+>
+  <span class="_DVAfiyo21kM68EUVzEQ">View notifications</span>
+</BoxIcon>
+
+<!-- Unread Count Badge -->
+<!-- </button> -->
+
+<div
+  id="tooltip-notification"
+  role="tooltip"
+  class="H78G_4yayxs5C3xdFbnK ZBSHeVK3dmgzHTRX3hLO pq2JRWtiWcwYnw3xueNl QhmQ_v3mmDFIP9VaVOfb VPGGthdu3cy_ZP7AL7dt mveJTCIb2WII7J4sY22F foDHZclRWUf2bqma2a8U _Cj_M6jt2eLjDgkBBNgI b9aD6g2qw84oyZNsMO8j c8dCx6gnV43hTOLV6ks5 ezMFUVl744lvw6ht0lFe y6GKdvUrd7vp_pxsFb57 Db4Wzva4DMepJJiQLY7M fzhbbDQ686T8arwvi_bJ mc9bwhBTHL8mVzJvl6gz rqOAGYeDo9iWuroePkaf"
+>
+  Notifications
+
+  <div class="tkX8MMO2MiTlgtbd_jG3" data-popper-arrow=""></div>
+</div>
+
+<!-- Dropdown Menu -->
+<div
+  id="notification-dropdown"
+  class="absolute right-0 z-50 mt-2 hidden w-80 rounded-lg border border-gray-200 bg-white shadow-lg dark:border-gray-700 dark:bg-gray-800"
+>
+  <!-- Header -->
+  <div
+    class="YRrCJSr_j5nopfm4duUc Q_jg_EPdNf9eDMn1mLI2 sJNGKHxFYdN5Nzml5J2j EpUSgjHdM6oyMXUiK_8_ qUWbS_LTZujDB4XCd11V _9dH7mrOkzM4RTmidHTs RZmKBZs1E1eXw8vkE6jY b9aD6g2qw84oyZNsMO8j ijrOHNoSVGATsWYKl4Id ezMFUVl744lvw6ht0lFe __9sbu0yrzdhGIkLWNXl Mmx5lX7HVdrWCgh3EpTP jqg6J89cvxmDiFpnV56r OyABRrnTV_kvHV7dJ0uE"
   >
-    <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <h3>Notifications</h3>
+    <button
+      id="mark-all-read"
+      class="text-sm text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
+    >
+      Mark all read
+    </button>
+  </div>
+
+  <!-- Loading State -->
+  <div id="notification-loading" class="p-4 text-center">
+    <div class="flex items-center justify-center space-x-2 text-gray-500 dark:text-gray-400">
+      <div class="h-4 w-4 animate-spin rounded-full border-2 border-gray-300 border-t-blue-600">
+      </div>
+      <span>Loading notifications...</span>
+    </div>
+  </div>
+
+  <!-- Empty State -->
+  <div id="notification-empty" class="hidden p-6 text-center">
+    <svg
+      class="mx-auto h-12 w-12 text-gray-400 dark:text-gray-600"
+      fill="none"
+      stroke="currentColor"
+      viewBox="0 0 24 24"
+    >
       <path
         stroke-linecap="round"
         stroke-linejoin="round"
@@ -22,252 +84,278 @@ const { userId, class: className = "" } = Astro.props;
         d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"
       ></path>
     </svg>
-
-    <!-- Unread Count Badge -->
-    <span
-      id="notification-badge"
-      class="absolute -right-1 -top-1 hidden h-5 w-5 items-center justify-center rounded-full bg-red-500 text-xs text-white"
-    >
-      0
-    </span>
-  </button>
-
-  <!-- Dropdown Menu -->
-  <div
-    id="notification-dropdown"
-    class="absolute right-0 z-50 mt-2 hidden w-80 rounded-lg border border-gray-200 bg-white shadow-lg dark:border-gray-700 dark:bg-gray-800"
-  >
-    <!-- Header -->
-    <div class="border-b border-gray-200 px-4 py-3 dark:border-gray-700">
-      <div class="flex items-center justify-between">
-        <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Notifications</h3>
-        <button
-          id="mark-all-read"
-          class="text-sm text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
-        >
-          Mark all read
-        </button>
-      </div>
-    </div>
-
-    <!-- Loading State -->
-    <div id="notification-loading" class="p-4 text-center">
-      <div class="flex items-center justify-center space-x-2 text-gray-500 dark:text-gray-400">
-        <div class="h-4 w-4 animate-spin rounded-full border-2 border-gray-300 border-t-blue-600">
-        </div>
-        <span>Loading notifications...</span>
-      </div>
-    </div>
-
-    <!-- Empty State -->
-    <div id="notification-empty" class="hidden p-6 text-center">
-      <svg
-        class="mx-auto h-12 w-12 text-gray-400 dark:text-gray-600"
-        fill="none"
-        stroke="currentColor"
-        viewBox="0 0 24 24"
-      >
-        <path
-          stroke-linecap="round"
-          stroke-linejoin="round"
-          stroke-width="2"
-          d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"
-        ></path>
-      </svg>
-      <h3 class="mt-2 text-sm font-medium text-gray-900 dark:text-white">No notifications</h3>
-      <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">You're all caught up!</p>
-    </div>
-
-    <!-- Notifications List -->
-    <div id="notification-list" class="max-h-96 overflow-y-auto">
-      <!-- Notifications will be populated here -->
-    </div>
-
-    <!-- Footer -->
-    <div class="border-t border-gray-200 px-4 py-3 dark:border-gray-700">
-      <button
-        id="view-all-notifications"
-        class="w-full text-center text-sm text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
-      >
-        View all notifications
-      </button>
-    </div>
+    <h3 class="mt-2 text-sm font-medium text-gray-900 dark:text-white">No recent notifications</h3>
+    <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+      No notifications in the last 5 items
+    </p>
   </div>
-</div>
 
-<script>
-  class NotificationManager {
-    isOpen: boolean = false;
-    notifications: any[] = [];
-    viewedNotifications: Set<number> = new Set();
-    userId: string | null = null;
-    pollingInterval: NodeJS.Timeout | null = null;
+  <!-- Notifications List -->
+  <div id="notification-list" class="max-h-96 overflow-y-auto">
+    <!-- Notifications will be populated here -->
+  </div>
 
-    constructor() {
-      this.init();
-    }
+  <!-- Footer -->
+  <div class="border-t border-gray-200 px-4 py-3 dark:border-gray-700">
+    <button
+      id="view-all-notifications"
+      class="w-full text-center text-sm text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
+    >
+      Load more notifications
+    </button>
+  </div>
 
-    async init() {
-      // Get user ID from global variable or data attribute
-      console.log("🔍 [NOTIFICATIONS] Debug - window.currentUser:", (window as any).currentUser);
-      console.log(
-        "🔍 [NOTIFICATIONS] Debug - data-user-id attribute:",
-        document.querySelector("[data-user-id]")?.getAttribute("data-user-id")
-      );
+  <script>
+    class NotificationManager {
+      isOpen: boolean = false;
+      notifications: any[] = [];
+      viewedNotifications: Set<number> = new Set();
+      userId: string | null = null;
+      pollingInterval: NodeJS.Timeout | null = null;
 
-      this.userId =
-        (window as any).currentUser?.id ||
-        document.querySelector("[data-user-id]")?.getAttribute("data-user-id") ||
-        null;
-
-      console.log("🔍 [NOTIFICATIONS] Debug - resolved userId:", this.userId);
-
-      if (!this.userId) {
-        console.error("❌ [NOTIFICATIONS] No user ID found");
-        console.error("❌ [NOTIFICATIONS] Available window properties:", Object.keys(window));
-        return;
+      constructor() {
+        this.init();
       }
 
-      this.bindEvents();
-      await this.loadNotifications();
-      this.startPolling();
-    }
+      async init() {
+        // Get user ID from global variable or data attribute
+        console.log("🔍 [NOTIFICATIONS] Debug - window.currentUser:", (window as any).currentUser);
+        console.log(
+          "🔍 [NOTIFICATIONS] Debug - data-user-id attribute:",
+          document.querySelector("[data-user-id]")?.getAttribute("data-user-id")
+        );
 
-    bindEvents() {
-      const bell = document.getElementById("notification-bell");
-      const dropdown = document.getElementById("notification-dropdown");
-      const markAllRead = document.getElementById("mark-all-read");
-      const viewAll = document.getElementById("view-all-notifications");
+        this.userId =
+          (window as any).currentUser?.id ||
+          document.querySelector("[data-user-id]")?.getAttribute("data-user-id") ||
+          null;
 
-      // Toggle dropdown
-      bell?.addEventListener("click", (e) => {
-        e.stopPropagation();
-        this.toggleDropdown();
-      });
+        console.log("🔍 [NOTIFICATIONS] Debug - resolved userId:", this.userId);
 
-      // Mark all as read
-      markAllRead?.addEventListener("click", () => {
-        this.markAllAsRead();
-      });
-
-      // View all notifications
-      viewAll?.addEventListener("click", () => {
-        this.viewAllNotifications();
-      });
-
-      // Close dropdown when clicking outside
-      document.addEventListener("click", (e) => {
-        if (!dropdown?.contains(e.target as Node) && !bell?.contains(e.target as Node)) {
-          this.closeDropdown();
+        if (!this.userId) {
+          console.error("❌ [NOTIFICATIONS] No user ID found");
+          console.error("❌ [NOTIFICATIONS] Available window properties:", Object.keys(window));
+          console.error(
+            "❌ [NOTIFICATIONS] Available data attributes:",
+            Array.from(document.querySelectorAll("[data-user-id]")).map((el) =>
+              el.getAttribute("data-user-id")
+            )
+          );
+          return;
         }
-      });
 
-      // Mark notifications as viewed when scrolling
-      const notificationList = document.getElementById("notification-list");
-      notificationList?.addEventListener("scroll", () => {
-        this.handleScroll();
-      });
-    }
-
-    toggleDropdown() {
-      if (this.isOpen) {
-        this.closeDropdown();
-      } else {
-        this.openDropdown();
+        console.log("✅ [NOTIFICATIONS] User ID found:", this.userId);
+        this.bindEvents();
+        await this.loadNotifications();
+        this.startPolling();
       }
-    }
 
-    openDropdown() {
-      const dropdown = document.getElementById("notification-dropdown");
-      if (dropdown) {
-        dropdown.classList.remove("hidden");
-        this.isOpen = true;
-        this.loadNotifications(); // Refresh notifications when opening
+      bindEvents() {
+        const bell = document.getElementById("notification-bell");
+        const dropdown = document.getElementById("notification-dropdown");
+        const markAllRead = document.getElementById("mark-all-read");
+        const viewAll = document.getElementById("view-all-notifications");
+
+        // Toggle dropdown
+        bell?.addEventListener("click", (e) => {
+          e.stopPropagation();
+          this.toggleDropdown();
+        });
+
+        // Mark all as read
+        markAllRead?.addEventListener("click", () => {
+          this.markAllAsRead();
+        });
+
+        // View all notifications
+        viewAll?.addEventListener("click", () => {
+          this.viewAllNotifications();
+        });
+
+        // Close dropdown when clicking outside
+        document.addEventListener("click", (e) => {
+          if (!dropdown?.contains(e.target as Node) && !bell?.contains(e.target as Node)) {
+            this.closeDropdown();
+          }
+        });
+
+        // Mark notifications as viewed when scrolling
+        const notificationList = document.getElementById("notification-list");
+        notificationList?.addEventListener("scroll", () => {
+          this.handleScroll();
+        });
       }
-    }
 
-    closeDropdown() {
-      const dropdown = document.getElementById("notification-dropdown");
-      if (dropdown) {
-        dropdown.classList.add("hidden");
-        this.isOpen = false;
-        this.markViewedNotificationsAsRead();
-      }
-    }
-
-    async loadNotifications() {
-      try {
-        this.showLoading();
-
-        const response = await fetch("/api/notifications?limit=20");
-        const data = await response.json();
-
-        if (data.success) {
-          this.notifications = data.notifications || [];
-          this.updateBadge(data.unreadCount || 0);
-          this.renderNotifications();
-        } else if (data.migrationRequired) {
-          console.warn("⚠️ [NOTIFICATIONS] Database migration required:", data.error);
-          this.showMigrationRequired(data.instructions);
+      toggleDropdown() {
+        if (this.isOpen) {
+          this.closeDropdown();
         } else {
-          console.error("❌ [NOTIFICATIONS] Failed to load notifications:", data.error);
+          this.openDropdown();
+        }
+      }
+
+      openDropdown() {
+        const dropdown = document.getElementById("notification-dropdown");
+        if (dropdown) {
+          console.log("🔍 [NOTIFICATIONS] Opening dropdown");
+          console.log("🔍 [NOTIFICATIONS] Dropdown classes before:", dropdown.className);
+          dropdown.classList.remove("hidden");
+          console.log("🔍 [NOTIFICATIONS] Dropdown classes after:", dropdown.className);
+          this.isOpen = true;
+          this.loadNotifications(); // Refresh notifications when opening
+          console.log("🔍 [NOTIFICATIONS] Dropdown opened, isOpen:", this.isOpen);
+          console.log(
+            "🔍 [NOTIFICATIONS] Dropdown computed style display:",
+            window.getComputedStyle(dropdown).display
+          );
+        }
+      }
+
+      closeDropdown() {
+        const dropdown = document.getElementById("notification-dropdown");
+        if (dropdown) {
+          console.log("🔍 [NOTIFICATIONS] Closing dropdown");
+          dropdown.classList.add("hidden");
+          this.isOpen = false;
+          this.markViewedNotificationsAsRead();
+        }
+      }
+
+      async loadNotifications() {
+        try {
+          this.showLoading();
+
+          console.log("🔍 [NOTIFICATIONS] Fetching notifications from /api/notifications?limit=5");
+          const response = await fetch("/api/notifications?limit=5");
+          console.log("🔍 [NOTIFICATIONS] Response status:", response.status);
+
+          const data = await response.json();
+          console.log("🔍 [NOTIFICATIONS] Response data:", data);
+
+          if (data.success) {
+            this.notifications = data.notifications || [];
+            console.log("🔍 [NOTIFICATIONS] Unread count from API:", data.unreadCount);
+            console.log(
+              "🔍 [NOTIFICATIONS] Notifications received:",
+              this.notifications.map((n) => ({ id: n.id, title: n.title, viewed: n.viewed }))
+            );
+            this.updateBadge(data.unreadCount || 0);
+            this.renderNotifications();
+            console.log(
+              "✅ [NOTIFICATIONS] Successfully loaded",
+              this.notifications.length,
+              "notifications"
+            );
+          } else if (data.migrationRequired) {
+            console.warn("⚠️ [NOTIFICATIONS] Database migration required:", data.error);
+            this.showMigrationRequired(data.instructions);
+          } else {
+            console.error("❌ [NOTIFICATIONS] Failed to load notifications:", data.error);
+            this.showEmpty();
+          }
+        } catch (error) {
+          console.error("❌ [NOTIFICATIONS] Error loading notifications:", error);
           this.showEmpty();
         }
-      } catch (error) {
-        console.error("❌ [NOTIFICATIONS] Error loading notifications:", error);
-        this.showEmpty();
-      }
-    }
-
-    renderNotifications() {
-      const list = document.getElementById("notification-list");
-      const empty = document.getElementById("notification-empty");
-      const loading = document.getElementById("notification-loading");
-
-      if (!list) return;
-
-      // Hide loading and empty states
-      loading?.classList.add("hidden");
-      empty?.classList.add("hidden");
-
-      if (this.notifications.length === 0) {
-        empty?.classList.remove("hidden");
-        return;
       }
 
-      list.innerHTML = "";
+      renderNotifications() {
+        const list = document.getElementById("notification-list");
+        const empty = document.getElementById("notification-empty");
+        const loading = document.getElementById("notification-loading");
 
-      this.notifications.forEach((notification: any) => {
-        const notificationElement = this.createNotificationElement(notification);
-        list.appendChild(notificationElement);
-      });
-    }
+        console.log(
+          "🔍 [NOTIFICATIONS] renderNotifications called with",
+          this.notifications.length,
+          "notifications"
+        );
 
-    createNotificationElement(notification: any) {
-      const div = document.createElement("div");
-      div.className = `p-4 border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors ${!notification.viewed ? "bg-blue-50 dark:bg-blue-900/20" : ""}`;
-      div.dataset.notificationId = notification.id;
+        if (!list) {
+          console.error("❌ [NOTIFICATIONS] notification-list element not found");
+          return;
+        }
 
-      const typeColors: Record<string, string> = {
-        info: "text-blue-600 dark:text-blue-400",
-        success: "text-green-600 dark:text-green-400",
-        warning: "text-yellow-600 dark:text-yellow-400",
-        error: "text-red-600 dark:text-red-400",
-      };
+        // Hide loading and empty states
+        loading?.classList.add("hidden");
+        empty?.classList.add("hidden");
 
-      const typeIcons: Record<string, string> = {
-        info: "M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z",
-        success: "M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z",
-        warning:
-          "M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z",
-        error: "M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z",
-      };
+        // Show the list (remove hidden class)
+        list?.classList.remove("hidden");
+        console.log(
+          "🔍 [NOTIFICATIONS] Removed hidden class from list. List classes now:",
+          list?.className
+        );
 
-      const timeAgo = this.formatTimeAgo(notification.created_at);
-      const typeColor = typeColors[notification.type] || typeColors.info;
-      const typeIcon = typeIcons[notification.type] || typeIcons.info;
+        if (this.notifications.length === 0) {
+          console.log("🔍 [NOTIFICATIONS] No notifications, showing empty state");
+          empty?.classList.remove("hidden");
+          return;
+        }
 
-      div.innerHTML = `
+        console.log("🔍 [NOTIFICATIONS] Rendering", this.notifications.length, "notifications");
+        list.innerHTML = "";
+
+        this.notifications.forEach((notification: any, index: number) => {
+          console.log(`🔍 [NOTIFICATIONS] Creating notification ${index + 1}:`, notification.title);
+          const notificationElement = this.createNotificationElement(notification);
+          console.log(
+            `🔍 [NOTIFICATIONS] Created element for notification ${index + 1}:`,
+            notificationElement
+          );
+          list.appendChild(notificationElement);
+          console.log(
+            `🔍 [NOTIFICATIONS] Appended notification ${index + 1} to list. List children count:`,
+            list.children.length
+          );
+        });
+
+        console.log("🔍 [NOTIFICATIONS] Finished rendering notifications");
+        console.log("🔍 [NOTIFICATIONS] Final list innerHTML length:", list.innerHTML.length);
+        console.log("🔍 [NOTIFICATIONS] Final list children count:", list.children.length);
+        console.log("🔍 [NOTIFICATIONS] List element classes:", list.className);
+        console.log(
+          "🔍 [NOTIFICATIONS] List computed style display:",
+          window.getComputedStyle(list).display
+        );
+        console.log(
+          "🔍 [NOTIFICATIONS] List computed style visibility:",
+          window.getComputedStyle(list).visibility
+        );
+        console.log(
+          "🔍 [NOTIFICATIONS] List computed style height:",
+          window.getComputedStyle(list).height
+        );
+
+        // Test: Add a simple test element to see if the list is working
+      }
+
+      createNotificationElement(notification: any) {
+        console.log("🔍 [NOTIFICATIONS] createNotificationElement called with:", notification);
+        const div = document.createElement("div");
+        div.className = `p-4 border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors ${!notification.viewed ? "bg-blue-50 dark:bg-blue-900/20" : ""}`;
+        div.dataset.notificationId = notification.id;
+        console.log("🔍 [NOTIFICATIONS] Created div with className:", div.className);
+
+        const typeColors: Record<string, string> = {
+          info: "text-blue-600 dark:text-blue-400",
+          success: "text-green-600 dark:text-green-400",
+          warning: "text-yellow-600 dark:text-yellow-400",
+          error: "text-red-600 dark:text-red-400",
+        };
+
+        const typeIcons: Record<string, string> = {
+          info: "M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z",
+          success: "M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z",
+          warning:
+            "M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z",
+          error: "M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z",
+        };
+
+        const timeAgo = this.formatTimeAgo(notification.created_at);
+        const typeColor = typeColors[notification.type] || typeColors.info;
+        const typeIcon = typeIcons[notification.type] || typeIcons.info;
+
+        div.innerHTML = `
         <div class="flex items-start space-x-3">
           <div class="flex-shrink-0">
             <div class="w-2 h-2 bg-blue-500 rounded-full ${notification.viewed ? "hidden" : ""}"></div>
@@ -277,9 +365,12 @@ const { userId, class: className = "" } = Astro.props;
           </div>
           <div class="flex-1 min-w-0">
             <div class="flex items-center justify-between">
-              <p class="text-sm font-medium text-gray-900 dark:text-white truncate">
-                ${notification.title}
-              </p>
+              <div class="flex items-center space-x-2">
+                <p class="text-sm font-medium text-gray-900 dark:text-white truncate">
+                  ${notification.title}
+                </p>
+                ${notification.viewed ? '<span class="text-xs text-gray-400 dark:text-gray-500">(read)</span>' : ""}
+              </div>
               <p class="text-xs text-gray-500 dark:text-gray-400 ml-2">${timeAgo}</p>
             </div>
             <p class="mt-1 text-sm text-gray-600 dark:text-gray-300">
@@ -298,151 +389,278 @@ const { userId, class: className = "" } = Astro.props;
             }
           </div>
           <button
-            class="flex-shrink-0 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
-            onclick="notificationManager.deleteNotification(${notification.id})"
+            type="button"
+            id="delete-notification-${notification.id}"
+            onclick="event.stopPropagation(); window.confirmDeleteNotification(${notification.id})"
+            class="flex-shrink-0 p-1 text-red-600 hover:text-red-800 hover:bg-red-100 rounded transition-colors delete-btn"
             title="Delete notification"
+            data-state="trash"
+            data-notification-id="${notification.id}"
           >
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
             </svg>
           </button>
         </div>
       `;
 
-      // Mark as viewed when rendered
-      if (!notification.viewed) {
-        this.viewedNotifications.add(notification.id);
+        // Don't automatically mark as viewed when rendered
+        // Only mark as viewed when user actually views them (scrolls or clicks)
+
+        console.log("🔍 [NOTIFICATIONS] Final notification element:", div);
+        console.log(
+          "🔍 [NOTIFICATIONS] Final notification innerHTML length:",
+          div.innerHTML.length
+        );
+        return div;
       }
 
-      return div;
-    }
+      handleScroll() {
+        // Mark visible notifications as viewed
+        const list = document.getElementById("notification-list");
+        if (!list) return;
 
-    handleScroll() {
-      // Mark visible notifications as viewed
-      const list = document.getElementById("notification-list");
-      if (!list) return;
+        const rect = list.getBoundingClientRect();
+        const notifications = list.querySelectorAll("[data-notification-id]");
 
-      const rect = list.getBoundingClientRect();
-      const notifications = list.querySelectorAll("[data-notification-id]");
+        notifications.forEach((element) => {
+          const elementRect = element.getBoundingClientRect();
+          const isVisible = elementRect.top >= rect.top && elementRect.bottom <= rect.bottom;
 
-      notifications.forEach((element) => {
-        const elementRect = element.getBoundingClientRect();
-        const isVisible = elementRect.top >= rect.top && elementRect.bottom <= rect.bottom;
-
-        if (isVisible) {
-          const notificationId = parseInt((element as HTMLElement).dataset.notificationId || "0");
-          this.viewedNotifications.add(notificationId);
-        }
-      });
-    }
-
-    async markViewedNotificationsAsRead() {
-      if (this.viewedNotifications.size === 0) return;
-
-      try {
-        const response = await fetch("/api/notifications", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            notificationIds: Array.from(this.viewedNotifications),
-          }),
+          if (isVisible) {
+            const notificationId = parseInt((element as HTMLElement).dataset.notificationId || "0");
+            this.viewedNotifications.add(notificationId);
+          }
         });
-
-        if (response.ok) {
-          this.viewedNotifications.clear();
-          await this.loadNotifications(); // Refresh to update counts
-        }
-      } catch (error) {
-        console.error("❌ [NOTIFICATIONS] Error marking notifications as read:", error);
       }
-    }
 
-    async markAllAsRead() {
-      try {
-        const unreadIds = this.notifications.filter((n: any) => !n.viewed).map((n: any) => n.id);
+      async markViewedNotificationsAsRead() {
+        if (this.viewedNotifications.size === 0) return;
 
-        if (unreadIds.length === 0) return;
+        try {
+          const response = await fetch("/api/notifications", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              notificationIds: Array.from(this.viewedNotifications),
+            }),
+          });
 
-        const response = await fetch("/api/notifications", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ notificationIds: unreadIds }),
-        });
-
-        if (response.ok) {
-          await this.loadNotifications();
+          if (response.ok) {
+            this.viewedNotifications.clear();
+            await this.loadNotifications(); // Refresh to update counts
+          }
+        } catch (error) {
+          console.error("❌ [NOTIFICATIONS] Error marking notifications as read:", error);
         }
-      } catch (error) {
-        console.error("❌ [NOTIFICATIONS] Error marking all as read:", error);
       }
-    }
 
-    async deleteNotification(notificationId: number) {
-      try {
-        const response = await fetch("/api/notifications", {
-          method: "DELETE",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ notificationId }),
-        });
+      async markAllAsRead() {
+        try {
+          const unreadIds = this.notifications.filter((n: any) => !n.viewed).map((n: any) => n.id);
 
-        if (response.ok) {
-          await this.loadNotifications();
+          if (unreadIds.length === 0) return;
+
+          const response = await fetch("/api/notifications", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ notificationIds: unreadIds }),
+          });
+
+          if (response.ok) {
+            await this.loadNotifications();
+          }
+        } catch (error) {
+          console.error("❌ [NOTIFICATIONS] Error marking all as read:", error);
         }
-      } catch (error) {
-        console.error("❌ [NOTIFICATIONS] Error deleting notification:", error);
       }
-    }
 
-    viewAllNotifications() {
-      // Navigate to full notifications page
-      window.location.href = "/notifications";
-    }
+      confirmDeleteNotification(notificationId: number) {
+        console.log("🔍 [NOTIFICATIONS] confirmDeleteNotification called for ID:", notificationId);
+        const button = document.getElementById(`delete-notification-${notificationId}`);
+        console.log("🔍 [NOTIFICATIONS] Button found:", button);
+        if (!button) {
+          console.error("❌ [NOTIFICATIONS] Delete button not found for ID:", notificationId);
+          return;
+        }
 
-    updateBadge(count: number) {
-      const badge = document.getElementById("notification-badge");
-      if (badge) {
-        if (count > 0) {
-          badge.textContent = count > 99 ? "99+" : count.toString();
-          badge.classList.remove("hidden");
+        const currentState = button.getAttribute("data-state");
+
+        if (currentState === "trash") {
+          // First click: Show question mark
+          button.innerHTML =
+            '<span class="text-lg font-bold w-4 h-4 flex items-center justify-center">?</span>';
+          button.setAttribute("data-state", "confirm");
+          button.title = "Click again to confirm deletion";
+          button.className =
+            "flex-shrink-0 p-1 text-orange-600 hover:text-orange-800 hover:bg-orange-100 rounded transition-colors delete-btn";
+
+          // Auto-revert after 3 seconds
+          setTimeout(() => {
+            if (button.getAttribute("data-state") === "confirm") {
+              this.revertDeleteButton(notificationId);
+            }
+          }, 3000);
+        } else if (currentState === "confirm") {
+          // Second click: Actually delete
+          this.deleteNotification(notificationId);
+        }
+      }
+
+      revertDeleteButton(notificationId: number) {
+        const button = document.getElementById(`delete-notification-${notificationId}`);
+        if (!button) return;
+
+        button.innerHTML = `
+        <svg class="w-4 h-4 flex items-center justify-center" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+        </svg>
+      `;
+        button.setAttribute("data-state", "trash");
+        button.title = "Delete notification";
+        button.className =
+          "flex-shrink-0 p-1 text-red-600 hover:text-red-800 hover:bg-red-100 rounded transition-colors delete-btn";
+      }
+
+      async deleteNotification(notificationId: number) {
+        console.log("🔍 [NOTIFICATIONS] deleteNotification called for ID:", notificationId);
+        try {
+          const response = await fetch("/api/notifications", {
+            method: "DELETE",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ notificationId }),
+          });
+
+          console.log("🔍 [NOTIFICATIONS] Delete response status:", response.status);
+          if (response.ok) {
+            console.log("✅ [NOTIFICATIONS] Notification deleted successfully, reloading...");
+            await this.loadNotifications();
+          } else {
+            console.error("❌ [NOTIFICATIONS] Delete failed with status:", response.status);
+          }
+        } catch (error) {
+          console.error("❌ [NOTIFICATIONS] Error deleting notification:", error);
+        }
+      }
+
+      viewAllNotifications() {
+        // Load more notifications (increase limit to show all)
+        console.log("🔍 [NOTIFICATIONS] Loading all notifications...");
+        this.loadAllNotifications();
+      }
+
+      async loadAllNotifications() {
+        try {
+          // Show loading state on button
+          const viewAllButton = document.getElementById(
+            "view-all-notifications"
+          ) as HTMLButtonElement;
+          if (viewAllButton) {
+            viewAllButton.textContent = "Loading...";
+            viewAllButton.disabled = true;
+          }
+
+          console.log(
+            "🔍 [NOTIFICATIONS] Fetching all notifications from /api/notifications?limit=50"
+          );
+          const response = await fetch("/api/notifications?limit=50");
+          console.log("🔍 [NOTIFICATIONS] All notifications response status:", response.status);
+
+          const data = await response.json();
+          console.log("🔍 [NOTIFICATIONS] All notifications response data:", data);
+
+          if (data.success) {
+            // Replace current notifications with all notifications
+            this.notifications = data.notifications || [];
+            this.updateBadge(data.unreadCount || 0);
+            this.renderNotifications();
+            console.log(
+              "✅ [NOTIFICATIONS] Successfully loaded all",
+              this.notifications.length,
+              "notifications"
+            );
+
+            // Hide the "View all notifications" button since we're now showing all
+            const viewAllButton = document.getElementById(
+              "view-all-notifications"
+            ) as HTMLButtonElement;
+            if (viewAllButton) {
+              viewAllButton.style.display = "none";
+            }
+          } else if (data.migrationRequired) {
+            console.warn("⚠️ [NOTIFICATIONS] Database migration required:", data.error);
+            this.showMigrationRequired(data.instructions);
+          } else {
+            console.error("❌ [NOTIFICATIONS] Failed to load all notifications:", data.error);
+            // Restore button on error
+            if (viewAllButton) {
+              viewAllButton.textContent = "Load more notifications";
+              viewAllButton.disabled = false;
+            }
+          }
+        } catch (error) {
+          console.error("❌ [NOTIFICATIONS] Error loading all notifications:", error);
+          // Restore button on error
+          const viewAllButton = document.getElementById(
+            "view-all-notifications"
+          ) as HTMLButtonElement;
+          if (viewAllButton) {
+            viewAllButton.textContent = "Load more notifications";
+            viewAllButton.disabled = false;
+          }
+        }
+      }
+
+      updateBadge(count: number) {
+        console.log("🔍 [NOTIFICATIONS] updateBadge called with count:", count);
+        const badge = document.querySelector("[data-count]") as HTMLElement;
+        if (badge) {
+          if (count > 0) {
+            badge.textContent = count > 99 ? "99+" : count.toString();
+            badge.classList.remove("hidden");
+            console.log("🔍 [NOTIFICATIONS] Badge updated to:", badge.textContent);
+          } else {
+            badge.classList.add("hidden");
+            console.log("🔍 [NOTIFICATIONS] Badge hidden (count is 0)");
+          }
         } else {
-          badge.classList.add("hidden");
+          console.error("❌ [NOTIFICATIONS] Badge element not found");
         }
       }
-    }
 
-    showLoading() {
-      const loading = document.getElementById("notification-loading");
-      const empty = document.getElementById("notification-empty");
-      const list = document.getElementById("notification-list");
+      showLoading() {
+        const loading = document.getElementById("notification-loading") as HTMLElement;
+        const empty = document.getElementById("notification-empty");
+        const list = document.getElementById("notification-list");
 
-      loading?.classList.remove("hidden");
-      empty?.classList.add("hidden");
-      list?.classList.add("hidden");
-    }
+        loading?.classList.remove("hidden");
+        empty?.classList.add("hidden");
+        list?.classList.add("hidden");
+      }
 
-    showEmpty() {
-      const loading = document.getElementById("notification-loading");
-      const empty = document.getElementById("notification-empty");
-      const list = document.getElementById("notification-list");
+      showEmpty() {
+        const loading = document.getElementById("notification-loading") as HTMLElement;
+        const empty = document.getElementById("notification-empty");
+        const list = document.getElementById("notification-list");
 
-      loading?.classList.add("hidden");
-      empty?.classList.remove("hidden");
-      list?.classList.add("hidden");
-    }
+        loading?.classList.add("hidden");
+        empty?.classList.remove("hidden");
+        list?.classList.add("hidden");
+      }
 
-    showMigrationRequired(instructions: string[]) {
-      const loading = document.getElementById("notification-loading");
-      const empty = document.getElementById("notification-empty");
-      const list = document.getElementById("notification-list");
+      showMigrationRequired(instructions: string[]) {
+        const loading = document.getElementById("notification-loading") as HTMLElement;
+        const empty = document.getElementById("notification-empty");
+        const list = document.getElementById("notification-list");
 
-      loading?.classList.add("hidden");
-      empty?.classList.add("hidden");
-      list?.classList.add("hidden");
+        loading?.classList.add("hidden");
+        empty?.classList.add("hidden");
+        list?.classList.add("hidden");
 
-      // Create migration required message
-      const emptyDiv = document.getElementById("notification-empty");
-      if (emptyDiv) {
-        emptyDiv.innerHTML = `
+        // Create migration required message
+        const emptyDiv = document.getElementById("notification-empty") as HTMLElement;
+        if (emptyDiv) {
+          emptyDiv.innerHTML = `
           <svg class="mx-auto h-12 w-12 text-yellow-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
           </svg>
@@ -455,58 +673,68 @@ const { userId, class: className = "" } = Astro.props;
             </ol>
           </div>
         `;
-        emptyDiv.classList.remove("hidden");
+          emptyDiv.classList.remove("hidden");
+        }
+      }
+
+      startPolling() {
+        // Poll for new notifications every 30 seconds
+        this.pollingInterval = setInterval(() => {
+          if (!this.isOpen) {
+            this.loadNotifications();
+          }
+        }, 30000);
+      }
+
+      formatTimeAgo(dateString: string) {
+        const date = new Date(dateString);
+        const now = new Date();
+        const diffInMinutes = Math.floor((now.getTime() - date.getTime()) / (1000 * 60));
+
+        if (diffInMinutes < 1) return "Just now";
+        if (diffInMinutes < 60) return `${diffInMinutes}m ago`;
+
+        const diffInHours = Math.floor(diffInMinutes / 60);
+        if (diffInHours < 24) return `${diffInHours}h ago`;
+
+        const diffInDays = Math.floor(diffInHours / 24);
+        if (diffInDays < 7) return `${diffInDays}d ago`;
+
+        return date.toLocaleDateString();
       }
     }
 
-    startPolling() {
-      // Poll for new notifications every 30 seconds
-      this.pollingInterval = setInterval(() => {
-        if (!this.isOpen) {
-          this.loadNotifications();
-        }
-      }, 30000);
+    // Initialize notification manager
+    const notificationManager = new NotificationManager();
+    (window as any).notificationManager = notificationManager;
+
+    // Global function for delete confirmation
+    (window as any).confirmDeleteNotification = (notificationId: number) => {
+      console.log(
+        "🔍 [NOTIFICATIONS] Global confirmDeleteNotification called for ID:",
+        notificationId
+      );
+      notificationManager.confirmDeleteNotification(notificationId);
+    };
+  </script>
+
+  <style>
+    /* Custom scrollbar for notification list */
+    #notification-list::-webkit-scrollbar {
+      width: 4px;
     }
 
-    formatTimeAgo(dateString: string) {
-      const date = new Date(dateString);
-      const now = new Date();
-      const diffInMinutes = Math.floor((now.getTime() - date.getTime()) / (1000 * 60));
-
-      if (diffInMinutes < 1) return "Just now";
-      if (diffInMinutes < 60) return `${diffInMinutes}m ago`;
-
-      const diffInHours = Math.floor(diffInMinutes / 60);
-      if (diffInHours < 24) return `${diffInHours}h ago`;
-
-      const diffInDays = Math.floor(diffInHours / 24);
-      if (diffInDays < 7) return `${diffInDays}d ago`;
-
-      return date.toLocaleDateString();
+    #notification-list::-webkit-scrollbar-track {
+      background: transparent;
     }
-  }
 
-  // Initialize notification manager
-  const notificationManager = new NotificationManager();
-  (window as any).notificationManager = notificationManager;
-</script>
+    #notification-list::-webkit-scrollbar-thumb {
+      background: #d1d5db;
+      border-radius: 2px;
+    }
 
-<style>
-  /* Custom scrollbar for notification list */
-  #notification-list::-webkit-scrollbar {
-    width: 4px;
-  }
-
-  #notification-list::-webkit-scrollbar-track {
-    background: transparent;
-  }
-
-  #notification-list::-webkit-scrollbar-thumb {
-    background: #d1d5db;
-    border-radius: 2px;
-  }
-
-  #notification-list::-webkit-scrollbar-thumb:hover {
-    background: #9ca3af;
-  }
-</style>
+    #notification-list::-webkit-scrollbar-thumb:hover {
+      background: #9ca3af;
+    }
+  </style>
+</div>
