@@ -83,13 +83,17 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     console.log("✅ [ADD-PUNCHLIST] Punchlist item created successfully:", punchlistData.id);
 
     // Log the punchlist item creation
-    if (typeof window !== "undefined" && window.SimpleProjectLogger) {
-      window.SimpleProjectLogger.logPunchlistAdd(
+    try {
+      await SimpleProjectLogger.addLogEntry(
         projectId,
-        punchlistData.id,
-        currentUser,
-        message.substring(0, 50) + "..."
+        "punchlist_added",
+        currentUser?.email || "Unknown User",
+        `Punchlist item added: ${message.substring(0, 50)}...`,
+        null,
+        { punchlistId: punchlistData.id, message: message.substring(0, 100) }
       );
+    } catch (logError) {
+      console.error("Error logging punchlist creation:", logError);
     }
 
     return new Response(

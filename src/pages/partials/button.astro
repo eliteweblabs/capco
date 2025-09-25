@@ -1,6 +1,71 @@
 ---
 // Button partial - makes the Button component accessible as a partial
 import ButtonComponent from "../../components/common/Button.astro";
+
+// Check if we have props (when used as component) or need to use headers (when used as partial)
+const hasProps = Object.keys(Astro.props).length > 0;
+
+let type,
+  variant,
+  size,
+  href,
+  target,
+  disabled,
+  loading,
+  icon,
+  iconPosition,
+  fullWidth,
+  className,
+  id,
+  children;
+
+if (hasProps) {
+  // Use props when available (prioritize props over headers)
+  const props = Astro.props;
+  type = props.type || "button";
+  variant = props.variant || "primary";
+  size = props.size || "md";
+  href = props.href;
+  target = props.target;
+  disabled = props.disabled || false;
+  loading = props.loading || false;
+  icon = props.icon;
+  iconPosition = props.iconPosition || "left";
+  fullWidth = props.fullWidth || false;
+  className = props.class;
+  id = props.id;
+  children = props.children || "Button";
+} else {
+  // Fall back to headers when used as partial
+  type = Astro.request.headers.get("x-button-type") || "button";
+  variant = Astro.request.headers.get("x-button-variant") || "primary";
+  size = Astro.request.headers.get("x-button-size") || "md";
+  href = Astro.request.headers.get("x-button-href");
+  target = Astro.request.headers.get("x-button-target");
+  disabled = Astro.request.headers.get("x-button-disabled") === "true";
+  loading = Astro.request.headers.get("x-button-loading") === "true";
+  icon = Astro.request.headers.get("x-button-icon");
+  iconPosition = Astro.request.headers.get("x-button-iconPosition") || "left";
+  fullWidth = Astro.request.headers.get("x-button-fullWidth") === "true";
+  className = Astro.request.headers.get("x-button-class");
+  id = Astro.request.headers.get("x-button-id");
+  children = Astro.request.headers.get("x-button-children") || "Button";
+}
 ---
 
-<ButtonComponent />
+<ButtonComponent
+  type={type}
+  variant={variant}
+  size={size}
+  href={href}
+  target={target}
+  disabled={disabled}
+  loading={loading}
+  icon={icon}
+  iconPosition={iconPosition}
+  fullWidth={fullWidth}
+  class={className}
+  id={id}
+>
+  {children}
+</ButtonComponent>

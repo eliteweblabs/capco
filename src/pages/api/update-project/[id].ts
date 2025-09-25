@@ -146,7 +146,7 @@ export const PUT: APIRoute = async ({ request, cookies, params }) => {
 
       await SimpleProjectLogger.logProjectChanges(
         parseInt(projectId),
-        userEmail,
+        { email: userEmail, first_name: userEmail, last_name: "" },
         currentProject,
         newProjectData
       );

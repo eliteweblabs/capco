@@ -15,6 +15,7 @@ const {
   invoiceResult,
   globalSecondaryTextClasses,
   globalPrimaryTextClasses,
+  globalInputClasses,
 } = Astro.props;
 
 // Only show to Admin/Staff users
@@ -78,16 +79,6 @@ try {
 const hasExistingProposal = !!existingInvoice;
 ---
 
-<style>
-  #proposal-content {
-    pointer-events: none;
-  }
-  .delete-line-item-btn,
-  #add-row-btn {
-    display: none;
-  }
-</style>
-
 <!-- Initial state: No proposal generated -->
 <div id="proposal-placeholder" class={hasExistingProposal ? "hidden" : "py-8 text-center"}>
   <BoxIcon name="upload" class="bx-lg mx-auto mb-4 text-gray-700 dark:text-gray-300" />
@@ -145,6 +136,8 @@ const hasExistingProposal = !!existingInvoice;
               id="proposal-subject-text"
               class="inline-block h-6 w-64 animate-pulse rounded bg-gray-200 dark:bg-gray-700"
             ></span>
+            {projectStatus === 20 && (
+
             <Button
               type="button"
               id="edit-subject-btn"
@@ -154,9 +147,11 @@ const hasExistingProposal = !!existingInvoice;
               class="ml-2 text-gray-400 hover:text-blue-600 dark:hover:text-blue-400"
               title="Edit subject"
             />
+            )}
           </p>
         </div>
 
+        {projectStatus === 20 && (
         <div id="proposal-subject-edit" class="hidden">
           <div class="space-y-2">
             <div id="subject-dropdown-container">
@@ -186,11 +181,12 @@ const hasExistingProposal = !!existingInvoice;
                 Cancel
               </Button>
             </div>
+            </div>
           </div>
-        </div>
+        )}
       </div>
 
-      <p class="text-sm text-gray-500 dark:text-gray-500">
+      <p class={`${globalSecondaryTextClasses} text-sm`}>
         Generated on: <span id="proposal-date"></span>
       </p>
     </div>
@@ -205,8 +201,8 @@ const hasExistingProposal = !!existingInvoice;
   <!-- Project Details -->
   <div class="mb-6 grid grid-cols-1 gap-6 md:grid-cols-2">
     <div class="rounded-lg bg-gray-50 p-4 dark:bg-gray-700">
-      <h3 class={`${globalSecondaryTextClasses} mb-4`}>Project Information</h3>
-      <div class="space-y-1 text-sm">
+      <h3 class={`${globalPrimaryTextClasses} mb-4`}>Project Information</h3>
+      <div class={`${globalSecondaryTextClasses} space-y-1 text-sm`}>
         <p><strong>Address:</strong> <span id="proposal-address">{project.address}</span></p>
         <p>
           <strong>Square Footage:</strong>
@@ -221,9 +217,9 @@ const hasExistingProposal = !!existingInvoice;
       </div>
     </div>
     <div class="rounded-lg bg-gray-50 p-4 dark:bg-gray-700">
-      <h3 class="mb-2 font-semibold text-gray-900 dark:text-white">Contact Information</h3>
+      <h3 class={`${globalPrimaryTextClasses} mb-2`}>Contact Information</h3>
       <div class="space-y-1 text-sm">
-        <p>
+        <p class={`${globalSecondaryTextClasses}`}>
           <strong>Client:</strong>
           <span id="proposal-client-name">{project?.company_name || "N/A"}</span>
         </p>
@@ -244,7 +240,7 @@ const hasExistingProposal = !!existingInvoice;
       <div class="overflow-hidden">
         <div class="overflow-x-auto">
           <table
-            class="mt6gkcSf0Bt4MLItXvDJ_ upQp7iWehfaU8VTbfx_w c8dCx6gnV43hTOLV6ks5 PeR2JZ9BZHYIH8Ea3F36 XIIs8ZOri3wm8Wnj9N_y"
+            class="mt6gkcSf0Bt4MLItXvDJ_ c8dCx6gnV43hTOLV6ks5 PeR2JZ9BZHYIH8Ea3F36 XIIs8ZOri3wm8Wnj9N_y"
           >
             <thead
               class="jtAJHOc7mn7b4IKRO59D gMXmdpOPfqG_3CKkL0VD sdSaZcRa4_We5kKaX4pf PeR2JZ9BZHYIH8Ea3F36 _1jTZ8KXRZul60S6czNi XIIs8ZOri3wm8Wnj9N_y"
@@ -280,12 +276,15 @@ const hasExistingProposal = !!existingInvoice;
                 >
                   Total
                 </th>
+                {projectStatus === 20 && (
+
                 <th
                   scope="col"
                   class="RZmKBZs1E1eXw8vkE6jY i8v96MUlFwGv9qJUkAx7 yM_AorRf2jSON3pDsdrz"
                 >
                   Actions
                 </th>
+                )}
               </tr>
             </thead>
             <tbody
@@ -293,11 +292,12 @@ const hasExistingProposal = !!existingInvoice;
               class="divide-y divide-gray-200 bg-white dark:divide-gray-700 dark:bg-gray-800"
             >
               <!-- All line items will be generated dynamically via JavaScript -->
+               
             </tbody>
             <tfoot>
               <tr>
                 <td
-                  colspan="5"
+                  colspan={projectStatus === 20 ? "5" : "4"}
                   class="px-6 py-3 text-right font-semibold text-gray-900 dark:text-white"
                 >
                   Total:
@@ -309,7 +309,7 @@ const hasExistingProposal = !!existingInvoice;
               <tr>
                 <td
                   class="px-6 py-3 text-right font-semibold text-gray-900 dark:text-white"
-                  colspan="5"
+                  colspan={projectStatus === 20 ? "5" : "4"}
                 >
                   Total Due (50%):
                 </td>
@@ -405,6 +405,9 @@ const hasExistingProposal = !!existingInvoice;
     projectStatus,
     currentUser,
     currentRole,
+    globalInputClasses,
+    globalSecondaryTextClasses,
+    globalPrimaryTextClasses,
   }}
 >
   // Define ProposalManager class directly in the script (following working pattern from PDF uploader)
@@ -716,43 +719,62 @@ const hasExistingProposal = !!existingInvoice;
         });
 
         const row = document.createElement("tr");
-        row.className = "hover:bg-gray-50 dark:hover:bg-gray-700 proposal-line-item-row";
-        row.innerHTML = `
-          <td class="whitespace-nowrap px-6 py-4">
-            <input type="text" value="${item.name || ""}" class="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm text-gray-900 focus:border-primary-500 focus:ring-2 focus:ring-primary-500 dark:border-gray-600 dark:text-white dark:focus:border-primary-400 dark:focus:ring-primary-400 bg-background-card _1jTZ8KXRZul60S6czNi line-item-name" onchange="window.proposalManager.updateLineItem(${index}, 'name', this.value)">
-          </td>
-          <td class="whitespace-nowrap px-6 py-4">
-            <input type="text" value="${item.description || ""}" class="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm text-gray-900 focus:border-primary-500 focus:ring-2 focus:ring-primary-500 dark:border-gray-600 dark:text-white dark:focus:border-primary-400 dark:focus:ring-primary-400 bg-background-card _1jTZ8KXRZul60S6czNi line-item-description" onchange="window.proposalManager.updateLineItem(${index}, 'description', this.value)">
-          </td>
-          <td class="whitespace-nowrap px-6 py-4">
-            <input type="number" value="${item.quantity || 1}" class="w-20 rounded-lg border border-gray-300 px-3 py-2.5 text-sm text-gray-900 focus:border-primary-500 focus:ring-2 focus:ring-primary-500 dark:border-gray-600 dark:text-white dark:focus:border-primary-400 dark:focus:ring-primary-400 bg-background-card _1jTZ8KXRZul60S6czNi line-item-quantity" data-row-index="${index}" data-field="quantity" onchange="window.proposalManager.updateLineItemFromInput(this)">
-          </td>
-          <td class="whitespace-nowrap px-6 py-4">
-            <input type="number" value="${item.unitPrice || 0}" class="w-24 rounded-lg border border-gray-300 px-3 py-2.5 text-sm text-gray-900 focus:border-primary-500 focus:ring-2 focus:ring-primary-500 dark:border-gray-600 dark:text-white dark:focus:border-primary-400 dark:focus:ring-primary-400 bg-background-card _1jTZ8KXRZul60S6czNi line-item-price" data-row-index="${index}" data-field="unitPrice" onchange="window.proposalManager.updateLineItemFromInput(this)">
-          </td>
-          <td class="whitespace-nowrap px-6 py-4 text-right line-item-total">$${((item.quantity || 1) * (item.unitPrice || 0)).toFixed(2)}</td>
-          <td class="whitespace-nowrap px-6 py-4 text-sm text-center">
-            <div class="flex items-center justify-center space-x-2">
-              <button 
-                type="button"
-                id="delete-btn-${index}"
-                onclick="window.proposalManager.confirmDelete(${index})"
-                class="p-1 text-red-600 hover:text-red-800 hover:bg-red-100 rounded transition-colors delete-btn"
-                title="Delete line item"
-                data-state="trash"
-              >
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
-                </svg>
-              </button>
-            </div>
-          </td>
-        `;
+        row.className = "proposal-line-item-row";
+        
+        if (projectStatus === 20) {
+          row.innerHTML = `
+            <td class="whitespace-nowrap px-6 py-4">
+              <input type="text" value="${item.name || ""}" class="${globalInputClasses} line-item-name" onchange="window.proposalManager.updateLineItem(${index}, 'name', this.value)">
+            </td>
+            <td class="whitespace-nowrap px-6 py-4">
+              <input type="text" value="${item.description || ""}" class="${globalInputClasses} line-item-description" onchange="window.proposalManager.updateLineItem(${index}, 'description', this.value)">
+            </td>
+            <td class="whitespace-nowrap px-6 py-4">
+              <input type="number" value="${item.quantity || 1}" class="${globalInputClasses} w-20 line-item-quantity" data-row-index="${index}" data-field="quantity" onchange="window.proposalManager.updateLineItemFromInput(this)">
+            </td>
+            <td class="whitespace-nowrap px-6 py-4">
+              <input type="number" value="${item.unitPrice || 0}" class="${globalInputClasses} w-24 line-item-price" data-row-index="${index}" data-field="unitPrice" onchange="window.proposalManager.updateLineItemFromInput(this)">
+            </td>
+            <td class="whitespace-nowrap px-6 py-4 text-right line-item-total">$${((item.quantity || 1) * (item.unitPrice || 0)).toFixed(2)}</td>
+            <td class="whitespace-nowrap px-6 py-4 text-sm text-center">
+              <div class="flex items-center justify-center space-x-2">
+                <button 
+                  type="button"
+                  id="delete-btn-${index}"
+                  onclick="window.proposalManager.confirmDelete(${index})"
+                  class="p-1 text-red-600 hover:text-red-800 hover:bg-red-100 rounded transition-colors delete-btn"
+                  title="Delete line item"
+                  data-state="trash"
+                >
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                  </svg>
+                </button>
+              </div>
+            </td>
+          `;
+        } else {
+          row.innerHTML = `
+            <td class="whitespace-nowrap px-6 py-4">
+              <span class="text-gray-900 dark:text-white">${item.name || ""}</span>
+            </td>
+            <td class="whitespace-nowrap px-6 py-4">
+              <span class="text-gray-600 dark:text-gray-300">${item.description || ""}</span>
+            </td>
+            <td class="whitespace-nowrap px-6 py-4 text-right">
+              <span class="text-gray-900 dark:text-white">${item.quantity || 1}</span>
+            </td>
+            <td class="whitespace-nowrap px-6 py-4 text-right">
+              <span class="text-gray-900 dark:text-white">$${(item.unitPrice || 0).toFixed(2)}</span>
+            </td>
+            <td class="whitespace-nowrap px-6 py-4 text-right line-item-total">$${((item.quantity || 1) * (item.unitPrice || 0)).toFixed(2)}</td>
+          `;
+        }
         tbody.appendChild(row);
       });
 
       // Add the "Add Line Item" button row
-      this.addRowButton(tbody);
+      if (projectStatus === 20) {this.addRowButton(tbody);}
     }
 
     addRowButton(tbody) {
@@ -1552,8 +1574,8 @@ const hasExistingProposal = !!existingInvoice;
         window.showModal(
           "info",
           "Sending Proposal",
-          "Please wait while we send your proposal...",
-          1000 // No auto-hide
+          "Saving & send your proposal...",
+          0 // No auto-hide
         );
       }
 
@@ -1579,29 +1601,20 @@ const hasExistingProposal = !!existingInvoice;
         if (data.success) {
           // console.log("✅ [PROPOSAL-MANAGER] Proposal sent successfully");
 
-          // Hide loading modal
-          if (window.hideNotification) {
-            window.hideNotification();
-          }
+          // Modal will be auto-destroyed by the system
 
           // Show notification using centralized notification system
           window.handleUpdateStatusNotification(data, "PROPOSAL-MANAGER");
         } else {
           console.error("Failed to send proposal:", data.error);
-          // Hide modal immediately on error
-          if (window.hideNotification) {
-            window.hideNotification();
-          }
+          // Modal will be auto-destroyed by the system
           if (window.showModal) {
             window.showModal("error", "Error", data.error || "Failed to send proposal");
           }
         }
       } catch (error) {
         console.error("Error sending proposal:", error);
-        // Hide modal immediately on error
-        if (window.hideNotification) {
-          window.hideNotification();
-        }
+        // Modal will be auto-destroyed by the system
         if (window.showModal) {
           window.showModal("error", "Error", "Failed to send proposal");
         }
@@ -1655,7 +1668,7 @@ const hasExistingProposal = !!existingInvoice;
               type="text"
               id="${rowId}-name"
               name="line-item-name"
-              class="line-item-name w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+              class="${globalInputClasses} line-item-name"
               placeholder="Enter line item description..."
               value="${item.name || ""}"
               autocomplete="off"
@@ -1669,7 +1682,7 @@ const hasExistingProposal = !!existingInvoice;
             type="text"
             id="${rowId}-description"
             name="line-item-description"
-            class="line-item-description w-full mt-2 px-3 py-1 text-sm border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+            class="${globalInputClasses} line-item-description w-full mt-2"
             placeholder="Description (optional)"
               value="${item.description || ""}"
           />
@@ -1679,7 +1692,7 @@ const hasExistingProposal = !!existingInvoice;
             type="number"
             id="${rowId}-quantity"
             name="line-item-quantity"
-            class="line-item-quantity w-20 px-2 py-1 text-right border border-gray-300 rounded dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+            class="${globalInputClasses} line-item-quantity w-20"
             value="${item.quantity || 1}"
             min="0"
             step="1"
@@ -1692,7 +1705,7 @@ const hasExistingProposal = !!existingInvoice;
             type="number"
             id="${rowId}-unit-price"
             name="line-item-unit-price"
-            class="line-item-unit-price w-24 px-2 py-1 text-right border border-gray-300 rounded dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+            class="${globalInputClasses} line-item-unit-price w-24"
             value="${item.unitPrice || 0}"
             min="0"
             step="1"
@@ -2179,7 +2192,7 @@ const hasExistingProposal = !!existingInvoice;
                     type="text"
                     id="proposal-subject-dropdown-search"
                     placeholder="Search and select or create subject..."
-                    class="w-full px-3 py-2 pl-8 pr-10 text-sm text-left border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:placeholder-gray-400"
+                    class="_1jTZ8KXRZul60S6czNi w-full rounded-lg border border-border-light px-3 py-2 text-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500 dark:border-border-dark dark:text-white dark:focus:border-primary-400 w-full pl-8 pr-10"
                     autocomplete="off"
                     value="${currentSubject}"
                   />
@@ -2719,40 +2732,4 @@ const hasExistingProposal = !!existingInvoice;
   }
   // Initialize the ProposalHelper class
   (window as any).proposalHelper = new ProposalHelper();
-</script>
-
-<script define:vars={{ invoiceResult }}>
-  let invoiceId = "0";
-  let totalAmount = 0;
-
-  console.log("🔍 [IS THIS NEEDED???] Invoice result:", invoiceResult);
-
-  //   // Process invoice data
-  //   if (!invoiceResult.error && invoiceResult.data) {
-  //   invoiceId = invoiceResult.data.id.toString();
-  //   // invoiceData = invoiceResult.data;
-
-  //   // Calculate total by looping through catalog line items
-  //   if (
-  //     invoiceResult.data.catalog_line_items &&
-  //     Array.isArray(invoiceResult.data.catalog_line_items)
-  //   ) {
-  //     totalAmount = invoiceResult.data.catalog_line_items.reduce((sum, item) => {
-  //       const quantity = parseFloat(item.quantity) || 0;
-  //       const unitPrice = parseFloat(item.unit_price) || 0;
-  //       return sum + quantity * unitPrice;
-  //     }, 0);
-
-  //     // Convert to cents for Stripe (multiply by 100)
-  //     totalAmount = Math.round(totalAmount * 100);
-  //   }
-  // } else {
-  //   // No invoice found for this project
-  //   invoiceId = "0";
-  // }
-
-  // // Fallback to hardcoded amount if no invoice data found
-  // if (totalAmount === 0) {
-  //   totalAmount = 2000;
-  // }
 </script>

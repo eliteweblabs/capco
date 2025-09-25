@@ -114,7 +114,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         projectId: punchlistItem.project_id,
         punchlistId: punchlistId,
         isCompleted: mark_completed,
-        user: currentUser?.email || "Unknown",
+        user: currentUser || "Unknown",
       });
 
       await SimpleProjectLogger.logPunchlistToggle(

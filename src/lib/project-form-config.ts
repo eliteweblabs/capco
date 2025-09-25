@@ -39,6 +39,7 @@ export interface ButtonGroupConfig {
   allow?: string[]; // Control button group visibility based on user roles - array of allowed roles
   hideAtStatus?: number[]; // Control button group visibility based on project status - array of status values where group should be hidden
   readOnlyAtStatus?: number[]; // Control button group read-only state based on project status - array of status values where group should be read-only
+  selected?: boolean; // Control button group selected state - array of status values where group should be selected
 }
 
 export interface FormActionConfig {
@@ -505,16 +506,16 @@ export const BUTTON_GROUPS: ButtonGroupConfig[] = [
     label: "Reports Required",
     type: "multi-select",
     cssClass: "fire-safety-service-btn",
-    allow: ["Admin", "Staff", "Client"], // Only admin and staff can see reports required
+    allow: ["Admin", "Staff"], // Only admin and staff can see reports required
     readOnlyAtStatus: [
       20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170, 180, 190, 200,
     ], // Read-only after proposal is viewed but before signed off
 
     // hideAtStatus: [50, 60, 70, 80, 90], // Hide after proposal is viewed
     options: [
-      { value: "Narrative", label: "Narrative" },
-      // { value: "Sprinkler", label: "Sprinkler" },
-      // { value: "Alarm", label: "Alarm" },
+      { value: "Narrative", label: "Narrative", selected: true },
+      { value: "Sprinkler", label: "Sprinkler" },
+      { value: "Alarm", label: "Alarm" },
       { value: "NFPA 241", label: "NFPA 241" },
       { value: "IEBC", label: "IEBC" },
       { value: "IBC", label: "IBC" },
@@ -614,67 +615,3 @@ export function generateFormFieldHTML(
       return "";
   }
 }
-
-// // Function to generate button group HTML
-// export function generateButtonGroupHTML(group: ButtonGroupConfig, projectData: any = {}): string {
-//   // Use project ID for unique button IDs
-//   const projectId = projectData.id || "project-unknown";
-//   let selectedValues: string[] = [];
-
-//   if (projectData[group.name]) {
-//     if (Array.isArray(projectData[group.name])) {
-//       // Already an array
-//       selectedValues = projectData[group.name];
-//     } else if (typeof projectData[group.name] === "string") {
-//       // Could be a JSON string or comma-separated string
-//       try {
-//         // Try to parse as JSON first
-//         const parsed = JSON.parse(projectData[group.name]);
-//         selectedValues = Array.isArray(parsed) ? parsed : [projectData[group.name]];
-//       } catch {
-//         // If JSON parsing fails, treat as comma-separated string
-//         selectedValues = projectData[group.name]
-//           .split(",")
-//           .map((s: string) => s.trim())
-//           .filter((s: string) => s);
-//       }
-//     } else {
-//       // Single value
-//       selectedValues = [projectData[group.name]];
-//     }
-//   }
-
-//   return `
-//     <div class="space-y-3">
-//       <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
-//         ${group.label}
-//       </label>
-//       <div class="flex flex-wrap gap-2">
-//         ${group.options
-//           .map(
-//             (option) => `
-//           <button
-//             type="button"
-//             class="${group.cssClass} px-3 py-2 text-sm rounded-full border border-border-light dark:border-border-dark bg-background-card _1jTZ8KXRZul60S6czNi text-gray-800 dark:text-gray-200 hover:bg-neutral-50 dark:hover:bg-neutral-600 transition-colors ${selectedValues.includes(option.value) ? "bg-primary-500 text-white border-primary-500" : ""}"
-//             data-value="${option.value}"
-//             data-group="${group.name}"
-//             data-type="${group.type}"
-//             data-project-id="${projectId}"
-//           >
-//             ${option.label}
-//           </button>
-//         `
-//           )
-//           .join("")}
-//       </div>
-//     </div>
-//   `;
-// }
-
-// Helper function to convert units to slider value (moved to UnitSlider component)
-// function getSliderValueFromUnits(units: number, options: string[]): number {
-//   const index = options.indexOf(units.toString());
-//   return index >= 0 ? index : 0;
-// }
-
-// Function to generate complete form HTML

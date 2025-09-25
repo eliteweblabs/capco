@@ -3,24 +3,30 @@ import BoxIcon from "../common/BoxIcon.astro";
 
 export interface Props {
   projectId: string;
+  globalInputClasses?: string;
+  globalSecondaryTextClasses?: string;
+  globalPrimaryTextClasses?: string;
 }
 
-const { projectId } = Astro.props;
+const { projectId, globalInputClasses, globalSecondaryTextClasses, globalPrimaryTextClasses } =
+  Astro.props;
 ---
 
-<div class="rounded-full border bg-white p-6 shadow-sm dark:border-gray-700 dark:bg-gray-800">
+<div class="rounded-lg border bg-white shadow-sm dark:border-gray-700 dark:bg-gray-800">
   <!-- Header -->
-  <div class="mb-4 flex items-center justify-between">
-    <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
-      <BoxIcon name="history" class="mr-2 inline text-blue-600 dark:text-blue-400" />
-      Project Activity
-    </h3>
-    <button
-      id="refresh-log"
-      class="rounded-full border border-gray-300 bg-white px-3 py-1 text-sm text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
-    >
-      <BoxIcon name="refresh" class="text-sm" />
-    </button>
+  <div class="border-b border-gray-200 p-6 dark:border-gray-700">
+    <div class="flex items-center justify-between">
+      <h2 class="text-xl font-semibold text-gray-900 dark:text-white">
+        <BoxIcon name="pulse" class="mr-2 inline text-blue-600 dark:text-blue-400" />
+        Project Activity
+      </h2>
+      <button
+        id="refresh-log"
+        class="rounded-full border border-gray-300 bg-white px-3 py-1 text-sm text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
+      >
+        <BoxIcon name="refresh" class="text-sm" />
+      </button>
+    </div>
   </div>
 
   <!-- Loading State -->
@@ -57,8 +63,13 @@ const { projectId } = Astro.props;
   </div>
 
   <!-- Log Content -->
-  <div id="log-content" class="hidden space-y-3">
-    <!-- Log entries will be populated here -->
+  <div id="log-content" class="hidden">
+    <div class="p-6">
+      <!-- Activity Timeline -->
+      <div id="activity-timeline" class="space-y-4">
+        <!-- Log entries will be populated here -->
+      </div>
+    </div>
   </div>
 </div>
 
@@ -70,6 +81,7 @@ const { projectId } = Astro.props;
       this.errorEl = document.getElementById("log-error");
       this.emptyEl = document.getElementById("log-empty");
       this.contentEl = document.getElementById("log-content");
+      this.timelineEl = document.getElementById("activity-timeline");
 
       this.attachEventListeners();
       this.loadLog();
@@ -111,7 +123,7 @@ const { projectId } = Astro.props;
         return;
       }
 
-      this.contentEl.innerHTML = "";
+      this.timelineEl.innerHTML = "";
 
       // Sort by timestamp (newest first)
       const sortedEntries = logEntries.sort(
@@ -120,7 +132,7 @@ const { projectId } = Astro.props;
 
       sortedEntries.forEach((entry) => {
         const logItem = this.createLogItem(entry);
-        this.contentEl.appendChild(logItem);
+        this.timelineEl.appendChild(logItem);
       });
 
       this.showContent();
@@ -128,29 +140,34 @@ const { projectId } = Astro.props;
 
     createLogItem(entry) {
       const item = document.createElement("div");
-      item.className = "flex items-start space-x-3 rounded-full bg-gray-50 p-4 dark:bg-gray-700";
+      item.className =
+        "flex items-start space-x-3 rounded-lg border border-gray-200 p-4 dark:border-gray-700";
 
       const icon = this.getActionIcon(entry.action);
       const color = this.getActionColor(entry.action);
+      const actionLabel = this.formatActionType(entry.action);
+      const timestamp = this.formatTimestamp(entry.timestamp);
 
       item.innerHTML = `
         <div class="flex-shrink-0">
           <div class="flex h-8 w-8 items-center justify-center rounded-full ${color}">
-            <i class='bx ${icon} text-white'></i>
+            <i class='bx ${icon} text-sm'></i>
           </div>
         </div>
-        <div class="flex-1 min-w-0">
+        <div class="min-w-0 flex-1">
           <div class="flex items-center justify-between">
-            <p class="text-sm font-medium text-gray-900 dark:text-white truncate" title="${entry.details}">
-              ${entry.details}
+            <p class="text-sm font-medium text-gray-900 dark:text-white">
+              ${actionLabel}
             </p>
-            <span class="text-xs text-gray-500 dark:text-gray-400 flex-shrink-0 ml-2">
-              ${this.formatDate(entry.timestamp)}
+            <p class="text-xs text-gray-500 dark:text-gray-400">${timestamp}</p>
+          </div>
+          <p class="mt-1 text-sm text-gray-600 dark:text-gray-300 truncate" title="${entry.details}">${entry.details}</p>
+          <div class="mt-2 flex items-center space-x-4 text-xs text-gray-500 dark:text-gray-400">
+            <span>
+              <i class='bx bx-user mr-1'></i>
+              ${entry.user}
             </span>
           </div>
-          <p class="text-xs text-gray-600 dark:text-gray-400">
-            by ${entry.user}
-          </p>
           ${this.renderValueChanges(entry)}
         </div>
       `;
@@ -159,25 +176,38 @@ const { projectId } = Astro.props;
     }
 
     getActionIcon(action) {
-      const icons = {
-        project_created: "bx-plus",
+      const iconMap = {
+        project_created: "bx-plus-circle",
         project_updated: "bx-edit",
-        status_change: "bx-refresh",
+        status_change: "bx-transfer",
+        assignment_changed: "bx-user-check",
+        metadata_updated: "bx-edit-alt",
+        configuration_updated: "bx-cog",
         file_uploaded: "bx-upload",
-        comment_added: "bx-comment",
+        comment_added: "bx-message",
+        invoice_generated: "bx-receipt",
+        payment_received: "bx-dollar-circle",
       };
-      return icons[action] || "bx-info-circle";
+      return iconMap[action] || "bx-info-circle";
     }
 
     getActionColor(action) {
-      const colors = {
-        project_created: "bg-green-500",
-        project_updated: "bg-blue-500",
-        status_change: "bg-purple-500",
-        file_uploaded: "bg-teal-500",
-        comment_added: "bg-gray-500",
+      const colorMap = {
+        project_created: "bg-green-100 text-green-600 dark:bg-green-900/20 dark:text-green-400",
+        project_updated: "bg-blue-100 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400",
+        status_change: "bg-purple-100 text-purple-600 dark:bg-purple-900/20 dark:text-purple-400",
+        assignment_changed: "bg-cyan-100 text-cyan-600 dark:bg-cyan-900/20 dark:text-cyan-400",
+        metadata_updated: "bg-blue-50 text-blue-500 dark:bg-blue-900/10 dark:text-blue-300",
+        configuration_updated:
+          "bg-indigo-50 text-indigo-500 dark:bg-indigo-900/10 dark:text-indigo-300",
+        file_uploaded: "bg-yellow-100 text-yellow-600 dark:bg-yellow-900/20 dark:text-yellow-400",
+        comment_added: "bg-indigo-100 text-indigo-600 dark:bg-indigo-900/20 dark:text-indigo-400",
+        invoice_generated:
+          "bg-orange-100 text-orange-600 dark:bg-orange-900/20 dark:text-orange-400",
+        payment_received:
+          "bg-emerald-100 text-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-400",
       };
-      return colors[action] || "bg-gray-500";
+      return colorMap[action] || "bg-gray-100 text-gray-600 dark:bg-gray-900/20 dark:text-gray-400";
     }
 
     renderValueChanges(entry) {
@@ -204,6 +234,39 @@ const { projectId } = Astro.props;
       if (value === null || value === undefined) return "N/A";
       if (typeof value === "object") return JSON.stringify(value, null, 2);
       return String(value);
+    }
+
+    formatActionType(action) {
+      const labelMap = {
+        project_created: "Project Created",
+        project_updated: "Project Updated",
+        status_change: "Status Changed",
+        assignment_changed: "Assignment Changed",
+        metadata_updated: "Data Updated",
+        configuration_updated: "Configuration Updated",
+        file_uploaded: "File Uploaded",
+        comment_added: "Comment Added",
+        invoice_generated: "Invoice Generated",
+        payment_received: "Payment Received",
+      };
+      return labelMap[action] || action.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase());
+    }
+
+    formatTimestamp(timestamp) {
+      const date = new Date(timestamp);
+      const now = new Date();
+      const diffInMinutes = Math.floor((now.getTime() - date.getTime()) / (1000 * 60));
+
+      if (diffInMinutes < 1) return "Just now";
+      if (diffInMinutes < 60) return `${diffInMinutes}m ago`;
+
+      const diffInHours = Math.floor(diffInMinutes / 60);
+      if (diffInHours < 24) return `${diffInHours}h ago`;
+
+      const diffInDays = Math.floor(diffInHours / 24);
+      if (diffInDays < 7) return `${diffInDays}d ago`;
+
+      return date.toLocaleDateString();
     }
 
     formatDate(dateString) {

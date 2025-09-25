@@ -109,7 +109,7 @@ export function replacePlaceholders(
       // Extract tab parameter for display text
       let displayText = "View Project";
       if (queryParams) {
-        const tabMatch = queryParams.match(/[?&]tab=([^&]*)/);
+        const tabMatch = queryParams.match(/[?&]status=([^&]*)/);
         if (tabMatch && tabMatch[1]) {
           const tabName = tabMatch[1]
             .replace(/([a-z])([A-Z])/g, "$1 $2")
