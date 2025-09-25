@@ -19,7 +19,7 @@ export interface FormFieldConfig {
   min?: number;
   max?: number;
   step?: number;
-  options?: string[] | { value: string; label: string }[];
+  options?: string[] | { value: string; label: string; selected?: boolean }[];
   groupType?: "radio" | "multi-select"; // For button groups
   dataField?: string; // For OCR/scraping
   component?: string; // Component name to render (e.g., "UnitSlider")
@@ -35,7 +35,7 @@ export interface ButtonGroupConfig {
   label: string;
   type: "radio" | "multi-select";
   cssClass: string;
-  options: { value: string; label: string }[];
+  options: { value: string; label: string; selected?: boolean }[];
   allow?: string[]; // Control button group visibility based on user roles - array of allowed roles
   hideAtStatus?: number[]; // Control button group visibility based on project status - array of status values where group should be hidden
   readOnlyAtStatus?: number[]; // Control button group read-only state based on project status - array of status values where group should be read-only
@@ -431,7 +431,7 @@ export const BUTTON_GROUPS: ButtonGroupConfig[] = [
       20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170, 180, 190, 200,
     ], // Read-only after proposal is viewed but before signed off
     options: [
-      { value: "Residential", label: "Residential" },
+      { value: "Residential", label: "Residential", selected: true },
       { value: "Mixed use", label: "Mixed use" },
       { value: "Mercantile", label: "Mercantile" },
       { value: "Commercial", label: "Commercial" },
@@ -453,7 +453,7 @@ export const BUTTON_GROUPS: ButtonGroupConfig[] = [
     ], // Read-only after proposal is viewed but before signed off
 
     options: [
-      { value: "Sprinkler", label: "Sprinkler" },
+      { value: "Sprinkler", label: "Sprinkler", selected: true },
       { value: "Alarm", label: "Alarm" },
       { value: "Mechanical", label: "Mechanical" },
       { value: "Electrical", label: "Electrical" },
@@ -514,7 +514,7 @@ export const BUTTON_GROUPS: ButtonGroupConfig[] = [
     // hideAtStatus: [50, 60, 70, 80, 90], // Hide after proposal is viewed
     options: [
       { value: "Narrative", label: "Narrative", selected: true },
-      { value: "Sprinkler", label: "Sprinkler" },
+      { value: "Sprinkler", label: "Sprinkler", selected: true },
       { value: "Alarm", label: "Alarm" },
       { value: "NFPA 241", label: "NFPA 241" },
       { value: "IEBC", label: "IEBC" },
@@ -522,96 +522,3 @@ export const BUTTON_GROUPS: ButtonGroupConfig[] = [
     ],
   },
 ];
-
-// Function to generate form field HTML
-export function generateFormFieldHTML(
-  field: FormFieldConfig,
-  index: number = 0,
-  projectData: any = {}
-): string {
-  // Use project ID for unique field IDs instead of array index
-  const projectId = projectData.id || `project-${index}`;
-  const fieldId = `${field.id}-${projectId}`;
-
-  // Robust value parsing for different data types
-  let value: any = projectData[field.name];
-
-  if (value === undefined || value === null) {
-    value = "";
-  } else if (typeof value === "string") {
-    // Handle string values that might be JSON or other formats
-    try {
-      const parsed = JSON.parse(value);
-      value = parsed;
-    } catch {
-      // Keep as string if JSON parsing fails
-      value = value;
-    }
-  }
-
-  switch (field.type) {
-    case "text":
-    case "number":
-      return `
-        <div class="relative">
-          <label for="${fieldId}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">${field.label}${field.required ? " *" : ""}</label>
-          <input
-            type="${field.type}"
-            id="${fieldId}"
-            name="${field.name}"
-            value="${value}"
-            class="w-full py-2 px-3 text-sm border border-border-light dark:border-border-dark rounded-full bg-background-card _1jTZ8KXRZul60S6czNi text-black dark:text-light focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:focus:ring-primary-400 dark:focus:border-primary-400"
-            placeholder="${field.placeholder || ""}"
-            ${field.required ? "required" : ""}
-            ${field.min !== undefined ? `min="${field.min}"` : ""}
-            ${field.max !== undefined ? `max="${field.max}"` : ""}
-            ${field.step !== undefined ? `step="${field.step}"` : ""}
-            ${field.dataField ? `data-field="${field.dataField}"` : ""}
-            data-project-id="${projectId}"
-          >
-        </div>
-      `;
-
-    case "textarea":
-      return `
-        <div class="relative">
-          <label for="${fieldId}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">${field.label}</label>
-          <textarea
-            id="${fieldId}"
-            name="${field.name}"
-            rows="3"
-            class="w-full py-2 px-3 text-sm border border-border-light dark:border-border-dark rounded-full bg-background-card _1jTZ8KXRZul60S6czNi text-black dark:text-light focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:focus:ring-primary-400 dark:focus:border-primary-400"
-            placeholder="${field.placeholder || ""}"
-            data-project-id="${projectId}"
-          >${value}</textarea>
-        </div>
-      `;
-
-    case "checkbox":
-      // Handle boolean values for checkboxes (new_construction)
-      const isChecked = value === true || value === "true" || value === 1 || value === "1";
-      return `
-        <div>
-          <label class="inline-flex items-center cursor-pointer">
-            <input 
-              type="checkbox" 
-              id="${fieldId}" 
-              name="${field.name}"
-              ${isChecked ? "checked" : ""}
-              class="sr-only peer"
-              data-project-id="${projectId}"
-            >
-            <div class="relative w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 dark:peer-focus:ring-primary-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-primary-600 dark:peer-checked:bg-primary-600"></div>
-            <span class="ms-3 text-sm font-medium text-gray-900 dark:text-gray-300">${field.label}</span>
-          </label>
-        </div>
-      `;
-
-    case "slider":
-      // Slider fields are now handled by dedicated components (e.g., UnitSlider.astro)
-      return "";
-
-    default:
-      return "";
-  }
-}

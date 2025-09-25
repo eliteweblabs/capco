@@ -140,4 +140,4 @@ export const GET: APIRoute = async ({ cookies, url }) => {
       headers: { "Content-Type": "application/json" },
     });
   }
-};
+}
