@@ -359,13 +359,6 @@ export const POST: APIRoute = async ({ request, cookies }) => {
           processedButtonText = replacePlaceholders(processedButtonText, placeholderData, false);
         }
 
-        // console.log("🔍 [UPDATE-STATUS] Processed button config:", {
-        //   originalLink: statusData.statusConfig.button_link,
-        //   processedLink: processedButtonLink,
-        //   originalText: statusData.statusConfig.button_text,
-        //   processedText: processedButtonText,
-        // });
-
         // Send client email using original email delivery API
         // console.log("📊 [UPDATE-STATUS] Sending client email...");
         const clientEmailResponse = await fetch(`${baseUrl}/api/email-delivery`, {
@@ -374,6 +367,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
+            currentUser: currentUser,
             usersToNotify: [clientEmail], // Use resolved client email
             emailSubject: placeholderResult.processedMessages.client_email_subject,
             emailContent: placeholderResult.processedMessages.client_email_content,
@@ -401,6 +395,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
+            currentUser: currentUser,
             usersToNotify: adminStaffEmails, // Use resolved admin/staff emails
             emailSubject: placeholderResult.processedMessages.admin_email_subject,
             emailContent: placeholderResult.processedMessages.admin_email_content,

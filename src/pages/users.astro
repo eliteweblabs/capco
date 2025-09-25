@@ -6,7 +6,7 @@ const { currentUser, session, supabase, refreshToken, accessToken } = await chec
 );
 
 // Handle auth redirect first
-if (requireAuthRedirect && (!session || !currentUser)) {
+if (requireAuthRedirect && (!session || !currentUser || currentUser.profile.role !== "Admin")) {
   return Astro.redirect(requireAuthRedirect);
 }
 
@@ -27,8 +27,6 @@ const {
 import { globalClasses } from "../pages/api/global-classes";
 const { globalInputClasses, globalPrimaryTextClasses, globalSecondaryTextClasses } =
   globalClasses();
-
-import { isBackendPage } from "../pages/api/backend-page-check";
 
 import App from "../components/common/App.astro";
 import Footer from "../components/common/Footer.astro";
@@ -85,9 +83,12 @@ const userCounts = {
   description=""
   currentUser={currentUser}
   session={session || undefined}
-  project={undefined}
   supabase={supabase}
-  isBackend={true}
+  globalCompanyName={companyName}
+  globalCompanySlogan={companySlogan}
+  globalPrimaryTextClasses={globalPrimaryTextClasses}
+  globalSecondaryTextClasses={globalSecondaryTextClasses}
+  globalInputClasses={globalInputClasses}
 >
   <div
     id="main-content"
@@ -397,7 +398,11 @@ const userCounts = {
 
                 <!-- Create User Form -->
                 <form id="create-user-form" class="space-y-4">
-                  <StaffCreationForm />
+                  <StaffCreationForm
+                    globalInputClasses={globalInputClasses}
+                    globalSecondaryTextClasses={globalSecondaryTextClasses}
+                    globalPrimaryTextClasses={globalPrimaryTextClasses}
+                  />
 
                   <!-- Submit Button -->
                   <div class="pt-2">
