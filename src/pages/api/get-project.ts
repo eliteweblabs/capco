@@ -186,11 +186,11 @@ function applyFilters(query: any, filters: FilterParams) {
 
 export const GET: APIRoute = async ({ request, cookies, url, params }) => {
   try {
-    // Check if this is a request for a specific project ID
-    const projectId = params?.id;
+    // Check if this is a request for a specific project ID (query parameter)
+    const projectId = url.searchParams.get("id");
 
     if (projectId) {
-      // Handle single project request (from /api/get-project/[id])
+      // Handle single project request (from /api/get-project?id=123)
       return await handleSingleProject(projectId, cookies);
     }
 
@@ -714,10 +714,69 @@ export const GET: APIRoute = async ({ request, cookies, url, params }) => {
     if (overdue) filters.push(`overdue: ${overdue}`);
     const filteredBy = filters.length > 0 ? filters.join(", ") : null;
 
+    // Add full document data for each project
+    let projectsWithDocuments = projects || [];
+    if (projects && projects.length > 0) {
+      try {
+        const projectIds = projects.map((p) => p.id);
+
+        // Get all files for all projects
+        const { data: allFiles, error: filesError } = await (supabaseAdmin || supabase)
+          .from("files")
+          .select("*")
+          .in("project_id", projectIds)
+          .eq("status", "active")
+          .order("uploaded_at", { ascending: false });
+
+        // Get all generated documents for all projects
+        const { data: allDocuments, error: docsError } = await (supabaseAdmin || supabase)
+          .from("generated_documents")
+          .select("*")
+          .in("project_id", projectIds)
+          .order("created_at", { ascending: false });
+
+        if (filesError) {
+          console.error("📡 [API] Error fetching project files:", filesError);
+        }
+        if (docsError) {
+          console.error("📡 [API] Error fetching generated documents:", docsError);
+        }
+
+        // Group files and documents by project_id
+        const filesByProject = new Map();
+        const documentsByProject = new Map();
+
+        allFiles?.forEach((file) => {
+          if (!filesByProject.has(file.project_id)) {
+            filesByProject.set(file.project_id, []);
+          }
+          filesByProject.get(file.project_id).push(file);
+        });
+
+        allDocuments?.forEach((doc) => {
+          if (!documentsByProject.has(doc.project_id)) {
+            documentsByProject.set(doc.project_id, []);
+          }
+          documentsByProject.get(doc.project_id).push(doc);
+        });
+
+        // Add full document data to projects
+        projectsWithDocuments = projects.map((project) => ({
+          ...project,
+          projectFiles: filesByProject.get(project.id) || [],
+          generatedDocuments: documentsByProject.get(project.id) || [],
+        }));
+      } catch (error) {
+        console.error("📡 [API] Error fetching document data:", error);
+        // Continue with original projects if document fetch fails
+        projectsWithDocuments = projects;
+      }
+    }
+
     return new Response(
       JSON.stringify({
         success: true,
-        projects: projects || [],
+        projects: projectsWithDocuments,
         count: projects?.length || 0,
         filtered_by: filteredBy,
         pagination: {
@@ -873,11 +932,48 @@ async function handleSingleProject(projectId: string, cookies: any) {
       project.assigned_to_name = null;
     }
 
+    // Get project files/documents
+    let projectFiles = [];
+    let generatedDocuments = [];
+
+    try {
+      // Fetch project files
+      const { data: files, error: filesError } = await supabase
+        .from("files")
+        .select("*")
+        .eq("project_id", projectId)
+        .eq("status", "active")
+        .order("uploaded_at", { ascending: false });
+
+      if (filesError) {
+        console.error("📡 [GET-PROJECT-ID] Error fetching project files:", filesError);
+      } else {
+        projectFiles = files || [];
+      }
+
+      // Fetch generated documents (PDFs)
+      const { data: documents, error: documentsError } = await supabase
+        .from("generated_documents")
+        .select("*")
+        .eq("project_id", projectId)
+        .order("created_at", { ascending: false });
+
+      if (documentsError) {
+        console.error("📡 [GET-PROJECT-ID] Error fetching generated documents:", documentsError);
+      } else {
+        generatedDocuments = documents || [];
+      }
+    } catch (error) {
+      console.error("📡 [GET-PROJECT-ID] Error fetching document data:", error);
+    }
+
     return new Response(
       JSON.stringify({
         success: true,
         project: project,
         projectAuthor: projectAuthor,
+        projectFiles: projectFiles,
+        generatedDocuments: generatedDocuments,
       }),
       {
         status: 200,

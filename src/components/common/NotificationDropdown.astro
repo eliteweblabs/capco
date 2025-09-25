@@ -26,7 +26,7 @@ const { userId, class: className = "" } = Astro.props;
     <!-- Unread Count Badge -->
     <span
       id="notification-badge"
-      class="absolute -right-1 -top-1 flex hidden h-5 w-5 items-center justify-center rounded-full bg-red-500 text-xs text-white"
+      class="absolute -right-1 -top-1 hidden h-5 w-5 items-center justify-center rounded-full bg-red-500 text-xs text-white"
     >
       0
     </span>
@@ -97,24 +97,34 @@ const { userId, class: className = "" } = Astro.props;
 
 <script>
   class NotificationManager {
-    constructor() {
-      this.isOpen = false;
-      this.notifications = [];
-      this.viewedNotifications = new Set();
-      this.userId = null;
-      this.pollingInterval = null;
+    isOpen: boolean = false;
+    notifications: any[] = [];
+    viewedNotifications: Set<number> = new Set();
+    userId: string | null = null;
+    pollingInterval: NodeJS.Timeout | null = null;
 
+    constructor() {
       this.init();
     }
 
     async init() {
       // Get user ID from global variable or data attribute
+      console.log("🔍 [NOTIFICATIONS] Debug - window.currentUser:", (window as any).currentUser);
+      console.log(
+        "🔍 [NOTIFICATIONS] Debug - data-user-id attribute:",
+        document.querySelector("[data-user-id]")?.getAttribute("data-user-id")
+      );
+
       this.userId =
-        window.currentUser?.id ||
-        document.querySelector("[data-user-id]")?.getAttribute("data-user-id");
+        (window as any).currentUser?.id ||
+        document.querySelector("[data-user-id]")?.getAttribute("data-user-id") ||
+        null;
+
+      console.log("🔍 [NOTIFICATIONS] Debug - resolved userId:", this.userId);
 
       if (!this.userId) {
         console.error("❌ [NOTIFICATIONS] No user ID found");
+        console.error("❌ [NOTIFICATIONS] Available window properties:", Object.keys(window));
         return;
       }
 
@@ -147,7 +157,7 @@ const { userId, class: className = "" } = Astro.props;
 
       // Close dropdown when clicking outside
       document.addEventListener("click", (e) => {
-        if (!dropdown?.contains(e.target) && !bell?.contains(e.target)) {
+        if (!dropdown?.contains(e.target as Node) && !bell?.contains(e.target as Node)) {
           this.closeDropdown();
         }
       });
@@ -196,6 +206,9 @@ const { userId, class: className = "" } = Astro.props;
           this.notifications = data.notifications || [];
           this.updateBadge(data.unreadCount || 0);
           this.renderNotifications();
+        } else if (data.migrationRequired) {
+          console.warn("⚠️ [NOTIFICATIONS] Database migration required:", data.error);
+          this.showMigrationRequired(data.instructions);
         } else {
           console.error("❌ [NOTIFICATIONS] Failed to load notifications:", data.error);
           this.showEmpty();
@@ -224,25 +237,25 @@ const { userId, class: className = "" } = Astro.props;
 
       list.innerHTML = "";
 
-      this.notifications.forEach((notification) => {
+      this.notifications.forEach((notification: any) => {
         const notificationElement = this.createNotificationElement(notification);
         list.appendChild(notificationElement);
       });
     }
 
-    createNotificationElement(notification) {
+    createNotificationElement(notification: any) {
       const div = document.createElement("div");
       div.className = `p-4 border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors ${!notification.viewed ? "bg-blue-50 dark:bg-blue-900/20" : ""}`;
       div.dataset.notificationId = notification.id;
 
-      const typeColors = {
+      const typeColors: Record<string, string> = {
         info: "text-blue-600 dark:text-blue-400",
         success: "text-green-600 dark:text-green-400",
         warning: "text-yellow-600 dark:text-yellow-400",
         error: "text-red-600 dark:text-red-400",
       };
 
-      const typeIcons = {
+      const typeIcons: Record<string, string> = {
         info: "M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z",
         success: "M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z",
         warning:
@@ -317,7 +330,7 @@ const { userId, class: className = "" } = Astro.props;
         const isVisible = elementRect.top >= rect.top && elementRect.bottom <= rect.bottom;
 
         if (isVisible) {
-          const notificationId = parseInt(element.dataset.notificationId);
+          const notificationId = parseInt((element as HTMLElement).dataset.notificationId || "0");
           this.viewedNotifications.add(notificationId);
         }
       });
@@ -346,7 +359,7 @@ const { userId, class: className = "" } = Astro.props;
 
     async markAllAsRead() {
       try {
-        const unreadIds = this.notifications.filter((n) => !n.viewed).map((n) => n.id);
+        const unreadIds = this.notifications.filter((n: any) => !n.viewed).map((n: any) => n.id);
 
         if (unreadIds.length === 0) return;
 
@@ -364,7 +377,7 @@ const { userId, class: className = "" } = Astro.props;
       }
     }
 
-    async deleteNotification(notificationId) {
+    async deleteNotification(notificationId: number) {
       try {
         const response = await fetch("/api/notifications", {
           method: "DELETE",
@@ -385,7 +398,7 @@ const { userId, class: className = "" } = Astro.props;
       window.location.href = "/notifications";
     }
 
-    updateBadge(count) {
+    updateBadge(count: number) {
       const badge = document.getElementById("notification-badge");
       if (badge) {
         if (count > 0) {
@@ -417,6 +430,35 @@ const { userId, class: className = "" } = Astro.props;
       list?.classList.add("hidden");
     }
 
+    showMigrationRequired(instructions: string[]) {
+      const loading = document.getElementById("notification-loading");
+      const empty = document.getElementById("notification-empty");
+      const list = document.getElementById("notification-list");
+
+      loading?.classList.add("hidden");
+      empty?.classList.add("hidden");
+      list?.classList.add("hidden");
+
+      // Create migration required message
+      const emptyDiv = document.getElementById("notification-empty");
+      if (emptyDiv) {
+        emptyDiv.innerHTML = `
+          <svg class="mx-auto h-12 w-12 text-yellow-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+          </svg>
+          <h3 class="mt-2 text-sm font-medium text-gray-900 dark:text-white">Database Migration Required</h3>
+          <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Notifications table not found.</p>
+          <div class="mt-4 text-left">
+            <p class="text-xs text-gray-600 dark:text-gray-400 mb-2">Setup instructions:</p>
+            <ol class="text-xs text-gray-600 dark:text-gray-400 space-y-1">
+              ${instructions.map((instruction: string) => `<li>${instruction}</li>`).join("")}
+            </ol>
+          </div>
+        `;
+        emptyDiv.classList.remove("hidden");
+      }
+    }
+
     startPolling() {
       // Poll for new notifications every 30 seconds
       this.pollingInterval = setInterval(() => {
@@ -426,7 +468,7 @@ const { userId, class: className = "" } = Astro.props;
       }, 30000);
     }
 
-    formatTimeAgo(dateString) {
+    formatTimeAgo(dateString: string) {
       const date = new Date(dateString);
       const now = new Date();
       const diffInMinutes = Math.floor((now.getTime() - date.getTime()) / (1000 * 60));
@@ -446,7 +488,7 @@ const { userId, class: className = "" } = Astro.props;
 
   // Initialize notification manager
   const notificationManager = new NotificationManager();
-  window.notificationManager = notificationManager;
+  (window as any).notificationManager = notificationManager;
 </script>
 
 <style>

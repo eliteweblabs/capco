@@ -25,6 +25,7 @@ interface Props {
     assigned_profiles?: any;
     assigned_to_avatar?: any;
     due_date?: any;
+    generated_document_count?: any;
     featured_image_data?: {
       id: any;
       file_path: string;
@@ -32,6 +33,36 @@ interface Props {
       file_type: string;
       public_url: string;
     };
+    // New document data fields
+    projectFiles?: Array<{
+      id: number;
+      project_id: number;
+      author_id: string;
+      file_path: string;
+      file_name: string;
+      file_size: number;
+      file_type: string;
+      title?: string;
+      comments?: string;
+      status: string;
+      uploaded_at: string;
+      created_at: string;
+      updated_at: string;
+    }>;
+    generatedDocuments?: Array<{
+      id: number;
+      project_id: number;
+      template_id?: number;
+      document_name: string;
+      file_path?: string;
+      file_size?: number;
+      generation_status: string;
+      error_message?: string;
+      generation_started_at?: string;
+      generation_completed_at?: string;
+      created_at: string;
+      created_by: string;
+    }>;
   };
   projectStatusesObject?: any;
   currentRole?: string;
@@ -257,7 +288,23 @@ const statusColor = projectStatusesObject?.[project.status]?.status_color || "gr
     >
   </td>
   <td class="BHrWGjM1Iab_fAz0_91H RZmKBZs1E1eXw8vkE6jY b9aD6g2qw84oyZNsMO8j">
-    <div class="YRrCJSr_j5nopfm4duUc IxVXJAn2ZWxXpcIHvPnh XrB0f1gZzjK6cEODacjg"></div>
+    <div class="YRrCJSr_j5nopfm4duUc IxVXJAn2ZWxXpcIHvPnh XrB0f1gZzjK6cEODacjg">
+      <div
+        class="flex flex-wrap items-center gap-2"
+        id="project-files-{project.id}"
+        data-project-files={JSON.stringify(project.projectFiles || [])}
+      >
+        {
+          !project.projectFiles || project.projectFiles.length === 0 ? (
+            <span class="text-sm text-gray-400">No files</span>
+          ) : (
+            <span class="text-sm text-gray-600">
+              {project.projectFiles.length} file{project.projectFiles.length !== 1 ? "s" : ""}
+            </span>
+          )
+        }
+      </div>
+    </div>
   </td>
   {
     currentRole !== "Client" && (
@@ -416,30 +463,32 @@ const statusColor = projectStatusesObject?.[project.status]?.status_color || "gr
   >
     {
       currentRole === "Admin" || currentRole === "Staff" ? (
-        <SlotMachineModal
-          id={`due-date-${project.id}`}
-          title="Select Due Date"
-          options={dueDateOptions}
-          selectedValue={project?.due_date ? new Date(project.due_date).toISOString() : ""}
-          placeholder="Choose due date"
-          buttonText={
-            new Date(project?.due_date).toLocaleDateString(undefined, {
-              year: "numeric",
-              month: "long",
-              day: "numeric",
-              hour: "2-digit",
-              minute: "2-digit",
-            }) || "No due date"
-          }
-          saveApiEndpoint="update-project"
-          showCloseButton={true}
-          showCancelButton={true}
-          skipSaveToAPI={false}
-          project={project}
-          showNotification={true}
-          icon="time"
-          searchText="Choose due date..."
-        />
+        // <SlotMachineModal
+        //   id={`due-date-${project.id}`}
+        //   title="Select Due Date"
+        //   options={dueDateOptions}
+        //   selectedValue={relationship}
+        //   placeholder="Choose due date"
+        //   buttonText={
+        //     new Date(project?.due_date).toLocaleDateString(undefined, {
+        //       year: "numeric",
+        //       month: "long",
+        //       day: "numeric",
+        //       hour: "2-digit",
+        //       minute: "2-digit",
+        //     }) || "No due date"
+        //   }
+        //   saveApiEndpoint="update-project"
+        //   showCloseButton={true}
+        //   showCancelButton={true}
+        //   skipSaveToAPI={false}
+        //   project={project}
+        //   showNotification={true}
+        //   icon="time"
+        //   searchText="Choose due date..."
+        // />
+
+        <span> {project?.due_date ? new Date(project.due_date).toISOString() : ""} </span>
       ) : (
         <span>
           {new Date(project?.due_date).toLocaleDateString(undefined, {
@@ -936,5 +985,124 @@ const statusColor = projectStatusesObject?.[project.status]?.status_color || "gr
     // Update immediately and then every minute
     updateTimeDisplay();
     setInterval(updateTimeDisplay, 60000); // 60000ms = 1 minute
+
+    // Render file icons for this project
+    renderFileIcons();
+
+    // File icon function for displaying file type icons
+    function getFileIcon(fileType: string) {
+      const type = (fileType || "").toLowerCase();
+
+      if (type.includes("pdf")) {
+        return `<svg class="h-5 w-5 text-red-500" fill="currentColor" viewBox="0 0 24 24">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zm-1 1v5h5v10H6V3h7z"/>
+          <path d="M9 12h6v2H9zm0 4h6v2H9z"/>
+        </svg>`;
+      }
+
+      if (
+        type.includes("image") ||
+        type.includes("png") ||
+        type.includes("jpg") ||
+        type.includes("jpeg") ||
+        type.includes("gif") ||
+        type.includes("webp") ||
+        type.includes("svg")
+      ) {
+        return `<svg class="h-5 w-5 text-blue-500" fill="currentColor" viewBox="0 0 24 24">
+          <path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/>
+        </svg>`;
+      }
+
+      if (type.includes("word") || type.includes("doc")) {
+        return `<svg class="h-5 w-5 text-blue-600" fill="currentColor" viewBox="0 0 24 24">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zm-1 1v5h5v10H6V3h7z"/>
+          <path d="M9 12h6v2H9zm0 4h6v2H9z"/>
+        </svg>`;
+      }
+
+      if (type.includes("excel") || type.includes("sheet")) {
+        return `<svg class="h-5 w-5 text-green-600" fill="currentColor" viewBox="0 0 24 24">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zm-1 1v5h5v10H6V3h7z"/>
+          <path d="M9 12h6v2H9zm0 4h6v2H9z"/>
+        </svg>`;
+      }
+
+      if (type.includes("powerpoint") || type.includes("presentation")) {
+        return `<svg class="h-5 w-5 text-orange-600" fill="currentColor" viewBox="0 0 24 24">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zm-1 1v5h5v10H6V3h7z"/>
+          <path d="M9 12h6v2H9zm0 4h6v2H9z"/>
+        </svg>`;
+      }
+
+      if (type.includes("zip") || type.includes("rar") || type.includes("archive")) {
+        return `<svg class="h-5 w-5 text-purple-500" fill="currentColor" viewBox="0 0 24 24">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zm-1 1v5h5v10H6V3h7z"/>
+          <path d="M9 12h6v2H9zm0 4h6v2H9z"/>
+        </svg>`;
+      }
+
+      if (
+        type.includes("video") ||
+        type.includes("mp4") ||
+        type.includes("avi") ||
+        type.includes("mov")
+      ) {
+        return `<svg class="h-5 w-5 text-pink-500" fill="currentColor" viewBox="0 0 24 24">
+          <path d="M21 3H3c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h18c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM8 15V9l5 3-5 3z"/>
+        </svg>`;
+      }
+
+      if (type.includes("audio") || type.includes("mp3") || type.includes("wav")) {
+        return `<svg class="h-5 w-5 text-indigo-500" fill="currentColor" viewBox="0 0 24 24">
+          <path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/>
+        </svg>`;
+      }
+
+      // Default file icon
+      return `<svg class="h-5 w-5 text-gray-500" fill="currentColor" viewBox="0 0 24 24">
+        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zm-1 1v5h5v10H6V3h7z"/>
+      </svg>`;
+    }
+
+    // Render file icons with tooltips
+    function renderFileIcons() {
+      // Find all project file containers
+      const containers = document.querySelectorAll('[id^="project-files-"]');
+
+      containers.forEach((container) => {
+        const projectFilesData = container.getAttribute("data-project-files");
+        if (!projectFilesData) {
+          return;
+        }
+
+        const projectFiles = JSON.parse(projectFilesData);
+
+        if (!projectFiles || projectFiles.length === 0) {
+          return;
+        }
+
+        // Clear existing content
+        container.innerHTML = "";
+
+        // Create file icons with tooltips
+        projectFiles.forEach((file: any) => {
+          const fileIconContainer = document.createElement("div");
+          fileIconContainer.className = "relative group";
+          fileIconContainer.innerHTML = `
+            <div class="cursor-pointer">
+              ${getFileIcon(file.file_type)}
+            </div>
+            <!-- CSS Tooltip -->
+            <div class="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-gray-900 text-white text-sm rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-50">
+              ${file.title || file.file_name}
+              <div class="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-900"></div>
+            </div>
+          `;
+
+          container.appendChild(fileIconContainer);
+        });
+      });
+    }
   </script>
 </tr>

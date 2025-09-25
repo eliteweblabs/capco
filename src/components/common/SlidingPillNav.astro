@@ -9,6 +9,7 @@ export interface NavItem {
   variant?: string;
   dataAttributes?: Record<string, string>;
   onclick?: string;
+  clientHide?: boolean;
 }
 
 interface Props {
@@ -18,6 +19,7 @@ interface Props {
   navId?: string;
   navClass?: string;
   urlParam?: string; // URL parameter to check (default: "status")
+  currentUser?: any; // Current user object to check role
 }
 
 const {
@@ -27,7 +29,17 @@ const {
   navId,
   navClass = "",
   urlParam = "status",
+  currentUser,
 } = Astro.props as Props;
+
+// Filter items based on clientHide parameter
+const filteredItems = items.filter((item) => {
+  // If clientHide is true and current user is a Client, hide this item
+  if (item.clientHide && currentUser?.profile?.role === "Client") {
+    return false;
+  }
+  return true;
+});
 ---
 
 <nav
@@ -45,7 +57,7 @@ const {
   </div>
 
   {
-    items.map((item: NavItem, index: number) => (
+    filteredItems.map((item: NavItem, index: number) => (
       <Button
         id={item.id}
         variant={(item.variant as any) || "ghost"}

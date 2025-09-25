@@ -10,6 +10,14 @@ if (requireAuthRedirect && (!session || !currentUser)) {
   return Astro.redirect(requireAuthRedirect);
 }
 
+console.log("🔍 [PROJECT] Current user:", currentUser);
+
+// Check if user is authenticated
+if (!currentUser) {
+  console.log("🔍 [PROJECT] No authenticated user, redirecting to login");
+  return Astro.redirect("/login");
+}
+
 import { globalCompanyData } from "../../pages/api/global-company-data";
 const {
   companyName,
@@ -28,24 +36,10 @@ import { globalClasses } from "../../pages/api/global-classes";
 const { globalInputClasses, globalPrimaryTextClasses, globalSecondaryTextClasses } =
   globalClasses();
 
-import App from "../../components/common/App.astro";
-
-import { isBackendPage } from "../../pages/api/backend-page-check";
-
-// Debug: Let's see what's actually in currentUser
-console.log("🔍 [PROJECT PAGE] currentUser object:", {
-  hasCurrentUser: !!currentUser,
-  currentUserId: currentUser?.id,
-  hasProfile: !!currentUser?.profile,
-  profileKeys: currentUser?.profile ? Object.keys(currentUser.profile) : "no profile",
-  role: currentUser?.profile?.role,
-  fullProfile: currentUser?.profile,
-});
-
 const currentRole = currentUser?.profile?.role;
 const currentUserId = currentUser?.id;
 const { id } = Astro.params;
-
+import App from "../../components/common/App.astro";
 import Footer from "../../components/common/Footer.astro";
 import HeroProject from "../../components/common/HeroProject.astro";
 import SlidingPillNav from "../../components/common/SlidingPillNav.astro";
@@ -60,15 +54,6 @@ import TabActivityLog from "../../components/project/TabActivityLog.astro";
 import TabGeneratePdf from "../../components/project/TabGeneratePdf.astro";
 import "../../lib/refresh-manager.ts";
 
-// Get the project ID from the URL parameter
-
-// console.log("🚀 [PROJECT] Front matter starting execution for project ID:", id);
-
-// console.log("🚀 [PROJECT] Current user:", currentUser);
-// Removed getAuthorInfoServer function - using direct database queries for better performance
-
-// Get the status parameter from URL query string
-const statusParam = Astro.url.searchParams.get("status") || "project-form";
 const validTabs = [
   "project-form",
   "discussion",
@@ -81,25 +66,12 @@ const validTabs = [
   "deliverables",
   "final-invoice",
 ];
-const defaultTab = validTabs.includes(statusParam || "") ? statusParam : "project-form";
 
-// Calculate active tab index for SlidingPillNav
-const tabOrder = [
-  "project-form",
-  "discussion",
-  "documents",
-  "proposal",
-  "contract",
-  "deposit",
-  "activity-log",
-  "generate-pdf",
-  "deliverables",
-  "final-invoice",
-];
-const activeTabIndex =
-  tabOrder.indexOf(defaultTab || "project-form") >= 0
-    ? tabOrder.indexOf(defaultTab || "project-form")
-    : 0;
+const statusParam = Astro.url.searchParams.get("status");
+const defaultTab = validTabs.includes(statusParam || "")
+  ? statusParam || "project-form"
+  : "project-form";
+const activeTabIndex = validTabs.indexOf(defaultTab);
 
 // Fetch project data and project author profile - RLS will handle authorization
 let project = null;
@@ -111,110 +83,78 @@ let statusesResult: any = null;
 let statuses: any[] = [];
 
 // Status-related variables (will be defined after data fetching)
-let projectId = "";
-let currentStatusObj: any = {};
-let currentStatusTab: string | null = null;
-let currentStatusSlug: string | null = null;
-let currentStatusName: string | null = null;
-let currentStatusInt = 0;
-let currentStatusColor = "gray";
-let currentStatusProjectAction: string | null = null;
-let statusesObject: any = {};
 
-// console.log("🚀 [PROJECT] About to start database queries, supabase available:", !!supabase);
-// console.log("🚀 [PROJECT] Supabase object:", supabase);
-// console.log("🚀 [PROJECT] SupabaseAdmin object:", supabaseAdmin);
+// Debug authentication and ID (can be removed once working)
+// console.log("🔍 [PROJECT] Debug info:", {
+//   id,
+//   hasCurrentUser: !!currentUser,
+//   currentUserId: currentUser?.id,
+//   currentRole: currentUser?.profile?.role,
+//   url: Astro.url.href,
+//   cookies: Astro.request.headers.get("Cookie") ? "Present" : "Missing",
+// });
 
-// Initialize invoiceResult with default value
-let invoiceResult = { data: null, error: null };
+// Fetch single project using the API endpoint
+if (id) {
+  try {
+    const baseUrl = Astro.url.origin || "http://localhost:4321";
+    const apiUrl = `${baseUrl}/api/get-project?id=${id}`;
 
-if (supabase) {
-  console.log("🔍 [PROJECT-DEBUG] Looking for project with ID:", id, "Type:", typeof id);
+    console.log("🏗️ [PROJECT] Fetching project from API:", apiUrl);
+    const response = await fetch(apiUrl, {
+      headers: {
+        Cookie: Astro.request.headers.get("Cookie") || "",
+      },
+    });
 
-  // OPTIMIZED: Run database queries in parallel for much faster loading
-  const [projectResult, invoiceResultData] = await Promise.all([
-    // 1. Get project data
-    supabase.from("projects").select("*").eq("id", id).single(),
+    console.log("🏗️ [PROJECT] Response status:", response.status);
 
-    // 2. Get invoice data (parallel with project query)
-    supabase
-      .from("invoices")
-      .select("id, catalog_line_items, status, project_id")
-      .eq("project_id", id)
-      .single(),
-  ]);
-
-  const invoiceResult = invoiceResultData || { data: null, error: null };
-
-  project = projectResult.data;
-  projectId = project?.id?.toString() || id || "";
-
-  // Convert statusesObject back to array for components that expect it
-  statuses = Object.values(statusesObject);
-
-  if (projectResult.error) {
-    console.error("Error fetching project:", projectResult.error);
-    console.log("🌐 [PROJECT] Project not found or no access, redirecting to dashboard");
+    if (response.ok) {
+      const data = await response.json();
+      console.log("🏗️ [PROJECT] Data:", data);
+      if (data.success) {
+        project = data.project;
+        authorProfile = data.projectAuthor;
+        console.log("✅ [PROJECT] Project loaded:", project?.title);
+      } else {
+        console.error("🏗️ [PROJECT] API returned error:", data.error);
+        return Astro.redirect("/dashboard");
+      }
+    } else {
+      console.error("🏗️ [PROJECT] Error fetching project:", response.status, response.statusText);
+      return Astro.redirect("/dashboard");
+    }
+  } catch (error) {
+    console.error("🏗️ [PROJECT] Error fetching project:", error);
     return Astro.redirect("/dashboard");
   }
-
-  if (project.author_id || project.assigned_to_id) {
-    const profileQueries = [];
-
-    if (project.author_id) {
-      // console.log("🔍 [PROJECT] Adding author profile query for:", project.author_id);
-      profileQueries.push(
-        supabase
-          .from("profiles")
-          .select("id, company_name, role, email")
-          .eq("id", project.author_id)
-          .maybeSingle()
-      );
-    }
-
-    const profileResults = await Promise.all(profileQueries);
-
-    if (project.author_id && profileResults[0]) {
-      const profileData = profileResults[0].data;
-      const profileError = profileResults[0].error;
-
-      if (profileData && !profileError) {
-        authorProfile = {
-          id: profileData.id,
-          role: profileData.role || "Unknown",
-          company_name: profileData.company_name,
-          email: profileData.email || "",
-          profile: profileData,
-        };
-      } else {
-        authorProfile = {
-          id: project.author_id,
-          role: "Unknown",
-          company_name: project.company_name || null,
-          email: "",
-          profile: null,
-        };
-      }
-    }
-
-    // Process assigned user profile
-    if (project.assigned_to_id) {
-      const assignedIndex = project.author_id ? 1 : 0;
-      const assignedResult = profileResults[assignedIndex];
-
-      if (assignedResult?.data) {
-        project.assigned_to_name = assignedResult.data.company_name || assignedResult.data.id;
-      } else {
-        project.assigned_to_name = null;
-      }
-    }
-  }
 } else {
-  console.error("🚀 [PROJECT] Supabase not available - cannot fetch data");
-  console.error("🚀 [PROJECT] This will cause the page to fail");
+  console.error("🏗️ [PROJECT] No project ID provided");
+  return Astro.redirect("/dashboard");
 }
 
-const statusResponse = await fetch(`${Astro.url.origin}/api/project-statuses`, {
+// Safety check - if no project was found, redirect to dashboard
+if (!project) {
+  return Astro.redirect("/dashboard");
+}
+
+const projectId = project?.id;
+const currentStatusInt = project?.status;
+let currentStatusName = project?.status_name;
+
+// Status-related variables
+let currentStatusTab: string | null = null;
+let currentStatusSlug: string | null = null;
+let currentStatusColor = "gray";
+let currentStatusProjectAction: string | null = null;
+
+// Initialize data arrays (same as dashboard)
+let project_statuses: any[] = [];
+let project_statuses_object: any = {};
+
+// Fetch project statuses using POST with project data for placeholder replacement
+const statusApiUrl = new URL("/api/project-statuses", Astro.url.origin);
+const statusResponse = await fetch(statusApiUrl.toString(), {
   method: "POST",
   headers: {
     "Content-Type": "application/json",
@@ -229,38 +169,40 @@ const statusResponse = await fetch(`${Astro.url.origin}/api/project-statuses`, {
 let statusData: any = { success: false, roleBasedStatuses: {}, statusesMap: {} };
 if (statusResponse.ok) {
   statusData = await statusResponse.json();
-  console.log("✅ [PROJECT] Unified status API response received:", statusData);
+  project_statuses = statusData.statuses || [];
+  project_statuses_object = statusData.roleBasedStatuses || {};
+  console.log("✅ [PROJECT] Statuses fetched with placeholder replacement");
 } else {
   console.error(
-    "❌ [PROJECT] Status API failed:",
+    "🏗️ [PROJECT] Error fetching project statuses:",
     statusResponse.status,
     statusResponse.statusText
   );
 }
 
-// Process status data after API call
-if (statusData.success) {
-  statusesObject = statusData.roleBasedStatuses;
-  currentStatusObj = statusesObject[project.status] || {};
-}
-currentStatusTab = currentStatusObj.status_tab || null;
-currentStatusSlug = currentStatusObj.status_slug || null;
-currentStatusName = currentStatusObj.status_name || null;
-currentStatusInt = project.status || 0;
-currentStatusColor = currentStatusObj.status_color || "gray";
-currentStatusProjectAction = currentStatusObj.status_action || null;
+// Get current status data by keying into the project status code (API already handles role-based filtering)
+if (currentStatusInt && project_statuses_object[currentStatusInt]) {
+  const currentStatusObj = project_statuses_object[currentStatusInt];
 
-console.log("🔍 [PROJECT] currentStatusProjectAction:", statusParam, currentStatusProjectAction);
+  // Use the role-based values directly from the API (no additional filtering needed)
+  currentStatusName = currentStatusObj.status_name;
+  currentStatusTab = currentStatusObj.status_tab;
+  currentStatusProjectAction = currentStatusObj.status_action;
+  currentStatusColor = currentStatusObj.status_color || "gray";
+  currentStatusSlug = currentStatusObj.status_slug;
 
-// search currentStatusProjectAction for "status=" + statusParam
-const statusParamIndex = currentStatusProjectAction?.indexOf("status=" + statusParam) || 0;
-if (statusParamIndex !== -1) {
-  currentStatusProjectAction = null;
-}
+  // search currentStatusProjectAction for "status=" + statusParam
+  const statusParamIndex = currentStatusProjectAction?.indexOf("status=" + statusParam) || 0;
+  if (statusParamIndex !== -1) {
+    currentStatusProjectAction = null;
+  }
 
-// Safety check - if no project was found, redirect to dashboard
-if (!project) {
-  return Astro.redirect("/dashboard");
+  console.log("✅ [PROJECT] Current status config:", {
+    name: currentStatusName,
+    tab: currentStatusTab,
+    color: currentStatusColor,
+    action: currentStatusProjectAction,
+  });
 }
 
 // Fetch staff data for staff selection
@@ -276,6 +218,7 @@ if (currentRole === "Admin" || currentRole === "Staff") {
         roles: ["Admin", "Staff"],
       }),
     });
+
     if (staffResponse.ok) {
       const staffData = await staffResponse.json();
       if (staffData.success && staffData.staffUsers) {
@@ -290,6 +233,9 @@ if (currentRole === "Admin" || currentRole === "Staff") {
           })),
         ];
       }
+    } else {
+      console.error("Failed to fetch staff data:", staffResponse.status, staffResponse.statusText);
+      staffOptions = [{ value: "", label: "Unassigned" }];
     }
   } catch (error) {
     console.error("Failed to fetch staff data:", error);
@@ -331,7 +277,7 @@ if (currentRole === "Admin" || currentRole === "Staff") {
             currentStatusName={currentStatusName || undefined}
             currentRole={currentRole || "Client"}
             project={project}
-            statuses={statusesObject}
+            statuses={project_statuses_object}
             authorProfile={authorProfile}
             currentStatusTab={currentStatusTab || undefined}
             staffOptions={staffOptions}
@@ -345,6 +291,7 @@ if (currentRole === "Admin" || currentRole === "Staff") {
             navId="project-tab-nav"
             navClass="my-4 dark:border-gray-700"
             activeItem={activeTabIndex}
+            currentUser={currentUser}
             items={[
               {
                 id: "status-project-form",
@@ -395,6 +342,7 @@ if (currentRole === "Admin" || currentRole === "Staff") {
                 icon: "history",
                 variant: "anchor",
                 onclick: "switchTab('activity-log')",
+                clientHide: true,
               },
               {
                 id: "status-generate-pdf",
@@ -402,6 +350,7 @@ if (currentRole === "Admin" || currentRole === "Staff") {
                 icon: "history",
                 variant: "anchor",
                 onclick: "switchTab('generate-pdf')",
+                clientHide: true,
               },
             ]}
           />
@@ -456,7 +405,6 @@ if (currentRole === "Admin" || currentRole === "Staff") {
             projectStatusLabel={currentStatusName || undefined}
             authorProfile={authorProfile}
             currentUser={currentUser}
-            invoiceResult={invoiceResult || { data: null, error: null }}
             globalSecondaryTextClasses={globalSecondaryTextClasses}
             globalPrimaryTextClasses={globalPrimaryTextClasses}
             globalInputClasses={globalInputClasses}
