@@ -13,6 +13,7 @@ export interface AuthResult {
   accessToken: string | null;
   refreshToken: string | null;
   supabase: any;
+  currentRole: string | null;
 }
 
 export async function checkAuth(cookies: any): Promise<AuthResult> {
@@ -24,6 +25,7 @@ export async function checkAuth(cookies: any): Promise<AuthResult> {
   let isAuth = false;
   let session = null;
   let currentUser: ExtendedUser | null = null;
+  let currentRole: string | null = null;
 
   if (accessToken && refreshToken && supabase) {
     // console.log("🔐 [AUTH] Tokens found, attempting to set session...");
@@ -130,6 +132,7 @@ export async function checkAuth(cookies: any): Promise<AuthResult> {
     accessToken: accessToken,
     refreshToken: refreshToken,
     supabase: supabase,
+    currentRole: currentRole,
   };
 
   return result;

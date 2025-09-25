@@ -90,7 +90,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         internal: internal,
         sms_alert: sms_alert,
         parent_id: parent_id,
-        company_name: currentUser.company_name,
+        company_name: currentUser.profile?.company_name,
       })
       .select(
         `

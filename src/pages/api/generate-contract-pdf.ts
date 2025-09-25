@@ -289,9 +289,10 @@ async function generateContractPDF(
       fileName: fileName,
       fileType: "application/pdf",
       projectId: project.id.toString(),
-      targetLocation: "contracts", // Routes to project-media/projectId/contracts/
+      targetLocation: "documents", // Routes to project-media/projectId/documents/ to appear in file manager
       title: `Contract - ${project.title}`,
       description: "Generated contract with digital signature",
+      customVersionNumber: 999, // Set version to 999 to match other generated PDFs
       currentUser: {
         id: project.author_id,
         // Add minimal required User properties for type safety
