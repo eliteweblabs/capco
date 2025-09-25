@@ -5,8 +5,9 @@ import { supabase } from "../../lib/supabase";
 export const POST: APIRoute = async ({ request, cookies }) => {
   try {
     // Check authentication
-    const { currentUser, currentRole } = await checkAuth(cookies);
+    const { currentUser } = await checkAuth(cookies);
 
+    const currentRole = currentUser?.profile?.role || "Client";
     if (!currentUser) {
       return new Response(JSON.stringify({ error: "Authentication required" }), {
         status: 401,
