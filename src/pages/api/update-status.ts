@@ -63,7 +63,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     const currentRole = currentUser?.profile?.role;
 
     const body = await request.json();
-    const { projectId, status: newStatus } = body;
+    const { projectId, status: newStatus, oldStatus, currentProject } = body;
 
     // Use the authenticated user's role
 
@@ -94,33 +94,51 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       );
     }
 
+    // Determine old status - use passed data if available, otherwise fetch from database
+    let finalOldStatus;
+    if (oldStatus) {
+      finalOldStatus = oldStatus;
+    } else if (currentProject?.status !== undefined) {
+      // Use passed project data (95% of cases)
+      finalOldStatus = currentProject.status;
+      console.log("📊 [UPDATE-STATUS] Using passed project data for old status:", finalOldStatus);
+    } else {
+      // Fallback to database fetch (5% of cases)
+      if (!supabase) {
+        return new Response(JSON.stringify({ error: "Database connection not available" }), {
+          status: 500,
+          headers: { "Content-Type": "application/json" },
+        });
+      }
+
+      const { data: fetchedProject, error: fetchError } = await supabase!
+        .from("projects")
+        .select("status")
+        .eq("id", projectId)
+        .single();
+
+      if (fetchError) {
+        console.error("📊 [UPDATE-STATUS] Error fetching current project:", fetchError);
+        return new Response(JSON.stringify({ error: "Failed to fetch current project status" }), {
+          status: 500,
+          headers: { "Content-Type": "application/json" },
+        });
+      }
+
+      finalOldStatus = fetchedProject.status;
+      console.log("📊 [UPDATE-STATUS] Fetched old status from database:", finalOldStatus);
+    }
+
+    // this used to use modal_auto_redirect_admin and modal_auto_redirect_client
+
+    console.log("📊 [UPDATE-STATUS] Updating project status:", { projectId, newStatus, oldStatus });
+
     if (!supabase) {
       return new Response(JSON.stringify({ error: "Database connection not available" }), {
         status: 500,
         headers: { "Content-Type": "application/json" },
       });
     }
-
-    // Fetch current project status before updating
-    const { data: currentProject, error: fetchError } = await supabase
-      .from("projects")
-      .select("status")
-      .eq("id", projectId)
-      .single();
-
-    if (fetchError) {
-      console.error("📊 [UPDATE-STATUS] Error fetching current project:", fetchError);
-      return new Response(JSON.stringify({ error: "Failed to fetch current project status" }), {
-        status: 500,
-        headers: { "Content-Type": "application/json" },
-      });
-    }
-
-    const oldStatus = currentProject.status;
-
-    // this used to use modal_auto_redirect_admin and modal_auto_redirect_client
-
-    console.log("📊 [UPDATE-STATUS] Updating project status:", { projectId, newStatus, oldStatus });
 
     // Update project status
     const { data: updatedProject, error: updateError } = await supabase
@@ -143,9 +161,12 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
     // Log the status change using authenticated user
     try {
-      // console.log("📊 [UPDATE-STATUS] Logging status change for user:", currentUser.id);
-      await SimpleProjectLogger.logStatusChange(projectId, currentUser, oldStatus, newStatus);
-      // console.log("📊 [UPDATE-STATUS] Status change logged successfully");
+      await SimpleProjectLogger.addLogEntry(
+        projectId,
+        "status_change",
+        currentUser,
+        `Status changed from ${finalOldStatus} to ${newStatus}`
+      );
     } catch (logError) {
       console.error("📊 [UPDATE-STATUS] Failed to log status change:", logError);
       // Don't fail the entire request if logging fails
@@ -188,29 +209,38 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
       // console.log("📊 [UPDATE-STATUS] Merged data for placeholder replacement:", mergedData);
 
-      // Get client profile data for placeholders
-      const { data: profiles, error: profileError } = await supabase
-        .from("profiles")
-        .select("id, company_name, first_name, last_name, role, email")
-        .eq("id", updatedProject.author_id);
+      // Get client profile data for placeholders - use current user profile if available
+      let profile = null;
+      if (currentUser?.profile) {
+        // Use current user's profile data (95% of cases)
+        profile = currentUser.profile;
+        console.log("📊 [UPDATE-STATUS] Using current user profile data");
+      } else {
+        // Fallback to database fetch (5% of cases)
+        const { data: profiles, error: profileError } = await supabase!
+          .from("profiles")
+          .select("id, company_name, first_name, last_name, role, email")
+          .eq("id", updatedProject.author_id);
 
-      if (profileError) {
-        console.error("📊 [UPDATE-STATUS] Profile query error:", profileError);
-        return new Response(JSON.stringify({ error: profileError.message }), {
-          status: 500,
-          headers: { "Content-Type": "application/json" },
-        });
+        if (profileError) {
+          console.error("📊 [UPDATE-STATUS] Profile query error:", profileError);
+          return new Response(JSON.stringify({ error: profileError.message }), {
+            status: 500,
+            headers: { "Content-Type": "application/json" },
+          });
+        }
+
+        if (!profiles || profiles.length === 0) {
+          console.warn(
+            "📊 [UPDATE-STATUS] No profile found for author_id:",
+            updatedProject.author_id
+          );
+          // Continue with empty profile data rather than failing
+        }
+
+        profile = profiles && profiles.length > 0 ? profiles[0] : null;
+        console.log("📊 [UPDATE-STATUS] Fetched client profile from database");
       }
-
-      if (!profiles || profiles.length === 0) {
-        console.warn(
-          "📊 [UPDATE-STATUS] No profile found for author_id:",
-          updatedProject.author_id
-        );
-        // Continue with empty profile data rather than failing
-      }
-
-      const profile = profiles && profiles.length > 0 ? profiles[0] : null;
 
       // Get client email from profiles table (already fetched above)
       const clientEmail = profile?.email || "";

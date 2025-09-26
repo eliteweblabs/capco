@@ -259,10 +259,9 @@ export const POST: APIRoute = async ({ request, cookies }): Promise<Response> =>
             try {
               await SimpleProjectLogger.addLogEntry(
                 projectId || 0,
-                "email_delivery_failed",
-                currentUser || { email: "System", name: "System" },
+                "email_failed",
+                currentUser,
                 `Email delivery failed to ${userEmail} - Type: ${emailType}, Subject: ${emailSubject}, Error: ${errorText}`,
-                null,
                 { emailType, emailSubject, error: errorText, status: response.status }
               );
             } catch (logError) {
@@ -280,10 +279,9 @@ export const POST: APIRoute = async ({ request, cookies }): Promise<Response> =>
             try {
               await SimpleProjectLogger.addLogEntry(
                 projectId || 0,
-                "email_delivery_success",
-                currentUser || { email: "System", name: "System" },
+                "email_sent",
+                currentUser,
                 `Email sent successfully to ${userEmail} - Type: ${emailType}, Subject: ${emailSubject}`,
-                null,
                 { emailType, emailSubject, responseId: responseData.id }
               );
             } catch (logError) {
@@ -312,10 +310,9 @@ export const POST: APIRoute = async ({ request, cookies }): Promise<Response> =>
           try {
             await SimpleProjectLogger.addLogEntry(
               projectId || 0,
-              "email_delivery_error",
+              "email_failed",
               currentUser,
               `Email delivery error to ${userEmail} - Type: ${emailType}, Subject: ${emailSubject}, Error: ${userError instanceof Error ? userError.message : "Unknown error"}`,
-              null,
               {
                 emailType,
                 emailSubject,
@@ -363,10 +360,9 @@ export const POST: APIRoute = async ({ request, cookies }): Promise<Response> =>
     try {
       await SimpleProjectLogger.addLogEntry(
         projectId || 0,
-        "email_delivery_completed",
-        currentUser || { email: "System", name: "System" },
+        "email_sent",
+        currentUser,
         `Email delivery batch completed - Type: ${emailType}, Total sent: ${sentEmails.length}, Total failed: ${failedEmails.length}`,
-        null,
         {
           emailType,
           totalSent: sentEmails.length,

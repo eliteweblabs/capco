@@ -431,11 +431,14 @@ Your account has been created successfully:<br><br>
 
     // Log admin user creation
     try {
-      await SimpleProjectLogger.logAdminUserCreation(
-        currentUser?.email || "unknown_admin",
-        email,
-        staffRole,
+      await SimpleProjectLogger.addLogEntry(
+        0, // System log
+        "admin_action",
+        currentUser,
+        `Admin created new ${staffRole} user: ${email}`,
         {
+          newUserEmail: email,
+          role: staffRole,
           userId: authData.user.id,
           firstName: first_name.trim(),
           lastName: last_name.trim(),

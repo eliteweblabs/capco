@@ -124,12 +124,12 @@ export const POST: APIRoute = async ({ request, cookies }) => {
           user: currentUser?.email || "Unknown",
         });
 
-        await SimpleProjectLogger.logDiscussionToggle(
+        await SimpleProjectLogger.addLogEntry(
           discussionData.project_id,
-          discussionIdNum,
-          mark_completed,
+          mark_completed ? "discussion_completed" : "discussion_incomplete",
           currentUser,
-          (discussionData.message?.substring(0, 50) || "No message") + "..."
+          `Discussion ${mark_completed ? "marked as completed" : "marked as incomplete"}: ${(discussionData.message?.substring(0, 50) || "No message") + "..."}`,
+          { discussionId: discussionIdNum, completed: mark_completed }
         );
 
         console.log("✅ [UPDATE-DISCUSSION] Project logging completed successfully");
