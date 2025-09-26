@@ -50,6 +50,13 @@ export class SimpleProjectLogger {
     metadata?: any
   ): Promise<boolean> {
     try {
+      console.log("📝 [SIMPLE-LOGGER] Adding log entry:", {
+        projectId,
+        type,
+        currentUser,
+        message,
+      });
+
       if (!supabase) {
         console.error("Supabase not configured");
         return false;
@@ -76,6 +83,7 @@ export class SimpleProjectLogger {
       }
 
       // Get current project to append to existing log
+      console.log("📝 [SIMPLE-LOGGER] Fetching project log for projectId:", projectId);
       const { data: project, error: fetchError } = await client
         .from("projects")
         .select("log")
@@ -83,26 +91,29 @@ export class SimpleProjectLogger {
         .single();
 
       if (fetchError) {
-        console.error("Error fetching project:", fetchError);
+        console.error("📝 [SIMPLE-LOGGER] Error fetching project:", fetchError);
         return false;
       }
+
+      console.log("📝 [SIMPLE-LOGGER] Current project log:", project?.log);
 
       // Append new entry to existing log
       const currentLog = project.log || [];
       const updatedLog = [...currentLog, logEntry];
 
       // Update the project with the new log
+      console.log("📝 [SIMPLE-LOGGER] Updating project with new log entry:", updatedLog);
       const { error: updateError } = await client
         .from("projects")
         .update({ log: updatedLog })
         .eq("id", projectId);
 
       if (updateError) {
-        console.error("Error updating project log:", updateError);
+        console.error("📝 [SIMPLE-LOGGER] Error updating project log:", updateError);
         return false;
       }
 
-      console.log(`📝 [LOG] ${type}: ${message} by ${userName}`);
+      console.log(`📝 [SIMPLE-LOGGER] Successfully logged ${type}: ${message} by ${userName}`);
       return true;
     } catch (error) {
       console.error("Error in addLogEntry:", error);
