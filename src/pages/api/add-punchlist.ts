@@ -1,5 +1,6 @@
 import type { APIRoute } from "astro";
 import { checkAuth } from "../../lib/auth";
+import { SimpleProjectLogger } from "../../lib/simple-logging";
 import { supabase } from "../../lib/supabase";
 
 export const POST: APIRoute = async ({ request, cookies }) => {
@@ -87,9 +88,8 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       await SimpleProjectLogger.addLogEntry(
         projectId,
         "punchlist_added",
-        currentUser?.email || "Unknown User",
+        currentUser,
         `Punchlist item added: ${message.substring(0, 50)}...`,
-        null,
         { punchlistId: punchlistData.id, message: message.substring(0, 100) }
       );
     } catch (logError) {

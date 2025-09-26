@@ -118,7 +118,13 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
     // Log user profile update
     try {
-      await SimpleProjectLogger.logUserProfileUpdate(userEmail, oldProfile, profile);
+      await SimpleProjectLogger.addLogEntry(
+        0, // System log
+        "user_registration",
+        { email: userEmail },
+        "User profile updated",
+        { oldData: oldProfile, newData: profile }
+      );
     } catch (logError) {
       console.error("Error logging profile update:", logError);
     }

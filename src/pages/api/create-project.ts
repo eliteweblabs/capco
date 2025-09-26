@@ -55,7 +55,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     // Get user profile to determine role
     const { data: userProfile, error: profileError } = await supabase
       .from("profiles")
-      .select("role")
+      .select("role, company_name")
       .eq("id", userId)
       .single();
 
@@ -504,7 +504,13 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
     // Log the project creation
     try {
-      await SimpleProjectLogger.logProjectCreation(project.id, session.session.user, projectData);
+      await SimpleProjectLogger.addLogEntry(
+        project.id,
+        "project_created",
+        { id: userId, company_name: userProfile.company_name },
+        "Project was created",
+        projectData
+      );
     } catch (logError) {
       console.error("Error logging project creation:", logError);
       // Don't fail the request if logging fails

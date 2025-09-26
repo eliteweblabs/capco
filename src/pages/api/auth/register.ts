@@ -342,17 +342,23 @@ export const POST: APIRoute = async ({ request, redirect, cookies }) => {
 
   // Log successful user registration
   try {
-    await SimpleProjectLogger.logUserRegistration(email, "email", {
-      userId: data.user?.id,
-      firstName,
-      lastName,
-      companyName,
-      phone: phone || null,
-      smsAlerts,
-      mobileCarrier: mobileCarrier || null,
-      userAgent: request.headers.get("user-agent"),
-      ip: request.headers.get("x-forwarded-for") || "unknown",
-    });
+    await SimpleProjectLogger.addLogEntry(
+      0, // System log
+      "user_registration",
+      { email },
+      "New user registered via email",
+      {
+        userId: data.user?.id,
+        firstName,
+        lastName,
+        companyName,
+        phone: phone || null,
+        smsAlerts,
+        mobileCarrier: mobileCarrier || null,
+        userAgent: request.headers.get("user-agent"),
+        ip: request.headers.get("x-forwarded-for") || "unknown",
+      }
+    );
   } catch (logError) {
     console.error("Error logging user registration:", logError);
   }

@@ -170,39 +170,25 @@ if (statusResponse.ok) {
   statusData = await statusResponse.json();
   project_statuses = statusData.statuses || [];
   project_statuses_object = statusData.roleBasedStatuses || {};
-  console.log("✅ [PROJECT] Statuses fetched with placeholder replacement");
 } else {
-  console.error(
-    "🏗️ [PROJECT] Error fetching project statuses:",
-    statusResponse.status,
-    statusResponse.statusText
-  );
+  console.error("🏗️ [PROJECT] Error fetching project statuses:");
 }
 
 // Get current status data by keying into the project status code (API already handles role-based filtering)
 if (currentStatusInt && project_statuses_object[currentStatusInt]) {
   const currentStatusObj = project_statuses_object[currentStatusInt];
-
   // Use the role-based values directly from the API (no additional filtering needed)
   currentStatusName = currentStatusObj.status_name;
   currentStatusTab = currentStatusObj.status_tab;
   currentStatusProjectAction = currentStatusObj.status_action;
   currentStatusColor = currentStatusObj.status_color || "gray";
   currentStatusSlug = currentStatusObj.status_slug;
-
   // search currentStatusProjectAction for "status=" + statusParam
   const statusParamIndex = currentStatusProjectAction?.indexOf("status=" + statusParam) || 0;
   if (statusParamIndex !== -1 && currentStatusProjectAction) {
     // remove HTML tags from currentStatusProjectAction
     currentStatusProjectAction = currentStatusProjectAction.replace(/<[^>]*>?/g, "");
   }
-
-  console.log("✅ [PROJECT] Current status config:", {
-    name: currentStatusName,
-    tab: currentStatusTab,
-    color: currentStatusColor,
-    action: currentStatusProjectAction,
-  });
 }
 
 // Fetch staff data for staff selection
@@ -487,82 +473,20 @@ if (currentRole === "Admin" || currentRole === "Staff") {
 <script
   type="module"
   define:vars={{
-    userRole: currentRole,
-    projectData: project,
-    currentUserData: authorProfile,
-    currentStatusInt: currentStatusInt.toString(),
+    project: project,
+    currentUser: currentUser,
     currentStatusName: currentStatusName,
     currentStatusProjectAction: currentStatusProjectAction,
   }}
 >
   // Tab switching functionality
-  function setPageLoadProjectStatus(tabName) {
+  function setPageLoadProjectStatus(statusNameFromUrl) {
     // Parse tab name and parameters (e.g., "discussion&new=true")
-    const [baseTabName, ...paramParts] = tabName.split("&");
+    const [statusSlug, ...paramParts] = statusNameFromUrl.split("&");
     const params = new URLSearchParams(paramParts.join("&"));
 
-    // // Hide all tab contents
-    // const tabContents = document.querySelectorAll(".tab-content");
-    // tabContents.forEach((content) => {
-    //   content.classList.add("hidden");
-    // });
-
-    // // Remove active class from all tab buttons
-    // const tabButtons = document.querySelectorAll(".tab-button");
-    // tabButtons.forEach((button) => {
-    //   button.classList.remove("active");
-    //   // button.classList.add(
-    //   //   "text-gray-500",
-    //   //   "hover:text-gray-700",
-    //   //   "dark:text-gray-400",
-    //   //   "dark:hover:text-gray-300"
-    //   // );
-    // });
-
-    // // Show selected tab content
-    // const selectedContent = document.getElementById(`content-${baseTabName}`);
-    // if (selectedContent) {
-    //   selectedContent.classList.remove("hidden");
-    // }
-
-    // Add active class to selected tab button
-    // const selectedButton = document.getElementById(`status-${baseTabName}`);
-    // if (selectedButton) {
-    //   selectedButton.classList.remove(
-    //     "text-gray-500",
-    //     "hover:text-gray-700",
-    //     "dark:text-gray-400",
-    //     "dark:hover:text-gray-300"
-    //   );
-    //   selectedButton.classList.add("active");
-
-    // Update sliding pill nav if it exists
-    //   if (window.project_tab_nav_updateActiveButton && window.project_tab_nav_updateSlidingPill) {
-    //     window.project_tab_nav_updateActiveButton(selectedButton);
-    //     window.project_tab_nav_updateSlidingPill(selectedButton);
-    //   } else {
-    //     // Fallback: try again after a short delay if functions aren't available yet
-    //     setTimeout(() => {
-    //       if (
-    //         window.project_tab_nav_updateActiveButton &&
-    //         window.project_tab_nav_updateSlidingPill
-    //       ) {
-    //         window.project_tab_nav_updateActiveButton(selectedButton);
-    //         window.project_tab_nav_updateSlidingPill(selectedButton);
-    //       }
-    //     }, 100);
-    //   }
-
-    //   // Center the active button in the navigation
-    //   selectedButton.scrollIntoView({
-    //     behavior: "smooth",
-    //     block: "nearest",
-    //     inline: "center",
-    //   });
-    // }
-
     // Handle tab-specific actions based on parameters
-    if (baseTabName === "discussion" && params.get("new") === "true") {
+    if (statusSlug === "discussion" && params.get("new") === "true") {
       // Auto-trigger new comment form after a short delay to ensure tab is visible
       setTimeout(() => {
         if (window.toggleCommentForm) {
@@ -571,14 +495,9 @@ if (currentRole === "Admin" || currentRole === "Staff") {
       }, 100);
     }
 
-    // Check if client is viewing proposal tab and update status if needed
-    // console.log("📋 [PROPOSAL-VIEW] Tab switched to:", tabName);
-    // console.log("📋 [PROPOSAL-VIEW] User role:", userRole);
-
-    const currentStatus = projectData?.status || 0;
-    const currentUserId = currentUserData?.id;
-    const projectId = projectData?.id;
-    const hasExistingProposal = projectData?.invoice_id && projectData.invoice_id !== "0";
+    const currentStatus = project?.status || 0;
+    const currentUser = currentUser;
+    const projectId = project?.id;
     let nextStatus = 0;
     // Viewed Update Tabs
 
@@ -586,13 +505,12 @@ if (currentRole === "Admin" || currentRole === "Staff") {
     // console.log("📋 [PROPOSAL-VIEW] Project data:", { projectId, currentUserId });
 
     if (
-      baseTabName === "proposal" &&
-      userRole === "Client" &&
+      statusSlug === "proposal" &&
+      currentRole === "Client" &&
       currentStatus >= 20 &&
       currentStatus < 40 &&
-      currentUserId &&
-      projectId &&
-      hasExistingProposal
+      currentUser &&
+      projectId
     ) {
       // console.log(
       //   "📋 [PROPOSAL-VIEW] Updating status from",
@@ -601,11 +519,11 @@ if (currentRole === "Admin" || currentRole === "Staff") {
       // );
       nextStatus = 40;
     } else if (
-      baseTabName === "deposit" &&
-      userRole === "Client" &&
+      statusSlug === "deposit" &&
+      currentRole === "Client" &&
       currentStatus >= 55 &&
       currentStatus < 65 &&
-      currentUserId &&
+      currentUser &&
       projectId &&
       hasExistingProposal
     ) {
@@ -616,13 +534,12 @@ if (currentRole === "Admin" || currentRole === "Staff") {
       // );
       nextStatus = 65;
     } else if (
-      baseTabName === "final-invoice" &&
+      statusSlug === "final-invoice" &&
       userRole === "Client" &&
       currentStatus >= 150 &&
       currentStatus < 160 &&
-      currentUserId &&
-      projectId &&
-      hasExistingProposal
+      currentUser &&
+      projectId
     ) {
       // console.log(
       //   "📋 [PROPOSAL-VIEW] Updating status from",
@@ -631,13 +548,12 @@ if (currentRole === "Admin" || currentRole === "Staff") {
       // );
       nextStatus = 160;
     } else if (
-      baseTabName === "final-invoice" &&
+      statusSlug === "final-invoice" &&
       userRole === "Client" &&
       currentStatus >= 200 &&
       currentStatus < 210 &&
-      currentUserId &&
-      projectId &&
-      hasExistingProposal
+      currentUser &&
+      projectId
     ) {
       // console.log(
       //   "📋 [PROPOSAL-VIEW] Updating status from",
@@ -661,7 +577,6 @@ if (currentRole === "Admin" || currentRole === "Staff") {
           projectId: projectId,
           status: nextStatus,
           currentUserId: currentUserId,
-          oldStatus: currentStatus,
         }),
       })
         .then((response) => response.json())
@@ -692,12 +607,12 @@ if (currentRole === "Admin" || currentRole === "Staff") {
 
     // Update URL with tab parameter (without page reload)
     // const currentUrl = new URL(window.location.href);
-    // if (baseTabName === "project-form") {
+    // if (statusSlug === "project-form") {
     //   // Remove status parameter for default tab
     //   currentUrl.searchParams.delete("status");
     // } else {
     //   // Add or update status parameter with any additional parameters
-    //   currentUrl.searchParams.set("status", tabName);
+    //   currentUrl.searchParams.set("status", statusNameFromUrl);
     // }
 
     // // Update browser history without reloading the page
@@ -752,8 +667,8 @@ if (currentRole === "Admin" || currentRole === "Staff") {
     // Parse status name and parameters
     let initialTab = "project-form";
     if (statusFromUrl) {
-      const [baseTabName] = statusFromUrl.split("&");
-      if (validTabs.includes(baseTabName)) {
+      const [statusSlug] = statusFromUrl.split("&");
+      if (validTabs.includes(statusSlug)) {
         initialTab = statusFromUrl; // Keep full parameter string for processing
       }
     }
@@ -764,93 +679,4 @@ if (currentRole === "Admin" || currentRole === "Staff") {
 
   // Make switchTab globally available for other components
   window.setPageLoadProjectStatus = setPageLoadProjectStatus;
-</script>
-
-<script define:vars={{ currentRole }}>
-  // Function to clean up backdrop
-  function cleanupDrawerBackdrop() {
-    const backdrops = document.querySelectorAll("[drawer-backdrop]");
-    backdrops.forEach((backdrop) => {
-      backdrop.remove();
-    });
-  }
-
-  document.addEventListener("DOMContentLoaded", () => {
-    // Check if we should open the drawer (you can add conditions here)
-    const shouldOpenDrawer = true; // Add your condition here
-
-    if (shouldOpenDrawer) {
-      // Use Flowbite's proper Drawer API with right-side placement
-      const drawerElement = document.getElementById("drawer-user-center");
-      if (drawerElement && window.Drawer) {
-        // Define options for right-side drawer
-        const options = {
-          placement: "right", // Positions the drawer on the right side
-          backdrop: true, // Enables the backdrop
-          bodyScrolling: false, // Disables body scrolling when the drawer is active
-          edge: false, // Disables the edge functionality
-          edgeOffset: "", // No offset for the edge
-          backdropClasses: "bg-gray-900/50 dark:bg-gray-900/80 fixed inset-0 z-30", // Custom backdrop classes
-          onHide: () => {
-            console.log("Drawer is hidden");
-
-            // Remove the manually created backdrop when drawer closes
-            const backdrop = document.querySelector("[drawer-backdrop]");
-            if (backdrop) {
-              backdrop.remove();
-            }
-          },
-          onShow: () => {
-            console.log("Drawer is shown");
-          },
-          onToggle: () => {
-            console.log("Drawer has been toggled");
-          },
-        };
-
-        // Initialize the drawer using Flowbite's API with options
-        const drawer = new window.Drawer(drawerElement, options);
-
-        // Add event listeners for drawer close buttons
-        const closeButtons = document.querySelectorAll('[data-drawer-hide="drawer-user-center"]');
-        closeButtons.forEach((button) => {
-          button.addEventListener("click", cleanupDrawerBackdrop);
-        });
-
-        // Open the drawer using Flowbite's method
-        if (currentRole !== "Client") {
-          // Create backdrop element before showing drawer
-          let backdrop = document.querySelector("[drawer-backdrop]");
-          if (!backdrop) {
-            backdrop = document.createElement("div");
-            backdrop.setAttribute("drawer-backdrop", "");
-            backdrop.className = "bg-gray-900/50 dark:bg-gray-900/80 fixed inset-0 z-30";
-            document.body.appendChild(backdrop);
-            console.log("🔍 [DRAWER] Backdrop created:", backdrop);
-          } else {
-            console.log("🔍 [DRAWER] Backdrop already exists:", backdrop);
-          }
-
-          // Add event listener to backdrop for cleanup
-          if (backdrop) {
-            backdrop.addEventListener("click", () => {
-              // Backdrop click will be handled by Flowbite, but we can also clean up
-              setTimeout(cleanupDrawerBackdrop, 100);
-            });
-          }
-
-          // Show the drawer after backdrop is created with a small delay
-          setTimeout(() => {
-            drawer.show();
-          }, 10);
-        }
-      } else if (drawerElement) {
-        // Fallback if Flowbite API is not available
-        console.warn("Flowbite Drawer API not available, using manual approach");
-        drawerElement.classList.remove("translate-x-full");
-        drawerElement.classList.add("translate-x-0");
-        drawerElement.setAttribute("aria-hidden", "false");
-      }
-    }
-  });
 </script>

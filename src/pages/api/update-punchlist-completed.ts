@@ -117,12 +117,12 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         user: currentUser || "Unknown",
       });
 
-      await SimpleProjectLogger.logPunchlistToggle(
+      await SimpleProjectLogger.addLogEntry(
         punchlistItem.project_id,
-        punchlistId,
-        mark_completed,
+        mark_completed ? "punchlist_completed" : "punchlist_incomplete",
         currentUser,
-        (punchlistItem.message?.substring(0, 50) || "No message") + "..."
+        `Punchlist item ${mark_completed ? "marked as completed" : "marked as incomplete"}: ${(punchlistItem.message?.substring(0, 50) || "No message") + "..."}`,
+        { punchlistId, completed: mark_completed }
       );
 
       console.log("✅ [UPDATE-PUNCHLIST-COMPLETED] Project logging completed successfully");

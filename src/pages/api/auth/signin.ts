@@ -36,8 +36,10 @@ export const POST: APIRoute = async ({ request, cookies, redirect }) => {
     if (error) {
       // Log failed OAuth login attempt
       try {
-        await SimpleProjectLogger.logFailedLogin(
-          email || "unknown",
+        await SimpleProjectLogger.addLogEntry(
+          0, // System log
+          "error",
+          { email: email || "unknown" },
           `OAuth ${provider} failed: ${error.message}`,
           { provider, error: error.message }
         );
@@ -50,10 +52,13 @@ export const POST: APIRoute = async ({ request, cookies, redirect }) => {
 
     // Log OAuth login initiation (we'll log success in the callback)
     try {
-      await SimpleProjectLogger.logUserLogin(email || "oauth_user", `oauth_${provider}`, {
-        provider,
-        initiated: true,
-      });
+      await SimpleProjectLogger.addLogEntry(
+        0, // System log
+        "user_login",
+        { email: email || "oauth_user" },
+        `User logged in via OAuth ${provider}`,
+        { provider, initiated: true }
+      );
     } catch (logError) {
       console.error("Error logging OAuth login initiation:", logError);
     }
@@ -73,9 +78,13 @@ export const POST: APIRoute = async ({ request, cookies, redirect }) => {
   if (error) {
     // Log failed login attempt
     try {
-      await SimpleProjectLogger.logFailedLogin(email, `Password login failed: ${error.message}`, {
-        error: error.message,
-      });
+      await SimpleProjectLogger.addLogEntry(
+        0, // System log
+        "error",
+        { email },
+        `Password login failed: ${error.message}`,
+        { error: error.message }
+      );
     } catch (logError) {
       console.error("Error logging failed login:", logError);
     }
@@ -88,11 +97,17 @@ export const POST: APIRoute = async ({ request, cookies, redirect }) => {
 
   // Log successful login
   try {
-    await SimpleProjectLogger.logUserLogin(data.user.email || email, "password", {
-      userId: data.user.id,
-      userAgent: request.headers.get("user-agent"),
-      ip: request.headers.get("x-forwarded-for") || "unknown",
-    });
+    await SimpleProjectLogger.addLogEntry(
+      0, // System log
+      "user_login",
+      { email: data.user.email || email },
+      "User logged in via password",
+      {
+        userId: data.user.id,
+        userAgent: request.headers.get("user-agent"),
+        ip: request.headers.get("x-forwarded-for") || "unknown",
+      }
+    );
   } catch (logError) {
     console.error("Error logging successful login:", logError);
   }

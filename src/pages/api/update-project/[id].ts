@@ -144,11 +144,12 @@ export const PUT: APIRoute = async ({ request, cookies, params }) => {
       console.log(`📝 [API] Logging project update for project ${projectId} by ${userEmail}`);
       console.log(`📝 [API] Status change: ${currentProject.status} -> ${newProjectData.status}`);
 
-      await SimpleProjectLogger.logProjectChanges(
+      await SimpleProjectLogger.addLogEntry(
         parseInt(projectId),
-        { email: userEmail, first_name: userEmail, last_name: "" },
-        currentProject,
-        newProjectData
+        "project_updated",
+        currentUser,
+        "Project was updated",
+        { oldData: currentProject, newData: newProjectData }
       );
 
       console.log(`📝 [API] Project update logged successfully`);
