@@ -267,10 +267,20 @@ const {
         }
 
         if (append) {
-          this.allActivities = [...this.allActivities, ...data.activities];
+          // Filter out activities with null/undefined actions when appending
+          const validActivities = data.activities.filter((activity) => activity.action);
+          this.allActivities = [...this.allActivities, ...validActivities];
         } else {
-          this.allActivities = data.activities;
+          // Filter out activities with null/undefined actions
+          this.allActivities = data.activities.filter((activity) => activity.action);
           this.actionTypes = data.action_types;
+
+          // Debug: Check for activities with null actions
+          const nullActionActivities = data.activities.filter((activity) => !activity.action);
+          if (nullActionActivities.length > 0) {
+            console.warn("Found activities with null/undefined actions:", nullActionActivities);
+          }
+
           this.populateActionFilter();
         }
 
@@ -387,13 +397,13 @@ const {
       div.className =
         "flex items-start space-x-3 rounded-lg border border-gray-200 p-4 dark:border-gray-700";
 
-      const icon = this.getActivityIcon(activity.action);
+      const icon = this.getActivityIcon(activity.action || "unknown");
       const timestamp = this.formatTimestamp(activity.timestamp);
-      const actionLabel = this.formatActionType(activity.action);
+      const actionLabel = this.formatActionType(activity.action || "unknown");
 
       div.innerHTML = `
         <div class="flex-shrink-0">
-          <div class="flex h-8 w-8 items-center justify-center rounded-full ${this.getActivityColor(activity.action)}">
+          <div class="flex h-8 w-8 items-center justify-center rounded-full ${this.getActivityColor(activity.action || "unknown")}">
             <i class='bx ${icon} text-sm'></i>
           </div>
         </div>
@@ -469,7 +479,12 @@ const {
         invoice_generated: "Invoice Generated",
         payment_received: "Payment Received",
       };
-      return labelMap[action] || action.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase());
+      return (
+        labelMap[action] ||
+        (action
+          ? action.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase())
+          : "Unknown Action")
+      );
     }
 
     private formatTimestamp(timestamp: string): string {

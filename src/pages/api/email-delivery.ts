@@ -358,6 +358,14 @@ export const POST: APIRoute = async ({ request, cookies }): Promise<Response> =>
     // newValue?: any
     // Log overall email delivery completion
     try {
+      console.log("📧 [EMAIL-DELIVERY] Logging email delivery completion:", {
+        projectId: projectId || 0,
+        emailType,
+        totalSent: sentEmails.length,
+        totalFailed: failedEmails.length,
+        currentUser,
+      });
+
       await SimpleProjectLogger.addLogEntry(
         projectId || 0,
         "email_sent",
@@ -371,6 +379,8 @@ export const POST: APIRoute = async ({ request, cookies }): Promise<Response> =>
           failedEmails: failedEmails,
         }
       );
+
+      console.log("📧 [EMAIL-DELIVERY] Email delivery completion logged successfully");
     } catch (logError) {
       console.error("📧 [EMAIL-DELIVERY] Error logging email delivery completion:", logError);
     }
