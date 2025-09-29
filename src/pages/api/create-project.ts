@@ -347,11 +347,16 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     // });
 
     // Prepare project data - use dynamic mapping like update-project API
-    // Start with all form data and add required fields
+    // Filter out user profile fields that don't belong in projects table
+    const { company_name, first_name, last_name, email, ...projectFields } = body;
+
+    // Start with filtered form data and add required fields
     const projectData = {
-      ...body, // Include all form fields dynamically
+      ...projectFields, // Include only project-related form fields
       author_id: projectAuthorId,
       // Handle special cases for specific fields
+      site_access: body.address ? body.address.match(/^[^,]+/)?.[0]?.trim() : null,
+      exterior_beacon: body.address ? body.address.match(/^[^,]+/)?.[0]?.trim() : null,
       title: body.title || body.address,
       address: body.address?.replace(/, USA$/, "") || body.address,
       architect: body.architect && body.architect.trim() !== "" ? body.architect.trim() : null,

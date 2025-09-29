@@ -41,4 +41,14 @@ export default [
       "@typescript-eslint/no-explicit-any": "warn",
     },
   },
+  {
+    files: ["**/*.html"],
+    languageOptions: {
+      parser: "html",
+    },
+    rules: {
+      // Basic HTML linting rules
+      "no-unused-vars": "off", // HTML doesn't have variables like JS
+    },
+  },
 ];

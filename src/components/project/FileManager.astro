@@ -182,33 +182,6 @@ console.log("🔧 [FILE-MANAGER] Component initialized with props:", {
     globalInputClasses,
   }}
 >
-  // Helper function to create button using partial
-  async function createButtonPartial(config) {
-    try {
-      const headers = new Headers();
-      Object.entries(config).forEach(([key, value]) => {
-        if (value !== undefined && value !== null) {
-          headers.set(`x-button-${key}`, value.toString());
-        }
-      });
-
-      const response = await fetch("/partials/button", {
-        headers: headers,
-      });
-
-      if (response.ok) {
-        const buttonHTML = await response.text();
-        return buttonHTML;
-      } else {
-        console.error("Failed to fetch button partial:", response.status);
-        return null;
-      }
-    } catch (error) {
-      console.error("Error fetching button partial:", error);
-      return null;
-    }
-  }
-
   // File Manager Component with Checkout System - EXTENSIVE DEBUGGING
   console.log("🔧 [FILE-MANAGER] Script initialized with variables:", {
     projectId,
@@ -462,7 +435,7 @@ console.log("🔧 [FILE-MANAGER] Component initialized with props:", {
 
     for (const file of files) {
       try {
-        const buttonHTML = await createButtonPartial({
+        const buttonHTML = await window.createButtonPartial({
           variant: "primary",
           size: "sm",
           children: "Save Changes",

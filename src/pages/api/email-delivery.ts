@@ -116,7 +116,19 @@ export const POST: APIRoute = async ({ request, cookies }): Promise<Response> =>
       console.error("📧 [EMAIL-DELIVERY] Email configuration not available");
       const errorResponse: EmailDeliveryResponse = {
         success: false,
-        error: "Email configuration not available",
+        error:
+          "Email configuration not available, usersToNotify: " +
+          JSON.stringify(usersToNotify) +
+          ", emailContent: " +
+          emailContent +
+          ", emailSubject: " +
+          emailSubject +
+          ", emailProvider: " +
+          emailProvider +
+          ", emailApiKey: " +
+          emailApiKey +
+          ", fromEmail: " +
+          fromEmail,
       };
       return new Response(JSON.stringify(errorResponse), {
         status: 500,

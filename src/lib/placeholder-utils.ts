@@ -23,6 +23,15 @@ export interface PlaceholderData {
     est_time?: string;
     building?: [];
     status_name?: string;
+    // New project fields
+    nfpa_version?: string;
+    hazardous_material?: string;
+    site_access?: string;
+    exterior_beacon?: string;
+    fire_sprinkler_installation?: string;
+    commencement_of_construction?: string;
+    suppression_detection_systems?: string;
+    hps_commodities?: string;
     authorProfile?:
       | {
           [key: number]: {
@@ -610,6 +619,105 @@ export function replacePlaceholders(
     }
   }
 
+  // === NEW PROJECT FIELD PLACEHOLDERS ===
+
+  // Replace NFPA_VERSION placeholders
+  const nfpaVersion = data?.project?.nfpa_version || "N/A";
+  if (nfpaVersion) {
+    const beforeReplace = result;
+    result = result.replace(/\{\{\s*NFPA_VERSION\s*\}\}/g, nfpaVersion);
+    if (result !== beforeReplace) {
+      placeholderApplied = true;
+      addBoldTags = true;
+    }
+  }
+
+  // Replace HAZARDOUS_MATERIAL placeholders
+  const hazardousMaterial = data?.project?.hazardous_material || "N/A";
+  if (hazardousMaterial) {
+    const beforeReplace = result;
+    result = result.replace(/\{\{\s*HAZARDOUS_MATERIAL\s*\}\}/g, hazardousMaterial);
+    if (result !== beforeReplace) {
+      placeholderApplied = true;
+      addBoldTags = true;
+    }
+  }
+
+  // Replace SITE_ACCESS placeholders
+  const siteAccess = data?.project?.site_access || "N/A";
+  if (siteAccess) {
+    const beforeReplace = result;
+    result = result.replace(/\{\{\s*SITE_ACCESS\s*\}\}/g, siteAccess);
+    if (result !== beforeReplace) {
+      placeholderApplied = true;
+      addBoldTags = true;
+    }
+  }
+
+  // Replace EXTERIOR_BEACON placeholders
+  const exteriorBeacon = data?.project?.exterior_beacon || "N/A";
+  if (exteriorBeacon) {
+    const beforeReplace = result;
+    result = result.replace(/\{\{\s*EXTERIOR_BEACON\s*\}\}/g, exteriorBeacon);
+    if (result !== beforeReplace) {
+      placeholderApplied = true;
+      addBoldTags = true;
+    }
+  }
+
+  // Replace FIRE_SPRINKLER_INSTALLATION placeholders
+  const fireSprinklerInstallation = data?.project?.fire_sprinkler_installation || "N/A";
+  if (fireSprinklerInstallation) {
+    const beforeReplace = result;
+    result = result.replace(
+      /\{\{\s*FIRE_SPRINKLER_INSTALLATION\s*\}\}/g,
+      fireSprinklerInstallation
+    );
+    if (result !== beforeReplace) {
+      placeholderApplied = true;
+      addBoldTags = true;
+    }
+  }
+
+  // Replace COMMENCEMENT_OF_CONSTRUCTION placeholders
+  const commencementOfConstruction = data?.project?.commencement_of_construction || "N/A";
+  if (commencementOfConstruction) {
+    const beforeReplace = result;
+    result = result.replace(
+      /\{\{\s*COMMENCEMENT_OF_CONSTRUCTION\s*\}\}/g,
+      commencementOfConstruction
+    );
+    if (result !== beforeReplace) {
+      placeholderApplied = true;
+      addBoldTags = true;
+    }
+  }
+
+  // Replace SUPPRESSION_DETECTION_SYSTEMS placeholders
+  const suppressionDetectionSystems = data?.project?.suppression_detection_systems || "N/A";
+  if (suppressionDetectionSystems) {
+    const beforeReplace = result;
+    result = result.replace(
+      /\{\{\s*SUPPRESSION_DETECTION_SYSTEMS\s*\}\}/g,
+      suppressionDetectionSystems
+    );
+    if (result !== beforeReplace) {
+      placeholderApplied = true;
+      addBoldTags = true;
+    }
+  }
+
+  // Replace HPS_COMMODITIES placeholders
+  const hpsCommodities = data?.project?.hps_commodities || "N/A";
+  if (hpsCommodities) {
+    const beforeReplace = result;
+    result = result.replace(/\{\{\s*HPS_COMMODITIES\s*\}\}/g, hpsCommodities);
+    if (result !== beforeReplace) {
+      placeholderApplied = true;
+      addBoldTags = true;
+    }
+  }
+
   // Process PROJECT_LINK placeholders
   if (result && projectLink) {
     const beforeReplace = result;
@@ -640,5 +748,6 @@ export function replacePlaceholders(
     }
   }
 
-  return placeholderApplied && addBoldTags ? "<b>" + result + "</b>" : result;
+  // return placeholderApplied && addBoldTags ? "<b>" + result + "</b>" : result;
+  return result;
 }

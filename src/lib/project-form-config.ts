@@ -19,6 +19,7 @@ export interface FormFieldConfig {
   min?: number;
   max?: number;
   step?: number;
+  value?: string;
   options?: string[] | { value: string; label: string; selected?: boolean }[];
   groupType?: "radio" | "multi-select"; // For button groups
   dataField?: string; // For OCR/scraping
@@ -29,17 +30,43 @@ export interface FormFieldConfig {
   readOnlyAtStatus?: number[]; // Control field read-only state based on project status - array of status values where field should be read-only
 }
 
-export interface ButtonGroupConfig {
+// Unified form element interface that combines fields, button groups, and actions
+export interface FormElementConfig {
   id: string;
   name: string;
+  type: "field" | "button-group" | "action";
+  elementType:
+    | "text"
+    | "number"
+    | "textarea"
+    | "checkbox"
+    | "slider"
+    | "select"
+    | "button-group"
+    | "component"
+    | "submit"
+    | "button";
   label: string;
-  type: "radio" | "multi-select";
-  cssClass: string;
-  options: { value: string; label: string; selected?: boolean }[];
-  allow?: string[]; // Control button group visibility based on user roles - array of allowed roles
-  hideAtStatus?: number[]; // Control button group visibility based on project status - array of status values where group should be hidden
-  readOnlyAtStatus?: number[]; // Control button group read-only state based on project status - array of status values where group should be read-only
-  selected?: boolean; // Control button group selected state - array of status values where group should be selected
+  placeholder?: string;
+  required?: boolean;
+  min?: number;
+  max?: number;
+  step?: number;
+  value?: string;
+  options?: string[] | { value: string; label: string; selected?: boolean }[];
+  groupType?: "radio" | "multi-select"; // For button groups
+  dataField?: string; // For OCR/scraping
+  component?: string; // Component name to render (e.g., "UnitSlider")
+  componentProps?: Record<string, any>; // Props to pass to the component
+  cssClass?: string; // For actions and button groups
+  icon?: string; // For actions
+  action?: string; // For actions
+  tab?: string; // For actions
+  variant?: "primary" | "secondary" | "success" | "danger" | "warning" | "info"; // For actions
+  allow?: string[]; // Control visibility based on user roles
+  hideAtStatus?: number[]; // Control visibility based on project status
+  readOnlyAtStatus?: number[]; // Control read-only state based on project status
+  columns?: 1 | 2 | 3 | 4 | 6 | 12; // Control grid column span (1=full width, 2=half, 3=third, etc.)
 }
 
 export interface FormActionConfig {
@@ -57,7 +84,7 @@ export interface FormActionConfig {
 
 // Helper function to check if a field or button group should be allowed based on user role
 export function isAllowed(
-  item: FormFieldConfig | ButtonGroupConfig | FormActionConfig,
+  item: FormFieldConfig | FormActionConfig,
   userRole?: string | null
 ): boolean {
   if (item.allow === undefined) {
@@ -89,16 +116,7 @@ export function isFieldStatusAllowed(
   if (projectStatus === null || projectStatus === undefined) return true; // If no status provided, show by default
   return !field.hideAtStatus.includes(projectStatus); // Hide if status is in the hideAtStatus array
 }
-
 // Helper function to check if a button group should be shown based on project status
-export function isButtonGroupStatusAllowed(
-  buttonGroup: ButtonGroupConfig,
-  projectStatus?: number | null
-): boolean {
-  if (!buttonGroup.hideAtStatus) return true; // If no hideAtStatus array specified, always display
-  if (projectStatus === null || projectStatus === undefined) return true; // If no status provided, show by default
-  return !buttonGroup.hideAtStatus.includes(projectStatus); // Hide if status is in the hideAtStatus array
-}
 
 // Helper function to check if a form field should be read-only based on project status
 export function isFieldReadOnly(field: FormFieldConfig, projectStatus?: number | null): boolean {
@@ -107,46 +125,14 @@ export function isFieldReadOnly(field: FormFieldConfig, projectStatus?: number |
   return field.readOnlyAtStatus.includes(projectStatus); // Read-only if status is in the readOnlyAtStatus array
 }
 
-// Helper function to check if a button group should be read-only based on project status
-export function isButtonGroupReadOnly(
-  buttonGroup: ButtonGroupConfig,
+// Helper function to check if a unified form element should be read-only based on project status
+export function isFormElementReadOnly(
+  element: FormElementConfig,
   projectStatus?: number | null
 ): boolean {
-  if (!buttonGroup.readOnlyAtStatus) return false; // If no readOnlyAtStatus array specified, not read-only
+  if (!element.readOnlyAtStatus) return false; // If no readOnlyAtStatus array specified, not read-only
   if (projectStatus === null || projectStatus === undefined) return false; // If no status provided, not read-only by default
-  return buttonGroup.readOnlyAtStatus.includes(projectStatus); // Read-only if status is in the readOnlyAtStatus array
-}
-
-// Function to get filtered form fields based on user role and project status
-export function getFilteredFormFields(
-  userRole?: string | null,
-  isNewProject: boolean = false,
-  projectStatus?: number | null
-): FormFieldConfig[] {
-  // For new projects, use status 0, otherwise use actual status
-  const effectiveStatus = isNewProject ? 0 : projectStatus;
-
-  let fields = PROJECT_FORM_FIELDS.filter(
-    (field) => isAllowed(field, userRole) && isFieldStatusAllowed(field, effectiveStatus)
-  );
-
-  return fields;
-}
-
-// Function to get filtered button groups based on user role and project status
-export function getFilteredButtonGroups(
-  userRole?: string | null,
-  isNewProject: boolean = false,
-  projectStatus?: number | null
-): ButtonGroupConfig[] {
-  // For new projects, use status 0, otherwise use actual status
-  const effectiveStatus = isNewProject ? 0 : projectStatus;
-
-  let groups = BUTTON_GROUPS.filter(
-    (group) => isAllowed(group, userRole) && isButtonGroupStatusAllowed(group, effectiveStatus)
-  );
-
-  return groups;
+  return element.readOnlyAtStatus.includes(projectStatus); // Read-only if status is in the readOnlyAtStatus array
 }
 
 // Function to get filtered form actions based on user role and project state
@@ -179,210 +165,6 @@ export function getFilteredFormActions(
   return actions;
 }
 
-// Core form fields
-export const PROJECT_FORM_FIELDS: FormFieldConfig[] = [
-  {
-    id: "address-input",
-    name: "address",
-    type: "component",
-    label: "Address / Title",
-    component: "GoogleAddressAutocomplete",
-    componentProps: {
-      placeholder: "Enter project address...",
-      required: true,
-    },
-    required: true,
-    dataField: "address",
-    allow: ["Admin", "Staff", "Client"], // All roles can see address
-    hideAtStatus: [
-      10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170, 180, 190, 200,
-    ], // Hide after proposal is signed off
-    readOnlyAtStatus: [
-      30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170, 180, 190, 200,
-    ], // Read-only after proposal is viewed but before signed off
-  },
-
-  // Company Name field (only shown for new projects with new client toggle on)
-  // {
-  //   id: "company-name-input",
-  //   name: "company_name",
-  //   type: "text",
-  //   label: "Company Name",
-  //   placeholder: "Company Name",
-  //   required: false,
-  //   dataField: "company_name",
-  //   allow: ["Admin", "Staff", "Client"], // All roles can see company name
-  //   hideAtStatus: [10, 20, 30, 40, 50, 60, 70, 80, 90], // Hide on existing projects
-  // },
-  // Owner email field (only shown for new projects with new client toggle on)
-  // {
-  //   id: "email-input",
-  //   name: "email",
-  //   type: "text",
-  //   label: "Email",
-  //   placeholder: "email@example.com",
-  //   required: true,
-  //   dataField: "email",
-  //   allow: ["Admin", "Staff"], // Only admin and staff can set email
-  //   hideAtStatus: [10, 20, 30, 40, 50, 60, 70, 80, 90], // Hide on existing projects
-  // },
-  // // First Name field (only shown for new projects with new client toggle on)
-  // {
-  //   id: "first-name-input",
-  //   name: "first_name",
-  //   type: "text",
-  //   label: "First Name",
-  //   placeholder: "First Name *",
-  //   required: true,
-  //   dataField: "first_name",
-  //   allow: ["Admin", "Staff", "Client"], // All roles can see first name
-  //   hideAtStatus: [10, 20, 30, 40, 50, 60, 70, 80, 90], // Hide on existing projects
-  // },
-  // // Last Name field (only shown for new projects with new client toggle on)
-  // {
-  //   id: "last-name-input",
-  //   name: "last_name",
-  //   type: "text",
-  //   label: "Last Name",
-  //   placeholder: "Last Name *",
-  //   required: true,
-  //   dataField: "last_name",
-  //   allow: ["Admin", "Staff", "Client"], // All roles can see last name
-  //   hideAtStatus: [10, 20, 30, 40, 50, 60, 70, 80, 90], // Hide on existing projects
-  // },
-
-  {
-    id: "title-input",
-    name: "title",
-    type: "text",
-    label: "Title",
-    placeholder: "Title",
-    dataField: "title",
-    allow: ["Admin", "Staff"], // Only admin and staff can see architect
-    hideAtStatus: [], // Hide after proposal is signed off
-    readOnlyAtStatus: [
-      20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170, 180, 190, 200,
-    ], // Read-only after proposal is viewed but before signed off
-  },
-  {
-    id: "architect-input",
-    name: "architect",
-    type: "text",
-    label: "Architect",
-    placeholder: "Architect",
-    dataField: "architect",
-    allow: ["Admin", "Staff", "Client"], // Only admin and staff can see architect
-    hideAtStatus: [], // Hide after proposal is signed off
-    readOnlyAtStatus: [
-      20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170, 180, 190, 200,
-    ], // Read-only after proposal is viewed but before signed off
-  },
-  {
-    id: "square-foot-input",
-    name: "sq_ft",
-    type: "number",
-    label: "Square Footage",
-    placeholder: "Gross Square Footage (GFA) *",
-    required: false,
-    min: 0,
-    max: 50000,
-    step: 1,
-    dataField: "square_foot",
-    allow: ["Admin", "Staff", "Client"], // All roles can see square footage
-    hideAtStatus: [], // Hide after proposal is signed off
-    readOnlyAtStatus: [
-      20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170, 180, 190, 200,
-    ], // Read-only after proposal is viewed but before signed off
-  },
-  {
-    id: "description-input",
-    name: "description",
-    type: "textarea",
-    label: "Description",
-    placeholder: "Project description...",
-    allow: ["Admin", "Staff", "Client"], // Only admin and staff can see description
-    hideAtStatus: [50, 60, 70, 80, 90], // Hide after proposal is viewed
-    readOnlyAtStatus: [
-      20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170, 180, 190, 200,
-    ], // Read-only after proposal is viewed but before signed off
-  },
-  {
-    id: "new-construction",
-    name: "new_construction",
-    type: "checkbox",
-    label: "New",
-    allow: ["Admin", "Staff", "Client"], // All roles can see new construction
-    readOnlyAtStatus: [
-      20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170, 180, 190, 200,
-    ], // Read-only after proposal is viewed but before signed off
-  },
-  // Units slider is now handled by UnitSlider.astro component
-  {
-    id: "units-slider",
-    name: "units",
-    type: "component",
-    label: "Units",
-    component: "UnitSlider",
-    componentProps: {
-      name: "units",
-      label: "Units",
-      required: false,
-    },
-    allow: ["Admin", "Staff", "Client"], // Only admin and staff can see units slider
-    // hideAtStatus: [0, 60, 70, 80, 90], // Hide on new projects and after proposal is signed off
-    readOnlyAtStatus: [
-      20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170, 180, 190, 200,
-    ], // Read-only after proposal is viewed but before signed off
-  },
-
-  {
-    id: "nfpa-input",
-    name: "nfpa_version",
-    type: "text",
-    label: "NFPA Version",
-    placeholder: "NFPA Version",
-    dataField: "nfpa_version",
-    allow: ["Admin", "Staff"], // Only admin and staff can see architect
-    hideAtStatus: [], // Hide after proposal is signed off
-    readOnlyAtStatus: [60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170, 180, 190, 200], // Read-only after proposal is viewed but before signed off
-  },
-  {
-    id: "site-access-input",
-    name: "site_access",
-    type: "text",
-    label: "Site access",
-    placeholder: "Site access for fire / rescue vehicles is via ____________",
-    dataField: "site_access",
-    allow: ["Admin", "Staff"], // Only admin and staff can see architect
-    hideAtStatus: [], // Hide after proposal is signed off
-    readOnlyAtStatus: [60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170, 180, 190, 200], // Read-only after proposal is viewed but before signed off
-  },
-
-  {
-    id: "exterior-beacon-input",
-    name: "exterior_beacon",
-    type: "text",
-    label: "Exterior Beacon",
-    placeholder: "An exterior fire alarm beacon ... visible from __________",
-    dataField: "site_access",
-    allow: ["Admin", "Staff"], // Only admin and staff can see architect
-    hideAtStatus: [], // Hide after proposal is signed off
-    readOnlyAtStatus: [60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170, 180, 190, 200], // Read-only after proposal is viewed but before signed off
-  },
-
-  {
-    id: "fire-sprinkler-installation-input",
-    name: "fire_sprinkler_installation",
-    type: "text",
-    label: "Fire Sprinkler Installation",
-    placeholder: "The fire sprinkler contractor will install: _______",
-    dataField: "fire_sprinkler_installation",
-    allow: ["Admin", "Staff"], // Only admin and staff can see architect
-    hideAtStatus: [], // Hide after proposal is signed off
-    readOnlyAtStatus: [60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170, 180, 190, 200], // Read-only after proposal is viewed but before signed off
-  },
-];
-
 // Form action button configurations
 export const FORM_ACTIONS: FormActionConfig[] = [
   {
@@ -411,7 +193,7 @@ export const FORM_ACTIONS: FormActionConfig[] = [
       "flex-1 w-full md:w-auto px-4 py-2 bg-red-600 text-white text-sm font-medium rounded-full hover:bg-red-700 transition-colors mt-6",
     action: "deleteProject",
     allow: ["Admin", "Staff"], // Only admin and staff can delete
-    hideAtStatus: [0], // Only show when specs are received (status 10)
+    hideAtStatus: [], // Only show when specs are received (status 10)
   },
   {
     id: "build-proposal",
@@ -481,17 +263,232 @@ export const FORM_ACTIONS: FormActionConfig[] = [
   // },
 ];
 
-// Button group configurations
-export const BUTTON_GROUPS: ButtonGroupConfig[] = [
+// Unified form elements array - combines fields, button groups, and actions in order
+export const UNIFIED_FORM_ELEMENTS: FormElementConfig[] = [
+  // Address field (special handling for new projects)
+  {
+    id: "address-input",
+    name: "address",
+    type: "field",
+    elementType: "component",
+    label: "Address / Title",
+    component: "GoogleAddressAutocomplete",
+    componentProps: {
+      placeholder: "Enter project address...",
+      required: true,
+    },
+    required: true,
+    dataField: "address",
+    allow: ["Admin", "Staff", "Client"],
+    hideAtStatus: [
+      10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170, 180, 190, 200,
+    ],
+    readOnlyAtStatus: [
+      30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170, 180, 190, 200,
+    ],
+    columns: 1, // Left column
+  },
+
+  // Title field
+  {
+    id: "title-input",
+    name: "title",
+    type: "field",
+    elementType: "text",
+    label: "Title",
+    placeholder: "Title",
+    dataField: "title",
+    allow: ["Admin", "Staff"],
+    hideAtStatus: [],
+    readOnlyAtStatus: [
+      20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170, 180, 190, 200,
+    ],
+    columns: 1, // Half width
+  },
+
+  // Architect field
+  {
+    id: "architect-input",
+    name: "architect",
+    type: "field",
+    elementType: "text",
+    label: "Architect",
+    placeholder: "Architect",
+    dataField: "architect",
+    allow: ["Admin", "Staff", "Client"],
+    hideAtStatus: [],
+    readOnlyAtStatus: [
+      20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170, 180, 190, 200,
+    ],
+    columns: 2, // Half width
+  },
+
+  // Square footage field
+  {
+    id: "square-foot-input",
+    name: "sq_ft",
+    type: "field",
+    elementType: "component",
+    label: "Square Footage",
+    placeholder: "Gross Square Footage (GFA) *",
+    required: false,
+    min: 0,
+    max: 50000,
+    step: 10,
+    component: "UnitSlider",
+    componentProps: {
+      required: false,
+    },
+    dataField: "sq_ft",
+    allow: ["Admin", "Staff", "Client"],
+    hideAtStatus: [],
+    readOnlyAtStatus: [
+      20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170, 180, 190, 200,
+    ],
+    columns: 2, // Half width
+  },
+
+  {
+    id: "nfpa-version-input",
+    name: "nfpa_version",
+    type: "field",
+    elementType: "text",
+    label: "NFPA Version",
+    placeholder: "NFPA Version",
+    dataField: "nfpa_version",
+    allow: ["Admin", "Staff"], // Only admin and staff can see architect
+    hideAtStatus: [], // Hide after proposal is signed off
+    readOnlyAtStatus: [60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170, 180, 190, 200], // Read-only after proposal is viewed but before signed off
+    columns: 2, // Half width
+  },
+  {
+    id: "hazardous-material-input",
+    name: "hazardous_material",
+    type: "field",
+    elementType: "text",
+    label: "Hazardous Material Usage and Storage",
+    placeholder: "None in excess of exempt amounts allowed by 780 CMR §307.1",
+    value: "None in excess of exempt amounts allowed by 780 CMR §307.1",
+    dataField: "hazardous_material",
+    allow: ["Admin", "Staff"], // Only admin and staff can see architect
+    hideAtStatus: [], // Hide after proposal is signed off
+    readOnlyAtStatus: [60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170, 180, 190, 200], // Read-only after proposal is viewed but before signed off
+    columns: 2, // Half width
+  },
+  {
+    id: "hps-commodities-input",
+    name: "hps_commodities",
+    type: "field",
+    elementType: "text",
+    label: "HPS Commodities",
+    placeholder: "High-Piled Storage (over 12 ft.) of Commodities",
+    value: "None in excess of exempt amounts allowed by 780 CMR §307.1",
+    dataField: "hps_commodities",
+    allow: ["Admin", "Staff"], // Only admin and staff can see architect
+    hideAtStatus: [], // Hide after proposal is signed off
+    readOnlyAtStatus: [60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170, 180, 190, 200], // Read-only after proposal is viewed but before signed off
+    columns: 2, // Half width
+  },
+  {
+    id: "site-access-input",
+    name: "site_access",
+    type: "field",
+    elementType: "text",
+    label: "Site Access",
+    placeholder: "Site access for fire / rescue vehicles is via ____________",
+    dataField: "site_access",
+    allow: ["Admin", "Staff"], // Only admin and staff can see architect
+    hideAtStatus: [0], // Hide after proposal is signed off
+    readOnlyAtStatus: [60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170, 180, 190, 200], // Read-only after proposal is viewed but before signed off
+    columns: 2, // Half width
+  },
+
+  {
+    id: "exterior-beacon-input",
+    name: "exterior_beacon",
+    type: "field",
+    elementType: "text",
+    label: "Exterior Beacon",
+    placeholder: "An exterior fire alarm beacon ... visible from __________",
+    dataField: "site_exterior_access",
+    allow: ["Admin", "Staff"], // Only admin and staff can see architect
+    hideAtStatus: [0], // Hide after proposal is signed off
+    readOnlyAtStatus: [60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170, 180, 190, 200], // Read-only after proposal is viewed but before signed off
+    columns: 2, // Half width
+  },
+
+  {
+    id: "fire-sprinkler-installation-input",
+    name: "fire_sprinkler_installation",
+    type: "field",
+    elementType: "text",
+    label: "Fire Sprinkler Installation",
+    placeholder: "The fire sprinkler contractor will install: _______",
+    dataField: "fire_sprinkler_installation",
+    allow: ["Admin", "Staff"], // Only admin and staff can see architect
+    hideAtStatus: [], // Hide after proposal is signed off
+    readOnlyAtStatus: [60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170, 180, 190, 200], // Read-only after proposal is viewed but before signed off
+    columns: 2, // Half width
+  },
+  {
+    id: "commencement-of-construction-input",
+    name: "commencement_of_construction",
+    type: "field",
+    elementType: "text",
+    label: "Commencement of Construction",
+    placeholder: "Estimated Commencement of Construction",
+    dataField: "commencement_of_construction",
+    allow: ["Admin", "Staff"], // Only admin and staff can see architect
+    hideAtStatus: [], // Hide after proposal is signed off
+    readOnlyAtStatus: [60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170, 180, 190, 200], // Read-only after proposal is viewed but before signed off
+    columns: 2, // Half width
+  },
+  {
+    id: "suppression-detection-systems-input",
+    name: "suppression_detection_systems",
+    type: "field",
+    elementType: "text",
+    label: "Suppression & Detection Systems",
+    placeholder: "Suppression & Detection Systems",
+    dataField: "commencement_of_construction",
+    allow: ["Admin", "Staff"], // Only admin and staff can see architect
+    hideAtStatus: [], // Hide after proposal is signed off
+    readOnlyAtStatus: [60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170, 180, 190, 200], // Read-only after proposal is viewed but before signed off
+    columns: 2, // Half width
+  },
+  // Building height field
+  {
+    id: "building-height-input",
+    name: "building_height",
+    type: "field",
+    elementType: "component",
+    label: "Building Height",
+    placeholder: "Building Height",
+    required: false,
+    min: 0,
+    max: 500,
+    step: 1,
+    component: "UnitSlider",
+    componentProps: {
+      required: false,
+    },
+    dataField: "building_height",
+    allow: ["Admin", "Staff"],
+    hideAtStatus: [],
+    readOnlyAtStatus: [50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170, 180, 190, 200],
+  },
+
+  // Fire Protection System Type button group
   {
     id: "fire-protection-system-type",
     name: "fire_protection_system_type",
+    type: "button-group",
+    elementType: "button-group",
     label: "Fire Protection System Type",
-    type: "radio",
+    groupType: "radio",
     cssClass: "fire-protection-system-type-radio",
-    allow: ["Admin", "Staff"], // All roles can see building type
-    // hideAtStatus: [60, 70, 80, 90], // Hide after proposal is signed off
-    readOnlyAtStatus: [60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170, 180, 190, 200], // Read-only after proposal is viewed but before signed off
+    allow: ["Admin", "Staff"],
+    readOnlyAtStatus: [60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170, 180, 190, 200],
     options: [
       {
         value:
@@ -503,19 +500,95 @@ export const BUTTON_GROUPS: ButtonGroupConfig[] = [
           "The fire protection system will be fed with a newly installed flushed and chlorinated Type K Copper fire service. Installation by licensed and bonded utility contractor.  Flushing and testing to be witnessed by the licensed fire sprinkler contractor.",
         label: "Type K Copper",
       },
+      {
+        value:
+          "The fire protection system installed will be fed by a residential GT-15 Goulds fire pump or equivalent. NFPA 13D requires 10 minutes of stored water supply calculated by the head flow of the two hydraulically most remote sprinkler heads. 2-26GPM = 600 Gallons of stored water.",
+        label: "GT-15 Goulds",
+      },
     ],
   },
+
+  // Floors below grade field
+  {
+    id: "floors-below-grade-input",
+    name: "floors_below_grade",
+    type: "field",
+    elementType: "component",
+    label: "Floors Below Grade",
+    placeholder: "Floors Below Grade",
+    required: false,
+    min: 0,
+    max: 5,
+    step: 1,
+    component: "UnitSlider",
+    componentProps: {
+      required: false,
+    },
+    dataField: "floors_below_grade",
+    allow: ["Admin", "Staff"],
+    hideAtStatus: [],
+    readOnlyAtStatus: [50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170, 180, 190, 200],
+  },
+
+  // Description field
+  {
+    id: "description-input",
+    name: "description",
+    type: "field",
+    elementType: "textarea",
+    label: "Description",
+    placeholder: "Project description...",
+    dataField: "description",
+    allow: ["Admin", "Staff", "Client"],
+    hideAtStatus: [50, 60, 70, 80, 90],
+    readOnlyAtStatus: [
+      20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170, 180, 190, 200,
+    ],
+  },
+
+  // New construction checkbox
+  {
+    id: "new-construction",
+    name: "new_construction",
+    type: "field",
+    elementType: "checkbox",
+    label: "New Construction",
+    allow: ["Admin", "Staff", "Client"],
+    readOnlyAtStatus: [
+      20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170, 180, 190, 200,
+    ],
+  },
+
+  // Units slider
+  {
+    id: "units-slider",
+    name: "units",
+    type: "field",
+    elementType: "component",
+    label: "Units",
+    component: "UnitSlider",
+    componentProps: {
+      required: false,
+    },
+    allow: ["Admin", "Staff", "Client"],
+    readOnlyAtStatus: [
+      20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170, 180, 190, 200,
+    ],
+  },
+
+  // Building Type button group
   {
     id: "building-type",
     name: "building",
+    type: "button-group",
+    elementType: "button-group",
     label: "Building",
-    type: "multi-select",
+    groupType: "multi-select",
     cssClass: "building-type-radio",
-    allow: ["Admin", "Staff", "Client"], // All roles can see building type
-    // hideAtStatus: [60, 70, 80, 90], // Hide after proposal is signed off
+    allow: ["Admin", "Staff", "Client"],
     readOnlyAtStatus: [
       20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170, 180, 190, 200,
-    ], // Read-only after proposal is viewed but before signed off
+    ],
     options: [
       { value: "Residential", label: "Residential" },
       { value: "Mixed use", label: "Mixed use" },
@@ -526,18 +599,20 @@ export const BUTTON_GROUPS: ButtonGroupConfig[] = [
       { value: "Institutional", label: "Institutional" },
     ],
   },
+
+  // Consulting Services button group
   {
     id: "consulting-services",
     name: "project",
+    type: "button-group",
+    elementType: "button-group",
     label: "Project",
-    type: "multi-select",
+    groupType: "multi-select",
     cssClass: "project-type-btns",
-    allow: ["Admin", "Staff", "Client"], // Only admin and staff can see consulting services
-    // hideAtStatus: [50, 60, 70, 80, 90], // Hide after proposal is viewed
+    allow: ["Admin", "Staff", "Client"],
     readOnlyAtStatus: [
       20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170, 180, 190, 200,
-    ], // Read-only after proposal is viewed but before signed off
-
+    ],
     options: [
       { value: "Sprinkler", label: "Sprinkler" },
       { value: "Alarm", label: "Alarm" },
@@ -548,36 +623,40 @@ export const BUTTON_GROUPS: ButtonGroupConfig[] = [
       { value: "Other", label: "Other" },
     ],
   },
+
+  // Tier button group
   {
     id: "tier",
     name: "tier",
+    type: "button-group",
+    elementType: "button-group",
     label: "Tier",
-    type: "multi-select",
+    groupType: "multi-select",
     cssClass: "project-type-btns",
-    allow: ["Admin", "Staff", "Client"], // Only admin and staff can see consulting services
-    // hideAtStatus: [50, 60, 70, 80, 90], // Hide after proposal is viewed
+    allow: ["Admin", "Staff", "Client"],
     readOnlyAtStatus: [
       20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170, 180, 190, 200,
-    ], // Read-only after proposal is viewed but before signed off
-
+    ],
     options: [
       { value: "Tier I", label: "Tier I" },
       { value: "Tier II", label: "Tier II" },
       { value: "Tier III", label: "Tier III" },
     ],
   },
+
+  // Fire Service button group
   {
     id: "fire-service",
     name: "service",
+    type: "button-group",
+    elementType: "button-group",
     label: "Supply / Service",
-    type: "radio",
+    groupType: "radio",
     cssClass: "fire-service-radio",
-    allow: ["Admin", "Staff", "Client"], // All roles can see fire service
+    allow: ["Admin", "Staff", "Client"],
     readOnlyAtStatus: [
       20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170, 180, 190, 200,
-    ], // Read-only after proposal is viewed but before signed off
-
-    // hideAtStatus: [60, 70, 80, 90], // Hide after proposal is signed off
+    ],
     options: [
       { value: "Pump & Tank", label: "Pump & Tank" },
       { value: "2' Copper", label: "2' Copper" },
@@ -586,18 +665,20 @@ export const BUTTON_GROUPS: ButtonGroupConfig[] = [
       { value: "Unknown", label: "Unknown" },
     ],
   },
+
+  // Reports Required button group
   {
-    id: "",
+    id: "reports-required",
     name: "requested_docs",
+    type: "button-group",
+    elementType: "button-group",
     label: "Reports Required",
-    type: "multi-select",
+    groupType: "multi-select",
     cssClass: "",
-    allow: ["Admin", "Staff"], // Only admin and staff can see reports required
+    allow: ["Admin", "Staff"],
     readOnlyAtStatus: [
       20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170, 180, 190, 200,
-    ], // Read-only after proposal is viewed but before signed off
-
-    // hideAtStatus: [50, 60, 70, 80, 90], // Hide after proposal is viewed
+    ],
     options: [
       { value: "Narrative", label: "Narrative", selected: true },
       { value: "Sprinkler", label: "Sprinkler", selected: true },
@@ -607,4 +688,118 @@ export const BUTTON_GROUPS: ButtonGroupConfig[] = [
       { value: "IBC", label: "IBC" },
     ],
   },
+
+  // Form Actions
+  {
+    id: "save-project",
+    name: "save-project",
+    type: "action",
+    elementType: "submit",
+    label: "Save Project",
+    icon: "bx-save",
+    variant: "primary",
+    cssClass:
+      "flex-1 w-full lg:w-auto px-4 py-2 bg-primary-600 text-white text-sm font-medium rounded-full hover:bg-primary-700 transition-colors mt-6",
+    allow: ["Admin", "Staff", "Client"],
+    hideAtStatus: [
+      60, 65, 70, 75, 80, 85, 90, 95, 100, 105, 110, 115, 120, 125, 130, 135, 140, 145, 150, 155,
+      160, 170, 180, 190, 200, 210, 220,
+    ],
+  },
+
+  {
+    id: "delete-project",
+    name: "delete-project",
+    type: "action",
+    elementType: "button",
+    label: "Delete Project",
+    icon: "bx-trash",
+    variant: "danger",
+    cssClass:
+      "flex-1 w-full md:w-auto px-4 py-2 bg-red-600 text-white text-sm font-medium rounded-full hover:bg-red-700 transition-colors mt-6",
+    action: "deleteProject",
+    allow: ["Admin", "Staff"],
+    hideAtStatus: [],
+  },
+
+  {
+    id: "build-proposal",
+    name: "build-proposal",
+    type: "action",
+    elementType: "button",
+    label: "Build Proposal",
+    icon: "bx-file-pdf",
+    tab: "proposal",
+    variant: "success",
+    cssClass:
+      "flex-1 w-full md:w-auto px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-full hover:bg-green-700 transition-colors mt-6",
+    action: "buildProposal",
+    allow: ["Admin", "Staff"],
+    hideAtStatus: [
+      0, 10, 30, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95, 100, 105, 110, 115, 120, 125, 130,
+      135, 140, 145, 150, 155, 160, 170, 180, 190, 200, 210, 220,
+    ],
+  },
 ];
+
+// Function to get filtered unified form elements based on user role and project status
+export function getFilteredUnifiedFormElements(
+  userRole?: string | null,
+  isNewProject: boolean = false,
+  projectStatus?: number | null
+): FormElementConfig[] {
+  // For new projects, use status 0, otherwise use actual status
+  const effectiveStatus = isNewProject ? 0 : projectStatus;
+
+  let elements = UNIFIED_FORM_ELEMENTS.filter(
+    (element) =>
+      isUnifiedElementAllowed(element, userRole) &&
+      isUnifiedElementStatusAllowed(element, effectiveStatus)
+  );
+
+  // Elements are already in the correct order from the array
+
+  // Change "Save Project" to "Create Project" for new projects
+  if (isNewProject) {
+    elements = elements.map((element) => {
+      if (element.id === "save-project") {
+        return {
+          ...element,
+          label: "Create Project",
+          icon: "bx-plus", // Change icon to plus for create
+        };
+      }
+      return element;
+    });
+  }
+
+  return elements;
+}
+
+// Helper function to check if a unified form element should be allowed based on user role
+export function isUnifiedElementAllowed(
+  element: FormElementConfig,
+  userRole?: string | null
+): boolean {
+  if (element.allow === undefined) {
+    return true; // Default to allowed if not specified
+  }
+
+  if (!userRole) {
+    return false; // No role provided, deny access
+  }
+
+  // Case-insensitive role matching
+  const normalizedUserRole = userRole.toLowerCase();
+  return element.allow.some((allowedRole) => allowedRole.toLowerCase() === normalizedUserRole);
+}
+
+// Helper function to check if a unified form element should be shown based on project status
+export function isUnifiedElementStatusAllowed(
+  element: FormElementConfig,
+  projectStatus?: number | null
+): boolean {
+  if (!element.hideAtStatus) return true; // If no hideAtStatus array specified, always display
+  if (projectStatus === null || projectStatus === undefined) return true; // If no status provided, show by default
+  return !element.hideAtStatus.includes(projectStatus); // Hide if status is in the hideAtStatus array
+}

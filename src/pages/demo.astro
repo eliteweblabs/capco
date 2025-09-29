@@ -1,4 +1,27 @@
 ---
+import { checkAuth } from "../lib/auth";
+const { currentUser, session, supabase, refreshToken, accessToken } = await checkAuth(
+  Astro.cookies
+);
+const currentRole = currentUser?.profile?.role || "Client";
+
+import { globalCompanyData } from "../pages/api/global-company-data";
+const {
+  globalCompanyName,
+  globalCompanySlogan,
+  globalCompanyAddress,
+  globalCompanyPhone,
+  globalCompanyEmail,
+  globalCompanyWebsite,
+  globalCompanyLogo,
+  globalCompanyLogoDark,
+  globalCompanyLogoLight,
+} = globalCompanyData();
+
+import { globalClasses } from "../pages/api/global-classes";
+const { globalInputClasses, globalPrimaryTextClasses, globalSecondaryTextClasses } =
+  globalClasses();
+
 import App from "../components/common/App.astro";
 import BookingDemo from "../components/common/BookingDemo.astro";
 import Hero from "../components/common/Hero.astro";
@@ -7,6 +30,10 @@ import Hero from "../components/common/Hero.astro";
 <App
   title="Book a Demo"
   description="Schedule a personalized demo of our fire protection system management platform. See how we can streamline your workflow."
+  currentUser={currentUser}
+  session={session}
+  supabase={supabase}
+  isBackend={true}
 >
   <div class="RZmKBZs1E1eXw8vkE6jY p_2EXc_a2sDA_h41l8QU">
     <div
@@ -18,7 +45,11 @@ import Hero from "../components/common/Hero.astro";
         description="Schedule a personalized demo of our fire protection system management platform. See how we can streamline your workflow."
       />
       <!-- Booking Demo Section -->
-      <BookingDemo />
+      <BookingDemo
+        globalInputClasses={globalInputClasses}
+        globalPrimaryTextClasses={globalPrimaryTextClasses}
+        globalSecondaryTextClasses={globalSecondaryTextClasses}
+      />
     </div>
   </div>
 </App>
