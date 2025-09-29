@@ -362,7 +362,7 @@ export const PROJECT_FORM_FIELDS: FormFieldConfig[] = [
     id: "exterior-beacon-input",
     name: "exterior_beacon",
     type: "text",
-    label: "Exterior beacon",
+    label: "Exterior Beacon",
     placeholder: "An exterior fire alarm beacon ... visible from __________",
     dataField: "site_access",
     allow: ["Admin", "Staff"], // Only admin and staff can see architect
@@ -374,7 +374,7 @@ export const PROJECT_FORM_FIELDS: FormFieldConfig[] = [
     id: "fire-sprinkler-installation-input",
     name: "fire_sprinkler_installation",
     type: "text",
-    label: "Sprinkler contractor will install",
+    label: "Fire Sprinkler Installation",
     placeholder: "The fire sprinkler contractor will install: _______",
     dataField: "fire_sprinkler_installation",
     allow: ["Admin", "Staff"], // Only admin and staff can see architect

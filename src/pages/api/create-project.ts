@@ -346,17 +346,19 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     //   });
     // });
 
-    // Prepare project data - match the update-project API structure
+    // Prepare project data - use dynamic mapping like update-project API
+    // Start with all form data and add required fields
     const projectData = {
+      ...body, // Include all form fields dynamically
       author_id: projectAuthorId,
+      // Handle special cases for specific fields
       title: body.title || body.address,
       address: body.address?.replace(/, USA$/, "") || body.address,
-      description: body.description,
       architect: body.architect && body.architect.trim() !== "" ? body.architect.trim() : null,
       sq_ft: body.sq_ft && body.sq_ft.trim() !== "" ? parseInt(body.sq_ft) : null,
       new_construction: body.new_construction === "on" || body.new_construction === true,
       units: body.units && body.units.trim() !== "" ? parseInt(body.units) : null,
-      // Button group fields - all are now consistently arrays
+      // Ensure button group fields are arrays
       building: body.building || [],
       project: body.project || [],
       tier: body.tier || [],
