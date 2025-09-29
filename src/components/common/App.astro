@@ -155,39 +155,6 @@ const debugData = {
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 
-    <!-- IMMEDIATE Safari viewport fix - runs before any other scripts -->
-    <script>
-      (function () {
-        // Check if iOS Safari immediately
-        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-        const isSafari =
-          /Safari/.test(navigator.userAgent) &&
-          !/Chrome|CriOS|FxiOS|EdgiOS/.test(navigator.userAgent);
-
-        if (isIOS && isSafari) {
-          console.log("🚀 [IMMEDIATE] iOS Safari detected - Applying immediate viewport fix");
-
-          // Set viewport height immediately
-          const setViewportHeight = () => {
-            const vh = window.innerHeight * 0.01;
-            document.documentElement.style.setProperty("--vh", vh + "px");
-            console.log("📐 [IMMEDIATE] Viewport height set to:", vh + "px");
-          };
-
-          // Apply immediately
-          setViewportHeight();
-
-          // Re-apply on orientation change
-          window.addEventListener("orientationchange", function () {
-            setTimeout(setViewportHeight, 100);
-          });
-
-          // Re-apply on resize
-          window.addEventListener("resize", setViewportHeight);
-        }
-      })();
-    </script>
-
     <title>{title + " → " + globalCompanyName}</title>
     <meta name="description" content={description} />
 
@@ -380,6 +347,44 @@ const debugData = {
     // Make data available globally for the proposal functions
     import { setupConsoleInterceptor } from "../../lib/console-interceptor.ts";
 
+    (window as any).isSafari18Beta = function () {
+      const ua = navigator.userAgent;
+      const isSafari18Beta =
+        /Safari/.test(ua) && /Version\/18\./.test(ua) && !/Chrome|CriOS|FxiOS|EdgiOS/.test(ua);
+
+      if (isSafari18Beta) {
+        console.log("🍎 [SAFARI-18-BETA] Applying orientation workaround for sticky positioning");
+
+        // Force orientation change workaround
+        const originalOrientation = screen.orientation?.type || "portrait";
+
+        // Request landscape orientation
+        if (screen.orientation && (screen.orientation as any).lock) {
+          (screen.orientation as any)
+            .lock("landscape")
+            .then(() => {
+              // Wait a moment then switch back to portrait
+              setTimeout(() => {
+                (screen.orientation as any)
+                  .lock("portrait")
+                  .then(() => {
+                    console.log("🍎 [SAFARI-18-BETA] Orientation workaround completed");
+                  })
+                  .catch(() => {
+                    // Fallback if orientation lock fails
+                    console.log("🍎 [SAFARI-18-BETA] Orientation lock failed, using fallback");
+                  });
+              }, 100);
+            })
+            .catch(() => {
+              // Fallback if orientation lock is not supported
+              console.log("🍎 [SAFARI-18-BETA] Orientation lock not supported");
+            });
+        }
+      }
+
+      return isSafari18Beta;
+    };
     // Window interface is defined in src/env.d.ts
 
     // showModal is now handled by UnifiedNotification.astro
@@ -1206,7 +1211,6 @@ const debugData = {
     }
 
     function isSafari18Beta(): any {
-      window.alert("isSafari18Beta");
       const ua = navigator.userAgent;
       return /Safari/.test(ua) && /Version\/18\./.test(ua) && !/Chrome|CriOS|FxiOS|EdgiOS/.test(ua);
     }
@@ -1215,9 +1219,12 @@ const debugData = {
       return window.innerWidth < 768;
     }
 
-    // Apply iOS Safari Mobile Beta specific CSS
-    if (isSafariIOS() && isSafari18Beta() && isMobile() && isSafari18Beta()) {
-      console.log("🍎 [APP] iOS Safari Mobile Beta detected - Applying specific CSS fixes");
+    // Apply iOS Safari Mobile Beta specific CSS and workaround
+    if (isSafariIOS() && isSafari18Beta() && isMobile()) {
+      console.log("🍎 [APP] iOS Safari Mobile Beta detected - Applying fixes and workaround");
+
+      // Trigger the orientation workaround
+      (window as any).isSafari18Beta();
 
       // Add iOS Safari Mobile Beta class to body
       document.body.classList.add("ios-safari-mobile-beta");
