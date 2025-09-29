@@ -98,6 +98,15 @@ import FeedbackWidget from "./FeedbackWidget.astro";
 const debugData = {
   // Original props
   title,
+  globalCompanyName,
+  globalCompanySlogan,
+  globalCompanyAddress,
+  globalCompanyPhone,
+  globalCompanyEmail,
+  globalCompanyWebsite,
+  globalCompanyLogo,
+  globalCompanyLogoDark,
+  globalCompanyLogoLight,
   description,
   currentUser,
   session,
@@ -108,15 +117,7 @@ const debugData = {
   projects,
   isBackend,
   id,
-  globalCompanyName,
-  globalCompanySlogan,
-  globalCompanyAddress,
-  globalCompanyPhone,
-  globalCompanyEmail,
-  globalCompanyWebsite,
-  globalCompanyLogo,
-  globalCompanyLogoDark,
-  globalCompanyLogoLight,
+
   // Derived properties
   isAuth,
   currentUserId,
@@ -187,7 +188,7 @@ const debugData = {
       })();
     </script>
 
-    <title>{title}</title>
+    <title>{title + " → " + globalCompanyName}</title>
     <meta name="description" content={description} />
 
     <link
@@ -209,12 +210,12 @@ const debugData = {
     <meta name="referrer" content="strict-origin-when-cross-origin" />
     <meta http-equiv="Cross-Origin-Embedder-Policy" content="unsafe-none" />
     <meta http-equiv="Cross-Origin-Opener-Policy" content="same-origin-allow-popups" />
-    <meta property="og:title" content={title} />
+    <meta property="og:title" content={title + " → " + globalCompanyName} />
     <meta property="og:description" content={description} />
     <meta property="og:image" content="/img/capco-logo.png" />
     <meta property="og:url" content={Astro.url} />
     <meta name="twitter:card" content={description} />
-    <meta name="twitter:title" content={title} />
+    <meta name="twitter:title" content={title + " → " + globalCompanyName} />
     <meta name="twitter:description" content={description} />
     <meta name="twitter:image" content="/img/capco-logo.png" />
 
@@ -325,7 +326,7 @@ const debugData = {
     <div
       class="YRrCJSr_j5nopfm4duUc wBVMFkIGfrKshbvi2gS1 jtAJHOc7mn7b4IKRO59D UZ9xFK4mqjHjj8e8yJwf h8KYXnua2NT4kTVzieom"
     >
-      <Aside currentUser={currentUser} project={project} />
+      <Aside currentUser={currentUser} project={project} globalInputClasses={globalInputClasses} />
 
       <div
         id="main-content"
@@ -379,38 +380,7 @@ const debugData = {
     // Make data available globally for the proposal functions
     import { setupConsoleInterceptor } from "../../lib/console-interceptor.ts";
 
-    // Local Window interface for this component's TypeScript intellisense
-    declare global {
-      interface Window {
-        // Global functions and utilities (alphabetized)
-        acceptProposal?: () => void;
-        addNewLineItem?: () => void;
-        clipboardData?: any;
-        createLineItemRow?: (data: any) => HTMLElement;
-        deleteProject?: (projectId: any) => void;
-        getProject?: (projectId: string | number) => Promise<any>;
-        handleNewStatusNotification?: any;
-        handleUrlNotification?: (type: string, message: string) => void;
-        hideNotification?: any;
-        initializeSubjectEditing?: () => void;
-        proposalHelper?: any;
-        proposalManager?: any;
-        refreshManager?: any;
-        requestPushNotificationPermission?: () => void;
-        resetForm?: any;
-        resetNotifications?: () => void;
-        sendEmail?: (emailData: any) => Promise<any>;
-        setPageLoadProjectStatus?: any;
-        showModal?: any;
-        switchTab?: any;
-        toggleCommentForm?: () => void;
-        trimText?: (text: string, maxLength?: number, suffix?: string) => string;
-        trimWords?: (text: string, wordLimit?: number, suffix?: string) => string;
-        updateProposalTotal?: () => void;
-        updateStatus?: (project: any, newStatus: number, statuses?: any) => Promise<any>;
-        validateEmail?: (email: string) => string | null;
-      }
-    }
+    // Window interface is defined in src/env.d.ts
 
     // showModal is now handled by UnifiedNotification.astro
 
@@ -480,6 +450,54 @@ const debugData = {
     (window as any).handleUrlNotification = function (type: string, message: string) {
       console.log(`[URL-NOTIFICATION] ${type}: ${message}`);
       // Implementation for handling URL-based notifications
+    };
+
+    (window as any).hideOnFormFocus = function (
+      elementSelector: string,
+      mobileOnly: boolean = false
+    ) {
+      // Check if we should only hide on mobile
+      if (mobileOnly && window.innerWidth >= 768) return;
+
+      const element = document.querySelector(elementSelector);
+      if (!element) return;
+
+      // Hide on input focus
+      const hideOnFocus = () => {
+        (element as HTMLElement).style.display = "none";
+      };
+
+      // Show on input blur
+      const showOnBlur = () => {
+        (element as HTMLElement).style.display = "block";
+      };
+
+      // Add event listeners to all form inputs
+      const inputs = document.querySelectorAll("input, textarea, select");
+      inputs.forEach((input) => {
+        input.addEventListener("focus", hideOnFocus);
+        input.addEventListener("blur", showOnBlur);
+      });
+
+      // Also handle dynamically added inputs
+      const observer = new MutationObserver((mutations) => {
+        mutations.forEach((mutation) => {
+          mutation.addedNodes.forEach((node) => {
+            if (node.nodeType === Node.ELEMENT_NODE) {
+              const element = node as Element;
+              const newInputs = element.querySelectorAll
+                ? element.querySelectorAll("input, textarea, select")
+                : [];
+              newInputs.forEach((input) => {
+                input.addEventListener("focus", hideOnFocus);
+                input.addEventListener("blur", showOnBlur);
+              });
+            }
+          });
+        });
+      });
+
+      observer.observe(document.body, { childList: true, subtree: true });
     };
 
     (window as any).sendEmail = async function (emailData: any, currentUser: any) {
@@ -747,7 +765,7 @@ const debugData = {
     });
 
     (window as any).updateStatus = async function (project: any, status: number, statuses?: any) {
-      window.showModal(
+      (window as any).showModal(
         "info",
         "Processing...",
         "Please wait... This may take a few seconds.",
@@ -924,6 +942,159 @@ const debugData = {
       // Implementation for setting project status
     };
 
+    // ===== UX UTILITY FUNCTIONS =====
+
+    // Scroll utilities
+    (window as any).scrollToTopOnMobile = function () {
+      if (window.innerWidth < 768) {
+        console.log("📱 [UX-UTILS] Scrolling to top on mobile device");
+        (window as any).scrollTo({ top: 0, behavior: "smooth" });
+      }
+    };
+
+    (window as any).scrollToTop = function (behavior = "smooth") {
+      console.log("📱 [UX-UTILS] Scrolling to top");
+      (window as any).scrollTo({ top: 0, behavior });
+    };
+
+    // Device detection
+    (window as any).isMobile = function () {
+      return window.innerWidth < 768;
+    };
+
+    (window as any).isTablet = function () {
+      return window.innerWidth >= 768 && window.innerWidth < 1024;
+    };
+
+    (window as any).isDesktop = function () {
+      return window.innerWidth >= 1024;
+    };
+
+    (window as any).getViewportSize = function () {
+      if (window.innerWidth < 768) return "mobile";
+      if (window.innerWidth < 1024) return "tablet";
+      return "desktop";
+    };
+
+    // Utility functions
+    (window as any).debounce = function (func: any, wait: any) {
+      let timeout: any;
+      return function executedFunction(...args: any[]) {
+        const later = () => {
+          clearTimeout(timeout);
+          func(...args);
+        };
+        clearTimeout(timeout);
+        timeout = setTimeout(later, wait);
+      };
+    };
+
+    (window as any).throttle = function (func: any, limit: any) {
+      let inThrottle: any;
+      return function executedFunction(this: any, ...args: any[]) {
+        if (!inThrottle) {
+          func.apply(this, args);
+          inThrottle = true;
+          setTimeout(() => (inThrottle = false), limit);
+        }
+      };
+    };
+
+    // Form utilities
+    (window as any).hideOnMobileInput = function (elementSelector: any) {
+      if (window.innerWidth >= 768) return;
+
+      const element = document.querySelector(elementSelector);
+      if (!element) return;
+
+      const hideOnFocus = () => {
+        (element as HTMLElement).style.display = "none";
+      };
+
+      const showOnBlur = () => {
+        (element as HTMLElement).style.display = "block";
+      };
+
+      const inputs = document.querySelectorAll("input, textarea, select");
+      inputs.forEach((input: any) => {
+        input.addEventListener("focus", hideOnFocus);
+        input.addEventListener("blur", showOnBlur);
+      });
+    };
+
+    // Safari detection
+    (window as any).isSafariIOS = function () {
+      const ua = navigator.userAgent;
+      const isIOS = /iPad|iPhone|iPod/.test(ua);
+      const isSafari = /Safari/.test(ua) && !/Chrome|CriOS|FxiOS|EdgiOS/.test(ua);
+      return isIOS && isSafari;
+    };
+
+    (window as any).isSafari = function () {
+      const ua = navigator.userAgent;
+      return /Safari/.test(ua) && !/Chrome|CriOS|FxiOS|EdgiOS/.test(ua);
+    };
+
+    (window as any).isSafari18Beta = function () {
+      const ua = navigator.userAgent;
+      return /Safari/.test(ua) && /Version\/18\./.test(ua) && !/Chrome|CriOS|FxiOS|EdgiOS/.test(ua);
+    };
+
+    (window as any).isSafari18OrLater = function () {
+      const ua = navigator.userAgent;
+      const safariMatch = ua.match(/Version\/(\d+)/);
+      if (!safariMatch) return false;
+      const version = parseInt(safariMatch[1]);
+      return /Safari/.test(ua) && !/Chrome|CriOS|FxiOS|EdgiOS/.test(ua) && version >= 18;
+    };
+
+    // Viewport utilities
+    (window as any).fixSafariViewport = function () {
+      if ((window as any).isSafariIOS()) {
+        const vh = window.innerHeight * 0.01;
+        document.documentElement.style.setProperty("--vh", vh + "px");
+      }
+    };
+
+    (window as any).immediateSafariViewportFix = function () {
+      if ((window as any).isSafariIOS()) {
+        const setViewportHeight = () => {
+          const vh = window.innerHeight * 0.01;
+          document.documentElement.style.setProperty("--vh", vh + "px");
+        };
+        setViewportHeight();
+        window.addEventListener("orientationchange", () => setTimeout(setViewportHeight, 100));
+        window.addEventListener("resize", setViewportHeight);
+      }
+    };
+
+    (window as any).setupViewportHandling = function () {
+      (window as any).immediateSafariViewportFix();
+    };
+
+    (window as any).ensureViewportBounds = function (minHeight = 400, maxHeight = 1200) {
+      const currentHeight = window.innerHeight;
+      if (currentHeight < minHeight || currentHeight > maxHeight) {
+        if ((window as any).showModal) {
+          (window as any).showModal(
+            "warning",
+            "Viewport Issue",
+            `Viewport height (${currentHeight}px) is outside recommended bounds (${minHeight}-${maxHeight}px)`,
+            5000
+          );
+        }
+      }
+    };
+
+    // Body scroll utilities
+    (window as any).lockBodyScroll = function () {
+      document.body.style.overflow = "hidden";
+    };
+
+    (window as any).unlockBodyScroll = function () {
+      document.body.style.overflow = "";
+    };
+
     // ===== END GLOBAL FUNCTIONS =====
 
     // Setup console interceptor (disables console.log in production)
@@ -982,7 +1153,7 @@ const debugData = {
   <!-- Expose centralized notification system to window object -->
   <script>
     // Suppress ResizeObserver loop warnings (they're usually harmless)
-    window.addEventListener("error", (e) => {
+    window.addEventListener("error", (e: any) => {
       if (e.message === "ResizeObserver loop completed with undelivered notifications.") {
         e.stopImmediatePropagation();
       }
@@ -993,10 +1164,10 @@ const debugData = {
       window.addEventListener("load", () => {
         navigator.serviceWorker
           .register("/sw.js")
-          .then((registration) => {
+          .then((registration: any) => {
             console.log("✅ Service Worker registered successfully:", registration.scope);
           })
-          .catch((error) => {
+          .catch((error: any) => {
             console.log("❌ Service Worker registration failed:", error);
           });
       });
@@ -1027,24 +1198,25 @@ const debugData = {
     };
 
     // iOS Safari Mobile Beta Detection and CSS Application
-    function isSafariIOS(): boolean {
+    function isSafariIOS(): any {
       const ua = navigator.userAgent;
       const isIOS = /iPad|iPhone|iPod/.test(ua);
       const isSafari = /Safari/.test(ua) && !/Chrome|CriOS|FxiOS|EdgiOS/.test(ua);
       return isIOS && isSafari;
     }
 
-    function isSafari18Beta(): boolean {
+    function isSafari18Beta(): any {
+      window.alert("isSafari18Beta");
       const ua = navigator.userAgent;
       return /Safari/.test(ua) && /Version\/18\./.test(ua) && !/Chrome|CriOS|FxiOS|EdgiOS/.test(ua);
     }
 
-    function isMobile(): boolean {
+    function isMobile(): any {
       return window.innerWidth < 768;
     }
 
     // Apply iOS Safari Mobile Beta specific CSS
-    if (isSafariIOS() && isSafari18Beta() && isMobile()) {
+    if (isSafariIOS() && isSafari18Beta() && isMobile() && isSafari18Beta()) {
       console.log("🍎 [APP] iOS Safari Mobile Beta detected - Applying specific CSS fixes");
 
       // Add iOS Safari Mobile Beta class to body

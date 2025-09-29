@@ -4,6 +4,24 @@ import { SimpleProjectLogger } from "../../../lib/simple-logging";
 import { getCarrierInfo } from "../../../lib/sms-carriers";
 import { supabase } from "../../../lib/supabase";
 import { supabaseAdmin } from "../../../lib/supabase-admin";
+import { globalCompanyData } from "../../../pages/api/global-company-data";
+const {
+  globalCompanyName,
+  globalCompanySlogan,
+  globalCompanyAddress,
+  globalCompanyPhone,
+  globalCompanyEmail,
+  globalCompanyWebsite,
+  globalCompanyLogo,
+  globalCompanyLogoDark,
+  globalCompanyLogoLight,
+} = globalCompanyData();
+
+import { globalClasses } from "../../../pages/api/global-classes";
+
+const { globalInputClasses, globalPrimaryTextClasses, globalSecondaryTextClasses } =
+  globalClasses();
+
 // Simple email validation
 const validateEmail = (email: string): string | null => {
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -187,7 +205,7 @@ export const POST: APIRoute = async ({ request, redirect, cookies }) => {
 
     // Send welcome email to the new user
     const displayName = companyName || `${firstName} ${lastName}`;
-    const welcomeContent = `<p>Welcome to CAPCo Fire Protection!<br></p>
+    const welcomeContent = `<p>Welcome to ${globalCompanyName}!<br></p>
 
 <b>Company Name:</b> ${displayName}<br>
 <b>Email:</b> ${email}<br>
@@ -212,7 +230,7 @@ export const POST: APIRoute = async ({ request, redirect, cookies }) => {
         },
         body: JSON.stringify({
           usersToNotify: [email], // Array of email strings
-          emailSubject: `Welcome to CAPCo Fire Protection → ${displayName}`,
+          emailSubject: `Welcome to ${globalCompanyName} → ${displayName}`,
           emailContent: welcomeContent,
           buttonText: "Access Your Dashboard",
           buttonLink: "/dashboard",
@@ -238,13 +256,16 @@ export const POST: APIRoute = async ({ request, redirect, cookies }) => {
     // Send notification email to all admin users about the new registration
     try {
       // Get all admin users
-      const { data: adminUsers, error: adminError } = await supabase
-        .from("profiles")
-        .select("id, first_name, last_name, role")
-        .eq("role", "Admin");
 
-      if (adminError) {
-        console.error("📧 [REGISTER] Failed to fetch admin users:", adminError);
+      const response = await fetch("/api/get-user-emails-by-role", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ roles: ["Admin", "Staff"] }),
+      });
+
+      const adminUsers = await response.json();
+      if (adminUsers.error) {
+        console.error("📧 [REGISTER] Failed to fetch admin users:", adminUsers.error);
       } else {
         // console.log("📧 [REGISTER] Found admin users:", adminUsers?.length || 0);
 
@@ -261,7 +282,7 @@ export const POST: APIRoute = async ({ request, redirect, cookies }) => {
         <b>Registration Date:</b> ${new Date().toLocaleDateString()}<br><br>`;
 
         // Send notification to all admin users
-        for (const admin of adminUsers || []) {
+        for (const admin of adminUsers.emails || []) {
           try {
             // Get admin's email using admin client
             const { data: adminUserProfile, error: authError } =
@@ -350,10 +371,10 @@ export const POST: APIRoute = async ({ request, redirect, cookies }) => {
     await SimpleProjectLogger.addLogEntry(
       0, // System log
       "user_registration",
-      { id: data.user.id, email: data.user.email },
+      { id: data?.user?.id, email: data?.user?.email },
       "New user registered via email",
       {
-        userId: data.user?.id,
+        userId: data?.user?.id,
         firstName,
         lastName,
         companyName,
@@ -373,11 +394,11 @@ export const POST: APIRoute = async ({ request, redirect, cookies }) => {
     JSON.stringify({
       success: true,
       message: "User registration successful",
-      user: data.user
+      user: data?.user
         ? {
-            id: data.user.id,
-            email: data.user.email,
-            needsConfirmation: !data.user.email_confirmed_at,
+            id: data?.user?.id,
+            email: data?.user?.email,
+            needsConfirmation: !data?.user?.email_confirmed_at,
           }
         : null,
       emailStatus: emailStatus,

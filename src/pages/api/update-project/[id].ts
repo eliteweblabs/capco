@@ -1,9 +1,5 @@
 import type { APIRoute } from "astro";
-import {
-  createErrorResponse,
-  createSuccessResponse,
-  getCurrentUser,
-} from "../../../lib/api-optimization";
+import { createErrorResponse, getCurrentUser } from "../../../lib/api-optimization";
 
 // Simple interface for project updates
 interface ProjectUpdateFormData {
@@ -87,7 +83,16 @@ export const PUT: APIRoute = async ({ request, cookies, params }) => {
       { oldData: currentProject, newData: project }
     );
 
-    return createSuccessResponse({ project }, "Project updated successfully");
+    return new Response(
+      JSON.stringify({
+        success: true,
+        project: project,
+      }),
+      {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      }
+    );
   } catch (error) {
     console.error("❌ [UPDATE-PROJECT] Unexpected error:", error);
     return createErrorResponse(
