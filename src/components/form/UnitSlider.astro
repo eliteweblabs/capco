@@ -6,6 +6,9 @@ export interface Props {
   label?: string;
   required?: boolean;
   readOnly?: boolean;
+  min?: number;
+  max?: number;
+  step?: number;
 }
 
 const {
@@ -15,9 +18,12 @@ const {
   label = "Units",
   required = false,
   readOnly = false,
+  min = 0,
+  max = 100,
+  step = 1,
 } = Astro.props;
 
-// Convert units value to slider position
+// Convert units value to slider position (only for units)
 const unitsOptions = [
   "1",
   "2",
@@ -35,10 +41,14 @@ const unitsOptions = [
   "40",
   "50",
 ];
-const sliderValue =
-  unitsOptions.indexOf(value.toString()) >= 0 ? unitsOptions.indexOf(value.toString()) : 0;
 
-const fieldId = `units-slider-${projectId}`;
+// Only use custom units logic if name is "units"
+const isUnitsSlider = name === "units";
+const sliderValue = isUnitsSlider 
+  ? (unitsOptions.indexOf(value.toString()) >= 0 ? unitsOptions.indexOf(value.toString()) : 0)
+  : value;
+
+const fieldId = `${name}-slider-${projectId}`;
 ---
 
 <div>
@@ -49,7 +59,7 @@ const fieldId = `units-slider-${projectId}`;
     }`}
   >
     {label}: <span
-      id={`units-value-${projectId}`}
+      id={`${name}-value-${projectId}`}
       class={`font-semibold ${
         readOnly ? "text-gray-500 dark:text-gray-400" : "text-primary-500 dark:text-primary-400"
       }`}>{value}</span
@@ -60,49 +70,55 @@ const fieldId = `units-slider-${projectId}`;
       type="range"
       id={fieldId}
       name={name}
-      min="0"
-      max="14"
+      min={isUnitsSlider ? "0" : min.toString()}
+      max={isUnitsSlider ? "14" : max.toString()}
+      step={isUnitsSlider ? "1" : step.toString()}
       value={sliderValue}
-      class={`w-full h-2 bg-gray-200 rounded-full appearance-none dark:bg-gray-700 units-range-slider ${
+      class={`w-full h-2 bg-gray-200 rounded-full appearance-none dark:bg-gray-700 ${
+        isUnitsSlider ? "units-range-slider" : "regular-range-slider"
+      } ${
         readOnly ? "cursor-not-allowed opacity-60" : "cursor-pointer"
       }`}
-      data-values={unitsOptions.join(",")}
-      aria-label="Select number of units"
+      data-values={isUnitsSlider ? unitsOptions.join(",") : ""}
+      aria-label={isUnitsSlider ? "Select number of units" : `Select ${label.toLowerCase()}`}
       {required}
       disabled={readOnly}
     />
-    <!-- Tick marks and labels positioned to match actual slider positions -->
-    <div class="relative mt-1 h-6 mb-3 mx-4">
-      {unitsOptions.map((unit, index) => {
-        // Calculate position as percentage across the slider (accounting for padding)
-        const position = (index / (unitsOptions.length - 1)) * 100;
-        
-        // Show labels for key values to avoid overcrowding
-        const showLabel = [0, 4, 9, 12, 14].includes(index); // positions for 1, 5, 10, 30, 50
-        
-        return (
-          <div 
-            class="absolute transform -translate-x-1/2"
-            style={`left: ${position}%`}
-          >
-            <!-- Small tick mark -->
-            <div class={`w-px bg-gray-300 dark:bg-gray-600 ${showLabel ? 'h-3' : 'h-2'} mx-auto`}></div>
-            
-            <!-- Label for key positions -->
-            {showLabel && (
-              <span class="block text-xs text-gray-500 dark:text-gray-400 text-center mt-1">
-                {unit}
-              </span>
-            )}
-          </div>
-        );
-      })}
-    </div>
+    <!-- Tick marks and labels positioned to match actual slider positions (only for units) -->
+    {isUnitsSlider && (
+      <div class="relative mt-1 h-6 mb-3 mx-4">
+        {unitsOptions.map((unit, index) => {
+          // Calculate position as percentage across the slider (accounting for padding)
+          const position = (index / (unitsOptions.length - 1)) * 100;
+          
+          // Show labels for key values to avoid overcrowding
+          const showLabel = [0, 4, 9, 12, 14].includes(index); // positions for 1, 5, 10, 30, 50
+          
+          return (
+            <div 
+              class="absolute transform -translate-x-1/2"
+              style={`left: ${position}%`}
+            >
+              <!-- Small tick mark -->
+              <div class={`w-px bg-gray-300 dark:bg-gray-600 ${showLabel ? 'h-3' : 'h-2'} mx-auto`}></div>
+              
+              <!-- Label for key positions -->
+              {showLabel && (
+                <span class="block text-xs text-gray-500 dark:text-gray-400 text-center mt-1">
+                  {unit}
+                </span>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    )}
   </div>
 </div>
 
 <style>
   /* Units slider styling - Override Flowbite */
+  .regular-range-slider,
   .units-range-slider {
     -webkit-appearance: none;
     appearance: none;
@@ -110,16 +126,19 @@ const fieldId = `units-slider-${projectId}`;
     cursor: pointer;
   }
 
+  .regular-range-slider::-webkit-slider-track,
   .units-range-slider::-webkit-slider-track {
     background: #e5e7eb;
     height: 8px;
     border-radius: 8px;
   }
 
+  .dark .regular-range-slider::-webkit-slider-track,
   .dark .units-range-slider::-webkit-slider-track {
     background: #374151;
   }
 
+  .regular-range-slider::-webkit-slider-thumb,
   .units-range-slider::-webkit-slider-thumb {
     -webkit-appearance: none;
     appearance: none;
@@ -132,6 +151,7 @@ const fieldId = `units-slider-${projectId}`;
     margin-top: -11px; /* Centers the thumb vertically on the track */
   }
 
+  .regular-range-slider::-moz-range-track,
   .units-range-slider::-moz-range-track {
     background: #e5e7eb;
     height: 8px;
@@ -139,10 +159,12 @@ const fieldId = `units-slider-${projectId}`;
     border: none;
   }
 
+  .dark .regular-range-slider::-moz-range-track,
   .dark .units-range-slider::-moz-range-track {
     background: var(--color-primary-dark-500);
   }
 
+  .regular-range-slider::-moz-range-thumb,
   .units-range-slider::-moz-range-thumb {
     background: var(--color-primary-500);
     height: 30px;
@@ -155,38 +177,46 @@ const fieldId = `units-slider-${projectId}`;
     margin-top: 0; /* Firefox handles centering differently */
   }
 
+  .dark .regular-range-slider::-webkit-slider-thumb,
   .dark .units-range-slider::-webkit-slider-thumb {
     background: var(--color-primary-dark-500);
   }
 
+  .dark .regular-range-slider::-moz-range-thumb,
   .dark .units-range-slider::-moz-range-thumb {
     background: var(--color-primary-dark-500);
   }
 
+  .regular-range-slider:focus,
   .units-range-slider:focus {
     outline: none;
   }
 
+  .regular-range-slider:focus::-webkit-slider-thumb,
   .units-range-slider:focus::-webkit-slider-thumb {
     box-shadow: 0 0 0 3px var(--color-primary-500);
   }
 
   /* Disabled state styling */
+  .regular-range-slider:disabled,
   .units-range-slider:disabled {
     cursor: not-allowed;
     opacity: 0.6;
   }
 
+  .regular-range-slider:disabled::-webkit-slider-thumb,
   .units-range-slider:disabled::-webkit-slider-thumb {
     background: #9ca3af;
     cursor: not-allowed;
   }
 
+  .regular-range-slider:disabled::-moz-range-thumb,
   .units-range-slider:disabled::-moz-range-thumb {
     background: #9ca3af;
     cursor: not-allowed;
   }
 
+  input[type="range"].regular-range-slider,
   input[type="range"].units-range-slider {
     background: transparent;
     border: none;
@@ -195,6 +225,7 @@ const fieldId = `units-slider-${projectId}`;
     margin: 0;
   }
 
+  input[type="range"].regular-range-slider::-webkit-slider-runnable-track,
   input[type="range"].units-range-slider::-webkit-slider-runnable-track {
     background: #e5e7eb;
     height: 8px;
@@ -202,24 +233,32 @@ const fieldId = `units-slider-${projectId}`;
     border: none;
   }
 
+  .dark input[type="range"].regular-range-slider::-webkit-slider-runnable-track,
   .dark input[type="range"].units-range-slider::-webkit-slider-runnable-track {
     background: #374151;
   }
 </style>
 
-<script define:vars={{ projectId, unitsOptions, readOnly }}>
-  // Update the units value display when slider changes
-  const slider = document.getElementById(`units-slider-${projectId}`);
-  const valueDisplay = document.getElementById(`units-value-${projectId}`);
+<script define:vars={{ projectId, unitsOptions, readOnly, name, isUnitsSlider }}>
+  // Update the value display when slider changes
+  const slider = document.getElementById(`${name}-slider-${projectId}`);
+  const valueDisplay = document.getElementById(`${name}-value-${projectId}`);
 
   if (slider && valueDisplay) {
     // Only add event listener if not read-only
     if (!readOnly) {
       slider.addEventListener("input", (e) => {
         const target = e.target;
-        const index = parseInt(target.value);
-        const unitsValue = unitsOptions[index] || "1";
-        valueDisplay.textContent = unitsValue;
+        const sliderValue = parseInt(target.value);
+        
+        if (isUnitsSlider) {
+          // For units slider, convert index to actual units value
+          const unitsValue = unitsOptions[sliderValue] || "1";
+          valueDisplay.textContent = unitsValue;
+        } else {
+          // For regular slider, use the value directly
+          valueDisplay.textContent = sliderValue;
+        }
       });
     }
   }

@@ -60,7 +60,7 @@ export const GET: APIRoute = async ({ request, cookies, url }) => {
     if (projectParam) {
       try {
         project = JSON.parse(decodeURIComponent(projectParam));
-        console.log("🔍 [PROJECT-STATUSES-API] Using provided project object:", project?.id);
+        console.log("🔍 [PROJECT-STATUSES-API] Using provided project object:", project);
       } catch (error) {
         console.error("🔍 [PROJECT-STATUSES-API] Error parsing project object:", error);
         project = null;
@@ -388,7 +388,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     // Handle project data - either full project object or just project ID
     if (project && typeof project === "object" && project.id) {
       projectData = project;
-      console.log("🔍 [PROJECT-STATUSES-API] Using provided project object:", projectData.id);
+      console.log("🔍 [PROJECT-STATUSES-API] Using provided project object:", projectData);
     } else if (projectId) {
       try {
         const parsedProjectId = parseInt(projectId);

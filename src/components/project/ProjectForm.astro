@@ -1,12 +1,7 @@
 ---
 import {
-  // BUTTON_GROUPS,
-  // PROJECT_FORM_FIELDS,
-  getFilteredFormFields,
-  getFilteredButtonGroups,
-  getFilteredFormActions,
-  isFieldReadOnly,
-  isButtonGroupReadOnly,
+  getFilteredUnifiedFormElements,
+  isFormElementReadOnly,
 } from "../../lib/project-form-config";
 
 import ToggleButton from "../form/ToggleButton.astro";
@@ -40,12 +35,8 @@ const currentRole = currentUser?.profile?.role;
 const projectId = project?.id;
 // Generate a temporary ID for new projects
 const formId = isNewProject ? `Yeah-${Date.now()}` : projectId || "";
-// Filter fields based on user role and project status
-const formFields = getFilteredFormFields(currentRole, isNewProject, projectStatus);
-// Get filtered button groups based on user role and project status
-const buttonGroups = getFilteredButtonGroups(currentRole, isNewProject, projectStatus);
-// Get filtered form actions based on user role and project status
-const formActions = getFilteredFormActions(currentRole, isNewProject, projectStatus);
+// Get unified form elements based on user role and project status
+const formElements = getFilteredUnifiedFormElements(currentRole, isNewProject, projectStatus);
 ---
 
 <form
@@ -56,293 +47,303 @@ const formActions = getFilteredFormActions(currentRole, isNewProject, projectSta
   data-project-data={JSON.stringify(project || {})}
   autocomplete="off"
 >
-  <!-- Address Input -->
-  <div class="grid grid-cols-1 gap-4 lg:grid-cols-1">
+  <!-- Unified Form Elements Loop -->
+  <div class="grid grid-cols-12 gap-4">
     {
-
-      isNewProject ? (
-
-      <SlotMachineModal
-          id="address"
-          icon="map-pin"
-          title="Select Address"
-          options={[]}
-          selectedValue={project?.address || ""}
-          placeholder="Search for an address..."
-          showCloseButton={true}
-          showCancelButton={true}
-          fetchOnLoad={false}
-          buttonText="Select Address *"
-          buttonClass="w-full"
-          searchText="Search Address"
-          searchPlaceholder="Type to search addresses..."
-          fetchApiEndpoint="/api/places-autocomplete"
-          apiParams={{
-            types: "address",
-            components: "country:us",
-            locationBias: "circle:100@42.3601,-71.0589",
-          }}
-          valueField="description"
-          showImages={true}
-          imageField=""
-          noResultsText="Type to search addresses..."
-          skipSaveToAPI={true}
-          currentUser={currentUser}
-          project={project}
-        />
-
+      formElements.map((element) => {
+        const isReadOnly = isFormElementReadOnly(element, projectStatus);
+      
+      // Handle special cases first
+      if (element.id === "address-input") {
+        // Determine column class for address field
+        const columnClass = element.columns === 1 ? "col-span-12" : 
+                           element.columns === 2 ? "col-span-6" : 
+                           element.columns === 3 ? "col-span-4" : 
+                           element.columns === 4 ? "col-span-3" : 
+                           element.columns === 6 ? "col-span-2" : 
+                           element.columns === 12 ? "col-span-1" : "col-span-12";
         
-      ) : (
-        <input
-          type="text"
-          id="address"
-          name="address"
-          value={project?.address || ""}
-          class="hidden"
-        />
-      )
-    }
-    <!-- Client Information (Admin/Staff Only) -->
-    {
-      isNewProject && (currentRole === "Admin" || currentRole === "Staff") && (
-        <IsNewOrExistingClient 
-          globalInputClasses={globalInputClasses}
-          globalSecondaryTextClasses={globalSecondaryTextClasses}
-          globalPrimaryTextClasses={globalPrimaryTextClasses}
-       
-        />
-      )
-    }
-  </div>
-
-  <!-- Other Core Fields Grid -->
-  <div class="grid grid-cols-1 gap-4 lg:grid-cols-2">
-    {
-      formFields
-        .filter(
-          (field) =>
-            field.name !== "address" &&
-            field.name !== "first_name" &&
-            field.name !== "last_name" &&
-            field.name !== "company_name" &&
-            field.name !== "email" &&
-            (field.type === "text" || field.type === "number")
-        )
-        .map((field) => {
-          const isReadOnly = isFieldReadOnly(field, projectStatus);
-          return (
-            <div class="relative">
-              <label
-                for={`${field.id}`}
-                class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300"
-              >
-                {field.label}
-                {field.required ? " *" : ""}
-              </label>
-              {field.name === "sq_ft" ? (
-                <div class="relative">
-                  <input
-                    type="text"
-                    id={`${field.id}`}
-                    name={field.name}
-                    value={project?.[field.name] || ""}
-                    class={`${globalInputClasses} ${
-                      isReadOnly ? "cursor-not-allowed bg-gray-100 dark:bg-gray-800" : ""
-                    }`}
-                    placeholder={field.placeholder || ""}
-                    required={field.required}
-                    readonly={isReadOnly}
-                    data-field={field.dataField}
-                    data-project-id={formId}
-                    inputmode="numeric"
-                    pattern="[0-9]*"
-                  />
-                  <div class="absolute inset-y-0 right-0 flex items-center pr-3">
-                    <span class="text-sm text-gray-500 dark:text-gray-400">ft²</span>
-                  </div>
-                </div>
+        return (
+          <div class={`relative ${columnClass}`}>
+            {
+              isNewProject ? (
+                <SlotMachineModal
+                  id="address"
+                  icon="map-pin"
+                  title="Select Address"
+                  options={[]}
+                  selectedValue={project?.address || ""}
+                  placeholder="Search for an address..."
+                  showCloseButton={true}
+                  showCancelButton={true}
+                  fetchOnLoad={false}
+                  buttonText="Select Address *"
+                  buttonClass="w-full"
+                  searchText="Search Address"
+                  searchPlaceholder="Type to search addresses..."
+                  fetchApiEndpoint="/api/places-autocomplete"
+                  apiParams={{
+                    types: "address",
+                    components: "country:us",
+                    locationBias: "circle:100@42.3601,-71.0589",
+                  }}
+                  valueField="description"
+                  showImages={true}
+                  imageField=""
+                  noResultsText="Type to search addresses..."
+                  skipSaveToAPI={true}
+                  currentUser={currentUser}
+                  project={project}
+                />
               ) : (
                 <input
-                  type={field.type === "number" ? "number" : "text"}
-                  id={`${field.id}`}
-                  name={field.name}
-                  value={project?.[field.name] || ""}
-                  class={`${globalInputClasses} ${
-                    isReadOnly ? "cursor-not-allowed bg-gray-100 dark:bg-gray-800" : ""
-                  }`}
-                  placeholder={field.placeholder || ""}
-                  required={field.required}
-                  min={field.min}
-                  max={field.max}
-                  step={field.step}
-                  readonly={isReadOnly}
-                  data-field={field.dataField}
+                  type="text"
+                  id="address"
+                  name="address"
+                  value={project?.address || ""}
+                  class="hidden"
                 />
-              )}
-            </div>
-          );
-        })
-    }
-  </div>
-
-  <!-- Description Field -->
-  {
-    formFields
-      .filter((field) => field.type === "textarea")
-      .map((field) => {
-        const isReadOnly = isFieldReadOnly(field, projectStatus);
-        return (
-          <div class="grid grid-cols-1 gap-4 lg:grid-cols-1">
-            <div class="relative">
-              <label
-                for={`${field.id}`}
-                class="block text-sm font-medium text-gray-700 dark:text-gray-300"
-              >
-                {field.label}
-              </label>
-              <!-- @ts-ignore -->
-              <textarea id={`${field.id}`} name={field.name} rows="3" class={globalInputClasses} placeholder={field.placeholder || ""} readonly={isReadOnly}>{project?.[field.name] || ""}</textarea>
-            </div>
+              )
+            }
+            {/* <!-- Client Information (Admin/Staff Only) --> */}
+            {
+              isNewProject && (currentRole === "Admin" || currentRole === "Staff") && (
+                <IsNewOrExistingClient 
+                  globalInputClasses={globalInputClasses}
+                  globalSecondaryTextClasses={globalSecondaryTextClasses}
+                  globalPrimaryTextClasses={globalPrimaryTextClasses}
+                />
+              )
+            }
           </div>
         );
-      })
-  }
+      }
 
-  <!-- Construction Type & Units Row -->
-  <div class="grid grid-cols-1 gap-4 lg:grid-cols-2">
-    <!-- Construction Type -->
-    <div>
-      <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300"
-        >Construction Type</label
-      >
-      <div class="flex gap-4">
-        {
-          formFields
-            .filter((field) => field.type === "checkbox" && field.name !== "new_client")
-            .map((field) => {
-              const isReadOnly = isFieldReadOnly(field, projectStatus);
-              const isChecked =
-                project?.[field.name] === true ||
-                project?.[field.name] === "true" ||
-                project?.[field.name] === 1 ||
-                project?.[field.name] === "1";
-              return (
-                <label
-                  class={`inline-flex items-center ${isReadOnly ? "cursor-not-allowed" : "cursor-pointer"}`}
-                >
-                  <input
-                    type="checkbox"
-                    id={`${field.id}`}
-                    name={field.name}
-                    checked={isChecked}
-                    disabled={isReadOnly}
-                    class="peer sr-only"
-                  />
-                  <div
-                    class={`peer relative h-6 w-11 rounded-full after:absolute after:start-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:border after:border-gray-300 after:bg-white after:transition-all after:content-[''] peer-checked:after:translate-x-full peer-checked:after:border-white peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 dark:border-gray-600 dark:peer-focus:ring-primary-800 rtl:peer-checked:after:-translate-x-full ${
-                      isReadOnly
-                        ? "cursor-not-allowed bg-gray-300 dark:bg-gray-600"
-                        : "bg-gray-200 peer-checked:bg-primary-600 dark:bg-gray-700 dark:peer-checked:bg-primary-600"
-                    }`}
-                  />
-                  <span class="ms-3 text-sm font-medium text-gray-900 dark:text-gray-300">
-                    {field.label}
-                  </span>
-                </label>
-              );
-            })
-        }
-      </div>
-    </div>
-
-    <!-- Units Slider -->
-    {
-      formFields
-        .filter((field) => field.type === "component" && field.component === "UnitSlider")
-        .map((field) => {
-          const isReadOnly = isFieldReadOnly(field, projectStatus);
+      // Handle form fields
+      if (element.type === "field") {
+        
+        if (element.elementType === "text" || element.elementType === "number") {
+          const columnClass = element.columns === 1 ? "col-span-12" : 
+                             element.columns === 2 ? "col-span-6" : 
+                             element.columns === 3 ? "col-span-4" : 
+                             element.columns === 4 ? "col-span-3" : 
+                             element.columns === 6 ? "col-span-2" : 
+                             element.columns === 12 ? "col-span-1" : "col-span-6";
+          
           return (
-            <UnitSlider projectId={formId} value={project?.units || 1} readOnly={isReadOnly} />
+            <div class={`relative ${columnClass}`}>
+              <label
+                for={`${element.id}`}
+                class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300"
+              >
+                {element.label}
+                {element.required ? " *" : ""}
+              </label>
+              <input
+                type={element.elementType === "number" ? "number" : "text"}
+                id={`${element.id}`}
+                name={element.name}
+                value={project?.[element.name] && project[element.name] !== "" ? project[element.name] : (element.value || "")}
+                class={`${globalInputClasses} ${
+                  isReadOnly ? "cursor-not-allowed bg-gray-100 dark:bg-gray-800" : ""
+                }`}
+                autocomplete="off"
+                placeholder={element.placeholder || ""}
+                required={element.required}
+                min={element.min}
+                max={element.max}
+                step={element.step}
+                readonly={isReadOnly}
+                data-field={element.dataField}
+              />
+            </div>
           );
-        })
-    }
-  </div>
+        }
 
-  <!-- Button Groups -->
-  {
-    buttonGroups.map((group) => {
-      const isReadOnly = isButtonGroupReadOnly(group, projectStatus);
-      // Parse selected values from project data
-      let selectedValues = [] as any;
-      console.log(`🔍 [PROJECT-FORM] Processing group: ${group.name}, Project data:`, project?.[group.name]);
-      if (project?.[group.name]) {
-        if (Array.isArray(project[group.name])) {
-          selectedValues = project[group.name];
-        } else if (typeof project[group.name] === "string") {
-          try {
-            const parsed = JSON.parse(project[group.name]);
-            selectedValues = Array.isArray(parsed) ? parsed : [project[group.name]];
-          } catch {
-            selectedValues = project[group.name]
-              .split(",")
-              .map((s: any) => s.trim())
-              .filter((s: any) => s);
-          }
-        } else {
-          selectedValues = [project[group.name]];
+        if (element.elementType === "textarea") {
+          const columnClass = element.columns === 1 ? "col-span-12" : 
+                             element.columns === 2 ? "col-span-6" : 
+                             element.columns === 3 ? "col-span-4" : 
+                             element.columns === 4 ? "col-span-3" : 
+                             element.columns === 6 ? "col-span-2" : 
+                             element.columns === 12 ? "col-span-1" : "col-span-12";
+          
+          return (
+            <div class={`relative ${columnClass}`}>
+              <label
+                for={`${element.id}`}
+                class="block text-sm font-medium text-gray-700 dark:text-gray-300"
+              >
+                {element.label}
+              </label>
+              <!-- @ts-ignore -->
+              <textarea id={`${element.id}`} name={element.name} rows="3" class={globalInputClasses} placeholder={element.placeholder || ""} readonly={isReadOnly} >{project?.[element.name] && project[element.name] !== "" ? project[element.name] : (element.value || "")}</textarea>
+            </div>
+          );
+        }
+
+        if (element.elementType === "checkbox") {
+          const columnClass = element.columns === 1 ? "col-span-12" : 
+                             element.columns === 2 ? "col-span-6" : 
+                             element.columns === 3 ? "col-span-4" : 
+                             element.columns === 4 ? "col-span-3" : 
+                             element.columns === 6 ? "col-span-2" : 
+                             element.columns === 12 ? "col-span-1" : "col-span-6";
+          
+          const isChecked =
+            project?.[element.name] === true ||
+            project?.[element.name] === "true" ||
+            project?.[element.name] === 1 ||
+            project?.[element.name] === "1";
+          return (
+            <div class={`relative ${columnClass}`}>
+              <label
+                class={`inline-flex items-center ${isReadOnly ? "cursor-not-allowed" : "cursor-pointer"}`}
+              >
+                <input
+                  type="checkbox"
+                  id={`${element.id}`}
+                  name={element.name}
+                  checked={isChecked}
+                  disabled={isReadOnly}
+                  class="peer sr-only"
+                />
+                <div
+                  class={`peer relative h-6 w-11 rounded-full after:absolute after:start-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:border after:border-gray-300 after:bg-white after:transition-all after:content-[''] peer-checked:after:translate-x-full peer-checked:after:border-white peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 dark:border-gray-600 dark:peer-focus:ring-primary-800 rtl:peer-checked:after:-translate-x-full ${
+                    isReadOnly
+                      ? "cursor-not-allowed bg-gray-300 dark:bg-gray-600"
+                      : "bg-gray-200 peer-checked:bg-primary-600 dark:bg-gray-700 dark:peer-checked:bg-primary-600"
+                  }`}
+                />
+                <span class="ms-3 text-sm font-medium text-gray-900 dark:text-gray-300">
+                  {element.label}
+                </span>
+              </label>
+            </div>
+          );
+        }
+
+        if (element.elementType === "component" && element.component === "UnitSlider") {
+          const columnClass = element.columns === 1 ? "col-span-12" : 
+                             element.columns === 2 ? "col-span-6" : 
+                             element.columns === 3 ? "col-span-4" : 
+                             element.columns === 4 ? "col-span-3" : 
+                             element.columns === 6 ? "col-span-2" : 
+                             element.columns === 12 ? "col-span-1" : "col-span-6";
+          
+          return (
+            <div class={`relative ${columnClass}`}>
+              <UnitSlider 
+                projectId={formId} 
+                value={project?.[element.name] && project[element.name] !== "" ? project[element.name] : (element.value || 1)} 
+                readOnly={isReadOnly}
+                name={element.name}
+                label={element.label}
+                min={element.min}
+                max={element.max}
+                step={element.step}
+              />
+            </div>
+          );
         }
       }
 
-      return (
-        <div class="mt-5 space-y-3">
-          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
-            {group.label}
-          </label>
-          <div
-            class={`mb-4 flex flex-wrap gap-2 ${isReadOnly ? "cursor-not-allowed opacity-75" : ""}`}
-          >
-            {group.options.map((option) => {
-              const isSelected = selectedValues.includes(option.value) || option.selected === true;
-              // console.log(`🔍 [PROJECT-FORM] Group: ${group.name}, Option: ${option.value}, SelectedValues:`, selectedValues, 'Option.selected:', option.selected, 'IsSelected:', isSelected);
-              return (
-                <ToggleButton
-                  value={option.value}
-                  group={group.name}
-                  type={group.type}
-                  disabled={isReadOnly}
-                  class={`${group.cssClass} ${isSelected ? "toggle-button selected" : "toggle-button"} ${
-                    isReadOnly ? "pointer-events-none" : ""
-                  }`}
-                >
-                  {option.label}
-                </ToggleButton>
-              );
-            })}
+      // Handle button groups
+      if (element.type === "button-group") {
+        const columnClass = element.columns === 1 ? "col-span-12" : 
+                           element.columns === 2 ? "col-span-6" : 
+                           element.columns === 3 ? "col-span-4" : 
+                           element.columns === 4 ? "col-span-3" : 
+                           element.columns === 6 ? "col-span-2" : 
+                           element.columns === 12 ? "col-span-1" : "col-span-12";
+        
+        // Parse selected values from project data
+        let selectedValues = [] as any;
+        console.log(`🔍 [PROJECT-FORM] Processing group: ${element.name}, Project data:`, project?.[element.name]);
+        if (project?.[element.name]) {
+          if (Array.isArray(project[element.name])) {
+            selectedValues = project[element.name];
+          } else if (typeof project[element.name] === "string") {
+            try {
+              const parsed = JSON.parse(project[element.name]);
+              selectedValues = Array.isArray(parsed) ? parsed : [project[element.name]];
+            } catch {
+              selectedValues = project[element.name]
+                .split(",")
+                .map((s: any) => s.trim())
+                .filter((s: any) => s);
+            }
+          } else {
+            selectedValues = [project[element.name]];
+          }
+        }
+
+        return (
+          <div class={`mt-5 space-y-3 ${columnClass}`}>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+              {element.label}
+            </label>
+            <div
+              class={`mb-4 flex flex-wrap gap-2 ${isReadOnly ? "cursor-not-allowed opacity-75" : ""}`}
+            >
+              {element.options?.map((option) => {
+                const optionValue = typeof option === 'string' ? option : option.value;
+                const optionLabel = typeof option === 'string' ? option : option.label;
+                const isSelected = selectedValues.includes(optionValue) || (typeof option === 'object' && option.selected === true);
+                return (
+                  <ToggleButton
+                    value={optionValue}
+                    group={element.name}
+                    type={element.groupType}
+                    disabled={isReadOnly}
+                    class={`${element.cssClass || ""} ${isSelected ? "toggle-button selected" : "toggle-button"} ${
+                      isReadOnly ? "pointer-events-none" : ""
+                    }`}
+                  >
+                    {optionLabel}
+                  </ToggleButton>
+                );
+              })}
+            </div>
           </div>
-        </div>
-      );
+        );
+      }
+
+      // Skip actions in main loop - they're handled separately
+      if (element.type === "action") {
+        return null;
+      }
+
+      return null;
     })
   }
-  <!-- Form Actions -->
+  </div>
+
+  <!-- Form Actions Container -->
   <div class="flex gap-2 pt-4 dark:border-gray-600">
     {
-      formActions.map((action: any) => (
-        <Button
-          type={action.type}
-          variant={action.variant === "info" ? "primary" : action.variant || "primary"}
-          size="md"
-          icon={action.icon}
-          iconPosition="left"
-          class={action.cssClass}
-          id={action.id}
-          dataAttributes={{
-            "data-action": action.action,
-            "data-tab": action.tab,
-          }}
-        >
-          {action.label}
-        </Button>
-      ))
+      formElements
+        .filter((element) => element.type === "action")
+        .map((element) => {
+          const isReadOnly = isFormElementReadOnly(element, projectStatus);
+          return (
+            <Button
+              type={element.elementType === "submit" ? "submit" : "button"}
+              variant={element.variant === "info" ? "primary" : element.variant || "primary"}
+              size="md"
+              icon={element.icon}
+              iconPosition="left"
+              class={element.cssClass || ""}
+              id={element.id}
+              dataAttributes={{
+                "data-action": element.action || "",
+                "data-tab": element.tab || "",
+              }}
+            >
+              {element.label}
+            </Button>
+          );
+        })
     }
   </div>
 </form>
@@ -487,8 +488,10 @@ const formActions = getFilteredFormActions(currentRole, isNewProject, projectSta
             // console.log("📝 [ProjectForm] About to make fetch call to test endpoint");
             try {
               // console.log("📝 [ProjectForm] Making fetch call now...");
+
               const nextStatus = 10;
               const statusResult = await (window as any).updateStatus(result.project, nextStatus, undefined);
+
 
               // console.log("📝 [ProjectForm] Update status call completed");
               // console.log("📝 [ProjectForm] Response parsed successfully");
@@ -496,8 +499,8 @@ const formActions = getFilteredFormActions(currentRole, isNewProject, projectSta
               // console.log("📝 [ProjectForm] Status update response:", statusResult);
 
               // Handle the status update response with redirect logic
-              (window as any).handleNewStatusNotification(statusResult, "PROJECT-FORM");
-              // window.location.href = `/project/${statusResult.project.id}`;
+              // (window as any).handleNewStatusNotification(statusResult, "PROJECT-FORM");
+              window.location.href = `/project/${statusResult.project.id}`;
 
             } catch (statusError) {
               console.error("📝 [ProjectForm] Status update failed:", statusError);
@@ -649,7 +652,7 @@ const formActions = getFilteredFormActions(currentRole, isNewProject, projectSta
     const form = document.querySelector('form[data-is-new-project="true"]');
     if (form) {
       // console.log("🧹 [ProjectForm] Auto-resetting new project form");
-      resetForm();
+      // resetForm();
     }
     // Make resetForm globally available
     window.resetForm = resetForm;

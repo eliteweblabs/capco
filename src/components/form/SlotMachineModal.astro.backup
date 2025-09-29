@@ -535,34 +535,7 @@ const displayText = buttonText || selectedOption?.label || placeholder;
     }
   }
 
-  // Helper function to create buttons using Button partial
-  async function createButtonPartial(config) {
-    try {
-      const headers = new Headers();
-      Object.entries(config).forEach(([key, value]) => {
-        if (value !== undefined && value !== null) {
-          headers.set(`x-button-${key}`, value.toString());
-        }
-      });
 
-      const response = await fetch("/partials/button", {
-        headers: headers,
-      });
-
-      if (response.ok) {
-        const buttonHTML = await response.text();
-        const wrapper = document.createElement("div");
-        wrapper.innerHTML = buttonHTML;
-        return wrapper.firstElementChild;
-      } else {
-        console.error("Failed to fetch button partial:", response.status);
-        return null;
-      }
-    } catch (error) {
-      console.error("Error creating button partial:", error);
-      return null;
-    }
-  }
 
   // Generic slot machine modal function
   async function showSlotMachineModal(config) {

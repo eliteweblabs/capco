@@ -350,6 +350,7 @@ const debugData = {
         addNewLineItem?: () => void;
         clipboardData?: any;
         createLineItemRow?: (data: any) => HTMLElement;
+        createButtonPartial?: (config: any) => Promise<HTMLElement | null>;
         deleteProject?: (projectId: any) => void;
         getProject?: (projectId: string | number) => Promise<any>;
         handleNewStatusNotification?: any;
@@ -419,6 +420,49 @@ const debugData = {
     }
     // Make data available globally for the proposal functions
     import { setupConsoleInterceptor } from "../../lib/console-interceptor.ts";
+
+    // Ensure startsWith is available - with debugging
+    console.log("🔧 [POLYFILL] Checking startsWith availability...");
+    console.log("🔧 [POLYFILL] String.prototype.startsWith exists:", !!String.prototype.startsWith);
+
+    // Helper function to create buttons using Button partial
+    (window as any).createButtonPartial = async function (config: any) {
+      try {
+        const headers = new Headers();
+        Object.entries(config).forEach(([key, value]) => {
+          if (value !== undefined && value !== null) {
+            headers.set(`x-button-${key}`, value.toString());
+          }
+        });
+
+        const response = await fetch("/partials/button", {
+          headers: headers,
+        });
+
+        if (response.ok) {
+          const buttonHTML = await response.text();
+          const wrapper = document.createElement("div");
+          wrapper.innerHTML = buttonHTML;
+          return wrapper.firstElementChild;
+        } else {
+          console.error("Failed to fetch button partial:", response.status);
+          return null;
+        }
+      } catch (error) {
+        console.error("Error creating button partial:", error);
+        return null;
+      }
+    };
+
+    if (!String.prototype.startsWith) {
+      console.log("🔧 [POLYFILL] Adding startsWith polyfill...");
+      String.prototype.startsWith = function (search: string, pos?: number) {
+        return this.substr(!pos || pos < 0 ? 0 : +pos, search.length) === search;
+      };
+      console.log("🔧 [POLYFILL] startsWith polyfill added successfully");
+    } else {
+      console.log("🔧 [POLYFILL] startsWith already available");
+    }
 
     (window as any).isSafari18Beta = function () {
       const ua = navigator.userAgent;
@@ -639,8 +683,11 @@ const debugData = {
         return;
       }
 
-      // Validate project ID
-      if (!projectId || projectId.startsWith("new-project-")) {
+      // Validate project ID - ensure it's a string
+      console.log("🔧 [DELETE] projectId type:", typeof projectId, "value:", projectId);
+      const projectIdStr = String(projectId);
+      console.log("🔧 [DELETE] projectIdStr:", projectIdStr);
+      if (!projectId || projectIdStr.startsWith("new-project-")) {
         if ((window as any).showModal) {
           (window as any).showModal(
             "error",
@@ -707,10 +754,16 @@ const debugData = {
                     // Reset deleting flag
                     isDeleting = false;
 
+                    document
+                      .querySelectorAll("[data-project-id='" + projectId + "']")
+                      ?.forEach((element) => {
+                        element.remove();
+                      });
+
                     // Redirect to dashboard after a short delay
-                    setTimeout(() => {
-                      window.location.href = "project/dashboard";
-                    }, 1500);
+                    // setTimeout(() => {
+                    //   window.location.href = "/project/dashboard";
+                    // }, 1500);
                   })
                   .catch((error) => {
                     console.error("Error deleting project:", error);

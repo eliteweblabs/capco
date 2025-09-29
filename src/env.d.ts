@@ -152,5 +152,8 @@ declare global {
     // Body scroll utilities
     lockBodyScroll?: () => void;
     unlockBodyScroll?: () => void;
+
+    // Partials
+    createButtonPartial?: (config: any) => Promise<HTMLElement | null>;
   }
 }
