@@ -74,7 +74,55 @@ const { globalInputClasses } = Astro.props;
       return; // Component not rendered (backend page)
     }
 
-    (window as any).hideOnFormFocus("#sms-toggle-btn-container", true);
+    // Implement hideOnFormFocus functionality directly
+    if (container) {
+      const elementSelector = "#sms-toggle-btn-container";
+      const mobileOnly = true;
+
+      // Check if we should only hide on mobile
+      if (mobileOnly && window.innerWidth >= 768) return;
+
+      const element = document.querySelector(elementSelector);
+      if (!element) return;
+
+      // Hide on input focus
+      const hideOnFocus = () => {
+        (element as HTMLElement).style.display = "none";
+      };
+
+      // Show on input blur
+      const showOnBlur = () => {
+        (element as HTMLElement).style.display = "block";
+      };
+
+      // Add event listeners to all form inputs
+      const inputs = document.querySelectorAll("input, textarea, select");
+      inputs.forEach((input) => {
+        input.addEventListener("focus", hideOnFocus);
+        input.addEventListener("blur", showOnBlur);
+      });
+
+      // Also handle dynamically added inputs
+      const observer = new MutationObserver((mutations) => {
+        mutations.forEach((mutation) => {
+          mutation.addedNodes.forEach((node) => {
+            if (node.nodeType === Node.ELEMENT_NODE) {
+              const element = node as Element;
+              const newInputs = element.querySelectorAll("input, textarea, select");
+              newInputs.forEach((input) => {
+                input.addEventListener("focus", hideOnFocus);
+                input.addEventListener("blur", showOnBlur);
+              });
+            }
+          });
+        });
+      });
+
+      observer.observe(document.body, {
+        childList: true,
+        subtree: true,
+      });
+    }
 
     let isOpen = false;
 

@@ -74,7 +74,6 @@ const currentRole = currentUser?.profile.role || undefined;
 const projectId = project?.id || undefined;
 const currentUrl = Astro.url.pathname;
 
-import { handleUrlNotification } from "../../lib/ux-utils";
 // Get navigation data
 import { navigation } from "@/pages/api/navigation";
 import { isBackendPage } from "@/pages/api/backend-page-check";
@@ -275,7 +274,7 @@ const debugData = {
 
   <!-- Set global user data for client-side components -->
 
-  <body class="h8KYXnua2NT4kTVzieom KRANKvs7gs1E_d0fCA0k">
+  <body class="jtAJHOc7mn7b4IKRO59D h8KYXnua2NT4kTVzieom KRANKvs7gs1E_d0fCA0k">
     <!-- Preloader -->
     <Preloader />
 
@@ -297,9 +296,9 @@ const debugData = {
 
       <div
         id="main-content"
-        class="ahOqFrhzLjivRe8a1kX_ uLPch_bqyJDXwe5tynMV t6gkcSf0Bt4MLItXvDJ_ pdl952ted2i71qBLPIcQ jtAJHOc7mn7b4IKRO59D h8KYXnua2NT4kTVzieom flex min-h-screen flex-col"
+        class="ahOqFrhzLjivRe8a1kX_ uLPch_bqyJDXwe5tynMV t6gkcSf0Bt4MLItXvDJ_ pdl952ted2i71qBLPIcQ jtAJHOc7mn7b4IKRO59D h8KYXnua2NT4kTVzieom Syhv8OuxgyaGMa27BMXo"
       >
-        <main class="grow">
+        <main>
           <slot />
         </main>
         <!-- Footer -->
@@ -344,15 +343,102 @@ const debugData = {
   <!-- <script src="https://unpkg.com/flowbite@2.5.2/dist/flowbite.min.js"></script> -->
 
   <script>
+    declare global {
+      interface Window {
+        // Global functions and utilities (alphabetized)
+        acceptProposal?: () => void;
+        addNewLineItem?: () => void;
+        clipboardData?: any;
+        createLineItemRow?: (data: any) => HTMLElement;
+        deleteProject?: (projectId: any) => void;
+        getProject?: (projectId: string | number) => Promise<any>;
+        handleNewStatusNotification?: any;
+        handleUrlNotification?: (type: string, message: string) => void;
+        hideOnFormFocus?: (elementSelector: string, mobileOnly?: boolean) => void;
+        hideNotification?: any;
+        // UX Utility Functions
+        scrollToTopOnMobile?: () => void;
+        scrollToTop?: (behavior?: ScrollBehavior) => void;
+        isMobile?: () => boolean;
+        isTablet?: () => boolean;
+        isDesktop?: () => boolean;
+        getViewportSize?: () => "mobile" | "tablet" | "desktop";
+        debounce?: <T extends (...args: any[]) => any>(func: T, wait: number) => T;
+        throttle?: <T extends (...args: any[]) => any>(func: T, limit: number) => T;
+        hideOnMobileInput?: (elementSelector: string) => void;
+        isSafariIOS?: () => boolean;
+        isSafari?: () => boolean;
+        isSafari18Beta?: () => boolean;
+        isSafari18OrLater?: () => boolean;
+        fixSafariViewport?: () => void;
+        immediateSafariViewportFix?: () => void;
+        setupViewportHandling?: () => void;
+        ensureViewportBounds?: (minHeight?: number, maxHeight?: number) => void;
+        lockBodyScroll?: () => void;
+        unlockBodyScroll?: () => void;
+        initializeSubjectEditing?: () => void;
+        proposalHelper?: any;
+        proposalManager?: any;
+        refreshManager?: any;
+        requestPushNotificationPermission?: () => void;
+        resetForm?: any;
+        resetNotifications?: () => void;
+        sendEmail?: (emailData: any, currentUser: any) => Promise<any>;
+        setPageLoadProjectStatus?: any;
+        showModal?: any;
+        switchTab?: any;
+        toggleCommentForm?: () => void;
+        trimText?: (text: string, maxLength?: number, suffix?: string) => string;
+        trimWords?: (text: string, wordLimit?: number, suffix?: string) => string;
+        updateCountBubble?: (
+          parentElement: HTMLElement,
+          count: number,
+          options?: any
+        ) => HTMLElement | null;
+        updateProposalTotal?: () => void;
+        updateStatus?: (project: any, newStatus: number, statuses?: any) => Promise<any>;
+        validateEmail?: (email: string) => string | null;
+        COUNT_BUBBLE_PRESETS?: {
+          notification: {
+            bubbleClasses: string;
+            maxCount: number;
+            showZero: boolean;
+          };
+          punchlist: {
+            bubbleClasses: string;
+            maxCount: number;
+            showZero: boolean;
+          };
+          small: {
+            bubbleClasses: string;
+            maxCount: number;
+            showZero: boolean;
+          };
+        };
+      }
+    }
     // Make data available globally for the proposal functions
     import { setupConsoleInterceptor } from "../../lib/console-interceptor.ts";
 
     (window as any).isSafari18Beta = function () {
       const ua = navigator.userAgent;
+      console.log("🔍 [DEBUG] User Agent:", ua);
+
       const isSafari18Beta =
         /Safari/.test(ua) && /Version\/18\./.test(ua) && !/Chrome|CriOS|FxiOS|EdgiOS/.test(ua);
 
-      if (isSafari18Beta) {
+      console.log("🔍 [DEBUG] Safari test:", /Safari/.test(ua));
+      console.log("🔍 [DEBUG] Version 18 test:", /Version\/18\./.test(ua));
+      console.log("🔍 [DEBUG] Not Chrome test:", !/Chrome|CriOS|FxiOS|EdgiOS/.test(ua));
+      console.log("🔍 [DEBUG] isSafari18Beta result:", isSafari18Beta);
+
+      return isSafari18Beta;
+    };
+
+    document.addEventListener("DOMContentLoaded", () => {
+      // Call immediately
+      const isSafari18 = (window as any).isSafari18Beta();
+      if (isSafari18) {
         console.log("🍎 [SAFARI-18-BETA] Applying orientation workaround for sticky positioning");
 
         // Force orientation change workaround
@@ -382,10 +468,9 @@ const debugData = {
             });
         }
       }
+    });
 
-      return isSafari18Beta;
-    };
-    // Window interface is defined in src/env.d.ts
+    // Local Window interface for this component's TypeScript intellisense
 
     // showModal is now handled by UnifiedNotification.astro
 
@@ -452,10 +537,8 @@ const debugData = {
       }
     };
 
-    (window as any).handleUrlNotification = function (type: string, message: string) {
-      console.log(`[URL-NOTIFICATION] ${type}: ${message}`);
-      // Implementation for handling URL-based notifications
-    };
+    // Assign imported function to global window object
+    // @ts-ignore - Function is imported and used, but TypeScript doesn't recognize the assignment
 
     (window as any).hideOnFormFocus = function (
       elementSelector: string,
@@ -1040,10 +1123,10 @@ const debugData = {
       return /Safari/.test(ua) && !/Chrome|CriOS|FxiOS|EdgiOS/.test(ua);
     };
 
-    (window as any).isSafari18Beta = function () {
-      const ua = navigator.userAgent;
-      return /Safari/.test(ua) && /Version\/18\./.test(ua) && !/Chrome|CriOS|FxiOS|EdgiOS/.test(ua);
-    };
+    // (window as any).isSafari18Beta = function () {
+    //   const ua = navigator.userAgent;
+    //   return /Safari/.test(ua) && /Version\/18\./.test(ua) && !/Chrome|CriOS|FxiOS|EdgiOS/.test(ua);
+    // };
 
     (window as any).isSafari18OrLater = function () {
       const ua = navigator.userAgent;
@@ -1100,13 +1183,146 @@ const debugData = {
       document.body.style.overflow = "";
     };
 
+    /**
+     * Handles URL parameter notifications (errors and success messages)
+     * @param type - Notification type ('error' | 'success')
+     * @param param - URL parameter value
+     */
+    (window as any).handleUrlNotification = function (
+      type: "error" | "success",
+      param: string
+    ): void {
+      const notifications = {
+        // Error notifications
+        error: {
+          oauth_failed: {
+            title: "Authentication Failed",
+            message: "OAuth authentication failed. Please try again.",
+          },
+          verification_failed: {
+            title: "Verification Failed",
+            message: "Email verification failed. Please try again.",
+          },
+          verification_expired: {
+            title: "Link Expired",
+            message: "Verification link has expired. Please request a new one.",
+          },
+          verification_invalid: {
+            title: "Invalid Link",
+            message: "Invalid verification link.",
+          },
+          verification_error: {
+            title: "Verification Error",
+            message: "An error occurred during verification.",
+          },
+          no_token: {
+            title: "Invalid Token",
+            message: "Invalid or missing verification token.",
+          },
+          no_user: { title: "User Not Found", message: "User not found." },
+          invalid_credentials: {
+            title: "Invalid Credentials",
+            message: "Invalid email or password.",
+          },
+          email_exists: {
+            title: "Account Exists",
+            message: "An account with this email already exists.",
+          },
+          weak_password: {
+            title: "Weak Password",
+            message: "Password must be at least 6 characters long.",
+          },
+          invalid_email: {
+            title: "Invalid Email",
+            message: "Please enter a valid email address.",
+          },
+          sms_missing_fields: {
+            title: "SMS Error",
+            message: "Please fill in all required fields for SMS.",
+          },
+          sms_invalid_phone: {
+            title: "Invalid Phone",
+            message: "Please enter a valid 10-digit phone number.",
+          },
+          sms_invalid_carrier: {
+            title: "Invalid Carrier",
+            message: "Please select a valid carrier.",
+          },
+          sms_send_failed: {
+            title: "SMS Failed",
+            message: "Failed to send SMS. Please try again.",
+          },
+          sms_email_error: {
+            title: "Service Error",
+            message: "Email service error. Please try again later.",
+          },
+          sms_unexpected_error: {
+            title: "SMS Error",
+            message: "An unexpected error occurred while sending SMS.",
+          },
+          default: { title: "Error", message: "An error occurred. Please try again." },
+        },
+        // Success notifications
+        success: {
+          registration_success: {
+            title: "Account Created",
+            message: "Registration successful! Please check your email to verify your account.",
+          },
+          verification_success: {
+            title: "Email Verified",
+            message: "Email verified successfully! You can now sign in.",
+          },
+          welcome: {
+            title: "Welcome!",
+            message: "Welcome! Your account has been verified and you're now signed in.",
+          },
+          logout_success: {
+            title: "Signed Out",
+            message: "You have been successfully signed out.",
+            redirect: { url: "/", delay: 2500, showCountdown: true },
+          },
+          sms_sent_success: {
+            title: "Message Sent",
+            message: `Your message has been sent to ${import.meta.env.GLOBAL_COMPANY_NAME} successfully.`,
+          },
+          default: { title: "Success!", message: param },
+        },
+      };
+
+      const notification = (notifications[type] as any)[param] || notifications[type].default;
+
+      if ((window as any).showModal) {
+        // Use global UX utility function for mobile scroll
+        (window as any).scrollToTopOnMobile();
+
+        if (type === "error") {
+          (window as any).showModal("error", notification.title, notification.message);
+        } else {
+          (window as any).showModal(
+            notification.title,
+            notification.message,
+            "success",
+            2500,
+            notification.redirect
+          );
+        }
+      } else {
+        console.error(`🔔 [${notification.title}] ${notification.message}`);
+      }
+
+      // Clean up URL parameters
+      const currentUrl = new URL(window.location.href);
+      currentUrl.searchParams.delete(type === "error" ? "error" : "message");
+      window.history.replaceState({}, document.title, currentUrl.toString());
+    };
+
     // ===== END GLOBAL FUNCTIONS =====
 
     // Setup console interceptor (disables console.log in production)
     setupConsoleInterceptor();
 
-    // Handle URL parameter notifications (errors and success messages)
-    function processUrlNotifications() {
+    // // Handle URL parameter notifications (errors and success messages)
+    (window as any).processUrlNotifications = function () {
       const urlParams = new URLSearchParams(window.location.search);
       const errorParam = urlParams.get("error");
       const successParam = urlParams.get("success");
@@ -1141,22 +1357,19 @@ const debugData = {
         newUrl.searchParams.delete("message");
         window.history.replaceState({}, document.title, newUrl.pathname + newUrl.search);
       }
-    }
+    };
 
-    // Process URL notifications on page load
-    document.addEventListener("DOMContentLoaded", processUrlNotifications);
+    // // Process URL notifications on page load
+    document.addEventListener("DOMContentLoaded", () => (window as any).processUrlNotifications());
 
-    // Also run immediately in case DOM is already loaded
+    // // Also run immediately in case DOM is already loaded
     if (document.readyState === "loading") {
       // DOM is still loading, event listener will handle it
     } else {
       // DOM is already loaded, run immediately
-      processUrlNotifications();
+      (window as any).processUrlNotifications();
     }
-  </script>
 
-  <!-- Expose centralized notification system to window object -->
-  <script>
     // Suppress ResizeObserver loop warnings (they're usually harmless)
     window.addEventListener("error", (e: any) => {
       if (e.message === "ResizeObserver loop completed with undelivered notifications.") {
@@ -1202,25 +1415,12 @@ const debugData = {
       return words.slice(0, wordLimit).join(" ") + suffix;
     };
 
-    // iOS Safari Mobile Beta Detection and CSS Application
-    function isSafariIOS(): any {
-      const ua = navigator.userAgent;
-      const isIOS = /iPad|iPhone|iPod/.test(ua);
-      const isSafari = /Safari/.test(ua) && !/Chrome|CriOS|FxiOS|EdgiOS/.test(ua);
-      return isIOS && isSafari;
-    }
-
-    function isSafari18Beta(): any {
-      const ua = navigator.userAgent;
-      return /Safari/.test(ua) && /Version\/18\./.test(ua) && !/Chrome|CriOS|FxiOS|EdgiOS/.test(ua);
-    }
-
-    function isMobile(): any {
-      return window.innerWidth < 768;
-    }
-
     // Apply iOS Safari Mobile Beta specific CSS and workaround
-    if (isSafariIOS() && isSafari18Beta() && isMobile()) {
+    if (
+      (window as any).isSafariIOS() &&
+      (window as any).isSafari18Beta() &&
+      (window as any).isMobile()
+    ) {
       console.log("🍎 [APP] iOS Safari Mobile Beta detected - Applying fixes and workaround");
 
       // Trigger the orientation workaround

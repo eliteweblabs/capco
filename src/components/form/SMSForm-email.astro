@@ -172,15 +172,8 @@ const { compact = false } = Astro.props;
 
    
 
-    // Helper function to show modal with mobile scroll
-    function showModalWithScroll(type: string, title: string, message: string, duration?: number) {
-      if ((window as any).showModal) {
-        (window as any).showModal(type, title, message, duration);
-      } else {
-        console.error(`🔔 [${title}] ${message}`);
-      }
-    }
-
+  
+    
     // Form submission handling
     if (form) {
       form.addEventListener("submit", async (e) => {
@@ -194,12 +187,12 @@ const { compact = false } = Astro.props;
 
         // Client-side validation - only check message since phone/carrier are hardcoded
         if (!message || message.trim().length === 0) {
-          showModalWithScroll("error", "Message Required", "Please enter a message to send.", 5000);
+          (window as any).showModal("error", "Message Required", "Please enter a message to send.", 5000);
           return;
         }
 
         // Show loading notification as modal
-        // showModalWithScroll("info", "Sending Email...", "Please wait while we send your email to the CAPCo team.", 0); // 0 = no auto-hide
+        // (window as any).showModal("info", "Sending Email...", "Please wait while we send your email to the CAPCo team.", 0); // 0 = no auto-hide
 
         try {
           // Create FormData from the form
@@ -230,7 +223,7 @@ const { compact = false } = Astro.props;
             // Check if emails were actually sent successfully
             if (result.totalSent && result.totalSent > 0) {
               // Success - emails were actually sent
-              showModalWithScroll("success", "Email Sent!", "Your message has been sent to the CAPCo team successfully.", 5000);
+              (window as any).showModal("success", "Email Sent!", "Your message has been sent to the CAPCo team successfully.", 5000);
               (form as HTMLFormElement).reset();
               
               // Dispatch custom event to close the SMS panel
@@ -239,17 +232,17 @@ const { compact = false } = Astro.props;
             } else {
               // No emails were sent - show error modal
               console.error("🔔 [SMS Error] No emails were sent:", result);
-              showModalWithScroll("error", "Send Failed", "Failed to send message. No emails were delivered.", 5000);
+              (window as any).showModal("error", "Send Failed", "Failed to send message. No emails were delivered.", 5000);
             }
           } else {
             // Error
             const errorText = await response.text();
             console.error("🔔 [SMS Error] API response:", response.status, errorText);
-            showModalWithScroll("error", "Send Failed", "Failed to send message. Please try again.", 5000);
+            (window as any).showModal("error", "Send Failed", "Failed to send message. Please try again.", 5000);
           }
         } catch (error) {
           console.error("🔔 [SMS Error] Network error:", error);
-          showModalWithScroll("error", "Network Error", "Failed to send message. Please check your connection.", 5000);
+          (window as any).showModal("error", "Network Error", "Failed to send message. Please check your connection.", 5000);
         }
       });
     }

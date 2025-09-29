@@ -275,6 +275,7 @@ const { globalInputClasses } = Astro.props;
     }
 
     setupElements(): void {
+      console.log("📝 [CONTACT-FORM] Setting up elements...");
       this.dropzone = document.getElementById("upload-dropzone");
       this.fileInput = document.getElementById("file-input") as HTMLInputElement;
       this.browseBtn = document.getElementById("browse-files-btn");
@@ -285,12 +286,25 @@ const { globalInputClasses } = Astro.props;
       this.fileList = document.getElementById("file-list");
       this.form = document.getElementById("contact-form-with-upload") as HTMLFormElement;
       this.formMessages = document.getElementById("form-messages");
+
+      console.log("📝 [CONTACT-FORM] Elements found:");
+      console.log("📝 [CONTACT-FORM] - dropzone:", !!this.dropzone);
+      console.log("📝 [CONTACT-FORM] - fileInput:", !!this.fileInput);
+      console.log("📝 [CONTACT-FORM] - browseBtn:", !!this.browseBtn);
+      console.log("📝 [CONTACT-FORM] - form:", !!this.form);
+      console.log("📝 [CONTACT-FORM] - formMessages:", !!this.formMessages);
     }
 
     setupEventListeners(): void {
+      console.log("📝 [CONTACT-FORM] Setting up event listeners...");
+
       // Dropzone events
-      this.dropzone?.addEventListener("click", () => this.openFileDialog());
+      this.dropzone?.addEventListener("click", () => {
+        console.log("📝 [CONTACT-FORM] Dropzone clicked");
+        this.openFileDialog();
+      });
       this.browseBtn?.addEventListener("click", (e) => {
+        console.log("📝 [CONTACT-FORM] Browse button clicked");
         e.stopPropagation();
         this.openFileDialog();
       });
@@ -316,15 +330,19 @@ const { globalInputClasses } = Astro.props;
 
       // File input change
       this.fileInput?.addEventListener("change", (e) => {
+        console.log("📝 [CONTACT-FORM] File input changed");
         const target = e.target as HTMLInputElement;
         this.handleFiles(Array.from(target.files || []));
       });
 
       // Form submission
       this.form?.addEventListener("submit", (e) => {
+        console.log("📝 [CONTACT-FORM] Form submit event triggered!");
         e.preventDefault();
         this.submitForm();
       });
+
+      console.log("📝 [CONTACT-FORM] Event listeners setup complete");
     }
 
     openFileDialog(): void {
@@ -403,13 +421,20 @@ const { globalInputClasses } = Astro.props;
     }
 
     async submitForm(): Promise<void> {
-      if (!this.form) return;
+      console.log("📝 [CONTACT-FORM] Starting form submission");
+      if (!this.form) {
+        console.error("📝 [CONTACT-FORM] Form element not found");
+        return;
+      }
+
       const formData = new FormData(this.form);
 
       // Add files to form data
       this.uploadedFiles.forEach((file) => {
         formData.append("files", file);
       });
+
+      console.log("📝 [CONTACT-FORM] Form data prepared, files:", this.uploadedFiles.length);
 
       // Show progress
       this.uploadProgress?.classList.remove("hidden");
@@ -418,14 +443,29 @@ const { globalInputClasses } = Astro.props;
       this.uploadStatus && (this.uploadStatus.textContent = "Uploading...");
 
       try {
+        console.log("📝 [CONTACT-FORM] Sending request to /api/contact-submission");
         const response = await fetch("/api/contact-submission", {
           method: "POST",
           body: formData,
         });
 
+        console.log("📝 [CONTACT-FORM] Response received:", response.status, response.ok);
         const result = await response.json();
+        console.log("📝 [CONTACT-FORM] Response data:", result);
 
         if (response.ok) {
+          console.log("📝 [CONTACT-FORM] Success response received");
+
+          // Send email notification
+          if ((window as any).sendEmail) {
+            (window as any).sendEmail({
+              to: ["capco@eliteweblabs.com", "jk@capcofire.com"],
+              subject: "New Project Request",
+              message: "A new project request has been submitted." + JSON.stringify(formData),
+            });
+          }
+
+          // Show success message using simple approach like project form
           this.showMessage(
             "Thank you! Your project request has been submitted successfully. We'll get back to you within 24 hours.",
             "success"
@@ -434,14 +474,20 @@ const { globalInputClasses } = Astro.props;
           this.uploadedFiles = [];
           this.updateFileList();
         } else {
+          console.log("📝 [CONTACT-FORM] Error response received:", result.error);
+          // Show error message
           this.showMessage(
             result.error || "There was an error submitting your request. Please try again.",
             "error"
           );
         }
       } catch (error) {
-        console.error("Submission error:", error);
-        this.showMessage("There was an error submitting your request. Please try again.", "error");
+        console.error("📝 [CONTACT-FORM] Submission error:", error);
+        // Show error message
+        this.showMessage(
+          "There was an error submitting your request. Please check your connection and try again.",
+          "error"
+        );
       } finally {
         this.uploadProgress?.classList.add("hidden");
       }
@@ -476,10 +522,10 @@ const { globalInputClasses } = Astro.props;
     }
   }
 
-  // // Initialize when DOM is ready
-  // document.addEventListener("DOMContentLoaded", () => {
-  //   if (!window.contactUpload) {
-  //     window.contactUpload = new ContactPDFUpload();
-  //   }
-  // });
+  // Initialize when DOM is ready
+  document.addEventListener("DOMContentLoaded", () => {
+    console.log("📝 [CONTACT-FORM] DOM loaded, initializing ContactPDFUpload...");
+    new ContactPDFUpload();
+    console.log("📝 [CONTACT-FORM] ContactPDFUpload initialized");
+  });
 </script>
