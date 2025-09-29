@@ -80,9 +80,9 @@ const currentUserId = currentUser?.id;
       ></path>
     </svg>
     <h3 class="mt-2 text-sm font-medium text-gray-900 dark:text-white">No recent notifications</h3>
-    <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+    <!-- <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
       No notifications in the last 5 items
-    </p>
+    </p> -->
   </div>
 
   <!-- Notifications List -->
@@ -597,8 +597,15 @@ const currentUserId = currentUser?.id;
 
         if (badgeParent) {
           // Use global count bubble utility with notification preset
-          if (typeof window.updateCountBubble !== "undefined" && window.COUNT_BUBBLE_PRESETS) {
-            window.updateCountBubble(badgeParent, count, window.COUNT_BUBBLE_PRESETS.notification);
+          if (
+            typeof (window as any).updateCountBubble !== "undefined" &&
+            (window as any).COUNT_BUBBLE_PRESETS
+          ) {
+            (window as any).updateCountBubble(
+              badgeParent,
+              count,
+              (window as any).COUNT_BUBBLE_PRESETS.notification
+            );
           } else {
             // Fallback to manual implementation
             let countBubble = badgeParent.querySelector(".count-bubble") as HTMLSpanElement;
