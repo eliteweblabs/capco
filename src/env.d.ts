@@ -118,5 +118,39 @@ declare global {
         showZero: boolean;
       };
     };
+
+    // UX Utility Functions
+    hideOnFormFocus?: (elementSelector: string, mobileOnly?: boolean) => void;
+    hideOnMobileInput?: (elementSelector: string) => void;
+
+    // Scroll utilities
+    scrollToTopOnMobile?: () => void;
+    scrollToTop?: (behavior?: ScrollBehavior) => void;
+
+    // Device detection
+    isMobile?: () => boolean;
+    isTablet?: () => boolean;
+    isDesktop?: () => boolean;
+    getViewportSize?: () => "mobile" | "tablet" | "desktop";
+
+    // Utility functions
+    debounce?: <T extends (...args: any[]) => any>(func: T, wait: number) => T;
+    throttle?: <T extends (...args: any[]) => any>(func: T, limit: number) => T;
+
+    // Safari detection
+    isSafariIOS?: () => boolean;
+    isSafari?: () => boolean;
+    isSafari18Beta?: () => boolean;
+    isSafari18OrLater?: () => boolean;
+
+    // Viewport utilities
+    fixSafariViewport?: () => void;
+    immediateSafariViewportFix?: () => void;
+    setupViewportHandling?: () => void;
+    ensureViewportBounds?: (minHeight?: number, maxHeight?: number) => void;
+
+    // Body scroll utilities
+    lockBodyScroll?: () => void;
+    unlockBodyScroll?: () => void;
   }
 }

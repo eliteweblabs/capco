@@ -13,9 +13,10 @@ interface Props {
     };
   };
   currentRole?: string;
+  globalInputClasses?: string;
 }
 
-const { currentUser } = Astro.props;
+const { currentUser, globalInputClasses } = Astro.props;
 const currentRole = currentUser?.profile?.role || "Client";
 
 // // Debug logging
@@ -96,7 +97,7 @@ const currentRole = currentUser?.profile?.role || "Client";
           type="text"
           id="chat-input"
           placeholder="Type your message..."
-          class="w-[11rem] flex-1 rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-transparent focus:ring-2 focus:ring-primary-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+          class=`w-[11rem] ${globalInputClasses}`
           maxlength="500"
         />
       </div>
@@ -327,8 +328,8 @@ const currentRole = currentUser?.profile?.role || "Client";
       } else {
         console.error("❌ [HTTP-CHAT] Failed to send message:", data.error);
         // Show error to user
-        if (window.showModal) {
-          window.showModal(
+        if ((window as any).showModal) {
+          (window as any).showModal(
             "Error",
             "Failed to send message: " + (data.error || "Unknown error"),
             "error"
@@ -338,8 +339,8 @@ const currentRole = currentUser?.profile?.role || "Client";
     } catch (error) {
       console.error("🔔 [HTTP-CHAT] Error sending message:", error);
       // Show error to user
-      if (window.showModal) {
-        window.showModal("Error", "Failed to send message. Please try again.", "error");
+      if ((window as any).showModal) {
+        (window as any).showModal("Error", "Failed to send message. Please try again.", "error");
       }
     } finally {
       // Re-enable input

@@ -559,10 +559,6 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       JSON.stringify({
         success: true,
         project: enrichedProject,
-        projectFiles: enrichedProject.projectFiles,
-        generatedDocuments: enrichedProject.generatedDocuments,
-        currentUser: currentUser,
-        message: "Project created successfully",
       }),
       {
         status: 201,

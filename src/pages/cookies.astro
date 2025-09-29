@@ -10,19 +10,35 @@ if (requireAuthRedirect && (!session || !currentUser)) {
   return Astro.redirect(requireAuthRedirect);
 }
 
-const companyName = process.env.GLOBAL_COMPANY_NAME;
-const companySlogan = process.env.GLOBAL_COMPANY_SLOGAN;
-const globalSecondaryTextClasses = window.GLOBAL_SECONDARY_TEXT_CLASSES;
-const globalPrimaryTextClasses = window.GLOBAL_PRIMARY_TEXT_CLASSES;
-
+import { globalCompanyData } from "../pages/api/global-company-data";
+const {
+  globalCompanyName,
+  globalCompanySlogan,
+  globalCompanyAddress,
+  globalCompanyPhone,
+  globalCompanyEmail,
+  globalCompanyWebsite,
+  globalCompanyLogo,
+  globalCompanyLogoDark,
+  globalCompanyLogoLight,
+} = globalCompanyData();
 import App from "../components/common/App.astro";
 import SlideToggle from "../components/common/SlideToggle.astro";
 import Button from "../components/common/Button.astro";
 ---
 
 <App
-  title="Cookie Preferences - CAPCo Fire Protection"
-  description="Manage your cookie preferences and learn about how CAPCo uses cookies to enhance your experience."
+  title=`Cookie Preferences - ${globalCompanyName}`
+  description=`Manage your cookie preferences and learn about how ${globalCompanyName} uses cookies to enhance your experience.`
+  globalCompanyName={globalCompanyName}
+  globalCompanySlogan={globalCompanySlogan}
+  globalCompanyAddress={globalCompanyAddress}
+  globalCompanyPhone={globalCompanyPhone}
+  globalCompanyEmail={globalCompanyEmail}
+  globalCompanyWebsite={globalCompanyWebsite}
+  globalCompanyLogo={globalCompanyLogo}
+  globalCompanyLogoDark={globalCompanyLogoDark}
+  globalCompanyLogoLight={globalCompanyLogoLight}
 >
   <div class="container mx-auto max-w-4xl px-4 py-8">
     <div class="prose prose-lg dark:prose-invert max-w-none">
@@ -183,43 +199,45 @@ import Button from "../components/common/Button.astro";
         </ul>
       </div>
     </div>
-  </div>
 
-  <!-- Action Buttons -->
-  <div class="mb-8 flex flex-col gap-4 sm:flex-row">
-    <Button id="save-preferences" variant="primary" size="md"> Save Preferences </Button>
-    <Button id="accept-all" variant="success" size="md"> Accept All Cookies </Button>
-    <Button id="reject-all" variant="secondary" size="md"> Reject All Optional </Button>
-  </div>
+    <!-- Action Buttons -->
+    <div class="mb-8 flex flex-col gap-4 sm:flex-row">
+      <Button id="save-preferences" variant="primary" size="md"> Save Preferences </Button>
+      <Button id="accept-all" variant="success" size="md"> Accept All Cookies </Button>
+      <Button id="reject-all" variant="secondary" size="md"> Reject All Optional </Button>
+    </div>
 
-  <!-- Additional Information -->
-  <div class="rounded-lg bg-gray-50 p-6 dark:bg-gray-800">
-    <h3 class="mb-4 text-lg font-semibold text-gray-900 dark:text-white">Additional Information</h3>
-    <div class="space-y-4 text-sm text-gray-600 dark:text-gray-400">
-      <p>
-        <strong>Browser Settings:</strong> You can also manage cookies through your browser settings.
-        Most browsers allow you to refuse cookies or delete them. However, disabling cookies may affect
-        the functionality of our website.
-      </p>
-      <p>
-        <strong>Third-Party Cookies:</strong> Some cookies on our website are set by third-party services
-        that appear on our pages. We do not control these cookies, and you should check the third-party
-        websites for more information about their cookies and how to manage them.
-      </p>
-      <p>
-        <strong>Updates:</strong> We may update this Cookie Preferences page from time to time. Any changes
-        will be posted on this page with an updated revision date.
+    <!-- Additional Information -->
+    <div class="rounded-lg bg-gray-50 p-6 dark:bg-gray-800">
+      <h3 class="mb-4 text-lg font-semibold text-gray-900 dark:text-white">
+        Additional Information
+      </h3>
+      <div class="space-y-4 text-sm text-gray-600 dark:text-gray-400">
+        <p>
+          <strong>Browser Settings:</strong> You can also manage cookies through your browser settings.
+          Most browsers allow you to refuse cookies or delete them. However, disabling cookies may affect
+          the functionality of our website.
+        </p>
+        <p>
+          <strong>Third-Party Cookies:</strong> Some cookies on our website are set by third-party services
+          that appear on our pages. We do not control these cookies, and you should check the third-party
+          websites for more information about their cookies and how to manage them.
+        </p>
+        <p>
+          <strong>Updates:</strong> We may update this Cookie Preferences page from time to time. Any
+          changes will be posted on this page with an updated revision date.
+        </p>
+      </div>
+    </div>
+
+    <div class="mt-8 border-t border-gray-200 pt-6 dark:border-gray-700">
+      <p class="text-sm text-gray-500 dark:text-gray-400">
+        For more detailed information about our data practices, please review our
+        <a href="/privacy-policy" class="text-primary-600 hover:underline dark:text-primary-400"
+          >Privacy Policy</a
+        >.
       </p>
     </div>
-  </div>
-
-  <div class="mt-8 border-t border-gray-200 pt-6 dark:border-gray-700">
-    <p class="text-sm text-gray-500 dark:text-gray-400">
-      For more detailed information about our data practices, please review our
-      <a href="/privacy-policy" class="text-primary-600 hover:underline dark:text-primary-400"
-        >Privacy Policy</a
-      >.
-    </p>
   </div>
 </App>
 
@@ -252,8 +270,8 @@ import Button from "../components/common/Button.astro";
       localStorage.setItem("cookiePreferences", JSON.stringify(preferences));
 
       // Show confirmation using unified notification
-      if (window.showModal) {
-        window.showModal(
+      if ((window as any).showModal) {
+        (window as any).showModal(
           "success",
           "Preferences Saved",
           "Your cookie preferences have been saved successfully!",

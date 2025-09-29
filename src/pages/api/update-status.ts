@@ -84,42 +84,37 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       console.log("📊 [UPDATE-STATUS] Fetched old status from database:", finalOldStatus);
     }
 
-    console.log("📊 [UPDATE-STATUS] Updating project status via update-project API:", {
+    console.log("📊 [UPDATE-STATUS] Updating project status directly:", {
       projectId,
       newStatus,
       oldStatus,
     });
 
-    // Call the update-project API to update the status
-    const updateResponse = await fetch(
-      `${request.url.split("/api")[0]}/api/update-project/${projectId}`,
-      {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          Cookie: request.headers.get("Cookie") || "",
-        },
-        body: JSON.stringify({
-          status: newStatus,
-        }),
-      }
-    );
-
-    if (!updateResponse.ok) {
-      const errorText = await updateResponse.text();
-      console.error(
-        "📊 [UPDATE-STATUS] Update project API failed:",
-        updateResponse.status,
-        errorText
-      );
-      return new Response(JSON.stringify({ error: "Failed to update project status" }), {
+    // Update the project status directly in the database
+    if (!supabase) {
+      return new Response(JSON.stringify({ error: "Database connection not available" }), {
         status: 500,
         headers: { "Content-Type": "application/json" },
       });
     }
 
-    const updateResult = await updateResponse.json();
-    const updatedProject = updateResult.data?.project;
+    const { data: updatedProject, error: updateError } = await supabase
+      .from("projects")
+      .update({
+        status: newStatus,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", projectId)
+      .select()
+      .single();
+
+    if (updateError) {
+      console.error("📊 [UPDATE-STATUS] Database update failed:", updateError);
+      return new Response(JSON.stringify({ error: "Failed to update project status" }), {
+        status: 500,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
 
     // Attach the author profile to the project object
     if (updatedProject && authorProfile) {
@@ -167,12 +162,52 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       );
     }
 
+    // Fetch status data if not provided
+    let statusData = currentStatusData;
+    if (!statusData) {
+      try {
+        console.log("📊 [UPDATE-STATUS] Fetching status data for new status:", newStatus);
+        const baseUrl = request.url.split("/api")[0];
+        // Use POST method to pass project data in body for placeholder processing
+        const statusResponse = await fetch(`${baseUrl}/api/project-statuses`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Cookie: request.headers.get("Cookie") || "",
+          },
+          body: JSON.stringify({
+            project: currentProject,
+            status: newStatus,
+          }),
+        });
+
+        if (statusResponse.ok) {
+          const statusResult = await statusResponse.json();
+          // Extract just the specific status data for the new status
+          // Convert newStatus to number to match the statuses object keys
+          const statusKey = parseInt(newStatus.toString());
+          statusData = statusResult.statuses?.[statusKey] || null;
+          console.log(
+            "📊 [UPDATE-STATUS] Fetched status data:",
+            !!statusData,
+            "for status:",
+            statusKey
+          );
+        } else {
+          console.error("📊 [UPDATE-STATUS] Failed to fetch status data:", statusResponse.status);
+        }
+      } catch (error) {
+        console.error("📊 [UPDATE-STATUS] Error fetching status data:", error);
+        // Continue without status data if fetch fails
+      }
+    }
+
     // Return the same structure as get-project API
     return new Response(
       JSON.stringify({
         success: true,
         project: updatedProject,
-        statusData: currentStatusData,
+        statusData: statusData,
         currentUser: currentUser,
       }),
       {
