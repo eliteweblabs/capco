@@ -4,15 +4,21 @@
 import { generateColorPalette } from "./color-generator.js";
 
 // Get primary color from environment variable or use default
-const primaryColor = process.env.PRIMARY_COLOR || "#825BDD";
+const primaryColor = process.env.GLOBAL_COLOR_PRIMARY || "#825BDD";
+
+// Get font family from environment variable or use default
+const fontFamily = process.env.FONT_FAMILY || "Outfit Variable";
+const fontFamilyFallback = process.env.FONT_FAMILY_FALLBACK || "sans-serif";
 
 // Generate complete color palette automatically from the hex color
 const primaryColorPalette = generateColorPalette(primaryColor);
 
-// Debug: Log what color is being used
-console.log("🎨 [TAILWIND] PRIMARY_COLOR from env:", process.env.PRIMARY_COLOR);
+// Debug: Log what color and font are being used
+console.log("🎨 [TAILWIND] GLOBAL_COLOR_PRIMARY from env:", process.env.GLOBAL_COLOR_PRIMARY);
 console.log("🎨 [TAILWIND] Using primary color:", primaryColor);
 console.log("🎨 [TAILWIND] Generated palette:", primaryColorPalette);
+console.log("🎨 [TAILWIND] FONT_FAMILY from env:", process.env.FONT_FAMILY);
+console.log("🎨 [TAILWIND] Using font family:", fontFamily);
 
 export default {
   content: ["./src/**/*.{astro,js,ts,jsx,tsx,vue,svelte}", "./node_modules/flowbite/**/*.js"],
@@ -34,7 +40,7 @@ export default {
       //      ### Fonts
       fontFamily: {
         // #### Headings, Call- to - actions, Header Navigation
-        sans: ['"Outfit Variable"', "sans-serif"], // Usando la fuente personalizada
+        sans: [`"${fontFamily}"`, fontFamilyFallback], // Dynamic font from environment
         // #### Body
         // "serif": ['"Open Sans"', "serif"], // Otra fuente para el cuerpo
       },
@@ -51,7 +57,7 @@ export default {
           600: "#525252", // Secondary text (gray)
           400: "#a3a3a3", // Secondary text (dark mode)
         },
-        // Brand Colors - Automatically generated from PRIMARY_COLOR environment variable
+        // Brand Colors - Automatically generated from GLOBAL_COLOR_PRIMARY environment variable
         primary: primaryColorPalette,
         secondary: {
           50: "#f0f9ff",
@@ -133,7 +139,7 @@ export default {
 
         // Text Colors
         text: {
-          primary: "#171717",
+          primary: primaryColorPalette[500], // Use the actual primary color
           "primary-dark": "#fafafa",
           secondary: "#525252",
           "secondary-dark": "#a3a3a3",

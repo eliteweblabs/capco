@@ -4,6 +4,11 @@ import { SimpleProjectLogger } from "../../lib/simple-logging";
 import { supabase } from "../../lib/supabase";
 import { supabaseAdmin } from "../../lib/supabase-admin";
 import { getApiBaseUrl } from "../../lib/url-utils";
+// Simple email validation
+const validateEmail = (email: string): string | null => {
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return emailRegex.test(email) ? null : "Invalid email format";
+};
 
 export const POST: APIRoute = async ({ request, cookies }) => {
   // console.log("=== CREATE STAFF API CALLED ===");
@@ -104,16 +109,16 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     }
 
     // Validate email format
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
+    const emailError = validateEmail(email);
+    if (emailError) {
       return new Response(
         JSON.stringify({
           success: false,
-          error: "Invalid email format.",
+          error: emailError,
           notification: {
             type: "error",
             title: "Invalid Email",
-            message: "Please enter a valid email address.",
+            message: emailError,
             duration: 5000,
           },
         }),
@@ -317,29 +322,37 @@ export const POST: APIRoute = async ({ request, cookies }) => {
             const adminEmail = authUser.user.email;
 
             // THIS IS TO THE ADMINS EMAIL
-            // Send email using the email delivery API with full URL
-            const baseUrl = getApiBaseUrl(request);
-            const emailResponse = await fetch(`${baseUrl}/api/email-delivery`, {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-              },
-
-              body: JSON.stringify({
+            // Send email using direct fetch to email-delivery API
+            try {
+              const emailData = {
                 usersToNotify: [adminEmail], // Use resolved user email
                 emailSubject: `New User → ${displayName} → ${staffRole}`,
                 emailContent: adminContent,
                 buttonText: "Access Your Dashboard",
                 buttonLink: "/dashboard",
-              }),
-            });
+              };
 
-            if (emailResponse.ok) {
-              console.log(`📧 [CREATE-USER] ${user.role} notification sent to ${adminEmail}`);
-            } else {
+              const emailResult = await fetch("/api/email-delivery", {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                },
+                body: JSON.stringify(emailData),
+              });
+
+              const result = await emailResult.json();
+              if (result.success) {
+                console.log(`📧 [CREATE-USER] ${user.role} notification sent to ${adminEmail}`);
+              } else {
+                console.error(
+                  `📧 [CREATE-USER] Failed to send ${user.role} notification to ${adminEmail}:`,
+                  result.error
+                );
+              }
+            } catch (emailError) {
               console.error(
-                `📧 [CREATE-USER] Failed to send ${user.role} notification to ${adminEmail}:`,
-                await emailResponse.text()
+                `📧 [CREATE-USER] Error sending ${user.role} notification to ${user.id}:`,
+                emailError
               );
             }
           } catch (emailError) {

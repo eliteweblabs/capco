@@ -22,6 +22,18 @@ export interface Project {
   new_construction: boolean;
   created_at: string;
   updated_at: string;
+  authorProfile?: {
+    id: string;
+    company_name: string;
+    first_name: string;
+    last_name: string;
+  } | null;
+  assignedToProfile?: {
+    id: string;
+    company_name: string;
+    first_name: string;
+    last_name: string;
+  } | null;
 }
 
 export interface Discussion {

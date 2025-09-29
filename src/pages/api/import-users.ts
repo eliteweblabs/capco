@@ -2,6 +2,11 @@ import type { APIRoute } from "astro";
 import { checkAuth } from "../../lib/auth";
 import { supabase } from "../../lib/supabase";
 import { supabaseAdmin } from "../../lib/supabase-admin";
+// Simple email validation
+const validateEmail = (email: string): string | null => {
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return emailRegex.test(email) ? null : "Invalid email format";
+};
 
 export const POST: APIRoute = async ({ request, cookies }) => {
   console.log("=== USER IMPORT API CALLED ===");
@@ -99,9 +104,9 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       }
 
       // Validate email format
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(user.email)) {
-        errors.push(`Row ${i + 1}: Invalid email format`);
+      const emailError = validateEmail(user.email);
+      if (emailError) {
+        errors.push(`Row ${i + 1}: ${emailError}`);
         continue;
       }
 

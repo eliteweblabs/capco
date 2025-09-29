@@ -2,10 +2,8 @@
 import Button from "../common/Button.astro";
 
 interface Props {
-  authorProfile?: any;
-  currentRole?: string;
+  currentUser?: any;
   project: any;
-  projectId: string;
   invoiceId: number | null;
   amount: number;
   currency?: string;
@@ -13,6 +11,7 @@ interface Props {
   globalInputClasses?: string;
   globalSecondaryTextClasses?: string;
   globalPrimaryTextClasses?: string;
+  statusesData?: any;
 }
 
 const {
@@ -20,15 +19,16 @@ const {
   amount,
   currency = "usd",
   paymentType = "deposit",
-  authorProfile,
-  currentRole,
+  currentUser,
   project,
-  projectId,
   globalInputClasses,
   globalSecondaryTextClasses,
   globalPrimaryTextClasses,
+  statusesData,
 } = Astro.props;
 
+const currentRole = currentUser?.profile?.role;
+const authorProfile = currentUser?.profile;
 // Extract user data for form fields
 
 // Debug the actual values being used in the form
@@ -315,10 +315,9 @@ console.log("🔍 [PAYMENT-FORM] Computed lastNameValue:", lastNameValue);
     amount,
     currency,
     paymentType,
-    authorProfile,
-    currentRole,
+    currentUser,
     project,
-    projectId,
+    statusesData,
   }}
 >
   (async () => {
@@ -588,7 +587,7 @@ console.log("🔍 [PAYMENT-FORM] Computed lastNameValue:", lastNameValue);
         }
       } catch (error) {
         console.error("Error creating payment intent:", error);
-        showError("Failed to initialize payment. Please try again.");
+        showModal("error", "Payment Error", "Failed to initialize payment. Please try again.");
       }
     }
 
@@ -596,7 +595,9 @@ console.log("🔍 [PAYMENT-FORM] Computed lastNameValue:", lastNameValue);
     async function handlePayment(paymentMethod = null) {
       // Validate we have a valid ID before proceeding
       if (!invoiceId || invoiceId <= 0) {
-        showError(
+        showModal(
+          "error",
+          "Payment Error",
           `Cannot process payment: Invalid project ID (${invoiceId}). Please refresh the page.`
         );
         return;
@@ -644,13 +645,13 @@ console.log("🔍 [PAYMENT-FORM] Computed lastNameValue:", lastNameValue);
         }
 
         if (result.error) {
-          showError(result.error.message);
+          showModal("error", "Payment Error", result.error.message);
         } else if (result.paymentIntent && result.paymentIntent.status === "succeeded") {
           await confirmPayment();
         }
       } catch (error) {
         console.error("Payment error:", error);
-        showError("Payment failed. Please try again.");
+        showModal("error", "Payment Error", "Payment failed. Please try again.");
       } finally {
         setLoading(false);
       }
@@ -659,13 +660,6 @@ console.log("🔍 [PAYMENT-FORM] Computed lastNameValue:", lastNameValue);
     // Confirm payment with backend
     async function confirmPayment() {
       try {
-        console.log("🔍 [PAYMENT-FORM] Confirming payment with:", {
-          paymentIntentId,
-          invoiceId,
-          projectId,
-          authorProfileId: authorProfile?.id,
-        });
-
         const response = await fetch("/api/confirm-payment", {
           method: "POST",
           headers: {
@@ -684,41 +678,35 @@ console.log("🔍 [PAYMENT-FORM] Computed lastNameValue:", lastNameValue);
           const newStatus = paymentType === "deposit" ? 70 : 170;
 
           try {
-            const statusResponse = await fetch("/api/update-status", {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-              },
-              credentials: "include", // Include cookies for authentication
-              body: JSON.stringify({
-                projectId: projectId,
-                status: newStatus,
-              }),
-            });
+            const statusData = await window.updateStatus(project, newStatus, statusesData);
 
-            const statusData = await statusResponse.json();
-
-            if (statusResponse.ok && statusData.success) {
+            if (statusData.success) {
               // Show notification from update-status API
-              window.handleUpdateStatusNotification(statusData, "PAYMENT-FORM");
+              window.handleNewStatusNotification(statusData, "PAYMENT-FORM");
             } else {
               throw new Error(statusData.error || "Failed to update project status");
             }
           } catch (error) {
             console.error("❌ [PAYMENT-FORM] Error updating project status:", error);
-            showError(
+            showModal(
+              "error",
+              "Payment Error",
               "Payment was successful but failed to update project status. Please contact support."
             );
           }
 
-          showSuccess();
+          showModal("success", "Payment Successful", "Payment has been processed successfully!");
         } else {
           console.error("❌ [PAYMENT-FORM] Payment confirmation failed:", data.error);
-          showError(data.error || "Payment confirmation failed. Please try again.");
+          showModal(
+            "error",
+            "Payment Error",
+            data.error || "Payment confirmation failed. Please try again."
+          );
         }
       } catch (error) {
         console.error("Error confirming payment:", error);
-        showError("Failed to confirm payment");
+        showModal("error", "Payment Error", "Failed to confirm payment");
       }
     }
 
@@ -734,29 +722,6 @@ console.log("🔍 [PAYMENT-FORM] Computed lastNameValue:", lastNameValue);
       } else {
         buttonText?.classList.remove("hidden");
         spinner?.classList.add("hidden");
-      }
-    }
-
-    function showSuccess() {
-      if (window.showModal) {
-        window.showModal(
-          "success",
-          "Payment Successful!",
-          "Your payment has been processed successfully and your invoice has been updated.",
-          5000,
-          { url: "/dashboard", delay: 3000, showCountdown: true }
-        );
-      }
-    }
-
-    function showError(message) {
-      if (window.showModal) {
-        window.showModal(
-          "error",
-          "Payment Failed",
-          message || "An error occurred while processing your payment. Please try again.",
-          0 // No auto-hide for errors
-        );
       }
     }
 
@@ -906,7 +871,11 @@ console.log("🔍 [PAYMENT-FORM] Computed lastNameValue:", lastNameValue);
 
             if (error) {
               console.error("❌ [LINK-PAY] Error creating payment method:", error);
-              showError("Failed to initialize Link payment. Please try another method.");
+              showModal(
+                "error",
+                "Payment Error",
+                "Failed to initialize Link payment. Please try another method."
+              );
               return;
             }
 
@@ -914,7 +883,7 @@ console.log("🔍 [PAYMENT-FORM] Computed lastNameValue:", lastNameValue);
             await handlePayment(paymentMethod.id);
           } catch (error) {
             console.error("❌ [LINK-PAY] Link payment error:", error);
-            showError("Link payment failed. Please try another method.");
+            showModal("error", "Payment Error", "Link payment failed. Please try another method.");
           }
         });
       } else {

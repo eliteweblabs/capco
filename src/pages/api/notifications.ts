@@ -24,12 +24,43 @@ export const GET: APIRoute = async ({ cookies, url }) => {
       });
     }
 
-    let query = supabase
+    // Add timeout handling for Supabase connection issues
+    const queryPromise = supabase
       .from("notifications")
       .select("*")
       .eq("user_id", currentUser.id)
       .order("created_at", { ascending: false })
       .range(offset, offset + limit - 1);
+
+    const timeoutPromise = new Promise((_, reject) =>
+      setTimeout(() => reject(new Error("Database connection timeout")), 15000)
+    );
+
+    let query;
+    try {
+      query = await Promise.race([queryPromise, timeoutPromise]);
+    } catch (error) {
+      if (error instanceof Error && error.message === "Database connection timeout") {
+        console.warn(
+          "🔔 [NOTIFICATIONS] Database connection timeout - returning empty notifications"
+        );
+        return new Response(
+          JSON.stringify({
+            success: true,
+            notifications: [],
+            unreadCount: 0,
+            limit,
+            offset,
+            warning: "Database connection timeout - notifications temporarily unavailable",
+          }),
+          {
+            status: 200,
+            headers: { "Content-Type": "application/json" },
+          }
+        );
+      }
+      throw error;
+    }
 
     if (unreadOnly) {
       query = query.eq("viewed", false);

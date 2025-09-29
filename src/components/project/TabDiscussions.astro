@@ -1,12 +1,8 @@
 ---
 interface Props {
   authorProfile?: any;
-  currentRole?: string;
   currentUser?: any;
   project: any;
-  projectId: string;
-  projectStatus?: number;
-  projectStatusLabel?: string;
   supabaseUrl?: string;
   globalInputClasses?: string;
   globalSecondaryTextClasses?: string;
@@ -18,18 +14,17 @@ import Button from "../common/Button.astro";
 import SlideToggle from "../common/SlideToggle.astro";
 
 const {
-  projectId,
   authorProfile,
-  projectStatus,
-  currentRole,
   currentUser,
-  projectStatusLabel,
+  project,
   supabaseUrl,
   globalInputClasses,
   globalSecondaryTextClasses,
   globalPrimaryTextClasses,
 } = Astro.props;
 
+const currentRole = currentUser?.profile?.role;
+const projectId = project?.id;
 const placeholder =
   currentRole === "Admin" || currentRole === "Staff"
     ? "Write your comment here... (Use @username to mention users)"
@@ -166,22 +161,18 @@ const placeholder =
           }}
           type="module"
         >
+          // Global count bubble utility is available via window.updateCountBubble
+
           // Discussion functionality
           let discussions = [];
           let currentProjectId = projectId;
           let currentUserRole = currentRole;
-          let currentUserId = currentUser?.id || authorProfile.id;
-          // let currentUserName = currentUser?.company_name || authorProfile.company_name;
+          let currentUserId = currentUser?.id || authorProfile?.[0]?.id || authorProfile?.id;
           let mentionableUsers = [];
           let currentMentionStart = -1;
           let selectedImages = [];
 
           // console.log("🔔 [DISCUSSION] Initial userRole:", currentUserRole);
-
-          // Make user role available globally for reply forms
-          window.currentUserRole = currentUserRole;
-          window.PROJECT_USER_ROLE = currentUserRole;
-
           async function loadDiscussions(projectId) {
             try {
               const response = await fetch(`/api/get-project-discussions?projectId=${projectId}`, {
@@ -191,20 +182,7 @@ const placeholder =
 
               if (data.success) {
                 discussions = data.discussions;
-                //       console.log("🔍 [DISCUSSIONS] Loaded discussions data:", discussions.map(d => ({
-                //         // id: d.id,
-                //         // author_id: d.author_id,
-                //         // company_name: d.company_name,
-                //         // hasProfiles: !!d.profiles,
-                //         // profileData: d.profiles ? {
-                //         //   company_name: d.profiles.company_name,
-                //         //   first_name: d.profiles.first_name,
-                //         //   last_name: d.profiles.last_name
-                //         // } : null
-                //       }
-                //     )
-                //   )
-                // );
+
                 renderDiscussions();
                 updateIncompleteCommentsCount(); // Update count after loading discussions
               } else {
@@ -226,26 +204,36 @@ const placeholder =
             const tabButton = document.getElementById("status-discussion");
 
             if ((tabButton && currentUserRole === "Admin") || currentUserRole === "Staff") {
-              // Create or update count bubble
-              let countBubble = tabButton.querySelector(".discussion-count-bubble");
-
-              if (incompleteCount > 0) {
-                if (!countBubble) {
-                  // Create count bubble if it doesn't exist
-                  countBubble = document.createElement("span");
-                  countBubble.className =
-                    "discussion-count-bubble absolute right-0 top-0 flex h-5 w-5 items-center justify-center rounded-full border border-primary-500 bg-white text-xs font-medium text-primary-500 dark:border-primary-400 dark:bg-background-dark dark:text-primary-400";
-                  tabButton.style.position = "relative";
-                  tabButton.appendChild(countBubble);
-                }
-                countBubble.textContent = incompleteCount.toString();
-                countBubble.style.display = "flex";
-                tabButton.setAttribute("data-count", incompleteCount.toString());
+              // Use global count bubble utility
+              if (typeof window.updateCountBubble !== "undefined") {
+                window.updateCountBubble(tabButton, incompleteCount, {
+                  bubbleClasses:
+                    "absolute right-0 top-0 flex h-5 w-5 items-center justify-center rounded-full border border-primary-500 bg-white text-xs font-medium text-primary-500 dark:border-primary-400 dark:bg-background-dark dark:text-primary-400",
+                  maxCount: 99,
+                  showZero: false,
+                });
               } else {
-                if (countBubble) {
-                  countBubble.style.display = "none";
+                // Fallback to manual implementation if global utility not available
+                let countBubble = tabButton.querySelector(".discussion-count-bubble");
+
+                if (incompleteCount > 0) {
+                  if (!countBubble) {
+                    // Create count bubble if it doesn't exist
+                    countBubble = document.createElement("span");
+                    countBubble.className =
+                      "discussion-count-bubble absolute right-0 top-0 flex h-5 w-5 items-center justify-center rounded-full border border-primary-500 bg-white text-xs font-medium text-primary-500 dark:border-primary-400 dark:bg-background-dark dark:text-primary-400";
+                    tabButton.style.position = "relative";
+                    tabButton.appendChild(countBubble);
+                  }
+                  countBubble.textContent = incompleteCount.toString();
+                  countBubble.style.display = "flex";
+                  tabButton.setAttribute("data-count", incompleteCount.toString());
+                } else {
+                  if (countBubble) {
+                    countBubble.style.display = "none";
+                  }
+                  tabButton.setAttribute("data-count", "0");
                 }
-                tabButton.setAttribute("data-count", "0");
               }
 
               // Also update the old count element if it exists
@@ -1009,18 +997,16 @@ const placeholder =
                 mentionableUsers = data.users;
 
                 // Add project author to mentionable users if not already included
-                if (
-                  authorProfile &&
-                  !mentionableUsers.find((user) => user.id === authorProfile.id)
-                ) {
+                const profile = authorProfile?.[0] || authorProfile;
+                if (profile && !mentionableUsers.find((user) => user.id === profile.id)) {
                   const authorUser = {
-                    id: authorProfile.id,
+                    id: profile.id,
                     name:
-                      authorProfile.first_name && authorProfile.last_name
-                        ? `${authorProfile.first_name} ${authorProfile.last_name}`
-                        : authorProfile.company_name || "Unknown User",
-                    role: authorProfile.role || "Client",
-                    email: authorProfile.email || "",
+                      profile.first_name && profile.last_name
+                        ? `${profile.first_name} ${profile.last_name}`
+                        : profile.company_name || "Unknown User",
+                    role: profile.role || "Client",
+                    email: profile.email || "",
                   };
                   mentionableUsers.unshift(authorUser); // Add to beginning of list
                   // console.log("📋 [DISCUSSION] Added project author to mentionable users");
@@ -1054,8 +1040,9 @@ const placeholder =
             }
 
             // Separate project author from other users
-            const projectAuthor = filteredUsers.find((user) => user.id === authorProfile?.id);
-            const otherUsers = filteredUsers.filter((user) => user.id !== authorProfile?.id);
+            const profile = authorProfile?.[0] || authorProfile;
+            const projectAuthor = filteredUsers.find((user) => user.id === profile?.id);
+            const otherUsers = filteredUsers.filter((user) => user.id !== profile?.id);
 
             let html = "";
             let itemIndex = 0;
@@ -1170,11 +1157,9 @@ const placeholder =
           // Initialize discussion functionality when discussion tab is shown
           function initializeDiscussion() {
             // Set user role from server-side data (already set via define:vars)
-            currentUserRole = window.PROJECT_USER_ROLE || "Client";
             console.log("🔔 [DISCUSSION] User role set to:", currentUserRole);
 
             // Make user role available globally for reply forms
-            window.currentUserRole = currentUserRole;
 
             const discussionContainer = document.getElementById("discussion-container");
             if (discussionContainer) {
@@ -1362,7 +1347,7 @@ const placeholder =
         
         <!-- Admin/Staff Only Toggles for Reply -->
         ${(() => {
-          const userRole = window.currentUserRole || "Client";
+          const userRole = currentUserRole || "Client";
           return userRole === "Admin" || userRole === "Staff"
             ? `
             <div class="mt-3 flex flex-wrap gap-6 border-t border-gray-200 pt-3 dark:border-gray-600">

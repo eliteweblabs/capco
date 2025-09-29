@@ -45,11 +45,78 @@ declare namespace App {
 // Global window object extensions
 declare global {
   interface Window {
-    SUPABASE_URL: string;
-    SUPABASE_ANON_KEY: string;
-    USER_DATA?: {
-      id: string;
-      email: string;
+    // Global functions and utilities
+    showModal?: (
+      type: string,
+      title: string,
+      message: string,
+      duration?: number,
+      redirectOrActions?:
+        | Array<{ label: string; action: () => void; primary?: boolean }>
+        | { url: string; delay?: number; showCountdown?: boolean },
+      persist?: boolean
+    ) => Promise<void>;
+    trimText?: (text: string, maxLength?: number, suffix?: string) => string;
+    trimWords?: (text: string, wordLimit?: number, suffix?: string) => string;
+    hideNotification?: any;
+    switchTab?: any;
+    handleNewStatusNotification?: any;
+    handleUrlNotification?: (type: string, message: string) => void;
+    sendEmail?: (emailData: any) => Promise<any>;
+    validateEmail?: (email: string) => string | null;
+    updateStatus?: (projectId: string | number, status: number, data?: any) => Promise<any>;
+    getProject?: (projectId: string | number) => Promise<any>;
+
+    // Project management
+    resetForm?: any;
+    clipboardData?: any;
+
+    // Proposal management
+    proposalManager?: any;
+    proposalHelper?: any;
+    addNewLineItem?: () => void;
+    initializeSubjectEditing?: () => void;
+    acceptProposal?: () => void;
+    createLineItemRow?: (data: any) => HTMLElement;
+    updateProposalTotal?: () => void;
+
+    // Contact form
+    // contactUpload?: any;
+
+    // Discussion management
+    toggleCommentForm?: () => void;
+    refreshManager?: any;
+    setPageLoadProjectStatus?: any;
+
+    // Project management
+    deleteProject?: (projectId: any) => void;
+
+    // Notification management
+    requestPushNotificationPermission?: () => void;
+    resetNotifications?: () => void;
+
+    // Count bubble utility
+    updateCountBubble?: (
+      parentElement: HTMLElement,
+      count: number,
+      options?: any
+    ) => HTMLElement | null;
+    COUNT_BUBBLE_PRESETS?: {
+      notification: {
+        bubbleClasses: string;
+        maxCount: number;
+        showZero: boolean;
+      };
+      punchlist: {
+        bubbleClasses: string;
+        maxCount: number;
+        showZero: boolean;
+      };
+      small: {
+        bubbleClasses: string;
+        maxCount: number;
+        showZero: boolean;
+      };
     };
   }
 }

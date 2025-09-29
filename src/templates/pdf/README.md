@@ -92,7 +92,7 @@ src/templates/pdf/
 - `{{CLIENT_NAME}}` - Client name
 - `{{CLIENT_EMAIL}}` - Client email
 - `{{CLIENT_PHONE}}` - Client phone
-- `{{CLIENT_COMPANY}}` - Client company
+- `{{CLIENT_NAME}}` - Client company
 
 ### Status & Staff
 

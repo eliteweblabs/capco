@@ -18,11 +18,11 @@ interface Props {
 const { currentUser } = Astro.props;
 const currentRole = currentUser?.profile?.role || "Client";
 
-// Debug logging
-console.log("🔧 [HTTP-CHAT-WIDGET] Current user object:", currentUser);
-console.log("🔧 [HTTP-CHAT-WIDGET] Current role:", currentRole);
-console.log("🔧 [HTTP-CHAT-WIDGET] User ID:", currentUser?.id);
-console.log("🔧 [HTTP-CHAT-WIDGET] Company name:", currentUser?.profile?.company_name);
+// // Debug logging
+// console.log("🔧 [HTTP-CHAT-WIDGET] Current user object:", currentUser);
+// console.log("🔧 [HTTP-CHAT-WIDGET] Current role:", currentRole);
+// console.log("🔧 [HTTP-CHAT-WIDGET] User ID:", currentUser?.id);
+// console.log("🔧 [HTTP-CHAT-WIDGET] Company name:", currentUser?.profile?.company_name);
 ---
 
 <div
@@ -30,7 +30,7 @@ console.log("🔧 [HTTP-CHAT-WIDGET] Company name:", currentUser?.profile?.compa
   data-user-role={currentRole || "Client"}
   data-user-id={currentUser?.id || "unknown"}
   data-user-name={currentUser?.profile?.company_name || "Unknown User"}
-  class={currentRole === "Admin" || currentRole === "Staff" ? "" : "hidden"}
+  class={currentRole === "Admin" || currentRole === "Staff" ? "relative" : "hidden"}
 >
   <!-- Chat Icon (Always Visible) -->
   <BoxIcon
@@ -191,7 +191,6 @@ console.log("🔧 [HTTP-CHAT-WIDGET] Company name:", currentUser?.profile?.compa
     chatToggle?.addEventListener("click", () => {
       const chatPanel = document.getElementById("chat-panel");
       const isHidden = chatPanel?.classList.contains("hidden");
-      (window as any).closeUserCenterDrawer();
 
       if (isHidden) {
         // Opening chat
@@ -473,7 +472,7 @@ console.log("🔧 [HTTP-CHAT-WIDGET] Company name:", currentUser?.profile?.compa
       } catch (error) {
         console.error("🔔 [HTTP-CHAT] Message polling error:", error);
       }
-    }, 5000); // Every 5 seconds
+    }, 30000); // Every 30 seconds (reduced from 5 seconds)
   }
 
   // Update online count and show usernames

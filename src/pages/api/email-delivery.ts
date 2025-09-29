@@ -16,12 +16,13 @@ interface EmailDeliveryRequest {
   emailContent: string;
   buttonLink?: string;
   buttonText?: string;
-  projectId?: number;
+  project?: any;
   newStatus?: number;
   authorId?: string;
   includeResendHeaders?: boolean;
   trackLinks?: boolean;
   currentUser?: any;
+  emailToRoles?: any;
 }
 
 interface FailedEmail {
@@ -69,14 +70,16 @@ export const POST: APIRoute = async ({ request, cookies }): Promise<Response> =>
     const failedEmails = [];
     let emailTemplate: string;
 
+    let usersToNotify = body.usersToNotify;
+
     const {
-      usersToNotify,
       emailType,
       emailSubject,
       emailContent,
+      emailToRoles,
       buttonLink = `${baseUrl}/dashboard`,
       buttonText = "Access Your Dashboard",
-      projectId,
+      project,
       newStatus,
       authorId,
       includeResendHeaders = false,
@@ -141,39 +144,24 @@ export const POST: APIRoute = async ({ request, cookies }): Promise<Response> =>
 
     try {
       // Send emails to each user
+      let emailHtml: string;
+
+      emailHtml = emailTemplate.replace("{{CONTENT}}", emailContent);
+
+      // Use placeholder utilities for all template replacements
+      const { replacePlaceholders } = await import("../../lib/placeholder-utils");
+      const placeholderData = {
+        project: project || {},
+        // Add any additional data needed for placeholders
+      };
+
+      emailHtml = replacePlaceholders(emailHtml, placeholderData);
+
       for (let i = 0; i < usersToNotify.length; i++) {
         const userEmail = usersToNotify[i];
 
-        let emailHtml: string;
         try {
           // Replace template variables for regular emails
-          emailHtml = emailTemplate.replace("{{CONTENT}}", emailContent);
-
-          // must process LOGO before COMPANY_NAME for title tag
-          emailHtml = emailHtml.replace(
-            /{{GLOBAL_COMPANY_NAME}}/g,
-            process.env.GLOBAL_COMPANY_NAME || "No Company Name"
-          );
-
-          emailHtml = emailHtml.replace(
-            /{{PRIMARY_COLOR}}/g,
-            process.env.PRIMARY_COLOR || "#3b82f6"
-          );
-
-          emailHtml = emailHtml.replace(/{{YEAR}}/g, process.env.YEAR || "No Year");
-
-          emailHtml = emailHtml.replace(
-            /{{GLOBAL_COMPANY_SLOGAN}}/g,
-            process.env.GLOBAL_COMPANY_SLOGAN || "No Company Slogan"
-          );
-          emailHtml = emailHtml.replace(
-            /{{COMPANY_LOGO_LIGHT}}/g,
-            process.env.COMPANY_LOGO_LIGHT || "No Logo Img"
-          );
-          emailHtml = emailHtml.replace(
-            /{{COMPANY_LOGO_DARK}}/g,
-            process.env.COMPANY_LOGO_DARK || "No Logo Img"
-          );
 
           // Override buttonLink with magic link for authentication
           let finalButtonLink = buttonLink;
@@ -228,11 +216,10 @@ export const POST: APIRoute = async ({ request, cookies }): Promise<Response> =>
             // Add proper content type and custom headers (only if values exist)
             headers: {
               "Content-Type": "text/html; charset=UTF-8",
-              ...(includeResendHeaders && projectId && { "X-Project-ID": String(projectId) }),
+              ...(includeResendHeaders && project && { "X-Project": JSON.stringify(project) }),
               ...(includeResendHeaders &&
                 newStatus !== undefined &&
                 newStatus !== null && { "X-Project-Status": String(newStatus) }),
-              ...(includeResendHeaders && authorId && { "X-Author-ID": String(authorId) }),
             },
           };
 
@@ -258,7 +245,7 @@ export const POST: APIRoute = async ({ request, cookies }): Promise<Response> =>
             // Log failed email delivery
             try {
               await SimpleProjectLogger.addLogEntry(
-                projectId || 0,
+                project.id || 0,
                 "email_failed",
                 currentUser,
                 `Email delivery failed to ${userEmail} - Type: ${emailType}, Subject: ${emailSubject}, Error: ${errorText}`,
@@ -278,7 +265,7 @@ export const POST: APIRoute = async ({ request, cookies }): Promise<Response> =>
             // Log successful email delivery
             try {
               await SimpleProjectLogger.addLogEntry(
-                projectId || 0,
+                project.id || 0,
                 "email_sent",
                 currentUser,
                 `Email sent successfully to ${userEmail} - Type: ${emailType}, Subject: ${emailSubject}`,
@@ -309,7 +296,7 @@ export const POST: APIRoute = async ({ request, cookies }): Promise<Response> =>
           // Log failed email delivery (catch block)
           try {
             await SimpleProjectLogger.addLogEntry(
-              projectId || 0,
+              project.id || 0,
               "email_failed",
               currentUser,
               `Email delivery error to ${userEmail} - Type: ${emailType}, Subject: ${emailSubject}, Error: ${userError instanceof Error ? userError.message : "Unknown error"}`,
@@ -359,7 +346,7 @@ export const POST: APIRoute = async ({ request, cookies }): Promise<Response> =>
     // Log overall email delivery completion
     try {
       console.log("📧 [EMAIL-DELIVERY] Logging email delivery completion:", {
-        projectId: projectId || 0,
+        projectId: project.id || 0,
         emailType,
         totalSent: sentEmails.length,
         totalFailed: failedEmails.length,
@@ -367,7 +354,7 @@ export const POST: APIRoute = async ({ request, cookies }): Promise<Response> =>
       });
 
       await SimpleProjectLogger.addLogEntry(
-        projectId || 0,
+        project.id || 0,
         "email_sent",
         currentUser,
         `Email delivery batch completed - Type: ${emailType}, Total sent: ${sentEmails.length}, Total failed: ${failedEmails.length}`,

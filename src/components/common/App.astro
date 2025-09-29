@@ -74,6 +74,7 @@ const currentRole = currentUser?.profile.role || undefined;
 const projectId = project?.id || undefined;
 const currentUrl = Astro.url.pathname;
 
+import { handleUrlNotification } from "../../lib/ux-utils";
 // Get navigation data
 import { navigation } from "@/pages/api/navigation";
 import { isBackendPage } from "@/pages/api/backend-page-check";
@@ -85,7 +86,6 @@ import "../../styles/boxicons.css"; // this is sketchy
 import "../../styles/global.css"; // Import Tailwind CSS
 import Preloader from "./Preloader.astro";
 import Footer from "./Footer.astro";
-import UserCenter from "./UserCenter.astro";
 import UnifiedNotification from "./UnifiedNotification.astro";
 import CookieBanner from "./CookieBanner.astro";
 import SpeedDial from "./SpeedDial.astro";
@@ -226,19 +226,18 @@ const debugData = {
       property="og:type"
       content="website"
     />
-    <!-- <link rel="canonical" href="https://flowbite.com/application-ui/demo/" />
+    <!-- <link rel="canonical" href="https://flowbite.com/application-ui/demo/" />-->
 
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <!-- <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="" />
     <link
       href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
       rel="stylesheet"
-    />
+    /> -->
 
-    <link
-      rel="stylesheet"
-      href="https://www.unpkg.com/flowbite-datepicker@1.3.2/dist/css/datepicker.min.css"
-    />
+    <!-- Font styles are handled by CSS files -->
+
+    <!-- 
     <link rel="stylesheet" href="https://flowbite.com/application-ui/demo/app.css" />
 
     <link
@@ -306,16 +305,7 @@ const debugData = {
     </script>
   </head>
 
-  <!-- Inject environment variables for client-side use FIRST -->
-  <script
-    set:html={`window.GOOGLE_MAPS_API_KEY = "${import.meta.env.GOOGLE_MAPS_API_KEY || ""}"; window.GOOGLE_PLACES_API_KEY = "${import.meta.env.GOOGLE_PLACES_API_KEY || ""}"; window.STRIPE_PUBLISHABLE_KEY = "${import.meta.env.PUBLIC_STRIPE_PUBLISHABLE_KEY || ""}";`}
-  />
-
   <!-- Set global user data for client-side components -->
-  <script set:html={`window.currentUser = ${JSON.stringify(currentUser || null)};`} />
-
-  <!-- User data and Supabase config handled server-side -->
-  <!-- SimpleProjectLogger is now handled server-side only -->
 
   <body class="h8KYXnua2NT4kTVzieom KRANKvs7gs1E_d0fCA0k">
     <!-- Preloader -->
@@ -362,15 +352,6 @@ const debugData = {
       </div>
     </div>
 
-    <!-- <UserCenter
-      isAuth={isAuth}
-      currentUser={currentUser}
-      currentRole={currentRole || ""}
-      session={session}
-      visibleNavItems={visibleNavItems}
-      desktopNavigationHTML={desktopNavigationHTML}
-      project={project}
-    /> -->
     <!-- Unified Notification System -->
     <UnifiedNotification />
 
@@ -395,23 +376,555 @@ const debugData = {
   <!-- <script src="https://unpkg.com/flowbite@2.5.2/dist/flowbite.min.js"></script> -->
 
   <script>
-    // Import UX utilities and console interceptor
-    import {
-      debounce,
-      fixSafariViewport,
-      getViewportSize,
-      handleUrlNotification,
-      isDesktop,
-      isMobile,
-      isSafariIOS,
-      isTablet,
-      lockBodyScroll,
-      scrollToTop,
-      throttle,
-      unlockBodyScroll,
-    } from "../../lib/ux-utils.ts";
-
+    // Make data available globally for the proposal functions
     import { setupConsoleInterceptor } from "../../lib/console-interceptor.ts";
+
+    // Local Window interface for this component's TypeScript intellisense
+    declare global {
+      interface Window {
+        // Global functions and utilities (alphabetized)
+        acceptProposal?: () => void;
+        addNewLineItem?: () => void;
+        clipboardData?: any;
+        createLineItemRow?: (data: any) => HTMLElement;
+        deleteProject?: (projectId: any) => void;
+        getProject?: (projectId: string | number) => Promise<any>;
+        handleNewStatusNotification?: any;
+        handleUrlNotification?: (type: string, message: string) => void;
+        hideNotification?: any;
+        initializeSubjectEditing?: () => void;
+        proposalHelper?: any;
+        proposalManager?: any;
+        refreshManager?: any;
+        requestPushNotificationPermission?: () => void;
+        resetForm?: any;
+        resetNotifications?: () => void;
+        sendEmail?: (emailData: any) => Promise<any>;
+        setPageLoadProjectStatus?: any;
+        showModal?: any;
+        switchTab?: any;
+        toggleCommentForm?: () => void;
+        trimText?: (text: string, maxLength?: number, suffix?: string) => string;
+        trimWords?: (text: string, wordLimit?: number, suffix?: string) => string;
+        updateProposalTotal?: () => void;
+        updateStatus?: (project: any, newStatus: number, statuses?: any) => Promise<any>;
+        validateEmail?: (email: string) => string | null;
+      }
+    }
+
+    // showModal is now handled by UnifiedNotification.astro
+
+    (window as any).hideNotification = function () {
+      console.log("[FALLBACK-NOTIFICATION] Hiding notification");
+    };
+
+    (window as any).switchTab = function (tabName: string) {
+      console.log(`[TAB] Switching to: ${tabName}`);
+      // Implementation for tab switching
+    };
+
+    (window as any).handleNewStatusNotification = function (response: any, context: any) {
+      if (!response) {
+        console.error(`ERROR [${context || "NOTIFICATION"}] API call failed:`, response.error);
+        return;
+      }
+
+      if (!response.statusData || !(window as any).showModal) {
+        console.warn(
+          `WARNING [${context || "NOTIFICATION"}] No notification data or showModal function available`
+        );
+        return;
+      }
+
+      // Get the current status configuration
+      const clientNotification = response.statusData?.client;
+      const adminNotification = response.statusData?.admin;
+      const currentNotification = response.statusData?.current;
+      const currentUser = response.statusData?.currentUser;
+
+      // Send email if email configuration exists
+      if (clientNotification?.email) {
+        (window as any).sendEmail(clientNotification.email, currentUser);
+      }
+
+      if (adminNotification?.email) {
+        (window as any).sendEmail(adminNotification.email);
+      }
+
+      if (currentNotification?.modal) {
+        const modalData = currentNotification.modal;
+        // Handle redirect object structure
+
+        //     type: "success" | "error" | "warning" | "info";
+        // title: string;
+        // message: string;
+        // duration?: number; // 0 = no auto-hide, >0 = auto-hide after ms
+        // persist?: boolean; // false = close existing modals, true = keep existing modals
+        // redirect?: {
+        //   url: string;
+        //   delay?: number; // Delay in milliseconds before redirect
+        //   showCountdown?: boolean; // Show countdown in message
+        // };
+        // actions?: Array<{
+        //   label: string;
+        //   action: () => void;
+        //   primary?: boolean; // Primary button styling
+        // }>;
+        // onClose?: () => void; //
+        (window as any).showModal(modalData);
+      } else {
+        console.warn(`WARNING [${context || "NOTIFICATION"}] No notification found in response`);
+      }
+    };
+
+    (window as any).handleUrlNotification = function (type: string, message: string) {
+      console.log(`[URL-NOTIFICATION] ${type}: ${message}`);
+      // Implementation for handling URL-based notifications
+    };
+
+    (window as any).sendEmail = async function (emailData: any, currentUser: any) {
+      try {
+        // Transform the email data to match the email-delivery API structure
+        const transformedData = {
+          usersToNotify: emailData.users_to_notify, // TODO: Get actual user emails
+          emailType: emailData.email_type || "status_update",
+          emailSubject: emailData.email_subject || "Project Update",
+          emailContent: emailData.email_content || "Your project has been updated.",
+          buttonLink: emailData.button_link,
+          buttonText: emailData.button_text,
+          project: {}, // TODO: Pass actual project data
+          currentUser: currentUser, // TODO: Pass actual current user
+        };
+
+        console.log("📧 [SEND-EMAIL] Sending email with data:", transformedData);
+
+        const response = await fetch("/api/email-delivery", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(transformedData),
+        });
+        return await response.json();
+      } catch (error: any) {
+        console.error("Global sendEmail error:", error);
+        return { success: false, error: error.message };
+      }
+    };
+
+    (window as any).validateEmail = function (email: string) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      return emailRegex.test(email) ? null : "Invalid email format";
+    };
+
+    (window as any).getProject = async function (projectId: string | number) {
+      const projectResponse = await fetch(`/api/get-project?id=${projectId}`);
+      if (projectResponse.ok) {
+        return await projectResponse.json();
+      } else {
+        throw new Error("Failed to fetch project");
+      }
+    };
+
+    // Delete project function
+    let isDeleting = false; // Flag to prevent multiple delete operations
+    (window as any).deleteProject = function (projectId: any) {
+      // Prevent multiple delete operations
+      if (isDeleting) {
+        console.log("Delete operation already in progress, ignoring request");
+        return;
+      }
+
+      // Validate project ID
+      if (!projectId || projectId.startsWith("new-project-")) {
+        if ((window as any).showModal) {
+          (window as any).showModal(
+            "error",
+            "Delete Failed",
+            "Cannot delete a new project that hasn't been saved yet.",
+            5000
+          );
+        }
+        return;
+      }
+
+      // Show confirmation modal with action buttons
+      if ((window as any).showModal) {
+        (window as any).showModal(
+          "warning",
+          "Delete Project",
+          "Are you sure you want to delete this project? This action cannot be undone.",
+          6000000, // 6000 seconds timeout
+          [
+            {
+              label: "Cancel",
+              action: () => {},
+            },
+            {
+              label: "Delete",
+              action: () => {
+                // Set deleting flag to prevent multiple operations
+                isDeleting = true;
+
+                // Show loading state
+                const deleteBtn = document.getElementById("delete-project") as HTMLButtonElement;
+                deleteBtn?.setAttribute("data-loading", "true");
+                if (deleteBtn) {
+                  deleteBtn.disabled = true;
+                  deleteBtn.innerHTML = '<i class="bx bx-loader-alt bx-spin mr-1"></i>Deleting...';
+                }
+
+                // Make API call to delete project
+                console.log("Sending delete request for project:", projectId);
+                fetch(`/api/delete-project`, {
+                  method: "DELETE",
+                  headers: {
+                    "Content-Type": "application/json",
+                  },
+                  body: JSON.stringify({ projectId }),
+                })
+                  .then(async (response) => {
+                    const data = await response.json();
+
+                    if (!response.ok) {
+                      throw new Error(data.error || "Failed to delete project");
+                    }
+
+                    // Show success modal
+                    if ((window as any).showModal) {
+                      (window as any).showModal(
+                        "success",
+                        "Project Deleted!",
+                        data.message || "Project has been deleted successfully.",
+                        1500
+                      );
+                    }
+
+                    // Reset deleting flag
+                    isDeleting = false;
+
+                    // Redirect to dashboard after a short delay
+                    setTimeout(() => {
+                      window.location.href = "project/dashboard";
+                    }, 1500);
+                  })
+                  .catch((error) => {
+                    console.error("Error deleting project:", error);
+
+                    // Show error modal with specific error message
+                    if ((window as any).showModal) {
+                      (window as any).showModal(
+                        "error",
+                        "Delete Failed",
+                        error.message || "Failed to delete project. Please try again.",
+                        6000000
+                      );
+                    }
+
+                    // Reset deleting flag and button state
+                    isDeleting = false;
+                    if (deleteBtn) {
+                      deleteBtn.disabled = false;
+                      deleteBtn.innerHTML = '<i class="bx bx-trash mr-1"></i>Delete Project';
+                    }
+                  });
+              },
+            },
+          ]
+        );
+      }
+    };
+
+    // Request push notification permission
+    (window as any).requestPushNotificationPermission = function () {
+      console.log("🔔 [APP] Checking notification permission...");
+      console.log("🔔 [APP] Notification in window:", "Notification" in window);
+      console.log(
+        "🔔 [APP] Current permission:",
+        "Notification" in window ? Notification.permission : "Not available"
+      );
+
+      // Check if we're on mobile Safari
+      const isMobileSafari =
+        /iPad|iPhone|iPod/.test(navigator.userAgent) && /Safari/.test(navigator.userAgent);
+      console.log("🔔 [APP] Mobile Safari detected:", isMobileSafari);
+
+      if (isMobileSafari) {
+        console.log(
+          "🔔 [APP] Mobile Safari detected - push notifications work when installed as PWA"
+        );
+        console.log("🔔 [APP] Install as PWA (Add to Home Screen) for full notification support");
+
+        // Check if running as PWA
+        const isStandalone =
+          window.matchMedia("(display-mode: standalone)").matches ||
+          (window.navigator as any).standalone === true;
+        console.log("🔔 [APP] Running as PWA:", isStandalone);
+
+        if (!isStandalone) {
+          console.log("💡 [APP] Install as PWA for better notification support");
+          return;
+        }
+      }
+
+      // Only request if user hasn't been prompted yet
+      if ("Notification" in window && Notification.permission === "default") {
+        console.log("🔔 [APP] Requesting notification permission...");
+        // Wait a bit for the page to load, then request permission
+        setTimeout(() => {
+          Notification.requestPermission().then((permission) => {
+            console.log("🔔 [APP] Permission result:", permission);
+            if (permission === "granted") {
+              console.log("🔔 Push notifications enabled for authenticated user!");
+              // Show a subtle notification
+              if ((window as any).showModal) {
+                (window as any).showModal(
+                  "info",
+                  "Notifications Enabled",
+                  "You'll receive push notifications for project updates!",
+                  3000
+                );
+              }
+            } else {
+              console.log("🔔 Push notifications declined by user");
+            }
+          });
+        }, 3000); // Wait 3 seconds after page load
+      } else {
+        console.log("🔔 [APP] Not requesting permission - already handled or not available");
+      }
+    };
+
+    // Reset notification permissions for debugging
+    (window as any).resetNotifications = function () {
+      console.log("🔄 [APP] Resetting notification permissions...");
+
+      // Check if we're on mobile Safari
+      const isMobileSafari =
+        /iPad|iPhone|iPod/.test(navigator.userAgent) && /Safari/.test(navigator.userAgent);
+
+      if (isMobileSafari) {
+        console.log(
+          "📱 [APP] Mobile Safari detected - push notifications work when installed as PWA"
+        );
+        console.log("💡 [APP] Install as PWA (Add to Home Screen) for full notification support");
+
+        // Check if running as PWA
+        const isStandalone =
+          window.matchMedia("(display-mode: standalone)").matches ||
+          (window.navigator as any).standalone === true;
+        console.log("🔔 [APP] Running as PWA:", isStandalone);
+
+        if (!isStandalone) {
+          console.log("💡 [APP] Install as PWA for better notification support");
+          return;
+        }
+      }
+
+      console.log(
+        "🔄 [APP] Current permission:",
+        "Notification" in window ? Notification.permission : "Not available"
+      );
+
+      // Clear any stored permission state
+      localStorage.removeItem("notification-permission-requested");
+      sessionStorage.removeItem("notification-permission-requested");
+
+      // Force a new permission request
+      if ("Notification" in window) {
+        Notification.requestPermission().then((permission) => {
+          console.log("🔄 [APP] Reset permission result:", permission);
+          if (permission === "granted") {
+            console.log("✅ Notifications re-enabled!");
+          } else {
+            console.log("❌ Notifications still denied");
+          }
+        });
+      }
+    };
+
+    // Auto-request notification permission on page load
+    document.addEventListener("DOMContentLoaded", () => {
+      (window as any).requestPushNotificationPermission();
+    });
+
+    (window as any).updateStatus = async function (project: any, status: number, statuses?: any) {
+      window.showModal(
+        "info",
+        "Processing...",
+        "Please wait... This may take a few seconds.",
+        5000
+      );
+
+      try {
+        // If project exists, use it; otherwise fetch it
+        let currentProject = project;
+        if (!currentProject) {
+          console.log("📊 [UPDATE-STATUS] No project provided, fetching full project data...");
+          try {
+            currentProject = await (window as any).getProject(project);
+          } catch (error) {
+            console.log("📊 [UPDATE-STATUS] Could not fetch project, using minimal object:", error);
+            currentProject = {
+              id: project.id,
+              status: 0,
+            };
+          }
+        }
+
+        const response = await fetch("/api/update-status", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            currentProject,
+            newStatus: status,
+            currentStatusData: statuses || null, // Pass the current status data
+          }),
+        });
+        return await response.json();
+      } catch (error: any) {
+        console.error("Global updateStatus error:", error);
+        return { success: false, error: error.message };
+      }
+    };
+
+    // Global count bubble utility
+    (window as any).updateCountBubble = function (
+      parentElement: HTMLElement,
+      count: number,
+      options: any = {}
+    ) {
+      if (!parentElement) {
+        console.warn("🔍 [COUNT-BUBBLE] Parent element is null or undefined");
+        return null;
+      }
+
+      const config = {
+        bubbleClasses:
+          "absolute -right-2 -top-2 flex h-5 w-5 items-center justify-center rounded-full bg-primary-500 text-xs font-bold text-white dark:bg-primary-dark",
+        parentClasses: "relative",
+        maxCount: 99,
+        showZero: false,
+        ...options,
+      };
+
+      // Find existing bubble or create new one
+      let countBubble = parentElement.querySelector(".count-bubble") as HTMLSpanElement;
+
+      if (count > 0 || config.showZero) {
+        // Create bubble if it doesn't exist
+        if (!countBubble) {
+          countBubble = document.createElement("span");
+          countBubble.className = `count-bubble ${config.bubbleClasses}`;
+
+          // Add parent classes if specified
+          if (config.parentClasses) {
+            parentElement.classList.add(...config.parentClasses.split(" "));
+          }
+
+          parentElement.appendChild(countBubble);
+          console.log("🔍 [COUNT-BUBBLE] Created new bubble for element:", parentElement);
+        }
+
+        // Update bubble content and visibility
+        const displayCount = count > config.maxCount ? `${config.maxCount}+` : count.toString();
+        countBubble.textContent = displayCount;
+        countBubble.style.display = "flex";
+
+        // Update data attribute for accessibility
+        parentElement.setAttribute("data-count", count.toString());
+
+        console.log("🔍 [COUNT-BUBBLE] Updated bubble:", {
+          count,
+          displayCount,
+          element: parentElement,
+        });
+      } else {
+        // Hide bubble when count is 0 (unless showZero is true)
+        if (countBubble) {
+          countBubble.style.display = "none";
+          parentElement.removeAttribute("data-count");
+          console.log("🔍 [COUNT-BUBBLE] Hidden bubble (count is 0)");
+        }
+      }
+
+      return countBubble;
+    };
+
+    // Count bubble presets
+    (window as any).COUNT_BUBBLE_PRESETS = {
+      notification: {
+        bubbleClasses:
+          "absolute inline-flex items-center justify-center w-6 h-6 text-xs font-bold text-white bg-red-500 border-2 border-white rounded-full -top-2 -end-2 dark:border-gray-900",
+        maxCount: 99,
+        showZero: false,
+      },
+      punchlist: {
+        bubbleClasses:
+          "absolute -right-2 -top-2 flex h-5 w-5 items-center justify-center rounded-full bg-primary-500 text-xs font-bold text-white dark:bg-primary-dark",
+        maxCount: 99,
+        showZero: false,
+      },
+      small: {
+        bubbleClasses:
+          "absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-xs font-bold text-white",
+        maxCount: 9,
+        showZero: false,
+      },
+    };
+
+    // Project management
+    (window as any).resetForm = function (formId: string) {
+      console.log(`[FORM] Resetting form: ${formId}`);
+      // Implementation for form reset
+    };
+
+    (window as any).clipboardData = function (data: any) {
+      console.log("[CLIPBOARD] Data:", data);
+      // Implementation for clipboard operations
+    };
+
+    // Proposal management
+    (window as any).proposalManager = {};
+    (window as any).proposalHelper = {};
+    (window as any).addNewLineItem = function () {
+      console.log("[PROPOSAL] Adding new line item");
+      // Implementation for adding line items
+    };
+    (window as any).initializeSubjectEditing = function () {
+      console.log("[PROPOSAL] Initializing subject editing");
+      // Implementation for subject editing
+    };
+    (window as any).acceptProposal = function () {
+      console.log("[PROPOSAL] Accepting proposal");
+      // Implementation for accepting proposals
+    };
+    (window as any).createLineItemRow = function (data: any) {
+      console.log("[PROPOSAL] Creating line item row:", data);
+      // Implementation for creating line item rows
+      return document.createElement("div");
+    };
+    (window as any).updateProposalTotal = function () {
+      console.log("[PROPOSAL] Updating proposal total");
+      // Implementation for updating totals
+    };
+
+    // Contact form
+    (window as any).contactUpload = function (file: any) {
+      console.log("[CONTACT] Uploading file:", file);
+      // Implementation for contact form uploads
+    };
+
+    // Discussion management
+    (window as any).toggleCommentForm = function () {
+      console.log("[DISCUSSION] Toggling comment form");
+      // Implementation for toggling comment forms
+    };
+    (window as any).refreshManager = {};
+    (window as any).setPageLoadProjectStatus = function (status: any) {
+      console.log("[PROJECT] Setting page load status:", status);
+      // Implementation for setting project status
+    };
+
+    // ===== END GLOBAL FUNCTIONS =====
 
     // Setup console interceptor (disables console.log in production)
     setupConsoleInterceptor();
@@ -421,10 +934,11 @@ const debugData = {
       const urlParams = new URLSearchParams(window.location.search);
       const errorParam = urlParams.get("error");
       const successParam = urlParams.get("success");
+      const messageParam = urlParams.get("message");
 
       if (errorParam) {
         console.log("🔔 [URL-NOTIFICATION] Processing error parameter:", errorParam);
-        handleUrlNotification("error", errorParam);
+        (window as any).handleUrlNotification("error", errorParam);
 
         // Clean up URL by removing the error parameter
         const newUrl = new URL(window.location.href);
@@ -434,11 +948,21 @@ const debugData = {
 
       if (successParam) {
         console.log("🔔 [URL-NOTIFICATION] Processing success parameter:", successParam);
-        handleUrlNotification("success", successParam);
+        (window as any).handleUrlNotification("success", successParam);
 
         // Clean up URL by removing the success parameter
         const newUrl = new URL(window.location.href);
         newUrl.searchParams.delete("success");
+        window.history.replaceState({}, document.title, newUrl.pathname + newUrl.search);
+      }
+
+      if (messageParam) {
+        console.log("🔔 [URL-NOTIFICATION] Processing message parameter:", messageParam);
+        (window as any).handleUrlNotification("success", messageParam);
+
+        // Clean up URL by removing the message parameter
+        const newUrl = new URL(window.location.href);
+        newUrl.searchParams.delete("message");
         window.history.replaceState({}, document.title, newUrl.pathname + newUrl.search);
       }
     }
@@ -464,133 +988,6 @@ const debugData = {
       }
     });
 
-    // Centralized notification handler for update-status API responses
-    (window as any).handleUpdateStatusNotification = function (response: any, context: any) {
-      if (!response.success) {
-        console.error(`ERROR [${context || "NOTIFICATION"}] API call failed:`, response.error);
-        return;
-      }
-
-      if (!response.notificationData || !(window as any).showModal) {
-        console.warn(
-          `WARNING [${context || "NOTIFICATION"}] No notification data or showModal function available`
-        );
-        return;
-      }
-
-      // Get user role from API response (more secure than frontend)
-      const currentUserRole = response.notificationData.currentUserRole || "Client";
-      const isAdminOrStaff = currentUserRole === "Admin" || currentUserRole === "Staff";
-      const notification = isAdminOrStaff
-        ? response.notificationData.admin
-        : response.notificationData.client;
-
-      if (notification) {
-        (window as any).showModal(
-          notification.type,
-          notification.title,
-          notification.message,
-          notification.duration,
-          notification.redirect
-        );
-      } else {
-        console.warn(
-          `WARNING [${context || "NOTIFICATION"}] No ${isAdminOrStaff ? "admin" : "client"} notification found in response`
-        );
-      }
-    };
-  </script>
-
-  <!-- Magic Link Authentication Handler -->
-  <!-- <script>
-    // Global magic link authentication handler
-    (window as any).handleMagicLinkAuth = async function () {
-      try {
-        // Check if we have auth tokens in the URL fragment
-        const fragment = window.location.hash.substring(1);
-        if (!fragment) return;
-
-        const params = new URLSearchParams(fragment);
-        const accessToken = params.get("access_token");
-        const refreshToken = params.get("refresh_token");
-        const expiresIn = params.get("expires_in");
-        const tokenType = params.get("token_type");
-        const type = params.get("type");
-
-        // Only handle magic link callbacks
-        if (!accessToken || !refreshToken || type !== "magiclink") {
-          return;
-        }
-
-        console.log("🔐 [MAGIC-LINK] Processing magic link authentication...");
-
-        // Set auth cookies via API call
-        const response = await fetch("/api/auth/callback", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            access_token: accessToken,
-            refresh_token: refreshToken,
-            expires_in: parseInt(expiresIn || "3600"),
-            token_type: tokenType || "bearer",
-          }),
-        });
-
-        if (response.ok) {
-          console.log("✅ [MAGIC-LINK] Authentication successful, redirecting...");
-
-          // Clear the URL fragment to prevent reprocessing
-          window.history.replaceState(
-            {},
-            document.title,
-            window.location.pathname + window.location.search
-          );
-
-          // Redirect to dashboard
-          window.location.href = "/dashboard";
-        } else {
-          const errorData = await response.json();
-          console.error("❌ [MAGIC-LINK] Authentication failed:", errorData);
-
-          // Show error message to user
-          if (typeof (window as any).showModal === "function") {
-            (window as any).showModal(
-              "error",
-              "Login Failed",
-              "There was an error processing your login. Please try again."
-            );
-          }
-        }
-      } catch (error) {
-        console.error("❌ [MAGIC-LINK] Error processing magic link:", error);
-
-        // Show error message to user
-        if (typeof (window as any).showModal === "function") {
-          (window as any).showModal(
-            "error",
-            "Login Error",
-            "There was an unexpected error. Please try again."
-          );
-        }
-      }
-    };
-
-    // Run magic link handler on page load
-    document.addEventListener("DOMContentLoaded", (window as any).handleMagicLinkAuth);
-
-    // Also run immediately in case DOM is already loaded
-    if (document.readyState === "loading") {
-      // DOM is still loading, event listener will handle it
-    } else {
-      // DOM is already loaded, run immediately
-      (window as any).handleMagicLinkAuth();
-    }
-  </script> -->
-
-  <!-- Service Worker Registration for PWA -->
-  <script>
     // Register service worker for PWA functionality
     if ("serviceWorker" in navigator) {
       window.addEventListener("load", () => {
@@ -606,6 +1003,28 @@ const debugData = {
     } else {
       console.log("❌ Service Worker not supported in this browser");
     }
+
+    // Global text trimming utilities
+    (window as any).trimText = function (
+      text: string,
+      maxLength: number = 100,
+      suffix: string = "..."
+    ): string {
+      if (!text) return "";
+      if (text.length <= maxLength) return text;
+      return text.substring(0, maxLength - suffix.length) + suffix;
+    };
+
+    (window as any).trimWords = function (
+      text: string,
+      wordLimit: number = 50,
+      suffix: string = "..."
+    ): string {
+      if (!text) return "";
+      const words = text.trim().split(/\s+/);
+      if (words.length <= wordLimit) return text;
+      return words.slice(0, wordLimit).join(" ") + suffix;
+    };
 
     // iOS Safari Mobile Beta Detection and CSS Application
     function isSafariIOS(): boolean {
@@ -643,24 +1062,4 @@ const debugData = {
       console.log("🌐 [APP] Not iOS Safari Mobile Beta - Skipping specific CSS fixes");
     }
   </script>
-
-  <script>
-    // Global function to close the drawer
-    (window as any).closeUserCenterDrawer = function () {
-      const closeBtn = document.querySelector(
-        '[data-drawer-hide="drawer-user-center"]'
-      ) as HTMLButtonElement;
-      if (closeBtn) {
-        closeBtn.click();
-      }
-    };
-  </script>
 </html>
-
-<style>
-  /* iOS Safari Mobile Beta specific CSS - Only applied when detected */
-  .ios-safari-mobile-beta-fix {
-    height: 100dvh !important;
-    overflow-y: scroll !important;
-  }
-</style>

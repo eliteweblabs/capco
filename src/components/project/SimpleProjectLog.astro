@@ -113,7 +113,7 @@ const { projectId, globalInputClasses, globalSecondaryTextClasses, globalPrimary
         this.renderLog(data.log || []);
       } catch (error) {
         console.error("Error loading log:", error);
-        this.showError();
+        window.showModal("error", "Log Error", "Failed to load project log");
       }
     }
 
@@ -250,6 +250,8 @@ const { projectId, globalInputClasses, globalSecondaryTextClasses, globalPrimary
     }
 
     formatActionType(action) {
+      if (!action) return "Unknown Action";
+
       const labelMap = {
         project_created: "Project Created",
         project_updated: "Project Updated",
@@ -290,13 +292,6 @@ const { projectId, globalInputClasses, globalSecondaryTextClasses, globalPrimary
     showLoading() {
       this.loadingEl?.classList.remove("hidden");
       this.errorEl?.classList.add("hidden");
-      this.emptyEl?.classList.add("hidden");
-      this.contentEl?.classList.add("hidden");
-    }
-
-    showError() {
-      this.loadingEl?.classList.add("hidden");
-      this.errorEl?.classList.remove("hidden");
       this.emptyEl?.classList.add("hidden");
       this.contentEl?.classList.add("hidden");
     }

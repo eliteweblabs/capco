@@ -3,14 +3,12 @@ interface Props {
   title: string;
   description: string;
   statusColor?: string;
-  projectId?: string;
+  project?: any;
   currentStatusInt?: string;
   currentStatusName?: string;
   currentStatusTab?: string;
-  currentRole?: string;
-  project?: any;
-  statuses?: any; // Accept statuses object for slot machine picker
-  authorProfile?: any;
+  currentUser?: any;
+  statusesOptions?: any; // Accept statuses object for slot machine picker
   staffOptions?: any;
   globalSecondaryTextClasses?: string;
   globalPrimaryTextClasses?: string;
@@ -20,57 +18,68 @@ interface Props {
 const {
   title,
   description,
-  currentRole,
+  currentUser,
   statusColor = "blue",
-  projectId,
+  project,
   currentStatusInt = "",
   currentStatusName = "",
   currentStatusTab = "",
-  authorProfile,
-  project,
-  statuses = {},
+  statusesOptions,
   staffOptions = [],
   globalSecondaryTextClasses = "",
   globalPrimaryTextClasses = "",
   globalInputClasses = "",
 } = Astro.props;
 
+const projectId = project?.id;
+
+const currentRole = currentUser?.profile?.role;
+
+// console.log("🔍 [HERO-PROJECT] Project:", project);
+// console.log("🔍 [HERO-PROJECT] Current user:", currentUser);
+// console.log("🔍 [HERO-PROJECT] Current role:", currentRole);
+// console.log("🔍 [HERO-PROJECT] Current status tab:", currentStatusTab);
+// console.log("🔍 [HERO-PROJECT] Current status int:", currentStatusInt);
+// console.log("🔍 [HERO-PROJECT] Current status name:", currentStatusName);
+// console.log("🔍 [HERO-PROJECT] Project ID:", projectId);
+
 import SlotMachineModal from "../form/SlotMachineModal.astro";
+import SlotMachineModalStaff from "../form/SlotMachineModalStaff.astro";
 import BoxIcon from "./BoxIcon.astro";
 import Button from "./Button.astro";
-import SectionContainer from "./SectionContainer.astro";
+// import SectionContainer from "./SectionContainer.astro";
 
-// Get status options from the unified API if not provided
-let statusOptions: any[] = [];
-if (Object.keys(statuses).length > 0) {
-  // Use provided statuses (legacy support)
-  statusOptions = Object.values(statuses).map((status: any) => ({
-    value: status.status_code?.toString() || "",
-    label:
-      status.admin_status_name +
-        " / " +
-        (status.est_time === null ? "No Est. Time Value" : status.est_time) || "",
-  }));
-} else {
-  // Fetch from unified API
-  try {
-    const statusResponse = await fetch(`${Astro.url.origin}/api/project-statuses`, {
-      method: "GET",
-      headers: {
-        Cookie: Astro.request.headers.get("Cookie") || "",
-      },
-    });
+// // Get status options from the unified API if not provided
+// let statusOptions: any[] = [];
+// if (Object.keys(statusesOptions).length > 0) {
+//   // Use provided statuses (legacy support)
+//   statusOptions = Object.values(statuses).map((status: any) => ({
+//     value: status.status_code?.toString() || "",
+//     label:
+//       status.admin_status_name +
+//         " / " +
+//         (status.est_time === null ? "No Est. Time Value" : status.est_time) || "",
+//   }));
+// } else {
+//   // Fetch from unified API
+//   try {
+//     const statusResponse = await fetch(`${Astro.url.origin}/api/project-statuses`, {
+//       method: "GET",
+//       headers: {
+//         Cookie: Astro.request.headers.get("Cookie") || "",
+//       },
+//     });
 
-    if (statusResponse.ok) {
-      const statusData = await statusResponse.json();
-      if (statusData.success) {
-        statusOptions = statusData.selectOptions;
-      }
-    }
-  } catch (error) {
-    console.error("Failed to fetch status options:", error);
-  }
-}
+//     if (statusResponse.ok) {
+//       const statusData = await statusResponse.json();
+//       if (statusData.success) {
+//         statusOptions = statusData.selectOptions;
+//       }
+//     }
+//   } catch (error) {
+//     console.error("Failed to fetch status options:", error);
+//   }
+// }
 
 // Create array of 36 datetime options (9 days × 4 times per day)
 const createDueDateOptions = () => {
@@ -184,9 +193,9 @@ const dueDateOptions = createDueDateOptions();
                 d="m9 5 7 7-7 7"></path>
             </svg>
             <a
-              href="#"
+              href="/project/dashboard"
               class="UwVmaTmxbsmvnpCB2B1K c8dCx6gnV43hTOLV6ks5 ezMFUVl744lvw6ht0lFe rYHHksRBEMl_guI3q0UQ YXx9oZ15oLXSCG32YPBT XIIs8ZOri3wm8Wnj9N_y dMTOiA3mf3FTjlHu6DqW _9RDyySiJ2_PuvLFkRD4"
-              >Project management</a
+              >Projects</a
             >
           </div>
         </li>
@@ -207,8 +216,8 @@ const dueDateOptions = createDueDateOptions();
                 d="m9 5 7 7-7 7"></path>
             </svg>
             <span
-              class="UwVmaTmxbsmvnpCB2B1K c8dCx6gnV43hTOLV6ks5 ezMFUVl744lvw6ht0lFe PeR2JZ9BZHYIH8Ea3F36 XIIs8ZOri3wm8Wnj9N_y _9RDyySiJ2_PuvLFkRD4"
-              >{project.title || project.address || "Untitled Project"}</span
+              class="UwVmaTmxbsmvnpCB2B1K c8dCx6gnV43hTOLV6ks5 ezMFUVl744lvw6ht0lFe PeR2JZ9BZHYIH8Ea3F36 XIIs8ZOri3wm8Wnj9N_y _9RDyySiJ2_PuvLFkRD4 truncate"
+              >{project.title || "Untitled Project"}</span
             >
           </div>
         </li>
@@ -222,8 +231,8 @@ const dueDateOptions = createDueDateOptions();
     currentRole === "Admin" || currentRole === "Staff" ? (
       <>
         <div class="relative mt-2 flex flex-row-reverse">
-          <SlotMachineModal
-            id="assign-staff"
+          <SlotMachineModalStaff
+            id="assign-staff-slot-machine"
             title="Assign Staff Member"
             options={staffOptions}
             selectedValue={project?.assigned_to_id || ""}
@@ -238,7 +247,6 @@ const dueDateOptions = createDueDateOptions();
             saveApiEndpoint="assign-staff"
             showCloseButton={true}
             showCancelButton={true}
-            skipSaveToAPI={false}
             project={project}
             showNotification={true}
             icon="user"
@@ -247,11 +255,11 @@ const dueDateOptions = createDueDateOptions();
           />
         </div>
 
-        <div class="relative mt-2 flex flex-row-reverse">
+        {/* <div class="relative mt-2 flex flex-row-reverse">
           <SlotMachineModal
             id="update-status"
             title="Select Status"
-            options={statusOptions}
+            options={statusesOptions}
             selectedValue={currentStatusInt || ""}
             placeholder="Choose status"
             buttonText={currentStatusName}
@@ -265,7 +273,7 @@ const dueDateOptions = createDueDateOptions();
             buttonText={`${currentStatusInt} - ${currentStatusName}`}
             searchText="Search status..."
           />
-        </div>
+        </div> */}
 
         <div class="relative mt-2 flex flex-row-reverse">
           <SlotMachineModal
@@ -323,15 +331,15 @@ const dueDateOptions = createDueDateOptions();
   <!-- Google Map will be rendered here -->
 </div>
 
-<div class="relative mx-auto flex hidden">
+<div class="relative mx-auto flex">
   <div class="mx-4 ml-0 flex flex-1 flex-col gap-2">
     <h1 class="text-2xl font-medium text-black dark:text-white" id="page-title" data-refresh>
       {title}
     </h1>
     <h2 id="page-subtitle" class="text-black dark:text-white" set:html={description} />
     {
-      authorProfile?.email && (
-        <p class="text-sm text-gray-500 dark:text-gray-400">{authorProfile.email}</p>
+      currentUser?.profile?.email && (
+        <p class="text-sm text-gray-500 dark:text-gray-400">{currentUser.profile.email}</p>
       )
     }
   </div>

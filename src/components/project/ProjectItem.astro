@@ -1,6 +1,6 @@
 ---
 import BoxIcon from "../common/BoxIcon.astro";
-import SlotMachineModal from "../form/SlotMachineModal.astro";
+import SlotMachineModalStaff from "../form/SlotMachineModalStaff.astro";
 import Tooltip from "../common/Tooltip.astro";
 interface Props {
   project: {
@@ -15,17 +15,14 @@ interface Props {
     new_construction: any;
     status: any;
     created_at: any;
-    company_name: any;
     updated_at: any;
     elapsed_time?: any;
-    assigned_to_name?: any;
     assigned_to_id?: any;
     comment_count?: any;
-    profiles?: any;
-    assigned_profiles?: any;
-    assigned_to_avatar?: any;
     due_date?: any;
     generated_document_count?: any;
+    authorProfile?: any;
+    assignedToProfile?: any;
     featured_image_data?: {
       id: any;
       file_path: string;
@@ -64,13 +61,14 @@ interface Props {
       created_by: string;
     }>;
   };
-  projectStatusesObject?: any;
+  statusData?: any;
   currentRole?: string;
   statuses?: any;
   currentStatusName?: string;
   currentStatusInt?: string;
   currentStatusSlug?: string;
   currentStatusTab?: string;
+  currentStatusColor?: string;
   currentStatusEstTime?: string;
   staffOptions?: any;
   dueDateOptions?: any;
@@ -80,11 +78,12 @@ interface Props {
 const {
   project,
   currentUser,
-  projectStatusesObject,
+  statusData,
   currentStatusName,
   currentStatusInt,
   currentStatusSlug,
   currentStatusTab,
+  currentStatusColor,
   currentStatusEstTime,
   staffOptions,
   dueDateOptions,
@@ -92,7 +91,6 @@ const {
 
 const currentRole = currentUser?.profile?.role;
 
-console.log("🔍 [PROJECT-ITEM] Project:", project);
 const description = project?.description || "No description";
 
 // console.log("🔍 [PROJECT-feater] Project:", project.featured_image_data);
@@ -105,8 +103,6 @@ const description = project?.description || "No description";
 // if (currentRole === "Client" && project.author_id !== user?.id) {
 //   return null;
 // }
-
-// console.log("🔍 [PROJECT-LIST-ITEM] Status URL:", projectStatusesObject[project.status]);
 
 const statusSlugOrId =
   currentRole && currentRole === "Client" ? currentStatusSlug : currentStatusInt;
@@ -128,6 +124,46 @@ const elapsedTime = project.elapsed_time;
 let projectAgeColor = "rgb(209, 213, 219)"; // Default gray
 let projectAlertIconCount = 0;
 let elapsedHours = 0; // Initialize outside the if block
+
+// Function to format elapsed time into hours and minutes
+function formatElapsedTime(elapsedTime: any): string {
+  if (!elapsedTime) return "0h 0m";
+
+  let totalMinutes = 0;
+
+  if (typeof elapsedTime === "string") {
+    // Parse interval string (e.g., "2 days 5:30:45")
+    const match = elapsedTime.match(/(\d+) days? (\d+):(\d+):(\d+)/);
+    if (match) {
+      const days = parseInt(match[1]);
+      const hours = parseInt(match[2]);
+      const minutes = parseInt(match[3]);
+      totalMinutes = days * 24 * 60 + hours * 60 + minutes;
+    } else {
+      // Try to parse as just hours:minutes:seconds
+      const timeMatch = elapsedTime.match(/(\d+):(\d+):(\d+)/);
+      if (timeMatch) {
+        const hours = parseInt(timeMatch[1]);
+        const minutes = parseInt(timeMatch[2]);
+        totalMinutes = hours * 60 + minutes;
+      }
+    }
+  } else if (elapsedTime.total_seconds) {
+    // If it's an object with total_seconds
+    totalMinutes = Math.floor(elapsedTime.total_seconds / 60);
+  } else if (elapsedTime.days !== undefined) {
+    // If it's an object with days, hours, minutes, seconds
+    totalMinutes =
+      (elapsedTime.days || 0) * 24 * 60 +
+      (elapsedTime.hours || 0) * 60 +
+      (elapsedTime.minutes || 0);
+  }
+
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+
+  return `${hours}h ${minutes}m`;
+}
 
 // Calculate time since last update
 function getTimeSinceUpdate(updatedAt: string): string {
@@ -230,7 +266,7 @@ function renderAlertIcons(count: number) {
   return html;
 }
 
-const statusColor = projectStatusesObject?.[project.status]?.status_color || "gray";
+const statusColor = currentStatusColor || "gray";
 
 // // Convert to days, hours, and minutes
 // const days = Math.floor(timeDifference / (1000 * 60 * 60 * 24));
@@ -241,11 +277,11 @@ const statusColor = projectStatusesObject?.[project.status]?.status_color || "gr
 // const createdAt = `${days}d ${hours}h ${minutes}m`;
 ---
 
-<tr
-  class="EpUSgjHdM6oyMXUiK_8_ _7KA5gD55t2lxf9Jkj20 _JnjhZbEHpDJUKJAU8Cw iIDqXVKz6wdYnAVfRsN2"
-  data-project-status={statusSlugOrId}
-  data-project-id={project.id}
->
+<tr class="EpUSgjHdM6oyMXUiK_8_ _7KA5gD55t2lxf9Jkj20 _JnjhZbEHpDJUKJAU8Cw iIDqXVKz6wdYnAVfRsN2">
+  <!-- 
+data-project-status={statusSlugOrId}
+  data-project-id={project.id} -->
+
   <!-- <td class="E9GV5sZJIbfO_GEQ_moc RZmKBZs1E1eXw8vkE6jY b9aD6g2qw84oyZNsMO8j">
     <div class="YRrCJSr_j5nopfm4duUc Q_jg_EPdNf9eDMn1mLI2">
       <input
@@ -278,7 +314,9 @@ const statusColor = projectStatusesObject?.[project.status]?.status_color || "gr
   {
     currentRole !== "Client" && (
       <td class="BHrWGjM1Iab_fAz0_91H RZmKBZs1E1eXw8vkE6jY b9aD6g2qw84oyZNsMO8j">
-        {project.company_name}
+        {project?.authorProfile?.[0]?.company_name ||
+          project?.authorProfile?.company_name ||
+          "Unknown Author"}
       </td>
     )
   }
@@ -287,8 +325,8 @@ const statusColor = projectStatusesObject?.[project.status]?.status_color || "gr
     <a
       href={`/project/${project.id}?status=${currentStatusTab}`}
       style={`background-color: ${statusColor};`}
-      class="Y3FxyuXtj2gecrGXvLEI YccXYy5sNIz6FJlLxw0D St_AVDyTHE88JaawJoRQ Zs2BLzUMh0_yTpU6xCcU gMXmdpOPfqG_3CKkL0VD ezMFUVl744lvw6ht0lFe mbOxN7eW74XygTKQC_r3 V9HgZms3_2W5sanRatci"
-      >{currentStatusName}</a
+      class="Y3FxyuXtj2gecrGXvLEI YccXYy5sNIz6FJlLxw0D St_AVDyTHE88JaawJoRQ Zs2BLzUMh0_yTpU6xCcU gMXmdpOPfqG_3CKkL0VD ezMFUVl744lvw6ht0lFe mbOxN7eW74XygTKQC_r3 V9HgZms3_2W5sanRatci text-white"
+      >{currentStatusName || "Unknown Status"}</a
     >
   </td>
   <td class="BHrWGjM1Iab_fAz0_91H RZmKBZs1E1eXw8vkE6jY b9aD6g2qw84oyZNsMO8j">
@@ -306,7 +344,7 @@ const statusColor = projectStatusesObject?.[project.status]?.status_color || "gr
       currentRole !== "Client" && (
         <td class="BHrWGjM1Iab_fAz0_91H RZmKBZs1E1eXw8vkE6jY b9aD6g2qw84oyZNsMO8j ezMFUVl744lvw6ht0lFe">
           <div class="Z3N7I2IDDsoXK6xJ1cSW YRrCJSr_j5nopfm4duUc URF_PdoDtDpDi8BZQL94">
-            <SlotMachineModal
+            {/* <SlotMachineModal
               id={`assign-staff-${project.id}`}
               title="Assign Staff Member"
               options={staffOptions}
@@ -327,46 +365,34 @@ const statusColor = projectStatusesObject?.[project.status]?.status_color || "gr
               showNotification={true}
               searchText="Search staff..."
               buttonVariant="anchor"
+            /> */}
+
+            <SlotMachineModalStaff
+              id={`assign-staff-slot-machine-${project.id}`}
+              title="Assign Staff Member"
+              options={staffOptions}
+              selectedValue={project?.assigned_to_id || ""}
+              placeholder="Assign staff..."
+              buttonText={(() => {
+                if (!project?.assigned_to_id) return "Unassigned";
+                const assignedStaff = staffOptions.find(
+                  (staff: any) => staff.value === project.assigned_to_id
+                );
+                return assignedStaff?.label || "Unknown Staff";
+              })()}
+              saveApiEndpoint="assign-staff"
+              showCloseButton={true}
+              showCancelButton={true}
+              project={project}
+              showNotification={true}
+              icon="user"
+              searchText="Search staff..."
+              buttonVariant="outline"
             />
           </div>
         </td>
       )
     }
-
-    <!-- <span data-searchable>
-        {
-          project.assigned_to_name ? (
-            <span data-searchable>{project.assigned_to_name}</span>
-          ) : (
-            <span class="text-danger-500">UNASSIGNED</span>
-          )
-        }
-      </span> -->
-    <!-- {
-        project.assigned_to_avatar && (
-          <img
-            src={project.assigned_to_avatar}
-            alt=""
-            class="Mln3CkDzLcoVQAC3Uqsd hlT3pgfpx11BUFMWNdhc _VPh6kIywCMfXFfQLas4 RpVwy4sO7Asb86CncKJ_ b0rXX23llDSn6PZwxAyx MGZ9bvBP5fgetIhNCD_o _JnjhZbEHpDJUKJAU8Cw"
-          />
-        )
-      } -->
-
-    <!-- <img
-        src="https://flowbite.com/application-ui/demo/images/users/avatar-1.png"
-        alt=""
-        class="Mln3CkDzLcoVQAC3Uqsd hlT3pgfpx11BUFMWNdhc _VPh6kIywCMfXFfQLas4 RpVwy4sO7Asb86CncKJ_ b0rXX23llDSn6PZwxAyx MGZ9bvBP5fgetIhNCD_o _JnjhZbEHpDJUKJAU8Cw"
-      />
-      <img
-        src="https://flowbite.com/application-ui/demo/images/users/avatar-3.png"
-        alt=""
-        class="Mln3CkDzLcoVQAC3Uqsd hlT3pgfpx11BUFMWNdhc _VPh6kIywCMfXFfQLas4 RpVwy4sO7Asb86CncKJ_ b0rXX23llDSn6PZwxAyx MGZ9bvBP5fgetIhNCD_o _JnjhZbEHpDJUKJAU8Cw"
-      />
-      <a
-        href="#"
-        class="YRrCJSr_j5nopfm4duUc Mln3CkDzLcoVQAC3Uqsd hlT3pgfpx11BUFMWNdhc _VPh6kIywCMfXFfQLas4 Q_jg_EPdNf9eDMn1mLI2 Nm7xMnguzOx6J5Ao7yCU RpVwy4sO7Asb86CncKJ_ b0rXX23llDSn6PZwxAyx MGZ9bvBP5fgetIhNCD_o foDHZclRWUf2bqma2a8U gMXmdpOPfqG_3CKkL0VD ezMFUVl744lvw6ht0lFe y6GKdvUrd7vp_pxsFb57 btSG3Q4vfhdH0rmixNRx _JnjhZbEHpDJUKJAU8Cw jqg6J89cvxmDiFpnV56r RzANcaqunVvlLrO6_tal"
-        >+5</a
-      > -->
 
     <td class="BHrWGjM1Iab_fAz0_91H RZmKBZs1E1eXw8vkE6jY b9aD6g2qw84oyZNsMO8j ezMFUVl744lvw6ht0lFe">
       <div class="Z3N7I2IDDsoXK6xJ1cSW YRrCJSr_j5nopfm4duUc URF_PdoDtDpDi8BZQL94">
@@ -412,7 +438,9 @@ const statusColor = projectStatusesObject?.[project.status]?.status_color || "gr
           d="M18 14v4.8a1.2 1.2 0 0 1-1.2 1.2H5.2A1.2 1.2 0 0 1 4 18.8V7.2A1.2 1.2 0 0 1 5.2 6h4.6m4.4-2H20v5.8m-7.9 2L20 4.2"
         ></path>
       </svg> -->
-        {project.elapsed_time}
+        {formatElapsedTime(project.elapsed_time)}
+        <br />
+        {elapsedTime}
       </a>
     </td>
     <td
@@ -484,7 +512,19 @@ const statusColor = projectStatusesObject?.[project.status]?.status_color || "gr
           //   searchText="Choose due date..."
           // />
 
-          <span> {project?.due_date ? new Date(project.due_date).toISOString() : ""} </span>
+          <span>
+            {" "}
+            {project?.due_date
+              ? new Date(project.due_date).toLocaleDateString("en-US", {
+                  weekday: "short",
+                  month: "short",
+                  day: "numeric",
+                  hour: "numeric",
+                  minute: "2-digit",
+                  hour12: true,
+                })
+              : ""}{" "}
+          </span>
         ) : (
           <span>
             {new Date(project?.due_date).toLocaleDateString(undefined, {
@@ -602,9 +642,10 @@ const statusColor = projectStatusesObject?.[project.status]?.status_color || "gr
 
     <tr
       class="EpUSgjHdM6oyMXUiK_8_ _7KA5gD55t2lxf9Jkj20 _JnjhZbEHpDJUKJAU8Cw iIDqXVKz6wdYnAVfRsN2 relative hidden"
-      data-project-status={statusSlugOrId}
-      data-project-id={project.id}
     >
+      <!-- data-project-id={project.id} -->
+      <!-- data-project-status={statusSlugOrId} -->
+
       <!-- <td class="E9GV5sZJIbfO_GEQ_moc RZmKBZs1E1eXw8vkE6jY b9aD6g2qw84oyZNsMO8j">
       <div class="YRrCJSr_j5nopfm4duUc Q_jg_EPdNf9eDMn1mLI2 hidden">
         <input
@@ -633,8 +674,8 @@ const statusColor = projectStatusesObject?.[project.status]?.status_color || "gr
         <div class="YRrCJSr_j5nopfm4duUc IxVXJAn2ZWxXpcIHvPnh XrB0f1gZzjK6cEODacjg">
           <span data-searchable>
             {
-              project.assigned_to_name ? (
-                <span data-searchable>{project.assigned_to_name}</span>
+              project?.assignedToProfile?.company_name ? (
+                <span data-searchable>{project.assignedToProfile?.company_name}</span>
               ) : (
                 <span class="text-danger-500">UNASSIGNED</span>
               )
@@ -855,7 +896,12 @@ const statusColor = projectStatusesObject?.[project.status]?.status_color || "gr
       <a href={`/project/${project.id}`} class="transition-opacity hover:opacity-80">
         <div class="flex items-center gap-2">
           <h3 class="truncate text-lg font-semibold" data-searchable>
-            {currentRole !== "Client" && (project.company_name + " → " || "Unknown Author")}
+            {
+              currentRole !== "Client" &&
+                (project.authorProfile?.[0]?.company_name ||
+                  project.authorProfile?.company_name ||
+                  "Unknown Author") + " → "
+            }
             {project.address}
           </h3>
         </div>
@@ -903,8 +949,8 @@ const statusColor = projectStatusesObject?.[project.status]?.status_color || "gr
             <div class="flex items-center gap-1">
               <BoxIcon name="user" size="sm" class="" />
               <span data-searchable>
-                {project.assigned_to_name ? (
-                  <span data-searchable>{project.assigned_to_name}</span>
+                {project.assignedToProfile?.company_name ? (
+                  <span data-searchable>{project.assignedToProfile?.company_name}</span>
                 ) : (
                   <span class="text-danger-500">UNASSIGNED</span>
                 )}

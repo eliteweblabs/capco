@@ -4,6 +4,11 @@ import { SimpleProjectLogger } from "../../../lib/simple-logging";
 import { getCarrierInfo } from "../../../lib/sms-carriers";
 import { supabase } from "../../../lib/supabase";
 import { supabaseAdmin } from "../../../lib/supabase-admin";
+// Simple email validation
+const validateEmail = (email: string): string | null => {
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return emailRegex.test(email) ? null : "Invalid email format";
+};
 
 // Helper function to get gateway domain from carrier key
 function getCarrierGateway(carrierKey: string | null): string | null {
@@ -49,9 +54,9 @@ export const POST: APIRoute = async ({ request, redirect, cookies }) => {
   }
 
   // Validate email format
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  if (!emailRegex.test(email)) {
-    return new Response("Invalid email format", { status: 400 });
+  const emailError = validateEmail(email);
+  if (emailError) {
+    return new Response(emailError, { status: 400 });
   }
 
   // Validate password strength
@@ -345,7 +350,7 @@ export const POST: APIRoute = async ({ request, redirect, cookies }) => {
     await SimpleProjectLogger.addLogEntry(
       0, // System log
       "user_registration",
-      { email },
+      { id: data.user.id, email: data.user.email },
       "New user registered via email",
       {
         userId: data.user?.id,

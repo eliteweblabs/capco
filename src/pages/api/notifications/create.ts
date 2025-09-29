@@ -46,6 +46,13 @@ export const POST: APIRoute = async ({ request }): Promise<Response> => {
     }
 
     if (allUsers) {
+      if (!supabaseAdmin) {
+        console.error("Supabase admin client not initialized");
+        return new Response(JSON.stringify({ error: "Server configuration error" }), {
+          status: 500,
+          headers: { "Content-Type": "application/json" },
+        });
+      }
       // Send notification to all users
       const { data: allUsersData, error: usersError } = await supabaseAdmin
         .from("profiles")
@@ -95,6 +102,13 @@ export const POST: APIRoute = async ({ request }): Promise<Response> => {
 
     let targetUserId = userId;
 
+    if (!supabaseAdmin) {
+      console.error("Supabase admin client not initialized");
+      return new Response(JSON.stringify({ error: "Server configuration error" }), {
+        status: 500,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
     // If userEmail is provided, look up the user ID
     if (userEmail && !userId) {
       const { data: userData, error: userError } = await supabaseAdmin

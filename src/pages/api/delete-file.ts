@@ -191,7 +191,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     return new Response(
       JSON.stringify({
         success: true,
-        message: `File "${file.file_name}" has been deleted successfully`,
+        message: `File <b>${file.file_name}</b> has been deleted successfully`,
       }),
       {
         status: 200,

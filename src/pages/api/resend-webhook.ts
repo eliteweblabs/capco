@@ -102,8 +102,9 @@ export const POST: APIRoute = async ({ request }) => {
       case "email.opened":
         console.log("📧 [RESEND-WEBHOOK] Email opened:", data.email);
         // Check rate limit before processing
-        const projectId = data.headers?.["X-Project-ID"] || data.headers?.["x-project-id"];
-        if (projectId && !checkRateLimit(projectId, "email.opened")) {
+        const projectHeader = data.headers?.["x-Project"] || data.headers?.["x-project"];
+        const project = projectHeader ? JSON.parse(projectHeader) : null;
+        if (project && !checkRateLimit(project.id, "email.opened")) {
           console.log("🚫 [RESEND-WEBHOOK] Rate limit exceeded for email.opened, skipping");
           return new Response(JSON.stringify({ success: true, message: "Rate limited" }), {
             status: 200,
@@ -116,8 +117,9 @@ export const POST: APIRoute = async ({ request }) => {
       case "email.clicked":
         console.log("📧 [RESEND-WEBHOOK] Email clicked:", data.email);
         // Check rate limit before processing
-        const clickedProjectId = data.headers?.["X-Project-ID"] || data.headers?.["x-project-id"];
-        if (clickedProjectId && !checkRateLimit(clickedProjectId, "email.clicked")) {
+        const clickedProjectHeader = data.headers?.["x-Project"] || data.headers?.["x-project"];
+        const clickedProject = clickedProjectHeader ? JSON.parse(clickedProjectHeader) : null;
+        if (clickedProject && !checkRateLimit(clickedProject.id, "email.clicked")) {
           console.log("🚫 [RESEND-WEBHOOK] Rate limit exceeded for email.clicked, skipping");
           return new Response(JSON.stringify({ success: true, message: "Rate limited" }), {
             status: 200,
@@ -155,11 +157,13 @@ async function handleEmailOpened(data: any, baseUrl?: string) {
     console.log("📧 [RESEND-WEBHOOK] Processing email opened event:", { email });
 
     // Get project ID from email headers
-    const projectId = data.headers?.["X-Project-ID"] || data.headers?.["x-project-id"];
+    const projectHeader = data.headers?.["x-Project"] || data.headers?.["x-project"];
+    const project = projectHeader ? JSON.parse(projectHeader) : null;
     const currentStatus = data.headers?.["X-Project-Status"] || data.headers?.["x-project-status"];
     const authorId = data.headers?.["X-Author-ID"] || data.headers?.["x-author-id"];
+    const currentUser = data.headers?.["X-Current-User"] || data.headers?.["x-current-user"];
 
-    if (!projectId || !currentStatus || !authorId) {
+    if (!project || !currentStatus || !authorId) {
       console.log(
         "📧 [RESEND-WEBHOOK] No project ID or status or author ID found in email headers for:",
         email
@@ -198,22 +202,18 @@ async function handleEmailOpened(data: any, baseUrl?: string) {
     const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
 
     try {
-      const updateResponse = await fetch(
-        `${baseUrl || "http://localhost:4322"}/api/update-status`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            projectId: projectId,
-            status: nextStatus, // Pass the next status to update to
-            currentUserId: authorId,
-            oldStatus: parseInt(currentStatus),
-          }),
-          signal: controller.signal,
-        }
-      );
+      const updateResponse = await fetch(`${baseUrl}/api/update-status`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          currentProject: project,
+          status: nextStatus,
+          currentUser: currentUser,
+        }),
+        signal: controller.signal,
+      });
 
       clearTimeout(timeoutId);
 
@@ -265,7 +265,7 @@ export const GET: APIRoute = async ({ request }) => {
     data: {
       email: "test@eliteweblabs.com",
       headers: {
-        "X-Project-ID": "303",
+        "x-Project": "303",
         "X-Project-Status": "30",
         "X-Author-ID": "039566a7-1890-4603-b636-9b3248437eba",
       },

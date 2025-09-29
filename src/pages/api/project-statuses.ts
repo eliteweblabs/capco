@@ -1,86 +1,40 @@
 import type { APIRoute } from "astro";
 import { checkAuth } from "../../lib/auth";
 import { replacePlaceholders } from "../../lib/placeholder-utils";
+import { createSimplifiedStatuses } from "../../lib/status-interfaces";
 import { supabaseAdmin } from "../../lib/supabase-admin";
-
-// Function to process status objects for role-based filtering and placeholder replacement
-function filteredStatusObj(statusObj: any, role: string, placeholderData?: any) {
-  // console.log("🔍 [PROJECT-LIST-ITEM] Status object:", statusObj);
-  let filteredStatusObj: any = {};
-
-  // Check if statusObj is defined before accessing its properties
-  if (!statusObj) {
-    console.warn("⚠️ [PROJECT-LIST-ITEM] Status object is undefined");
-    return {
-      status_name: "Unknown Status",
-      status_tab: null,
-    };
-  }
-
-  // Function to generate slug from status name
-  function generateStatusSlug(statusName: string): string {
-    // Generate slug from status name
-    const slug = statusName
-      .toLowerCase()
-      .replace(/[^a-z0-9\s-]/g, "")
-      .replace(/\s+/g, "-")
-      .trim();
-
-    return slug;
-  }
-
-  // Use client_status_name for clients, admin_status_name for admins
-  if (role === "Client" && statusObj.client_status_name) {
-    filteredStatusObj.status_name = statusObj.client_status_name;
-    filteredStatusObj.status_slug = generateStatusSlug(statusObj.client_status_name);
-    filteredStatusObj.status_tab = statusObj.client_status_tab;
-    // Store original action (placeholder replacement will be done later)
-    filteredStatusObj.status_action = statusObj.client_status_action || null;
-  } else if (statusObj.admin_status_name) {
-    filteredStatusObj.status_name = statusObj.admin_status_name;
-    filteredStatusObj.status_slug = generateStatusSlug(statusObj.admin_status_name);
-    filteredStatusObj.status_tab = statusObj.admin_status_tab;
-    // Store original action (placeholder replacement will be done later)
-    filteredStatusObj.status_action = statusObj.admin_status_action || null;
-  }
-
-  // Store original final_status_action (placeholder replacement will be done later)
-  filteredStatusObj.final_status_action = statusObj.final_status_action || null;
-
-  return filteredStatusObj;
-}
-
-export interface UnifiedProjectStatus {
-  status_code: number;
-  admin_status_name: string;
-  client_status_name: string;
-  admin_status_action: string | null;
-  client_status_action: string | null;
-  final_status_action?: string | null;
-  admin_status_tab: string;
-  client_status_tab: string;
-  status_color: string;
-  // Role-based processed values
-  status_name: string;
-  status_tab: string;
-  status_action: string | null;
-  status_slug: string;
-}
+import { getApiBaseUrl } from "../../lib/url-utils";
 
 export interface ProjectStatusesResponse {
   success: boolean;
-  statuses: any[]; // Raw statuses from database
-  statusesMap: Record<number, any>; // Raw statuses as map
-  roleBasedStatuses: Record<number, UnifiedProjectStatus>; // Role-processed statuses
+  statuses: Record<
+    number,
+    {
+      admin: any;
+      client: any;
+      current: any;
+    }
+  >;
   selectOptions: Array<{ value: string; label: string }>; // For form selects
-  userRole: string;
+}
+
+// Helper function to get status data by code and role
+export function getStatusData(
+  statuses: Record<number, any>,
+  statusCode: number,
+  role: "admin" | "client" | "current" = "current"
+) {
+  return statuses[statusCode]?.[role] || null;
 }
 
 export const GET: APIRoute = async ({ request, cookies, url }) => {
   try {
     // Check authentication and get user role
+    console.log("🔍 [PROJECT-STATUSES-API] GET method called!");
+
     const { currentUser } = await checkAuth(cookies);
     if (!currentUser) {
+      console.log("🔍 [PROJECT-STATUSES-API] Authentication required!");
       return new Response(JSON.stringify({ error: "Authentication required" }), {
         status: 401,
         headers: { "Content-Type": "application/json" },
@@ -88,6 +42,7 @@ export const GET: APIRoute = async ({ request, cookies, url }) => {
     }
 
     if (!supabaseAdmin) {
+      console.log("🔍 [PROJECT-STATUSES-API] Database not available!");
       return new Response(JSON.stringify({ error: "Database not available" }), {
         status: 500,
         headers: { "Content-Type": "application/json" },
@@ -95,152 +50,301 @@ export const GET: APIRoute = async ({ request, cookies, url }) => {
     }
 
     // Get optional parameters for placeholder processing
-    const projectId = url.searchParams.get("projectId");
-    const projectAddress = url.searchParams.get("projectAddress");
-    const clientName = url.searchParams.get("clientName");
-    const clientEmail = url.searchParams.get("clientEmail");
-    const statusCode = url.searchParams.get("status_code");
+    const projectParam = url.searchParams.get("project");
+    const projectIdParam = url.searchParams.get("projectId");
+    const statusCode = url.searchParams.get("status");
+
+    let project: any = null;
+
+    // Handle project data - either full project object or just project ID
+    if (projectParam) {
+      try {
+        project = JSON.parse(decodeURIComponent(projectParam));
+        console.log("🔍 [PROJECT-STATUSES-API] Using provided project object:", project?.id);
+      } catch (error) {
+        console.error("🔍 [PROJECT-STATUSES-API] Error parsing project object:", error);
+        project = null;
+      }
+    } else if (projectIdParam) {
+      try {
+        const projectId = parseInt(projectIdParam);
+        console.log("🔍 [PROJECT-STATUSES-API] Fetching project data for ID:", projectId);
+
+        // Fetch project data using get-project API
+        const projectResponse = await fetch(`${getApiBaseUrl()}/api/get-project?id=${projectId}`, {
+          headers: {
+            Cookie: request.headers.get("Cookie") || "",
+          },
+        });
+        if (projectResponse.ok) {
+          const projectData = await projectResponse.json();
+          project = projectData.project || projectData;
+          console.log("🔍 [PROJECT-STATUSES-API] Fetched project data:", project?.id);
+        } else {
+          console.error(
+            "🔍 [PROJECT-STATUSES-API] Failed to fetch project data:",
+            projectResponse.status
+          );
+        }
+      } catch (error) {
+        console.error("🔍 [PROJECT-STATUSES-API] Error fetching project data:", error);
+      }
+    }
+
+    let statusesData: any;
+    let statusesError: any;
 
     // If status_code is provided, return specific status data
     if (statusCode) {
-      const { data: statusData, error: statusError } = await supabaseAdmin
+      const result = await supabaseAdmin
         .from("project_statuses")
         .select("*")
         .eq("status_code", statusCode)
         .single();
 
-      if (statusError) {
-        console.error("❌ [PROJECT-STATUSES-API] Status not found:", statusError);
+      statusesData = result.data;
+      statusesError = result.error;
+
+      if (statusesError) {
+        console.error("❌ [PROJECT-STATUSES-API] Status not found:", statusesError);
         return new Response(JSON.stringify({ error: "Status not found" }), {
           status: 404,
           headers: { "Content-Type": "application/json" },
         });
       }
 
-      return new Response(
-        JSON.stringify({
-          success: true,
-          statusConfig: statusData,
-        }),
-        {
-          status: 200,
+      // Convert single object to array for consistent processing
+      statusesData = [statusesData];
+    } else {
+      // Fetch all project statuses from database
+      const result = await supabaseAdmin
+        .from("project_statuses")
+        .select("*")
+        .neq("status_code", 0)
+        .order("status_code");
+
+      statusesData = result.data;
+      statusesError = result.error;
+
+      if (statusesError) {
+        console.error("❌ [PROJECT-STATUSES-API] Database error:", statusesError);
+        return new Response(JSON.stringify({ error: "Failed to fetch statuses" }), {
+          status: 500,
           headers: { "Content-Type": "application/json" },
-        }
-      );
+        });
+      }
     }
 
-    // Fetch all project statuses from database
-    const { data: statusesData, error: statusesError } = await supabaseAdmin
-      .from("project_statuses")
-      .select("*")
-      .neq("status_code", 0)
-      .order("status_code");
-
-    if (statusesError) {
-      console.error("❌ [PROJECT-STATUSES-API] Database error:", statusesError);
-      return new Response(JSON.stringify({ error: "Failed to fetch statuses" }), {
-        status: 500,
-        headers: { "Content-Type": "application/json" },
-      });
-    }
-
-    const statuses = statusesData || [];
-
-    // Create raw statuses map for lookup
-    const statusesMap = statuses.reduce((acc: any, status: any) => {
-      acc[status.status_code] = status;
-      return acc;
-    }, {});
-
-    // Prepare placeholder data from URL parameters
     let placeholderData: any = null;
-
-    if (projectId || projectAddress || clientName || clientEmail) {
+    if (project) {
       placeholderData = {
-        projectId: projectId || "",
-        projectAddress: projectAddress || "",
-        clientName: clientName || "Client",
-        clientEmail: clientEmail || "",
-        contractUrl: projectId ? `/project/${projectId}?status=contract` : "",
-        siteUrl: process.env.SITE_URL || "https://capcofire.com",
-        companyName: process.env.GLOBAL_COMPANY_NAME || "CAPCo Fire",
-        globalCompanySlogan: process.env.GLOBAL_COMPANY_SLOGAN || "CAPCo Fire",
-        year: new Date().getFullYear().toString(),
+        project: project,
       };
     }
 
-    console.log("🔍 [PROJECT-STATUSES-API] Final placeholder data:", {
-      projectId: placeholderData?.projectId,
-      projectAddress: placeholderData?.projectAddress,
-      clientName: placeholderData?.clientName,
-      clientEmail: placeholderData?.clientEmail,
-    });
+    // console.log("🔍 [PROJECT-STATUSES-API] Project data for placeholders:", {
+    //   projectId: placeholderData?.project?.id,
+    //   projectAddress: placeholderData?.project?.address,
+    //   projectTitle: placeholderData?.project?.title,
+    //   authorProfile: placeholderData?.project?.authorProfile,
+    // });
 
-    // Process statuses for the current user's role (without placeholder processing)
-    const roleBasedStatuses = statuses.reduce((acc: any, status: any) => {
-      // Get role-filtered status object (without placeholder processing)
-      const processedStatus = filteredStatusObj(
-        status,
-        currentUser?.profile?.role || "Client",
-        null // No placeholder data yet
-      );
+    // Apply placeholder replacement to all string properties in statuses
 
-      // Create unified status object
-      acc[status.status_code] = {
-        // Raw database values
-        status_code: status.status_code,
-        admin_status_name: status.admin_status_name,
-        client_status_name: status.client_status_name,
-        admin_status_action: status.admin_status_action,
-        client_status_action: status.client_status_action,
-        final_status_action: status.final_status_action,
-        admin_status_tab: status.admin_status_tab,
-        client_status_tab: status.client_status_tab,
-        status_color: status.status_color,
-        est_time: status.est_time,
-
-        // Role-processed values
-        status_name: processedStatus.status_name,
-        status_tab: processedStatus.status_tab,
-        status_action: processedStatus.status_action, // Will be processed with placeholders below
-        status_slug: processedStatus.status_slug,
-      };
-
-      return acc;
-    }, {});
-
-    // Apply placeholder replacement once to all statuses if placeholder data exists
     if (placeholderData) {
-      Object.values(roleBasedStatuses).forEach((status: any) => {
-        if (status.status_action) {
-          status.status_action = replacePlaceholders(status.status_action, placeholderData);
-        }
-        if (status.final_status_action) {
-          status.final_status_action = replacePlaceholders(
-            status.final_status_action,
-            placeholderData
-          );
-        }
+      statusesData.forEach((status: any) => {
+        // Loop through all properties of the status object
+        Object.keys(status).forEach((key) => {
+          const value = status[key];
+
+          // Only process string values
+          if (typeof value === "string" && value.trim()) {
+            status[key] = replacePlaceholders(value, placeholderData);
+            // console.log("🔍 [PROJECT-STATUSES-API] Key:", key, "Value:", status[key]);
+          }
+        });
       });
 
       console.log("🔍 [PROJECT-STATUSES-API] Applied placeholder replacement to all statuses");
     }
 
-    // Create select options for forms (using role-appropriate names)
-    const selectOptions = statuses.map((status: any) => ({
-      value: status.status_code?.toString() || "",
-      label: status.status_name,
-    }));
+    // All simplified statuses structure: statuses[status_code].{admin, client, current}
+    const simplifiedStatuses: Record<number, { admin: any; client: any; current: any }> = {};
 
-    // console.log("✅ [PROJECT-STATUSES-API] Processed", statuses.length, "statuses for role:");
+    // Debug: Log the current user's role
+    // console.log("🔍 [PROJECT-STATUSES-API] Current user role:", currentUser?.profile?.role);
+    const isAdminOrStaff =
+      currentUser?.profile?.role === "Admin" || currentUser?.profile?.role === "Staff";
+    // console.log("🔍 [PROJECT-STATUSES-API] Is admin or staff:", isAdminOrStaff);
+
+    // Get admin and staff emails using reusable API
+    const adminStaffResponse = await fetch(`${getApiBaseUrl()}/api/get-user-emails-by-role`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ roles: ["Admin", "Staff"] }),
+    });
+
+    console.log("🔍 [PROJECT-STATUSES-API] Admin/Staff response:", adminStaffResponse);
+
+    let adminStaffEmails: any[] = [];
+    let adminStaffUsers: any[] = [];
+    if (adminStaffResponse.ok) {
+      const adminStaffData = await adminStaffResponse.json();
+      console.log("📊 [PROJECT-STATUSES-API] Admin/Staff data:", adminStaffData);
+      adminStaffEmails = adminStaffData.emails || [];
+      adminStaffUsers = adminStaffData.staffUsers || [];
+      console.log("📊 [PROJECT-STATUSES-API] Admin/Staff emails:", adminStaffEmails);
+      console.log("📊 [PROJECT-STATUSES-API] Admin/Staff users:", adminStaffUsers);
+    } else {
+      console.error("📊 [UPDATE-STATUS] Failed to fetch admin/staff emails");
+    }
+
+    statusesData.forEach((status: any) => {
+      const statusCode = status.status_code;
+      if (statusCode) {
+        const usersToNotify = adminStaffUsers
+          .filter((user: any) => status.email_to_roles?.includes(user.role))
+          .map((user: any) => user.email)
+          .filter((email: string) => email); // Remove any undefined emails
+
+        // Process button link and text (placeholders already processed)
+        let processedButtonLink = status.button_link || "";
+        let processedButtonText = status.button_text || "";
+
+        if (processedButtonLink) {
+          // Convert relative paths to full URLs
+          if (processedButtonLink.startsWith("/")) {
+            // It's a relative path like "/dashboard" or "/login"
+            processedButtonLink = `${getApiBaseUrl()}${processedButtonLink}`;
+          } else if (
+            !processedButtonLink.startsWith("http") &&
+            !processedButtonLink.startsWith("#")
+          ) {
+            // It's a path without leading slash, add the base URL
+            processedButtonLink = `${getApiBaseUrl()}/${processedButtonLink}`;
+          }
+          // For hash fragments (#) and full URLs (http), leave as-is
+        }
+
+        simplifiedStatuses[statusCode] = {
+          admin: {
+            email: {
+              users_to_notify: usersToNotify,
+              emailToRoles: status.email_to_roles,
+              email_subject: status.admin_email_subject,
+              email_content: status.admin_email_content,
+              email_type: "status_update",
+              button_text: processedButtonText,
+              button_link: processedButtonLink,
+            },
+            status_name: status.admin_status_name,
+            status_action: status.admin_status_action,
+            status_color: status.status_color,
+            status_slug: status.status_slug,
+            status_tab: status.admin_status_tab,
+            modal: {
+              type: "info",
+              persist: false,
+              message: status.modal_admin,
+              title: "Project Updated",
+              redirect: {
+                url: status.modal_auto_redirect_admin,
+                delay: 3000,
+                showCountdown: true,
+              },
+              showCountdown: true,
+              duration: 2500,
+              est_time: status.est_time,
+            },
+          },
+          client: {
+            email: {
+              users_to_notify: [project?.authorProfile?.email],
+              email_subject: status.client_email_subject,
+              email_content: status.client_email_content,
+              email_type: "status_update",
+              button_text: processedButtonText,
+              button_link: processedButtonLink,
+            },
+            status_name: status.client_status_name,
+            status_action: status.client_status_action,
+            status_color: status.status_color,
+            status_slug: status.status_slug,
+            status_tab: status.client_status_tab,
+            modal: {
+              type: "info",
+              persist: false,
+              message: status.modal_client,
+              title: "ClientProject Updated",
+              redirect: {
+                url: status.modal_auto_redirect_client,
+                delay: 3000,
+                showCountdown: true,
+              },
+              showCountdown: true,
+              duration: 2500,
+              est_time: status.est_time,
+            },
+          },
+          current: {
+            email: {
+              usersToNotify: isAdminOrStaff ? usersToNotify : [project?.authorProfile?.email],
+              email_subject: isAdminOrStaff
+                ? status.admin_email_subject
+                : status.client_email_subject,
+              email_content: isAdminOrStaff
+                ? status.admin_email_content
+                : status.client_email_content,
+              email_type: "status_update",
+              button_text: processedButtonText,
+              button_link: processedButtonLink,
+            },
+
+            status_name: isAdminOrStaff ? status.admin_status_name : status.client_status_name,
+            status_action: isAdminOrStaff
+              ? status.admin_status_action
+              : status.client_status_action,
+            status_color: status.status_color,
+            status_slug: status.status_slug,
+            status_tab: isAdminOrStaff ? status.admin_status_tab : status.client_status_tab,
+            modal: {
+              type: "info",
+              persist: false, // false = close existing modals, true = keep existing modals
+              message: isAdminOrStaff ? status.modal_admin : status.modal_client,
+              title: "Project Updated",
+              redirect: {
+                url: isAdminOrStaff
+                  ? status.modal_auto_redirect_admin
+                  : status.modal_auto_redirect_client,
+                delay: 3000, // Delay in milliseconds before redirect
+                showCountdown: true, // Show countdown in message
+              },
+              showCountdown: true,
+              duration: 2500,
+              est_time: status.est_time,
+            },
+          },
+        };
+      }
+    });
+
+    // Create select options for forms (using already-processed current values)
+    const selectOptions = Object.entries(simplifiedStatuses).map(([statusCode, statusData]) => ({
+      value: statusCode,
+      label:
+        statusData.current.status_name.replace(/<[^>]*>/g, "") +
+        " / " +
+        (statusesData.find((s: any) => s.status_code === parseInt(statusCode))?.est_time === null
+          ? "No Est. Time Value"
+          : statusesData
+              .find((s: any) => s.status_code === parseInt(statusCode))
+              ?.est_time.replace(/<[^>]*>/g, "")),
+    }));
 
     const response: ProjectStatusesResponse = {
       success: true,
-      statuses, // Raw statuses array
-      statusesMap, // Raw statuses as map
-      roleBasedStatuses, // Role-processed statuses with placeholders
-      selectOptions, // For form selects
-      userRole: currentUser?.profile?.role || "Client",
+      statuses: simplifiedStatuses,
+      selectOptions,
     };
 
     return new Response(JSON.stringify(response), {
@@ -266,13 +370,6 @@ export const POST: APIRoute = async ({ request, cookies }) => {
   console.log("🔍 [PROJECT-STATUSES-API] POST method called!");
   try {
     // Check authentication and get user role
-    const { currentUser } = await checkAuth(cookies);
-    if (!currentUser) {
-      return new Response(JSON.stringify({ error: "Authentication required" }), {
-        status: 401,
-        headers: { "Content-Type": "application/json" },
-      });
-    }
 
     if (!supabaseAdmin) {
       return new Response(JSON.stringify({ error: "Database not available" }), {
@@ -283,42 +380,51 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
     // Get project data from request body
     const requestBody = await request.json();
-    const { project, authorProfile } = requestBody;
+    console.log("🔍 [PROJECT-STATUSES-API] Raw request body:", requestBody);
+    const { project, projectId } = requestBody;
 
-    console.log("🔍 [PROJECT-STATUSES-API] POST - Request body received:", {
-      hasProject: !!project,
-      hasAuthorProfile: !!authorProfile,
-      projectKeys: project ? Object.keys(project) : [],
-      authorProfileKeys: authorProfile ? Object.keys(authorProfile) : [],
-    });
+    let projectData: any = null;
 
-    if (project) {
-      console.log("🔍 [PROJECT-STATUSES-API] POST - Project data:", {
-        id: project.id,
-        address: project.address,
-        profileData: project.profileData,
-        hasProfileData: !!project.profileData,
-      });
+    // Handle project data - either full project object or just project ID
+    if (project && typeof project === "object" && project.id) {
+      projectData = project;
+      console.log("🔍 [PROJECT-STATUSES-API] Using provided project object:", projectData.id);
+    } else if (projectId) {
+      try {
+        const parsedProjectId = parseInt(projectId);
+        console.log("🔍 [PROJECT-STATUSES-API] Fetching project data for ID:", parsedProjectId);
 
-      if (project.profileData) {
-        console.log("🔍 [PROJECT-STATUSES-API] POST - Profile data:", {
-          company_name: project.profileData.company_name,
-          first_name: project.profileData.first_name,
-          last_name: project.profileData.last_name,
-          email: project.profileData.email,
-          profileDataKeys: Object.keys(project.profileData),
-        });
+        // Fetch project data using get-project API
+        const projectResponse = await fetch(
+          `${getApiBaseUrl()}/api/get-project?id=${parsedProjectId}`
+        );
+        if (projectResponse.ok) {
+          const responseData = await projectResponse.json();
+          projectData = responseData.project || responseData;
+          console.log("🔍 [PROJECT-STATUSES-API] Fetched project data:", projectData?.id);
+        } else {
+          console.error(
+            "🔍 [PROJECT-STATUSES-API] Failed to fetch project data:",
+            projectResponse.status
+          );
+        }
+      } catch (error) {
+        console.error("🔍 [PROJECT-STATUSES-API] Error fetching project data:", error);
       }
     }
 
-    if (authorProfile) {
-      console.log("🔍 [PROJECT-STATUSES-API] POST - Author profile:", {
-        company_name: authorProfile.company_name,
-        first_name: authorProfile.first_name,
-        last_name: authorProfile.last_name,
-        email: authorProfile.email,
+    // Always get current user from authentication check
+    const { currentUser } = await checkAuth(cookies);
+    if (!currentUser) {
+      return new Response(JSON.stringify({ error: "Authentication required" }), {
+        status: 401,
+        headers: { "Content-Type": "application/json" },
       });
     }
+
+    // Determine user role for status display
+    const isAdminOrStaff =
+      currentUser?.profile?.role === "Admin" || currentUser?.profile?.role === "Staff";
 
     // Fetch all project statuses from database
     const { data: statusesData, error: statusesError } = await supabaseAdmin
@@ -335,120 +441,47 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       });
     }
 
-    const statuses = statusesData || [];
-
-    // Create raw statuses map for lookup
-    const statusesMap = statuses.reduce((acc: any, status: any) => {
-      acc[status.status_code] = status;
-      return acc;
-    }, {});
-
-    // Prepare placeholder data from project data
+    // Prepare placeholder data from request body
     let placeholderData: any = null;
-
-    if (project) {
-      console.log("🔍 [PROJECT-STATUSES-API] POST - Extracting client name from authorProfile:", {
-        company_name: authorProfile?.company_name,
-        first_name: authorProfile?.profile?.first_name,
-        last_name: authorProfile?.profile?.last_name,
-        fullName:
-          `${authorProfile?.profile?.first_name || ""} ${authorProfile?.profile?.last_name || ""}`.trim(),
-      });
-
-      const clientName =
-        authorProfile?.company_name ||
-        `${authorProfile?.profile?.first_name || ""} ${authorProfile?.profile?.last_name || ""}`.trim() ||
-        "Client";
-
-      console.log("🔍 [PROJECT-STATUSES-API] POST - Final client name:", clientName);
-
+    if (projectData) {
       placeholderData = {
-        projectId: project.id?.toString() || "",
-        projectAddress: project.address || "",
-        clientName: clientName,
-        clientEmail: authorProfile?.email || "",
-        contractUrl: project.id ? `/project/${project.id}?status=contract` : "",
-        siteUrl: process.env.SITE_URL || "https://capcofire.com",
-        companyName: process.env.GLOBAL_COMPANY_NAME || "CAPCo Fire",
-        globalCompanySlogan: process.env.GLOBAL_COMPANY_SLOGAN || "CAPCo Fire",
-        year: new Date().getFullYear().toString(),
+        project: projectData,
       };
     }
 
-    console.log("🔍 [PROJECT-STATUSES-API] POST - Final placeholder data:", {
-      projectId: placeholderData?.projectId,
-      projectAddress: placeholderData?.projectAddress,
-      clientName: placeholderData?.clientName,
-      clientEmail: placeholderData?.clientEmail,
-      hasProject: !!project,
-      hasAuthorProfile: !!authorProfile,
-    });
-
-    // Process statuses for the current user's role (without placeholder processing)
-    const roleBasedStatuses = statuses.reduce((acc: any, status: any) => {
-      // Get role-filtered status object (without placeholder processing)
-      const processedStatus = filteredStatusObj(
-        status,
-        currentUser?.profile?.role || "Client",
-        null // No placeholder data yet
-      );
-
-      // Create unified status object
-      acc[status.status_code] = {
-        // Raw database values
-        status_code: status.status_code,
-        admin_status_name: status.admin_status_name,
-        client_status_name: status.client_status_name,
-        admin_status_action: status.admin_status_action,
-        client_status_action: status.client_status_action,
-        final_status_action: status.final_status_action,
-        admin_status_tab: status.admin_status_tab,
-        client_status_tab: status.client_status_tab,
-        status_color: status.status_color,
-        est_time: status.est_time,
-
-        // Role-processed values
-        status_name: processedStatus.status_name,
-        status_tab: processedStatus.status_tab,
-        status_action: processedStatus.status_action, // Will be processed with placeholders below
-        status_slug: processedStatus.status_slug,
-      };
-
-      return acc;
-    }, {});
-
-    // Apply placeholder replacement once to all statuses if placeholder data exists
+    // Apply placeholder replacement to all string properties in statuses
     if (placeholderData) {
-      Object.values(roleBasedStatuses).forEach((status: any) => {
-        if (status.status_action) {
-          status.status_action = replacePlaceholders(status.status_action, placeholderData);
-        }
-        if (status.final_status_action) {
-          status.final_status_action = replacePlaceholders(
-            status.final_status_action,
-            placeholderData
-          );
-        }
-      });
+      statusesData.forEach((status: any) => {
+        // Loop through all properties of the status object
+        Object.keys(status).forEach((key) => {
+          const value = status[key];
 
-      console.log(
-        "🔍 [PROJECT-STATUSES-API] POST - Applied placeholder replacement to all statuses"
-      );
+          // Only process string values
+          if (typeof value === "string" && value.trim()) {
+            status[key] = replacePlaceholders(value, placeholderData);
+          }
+        });
+      });
+      console.log("🔍 [PROJECT-STATUSES-API] Applied placeholder replacement to all statuses");
     }
 
-    // Create select options for forms (using role-appropriate names)
-    const selectOptions = statuses.map((status: any) => ({
-      value: status.status_code?.toString() || "",
-      label: status.status_name,
+    // Create simplified statuses structure using standardized utility
+    const simplifiedStatuses = createSimplifiedStatuses(
+      statusesData,
+      isAdminOrStaff,
+      projectData?.authorProfile?.email
+    );
+
+    // Create select options for forms (using already-processed current values)
+    const selectOptions = Object.entries(simplifiedStatuses).map(([statusCode, statusData]) => ({
+      value: statusCode,
+      label: statusData.current.status_name,
     }));
 
     const response: ProjectStatusesResponse = {
       success: true,
-      statuses: statuses,
-      roleBasedStatuses: roleBasedStatuses,
-      statusesMap: statusesMap,
-      selectOptions: selectOptions,
-      userRole: currentUser?.profile?.role || "Client",
+      statuses: simplifiedStatuses,
+      selectOptions,
     };
 
     return new Response(JSON.stringify(response), {

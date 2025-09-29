@@ -121,7 +121,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       await SimpleProjectLogger.addLogEntry(
         0, // System log
         "user_registration",
-        { email: userEmail },
+        currentUser,
         "User profile updated",
         { oldData: oldProfile, newData: profile }
       );

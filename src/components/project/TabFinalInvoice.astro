@@ -3,24 +3,20 @@ import PaymentForm from "./PaymentForm.astro";
 
 interface Props {
   project?: any;
-  currentRole?: string;
-  projectId: string;
   projectStatus?: number;
   projectStatusLabel?: string;
   currentUser?: any;
   invoiceId?: any;
   totalAmount?: number;
-  authorProfile?: any;
   globalSecondaryTextClasses?: string;
   globalPrimaryTextClasses?: string;
   globalInputClasses?: string;
+  statusData?: any;
 }
 
 const {
+  currentUser,
   project,
-  currentRole,
-  projectId,
-  authorProfile,
   projectStatus = 0,
   projectStatusLabel = "Unknown Status",
   invoiceId = null,
@@ -28,9 +24,13 @@ const {
   globalSecondaryTextClasses,
   globalInputClasses,
   globalPrimaryTextClasses,
+  statusData,
 } = Astro.props;
 
-// const invoiceId = project?.invoice_id ?? "0";
+const currentRole = currentUser?.profile?.role;
+const projectId = project?.id;
+// const invoiceId = pro
+// ject?.invoice_id ?? "0";
 
 // Debug logging
 // console.log("🔍 [TAB-FINAL-INVOICE] Debug values:", {
@@ -67,10 +67,8 @@ const {
           amount={totalAmount / 2}
           currency="usd"
           paymentType="balance"
-          authorProfile={authorProfile}
-          currentRole={currentRole}
           project={project}
-          projectId={projectId}
+          currentUser={currentUser}
           globalInputClasses={globalInputClasses}
           globalSecondaryTextClasses={globalSecondaryTextClasses}
           globalPrimaryTextClasses={globalPrimaryTextClasses}

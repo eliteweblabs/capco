@@ -1,7 +1,7 @@
 import type { APIRoute } from "astro";
+import { checkAuth } from "../../lib/auth";
 import { supabase } from "../../lib/supabase";
 import { supabaseAdmin } from "../../lib/supabase-admin";
-
 // In-memory storage for active connections (in production, use Redis)
 const activeConnections = new Map<
   string,
@@ -16,28 +16,50 @@ const corsHeaders = {
   "Access-Control-Allow-Credentials": "true",
 };
 
-export const POST: APIRoute = async ({ request }) => {
+export const POST: APIRoute = async ({ request, cookies }) => {
   try {
-    console.log("🔔 [CHAT-API] ===== CHAT API CALLED =====");
-    console.log("🔔 [CHAT-API] API called, checking supabase connection...");
+    // console.log("🔔 [CHAT-API] ===== CHAT API CALLED =====");
+    // console.log("🔔 [CHAT-API] API called, checking supabase connection...");
+
+    const { currentUser, isAuth } = await checkAuth(cookies);
+
+    if (!currentUser || !isAuth) {
+      console.log("🔔 [CHAT-API] Authentication failed - user not logged in or session expired");
+      return new Response(
+        JSON.stringify({
+          error: "Authentication required",
+          message: "Please log in to use the chat feature",
+        }),
+        {
+          status: 401,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        }
+      );
+    }
 
     if (!supabase) {
       console.error("🔔 [CHAT-API] Supabase client is null - database connection not available");
-      return new Response(JSON.stringify({ error: "Database connection not available" }), {
-        status: 500,
-        headers: { "Content-Type": "application/json", ...corsHeaders },
-      });
+      return new Response(
+        JSON.stringify({
+          error: "Database connection not available",
+          message: "Chat service is temporarily unavailable. Please try again later.",
+        }),
+        {
+          status: 503,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        }
+      );
     }
 
     const body = await request.json();
     const { action, userId, userName, userRole, message } = body;
-    console.log("🔔 [CHAT-API] Request data:", {
-      action,
-      userId,
-      userName,
-      userRole,
-      message: message ? message.substring(0, 50) + "..." : "N/A",
-    });
+    // console.log("🔔 [CHAT-API] Request data:", {
+    //   action,
+    //   userId,
+    //   userName,
+    //   userRole,
+    //   message: message ? message.substring(0, 50) + "..." : "N/A",
+    // });
 
     switch (action) {
       case "join":
@@ -60,12 +82,33 @@ export const POST: APIRoute = async ({ request }) => {
             headers: { "Content-Type": "application/json", ...corsHeaders },
           });
         }
-        // Get recent chat history using admin client
-        const { data: messages, error: historyError } = await supabaseAdmin
+        // Get recent chat history using admin client with timeout handling
+        const historyPromise = supabaseAdmin
           .from("chat_messages")
           .select("*")
           .order("created_at", { ascending: false })
           .limit(50);
+
+        const timeoutPromise = new Promise((_, reject) =>
+          setTimeout(() => reject(new Error("Database connection timeout")), 15000)
+        );
+
+        let messages, historyError;
+        try {
+          const result = (await Promise.race([historyPromise, timeoutPromise])) as any;
+          messages = result.data;
+          historyError = result.error;
+        } catch (error) {
+          if (error instanceof Error && error.message === "Database connection timeout") {
+            console.warn(
+              "🔔 [CHAT-API] Database connection timeout - returning empty chat history"
+            );
+            messages = [];
+            historyError = null;
+          } else {
+            throw error;
+          }
+        }
 
         if (historyError) {
           console.error("❌ [CHAT-API] Error fetching chat history:", historyError);
@@ -90,7 +133,7 @@ export const POST: APIRoute = async ({ request }) => {
           onlineUsers: Array.from(activeConnections.values()),
         };
 
-        console.log("🔔 [CHAT-API] Join response data:", responseData);
+        // console.log("🔔 [CHAT-API] Join response data:", responseData);
 
         return new Response(JSON.stringify(responseData), {
           status: 200,
@@ -172,8 +215,8 @@ export const POST: APIRoute = async ({ request }) => {
           console.log("🔔 [CHAT-API] User not found in active connections:", userId);
         }
 
-        console.log("🔔 [CHAT-API] Active connections:", Array.from(activeConnections.keys()));
-        console.log("🔔 [CHAT-API] Online users:", Array.from(activeConnections.values()));
+        // console.log("🔔 [CHAT-API] Active connections:", Array.from(activeConnections.keys()));
+        // console.log("🔔 [CHAT-API] Online users:", Array.from(activeConnections.values()));
 
         return new Response(
           JSON.stringify({

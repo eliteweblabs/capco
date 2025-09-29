@@ -1,6 +1,7 @@
 ---
 const requireAuthRedirect = "/login";
 import { checkAuth } from "../lib/auth";
+
 const { currentUser, session, supabase, refreshToken, accessToken } = await checkAuth(
   Astro.cookies
 );
@@ -497,6 +498,20 @@ const userCounts = {
     created: string;
   }
 
+  // Email validation function (client-side version)
+  function validateEmail(email: string): string | null {
+    if (!email || !email.trim()) {
+      return "Email is required";
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email.trim())) {
+      return "Invalid email format. Please use email@example.com";
+    }
+
+    return null;
+  }
+
   let currentUsers: User[] = [];
 
   let currentSort = { field: "created", direction: "desc" };
@@ -634,17 +649,12 @@ const userCounts = {
       }
 
       // Validate email format
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(userData.email)) {
+      const emailError = validateEmail(userData.email);
+      if (emailError) {
         if ((window as any).showModal) {
-          (window as any).showModal(
-            "error",
-            "Validation Error",
-            "Please enter a valid email address.",
-            5000
-          );
+          (window as any).showModal("error", "Validation Error", emailError, 5000);
         } else if (window.showModal) {
-          window.showModal("error", "Validation Error", "Please enter a valid email address.");
+          window.showModal("error", "Validation Error", emailError);
         }
         return;
       }

@@ -124,14 +124,14 @@ export function hexToRgb(hex: string): string {
  */
 export function getPrimaryColor(): string {
   // Check various environment variable sources
-  if (typeof process !== "undefined" && process.env && process.env.PRIMARY_COLOR) {
-    return process.env.PRIMARY_COLOR;
+  if (typeof process !== "undefined" && process.env && process.env.GLOBAL_COLOR_PRIMARY) {
+    return process.env.GLOBAL_COLOR_PRIMARY;
   }
 
   // Try import.meta.env if available (Vite/Astro environment)
   try {
-    if (import.meta && import.meta.env && import.meta.env.PRIMARY_COLOR) {
-      return import.meta.env.PRIMARY_COLOR;
+    if (import.meta && import.meta.env && import.meta.env.GLOBAL_COLOR_PRIMARY) {
+      return import.meta.env.GLOBAL_COLOR_PRIMARY;
     }
   } catch (e) {
     // import.meta might not be available in all contexts

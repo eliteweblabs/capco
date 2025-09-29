@@ -4,7 +4,7 @@ import { supabaseAdmin } from "./supabase-admin";
 
 export interface SimpleLogEntry {
   timestamp: string;
-  type: string;
+  action: string;
   user: string;
   message: string;
   metadata?: any;
@@ -43,23 +43,64 @@ export class SimpleProjectLogger {
    * @param metadata - Optional additional data
    */
   static async addLogEntry(
-    projectId: number,
+    projectIdOrProject: number | any,
     type: LogType,
     currentUser: any,
     message: string,
-    metadata?: any
+    metadata?: any,
+    cookies?: string
   ): Promise<boolean> {
     try {
-      console.log("📝 [SIMPLE-LOGGER] Adding log entry:", {
-        projectId,
-        type,
-        currentUser,
-        message,
-      });
+      // console.log("📝 [SIMPLE-LOGGER] Adding log entry:", {
+      //   projectIdOrProject,
+      //   type,
+      //   currentUser,
+      //   message,
+      // });
 
       if (!supabase) {
         console.error("Supabase not configured");
         return false;
+      }
+
+      // Determine if we have a project ID or project object
+      let projectId: number;
+      let project: any = null;
+
+      if (typeof projectIdOrProject === "number") {
+        // It's a project ID
+        projectId = projectIdOrProject;
+      } else if (
+        projectIdOrProject &&
+        typeof projectIdOrProject === "object" &&
+        projectIdOrProject.id
+      ) {
+        // It's a project object
+        projectId = projectIdOrProject.id;
+        project = projectIdOrProject;
+      } else {
+        console.error("📝 [SIMPLE-LOGGER] Invalid projectIdOrProject:", projectIdOrProject);
+        return false;
+      }
+
+      // If no project object provided, fetch it using get-project API
+      if (!project) {
+        try {
+          const response = await fetch(
+            `${process.env.PUBLIC_SITE_URL || "http://localhost:4321"}/api/get-project?id=${projectId}`,
+            {
+              headers: cookies ? { Cookie: cookies } : {},
+            }
+          );
+          if (response.ok) {
+            const result = await response.json();
+            project = result.project;
+          } else {
+            console.warn("📝 [SIMPLE-LOGGER] Could not fetch project data for logging");
+          }
+        } catch (error) {
+          console.warn("📝 [SIMPLE-LOGGER] Error fetching project data:", error);
+        }
       }
 
       // Extract user name from currentUser
@@ -68,7 +109,7 @@ export class SimpleProjectLogger {
       // Create the log entry
       const logEntry: SimpleLogEntry = {
         timestamp: new Date().toISOString(),
-        type,
+        action: type,
         user: userName,
         message,
         metadata,
@@ -84,7 +125,7 @@ export class SimpleProjectLogger {
 
       // Get current project to append to existing log
       console.log("📝 [SIMPLE-LOGGER] Fetching project log for projectId:", projectId);
-      const { data: project, error: fetchError } = await client
+      const { data: projectData, error: fetchError } = await client
         .from("projects")
         .select("log")
         .eq("id", projectId)
@@ -95,14 +136,14 @@ export class SimpleProjectLogger {
         return false;
       }
 
-      console.log("📝 [SIMPLE-LOGGER] Current project log:", project?.log);
+      // console.log("📝 [SIMPLE-LOGGER] Current project log:", projectData?.log);
 
       // Append new entry to existing log
-      const currentLog = project.log || [];
+      const currentLog = projectData.log || [];
       const updatedLog = [...currentLog, logEntry];
 
       // Update the project with the new log
-      console.log("📝 [SIMPLE-LOGGER] Updating project with new log entry:", updatedLog);
+      // console.log("📝 [SIMPLE-LOGGER] Updating project with new log entry:", updatedLog);
       const { error: updateError } = await client
         .from("projects")
         .update({ log: updatedLog })

@@ -3,108 +3,618 @@
  */
 
 // 🔍 PLACEHOLDER DEBUG - Status Action Fields
-console.log("🔍 [PLACEHOLDER-DEBUG] placeholder-utils.ts - Checking for status action fields");
-
-/**
- * Get the CAPCo logo SVG as a string
- * This function extracts the SVG content from the Logo component
- */
-export function getCapcoLogoSvg(
-  size: string,
-  file: string = "svg",
-  link: string = "/dashboard"
-): string {
-  return `<svg id="Layer_1" xmlns="http://www.w3.org/2000/svg" width="155" height="26.6" version="1.1" viewBox="0 0 135 24.6">
-  <defs>
-    <style>
-      .fill {
-        fill: black;
-      }
-      .dark .fill {
-        fill: white;
-      }
-    </style>
-  </defs>
-  <path class="fill" d="M73.4,5.2c-.6-1-1.4-1.7-2.5-2.2-1-.5-2.2-.8-3.5-.8h-8.5v20.4h4.6v-7.4h4c1.3,0,2.5-.3,3.5-.8,1-.5,1.9-1.3,2.5-2.2.6-1,.9-2.1.9-3.4s-.3-2.5-.9-3.5ZM69.3,10.3c-.3.4-.6.8-1.1,1-.5.2-1,.3-1.5.3h-3.3v-5.9h3.3c.6,0,1.1.1,1.5.3.5.2.8.6,1.1,1,.3.4.4,1,.4,1.6s-.1,1.1-.4,1.6Z" fill="#231f20"></path>
-  <path class="fill" d="M115.2,8.2c-.5-1.3-1.3-2.4-2.3-3.3-1-1-2.1-1.7-3.4-2.2-1.3-.5-2.7-.8-4.2-.8s-3,.3-4.3.8c-1.3.5-2.4,1.3-3.4,2.2-1,1-1.7,2.1-2.2,3.3-.5,1.3-.8,2.7-.8,4.2s.3,2.9.8,4.1c.5,1.3,1.3,2.4,2.3,3.4,1,1,2.1,1.7,3.4,2.2,1.3.5,2.7.8,4.3.8s2.9-.3,4.2-.8c1.3-.5,2.4-1.3,3.4-2.2,1-1,1.7-2.1,2.2-3.3.5-1.3.8-2.7.8-4.1s-.3-2.9-.8-4.2ZM110.6,15.7c-.5,1-1.2,1.7-2.1,2.2-.9.5-2,.8-3.2.8s-1.7-.1-2.5-.4c-.7-.3-1.4-.7-1.9-1.3-.5-.6-1-1.2-1.2-2-.3-.8-.4-1.7-.4-2.6s.2-2.4.8-3.3c.5-1,1.2-1.7,2.1-2.2.9-.5,2-.8,3.2-.8s1.7.1,2.5.4c.7.3,1.4.7,1.9,1.3.5.6,1,1.2,1.2,2,.3.8.4,1.6.4,2.6s-.3,2.4-.8,3.3Z" fill="#231f20"></path>
-  <path class="fill" d="M130.8,10.8h-.1c-2.2.8-3.7.3-5-1.7l-.4-.6c-.3-.4-.6-.8-.9-1.3-1-1.5-2.7-2.5-4.5-2.7-.7-.1-1.4,0-2,.1,1.3,2.1,2,4.6,2,7.3s-.9,5.6-2.3,7.9c2.5.5,5.7-.1,7.2-1.8,0,0-.2,0-.3,0-1.1-.2-1.8-1.2-1.8-2.2,0-1.1.6-1.7,1.8-1.8.4,0,.9,0,1.4,0h.2c1.1,0,2-.3,2.9-.9.8-.5,1.5-1.3,1.9-2.2h-.1Z" fill="#231f20"></path>
-  <path class="fill" d="M89.7,18.2c-.8.3-1.7.5-2.7.5s-1.7-.1-2.4-.4c-.7-.3-1.4-.7-1.9-1.3-.5-.6-1-1.2-1.2-2-.3-.8-.4-1.6-.4-2.6s.1-1.8.4-2.6c.3-.8.7-1.5,1.2-2,.5-.6,1.2-1,1.9-1.3.7-.3,1.5-.4,2.4-.4s1.9.2,2.6.5c.7.3,1.3.7,1.8,1.3.4-1.4,1.1-2.8,1.9-4-.6-.5-1.3-.8-2.1-1.2-1.3-.5-2.7-.8-4.3-.8s-3,.3-4.2.8c-1.3.5-2.4,1.3-3.4,2.2-1,.9-1.7,2.1-2.3,3.3-.5,1.3-.8,2.7-.8,4.1s.3,2.9.8,4.1c.5,1.3,1.3,2.4,2.3,3.4,1,1,2.1,1.7,3.4,2.2,1.3.5,2.7.8,4.2.8s3.1-.3,4.4-.8c.8-.3,1.6-.8,2.3-1.3-.9-1.2-1.6-2.5-2.1-3.9-.5.6-1.2,1-1.9,1.3Z" fill="#231f20"></path>
-  <path class="fill" d="M2.8,10.8h.1c2.2.8,3.7.3,5-1.7l.4-.6c.3-.4.6-.8.9-1.3,1-1.5,2.7-2.5,4.5-2.7.7-.1,1.4,0,2,.1-1.3,2.1-2,4.6-2,7.3s.9,5.6,2.3,7.9c-2.5.5-5.7-.1-7.2-1.8,0,0,.2,0,.3,0,1.1-.2,1.8-1.2,1.8-2.2,0-1.1-.6-1.7-1.8-1.8-.4,0-.9,0-1.4,0h-.2c-1.1,0-2-.3-2.9-.9-.8-.5-1.5-1.3-1.9-2.2h.1Z" fill="#231f20"></path>
-  <path class="fill" d="M30.7,18.2c-.8.3-1.7.5-2.7.5s-1.7-.1-2.4-.4c-.7-.3-1.4-.7-1.9-1.3-.5-.6-1-1.2-1.2-2-.3-.8-.4-1.6-.4-2.6s.1-1.8.4-2.6c.3-.8.7-1.5,1.2-2,.5-.6,1.2-1,1.9-1.3.7-.3,1.5-.4,2.4-.4s1.9.2,2.6.5c.7.3,1.3.7,1.8,1.3.4-1.4,1.1-2.8,1.9-4-.6-.5-1.3-.8-2.1-1.2-1.3-.5-2.7-.8-4.3-.8s-3,.3-4.2.8c-1.3.5-2.4,1.3-3.4,2.2-1,.9-1.7,2.1-2.3,3.3-.5,1.3-.8,2.7-.8,4.1s.3,2.9.8,4.1c.5,1.3,1.3,2.4,2.3,3.4,1,1,2.1,1.7,3.4,2.2,1.3.5,2.7.8,4.2.8s3.1-.3,4.4-.8c.8-.3,1.6-.8,2.3-1.3-.9-1.2-1.6-2.5-2.1-3.9-.5.6-1.2,1-1.9,1.3Z" fill="#231f20"></path>
-  <path class="fill" d="M55.4,12.4s0,0,0,0c0-5.6-4.5-10.1-10.1-10.1s-10.1,4.5-10.1,10.1,4.5,10.1,10.1,10.1,4-.6,5.7-1.7v1.8s4.5,0,4.5,0v-10.1s0,0,0,0ZM45.4,18.6c-3.4,0-6.2-2.8-6.2-6.2s2.8-6.2,6.2-6.2,6.2,2.8,6.2,6.2-2.8,6.2-6.2,6.2Z" fill="#231f20"></path>
-</svg>`;
-}
+// console.log("🔍 [PLACEHOLDER-DEBUG] placeholder-utils.ts - Checking for status action fields");
 
 /**
  * Get the base URL from environment or current location
  */
-function getBaseUrl(): string {
-  // Always use the current origin URL
-  if (typeof window !== "undefined") {
-    return window.location.origin;
-  }
 
-  // Fallback for server-side
-  return "http://localhost:4321";
-}
+import { globalCompanyData } from "../pages/api/global-company-data";
 
 export interface PlaceholderData {
-  projectAddress?: string;
-  clientName?: string;
-  clientEmail?: string;
-  statusName?: string;
-  estTime?: string;
-  baseUrl?: string;
-  primaryColor?: string;
-  svgLogo?: string;
-  companyName?: string;
-  projectLink?: string;
-  projectId?: string;
-  baseProjectLink?: string;
+  project: {
+    id: number;
+    address: string;
+    title?: string;
+    description?: string;
+    sq_ft?: string | number;
+    new_construction?: boolean;
+    created_at?: string;
+    est_time?: string;
+    building?: [];
+    status_name?: string;
+    authorProfile?:
+      | {
+          [key: number]: {
+            company_name: string;
+            email: string;
+            phone?: string;
+          };
+        }
+      | {
+          company_name: string;
+          email: string;
+          phone?: string;
+        };
+    assignedToProfile?: {
+      company_name: string;
+      email: string;
+    };
+  };
+  statusesData?: {
+    statuses: {
+      [key: number]: {
+        admin: any;
+        client: any;
+        current: any;
+      };
+    };
+  };
 }
 
 /**
  * Replace placeholders in a message string
  */
+
 export function replacePlaceholders(
   message: string,
-  data: PlaceholderData,
-  addBoldTags: boolean = true
+  data?: PlaceholderData | null,
+  addBoldTags: boolean = false
 ): string {
-  // // console.log("🔄 [PLACEHOLDER-UTILS] Starting placeholder replacement...");
-  // // console.log("🔄 [PLACEHOLDER-UTILS] Original message:", message);
-  // // console.log("🔄 [PLACEHOLDER-UTILS] Placeholder data:", data);
-
-  if (!message || !data) {
-    // console.log("🔄 [PLACEHOLDER-UTILS] No message or data, returning original");
+  if (!message) {
+    console.log("🔄 [PLACEHOLDER-UTILS] No message or data, returning original");
     return message;
   }
 
   let result = message;
+  let placeholderApplied = false;
 
-  // Replace placeholders
-  // Get base URL from data or environment
-  const baseUrl = data.baseUrl || getBaseUrl();
+  // Extract data from project object and additional data
+  const projectId = data?.project?.id;
+  const baseUrl = import.meta.env.SITE_URL || process.env.SITE_URL;
+  const baseProjectLink = `${baseUrl}/project`;
+  const projectLink = `${baseProjectLink}/${projectId}`;
+
+  // console.log("🔄 [PLACEHOLDER-UTILS] Project link:", projectLink, projectId);
+  // console.log("🔄 [PLACEHOLDER-UTILS] Base project link:", baseProjectLink);
+
+  // Client/Author data (with array support)
+  const authorProfile = data?.project?.authorProfile;
+  const isArrayProfile = Array.isArray(authorProfile);
+
+  const clientName =
+    (isArrayProfile && (authorProfile as any)[0]?.company_name) ||
+    (!isArrayProfile && (authorProfile as any)?.company_name) ||
+    "Client Name Missing";
+  const clientEmail =
+    (isArrayProfile && (authorProfile as any)[0]?.email) ||
+    (!isArrayProfile && (authorProfile as any)?.email) ||
+    "Client Email Missing";
+  const clientPhone =
+    (isArrayProfile && (authorProfile as any)[0]?.phone) ||
+    (!isArrayProfile && (authorProfile as any)?.phone) ||
+    "N/A";
+
+  // Project data
+  const projectAddress = data?.project?.address || "Project Address Missing";
+  const projectTitle = data?.project?.title || data?.project?.address || "Untitled Project";
+  const projectDescription = data?.project?.description || "No description provided";
+  const projectSqFt = data?.project?.sq_ft || "N/A";
+  const projectNewConstruction = data?.project?.new_construction ? "Yes" : "No";
+  const projectCreatedDate = data?.project?.created_at
+    ? new Date(data?.project?.created_at).toLocaleDateString()
+    : "N/A";
+  const projectEstTime = data?.project?.est_time || "TBD";
+  const projectBuildingType = JSON.stringify(data?.project?.building) || "N/A";
+
+  // Staff/Assigned data
+  const assignedStaffName = data?.project?.assignedToProfile?.company_name || "Unassigned";
+  const assignedStaffEmail = data?.project?.assignedToProfile?.email || "N/A";
+
+  // Status data
+  const currentStatusName = data?.project?.status_name || "Status Name Missing";
+
+  const estTime = data?.project?.est_time || "Est Time Missing";
+
+  // System data
+  const year = new Date().getFullYear();
+  const currentDate = new Date().toLocaleDateString();
+  const documentId = `DOC-${Date.now()}`;
+  const documentVersion = "1.0";
+
+  // Replace BASE_URL placeholders
   if (baseUrl) {
-    // // console.log(`🔄 [PLACEHOLDER-UTILS] Replacing {{BASE_URL}} with: ${baseUrl}`);
+    const beforeReplace = result;
     result = result.replace(/\{\{BASE_URL\}\}/g, baseUrl);
-  } else {
-    // console.log("🔄 [PLACEHOLDER-UTILS] ⚠️ No baseUrl available");
+    if (result !== beforeReplace) {
+      placeholderApplied = true;
+      addBoldTags = true;
+    }
   }
 
-  data.baseProjectLink = `${process.env.SITE_URL}/project/${data.projectId}`;
+  // Replace PROJECT_ID placeholders
+  if (projectId) {
+    const beforeReplace = result;
+    result = result.replace(/\{\{\s*PROJECT_ID\s*\}\}/g, projectId.toString());
+    if (result !== beforeReplace) {
+      placeholderApplied = true;
+      addBoldTags = false;
+    }
+  }
 
-  if (data.baseProjectLink) {
-    // // console.log(`🔄 [PLACEHOLDER-UTILS] Replacing {{BASE_URL}} with: ${baseUrl}`);
-    result = result.replace(/\{\{BASE_URL\}\}/g, baseUrl);
-  } else {
-    // console.log("🔄 [PLACEHOLDER-UTILS] ⚠️ No baseUrl available");
+  // Replace COUNTDOWN placeholders (if countdown variable is defined)
+  // if (countdown) {
+  //   result = result.replace(/\{\{\s*COUNTDOWN\s*\}\}/g, "<b>" + countdown + "</b>");
+  //   addBoldTags = true;
+  // }
+
+  // Replace GLOBAL_COLOR_PRIMARY placeholders
+  if (globalCompanyData().primaryColor) {
+    // Ensure primary color starts with # for hexadecimal format
+    let hexColor = globalCompanyData().primaryColor;
+    if (!hexColor.startsWith("#")) {
+      hexColor = "#" + hexColor;
+    }
+    const beforeReplace = result;
+    result = result.replace(/\{\{\s*GLOBAL_COLOR_PRIMARY\s*\}\}/g, hexColor);
+    if (result !== beforeReplace) {
+      placeholderApplied = true;
+      addBoldTags = false;
+    }
+  }
+
+  // Replace GLOBAL_COLOR_SECONDARY placeholders
+  if (globalCompanyData().secondaryColor) {
+    // Ensure primary color starts with # for hexadecimal format
+    let hexColor = globalCompanyData().secondaryColor;
+    if (!hexColor.startsWith("#")) {
+      hexColor = "#" + hexColor;
+    }
+    const beforeReplace = result;
+    result = result.replace(/\{\{\s*GLOBAL_COLOR_SECONDARY\s*\}\}/g, hexColor);
+    if (result !== beforeReplace) {
+      placeholderApplied = true;
+      addBoldTags = false;
+    }
+  }
+
+  // Replace FONT_FAMILY placeholders (use environment variables or defaults)
+  const primaryFontFamily = process.env.FONT_FAMILY || '"Outfit Variable", sans-serif';
+
+  const pdfFontFallback = process.env.FONT_FAMILY_FALLBACK || "Arial, sans-serif";
+
+  const beforeReplaceFontFamily = result;
+  result = result.replace(/\{\{\s*FONT_FAMILY\s*\}\}/g, `${primaryFontFamily}, ${pdfFontFallback}`);
+  if (result !== beforeReplaceFontFamily) {
+    placeholderApplied = true;
+    addBoldTags = false;
+  }
+
+  const beforeReplaceFontPrimary = result;
+  result = result.replace(/\{\{\s*FONT_FAMILY_PRIMARY\s*\}\}/g, primaryFontFamily);
+  if (result !== beforeReplaceFontPrimary) {
+    placeholderApplied = true;
+    addBoldTags = false;
+  }
+
+  const beforeReplaceFontFallback = result;
+  result = result.replace(/\{\{\s*FONT_FAMILY_FALLBACK\s*\}\}/g, pdfFontFallback);
+  if (result !== beforeReplaceFontFallback) {
+    placeholderApplied = true;
+    addBoldTags = false;
+  }
+
+  // Replace FONT_WEIGHT placeholders
+  const beforeReplaceWeightNormal = result;
+  result = result.replace(/\{\{\s*FONT_WEIGHT_NORMAL\s*\}\}/g, "400");
+  if (result !== beforeReplaceWeightNormal) {
+    placeholderApplied = true;
+    addBoldTags = false;
+  }
+
+  const beforeReplaceWeightBold = result;
+  result = result.replace(/\{\{\s*FONT_WEIGHT_BOLD\s*\}\}/g, "600");
+  if (result !== beforeReplaceWeightBold) {
+    placeholderApplied = true;
+    addBoldTags = false;
+  }
+
+  const beforeReplaceWeightHeading = result;
+  result = result.replace(/\{\{\s*FONT_WEIGHT_HEADING\s*\}\}/g, "700");
+  if (result !== beforeReplaceWeightHeading) {
+    placeholderApplied = true;
+    addBoldTags = false;
+  }
+
+  // Replace FONT_SIZE placeholders
+  const beforeReplaceSizeBase = result;
+  result = result.replace(/\{\{\s*FONT_SIZE_BASE\s*\}\}/g, "14px");
+  if (result !== beforeReplaceSizeBase) {
+    placeholderApplied = true;
+    addBoldTags = false;
+  }
+
+  const beforeReplaceSizeHeading = result;
+  result = result.replace(/\{\{\s*FONT_SIZE_HEADING\s*\}\}/g, "24px");
+  if (result !== beforeReplaceSizeHeading) {
+    placeholderApplied = true;
+    addBoldTags = false;
+  }
+
+  const beforeReplaceSizeSmall = result;
+  result = result.replace(/\{\{\s*FONT_SIZE_SMALL\s*\}\}/g, "12px");
+  if (result !== beforeReplaceSizeSmall) {
+    placeholderApplied = true;
+    addBoldTags = false;
+  }
+
+  // Replace COMPANY_LOGO_LIGHT placeholders
+  if (globalCompanyData().globalCompanyLogoLight) {
+    const beforeReplace = result;
+    result = result.replace(
+      /\{\{\s*COMPANY_LOGO_LIGHT\s*\}\}/g,
+      globalCompanyData().globalCompanyLogoLight
+    );
+    if (result !== beforeReplace) {
+      placeholderApplied = true;
+      addBoldTags = false;
+    }
+  }
+
+  // Replace COMPANY_LOGO_DARK placeholders
+  if (globalCompanyData().globalCompanyLogoDark) {
+    const beforeReplace = result;
+    result = result.replace(
+      /\{\{\s*COMPANY_LOGO_DARK\s*\}\}/g,
+      globalCompanyData().globalCompanyLogoDark
+    );
+    if (result !== beforeReplace) {
+      placeholderApplied = true;
+      addBoldTags = false;
+    }
+  }
+
+  // Replace GLOBAL_COMPANY_NAME placeholders
+  if (globalCompanyData().globalCompanyName) {
+    const beforeReplace = result;
+    result = result.replace(
+      /\{\{\s*GLOBAL_COMPANY_NAME\s*\}\}/g,
+      globalCompanyData().globalCompanyName
+    );
+    if (result !== beforeReplace) {
+      placeholderApplied = true;
+      addBoldTags = true;
+    }
+  }
+
+  // Replace GLOBAL_COMPANY_SLOGAN placeholders
+  if (globalCompanyData().globalCompanySlogan) {
+    const beforeReplace = result;
+    result = result.replace(
+      /\{\{\s*GLOBAL_COMPANY_SLOGAN\s*\}\}/g,
+      globalCompanyData().globalCompanySlogan
+    );
+    if (result !== beforeReplace) {
+      placeholderApplied = true;
+      addBoldTags = true;
+    }
+  }
+
+  // Replace GLOBAL_COMPANY_PHONE placeholders
+  if (globalCompanyData().globalCompanyPhone) {
+    const beforeReplace = result;
+    result = result.replace(
+      /\{\{\s*GLOBAL_COMPANY_PHONE\s*\}\}/g,
+      globalCompanyData().globalCompanyPhone
+    );
+    if (result !== beforeReplace) {
+      placeholderApplied = true;
+      addBoldTags = true;
+    }
+  }
+
+  // Replace GLOBAL_COMPANY_EMAIL placeholders
+  if (globalCompanyData().globalCompanyEmail) {
+    const beforeReplace = result;
+    result = result.replace(
+      /\{\{\s*GLOBAL_COMPANY_EMAIL\s*\}\}/g,
+      globalCompanyData().globalCompanyEmail
+    );
+    if (result !== beforeReplace) {
+      placeholderApplied = true;
+      addBoldTags = true;
+    }
+  }
+
+  // Replace GLOBAL_COMPANY_WEBSITE placeholders
+  if (globalCompanyData().globalCompanyWebsite) {
+    const beforeReplace = result;
+    result = result.replace(
+      /\{\{\s*GLOBAL_COMPANY_WEBSITE\s*\}\}/g,
+      globalCompanyData().globalCompanyWebsite
+    );
+    if (result !== beforeReplace) {
+      placeholderApplied = true;
+      addBoldTags = true;
+    }
+  }
+
+  // Replace GLOBAL_COMPANY_ADDRESS placeholders
+  if (globalCompanyData().globalCompanyAddress) {
+    const beforeReplace = result;
+    result = result.replace(
+      /\{\{\s*GLOBAL_COMPANY_ADDRESS\s*\}\}/g,
+      globalCompanyData().globalCompanyAddress
+    );
+    if (result !== beforeReplace) {
+      placeholderApplied = true;
+      addBoldTags = true;
+    }
+  }
+
+  // Replace YEAR placeholders
+  if (year) {
+    const beforeReplace = result;
+    result = result.replace(/\{\{\s*YEAR\s*\}\}/g, year.toString());
+    if (result !== beforeReplace) {
+      placeholderApplied = true;
+      addBoldTags = true;
+    }
+  }
+
+  // === PDF-SPECIFIC PLACEHOLDERS ===
+
+  // Project placeholders
+  if (projectTitle) {
+    const beforeReplace = result;
+    result = result.replace(/\{\{\s*PROJECT_TITLE\s*\}\}/g, projectTitle);
+    if (result !== beforeReplace) {
+      placeholderApplied = true;
+      addBoldTags = true;
+    }
+  }
+
+  if (projectDescription) {
+    const beforeReplace = result;
+    result = result.replace(/\{\{\s*PROJECT_DESCRIPTION\s*\}\}/g, projectDescription);
+    if (result !== beforeReplace) {
+      placeholderApplied = true;
+      addBoldTags = true;
+    }
+  }
+
+  if (projectSqFt) {
+    const beforeReplace = result;
+    result = result.replace(/\{\{\s*PROJECT_SQ_FT\s*\}\}/g, projectSqFt.toString());
+    if (result !== beforeReplace) {
+      placeholderApplied = true;
+      addBoldTags = true;
+    }
+  }
+
+  if (projectNewConstruction) {
+    const beforeReplace = result;
+    result = result.replace(/\{\{\s*PROJECT_NEW_CONSTRUCTION\s*\}\}/g, projectNewConstruction);
+    if (result !== beforeReplace) {
+      placeholderApplied = true;
+      addBoldTags = true;
+    }
+  }
+
+  if (projectCreatedDate) {
+    const beforeReplace = result;
+    result = result.replace(/\{\{\s*PROJECT_CREATED_DATE\s*\}\}/g, projectCreatedDate);
+    if (result !== beforeReplace) {
+      placeholderApplied = true;
+      addBoldTags = true;
+    }
+  }
+
+  if (projectEstTime) {
+    const beforeReplace = result;
+    result = result.replace(/\{\{\s*PROJECT_EST_TIME\s*\}\}/g, projectEstTime);
+    if (result !== beforeReplace) {
+      placeholderApplied = true;
+      addBoldTags = true;
+    }
+  }
+
+  if (projectBuildingType) {
+    const beforeReplace = result;
+    result = result.replace(/\{\{\s*PROJECT_BUILDING_TYPE\s*\}\}/g, projectBuildingType);
+    if (result !== beforeReplace) {
+      placeholderApplied = true;
+      addBoldTags = true;
+    }
+  }
+
+  // Client placeholders
+  if (clientName) {
+    const beforeReplace = result;
+    result = result.replace(/\{\{\s*CLIENT_NAME\s*\}\}/g, clientName);
+    if (result !== beforeReplace) {
+      placeholderApplied = true;
+      addBoldTags = true;
+    }
+  }
+
+  if (clientPhone) {
+    const beforeReplace = result;
+    result = result.replace(/\{\{\s*CLIENT_PHONE\s*\}\}/g, clientPhone);
+    if (result !== beforeReplace) {
+      placeholderApplied = true;
+      addBoldTags = true;
+    }
+  }
+
+  // Staff placeholders
+  if (assignedStaffName) {
+    const beforeReplace = result;
+    result = result.replace(/\{\{\s*ASSIGNED_STAFF_NAME\s*\}\}/g, assignedStaffName);
+    if (result !== beforeReplace) {
+      placeholderApplied = true;
+      addBoldTags = true;
+    }
+  }
+
+  if (assignedStaffEmail) {
+    const beforeReplace = result;
+    result = result.replace(/\{\{\s*ASSIGNED_STAFF_EMAIL\s*\}\}/g, assignedStaffEmail);
+    if (result !== beforeReplace) {
+      placeholderApplied = true;
+      addBoldTags = true;
+    }
+  }
+
+  // Status placeholders
+
+  // System placeholders
+  if (currentDate) {
+    const beforeReplace = result;
+    result = result.replace(/\{\{\s*CURRENT_DATE\s*\}\}/g, currentDate);
+    if (result !== beforeReplace) {
+      placeholderApplied = true;
+      addBoldTags = true;
+    }
+  }
+
+  if (documentId) {
+    const beforeReplace = result;
+    result = result.replace(/\{\{\s*DOCUMENT_ID\s*\}\}/g, documentId);
+    if (result !== beforeReplace) {
+      placeholderApplied = true;
+      addBoldTags = true;
+    }
+  }
+
+  if (documentVersion) {
+    const beforeReplace = result;
+    result = result.replace(/\{\{\s*DOCUMENT_VERSION\s*\}\}/g, documentVersion);
+    if (result !== beforeReplace) {
+      placeholderApplied = true;
+      addBoldTags = true;
+    }
+  }
+
+  // Company placeholders
+  if (globalCompanyData().globalCompanyAddress) {
+    const beforeReplace = result;
+    result = result.replace(
+      /\{\{\s*COMPANY_ADDRESS\s*\}\}/g,
+      globalCompanyData().globalCompanyAddress
+    );
+    if (result !== beforeReplace) {
+      placeholderApplied = true;
+      addBoldTags = true;
+    }
+  }
+
+  if (globalCompanyData().globalCompanyPhone) {
+    const beforeReplace = result;
+    result = result.replace(/\{\{\s*COMPANY_PHONE\s*\}\}/g, globalCompanyData().globalCompanyPhone);
+    if (result !== beforeReplace) {
+      placeholderApplied = true;
+      addBoldTags = true;
+    }
+  }
+
+  if (globalCompanyData().globalCompanyEmail) {
+    const beforeReplace = result;
+    result = result.replace(/\{\{\s*COMPANY_EMAIL\s*\}\}/g, globalCompanyData().globalCompanyEmail);
+    if (result !== beforeReplace) {
+      placeholderApplied = true;
+      addBoldTags = true;
+    }
+  }
+
+  if (globalCompanyData().globalCompanyWebsite) {
+    const beforeReplace = result;
+    result = result.replace(
+      /\{\{\s*COMPANY_WEBSITE\s*\}\}/g,
+      globalCompanyData().globalCompanyWebsite
+    );
+    if (result !== beforeReplace) {
+      placeholderApplied = true;
+      addBoldTags = false;
+    }
+  }
+
+  if (globalCompanyData().globalCompanyLogo) {
+    const beforeReplace = result;
+    result = result.replace(
+      /\{\{\s*COMPANY_LOGO_URL\s*\}\}/g,
+      globalCompanyData().globalCompanyLogo
+    );
+    if (result !== beforeReplace) {
+      placeholderApplied = true;
+      addBoldTags = false;
+    }
+  }
+
+  // project placeholders
+  // project placeholders
+  // project placeholders
+  // project placeholders
+  // project placeholders
+  // project placeholders
+
+  // Track if any placeholders were actually replaced
+
+  // Replace PROJECT_ADDRESS placeholders
+  if (projectAddress) {
+    const beforeReplace = result;
+    result = result.replace(/\{\{\s*PROJECT_ADDRESS\s*\}\}/g, projectAddress);
+    if (result !== beforeReplace) {
+      placeholderApplied = true;
+      addBoldTags = true;
+    }
+  }
+
+  // Replace CLIENT_NAME placeholders
+  if (clientName) {
+    const beforeReplace = result;
+    result = result.replace(/\{\{\s*CLIENT_NAME\s*\}\}/g, clientName);
+    if (result !== beforeReplace) {
+      placeholderApplied = true;
+      addBoldTags = true;
+    }
+  }
+
+  // Replace CLIENT_EMAIL placeholders
+  if (clientEmail) {
+    const beforeReplace = result;
+    result = result.replace(/\{\{\s*CLIENT_EMAIL\s*\}\}/g, clientEmail);
+    if (result !== beforeReplace) {
+      placeholderApplied = true;
+      addBoldTags = true;
+    }
+  }
+
+  // Replace STATUS_NAME placeholders
+  if (currentStatusName) {
+    const beforeReplace = result;
+    result = result.replace(/\{\{\s*STATUS_NAME\s*\}\}/g, currentStatusName);
+    if (result !== beforeReplace) {
+      placeholderApplied = true;
+      addBoldTags = true;
+    }
+  }
+
+  // Replace EST_TIME placeholders
+  if (estTime) {
+    const beforeReplace = result;
+    result = result.replace(/\{\{\s*EST_TIME\s*\}\}/g, estTime);
+    if (result !== beforeReplace) {
+      placeholderApplied = true;
+      addBoldTags = true;
+    }
   }
 
   // Process PROJECT_LINK placeholders
-  if (result && data.baseProjectLink) {
+  if (result && projectLink) {
+    const beforeReplace = result;
     result = result.replace(/{{PROJECT_LINK(\?[^}]*)?}}/g, (match: string, queryParams: string) => {
-      const fullUrl = data.baseProjectLink + (queryParams || "");
+      const fullUrl = projectLink + (queryParams || "");
 
       // Extract tab parameter for display text
       let displayText = "View Project";
@@ -124,91 +634,11 @@ export function replacePlaceholders(
       // Return button on new line
       return `<br><br><a href="${fullUrl}" style="display: inline-block; background-color: #3b82f6; color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: 600; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.1); transition: background-color 0.2s;">${displayText}</a>`;
     });
-  }
-
-  // if (data.projectLink) {
-  //   // // console.log(
-  //   //   `🔄 [PLACEHOLDER-UTILS] Replacing {{PROJECT_ADDRESS}} with: ${data.projectAddress}`
-  //   // );
-  //   result = result.replace(/\{\{\s*PROJECT_LINK\s*\}\}/g, data.projectLink);
-  // } else {
-  //   // console.log("🔄 [PLACEHOLDER-UTILS] ⚠️ No projectAddress data available");
-  // }
-
-  if (data.projectAddress) {
-    // // console.log(
-    //   `🔄 [PLACEHOLDER-UTILS] Replacing {{PROJECT_ADDRESS}} with: ${data.projectAddress}`
-    // );
-    result = result.replace(/\{\{\s*PROJECT_ADDRESS\s*\}\}/g, "<b>" + data.projectAddress + "</b>");
-    addBoldTags = true;
-  } else {
-    // console.log("🔄 [PLACEHOLDER-UTILS] ⚠️ No projectAddress data available");
-  }
-
-  if (data.clientName) {
-    // // console.log(`🔄 [PLACEHOLDER-UTILS] Replacing {{CLIENT_NAME}} with: ${data.clientName}`);
-    result = result.replace(/\{\{\s*CLIENT_NAME\s*\}\}/g, "<b>" + data.clientName + "</b>");
-    addBoldTags = true;
-  } else {
-    // console.log("🔄 [PLACEHOLDER-UTILS] ⚠️ No clientName data available");
-  }
-
-  if (data.clientEmail) {
-    // // console.log(`🔄 [PLACEHOLDER-UTILS] Replacing {{CLIENT_EMAIL}} with: ${data.clientEmail}`);
-    result = result.replace(/\{\{\s*CLIENT_EMAIL\s*\}\}/g, data.clientEmail);
-    addBoldTags = false;
-  } else {
-    // console.log("🔄 [PLACEHOLDER-UTILS] ⚠️ No clientEmail data available");
-  }
-
-  if (data.statusName) {
-    // console.log(`🔄 [PLACEHOLDER-UTILS] Replacing {{STATUS_NAME}} with: ${data.statusName}`);
-    result = result.replace(/\{\{\s*STATUS_NAME\s*\}\}/g, "<b>" + data.statusName + "</b>");
-    addBoldTags = true;
-  }
-
-  if (data.estTime) {
-    // console.log(`🔄 [PLACEHOLDER-UTILS] Replacing {{EST_TIME}} with: ${data.estTime}`);
-    result = result.replace(/\{\{\s*EST_TIME\s*\}\}/g, data.estTime);
-    addBoldTags = true;
-  }
-
-  data.primaryColor = process.env.PRIMARY_COLOR || "#3b82f6";
-
-  if (data.primaryColor) {
-    // console.log(`🔄 [PLACEHOLDER-UTILS] Replacing {{PRIMARY_COLOR}} with: ${data.primaryColor}`);
-    // Ensure primary color starts with # for hexadecimal format
-    let hexColor = data.primaryColor;
-    if (!hexColor.startsWith("#")) {
-      hexColor = "#" + hexColor;
+    if (result !== beforeReplace) {
+      placeholderApplied = true;
+      addBoldTags = false;
     }
-    addBoldTags = false;
-    result = result.replace(/\{\{\s*PRIMARY_COLOR\s*\}\}/g, hexColor);
   }
 
-  data.svgLogo = process.env.COMPANY_LOGO_LIGHT || "No Logo Img";
-
-  if (data.svgLogo) {
-    // console.log(
-    //   `🔄 [PLACEHOLDER-UTILS] Replacing {{SVG_LOGO}} with: ${data.svgLogo.substring(0, 50)}...`
-    // );
-    addBoldTags = false;
-    result = result.replace(/\{\{\s*COMPANY_LOGO_LIGHT\s*\}\}/g, data.svgLogo);
-  }
-
-  // Always replace GLOBAL_COMPANY_NAME with the environment variable
-  const globalCompanyName = process.env.GLOBAL_COMPANY_NAME || "Edit Company Name Here";
-  // console.log(`🔄 [PLACEHOLDER-UTILS] Replacing {{GLOBAL_COMPANY_NAME}} with: ${globalCompanyName}`);
-  result = result.replace(/\{\{\s*GLOBAL_COMPANY_NAME\s*\}\}/g, globalCompanyName);
-
-  const globalCompanySlogan = process.env.GLOBAL_COMPANY_SLOGAN || "Edit Company Slogan Here";
-  // console.log(`🔄 [PLACEHOLDER-UTILS] Replacing {{GLOBAL_COMPANY_SLOGAN}} with: ${globalCompanySlogan}`);
-  result = result.replace(/\{\{\s*GLOBAL_COMPANY_SLOGAN\s*\}\}/g, globalCompanySlogan);
-
-  const year = new Date().getFullYear();
-  // console.log(`🔄 [PLACEHOLDER-UTILS] Replacing {{YEAR}} with: ${year}`);
-  result = result.replace(/\{\{\s*YEAR\s*\}\}/g, year.toString());
-
-  // console.log("🔄 [PLACEHOLDER-UTILS] Final result:", result);
-  return addBoldTags ? "<b>" + result + "</b>" : result;
+  return placeholderApplied && addBoldTags ? "<b>" + result + "</b>" : result;
 }

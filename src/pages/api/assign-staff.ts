@@ -16,6 +16,7 @@ export const POST: APIRoute = async ({ request }) => {
     let staffEmail = null;
     let staffName = null;
     if (assigned_to_id && supabase) {
+      console.log("📧 [ASSIGN-STAFF] Fetching staff data for ID:", assigned_to_id);
       const { data: staffData, error: staffError } = await supabase
         .from("profiles")
         .select("email, company_name")
@@ -27,7 +28,10 @@ export const POST: APIRoute = async ({ request }) => {
       } else {
         staffEmail = staffData?.email || null;
         staffName = staffData?.company_name || null;
+        console.log("📧 [ASSIGN-STAFF] Staff data found:", { staffEmail, staffName });
       }
+    } else {
+      console.log("📧 [ASSIGN-STAFF] No assigned_to_id or supabase not available");
     }
 
     if (!projectId) {
@@ -169,25 +173,21 @@ export const POST: APIRoute = async ({ request }) => {
         // Don't fail the assignment if email fails
       }
     }
+    const baseUrl = getApiBaseUrl(request);
 
     return new Response(
       JSON.stringify({
         success: true,
-        message: `Project assigned to ${staffName || "Unassigned"}`,
-        project: projectData,
-        notificationData: {
-          admin: {
-            type: "success",
-            title: "Staff Assigned",
-            message: `Project assigned to ${staffName || "Unassigned"}`,
-            duration: 1500,
-            // redirect: {
-            //   url: `${baseUrl}/project/${projectId}`,
-            //   delay: 3,
-            //   showCountdown: true,
-            // },
+        modalData: {
+          type: "success",
+          title: "Staff Assigned",
+          message: `Project assigned to ${staffName || "Unassigned"}`,
+          duration: 1500,
+          redirect: {
+            url: `${baseUrl}/project/${projectId}`,
+            delay: 3,
+            showCountdown: true,
           },
-          currentUserRole: "Admin",
         },
       }),
       {

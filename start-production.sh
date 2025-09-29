@@ -10,7 +10,7 @@ echo "SUPABASE_URL: $SUPABASE_URL"
 echo "PORT: $PORT"
 echo "EMAIL_LOGO_LIGHT: $EMAIL_LOGO_LIGHT"
 echo "COMPANY_LOGO_LIGHT: $COMPANY_LOGO_LIGHT"
-echo "PRIMARY_COLOR: $PRIMARY_COLOR"
+echo "GLOBAL_COLOR_PRIMARY: $GLOBAL_COLOR_PRIMARY"
 
 # Start integrated Astro + Socket.io server
 echo "Starting integrated Astro + Socket.io server..."

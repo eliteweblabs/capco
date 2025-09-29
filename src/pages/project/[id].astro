@@ -1,6 +1,6 @@
 ---
 // Define requireAuthRedirect
-const requireAuthRedirect = undefined;
+const requireAuthRedirect = "/login";
 // Make sure to check above value before redirecting
 import { checkAuth } from "../../lib/auth";
 // Handle OAuth callback if code is present
@@ -8,14 +8,6 @@ const { currentUser, session, supabase } = await checkAuth(Astro.cookies);
 // Handle auth redirect first
 if (requireAuthRedirect && (!session || !currentUser)) {
   return Astro.redirect(requireAuthRedirect);
-}
-
-console.log("🔍 [PROJECT] Current user:", currentUser);
-
-// Check if user is authenticated
-if (!currentUser) {
-  console.log("🔍 [PROJECT] No authenticated user, redirecting to login");
-  return Astro.redirect("/login");
 }
 
 import { globalCompanyData } from "../../pages/api/global-company-data";
@@ -36,10 +28,8 @@ const { globalInputClasses, globalPrimaryTextClasses, globalSecondaryTextClasses
   globalClasses();
 
 const currentRole = currentUser?.profile?.role;
-const currentUserId = currentUser?.id;
 const { id } = Astro.params;
 import App from "../../components/common/App.astro";
-import Footer from "../../components/common/Footer.astro";
 import HeroProject from "../../components/common/HeroProject.astro";
 import SlidingPillNav from "../../components/common/SlidingPillNav.astro";
 import TabDocuments from "../../components/project/TabDocuments.astro";
@@ -73,13 +63,10 @@ const defaultTab = validTabs.includes(statusParam || "")
 const activeTabIndex = validTabs.indexOf(defaultTab);
 
 // Fetch project data and project author profile - RLS will handle authorization
-let project = null;
-let authorProfile = null;
+let project: any = null;
 // let invoiceData = null;
 let totalAmount = 0;
 let invoiceId = "0";
-let statusesResult: any = null;
-let statuses: any[] = [];
 
 // Status-related variables (will be defined after data fetching)
 
@@ -96,7 +83,7 @@ let statuses: any[] = [];
 // Fetch single project using the API endpoint
 if (id) {
   try {
-    const baseUrl = Astro.url.origin || "http://localhost:4321";
+    const baseUrl = Astro.url.origin;
     const apiUrl = `${baseUrl}/api/get-project?id=${id}`;
 
     console.log("🏗️ [PROJECT] Fetching project from API:", apiUrl);
@@ -110,10 +97,9 @@ if (id) {
 
     if (response.ok) {
       const data = await response.json();
-      console.log("🏗️ [PROJECT] Data:", data);
+      // console.log("🏗️ [PROJECT] Data:", data);
       if (data.success) {
         project = data.project;
-        authorProfile = data.projectAuthor;
         console.log("✅ [PROJECT] Project loaded:", project?.title);
       } else {
         console.error("🏗️ [PROJECT] API returned error:", data.error);
@@ -125,6 +111,7 @@ if (id) {
     }
   } catch (error) {
     console.error("🏗️ [PROJECT] Error fetching project:", error);
+
     return Astro.redirect("/dashboard");
   }
 } else {
@@ -137,9 +124,8 @@ if (!project) {
   return Astro.redirect("/dashboard");
 }
 
-const projectId = project?.id;
 const currentStatusInt = project?.status;
-let currentStatusName = project?.status_name;
+let currentStatusName;
 
 // Status-related variables
 let currentStatusTab: string | null = null;
@@ -148,41 +134,38 @@ let currentStatusColor = "gray";
 let currentStatusProjectAction: string | null = null;
 
 // Initialize data arrays (same as dashboard)
-let project_statuses: any[] = [];
-let project_statuses_object: any = {};
-
-// Fetch project statuses using POST with project data for placeholder replacement
-const statusApiUrl = new URL("/api/project-statuses", Astro.url.origin);
-const statusResponse = await fetch(statusApiUrl.toString(), {
+// Fetch project statuses using the unified API (POST to avoid URL length limits)
+const statusResponse = await fetch(`${Astro.url.origin}/api/project-statuses`, {
   method: "POST",
   headers: {
     "Content-Type": "application/json",
     Cookie: Astro.request.headers.get("Cookie") || "",
   },
-  body: JSON.stringify({
-    project: project,
-    authorProfile: authorProfile,
-  }),
+  body: JSON.stringify({ project }),
 });
 
-let statusData: any = { success: false, roleBasedStatuses: {}, statusesMap: {} };
-if (statusResponse.ok) {
-  statusData = await statusResponse.json();
-  project_statuses = statusData.statuses || [];
-  project_statuses_object = statusData.roleBasedStatuses || {};
-} else {
-  console.error("🏗️ [PROJECT] Error fetching project statuses:");
+if (!statusResponse.ok) {
+  console.error(
+    "❌ [PROJECT-PAGE] Status API failed:",
+    statusResponse.status,
+    statusResponse.statusText
+  );
+  throw new Error(`Status API failed: ${statusResponse.status}`);
 }
 
+const statusResponseData = await statusResponse.json();
+const statusData = statusResponseData.statuses || [];
+const statusOptions = statusResponseData.selectOptions || [];
+
 // Get current status data by keying into the project status code (API already handles role-based filtering)
-if (currentStatusInt && project_statuses_object[currentStatusInt]) {
-  const currentStatusObj = project_statuses_object[currentStatusInt];
+if (currentStatusInt && statusData[currentStatusInt]) {
+  const currentStatusObj = statusData[currentStatusInt];
   // Use the role-based values directly from the API (no additional filtering needed)
-  currentStatusName = currentStatusObj.status_name;
-  currentStatusTab = currentStatusObj.status_tab;
-  currentStatusProjectAction = currentStatusObj.status_action;
-  currentStatusColor = currentStatusObj.status_color || "gray";
-  currentStatusSlug = currentStatusObj.status_slug;
+  currentStatusName = currentStatusObj.current.status_name;
+  currentStatusTab = currentStatusObj.current.status_tab;
+  currentStatusProjectAction = currentStatusObj.current.status_action;
+  currentStatusColor = currentStatusObj.current.status_color || "gray";
+  currentStatusSlug = currentStatusObj.current.status_slug;
   // search currentStatusProjectAction for "status=" + statusParam
   const statusParamIndex = currentStatusProjectAction?.indexOf("status=" + statusParam) || 0;
   if (statusParamIndex !== -1 && currentStatusProjectAction) {
@@ -228,11 +211,11 @@ if (currentRole === "Admin" || currentRole === "Staff") {
     staffOptions = [{ value: "", label: "Unassigned" }];
   }
 }
+
+console.log("🔍 [PROJECT] currentStatusName:", currentStatusName);
 ---
 
 <App
-  title={`${project?.address || project?.title || "Untitled Project"} - CAPCo Fire Protection`}
-  description={`${project?.address || project?.title || "Untitled Project"} - CAPCo Fire Protection`}
   currentUser={currentUser}
   project={project}
   session={session}
@@ -265,15 +248,15 @@ if (currentRole === "Admin" || currentRole === "Staff") {
         >
           <HeroProject
             title={project?.address || project?.title || "Untitled Project"}
-            description={project?.company_name || "Unknown Author"}
+            description={project?.authorProfile?.[0]?.company_name ||
+              project?.authorProfile?.company_name ||
+              "Unknown Author"}
             statusColor={currentStatusColor}
-            projectId={id}
+            currentUser={currentUser}
             currentStatusInt={currentStatusInt.toString()}
             currentStatusName={currentStatusName || undefined}
-            currentRole={currentRole || "Client"}
             project={project}
-            statuses={project_statuses_object}
-            authorProfile={authorProfile}
+            statusesOptions={statusOptions}
             currentStatusTab={currentStatusTab || undefined}
             staffOptions={staffOptions}
             globalSecondaryTextClasses={globalSecondaryTextClasses}
@@ -367,12 +350,7 @@ if (currentRole === "Admin" || currentRole === "Staff") {
 
           <TabDiscussions
             project={project}
-            currentRole={currentRole || undefined}
             currentUser={currentUser}
-            projectId={projectId}
-            projectStatus={currentStatusInt}
-            projectStatusLabel={currentStatusName || undefined}
-            authorProfile={authorProfile}
             supabaseUrl={import.meta.env.PUBLIC_SUPABASE_URL}
             globalInputClasses={globalInputClasses}
             globalSecondaryTextClasses={globalSecondaryTextClasses}
@@ -389,63 +367,54 @@ if (currentRole === "Admin" || currentRole === "Staff") {
             globalSecondaryTextClasses={globalSecondaryTextClasses}
             globalPrimaryTextClasses={globalPrimaryTextClasses}
             globalInputClasses={globalInputClasses}
+            statusData={statusData}
           />
 
           <!-- Proposal Tab -->
           <TabProposal
             project={project}
-            currentRole={currentRole || undefined}
-            projectId={projectId}
             projectStatus={currentStatusInt}
-            projectStatusLabel={currentStatusName || undefined}
-            authorProfile={authorProfile}
             currentUser={currentUser}
             globalSecondaryTextClasses={globalSecondaryTextClasses}
             globalPrimaryTextClasses={globalPrimaryTextClasses}
             globalInputClasses={globalInputClasses}
+            statusData={statusData}
           />
 
           <!-- Contract Tab -->
           <TabContract
             project={project}
-            currentRole={currentRole || undefined}
-            projectId={projectId}
+            currentUser={currentUser}
             projectStatus={currentStatusInt}
-            projectStatusLabel={currentStatusName || undefined}
-            authorProfile={authorProfile}
             globalSecondaryTextClasses={globalSecondaryTextClasses}
             globalPrimaryTextClasses={globalPrimaryTextClasses}
             globalInputClasses={globalInputClasses}
+            statusData={statusData}
           />
 
           <!-- Deposit Tab -->
           <TabDeposit
             project={project}
-            currentRole={currentRole || undefined}
-            projectId={projectId}
+            currentUser={currentUser}
             projectStatus={currentStatusInt}
-            projectStatusLabel={currentStatusName || undefined}
-            authorProfile={authorProfile}
             invoiceId={invoiceId || "0"}
             totalAmount={totalAmount}
             globalSecondaryTextClasses={globalSecondaryTextClasses}
             globalPrimaryTextClasses={globalPrimaryTextClasses}
             globalInputClasses={globalInputClasses}
+            statusData={statusData}
           />
 
           <!-- Final Invoice Tab -->
           <TabFinalInvoice
             project={project}
-            currentRole={currentRole || undefined}
-            projectId={projectId}
             projectStatus={currentStatusInt}
-            projectStatusLabel={currentStatusName || undefined}
-            authorProfile={authorProfile}
             invoiceId={invoiceId || "0"}
             totalAmount={totalAmount}
             globalSecondaryTextClasses={globalSecondaryTextClasses}
             globalPrimaryTextClasses={globalPrimaryTextClasses}
             globalInputClasses={globalInputClasses}
+            statusData={statusData}
           />
 
           <TabActivityLog
@@ -454,14 +423,16 @@ if (currentRole === "Admin" || currentRole === "Staff") {
             globalInputClasses={globalInputClasses}
             currentUser={currentUser}
             project={project}
+            statusData={statusData}
           />
 
           <TabGeneratePdf
-            projectId={projectId}
-            currentRole={currentRole || undefined}
             globalSecondaryTextClasses={globalSecondaryTextClasses}
             globalPrimaryTextClasses={globalPrimaryTextClasses}
             globalInputClasses={globalInputClasses}
+            project={project}
+            currentUser={currentUser}
+            statusData={statusData}
           />
           <!-- </div> -->
         </div>
@@ -473,12 +444,14 @@ if (currentRole === "Admin" || currentRole === "Staff") {
 <script
   type="module"
   define:vars={{
-    project: project,
-    currentUser: currentUser,
-    currentStatusName: currentStatusName,
-    currentStatusProjectAction: currentStatusProjectAction,
+    project,
+    currentUser,
+    currentStatusProjectAction,
+    baseUrl: Astro.url.origin,
   }}
 >
+  const currentStatus = project?.status || 0;
+  const projectId = project?.id;
   // Tab switching functionality
   function setPageLoadProjectStatus(statusNameFromUrl) {
     // Parse tab name and parameters (e.g., "discussion&new=true")
@@ -495,9 +468,6 @@ if (currentRole === "Admin" || currentRole === "Staff") {
       }, 100);
     }
 
-    const currentStatus = project?.status || 0;
-    const currentUser = currentUser;
-    const projectId = project?.id;
     let nextStatus = 0;
     // Viewed Update Tabs
 
@@ -510,7 +480,7 @@ if (currentRole === "Admin" || currentRole === "Staff") {
       currentStatus >= 20 &&
       currentStatus < 40 &&
       currentUser &&
-      projectId
+      project.id
     ) {
       // console.log(
       //   "📋 [PROPOSAL-VIEW] Updating status from",
@@ -524,8 +494,7 @@ if (currentRole === "Admin" || currentRole === "Staff") {
       currentStatus >= 55 &&
       currentStatus < 65 &&
       currentUser &&
-      projectId &&
-      hasExistingProposal
+      project.id
     ) {
       // console.log(
       //   "📋 [PROPOSAL-VIEW] Updating status from",
@@ -539,7 +508,7 @@ if (currentRole === "Admin" || currentRole === "Staff") {
       currentStatus >= 150 &&
       currentStatus < 160 &&
       currentUser &&
-      projectId
+      project.id
     ) {
       // console.log(
       //   "📋 [PROPOSAL-VIEW] Updating status from",
@@ -553,7 +522,7 @@ if (currentRole === "Admin" || currentRole === "Staff") {
       currentStatus >= 200 &&
       currentStatus < 210 &&
       currentUser &&
-      projectId
+      project.id
     ) {
       // console.log(
       //   "📋 [PROPOSAL-VIEW] Updating status from",
@@ -566,20 +535,9 @@ if (currentRole === "Admin" || currentRole === "Staff") {
     // Update status to 40 (Proposal Viewed) if status is between 30-40
 
     if (nextStatus !== 0) {
-      // Call update-status API
-      fetch("/api/update-status", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        credentials: "include",
-        body: JSON.stringify({
-          projectId: projectId,
-          status: nextStatus,
-          currentUserId: currentUserId,
-        }),
-      })
-        .then((response) => response.json())
+      // Call global updateStatus function
+      window
+        .updateStatus(project, nextStatus, statusData)
         .then((data) => {
           if (data.success) {
             // console.log("✅ [PROPOSAL-VIEW] Status updated to 40 successfully");
@@ -593,7 +551,7 @@ if (currentRole === "Admin" || currentRole === "Staff") {
             }
 
             // Show notification using new modal system
-            window.handleUpdateStatusNotification(data, "PROPOSAL-VIEW");
+            window.handleNewStatusNotification(data, "PROPOSAL-VIEW");
           } else {
             console.error("❌ [PROPOSAL-VIEW] Failed to update status:", data.error);
           }

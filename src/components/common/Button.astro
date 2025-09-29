@@ -36,6 +36,7 @@ export interface Props {
   onclick?: string;
   dataAttributes?: Record<string, string>;
   selectedClasses?: string;
+  style?: string;
 }
 
 // Check if this is being used as a partial (X-headers present) or regular component
@@ -66,6 +67,7 @@ const form = Astro.props.form || Astro.request.headers.get("x-button-form") || u
 const onclick = Astro.props.onclick || Astro.request.headers.get("x-button-onclick") || undefined;
 const buttonText = Astro.request.headers.get("x-button-text") || "";
 const selectedClasses = Astro.props.selectedClasses || "";
+const style = Astro.props.style || Astro.request.headers.get("x-button-style") || "";
 
 // Handle data attributes from both props and headers
 let dataAttributes = Astro.props.dataAttributes || {};
@@ -127,6 +129,7 @@ const attributes = {
   ...(isLink && { href, target }),
   ...dataAttrs,
   ...selectedDataAttr,
+  ...(style && { style }),
 };
 ---
 

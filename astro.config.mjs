@@ -13,7 +13,7 @@ import { hexToRgb } from "./src/lib/color-utils.ts";
 const env = loadEnv(process.env.NODE_ENV || "development", process.cwd(), "");
 
 // Generate RGB version of primary color automatically
-const primaryColor = env.PRIMARY_COLOR || "#825BDD";
+const primaryColor = env.GLOBAL_COLOR_PRIMARY || "#825BDD";
 const primaryColorRgb = hexToRgb(primaryColor);
 
 // https://astro.build/config
@@ -67,8 +67,8 @@ export default defineConfig({
       "process.env.MAILGUN_BASE_URL": JSON.stringify(env.MAILGUN_BASE_URL),
       "process.env.MAILGUN_SANDBOX_DOMAIN": JSON.stringify(env.MAILGUN_SANDBOX_DOMAIN),
       "process.env.MAILGUN_WEBHOOK_SIGNING_KEY": JSON.stringify(env.MAILGUN_WEBHOOK_SIGNING_KEY),
-      "process.env.PRIMARY_COLOR": JSON.stringify(env.PRIMARY_COLOR),
-      "process.env.PRIMARY_COLOR_RGB": JSON.stringify(env.PRIMARY_COLOR_RGB),
+      "process.env.GLOBAL_COLOR_PRIMARY": JSON.stringify(env.GLOBAL_COLOR_PRIMARY),
+      "process.env.GLOBAL_COLOR_PRIMARY_RGB": JSON.stringify(env.GLOBAL_COLOR_PRIMARY_RGB),
       "process.env.PUBLIC_GOOGLE_MAPS_API_KEY": JSON.stringify(env.PUBLIC_GOOGLE_MAPS_API_KEY),
       "process.env.PUBLIC_STRIPE_PUBLISHABLE_KEY": JSON.stringify(
         env.PUBLIC_STRIPE_PUBLISHABLE_KEY
@@ -76,7 +76,7 @@ export default defineConfig({
       "process.env.PUBLIC_SUPABASE_ANON_KEY": JSON.stringify(env.PUBLIC_SUPABASE_ANON_KEY),
       "process.env.PUBLIC_SUPABASE_URL": JSON.stringify(env.PUBLIC_SUPABASE_URL),
       "process.env.RESEND_WEBHOOK_SECRET": JSON.stringify(env.RESEND_WEBHOOK_SECRET),
-      "process.env.SECONDARY_COLOR": JSON.stringify(env.SECONDARY_COLOR),
+      "process.env.GLOBAL_COLOR_SECONDARY": JSON.stringify(env.GLOBAL_COLOR_SECONDARY),
       "process.env.SITE_URL": JSON.stringify(env.SITE_URL || "https://capcofire.com"),
       "process.env.STRIPE_DOMAIN_ID": JSON.stringify(env.STRIPE_DOMAIN_ID),
       "process.env.STRIPE_SECRET_KEY": JSON.stringify(env.STRIPE_SECRET_KEY),

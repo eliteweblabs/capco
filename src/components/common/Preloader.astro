@@ -22,15 +22,29 @@
 
 <script>
   // Hide preloader when page is loaded
-  window.addEventListener("load", function () {
+  function hidePreloader() {
     const preloader = document.getElementById("preloader");
     if (preloader) {
       preloader.style.opacity = "0";
       setTimeout(() => {
         preloader.style.display = "none";
       }, 300);
+    } else {
+      console.log("❌ [PRELOADER] Preloader element not found");
     }
+  }
+
+  // Try multiple events to ensure preloader hides
+  window.addEventListener("load", hidePreloader);
+  document.addEventListener("DOMContentLoaded", function () {
+    // Add a small delay to ensure everything is ready
+    setTimeout(hidePreloader, 100);
   });
+
+  // Fallback: hide after 2 seconds regardless
+  setTimeout(() => {
+    hidePreloader();
+  }, 2000);
 </script>
 
 <style>

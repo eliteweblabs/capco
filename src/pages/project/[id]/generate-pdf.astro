@@ -174,6 +174,13 @@ const projectTitle = project.title || "Untitled Project";
                   Refresh
                 </button>
                 <button
+                  id="saveToDocumentsBtn"
+                  class="hidden rounded bg-blue-100 px-3 py-1 text-blue-700 transition-colors hover:bg-blue-200 dark:bg-blue-900 dark:text-blue-300 dark:hover:bg-blue-800"
+                >
+                  <i class="bx bx-save mr-1"></i>
+                  Save to Documents
+                </button>
+                <button
                   id="downloadBtn"
                   class="hidden rounded bg-green-100 px-3 py-1 text-green-700 transition-colors hover:bg-green-200 dark:bg-green-900 dark:text-green-300 dark:hover:bg-green-800"
                 >
@@ -199,7 +206,7 @@ const projectTitle = project.title || "Untitled Project";
       <!-- Loading Overlay -->
       <div
         id="loadingOverlay"
-        class="fixed inset-0 z-50 hidden items-center justify-center bg-black bg-opacity-50"
+        class="z-60 fixed inset-0 hidden items-center justify-center bg-black bg-opacity-50"
       >
         <div class="rounded-lg bg-white p-8 text-center dark:bg-gray-800">
           <div class="mx-auto mb-4 h-12 w-12 animate-spin rounded-full border-b-2 border-blue-600">
@@ -392,15 +399,16 @@ const projectTitle = project.title || "Untitled Project";
           // Show preview
           showPreview(result.document.htmlContent);
 
-          // Show download button
+          // Show download and save buttons
           document.getElementById("downloadBtn").classList.remove("hidden");
+          document.getElementById("saveToDocumentsBtn").classList.remove("hidden");
 
           // Show success message
           if (window.showModal) {
             window.showModal(
               "success",
               "PDF Generated",
-              "Your document has been generated and saved to the file manager!",
+              "Your document has been generated! You can now preview, download, or save it to documents.",
               4000
             );
           }
@@ -501,6 +509,54 @@ const projectTitle = project.title || "Untitled Project";
     document.getElementById("refreshPreview").addEventListener("click", () => {
       if (generatedDocument) {
         showPreview(generatedDocument.htmlContent);
+      }
+    });
+
+    // Save to Documents handler
+    document.getElementById("saveToDocumentsBtn").addEventListener("click", async () => {
+      if (!generatedDocument) {
+        window.showModal("error", "No Document", "Please generate a document first", 3000);
+        return;
+      }
+
+      const saveBtn = document.getElementById("saveToDocumentsBtn");
+      const originalText = saveBtn.innerHTML;
+
+      // Show loading state
+      saveBtn.disabled = true;
+      saveBtn.innerHTML = '<i class="bx bx-loader-alt animate-spin mr-1"></i>Saving...';
+
+      try {
+        const response = await fetch("/api/pdf/save-document", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            projectId: projectId,
+            templateId: selectedTemplate,
+            documentName: generatedDocument.name,
+            htmlContent: generatedDocument.htmlContent,
+            userId: currentUser?.id || null,
+          }),
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+          window.showModal("success", "Document Saved", "PDF has been saved to documents", 3000);
+          // Hide the save button since it's now saved
+          saveBtn.classList.add("hidden");
+        } else {
+          throw new Error(result.message || "Failed to save document");
+        }
+      } catch (error) {
+        console.error("Error saving document:", error);
+        window.showModal("error", "Save Failed", error.message, 5000);
+      } finally {
+        // Reset button state
+        saveBtn.disabled = false;
+        saveBtn.innerHTML = originalText;
       }
     });
 
