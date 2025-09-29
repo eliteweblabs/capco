@@ -18,6 +18,7 @@ export type LogType =
   | "file_uploaded"
   | "file_downloaded"
   | "comment_added"
+  | "assignment_changed"
   | "discussion_added"
   | "discussion_completed"
   | "discussion_incomplete"

@@ -1,4 +1,5 @@
 import type { APIRoute } from "astro";
+import { SimpleProjectLogger } from "../../lib/simple-logging";
 import { supabase } from "../../lib/supabase";
 import { getApiBaseUrl } from "../../lib/url-utils";
 
@@ -7,7 +8,14 @@ export const POST: APIRoute = async ({ request }) => {
     const body = await request.json();
     console.log("📧 [ASSIGN-STAFF] API received:", body);
 
-    const { projectId, assigned_to_id } = body;
+    const { projectId, assigned_to_id, currentUser } = body;
+
+    if (!currentUser) {
+      return new Response(JSON.stringify({ error: "Current user is required" }), {
+        status: 400,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
 
     console.log("📧 [ASSIGN-STAFF] Project ID:", projectId);
     console.log("📧 [ASSIGN-STAFF] Assigned to ID:", assigned_to_id);
@@ -90,6 +98,21 @@ export const POST: APIRoute = async ({ request }) => {
           // Get admin emails only
           console.log("📧 [ASSIGN-STAFF] Fetching admin emails...");
           const baseUrl = getApiBaseUrl(request);
+
+          try {
+            // console.log("📊 [ASSIGN-STAFF] Logging assignment change for user:", currentUser.id);
+            await SimpleProjectLogger.addLogEntry(
+              projectId,
+              "assignment_changed",
+              currentUser,
+              `Project Assigned → ${projectDetails.address} → ${staffName}`,
+              undefined,
+              request.headers.get("Cookie") || ""
+            ); // console.log("📊 [ASSIGN-STAFF] Assignment change logged successfully");
+          } catch (logError) {
+            console.error("📊 [ASSIGN-STAFF] Failed to log assignment change:", logError);
+            // Don't fail the entire request if logging fails
+          }
 
           const adminResponse = await fetch(`${baseUrl}/api/get-user-emails-by-role`, {
             method: "POST",
