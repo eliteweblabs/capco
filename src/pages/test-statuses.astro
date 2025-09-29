@@ -1,0 +1,244 @@
+---
+const requireAuthRedirect = "/login";
+import { checkAuth } from "../lib/auth";
+const { currentUser, session, supabase, refreshToken, accessToken } = await checkAuth(
+  Astro.cookies
+);
+
+import { globalCompanyData } from "../pages/api/global-company-data";
+const {
+  globalCompanyName,
+  globalCompanySlogan,
+  globalCompanyAddress,
+  globalCompanyPhone,
+  globalCompanyEmail,
+  globalCompanyWebsite,
+  globalCompanyLogo,
+  globalCompanyLogoDark,
+  globalCompanyLogoLight,
+} = globalCompanyData();
+
+import { globalClasses } from "../pages/api/global-classes";
+const { globalInputClasses, globalPrimaryTextClasses, globalSecondaryTextClasses } =
+  globalClasses();
+
+import App from "../components/common/App.astro";
+import Button from "../components/common/Button.astro";
+import Footer from "../components/common/Footer.astro";
+import HeroDashboard from "../components/common/HeroDashboard.astro";
+import ProjectList from "../components/project/ProjectList.astro";
+import ProjectNav from "../components/project/ProjectNav.astro";
+import "../lib/refresh-manager.ts";
+// Get auth data directly since App component handles auth requirements
+
+let project = {};
+// Fetch projects using the API endpoint that includes discussion counts
+let id = 417;
+if (id) {
+  try {
+    const baseUrl = Astro.url.origin;
+    const apiUrl = `${baseUrl}/api/get-project?id=${id}`;
+
+    console.log("🏗️ [PROJECT] Fetching project from API:", apiUrl);
+    const response = await fetch(apiUrl, {
+      headers: {
+        Cookie: Astro.request.headers.get("Cookie") || "",
+      },
+    });
+
+    console.log("🏗️ [PROJECT] Response status:", response.status);
+
+    if (response.ok) {
+      const data = await response.json();
+      // console.log("🏗️ [PROJECT] Data:", data);
+      if (data.success) {
+        project = data.project;
+        // console.log("✅ [PROJECT] Project loaded:", (project as any)?.title);
+      } else {
+        console.error("🏗️ [PROJECT] API returned error:", data.error);
+        return Astro.redirect("/dashboard");
+      }
+    } else {
+      console.error("🏗️ [PROJECT] Error fetching project:", response.status, response.statusText);
+      return Astro.redirect("/dashboard");
+    }
+  } catch (error) {
+    console.error("🏗️ [PROJECT] Error fetching project:", error);
+    return Astro.redirect("/dashboard");
+  }
+} else {
+  console.error("🏗️ [PROJECT] No project ID provided");
+  return Astro.redirect("/dashboard");
+}
+
+// Fetch project statuses using the unified API
+const statusApiUrl = new URL("/api/project-statuses?projectId=" + id, Astro.url.origin);
+const statusResponse = await fetch(statusApiUrl.toString(), {
+  method: "GET",
+  headers: {
+    Cookie: Astro.request.headers.get("Cookie") || "",
+  },
+});
+
+const statusResponseData = await statusResponse.json();
+const statusData = statusResponseData || [];
+---
+
+<App title="Test Project Statuses">
+  <div class="min-h-screen bg-gray-50 py-8 dark:bg-gray-900">
+    <div class="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
+      <div class="rounded-lg bg-white p-6 shadow dark:bg-gray-800">
+        <h1 class="mb-6 text-2xl font-bold text-gray-900 dark:text-white">
+          Project Statuses Testing
+        </h1>
+
+        <div class="space-y-6">
+          <!-- Project ID Input -->
+          <div>
+            <label
+              for="project-id"
+              class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300"
+            >
+              Project ID
+            </label>
+            <input
+              type="number"
+              id="project-id"
+              class="w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+              placeholder="Enter project ID"
+            />
+          </div>
+
+          <!-- Status Dropdown -->
+          <div>
+            <label
+              for="status-select"
+              class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300"
+            >
+              Project Status
+            </label>
+
+            <!-- map thur statusData -->
+            <select
+              id="status-select"
+              class="w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+            >
+              <option value="">Select a status</option>
+              {
+                statusData.selectOptions.map((option: any) => (
+                  <option value={option.value}>{option.label}</option>
+                ))
+              }
+            </select>
+          </div>
+        </div>
+
+        <!-- Test Buttons -->
+        <div class="flex space-x-4">
+          <button
+            id="test-query"
+            class="rounded-md bg-blue-500 px-4 py-2 text-white hover:bg-blue-600 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+          >
+            Test Query
+          </button>
+          <button
+            id="test-update"
+            class="rounded-md bg-green-500 px-4 py-2 text-white hover:bg-green-600 focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
+          >
+            Test Update
+          </button>
+          <button
+            id="clear-results"
+            class="rounded-md bg-gray-500 px-4 py-2 text-white hover:bg-gray-600 focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
+          >
+            Clear Results
+          </button>
+        </div>
+
+        <!-- Results Display -->
+        <div id="results" class="hidden">
+          <h3 class="mb-3 text-lg font-medium text-gray-900 dark:text-white">Results</h3>
+          <div id="results-content" class="rounded-md bg-gray-50 p-4 dark:bg-gray-700">
+            <!-- Results will be displayed here -->
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</App>
+
+<script type="module" define:vars={{ statusData, project }}>
+  document.addEventListener("DOMContentLoaded", async () => {
+    const projectIdInput = document.getElementById("project-id");
+    const statusSelect = document.getElementById("status-select");
+    const testQueryBtn = document.getElementById("test-query");
+    const testUpdateBtn = document.getElementById("test-update");
+    const clearResultsBtn = document.getElementById("clear-results");
+    const resultsDiv = document.getElementById("results");
+    const resultsContent = document.getElementById("results-content");
+
+    // rewrite this to use global updateStatus function
+    testUpdateBtn.addEventListener("click", async () => {
+      const projectId = projectIdInput.value;
+      const status = statusSelect.value;
+
+      if (!projectId || !status) {
+        resultsContent.innerHTML = "Please enter both Project ID and Status";
+        return;
+      }
+
+      try {
+        // Try to get project data if window.getProject exists
+        let projectData = null;
+        if (!project && window.getProject) {
+          try {
+            projectData = await window.getProject(projectId);
+            project = projectData.project;
+          } catch (error) {
+            console.log("Could not fetch project, using basic project object:", error);
+          }
+        }
+
+        // If no project data, create a basic project object
+        // if (!project) {
+        //   project = {
+        //     id: parseInt(projectId),
+        //     status: 0, // Default old status
+        //   };
+        // }
+
+        // Fetch statuses if not available
+        // let statuses = null;
+        // try {
+        //   const statusesResponse = await fetch("/api/project-statuses");
+        //   if (statusesResponse.ok) {
+        //     const statusesData = await statusesResponse.json();
+        //     statuses = statusesData.statuses;
+        //   }
+        // } catch (error) {
+        //   console.error("Failed to fetch statuses:", error);
+        // }
+
+        let sdf = statusData.statuses[status];
+
+        const response = await window.updateStatus(
+          project,
+          parseInt(status),
+          statusData.statuses[status]
+        );
+
+        // debugger;
+        window.handleNewStatusNotification(response, "TEST-STATUS");
+
+        resultsContent.innerHTML = JSON.stringify(response, null, 2);
+      } catch (error) {
+        resultsContent.innerHTML = "Error: " + error.message;
+      }
+    });
+
+    clearResultsBtn.addEventListener("click", () => {
+      resultsDiv.classList.add("hidden");
+      resultsContent.innerHTML = "";
+    });
+  });
+</script>

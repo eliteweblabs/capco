@@ -2,6 +2,8 @@
  * Utility functions for punchlist operations
  */
 
+import { COUNT_BUBBLE_PRESETS, updateCountBubble } from "./count-bubble-utils";
+
 export interface PunchlistItem {
   id: number;
   project_id: number;
@@ -103,39 +105,22 @@ export function updatePunchlistCount(incompleteCount: number, selector?: string)
     selector,
   });
   const countElement = document.querySelector(selector || ".incomplete-punchlist-items-count");
-  const tabButton = document.querySelector("[data-count]") as HTMLElement;
+  const tabButton = document.querySelector(
+    '[data-dropdown-toggle="checklist-dropdown"]'
+  ) as HTMLElement;
 
   if (tabButton) {
-    // Create or update count bubble
-    let countBubble = tabButton.querySelector(".punchlist-count-bubble") as HTMLSpanElement;
+    // Use global count bubble utility
+    updateCountBubble(tabButton, incompleteCount, COUNT_BUBBLE_PRESETS.punchlist);
+  }
 
+  // Also update the old count element if it exists
+  if (countElement) {
     if (incompleteCount > 0) {
-      if (!countBubble) {
-        // Create count bubble if it doesn't exist
-        countBubble = document.createElement("span") as HTMLSpanElement;
-        countBubble.className =
-          "absolute -right-2 -top-2 flex h-5 w-5 items-center justify-center rounded-full bg-primary-500 text-xs text-bold font-medium text-white dark:bg-primary-dark";
-        tabButton.style.position = "relative";
-        tabButton.appendChild(countBubble);
-      }
-      countBubble.textContent = incompleteCount.toString();
-      countBubble.style.display = "flex";
-      tabButton.setAttribute("data-count", incompleteCount.toString());
+      countElement.textContent = incompleteCount.toString();
+      countElement.classList.remove("hidden");
     } else {
-      if (countBubble) {
-        countBubble.style.display = "none";
-      }
-      tabButton.setAttribute("data-count", "0");
-    }
-
-    // Also update the old count element if it exists
-    if (countElement) {
-      if (incompleteCount > 0) {
-        countElement.textContent = incompleteCount.toString();
-        countElement.classList.remove("hidden");
-      } else {
-        countElement.classList.add("hidden");
-      }
+      countElement.classList.add("hidden");
     }
   }
 }

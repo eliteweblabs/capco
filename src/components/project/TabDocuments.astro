@@ -8,6 +8,7 @@ interface Props {
   globalSecondaryTextClasses?: string;
   globalPrimaryTextClasses?: string;
   globalInputClasses?: string;
+  statusData?: any;
 }
 
 import FileManager from "./FileManager.astro";
@@ -22,6 +23,7 @@ const {
   globalSecondaryTextClasses,
   globalPrimaryTextClasses,
   globalInputClasses,
+  statusData,
 } = Astro.props;
 
 const projectId = project?.id;
@@ -64,11 +66,13 @@ const currentRole = currentUser?.profile?.role;
 
 <script
   define:vars={{
+    project,
     projectId,
     projectStatus,
     globalInputClasses,
     globalSecondaryTextClasses,
     globalPrimaryTextClasses,
+    statusData,
   }}
 >
   // Only initialize if the button exists (projectStatus === 10)
@@ -76,6 +80,7 @@ const currentRole = currentUser?.profile?.role;
     class PDFUpload {
       constructor() {
         this.allDocumentsUploadedBtn = document.getElementById("all-documents-uploaded-btn");
+        this.project = project;
         this.projectId = projectId;
         this.projectStatus = projectStatus;
         this.initialized = false;
@@ -122,33 +127,26 @@ const currentRole = currentUser?.profile?.role;
             Updating Status...
           `;
 
-          window.showModal("alert", "Reviewing Documents, Please Wait...", "", 2000);
+          window.showModal("alert", "Reviewing Documents", "Please Wait A Moment...", 5000);
 
-          const response = await fetch("/api/update-status", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            credentials: "include",
-            body: JSON.stringify({
-              projectId: this.projectId,
-              status: 20, // Status 20 - All Documents Uploaded
-              oldStatus: this.projectStatus,
-            }),
-          });
+          const nextStatus = 20;
+          const result = await window.updateStatus(
+            this.project,
+            nextStatus,
+            statusData.statuses[nextStatus]
+          );
 
-          console.log("🔔 [PDF-UPLOAD] API response status:", response.status);
+          console.log("🔔 [PDF-UPLOAD] Update status result:", result);
 
-          if (!response.ok) {
-            const error = await response.json();
-            throw new Error(error.error || "Failed to update project status");
+          if (!result.success) {
+            throw new Error(result.error || "Failed to update project status");
           }
-
-          const result = await response.json();
 
           if (result.success) {
             console.log("📊 [PDF-UPLOAD] Status updated successfully:", result);
 
             // Show success notification using notificationData from API
-            window.handleUpdateStatusNotification(result, "PDF-UPLOAD");
+            window.handleNewStatusNotification(result, "PDF-UPLOAD");
 
             // Update button to show completion
             this.allDocumentsUploadedBtn.innerHTML = `
@@ -163,7 +161,11 @@ const currentRole = currentUser?.profile?.role;
           }
         } catch (error) {
           console.error("Error updating project status:", error);
-          this.showError(`Failed to update project status: ${error.message}`);
+          window.showModal(
+            "error",
+            "Status Update Error",
+            `Failed to update project status: ${error.message}`
+          );
 
           // Reset button to original state
           this.allDocumentsUploadedBtn.disabled = false;
@@ -176,10 +178,10 @@ const currentRole = currentUser?.profile?.role;
         }
       }
 
-      showError(message) {
-        console.error("PDF Upload Error:", message);
-        // You can implement a proper error display here
-      }
+      // showModal(type, title, message) {
+      //   console.error("PDF Upload Error:", message);
+      //   // You can implement a proper error display here
+      // }
     }
 
     // Initialize the PDF upload component

@@ -1,5 +1,5 @@
 ---
-const requireAuthRedirect = "/project/dashboard";
+const requireAuthRedirect = "/login";
 import { checkAuth } from "../lib/auth";
 const { currentUser, session, supabase, refreshToken, accessToken } = await checkAuth(
   Astro.cookies
@@ -40,13 +40,11 @@ import "../lib/refresh-manager.ts";
 // console.log("🚀 [DASHBOARD] Current user:", currentUser);
 // Initialize data arrays
 let projects: any[] = [];
-let project_statuses: any[] = [];
-let project_statuses_object: any = {};
 
 // Fetch projects using the API endpoint that includes discussion counts
 if (currentUser?.id) {
   try {
-    const baseUrl = Astro.url.origin || "http://localhost:4321";
+    const baseUrl = Astro.url.origin;
     let apiUrl = `${baseUrl}/api/get-project`;
 
     // Add assigned_to_id parameter for Staff role
@@ -94,18 +92,7 @@ const statusResponse = await fetch(statusApiUrl.toString(), {
   },
 });
 
-let statusData: any = { success: false, roleBasedStatuses: {}, statusesMap: {} };
-if (statusResponse.ok) {
-  statusData = await statusResponse.json();
-  project_statuses = statusData.statuses || [];
-  project_statuses_object = statusData.roleBasedStatuses || {};
-} else {
-  console.error(
-    "🏗️ [DASHBOARD] Error fetching project statuses:",
-    statusResponse.status,
-    statusResponse.statusText
-  );
-}
+const statusData = await statusResponse.json();
 ---
 
 <App

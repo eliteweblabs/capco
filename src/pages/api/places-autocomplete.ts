@@ -37,6 +37,8 @@ export const GET: APIRoute = async ({ url }) => {
     // Get API key from environment variables
     const apiKey = import.meta.env.GOOGLE_MAPS_API_KEY;
 
+    console.log("🔍 [PLACES-PROXY] API key:", apiKey);
+
     if (!apiKey) {
       return new Response(
         JSON.stringify({

@@ -7,13 +7,10 @@ interface Props {
   height?: number;
   placeholder?: string;
   required?: boolean;
-  authorProfile?: any;
-  currentRole?: string;
+  currentUser?: any;
   project: any;
-  projectId: string;
   projectStatus?: number;
   projectStatusLabel?: string;
-  currentUser?: any;
 }
 const {
   id = "signature-canvas",
@@ -22,14 +19,14 @@ const {
   placeholder = "Sign here...",
   required = false,
   currentUser,
-  currentRole,
   project,
-  projectId,
   projectStatus,
   projectStatusLabel,
 } = Astro.props;
 
 const newStatus = 50;
+const currentRole = currentUser?.profile?.role;
+const projectId = project?.id;
 ---
 
 <div class="">
@@ -99,9 +96,11 @@ const newStatus = 50;
     </button>
   </div>
 
-  <script define:vars={{ newStatus, projectId, project, currentRole, currentUser }}>
+  <script define:vars={{ newStatus, project, currentUser }}>
     // Load SignaturePad from CDN
     let SignaturePad;
+    const currentRole = currentUser?.profile?.role;
+    const projectId = project?.id;
 
     async function loadSignaturePad() {
       if (SignaturePad) return SignaturePad;
@@ -424,7 +423,7 @@ const newStatus = 50;
 
         const signatureData = signaturePad.toDataURL("image/png");
 
-        if (!project || !authorProfile) {
+        if (!project || !currentUser) {
           console.error("❌ [DigitalSignature] Missing project or user data");
           if (window.showModal) {
             window.showModal(
@@ -455,7 +454,8 @@ const newStatus = 50;
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            projectId: projectId,
+            project: project,
+            currentUser: currentUser,
             signature: signatureData,
             signed_at: new Date().toISOString(),
           }),
@@ -476,7 +476,8 @@ const newStatus = 50;
                 "Content-Type": "application/json",
               },
               body: JSON.stringify({
-                projectId: projectId,
+                project: project,
+                currentUser: currentUser,
                 signature: signatureData,
                 signedAt: new Date().toISOString(),
               }),
@@ -499,23 +500,10 @@ const newStatus = 50;
           }
 
           try {
-            // Call update-status API to set status to 55
-            const response = await fetch("/api/update-status", {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-              },
-              body: JSON.stringify({
-                projectId: project.id,
-                status: `${newStatus}`,
-                project: project,
-                currentUser: currentUser,
-              }),
-            });
+            // Call global updateStatus function to set status
+            const data = await window.updateStatus(project, newStatus, statusData);
 
-            const data = await response.json();
-
-            if (response.ok && data.success) {
+            if (data.success) {
               console.log("✅ [DigitalSignature] Contract agreement processed successfully");
 
               // Update button to show success state
@@ -527,7 +515,7 @@ const newStatus = 50;
               agreeBtn.classList.add("bg-green-500");
 
               // Show notification immediately for instant feedback
-              window.handleUpdateStatusNotification(data, "DIGITAL-SIGNATURE");
+              window.handleNewStatusNotification(data, "DIGITAL-SIGNATURE");
             } else {
               throw new Error(data.error || "Failed to process agreement");
             }

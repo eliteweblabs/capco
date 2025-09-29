@@ -1,35 +1,31 @@
 import type { APIRoute } from "astro";
-import { checkAuth } from "../../lib/auth";
+import {
+  createErrorResponse,
+  createSuccessResponse,
+  getCurrentUser,
+} from "../../lib/api-optimization";
 import { SimpleProjectLogger } from "../../lib/simple-logging";
 import { supabase } from "../../lib/supabase";
 
 export const POST: APIRoute = async ({ request, cookies }) => {
   try {
-    // Check authentication
-    const { currentUser, currentRole } = await checkAuth(cookies);
+    const body = await request.json();
+
+    // Get current user (optimized to use provided user if available)
+    const { currentUser } = await getCurrentUser(cookies, body);
     if (!currentUser) {
-      return new Response(JSON.stringify({ error: "Authentication required" }), {
-        status: 401,
-        headers: { "Content-Type": "application/json" },
-      });
+      return createErrorResponse("Authentication required", 401);
     }
 
     if (!supabase) {
-      return new Response(JSON.stringify({ error: "Database connection not available" }), {
-        status: 500,
-        headers: { "Content-Type": "application/json" },
-      });
+      return createErrorResponse("Database connection not available", 500);
     }
 
-    const body = await request.json();
     const { projectId, message, internal = false, parentId = null } = body;
 
     // Validate required fields
     if (!projectId || !message) {
-      return new Response(JSON.stringify({ error: "Project ID and message are required" }), {
-        status: 400,
-        headers: { "Content-Type": "application/json" },
-      });
+      return createErrorResponse("Project ID and message are required", 400);
     }
 
     console.log("🔔 [ADD-PUNCHLIST] Adding punchlist item:", {
@@ -40,17 +36,11 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       userId: currentUser.id,
     });
 
-    // Get user profile for company_name
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("company_name, first_name, last_name")
-      .eq("id", currentUser.id)
-      .single();
-
+    // Get company name from currentUser profile (no redundant database call)
     const companyName =
-      profile?.company_name ||
-      (profile?.first_name && profile?.last_name
-        ? `${profile.first_name} ${profile.last_name}`
+      currentUser.profile?.company_name ||
+      (currentUser.profile?.first_name && currentUser.profile?.last_name
+        ? `${currentUser.profile.first_name} ${currentUser.profile.last_name}`
         : "Unknown User");
 
     // Insert punchlist item
@@ -96,28 +86,12 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       console.error("Error logging punchlist creation:", logError);
     }
 
-    return new Response(
-      JSON.stringify({
-        success: true,
-        punchlist: punchlistData,
-        message: "Punchlist item created successfully",
-      }),
-      {
-        status: 201,
-        headers: { "Content-Type": "application/json" },
-      }
+    return createSuccessResponse(
+      { punchlist: punchlistData },
+      "Punchlist item created successfully"
     );
   } catch (error) {
     console.error("❌ [ADD-PUNCHLIST] Unexpected error:", error);
-    return new Response(
-      JSON.stringify({
-        error: "Internal server error",
-        details: error instanceof Error ? error.message : "Unknown error",
-      }),
-      {
-        status: 500,
-        headers: { "Content-Type": "application/json" },
-      }
-    );
+    return createErrorResponse(error instanceof Error ? error.message : "Unknown error", 500);
   }
 };

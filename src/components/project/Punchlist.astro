@@ -17,7 +17,7 @@ if (!project || !project.id || currentRole === "Client") {
 const projectId = project.id;
 import BoxIcon from "../common/BoxIcon.astro";
 
-console.log("🔍 [TabPunchlist] props:", Astro.props);
+// console.log("🔍 [TabPunchlist] props:", Astro.props);
 
 ---
 
@@ -79,17 +79,12 @@ console.log("🔍 [TabPunchlist] props:", Astro.props);
   // Punchlist functionality
   let punchlistItems = [];
   let currentProjectId = projectId;
-  let currentUserRole = currentRole;
   let currentUserId = currentUser?.id;
-
-  // Make user role available globally for reply forms
-  window.currentUserRole = currentUserRole;
-  window.PROJECT_USER_ROLE = currentUserRole;
 
   async function loadPunchlistItems(projectId) {
     try {
       // Import the utility function dynamically
-      const { fetchPunchlistData, updatePunchlistCount, showPunchlistError: showError } = await import("../src/lib/punchlist-utils");
+      const { fetchPunchlistData, updatePunchlistCount } = await import("../src/lib/punchlist-utils");
       
       const data = await fetchPunchlistData(projectId);
 
@@ -103,7 +98,7 @@ console.log("🔍 [TabPunchlist] props:", Astro.props);
 
         // Show specific error message if table doesn't exist
         if (data.migration_needed || data.error?.includes("does not exist")) {
-          showError(
+          showModal("error", "Punchlist Setup Required",
             `Punchlist feature setup required<br><br>
                     <strong>Admin Action Needed:</strong><br>
                     Please run the SQL script:<br>
@@ -111,7 +106,7 @@ console.log("🔍 [TabPunchlist] props:", Astro.props);
                     in your Supabase SQL Editor to enable punchlist functionality.`
           );
         } else {
-          showError("Failed to load punchlist items: " + (data.details || data.error));
+          showModal("error", "Punchlist Error", "Failed to load punchlist items: " + (data.details || data.error));
         }
       }
     } catch (error) {
@@ -153,8 +148,8 @@ console.log("🔍 [TabPunchlist] props:", Astro.props);
     // Load toggles for all items that can be toggled
     punchlistItems.forEach((item) => {
       const canToggleCompleted =
-        currentUserRole === "Admin" ||
-        currentUserRole === "Staff";
+        currentRole === "Admin" ||
+        currentRole === "Staff";
 
       if (canToggleCompleted) {
         loadToggleForPunchlistItem(item.id, item.mark_completed, true);
@@ -168,7 +163,7 @@ console.log("🔍 [TabPunchlist] props:", Astro.props);
       const isInternal = item.internal;
       const isAuthor = item.author_id === currentUserId;
       const canToggleCompleted =
-        currentUserRole === "Admin" || currentUserRole === "Staff";
+        currentRole === "Admin" || currentRole === "Staff";
 
       const marginLeft = depth > 0 ? `ml-${Math.min(depth * 8, 32)}` : "";
       const borderLeft = depth > 0 ? "border-l-2 border-gray-200 dark:border-gray-600 pl-4" : "";
@@ -178,7 +173,7 @@ console.log("🔍 [TabPunchlist] props:", Astro.props);
 
       const headers = new Headers({
         "x-comment-data": itemData,
-        "x-current-user-role": currentUserRole,
+        "x-current-user-role": currentRole,
         "x-current-user-id": currentUserId,
         "x-supabase-url": supabaseUrl,
         "x-comment-depth": depth.toString(),
@@ -255,11 +250,7 @@ console.log("🔍 [TabPunchlist] props:", Astro.props);
   // Initialize punchlist functionality when punchlist tab is shown
   function initializePunchlist() {
     // Set user role from server-side data (already set via define:vars)
-    currentUserRole = window.PROJECT_USER_ROLE || "Client";
-    console.log("🔔 [PUNCHLIST] User role set to:", currentUserRole);
-
-    // Make user role available globally for reply forms
-    window.currentUserRole = currentUserRole;
+    // User role is already available from component props
 
     const punchlistContainer = document.getElementById("punchlist-container");
     if (punchlistContainer) {

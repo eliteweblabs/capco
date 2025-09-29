@@ -27,6 +27,7 @@ export const POST: APIRoute = async ({ request }) => {
         });
       }
       // Get user data by roles
+      console.log("📧 [GET-USER-EMAILS-BY-ROLE] Querying profiles for roles:", roles);
       const { data: fetchedRoleUsers, error: roleError } = await supabaseAdmin
         .from("profiles")
         .select(
@@ -41,15 +42,16 @@ export const POST: APIRoute = async ({ request }) => {
         )
         .in("role", roles);
 
+      console.log("📧 [GET-USER-EMAILS-BY-ROLE] Query result:", { fetchedRoleUsers, roleError });
+
       // If no email in profiles, try to get from auth.users
       if (fetchedRoleUsers && fetchedRoleUsers.length > 0) {
-        roleUsers = fetchedRoleUsers; // Assign to the outer scope variable
         const userIds = fetchedRoleUsers.map((user) => user.id);
         const { data: authUsers, error: authError } = await supabaseAdmin.auth.admin.listUsers();
 
         if (authUsers && authUsers.users) {
           // Match profiles with auth users
-          for (const user of roleUsers) {
+          for (const user of fetchedRoleUsers) {
             if (!user.email) {
               const authUser = authUsers.users.find((au) => au.id === user.id);
               if (authUser && authUser.email) {
@@ -62,9 +64,11 @@ export const POST: APIRoute = async ({ request }) => {
 
       if (roleError) {
         console.error("📧 [GET-USER-EMAILS-BY-ROLE] Error fetching users by roles:", roleError);
-      } else if (fetchedRoleUsers) {
-        roleUsers = fetchedRoleUsers; // Assign to the outer scope variable
-        // console.log("📧 [GET-USER-EMAILS-BY-ROLE] Found users by roles:", roleUsers);
+      } else {
+        // Always assign fetchedRoleUsers to roleUsers, even if empty
+        roleUsers = fetchedRoleUsers || [];
+        console.log("📧 [GET-USER-EMAILS-BY-ROLE] Found users by roles:", roleUsers);
+
         for (const user of roleUsers) {
           try {
             if (user.email) {
@@ -82,7 +86,7 @@ export const POST: APIRoute = async ({ request }) => {
 
     // Get emails by specific user IDs
     if (userIds && userIds.length > 0) {
-      // console.log("📧 [GET-USER-EMAILS-BY-ROLE] Fetching emails for user IDs:", userIds);
+      console.log("📧 [GET-USER-EMAILS-BY-ROLE] Fetching emails for user IDs:", userIds);
 
       if (!supabaseAdmin) {
         return new Response(JSON.stringify({ error: "Database connection not available" }), {
@@ -114,7 +118,8 @@ export const POST: APIRoute = async ({ request }) => {
     // Remove duplicates
     const uniqueEmails = [...new Set(emails)];
 
-    // console.log("📧 [GET-USER-EMAILS-BY-ROLE] Final unique emails:", uniqueEmails);
+    console.log("📧 [GET-USER-EMAILS-BY-ROLE] Final unique emails:", uniqueEmails);
+    console.log("📧 [GET-USER-EMAILS-BY-ROLE] Role users data:", roleUsers);
 
     // Also return the full user data for staff dropdowns
     const staffUsers = roleUsers || [];

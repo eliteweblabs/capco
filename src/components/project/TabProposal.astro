@@ -3,30 +3,27 @@ import BoxIcon from "../common/BoxIcon.astro";
 import ProposalManager from "./ProposalManager.astro";
 
 interface Props {
-  authorProfile?: any;
-  currentRole?: string;
   project: any;
-  projectId: string;
   projectStatus?: number;
-  projectStatusLabel?: string;
   currentUser?: any;
   globalInputClasses?: string;
   globalSecondaryTextClasses?: string;
   globalPrimaryTextClasses?: string;
+  statusData?: any;
 }
 
 const {
   project,
-  currentRole,
-  projectId,
-  authorProfile,
   projectStatus = 0,
-  projectStatusLabel,
   currentUser,
   globalInputClasses,
   globalSecondaryTextClasses,
   globalPrimaryTextClasses,
+  statusData,
 } = Astro.props;
+
+const currentRole = currentUser?.profile?.role;
+const projectId = project?.id;
 
 function getStatusAlert() {
   return (
@@ -64,29 +61,23 @@ const statusAlert = getStatusAlert();
       <ProposalManager
         projectId={projectId}
         project={project}
-        authorProfile={authorProfile}
-        currentRole={currentRole || undefined}
         projectStatus={projectStatus}
-        projectStatusLabel={projectStatusLabel}
         currentUser={currentUser}
-        globalInputClasses={globalInputClasses}
-        globalSecondaryTextClasses={globalSecondaryTextClasses}
-        globalPrimaryTextClasses={globalPrimaryTextClasses}
-        isViewOnly={true}
+        globalInputClasses={globalInputClasses || ""}
+        globalSecondaryTextClasses={globalSecondaryTextClasses || ""}
+        globalPrimaryTextClasses={globalPrimaryTextClasses || ""}
+        statusData={statusData}
       />
     ) : (
       <ProposalManager
         projectId={projectId}
         project={project}
-        authorProfile={authorProfile}
-        currentRole={currentRole || undefined}
         projectStatus={projectStatus}
-        projectStatusLabel={projectStatusLabel}
         currentUser={currentUser}
-        globalInputClasses={globalInputClasses}
-        globalSecondaryTextClasses={globalSecondaryTextClasses}
-        globalPrimaryTextClasses={globalPrimaryTextClasses}
-        isViewOnly={false}
+        globalInputClasses={globalInputClasses || ""}
+        globalSecondaryTextClasses={globalSecondaryTextClasses || ""}
+        globalPrimaryTextClasses={globalPrimaryTextClasses || ""}
+        statusData={statusData}
       />
     )
   }

@@ -6,7 +6,7 @@
  * Query Parameters:
  * - assigned_to_id: Filter by assigned user ID
  * - author_id: Filter by project author ID
- * - search: Search across title, address, company_name, subject, building, project, service fields
+ * - search: Search across title, address, subject, building, project, service fields
  * - status: Filter by project status (integer)
  * - building: Filter by building type (partial match)
  * - project: Filter by project type (partial match)
@@ -100,7 +100,7 @@ function applyFilters(query: any, filters: FilterParams) {
   if (search) {
     console.log(`📡 [API] Adding search filter: ${search}`);
     query = query.or(
-      `title.ilike.%${search}%,address.ilike.%${search}%,company_name.ilike.%${search}%,subject.ilike.%${search}%,building.ilike.%${search}%,project.ilike.%${search}%,service.ilike.%${search}%`
+      `title.ilike.%${search}%,address.ilike.%${search}%,subject.ilike.%${search}%,building.ilike.%${search}%,project.ilike.%${search}%,service.ilike.%${search}%`
     );
   }
 
@@ -414,7 +414,7 @@ export const GET: APIRoute = async ({ request, cookies, url, params }) => {
       for (const project of projects) {
         if (project.author_id) {
           const authorProfile = profilesMap.get(project.author_id);
-          project.profiles = authorProfile || null;
+          project.authorProfile = authorProfile || null;
           if (authorProfile) {
             // console.log("📡 [API] Attached profile to project:", {
             //   projectId: project.id,
@@ -427,7 +427,7 @@ export const GET: APIRoute = async ({ request, cookies, url, params }) => {
           }
         }
         if (project.assigned_to_id) {
-          project.assigned_profiles = profilesMap.get(project.assigned_to_id) || null;
+          project.assignedToProfile = profilesMap.get(project.assigned_to_id) || null;
         }
 
         // Process featured image data (new system using featured_image_id)
@@ -862,6 +862,11 @@ async function handleSingleProject(projectId: string, cookies: any) {
       .eq("id", projectId)
       .single();
 
+    // Remove the log column if it exists
+    if (project && project.log) {
+      delete project.log;
+    }
+
     if (projectError) {
       console.error("📡 [GET-PROJECT-ID] Database error:", projectError);
       return new Response(
@@ -891,42 +896,97 @@ async function handleSingleProject(projectId: string, cookies: any) {
     }
 
     // Get project author's profile data
-    let projectAuthor = null;
+    let authorProfile: any = null;
     if (project.author_id) {
-      const { data: authorProfile, error: authorError } = await supabase
-        .from("profiles")
-        .select("*")
-        .eq("id", project.author_id)
-        .single();
+      try {
+        // Try admin client first, fallback to regular client
+        let client = supabaseAdmin;
+        if (!client) {
+          console.log("📡 [GET-PROJECT-ID] Admin client not available, using regular client");
+          console.log("📡 [GET-PROJECT-ID] supabaseAdmin value:", supabaseAdmin);
+          console.log("📡 [GET-PROJECT-ID] supabase value:", !!supabase);
+          client = supabase;
+        } else {
+          console.log("📡 [GET-PROJECT-ID] Using admin client for profile query");
+        }
 
-      if (authorError) {
-        console.error("📡 [GET-PROJECT-ID] Error fetching author profile:", authorError);
-      } else {
-        projectAuthor = authorProfile;
+        // Try to fetch the profile, but if it fails due to RLS, create a fallback
+        const { data: profileData, error: authorError } = await client
+          .from("profiles")
+          .select("*")
+          .eq("id", project.author_id)
+          .single();
+
+        if (authorError) {
+          console.error("📡 [GET-PROJECT-ID] Error fetching author profile:", authorError);
+          console.error("📡 [GET-PROJECT-ID] Author ID:", project.author_id);
+          console.error("📡 [GET-PROJECT-ID] Error details:", {
+            message: authorError.message,
+            code: authorError.code,
+            details: authorError.details,
+            hint: authorError.hint,
+          });
+
+          // Create a minimal profile object if we can't fetch the full profile
+          authorProfile = {
+            id: project.author_id,
+            company_name: project.company_name || "Unknown Company",
+            first_name: "Unknown",
+            last_name: "User",
+          };
+        } else {
+          console.log("📡 [GET-PROJECT-ID] Successfully fetched author profile");
+          authorProfile = profileData;
+        }
+      } catch (error) {
+        console.error("📡 [GET-PROJECT-ID] Exception fetching author profile:", error);
+        // Create a minimal profile object as fallback
+        authorProfile = {
+          id: project.author_id,
+          company_name: project.company_name || "Unknown Company",
+          first_name: "Unknown",
+          last_name: "User",
+        };
       }
     }
 
     // Get assigned user's profile data if project has an assigned user
+    let assignedToProfile = null;
     if (project.assigned_to_id) {
-      const { data: assignedProfile, error: assignedError } = await supabase
-        .from("profiles")
-        .select("id, company_name")
-        .eq("id", project.assigned_to_id)
-        .maybeSingle();
+      try {
+        // Try admin client first, fallback to regular client
+        let client = supabaseAdmin;
+        if (!client) {
+          console.log(
+            "📡 [GET-PROJECT-ID] Admin client not available for assigned user, using regular client"
+          );
+          client = supabase;
+        }
 
-      if (assignedError) {
-        console.error("📡 [GET-PROJECT-ID] Error fetching assigned user profile:", assignedError);
-        project.assigned_to_name = null;
-      } else if (assignedProfile) {
-        // Add assigned user name to the project data
-        project.assigned_to_name = assignedProfile.company_name || assignedProfile.id;
-      } else {
-        // Profile not found for assigned user ID
-        console.log(
-          "📡 [GET-PROJECT-ID] No profile found for assigned user ID:",
-          project.assigned_to_id
-        );
-        project.assigned_to_name = null;
+        const { data: assignedToProfile, error: assignedError } = await client
+          .from("profiles")
+          .select("id, company_name")
+          .eq("id", project.assigned_to_id)
+          .maybeSingle();
+
+        if (assignedError) {
+          console.error("📡 [GET-PROJECT-ID] Error fetching assigned user profile:", assignedError);
+          console.error("📡 [GET-PROJECT-ID] Assigned user ID:", project.assigned_to_id);
+          project.assigned_to_name = project.assigned_to_name || "Unknown User";
+        } else if (assignedToProfile) {
+          // Add assigned user name to the project data
+          project.assigned_to_name = assignedToProfile.company_name || assignedToProfile.id;
+        } else {
+          // Profile not found for assigned user ID
+          console.log(
+            "📡 [GET-PROJECT-ID] No profile found for assigned user ID:",
+            project.assigned_to_id
+          );
+          project.assigned_to_name = project.assigned_to_name || "Unknown User";
+        }
+      } catch (error) {
+        console.error("📡 [GET-PROJECT-ID] Exception fetching assigned user profile:", error);
+        project.assigned_to_name = project.assigned_to_name || "Unknown User";
       }
     } else {
       project.assigned_to_name = null;
@@ -937,8 +997,17 @@ async function handleSingleProject(projectId: string, cookies: any) {
     let generatedDocuments = [];
 
     try {
+      // Try admin client first, fallback to regular client
+      let client = supabaseAdmin;
+      if (!client) {
+        console.log(
+          "📡 [GET-PROJECT-ID] Admin client not available for files/documents, using regular client"
+        );
+        client = supabase;
+      }
+
       // Fetch project files
-      const { data: files, error: filesError } = await supabase
+      const { data: files, error: filesError } = await client
         .from("files")
         .select("*")
         .eq("project_id", projectId)
@@ -947,12 +1016,13 @@ async function handleSingleProject(projectId: string, cookies: any) {
 
       if (filesError) {
         console.error("📡 [GET-PROJECT-ID] Error fetching project files:", filesError);
+        projectFiles = []; // Set empty array on error
       } else {
         projectFiles = files || [];
       }
 
       // Fetch generated documents (PDFs)
-      const { data: documents, error: documentsError } = await supabase
+      const { data: documents, error: documentsError } = await client
         .from("generated_documents")
         .select("*")
         .eq("project_id", projectId)
@@ -960,20 +1030,26 @@ async function handleSingleProject(projectId: string, cookies: any) {
 
       if (documentsError) {
         console.error("📡 [GET-PROJECT-ID] Error fetching generated documents:", documentsError);
+        generatedDocuments = []; // Set empty array on error
       } else {
         generatedDocuments = documents || [];
       }
     } catch (error) {
       console.error("📡 [GET-PROJECT-ID] Error fetching document data:", error);
+      projectFiles = [];
+      generatedDocuments = [];
     }
+
+    project.authorProfile = authorProfile;
+    project.projectFiles = projectFiles;
+    project.generatedDocuments = generatedDocuments;
+    project.assignedToProfile = assignedToProfile;
+    // project.punchlistItems = punchlistItems;
 
     return new Response(
       JSON.stringify({
         success: true,
         project: project,
-        projectAuthor: projectAuthor,
-        projectFiles: projectFiles,
-        generatedDocuments: generatedDocuments,
       }),
       {
         status: 200,

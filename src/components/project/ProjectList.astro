@@ -5,15 +5,15 @@ import ProjectItem from "./ProjectItem.astro";
 interface Props {
   projects: any[];
   currentUser: any;
-  statusesObject: any;
+  statusData: any;
 }
 
 // // const { currentLocale } = Astro;
 // // const i18n = getI18N({ currentLocale });
-const { projects, statusesObject, currentUser } = Astro.props;
+const { projects, statusData, currentUser } = Astro.props;
 const currentRole = currentUser?.profile?.role;
 
-// console.log("🔍 [DEBUG] ProjectList statusesObject:", statusesObject);
+// console.log("🔍 [DEBUG] ProjectList statusData:", statusData);
 // console.log("🔍 [DEBUG] ProjectList currentUser:", currentUser);
 // console.log("🔍 [DEBUG] ProjectList currentRole:", currentRole);
 // console.log("🔍 [DEBUG] ProjectList projects:", projects);
@@ -54,7 +54,8 @@ if (currentRole === "Admin" || currentRole === "Staff") {
 
 // Process each project's status in the frontmatter
 const processedProjects = projects.map((project: any) => {
-  const currentStatusObj = statusesObject[project.status] || {
+  const currentStatusInt = project.status || 0;
+  const currentStatusObj = statusData[currentStatusInt] || {
     status_name: "Unknown Status",
     status_tab: null,
     status_slug: null,
@@ -63,10 +64,11 @@ const processedProjects = projects.map((project: any) => {
   return {
     ...project,
     currentStatusObj,
-    currentStatusName: currentStatusObj.status_name,
-    currentStatusInt: currentStatusObj.status_code,
-    currentStatusSlug: currentStatusObj.status_slug,
-    currentStatusTab: currentStatusObj.status_tab,
+    currentStatusName: currentStatusObj?.current?.status_name,
+    currentStatusSlug: currentStatusObj?.current?.status_slug,
+    currentStatusTab: currentStatusObj?.current?.status_tab,
+    currentStatusInt: currentStatusObj?.current?.status_code,
+    currentStatusColor: currentStatusObj?.current?.status_color,
   };
 });
 
@@ -179,11 +181,12 @@ const dueDateOptions = createDueDateOptions();
               <ProjectItem
                 currentUser={currentUser}
                 project={project}
-                projectStatusesObject={statusesObject}
+                statusData={statusData}
                 currentStatusName={project.currentStatusName}
                 currentStatusInt={project.currentStatusInt}
                 currentStatusSlug={project.currentStatusSlug}
                 currentStatusTab={project.currentStatusTab}
+                currentStatusColor={project.currentStatusColor}
                 staffOptions={staffOptions}
                 dueDateOptions={dueDateOptions}
               />

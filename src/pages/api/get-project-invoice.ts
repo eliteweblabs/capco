@@ -96,7 +96,7 @@ export const GET: APIRoute = async ({ url, cookies }) => {
   } catch (error) {
     console.error("❌ [GET-PROJECT-INVOICE] Unexpected error:", error);
     return new Response(
-      JSON.stringify({ error: "Internal server error", details: error.message }),
+      JSON.stringify({ error: "Internal server error", details: (error as Error).message }),
       {
         status: 500,
         headers: { "Content-Type": "application/json" },

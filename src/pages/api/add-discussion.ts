@@ -2,7 +2,6 @@ import type { APIRoute } from "astro";
 import { checkAuth } from "../../lib/auth";
 import { supabase } from "../../lib/supabase";
 import { getApiBaseUrl } from "../../lib/url-utils";
-
 export const POST: APIRoute = async ({ request, cookies }) => {
   try {
     // Check authentication
@@ -140,28 +139,6 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         }
       );
     }
-
-    // Send email notification to all admins when a client posts a comment
-    // console.log("📧 [ADD-DISCUSSION] Email notification check:", {
-    //   isClient,
-    //   internal,
-    //   shouldSendEmail: isClient && !internal,
-    //   userRole: currentRole,
-    //   userInfo: userInfo
-    //     ? {
-    //         company_name: userInfo.company_name,
-    //         first_name: userInfo.profile?.first_name,
-    //         last_name: userInfo.profile?.last_name,
-    //       }
-    //     : null,
-    // });
-
-    //
-
-    // Send notifications for ALL comments (new logic)
-    // console.log(
-    //   "📧 [ADD-DISCUSSION] Sending notifications for comment - always email Admin + Staff"
-    // );
 
     try {
       // Get project address and author_id for the subject line

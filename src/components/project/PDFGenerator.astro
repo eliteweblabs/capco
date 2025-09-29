@@ -177,7 +177,10 @@ const {
     }
 
     buildTemplateUrl(templateType, projectId, projectData) {
-      const baseUrl = new URL(`/pdf/${templateType}`, window.location.origin);
+      const baseUrl = new URL(`/api/pdf/assemble`, window.location.origin);
+
+      baseUrl.searchParams.set("templateId", templateType);
+      baseUrl.searchParams.set("mode", "pdf");
 
       if (projectId) {
         baseUrl.searchParams.set("projectId", projectId);
@@ -318,10 +321,27 @@ const {
     }
   }
 
-  // Initialize when DOM is ready
+  // Initialize when DOM is ready - only on PDF generation pages
   document.addEventListener("DOMContentLoaded", () => {
-    if (!window.pdfGeneratorManager) {
+    // Only initialize on pages that have PDF generation elements AND are not the homepage
+    const pdfGenerationElements = document.querySelectorAll(
+      "[data-pdf-generator], #pdfGenerator, .pdf-generator"
+    );
+    const isHomepage = window.location.pathname === "/" || window.location.pathname === "/index";
+    const isProjectPage = window.location.pathname.includes("/project/");
+
+    // Only initialize on project pages with PDF generation elements, never on homepage
+    if (
+      pdfGenerationElements.length > 0 &&
+      isProjectPage &&
+      !isHomepage &&
+      !window.pdfGeneratorManager
+    ) {
+      console.log("🔧 [PDF-GENERATOR] Initializing PDF generator manager");
       window.pdfGeneratorManager = new PDFGeneratorManager();
+    } else {
+      console.log("🔧 [PDF-GENERATOR] Skipping initialization - not on PDF generation page");
+      return;
     }
   });
 

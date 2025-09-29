@@ -1,5 +1,14 @@
 import type { APIRoute } from "astro";
 import { supabaseAdmin } from "../../lib/supabase-admin";
+// Simple validation functions
+const validateEmail = (email: string): string | null => {
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return emailRegex.test(email) ? null : "Invalid email format";
+};
+
+const validateTime = (time: string): string | null => {
+  return time ? null : "Time is required";
+};
 
 export const POST: APIRoute = async ({ request }) => {
   try {
@@ -25,12 +34,12 @@ export const POST: APIRoute = async ({ request }) => {
     }
 
     // Validate email format
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
+    const emailError = validateEmail(email);
+    if (emailError) {
       return new Response(
         JSON.stringify({
           success: false,
-          error: "Invalid email format",
+          error: emailError,
         }),
         {
           status: 400,
@@ -61,13 +70,13 @@ export const POST: APIRoute = async ({ request }) => {
       );
     }
 
-    // Validate time format (basic check)
-    const timeRegex = /^(1[0-2]|[1-9]):[0-5][0-9] (AM|PM)$/i;
-    if (!timeRegex.test(time)) {
+    // Validate time format
+    const timeError = validateTime(time);
+    if (timeError) {
       return new Response(
         JSON.stringify({
           success: false,
-          error: "Invalid time format",
+          error: timeError,
         }),
         {
           status: 400,
@@ -348,18 +357,15 @@ async function sendDemoBookingEmails(booking: any, request: Request) {
 // Function to get admin email addresses
 async function getAdminEmails(): Promise<string[]> {
   try {
-    const response = await fetch(
-      `${process.env.PUBLIC_SITE_URL || "http://localhost:4321"}/api/get-user-emails-by-role`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          roles: ["Admin"],
-        }),
-      }
-    );
+    const response = await fetch(`${process.env.SITE_URL}/api/get-user-emails-by-role`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        roles: ["Admin"],
+      }),
+    });
 
     if (response.ok) {
       const data = await response.json();

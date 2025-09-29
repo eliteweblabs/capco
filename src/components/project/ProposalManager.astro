@@ -1,35 +1,32 @@
 ---
 import BoxIcon from "../common/BoxIcon.astro";
 import { supabase } from "../../lib/supabase";
-import ActionButton from "../common/ActionButton.astro";
 import Button from "../common/Button.astro";
 
 interface Props {
   projectId: string;
   project: any;
-  authorProfile: any;
   projectStatus: number;
-  currentRole: string;
-  projectStatusLabel: string;
   currentUser: any;
   globalSecondaryTextClasses: string;
   globalPrimaryTextClasses: string;
   globalInputClasses: string;
-  isViewOnly: boolean;
+  statusData: any;
+  
 }
 const {
   projectId,
   project,
-  authorProfile,
   projectStatus = 0,
-  currentRole,
-  projectStatusLabel,
   currentUser,
   globalSecondaryTextClasses,
   globalPrimaryTextClasses,
   globalInputClasses,
-  isViewOnly = true,
+  statusData,
 } = Astro.props;
+
+const currentRole = currentUser?.profile?.role;
+const authorProfile = currentUser?.profile;
 
 // Only show to Admin/Staff users
 const canManageProposals = currentRole === "Admin" || currentRole === "Staff";
@@ -89,11 +86,10 @@ try {
   console.error("❌ [ProposalManager] Error checking for existing invoice:", error);
 }
 
-const hasExistingProposal = !!existingInvoice;
 ---
 
 <!-- Initial state: No proposal generated -->
-<div id="proposal-placeholder" class={hasExistingProposal ? "hidden" : "py-8 text-center"}>
+<div id="proposal-placeholder" class="py-8 text-center">
   <BoxIcon name="upload" class="bx-lg mx-auto mb-4 text-gray-700 dark:text-gray-300" />
   <p class="mb-4 text-gray-500 dark:text-gray-400">
     {
@@ -120,7 +116,7 @@ const hasExistingProposal = !!existingInvoice;
   </p>
 
   {
-    canManageProposals && !hasExistingProposal && projectStatus === 20 && (
+    canManageProposals && !existingInvoice && projectStatus === 20 && (
       <Button
         onclick={`buildProposal('${projectId}')`}
         variant="success"
@@ -135,7 +131,7 @@ const hasExistingProposal = !!existingInvoice;
 </div>
 
 <!-- Generated proposal content (hidden initially) -->
-<div id="proposal-content" class={hasExistingProposal ? "" : "hidden"}>
+<div id="proposal-content" class={existingInvoice ? "" : "hidden"}>
   <!-- Proposal Header -->
   <div class="mb-6 flex items-start justify-between">
     <div class="flex-1">
@@ -234,7 +230,7 @@ const hasExistingProposal = !!existingInvoice;
       <div class="space-y-1 text-sm">
         <p class={`${globalSecondaryTextClasses}`}>
           <strong>Client:</strong>
-          <span id="proposal-client-name">{project?.company_name || "N/A"}</span>
+          <span id="proposal-client-name">{authorProfile?.[0]?.company_name || authorProfile?.company_name || "N/A"}</span>
         </p>
         <!-- <p><strong>Email:</strong> <span id="proposal-client-email">{authorProfile?.email || 'N/A'}</span></p> -->
         <!-- <p><strong>Phone:</strong> <span id="proposal-client-phone">{authorProfile?.phone || 'N/A'}</span></p> -->
@@ -376,7 +372,7 @@ const hasExistingProposal = !!existingInvoice;
 </div>
 
 {
-  projectStatus >= 30 && currentRole === "Client" && projectStatus < 50 && hasExistingProposal && (
+  projectStatus >= 30 && currentRole === "Client" && projectStatus < 50 && existingInvoice && (
     <div class="mt-8 rounded-lg border border-gray-200 bg-white p-6 dark:border-gray-700 dark:bg-gray-800">
       <div class="mb-6">
         <p class="text-gray-500 dark:text-gray-400">
@@ -408,29 +404,26 @@ const hasExistingProposal = !!existingInvoice;
 <script
   type="module"
   define:vars={{
-    projectId,
     project,
-    authorProfile,
-    existingInvoice,
-    hasExistingProposal,
-    projectStatus,
     currentUser,
-    currentRole,
+    existingInvoice,
+    projectStatus,
     globalInputClasses,
     globalSecondaryTextClasses,
     globalPrimaryTextClasses,
+    statusData,
   }}
 >
   // Define ProposalManager class directly in the script (following working pattern from PDF uploader)
   class ProposalManager {
-    constructor(projectId, project, projectAuthor, projectStatus, currentUser) {
-      console.log("🔧 [PROPOSAL-MANAGER] Constructor called with projectId:", projectId);
-      this.projectId = projectId;
+    constructor(project, currentUser) {
+      console.log("🔧 [PROPOSAL-MANAGER] Constructor called with projectId:", project, currentUser);
       this.project = project;
-      this.projectAuthor = projectAuthor;
-      this.projectStatus = projectStatus;
+      this.projectId = project.id;
+      this.projectAuthor = project.author;
+      this.projectStatus = project.status;
       this.currentUser = currentUser;
-      console.log("🔧 [PROPOSAL-MANAGER] Constructor set this.projectId to:", this.projectId);
+      console.log("🔧 [PROPOSAL-MANAGER] Constructor set this.projectId to:", this.project);
       this.isEditMode = false;
       this.cachedLineItems = null;
       this.cachedTotal = null;
@@ -438,11 +431,10 @@ const hasExistingProposal = !!existingInvoice;
       this.invoiceId = null;
       this.saveTimeout = null;
       this.saveBuffer = 1000; // 1 second buffer
-      this.currentRole = currentRole;
     }
 
     async buildProposal() {
-      console.log("🔧 [PROPOSAL-MANAGER] Building proposal for project:", this.projectId);
+      console.log("🔧 [PROPOSAL-MANAGER] Building proposal for project:", this.project);
 
       if (!this.project) {
         console.error("Project data not available");
@@ -477,7 +469,7 @@ const hasExistingProposal = !!existingInvoice;
 
     async ensureInvoiceExists() {
       try {
-        console.log("🔍 [PROPOSAL-MANAGER] Ensuring invoice exists for project:", this.projectId);
+        console.log("🔍 [PROPOSAL-MANAGER] Ensuring invoice exists for project:", this.project);
 
         // Check if invoice already exists
         const response = await fetch(`/api/get-project-invoice?projectId=${this.projectId}`);
@@ -494,7 +486,7 @@ const hasExistingProposal = !!existingInvoice;
             body: JSON.stringify({
               projectId: this.projectId,
               projectData: {
-                title: `Proposal for ${this.project.address}`,
+                title: `Proposal for ${this.project.title}`,
                 date: new Date().toISOString().split("T")[0],
                 subject: "Fire Protection System Proposal",
                 status: "proposal",
@@ -735,10 +727,10 @@ const hasExistingProposal = !!existingInvoice;
         if (projectStatus === 20) {
           row.innerHTML = `
             <td class="whitespace-nowrap px-6 py-4">
-              <input type="text" value="${item.name || ""}" class="${globalInputClasses} line-item-name" onchange="window.proposalManager.updateLineItem(${index}, 'name', this.value)">
+              <input type="text" value="${item.name || ""}" class="${globalInputClasses} w-40 line-item-name" onchange="window.proposalManager.updateLineItem(${index}, 'name', this.value)">
             </td>
             <td class="whitespace-nowrap px-6 py-4">
-              <input type="text" value="${item.description || ""}" class="${globalInputClasses} line-item-description" onchange="window.proposalManager.updateLineItem(${index}, 'description', this.value)">
+              <input type="text" value="${item.description || ""}" class="${globalInputClasses} w-60 line-item-description" onchange="window.proposalManager.updateLineItem(${index}, 'description', this.value)">
             </td>
             <td class="whitespace-nowrap px-6 py-4">
               <input type="number" value="${item.quantity || 1}" class="${globalInputClasses} w-20 line-item-quantity" data-row-index="${index}" data-field="quantity" onchange="window.proposalManager.updateLineItemFromInput(this)">
@@ -746,9 +738,9 @@ const hasExistingProposal = !!existingInvoice;
             <td class="whitespace-nowrap px-6 py-4">
               <input type="number" value="${item.unitPrice || 0}" class="${globalInputClasses} w-24 line-item-price" data-row-index="${index}" data-field="unitPrice" onchange="window.proposalManager.updateLineItemFromInput(this)">
             </td>
-            <td class="whitespace-nowrap px-6 py-4 text-right line-item-total">$${((item.quantity || 1) * (item.unitPrice || 0)).toFixed(2)}</td>
-            <td class="whitespace-nowrap px-6 py-4 text-sm text-center">
-              <div class="flex items-center justify-center space-x-2">
+            <td class="whitespace-nowrap px-6 py-4 text-right line-item-total w-24">$${((item.quantity || 1) * (item.unitPrice || 0)).toFixed(2)}</td>
+            <td class="whitespace-nowrap px-6 py-4 text-sm text-center w-12">
+              <div class="flex items-center justify-center space-x-2 w-12">
                 <button 
                   type="button"
                   id="delete-btn-${index}"
@@ -767,18 +759,18 @@ const hasExistingProposal = !!existingInvoice;
         } else {
           row.innerHTML = `
             <td class="whitespace-nowrap px-6 py-4">
-              <span class="text-gray-900 dark:text-white">${item.name || ""}</span>
+              <span class="text-gray-900 dark:text-white w-40">${item.name || ""}</span>
             </td>
             <td class="whitespace-nowrap px-6 py-4">
-              <span class="text-gray-600 dark:text-gray-300">${item.description || ""}</span>
+              <span class="text-gray-600 dark:text-gray-300 w-60">${item.description || ""}</span>
             </td>
-            <td class="whitespace-nowrap px-6 py-4 text-right">
+            <td class="whitespace-nowrap px-6 py-4 text-right w-20">
               <span class="text-gray-900 dark:text-white">${item.quantity || 1}</span>
             </td>
-            <td class="whitespace-nowrap px-6 py-4 text-right">
+            <td class="whitespace-nowrap px-6 py-4 text-right w-24">
               <span class="text-gray-900 dark:text-white">$${(item.unitPrice || 0).toFixed(2)}</span>
             </td>
-            <td class="whitespace-nowrap px-6 py-4 text-right line-item-total">$${((item.quantity || 1) * (item.unitPrice || 0)).toFixed(2)}</td>
+            <td class="whitespace-nowrap px-6 py-4 text-right line-item-total w-24">$${((item.quantity || 1) * (item.unitPrice || 0)).toFixed(2)}</td>
           `;
         }
         tbody.appendChild(row);
@@ -1366,19 +1358,15 @@ const hasExistingProposal = !!existingInvoice;
 
   // Initialize the ProposalManager
   async function initializeProposalManager(
-    projectId,
     project,
-    projectAuthor,
     projectStatus,
     currentUser
   ) {
-    console.log("🔧 [PROPOSAL-MANAGER] Initializing ProposalManager for project:", projectId);
+    console.log("🔧 [PROPOSAL-MANAGER] Initializing ProposalManager for project:", project.id);
 
     // Create the proposal manager instance
     window.proposalManager = new ProposalManager(
-      projectId,
       project,
-      projectAuthor,
       projectStatus,
       currentUser
     );
@@ -1542,18 +1530,16 @@ const hasExistingProposal = !!existingInvoice;
     window.createLineItemRow = createLineItemRow;
 
     // Initialize the global proposal manager
-    if (projectId && project) {
+    if (project) {
       await initializeProposalManager(
-        projectId,
         project,
-        authorProfile,
         projectStatus,
         currentUser
       );
 
       // If there's an existing invoice, load it automatically
-      // console.log("🔍 [Client] Checking if should load existing invoice:", { hasExistingProposal, existingInvoice, proposalManager: !!window.proposalManager });
-      if (hasExistingProposal && existingInvoice && window.proposalManager) {
+      // console.log("🔍 [Client] Checking if should load existing invoice:", { existingInvoice, proposalManager: !!window.proposalManager });
+      if (existingInvoice && window.proposalManager) {
         // console.log("✅ [Client] Loading existing proposal invoice:", existingInvoice);
         window.proposalManager
           .loadExistingInvoice(existingInvoice)
@@ -1575,7 +1561,7 @@ const hasExistingProposal = !!existingInvoice;
     window.sendProposal = async () => {
       console.log("🔧 [PROPOSAL-MANAGER] Send proposal button clicked");
 
-      if (!projectId) {
+      if (!project) {
         console.error("Project ID not available");
         return;
       }
@@ -1593,19 +1579,11 @@ const hasExistingProposal = !!existingInvoice;
       try {
         // Update project status to 30 (Proposal Shipped)
 
-        const response = await fetch("/api/update-status", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          credentials: "include", // Include cookies for authentication
-          body: JSON.stringify({
-            projectId: projectId,
-            status: 30, // Proposal Shipped
-          }),
-        });
-
-        const data = await response.json();
+        const newStatus = 30;
+        console.log("🔍 [PROPOSAL-MANAGER] Updating status to:", newStatus);
+        console.log("🔍 [PROPOSAL-MANAGER] Status data:", statusData);
+        console.log("🔍 [PROPOSAL-MANAGER] Status data:", statusData[newStatus.toString()]);
+        const data = await window.updateStatus(project, newStatus, statusData[newStatus.toString()]);
         // console.log("🔍 [PROPOSAL-MANAGER] Full API response:", data);
 
         if (data.success) {
@@ -1614,7 +1592,7 @@ const hasExistingProposal = !!existingInvoice;
           // Modal will be auto-destroyed by the system
 
           // Show notification using centralized notification system
-          window.handleUpdateStatusNotification(data, "PROPOSAL-MANAGER");
+          window.handleNewStatusNotification(data, "PROPOSAL-MANAGER");
         } else {
           console.error("Failed to send proposal:", data.error);
           // Modal will be auto-destroyed by the system
@@ -2058,21 +2036,8 @@ const hasExistingProposal = !!existingInvoice;
 </script>
 
 <script>
-  // Make data available globally for the proposal functions
-  declare global {
-    interface Window {
-      showModal?: any;
-      hideNotification?: any;
-      proposalManager?: any;
-      PROPOSAL_HAS_EXISTING_INVOICE?: boolean;
-      proposalHelper?: ProposalHelper;
-      addNewLineItem?: () => void;
-      initializeSubjectEditing?: () => void;
-      acceptProposal?: () => void;
-      createLineItemRow?: (data: any) => HTMLElement;
-      updateProposalTotal?: () => void;
-    }
-  }
+
+
 
   // Proposal Helper Class - manages all proposal-related functionality
   class ProposalHelper {
@@ -2081,38 +2046,7 @@ const hasExistingProposal = !!existingInvoice;
     private searchTimeout: NodeJS.Timeout | null = null;
 
     constructor() {
-      this.projectData = this.getProjectData();
       this.initialize();
-    }
-
-    // Get data from DOM or global variables
-    private getProjectData() {
-      console.log("🔍 [PROPOSAL-HELPER] Getting project data...");
-      console.log("🔍 [PROPOSAL-HELPER] window.proposalManager exists:", !!window.proposalManager);
-      console.log(
-        "🔍 [PROPOSAL-HELPER] window.proposalManager.projectId:",
-        window.proposalManager?.projectId
-      );
-
-      // Try to get projectId from multiple sources
-      const projectId =
-        window.proposalManager?.projectId ||
-        document.querySelector("[data-project-id]")?.getAttribute("data-project-id") ||
-        new URLSearchParams(window.location.search).get("projectId") ||
-        window.location.pathname.split("/").pop();
-
-      console.log("🔍 [PROPOSAL-HELPER] Resolved projectId:", projectId);
-
-      const projectData = {
-        projectId: projectId,
-        project: window.proposalManager?.project || null,
-        authorProfile: window.proposalManager?.projectAuthor || null,
-        projectStatus: window.proposalManager?.projectStatus || 0,
-        hasExistingProposal: window.PROPOSAL_HAS_EXISTING_INVOICE || false,
-      };
-
-      console.log("🔍 [PROPOSAL-HELPER] Final project data:", projectData);
-      return projectData;
     }
 
     // Initialize the helper
@@ -2156,11 +2090,7 @@ const hasExistingProposal = !!existingInvoice;
         window.updateProposalTotal();
       }
     }
-    // Set global variable for existing invoice status
-    private setGlobalVariables() {
-      const { hasExistingProposal } = this.projectData;
-      window.PROPOSAL_HAS_EXISTING_INVOICE = hasExistingProposal;
-    }
+    // Global variable assignment removed - using existingInvoice directly
 
     // Subject editing functionality
     public initializeSubjectEditing() {
@@ -2308,7 +2238,7 @@ const hasExistingProposal = !!existingInvoice;
             if (searchTerm) params.append("search", searchTerm);
             params.append("limit", "20");
 
-            const response = await fetch(`/api/subject-catalog?${params}`, {
+            const response = await fetch(`/api/invoice-subject-util?${params}`, {
               credentials: "include",
             });
 
@@ -2500,7 +2430,7 @@ const hasExistingProposal = !!existingInvoice;
             const newSubject = searchInput.value.trim();
             if (newSubject) {
               try {
-                const response = await fetch("/api/subject-catalog", {
+                const response = await fetch("/api/invoice-subject-util", {
                   method: "POST",
                   headers: {
                     "Content-Type": "application/json",
@@ -2574,16 +2504,15 @@ const hasExistingProposal = !!existingInvoice;
 
         try {
           // Save to database
-          const { projectId } = this.projectData;
-          const response = await fetch("/api/update-proposal-subject", {
+          const { project } = this.projectData;
+          const response = await fetch("/api/save-proposal-subject", {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
             },
             credentials: "include",
             body: JSON.stringify({
-              projectId: projectId,
-              subject: newSubject,
+              subject: newSubject
             }),
           });
 
@@ -2696,25 +2625,17 @@ const hasExistingProposal = !!existingInvoice;
 
         // Make API call to update status to 45 (Proposal Accepted)
 
-        const response = await fetch("/api/update-status", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            projectId: parsedProjectId,
-            status: 45
-            
-          }),
+        const nextStatus = 45;
+        const result = await (window as any).updateStatus(this.projectData.project.id, nextStatus, {
+          currentProject: this.projectData.project,
+          currentUser: this.projectData.currentUser,
         });
 
-        const result = await response.json();
-
-        if (response.ok && result.success) {
+        if (result.success) {
           console.log("✅ [PROPOSAL-MANAGER] Proposal accepted successfully");
 
           // Show notification using new modal system
-          window.handleUpdateStatusNotification(result, "PROPOSAL-MANAGER");
+          window.handleNewStatusNotification(result, "PROPOSAL-MANAGER");
         } else {
           console.error("❌ [PROPOSAL-MANAGER] Failed to accept proposal:", result.error);
 

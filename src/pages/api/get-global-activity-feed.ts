@@ -25,10 +25,17 @@ export const GET: APIRoute = async ({ cookies, url }) => {
     });
 
     if (sessionError || !session.session?.user) {
-      return new Response(JSON.stringify({ error: "Invalid session" }), {
-        status: 401,
-        headers: { "Content-Type": "application/json" },
-      });
+      console.error("Session error:", sessionError);
+      return new Response(
+        JSON.stringify({
+          error: "Invalid session",
+          details: sessionError?.message || "No session data",
+        }),
+        {
+          status: 401,
+          headers: { "Content-Type": "application/json" },
+        }
+      );
     }
 
     // Check if user is admin
@@ -51,7 +58,7 @@ export const GET: APIRoute = async ({ cookies, url }) => {
     const offset = parseInt(searchParams.get("offset") || "0");
     const actionFilter = searchParams.get("action");
 
-    // Get all projects with their logs - now with denormalized user data
+    // Get all projects with their logs (without profile join for now)
     const { data: projects, error: projectsError } = await supabase!
       .from("projects")
       .select(
@@ -61,7 +68,6 @@ export const GET: APIRoute = async ({ cookies, url }) => {
         title,
         log,
         author_id,
-        company_name,
         assigned_to_name
       `
       )
@@ -71,14 +77,21 @@ export const GET: APIRoute = async ({ cookies, url }) => {
 
     if (projectsError) {
       console.error("Error fetching projects with logs:", projectsError);
-      return new Response(JSON.stringify({ error: "Failed to fetch activity data" }), {
-        status: 500,
-        headers: { "Content-Type": "application/json" },
-      });
+      return new Response(
+        JSON.stringify({
+          error: "Failed to fetch activity data",
+          details: projectsError.message,
+          code: projectsError.code,
+        }),
+        {
+          status: 500,
+          headers: { "Content-Type": "application/json" },
+        }
+      );
     }
 
     // Extract and flatten all log entries with project context
-    // No need for profile lookups - use denormalized company_name directly
+    // Get company_name from the joined profiles table
     const allActivities: any[] = [];
 
     projects?.forEach((project) => {
@@ -90,7 +103,7 @@ export const GET: APIRoute = async ({ cookies, url }) => {
           project_id: project.id,
           project_address: project.address,
           project_title: project.title,
-          project_owner: project.company_name || "Unknown",
+          project_owner: "Unknown", // Will be populated later if needed
           project_owner_id: project.author_id,
         });
       });
@@ -140,4 +153,4 @@ export const GET: APIRoute = async ({ cookies, url }) => {
       headers: { "Content-Type": "application/json" },
     });
   }
-}
+};

@@ -127,9 +127,10 @@ export const GET: APIRoute = async ({ url, cookies }) => {
 
     // Prepare placeholder data for centralized replacement
     const placeholderData: PlaceholderData = {
-      projectAddress: project.address || "No Address Provided",
-      clientName: projectAuthor?.company_name || "Unknown Client",
-      clientEmail: projectAuthor?.email || "No Email Provided",
+      project: {
+        ...project,
+        authorProfile: projectAuthor,
+      },
     };
 
     // Process discussions with placeholder replacement and company name

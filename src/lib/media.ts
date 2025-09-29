@@ -551,12 +551,12 @@ export async function getMedia(params: GetMediaParams): Promise<{
         let uploaded_by_name = null;
 
         if (file.assigned_to) {
-          const { data: assignedProfile } = await supabaseAdmin
+          const { data: assignedToProfile } = await supabaseAdmin
             .from("profiles")
             .select("company_name")
             .eq("id", file.assigned_to)
             .single();
-          assigned_to_name = assignedProfile?.company_name || null;
+          assigned_to_name = assignedToProfile?.company_name || null;
         }
 
         if (file.checked_out_by) {

@@ -6,6 +6,11 @@ import type { APIRoute } from "astro";
 import { supabase } from "../../lib/supabase";
 import { supabaseAdmin } from "../../lib/supabase-admin";
 import { getApiBaseUrl } from "../../lib/url-utils";
+// Simple email validation
+const validateEmail = (email: string): string | null => {
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return emailRegex.test(email) ? null : "Invalid email format";
+};
 
 interface EmailWebhookData {
   from: string;
@@ -293,8 +298,8 @@ function extractEmailAddress(emailString: string): string | null {
 
 // Validate email format
 function isValidEmail(email: string): boolean {
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  return emailRegex.test(email);
+  const emailError = validateEmail(email);
+  return emailError === null;
 }
 
 // Generate a temporary password for new users
@@ -446,26 +451,23 @@ async function findOrCreateUser(email: string, headers?: Record<string, string>)
     console.log("🔐 [EMAIL-WEBHOOK] Creating user via create-user API");
 
     try {
-      const createUserResponse = await fetch(
-        `${process.env.SITE_URL || "http://localhost:4321"}/api/create-user`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            email: cleanEmail,
-            password: tempPassword,
-            first_name: firstName,
-            last_name: lastName,
-            company_name: fullName,
-            phone: null,
-            mobile_carrier: null,
-            sms_alerts: false,
-            role: "Client", // Note: it's 'role', not 'staff_role'
-          }),
-        }
-      );
+      const createUserResponse = await fetch(`${process.env.SITE_URL}/api/create-user`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email: cleanEmail,
+          password: tempPassword,
+          first_name: firstName,
+          last_name: lastName,
+          company_name: fullName,
+          phone: null,
+          mobile_carrier: null,
+          sms_alerts: false,
+          role: "Client", // Note: it's 'role', not 'staff_role'
+        }),
+      });
 
       const createUserResult = await createUserResponse.json();
 
@@ -665,16 +667,16 @@ async function createProjectFromEmail(userId: string, projectInfo: any, userProf
     try {
       console.log("🔔 [EMAIL-WEBHOOK] Updating project status to trigger notifications");
 
+      const nextStatus = 10;
       const statusResponse = await fetch(`${getApiBaseUrl()}/api/update-status`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          projectId: project.id,
-          status: 10, // "Specs Received" status
-          oldStatus: 0,
-          currentUserId: userId,
+          currentProject: project,
+          status: nextStatus,
+          currentUser: userProfile,
         }),
       });
 

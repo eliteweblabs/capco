@@ -97,6 +97,7 @@ export const POST: APIRoute = async ({ request }) => {
 
     console.log(`📄 [PDF-COMPONENTS] Creating new component: ${name}`);
 
+    const { supabase } = await import("../../../lib/supabase");
     if (!supabase) {
       return new Response(
         JSON.stringify({

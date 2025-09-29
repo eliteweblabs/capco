@@ -31,10 +31,18 @@ export async function checkAuth(cookies: any): Promise<AuthResult> {
     // console.log("🔐 [AUTH] Tokens found, attempting to set session...");
 
     try {
-      session = await supabase.auth.setSession({
+      // Add timeout handling for Supabase connection issues
+      const sessionPromise = supabase.auth.setSession({
         refresh_token: refreshToken.value,
         access_token: accessToken.value,
       });
+
+      // Set a 10-second timeout for the session request
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error("Connection timeout")), 10000)
+      );
+
+      session = await Promise.race([sessionPromise, timeoutPromise]);
 
       // console.log("🔐 [AUTH] Session result:", {
       //   hasSession: !!session,
@@ -117,8 +125,24 @@ export async function checkAuth(cookies: any): Promise<AuthResult> {
         clearAuthCookies(cookies);
       }
     } catch (error) {
-      // console.error("🔐 [AUTH] Exception during authentication:", error);
-      // Clear invalid tokens
+      console.error("🔐 [AUTH] Exception during authentication:", error);
+
+      // Handle connection timeout specifically
+      if (error instanceof Error && error.message === "Connection timeout") {
+        console.warn("🔐 [AUTH] Supabase connection timeout - database may be experiencing issues");
+        // Don't clear cookies on timeout, just return unauthenticated state
+        return {
+          isAuth: false,
+          session: null,
+          currentUser: null,
+          accessToken: accessToken?.value || null,
+          refreshToken: refreshToken?.value || null,
+          supabase,
+          currentRole: null,
+        };
+      }
+
+      // Clear invalid tokens for other errors
       clearAuthCookies(cookies);
     }
   } else {

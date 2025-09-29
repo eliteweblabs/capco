@@ -1,19 +1,23 @@
 ---
 export interface Props {
-  projectId: string;
-  currentRole?: string;
+  project?: any;
+  currentUser?: any;
   globalSecondaryTextClasses?: string;
   globalPrimaryTextClasses?: string;
   globalInputClasses?: string;
+  statusData?: any;
 }
 
 const {
-  projectId,
-  currentRole,
+  project,
+  currentUser,
   globalSecondaryTextClasses,
   globalPrimaryTextClasses,
   globalInputClasses,
+  statusData,
 } = Astro.props;
+
+const currentRole = currentUser?.profile?.role;
 
 if (currentRole === "Client") {
   return;
@@ -98,8 +102,8 @@ if (currentRole === "Client") {
 
 <script
   define:vars={{
-    projectId,
-    currentRole,
+    project,
+    currentUser,
     globalInputClasses,
     globalSecondaryTextClasses,
     globalPrimaryTextClasses,
@@ -109,6 +113,8 @@ if (currentRole === "Client") {
   document.addEventListener("DOMContentLoaded", async () => {
     await loadRecentDocuments();
   });
+  const projectId = project?.id;
+  const currentRole = currentUser?.profile?.role;
 
   async function loadRecentDocuments() {
     try {

@@ -2,7 +2,7 @@
 // Contact form with PDF upload component for non-authenticated users
 import Button from "./Button.astro";
 import BoxIcon from "./BoxIcon.astro";
-
+import App from "./App.astro";
 const { globalInputClasses } = Astro.props;
 ---
 
@@ -386,7 +386,7 @@ const { globalInputClasses } = Astro.props;
               <p class="text-xs text-gray-500">${(file.size / 1024 / 1024).toFixed(2)} MB</p>
             </div>
           </div>
-          <button type="button" onclick="contactUpload.removeFile(${index})" class="text-red-500 hover:text-red-700">
+          <button type="button" onclick="window.contactUpload.removeFile(${index})" class="text-red-500 hover:text-red-700">
             <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
             </svg>
@@ -476,15 +476,10 @@ const { globalInputClasses } = Astro.props;
     }
   }
 
-  // Declare global type for TypeScript
-  declare global {
-    interface Window {
-      contactUpload: ContactPDFUpload;
-    }
-  }
-
-  // Initialize when DOM is loaded
-  document.addEventListener("DOMContentLoaded", () => {
-    window.contactUpload = new ContactPDFUpload();
-  });
+  // // Initialize when DOM is ready
+  // document.addEventListener("DOMContentLoaded", () => {
+  //   if (!window.contactUpload) {
+  //     window.contactUpload = new ContactPDFUpload();
+  //   }
+  // });
 </script>

@@ -1,5 +1,6 @@
 ---
 import BoxIcon from "./BoxIcon.astro";
+import Button from "./Button.astro";
 
 interface Props {
   currentUser: any;
@@ -13,24 +14,44 @@ const currentRole = currentUser?.profile?.role;
 {
   currentUser ? (
     <>
-      <button
-        type="button"
-        id="user-menu-button"
-        aria-expanded="false"
-        data-dropdown-toggle="accountDropdown"
-        class="H78G_4yayxs5C3xdFbnK QhmQ_v3mmDFIP9VaVOfb VPGGthdu3cy_ZP7AL7dt mveJTCIb2WII7J4sY22F _Cj_M6jt2eLjDgkBBNgI b9aD6g2qw84oyZNsMO8j c8dCx6gnV43hTOLV6ks5 ezMFUVl744lvw6ht0lFe y6GKdvUrd7vp_pxsFb57 fzhbbDQ686T8arwvi_bJ mc9bwhBTHL8mVzJvl6gz rqOAGYeDo9iWuroePkaf"
-      >
-        <span class="_DVAfiyo21kM68EUVzEQ">Open user menu</span>
-
-        <img
-          id="user-avatar"
-          src={currentUser?.user_metadata?.avatar_url || ""}
-          alt="User avatar"
-          class="mWvJQyBFgwNGEt0h7bSP yNvZ2JlUalNo5uPPv1sf _VPh6kIywCMfXFfQLas4 RpVwy4sO7Asb86CncKJ_"
-          onerror="this.style.display='none'; this.nextElementSibling.style.display='block';"
-        />
-        <BoxIcon name="user" customStyle="display:none;" variant="primary" />
-      </button>
+      {currentUser?.user_metadata?.avatar_url && currentUser?.user_metadata?.avatar_url !== "" ? (
+        <>
+          <Button
+            size="lg"
+            variant="ghost"
+            id="user-menu-button"
+            class="mWvJQyBFgwNGEt0h7bSP yNvZ2JlUalNo5uPPv1sf _VPh6kIywCMfXFfQLas4 RpVwy4sO7Asb86CncKJ_"
+            style={`background-image: url('${currentUser?.user_metadata?.avatar_url || ""}'); background-size: cover; background-position: center; background-repeat: no-repeat;`}
+            dataAttributes={{
+              "data-dropdown-toggle": "accountDropdown",
+              "aria-expanded": "false",
+            }}
+          />
+          {/* <BoxIcon
+            name="user"
+            id="user-menu-button"
+            dataAttributes={{
+              "data-dropdown-toggle": "accountDropdown",
+              "aria-expanded": "false",
+            }}
+            style="display: none;"
+          >
+            <span class="_DVAfiyo21kM68EUVzEQ">Open user menu</span>
+          </BoxIcon> */}
+        </>
+      ) : (
+        <BoxIcon
+          name="user"
+          id="user-menu-button"
+          dataAttributes={{
+            "data-dropdown-toggle": "accountDropdown",
+            "aria-expanded": "false",
+          }}
+          class="H78G_4yayxs5C3xdFbnK QhmQ_v3mmDFIP9VaVOfb VPGGthdu3cy_ZP7AL7dt mveJTCIb2WII7J4sY22F _Cj_M6jt2eLjDgkBBNgI b9aD6g2qw84oyZNsMO8j c8dCx6gnV43hTOLV6ks5 ezMFUVl744lvw6ht0lFe y6GKdvUrd7vp_pxsFb57 fzhbbDQ686T8arwvi_bJ mc9bwhBTHL8mVzJvl6gz rqOAGYeDo9iWuroePkaf"
+        >
+          <span class="_DVAfiyo21kM68EUVzEQ">Open user menu</span>
+        </BoxIcon>
+      )}
 
       <div
         id="accountDropdown"
@@ -86,30 +107,7 @@ const currentRole = currentUser?.profile?.role;
               Dashboard
             </a>
           </li>
-          {/* <li>
-            <a
-              href="#"
-              title=""
-              class="BpcA_ZTX79XDgSc71n2v YRrCJSr_j5nopfm4duUc Q_jg_EPdNf9eDMn1mLI2 _5Tr_VpHPDHkr3MEHnD3 W5n_NSFnC6y2nqoHw_5x _Cj_M6jt2eLjDgkBBNgI b9aD6g2qw84oyZNsMO8j __9sbu0yrzdhGIkLWNXl _7KA5gD55t2lxf9Jkj20 OyABRrnTV_kvHV7dJ0uE RzANcaqunVvlLrO6_tal"
-            >
-              <svg
-                class="_o2IXcpM0qnG3JPReKus E9GV5sZJIbfO_GEQ_moc PeR2JZ9BZHYIH8Ea3F36 _Oyukq8JlN1X9w2FmPds XIIs8ZOri3wm8Wnj9N_y Lld6j9B1iilEqA6j31e4"
-                aria-hidden="true"
-                xmlns="http://www.w3.org/2000/svg"
-                width="24"
-                height="24"
-                fill="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  fill-rule="evenodd"
-                  d="M8 10V7a4 4 0 1 1 8 0v3h1a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h1Zm2-3a2 2 0 1 1 4 0v3h-4V7Zm2 6a1 1 0 0 1 1 1v3a1 1 0 1 1-2 0v-3a1 1 0 0 1 1-1Z"
-                  clip-rule="evenodd"
-                />
-              </svg>
-              Privacy
-            </a>
-          </li> */}
+
           <li>
             <a
               href="#"
@@ -162,12 +160,8 @@ const currentRole = currentUser?.profile?.role;
       </div>
     </>
   ) : (
-    <a href="/login">
-      <BoxIcon
-        name="log-in"
-        variant="secondary"
-        class="mveJTCIb2WII7J4sY22F Z4DH5a4vmjReSFRBpPgz c8dCx6gnV43hTOLV6ks5 PeR2JZ9BZHYIH8Ea3F36 _7KA5gD55t2lxf9Jkj20 BkIbg_JwkgiyRW804Hhu _q0p_O8QLU1paqtuqmI2 _6wdnQrxT_dGdAdNk5AQ XIIs8ZOri3wm8Wnj9N_y OPrb_iG5WDy_7F05BDOX yChACvAr1v8czJ2VO22j"
-      />
-    </a>
+    <Button href="/login" variant="secondary">
+      login
+    </Button>
   )
 }

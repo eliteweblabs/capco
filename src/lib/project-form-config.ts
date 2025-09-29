@@ -252,6 +252,19 @@ export const PROJECT_FORM_FIELDS: FormFieldConfig[] = [
   // },
 
   {
+    id: "title-input",
+    name: "title",
+    type: "text",
+    label: "Title",
+    placeholder: "Title",
+    dataField: "title",
+    allow: ["Admin", "Staff"], // Only admin and staff can see architect
+    hideAtStatus: [], // Hide after proposal is signed off
+    readOnlyAtStatus: [
+      20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170, 180, 190, 200,
+    ], // Read-only after proposal is viewed but before signed off
+  },
+  {
     id: "architect-input",
     name: "architect",
     type: "text",
@@ -321,6 +334,53 @@ export const PROJECT_FORM_FIELDS: FormFieldConfig[] = [
       20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170, 180, 190, 200,
     ], // Read-only after proposal is viewed but before signed off
   },
+
+  {
+    id: "nfpa-input",
+    name: "nfpa_version",
+    type: "text",
+    label: "NFPA Version",
+    placeholder: "NFPA Version",
+    dataField: "nfpa_version",
+    allow: ["Admin", "Staff"], // Only admin and staff can see architect
+    hideAtStatus: [], // Hide after proposal is signed off
+    readOnlyAtStatus: [60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170, 180, 190, 200], // Read-only after proposal is viewed but before signed off
+  },
+  {
+    id: "site-access-input",
+    name: "site_access",
+    type: "text",
+    label: "Site access",
+    placeholder: "Site access for fire / rescue vehicles is via ____________",
+    dataField: "site_access",
+    allow: ["Admin", "Staff"], // Only admin and staff can see architect
+    hideAtStatus: [], // Hide after proposal is signed off
+    readOnlyAtStatus: [60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170, 180, 190, 200], // Read-only after proposal is viewed but before signed off
+  },
+
+  {
+    id: "exterior-beacon-input",
+    name: "exterior_beacon",
+    type: "text",
+    label: "Exterior beacon",
+    placeholder: "An exterior fire alarm beacon ... visible from __________",
+    dataField: "site_access",
+    allow: ["Admin", "Staff"], // Only admin and staff can see architect
+    hideAtStatus: [], // Hide after proposal is signed off
+    readOnlyAtStatus: [60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170, 180, 190, 200], // Read-only after proposal is viewed but before signed off
+  },
+
+  {
+    id: "fire-sprinkler-installation-input",
+    name: "fire_sprinkler_installation",
+    type: "text",
+    label: "Sprinkler contractor will install",
+    placeholder: "The fire sprinkler contractor will install: _______",
+    dataField: "fire_sprinkler_installation",
+    allow: ["Admin", "Staff"], // Only admin and staff can see architect
+    hideAtStatus: [], // Hide after proposal is signed off
+    readOnlyAtStatus: [60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170, 180, 190, 200], // Read-only after proposal is viewed but before signed off
+  },
 ];
 
 // Form action button configurations
@@ -337,8 +397,8 @@ export const FORM_ACTIONS: FormActionConfig[] = [
     // No status restriction - can save project at any status
     // displayOnNew undefined - shows on both new and existing projects
     hideAtStatus: [
-      20, 30, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95, 100, 105, 110, 115, 120, 125, 130,
-      135, 140, 145, 150, 155, 160, 170, 180, 190, 200, 210, 220,
+      60, 65, 70, 75, 80, 85, 90, 95, 100, 105, 110, 115, 120, 125, 130, 135, 140, 145, 150, 155,
+      160, 170, 180, 190, 200, 210, 220,
     ], // Only show when specs are received (status 10)
   },
   {
@@ -424,6 +484,28 @@ export const FORM_ACTIONS: FormActionConfig[] = [
 // Button group configurations
 export const BUTTON_GROUPS: ButtonGroupConfig[] = [
   {
+    id: "fire-protection-system-type",
+    name: "fire_protection_system_type",
+    label: "Fire Protection System Type",
+    type: "radio",
+    cssClass: "fire-protection-system-type-radio",
+    allow: ["Admin", "Staff"], // All roles can see building type
+    // hideAtStatus: [60, 70, 80, 90], // Hide after proposal is signed off
+    readOnlyAtStatus: [60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170, 180, 190, 200], // Read-only after proposal is viewed but before signed off
+    options: [
+      {
+        value:
+          "The fire protection system will be fed with a newly installed flushed and chlorinated DICL fire service. Installation by licensed and bonded utility contractor",
+        label: "DICL",
+      },
+      {
+        value:
+          "The fire protection system will be fed with a newly installed flushed and chlorinated Type K Copper fire service. Installation by licensed and bonded utility contractor.  Flushing and testing to be witnessed by the licensed fire sprinkler contractor.",
+        label: "Type K Copper",
+      },
+    ],
+  },
+  {
     id: "building-type",
     name: "building",
     label: "Building",
@@ -435,7 +517,7 @@ export const BUTTON_GROUPS: ButtonGroupConfig[] = [
       20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170, 180, 190, 200,
     ], // Read-only after proposal is viewed but before signed off
     options: [
-      { value: "Residential", label: "Residential", selected: true },
+      { value: "Residential", label: "Residential" },
       { value: "Mixed use", label: "Mixed use" },
       { value: "Mercantile", label: "Mercantile" },
       { value: "Commercial", label: "Commercial" },
@@ -457,7 +539,7 @@ export const BUTTON_GROUPS: ButtonGroupConfig[] = [
     ], // Read-only after proposal is viewed but before signed off
 
     options: [
-      { value: "Sprinkler", label: "Sprinkler", selected: true },
+      { value: "Sprinkler", label: "Sprinkler" },
       { value: "Alarm", label: "Alarm" },
       { value: "Mechanical", label: "Mechanical" },
       { value: "Electrical", label: "Electrical" },
@@ -505,11 +587,11 @@ export const BUTTON_GROUPS: ButtonGroupConfig[] = [
     ],
   },
   {
-    id: "fire-safety-services",
+    id: "",
     name: "requested_docs",
     label: "Reports Required",
     type: "multi-select",
-    cssClass: "fire-safety-service-btn",
+    cssClass: "",
     allow: ["Admin", "Staff"], // Only admin and staff can see reports required
     readOnlyAtStatus: [
       20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170, 180, 190, 200,
@@ -519,8 +601,8 @@ export const BUTTON_GROUPS: ButtonGroupConfig[] = [
     options: [
       { value: "Narrative", label: "Narrative", selected: true },
       { value: "Sprinkler", label: "Sprinkler", selected: true },
-      { value: "Alarm", label: "Alarm" },
-      { value: "NFPA 241", label: "NFPA 241" },
+      { value: "Alarm", label: "Alarm", selected: true },
+      { value: "NFPA 241", label: "NFPA 241", selected: true },
       { value: "IEBC", label: "IEBC" },
       { value: "IBC", label: "IBC" },
     ],

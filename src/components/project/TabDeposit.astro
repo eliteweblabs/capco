@@ -4,9 +4,6 @@ import PaymentForm from "./PaymentForm.astro";
 
 interface Props {
   project?: any;
-  currentRole?: string;
-  projectId: string;
-  authorProfile?: any;
   projectStatus?: number;
   currentUser?: any;
   projectStatusLabel?: string;
@@ -15,21 +12,25 @@ interface Props {
   globalSecondaryTextClasses?: string;
   globalPrimaryTextClasses?: string;
   globalInputClasses?: string;
+  statusData?: any;
 }
 
 const {
   project,
-  currentRole,
-  projectId,
-  authorProfile,
   projectStatus = 0,
+  currentUser,
   projectStatusLabel,
   invoiceId,
   totalAmount = 0,
   globalSecondaryTextClasses,
   globalPrimaryTextClasses,
   globalInputClasses,
+  statusData,
 } = Astro.props;
+
+const currentRole = currentUser?.profile?.role;
+const authorProfile = currentUser?.profile;
+const projectId = project?.id;
 
 // Debug logging
 // console.log("🔍 [TAB-DEPOSIT] Debug values:", {
@@ -95,10 +96,8 @@ const statusAlert = getStatusAlert();
         amount={totalAmount / 2}
         currency="usd"
         paymentType="deposit"
-        authorProfile={authorProfile}
-        currentRole={currentRole}
         project={project}
-        projectId={projectId}
+        currentUser={currentUser}
       />
     )
   }
