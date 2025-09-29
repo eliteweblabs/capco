@@ -10,13 +10,6 @@ export const POST: APIRoute = async ({ request }) => {
 
     const { projectId, assigned_to_id, currentUser } = body;
 
-    if (!currentUser) {
-      return new Response(JSON.stringify({ error: "Current user is required" }), {
-        status: 400,
-        headers: { "Content-Type": "application/json" },
-      });
-    }
-
     console.log("📧 [ASSIGN-STAFF] Project ID:", projectId);
     console.log("📧 [ASSIGN-STAFF] Assigned to ID:", assigned_to_id);
 
