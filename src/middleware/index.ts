@@ -3,7 +3,11 @@
 import { defineMiddleware } from "astro:middleware";
 import micromatch from "micromatch";
 import { clearAuthCookies, setAuthCookies } from "../lib/auth-cookies";
+import { setupConsoleInterceptor } from "../lib/console-interceptor";
 import { supabase } from "../lib/supabase";
+
+// Setup console interceptor for server-side (disables console.log in production)
+setupConsoleInterceptor();
 
 const protectedRoutes = ["/dashboard(|/)", "/project/**"];
 const redirectRoutes = ["/signin(|/)", "/register(|/)"];

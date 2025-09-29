@@ -463,12 +463,12 @@ export const GET: APIRoute = async ({ request, cookies, url, params }) => {
                 uploaded_at: featuredImageFile.uploaded_at,
               };
             } else {
-              console.warn(
-                "📡 [GET-PROJECT] Featured image file not found for project",
-                project.id,
-                "featured_image_id:",
-                project.featured_image_id
-              );
+              // console.warn(
+              //   "📡 [GET-PROJECT] Featured image file not found for project",
+              //   project.id,
+              //   "featured_image_id:",
+              //   project.featured_image_id
+              // );
               project.featured_image_data = null;
             }
           } catch (error) {

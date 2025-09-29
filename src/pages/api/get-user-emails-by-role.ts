@@ -67,7 +67,7 @@ export const POST: APIRoute = async ({ request }) => {
       } else {
         // Always assign fetchedRoleUsers to roleUsers, even if empty
         roleUsers = fetchedRoleUsers || [];
-        console.log("📧 [GET-USER-EMAILS-BY-ROLE] Found users by roles:", roleUsers);
+        // console.log("📧 [GET-USER-EMAILS-BY-ROLE] Found users by roles:", roleUsers);
 
         for (const user of roleUsers) {
           try {
