@@ -490,9 +490,20 @@
       container: "map",
       style: "mapbox://styles/mapbox/streets-v11",
       center: [-74.006, 40.7128], // New York City
-      zoom: 12,
+      zoom: 1,
       pitch: 45,
       bearing: -17.6,
+      minZoom: 1,
+      maxZoom: 18,
+      attributionControl: false,
+      zoomControl: false,
+      scrollZoom: false,
+      dragRotate: false,
+      touchZoomRotate: false,
+      keyboard: false,
+      doubleClickZoom: false,
+      touchZoom: false,
+      touchZoomRotate: false,
     });
 
     // Add 3D buildings
@@ -503,7 +514,7 @@
         "source-layer": "building",
         filter: ["==", "extrude", "true"],
         type: "fill-extrusion",
-        minzoom: 15,
+        minzoom: 1,
         paint: {
           "fill-extrusion-color": "#aaa",
           "fill-extrusion-height": [
@@ -529,11 +540,11 @@
       });
 
       // Add coverage markers
-      addCoverageMarkers();
+      addCoverageMarkers(map as any);
     });
   }
 
-  function addCoverageMarkers() {
+  function addCoverageMarkers(map: any) {
     const markers = [
       { lng: -74.006, lat: 40.7128, strength: 95, type: "tower" },
       { lng: -74.005, lat: 40.7135, strength: 87, type: "tower" },
@@ -552,23 +563,24 @@
       el.style.boxShadow = "0 2px 8px rgba(0,0,0,0.3)";
       el.style.cursor = "pointer";
 
-      new (window as any).mapboxgl.Marker(el).setLngLat([marker.lng, marker.lat]).addTo(map);
+      new (window as any).mapboxgl.Marker(el).setLngLat([marker.lng, marker.lat]).addTo(map as any);
     });
   }
 
   function setupScrollEffects() {
-    const overlay = document.querySelector(".map-overlay") as HTMLElement;
+    const overlay = document.querySelector(".map-overlay") as HTMLElement | null;
 
     window.addEventListener("scroll", () => {
+      console.log("🗺️ [MAPBOX] Scrolling");
       const scrolled = window.scrollY;
       const maxHeight = document.body.scrollHeight - window.innerHeight;
       const progress = (scrolled / maxHeight) * 100;
 
       // Zoom in as page scrolls down
       if (map && map.isStyleLoaded()) {
-        const minZoom = 8;
+        const minZoom = 2;
         const maxZoom = 18;
-        const zoom = maxZoom - (progress / 100) * (maxZoom - minZoom);
+        const zoom = minZoom + (progress / 100) * (maxZoom - minZoom);
         map.setZoom(zoom);
         console.log("🗺️ [MAPBOX] Zoom:", zoom, "Progress:", progress);
       }
@@ -580,7 +592,7 @@
       }
 
       // Show overlay when scrolled
-      if (scrolled > 100 && !overlay.classList.contains("visible")) {
+      if (scrolled > 100 && overlay && !overlay.classList.contains("visible")) {
         overlay.classList.add("visible");
         showContent(currentExample);
       }
@@ -589,7 +601,7 @@
 
   function setupNavigation() {
     const navTabs = document.querySelectorAll(".nav-tab");
-    const overlay = document.querySelector(".map-overlay");
+    const overlay = document.querySelector(".map-overlay") as HTMLElement;
 
     navTabs.forEach((tab) => {
       tab.addEventListener("click", () => {
@@ -600,27 +612,27 @@
 
         // Get example type
         const example = tab.dataset.example;
-        currentExample = example;
+        const currentExample = example;
 
         // Show overlay with animation
         if (overlay) {
           overlay.classList.add("visible");
-          showContent(example);
+          showContent(example as string);
         }
       });
     });
   }
 
-  function showContent(example) {
+  function showContent(example: string) {
     // Hide all content
     const allContent = document.querySelectorAll(".overlay-content");
-    allContent.forEach((content) => {
+    allContent.forEach((content: HTMLElement) => {
       content.classList.add("hidden");
       content.classList.remove("visible");
     });
 
     // Show selected content
-    const targetContent = document.getElementById(`${example}-content`);
+    const targetContent = document.getElementById(`${example}-content`) as HTMLElement;
     if (targetContent) {
       setTimeout(() => {
         targetContent.classList.remove("hidden");
@@ -632,7 +644,7 @@
     updateMapForExample(example);
   }
 
-  function updateMapForExample(example) {
+  function updateMapForExample(example: string) {
     if (!map) return;
 
     switch (example) {
@@ -654,8 +666,8 @@
   function setupCounterAnimations() {
     const counters = document.querySelectorAll(".stat-number");
 
-    const animateCounter = (counter) => {
-      const target = parseInt(counter.dataset.target);
+    const animateCounter = (counter: HTMLElement) => {
+      const target = parseInt(counter.dataset.target as string);
       const duration = 2000;
       const increment = target / (duration / 16);
       let current = 0;
@@ -666,22 +678,22 @@
           current = target;
           clearInterval(timer);
         }
-        counter.textContent = Math.floor(current);
+        counter.textContent = Math.floor(current).toString();
       }, 16);
     };
 
     // Intersection Observer for counter animation
-    const observer = new IntersectionObserver((entries) => {
-      entries.forEach((entry) => {
+    const observer = new IntersectionObserver((entries: IntersectionObserverEntry[]) => {
+      entries.forEach((entry: IntersectionObserverEntry) => {
         if (entry.isIntersecting) {
-          animateCounter(entry.target);
-          observer.unobserve(entry.target);
+          animateCounter(entry.target as HTMLElement);
+          observer.unobserve(entry.target as HTMLElement);
         }
       });
     });
 
     counters.forEach((counter) => {
-      observer.observe(counter);
+      observer.observe(counter as HTMLElement);
     });
   }
 </script>
