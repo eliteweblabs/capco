@@ -4,6 +4,23 @@ import { supabaseAdmin } from "../../lib/supabase-admin";
 import App from "../../components/common/App.astro";
 import Footer from "../../components/common/Footer.astro";
 
+import { globalCompanyData } from "../../pages/api/global-company-data";
+const {
+  globalCompanyName,
+  globalCompanySlogan,
+  globalCompanyAddress,
+  globalCompanyPhone,
+  globalCompanyEmail,
+  globalCompanyWebsite,
+  globalCompanyLogo,
+  globalCompanyLogoDark,
+  globalCompanyLogoLight,
+} = globalCompanyData();
+
+import { globalClasses } from "../../pages/api/global-classes";
+const { globalInputClasses, globalPrimaryTextClasses, globalSecondaryTextClasses } =
+  globalClasses();
+
 // Check authentication
 const { currentUser, session, supabase } = await checkAuth(Astro.cookies);
 
@@ -229,6 +246,7 @@ if (supabaseAdmin) {
   </div>
 
   <script>
+    import { SimpleProjectLogger } from "../../lib/simple-logging";
     class NotificationManager {
       constructor() {
         this.init();
@@ -325,9 +343,18 @@ if (supabaseAdmin) {
           const failed = notifications.length - successful;
 
           if (successful > 0) {
-            alert(
+            window.showModal(
+              "success",
               `✅ Successfully sent ${successful} notification(s)${failed > 0 ? `, ${failed} failed` : ""}`
             );
+
+            await SimpleProjectLogger.addLogEntry(
+              "notifications_sent",
+              "email_sent",
+              null,
+              `Notifications sent successfully to ${successful} users${failed > 0 ? `, ${failed} failed` : ""}`
+            );
+
             if (e.target) {
               (e.target as HTMLFormElement).reset();
             }

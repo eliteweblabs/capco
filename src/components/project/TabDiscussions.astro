@@ -49,12 +49,17 @@ const placeholder =
         </Button>
       </div>
 
-      <p class="mb-4 text-sm text-gray-500 dark:text-gray-400">
-        <b>Placeholders: </b>
-        &#123;&#123; PROJECT_ADDRESS &#125;&#125;, &#123;&#123; CLIENT_NAME &#125;&#125;, &#123;&#123;
-        CLIENT_EMAIL &#125;&#125;, &#123;&#123; PROJECT_EST_TIME &#125;&#125;, &#123;&#123; STATUS_NAME
-        &#125;&#125;, &#123;&#123; CONTRACT_URL &#125;&#125;
-      </p>
+      {
+        currentRole === "Admin" ||
+          (currentRole === "Staff" && (
+            <p class="mb-4 text-sm text-gray-500 dark:text-gray-400">
+              <b>Placeholders: </b>
+              &#123;&#123; PROJECT_ADDRESS &#125;&#125;, &#123;&#123; CLIENT_NAME &#125;&#125;,
+              &#123;&#123; CLIENT_EMAIL &#125;&#125;, &#123;&#123; PROJECT_EST_TIME &#125;&#125;,
+              &#123;&#123; STATUS_NAME &#125;&#125;, &#123;&#123; CONTRACT_URL &#125;&#125;
+            </p>
+          ))
+      }
       <!-- Comment Form (hidden by default) -->
       <div
         id="comment-form"
@@ -144,7 +149,15 @@ const placeholder =
         </div>
       </div>
       <!-- Comments List -->
-      <div id="comments-list" class="space-y-4">
+      <div id="comments-list" class="relative h-24 space-y-4">
+        <!-- Loading Spinner -->
+        <div
+          id="comments-loading"
+          class="absolute inset-0 z-50 flex h-24 items-center justify-center"
+        >
+          <div class="h-8 w-8 animate-spin rounded-full border-b-2 border-primary-600"></div>
+          <span class="ml-3 text-gray-600 dark:text-gray-400">Loading comments...</span>
+        </div>
         <!-- Comments will be dynamically loaded here -->
       </div>
       <div>
@@ -174,6 +187,9 @@ const placeholder =
 
           // console.log("🔔 [DISCUSSION] Initial userRole:", currentUserRole);
           async function loadDiscussions(projectId) {
+            // Show loading spinner
+            showCommentsLoading();
+
             try {
               const response = await fetch(`/api/get-project-discussions?projectId=${projectId}`, {
                 credentials: "include",
@@ -192,6 +208,39 @@ const placeholder =
             } catch (error) {
               console.error("Error loading discussions:", error);
               showDiscussionError("Failed to load discussions");
+            } finally {
+              // Hide loading spinner
+              hideCommentsLoading();
+            }
+          }
+
+          function showCommentsLoading() {
+            const loadingEl = document.getElementById("comments-loading");
+            const commentsList = document.getElementById("comments-list");
+
+            if (loadingEl) {
+              loadingEl.classList.remove("hidden");
+            }
+
+            // Hide any existing comments while loading
+            if (commentsList) {
+              const existingComments = commentsList.querySelectorAll(".comment-item");
+              existingComments.forEach((comment) => (comment.style.display = "none"));
+            }
+          }
+
+          function hideCommentsLoading() {
+            const loadingEl = document.getElementById("comments-loading");
+
+            if (loadingEl) {
+              loadingEl.classList.add("hidden");
+            }
+
+            // Show comments again
+            const commentsList = document.getElementById("comments-list");
+            if (commentsList) {
+              const existingComments = commentsList.querySelectorAll(".comment-item");
+              existingComments.forEach((comment) => (comment.style.display = "block"));
             }
           }
 
@@ -659,7 +708,11 @@ const placeholder =
               const isAllowedType =
                 allowedTypes.includes(file.type) ||
                 (file.type === "application/octet-stream" &&
-                  /\.(dwg|dxf|dwt|dws|dwf)$/i.test(file.name));
+                  /\.(dwg|dxf|dwt|dws|dwf)$/i.test(file.name)) ||
+                (file.type === "" && /\.(dwg|dxf|dwt|dws|dwf)$/i.test(file.name)) ||
+                /\.(pdf|png|jpg|jpeg|gif|webp|bmp|tiff|svg|dwg|dxf|dwt|dws|dwf|doc|docx|xls|xlsx|ppt|pptx|txt|csv|zip|rar|7z|tar|gz)$/i.test(
+                  file.name
+                );
 
               if (!isAllowedType) {
                 console.warn("Skipping unsupported file type:", file.name, "Type:", file.type);

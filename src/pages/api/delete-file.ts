@@ -114,17 +114,40 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       });
     }
 
-    const isAdmin = profile?.role === "Admin";
+    const userRole = profile?.role;
+    const isAdmin = userRole === "Admin";
+    const isStaff = userRole === "Staff";
+    const isClient = userRole === "Client";
 
-    if (!isAdmin) {
-      console.error("Unauthorized to delete files - Admin role required");
-      return new Response(JSON.stringify({ error: "Only administrators can delete files" }), {
+    // Get project status to determine if client can delete
+    let projectStatus = 0;
+    if (projectIdNum) {
+      const { data: project, error: projectError } = await supabase
+        .from("projects")
+        .select("status")
+        .eq("id", projectIdNum)
+        .single();
+
+      if (!projectError && project) {
+        projectStatus = project.status || 0;
+      }
+    }
+
+    // Permission logic: Admins/Staff can always delete, Clients can delete at status <= 10
+    const canDelete = isAdmin || isStaff || (isClient && projectStatus <= 10);
+
+    if (!canDelete) {
+      console.error("Unauthorized to delete files - insufficient permissions");
+      const errorMessage = isClient
+        ? "Files can only be deleted during the initial project phase (status 10 or below)"
+        : "Only administrators and staff can delete files";
+      return new Response(JSON.stringify({ error: errorMessage }), {
         status: 403,
         headers: { "Content-Type": "application/json" },
       });
     }
 
-    console.log("User is Admin, proceeding with file deletion");
+    console.log(`User (${userRole}) authorized to delete files. Project status: ${projectStatus}`);
 
     // Check if file exists and get file details
     console.log("Looking up file:", fileIdNum);
