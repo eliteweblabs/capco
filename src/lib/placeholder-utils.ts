@@ -130,6 +130,38 @@ export function replacePlaceholders(
   const documentId = `DOC-${Date.now()}`;
   const documentVersion = "1.0";
 
+  // undone
+  const registrationExpirationDate = "06/30/2026";
+  const registrationNumber = "48388";
+  const professionalName = "Jason Kahan";
+
+  if (registrationExpirationDate) {
+    const beforeReplace = result;
+    result = result.replace(/\{\{REGISTRATION_EXPIRATION_DATE\}\}/g, registrationExpirationDate);
+    if (result !== beforeReplace) {
+      placeholderApplied = true;
+      addBoldTags = false;
+    }
+  }
+
+  if (registrationNumber) {
+    const beforeReplace = result;
+    result = result.replace(/\{\{REGISTRATION_NUMBER\}\}/g, registrationNumber);
+    if (result !== beforeReplace) {
+      placeholderApplied = true;
+      addBoldTags = false;
+    }
+  }
+
+  if (professionalName) {
+    const beforeReplace = result;
+    result = result.replace(/\{\{PROFESSIONAL_NAME\}\}/g, professionalName);
+    if (result !== beforeReplace) {
+      placeholderApplied = true;
+      addBoldTags = false;
+    }
+  }
+
   // Replace BASE_URL placeholders
   if (baseUrl) {
     const beforeReplace = result;
@@ -401,8 +433,11 @@ export function replacePlaceholders(
   }
 
   if (projectNewConstruction) {
+    const projectNewConstructionVal =
+      projectNewConstruction === "Yes" ? "☑ New Construction" : "☑ Existing Construction";
+
     const beforeReplace = result;
-    result = result.replace(/\{\{\s*PROJECT_NEW_CONSTRUCTION\s*\}\}/g, projectNewConstruction);
+    result = result.replace(/\{\{\s*PROJECT_NEW_CONSTRUCTION\s*\}\}/g, projectNewConstructionVal);
     if (result !== beforeReplace) {
       placeholderApplied = true;
       addBoldTags = true;
@@ -420,7 +455,7 @@ export function replacePlaceholders(
 
   if (estTime) {
     const beforeReplace = result;
-    result = result.replace(/\{\{\s*EST_TIME\s*\}\}/g, estTime);
+    result = result.replace(/\{\{\s*PROJECT_EST_TIME\s*\}\}/g, estTime);
     if (result !== beforeReplace) {
       placeholderApplied = true;
       addBoldTags = true;
@@ -705,6 +740,14 @@ export function replacePlaceholders(
       placeholderApplied = true;
       addBoldTags = true;
     }
+  }
+
+  // Replace ASCII_CHECKBOX placeholders
+  const beforeReplaceCheckbox = result;
+  result = result.replace(/\{\{\s*ASCII_CHECKBOX\s*\}\}/g, "☐");
+  if (result !== beforeReplaceCheckbox) {
+    placeholderApplied = true;
+    addBoldTags = false;
   }
 
   // Process PROJECT_LINK placeholders

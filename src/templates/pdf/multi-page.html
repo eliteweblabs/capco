@@ -1,0 +1,741 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Multi-Page Document</title>
+    <style>
+      @page {
+        size: A4;
+        margin: 0.25in;
+      }
+
+      body {
+        font-family: Arial, sans-serif;
+        line-height: 1.6;
+        color: #333;
+        margin: 0;
+        padding: 0;
+      }
+
+      .page {
+        min-height: 11in; /* 11 inches - 0.5 inch margins */
+        page-break-after: always;
+        position: relative;
+      }
+
+      .page:last-child {
+        page-break-after: avoid;
+      }
+
+      .page-header {
+        border-bottom: 2px solid #333;
+        padding-bottom: 10px;
+        margin-bottom: 20px;
+      }
+
+      .page-title {
+        font-size: 24px;
+        font-weight: bold;
+        margin: 0;
+      }
+
+      .page-subtitle {
+        font-size: 16px;
+        color: #666;
+        margin: 5px 0 0 0;
+      }
+
+      .content-section {
+        margin-bottom: 30px;
+      }
+
+      .section-title {
+        font-size: 18px;
+        font-weight: bold;
+        margin-bottom: 15px;
+        color: #2c3e50;
+      }
+
+      .content-text {
+        margin-bottom: 15px;
+        text-align: justify;
+      }
+
+      .page-footer {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        border-top: 1px solid #ccc;
+        padding-top: 10px;
+        font-size: 12px;
+        color: #666;
+      }
+
+      .page-number {
+        float: right;
+      }
+
+      .project-info {
+        background-color: #f8f9fa;
+        padding: 15px;
+        border-radius: 5px;
+        margin-bottom: 20px;
+      }
+
+      .info-row {
+        display: flex;
+        margin-bottom: 8px;
+      }
+
+      .info-label {
+        font-weight: bold;
+        width: 150px;
+      }
+
+      .info-value {
+        flex: 1;
+      }
+
+      /* Header and Footer Styles */
+      .header {
+        margin-bottom: 20px;
+        padding-bottom: 10px;
+        border-bottom: 1px solid #ddd;
+      }
+
+      .footer {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        padding: 15px 0;
+        border-top: 1px solid #ddd;
+        font-size: 12px;
+        color: #666;
+      }
+
+      .footer-content {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 10px;
+      }
+
+      .footer-section h3 {
+        margin: 0 0 8px 0;
+        font-size: 14px;
+        color: #333;
+      }
+
+      .contact-details,
+      .document-details {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+      }
+
+      .contact-item,
+      .document-item {
+        margin: 0;
+      }
+
+      .footer-bottom {
+        text-align: center;
+        font-size: 11px;
+        color: #888;
+      }
+
+      .footer-bottom p {
+        margin: 2px 0;
+      }
+
+      /* Basic HTML Element Styles */
+      h1,
+      h2,
+      h3,
+      h4,
+      h5,
+      h6 {
+        font-family:
+          "Trebuchet MS", "Lucida Sans Unicode", "Lucida Grande", "Lucida Sans", Arial, sans-serif;
+        font-weight: bold;
+        margin: 0 0 10px 0;
+        color: #333;
+      }
+
+      h1 {
+        font-size: 24px;
+      }
+      h2 {
+        font-size: 20px;
+      }
+      h3 {
+        font-size: 18px;
+      }
+      h4 {
+        font-size: 16px;
+      }
+      h5 {
+        font-size: 14px;
+      }
+      h6 {
+        font-size: 12px;
+      }
+
+      p {
+        margin: 0 0 10px 0;
+        line-height: 1.6;
+      }
+
+      strong,
+      b {
+        font-weight: bold;
+      }
+
+      em,
+      i {
+        font-style: italic;
+      }
+
+      u {
+        text-decoration: underline;
+      }
+
+      small {
+        font-size: 0.875em;
+      }
+
+      /* Lists */
+      ul,
+      ol {
+        margin: 10px 0;
+        padding-left: 30px;
+      }
+
+      li {
+        margin: 5px 0;
+        line-height: 1.5;
+      }
+
+      ul {
+        list-style-type: disc;
+      }
+
+      ol {
+        list-style-type: decimal;
+      }
+
+      ul ul,
+      ol ol,
+      ul ol,
+      ol ul {
+        margin: 5px 0;
+        padding-left: 20px;
+      }
+
+      ul ul {
+        list-style-type: circle;
+      }
+
+      ul ul ul {
+        list-style-type: square;
+      }
+
+      /* Tables */
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 15px 0;
+      }
+
+      th,
+      td {
+        border: 1px solid #ddd;
+        padding: 8px 12px;
+        text-align: left;
+      }
+
+      th {
+        background-color: #f5f5f5;
+        font-weight: bold;
+      }
+
+      tr:nth-child(even) {
+        background-color: #f9f9f9;
+      }
+
+      /* Blockquotes */
+      blockquote {
+        margin: 15px 0;
+        padding: 10px 20px;
+        border-left: 4px solid #ddd;
+        background-color: #f9f9f9;
+        font-style: italic;
+      }
+
+      /* Code */
+      code {
+        background-color: #f4f4f4;
+        padding: 2px 4px;
+        border-radius: 3px;
+        font-family: "Courier New", monospace;
+        font-size: 0.9em;
+      }
+
+      pre {
+        background-color: #f4f4f4;
+        padding: 15px;
+        border-radius: 5px;
+        overflow-x: auto;
+        font-family: "Courier New", monospace;
+        font-size: 0.9em;
+        line-height: 1.4;
+      }
+
+      pre code {
+        background: none;
+        padding: 0;
+      }
+
+      /* Horizontal Rule */
+      hr {
+        border: none;
+        border-top: 1px solid #ddd;
+        margin: 20px 0;
+      }
+
+      /* Links */
+      a {
+        color: #0066cc;
+        text-decoration: underline;
+      }
+
+      a:hover {
+        color: #004499;
+      }
+
+      /* Definition Lists */
+      dl {
+        margin: 10px 0;
+      }
+
+      dt {
+        font-weight: bold;
+        margin-top: 10px;
+      }
+
+      dd {
+        margin: 5px 0 10px 20px;
+      }
+
+      /* Address */
+      address {
+        font-style: italic;
+        margin: 10px 0;
+      }
+
+      /* Sub and Sup */
+      sub,
+      sup {
+        font-size: 0.75em;
+        line-height: 0;
+        position: relative;
+        vertical-align: baseline;
+      }
+
+      sup {
+        top: -0.5em;
+      }
+
+      sub {
+        bottom: -0.25em;
+      }
+
+      /* Mark/Highlight */
+      mark {
+        background-color: #ffeb3b;
+        padding: 2px 4px;
+      }
+
+      /* Del/Strike */
+      del,
+      s {
+        text-decoration: line-through;
+      }
+
+      /* Ins */
+      ins {
+        text-decoration: underline;
+        background-color: #d4edda;
+      }
+
+      /* Abbreviations */
+      abbr[title] {
+        border-bottom: 1px dotted #666;
+        cursor: help;
+      }
+
+      /* Keyboard */
+      kbd {
+        background-color: #f4f4f4;
+        border: 1px solid #ccc;
+        border-radius: 3px;
+        padding: 2px 4px;
+        font-family: "Courier New", monospace;
+        font-size: 0.9em;
+      }
+
+      /* Sample */
+      samp {
+        font-family: "Courier New", monospace;
+        background-color: #f4f4f4;
+        padding: 2px 4px;
+        border-radius: 3px;
+      }
+
+      /* Variable */
+      var {
+        font-style: italic;
+        font-family: "Times New Roman", serif;
+      }
+
+      /* Time */
+      time {
+        font-weight: bold;
+      }
+
+      /* Details/Summary */
+      details {
+        margin: 10px 0;
+        border: 1px solid #ddd;
+        border-radius: 5px;
+      }
+
+      summary {
+        padding: 10px;
+        background-color: #f5f5f5;
+        cursor: pointer;
+        font-weight: bold;
+      }
+
+      details[open] summary {
+        border-bottom: 1px solid #ddd;
+      }
+
+      details > *:not(summary) {
+        padding: 10px;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Page 1: Project Overview -->
+    <div class="page">
+      <!-- Header -->
+      <div class="header">
+        <div style="display: flex; align-items: center; justify-content: space-between">
+          <div>{{COMPANY_LOGO_LIGHT}}</div>
+          <div>
+            <!-- <h1 style="margin: 0; font-size: 2.5em; font-weight: bold">{{GLOBAL_COMPANY_NAME}}</h1> -->
+            <!-- <div class="subtitle">{{GLOBAL_COMPANY_SLOGAN}}</div> -->
+          </div>
+          <div style="text-align: right; font-size: 0.9em; opacity: 0.9">
+            <!-- <div><strong>Phone:</strong> {{GLOBAL_COMPANY_PHONE}}</div>
+             <div><strong>Email:</strong> {{GLOBAL_COMPANY_EMAIL}}</div>
+             <div><strong>Website:</strong> {{GLOBAL_COMPANY_WEBSITE}}</div> -->
+            <div>{{GLOBAL_COMPANY_PHONE}}</div>
+            <div>{{GLOBAL_COMPANY_EMAIL}}</div>
+            <div>{{GLOBAL_COMPANY_WEBSITE}}</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="page-header">
+        <h1
+          class="page-title"
+          style="font-size: 24px; font-weight: bold; text-align: center; margin: 30px 200px"
+        >
+          COMMONWEALTH OF MASSACHUSETTS STATE<br />BUILDING CODE 780 CMR CHAPTER 9<br />10th
+          Edition<br />
+          FIRE PROTECTION SYSTEMS NARRATIVE
+        </h1>
+        <p class="page-subtitle" style="text-align: center; margin: 0 200px">780 CMR – 901.2.1</p>
+      </div>
+
+      BUILDING CODE 780 CMR CHAPTER 9, 10th Edition FIRE PROTECTION SYSTEMS NARRATIVE 780 CMR –
+      901.2.1
+
+      <div class="project-info">
+        <div class="info-row">
+          <span class="info-label">Project ID:</span>
+          <span class="info-value">{{PROJECT_ID}}</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">Project Title:</span>
+          <span class="info-value">{{PROJECT_TITLE}}</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">Address:</span>
+          <span class="info-value">{{PROJECT_ADDRESS}}</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">Client:</span>
+          <span class="info-value">{{CLIENT_NAME}}</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">Square Footage:</span>
+          <span class="info-value">{{PROJECT_SQ_FT}} sq ft</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">Construction Type:</span>
+          <span class="info-value">{{PROJECT_NEW_CONSTRUCTION}}</span>
+        </div>
+      </div>
+
+      <div class="content-section">
+        <h2 class="section-title">Project Description</h2>
+        <div class="content-text">{{PROJECT_DESCRIPTION}}</div>
+      </div>
+
+      <div class="content-section">
+        <h2 class="section-title">Building Information</h2>
+        <div class="content-text">
+          <strong>Building Height:</strong> {{BUILDING_HEIGHT}}<br />
+          <strong>Floors Below Grade:</strong> {{FLOORS_BELOW_GRADE}}<br />
+          <strong>Building Type:</strong> {{PROJECT_BUILDING_TYPE}}
+        </div>
+      </div>
+
+      <!-- Footer -->
+      <div class="footer">
+        <div class="footer-content">
+          <div class="footer-section">
+            <h3>Contact Information</h3>
+            <div class="contact-details">
+              <div class="contact-item"><strong>Phone:</strong> {{GLOBAL_COMPANY_PHONE}}</div>
+              <div class="contact-item"><strong>Email:</strong> {{GLOBAL_COMPANY_EMAIL}}</div>
+              <div class="contact-item"><strong>Website:</strong> {{GLOBAL_COMPANY_WEBSITE}}</div>
+              <div class="contact-item"><strong>Address:</strong> {{GLOBAL_COMPANY_ADDRESS}}</div>
+            </div>
+          </div>
+
+          <div class="footer-section">
+            <h3>Document Information</h3>
+            <div class="document-details">
+              <div class="document-item"><strong>Generated:</strong> {{CURRENT_DATE}}</div>
+              <div class="document-item"><strong>Project ID:</strong> {{PROJECT_ID}}</div>
+              <div class="document-item"><strong>Version:</strong> 1.0</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="footer-bottom">
+          <p>&copy; {{YEAR}} {{GLOBAL_COMPANY_NAME}}. All rights reserved.</p>
+          <p>This document is confidential and proprietary to {{GLOBAL_COMPANY_NAME}}.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Page 2: Technical Specifications -->
+    <div class="page">
+      <!-- Header -->
+      <div class="header">
+        <div style="display: flex; align-items: center; justify-content: space-between">
+          <div>{{COMPANY_LOGO_LIGHT}}</div>
+          <div>
+            <!-- <h1 style="margin: 0; font-size: 2.5em; font-weight: bold">{{GLOBAL_COMPANY_NAME}}</h1> -->
+            <!-- <div class="subtitle">{{GLOBAL_COMPANY_SLOGAN}}</div> -->
+          </div>
+          <div style="text-align: right; font-size: 0.9em; opacity: 0.9">
+            <!-- <div><strong>Phone:</strong> {{GLOBAL_COMPANY_PHONE}}</div>
+             <div><strong>Email:</strong> {{GLOBAL_COMPANY_EMAIL}}</div>
+             <div><strong>Website:</strong> {{GLOBAL_COMPANY_WEBSITE}}</div> -->
+            <div>{{GLOBAL_COMPANY_PHONE}}</div>
+            <div>{{GLOBAL_COMPANY_EMAIL}}</div>
+            <div>{{GLOBAL_COMPANY_WEBSITE}}</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="page-header">
+        <h1 class="page-title">Technical Specifications</h1>
+        <p class="page-subtitle">Fire Protection System Details</p>
+      </div>
+
+      <div class="content-section">
+        <h2 class="section-title">Fire Protection System Type</h2>
+        <div class="content-text">{{FIRE_PROTECTION_SYSTEM_TYPE}}</div>
+      </div>
+
+      <h2>
+        As required by 780 CMR §901.2.1, this narrative report is a written description of the
+        proposed fire protection system features to be installed as part of the 183 Congress Avenue
+        located in Chelsea, Massachusetts.
+      </h2>
+      <div class="content-section">
+        As required by 780 CMR §901.2.1, this narrative report is a written description of the
+        proposed fire protection system features to be installed as part of the 183 Congress Avenue
+        located in Chelsea, Massachusetts. 901.2.1 (1-a-i) – BASIS (METHODOLOGY) OF DESIGN Section 1
+        - Building Description
+
+        <ol>
+          <li>Estimated Commencement of Construction: {{COMMENCEMENT_OF_CONSTRUCTION}}</li>
+          <li>Building Use Groups: {{BUILDING}}</li>
+          <li>Total Square Footage of Building: {{PROJECT_SQ_FT}}</li>
+          <li>Building Height {{BUILDING_HEIGHT}}</li>
+          <li>Number of Floors Below Grade:{{FLOORS_BELOW_GRADE}}</li>
+          <li>Construction Type: {{CONSTRUCTION_TYPE}}</li>
+          <li>Hazardous Material Usage and Storage: {{HAZARDOUS_MATERIALS}}</li>
+          <li>High-Piled Storage (over 12 ft.) of Commodities: {{HPS_COMMODITIES}}</li>
+          <li>
+            Site Access Arrangement for Emergency Response Vehicles:
+            <ul>
+              <li>Site access for fire / rescue vehicles is via {{SITE_ACCESS}}</li>
+              <li>
+                An exterior fire alarm beacon shall be located such that it is visible from
+                {{EXTERIOR_BEACON}}
+              </li>
+            </ul>
+          </li>
+          <li>Special Suppression & Detection Systems: {{SUPPRESSION_DETECTION_SYSTEMS}}</li>
+        </ol>
+      </div>
+
+      <div class="content-section">
+        <h2 class="section-title">NFPA Compliance</h2>
+        <div class="content-text">
+          <strong>NFPA Version:</strong> {{NFPA_VERSION}}<br />
+          <strong>Hazardous Material Usage:</strong> {{HAZARDOUS_MATERIAL}}<br />
+          <strong>High-Piled Storage:</strong> {{HPS_COMMODITIES}}
+        </div>
+      </div>
+
+      <div class="content-section">
+        <h2 class="section-title">Site Access and Safety</h2>
+        <div class="content-text">
+          <strong>Site Access:</strong> {{SITE_ACCESS}}<br />
+          <strong>Exterior Beacon:</strong> {{EXTERIOR_BEACON}}<br />
+          <strong>Fire Sprinkler Installation:</strong> {{FIRE_SPRINKLER_INSTALLATION}}
+        </div>
+      </div>
+
+      <div class="content-section">
+        <h2 class="section-title">Timeline</h2>
+        <div class="content-text">
+          <strong>Commencement of Construction:</strong> {{COMMENCEMENT_OF_CONSTRUCTION}}<br />
+          <strong>Estimated Completion:</strong> {{PROJECT_EST_TIME}}
+        </div>
+      </div>
+
+      <!-- Footer -->
+      <div class="footer">
+        <div class="footer-content">
+          <div class="footer-section">
+            <h3>Contact Information</h3>
+            <div class="contact-details">
+              <div class="contact-item"><strong>Phone:</strong> {{GLOBAL_COMPANY_PHONE}}</div>
+              <div class="contact-item"><strong>Email:</strong> {{GLOBAL_COMPANY_EMAIL}}</div>
+              <div class="contact-item"><strong>Website:</strong> {{GLOBAL_COMPANY_WEBSITE}}</div>
+              <div class="contact-item"><strong>Address:</strong> {{GLOBAL_COMPANY_ADDRESS}}</div>
+            </div>
+          </div>
+
+          <div class="footer-section">
+            <h3>Document Information</h3>
+            <div class="document-details">
+              <div class="document-item"><strong>Generated:</strong> {{CURRENT_DATE}}</div>
+              <div class="document-item"><strong>Project ID:</strong> {{PROJECT_ID}}</div>
+              <div class="document-item"><strong>Version:</strong> 1.0</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="footer-bottom">
+          <p>&copy; {{YEAR}} {{GLOBAL_COMPANY_NAME}}. All rights reserved.</p>
+          <p>This document is confidential and proprietary to {{GLOBAL_COMPANY_NAME}}.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Page 3: Additional Information -->
+    <div class="page">
+      <!-- Header -->
+      <div class="header">
+        <div style="display: flex; align-items: center; justify-content: space-between">
+          <div>{{COMPANY_LOGO_LIGHT}}</div>
+          <div>
+            <!-- <h1 style="margin: 0; font-size: 2.5em; font-weight: bold">{{GLOBAL_COMPANY_NAME}}</h1> -->
+            <!-- <div class="subtitle">{{GLOBAL_COMPANY_SLOGAN}}</div> -->
+          </div>
+          <div style="text-align: right; font-size: 0.9em; opacity: 0.9">
+            <!-- <div><strong>Phone:</strong> {{GLOBAL_COMPANY_PHONE}}</div>
+             <div><strong>Email:</strong> {{GLOBAL_COMPANY_EMAIL}}</div>
+             <div><strong>Website:</strong> {{GLOBAL_COMPANY_WEBSITE}}</div> -->
+            <div>{{GLOBAL_COMPANY_PHONE}}</div>
+            <div>{{GLOBAL_COMPANY_EMAIL}}</div>
+            <div>{{GLOBAL_COMPANY_WEBSITE}}</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="page-header">
+        <h1 class="page-title">Additional Information</h1>
+        <p class="page-subtitle">Supporting Documentation</p>
+      </div>
+
+      <div class="content-section">
+        <h2 class="section-title">Suppression & Detection Systems</h2>
+        <div class="content-text">{{SUPPRESSION_DETECTION_SYSTEMS}}</div>
+      </div>
+
+      <div class="content-section">
+        <h2 class="section-title">Project Requirements</h2>
+        <div class="content-text">
+          <strong>Building Use Groups:</strong> {{BUILDING}}<br />
+          <strong>Project Type:</strong> {{PROJECT}}<br />
+          <strong>Tier:</strong> {{TIER}}<br />
+          <strong>Service:</strong> {{SERVICE}}
+        </div>
+      </div>
+
+      <div class="content-section">
+        <h2 class="section-title">Contact Information</h2>
+        <div class="content-text">
+          <strong>Client Contact:</strong> {{CLIENT_NAME}}<br />
+          <strong>Email:</strong> {{CLIENT_EMAIL}}<br />
+          <strong>Phone:</strong> {{CLIENT_PHONE}}<br />
+          <strong>Assigned Staff:</strong> {{ASSIGNED_STAFF_NAME}}
+        </div>
+      </div>
+
+      <!-- Footer -->
+      <div class="footer">
+        <div class="footer-content">
+          <div class="footer-section">
+            <h3>Contact Information</h3>
+            <div class="contact-details">
+              <div class="contact-item"><strong>Phone:</strong> {{GLOBAL_COMPANY_PHONE}}</div>
+              <div class="contact-item"><strong>Email:</strong> {{GLOBAL_COMPANY_EMAIL}}</div>
+              <div class="contact-item"><strong>Website:</strong> {{GLOBAL_COMPANY_WEBSITE}}</div>
+              <div class="contact-item"><strong>Address:</strong> {{GLOBAL_COMPANY_ADDRESS}}</div>
+            </div>
+          </div>
+
+          <div class="footer-section">
+            <h3>Document Information</h3>
+            <div class="document-details">
+              <div class="document-item"><strong>Generated:</strong> {{CURRENT_DATE}}</div>
+              <div class="document-item"><strong>Project ID:</strong> {{PROJECT_ID}}</div>
+              <div class="document-item"><strong>Version:</strong> 1.0</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="footer-bottom">
+          <p>&copy; {{YEAR}} {{GLOBAL_COMPANY_NAME}}. All rights reserved.</p>
+          <p>This document is confidential and proprietary to {{GLOBAL_COMPANY_NAME}}.</p>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>
