@@ -334,7 +334,7 @@ export const UNIFIED_FORM_ELEMENTS: FormElementConfig[] = [
     required: false,
     min: 0,
     max: 50000,
-    step: 10,
+    step: 100,
     component: "UnitSlider",
     componentProps: {
       required: false,

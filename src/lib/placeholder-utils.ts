@@ -461,6 +461,14 @@ export function replacePlaceholders(
       addBoldTags = true;
     }
   }
+  if (estTime) {
+    const beforeReplace = result;
+    result = result.replace(/\{\{\s*EST_TIME\s*\}\}/g, estTime);
+    if (result !== beforeReplace) {
+      placeholderApplied = true;
+      addBoldTags = true;
+    }
+  }
 
   if (projectBuildingType) {
     const beforeReplace = result;

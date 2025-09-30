@@ -457,9 +457,9 @@ const projectId = project?.id;
           },
           body: JSON.stringify({
             project: project,
-            currentUser: currentUser,
             signature: signatureData,
             signed_at: new Date().toISOString(),
+            currentUser: currentUser,
           }),
         });
 
@@ -502,13 +502,6 @@ const projectId = project?.id;
           }
 
           try {
-            // Call global updateStatus function to set status
-            newStatus = 50;
-            const data = await window.updateStatus(project, newStatus, statusData[newStatus]);
-
-            newStatus = 55;
-            const data2 = await window.updateStatus(project, newStatus, statusData[newStatus]);
-
             if (data.success) {
               console.log("✅ [DigitalSignature] Contract agreement processed successfully");
 
@@ -520,8 +513,16 @@ const projectId = project?.id;
               agreeBtn.classList.remove("bg-green-600", "hover:bg-green-700");
               agreeBtn.classList.add("bg-green-500");
 
-              // Show notification immediately for instant feedback
-              window.handleNewStatusNotification(data, "DIGITAL-SIGNATURE");
+              // Call global updateStatus function to set status
+              const nextStatus = 50;
+              const statusResult = await window.updateStatus(project, nextStatus, statusData);
+              window
+                .handleNewStatusNotification(statusResult, "PROJECT-FORM")
+                .then(async (data) => {
+                  newStatus = 55;
+                  const data2 = await window.updateStatus(project, newStatus, statusData);
+                  window.handleNewStatusNotification(data2, "DIGITAL-SIGNATURE");
+                });
             } else {
               throw new Error(data.error || "Failed to process agreement");
             }

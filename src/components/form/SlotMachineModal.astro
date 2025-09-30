@@ -84,9 +84,9 @@ const {
 } = Astro.props;
 
 // Debug logging for saveApiEndpoint
-console.log("🔧 [SLOT-MACHINE] Props received:", { saveApiEndpoint, fetchApiEndpoint, id });
-console.log("🔧 [SLOT-MACHINE] saveApiEndpoint type:", typeof saveApiEndpoint);
-console.log("🔧 [SLOT-MACHINE] saveApiEndpoint value:", JSON.stringify(saveApiEndpoint));
+// console.log("🔧 [SLOT-MACHINE] Props received:", { saveApiEndpoint, fetchApiEndpoint, id });
+// console.log("🔧 [SLOT-MACHINE] saveApiEndpoint type:", typeof saveApiEndpoint);
+// console.log("🔧 [SLOT-MACHINE] saveApiEndpoint value:", JSON.stringify(saveApiEndpoint));
 
 const projectId = project?.id || "";
 // Ensure options is always an array
@@ -528,8 +528,8 @@ const displayText = buttonText || selectedOption?.label || placeholder;
         // Show success notification
 
         // Also try the original notification handler if it exists
-        if (window.handleUpdateStatusNotification) {
-          window.handleUpdateStatusNotification(result, "SLOT-MACHINE");
+        if (window.handleNewStatusNotification) {
+          window.handleNewStatusNotification(result, "SLOT-MACHINE");
         }
 
         // if (result.notificationData && window.showModal && showNotification) {
@@ -586,35 +586,6 @@ const displayText = buttonText || selectedOption?.label || placeholder;
     }
   }
 
-  // Helper function to create buttons using Button partial
-  async function createButtonPartial(config) {
-    try {
-      const headers = new Headers();
-      Object.entries(config).forEach(([key, value]) => {
-        if (value !== undefined && value !== null) {
-          headers.set(`x-button-${key}`, value.toString());
-        }
-      });
-
-      const response = await fetch("/partials/button", {
-        headers: headers,
-      });
-
-      if (response.ok) {
-        const buttonHTML = await response.text();
-        const wrapper = document.createElement("div");
-        wrapper.innerHTML = buttonHTML;
-        return wrapper.firstElementChild;
-      } else {
-        console.error("Failed to fetch button partial:", response.status);
-        return null;
-      }
-    } catch (error) {
-      console.error("Error creating button partial:", error);
-      return null;
-    }
-  }
-
   // Generic slot machine modal function
   async function showSlotMachineModal(config) {
     const {
@@ -666,13 +637,13 @@ const displayText = buttonText || selectedOption?.label || placeholder;
 
     // Initialize originalOptions immediately for static options (before search setup)
     let originalOptions = [];
-    if (!fetchOnLoad && finalOptions.length > 0) {
-      originalOptions = [...finalOptions];
-      console.log(
-        `🔍 [SLOT-MACHINE] Initialized originalOptions with ${originalOptions.length} static options`
-      );
-      console.log(`🔍 [SLOT-MACHINE] Sample option structure:`, originalOptions[0]);
-    }
+    // if (!fetchOnLoad && finalOptions.length > 0) {
+    //   originalOptions = [...finalOptions];
+    //   console.log(
+    //     `🔍 [SLOT-MACHINE] Initialized originalOptions with ${originalOptions.length} static options`
+    //   );
+    //   console.log(`🔍 [SLOT-MACHINE] Sample option structure:`, originalOptions[0]);
+    // }
 
     // Helper function to create LI elements consistently
     function createOptionElement(option, index, isSelected = false) {
@@ -753,9 +724,16 @@ const displayText = buttonText || selectedOption?.label || placeholder;
         optionsList.innerHTML = "";
       }
 
+      console.log("🔍 [SLOT-MACHINE] populateOptionsList", optionsArray);
       let newSelectedIndex = -1;
 
+      const modal = document.getElementById(`${id}-slot-machine-modal`);
+      const emptyState = modal?.querySelector(".slot-empty-state");
+
       if (optionsArray.length > 0) {
+        if (emptyState) {
+          emptyState.classList.add("hidden");
+        }
         optionsArray.forEach((option, index) => {
           const optionValue = option[valueField] || option.value || option.place_id || option.id;
           const isSelected =
@@ -770,12 +748,6 @@ const displayText = buttonText || selectedOption?.label || placeholder;
           optionsList.appendChild(li);
         });
       } else {
-        // const messageLi = createMessageElement("No results found");
-        // document.getElementById("no-results-message").innerHTML = noResultsText;
-        // optionsList.appendChild(messageLi);
-
-        const modal = document.getElementById(`${id}-slot-machine-modal`);
-        const emptyState = modal?.querySelector(".slot-empty-state");
         if (emptyState) {
           emptyState.classList.remove("hidden");
         }
@@ -889,12 +861,16 @@ const displayText = buttonText || selectedOption?.label || placeholder;
           // Store original options on first search
           if (originalOptions.length === 0) {
             // If we have finalOptions (pre-populated from props), use those
+            console.log("🔍 [SLOT-MACHINE] finalOptions", finalOptions);
             if (finalOptions.length > 0) {
               originalOptions = finalOptions.map((option, index) => ({
                 value: option[valueField] || option.value || "",
                 label: option[labelField] || option.label || "",
                 index: index,
               }));
+              if (emptyState) {
+                emptyState.classList.add("hidden");
+              }
             } else {
               // Otherwise, get from DOM
               originalOptions = Array.from(optionsList.querySelectorAll("li")).map((li, index) => {
@@ -905,6 +881,9 @@ const displayText = buttonText || selectedOption?.label || placeholder;
                   index: index,
                 };
               });
+              if (emptyState) {
+                emptyState.classList.add("hidden");
+              }
             }
           }
 
@@ -972,7 +951,9 @@ const displayText = buttonText || selectedOption?.label || placeholder;
           // Update the options list
           if (optionsList) {
             optionsList.innerHTML = "";
-
+            if (emptyState) {
+              emptyState.classList.add("hidden");
+            }
             if (filteredOptions.length > 0) {
               console.log(`🔍 [SLOT-MACHINE] Showing ${filteredOptions.length} filtered results`);
               const newSelectedIndex = populateOptionsList(filteredOptions);
@@ -990,6 +971,9 @@ const displayText = buttonText || selectedOption?.label || placeholder;
               optionsList.innerHTML = "";
               optionsList.appendChild(messageLi);
               selectedIndex = -1;
+              if (emptyState) {
+                emptyState.classList.remove("hidden");
+              }
             }
           }
           return;
@@ -1559,21 +1543,8 @@ const displayText = buttonText || selectedOption?.label || placeholder;
     console.log(`✅ [SLOT-MACHINE] Selected: ${label} (${value}) for component: ${componentId}`);
 
     // Auto-save to API if saveApiEndpoint is provided or legacy component IDs
-    console.log(`🐛 [SLOT-MACHINE] Debugging auto-save condition:`);
-    console.log(`🐛   - passedSaveApiEndpoint:`, passedSaveApiEndpoint);
-    console.log(`🐛   - componentId:`, componentId);
-    console.log(
-      `🐛   - componentId.startsWith("assign-staff"):`,
-      componentId.startsWith("assign-staff")
-    );
-    console.log(`🐛   - componentId === "update-status":`, componentId === "update-status");
 
-    if (
-      passedSaveApiEndpoint ||
-      componentId === "update-status" ||
-      componentId.startsWith("assign-staff-") ||
-      componentId === "assign-staff"
-    ) {
+    if (passedSaveApiEndpoint || componentId === "update-status") {
       console.log(
         `🎰 [SLOT-MACHINE] Auto-saving to API for passedSaveApiEndpoint: ${passedSaveApiEndpoint}`
       );
@@ -1583,9 +1554,6 @@ const displayText = buttonText || selectedOption?.label || placeholder;
       if (passedSaveApiEndpoint) {
         // Use the passed saveApiEndpoint if provided (highest priority)
         correctSaveApiEndpoint = passedSaveApiEndpoint;
-      } else if (componentId.startsWith("assign-staff-") || componentId === "assign-staff") {
-        // For assign-staff components without saveApiEndpoint, use the generic assign-staff endpoint
-        correctSaveApiEndpoint = "assign-staff";
       } else {
         // For other components without saveApiEndpoint, use the component ID
         correctSaveApiEndpoint = componentId;

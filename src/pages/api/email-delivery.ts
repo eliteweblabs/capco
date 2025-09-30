@@ -73,7 +73,7 @@ export const POST: APIRoute = async ({ request, cookies }): Promise<Response> =>
     let usersToNotify = body.usersToNotify;
 
     const {
-      emailType,
+      emailType = "email",
       emailSubject,
       emailContent,
       emailToRoles,
@@ -114,6 +114,14 @@ export const POST: APIRoute = async ({ request, cookies }): Promise<Response> =>
       !fromEmail
     ) {
       console.error("📧 [EMAIL-DELIVERY] Email configuration not available");
+      console.error("📧 [EMAIL-DELIVERY] Email configuration not available", {
+        usersToNotify,
+        emailContent,
+        emailSubject,
+        emailProvider,
+        emailApiKey,
+        fromEmail,
+      });
       const errorResponse: EmailDeliveryResponse = {
         success: false,
         error:
@@ -269,7 +277,7 @@ export const POST: APIRoute = async ({ request, cookies }): Promise<Response> =>
           } else {
             const responseData = await response.json();
             console.log(
-              // `📧 [EMAIL-DELIVERY] Email sent successfully to ${userEmail}:`,
+              `📧 [EMAIL-DELIVERY] Email sent successfully to ${userEmail}:`,
               responseData
             );
             sentEmails.push(userEmail);

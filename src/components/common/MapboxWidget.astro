@@ -1,0 +1,691 @@
+---
+// Mapbox Widget Component with Scroll Effects
+---
+
+<div id="mapbox-widget" class="mapbox-container">
+  <!-- Navigation Tabs -->
+  <div class="mapbox-nav">
+    <button class="nav-tab active" data-example="coverage">Coverage Map</button>
+    <button class="nav-tab" data-example="deployment">Deployment</button>
+    <button class="nav-tab" data-example="analytics">Analytics</button>
+    <button class="nav-tab" data-example="performance">Performance</button>
+  </div>
+
+  <!-- Map Container -->
+  <div class="map-container">
+    <div id="map" class="mapbox-map"></div>
+
+    <!-- Overlay Content -->
+    <div class="map-overlay">
+      <div class="overlay-content" id="coverage-content">
+        <h3>Network Coverage</h3>
+        <div class="stats-grid">
+          <div class="stat-item">
+            <div class="stat-number" data-target="98">0</div>
+            <div class="stat-label">Coverage %</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-number" data-target="45">0</div>
+            <div class="stat-label">Active Sites</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-number" data-target="2.4">0</div>
+            <div class="stat-label">Avg Speed (Gbps)</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="overlay-content hidden" id="deployment-content">
+        <h3>Deployment Status</h3>
+        <div class="deployment-timeline">
+          <div class="timeline-item completed">
+            <div class="timeline-dot"></div>
+            <div class="timeline-content">
+              <h4>Site Survey Complete</h4>
+              <p>All locations surveyed and approved</p>
+            </div>
+          </div>
+          <div class="timeline-item active">
+            <div class="timeline-dot"></div>
+            <div class="timeline-content">
+              <h4>Hardware Installation</h4>
+              <p>Installing cellular access points</p>
+            </div>
+          </div>
+          <div class="timeline-item">
+            <div class="timeline-dot"></div>
+            <div class="timeline-content">
+              <h4>Network Testing</h4>
+              <p>Performance validation pending</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="overlay-content hidden" id="analytics-content">
+        <h3>Network Analytics</h3>
+        <div class="chart-container">
+          <div class="chart-bar" style="height: 85%">
+            <span class="chart-label">Peak Hours</span>
+            <span class="chart-value">2.1 Gbps</span>
+          </div>
+          <div class="chart-bar" style="height: 65%">
+            <span class="chart-label">Off-Peak</span>
+            <span class="chart-value">1.4 Gbps</span>
+          </div>
+          <div class="chart-bar" style="height: 95%">
+            <span class="chart-label">Weekend</span>
+            <span class="chart-value">2.3 Gbps</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="overlay-content hidden" id="performance-content">
+        <h3>Performance Metrics</h3>
+        <div class="metrics-grid">
+          <div class="metric-card">
+            <div class="metric-icon">📶</div>
+            <div class="metric-info">
+              <div class="metric-title">Signal Strength</div>
+              <div class="metric-value">-45 dBm</div>
+            </div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-icon">⚡</div>
+            <div class="metric-info">
+              <div class="metric-title">Latency</div>
+              <div class="metric-value">12ms</div>
+            </div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-icon">🔄</div>
+            <div class="metric-info">
+              <div class="metric-title">Uptime</div>
+              <div class="metric-value">99.9%</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<!-- 
+<div class="cellular_maps__IWnVr mapboxgl-map">
+  <div class="mapboxgl-canary" style="visibility: hidden;"></div><div
+    class="mapboxgl-canvas-container mapboxgl-interactive mapboxgl-touch-drag-pan"
+  >
+    <canvas
+      class="mapboxgl-canvas"
+      tabindex="0"
+      aria-label="Map"
+      role="region"
+      width="502"
+      height="1004"
+      style="width: 251px; height: 502px;"></canvas><div
+      class="undefined mapboxgl-marker mapboxgl-marker-anchor-bottom"
+      aria-label="Map marker"
+      role="img"
+      style="transform: translate(126px, 251px) translate(-50%, -100%) translate(0px, 0px); opacity: 0.951862; pointer-events: auto;"
+    >
+    </div>
+  </div><div class="mapboxgl-control-container">
+    <div class="mapboxgl-ctrl-top-left"></div><div class="mapboxgl-ctrl-top"></div><div
+      class="mapboxgl-ctrl-top-right"
+    >
+    </div><div class="mapboxgl-ctrl-right">
+      <div class="mapboxgl-ctrl mapboxgl-ctrl-group"></div>
+    </div><div class="mapboxgl-ctrl-bottom-right">
+      <div class="mapboxgl-ctrl mapboxgl-ctrl-attrib mapboxgl-compact">
+        <button class="mapboxgl-ctrl-attrib-button" type="button" aria-label="Toggle attribution"
+          ><span class="mapboxgl-ctrl-icon" aria-hidden="true" title="Toggle attribution"
+          ></span></button
+        >
+      </div>
+    </div><div class="mapboxgl-ctrl-bottom"></div><div class="mapboxgl-ctrl-bottom-left">
+      <div class="mapboxgl-ctrl" style="display: block;">
+        <a
+          class="mapboxgl-ctrl-logo"
+          target="_blank"
+          rel="noopener nofollow"
+          href="https://www.mapbox.com/"
+          aria-label="Mapbox homepage"></a>
+      </div>
+    </div><div class="mapboxgl-ctrl-left"></div>
+  </div>
+</div> -->
+
+<style>
+  .mapbox-container {
+    position: relative;
+    height: 100vh;
+    width: 100%;
+    overflow: hidden;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  }
+
+  .mapbox-nav {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    z-index: 1000;
+    display: flex;
+    gap: 10px;
+    background: rgba(255, 255, 255, 0.95);
+    padding: 10px;
+    border-radius: 12px;
+    backdrop-filter: blur(10px);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  }
+
+  .nav-tab {
+    padding: 12px 20px;
+    border: none;
+    background: transparent;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    color: #666;
+  }
+
+  .nav-tab:hover {
+    background: rgba(102, 126, 234, 0.1);
+    color: #667eea;
+  }
+
+  .nav-tab.active {
+    background: #667eea;
+    color: white;
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+  }
+
+  .map-container {
+    position: relative;
+    height: 100%;
+    width: 100%;
+  }
+
+  .mapbox-map {
+    width: 100%;
+    height: 100%;
+    border-radius: 0;
+  }
+
+  .map-overlay {
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 400px;
+    height: 100%;
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(20px);
+    border-left: 1px solid rgba(255, 255, 255, 0.2);
+    padding: 40px;
+    overflow-y: auto;
+    transform: translateX(100%);
+    transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .map-overlay.visible {
+    transform: translateX(0);
+  }
+
+  .overlay-content {
+    opacity: 0;
+    transform: translateY(30px);
+    transition: all 0.6s ease;
+  }
+
+  .overlay-content.visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  .overlay-content h3 {
+    font-size: 28px;
+    font-weight: 700;
+    margin-bottom: 30px;
+    color: #2d3748;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .stats-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 20px;
+    margin-bottom: 40px;
+  }
+
+  .stat-item {
+    background: white;
+    padding: 24px;
+    border-radius: 16px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+    text-align: center;
+    transition: transform 0.3s ease;
+  }
+
+  .stat-item:hover {
+    transform: translateY(-4px);
+  }
+
+  .stat-number {
+    font-size: 36px;
+    font-weight: 700;
+    color: #667eea;
+    margin-bottom: 8px;
+  }
+
+  .stat-label {
+    font-size: 14px;
+    color: #718096;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .deployment-timeline {
+    margin-top: 20px;
+  }
+
+  .timeline-item {
+    display: flex;
+    align-items: flex-start;
+    margin-bottom: 24px;
+    position: relative;
+  }
+
+  .timeline-item:not(:last-child)::after {
+    content: "";
+    position: absolute;
+    left: 12px;
+    top: 32px;
+    width: 2px;
+    height: calc(100% + 8px);
+    background: #e2e8f0;
+  }
+
+  .timeline-dot {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: #e2e8f0;
+    margin-right: 16px;
+    flex-shrink: 0;
+    position: relative;
+    z-index: 1;
+  }
+
+  .timeline-item.completed .timeline-dot {
+    background: #48bb78;
+  }
+
+  .timeline-item.active .timeline-dot {
+    background: #667eea;
+    animation: pulse 2s infinite;
+  }
+
+  @keyframes pulse {
+    0%,
+    100% {
+      transform: scale(1);
+    }
+    50% {
+      transform: scale(1.1);
+    }
+  }
+
+  .timeline-content h4 {
+    font-size: 16px;
+    font-weight: 600;
+    margin-bottom: 4px;
+    color: #2d3748;
+  }
+
+  .timeline-content p {
+    font-size: 14px;
+    color: #718096;
+    margin: 0;
+  }
+
+  .chart-container {
+    display: flex;
+    align-items: end;
+    gap: 16px;
+    height: 200px;
+    margin-top: 20px;
+  }
+
+  .chart-bar {
+    flex: 1;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    border-radius: 8px 8px 0 0;
+    position: relative;
+    transition: all 0.6s ease;
+    animation: growUp 1s ease-out;
+  }
+
+  @keyframes growUp {
+    from {
+      height: 0;
+    }
+    to {
+      height: var(--target-height);
+    }
+  }
+
+  .chart-label {
+    position: absolute;
+    bottom: -25px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 12px;
+    color: #718096;
+    font-weight: 500;
+  }
+
+  .chart-value {
+    position: absolute;
+    top: -25px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 12px;
+    color: #667eea;
+    font-weight: 600;
+  }
+
+  .metrics-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 16px;
+    margin-top: 20px;
+  }
+
+  .metric-card {
+    display: flex;
+    align-items: center;
+    background: white;
+    padding: 20px;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    transition: all 0.3s ease;
+  }
+
+  .metric-card:hover {
+    transform: translateX(4px);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+  }
+
+  .metric-icon {
+    font-size: 24px;
+    margin-right: 16px;
+  }
+
+  .metric-title {
+    font-size: 14px;
+    color: #718096;
+    margin-bottom: 4px;
+  }
+
+  .metric-value {
+    font-size: 18px;
+    font-weight: 600;
+    color: #2d3748;
+  }
+
+  .hidden {
+    display: none;
+  }
+
+  @media (max-width: 768px) {
+    .map-overlay {
+      width: 100%;
+      height: 50%;
+      bottom: 0;
+      top: auto;
+      transform: translateY(100%);
+    }
+
+    .map-overlay.visible {
+      transform: translateY(0);
+    }
+
+    .mapbox-nav {
+      top: 10px;
+      left: 10px;
+      right: 10px;
+      flex-wrap: wrap;
+    }
+
+    .nav-tab {
+      flex: 1;
+      min-width: 80px;
+    }
+  }
+</style>
+
+<script>
+  // Mapbox configuration
+  const MAPBOX_ACCESS_TOKEN =
+    "REDACTED_MAPBOX_TOKEN"; // Replace with your token
+
+  let map: any = null;
+  let currentExample = "coverage";
+
+  // Initialize map when component loads
+  document.addEventListener("DOMContentLoaded", () => {
+    initializeMap();
+    setupScrollEffects();
+    setupNavigation();
+    setupCounterAnimations();
+  });
+
+  function initializeMap() {
+    // Initialize Mapbox GL JS
+    (window as any).mapboxgl.accessToken = MAPBOX_ACCESS_TOKEN;
+
+    map = new (window as any).mapboxgl.Map({
+      container: "map",
+      style: "mapbox://styles/mapbox/streets-v11",
+      center: [-74.006, 40.7128], // New York City
+      zoom: 12,
+      pitch: 45,
+      bearing: -17.6,
+    });
+
+    // Add 3D buildings
+    map.on("load", () => {
+      map.addLayer({
+        id: "3d-buildings",
+        source: "composite",
+        "source-layer": "building",
+        filter: ["==", "extrude", "true"],
+        type: "fill-extrusion",
+        minzoom: 15,
+        paint: {
+          "fill-extrusion-color": "#aaa",
+          "fill-extrusion-height": [
+            "interpolate",
+            ["linear"],
+            ["zoom"],
+            15,
+            0,
+            15.05,
+            ["get", "height"],
+          ],
+          "fill-extrusion-base": [
+            "interpolate",
+            ["linear"],
+            ["zoom"],
+            15,
+            0,
+            15.05,
+            ["get", "min_height"],
+          ],
+          "fill-extrusion-opacity": 0.6,
+        },
+      });
+
+      // Add coverage markers
+      addCoverageMarkers();
+    });
+  }
+
+  function addCoverageMarkers() {
+    const markers = [
+      { lng: -74.006, lat: 40.7128, strength: 95, type: "tower" },
+      { lng: -74.005, lat: 40.7135, strength: 87, type: "tower" },
+      { lng: -74.007, lat: 40.712, strength: 92, type: "tower" },
+      { lng: -74.004, lat: 40.714, strength: 78, type: "tower" },
+    ];
+
+    markers.forEach((marker) => {
+      const el = document.createElement("div");
+      el.className = "coverage-marker";
+      el.style.width = "20px";
+      el.style.height = "20px";
+      el.style.borderRadius = "50%";
+      el.style.background = `hsl(${marker.strength}, 70%, 50%)`;
+      el.style.border = "3px solid white";
+      el.style.boxShadow = "0 2px 8px rgba(0,0,0,0.3)";
+      el.style.cursor = "pointer";
+
+      new (window as any).mapboxgl.Marker(el).setLngLat([marker.lng, marker.lat]).addTo(map);
+    });
+  }
+
+  function setupScrollEffects() {
+    const overlay = document.querySelector(".map-overlay") as HTMLElement;
+
+    window.addEventListener("scroll", () => {
+      const scrolled = window.scrollY;
+      const maxHeight = document.body.scrollHeight - window.innerHeight;
+      const progress = (scrolled / maxHeight) * 100;
+
+      // Zoom in as page scrolls down
+      if (map && map.isStyleLoaded()) {
+        const minZoom = 8;
+        const maxZoom = 18;
+        const zoom = maxZoom - (progress / 100) * (maxZoom - minZoom);
+        map.setZoom(zoom);
+        console.log("🗺️ [MAPBOX] Zoom:", zoom, "Progress:", progress);
+      }
+
+      // Parallax effect for overlay
+      if (overlay) {
+        const translateY = scrolled * 0.5;
+        overlay.style.transform = `translateY(${translateY}px)`;
+      }
+
+      // Show overlay when scrolled
+      if (scrolled > 100 && !overlay.classList.contains("visible")) {
+        overlay.classList.add("visible");
+        showContent(currentExample);
+      }
+    });
+  }
+
+  function setupNavigation() {
+    const navTabs = document.querySelectorAll(".nav-tab");
+    const overlay = document.querySelector(".map-overlay");
+
+    navTabs.forEach((tab) => {
+      tab.addEventListener("click", () => {
+        // Remove active class from all tabs
+        navTabs.forEach((t) => t.classList.remove("active"));
+        // Add active class to clicked tab
+        tab.classList.add("active");
+
+        // Get example type
+        const example = tab.dataset.example;
+        currentExample = example;
+
+        // Show overlay with animation
+        if (overlay) {
+          overlay.classList.add("visible");
+          showContent(example);
+        }
+      });
+    });
+  }
+
+  function showContent(example) {
+    // Hide all content
+    const allContent = document.querySelectorAll(".overlay-content");
+    allContent.forEach((content) => {
+      content.classList.add("hidden");
+      content.classList.remove("visible");
+    });
+
+    // Show selected content
+    const targetContent = document.getElementById(`${example}-content`);
+    if (targetContent) {
+      setTimeout(() => {
+        targetContent.classList.remove("hidden");
+        targetContent.classList.add("visible");
+      }, 100);
+    }
+
+    // Update map based on example
+    updateMapForExample(example);
+  }
+
+  function updateMapForExample(example) {
+    if (!map) return;
+
+    switch (example) {
+      case "coverage":
+        map.setStyle("mapbox://styles/mapbox/streets-v11");
+        break;
+      case "deployment":
+        map.setStyle("mapbox://styles/mapbox/satellite-v9");
+        break;
+      case "analytics":
+        map.setStyle("mapbox://styles/mapbox/dark-v10");
+        break;
+      case "performance":
+        map.setStyle("mapbox://styles/mapbox/light-v10");
+        break;
+    }
+  }
+
+  function setupCounterAnimations() {
+    const counters = document.querySelectorAll(".stat-number");
+
+    const animateCounter = (counter) => {
+      const target = parseInt(counter.dataset.target);
+      const duration = 2000;
+      const increment = target / (duration / 16);
+      let current = 0;
+
+      const timer = setInterval(() => {
+        current += increment;
+        if (current >= target) {
+          current = target;
+          clearInterval(timer);
+        }
+        counter.textContent = Math.floor(current);
+      }, 16);
+    };
+
+    // Intersection Observer for counter animation
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          animateCounter(entry.target);
+          observer.unobserve(entry.target);
+        }
+      });
+    });
+
+    counters.forEach((counter) => {
+      observer.observe(counter);
+    });
+  }
+</script>
+
+<!-- Mapbox GL JS -->
+<link href="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css" rel="stylesheet" />
+<script src="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js"></script>

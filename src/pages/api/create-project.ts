@@ -198,10 +198,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         if (existingUser) {
           // User exists, check if profile needs updating
           projectAuthorId = existingUser.id;
-          // console.log("📝 [CREATE-PROJECT] User exists, using existing ID:", projectAuthorId);
-          // console.log("📝 [CREATE-PROJECT] Existing user data:", existingUser);
 
-          // Get current profile to compare with form data
           const { data: existingProfile, error: profileError } = await supabaseAdmin
             .from("profiles")
             .select("first_name, last_name, company_name")
@@ -220,20 +217,6 @@ export const POST: APIRoute = async ({ request, cookies }) => {
               existingProfile.first_name !== trimmedFirstName ||
               existingProfile.last_name !== trimmedLastName ||
               existingProfile.company_name !== trimmedCompanyName;
-
-            // console.log("📝 [CREATE-PROJECT] Profile comparison:", {
-            //   current: {
-            //     first_name: existingProfile.first_name,
-            //     last_name: existingProfile.last_name,
-            //     company_name: existingProfile.company_name,
-            //   },
-            //   new: {
-            //     first_name: trimmedFirstName,
-            //     last_name: trimmedLastName,
-            //     company_name: trimmedCompanyName,
-            //   },
-            //   hasChanges,
-            // });
 
             if (hasChanges) {
               console.log("📝 [CREATE-PROJECT] Profile data has changed, updating profile:", {
@@ -264,12 +247,11 @@ export const POST: APIRoute = async ({ request, cookies }) => {
                 console.error("📝 [CREATE-PROJECT] Error updating profile:", updateError);
                 // Don't fail the project creation, just log the error
               } else {
-                // console.log("📝 [CREATE-PROJECT] Profile updated successfully");
-                // console.log("📝 [CREATE-PROJECT] Updated profile data:", {
-                //   first_name: trimmedFirstName,
-                //   last_name: trimmedLastName,
-                //   company_name: trimmedCompanyName,
-                // });
+                (window as any).showModal(
+                  "success",
+                  `${trimmedCompanyName}Profile Updated", "Profile has been updated successfully!`,
+                  2000
+                );
               }
             } else {
               // console.log("📝 [CREATE-PROJECT] Profile data unchanged, no update needed");
@@ -348,11 +330,11 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
     // Prepare project data - use dynamic mapping like update-project API
     // Filter out user profile fields that don't belong in projects table
-    const { company_name, first_name, last_name, email, ...projectFields } = body;
+    const { company_name, first_name, last_name, email, ...updatestields } = body;
 
     // Start with filtered form data and add required fields
     const projectData = {
-      ...projectFields, // Include only project-related form fields
+      ...updatestields, // Include only project-related form fields
       author_id: projectAuthorId,
       // Handle special cases for specific fields
       site_access: body.address ? body.address.match(/^[^,]+/)?.[0]?.trim() : null,
@@ -374,15 +356,15 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       updated_at: new Date().toISOString(), // Set initial update timestamp
     };
 
-    console.log(
-      "📝 [CREATE-PROJECT] Inserting project data:",
-      JSON.stringify(projectData, null, 2)
-    );
+    // console.log(
+    //   "📝 [CREATE-PROJECT] Inserting project data:",
+    //   JSON.stringify(projectData, null, 2)
+    // );
 
     // SAFETY CHECK: Ensure project author is always a client
     // This prevents the issue where projects could be created with admin/staff authors
     // The check validates that the author_id corresponds to a user with role = 'Client'
-    console.log("📝 [CREATE-PROJECT] Safety check: Verifying project author role");
+    // console.log("📝 [CREATE-PROJECT] Safety check: Verifying project author role");
     const { data: authorProfile, error: authorCheckError } = await supabase
       .from("profiles")
       .select("*")
@@ -406,12 +388,9 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     }
 
     if (authorProfile.role !== "Client") {
-      console.error("📝 [CREATE-PROJECT] SAFETY CHECK FAILED - Project author is not a client!", {
-        authorId: projectAuthorId,
-        authorRole: authorProfile.role,
-        expectedRole: "Client",
-        currentUserRole: userProfile.role,
-      });
+      console.error(
+        "📝 [CREATE-PROJECT] SAFETY CHECK FAILED - Project author is not a client! e5EGRe6*uryetgre"
+      );
       return new Response(
         JSON.stringify({
           error: "Project author must be a client",
@@ -423,30 +402,15 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       );
     }
 
-    console.log("📝 [CREATE-PROJECT] ✅ Safety check passed - project author is a client:", {
-      authorId: projectAuthorId,
-      authorRole: authorProfile.role,
-    });
-
     // Create project
-    console.log("📝 [CREATE-PROJECT] About to insert project into database");
     const { data: projects, error } = await supabase
       .from("projects")
       .insert([projectData])
       .select();
 
     if (error) {
-      console.error("📝 [CREATE-PROJECT] Database error:", error);
-      console.error("📝 [CREATE-PROJECT] Error details:", {
-        message: error.message,
-        code: error.code,
-        details: error.details,
-        hint: error.hint,
-      });
-      console.error(
-        "📝 [CREATE-PROJECT] Project data that failed:",
-        JSON.stringify(projectData, null, 2)
-      );
+      console.error("📝 [CREATE-PROJECT] Database error: er#5erw3$Tr", error);
+
       return new Response(
         JSON.stringify({
           error: error.message,
@@ -468,32 +432,6 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
     const project = projects[0];
 
-    // console.log("📝 [CREATE-PROJECT] Project created successfully:", {
-    //   id: project.id,
-    //   author_id: project.author_id,
-    //   title: project.title,
-    //   address: project.address,
-    //   status: project.status,
-    // });
-
-    // Verify the project has the correct initial status
-    // if (project.status !== 0) {
-    //   console.error("📝 [CREATE-PROJECT] WARNING: Project created without status 0!", {
-    //     actualStatus: project.status,
-    //     expectedStatus: 0,
-    //     projectId: project.id,
-    //   });
-    // } else {
-    //   console.log(
-    //     "📝 [CREATE-PROJECT] ✅ Project created with correct initial status:",
-    //     project.status
-    //   );
-    // }
-
-    // This will trigger proper email notifications for "Specs Received" status
-
-    // console.log("📝 [CREATE-PROJECT] ==========================================");
-
     // Get current user data for logging
     const currentUser = {
       id: userId,
@@ -504,10 +442,10 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     // Log the project creation
     try {
       await SimpleProjectLogger.addLogEntry(
-        project.id,
+        project,
         "project_created",
         currentUser,
-        "Project was created",
+        project.address ? project.address : "New Project was created",
         projectData
       );
     } catch (logError) {

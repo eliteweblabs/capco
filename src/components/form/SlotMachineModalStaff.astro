@@ -82,9 +82,9 @@ const {
 } = Astro.props;
 
 // Debug logging for saveApiEndpoint
-console.log("🔧 [SLOT-MACHINE] Props received:", { saveApiEndpoint, fetchApiEndpoint, id });
-console.log("🔧 [SLOT-MACHINE] saveApiEndpoint type:", typeof saveApiEndpoint);
-console.log("🔧 [SLOT-MACHINE] saveApiEndpoint value:", JSON.stringify(saveApiEndpoint));
+// console.log("🔧 [SLOT-MACHINE] Props received:", { saveApiEndpoint, fetchApiEndpoint, id });
+// console.log("🔧 [SLOT-MACHINE] saveApiEndpoint type:", typeof saveApiEndpoint);
+// console.log("🔧 [SLOT-MACHINE] saveApiEndpoint value:", JSON.stringify(saveApiEndpoint));
 
 const projectId = project?.id || "";
 // Ensure options is always an array
@@ -153,13 +153,11 @@ const displayText = selectedOption?.label || placeholder;
   // Initialize the slot machine picker
   document.addEventListener("DOMContentLoaded", function () {
     // Debug: Log how many slot machines are on the page
-    const allSlotMachines = document.querySelectorAll("[data-slot-machine]");
-    console.log(`🎰 [SLOT-MACHINE-${id}] Found ${allSlotMachines.length} slot machines on page`);
 
     const trigger = document.getElementById(id);
     const hiddenInput = document.getElementById(`${id}-value`);
 
-    if (!trigger) {
+    if (!trigger || !hiddenInput) {
       console.error(`🎰 [SLOT-MACHINE-${id}] Trigger button with ID '${id}' not found`);
       return;
     }
@@ -537,6 +535,12 @@ const displayText = selectedOption?.label || placeholder;
         `🔍 [SLOT-MACHINE] Initialized originalOptions with ${originalOptions.length} static options`
       );
       console.log(`🔍 [SLOT-MACHINE] Sample option structure:`, originalOptions[0]);
+
+      const modal = document.getElementById(`${id}-slot-machine-modal`);
+      const emptyState = modal?.querySelector(".slot-empty-state");
+      if (emptyState) {
+        emptyState.classList.add("hidden");
+      }
     }
 
     // Helper function to create LI elements consistently
@@ -638,12 +642,6 @@ const displayText = selectedOption?.label || placeholder;
         // const messageLi = createMessageElement("No results found");
         // document.getElementById("no-results-message").innerHTML = noResultsText;
         // optionsList.appendChild(messageLi);
-
-        const modal = document.getElementById(`${id}-slot-machine-modal`);
-        const emptyState = modal?.querySelector(".slot-empty-state");
-        if (emptyState) {
-          emptyState.classList.remove("hidden");
-        }
       }
 
       // Handle single item case - if there's only one option and no selection, select it by default
@@ -1041,6 +1039,13 @@ const displayText = selectedOption?.label || placeholder;
       selectedIndex = 0;
     }
 
+    if (finalOptions.length > 0) {
+      const modal = document.getElementById(`${id}-slot-machine-modal`);
+      const emptyState = modal?.querySelector(".slot-empty-state");
+      if (emptyState) {
+        emptyState.classList.add("hidden");
+      }
+    }
     // Debug logging for selection
     // // console.log("🎰 [SLOT-MACHINE] Selection debug:", {
     //   selectedValue,

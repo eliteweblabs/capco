@@ -13,6 +13,23 @@ if (currentRole !== "Admin") {
   return Astro.redirect("/dashboard");
 }
 
+import { globalCompanyData } from "../../pages/api/global-company-data";
+const {
+  globalCompanyName,
+  globalCompanySlogan,
+  globalCompanyAddress,
+  globalCompanyPhone,
+  globalCompanyEmail,
+  globalCompanyWebsite,
+  globalCompanyLogo,
+  globalCompanyLogoDark,
+  globalCompanyLogoLight,
+} = globalCompanyData();
+
+import { globalClasses } from "../../pages/api/global-classes";
+const { globalInputClasses, globalPrimaryTextClasses, globalSecondaryTextClasses } =
+  globalClasses();
+
 import App from "../../components/common/App.astro";
 import Hero from "../../components/common/Hero.astro";
 import GlobalActivityFeed from "../../components/common/GlobalActivityFeed.astro";
@@ -51,6 +68,9 @@ if (currentUser?.id) {
   <Hero
     title="Global Activity Feed"
     description="Monitor all project activities, status changes, and user actions across the platform."
+    globalPrimaryTextClasses={globalPrimaryTextClasses}
+    globalSecondaryTextClasses={globalSecondaryTextClasses}
+    globalInputClasses={globalInputClasses}
   />
 
   <!-- Activity Overview Cards -->
