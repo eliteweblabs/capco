@@ -138,7 +138,7 @@ export const GET: APIRoute = async ({ request, url }) => {
       ASSIGNED_STAFF_PHONE: replacePlaceholders("{{ASSIGNED_STAFF_PHONE}}", placeholderData, false),
       STATUS_NAME: replacePlaceholders("{{STATUS_NAME}}", placeholderData, false),
       STATUS_DESCRIPTION: replacePlaceholders("{{STATUS_DESCRIPTION}}", placeholderData, false),
-      EST_TIME: replacePlaceholders("{{EST_TIME}}", placeholderData, false),
+      PROJECT_EST_TIME: replacePlaceholders("{{PROJECT_EST_TIME}}", placeholderData, false),
       BUILDING_TYPE: replacePlaceholders("{{BUILDING_TYPE}}", placeholderData, false),
       CURRENT_DATE: replacePlaceholders("{{CURRENT_DATE}}", placeholderData, false),
       CURRENT_YEAR: replacePlaceholders("{{YEAR}}", placeholderData, false),

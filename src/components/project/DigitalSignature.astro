@@ -11,6 +11,7 @@ interface Props {
   project: any;
   projectStatus?: number;
   projectStatusLabel?: string;
+  statusData?: any;
 }
 const {
   id = "signature-canvas",
@@ -22,6 +23,7 @@ const {
   project,
   projectStatus,
   projectStatusLabel,
+  statusData,
 } = Astro.props;
 
 const newStatus = 50;
@@ -96,7 +98,7 @@ const projectId = project?.id;
     </button>
   </div>
 
-  <script define:vars={{ newStatus, project, currentUser }}>
+  <script define:vars={{ newStatus, project, currentUser, statusData }}>
     // Load SignaturePad from CDN
     let SignaturePad;
     const currentRole = currentUser?.profile?.role;
@@ -501,7 +503,11 @@ const projectId = project?.id;
 
           try {
             // Call global updateStatus function to set status
-            const data = await window.updateStatus(project, newStatus, statusData);
+            newStatus = 50;
+            const data = await window.updateStatus(project, newStatus, statusData[newStatus]);
+
+            newStatus = 55;
+            const data2 = await window.updateStatus(project, newStatus, statusData[newStatus]);
 
             if (data.success) {
               console.log("✅ [DigitalSignature] Contract agreement processed successfully");

@@ -97,7 +97,7 @@ src/templates/pdf/
 ### Status & Staff
 
 - `{{STATUS_NAME}}` - Current status name
-- `{{EST_TIME}}` - Estimated completion time
+- `{{PROJECT_EST_TIME}}` - Estimated completion time
 - `{{ASSIGNED_STAFF_NAME}}` - Assigned staff name
 - `{{ASSIGNED_STAFF_EMAIL}}` - Assigned staff email
 - `{{ASSIGNED_STAFF_PHONE}}` - Assigned staff phone
