@@ -216,7 +216,7 @@ export const POST: APIRoute = async ({ request, redirect, cookies }) => {
 <b>Mobile Carrier:</b> ${mobileCarrier || "Not provided"}<br>
         <b>Registration Date:</b> ${new Date().toLocaleDateString()}<br><br>
 
-<p>You're now signed in and ready to start creating projects. Click the button below to access your dashboard.</p><br><br>`;
+<p>You're now signed in and ready to start creating projects...</p>`;
 
     // Get the base URL for the email API call
     const baseUrl = import.meta.env.SITE_URL || "https://capcofire.com";

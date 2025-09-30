@@ -46,7 +46,6 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
     try {
       body = await request.json();
-      // console.log("6. Request body:", body);
       ({
         first_name,
         last_name,
@@ -58,14 +57,6 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         sms_alerts,
         password,
       } = body);
-      // console.log("7. Extracted data:", {
-      //   first_name,
-      //   last_name,
-      //   company_name,
-      //   email,
-      //   phone,
-      //   staffRole,
-      // });
     } catch (parseError) {
       console.error("Request body parsing error:", parseError);
       return new Response(
@@ -325,6 +316,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
             // Send email using direct fetch to email-delivery API
             try {
               const emailData = {
+                emailType: "new_user",
                 usersToNotify: [adminEmail], // Use resolved user email
                 emailSubject: `New User → ${displayName} → ${staffRole}`,
                 emailContent: adminContent,
@@ -418,6 +410,7 @@ Your account has been created successfully:<br><br>
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
+            emailType: "magic_link",
             usersToNotify: [email], // Array of email strings
             emailSubject: `Welcome to ${process.env.GLOBAL_COMPANY_NAME} → ${displayName}`,
             emailContent: welcomeContent,
