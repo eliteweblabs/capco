@@ -113,7 +113,6 @@ export function replacePlaceholders(
   const projectCreatedDate = data?.project?.created_at
     ? new Date(data?.project?.created_at).toLocaleDateString()
     : "N/A";
-  const projectEstTime = data?.project?.est_time || "TBD";
   const projectBuildingType = JSON.stringify(data?.project?.building) || "N/A";
 
   // Staff/Assigned data
@@ -419,9 +418,9 @@ export function replacePlaceholders(
     }
   }
 
-  if (projectEstTime) {
+  if (estTime) {
     const beforeReplace = result;
-    result = result.replace(/\{\{\s*PROJECT_EST_TIME\s*\}\}/g, projectEstTime);
+    result = result.replace(/\{\{\s*EST_TIME\s*\}\}/g, estTime);
     if (result !== beforeReplace) {
       placeholderApplied = true;
       addBoldTags = true;
@@ -603,16 +602,6 @@ export function replacePlaceholders(
   if (currentStatusName) {
     const beforeReplace = result;
     result = result.replace(/\{\{\s*STATUS_NAME\s*\}\}/g, currentStatusName);
-    if (result !== beforeReplace) {
-      placeholderApplied = true;
-      addBoldTags = true;
-    }
-  }
-
-  // Replace EST_TIME placeholders
-  if (estTime) {
-    const beforeReplace = result;
-    result = result.replace(/\{\{\s*EST_TIME\s*\}\}/g, estTime);
     if (result !== beforeReplace) {
       placeholderApplied = true;
       addBoldTags = true;
