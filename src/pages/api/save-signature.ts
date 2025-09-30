@@ -1,4 +1,3 @@
-import { createClient } from "@supabase/supabase-js";
 import type { APIRoute } from "astro";
 import puppeteer from "puppeteer";
 
@@ -14,10 +13,11 @@ export const OPTIONS: APIRoute = async () => {
   });
 };
 
-export const POST: APIRoute = async ({ request }) => {
+export const POST: APIRoute = async ({ request, cookies }) => {
   try {
     const body = await request.json();
-    const { projectId, signature, signed_at } = body;
+    const { project, signature, signed_at, currentUser } = body;
+    const projectId = project.id;
 
     if (!projectId || !signature) {
       return new Response(JSON.stringify({ error: "Project ID and signature are required" }), {
@@ -44,11 +44,14 @@ export const POST: APIRoute = async ({ request }) => {
 
     console.log("💾 [SAVE-SIGNATURE] Saving signature for project:", projectId);
 
-    // Create Supabase client
-    const supabase = createClient(
-      import.meta.env.PUBLIC_SUPABASE_URL,
-      import.meta.env.SUPABASE_SERVICE_ROLE_KEY
-    );
+    // Check authentication using the same pattern as other APIs
+    const { supabase } = await import("../../lib/supabase");
+    if (!supabase) {
+      return new Response(JSON.stringify({ error: "Supabase client not configured" }), {
+        status: 500,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
 
     // Generate PDF with contract text and signature (optional)
     let contractPdfUrl = null;
@@ -240,10 +243,11 @@ async function generateContractPDF(
     await browser.close();
 
     // Upload PDF to Supabase Storage
-    const supabase = createClient(
-      import.meta.env.PUBLIC_SUPABASE_URL,
-      import.meta.env.SUPABASE_SERVICE_ROLE_KEY
-    );
+    const { supabase } = await import("../../lib/supabase");
+
+    if (!supabase) {
+      throw new Error("Supabase client not configured");
+    }
 
     const fileName = `contracts/contract-${projectId}-${Date.now()}.pdf`;
     const { data: uploadData, error: uploadError } = await supabase.storage

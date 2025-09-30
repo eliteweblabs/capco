@@ -10,20 +10,29 @@ const { currentUser } = Astro.props;
 const currentUserId = currentUser?.id;
 ---
 
-<BoxIcon
+<button
+  type="button"
+  data-dropdown-toggle="notification-dropdown"
+  class="mveJTCIb2WII7J4sY22F Z4DH5a4vmjReSFRBpPgz PeR2JZ9BZHYIH8Ea3F36 _7KA5gD55t2lxf9Jkj20 ZnBoTVi7VOJdCLSSU62n _q0p_O8QLU1paqtuqmI2 KLtw3_OqL54e_zEQU_yi XIIs8ZOri3wm8Wnj9N_y OPrb_iG5WDy_7F05BDOX dMTOiA3mf3FTjlHu6DqW ICV24pqO8p1LJm4GEOgS relative"
+>
+  <span class="_DVAfiyo21kM68EUVzEQ">View Notifications</span>
+
+  <BoxIcon name="bell" variant="secondary" size="sm" dataAttributes={{ "data-count": "1" }} />
+</button>
+
+<!-- <BoxIcon
   name="bell"
   size="sm"
   id="notification-bell"
   variant="secondary"
   dataAttributes={{
-    "data-count": "1",
     "data-dropdown-toggle": "notification-dropdown",
     "data-tooltip-target": "tooltip-notification",
   }}
   class="mveJTCIb2WII7J4sY22F Z4DH5a4vmjReSFRBpPgz c8dCx6gnV43hTOLV6ks5 PeR2JZ9BZHYIH8Ea3F36 _7KA5gD55t2lxf9Jkj20 BkIbg_JwkgiyRW804Hhu _q0p_O8QLU1paqtuqmI2 _6wdnQrxT_dGdAdNk5AQ XIIs8ZOri3wm8Wnj9N_y OPrb_iG5WDy_7F05BDOX yChACvAr1v8czJ2VO22j relative"
 >
   <span class="_DVAfiyo21kM68EUVzEQ">View notifications</span>
-</BoxIcon>
+</BoxIcon> -->
 
 <!-- Unread Count Badge -->
 <!-- </button> -->
@@ -568,34 +577,11 @@ const currentUserId = currentUser?.id;
 
         if (badgeParent) {
           // Use global count bubble utility with notification preset
-          if (
-            typeof (window as any).updateCountBubble !== "undefined" &&
-            (window as any).COUNT_BUBBLE_PRESETS
-          ) {
-            (window as any).updateCountBubble(
-              badgeParent,
-              count,
-              (window as any).COUNT_BUBBLE_PRESETS.notification
-            );
-          } else {
-            // Fallback to manual implementation
-            let countBubble = badgeParent.querySelector(".count-bubble") as HTMLSpanElement;
-
-            if (count > 0) {
-              if (!countBubble) {
-                countBubble = document.createElement("span");
-                countBubble.className =
-                  "count-bubble absolute inline-flex items-center justify-center w-6 h-6 text-xs font-bold text-white bg-red-500 border-2 border-white rounded-full -top-2 -end-2 dark:border-gray-900";
-                badgeParent.appendChild(countBubble);
-              }
-              countBubble.textContent = count.toString();
-              countBubble.style.display = "flex";
-            } else {
-              if (countBubble) {
-                countBubble.style.display = "none";
-              }
-            }
-          }
+          (window as any).updateCountBubble(
+            badgeParent,
+            count,
+            (window as any).COUNT_BUBBLE_PRESETS.notification
+          );
         }
       }
 

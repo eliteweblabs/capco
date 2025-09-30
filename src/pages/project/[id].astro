@@ -129,7 +129,6 @@ let currentStatusName;
 
 // Status-related variables
 let currentStatusTab: string | null = null;
-let currentStatusSlug: string | null = null;
 let currentStatusColor = "gray";
 let currentStatusProjectAction: string | null = null;
 
@@ -165,7 +164,6 @@ if (currentStatusInt && statusData[currentStatusInt]) {
   currentStatusTab = currentStatusObj.current.status_tab;
   currentStatusProjectAction = currentStatusObj.current.status_action;
   currentStatusColor = currentStatusObj.current.status_color || "gray";
-  currentStatusSlug = currentStatusObj.current.status_slug;
   // search currentStatusProjectAction for "status=" + statusParam
   const statusParamIndex = currentStatusProjectAction?.indexOf("status=" + statusParam) || 0;
   if (statusParamIndex !== -1 && currentStatusProjectAction) {
@@ -248,96 +246,95 @@ console.log("🔍 [PROJECT] currentStatusName:", currentStatusName);
   >
     <main class="flex-grow">
       <div class="RZmKBZs1E1eXw8vkE6jY p_2EXc_a2sDA_h41l8QU">
+        <HeroProject
+          title={project?.address || project?.title || "Untitled Project"}
+          description={currentUser?.profile?.role === "Client" ? (project?.created_at ? new Date(project.created_at).toLocaleDateString() : "Unknown Date") : project?.authorProfile?.company_name || "Unknown Author"}
+          statusColor={currentStatusColor}
+          currentUser={currentUser}
+          currentStatusInt={currentStatusInt.toString()}
+          currentStatusName={currentStatusName || undefined}
+          project={project}
+          statusesOptions={statusOptions}
+          currentStatusTab={currentStatusTab || undefined}
+          staffOptions={staffOptions}
+          globalSecondaryTextClasses={globalSecondaryTextClasses}
+          globalPrimaryTextClasses={globalPrimaryTextClasses}
+          globalInputClasses={globalInputClasses}
+        />
+      </div>
+
+      <!-- Tab Navigation -->
+      <SlidingPillNav
+        navId="project-tab-nav"
+        navClass="my-4 dark:border-gray-700"
+        activeItem={activeTabIndex}
+        currentUser={currentUser}
+        items={[
+          {
+            id: "status-project-form",
+            label: "Project Form",
+            icon: "edit",
+            variant: "anchor",
+            onclick: "switchTab('project-form')",
+          },
+          {
+            id: "status-discussion",
+            label: "Discussion",
+            icon: "message-rounded-dots",
+            variant: "anchor",
+            dataAttributes: { "data-count": "0" },
+            onclick: "switchTab('discussion')",
+          },
+          {
+            id: "status-documents",
+            label: "Documents",
+            icon: "file",
+            variant: "anchor",
+            onclick: "switchTab('documents')",
+          },
+          {
+            id: "status-proposal",
+            label: "Proposal",
+            icon: "grid",
+            variant: "anchor",
+            onclick: "switchTab('proposal')",
+          },
+          {
+            id: "status-contract",
+            label: "Contract",
+            icon: "pencil",
+            variant: "anchor",
+            onclick: "switchTab('contract')",
+          },
+          {
+            id: "status-deposit",
+            label: "Deposit",
+            icon: "credit-card",
+            variant: "anchor",
+            onclick: "switchTab('deposit')",
+          },
+          {
+            id: "status-activity-log",
+            label: "Activity Log",
+            icon: "history",
+            variant: "anchor",
+            onclick: "switchTab('activity-log')",
+            clientHide: true,
+          },
+          {
+            id: "status-generate-pdf",
+            label: "Generate PDF",
+            icon: "history",
+            variant: "anchor",
+            onclick: "switchTab('generate-pdf')",
+            clientHide: true,
+          },
+        ]}
+      />
+      <div class="RZmKBZs1E1eXw8vkE6jY p_2EXc_a2sDA_h41l8QU">
         <div
           class="mveJTCIb2WII7J4sY22F _Ybd3WwuTVljUT4vEaM3 _wYiJGbRZyFZeCc8y7Sf mngKhi_Rv06PF57lblDI _1jTZ8KXRZul60S6czNi LSIxp7RSuOKhsg28v_u3"
         >
-          <HeroProject
-            title={project?.address || project?.title || "Untitled Project"}
-            description={project?.authorProfile?.[0]?.company_name ||
-              project?.authorProfile?.company_name ||
-              "Unknown Author"}
-            statusColor={currentStatusColor}
-            currentUser={currentUser}
-            currentStatusInt={currentStatusInt.toString()}
-            currentStatusName={currentStatusName || undefined}
-            project={project}
-            statusesOptions={statusOptions}
-            currentStatusTab={currentStatusTab || undefined}
-            staffOptions={staffOptions}
-            globalSecondaryTextClasses={globalSecondaryTextClasses}
-            globalPrimaryTextClasses={globalPrimaryTextClasses}
-            globalInputClasses={globalInputClasses}
-          />
-
-          <!-- Tab Navigation -->
-          <SlidingPillNav
-            navId="project-tab-nav"
-            navClass="my-4 dark:border-gray-700"
-            activeItem={activeTabIndex}
-            currentUser={currentUser}
-            items={[
-              {
-                id: "status-project-form",
-                label: "Project Form",
-                icon: "edit",
-                variant: "anchor",
-                onclick: "switchTab('project-form')",
-              },
-              {
-                id: "status-discussion",
-                label: "Discussion",
-                icon: "message-rounded-dots",
-                variant: "anchor",
-                dataAttributes: { "data-count": "0" },
-                onclick: "switchTab('discussion')",
-              },
-              {
-                id: "status-documents",
-                label: "Documents",
-                icon: "file",
-                variant: "anchor",
-                onclick: "switchTab('documents')",
-              },
-              {
-                id: "status-proposal",
-                label: "Proposal",
-                icon: "grid",
-                variant: "anchor",
-                onclick: "switchTab('proposal')",
-              },
-              {
-                id: "status-contract",
-                label: "Contract",
-                icon: "pencil",
-                variant: "anchor",
-                onclick: "switchTab('contract')",
-              },
-              {
-                id: "status-deposit",
-                label: "Deposit",
-                icon: "credit-card",
-                variant: "anchor",
-                onclick: "switchTab('deposit')",
-              },
-              {
-                id: "status-activity-log",
-                label: "Activity Log",
-                icon: "history",
-                variant: "anchor",
-                onclick: "switchTab('activity-log')",
-                clientHide: true,
-              },
-              {
-                id: "status-generate-pdf",
-                label: "Generate PDF",
-                icon: "history",
-                variant: "anchor",
-                onclick: "switchTab('generate-pdf')",
-                clientHide: true,
-              },
-            ]}
-          />
-
           <!-- Tab Content -->
           <!-- <div class="grid grid-cols-1 gap-6 lg:grid-cols-1"> -->
           <!-- Project Form Tab -->
@@ -444,202 +441,225 @@ console.log("🔍 [PROJECT] currentStatusName:", currentStatusName);
       </div>
     </main>
   </div>
-</App>
 
-<script
-  type="module"
-  define:vars={{
-    project,
-    currentUser,
-    currentStatusProjectAction,
-    baseUrl: Astro.url.origin,
-  }}
->
-  const currentStatus = project?.status || 0;
-  const projectId = project?.id;
-  // Tab switching functionality
-  function setPageLoadProjectStatus(statusNameFromUrl) {
-    // Parse tab name and parameters (e.g., "discussion&new=true")
-    const [statusSlug, ...paramParts] = statusNameFromUrl.split("&");
-    const params = new URLSearchParams(paramParts.join("&"));
+  <script
+    type="module"
+    define:vars={{
+      project,
+      currentUser,
+      currentStatusProjectAction,
+      baseUrl: Astro.url.origin,
+      statusData,
+    }}
+  >
+    const currentStatus = project?.status || 0;
+    const projectId = project?.id;
+    const currentRole = currentUser?.profile?.role;
+    // Tab switching functionality
+    function setPageLoadProjectStatus(statusNameFromUrl) {
+      // Parse tab name and parameters (e.g., "discussion&new=true")
+      const [statusSlug, ...paramParts] = statusNameFromUrl.split("&");
+      const params = new URLSearchParams(paramParts.join("&"));
 
-    // Handle tab-specific actions based on parameters
-    if (statusSlug === "discussion" && params.get("new") === "true") {
-      // Auto-trigger new comment form after a short delay to ensure tab is visible
-      setTimeout(() => {
-        if (window.toggleCommentForm) {
-          window.toggleCommentForm();
-        }
-      }, 100);
-    }
+      // Handle tab-specific actions based on parameters
+      if (statusSlug === "discussion" && params.get("new") === "true") {
+        // Auto-trigger new comment form after a short delay to ensure tab is visible
+        setTimeout(() => {
+          if (window.toggleCommentForm) {
+            window.toggleCommentForm();
+          }
+        }, 100);
+      }
 
-    let nextStatus = 0;
-    // Viewed Update Tabs
+      let nextStatus = 0;
+      // Viewed Update Tabs
 
-    // console.log("📋 [PROPOSAL-VIEW] Client viewing proposal tab, current status:", currentStatus);
-    // console.log("📋 [PROPOSAL-VIEW] Project data:", { projectId, currentUserId });
+      // console.log("📋 [PROPOSAL-VIEW] Client viewing proposal tab, current status:", currentStatus);
+      // console.log("📋 [PROPOSAL-VIEW] Project data:", { projectId, currentUserId });
 
-    if (
-      statusSlug === "proposal" &&
-      currentRole === "Client" &&
-      currentStatus >= 20 &&
-      currentStatus < 40 &&
-      currentUser &&
-      project.id
-    ) {
-      // console.log(
-      //   "📋 [PROPOSAL-VIEW] Updating status from",
-      //   currentStatus,
-      //   "to 40 (Proposal Viewed)"
-      // );
-      nextStatus = 40;
-    } else if (
-      statusSlug === "deposit" &&
-      currentRole === "Client" &&
-      currentStatus >= 55 &&
-      currentStatus < 65 &&
-      currentUser &&
-      project.id
-    ) {
-      // console.log(
-      //   "📋 [PROPOSAL-VIEW] Updating status from",
-      //   currentStatus,
-      //   "to 65 (Deposit Viewed)"
-      // );
-      nextStatus = 65;
-    } else if (
-      statusSlug === "final-invoice" &&
-      userRole === "Client" &&
-      currentStatus >= 150 &&
-      currentStatus < 160 &&
-      currentUser &&
-      project.id
-    ) {
-      // console.log(
-      //   "📋 [PROPOSAL-VIEW] Updating status from",
-      //   currentStatus,
-      //   "to 160 (Final Invoice Viewed)"
-      // );
-      nextStatus = 160;
-    } else if (
-      statusSlug === "final-invoice" &&
-      userRole === "Client" &&
-      currentStatus >= 200 &&
-      currentStatus < 210 &&
-      currentUser &&
-      project.id
-    ) {
-      // console.log(
-      //   "📋 [PROPOSAL-VIEW] Updating status from",
-      //   currentStatus,
-      //   "to 220 (Final Deliverables Viewed)"
-      // );
-      nextStatus = 210;
-    }
+      if (
+        statusSlug === "proposal" &&
+        currentRole === "Client" &&
+        currentStatus >= 20 &&
+        currentStatus < 40 &&
+        currentUser &&
+        project.id
+      ) {
+        // console.log(
+        //   "📋 [PROPOSAL-VIEW] Updating status from",
+        //   currentStatus,
+        //   "to 40 (Proposal Viewed)"
+        // );
+        nextStatus = 40;
+      } else if (
+        statusSlug === "deposit" &&
+        currentRole === "Client" &&
+        currentStatus >= 55 &&
+        currentStatus < 65 &&
+        currentUser &&
+        project.id
+      ) {
+        // console.log(
+        //   "📋 [PROPOSAL-VIEW] Updating status from",
+        //   currentStatus,
+        //   "to 65 (Deposit Viewed)"
+        // );
+        nextStatus = 65;
+      } else if (
+        statusSlug === "final-invoice" &&
+        userRole === "Client" &&
+        currentStatus >= 150 &&
+        currentStatus < 160 &&
+        currentUser &&
+        project.id
+      ) {
+        // console.log(
+        //   "📋 [PROPOSAL-VIEW] Updating status from",
+        //   currentStatus,
+        //   "to 160 (Final Invoice Viewed)"
+        // );
+        nextStatus = 160;
+      } else if (
+        statusSlug === "final-invoice" &&
+        userRole === "Client" &&
+        currentStatus >= 200 &&
+        currentStatus < 210 &&
+        currentUser &&
+        project.id
+      ) {
+        // console.log(
+        //   "📋 [PROPOSAL-VIEW] Updating status from",
+        //   currentStatus,
+        //   "to 220 (Final Deliverables Viewed)"
+        // );
+        nextStatus = 210;
+      }
 
-    // Update status to 40 (Proposal Viewed) if status is between 30-40
+      // Update status to 40 (Proposal Viewed) if status is between 30-40
 
-    if (nextStatus !== 0) {
-      // Call global updateStatus function
-      window
-        .updateStatus(project, nextStatus, statusData)
-        .then((data) => {
+      if (nextStatus !== 0 && nextStatus !== currentStatus) {
+        // Call global updateStatus function
+        window.updateStatus(project, nextStatus, statusData[nextStatus]).then((data) => {
           if (data.success) {
-            // console.log("✅ [PROPOSAL-VIEW] Status updated to 40 successfully");
-            // Update the project data for future checks
-            projectData.status = nextStatus;
-
-            // Update UI elements using RefreshManager
-            if (window.refreshManager) {
-              window.refreshManager.updateField("status", nextStatus);
-              window.refreshManager.updateField("status_name", "Status Updated");
-            }
-
-            // Show notification using new modal system
             window.handleNewStatusNotification(data, "PROPOSAL-VIEW");
           } else {
             console.error("❌ [PROPOSAL-VIEW] Failed to update status:", data.error);
           }
-        })
-        .catch((error) => {
-          console.error("❌ [PROPOSAL-VIEW] Error updating status:", error);
         });
-    } else {
-      // console.log("📋 [PROPOSAL-VIEW] No status update needed, current status:", currentStatus);
+      }
     }
 
-    // Update URL with tab parameter (without page reload)
-    // const currentUrl = new URL(window.location.href);
-    // if (statusSlug === "project-form") {
-    //   // Remove status parameter for default tab
-    //   currentUrl.searchParams.delete("status");
-    // } else {
-    //   // Add or update status parameter with any additional parameters
-    //   currentUrl.searchParams.set("status", statusNameFromUrl);
-    // }
+    // Initialize tabs on page load
+    document.addEventListener("DOMContentLoaded", function () {
+      // Check for project action modal first
+      checkProjectActionModal();
 
-    // // Update browser history without reloading the page
-    // window.history.replaceState({}, "", currentUrl.toString());
-  }
+      // Get status from URL parameter or use default
+      const urlParams = new URLSearchParams(window.location.search);
+      const statusFromUrl = urlParams.get("status");
+      const validTabs = [
+        "project-form",
+        "discussion",
+        "documents",
+        "proposal",
+        "contract",
+        "deposit",
+        "final-invoice",
+        "activity-log",
+        "generate-pdf",
+        "deliverables",
+      ];
+              }
 
-  // Check for project action modal on page load
-  function checkProjectActionModal() {
-    console.log("🔍 [PROJECT] Checking for project action:", currentStatusProjectAction);
-
-    if (currentStatusProjectAction && currentStatusProjectAction.trim() !== "") {
-      console.log("🚀 [PROJECT] Found project action, showing modal:", currentStatusProjectAction);
-
-      // Show modal with project action content
-      if (typeof window.showModal === "function") {
-        window.showModal(
-          "alert",
-          "Project Action Required",
-          currentStatusProjectAction,
-          2000 // No auto-hide
-        );
+              // Show notification using new modal system
+              window.handleNewStatusNotification(data, "PROPOSAL-VIEW");
+            } else {
+              console.error("❌ [PROPOSAL-VIEW] Failed to update status:", data.error);
+            }
+          })
+          .catch((error) => {
+            console.error("❌ [PROPOSAL-VIEW] Error updating status:", error);
+          });
       } else {
-        // Fallback alert if modal function not available
-        alert(`Project Status Update:\n\n${currentStatusProjectAction}`);
+        // console.log("📋 [PROPOSAL-VIEW] No status update needed, current status:", currentStatus);
       }
-    } else {
-      console.log("🔍 [PROJECT] No project action to display");
-    }
-  }
 
-  // Initialize tabs on page load
-  document.addEventListener("DOMContentLoaded", function () {
-    // Check for project action modal first
-    checkProjectActionModal();
+      // Update URL with tab parameter (without page reload)
+      // const currentUrl = new URL(window.location.href);
+      // if (statusSlug === "project-form") {
+      //   // Remove status parameter for default tab
+      //   currentUrl.searchParams.delete("status");
+      // } else {
+      //   // Add or update status parameter with any additional parameters
+      //   currentUrl.searchParams.set("status", statusNameFromUrl);
+      // }
 
-    // Get status from URL parameter or use default
-    const urlParams = new URLSearchParams(window.location.search);
-    const statusFromUrl = urlParams.get("status");
-    const validTabs = [
-      "project-form",
-      "discussion",
-      "documents",
-      "proposal",
-      "contract",
-      "deposit",
-      "final-invoice",
-      "activity-log",
-      "generate-pdf",
-      "deliverables",
-    ];
-
-    // Parse status name and parameters
-    let initialTab = "project-form";
-    if (statusFromUrl) {
-      const [statusSlug] = statusFromUrl.split("&");
-      if (validTabs.includes(statusSlug)) {
-        initialTab = statusFromUrl; // Keep full parameter string for processing
-      }
+      // // Update browser history without reloading the page
+      // window.history.replaceState({}, "", currentUrl.toString());
     }
 
-    // Switch to the initial tab
-    setPageLoadProjectStatus(initialTab);
-  });
+    // Check for project action modal on page load
+    function checkProjectActionModal() {
+      console.log("🔍 [PROJECT] Checking for project action:", currentStatusProjectAction);
 
-  // Make switchTab globally available for other components
-  window.setPageLoadProjectStatus = setPageLoadProjectStatus;
-</script>
+      if (currentStatusProjectAction && currentStatusProjectAction.trim() !== "") {
+        console.log(
+          "🚀 [PROJECT] Found project action, showing modal:",
+          currentStatusProjectAction
+        );
+
+        // Show modal with project action content
+        if (typeof window.showModal === "function") {
+          window.showModal(
+            "alert",
+            "Project Action Required",
+            currentStatusProjectAction,
+            2000 // No auto-hide
+          );
+        } else {
+          // Fallback alert if modal function not available
+          alert(`Project Status Update:\n\n${currentStatusProjectAction}`);
+        }
+      } else {
+        console.log("🔍 [PROJECT] No project action to display");
+      }
+    }
+
+    // Initialize tabs on page load
+    document.addEventListener("DOMContentLoaded", function () {
+      // Check for project action modal first
+      checkProjectActionModal();
+
+      // Get status from URL parameter or use default
+      const urlParams = new URLSearchParams(window.location.search);
+      const statusFromUrl = urlParams.get("status");
+      const validTabs = [
+        "project-form",
+        "discussion",
+        "documents",
+        "proposal",
+        "contract",
+        "deposit",
+        "final-invoice",
+        "activity-log",
+        "generate-pdf",
+        "deliverables",
+      ];
+
+      // Parse status name and parameters
+      let initialTab = "project-form";
+      if (statusFromUrl) {
+        const [statusSlug] = statusFromUrl.split("&");
+        if (validTabs.includes(statusSlug)) {
+          initialTab = statusFromUrl; // Keep full parameter string for processing
+        }
+      }
+
+      // Switch to the initial tab
+      setPageLoadProjectStatus(initialTab);
+    });
+
+    // Make switchTab globally available for other components
+    window.setPageLoadProjectStatus = setPageLoadProjectStatus;
+  </script>
+</App>

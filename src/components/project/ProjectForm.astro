@@ -34,7 +34,7 @@ const {
 const currentRole = currentUser?.profile?.role;
 const projectId = project?.id;
 // Generate a temporary ID for new projects
-const formId = isNewProject ? `Yeah-${Date.now()}` : projectId || "";
+const formId = isNewProject ? `${Date.now()}` : projectId || "";
 // Get unified form elements based on user role and project status
 const formElements = getFilteredUnifiedFormElements(currentRole, isNewProject, projectStatus);
 ---
@@ -79,6 +79,7 @@ const formElements = getFilteredUnifiedFormElements(currentRole, isNewProject, p
                   fetchOnLoad={false}
                   buttonText="Select Address *"
                   buttonClass="w-full"
+                  buttonVariant="outline"
                   searchText="Search Address"
                   searchPlaceholder="Type to search addresses..."
                   fetchApiEndpoint="/api/places-autocomplete"
@@ -105,7 +106,7 @@ const formElements = getFilteredUnifiedFormElements(currentRole, isNewProject, p
                 />
               )
             }
-            {/* <!-- Client Information (Admin/Staff Only) --> */}
+
             {
               isNewProject && (currentRole === "Admin" || currentRole === "Staff") && (
                 <IsNewOrExistingClient 
@@ -343,45 +344,25 @@ const formElements = getFilteredUnifiedFormElements(currentRole, isNewProject, p
               {element.label}
             </Button>
           );
-        })
+        }
+      )
     }
   </div>
 </form>
 
 
 
-<script>
-  // Pass Astro variables to JavaScript scope
 
- 
 
-  // Window properties
-
+<script> 
   // Initialize project form
   document.addEventListener("DOMContentLoaded", async function () {
     const form = document.querySelector("form[data-project-id]");
     if (!form) return;
-
     const projectId = form.getAttribute("data-project-id");
     const isNewProject = form.getAttribute("data-is-new-project") === "true";
-
-    // Make project data available globally
-    // const projectDataAttr = form.getAttribute("data-project-data");
-    // if (projectDataAttr) {
-    //   try {
-    //     const projectData = JSON.parse(projectDataAttr);
-    //     window.currentProjectData = projectData;
-    //     // console.log("Project data loaded:", projectData);
-    //   } catch (error) {
-    //     console.error("Error parsing project data:", error);
-    //   }
-    // }
-
-    // Add event listeners for action buttons
-
     // Add form submission handler
     form.addEventListener("submit", handleFormSubmit);
-
     // Form submission handler
     async function handleFormSubmit(event: Event) {
       const form = event.target as HTMLFormElement;
@@ -477,30 +458,29 @@ const formElements = getFilteredUnifiedFormElements(currentRole, isNewProject, p
         }
 
         const result = await response.json();
-        console.log("📝 [ProjectForm] API response:", result);
-        console.log("📝 [ProjectForm] Response status:", response.status);
-        console.log("📝 [ProjectForm] Response ok:", response.ok);
-
+    
         if (result.success) {
           if (isNewProject) {
             // For new projects, update status to 10 (Project Created) to trigger database-driven notifications
-            // console.log("📝 [ProjectForm] Updating status to 10 for new project");
-            // console.log("📝 [ProjectForm] About to make fetch call to test endpoint");
+         
             try {
-              // console.log("📝 [ProjectForm] Making fetch call now...");
+              console.log("📝 [ProjectForm] Making fetch call now...");
 
+              const project = result.project;
               const nextStatus = 10;
-              const statusResult = await (window as any).updateStatus(result.project, nextStatus, undefined);
+              
+              (window as any).updateStatus(project, nextStatus, undefined).then((data: any) => {
+                if (data.success) {
+                  window.handleNewStatusNotification(data, "PROPOSAL-VIEW");
+                } else {
+                  console.error("❌ [PROPOSAL-VIEW] Failed to update status:", data.error);
+                }
+              });
 
+              // const statusResult = await (window as any).updateStatus(result.project, nextStatus, undefined);
+              // window.handleNewStatusNotification(statusResult, "PROJECT-FORM");
 
-              // console.log("📝 [ProjectForm] Update status call completed");
-              // console.log("📝 [ProjectForm] Response parsed successfully");
-              // console.log("📝 [ProjectForm] Status update response:", statusResult);
-              // console.log("📝 [ProjectForm] Status update response:", statusResult);
-
-              // Handle the status update response with redirect logic
-              // (window as any).handleNewStatusNotification(statusResult, "PROJECT-FORM");
-              window.location.href = `/project/${statusResult.project.id}`;
+              // window.location.href = `/project/${statusResult.project.id}?status=documents`;
 
             } catch (statusError) {
               console.error("📝 [ProjectForm] Status update failed:", statusError);

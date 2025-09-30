@@ -1,0 +1,487 @@
+---
+// Email Types Interface Component
+// Lists all available email types in the project
+
+interface EmailType {
+  id: string;
+  name: string;
+  description: string;
+  category: string;
+  usage: string;
+  tracking: boolean;
+  examples: string[];
+}
+
+const emailTypes: EmailType[] = [
+  {
+    id: "status_update",
+    name: "Status Update",
+    description: "Notifications sent when project status changes",
+    category: "Project Management",
+    usage: "Most common email type for project workflow",
+    tracking: true,
+    examples: ["Project moved to review", "Status changed to approved", "Work completed"]
+  },
+  {
+    id: "magic_link",
+    name: "Magic Link Authentication",
+    description: "Passwordless login links for secure access",
+    category: "Authentication",
+    usage: "User login without passwords",
+    tracking: false,
+    examples: ["Login to dashboard", "Access project files", "Secure authentication"]
+  },
+  {
+    id: "authentication",
+    name: "Authentication",
+    description: "General authentication-related emails",
+    category: "Authentication",
+    usage: "User verification and security",
+    tracking: false,
+    examples: ["Email verification", "Password reset", "Account security"]
+  },
+  {
+    id: "login",
+    name: "Login Notifications",
+    description: "Notifications about user login activities",
+    category: "Security",
+    usage: "Security monitoring and alerts",
+    tracking: false,
+    examples: ["Successful login", "Failed login attempt", "New device login"]
+  },
+  {
+    id: "project_created",
+    name: "Project Created",
+    description: "Notifications when new projects are created",
+    category: "Project Management",
+    usage: "Initial project setup notifications",
+    tracking: true,
+    examples: ["New project assigned", "Project setup complete", "Welcome to new project"]
+  },
+  {
+    id: "file_uploaded",
+    name: "File Uploaded",
+    description: "Notifications when files are uploaded to projects",
+    category: "File Management",
+    usage: "Document and file activity tracking",
+    tracking: true,
+    examples: ["New document uploaded", "File ready for review", "Document updated"]
+  },
+  {
+    id: "discussion_added",
+    name: "Discussion Added",
+    description: "Notifications for new project discussions",
+    category: "Communication",
+    usage: "Team communication and collaboration",
+    tracking: true,
+    examples: ["New discussion started", "Comment added", "Team message"]
+  },
+  {
+    id: "assignment_changed",
+    name: "Assignment Changed",
+    description: "Notifications when project assignments change",
+    category: "Project Management",
+    usage: "Team member assignment updates",
+    tracking: true,
+    examples: ["Project reassigned", "New team member added", "Assignment updated"]
+  },
+  {
+    id: "punchlist_added",
+    name: "Punchlist Added",
+    description: "Notifications for new punchlist items",
+    category: "Project Management",
+    usage: "Task and issue tracking",
+    tracking: true,
+    examples: ["New punchlist item", "Task assigned", "Issue reported"]
+  },
+  {
+    id: "admin_action",
+    name: "Admin Action",
+    description: "Notifications for administrative actions",
+    category: "Administration",
+    usage: "System and administrative notifications",
+    tracking: true,
+    examples: ["User permissions changed", "System maintenance", "Admin notification"]
+  }
+];
+
+const categories = [...new Set(emailTypes.map(type => type.category))];
+---
+
+<div class="email-types-interface">
+  <div class="header">
+    <h1 class="text-3xl font-bold text-gray-900 dark:text-white mb-2">
+      Email Types Interface
+    </h1>
+    <p class="text-gray-600 dark:text-gray-400 mb-6">
+      Comprehensive list of all email types used in the project system
+    </p>
+  </div>
+
+  <!-- Summary Cards -->
+  <div class="summary-grid mb-8">
+    <div class="summary-card">
+      <div class="summary-icon">📧</div>
+      <div class="summary-content">
+        <div class="summary-number">{emailTypes.length}</div>
+        <div class="summary-label">Total Email Types</div>
+      </div>
+    </div>
+    <div class="summary-card">
+      <div class="summary-icon">🏷️</div>
+      <div class="summary-content">
+        <div class="summary-number">{categories.length}</div>
+        <div class="summary-label">Categories</div>
+      </div>
+    </div>
+    <div class="summary-card">
+      <div class="summary-icon">🔒</div>
+      <div class="summary-content">
+        <div class="summary-number">{emailTypes.filter(t => !t.tracking).length}</div>
+        <div class="summary-label">No Tracking</div>
+      </div>
+    </div>
+    <div class="summary-card">
+      <div class="summary-icon">📊</div>
+      <div class="summary-content">
+        <div class="summary-number">{emailTypes.filter(t => t.tracking).length}</div>
+        <div class="summary-label">Tracked</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Category Filter -->
+  <div class="filter-section mb-6">
+    <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-3">Filter by Category</h3>
+    <div class="filter-buttons">
+      <button class="filter-btn active" data-category="all">All Categories</button>
+      {categories.map(category => (
+        <button class="filter-btn" data-category={category.toLowerCase().replace(/\s+/g, '-')}>
+          {category}
+        </button>
+      ))}
+    </div>
+  </div>
+
+  <!-- Email Types List -->
+  <div class="email-types-grid">
+    {emailTypes.map((emailType) => (
+      <div class="email-type-card" data-category={emailType.category.toLowerCase().replace(/\s+/g, '-')}>
+        <div class="card-header">
+          <div class="type-info">
+            <h3 class="type-name">{emailType.name}</h3>
+            <span class="type-id">{emailType.id}</span>
+          </div>
+          <div class="type-badges">
+            <span class={`tracking-badge ${emailType.tracking ? 'tracked' : 'no-tracking'}`}>
+              {emailType.tracking ? '📊 Tracked' : '🔒 No Tracking'}
+            </span>
+            <span class="category-badge">{emailType.category}</span>
+          </div>
+        </div>
+        
+        <div class="card-content">
+          <p class="type-description">{emailType.description}</p>
+          <div class="usage-section">
+            <h4 class="usage-title">Usage:</h4>
+            <p class="usage-text">{emailType.usage}</p>
+          </div>
+          
+          <div class="examples-section">
+            <h4 class="examples-title">Examples:</h4>
+            <ul class="examples-list">
+              {emailType.examples.map(example => (
+                <li class="example-item">{example}</li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      </div>
+    ))}
+  </div>
+
+  <!-- API Usage Section -->
+  <div class="api-usage-section mt-12">
+    <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-4">API Usage</h2>
+    <div class="code-example">
+      <h3 class="text-lg font-semibold mb-2">Email Delivery API</h3>
+      <pre class="code-block"><code>POST /api/email-delivery
+{
+  "usersToNotify": ["user@example.com"],
+  "emailType": "status_update",
+  "emailSubject": "Project Status Updated",
+  "emailContent": "Your project status has been updated...",
+  "buttonLink": "/dashboard",
+  "buttonText": "View Project",
+  "trackLinks": true
+}</code></pre>
+    </div>
+  </div>
+</div>
+
+<style>
+  .email-types-interface {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 2rem;
+  }
+
+  .summary-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+  }
+
+  .summary-card {
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    padding: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  }
+
+  .summary-icon {
+    font-size: 2rem;
+  }
+
+  .summary-number {
+    font-size: 2rem;
+    font-weight: bold;
+    color: #1f2937;
+  }
+
+  .summary-label {
+    color: #6b7280;
+    font-size: 0.875rem;
+  }
+
+  .filter-section {
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    padding: 1.5rem;
+  }
+
+  .filter-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .filter-btn {
+    padding: 0.5rem 1rem;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    background: white;
+    color: #374151;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .filter-btn:hover {
+    background: #f3f4f6;
+  }
+
+  .filter-btn.active {
+    background: #3b82f6;
+    color: white;
+    border-color: #3b82f6;
+  }
+
+  .email-types-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+    gap: 1.5rem;
+  }
+
+  .email-type-card {
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    padding: 1.5rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    transition: all 0.2s;
+  }
+
+  .email-type-card:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    transform: translateY(-2px);
+  }
+
+  .card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 1rem;
+  }
+
+  .type-name {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #1f2937;
+    margin: 0;
+  }
+
+  .type-id {
+    font-size: 0.875rem;
+    color: #6b7280;
+    font-family: monospace;
+    background: #f3f4f6;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+  }
+
+  .type-badges {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    align-items: flex-end;
+  }
+
+  .tracking-badge {
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: 500;
+  }
+
+  .tracking-badge.tracked {
+    background: #dcfce7;
+    color: #166534;
+  }
+
+  .tracking-badge.no-tracking {
+    background: #fef3c7;
+    color: #92400e;
+  }
+
+  .category-badge {
+    background: #e0e7ff;
+    color: #3730a3;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: 500;
+  }
+
+  .type-description {
+    color: #4b5563;
+    margin-bottom: 1rem;
+  }
+
+  .usage-section, .examples-section {
+    margin-bottom: 1rem;
+  }
+
+  .usage-title, .examples-title {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #374151;
+    margin-bottom: 0.5rem;
+  }
+
+  .usage-text {
+    color: #6b7280;
+    font-size: 0.875rem;
+  }
+
+  .examples-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+
+  .example-item {
+    color: #6b7280;
+    font-size: 0.875rem;
+    padding: 0.25rem 0;
+    position: relative;
+    padding-left: 1rem;
+  }
+
+  .example-item::before {
+    content: "•";
+    color: #9ca3af;
+    position: absolute;
+    left: 0;
+  }
+
+  .api-usage-section {
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    padding: 1.5rem;
+  }
+
+  .code-example {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 1rem;
+  }
+
+  .code-block {
+    background: #1e293b;
+    color: #e2e8f0;
+    padding: 1rem;
+    border-radius: 6px;
+    overflow-x: auto;
+    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+    font-size: 0.875rem;
+    line-height: 1.5;
+  }
+
+  @media (max-width: 768px) {
+    .email-types-interface {
+      padding: 1rem;
+    }
+
+    .summary-grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
+
+    .email-types-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .filter-buttons {
+      flex-direction: column;
+    }
+
+    .filter-btn {
+      text-align: center;
+    }
+  }
+</style>
+
+<script>
+  // Filter functionality
+  document.addEventListener('DOMContentLoaded', () => {
+    const filterButtons = document.querySelectorAll('.filter-btn');
+    const emailCards = document.querySelectorAll('.email-type-card');
+
+    filterButtons.forEach(button => {
+      button.addEventListener('click', () => {
+        // Remove active class from all buttons
+        filterButtons.forEach(btn => btn.classList.remove('active'));
+        // Add active class to clicked button
+        button.classList.add('active');
+
+        const category = button.dataset.category;
+
+        // Show/hide cards based on filter
+        emailCards.forEach(card => {
+          if (category === 'all' || card.dataset.category === category) {
+            card.style.display = 'block';
+          } else {
+            card.style.display = 'none';
+          }
+        });
+      });
+    });
+  });
+</script>

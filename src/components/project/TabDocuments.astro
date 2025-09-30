@@ -129,39 +129,30 @@ const currentRole = currentUser?.profile?.role;
             </svg>
             Updating Status...
           `;
+          this.allDocumentsUploadedBtn.classList.remove("bg-green-600", "hover:bg-green-700");
+          this.allDocumentsUploadedBtn.classList.add("bg-gray-600", "cursor-not-allowed");
+          this.allDocumentsUploadedBtn.disabled = true;
 
-          window.showModal("alert", "Reviewing Documents", "Please Wait A Moment...", 5000);
+          window.showModal("alert", "Reviewing Documents", "Please Wait A Moment...", 2500);
 
           const nextStatus = 20;
-          const result = await window.updateStatus(
-            this.project,
-            nextStatus,
-            this.statusData[nextStatus]
-          );
 
-          console.log("🔔 [PDF-UPLOAD] Update status result:", result);
-
-          if (!result.success) {
-            throw new Error(result.error || "Failed to update project status");
-          }
-
-          if (result.success) {
-            console.log("📊 [PDF-UPLOAD] Status updated successfully:", result);
-
-            // Show success notification using notificationData from API
-            window.handleNewStatusNotification(result, "PDF-UPLOAD");
-
-            // Update button to show completion
-            this.allDocumentsUploadedBtn.innerHTML = `
+          window
+            .updateStatus(this.project, nextStatus, this.statusData[nextStatus])
+            .then((data) => {
+              if (data.success) {
+                this.allDocumentsUploadedBtn.innerHTML = `
               <svg class="mr-2 h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
                 <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
               </svg>
               Documents Submitted ✓
             `;
-            this.allDocumentsUploadedBtn.classList.remove("bg-green-600", "hover:bg-green-700");
-            this.allDocumentsUploadedBtn.classList.add("bg-gray-600", "cursor-not-allowed");
-            this.allDocumentsUploadedBtn.disabled = true;
-          }
+
+                window.handleNewStatusNotification(data, "PROPOSAL-VIEW");
+              } else {
+                window.showModal("error", "Error", data.error || "Failed to update project status");
+              }
+            });
         } catch (error) {
           console.error("Error updating project status:", error);
           window.showModal(

@@ -91,6 +91,7 @@ import SpeedDial from "./SpeedDial.astro";
 import Navbar from "./Navbar.astro";
 import Aside from "./Aside.astro";
 import DebugPanel from "./DebugPanel.astro";
+import ScrollProgressIndicator from "./ScrollProgressIndicator.astro";
 import FeedbackWidget from "./FeedbackWidget.astro";
 
 // Prepare debug data for admin users
@@ -119,8 +120,6 @@ const debugData = {
 
   // Derived properties
   isAuth,
-  currentUserId,
-  currentRole,
   projectId,
   currentUrl,
   // Navigation data
@@ -296,7 +295,7 @@ const debugData = {
 
       <div
         id="main-content"
-        class="ahOqFrhzLjivRe8a1kX_ uLPch_bqyJDXwe5tynMV t6gkcSf0Bt4MLItXvDJ_ pdl952ted2i71qBLPIcQ jtAJHOc7mn7b4IKRO59D h8KYXnua2NT4kTVzieom Syhv8OuxgyaGMa27BMXo"
+        class=`ahOqFrhzLjivRe8a1kX_ uLPch_bqyJDXwe5tynMV t6gkcSf0Bt4MLItXvDJ_ pdl952ted2i71qBLPIcQ jtAJHOc7mn7b4IKRO59D h8KYXnua2NT4kTVzieom ${currentUser && currentRole !== "Client" ? "Syhv8OuxgyaGMa27BMXo" : ""}`
       >
         <main>
           <slot />
@@ -334,6 +333,9 @@ const debugData = {
       globalSecondaryTextClasses={globalSecondaryTextClasses}
       globalInputClasses={globalInputClasses}
     />
+
+    <ScrollProgressIndicator />
+
     <!-- Debug Panel (Admin Only) -->
   </body>
 
@@ -544,7 +546,7 @@ const debugData = {
       const clientNotification = response.statusData?.client;
       const adminNotification = response.statusData?.admin;
       const currentNotification = response.statusData?.current;
-      const currentUser = response.statusData?.currentUser;
+      const currentUser = response.currentUser;
 
       // Send email if email configuration exists
       if (clientNotification?.email) {
@@ -827,26 +829,24 @@ const debugData = {
       // Only request if user hasn't been prompted yet
       if ("Notification" in window && Notification.permission === "default") {
         console.log("🔔 [APP] Requesting notification permission...");
-        // Wait a bit for the page to load, then request permission
-        setTimeout(() => {
-          Notification.requestPermission().then((permission) => {
-            console.log("🔔 [APP] Permission result:", permission);
-            if (permission === "granted") {
-              console.log("🔔 Push notifications enabled for authenticated user!");
-              // Show a subtle notification
-              if ((window as any).showModal) {
-                (window as any).showModal(
-                  "info",
-                  "Notifications Enabled",
-                  "You'll receive push notifications for project updates!",
-                  3000
-                );
-              }
-            } else {
-              console.log("🔔 Push notifications declined by user");
+        // Request permission immediately in user interaction context
+        Notification.requestPermission().then((permission) => {
+          console.log("🔔 [APP] Permission result:", permission);
+          if (permission === "granted") {
+            console.log("🔔 Push notifications enabled for authenticated user!");
+            // Show a subtle notification
+            if ((window as any).showModal) {
+              (window as any).showModal(
+                "info",
+                "Notifications Enabled",
+                "You'll receive push notifications for project updates!",
+                3000
+              );
             }
-          });
-        }, 3000); // Wait 3 seconds after page load
+          } else {
+            console.log("🔔 Push notifications declined by user");
+          }
+        });
       } else {
         console.log("🔔 [APP] Not requesting permission - already handled or not available");
       }
@@ -900,12 +900,27 @@ const debugData = {
       }
     };
 
-    // Auto-request notification permission on page load
-    document.addEventListener("DOMContentLoaded", () => {
-      (window as any).requestPushNotificationPermission();
-    });
+    // Request notification permission on first user interaction
+    let permissionRequested = false;
+    const requestPermissionOnInteraction = () => {
+      if (!permissionRequested) {
+        permissionRequested = true;
+        (window as any).requestPushNotificationPermission();
+        // Remove listeners after first interaction
+        document.removeEventListener("click", requestPermissionOnInteraction);
+        document.removeEventListener("touchstart", requestPermissionOnInteraction);
+      }
+    };
 
-    (window as any).updateStatus = async function (project: any, status: number, statuses?: any) {
+    // Listen for first user interaction
+    document.addEventListener("click", requestPermissionOnInteraction);
+    document.addEventListener("touchstart", requestPermissionOnInteraction);
+
+    (window as any).updateStatus = async function (
+      project: any,
+      status: number,
+      currentStatusData?: any
+    ) {
       (window as any).showModal(
         "info",
         "Processing...",
@@ -935,7 +950,7 @@ const debugData = {
           body: JSON.stringify({
             currentProject,
             newStatus: status,
-            currentStatusData: statuses || null, // Pass the current status data
+            currentStatusData: currentStatusData || null, // Pass the current status data
           }),
         });
         return await response.json();

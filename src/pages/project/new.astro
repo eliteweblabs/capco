@@ -50,12 +50,24 @@ import App from "../../components/common/App.astro";
 import Hero from "../../components/common/Hero.astro";
 import ProjectForm from "../../components/project/ProjectForm.astro";
 
+// Fetch project statuses using the unified API
+const statusApiUrl = new URL("/api/project-statuses", Astro.url.origin);
+const statusResponse = await fetch(statusApiUrl.toString(), {
+  method: "GET",
+  headers: {
+    Cookie: Astro.request.headers.get("Cookie") || "",
+  },
+});
+
+const statusResponseData = await statusResponse.json();
+const statusData = statusResponseData.statuses || [];
+
 // Get auth data for conditional rendering
 ---
 
 <App
-  title=""
-  description=""
+  title="New Project"
+  description="Create a new project"
   currentUser={currentUser}
   session={session || undefined}
   project={undefined}
@@ -78,7 +90,7 @@ import ProjectForm from "../../components/project/ProjectForm.astro";
         >
           <Hero
             title="Create a New Project"
-            description="Add a new client or select an existing client to create a new project."
+            description=""
             globalPrimaryTextClasses={globalPrimaryTextClasses}
             globalSecondaryTextClasses={globalSecondaryTextClasses}
             globalInputClasses={globalInputClasses}

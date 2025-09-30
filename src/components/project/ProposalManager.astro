@@ -12,7 +12,6 @@ interface Props {
   globalPrimaryTextClasses: string;
   globalInputClasses: string;
   statusData: any;
-  
 }
 const {
   projectId,
@@ -85,38 +84,11 @@ try {
 } catch (error) {
   console.error("❌ [ProposalManager] Error checking for existing invoice:", error);
 }
-
 ---
 
-<!-- Initial state: No proposal generated -->
-<div id="proposal-placeholder" class="py-8 text-center">
-  <BoxIcon name="upload" class="bx-lg mx-auto mb-4 text-gray-700 dark:text-gray-300" />
-  <p class="mb-4 text-gray-500 dark:text-gray-400">
-    {
-      canManageProposals && projectStatus < 20 && (
-        <span
-          set:html={`Upload Project Documents for <b>${authorProfile?.company_name || "Client"}</b> at <b>${project.address}</b> first.`}
-        />
-      )
-    }
-
-    {
-      projectStatus < 20 && currentRole === "Client" && (
-        <span set:html={`Upload your project documents first.`} />
-      )
-    }
-
-    {
-      projectStatus >= 20 && currentRole === "Client" && (
-        <span
-          set:html={`Your project proposal is being generated.<br>You will be notified at <b>${authorProfile?.email}</b> when it is ready.`}
-        />
-      )
-    }
-  </p>
-
-  {
-    canManageProposals && !existingInvoice && projectStatus === 20 && (
+{
+  canManageProposals && !existingInvoice && projectStatus === 20 && (
+    <div id="proposal-placeholder" class="py-8">
       <Button
         onclick={`buildProposal('${projectId}')`}
         variant="success"
@@ -126,9 +98,9 @@ try {
       >
         Build Proposal from Specs
       </Button>
-    )
-  }
-</div>
+    </div>
+  )
+}
 
 <!-- Generated proposal content (hidden initially) -->
 <div id="proposal-content" class={existingInvoice ? "" : "hidden"}>
@@ -145,54 +117,57 @@ try {
               id="proposal-subject-text"
               class="inline-block h-6 w-64 animate-pulse rounded bg-gray-200 dark:bg-gray-700"
             ></span>
-            {projectStatus === 20 && (
-
-            <Button
-              type="button"
-              id="edit-subject-btn"
-              variant="ghost"
-              size="sm"
-              icon="edit"
-              class="ml-2 text-gray-400 hover:text-blue-600 dark:hover:text-blue-400"
-              title="Edit subject"
-            />
-            )}
+            {
+              projectStatus === 20 && (
+                <Button
+                  type="button"
+                  id="edit-subject-btn"
+                  variant="ghost"
+                  size="sm"
+                  icon="edit"
+                  class="ml-2 text-gray-400 hover:text-blue-600 dark:hover:text-blue-400"
+                  title="Edit subject"
+                />
+              )
+            }
           </p>
         </div>
 
-        {projectStatus === 20 && (
-        <div id="proposal-subject-edit" class="hidden">
-          <div class="space-y-2">
-            <div id="subject-dropdown-container">
-              <!-- Subject dropdown will be inserted here -->
+        {
+          projectStatus === 20 && (
+            <div id="proposal-subject-edit" class="hidden">
+              <div class="space-y-2">
+                <div id="subject-dropdown-container">
+                  {/* <!-- Subject dropdown will be inserted here --> */}
+                </div>
+                <div class="flex items-center space-x-2">
+                  <Button
+                    type="button"
+                    id="save-subject-btn"
+                    variant="primary"
+                    size="sm"
+                    icon="check"
+                    iconPosition="left"
+                    title="Save subject"
+                  >
+                    Save
+                  </Button>
+                  <Button
+                    type="button"
+                    id="cancel-subject-btn"
+                    variant="secondary"
+                    size="sm"
+                    icon="x"
+                    iconPosition="left"
+                    title="Cancel"
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              </div>
             </div>
-            <div class="flex items-center space-x-2">
-              <Button
-                type="button"
-                id="save-subject-btn"
-                variant="primary"
-                size="sm"
-                icon="check"
-                iconPosition="left"
-                title="Save subject"
-              >
-                Save
-              </Button>
-              <Button
-                type="button"
-                id="cancel-subject-btn"
-                variant="secondary"
-                size="sm"
-                icon="x"
-                iconPosition="left"
-                title="Cancel"
-              >
-                Cancel
-              </Button>
-            </div>
-            </div>
-          </div>
-        )}
+          )
+        }
       </div>
 
       <p class={`${globalSecondaryTextClasses} text-sm`}>
@@ -230,7 +205,9 @@ try {
       <div class="space-y-1 text-sm">
         <p class={`${globalSecondaryTextClasses}`}>
           <strong>Client:</strong>
-          <span id="proposal-client-name">{authorProfile?.[0]?.company_name || authorProfile?.company_name || "N/A"}</span>
+          <span id="proposal-client-name"
+            >{authorProfile?.[0]?.company_name || authorProfile?.company_name || "N/A"}</span
+          >
         </p>
         <!-- <p><strong>Email:</strong> <span id="proposal-client-email">{authorProfile?.email || 'N/A'}</span></p> -->
         <!-- <p><strong>Phone:</strong> <span id="proposal-client-phone">{authorProfile?.phone || 'N/A'}</span></p> -->
@@ -285,15 +262,16 @@ try {
                 >
                   Total
                 </th>
-                {projectStatus === 20 && (
-
-                <th
-                  scope="col"
-                  class="RZmKBZs1E1eXw8vkE6jY i8v96MUlFwGv9qJUkAx7 yM_AorRf2jSON3pDsdrz"
-                >
-                  Actions
-                </th>
-                )}
+                {
+                  projectStatus === 20 && (
+                    <th
+                      scope="col"
+                      class="RZmKBZs1E1eXw8vkE6jY i8v96MUlFwGv9qJUkAx7 yM_AorRf2jSON3pDsdrz"
+                    >
+                      Actions
+                    </th>
+                  )
+                }
               </tr>
             </thead>
             <tbody
@@ -301,7 +279,6 @@ try {
               class="divide-y divide-gray-200 bg-white dark:divide-gray-700 dark:bg-gray-800"
             >
               <!-- All line items will be generated dynamically via JavaScript -->
-               
             </tbody>
             <tfoot>
               <tr>
@@ -353,7 +330,7 @@ try {
         <div class="flex gap-2">
           <span class="button-text">Proposal Saves Automatically</span>
         </div>
-        <div class="flex gap-2 flex-center">
+        <div class="flex-center flex gap-2">
           <Button
             id="send-proposal-btn"
             onclick="sendProposal()"
@@ -381,17 +358,21 @@ try {
 
       <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <Button
-          onclick="window.switchTab('discussion')"
-          variant="primary"
+          href={`/project/${projectId}?status=discussion&new=true`}
+          variant="secondary"
           size="md"
+          icon="pencil"
+          iconPosition="left"
         >
           To Request Edits Leave a Comment
         </Button>
 
         <Button
-          variant="primary"
+          variant="success"
           size="md"
-          onclick="acceptProposal()"
+          icon="check"
+          iconPosition="right"
+          onclick="window.acceptProposal()"
         >
           Accept Proposal
         </Button>
@@ -425,6 +406,8 @@ try {
       console.log("🔧 [PROPOSAL-MANAGER] Constructor set this.projectId to:", this.project);
       this.isEditMode = false;
       this.cachedLineItems = null;
+      this.projectData = project;
+      this.statusData = statusData;
       this.cachedTotal = null;
       this.autocompleteInitialized = false;
       this.invoiceId = null;
@@ -722,7 +705,7 @@ try {
 
         const row = document.createElement("tr");
         row.className = "proposal-line-item-row";
-        
+
         if (projectStatus === 20) {
           row.innerHTML = `
             <td class="whitespace-nowrap px-6 py-4">
@@ -776,7 +759,9 @@ try {
       });
 
       // Add the "Add Line Item" button row
-      if (projectStatus === 20) {this.addRowButton(tbody);}
+      if (projectStatus === 20) {
+        this.addRowButton(tbody);
+      }
     }
 
     addRowButton(tbody) {
@@ -1356,19 +1341,11 @@ try {
   }
 
   // Initialize the ProposalManager
-  async function initializeProposalManager(
-    project,
-    projectStatus,
-    currentUser
-  ) {
+  async function initializeProposalManager(project, projectStatus, currentUser) {
     console.log("🔧 [PROPOSAL-MANAGER] Initializing ProposalManager for project:", project.id);
 
     // Create the proposal manager instance
-    window.proposalManager = new ProposalManager(
-      project,
-      projectStatus,
-      currentUser
-    );
+    window.proposalManager = new ProposalManager(project, projectStatus, currentUser);
 
     console.log("✅ [PROPOSAL-MANAGER] ProposalManager initialized successfully");
   }
@@ -1438,6 +1415,10 @@ try {
 
   document.addEventListener("DOMContentLoaded", async () => {
     // Get component data from the global variables set by define:vars
+    // Set project data on window object for global access
+    window.project = project;
+    window.currentUser = currentUser;
+    window.statusData = statusData;
 
     // Update proposal total function
     function updateProposalTotal() {
@@ -1530,11 +1511,7 @@ try {
 
     // Initialize the global proposal manager
     if (project) {
-      await initializeProposalManager(
-        project,
-        projectStatus,
-        currentUser
-      );
+      await initializeProposalManager(project, projectStatus, currentUser);
 
       // If there's an existing invoice, load it automatically
       // console.log("🔍 [Client] Checking if should load existing invoice:", { existingInvoice, proposalManager: !!window.proposalManager });
@@ -1582,7 +1559,11 @@ try {
         console.log("🔍 [PROPOSAL-MANAGER] Updating status to:", newStatus);
         console.log("🔍 [PROPOSAL-MANAGER] Status data:", statusData);
         console.log("🔍 [PROPOSAL-MANAGER] Status data:", statusData[newStatus.toString()]);
-        const data = await window.updateStatus(project, newStatus, statusData[newStatus.toString()]);
+        const data = await window.updateStatus(
+          project,
+          newStatus,
+          statusData[newStatus.toString()]
+        );
         // console.log("🔍 [PROPOSAL-MANAGER] Full API response:", data);
 
         if (data.success) {
@@ -1610,6 +1591,16 @@ try {
     window.addProposalRow = () => window.proposalManager?.addProposalRow();
     window.deleteProposalRow = (index) => window.proposalManager?.deleteProposalRow(index);
     window.confirmDelete = (index) => window.proposalManager?.confirmDelete(index);
+
+    // Set up acceptProposal function directly
+    window.acceptProposal = async () => {
+      console.log("🔧 [ACCEPT-PROPOSAL] Function called");
+      if (window.proposalHelper && window.proposalHelper.acceptProposal) {
+        return await window.proposalHelper.acceptProposal();
+      } else {
+        console.error("❌ [ACCEPT-PROPOSAL] proposalHelper not available");
+      }
+    };
 
     // Initialize subject editing functionality
     window.initializeSubjectEditing();
@@ -2035,34 +2026,32 @@ try {
 </script>
 
 <script>
-
-
-
   // Proposal Helper Class - manages all proposal-related functionality
   class ProposalHelper {
-    private projectData: any;
-    private subjects: any[] = [];
-    private searchTimeout: NodeJS.Timeout | null = null;
-
     constructor() {
       this.initialize();
     }
 
     // Initialize the helper
-    private initialize() {
+    initialize() {
       this.initializeSubjectEditing();
       this.setupGlobalFunctions();
     }
 
     // Setup global functions for backward compatibility
-    private setupGlobalFunctions() {
+    setupGlobalFunctions() {
       window.addNewLineItem = () => this.addNewLineItem();
       window.initializeSubjectEditing = () => this.initializeSubjectEditing();
       window.acceptProposal = () => this.acceptProposal();
+      console.log("🔧 [PROPOSAL-HELPER] Global functions set up:", {
+        addNewLineItem: !!window.addNewLineItem,
+        initializeSubjectEditing: !!window.initializeSubjectEditing,
+        acceptProposal: !!window.acceptProposal,
+      });
     }
 
     // Add new line item method
-    public addNewLineItem() {
+    addNewLineItem() {
       console.log("➕ [PROPOSAL-MANAGER] Adding new line item");
 
       // Create new row for desktop view
@@ -2092,7 +2081,7 @@ try {
     // Global variable assignment removed - using existingInvoice directly
 
     // Subject editing functionality
-    public initializeSubjectEditing() {
+    initializeSubjectEditing() {
       const editBtn = document.getElementById("edit-subject-btn");
       const saveBtn = document.getElementById("save-subject-btn");
       const cancelBtn = document.getElementById("cancel-subject-btn");
@@ -2503,7 +2492,6 @@ try {
 
         try {
           // Save to database
-          const { project } = this.projectData;
           const response = await fetch("/api/save-proposal-subject", {
             method: "POST",
             headers: {
@@ -2511,7 +2499,7 @@ try {
             },
             credentials: "include",
             body: JSON.stringify({
-              subject: newSubject
+              subject: newSubject,
             }),
           });
 
@@ -2552,18 +2540,18 @@ try {
     }
 
     // Accept Proposal method
-    public async acceptProposal() {
-      const button = document.querySelector('[onclick="acceptProposal()"]') as HTMLButtonElement;
-      if (!button) return;
+    async acceptProposal() {
+      console.log("🔧 [ACCEPT-PROPOSAL] Method called");
+      const button = document.querySelector(
+        '[onclick="window.acceptProposal()"]'
+      ) as HTMLButtonElement;
+      if (!button) {
+        console.error("❌ [ACCEPT-PROPOSAL] Button not found");
+        return;
+      }
+      console.log("🔧 [ACCEPT-PROPOSAL] Button found:", button);
 
-
-      window.showModal(
-              "info",
-              "",
-              "Processing Proposal & Generating Contract...",
-              5000,
-              
-            );
+      window.showModal("info", "", "Processing Proposal & Generating Contract...", 5000);
 
       const originalText = button.innerHTML;
 
@@ -2578,15 +2566,19 @@ try {
           Accepting Proposal...
         `;
 
-        const { projectId, projectStatus } = this.projectData;
+        // Get project data from global variables
+        const project = (window as any).project;
+        const projectId = project?.id;
+        const projectStatus = project?.status;
+
         console.log("🔔 [PROPOSAL-MANAGER] Accepting proposal for project:", projectId);
         console.log("🔔 [PROPOSAL-MANAGER] Project status:", projectStatus);
+        console.log("🔔 [PROPOSAL-MANAGER] Full project object:", project);
 
         // Validate projectId
         if (!projectId) {
           console.error("❌ [PROPOSAL-MANAGER] No projectId found!");
-          console.error("❌ [PROPOSAL-MANAGER] this.projectData:", this.projectData);
-          console.error("❌ [PROPOSAL-MANAGER] window.proposalManager:", window.proposalManager);
+          console.error("❌ [PROPOSAL-MANAGER] project:", project);
 
           // Show error to user
           if (window.showModal) {
@@ -2623,12 +2615,12 @@ try {
         }
 
         // Make API call to update status to 45 (Proposal Accepted)
-
         const nextStatus = 45;
-        const result = await (window as any).updateStatus(this.projectData.project.id, nextStatus, {
-          currentProject: this.projectData.project,
-          currentUser: this.projectData.currentUser,
-        });
+        const result = await (window as any).updateStatus(
+          project,
+          nextStatus,
+          (window as any).statusData[nextStatus.toString()]
+        );
 
         if (result.success) {
           console.log("✅ [PROPOSAL-MANAGER] Proposal accepted successfully");
@@ -2670,5 +2662,5 @@ try {
     }
   }
   // Initialize the ProposalHelper class
-  (window as any).proposalHelper = new ProposalHelper();
+  window.proposalHelper = new ProposalHelper();
 </script>
