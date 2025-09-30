@@ -42,6 +42,7 @@ const currentRole = currentUser?.profile?.role;
     globalSecondaryTextClasses={globalSecondaryTextClasses}
     globalPrimaryTextClasses={globalPrimaryTextClasses}
     globalInputClasses={globalInputClasses}
+    statusData={statusData}
   />
 
   <!-- All Documents Uploaded Button (Clients Only) -->
@@ -75,6 +76,7 @@ const currentRole = currentUser?.profile?.role;
     statusData,
   }}
 >
+  console.log("🔍 [TAB-DOCUMENTS] statusData:", statusData);
   // Only initialize if the button exists (projectStatus === 10)
   if (projectStatus === 10) {
     class PDFUpload {
@@ -84,6 +86,7 @@ const currentRole = currentUser?.profile?.role;
         this.projectId = projectId;
         this.projectStatus = projectStatus;
         this.initialized = false;
+        this.statusData = statusData;
         this.init();
       }
 
@@ -133,7 +136,7 @@ const currentRole = currentUser?.profile?.role;
           const result = await window.updateStatus(
             this.project,
             nextStatus,
-            statusData.statuses[nextStatus]
+            this.statusData[nextStatus]
           );
 
           console.log("🔔 [PDF-UPLOAD] Update status result:", result);

@@ -137,6 +137,8 @@ export const GET: APIRoute = async ({ request, cookies, url }) => {
 
     let placeholderData: any = null;
     if (project) {
+      // project.est_time = statusesData.find((s: any) => s.status_code === project.status)?.est_time;
+      project.est_time = "2 days";
       placeholderData = {
         project: project,
       };

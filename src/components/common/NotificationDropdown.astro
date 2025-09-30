@@ -196,27 +196,27 @@ const currentUserId = currentUser?.id;
         try {
           this.showLoading();
 
-          console.log("🔍 [NOTIFICATIONS] Fetching notifications from /api/notifications?limit=5");
+          // console.log("🔍 [NOTIFICATIONS] Fetching notifications from /api/notifications?limit=5");
           const response = await fetch("/api/notifications?limit=5");
-          console.log("🔍 [NOTIFICATIONS] Response status:", response.status);
+          // console.log("🔍 [NOTIFICATIONS] Response status:", response.status);
 
           const data = await response.json();
-          console.log("🔍 [NOTIFICATIONS] Response data:", data);
+          // console.log("🔍 [NOTIFICATIONS] Response data:", data);
 
           if (data.success) {
             this.notifications = data.notifications || [];
-            console.log("🔍 [NOTIFICATIONS] Unread count from API:", data.unreadCount);
-            console.log(
-              "🔍 [NOTIFICATIONS] Notifications received:",
-              this.notifications.map((n) => ({ id: n.id, title: n.title, viewed: n.viewed }))
-            );
+            // console.log("🔍 [NOTIFICATIONS] Unread count from API:", data.unreadCount);
+            // console.log(
+            //   "🔍 [NOTIFICATIONS] Notifications received:",
+            //   this.notifications.map((n) => ({ id: n.id, title: n.title, viewed: n.viewed }))
+            // );
             this.updateBadge(data.unreadCount || 0);
             this.renderNotifications();
-            console.log(
-              "✅ [NOTIFICATIONS] Successfully loaded",
-              this.notifications.length,
-              "notifications"
-            );
+            // console.log(
+            //   "✅ [NOTIFICATIONS] Successfully loaded",
+            //   this.notifications.length,
+            //   "notifications"
+            // );
           } else if (data.migrationRequired) {
             console.warn("⚠️ [NOTIFICATIONS] Database migration required:", data.error);
             this.showMigrationRequired(data.instructions);
@@ -235,11 +235,11 @@ const currentUserId = currentUser?.id;
         const empty = document.getElementById("notification-empty");
         const loading = document.getElementById("notification-loading");
 
-        console.log(
-          "🔍 [NOTIFICATIONS] renderNotifications called with",
-          this.notifications.length,
-          "notifications"
-        );
+        // console.log(
+        //   "🔍 [NOTIFICATIONS] renderNotifications called with",
+        //   this.notifications.length,
+        //   "notifications"
+        // );
 
         if (!list) {
           console.error("❌ [NOTIFICATIONS] notification-list element not found");
@@ -252,50 +252,19 @@ const currentUserId = currentUser?.id;
 
         // Show the list (remove hidden class)
         list?.classList.remove("hidden");
-        console.log(
-          "🔍 [NOTIFICATIONS] Removed hidden class from list. List classes now:",
-          list?.className
-        );
 
         if (this.notifications.length === 0) {
-          console.log("🔍 [NOTIFICATIONS] No notifications, showing empty state");
           empty?.classList.remove("hidden");
           return;
         }
 
-        console.log("🔍 [NOTIFICATIONS] Rendering", this.notifications.length, "notifications");
         list.innerHTML = "";
 
         this.notifications.forEach((notification: any, index: number) => {
-          console.log(`🔍 [NOTIFICATIONS] Creating notification ${index + 1}:`, notification.title);
           const notificationElement = this.createNotificationElement(notification);
-          console.log(
-            `🔍 [NOTIFICATIONS] Created element for notification ${index + 1}:`,
-            notificationElement
-          );
-          list.appendChild(notificationElement);
-          console.log(
-            `🔍 [NOTIFICATIONS] Appended notification ${index + 1} to list. List children count:`,
-            list.children.length
-          );
-        });
 
-        console.log("🔍 [NOTIFICATIONS] Finished rendering notifications");
-        console.log("🔍 [NOTIFICATIONS] Final list innerHTML length:", list.innerHTML.length);
-        console.log("🔍 [NOTIFICATIONS] Final list children count:", list.children.length);
-        console.log("🔍 [NOTIFICATIONS] List element classes:", list.className);
-        console.log(
-          "🔍 [NOTIFICATIONS] List computed style display:",
-          window.getComputedStyle(list).display
-        );
-        console.log(
-          "🔍 [NOTIFICATIONS] List computed style visibility:",
-          window.getComputedStyle(list).visibility
-        );
-        console.log(
-          "🔍 [NOTIFICATIONS] List computed style height:",
-          window.getComputedStyle(list).height
-        );
+          list.appendChild(notificationElement);
+        });
 
         // Test: Add a simple test element to see if the list is working
       }
