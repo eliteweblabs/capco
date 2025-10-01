@@ -191,16 +191,26 @@ export const POST: APIRoute = async ({ request, cookies }): Promise<Response> =>
           // Override buttonLink with magic link for authentication
           let finalButtonLink = buttonLink;
 
+          // Only generate magic links when emailType is explicitly "magic_link"
           if (
+            emailType === "magic_link" &&
             buttonLink &&
             (buttonLink.includes("/dashboard") || buttonLink.includes("/api/auth/callback"))
           ) {
             try {
-              const redirectUrl = `${baseUrl}${buttonLink}`;
-              console.log("🔗 [EMAIL-DELIVERY] Magic link redirect URL:", redirectUrl);
-              console.log("🔗 [EMAIL-DELIVERY] Button link from request:", buttonLink);
-              console.log("🔗 [EMAIL-DELIVERY] Base URL used:", baseUrl);
-              console.log("🔗 [EMAIL-DELIVERY] Constructed redirect URL:", redirectUrl);
+              // The redirectTo should be the final destination after successful verification
+              // Supabase will redirect to /api/auth/verify first with token_hash, then verify will redirect here
+              const finalDestination = buttonLink.includes("/dashboard")
+                ? "/dashboard"
+                : "/dashboard";
+              const redirectUrl = `${baseUrl}/api/auth/verify?redirect=${encodeURIComponent(finalDestination)}`;
+
+              console.log("🔗 [EMAIL-DELIVERY] Magic link configuration:", {
+                baseUrl,
+                finalDestination,
+                redirectUrl,
+                userEmail,
+              });
 
               console.log("🔗 [EMAIL-DELIVERY] Generating magic link with Supabase...");
               const { data: magicLinkData, error: magicLinkError } =
@@ -224,11 +234,13 @@ export const POST: APIRoute = async ({ request, cookies }): Promise<Response> =>
                 finalButtonLink = magicLinkData.properties.action_link;
                 console.log("🔗 [EMAIL-DELIVERY] Magic link generated successfully");
                 console.log("🔗 [EMAIL-DELIVERY] Generated magic link URL:", finalButtonLink);
-                console.log("🔗 [EMAIL-DELIVERY] Magic link properties:", magicLinkData.properties);
               }
             } catch (error) {
               console.error("📧 [EMAIL-DELIVERY] Error generating magic link:", error);
             }
+          } else if (buttonLink && !buttonLink.startsWith("http")) {
+            // For non-magic-link emails, convert relative URLs to absolute URLs
+            finalButtonLink = `${baseUrl}${buttonLink.startsWith("/") ? buttonLink : `/${buttonLink}`}`;
           }
 
           if (buttonText && finalButtonLink) {

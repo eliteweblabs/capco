@@ -317,12 +317,12 @@ export const POST: APIRoute = async ({ request, cookies }) => {
             // Send email using direct fetch to email-delivery API
             try {
               const emailData = {
-                emailType: "new_user",
+                emailType: "notification", // Admin notification, not a magic link
                 usersToNotify: [adminEmail], // Use resolved user email
                 emailSubject: `New User → ${displayName} → ${staffRole}`,
                 emailContent: adminContent,
-                buttonText: "Access Your Dashboard",
-                buttonLink: "/api/auth/callback",
+                buttonText: "View Users",
+                buttonLink: "/admin/users", // Regular link, not magic link
               };
 
               const emailResult = await fetch(`${baseUrl}/api/email-delivery`, {
@@ -422,7 +422,7 @@ Your account has been created successfully:<br><br>
           emailSubject: `Welcome to ${process.env.GLOBAL_COMPANY_NAME} → ${displayName}`,
           emailContent: welcomeContent,
           buttonText: "Let's Get Started →",
-          buttonLink: "/api/auth/callback",
+          buttonLink: "/dashboard", // Will be converted to magic link by email-delivery.ts
         };
 
         console.log("🔗 [CREATE-USER] Email payload being sent:", {
