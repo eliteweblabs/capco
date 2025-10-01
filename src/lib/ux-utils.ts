@@ -177,10 +177,15 @@ export function isSafari(): boolean {
   return /Safari/.test(ua) && !/Chrome|CriOS|FxiOS|EdgiOS/.test(ua);
 }
 
-export function isSafari18Beta(): boolean {
+export function isSafariBeta(): boolean {
   const ua = navigator.userAgent;
-  // Safari 18 beta has version 18.x.x
-  return /Safari/.test(ua) && /Version\/18\./.test(ua) && !/Chrome|CriOS|FxiOS|EdgiOS/.test(ua);
+  // Safari 18 beta has version 18.x.x or higher (Safari version numbers don't match major versions)
+  // Version 26+ corresponds to Safari 18+ on iOS
+  return (
+    /Safari/.test(ua) &&
+    /Version\/(18|19|20|21|22|23|24|25|26)\./.test(ua) &&
+    !/Chrome|CriOS|FxiOS|EdgiOS/.test(ua)
+  );
 }
 
 export function isSafari18OrLater(): boolean {
@@ -195,12 +200,14 @@ export function isSafari18OrLater(): boolean {
  * Fixes Safari viewport positioning issues (Safari 18 beta and earlier)
  * Only runs on Safari browsers to avoid unnecessary processing
  */
+
+// not called
 export function fixSafariViewport(): void {
   if (!isSafari()) {
     return; // Only run on Safari
   }
 
-  const isSafari18 = isSafari18Beta();
+  const isSafari18 = isSafariBeta();
   console.log(
     `🍎 [UX-UTILS] Fixing Safari viewport positioning${isSafari18 ? " (Safari 18 Beta)" : ""}`
   );
@@ -208,34 +215,34 @@ export function fixSafariViewport(): void {
   // AGGRESSIVE FIXES - Force all elements to stay in place
 
   // Fix sticky container (SpeedDial) - FORCE POSITIONING
-  const container = document.getElementById("sticky-container");
-  if (container) {
-    let containerStyles = `
-      position: fixed !important;
-      bottom: 1.5rem !important;
-      left: 1.5rem !important;
-      z-index: 40 !important;
-      transform: translateZ(0) !important;
-      will-change: transform !important;
-      display: inline !important;
-    `;
+  // const container = document.getElementById("sticky-container");
+  // if (container) {
+  //   let containerStyles = `
+  //     position: fixed !important;
+  //     bottom: 1.5rem !important;
+  //     left: 1.5rem !important;
+  //     z-index: 40 !important;
+  //     transform: translateZ(0) !important;
+  //     will-change: transform !important;
+  //     display: inline !important;
+  //   `;
 
-    // Safari 18 beta specific fixes
-    if (isSafari18) {
-      containerStyles += `
-        /* Safari 18 beta specific fixes */
-        contain: layout style paint !important;
-        isolation: isolate !important;
-        backface-visibility: hidden !important;
-        -webkit-transform: translateZ(0) !important;
-        -webkit-backface-visibility: hidden !important;
-      `;
-    }
+  //   // Safari 18 beta specific fixes
+  //   if (isSafari18) {
+  //     containerStyles += `
+  //       /* Safari 18 beta specific fixes */
+  //       contain: layout style paint !important;
+  //       isolation: isolate !important;
+  //       backface-visibility: hidden !important;
+  //       -webkit-transform: translateZ(0) !important;
+  //       -webkit-backface-visibility: hidden !important;
+  //     `;
+  //   }
 
-    container.style.cssText = containerStyles;
-    container.setAttribute("data-fixed", "true");
-    container.setAttribute("data-safari18", isSafari18 ? "true" : "false");
-  }
+  //   container.style.cssText = containerStyles;
+  //   container.setAttribute("data-fixed", "true");
+  //   container.setAttribute("data-safari18", isSafari18 ? "true" : "false");
+  // }
 
   // Fix SMS form panel - FORCE POSITIONING
   const panel = document.getElementById("sms-form-panel");
@@ -421,13 +428,13 @@ export function setupViewportHandling(): void {
   };
 
   // Set viewport height immediately
-  setViewportHeight();
+  // setViewportHeight();
 
   // Recalculate on resize
-  window.addEventListener("resize", setViewportHeight);
-  window.addEventListener("orientationchange", () => {
-    setTimeout(setViewportHeight, 100);
-  });
+  // window.addEventListener("resize", setViewportHeight);
+  // window.addEventListener("orientationchange", () => {
+  //   setTimeout(setViewportHeight, 100);
+  // });
 
   // NUCLEAR OPTION - Force elements to stay in place
   const forcePositioning = () => {
@@ -516,85 +523,76 @@ export function setupViewportHandling(): void {
   };
 
   // Apply immediately
-  forcePositioning();
+  // forcePositioning();
 
   // Event listeners for viewport fixes
-  window.addEventListener("resize", forcePositioning);
-  window.addEventListener("orientationchange", () => {
-    setTimeout(forcePositioning, 100);
-  });
-  window.addEventListener("scroll", forcePositioning);
-  window.addEventListener("focus", forcePositioning);
-  window.addEventListener("blur", forcePositioning);
-  window.addEventListener("touchstart", forcePositioning);
-  window.addEventListener("touchend", forcePositioning);
-  window.addEventListener("touchmove", forcePositioning);
+  // window.addEventListener("resize", forcePositioning);
+  // window.addEventListener("orientationchange", () => {
+  //   setTimeout(forcePositioning, 100);
+  // });
+  // window.addEventListener("scroll", forcePositioning);
+  // window.addEventListener("focus", forcePositioning);
+  // window.addEventListener("blur", forcePositioning);
+  // window.addEventListener("touchstart", forcePositioning);
+  // window.addEventListener("touchend", forcePositioning);
+  // window.addEventListener("touchmove", forcePositioning);
 
   // NUCLEAR periodic check (every 500ms for ALL browsers)
-  setInterval(forcePositioning, 500);
+  // setInterval(forcePositioning, 500);
 
   // Additional nuclear checks
-  setInterval(() => {
-    const container = document.getElementById("sticky-container");
-    const header = document.querySelector("header");
+  // setInterval(() => {
+  //   const container = document.getElementById("sticky-container");
+  //   const header = document.querySelector("header");
 
-    if (container) {
-      const rect = container.getBoundingClientRect();
-      if (rect.bottom > window.innerHeight || rect.left < 0 || rect.top < 0) {
-        console.log("🚨 [UX-UTILS] Container out of bounds, forcing position");
-        forcePositioning();
-      }
-    }
+  //   if (container) {
+  //     const rect = container.getBoundingClientRect();
+  //     if (rect.bottom > window.innerHeight || rect.left < 0 || rect.top < 0) {
+  //       console.log("🚨 [UX-UTILS] Container out of bounds, forcing position");
+  //       forcePositioning();
+  //     }
+  //   }
 
-    if (header) {
-      const rect = header.getBoundingClientRect();
-      if (rect.top > 0) {
-        console.log("🚨 [UX-UTILS] Header out of bounds, forcing position");
-        // Force header immediately
-        header.style.setProperty("position", "sticky", "important");
-        header.style.setProperty("position", "-webkit-sticky", "important");
-        header.style.setProperty("top", "0", "important");
-        header.style.setProperty("transform", "translate3d(0, 0, 0)", "important");
-        forcePositioning();
-      }
-    }
-  }, 250);
+  //   if (header) {
+  //     const rect = header.getBoundingClientRect();
+  //     if (rect.top > 0) {
+  //       console.log("🚨 [UX-UTILS] Header out of bounds, forcing position");
+  //       // Force header immediately
+  //       header.style.setProperty("position", "sticky", "important");
+  //       header.style.setProperty("position", "-webkit-sticky", "important");
+  //       header.style.setProperty("top", "0", "important");
+  //       header.style.setProperty("transform", "translate3d(0, 0, 0)", "important");
+  //       forcePositioning();
+  //     }
+  //   }
+  // }, 250);
 
   // EXTRA AGGRESSIVE header check every 100ms
-  setInterval(() => {
-    const header = document.querySelector("header");
-    if (header) {
-      const rect = header.getBoundingClientRect();
-      if (rect.top > 0) {
-        console.log("🚨 [UX-UTILS] EXTRA AGGRESSIVE - Header moved, forcing back");
-        header.style.cssText = `
-          position: sticky !important;
-          position: -webkit-sticky !important;
-          top: 0 !important;
-          left: 0 !important;
-          right: 0 !important;
-          width: 100% !important;
-          z-index: 9998 !important;
-          transform: translate3d(0, 0, 0) !important;
-          will-change: transform !important;
-          contain: layout style paint !important;
-          isolation: isolate !important;
-          backface-visibility: hidden !important;
-          -webkit-transform: translate3d(0, 0, 0) !important;
-          -webkit-backface-visibility: hidden !important;
-        `;
-      }
-    }
-  }, 100);
-
-  // Responsive behavior for all elements
-  window.addEventListener("resize", () => {
-    // Handle responsive visibility
-    const container = document.getElementById("sticky-container");
-    if (container && window.innerWidth >= 768) {
-      container.style.opacity = "1";
-    }
-  });
+  // setInterval(() => {
+  //   const header = document.querySelector("header");
+  //   if (header) {
+  //     const rect = header.getBoundingClientRect();
+  //     if (rect.top > 0) {
+  //       console.log("🚨 [UX-UTILS] EXTRA AGGRESSIVE - Header moved, forcing back");
+  //       header.style.cssText = `
+  //         position: sticky !important;
+  //         position: -webkit-sticky !important;
+  //         top: 0 !important;
+  //         left: 0 !important;
+  //         right: 0 !important;
+  //         width: 100% !important;
+  //         z-index: 9998 !important;
+  //         transform: translate3d(0, 0, 0) !important;
+  //         will-change: transform !important;
+  //         contain: layout style paint !important;
+  //         isolation: isolate !important;
+  //         backface-visibility: hidden !important;
+  //         -webkit-transform: translate3d(0, 0, 0) !important;
+  //         -webkit-backface-visibility: hidden !important;
+  //       `;
+  //     }
+  //   }
+  // }, 100);
 
   // Use MutationObserver to catch DOM changes that might reset positioning
   // const observer = new MutationObserver((mutations) => {

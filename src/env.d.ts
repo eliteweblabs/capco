@@ -140,7 +140,7 @@ declare global {
     // Safari detection
     isSafariIOS?: () => boolean;
     isSafari?: () => boolean;
-    isSafari18Beta?: () => boolean;
+    isSafariBeta?: () => boolean;
     isSafari18OrLater?: () => boolean;
 
     // Viewport utilities

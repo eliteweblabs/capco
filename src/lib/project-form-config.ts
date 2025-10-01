@@ -700,10 +700,26 @@ export const UNIFIED_FORM_ELEMENTS: FormElementConfig[] = [
     variant: "primary",
     cssClass:
       "flex-1 w-full lg:w-auto px-4 py-2 bg-primary-600 text-white text-sm font-medium rounded-full hover:bg-primary-700 transition-colors mt-6",
-    allow: ["Admin", "Staff", "Client"],
+    allow: ["Admin", "Staff"],
     hideAtStatus: [
-      60, 65, 70, 75, 80, 85, 90, 95, 100, 105, 110, 115, 120, 125, 130, 135, 140, 145, 150, 155,
-      160, 170, 180, 190, 200, 210, 220,
+      110, 115, 120, 125, 130, 135, 140, 145, 150, 155, 160, 170, 180, 190, 200, 210, 220,
+    ],
+  },
+
+  {
+    id: "save-project",
+    name: "save-project",
+    type: "action",
+    elementType: "submit",
+    label: "Save Project",
+    icon: "bx-save",
+    variant: "primary",
+    cssClass:
+      "flex-1 w-full lg:w-auto px-4 py-2 bg-primary-600 text-white text-sm font-medium rounded-full hover:bg-primary-700 transition-colors mt-6",
+    allow: ["Client"],
+    hideAtStatus: [
+      20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95, 100, 105, 110, 115, 120, 125,
+      130, 135, 140, 145, 150, 155, 160, 170, 180, 190, 200, 210, 220,
     ],
   },
 

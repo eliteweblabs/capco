@@ -34,6 +34,14 @@ export default {
     "data-drawer-hide",
     "data-drawer-backdrop",
     "data-drawer-placement",
+    // Scroll snap utilities
+    "snap-y",
+    "snap-y-mandatory",
+    "snap-y-proximity",
+    "snap-start",
+    "snap-end",
+    "snap-center",
+    "snap-align-none",
   ],
   theme: {
     extend: {
