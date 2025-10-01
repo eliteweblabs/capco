@@ -62,6 +62,11 @@ export const POST: APIRoute = async ({ request, cookies }): Promise<Response> =>
     // Use the proper base URL function to avoid localhost in production
     const { getBaseUrl } = await import("../../lib/url-utils");
     const baseUrl = getBaseUrl(request);
+    console.log("🔗 [EMAIL-DELIVERY] Base URL:", baseUrl);
+    console.log("🔗 [EMAIL-DELIVERY] Request URL:", request.url);
+    console.log("🔗 [EMAIL-DELIVERY] Request headers host:", request.headers.get("host"));
+    console.log("🔗 [EMAIL-DELIVERY] Environment SITE_URL:", process.env.SITE_URL);
+    console.log("🔗 [EMAIL-DELIVERY] Import meta SITE_URL:", import.meta.env.SITE_URL);
     const emailProvider = import.meta.env.EMAIL_PROVIDER;
     const emailApiKey = import.meta.env.EMAIL_API_KEY;
     const fromEmail = import.meta.env.FROM_EMAIL;
@@ -186,11 +191,18 @@ export const POST: APIRoute = async ({ request, cookies }): Promise<Response> =>
           // Override buttonLink with magic link for authentication
           let finalButtonLink = buttonLink;
 
-          if (buttonLink && buttonLink.includes("/dashboard")) {
+          if (
+            buttonLink &&
+            (buttonLink.includes("/dashboard") || buttonLink.includes("/api/auth/callback"))
+          ) {
             try {
               const redirectUrl = `${baseUrl}${buttonLink}`;
               console.log("🔗 [EMAIL-DELIVERY] Magic link redirect URL:", redirectUrl);
+              console.log("🔗 [EMAIL-DELIVERY] Button link from request:", buttonLink);
+              console.log("🔗 [EMAIL-DELIVERY] Base URL used:", baseUrl);
+              console.log("🔗 [EMAIL-DELIVERY] Constructed redirect URL:", redirectUrl);
 
+              console.log("🔗 [EMAIL-DELIVERY] Generating magic link with Supabase...");
               const { data: magicLinkData, error: magicLinkError } =
                 await supabaseAdmin.auth.admin.generateLink({
                   type: "magiclink",
@@ -200,11 +212,19 @@ export const POST: APIRoute = async ({ request, cookies }): Promise<Response> =>
                   },
                 });
 
+              console.log("🔗 [EMAIL-DELIVERY] Supabase generateLink response:", {
+                hasData: !!magicLinkData,
+                hasError: !!magicLinkError,
+                errorMessage: magicLinkError?.message,
+              });
+
               if (magicLinkError) {
                 console.error("📧 [EMAIL-DELIVERY] Error generating magic link:", magicLinkError);
               } else {
                 finalButtonLink = magicLinkData.properties.action_link;
-                // console.log("📧 [EMAIL-DELIVERY] Generated magic link for:", userEmail);
+                console.log("🔗 [EMAIL-DELIVERY] Magic link generated successfully");
+                console.log("🔗 [EMAIL-DELIVERY] Generated magic link URL:", finalButtonLink);
+                console.log("🔗 [EMAIL-DELIVERY] Magic link properties:", magicLinkData.properties);
               }
             } catch (error) {
               console.error("📧 [EMAIL-DELIVERY] Error generating magic link:", error);
@@ -265,7 +285,7 @@ export const POST: APIRoute = async ({ request, cookies }): Promise<Response> =>
             // Log failed email delivery
             try {
               await SimpleProjectLogger.addLogEntry(
-                project.id || 0,
+                project?.id || 0,
                 "email_failed",
                 currentUser,
                 `Email delivery failed to ${userEmail} - Type: ${emailType}, Subject: ${emailSubject}, Error: ${errorText}`,
@@ -285,7 +305,7 @@ export const POST: APIRoute = async ({ request, cookies }): Promise<Response> =>
             // Log successful email delivery
             try {
               await SimpleProjectLogger.addLogEntry(
-                project.id || 0,
+                project?.id || 0,
                 "email_sent",
                 currentUser,
                 `Email sent successfully to ${userEmail} - Type: ${emailType}, Subject: ${emailSubject}`,
@@ -366,7 +386,7 @@ export const POST: APIRoute = async ({ request, cookies }): Promise<Response> =>
     // Log overall email delivery completion
     try {
       console.log("📧 [EMAIL-DELIVERY] Logging email delivery completion:", {
-        projectId: project.id || 0,
+        projectId: project?.id || 0,
         emailType,
         totalSent: sentEmails.length,
         totalFailed: failedEmails.length,

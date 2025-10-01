@@ -265,6 +265,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
     // Define base URL for email API calls
     const baseUrl = getApiBaseUrl(request);
+    console.log("🔗 [CREATE-USER] Base URL for email delivery:", baseUrl);
 
     try {
       // Get all admin and staff users
@@ -321,10 +322,10 @@ export const POST: APIRoute = async ({ request, cookies }) => {
                 emailSubject: `New User → ${displayName} → ${staffRole}`,
                 emailContent: adminContent,
                 buttonText: "Access Your Dashboard",
-                buttonLink: "/dashboard",
+                buttonLink: "/api/auth/callback",
               };
 
-              const emailResult = await fetch("/api/email-delivery", {
+              const emailResult = await fetch(`${baseUrl}/api/email-delivery`, {
                 method: "POST",
                 headers: {
                   "Content-Type": "application/json",
@@ -373,7 +374,8 @@ Your account has been created successfully:<br><br>
 <b>Email:</b> ${email}<br>
 <b>First Name:</b> ${first_name}<br>
 <b>Last Name:</b> ${last_name}<br>
-<b>Phone:</b> ${phone || "Not provided"}<br><br>`;
+<b>Phone:</b> ${phone || "Not provided"}<br>
+<br>`;
 
         const newStaffContent = `Welcome to the new {{GLOBAL_COMPANY_NAME}} website!<br><br>
 
@@ -399,24 +401,44 @@ Your account has been created successfully:<br><br>
 <b>Email:</b> ${email}<br>
 <b>First Name:</b> ${first_name}<br>
 <b>Last Name:</b> ${last_name}<br>
-<b>Phone:</b> ${phone || "Not provided"}<br><br>`;
+<b>Phone:</b> ${phone || "Not provided"}<br>
+<b>SMS Alerts:</b> ${sms_alerts ? "Enabled" : "Disabled"}<br>
+<b>Mobile Carrier:</b> ${mobile_carrier || "Not provided"}<br>
+<b>Registration Date:</b> ${new Date().toLocaleDateString()}<br><br><br>`;
 
         const welcomeContent = staffRole === "Client" ? newClientContent : newStaffContent;
 
         // Send welcome email using the email delivery API with full URL
-        const userEmailResponse = await fetch(`${baseUrl}/api/email-delivery`, {
+        const emailDeliveryUrl = `${baseUrl}/api/email-delivery`;
+        console.log("🔗 [CREATE-USER] Calling email delivery API:", emailDeliveryUrl);
+        console.log("🔗 [CREATE-USER] Base URL for email delivery:", baseUrl);
+        console.log("🔗 [CREATE-USER] Request URL:", request.url);
+        console.log("🔗 [CREATE-USER] Environment SITE_URL:", process.env.SITE_URL);
+        console.log("🔗 [CREATE-USER] Import meta SITE_URL:", import.meta.env.SITE_URL);
+
+        const emailPayload = {
+          emailType: "magic_link",
+          usersToNotify: [email], // Array of email strings
+          emailSubject: `Welcome to ${process.env.GLOBAL_COMPANY_NAME} → ${displayName}`,
+          emailContent: welcomeContent,
+          buttonText: "Let's Get Started →",
+          buttonLink: "/api/auth/callback",
+        };
+
+        console.log("🔗 [CREATE-USER] Email payload being sent:", {
+          emailType: emailPayload.emailType,
+          usersToNotify: emailPayload.usersToNotify,
+          emailSubject: emailPayload.emailSubject,
+          buttonText: emailPayload.buttonText,
+          buttonLink: emailPayload.buttonLink,
+        });
+
+        const userEmailResponse = await fetch(emailDeliveryUrl, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({
-            emailType: "magic_link",
-            usersToNotify: [email], // Array of email strings
-            emailSubject: `Welcome to ${process.env.GLOBAL_COMPANY_NAME} → ${displayName}`,
-            emailContent: welcomeContent,
-            buttonText: "Let's Get Started →",
-            buttonLink: "/dashboard",
-          }),
+          body: JSON.stringify(emailPayload),
         });
 
         if (userEmailResponse.ok) {
@@ -473,7 +495,7 @@ Your account has been created successfully:<br><br>
         notification: {
           type: "success",
           title: "User Created Successfully",
-          message: `${displayName} has been created as ${staffRole}. They will receive a magic link to access their account.`,
+          message: `<b>${displayName}</b> has been created as <b>${staffRole}</b>. They will receive a magic link to access their account.`,
           duration: 5000,
         },
       }),
