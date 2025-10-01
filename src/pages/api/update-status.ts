@@ -125,13 +125,30 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         }),
       });
 
-      console.log("📊 [UPDATE-STATUS] Status response:", statusResponse);
+      console.log("📊 [UPDATE-STATUS] Status response:", {
+        ok: statusResponse.ok,
+        status: statusResponse.status,
+        statusText: statusResponse.statusText,
+      });
 
       if (statusResponse.ok) {
         const statusResult = await statusResponse.json();
 
-        // Extract specific status data for the new status
-        statusData = statusResult.statuses[newStatus] || null;
+        console.log("📊 [UPDATE-STATUS] Status result:", {
+          hasStatuses: !!statusResult?.statuses,
+          statusCount: statusResult?.statuses ? Object.keys(statusResult.statuses).length : 0,
+          hasSelectOptions: !!statusResult?.selectOptions,
+          fullResult: statusResult,
+        });
+
+        // Extract the specific status data from the statuses object
+        // JavaScript object keys are strings, so convert newStatus to string
+        const statusKey = String(newStatus);
+        statusData = statusResult.statuses?.[statusKey];
+
+        console.log("📊 [UPDATE-STATUS] Extracted statusData for status", newStatus, ":", {
+          statusData: statusData,
+        });
       } else {
         console.error("📊 [UPDATE-STATUS] Failed to fetch status data:", statusResponse.status);
       }
@@ -139,7 +156,10 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       console.log("📊 [UPDATE-STATUS] Using provided statusData, skipping database query");
     }
 
-    console.log("📊 [UPDATE-STATUS] Status data:", statusData);
+    console.log("📊 [UPDATE-STATUS] Final status data before return:", {
+      hasStatusData: !!statusData,
+      statusData: statusData,
+    });
     // Return the same structure as get-project API for status updates
     return new Response(
       JSON.stringify({

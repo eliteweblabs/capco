@@ -28,12 +28,8 @@ export function getStatusData(
 
 export const GET: APIRoute = async ({ request, cookies, url }) => {
   try {
-    // Check authentication and get user role
-    // console.log("🔍 [PROJECT-STATUSES-API] GET method called!");
-
     const { currentUser } = await checkAuth(cookies);
     if (!currentUser) {
-      // console.log("🔍 [PROJECT-STATUSES-API] Authentication required!");
       return new Response(JSON.stringify({ error: "Authentication required" }), {
         status: 401,
         headers: { "Content-Type": "application/json" },
@@ -41,7 +37,6 @@ export const GET: APIRoute = async ({ request, cookies, url }) => {
     }
 
     if (!supabaseAdmin) {
-      // console.log("🔍 [PROJECT-STATUSES-API] Database not available!");
       return new Response(JSON.stringify({ error: "Database not available" }), {
         status: 500,
         headers: { "Content-Type": "application/json" },
@@ -59,7 +54,6 @@ export const GET: APIRoute = async ({ request, cookies, url }) => {
     if (projectParam) {
       try {
         project = JSON.parse(decodeURIComponent(projectParam));
-        console.log("🔍 [PROJECT-STATUSES-API] Using provided project object:");
       } catch (error) {
         console.error("🔍 [PROJECT-STATUSES-API] Error parsing project object:", error);
         project = null;
@@ -78,7 +72,6 @@ export const GET: APIRoute = async ({ request, cookies, url }) => {
         if (projectResponse.ok) {
           const projectData = await projectResponse.json();
           project = projectData.project || projectData;
-          console.log("🔍 [PROJECT-STATUSES-API] Fetched project data:", project?.id);
         } else {
           console.error(
             "🔍 [PROJECT-STATUSES-API] Failed to fetch project data:",
@@ -134,21 +127,12 @@ export const GET: APIRoute = async ({ request, cookies, url }) => {
       }
     }
 
-    console.log("🔍 [PROJECT-STATUSES-API] Statuses data:", statusesData);
     let placeholderData: any = null;
     if (project) {
-      // project.est_time = statusesData.find((s: any) => s.status_code === project.status)?.est_time;
       placeholderData = {
         project: project,
       };
     }
-
-    // console.log("🔍 [PROJECT-STATUSES-API] Project data for placeholders:", {
-    //   projectId: placeholderData?.project?.id,
-    //   projectAddress: placeholderData?.project?.address,
-    //   projectTitle: placeholderData?.project?.title,
-    //   authorProfile: placeholderData?.project?.authorProfile,
-    // });
 
     // Apply placeholder replacement to all string properties in statuses
 
@@ -332,8 +316,6 @@ export const GET: APIRoute = async ({ request, cookies, url }) => {
       }
     });
 
-    console.log("🔍 [PROJECT-STATUSES-API] Simplified statuses:", simplifiedStatuses);
-
     // Create select options for forms (using already-processed current values)
     const selectOptions = Object.entries(simplifiedStatuses).map(([statusCode, statusData]) => ({
       value: statusCode,
@@ -386,7 +368,6 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
     // Get project data from request body
     const requestBody = await request.json();
-    console.log("🔍 [PROJECT-STATUSES-API] Raw request body:", requestBody);
     const { project, projectId } = requestBody;
 
     let projectData: any = null;
@@ -394,11 +375,9 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     // Handle project data - either full project object or just project ID
     if (project && typeof project === "object" && project.id) {
       projectData = project;
-      console.log("🔍 [PROJECT-STATUSES-API] Using provided project object:", projectData);
     } else if (projectId) {
       try {
         const parsedProjectId = parseInt(projectId);
-        console.log("🔍 [PROJECT-STATUSES-API] Fetching project data for ID:", parsedProjectId);
 
         // Fetch project data using get-project API
         const projectResponse = await fetch(
@@ -407,7 +386,6 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         if (projectResponse.ok) {
           const responseData = await projectResponse.json();
           projectData = responseData.project || responseData;
-          console.log("🔍 [PROJECT-STATUSES-API] Fetched project data:", projectData?.id);
         } else {
           console.error(
             "🔍 [PROJECT-STATUSES-API] Failed to fetch project data:",
@@ -471,7 +449,6 @@ export const POST: APIRoute = async ({ request, cookies }) => {
           }
         });
       });
-      console.log("🔍 [PROJECT-STATUSES-API] Applied placeholder replacement to all statuses");
     }
 
     // Get admin and staff emails using reusable API (same as GET route)
@@ -481,17 +458,12 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       body: JSON.stringify({ roles: ["Admin", "Staff"] }),
     });
 
-    // console.log("🔍 [PROJECT-STATUSES-API] Admin/Staff response:", adminStaffResponse);
-
     let adminStaffEmails: any[] = [];
     let adminStaffUsers: any[] = [];
     if (adminStaffResponse.ok) {
       const adminStaffData = await adminStaffResponse.json();
-      // console.log("📊 [PROJECT-STATUSES-API] Admin/Staff data:", adminStaffData);
       adminStaffEmails = adminStaffData.emails || [];
       adminStaffUsers = adminStaffData.staffUsers || [];
-      // console.log("📊 [PROJECT-STATUSES-API] Admin/Staff emails:", adminStaffEmails);
-      // console.log("📊 [PROJECT-STATUSES-API] Admin/Staff users:", adminStaffUsers);
     } else {
       console.error("📊 [PROJECT-STATUSES-API] Failed to fetch admin/staff emails");
     }
@@ -648,7 +620,6 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       selectOptions,
     };
 
-    console.log("🔍 [PROJECT-STATUSES-API] Response:", response);
     return new Response(JSON.stringify(response), {
       status: 200,
       headers: { "Content-Type": "application/json" },

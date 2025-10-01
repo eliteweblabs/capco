@@ -3,110 +3,45 @@
 ---
 
 <div id="mapbox-widget" class="mapbox-container">
-  <!-- Navigation Tabs -->
+  <!-- Navigation Tabs with Counts -->
   <div class="mapbox-nav">
-    <button class="nav-tab active" data-example="coverage">Coverage Map</button>
-    <button class="nav-tab" data-example="deployment">Deployment</button>
-    <button class="nav-tab" data-example="analytics">Analytics</button>
-    <button class="nav-tab" data-example="performance">Performance</button>
+    <button class="nav-tab active" data-filter="all">
+      <span class="tab-label">All Buildings</span>
+      <span class="tab-count" id="count-all">24</span>
+    </button>
+    <button class="nav-tab" data-filter="residential">
+      <span class="tab-label">Residential</span>
+      <span class="tab-count" id="count-residential">4</span>
+    </button>
+    <button class="nav-tab" data-filter="commercial">
+      <span class="tab-label">Commercial</span>
+      <span class="tab-count" id="count-commercial">4</span>
+    </button>
+    <button class="nav-tab" data-filter="industrial">
+      <span class="tab-label">Industrial</span>
+      <span class="tab-count" id="count-industrial">3</span>
+    </button>
+    <button class="nav-tab" data-filter="warehouse">
+      <span class="tab-label">Warehouse</span>
+      <span class="tab-count" id="count-warehouse">3</span>
+    </button>
+    <button class="nav-tab" data-filter="institutional">
+      <span class="tab-label">Institutional</span>
+      <span class="tab-count" id="count-institutional">3</span>
+    </button>
+    <button class="nav-tab" data-filter="storage">
+      <span class="tab-label">Storage</span>
+      <span class="tab-count" id="count-storage">3</span>
+    </button>
+    <button class="nav-tab" data-filter="mercantile">
+      <span class="tab-label">Mercantile</span>
+      <span class="tab-count" id="count-mercantile">4</span>
+    </button>
   </div>
 
   <!-- Map Container -->
   <div class="map-container">
     <div id="map" class="mapbox-map"></div>
-
-    <!-- Overlay Content -->
-    <div class="map-overlay">
-      <div class="overlay-content" id="coverage-content">
-        <h3>Network Coverage</h3>
-        <div class="stats-grid">
-          <div class="stat-item">
-            <div class="stat-number" data-target="98">0</div>
-            <div class="stat-label">Coverage %</div>
-          </div>
-          <div class="stat-item">
-            <div class="stat-number" data-target="45">0</div>
-            <div class="stat-label">Active Sites</div>
-          </div>
-          <div class="stat-item">
-            <div class="stat-number" data-target="2.4">0</div>
-            <div class="stat-label">Avg Speed (Gbps)</div>
-          </div>
-        </div>
-      </div>
-
-      <div class="overlay-content hidden" id="deployment-content">
-        <h3>Deployment Status</h3>
-        <div class="deployment-timeline">
-          <div class="timeline-item completed">
-            <div class="timeline-dot"></div>
-            <div class="timeline-content">
-              <h4>Site Survey Complete</h4>
-              <p>All locations surveyed and approved</p>
-            </div>
-          </div>
-          <div class="timeline-item active">
-            <div class="timeline-dot"></div>
-            <div class="timeline-content">
-              <h4>Hardware Installation</h4>
-              <p>Installing cellular access points</p>
-            </div>
-          </div>
-          <div class="timeline-item">
-            <div class="timeline-dot"></div>
-            <div class="timeline-content">
-              <h4>Network Testing</h4>
-              <p>Performance validation pending</p>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div class="overlay-content hidden" id="analytics-content">
-        <h3>Network Analytics</h3>
-        <div class="chart-container">
-          <div class="chart-bar" style="height: 85%">
-            <span class="chart-label">Peak Hours</span>
-            <span class="chart-value">2.1 Gbps</span>
-          </div>
-          <div class="chart-bar" style="height: 65%">
-            <span class="chart-label">Off-Peak</span>
-            <span class="chart-value">1.4 Gbps</span>
-          </div>
-          <div class="chart-bar" style="height: 95%">
-            <span class="chart-label">Weekend</span>
-            <span class="chart-value">2.3 Gbps</span>
-          </div>
-        </div>
-      </div>
-
-      <div class="overlay-content hidden" id="performance-content">
-        <h3>Performance Metrics</h3>
-        <div class="metrics-grid">
-          <div class="metric-card">
-            <div class="metric-icon">📶</div>
-            <div class="metric-info">
-              <div class="metric-title">Signal Strength</div>
-              <div class="metric-value">-45 dBm</div>
-            </div>
-          </div>
-          <div class="metric-card">
-            <div class="metric-icon">⚡</div>
-            <div class="metric-info">
-              <div class="metric-title">Latency</div>
-              <div class="metric-value">12ms</div>
-            </div>
-          </div>
-          <div class="metric-card">
-            <div class="metric-icon">🔄</div>
-            <div class="metric-info">
-              <div class="metric-title">Uptime</div>
-              <div class="metric-value">99.9%</div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
   </div>
 </div>
 <!-- 
@@ -169,7 +104,9 @@
     left: 20px;
     z-index: 1000;
     display: flex;
-    gap: 10px;
+    gap: 8px;
+    flex-wrap: wrap;
+    max-width: calc(100% - 440px);
     background: rgba(255, 255, 255, 0.95);
     padding: 10px;
     border-radius: 12px;
@@ -177,15 +114,126 @@
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
   }
 
+  /* 3D Building Markers */
+  :global(.building-marker) {
+    cursor: pointer;
+  }
+
+  :global(.marker-3d) {
+    position: relative;
+    width: 50px;
+    height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transform-style: preserve-3d;
+    transition: all 0.3s ease;
+  }
+
+  :global(.building-marker:hover .marker-3d) {
+    transform: scale(1.2) translateY(-5px);
+  }
+
+  :global(.marker-icon) {
+    font-size: 32px;
+    position: relative;
+    z-index: 2;
+    filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.3));
+    animation: float 3s ease-in-out infinite;
+  }
+
+  @keyframes float {
+    0%,
+    100% {
+      transform: translateY(0px);
+    }
+    50% {
+      transform: translateY(-8px);
+    }
+  }
+
+  :global(.marker-pulse) {
+    position: absolute;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: var(--marker-color);
+    opacity: 0.3;
+    animation: pulse-ring 2s ease-out infinite;
+  }
+
+  @keyframes pulse-ring {
+    0% {
+      transform: scale(0.8);
+      opacity: 0.5;
+    }
+    100% {
+      transform: scale(2);
+      opacity: 0;
+    }
+  }
+
+  :global(.marker-label) {
+    position: absolute;
+    bottom: -25px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: white;
+    padding: 4px 12px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 600;
+    white-space: nowrap;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    opacity: 0;
+    transition: all 0.3s ease;
+    pointer-events: none;
+  }
+
+  :global(.building-marker:hover .marker-label) {
+    opacity: 1;
+    bottom: -30px;
+  }
+
+  @keyframes markerFadeIn {
+    from {
+      opacity: 0;
+      transform: scale(0.5);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+
   .nav-tab {
-    padding: 12px 20px;
+    padding: 10px 16px;
     border: none;
     background: transparent;
     border-radius: 8px;
     cursor: pointer;
     font-weight: 500;
+    font-size: 13px;
     transition: all 0.3s ease;
     color: #666;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .tab-label {
+    flex: 1;
+  }
+
+  .tab-count {
+    background: rgba(102, 126, 234, 0.1);
+    color: #667eea;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 12px;
+    font-weight: 600;
+    min-width: 24px;
+    text-align: center;
   }
 
   .nav-tab:hover {
@@ -193,10 +241,19 @@
     color: #667eea;
   }
 
+  .nav-tab:hover .tab-count {
+    background: rgba(102, 126, 234, 0.2);
+  }
+
   .nav-tab.active {
     background: #667eea;
     color: white;
     box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+  }
+
+  .nav-tab.active .tab-count {
+    background: rgba(255, 255, 255, 0.25);
+    color: white;
   }
 
   .map-container {
@@ -435,6 +492,54 @@
     color: #2d3748;
   }
 
+  .building-types-list {
+    margin-top: 30px;
+  }
+
+  .building-types-list h4 {
+    font-size: 18px;
+    font-weight: 600;
+    margin-bottom: 20px;
+    color: #2d3748;
+  }
+
+  .type-breakdown {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .type-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 16px;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    transition: all 0.3s ease;
+  }
+
+  .type-item:hover {
+    transform: translateX(4px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  }
+
+  .type-label {
+    font-size: 14px;
+    font-weight: 500;
+    color: #2d3748;
+  }
+
+  .type-count {
+    font-size: 16px;
+    font-weight: 700;
+    color: #667eea;
+    background: rgba(102, 126, 234, 0.1);
+    padding: 4px 12px;
+    border-radius: 12px;
+  }
+
   .hidden {
     display: none;
   }
@@ -471,8 +576,11 @@
   const MAPBOX_ACCESS_TOKEN =
     "REDACTED_MAPBOX_TOKEN"; // Replace with your token
 
+  // Global zoom configuration
+  const MIN_ZOOM = 4;
+  const MAX_ZOOM = 13;
+
   let map: any = null;
-  let currentExample = "coverage";
 
   // Initialize map when component loads
   document.addEventListener("DOMContentLoaded", () => {
@@ -489,12 +597,12 @@
     map = new (window as any).mapboxgl.Map({
       container: "map",
       style: "mapbox://styles/mapbox/streets-v11",
-      center: [-74.006, 40.7128], // New York City
+      center: [-71.0589, 42.3601], // Boston, MA
       zoom: 1,
       pitch: 45,
       bearing: -17.6,
-      minZoom: 1,
-      maxZoom: 18,
+      minZoom: MIN_ZOOM,
+      maxZoom: MAX_ZOOM,
       attributionControl: false,
       zoomControl: false,
       scrollZoom: false,
@@ -503,11 +611,63 @@
       keyboard: false,
       doubleClickZoom: false,
       touchZoom: false,
-      touchZoomRotate: false,
     });
 
-    // Add 3D buildings
+    // Add 3D buildings and hide unnecessary layers for performance
     map.on("load", () => {
+      // Remove ALL labels for clean map - add back as needed
+      const labelsToRemove = [
+        // Road labels
+        "road-label",
+        "road-number-shield",
+        "road-exit-shield",
+        "motorway-junction",
+
+        // Place labels
+        "place-label",
+        "place-city-label",
+        "place-town-label",
+        "place-village-label",
+        "place-hamlet-label",
+        "place-suburb-label",
+        "place-neighbourhood-label",
+        "place-islet-label",
+
+        // Geographic labels
+        "state-label",
+        "country-label",
+        "continent-label",
+        "postcode-label",
+
+        // Water labels
+        "water-label",
+        "waterway-label",
+        "marine-label",
+
+        // Natural labels
+        "natural-label",
+        "natural-line-label",
+        "natural-point-label",
+
+        // POI labels
+        "poi-label",
+        "transit-label",
+        "airport-label",
+
+        // Other labels
+        "settlement-label",
+        "settlement-subdivision-label",
+      ];
+
+      labelsToRemove.forEach((layerId) => {
+        if (map.getLayer(layerId)) {
+          map.setLayoutProperty(layerId, "visibility", "none");
+        }
+      });
+
+      console.log("🗑️ [MAPBOX] Removed all label layers for clean map");
+
+      // Add 3D buildings
       map.addLayer({
         id: "3d-buildings",
         source: "composite",
@@ -544,64 +704,414 @@
     });
   }
 
+  // 24 building markers within 10-mile radius of Boston
+  // Priority: 0-100 determines when marker appears
+  // Strategy: Only a few early (0-50%), most appear during zoom finale (50-100%)
+  const buildingMarkers = [
+    // Early arrivals (0-50%) - Just 5 key landmarks
+    {
+      lng: -71.0589,
+      lat: 42.3601,
+      name: "Downtown Office Tower",
+      type: "commercial",
+      color: "#3b82f6",
+      icon: "🏢",
+      priority: 10, // First to appear
+    },
+    {
+      lng: -71.0703,
+      lat: 42.3555,
+      name: "Back Bay Residences",
+      type: "residential",
+      color: "#10b981",
+      icon: "🏘️",
+      priority: 25,
+    },
+    {
+      lng: -71.0989,
+      lat: 42.3734,
+      name: "Harvard Square Campus",
+      type: "institutional",
+      color: "#ec4899",
+      icon: "🏛️",
+      priority: 35,
+    },
+    {
+      lng: -71.0836,
+      lat: 42.3493,
+      name: "Fenway Business Center",
+      type: "commercial",
+      color: "#3b82f6",
+      icon: "🏢",
+      priority: 40,
+    },
+    {
+      lng: -71.0456,
+      lat: 42.3634,
+      name: "Faneuil Hall Marketplace",
+      type: "mercantile",
+      color: "#14b8a6",
+      icon: "🏪",
+      priority: 48,
+    },
+
+    // Main wave (50-100%) - Remaining 19 buildings
+    {
+      lng: -71.0489,
+      lat: 42.3736,
+      name: "Cambridge Tech Hub",
+      type: "commercial",
+      color: "#3b82f6",
+      icon: "🏢",
+      priority: 52,
+    },
+    {
+      lng: -71.1097,
+      lat: 42.3398,
+      name: "Brookline Plaza",
+      type: "commercial",
+      color: "#3b82f6",
+      icon: "🏢",
+      priority: 56,
+    },
+    {
+      lng: -71.0912,
+      lat: 42.339,
+      name: "Mission Hill Apartments",
+      type: "residential",
+      color: "#10b981",
+      icon: "🏘️",
+      priority: 54,
+    },
+    {
+      lng: -71.0545,
+      lat: 42.3656,
+      name: "Beacon Hill Condos",
+      type: "residential",
+      color: "#10b981",
+      icon: "🏘️",
+      priority: 60,
+    },
+    {
+      lng: -71.0412,
+      lat: 42.3512,
+      name: "Seaport Towers",
+      type: "residential",
+      color: "#10b981",
+      icon: "🏘️",
+      priority: 64,
+    },
+    {
+      lng: -71.0256,
+      lat: 42.3456,
+      name: "East Boston Manufacturing",
+      type: "industrial",
+      color: "#8b5cf6",
+      icon: "🏭",
+      priority: 58,
+    },
+    {
+      lng: -71.0623,
+      lat: 42.3323,
+      name: "South Boston Industrial",
+      type: "industrial",
+      color: "#8b5cf6",
+      icon: "🏭",
+      priority: 68,
+    },
+    {
+      lng: -71.1189,
+      lat: 42.3612,
+      name: "Brighton Processing Plant",
+      type: "industrial",
+      color: "#8b5cf6",
+      icon: "🏭",
+      priority: 74,
+    },
+    {
+      lng: -71.0345,
+      lat: 42.3378,
+      name: "Port Distribution Center",
+      type: "warehouse",
+      color: "#f59e0b",
+      icon: "📦",
+      priority: 62,
+    },
+    {
+      lng: -71.0789,
+      lat: 42.3267,
+      name: "Roxbury Warehouse",
+      type: "warehouse",
+      color: "#f59e0b",
+      icon: "📦",
+      priority: 70,
+    },
+    {
+      lng: -71.1423,
+      lat: 42.3545,
+      name: "Allston Storage Facility",
+      type: "warehouse",
+      color: "#f59e0b",
+      icon: "📦",
+      priority: 78,
+    },
+    {
+      lng: -71.0923,
+      lat: 42.3456,
+      name: "Longwood Medical Center",
+      type: "institutional",
+      color: "#ec4899",
+      icon: "🏛️",
+      priority: 66,
+    },
+    {
+      lng: -71.0534,
+      lat: 42.3712,
+      name: "MIT Science Building",
+      type: "institutional",
+      color: "#ec4899",
+      icon: "🏛️",
+      priority: 72,
+    },
+    {
+      lng: -71.0712,
+      lat: 42.3489,
+      name: "Copley Square Retail",
+      type: "mercantile",
+      color: "#14b8a6",
+      icon: "🏪",
+      priority: 76,
+    },
+    {
+      lng: -71.0578,
+      lat: 42.3589,
+      name: "Downtown Crossing Mall",
+      type: "mercantile",
+      color: "#14b8a6",
+      icon: "🏪",
+      priority: 80,
+    },
+    {
+      lng: -71.1234,
+      lat: 42.3456,
+      name: "Brookline Village Shops",
+      type: "mercantile",
+      color: "#14b8a6",
+      icon: "🏪",
+      priority: 84,
+    },
+    {
+      lng: -71.0823,
+      lat: 42.3178,
+      name: "Dorchester Self Storage",
+      type: "storage",
+      color: "#ef4444",
+      icon: "🗄️",
+      priority: 88,
+    },
+    {
+      lng: -71.1567,
+      lat: 42.3623,
+      name: "Newton Storage Complex",
+      type: "storage",
+      color: "#ef4444",
+      icon: "🗄️",
+      priority: 92,
+    },
+    {
+      lng: -71.0167,
+      lat: 42.3723,
+      name: "Chelsea Mini Storage",
+      type: "storage",
+      color: "#ef4444",
+      icon: "🗄️",
+      priority: 96,
+    },
+  ];
+
+  let markerObjects: any[] = [];
+  let currentFilter = "all";
+
   function addCoverageMarkers(map: any) {
-    const markers = [
-      { lng: -74.006, lat: 40.7128, strength: 95, type: "tower" },
-      { lng: -74.005, lat: 40.7135, strength: 87, type: "tower" },
-      { lng: -74.007, lat: 40.712, strength: 92, type: "tower" },
-      { lng: -74.004, lat: 40.714, strength: 78, type: "tower" },
-    ];
-
-    markers.forEach((marker) => {
+    buildingMarkers.forEach((building) => {
+      // Create 3D-style marker element
       const el = document.createElement("div");
-      el.className = "coverage-marker";
-      el.style.width = "20px";
-      el.style.height = "20px";
-      el.style.borderRadius = "50%";
-      el.style.background = `hsl(${marker.strength}, 70%, 50%)`;
-      el.style.border = "3px solid white";
-      el.style.boxShadow = "0 2px 8px rgba(0,0,0,0.3)";
-      el.style.cursor = "pointer";
+      el.className = "building-marker";
+      el.dataset.type = building.type;
+      el.dataset.priority = building.priority.toString();
+      el.style.display = "none"; // Start hidden
+      el.innerHTML = `
+        <div class="marker-3d" style="--marker-color: ${building.color}">
+          <div class="marker-icon">${building.icon}</div>
+          <div class="marker-pulse"></div>
+        </div>
+        <div class="marker-label">${building.name}</div>
+      `;
 
-      new (window as any).mapboxgl.Marker(el).setLngLat([marker.lng, marker.lat]).addTo(map as any);
+      const marker = new (window as any).mapboxgl.Marker(el)
+        .setLngLat([building.lng, building.lat])
+        .addTo(map);
+
+      markerObjects.push({ marker, building });
+    });
+
+    console.log(
+      "🏢 [MAPBOX] Added",
+      buildingMarkers.length,
+      "3D building markers with priority-based reveal"
+    );
+  }
+
+  function updateMarkerVisibility(progress: number) {
+    // Reveal markers based on eased progress matching their priority
+    markerObjects.forEach(({ marker, building }) => {
+      const el = marker.getElement();
+      const markerPriority = building.priority;
+
+      // Check if marker should be visible based on filter AND priority
+      const matchesFilter = currentFilter === "all" || building.type === currentFilter;
+      const reachedPriority = progress >= markerPriority;
+
+      if (matchesFilter && reachedPriority) {
+        // Show marker instantly (no transition to avoid elastic effect)
+        el.style.display = "block";
+      } else {
+        // Hide marker
+        el.style.display = "none";
+      }
     });
   }
 
-  function setupScrollEffects() {
-    const overlay = document.querySelector(".map-overlay") as HTMLElement | null;
+  function filterMarkers(type: string) {
+    currentFilter = type;
 
-    window.addEventListener("scroll", () => {
-      console.log("🗺️ [MAPBOX] Scrolling");
-      const scrolled = window.scrollY;
-      const maxHeight = document.body.scrollHeight - window.innerHeight;
-      const progress = (scrolled / maxHeight) * 100;
+    // Get current scroll progress to respect priority timing
+    const currentProgress = animationProgress;
 
-      // Zoom in as page scrolls down
-      if (map && map.isStyleLoaded()) {
-        const minZoom = 2;
-        const maxZoom = 18;
-        const zoom = minZoom + (progress / 100) * (maxZoom - minZoom);
-        map.setZoom(zoom);
-        console.log("🗺️ [MAPBOX] Zoom:", zoom, "Progress:", progress);
-      }
+    markerObjects.forEach(({ marker, building }) => {
+      const el = marker.getElement();
+      const markerPriority = building.priority;
+      const reachedPriority = currentProgress >= markerPriority;
 
-      // Parallax effect for overlay
-      if (overlay) {
-        const translateY = scrolled * 0.5;
-        overlay.style.transform = `translateY(${translateY}px)`;
-      }
-
-      // Show overlay when scrolled
-      if (scrolled > 100 && overlay && !overlay.classList.contains("visible")) {
-        overlay.classList.add("visible");
-        showContent(currentExample);
+      if ((type === "all" || building.type === type) && reachedPriority) {
+        el.style.display = "block";
+      } else {
+        el.style.display = "none";
       }
     });
+
+    console.log("🔍 [MAPBOX] Filtered to:", type);
+  }
+
+  let lastScrollY = 0;
+  let lastScrollDirection: "down" | "up" | null = null;
+  let animationProgress = 0; // 0-100, tracks animation state
+  let rafId: number | null = null;
+
+  // Calculate how much of the map is visible in the viewport (0-100%)
+  function getMapVisibility(mapContainer: HTMLElement): number {
+    const rect = mapContainer.getBoundingClientRect();
+    const viewportHeight = window.innerHeight;
+    const elementHeight = rect.height;
+
+    let visibleHeight = 0;
+    if (rect.top < viewportHeight && rect.bottom > 0) {
+      const visibleTop = Math.max(0, rect.top);
+      const visibleBottom = Math.min(viewportHeight, rect.bottom);
+      visibleHeight = visibleBottom - visibleTop;
+    }
+
+    return Math.max(0, Math.min(100, (visibleHeight / elementHeight) * 100));
+  }
+
+  // Apply cubic ease-in for smooth acceleration
+  function applyEasing(linearValue: number): number {
+    const t = linearValue / 100; // Normalize to 0-1
+    return t * t * t * 100; // Cubic ease-in, back to 0-100
+  }
+
+  function setupScrollEffects() {
+    const mapContainer = document.getElementById("map");
+
+    window.addEventListener("scroll", () => {
+      if (!mapContainer) return;
+
+      if (rafId !== null) {
+        cancelAnimationFrame(rafId);
+      }
+
+      rafId = requestAnimationFrame(() => {
+        updateMapAnimation(mapContainer);
+        rafId = null;
+      });
+    });
+  }
+
+  function updateMapAnimation(mapContainer: HTMLElement) {
+    // 1. Get current visibility percentage
+    const visibility = getMapVisibility(mapContainer);
+
+    // 2. Detect scroll direction
+    const currentScrollY = window.scrollY;
+    const scrollDirection = currentScrollY > lastScrollY ? "down" : "up";
+    const directionChanged = lastScrollDirection && lastScrollDirection !== scrollDirection;
+    lastScrollY = currentScrollY;
+    lastScrollDirection = scrollDirection;
+
+    // 3. Update animation progress based on direction
+    if (scrollDirection === "down") {
+      // Scrolling down: increase progress towards visibility
+      animationProgress = Math.max(animationProgress, visibility);
+    } else {
+      // Scrolling up: rewind progress towards visibility
+      animationProgress = Math.min(animationProgress, visibility);
+    }
+
+    // 4. Apply easing to get smooth animation curve
+    const easedProgress = applyEasing(animationProgress);
+
+    console.log(
+      `🗺️ [MAPBOX] ${scrollDirection === "down" ? "⬇️ DOWN" : "⬆️ UP"} Visibility: ${visibility.toFixed(1)}% Progress: ${animationProgress.toFixed(1)}% Eased: ${easedProgress.toFixed(1)}%`
+    );
+
+    // 5. Apply camera animation using eased progress
+    if (map && map.isStyleLoaded()) {
+      // Zoom: MIN to MAX based on eased progress
+      const zoom = MIN_ZOOM + (easedProgress / 100) * (MAX_ZOOM - MIN_ZOOM);
+
+      // Pitch: 35° to 75° for dramatic 3D building views
+      const pitch = 35 + (easedProgress / 100) * (75 - 35);
+
+      // Bearing: 360° rotation in the final 50% of animation
+      const rotationStartThreshold = 50;
+      let bearing = 0;
+      if (easedProgress > rotationStartThreshold) {
+        const rotationProgress =
+          (easedProgress - rotationStartThreshold) / (100 - rotationStartThreshold);
+        bearing = rotationProgress * 360;
+      }
+
+      // Apply camera position
+      map.easeTo({
+        zoom: zoom,
+        pitch: pitch,
+        bearing: bearing,
+        center: [-71.0589, 42.3601],
+        duration: 0,
+        easing: (t: number) => t,
+      });
+
+      console.log(
+        `🎥 [MAPBOX] Zoom: ${zoom.toFixed(2)} Pitch: ${pitch.toFixed(1)}° Bearing: ${bearing.toFixed(1)}°`
+      );
+    }
+
+    // 6. Update marker visibility
+    updateMarkerVisibility(easedProgress);
   }
 
   function setupNavigation() {
     const navTabs = document.querySelectorAll(".nav-tab");
-    const overlay = document.querySelector(".map-overlay") as HTMLElement;
 
     navTabs.forEach((tab) => {
       tab.addEventListener("click", () => {
@@ -610,57 +1120,13 @@
         // Add active class to clicked tab
         tab.classList.add("active");
 
-        // Get example type
-        const example = tab.dataset.example;
-        const currentExample = example;
+        // Get filter type
+        const filter = (tab as any).dataset.filter;
 
-        // Show overlay with animation
-        if (overlay) {
-          overlay.classList.add("visible");
-          showContent(example as string);
-        }
+        // Filter markers by building type
+        filterMarkers(filter);
       });
     });
-  }
-
-  function showContent(example: string) {
-    // Hide all content
-    const allContent = document.querySelectorAll(".overlay-content");
-    allContent.forEach((content: HTMLElement) => {
-      content.classList.add("hidden");
-      content.classList.remove("visible");
-    });
-
-    // Show selected content
-    const targetContent = document.getElementById(`${example}-content`) as HTMLElement;
-    if (targetContent) {
-      setTimeout(() => {
-        targetContent.classList.remove("hidden");
-        targetContent.classList.add("visible");
-      }, 100);
-    }
-
-    // Update map based on example
-    updateMapForExample(example);
-  }
-
-  function updateMapForExample(example: string) {
-    if (!map) return;
-
-    switch (example) {
-      case "coverage":
-        map.setStyle("mapbox://styles/mapbox/streets-v11");
-        break;
-      case "deployment":
-        map.setStyle("mapbox://styles/mapbox/satellite-v9");
-        break;
-      case "analytics":
-        map.setStyle("mapbox://styles/mapbox/dark-v10");
-        break;
-      case "performance":
-        map.setStyle("mapbox://styles/mapbox/light-v10");
-        break;
-    }
   }
 
   function setupCounterAnimations() {
