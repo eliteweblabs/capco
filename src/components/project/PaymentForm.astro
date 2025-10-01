@@ -11,7 +11,7 @@ interface Props {
   globalInputClasses?: string;
   globalSecondaryTextClasses?: string;
   globalPrimaryTextClasses?: string;
-  statusesData?: any;
+  statusData?: any;
 }
 
 const {
@@ -24,7 +24,7 @@ const {
   globalInputClasses,
   globalSecondaryTextClasses,
   globalPrimaryTextClasses,
-  statusesData,
+  statusData,
 } = Astro.props;
 
 const currentRole = currentUser?.profile?.role;
@@ -317,7 +317,7 @@ console.log("🔍 [PAYMENT-FORM] Computed lastNameValue:", lastNameValue);
     paymentType,
     currentUser,
     project,
-    statusesData,
+    statusData,
   }}
 >
   (async () => {
@@ -678,13 +678,17 @@ console.log("🔍 [PAYMENT-FORM] Computed lastNameValue:", lastNameValue);
           const newStatus = paymentType === "deposit" ? 70 : 170;
 
           try {
-            const statusData = await window.updateStatus(project, newStatus, statusesData);
+            const result = await window.updateStatus(
+              project,
+              newStatus,
+              statusData[newStatus.toString()]
+            );
 
-            if (statusData.success) {
+            if (result.success) {
               // Show notification from update-status API
-              window.handleNewStatusNotification(statusData, "PAYMENT-FORM");
+              window.handleNewStatusNotification(result, "PAYMENT-FORM");
             } else {
-              throw new Error(statusData.error || "Failed to update project status");
+              throw new Error(result.error || "Failed to update project status");
             }
           } catch (error) {
             console.error("❌ [PAYMENT-FORM] Error updating project status:", error);
