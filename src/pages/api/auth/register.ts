@@ -88,7 +88,7 @@ export const POST: APIRoute = async ({ request, redirect, cookies }) => {
 
   // Use the current request URL to determine the base URL
   const currentUrl = new URL(request.url);
-  const emailRedirectUrl = `${currentUrl.origin}/api/auth/verify`;
+  const emailRedirectUrl = `${currentUrl.origin}/dashboard`;
   // console.log("🔐 [AUTH] Email redirect URL:", emailRedirectUrl);
   // console.log("🔐 [AUTH] Current request origin:", currentUrl.origin);
 
@@ -214,7 +214,7 @@ export const POST: APIRoute = async ({ request, redirect, cookies }) => {
 <b>Phone:</b> ${phone || "Not provided"}<br>
 <b>SMS Alerts:</b> ${smsAlerts ? "Enabled" : "Disabled"}<br>
 <b>Mobile Carrier:</b> ${mobileCarrier || "Not provided"}<br>
-        <b>Registration Date:</b> ${new Date().toLocaleDateString()}<br><br>
+<b>Registration Date:</b> ${new Date().toLocaleDateString()}<br><br>
 
 <p>You're now signed in and ready to start creating projects...</p>`;
 

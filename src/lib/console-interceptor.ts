@@ -46,7 +46,7 @@ export function truncateConsoleLogs(): void {
       if (typeof arg === "object" && arg !== null) {
         try {
           const stringified = JSON.stringify(arg);
-          if (stringified.length > 200) {
+          if (stringified.split("\n").length > 10 || stringified.length > 200) {
             return truncateMessage(stringified);
           }
           return arg;
@@ -67,7 +67,7 @@ export function truncateConsoleLogs(): void {
       if (typeof arg === "object" && arg !== null) {
         try {
           const stringified = JSON.stringify(arg);
-          if (stringified.length > 200) {
+          if (stringified.split("\n").length > 10 || stringified.length > 200) {
             return truncateMessage(stringified);
           }
           return arg;
@@ -88,7 +88,7 @@ export function truncateConsoleLogs(): void {
       if (typeof arg === "object" && arg !== null) {
         try {
           const stringified = JSON.stringify(arg);
-          if (stringified.length > 200) {
+          if (stringified.split("\n").length > 10 || stringified.length > 200) {
             return truncateMessage(stringified);
           }
           return arg;

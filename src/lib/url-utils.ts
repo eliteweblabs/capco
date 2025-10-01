@@ -4,16 +4,22 @@
 
 /**
  * Get the base URL for the current environment
- * Always uses SITE_URL environment variable - no fallbacks
+ * Uses SITE_URL environment variable, with request URL fallback for development
  */
 export function getBaseUrl(request?: Request): string {
-  // Check for SITE_URL environment variable (required)
+  // Check for SITE_URL environment variable first
   if (process.env.SITE_URL) {
     return process.env.SITE_URL;
   }
 
   if (import.meta.env.SITE_URL) {
     return import.meta.env.SITE_URL;
+  }
+
+  // Fallback to request URL in development
+  if (request) {
+    const url = new URL(request.url);
+    return `${url.protocol}//${url.host}`;
   }
 
   // No fallbacks - throw error if SITE_URL is not configured
@@ -22,16 +28,22 @@ export function getBaseUrl(request?: Request): string {
 
 /**
  * Get the base URL for API calls
- * Always uses SITE_URL environment variable - no fallbacks
+ * Uses SITE_URL environment variable, with request URL fallback for development
  */
 export function getApiBaseUrl(request?: Request): string {
-  // Check for SITE_URL environment variable (required)
+  // Check for SITE_URL environment variable first
   if (process.env.SITE_URL) {
     return process.env.SITE_URL;
   }
 
   if (import.meta.env.SITE_URL) {
     return import.meta.env.SITE_URL;
+  }
+
+  // Fallback to request URL in development
+  if (request) {
+    const url = new URL(request.url);
+    return `${url.protocol}//${url.host}`;
   }
 
   // No fallbacks - throw error if SITE_URL is not configured
