@@ -229,11 +229,12 @@ export const POST: APIRoute = async ({ request, redirect, cookies }) => {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
+          emailType: "magic_link",
           usersToNotify: [email], // Array of email strings
           emailSubject: `Welcome to ${globalCompanyName} → ${displayName}`,
           emailContent: welcomeContent,
           buttonText: "Access Your Dashboard",
-          buttonLink: "/dashboard",
+          buttonLink: "/dashboard", // Will be converted to magic link by email-delivery.ts
         }),
       });
 
@@ -302,11 +303,12 @@ export const POST: APIRoute = async ({ request, redirect, cookies }) => {
                 "Content-Type": "application/json",
               },
               body: JSON.stringify({
+                emailType: "notification", // Not a magic link, just a notification
                 usersToNotify: [adminEmail], // Array of email strings
                 emailSubject: `New User Registration → ${displayName}`,
                 emailContent: adminEmailContent,
-                buttonText: "Access Your Dashboard",
-                buttonLink: "/dashboard",
+                buttonText: "View User",
+                buttonLink: "/users", // Regular link, not magic link
               }),
             });
 
