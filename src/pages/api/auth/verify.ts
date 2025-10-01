@@ -30,12 +30,12 @@ export const GET: APIRoute = async ({ url, cookies, redirect }) => {
   try {
     let verificationResult;
 
-    if (type === "email" && token_hash) {
+    if ((type === "email" || type === "magiclink") && token_hash) {
       // Handle email verification with token hash (newer Supabase format)
       console.log("Attempting email verification with token hash...");
       verificationResult = await supabase.auth.verifyOtp({
         token_hash,
-        type: "email",
+        type: type === "magiclink" ? "magiclink" : "email",
       });
     } else if (code) {
       // Handle verification with code (legacy or other format)
@@ -53,7 +53,6 @@ export const GET: APIRoute = async ({ url, cookies, redirect }) => {
       console.error("Error details:", {
         message: error.message,
         status: error.status,
-        statusCode: error.statusCode,
       });
 
       // Handle specific error types

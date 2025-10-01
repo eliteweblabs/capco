@@ -1461,11 +1461,115 @@ const debugData = {
     // // Process URL notifications on page load
     document.addEventListener("DOMContentLoaded", () => (window as any).processUrlNotifications());
 
+    // Handle magic link authentication (unified for both register and create-user flows)
+    (window as any).handleMagicLinkAuth = async function () {
+      try {
+        // Only run if we have magic link parameters in the URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const hasMagicLinkParams =
+          urlParams.has("access_token") ||
+          urlParams.has("refresh_token") ||
+          urlParams.has("token_hash") ||
+          urlParams.has("type");
+
+        console.log("🔐 [MAGIC-LINK] Current URL:", window.location.href);
+        console.log("🔐 [MAGIC-LINK] URL search params:", window.location.search);
+        console.log("🔐 [MAGIC-LINK] Has magic link params:", hasMagicLinkParams);
+        console.log("🔐 [MAGIC-LINK] Access token present:", urlParams.has("access_token"));
+        console.log("🔐 [MAGIC-LINK] Refresh token present:", urlParams.has("refresh_token"));
+        console.log("🔐 [MAGIC-LINK] Token hash present:", urlParams.has("token_hash"));
+        console.log("🔐 [MAGIC-LINK] Type present:", urlParams.has("type"));
+
+        if (!hasMagicLinkParams) {
+          console.log("🔐 [MAGIC-LINK] No magic link parameters found, skipping");
+          return;
+        }
+
+        console.log("🔐 [MAGIC-LINK] Magic link parameters detected, processing...");
+
+        // Check if we have a Supabase session in the URL
+        const {
+          data: { session },
+          error,
+        } = await supabase.auth.getSession();
+
+        if (session && !error) {
+          console.log("🔐 [MAGIC-LINK] Session detected from URL:", session.user?.email);
+
+          // Set auth cookies via API call
+          const response = await fetch("/api/auth/callback", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              access_token: session.access_token,
+              refresh_token: session.refresh_token,
+              expires_in: session.expires_in,
+              token_type: session.token_type,
+            }),
+          });
+
+          if (response.ok) {
+            console.log("✅ [MAGIC-LINK] Auth cookies set successfully");
+            // Show success notification
+            if (window.showModal) {
+              window.showModal({
+                type: "success",
+                title: "Welcome!",
+                message: "You've been successfully authenticated. Redirecting to dashboard...",
+                duration: 3000,
+                redirect: { url: "/dashboard", delay: 3000, showCountdown: true },
+              });
+            }
+            // Refresh the page to apply the new auth state
+            setTimeout(() => window.location.reload(), 2000);
+          } else {
+            console.error("❌ [MAGIC-LINK] Failed to set auth cookies");
+            if (window.showModal) {
+              window.showModal({
+                type: "error",
+                title: "Authentication Failed",
+                message: "There was an error setting up your session. Please try again.",
+                duration: 0,
+              });
+            }
+          }
+        } else {
+          console.log("🔐 [MAGIC-LINK] No session found in URL");
+        }
+      } catch (error) {
+        console.error("❌ [MAGIC-LINK] Error handling magic link auth:", error);
+        // Only show error if we actually detected magic link parameters
+        const urlParams = new URLSearchParams(window.location.search);
+        const hasMagicLinkParams =
+          urlParams.has("access_token") ||
+          urlParams.has("refresh_token") ||
+          urlParams.has("token_hash") ||
+          urlParams.has("type");
+
+        if (hasMagicLinkParams && window.showModal) {
+          window.showModal({
+            type: "error",
+            title: "Authentication Error",
+            message: "There was an error processing your authentication. Please try again.",
+            duration: 0,
+          });
+        }
+      }
+    };
+
+    // Check for magic link authentication on page load
+    document.addEventListener("DOMContentLoaded", () => {
+      (window as any).handleMagicLinkAuth();
+    });
+
     // // Also run immediately in case DOM is already loaded
     if (document.readyState === "loading") {
       // DOM is still loading, event listener will handle it
     } else {
       // DOM is already loaded, run immediately
+      (window as any).handleMagicLinkAuth();
       (window as any).processUrlNotifications();
     }
 
