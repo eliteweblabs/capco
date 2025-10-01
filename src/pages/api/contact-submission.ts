@@ -18,11 +18,12 @@ export const POST: APIRoute = async ({ request }) => {
     // Get files
     const files = formData.getAll("files") as File[];
 
-    // Validate required fields
-    if (!firstName || !lastName || !email || !projectAddress || !message) {
+    // Validate required fields (only contact information is required)
+    if (!firstName || !lastName || !email) {
       return new Response(
         JSON.stringify({
-          error: "Missing required fields. Please fill in all required information.",
+          error:
+            "Missing required fields. Please fill in your first name, last name, and email address.",
         }),
         {
           status: 400,
@@ -43,7 +44,7 @@ export const POST: APIRoute = async ({ request }) => {
       .from("projects")
       .insert({
         title: `${firstName} ${lastName} - Contact Submission`,
-        address: projectAddress,
+        address: projectAddress || "No address provided",
         author_id: null, // No authenticated user
         status: 1, // New/Contact status
         sq_ft: null,
