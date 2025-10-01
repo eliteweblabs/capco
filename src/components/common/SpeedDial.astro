@@ -1,20 +1,193 @@
 ---
-import DebugPanel from "./DebugPanel.astro";
 import StickySMS from "./StickySMS.astro";
 
 const { currentUser, isBackend, debugData, globalInputClasses } = Astro.props;
 
 const currentRole = currentUser?.profile?.role;
 
+import DebugPanel from "./DebugPanel.astro";
+
 // Speed dial component for quick actions
 ---
 
-<div id="speed-dial-container" class="fixed bottom-6 left-6 z-40">
-  <DebugPanel currentUser={currentUser} debugData={debugData} currentRole={currentRole} />
+<div id="speed-dial" data-dial-init class="group fixed bottom-6 end-6">
+  <div
+    id="speed-dial-menu-text-outside-button-square"
+    class="mb-4 flex hidden flex-col items-center space-y-2"
+  >
+    <DebugPanel currentUser={currentUser} debugData={debugData} currentRole={currentRole} />
 
-  {
-    currentRole !== "Admin" && currentRole !== "Staff" && (
-      <StickySMS isBackend={isBackend} globalInputClasses={globalInputClasses} />
-    )
-  }
+    {
+      !currentUser && (
+        <a
+          href="/login"
+          type="button"
+          class="shadow-xs relative h-[52px] w-[52px] rounded-full border border-gray-200 bg-white text-gray-500 hover:bg-gray-50 hover:text-gray-900 focus:outline-none focus:ring-4 focus:ring-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-400 dark:hover:bg-gray-600 dark:hover:text-white dark:focus:ring-gray-400"
+        >
+          <svg
+            class="mx-auto h-5 w-5"
+            aria-hidden="true"
+            xmlns="http://www.w3.org/2000/svg"
+            fill="currentColor"
+            width="20"
+            height="20"
+            viewBox="0 0 20 20"
+          >
+            <path
+              fill-rule="evenodd"
+              d="M12 20a7.966 7.966 0 0 1-5.002-1.756l.002.001v-.683c0-1.794 1.492-3.25 3.333-3.25h3.334c1.84 0 3.333 1.456 3.333 3.25v.683A7.966 7.966 0 0 1 12 20ZM2 12C2 6.477 6.477 2 12 2s10 4.477 10 10c0 5.5-4.44 9.963-9.932 10h-.138C6.438 21.962 2 17.5 2 12Zm10-5c-1.84 0-3.333 1.455-3.333 3.25S10.159 13.5 12 13.5c1.84 0 3.333-1.455 3.333-3.25S13.841 7 12 7Z"
+              clip-rule="evenodd"
+            />
+          </svg>
+
+          <span class="absolute -start-14 top-1/2 mb-px block -translate-y-1/2 text-sm font-medium">
+            Login
+          </span>
+        </a>
+      )
+    }
+    <button
+      type="button"
+      class="shadow-xs relative h-[52px] w-[52px] rounded-full border border-gray-200 bg-white text-gray-500 hover:bg-gray-50 hover:text-gray-900 focus:outline-none focus:ring-4 focus:ring-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-400 dark:hover:bg-gray-600 dark:hover:text-white dark:focus:ring-gray-400"
+    >
+      <svg
+        class="mx-auto h-5 w-5"
+        aria-hidden="true"
+        xmlns="http://www.w3.org/2000/svg"
+        fill="currentColor"
+        viewBox="0 0 20 20"
+      >
+        <path
+          d="M14.707 7.793a1 1 0 0 0-1.414 0L11 10.086V1.5a1 1 0 0 0-2 0v8.586L6.707 7.793a1 1 0 1 0-1.414 1.414l4 4a1 1 0 0 0 1.416 0l4-4a1 1 0 0 0-.002-1.414Z"
+        ></path>
+        <path
+          d="M18 12h-2.55l-2.975 2.975a3.5 3.5 0 0 1-4.95 0L4.55 12H2a2 2 0 0 0-2 2v4a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-4a2 2 0 0 0-2-2Zm-3 5a1 1 0 1 1 0-2 1 1 0 0 1 0 2Z"
+        ></path>
+      </svg>
+      <span class="absolute -start-14 top-1/2 mb-px block -translate-y-1/2 text-sm font-medium"
+        >Save</span
+      >
+    </button>
+    <button
+      type="button"
+      class="shadow-xs relative h-[52px] w-[52px] rounded-full border border-gray-200 bg-white text-gray-500 hover:bg-gray-50 hover:text-gray-900 focus:outline-none focus:ring-4 focus:ring-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-400 dark:hover:bg-gray-600 dark:hover:text-white dark:focus:ring-gray-400"
+    >
+      <svg
+        class="mx-auto h-5 w-5"
+        aria-hidden="true"
+        xmlns="http://www.w3.org/2000/svg"
+        fill="currentColor"
+        viewBox="0 0 18 20"
+      >
+        <path
+          d="M5 9V4.13a2.96 2.96 0 0 0-1.293.749L.879 7.707A2.96 2.96 0 0 0 .13 9H5Zm11.066-9H9.829a2.98 2.98 0 0 0-2.122.879L7 1.584A.987.987 0 0 0 6.766 2h4.3A3.972 3.972 0 0 1 15 6v10h1.066A1.97 1.97 0 0 0 18 14V2a1.97 1.97 0 0 0-1.934-2Z"
+        ></path>
+        <path
+          d="M11.066 4H7v5a2 2 0 0 1-2 2H0v7a1.969 1.969 0 0 0 1.933 2h9.133A1.97 1.97 0 0 0 13 18V6a1.97 1.97 0 0 0-1.934-2Z"
+        ></path>
+      </svg>
+      <span class="absolute -start-14 top-1/2 mb-px block -translate-y-1/2 text-sm font-medium"
+        >Copy</span
+      >
+    </button>
+  </div>
+  <button
+    type="button"
+    data-dial-toggle="speed-dial-menu-text-outside-button-square"
+    aria-controls="speed-dial-menu-text-outside-button-square"
+    aria-expanded="false"
+    class="flex h-14 w-14 items-center justify-center rounded-full bg-primary-700 text-white hover:bg-primary-800 focus:outline-none focus:ring-4 focus:ring-primary-300 dark:bg-primary-600 dark:hover:bg-primary-700 dark:focus:ring-primary-800"
+  >
+    <svg
+      class="h-5 w-5 transition-transform group-hover:rotate-45"
+      aria-hidden="true"
+      xmlns="http://www.w3.org/2000/svg"
+      fill="none"
+      viewBox="0 0 18 18"
+    >
+      <path
+        stroke="currentColor"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        stroke-width="2"
+        d="M9 1v16M1 9h16"></path>
+    </svg>
+    <span class="sr-only">Open actions menu</span>
+  </button>
 </div>
+
+{
+  currentRole !== "Admin" && currentRole !== "Staff" && (
+    <StickySMS isBackend={isBackend} globalInputClasses={globalInputClasses} />
+  )
+}
+
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    const speedDialButton = document.querySelector(
+      '[data-dial-toggle="speed-dial-menu-text-outside-button-square"]'
+    );
+
+    const speedDialMenu = document.getElementById("speed-dial-menu-text-outside-button-square");
+    const speedDial = document.getElementById("speed-dial");
+
+    (window as any).hideOnMobileInput("[data-dial-init]");
+
+    if (!speedDialButton || !speedDialMenu || !speedDial) return;
+
+    let isOpen = false;
+
+    // Toggle function
+    function toggleSpeedDial() {
+      isOpen = !isOpen;
+
+      if (isOpen) {
+        speedDialMenu?.classList.remove("hidden");
+        speedDialButton?.setAttribute("aria-expanded", "true");
+        const svg = speedDialButton?.querySelector("svg");
+        if (svg) svg.style.transform = "rotate(45deg)";
+      } else {
+        speedDialMenu?.classList.add("hidden");
+        speedDialButton?.setAttribute("aria-expanded", "false");
+        const svg = speedDialButton?.querySelector("svg");
+        if (svg) svg.style.transform = "rotate(0deg)";
+      }
+    }
+
+    // Hide function
+    function hideSpeedDial() {
+      if (isOpen) {
+        isOpen = false;
+        speedDialMenu?.classList.add("hidden");
+        speedDialButton?.setAttribute("aria-expanded", "false");
+        const svg = speedDialButton?.querySelector("svg");
+        if (svg) svg.style.transform = "rotate(0deg)";
+      }
+    }
+
+    // Toggle on button click
+    speedDialButton.addEventListener("click", function (e) {
+      e.stopPropagation();
+      toggleSpeedDial();
+    });
+
+    // Hide when clicking outside
+    document.addEventListener("click", function (e) {
+      if (!speedDial.contains(e.target as Node)) {
+        hideSpeedDial();
+      }
+    });
+
+    // Hide when pressing Escape key
+    document.addEventListener("keydown", function (e) {
+      if (e.key === "Escape") {
+        hideSpeedDial();
+      }
+    });
+
+    // Prevent menu clicks from closing the dial
+    speedDialMenu.addEventListener("click", function (e) {
+      e.stopPropagation();
+    });
+  });
+</script>
