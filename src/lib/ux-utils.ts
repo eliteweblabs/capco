@@ -179,8 +179,7 @@ export function isSafari(): boolean {
 
 export function isSafariBeta(): boolean {
   const ua = navigator.userAgent;
-  // Safari 18 beta has version 18.x.x or higher (Safari version numbers don't match major versions)
-  // Version 26+ corresponds to Safari 18+ on iOS
+  // Safari 18 beta and later versions
   return (
     /Safari/.test(ua) &&
     /Version\/(18|19|20|21|22|23|24|25|26)\./.test(ua) &&
@@ -202,92 +201,92 @@ export function isSafari18OrLater(): boolean {
  */
 
 // not called
-export function fixSafariViewport(): void {
-  if (!isSafari()) {
-    return; // Only run on Safari
-  }
+// export function fixSafariViewport(): void {
+//   if (!isSafari()) {
+//     return; // Only run on Safari
+//   }
 
-  const isSafari18 = isSafariBeta();
-  console.log(
-    `🍎 [UX-UTILS] Fixing Safari viewport positioning${isSafari18 ? " (Safari 18 Beta)" : ""}`
-  );
+//   const isSafari18 = isSafariBeta();
+//   console.log(
+//     `🍎 [UX-UTILS] Fixing Safari viewport positioning${isSafari18 ? " (Safari 18 Beta)" : ""}`
+//   );
 
-  // AGGRESSIVE FIXES - Force all elements to stay in place
+// AGGRESSIVE FIXES - Force all elements to stay in place
 
-  // Fix sticky container (SpeedDial) - FORCE POSITIONING
-  // const container = document.getElementById("sticky-container");
-  // if (container) {
-  //   let containerStyles = `
-  //     position: fixed !important;
-  //     bottom: 1.5rem !important;
-  //     left: 1.5rem !important;
-  //     z-index: 40 !important;
-  //     transform: translateZ(0) !important;
-  //     will-change: transform !important;
-  //     display: inline !important;
-  //   `;
+// Fix sticky container (SpeedDial) - FORCE POSITIONING
+// const container = document.getElementById("sticky-container");
+// if (container) {
+//   let containerStyles = `
+//     position: fixed !important;
+//     bottom: 1.5rem !important;
+//     left: 1.5rem !important;
+//     z-index: 40 !important;
+//     transform: translateZ(0) !important;
+//     will-change: transform !important;
+//     display: inline !important;
+//   `;
 
-  //   // Safari 18 beta specific fixes
-  //   if (isSafari18) {
-  //     containerStyles += `
-  //       /* Safari 18 beta specific fixes */
-  //       contain: layout style paint !important;
-  //       isolation: isolate !important;
-  //       backface-visibility: hidden !important;
-  //       -webkit-transform: translateZ(0) !important;
-  //       -webkit-backface-visibility: hidden !important;
-  //     `;
-  //   }
+//   // Safari 18 beta specific fixes
+//   if (isSafari18) {
+//     containerStyles += `
+//       /* Safari 18 beta specific fixes */
+//       contain: layout style paint !important;
+//       isolation: isolate !important;
+//       backface-visibility: hidden !important;
+//       -webkit-transform: translateZ(0) !important;
+//       -webkit-backface-visibility: hidden !important;
+//     `;
+//   }
 
-  //   container.style.cssText = containerStyles;
-  //   container.setAttribute("data-fixed", "true");
-  //   container.setAttribute("data-safari18", isSafari18 ? "true" : "false");
-  // }
+//   container.style.cssText = containerStyles;
+//   container.setAttribute("data-fixed", "true");
+//   container.setAttribute("data-safari18", isSafari18 ? "true" : "false");
+// }
 
-  // Fix SMS form panel - FORCE POSITIONING
-  const panel = document.getElementById("sms-form-panel");
-  if (panel) {
-    panel.style.cssText = `
-      position: fixed !important;
-      bottom: 6rem !important;
-      left: 1.5rem !important;
-      z-index: 50 !important;
-      transform: translateZ(0) !important;
-      will-change: transform !important;
-    `;
-    panel.setAttribute("data-fixed", "true");
-  }
+// Fix SMS form panel - FORCE POSITIONING
+//   const panel = document.getElementById("sms-form-panel");
+//   if (panel) {
+//     panel.style.cssText = `
+//       position: fixed !important;
+//       bottom: 6rem !important;
+//       left: 1.5rem !important;
+//       z-index: 50 !important;
+//       transform: translateZ(0) !important;
+//       will-change: transform !important;
+//     `;
+//     panel.setAttribute("data-fixed", "true");
+//   }
 
-  // Fix header positioning - FORCE STICKY
-  const header = document.querySelector("header");
-  if (header) {
-    let headerStyles = `
-      position: sticky !important;
-      top: 0 !important;
-      z-index: 30 !important;
-      transform: translateZ(0) !important;
-      will-change: transform !important;
-    `;
+//   // Fix header positioning - FORCE STICKY
+//   const header = document.querySelector("header");
+//   if (header) {
+//     let headerStyles = `
+//       position: sticky !important;
+//       top: 0 !important;
+//       z-index: 30 !important;
+//       transform: translateZ(0) !important;
+//       will-change: transform !important;
+//     `;
 
-    // Safari 18 beta specific fixes
-    if (isSafari18) {
-      headerStyles += `
-        /* Safari 18 beta specific fixes */
-        contain: layout style paint !important;
-        isolation: isolate !important;
-        backface-visibility: hidden !important;
-        -webkit-transform: translateZ(0) !important;
-        -webkit-backface-visibility: hidden !important;
-        /* Force header to stay at top */
-        position: -webkit-sticky !important;
-        position: sticky !important;
-      `;
-    }
+//     // Safari 18 beta specific fixes
+//     if (isSafari18) {
+//       headerStyles += `
+//         /* Safari 18 beta specific fixes */
+//         contain: layout style paint !important;
+//         isolation: isolate !important;
+//         backface-visibility: hidden !important;
+//         -webkit-transform: translateZ(0) !important;
+//         -webkit-backface-visibility: hidden !important;
+//         /* Force header to stay at top */
+//         position: -webkit-sticky !important;
+//         position: sticky !important;
+//       `;
+//     }
 
-    header.style.cssText = headerStyles;
-    header.setAttribute("data-safari18", isSafari18 ? "true" : "false");
-  }
-}
+//     header.style.cssText = headerStyles;
+//     header.setAttribute("data-safari18", isSafari18 ? "true" : "false");
+//   }
+// }
 
 /**
  * IMMEDIATE Safari viewport fix - runs before DOM is ready

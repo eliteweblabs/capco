@@ -292,7 +292,6 @@ const debugData = {
 
     <div
       class="YRrCJSr_j5nopfm4duUc wBVMFkIGfrKshbvi2gS1 jtAJHOc7mn7b4IKRO59D UZ9xFK4mqjHjj8e8yJwf h8KYXnua2NT4kTVzieom safari-fix"
-      style="height: 100dvh; overflow-y: scroll;"
     >
       <Aside currentUser={currentUser} project={project} globalInputClasses={globalInputClasses} />
 
@@ -392,7 +391,6 @@ const debugData = {
         sendEmail?: (emailData: any, currentUser: any) => Promise<any>;
         setPageLoadProjectStatus?: any;
         showModal?: any;
-        switchTab?: any;
         toggleCommentForm?: () => void;
         trimText?: (text: string, maxLength?: number, suffix?: string) => string;
         trimWords?: (text: string, wordLimit?: number, suffix?: string) => string;
@@ -425,6 +423,28 @@ const debugData = {
     }
     // Make data available globally for the proposal functions
     import { setupConsoleInterceptor } from "../../lib/console-interceptor.ts";
+
+    // Import UX utility functions
+    import {
+      scrollToTopOnMobile,
+      scrollToTop,
+      isMobile,
+      isTablet,
+      isDesktop,
+      getViewportSize,
+      debounce,
+      throttle,
+      hideOnMobileInput,
+      isSafari,
+      isSafariIOS,
+      isSafariBeta,
+      isSafari18OrLater,
+      immediateSafariViewportFix,
+      setupViewportHandling,
+      ensureViewportBounds,
+      lockBodyScroll,
+      unlockBodyScroll,
+    } from "../../lib/ux-utils.ts";
 
     // Ensure startsWith is available - with debugging
     console.log("🔧 [POLYFILL] Checking startsWith availability...");
@@ -472,44 +492,6 @@ const debugData = {
     // Safari detection functions are imported from ux-utils.ts
     // No need to redefine them here - they're already available globally
 
-    document.addEventListener("DOMContentLoaded", () => {
-      // Call immediately
-      const isSafari18 = (window as any).isSafariBeta();
-      if (isSafari18) {
-        console.log("🍎 [SAFARI-18-BETA] Applying orientation workaround for sticky positioning");
-
-        document
-          .querySelector(".safari-fix")
-          ?.classList.add("h-screen", "overflow-scroll", "scrollbar-hide");
-        // Force orientation change workaround
-        // const originalOrientation = screen.orientation?.type || "portrait";
-
-        // // Request landscape orientation
-        // if (screen.orientation && (screen.orientation as any).lock) {
-        //   (screen.orientation as any)
-        //     .lock("landscape")
-        //     .then(() => {
-        //       // Wait a moment then switch back to portrait
-        //       setTimeout(() => {
-        //         (screen.orientation as any)
-        //           .lock("portrait")
-        //           .then(() => {
-        //             console.log("🍎 [SAFARI-18-BETA] Orientation workaround completed");
-        //           })
-        //           .catch(() => {
-        //             // Fallback if orientation lock fails
-        //             console.log("🍎 [SAFARI-18-BETA] Orientation lock failed, using fallback");
-        //           });
-        //       }, 100);
-        //     })
-        //     .catch(() => {
-        //       // Fallback if orientation lock is not supported
-        //       console.log("🍎 [SAFARI-18-BETA] Orientation lock not supported");
-        //     });
-        // }
-      }
-    });
-
     // Local Window interface for this component's TypeScript intellisense
 
     // showModal is now handled by UnifiedNotification.astro
@@ -518,20 +500,28 @@ const debugData = {
       console.log("[FALLBACK-NOTIFICATION] Hiding notification");
     };
 
-    (window as any).switchTab = function (tabName: string) {
-      console.log(`[TAB] Switching to: ${tabName}`);
-      // Implementation for tab switching
-    };
-
     (window as any).handleNewStatusNotification = function (response: any, context: any) {
+      console.log(`🔔 [${context || "NOTIFICATION"}] handleNewStatusNotification called with:`, {
+        hasResponse: !!response,
+        hasSuccess: response?.success,
+        hasStatusData: !!response?.statusData,
+        statusDataKeys: response?.statusData ? Object.keys(response.statusData) : [],
+        hasShowModal: !!(window as any).showModal,
+        fullResponse: response,
+      });
+
       if (!response) {
-        console.error(`ERROR [${context || "NOTIFICATION"}] API call failed:`, response.error);
+        console.error(`ERROR [${context || "NOTIFICATION"}] API call failed:`, response?.error);
         return;
       }
 
       if (!response.statusData || !(window as any).showModal) {
         console.warn(
-          `WARNING [${context || "NOTIFICATION"}] No notification data or showModal function available`
+          `WARNING [${context || "NOTIFICATION"}] No notification data or showModal function available`,
+          {
+            hasStatusData: !!response.statusData,
+            hasShowModal: !!(window as any).showModal,
+          }
         );
         return;
       }
@@ -541,6 +531,14 @@ const debugData = {
       const adminNotification = response.statusData?.admin;
       const currentNotification = response.statusData?.current;
       const currentUser = response.currentUser;
+
+      console.log(`🔔 [${context || "NOTIFICATION"}] Notification data extracted:`, {
+        hasClientNotification: !!clientNotification,
+        hasAdminNotification: !!adminNotification,
+        hasCurrentNotification: !!currentNotification,
+        hasCurrentModal: !!currentNotification?.modal,
+        currentModal: currentNotification?.modal,
+      });
 
       // Send email if email configuration exists
       if (clientNotification?.email) {
@@ -922,6 +920,7 @@ const debugData = {
         5000
       );
 
+      debugger;
       try {
         // If project exists, use it; otherwise fetch it
         let currentProject = project;
@@ -947,7 +946,18 @@ const debugData = {
             currentStatusData: currentStatusData || null, // Pass the current status data
           }),
         });
-        return await response.json();
+        const result = await response.json();
+
+        console.log("📊 [UPDATE-STATUS] API Response:", {
+          success: result.success,
+          hasProject: !!result.project,
+          hasStatusData: !!result.statusData,
+          hasCurrentUser: !!result.currentUser,
+          statusDataKeys: result.statusData ? Object.keys(result.statusData) : [],
+          fullResult: result,
+        });
+
+        return result;
       } catch (error: any) {
         console.error("Global updateStatus error:", error);
         return { success: false, error: error.message };
@@ -1461,115 +1471,12 @@ const debugData = {
     // // Process URL notifications on page load
     document.addEventListener("DOMContentLoaded", () => (window as any).processUrlNotifications());
 
-    // Handle magic link authentication (unified for both register and create-user flows)
-    (window as any).handleMagicLinkAuth = async function () {
-      try {
-        // Only run if we have magic link parameters in the URL
-        const urlParams = new URLSearchParams(window.location.search);
-        const hasMagicLinkParams =
-          urlParams.has("access_token") ||
-          urlParams.has("refresh_token") ||
-          urlParams.has("token_hash") ||
-          urlParams.has("type");
-
-        console.log("🔐 [MAGIC-LINK] Current URL:", window.location.href);
-        console.log("🔐 [MAGIC-LINK] URL search params:", window.location.search);
-        console.log("🔐 [MAGIC-LINK] Has magic link params:", hasMagicLinkParams);
-        console.log("🔐 [MAGIC-LINK] Access token present:", urlParams.has("access_token"));
-        console.log("🔐 [MAGIC-LINK] Refresh token present:", urlParams.has("refresh_token"));
-        console.log("🔐 [MAGIC-LINK] Token hash present:", urlParams.has("token_hash"));
-        console.log("🔐 [MAGIC-LINK] Type present:", urlParams.has("type"));
-
-        if (!hasMagicLinkParams) {
-          console.log("🔐 [MAGIC-LINK] No magic link parameters found, skipping");
-          return;
-        }
-
-        console.log("🔐 [MAGIC-LINK] Magic link parameters detected, processing...");
-
-        // Check if we have a Supabase session in the URL
-        const {
-          data: { session },
-          error,
-        } = await supabase.auth.getSession();
-
-        if (session && !error) {
-          console.log("🔐 [MAGIC-LINK] Session detected from URL:", session.user?.email);
-
-          // Set auth cookies via API call
-          const response = await fetch("/api/auth/callback", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              access_token: session.access_token,
-              refresh_token: session.refresh_token,
-              expires_in: session.expires_in,
-              token_type: session.token_type,
-            }),
-          });
-
-          if (response.ok) {
-            console.log("✅ [MAGIC-LINK] Auth cookies set successfully");
-            // Show success notification
-            if (window.showModal) {
-              window.showModal({
-                type: "success",
-                title: "Welcome!",
-                message: "You've been successfully authenticated. Redirecting to dashboard...",
-                duration: 3000,
-                redirect: { url: "/dashboard", delay: 3000, showCountdown: true },
-              });
-            }
-            // Refresh the page to apply the new auth state
-            setTimeout(() => window.location.reload(), 2000);
-          } else {
-            console.error("❌ [MAGIC-LINK] Failed to set auth cookies");
-            if (window.showModal) {
-              window.showModal({
-                type: "error",
-                title: "Authentication Failed",
-                message: "There was an error setting up your session. Please try again.",
-                duration: 0,
-              });
-            }
-          }
-        } else {
-          console.log("🔐 [MAGIC-LINK] No session found in URL");
-        }
-      } catch (error) {
-        console.error("❌ [MAGIC-LINK] Error handling magic link auth:", error);
-        // Only show error if we actually detected magic link parameters
-        const urlParams = new URLSearchParams(window.location.search);
-        const hasMagicLinkParams =
-          urlParams.has("access_token") ||
-          urlParams.has("refresh_token") ||
-          urlParams.has("token_hash") ||
-          urlParams.has("type");
-
-        if (hasMagicLinkParams && window.showModal) {
-          window.showModal({
-            type: "error",
-            title: "Authentication Error",
-            message: "There was an error processing your authentication. Please try again.",
-            duration: 0,
-          });
-        }
-      }
-    };
-
-    // Check for magic link authentication on page load
-    document.addEventListener("DOMContentLoaded", () => {
-      (window as any).handleMagicLinkAuth();
-    });
-
     // // Also run immediately in case DOM is already loaded
     if (document.readyState === "loading") {
       // DOM is still loading, event listener will handle it
     } else {
       // DOM is already loaded, run immediately
-      (window as any).handleMagicLinkAuth();
+
       (window as any).processUrlNotifications();
     }
 
@@ -1643,5 +1550,46 @@ const debugData = {
     // } else {
     //   console.log("🌐 [APP] Not iOS Safari Mobile Beta - Skipping specific CSS fixes");
     // }
+  </script>
+
+  <script is:inline>
+    document.addEventListener("DOMContentLoaded", () => {
+      // Call immediately
+      const isSafari18 = window.isSafariBeta();
+      console.log("🍎 [SAFARI-18-BETA] isSafari18:", isSafari18);
+      if (isSafari18 === true) {
+        console.log("🍎 [SAFARI-18-BETA] Applying orientation workaround for sticky positioning");
+
+        document
+          .querySelector(".safari-fix")
+          ?.classList.add("h-screen", "overflow-scroll", "scrollbar-hide");
+        // Force orientation change workaround
+        // const originalOrientation = screen.orientation?.type || "portrait";
+
+        // // Request landscape orientation
+        // if (screen.orientation && (screen.orientation as any).lock) {
+        //   (screen.orientation as any)
+        //     .lock("landscape")
+        //     .then(() => {
+        //       // Wait a moment then switch back to portrait
+        //       setTimeout(() => {
+        //         (screen.orientation as any)
+        //           .lock("portrait")
+        //           .then(() => {
+        //             console.log("🍎 [SAFARI-18-BETA] Orientation workaround completed");
+        //           })
+        //           .catch(() => {
+        //             // Fallback if orientation lock fails
+        //             console.log("🍎 [SAFARI-18-BETA] Orientation lock failed, using fallback");
+        //           });
+        //       }, 100);
+        //     })
+        //     .catch(() => {
+        //       // Fallback if orientation lock is not supported
+        //       console.log("🍎 [SAFARI-18-BETA] Orientation lock not supported");
+        //     });
+        // }
+      }
+    });
   </script>
 </html>
