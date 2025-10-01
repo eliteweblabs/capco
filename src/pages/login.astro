@@ -1,30 +1,9 @@
 ---
-// import { navigation } from "@/pages/api/navigation";
-
-// interface Props {
-//   requireAuthRedirect?: string;
-//   title?: string;
-//   description?: string;
-//   currentUser?: any;
-//   session?: any;
-//   project?: any;
-//   supabase?: any;
-//   supabaseAdmin?: any;
-// }
-
-// const requireAuthRedirect = undefined;
-// import { checkAuth } from "../lib/auth";
-// const { currentUser, session, supabase, refreshToken, accessToken } = await checkAuth(
-//   Astro.cookies
-// );
-// // Handle auth redirect first
-// if (requireAuthRedirect && (!session || !currentUser)) {
-//   return Astro.redirect(requireAuthRedirect);
-// }
-// const currentRole = currentUser?.profile.role;
-// const currentUserId = currentUser?.id;
-
-// console.log("🔐 [LOGIN] Login/Register page loading...");
+// Handle OAuth callback if code is present (MUST be first)
+const authCode = Astro.url.searchParams.get("code");
+if (authCode) {
+  return Astro.redirect(`/api/auth/callback?code=${authCode}`);
+}
 
 // Get auth data directly
 import { checkAuth } from "../lib/auth";

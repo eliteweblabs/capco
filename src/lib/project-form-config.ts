@@ -355,6 +355,7 @@ export const UNIFIED_FORM_ELEMENTS: FormElementConfig[] = [
     elementType: "text",
     label: "NFPA Version",
     placeholder: "NFPA Version",
+    value: "13",
     dataField: "nfpa_version",
     allow: ["Admin", "Staff"], // Only admin and staff can see architect
     hideAtStatus: [], // Hide after proposal is signed off
@@ -478,15 +479,37 @@ export const UNIFIED_FORM_ELEMENTS: FormElementConfig[] = [
     readOnlyAtStatus: [50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170, 180, 190, 200],
   },
 
-  // Fire Protection System Type button group
+  // Fire Service button group
   {
-    id: "fire-protection-system-type",
-    name: "fire_protection_system_type",
+    id: "fire-service",
+    name: "service",
     type: "button-group",
     elementType: "button-group",
-    label: "Fire Protection System Type",
+    label: "Supply / Service",
     groupType: "radio",
-    cssClass: "fire-protection-system-type-radio",
+    cssClass: "fire-service-radio",
+    allow: ["Admin", "Staff", "Client"],
+    readOnlyAtStatus: [
+      20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170, 180, 190, 200,
+    ],
+    options: [
+      { value: "Pump & Tank", label: "Pump & Tank" },
+      { value: "2' Copper", label: "2' Copper" },
+      { value: "4' Ductile", label: "4' Ductile" },
+      { value: "6' Ductile", label: "6' Ductile" },
+      { value: "Unknown", label: "Unknown" },
+    ],
+  },
+
+  // Fire Protection Service Type button group
+  {
+    id: "fire-service-type",
+    name: "fire_service_type",
+    type: "button-group",
+    elementType: "button-group",
+    label: "Fire Service Type",
+    groupType: "radio",
+    cssClass: "fire-service-type-radio",
     allow: ["Admin", "Staff"],
     readOnlyAtStatus: [60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170, 180, 190, 200],
     options: [
@@ -644,28 +667,6 @@ export const UNIFIED_FORM_ELEMENTS: FormElementConfig[] = [
     ],
   },
 
-  // Fire Service button group
-  {
-    id: "fire-service",
-    name: "service",
-    type: "button-group",
-    elementType: "button-group",
-    label: "Supply / Service",
-    groupType: "radio",
-    cssClass: "fire-service-radio",
-    allow: ["Admin", "Staff", "Client"],
-    readOnlyAtStatus: [
-      20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170, 180, 190, 200,
-    ],
-    options: [
-      { value: "Pump & Tank", label: "Pump & Tank" },
-      { value: "2' Copper", label: "2' Copper" },
-      { value: "4' Ductile", label: "4' Ductile" },
-      { value: "6' Ductile", label: "6' Ductile" },
-      { value: "Unknown", label: "Unknown" },
-    ],
-  },
-
   // Reports Required button group
   {
     id: "reports-required",
@@ -677,13 +678,15 @@ export const UNIFIED_FORM_ELEMENTS: FormElementConfig[] = [
     cssClass: "",
     allow: ["Admin", "Staff"],
     readOnlyAtStatus: [
-      20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170, 180, 190, 200,
+      30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170, 180, 190, 200,
     ],
     options: [
       { value: "Narrative", label: "Narrative", selected: true },
       { value: "Sprinkler", label: "Sprinkler", selected: true },
-      { value: "Alarm", label: "Alarm", selected: true },
-      { value: "NFPA 241", label: "NFPA 241", selected: true },
+      { value: "Alarm", label: "Alarm" },
+      { value: "Hydraulic Calculations", label: "Hydraulic Calculations", selected: true },
+      { value: "Fire Hydrant Flow Test", label: "Fire Hydrant Flow Test", selected: true },
+      { value: "NFPA 241", label: "NFPA 241" },
       { value: "IEBC", label: "IEBC" },
       { value: "IBC", label: "IBC" },
     ],

@@ -1,11 +1,16 @@
 ---
+// Handle OAuth callback if code is present (MUST be first)
+const authCode = Astro.url.searchParams.get("code");
+if (authCode) {
+  return Astro.redirect(`/api/auth/callback?code=${authCode}`);
+}
+
 // Define requireAuthRedirect
 const requireAuthRedirect = undefined;
 // Make sure to check above value before redirecting
 import Button from "../components/common/Button.astro";
 import MapboxWidget from "../components/common/MapboxWidget.astro";
 import { checkAuth } from "../lib/auth";
-// Handle OAuth callback if code is present
 const { currentUser, session, supabase } = await checkAuth(Astro.cookies);
 // Handle auth redirect first
 if (requireAuthRedirect && (!session || !currentUser)) {
