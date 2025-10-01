@@ -59,7 +59,6 @@ declare global {
     trimText?: (text: string, maxLength?: number, suffix?: string) => string;
     trimWords?: (text: string, wordLimit?: number, suffix?: string) => string;
     hideNotification?: any;
-    switchTab?: any;
     handleNewStatusNotification?: any;
     handleUrlNotification?: (type: string, message: string) => void;
     sendEmail?: (emailData: any) => Promise<any>;

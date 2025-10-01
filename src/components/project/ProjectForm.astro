@@ -461,7 +461,7 @@ const formElements = getFilteredUnifiedFormElements(currentRole, isNewProject, p
     
         if (result.success) {
           if (isNewProject) {
-            // For new projects, update status to 10 (Project Created) to trigger database-driven notifications
+            // For new projects, update status to 1 (Under Review) to trigger database-driven notifications
          
             try {
               console.log("📝 [ProjectForm] Making fetch call now...");
@@ -469,8 +469,10 @@ const formElements = getFilteredUnifiedFormElements(currentRole, isNewProject, p
               const project = result.project;
               const nextStatus = 10;
               
+              debugger;
               (window as any).updateStatus(project, nextStatus, undefined).then((data: any) => {
                 if (data.success) {
+                  debugger;
                   window.handleNewStatusNotification(data, "PROPOSAL-VIEW");
                 } else {
                   console.error("❌ [PROPOSAL-VIEW] Failed to update status:", data.error);
