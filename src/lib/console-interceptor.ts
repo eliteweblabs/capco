@@ -23,6 +23,86 @@ export function disableConsoleLogs(): void {
 }
 
 /**
+ * Truncate console logs in development to prevent massive logs
+ */
+export function truncateConsoleLogs(): void {
+  const originalLog = console.log;
+  const originalDebug = console.debug;
+  const originalInfo = console.info;
+
+  const truncateMessage = (message: string, maxLines: number = 10): string => {
+    const lines = message.split("\n");
+    if (lines.length <= maxLines) return message;
+    const firstLines = lines.slice(0, maxLines).join("\n");
+    const remainingLines = lines.length - maxLines;
+    return firstLines + `\n... [truncated ${remainingLines} lines]`;
+  };
+
+  console.log = (...args: any[]) => {
+    const truncatedArgs = args.map((arg) => {
+      if (typeof arg === "string") {
+        return truncateMessage(arg);
+      }
+      if (typeof arg === "object" && arg !== null) {
+        try {
+          const stringified = JSON.stringify(arg);
+          if (stringified.length > 200) {
+            return truncateMessage(stringified);
+          }
+          return arg;
+        } catch {
+          return arg;
+        }
+      }
+      return arg;
+    });
+    originalLog(...truncatedArgs);
+  };
+
+  console.debug = (...args: any[]) => {
+    const truncatedArgs = args.map((arg) => {
+      if (typeof arg === "string") {
+        return truncateMessage(arg);
+      }
+      if (typeof arg === "object" && arg !== null) {
+        try {
+          const stringified = JSON.stringify(arg);
+          if (stringified.length > 200) {
+            return truncateMessage(stringified);
+          }
+          return arg;
+        } catch {
+          return arg;
+        }
+      }
+      return arg;
+    });
+    originalDebug(...truncatedArgs);
+  };
+
+  console.info = (...args: any[]) => {
+    const truncatedArgs = args.map((arg) => {
+      if (typeof arg === "string") {
+        return truncateMessage(arg);
+      }
+      if (typeof arg === "object" && arg !== null) {
+        try {
+          const stringified = JSON.stringify(arg);
+          if (stringified.length > 200) {
+            return truncateMessage(stringified);
+          }
+          return arg;
+        } catch {
+          return arg;
+        }
+      }
+      return arg;
+    });
+    originalInfo(...truncatedArgs);
+  };
+}
+
+/**
  * Disable all console methods except errors and warnings
  */
 export function disableConsoleDebug(): void {
@@ -69,10 +149,12 @@ export function setupConsoleInterceptor(): void {
       console.warn("🔇 [CLIENT] Console.log statements disabled in production");
     }
   } else {
+    // In development, truncate long console logs to prevent terminal clutter
+    truncateConsoleLogs();
     if (isServer) {
-      console.log("🔊 [SERVER] Console.log statements enabled in development");
+      console.log("🔊 [SERVER] Console.log statements enabled in development (truncated)");
     } else {
-      console.log("🔊 [CLIENT] Console.log statements enabled in development");
+      console.log("🔊 [CLIENT] Console.log statements enabled in development (truncated)");
     }
   }
 }
