@@ -19,37 +19,28 @@ const currentUserId = currentUser?.id;
 
   <BoxIcon name="bell" variant="secondary" size="sm" dataAttributes={{ "data-count": "1" }} />
 </button> -->
-<BoxIcon
+<Button
   name="bell"
   size="sm"
   id="notification-bell"
-  variant="secondary"
+  icon="bell"
+  variant="anchor"
+  iconClasses="mr-0"
   dataAttributes={{
     "data-dropdown-toggle": "notification-dropdown",
-    "data-tooltip-target": "tooltip-notification",
   }}
   class="mveJTCIb2WII7J4sY22F Z4DH5a4vmjReSFRBpPgz c8dCx6gnV43hTOLV6ks5 PeR2JZ9BZHYIH8Ea3F36 _7KA5gD55t2lxf9Jkj20 BkIbg_JwkgiyRW804Hhu _q0p_O8QLU1paqtuqmI2 _6wdnQrxT_dGdAdNk5AQ XIIs8ZOri3wm8Wnj9N_y OPrb_iG5WDy_7F05BDOX yChACvAr1v8czJ2VO22j relative"
 >
   <span class="_DVAfiyo21kM68EUVzEQ">View notifications</span>
-</BoxIcon>
+</Button>
 
 <!-- Unread Count Badge -->
 <!-- </button> -->
 
-<div
-  id="tooltip-notification"
-  role="tooltip"
-  class="H78G_4yayxs5C3xdFbnK ZBSHeVK3dmgzHTRX3hLO pq2JRWtiWcwYnw3xueNl QhmQ_v3mmDFIP9VaVOfb VPGGthdu3cy_ZP7AL7dt mveJTCIb2WII7J4sY22F foDHZclRWUf2bqma2a8U _Cj_M6jt2eLjDgkBBNgI b9aD6g2qw84oyZNsMO8j c8dCx6gnV43hTOLV6ks5 ezMFUVl744lvw6ht0lFe y6GKdvUrd7vp_pxsFb57 Db4Wzva4DMepJJiQLY7M fzhbbDQ686T8arwvi_bJ mc9bwhBTHL8mVzJvl6gz rqOAGYeDo9iWuroePkaf"
->
-  Notifications
-
-  <div class="tkX8MMO2MiTlgtbd_jG3" data-popper-arrow=""></div>
-</div>
-
 <!-- Dropdown Menu -->
 <div
   id="notification-dropdown"
-  class="absolute right-0 z-50 mt-2 hidden w-80 rounded-lg border border-gray-200 bg-white shadow-lg dark:border-gray-700 dark:bg-gray-800"
+  class="_SmdlCf6eUKB_V9S5IDj absolute right-0 z-50 mt-2 w-80 rounded-lg border border-gray-200 bg-white shadow-lg dark:border-gray-700 dark:bg-gray-800"
 >
   <!-- Header -->
   <div
@@ -397,19 +388,14 @@ const currentUserId = currentUser?.id;
 
           if (response.ok) {
             // Update badge immediately for better UX
-            this.updateBadgeCount();
+            const unreadCount = this.notifications.filter((n: any) => !n.viewed).length;
+            this.updateBadge(unreadCount);
             this.viewedNotifications.clear();
             await this.loadNotifications(); // Refresh to update counts
           }
         } catch (error) {
           console.error("❌ [NOTIFICATIONS] Error marking notifications as read:", error);
         }
-      }
-
-      updateBadgeCount() {
-        // Calculate current unread count and update badge immediately
-        const unreadCount = this.notifications.filter((n: any) => !n.viewed).length;
-        this.updateBadge(unreadCount);
       }
 
       async markAllAsRead() {

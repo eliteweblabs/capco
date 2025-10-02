@@ -26,6 +26,7 @@ export interface Props {
   loading?: boolean;
   icon?: string;
   iconPosition?: "left" | "right";
+  iconClasses?: string;
   fullWidth?: boolean;
   class?: string;
   id?: string;
@@ -56,6 +57,20 @@ const loading =
 const icon = Astro.props.icon || Astro.request.headers.get("x-button-icon") || undefined;
 const iconPosition =
   Astro.props.iconPosition || Astro.request.headers.get("x-button-icon-position") || "left";
+const iconClasses =
+  Astro.props.iconClasses || Astro.request.headers.get("x-button-icon-classes") || undefined;
+
+// Debug logging for iconClasses
+if (icon) {
+  console.log("🔍 [BUTTON] Icon classes:", {
+    icon,
+    iconClasses,
+    propsIconClasses: Astro.props.iconClasses,
+    iconPosition,
+    finalClass: iconClasses || (iconPosition === "left" ? "mr-2" : "ml-2"),
+  });
+}
+
 const fullWidth =
   Astro.props.fullWidth || Astro.request.headers.get("x-button-full-width") === "true" || false;
 const className = Astro.props.class || Astro.request.headers.get("x-button-class") || "";
@@ -154,7 +169,7 @@ const attributes = {
         </svg>
       )}
       {icon && iconPosition === "left" && !loading && (
-        <BoxIcon name={icon} size={iconSize} class="mr-2" />
+        <BoxIcon name={icon} size={iconSize} class={iconClasses || "mr-2"} />
       )}
       {buttonText ? (
         buttonText
@@ -164,7 +179,7 @@ const attributes = {
         </span>
       )}
       {icon && iconPosition === "right" && !loading && (
-        <BoxIcon name={icon} size={iconSize} class="ml-2" />
+        <BoxIcon name={icon} size={iconSize} class={iconClasses || "ml-2"} />
       )}
       {dataAttributes?.["data-count"] && parseInt(dataAttributes["data-count"]) > 0 && (
         <span class="absolute -right-2 -top-2 flex h-5 w-5 items-center justify-center rounded-full border border-primary-500 bg-white text-xs font-medium text-primary-500 dark:border-primary-400 dark:bg-background-dark dark:text-primary-400">
@@ -192,7 +207,7 @@ const attributes = {
         </svg>
       )}
       {icon && iconPosition === "left" && !loading && (
-        <BoxIcon name={icon} size={iconSize} class="mr-2" />
+        <BoxIcon name={icon} size={iconSize} class={iconClasses || "mr-2"} />
       )}
       {buttonText ? (
         buttonText
@@ -202,7 +217,7 @@ const attributes = {
         </span>
       )}
       {icon && iconPosition === "right" && !loading && (
-        <BoxIcon name={icon} size={iconSize} class="ml-2" />
+        <BoxIcon name={icon} size={iconSize} class={iconClasses || "ml-2"} />
       )}
       {dataAttributes?.["data-count"] && parseInt(dataAttributes["data-count"]) > 0 && (
         <span class="absolute right-0 top-0 flex h-5 w-5 items-center justify-center rounded-full border border-primary bg-white text-xs font-medium text-primary-500 dark:border-primary dark:bg-background-dark dark:text-primary-400">

@@ -29,6 +29,7 @@ const {
 
 const currentRole = currentUser?.profile?.role;
 const authorProfile = currentUser?.profile;
+const projectId = project?.id;
 // Extract user data for form fields
 
 // Debug the actual values being used in the form
@@ -216,14 +217,15 @@ console.log("🔍 [PAYMENT-FORM] Computed lastNameValue:", lastNameValue);
         <label for="card-expiry-element" class="mb-2 block text-sm font-medium text-gray-700">
           Expiration Date *
         </label>
-        <div id="card-expiry-element" class="rounded-lg border border-gray-300 p-3"></div>
+        <div id="card-expiry-element" class="min-h-[44px] rounded-lg border border-gray-300 p-3">
+        </div>
       </div>
 
       <div>
         <label for="card-cvc-element" class="mb-2 block text-sm font-medium text-gray-700">
           CVC *
         </label>
-        <div id="card-cvc-element" class="rounded-lg border border-gray-300 p-3"></div>
+        <div id="card-cvc-element" class="min-h-[44px] rounded-lg border border-gray-300 p-3"></div>
       </div>
     </div>
 
@@ -318,6 +320,7 @@ console.log("🔍 [PAYMENT-FORM] Computed lastNameValue:", lastNameValue);
     currentUser,
     project,
     statusData,
+    projectId,
   }}
 >
   (async () => {
@@ -550,7 +553,7 @@ console.log("🔍 [PAYMENT-FORM] Computed lastNameValue:", lastNameValue);
             invoiceId: invoiceId, // Using invoiceId as projectId since we're passing project ID as invoiceId
             paymentType: paymentType,
             projectId: projectId,
-            authorProfile: authorProfile,
+            authorProfile: project?.authorProfile,
             paymentMethod: paymentMethod,
             billingDetails: billingDetails.email ? billingDetails : null,
             amount: amount, // Send the amount from PaymentForm
@@ -666,7 +669,8 @@ console.log("🔍 [PAYMENT-FORM] Computed lastNameValue:", lastNameValue);
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            x,
+            paymentIntentId,
+            invoiceId,
           }),
         });
 
@@ -747,9 +751,66 @@ console.log("🔍 [PAYMENT-FORM] Computed lastNameValue:", lastNameValue);
     }
 
     // Handle form submission
-    submitButton?.addEventListener("click", (e) => {
+    submitButton?.addEventListener("click", async (e) => {
       e.preventDefault();
-      handlePayment();
+
+      // Validate all required fields before submitting
+      const requiredFields = [
+        { id: "first-name", label: "First Name" },
+        { id: "last-name", label: "Last Name" },
+        { id: "email", label: "Email" },
+        { id: "address", label: "Address" },
+        { id: "city", label: "City" },
+        { id: "state", label: "State" },
+        { id: "zip", label: "ZIP Code" },
+        { id: "cardholder-name", label: "Cardholder Name" },
+      ];
+
+      // Check for empty required fields
+      const emptyFields = [];
+      for (const field of requiredFields) {
+        const element = document.getElementById(field.id);
+        if (!element || !element.value.trim()) {
+          emptyFields.push(field.label);
+        }
+      }
+
+      // Validate card elements
+      if (!cardNumberElement._empty || !cardExpiryElement._empty || !cardCvcElement._empty) {
+        if (cardNumberElement._empty) emptyFields.push("Card Number");
+        if (cardExpiryElement._empty) emptyFields.push("Card Expiry");
+        if (cardCvcElement._empty) emptyFields.push("Card CVC");
+      }
+
+      // Check terms checkbox
+      const termsCheckbox = document.getElementById("terms-agreement");
+      if (!termsCheckbox || !termsCheckbox.checked) {
+        emptyFields.push("Terms & Conditions Agreement");
+      }
+
+      // If there are empty fields, show modal with specific fields listed
+      if (emptyFields.length > 0) {
+        showModal(
+          "error",
+          "Validation Error",
+          `Please fill in the following required fields:\n\n• ${emptyFields.join("\n• ")}`,
+          8000
+        );
+        return;
+      }
+
+      // Validate email format
+      const emailField = document.getElementById("email");
+      if (emailField && emailField.value) {
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(emailField.value)) {
+          showModal("error", "Validation Error", "Please enter a valid email address.", 5000);
+          return;
+        }
+      }
+
+      // All validation passed, proceed with payment
+      await handlePayment();
     });
 
     // Apple Pay setup - Debug and improved checks

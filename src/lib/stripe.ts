@@ -35,7 +35,7 @@ export const stripe =
 
 // Stripe configuration for client-side
 export const stripeConfig = {
-  publishableKey: process.env.STRIPE_PUBLISHABLE_KEY!,
+  publishableKey: process.env.PUBLIC_STRIPE_PUBLISHABLE_KEY!,
   // Enable Apple Pay and other payment methods
   paymentMethods: {
     card: true,

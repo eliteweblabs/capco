@@ -190,6 +190,21 @@ export const GET: APIRoute = async ({ request, url }) => {
       );
     }
 
+    // Replace signature components
+    if (template.components.signature) {
+      let signatureHtml = "";
+      for (const componentId of template.components.signature) {
+        const component = templatesConfig.components.find((c: any) => c.id === componentId);
+        if (component) {
+          const componentPath = join(process.cwd(), "src/templates/pdf", component.file);
+          const componentHtml = readFileSync(componentPath, "utf-8");
+          signatureHtml += componentHtml + "\n";
+        }
+      }
+      // Replace signature placeholder
+      assembledHtml = assembledHtml.replace(/\[SIGNATURE COMPONENT\]/g, signatureHtml);
+    }
+
     console.log(`📄 [PDF-ASSEMBLE] Project data structure:`, Object.keys(projectData));
     // Replace placeholders with comprehensive project data
     const processedHtml = replacePlaceholders(assembledHtml, { project: projectData });

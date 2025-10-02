@@ -246,6 +246,15 @@ export const POST: APIRoute = async ({ request, cookies }): Promise<Response> =>
           if (buttonText && finalButtonLink) {
             emailHtml = emailHtml.replace("{{BUTTON_TEXT}}", buttonText);
             emailHtml = emailHtml.replace("{{BUTTON_LINK}}", finalButtonLink);
+          } else if (!buttonText && finalButtonLink) {
+            emailHtml = emailHtml.replace("{{BUTTON_TEXT}}", "Access Your Dashboard");
+            emailHtml = emailHtml.replace("{{BUTTON_LINK}}", finalButtonLink);
+          } else if (buttonText && !finalButtonLink) {
+            emailHtml = emailHtml.replace("{{BUTTON_TEXT}}", buttonText);
+            emailHtml = emailHtml.replace("{{BUTTON_LINK}}", `${baseUrl}/dashboard`);
+          } else if (!buttonText && !finalButtonLink) {
+            emailHtml = emailHtml.replace("{{BUTTON_TEXT}}", "Access Your Dashboard");
+            emailHtml = emailHtml.replace("{{BUTTON_LINK}}", `${baseUrl}/dashboard`);
           }
 
           // // Validate from field
