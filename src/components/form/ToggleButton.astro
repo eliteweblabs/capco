@@ -1,0 +1,183 @@
+---
+const { value, group, type, class: className } = Astro.props;
+import Button from "../common/Button.astro";
+---
+
+<!-- cool styles --><!-- bg-blue-600 hover:bg-blue-700 text-white rounded-full p-3 shadow-lg transition-all duration-200 hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 -->
+<Button
+  type="button"
+  dataAttributes={{
+    "data-value": value,
+    "data-group": group,
+    "data-type": type,
+  }}
+  class={`toggle-button preserve dark:text-white ${className || ""}`}
+  variant="outline"
+  size="md"
+  fullWidth={false}
+>
+  <slot />
+</Button>
+
+<script>
+  // ToggleButton functionality
+  document.addEventListener("DOMContentLoaded", function () {
+    const toggleButtons = document.querySelectorAll(".toggle-button");
+
+    // Initialize buttons that are already selected (from server-side rendering)
+    toggleButtons.forEach((button) => {
+      if (button.classList.contains("selected")) {
+        // Ensure all selection classes are present for server-side selected buttons
+        button.classList.add("bg-primary", "dark:bg-primary-dark", "text-white");
+      }
+    });
+
+    toggleButtons.forEach((button) => {
+      button.addEventListener("click", function (this: HTMLButtonElement) {
+        const value = this.getAttribute("data-value");
+        const group = this.getAttribute("data-group");
+        const type = this.getAttribute("data-type");
+
+        if (type === "radio") {
+          // Radio behavior: deselect all others in the group, select this one
+          const groupButtons = document.querySelectorAll(`[data-group="${group}"]`);
+          groupButtons.forEach((btn) => {
+            btn.classList.remove("selected", "bg-primary", "dark:bg-primary-dark", "text-white");
+          });
+
+          // Select this button
+          this.classList.add("selected", "bg-primary", "dark:bg-primary-dark", "text-white");
+
+          // Trigger custom event for radio selection
+          this.dispatchEvent(
+            new CustomEvent("toggleButtonChange", {
+              detail: {
+                value: value,
+                group: group,
+                type: type,
+                selected: true,
+              },
+              bubbles: true,
+            })
+          );
+        } else if (type === "multi-select") {
+          // Multi-select behavior: toggle this button's state
+          const isSelected = this.classList.contains("selected");
+
+          if (isSelected) {
+            // Deselect - ensure all selection classes are removed
+            this.classList.remove("selected", "bg-primary", "dark:bg-primary-dark", "text-white");
+            // Add deselected state classes to override hover
+            this.classList.add("deselected");
+          } else {
+            // Select
+            this.classList.remove("deselected");
+            this.classList.add("selected", "bg-primary", "dark:bg-primary-dark", "text-white");
+          }
+
+          // Trigger custom event for multi-select toggle
+          this.dispatchEvent(
+            new CustomEvent("toggleButtonChange", {
+              detail: {
+                value: value,
+                group: group,
+                type: type,
+                selected: !isSelected,
+              },
+              bubbles: true,
+            })
+          );
+        }
+
+        // Update form data (optional - for form submission)
+        if (group && value && type) {
+          updateFormData(
+            group as string,
+            value as string,
+            type as string,
+            this.classList.contains("selected")
+          );
+        }
+      });
+    });
+  });
+
+  // Helper function to update form data
+  function updateFormData(group: string, value: string, type: string, isSelected: boolean) {
+    const form = document.querySelector("form[data-project-id]");
+    if (!form) return;
+
+    // Always use array format for consistency
+    let input = form.querySelector(`input[name="${group}"]`) as HTMLInputElement;
+    if (!input) {
+      input = document.createElement("input") as HTMLInputElement;
+      input.type = "hidden";
+      input.name = group;
+      form.appendChild(input);
+    }
+
+    // Parse current values
+    let currentValues: string[] = [];
+    try {
+      currentValues = input.value ? JSON.parse(input.value) : [];
+    } catch {
+      currentValues = input.value ? input.value.split(",").map((v: string) => v.trim()) : [];
+    }
+
+    if (type === "radio") {
+      // For radio, replace the entire array with just the selected value
+      currentValues = isSelected ? [value] : [];
+    } else if (type === "multi-select") {
+      // For multi-select, add/remove values
+      if (isSelected) {
+        // Add value if not already present
+        if (!currentValues.includes(value)) {
+          currentValues.push(value);
+        }
+      } else {
+        // Remove value
+        currentValues = currentValues.filter((v: string) => v !== value);
+      }
+    }
+
+    input.value = JSON.stringify(currentValues);
+    console.log("🔘 [ToggleButton] Updated form data:", {
+      group,
+      value,
+      type,
+      isSelected,
+      currentValues,
+      finalValue: input.value,
+    });
+  }
+
+  // Global function to get selected values for a group
+  (window as any).getToggleButtonValues = function (group: string): string[] {
+    const buttons = document.querySelectorAll(`[data-group="${group}"]`);
+    const selectedValues: string[] = [];
+
+    buttons.forEach((button) => {
+      if (button.classList.contains("selected")) {
+        const value = button.getAttribute("data-value");
+        if (value) selectedValues.push(value);
+      }
+    });
+
+    return selectedValues;
+  };
+
+  // Global function to set selected values for a group
+  (window as any).setToggleButtonValues = function (group: string, values: string | string[]) {
+    const buttons = document.querySelectorAll(`[data-group="${group}"]`);
+    const valueArray = Array.isArray(values) ? values : [values];
+
+    buttons.forEach((button) => {
+      const value = button.getAttribute("data-value");
+      if (value && valueArray.includes(value)) {
+        button.classList.add("selected", "bg-primary", "dark:bg-primary-dark", "text-white");
+      } else {
+        button.classList.remove("selected", "bg-primary", "dark:bg-primary-dark", "text-white");
+      }
+    });
+  };
+</script>
