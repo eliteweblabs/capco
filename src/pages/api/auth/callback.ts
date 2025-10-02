@@ -57,12 +57,27 @@ export const GET: APIRoute = async ({ url, cookies, redirect }) => {
     // Profile will be automatically created by database trigger
 
     // Download and save Google avatar if present (to avoid rate limiting)
+    console.log("📸 [AUTH-CALLBACK] Checking for Google avatar...");
+    console.log(
+      "📸 [AUTH-CALLBACK] User metadata:",
+      JSON.stringify(data.user?.user_metadata, null, 2)
+    );
+
     const googleAvatarUrl =
       data.user?.user_metadata?.avatar_url || data.user?.user_metadata?.picture;
+
+    console.log("📸 [AUTH-CALLBACK] Extracted avatar URL:", googleAvatarUrl);
+    console.log("📸 [AUTH-CALLBACK] User ID:", data.user?.id);
+
     if (googleAvatarUrl && data.user?.id) {
       console.log("📸 [AUTH-CALLBACK] Google avatar detected, saving to storage");
       try {
         const baseUrl = url.origin;
+        console.log(
+          "📸 [AUTH-CALLBACK] Calling save-avatar API at:",
+          `${baseUrl}/api/auth/save-avatar`
+        );
+
         const saveAvatarResponse = await fetch(`${baseUrl}/api/auth/save-avatar`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -72,16 +87,27 @@ export const GET: APIRoute = async ({ url, cookies, redirect }) => {
           }),
         });
 
+        console.log("📸 [AUTH-CALLBACK] Save avatar response status:", saveAvatarResponse.status);
+
         if (saveAvatarResponse.ok) {
           const result = await saveAvatarResponse.json();
-          console.log("✅ [AUTH-CALLBACK] Avatar saved:", result.avatarUrl);
+          console.log("✅ [AUTH-CALLBACK] Avatar saved successfully:", result.avatarUrl);
         } else {
-          console.error("⚠️ [AUTH-CALLBACK] Failed to save avatar:", saveAvatarResponse.status);
+          const errorText = await saveAvatarResponse.text();
+          console.error(
+            "⚠️ [AUTH-CALLBACK] Failed to save avatar:",
+            saveAvatarResponse.status,
+            errorText
+          );
         }
       } catch (avatarError) {
         // Don't fail the login if avatar saving fails
         console.error("⚠️ [AUTH-CALLBACK] Avatar save error:", avatarError);
       }
+    } else {
+      console.log(
+        "📸 [AUTH-CALLBACK] No Google avatar found or user ID missing - skipping avatar save"
+      );
     }
 
     // Use shared utility for consistent cookie handling

@@ -68,7 +68,7 @@ export const POST: APIRoute = async ({ request }) => {
     }
 
     const { data: uploadData, error: uploadError } = await supabaseAdmin.storage
-      .from("project-documents") // Using existing bucket
+      .from("project-media") // Using existing bucket
       .upload(fileName, avatarBuffer, {
         contentType: contentType,
         upsert: true, // Overwrite if exists
@@ -89,9 +89,7 @@ export const POST: APIRoute = async ({ request }) => {
     }
 
     // Get public URL for the avatar
-    const { data: urlData } = supabaseAdmin.storage
-      .from("project-documents")
-      .getPublicUrl(fileName);
+    const { data: urlData } = supabaseAdmin.storage.from("project-media").getPublicUrl(fileName);
 
     const newAvatarUrl = urlData.publicUrl;
     console.log("📸 [SAVE-AVATAR] Avatar uploaded successfully:", newAvatarUrl);
