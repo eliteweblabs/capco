@@ -20,7 +20,6 @@ interface Props {
   projects?: any[];
   isBackend?: boolean;
   supabaseUrl?: string;
-  isBackendPage?: boolean;
 }
 
 const {
@@ -32,7 +31,6 @@ const {
   isBackend,
   supabaseUrl,
   project,
-  isBackendPage,
 } = Astro.props;
 
 const currentUrl = Astro.url.pathname;
@@ -49,27 +47,38 @@ const currentRole = currentUser?.profile?.role;
       <ToggleSidebar currentUser={currentUser} />
       <Logo link="/" file="svg" />
     </div>
+
+    {
+      !isBackend && (
+        <div class="hidden w-full md:block md:w-auto" id="navbar-default">
+          <ul
+            class="mt-4 flex flex-col font-medium md:mt-0 md:flex-row md:space-x-8 md:border-0 md:p-0 rtl:space-x-reverse"
+            set:html={desktopNavigationHTML}
+          />
+        </div>
+      )
+    }
+    <!-- Search Form -->
+    {
+      currentUrl === "/dashboard" && currentRole !== "Client" && (
+        <ProjectSearch projects={projects} />
+      )
+    }
+
+    <div
+      class="YRrCJSr_j5nopfm4duUc Q_jg_EPdNf9eDMn1mLI2 R0X5VtiZIoV7IjvrxBJ_ tS181Wfa_gkJpFt03pqL"
+    >
+      {isAuth && currentRole !== "Client" && <AssignedProjects currentUser={currentUser} />}
+
+      {
+        project && (
+          <Punchlist currentUser={currentUser} supabaseUrl={supabaseUrl} project={project} />
+        )
+      }
+
+      {isAuth && <NotificationDropdown currentUser={currentUser} />}
+    </div>
   </div>
-
-  {
-    !isBackend && (
-      <div class="hidden w-full md:block md:w-auto" id="navbar-default">
-        <ul
-          class="mt-4 flex flex-col font-medium md:mt-0 md:flex-row md:space-x-8 md:border-0 md:p-0 rtl:space-x-reverse"
-          set:html={desktopNavigationHTML}
-        />
-      </div>
-    )
-  }
-  <!-- Search Form -->
-  {isBackendPage === true && currentRole !== "Client" && <ProjectSearch projects={projects} />}
-
-  {isAuth && currentRole !== "Client" && <AssignedProjects currentUser={currentUser} />}
-
-  {project && <Punchlist currentUser={currentUser} supabaseUrl={supabaseUrl} project={project} />}
-
-  {isAuth && <NotificationDropdown currentUser={currentUser} />}
-
   <button
     id="theme-toggle"
     data-tooltip-target="tooltip-toggle"
