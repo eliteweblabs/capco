@@ -56,6 +56,34 @@ export const GET: APIRoute = async ({ url, cookies, redirect }) => {
 
     // Profile will be automatically created by database trigger
 
+    // Download and save Google avatar if present (to avoid rate limiting)
+    const googleAvatarUrl =
+      data.user?.user_metadata?.avatar_url || data.user?.user_metadata?.picture;
+    if (googleAvatarUrl && data.user?.id) {
+      console.log("📸 [AUTH-CALLBACK] Google avatar detected, saving to storage");
+      try {
+        const baseUrl = url.origin;
+        const saveAvatarResponse = await fetch(`${baseUrl}/api/auth/save-avatar`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            userId: data.user.id,
+            avatarUrl: googleAvatarUrl,
+          }),
+        });
+
+        if (saveAvatarResponse.ok) {
+          const result = await saveAvatarResponse.json();
+          console.log("✅ [AUTH-CALLBACK] Avatar saved:", result.avatarUrl);
+        } else {
+          console.error("⚠️ [AUTH-CALLBACK] Failed to save avatar:", saveAvatarResponse.status);
+        }
+      } catch (avatarError) {
+        // Don't fail the login if avatar saving fails
+        console.error("⚠️ [AUTH-CALLBACK] Avatar save error:", avatarError);
+      }
+    }
+
     // Use shared utility for consistent cookie handling
     setAuthCookies(cookies, access_token, refresh_token);
 

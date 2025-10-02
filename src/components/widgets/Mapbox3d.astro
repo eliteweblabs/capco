@@ -1,0 +1,103 @@
+---
+// 3D Mapbox Component with Threebox
+---
+
+<!-- Mapbox GL JS -->
+<link href="https://api.mapbox.com/mapbox-gl-js/v3.15.0/mapbox-gl.css" rel="stylesheet" />
+<script src="https://api.mapbox.com/mapbox-gl-js/v3.15.0/mapbox-gl.js"></script>
+
+<!-- Threebox -->
+<script
+  src="https://cdn.jsdelivr.net/gh/jscastro76/threebox@v.2.2.2/dist/threebox.min.js"
+  type="text/javascript"></script>
+<link
+  href="https://cdn.jsdelivr.net/gh/jscastro76/threebox@v.2.2.2/dist/threebox.css"
+  rel="stylesheet"
+/>
+
+<div id="map"></div>
+
+<style>
+  #map {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 100%;
+    height: 100vh;
+  }
+</style>
+
+<script>
+  // Wait for mapboxgl to be available
+  function initMap() {
+    if (typeof mapboxgl === "undefined" || typeof Threebox === "undefined") {
+      setTimeout(initMap, 100);
+      return;
+    }
+
+    mapboxgl.accessToken =
+      "REDACTED_MAPBOX_TOKEN";
+
+    const map = new mapboxgl.Map({
+      container: "map",
+      style: "mapbox://styles/mapbox/standard",
+      config: {
+        basemap: {
+          theme: "monochrome",
+          show3dObjects: false, // turn off Mapbox 3D buildings
+        },
+      },
+      center: { lng: -73.97627, lat: 40.75155 },
+      zoom: 15.4,
+      pitch: 64.9,
+      bearing: 172.5,
+      antialias: true,
+    });
+
+    const tb = ((window as any).tb = new (window as any).Threebox(
+      map,
+      map.getCanvas().getContext("webgl"),
+      {
+        defaultLights: true,
+      }
+    ));
+
+    map.on("style.load", () => {
+      map.addLayer({
+        id: "custom-threebox-model",
+        type: "custom",
+        renderingMode: "3d",
+        onAdd: function () {
+          // Creative Commons License attribution: Metlife Building model by https://sketchfab.com/NanoRay
+          const scale = 3.2;
+          const options = {
+            obj: "https://docs.mapbox.com/mapbox-gl-js/assets/metlife-building.gltf",
+            type: "gltf",
+            scale: { x: scale, y: scale, z: 2.7 },
+            units: "meters",
+            rotation: { x: 90, y: -90, z: 0 },
+          };
+
+          tb.loadObj(options, (model: any) => {
+            model.setCoords([-73.976799, 40.754145]);
+            model.setRotation({ x: 0, y: 0, z: 241 });
+            tb.add(model);
+          });
+        },
+
+        render: function () {
+          tb.update();
+        },
+      });
+    });
+
+    console.log("🗺️ [MAPBOX 3D] Map initialized with Threebox");
+  }
+
+  // Initialize when DOM is ready
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", initMap);
+  } else {
+    initMap();
+  }
+</script>

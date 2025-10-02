@@ -51,7 +51,7 @@ const filteredItems = items.filter((item) => {
   <!-- Sliding pill background -->
   <div
     id="nav-pill-bg"
-    class="mix-blend-mode-multiply z-1 absolute top-3.5 h-11 rounded-full bg-primary-500 transition-all duration-300 ease-out dark:bg-primary-700"
+    class="mix-blend-mode-multiply z-1 absolute h-10 rounded-full bg-primary-500 transition-all duration-300 ease-out dark:bg-primary-700"
     style="width: 0px; left: 0px;"
   >
   </div>
@@ -115,14 +115,31 @@ const filteredItems = items.filter((item) => {
       (pillBg as HTMLElement).style.left = `${left}px`;
       (pillBg as HTMLElement).style.width = `${width}px`;
 
+      // Only scroll horizontally if nav is overflowing (avoid scrollIntoView as it affects page scroll)
       setTimeout(() => {
-        const activeButton = nav.querySelector('[data-active="true"]');
-        if (activeButton) {
-          activeButton.scrollIntoView({
-            behavior: "smooth",
-            block: "nearest",
-            inline: "center",
-          });
+        const navIsOverflowing = nav.scrollWidth > nav.clientWidth;
+
+        if (navIsOverflowing && activeButton) {
+          const buttonRect = activeButton.getBoundingClientRect();
+          const navRect = nav.getBoundingClientRect();
+
+          // Calculate button position relative to nav container
+          const buttonLeft = buttonRect.left - navRect.left + nav.scrollLeft;
+          const buttonRight = buttonLeft + buttonRect.width;
+
+          // Calculate visible area
+          const visibleLeft = nav.scrollLeft;
+          const visibleRight = visibleLeft + nav.clientWidth;
+
+          // Only scroll if button is not fully visible
+          if (buttonLeft < visibleLeft || buttonRight > visibleRight) {
+            // Center the button in the nav
+            const scrollTo = buttonLeft - nav.clientWidth / 2 + buttonRect.width / 2;
+            nav.scrollTo({
+              left: scrollTo,
+              behavior: "smooth",
+            });
+          }
         }
       }, 300);
     }

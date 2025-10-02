@@ -25,6 +25,7 @@ interface Props {
   globalCompanyLogo?: string;
   globalCompanyLogoDark?: string;
   globalCompanyLogoLight?: string;
+  statusData?: any;
 }
 
 // UX utility functions are defined inline in the script section below
@@ -54,6 +55,7 @@ const {
   globalCompanyLogo = undefined,
   globalCompanyLogoDark = undefined,
   globalCompanyLogoLight = undefined,
+  statusData = undefined,
 } = Astro.props;
 
 // console.log("[App] currentUser:", currentUser);
@@ -86,9 +88,7 @@ import CookieBanner from "./CookieBanner.astro";
 import SpeedDial from "./SpeedDial.astro";
 import Navbar from "./Navbar.astro";
 import Aside from "./Aside.astro";
-import DebugPanel from "./DebugPanel.astro";
 import ScrollProgressIndicator from "./ScrollProgressIndicator.astro";
-import FeedbackWidget from "./FeedbackWidget.astro";
 
 // Prepare debug data for admin users
 const debugData = {
@@ -113,7 +113,7 @@ const debugData = {
   projects,
   isBackend,
   id,
-
+  statusData,
   // Derived properties
   isAuth,
   projectId,
@@ -316,10 +316,8 @@ const debugData = {
 
     <!-- Unified Notification System -->
     <UnifiedNotification />
-
     <!-- Cookie Banner -->
     <CookieBanner />
-
     <!-- Speed Dial -->
     <SpeedDial
       currentUser={currentUser || undefined}
@@ -385,6 +383,7 @@ const debugData = {
         sendEmail?: (emailData: any, currentUser: any) => Promise<any>;
         setPageLoadProjectStatus?: any;
         showModal?: any;
+        switchTab?: any;
         toggleCommentForm?: () => void;
         trimText?: (text: string, maxLength?: number, suffix?: string) => string;
         trimWords?: (text: string, wordLimit?: number, suffix?: string) => string;
@@ -418,31 +417,13 @@ const debugData = {
     // Make data available globally for the proposal functions
     import { setupConsoleInterceptor } from "../../lib/console-interceptor.ts";
 
-    // Import UX utility functions
-    import {
-      scrollToTopOnMobile,
-      scrollToTop,
-      isMobile,
-      isTablet,
-      isDesktop,
-      getViewportSize,
-      debounce,
-      throttle,
-      hideOnMobileInput,
-      isSafari,
-      isSafariIOS,
-      isSafariBeta,
-      isSafari18OrLater,
-      immediateSafariViewportFix,
-      setupViewportHandling,
-      ensureViewportBounds,
-      lockBodyScroll,
-      unlockBodyScroll,
-    } from "../../lib/ux-utils.ts";
-
     // Ensure startsWith is available - with debugging
     console.log("🔧 [POLYFILL] Checking startsWith availability...");
     console.log("🔧 [POLYFILL] String.prototype.startsWith exists:", !!String.prototype.startsWith);
+
+    // Set Stripe publishable key globally for PaymentForm
+    (window as any).STRIPE_PUBLISHABLE_KEY = import.meta.env.PUBLIC_STRIPE_PUBLISHABLE_KEY;
+    console.log("🔧 [STRIPE] Publishable key loaded:", !!(window as any).STRIPE_PUBLISHABLE_KEY);
 
     // Helper function to create buttons using Button partial
     (window as any).createButtonPartial = async function (config: any) {
@@ -494,28 +475,20 @@ const debugData = {
       console.log("[FALLBACK-NOTIFICATION] Hiding notification");
     };
 
-    (window as any).handleNewStatusNotification = function (response: any, context: any) {
-      console.log(`🔔 [${context || "NOTIFICATION"}] handleNewStatusNotification called with:`, {
-        hasResponse: !!response,
-        hasSuccess: response?.success,
-        hasStatusData: !!response?.statusData,
-        statusDataKeys: response?.statusData ? Object.keys(response.statusData) : [],
-        hasShowModal: !!(window as any).showModal,
-        fullResponse: response,
-      });
+    (window as any).switchTab = function (tabName: string) {
+      console.log(`[TAB] Switching to: ${tabName}`);
+      // Implementation for tab switching
+    };
 
+    (window as any).handleNewStatusNotification = function (response: any, context: any) {
       if (!response) {
-        console.error(`ERROR [${context || "NOTIFICATION"}] API call failed:`, response?.error);
+        console.error(`ERROR [${context || "NOTIFICATION"}] API call failed:`, response.error);
         return;
       }
 
       if (!response.statusData || !(window as any).showModal) {
         console.warn(
-          `WARNING [${context || "NOTIFICATION"}] No notification data or showModal function available`,
-          {
-            hasStatusData: !!response.statusData,
-            hasShowModal: !!(window as any).showModal,
-          }
+          `WARNING [${context || "NOTIFICATION"}] No notification data or showModal function available`
         );
         return;
       }
@@ -525,14 +498,6 @@ const debugData = {
       const adminNotification = response.statusData?.admin;
       const currentNotification = response.statusData?.current;
       const currentUser = response.currentUser;
-
-      console.log(`🔔 [${context || "NOTIFICATION"}] Notification data extracted:`, {
-        hasClientNotification: !!clientNotification,
-        hasAdminNotification: !!adminNotification,
-        hasCurrentNotification: !!currentNotification,
-        hasCurrentModal: !!currentNotification?.modal,
-        currentModal: currentNotification?.modal,
-      });
 
       // Send email if email configuration exists
       if (clientNotification?.email) {
@@ -914,7 +879,6 @@ const debugData = {
         5000
       );
 
-      debugger;
       try {
         // If project exists, use it; otherwise fetch it
         let currentProject = project;
@@ -940,18 +904,7 @@ const debugData = {
             currentStatusData: currentStatusData || null, // Pass the current status data
           }),
         });
-        const result = await response.json();
-
-        console.log("📊 [UPDATE-STATUS] API Response:", {
-          success: result.success,
-          hasProject: !!result.project,
-          hasStatusData: !!result.statusData,
-          hasCurrentUser: !!result.currentUser,
-          statusDataKeys: result.statusData ? Object.keys(result.statusData) : [],
-          fullResult: result,
-        });
-
-        return result;
+        return await response.json();
       } catch (error: any) {
         console.error("Global updateStatus error:", error);
         return { success: false, error: error.message };
@@ -971,7 +924,7 @@ const debugData = {
 
       const config = {
         bubbleClasses:
-          "absolute -right-2 -top-2 flex h-5 w-5 items-center justify-center rounded-full bg-primary-500 text-xs font-bold text-white dark:bg-primary-dark",
+          "absolute right-0 top-0 flex h-5 w-5 items-center justify-center rounded-full bg-primary-500 text-xs font-bold text-white dark:bg-primary-dark",
         parentClasses: "relative",
         maxCount: 99,
         showZero: false,
@@ -1025,19 +978,19 @@ const debugData = {
     (window as any).COUNT_BUBBLE_PRESETS = {
       notification: {
         bubbleClasses:
-          "absolute inline-flex items-center justify-center w-6 h-6 text-xs font-bold text-white bg-red-500 border-2 border-white rounded-full -top-2 -end-2 dark:border-gray-900",
+          "absolute inline-flex items-center justify-center w-6 h-6 text-xs font-bold text-white bg-primary-500 border-2 border-white rounded-full top-0 end-0 dark:border-gray-900 animate-pulse",
         maxCount: 99,
         showZero: false,
       },
       punchlist: {
         bubbleClasses:
-          "absolute -right-2 -top-2 flex h-5 w-5 items-center justify-center rounded-full bg-primary-500 text-xs font-bold text-white dark:bg-primary-dark",
+          "absolute right-0 top-0 flex h-5 w-5 items-center justify-center rounded-full bg-primary-500 text-xs font-bold text-white dark:bg-primary-dark",
         maxCount: 99,
         showZero: false,
       },
       small: {
         bubbleClasses:
-          "absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-xs font-bold text-white",
+          "absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-primary-500 text-xs font-bold text-white",
         maxCount: 9,
         showZero: false,
       },
@@ -1411,12 +1364,10 @@ const debugData = {
         }
       } else {
         console.error(`🔔 [${notification.title}] ${notification.message}`);
+        console.error("🔔 showModal is not available - notification system not initialized");
       }
 
-      // Clean up URL parameters
-      const currentUrl = new URL(window.location.href);
-      currentUrl.searchParams.delete(type === "error" ? "error" : "message");
-      window.history.replaceState({}, document.title, currentUrl.toString());
+      // Note: URL cleanup is handled by processUrlNotifications with delay
     };
 
     // ===== END GLOBAL FUNCTIONS =====
@@ -1435,43 +1386,61 @@ const debugData = {
         console.log("🔔 [URL-NOTIFICATION] Processing error parameter:", errorParam);
         (window as any).handleUrlNotification("error", errorParam);
 
-        // Clean up URL by removing the error parameter
-        const newUrl = new URL(window.location.href);
-        newUrl.searchParams.delete("error");
-        window.history.replaceState({}, document.title, newUrl.pathname + newUrl.search);
+        // Clean up URL by removing the error parameter - DELAYED to allow modal to render
+        setTimeout(() => {
+          const newUrl = new URL(window.location.href);
+          newUrl.searchParams.delete("error");
+          window.history.replaceState({}, document.title, newUrl.pathname + newUrl.search);
+        }, 500);
       }
 
       if (successParam) {
         console.log("🔔 [URL-NOTIFICATION] Processing success parameter:", successParam);
         (window as any).handleUrlNotification("success", successParam);
 
-        // Clean up URL by removing the success parameter
-        const newUrl = new URL(window.location.href);
-        newUrl.searchParams.delete("success");
-        window.history.replaceState({}, document.title, newUrl.pathname + newUrl.search);
+        // Clean up URL by removing the success parameter - DELAYED to allow modal to render
+        setTimeout(() => {
+          const newUrl = new URL(window.location.href);
+          newUrl.searchParams.delete("success");
+          window.history.replaceState({}, document.title, newUrl.pathname + newUrl.search);
+        }, 500);
       }
 
       if (messageParam) {
         console.log("🔔 [URL-NOTIFICATION] Processing message parameter:", messageParam);
         (window as any).handleUrlNotification("success", messageParam);
 
-        // Clean up URL by removing the message parameter
-        const newUrl = new URL(window.location.href);
-        newUrl.searchParams.delete("message");
-        window.history.replaceState({}, document.title, newUrl.pathname + newUrl.search);
+        // Clean up URL by removing the message parameter - DELAYED to allow modal to render
+        setTimeout(() => {
+          const newUrl = new URL(window.location.href);
+          newUrl.searchParams.delete("message");
+          window.history.replaceState({}, document.title, newUrl.pathname + newUrl.search);
+        }, 500);
       }
     };
 
-    // // Process URL notifications on page load
-    document.addEventListener("DOMContentLoaded", () => (window as any).processUrlNotifications());
+    // // Process URL notifications on page load with retry mechanism
+    const processUrlNotificationsWithRetry = (attempts = 0) => {
+      if ((window as any).showModal) {
+        // showModal is available, process notifications
+        (window as any).processUrlNotifications();
+      } else if (attempts < 10) {
+        // showModal not ready yet, retry after 100ms
+        console.log("🔔 [URL-NOTIFICATION] showModal not ready, retrying... attempt", attempts + 1);
+        setTimeout(() => processUrlNotificationsWithRetry(attempts + 1), 100);
+      } else {
+        console.error("🔔 [URL-NOTIFICATION] showModal never became available after 10 attempts");
+      }
+    };
+
+    document.addEventListener("DOMContentLoaded", () => processUrlNotificationsWithRetry());
 
     // // Also run immediately in case DOM is already loaded
     if (document.readyState === "loading") {
       // DOM is still loading, event listener will handle it
     } else {
-      // DOM is already loaded, run immediately
-
-      (window as any).processUrlNotifications();
+      // DOM is already loaded, run immediately with retry
+      processUrlNotificationsWithRetry();
     }
 
     // Suppress ResizeObserver loop warnings (they're usually harmless)
@@ -1544,19 +1513,20 @@ const debugData = {
     // } else {
     //   console.log("🌐 [APP] Not iOS Safari Mobile Beta - Skipping specific CSS fixes");
     // }
-  </script>
 
-  <script is:inline>
     document.addEventListener("DOMContentLoaded", () => {
       // Call immediately
-      const isSafari18 = window.isSafariBeta();
-      console.log("🍎 [SAFARI-18-BETA] isSafari18:", isSafari18);
+      const isSafari18 = (window as any).isSafariBeta();
+      console.log("🍎 [APP] isSafari18", isSafari18);
       if (isSafari18 === true) {
         console.log("🍎 [SAFARI-18-BETA] Applying orientation workaround for sticky positioning");
 
-        document
-          .querySelector(".safari-fix")
-          ?.classList.add("h-screen", "overflow-scroll", "scrollbar-hide");
+        const safariFixElement = document.querySelector(".safari-fix") as HTMLElement;
+        if (safariFixElement) {
+          safariFixElement.classList.add("h-screen", "overflow-scroll", "scrollbar-hide");
+          safariFixElement.style.height = "100dvh";
+          safariFixElement.style.overflowY = "scroll";
+        }
         // Force orientation change workaround
         // const originalOrientation = screen.orientation?.type || "portrait";
 

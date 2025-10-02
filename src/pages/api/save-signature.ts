@@ -1,5 +1,4 @@
 import type { APIRoute } from "astro";
-import puppeteer from "puppeteer";
 
 export const OPTIONS: APIRoute = async () => {
   return new Response(null, {
@@ -56,7 +55,14 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     // Generate PDF with contract text and signature (optional)
     let contractPdfUrl = null;
     try {
-      contractPdfUrl = await generateContractPDF(projectId, signature, signed_at);
+      // Get base URL from request
+      const url = new URL(request.url);
+      const baseUrl = `${url.protocol}//${url.host}`;
+
+      // Get user ID from currentUser or cookies
+      const userId = currentUser?.id || cookies.get("user-id")?.value;
+
+      contractPdfUrl = await generateContractPDF(projectId, signature, signed_at, userId, baseUrl);
       console.log("✅ [SAVE-SIGNATURE] PDF generated successfully:", contractPdfUrl);
     } catch (pdfError) {
       console.warn("⚠️ [SAVE-SIGNATURE] PDF generation failed, continuing without PDF:", pdfError);
@@ -109,171 +115,89 @@ export const POST: APIRoute = async ({ request, cookies }) => {
   }
 };
 
+/**
+ * Generate contract PDF using the template system
+ * This leverages the existing PDF infrastructure instead of duplicating code
+ */
 async function generateContractPDF(
   projectId: string,
   signature: string,
-  signedAt: string
+  signedAt: string,
+  userId: string,
+  baseUrl: string
 ): Promise<string> {
   try {
     console.log("📄 [SAVE-SIGNATURE] Generating contract PDF for project:", projectId);
 
-    // Launch Puppeteer
-    const browser = await puppeteer.launch({
-      headless: true,
-      args: ["--no-sandbox", "--disable-setuid-sandbox"],
-    });
-
-    const page = await browser.newPage();
-
-    // Create HTML content for the contract
-    const contractHTML = `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <meta charset="utf-8">
-        <title>Contract - Project ${projectId}</title>
-        <style>
-          body {
-            font-family: Arial, sans-serif;
-            line-height: 1.6;
-            margin: 40px;
-            color: #333;
-          }
-          .header {
-            text-align: center;
-            margin-bottom: 40px;
-            border-bottom: 2px solid #333;
-            padding-bottom: 20px;
-          }
-          .contract-content {
-            margin-bottom: 40px;
-          }
-          .signature-section {
-            margin-top: 60px;
-            border-top: 1px solid #ccc;
-            padding-top: 20px;
-          }
-          .signature-image {
-            max-width: 300px;
-            margin: 20px 0;
-            border: 1px solid #ddd;
-            padding: 10px;
-          }
-          .signature-info {
-            margin-top: 20px;
-          }
-          .footer {
-            margin-top: 40px;
-            text-align: center;
-            font-size: 12px;
-            color: #666;
-          }
-        </style>
-      </head>
-      <body>
-        <div class="header">
-          <h1>Fire Protection Systems Contract</h1>
-          <p>Project ID: ${projectId}</p>
-        </div>
-
-        <div class="contract-content">
-          <h2>Contract Terms and Conditions</h2>
-          <p>This contract outlines the terms and conditions for fire protection systems installation and maintenance services.</p>
-          
-          <h3>Scope of Work</h3>
-          <p>The contractor agrees to provide comprehensive fire protection systems including but not limited to:</p>
-          <ul>
-            <li>Fire alarm system installation and testing</li>
-            <li>Sprinkler system installation and maintenance</li>
-            <li>Fire suppression system installation</li>
-            <li>Emergency lighting and exit signage</li>
-            <li>Fire safety equipment installation</li>
-          </ul>
-
-          <h3>Terms and Conditions</h3>
-          <p>By signing this contract, the client agrees to:</p>
-          <ul>
-            <li>Provide access to the property for installation and maintenance</li>
-            <li>Make payments according to the agreed schedule</li>
-            <li>Comply with all local fire safety regulations</li>
-            <li>Allow for regular system inspections and maintenance</li>
-          </ul>
-
-          <h3>Warranty</h3>
-          <p>All work performed under this contract is warranted for a period of one year from the date of completion. The contractor will provide maintenance services as outlined in the service agreement.</p>
-        </div>
-
-        <div class="signature-section">
-          <h3>Digital Signature</h3>
-          <p>I, the undersigned, agree to the terms and conditions outlined in this contract.</p>
-          
-          <div class="signature-image">
-            <img src="${signature}" alt="Digital Signature" style="max-width: 100%; height: auto;" />
-          </div>
-          
-          <div class="signature-info">
-            <p><strong>Signed:</strong> ${new Date(signedAt).toLocaleDateString()} at ${new Date(signedAt).toLocaleTimeString()}</p>
-            <p><strong>Project ID:</strong> ${projectId}</p>
-          </div>
-        </div>
-
-        <div class="footer">
-          <p>This document was generated electronically and is legally binding.</p>
-          <p>Generated on: ${new Date().toLocaleString()}</p>
-        </div>
-      </body>
-      </html>
-    `;
-
-    // Set the HTML content
-    await page.setContent(contractHTML, { waitUntil: "networkidle0" });
-
-    // Generate PDF
-    const pdfBuffer = await page.pdf({
-      format: "A4",
-      printBackground: true,
-      margin: {
-        top: "20mm",
-        right: "20mm",
-        bottom: "20mm",
-        left: "20mm",
-      },
-    });
-
-    await browser.close();
-
-    // Upload PDF to Supabase Storage
+    // Fetch project data for placeholders
     const { supabase } = await import("../../lib/supabase");
-
     if (!supabase) {
       throw new Error("Supabase client not configured");
     }
 
-    const fileName = `contracts/contract-${projectId}-${Date.now()}.pdf`;
-    const { data: uploadData, error: uploadError } = await supabase.storage
-      .from("project-documents")
-      .upload(fileName, pdfBuffer, {
-        contentType: "application/pdf",
-        upsert: false,
-      });
+    const { data: projectData, error: projectError } = await supabase
+      .from("projects")
+      .select("*")
+      .eq("id", projectId)
+      .single();
 
-    if (uploadError) {
-      console.error("❌ [SAVE-SIGNATURE] PDF upload error:", uploadError);
-      throw new Error("Failed to upload contract PDF");
+    if (projectError || !projectData) {
+      throw new Error("Failed to fetch project data");
     }
 
-    // Get signed URL
-    const { data: urlData, error: urlError } = await supabase.storage
-      .from("project-documents")
-      .createSignedUrl(fileName, 3600);
+    // Prepare signature data for manual replacement (SIGNATURE_* placeholders)
+    const signedDate = new Date(signedAt);
+    const signatureData = {
+      image: signature,
+      signed_date: signedDate.toLocaleDateString(),
+      signed_time: signedDate.toLocaleTimeString(),
+      ip_address: "N/A", // You can capture this from the request if needed
+    };
 
-    if (urlError) {
-      console.warn("Failed to generate signed URL:", urlError);
-      throw new Error("Failed to generate file URL");
+    // Use the template assembly API to get the contract HTML
+    const assembleUrl = `${baseUrl}/api/pdf/assemble?templateId=contract&projectId=${projectId}`;
+    console.log("📄 [SAVE-SIGNATURE] Assembling template:", assembleUrl);
+
+    const assembleResponse = await fetch(assembleUrl);
+    if (!assembleResponse.ok) {
+      throw new Error(`Failed to assemble template: ${assembleResponse.status}`);
     }
 
-    console.log("✅ [SAVE-SIGNATURE] Contract PDF generated and uploaded:", urlData.signedUrl);
-    return urlData.signedUrl;
+    let contractHTML = await assembleResponse.text();
+
+    // Replace signature-specific placeholders (using uppercase format for consistency)
+    contractHTML = contractHTML
+      .replace(/\{\{SIGNATURE_IMAGE\}\}/g, signatureData.image)
+      .replace(/\{\{SIGNATURE_DATE\}\}/g, signatureData.signed_date)
+      .replace(/\{\{SIGNATURE_TIME\}\}/g, signatureData.signed_time)
+      .replace(/\{\{SIGNATURE_IP\}\}/g, signatureData.ip_address);
+
+    console.log("📄 [SAVE-SIGNATURE] Assembled HTML length:", contractHTML.length);
+
+    // Use the existing PDF save-document API
+    const saveResponse = await fetch(`${baseUrl}/api/pdf/save-document`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        projectId,
+        templateId: "contract",
+        documentName: `Contract_Project_${projectId}`,
+        htmlContent: contractHTML,
+        userId,
+      }),
+    });
+
+    if (!saveResponse.ok) {
+      throw new Error(`Failed to save PDF: ${saveResponse.status}`);
+    }
+
+    const saveResult = await saveResponse.json();
+    if (!saveResult.success) {
+      throw new Error(saveResult.message || "Failed to save PDF");
+    }
+
+    console.log("✅ [SAVE-SIGNATURE] Contract PDF generated:", saveResult.document.fileUrl);
+    return saveResult.document.fileUrl;
   } catch (error) {
     console.error("❌ [SAVE-SIGNATURE] PDF generation error:", error);
     throw error;

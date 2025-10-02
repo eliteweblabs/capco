@@ -192,5 +192,20 @@ export default {
     require("tailwindcss-animate"),
     require("@tailwindcss/forms"),
     require("flowbite/plugin"),
+    // Add scrollbar-hide utility
+    function ({ addUtilities }) {
+      addUtilities({
+        ".scrollbar-hide": {
+          /* IE and Edge */
+          "-ms-overflow-style": "none",
+          /* Firefox */
+          "scrollbar-width": "none",
+          /* Safari and Chrome */
+          "&::-webkit-scrollbar": {
+            display: "none",
+          },
+        },
+      });
+    },
   ],
 };

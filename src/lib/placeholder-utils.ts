@@ -38,19 +38,25 @@ export interface PlaceholderData {
             company_name: string;
             email: string;
             phone?: string;
+            first_name?: string;
+            last_name?: string;
           };
         }
       | {
           company_name: string;
           email: string;
           phone?: string;
+          first_name?: string;
+          last_name?: string;
         };
     assignedToProfile?: {
       company_name: string;
       email: string;
+      first_name?: string;
+      last_name?: string;
     };
   };
-  statusesData?: {
+  statusData?: {
     statuses: {
       [key: number]: {
         admin: any;
@@ -103,6 +109,14 @@ export function replacePlaceholders(
     (isArrayProfile && (authorProfile as any)[0]?.phone) ||
     (!isArrayProfile && (authorProfile as any)?.phone) ||
     "N/A";
+  const clientFirstName =
+    (isArrayProfile && (authorProfile as any)[0]?.first_name) ||
+    (!isArrayProfile && (authorProfile as any)?.first_name) ||
+    "N/A";
+  const clientLastName =
+    (isArrayProfile && (authorProfile as any)[0]?.last_name) ||
+    (!isArrayProfile && (authorProfile as any)?.last_name) ||
+    "N/A";
 
   // Project data
   const projectAddress = data?.project?.address || "Project Address Missing";
@@ -118,6 +132,8 @@ export function replacePlaceholders(
   // Staff/Assigned data
   const assignedStaffName = data?.project?.assignedToProfile?.company_name || "Unassigned";
   const assignedStaffEmail = data?.project?.assignedToProfile?.email || "N/A";
+  const assignedStaffFirstName = data?.project?.assignedToProfile?.first_name || "N/A";
+  const assignedStaffLastName = data?.project?.assignedToProfile?.last_name || "N/A";
 
   // Status data
   const currentStatusName = data?.project?.status_name || "Status Name Missing";
@@ -379,6 +395,26 @@ export function replacePlaceholders(
     }
   }
 
+  // Replace FIRST_NAME placeholders
+  if (clientFirstName) {
+    const beforeReplace = result;
+    result = result.replace(/\{\{\s*FIRST_NAME\s*\}\}/g, clientFirstName);
+    if (result !== beforeReplace) {
+      placeholderApplied = true;
+      addBoldTags = true;
+    }
+  }
+
+  // Replace LAST_NAME placeholders
+  if (clientLastName) {
+    const beforeReplace = result;
+    result = result.replace(/\{\{\s*LAST_NAME\s*\}\}/g, clientLastName);
+    if (result !== beforeReplace) {
+      placeholderApplied = true;
+      addBoldTags = true;
+    }
+  }
+
   // Replace GLOBAL_COMPANY_ADDRESS placeholders
   if (globalCompanyData().globalCompanyAddress) {
     const beforeReplace = result;
@@ -498,6 +534,23 @@ export function replacePlaceholders(
     }
   }
 
+  if (clientFirstName) {
+    const beforeReplace = result;
+    result = result.replace(/\{\{\s*CLIENT_FIRST_NAME\s*\}\}/g, clientFirstName);
+    if (result !== beforeReplace) {
+      placeholderApplied = true;
+      addBoldTags = true;
+    }
+  }
+
+  if (clientLastName) {
+    const beforeReplace = result;
+    result = result.replace(/\{\{\s*CLIENT_LAST_NAME\s*\}\}/g, clientLastName);
+    if (result !== beforeReplace) {
+      placeholderApplied = true;
+      addBoldTags = true;
+    }
+  }
   // Staff placeholders
   if (assignedStaffName) {
     const beforeReplace = result;

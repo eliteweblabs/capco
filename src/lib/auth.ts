@@ -42,7 +42,7 @@ export async function checkAuth(cookies: any): Promise<AuthResult> {
         setTimeout(() => reject(new Error("Connection timeout")), 10000)
       );
 
-      session = await Promise.race([sessionPromise, timeoutPromise]);
+      session = (await Promise.race([sessionPromise, timeoutPromise])) as any;
 
       // console.log("🔐 [AUTH] Session result:", {
       //   hasSession: !!session,

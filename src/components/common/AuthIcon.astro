@@ -9,36 +9,30 @@ interface Props {
 
 const { currentUser, session } = Astro.props;
 const currentRole = currentUser?.profile?.role;
+
+// Prioritize profile.avatar_url (Supabase Storage) over user_metadata.avatar_url (Google CDN)
+const avatarUrl =
+  currentUser?.profile?.avatar_url ||
+  currentUser?.user_metadata?.avatar_url ||
+  currentUser?.user_metadata?.picture;
 ---
 
 {
   currentUser ? (
     <>
-      {currentUser?.user_metadata?.avatar_url && currentUser?.user_metadata?.avatar_url !== "" ? (
-        <>
-          <Button
-            size="lg"
-            variant="ghost"
-            id="user-menu-button"
-            class="mWvJQyBFgwNGEt0h7bSP yNvZ2JlUalNo5uPPv1sf _VPh6kIywCMfXFfQLas4 RpVwy4sO7Asb86CncKJ_"
-            style={`background-image: url('${currentUser?.user_metadata?.avatar_url || ""}'); background-size: cover; background-position: center; background-repeat: no-repeat;`}
-            dataAttributes={{
-              "data-dropdown-toggle": "accountDropdown",
-              "aria-expanded": "false",
-            }}
-          />
-          {/* <BoxIcon
-            name="user"
-            id="user-menu-button"
-            dataAttributes={{
-              "data-dropdown-toggle": "accountDropdown",
-              "aria-expanded": "false",
-            }}
-            style="display: none;"
-          >
-            <span class="_DVAfiyo21kM68EUVzEQ">Open user menu</span>
-          </BoxIcon> */}
-        </>
+      {avatarUrl && avatarUrl !== "" ? (
+        <button
+          id="user-menu-button"
+          class="dark:hover:text-primary-dark disabled mveJTCIb2WII7J4sY22F Z4DH5a4vmjReSFRBpPgz c8dCx6gnV43hTOLV6ks5 PeR2JZ9BZHYIH8Ea3F36 _7KA5gD55t2lxf9Jkj20 BkIbg_JwkgiyRW804Hhu _q0p_O8QLU1paqtuqmI2 _6wdnQrxT_dGdAdNk5AQ XIIs8ZOri3wm8Wnj9N_y OPrb_iG5WDy_7F05BDOX yChACvAr1v8czJ2VO22j avatar-button relative inline-flex items-center justify-center rounded-full border-none px-4 py-2 text-sm font-medium text-black opacity-100 outline-none transition-all duration-200 hover:text-primary hover:shadow-none focus:outline-none focus:ring-0 focus:ring-offset-0 disabled:cursor-not-allowed disabled:opacity-50 dark:text-white"
+          style={`background-image: url('${avatarUrl}'); background-size: cover; background-position: center; background-repeat: no-repeat;`}
+          data-dropdown-toggle="accountDropdown"
+          aria-expanded="false"
+          data-avatar-url={avatarUrl}
+        >
+          <span class="_DVAfiyo21kM68EUVzEQ">Open user menu</span>
+          {/* <!-- Fallback icon (hidden by default) --> */}
+          <BoxIcon name="user" class="avatar-fallback hidden" />
+        </button>
       ) : (
         <BoxIcon
           name="user"
@@ -145,3 +139,41 @@ const currentRole = currentUser?.profile?.role;
     </Button>
   )
 }
+
+<script>
+  // Handle Google avatar loading errors and rate limiting (429 errors)
+  document.addEventListener("DOMContentLoaded", () => {
+    const avatarButton = document.querySelector(".avatar-button");
+
+    if (avatarButton) {
+      const avatarUrl = avatarButton.getAttribute("data-avatar-url");
+
+      if (avatarUrl) {
+        // Test if the image can load
+        const img = new Image();
+
+        img.onload = () => {
+          console.log("✅ [AUTH-ICON] Avatar loaded successfully");
+        };
+
+        img.onerror = () => {
+          console.warn(
+            "⚠️ [AUTH-ICON] Avatar failed to load (likely Google rate limit 429), showing fallback icon"
+          );
+
+          // Remove background image
+          (avatarButton as HTMLElement).style.backgroundImage = "none";
+
+          // Show fallback icon
+          const fallbackIcon = avatarButton.querySelector(".avatar-fallback");
+          if (fallbackIcon) {
+            fallbackIcon.classList.remove("hidden");
+          }
+        };
+
+        // Start loading the image
+        img.src = avatarUrl;
+      }
+    }
+  });
+</script>

@@ -1,0 +1,99 @@
+---
+const requireAuthRedirect = "/login";
+import { checkAuth } from "../../lib/auth";
+const { currentUser, session, supabase, refreshToken, accessToken } = await checkAuth(
+  Astro.cookies
+);
+const currentRole = currentUser?.profile?.role || "Client";
+
+// Handle auth redirect first
+if (requireAuthRedirect && (!session || !currentUser)) {
+  return Astro.redirect(requireAuthRedirect);
+}
+
+import { globalCompanyData } from "../../pages/api/global-company-data";
+const {
+  globalCompanyName,
+  globalCompanySlogan,
+  globalCompanyAddress,
+  globalCompanyPhone,
+  globalCompanyEmail,
+  globalCompanyWebsite,
+  globalCompanyLogo,
+  globalCompanyLogoDark,
+  globalCompanyLogoLight,
+} = globalCompanyData();
+
+import { globalClasses } from "../../pages/api/global-classes";
+const { globalInputClasses, globalPrimaryTextClasses, globalSecondaryTextClasses } =
+  globalClasses();
+
+import App from "../../components/common/App.astro";
+import "../../lib/refresh-manager.ts";
+// Get auth data directly since App component handles auth requirements
+
+// console.log("🚀 [DASHBOARD] Current user:", currentUser);
+// Initialize data arrays
+let projects: any[] = [];
+
+// Fetch projects using the API endpoint that includes discussion counts
+if (currentUser?.id) {
+  try {
+    const baseUrl = Astro.url.origin;
+    let apiUrl = `${baseUrl}/api/get-project`;
+    // Add assigned_to_id parameter for Staff role
+    if (currentRole === "Client") {
+      apiUrl += `?author_id=${currentUser.id}`;
+    }
+
+    const response = await fetch(apiUrl);
+
+    if (response.ok) {
+      const data = await response.json();
+      projects = data.projects || [];
+    } else {
+      console.error(
+        "🏗️ [DASHBOARD] Error fetching projects:",
+        response.status,
+        response.statusText
+      );
+    }
+  } catch (error) {
+    console.error("🏗️ [DASHBOARD] Error fetching projects:", error);
+  }
+}
+
+// Fetch project statuses using the unified API
+const statusApiUrl = new URL("/api/project-statuses", Astro.url.origin);
+const statusResponse = await fetch(statusApiUrl.toString(), {
+  method: "GET",
+  headers: {
+    Cookie: Astro.request.headers.get("Cookie") || "",
+  },
+});
+
+const statusResponseData = await statusResponse.json();
+const statusData = statusResponseData.statuses || [];
+---
+
+<App
+  title="Global Dashboard - CAPCo Fire Protection"
+  description="View all projects."
+  currentUser={currentUser}
+  session={session}
+  supabase={supabase}
+  projects={projects}
+  globalCompanyName={globalCompanyName}
+  globalCompanySlogan={globalCompanySlogan}
+  globalPrimaryTextClasses={globalPrimaryTextClasses}
+  globalSecondaryTextClasses={globalSecondaryTextClasses}
+  globalInputClasses={globalInputClasses}
+  globalCompanyAddress={globalCompanyAddress}
+  globalCompanyPhone={globalCompanyPhone}
+  globalCompanyEmail={globalCompanyEmail}
+  globalCompanyWebsite={globalCompanyWebsite}
+  globalCompanyLogo={globalCompanyLogo}
+  globalCompanyLogoDark={globalCompanyLogoDark}
+  globalCompanyLogoLight={globalCompanyLogoLight}
+  statusData={statusData}
+/>
