@@ -348,6 +348,21 @@ export const UNIFIED_FORM_ELEMENTS: FormElementConfig[] = [
     columns: 2, // Half width
   },
 
+  // Description field
+  {
+    id: "description-input",
+    name: "description",
+    type: "field",
+    elementType: "textarea",
+    label: "Description",
+    placeholder: "Project description...",
+    dataField: "description",
+    allow: ["Admin", "Staff", "Client"],
+    hideAtStatus: [50, 60, 70, 80, 90],
+    readOnlyAtStatus: [
+      20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170, 180, 190, 200,
+    ],
+  },
   {
     id: "nfpa-version-input",
     name: "nfpa_version",
@@ -551,22 +566,6 @@ export const UNIFIED_FORM_ELEMENTS: FormElementConfig[] = [
     allow: ["Admin", "Staff"],
     hideAtStatus: [],
     readOnlyAtStatus: [50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170, 180, 190, 200],
-  },
-
-  // Description field
-  {
-    id: "description-input",
-    name: "description",
-    type: "field",
-    elementType: "textarea",
-    label: "Description",
-    placeholder: "Project description...",
-    dataField: "description",
-    allow: ["Admin", "Staff", "Client"],
-    hideAtStatus: [50, 60, 70, 80, 90],
-    readOnlyAtStatus: [
-      20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170, 180, 190, 200,
-    ],
   },
 
   // New construction checkbox

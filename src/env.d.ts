@@ -136,6 +136,9 @@ declare global {
     debounce?: <T extends (...args: any[]) => any>(func: T, wait: number) => T;
     throttle?: <T extends (...args: any[]) => any>(func: T, limit: number) => T;
 
+    // String utilities
+    unslugify?: (slug: string) => string;
+
     // Safari detection
     isSafariIOS?: () => boolean;
     isSafari?: () => boolean;
