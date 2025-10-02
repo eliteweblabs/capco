@@ -1,4 +1,8 @@
 ---
+const { currentUser } = Astro.props;
+if (!currentUser) {
+  return null;
+}
 // Mapbox Widget Component with Scroll Effects
 ---
 
@@ -584,10 +588,20 @@
 
   // Initialize map when component loads
   document.addEventListener("DOMContentLoaded", () => {
+    console.log("🗺️ [MAPBOX] Initializing Mapbox widget...");
+
+    // Check if Mapbox GL is loaded
+    if (typeof (window as any).mapboxgl === "undefined") {
+      console.error("❌ [MAPBOX] Mapbox GL JS not loaded!");
+      return;
+    }
+
     initializeMap();
     setupScrollEffects();
     setupNavigation();
     setupCounterAnimations();
+
+    console.log("✅ [MAPBOX] Widget initialized successfully");
   });
 
   function initializeMap() {
@@ -1033,6 +1047,13 @@
   function setupScrollEffects() {
     const mapContainer = document.getElementById("map");
 
+    if (!mapContainer) {
+      console.error("❌ [MAPBOX] Map container not found!");
+      return;
+    }
+
+    console.log("🎢 [MAPBOX] Scroll effects initialized");
+
     window.addEventListener("scroll", () => {
       if (!mapContainer) return;
 
@@ -1050,7 +1071,7 @@
   function updateMapAnimation(mapContainer: HTMLElement) {
     // 1. Get current visibility percentage
     const visibility = getMapVisibility(mapContainer);
-    debugger;
+
     // 2. Detect scroll direction
     const currentScrollY = window.scrollY;
     const scrollDirection = currentScrollY > lastScrollY ? "down" : "up";
