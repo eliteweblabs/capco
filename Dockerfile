@@ -117,14 +117,14 @@ ENV YEAR=$YEAR
 # Build the application
 RUN npm run build
 
-# Expose ports (Railway uses dynamic PORT for main app, 3001 for Socket.io)
-EXPOSE $PORT
-EXPOSE 3001
+# Expose ports (Railway uses dynamic PORT at runtime)
+# Note: Railway ignores EXPOSE and uses PORT env var
+EXPOSE 3000
 
 # Set environment variables for production
 ENV NODE_ENV=production
 ENV HOST=0.0.0.0
-ENV PORT=$PORT
+# Note: PORT is provided by Railway at runtime, do not set it here
 
 # Start both the Astro application and Socket.io server
 CMD ["/bin/sh", "./start-production.sh"] 
