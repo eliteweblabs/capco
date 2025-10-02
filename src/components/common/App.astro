@@ -348,8 +348,8 @@ const debugData = {
         const script = document.createElement("script");
         script.src = "https://cdn.jsdelivr.net/npm/eruda";
         script.onload = function () {
-          if (window.eruda) {
-            window.eruda.init();
+          if ((window as any).eruda) {
+            (window as any).eruda.init();
             console.log("📱 [ERUDA] Mobile debugging console loaded");
           }
         };
@@ -1561,10 +1561,14 @@ const debugData = {
         const isSafari18 = (window as any).isSafariBeta();
         console.log("🍎 [APP] isSafari18", isSafari18);
         if (isSafari18 === true) {
-          console.log("🍎 [SAFARI-18-BETA] Applying Safari sticky positioning fixes (lightweight mode)");
+          console.log(
+            "🍎 [SAFARI-18-BETA] Applying Safari sticky positioning fixes (lightweight mode)"
+          );
 
           // Fix 1: Force GPU compositing on all sticky elements
-          const stickyElements = document.querySelectorAll('[class*="sticky"], .sticky, [style*="position: sticky"]');
+          const stickyElements = document.querySelectorAll(
+            '[class*="sticky"], .sticky, [style*="position: sticky"]'
+          );
           stickyElements.forEach((el) => {
             const element = el as HTMLElement;
             element.style.transform = "translateZ(0)"; // Force GPU layer
@@ -1587,38 +1591,13 @@ const debugData = {
           };
 
           window.addEventListener("scroll", forceRepaint, { passive: true });
-          
+
           // Fix 3: Add body class for CSS-based fixes
           document.body.classList.add("safari-18-fix");
-          
-          console.log(`🍎 [SAFARI-18-BETA] Applied fixes to ${stickyElements.length} sticky elements (scroll triggers preserved)`);
-        }
-          // Force orientation change workaround
-          // const originalOrientation = screen.orientation?.type || "portrait";
 
-          // // Request landscape orientation
-          // if (screen.orientation && (screen.orientation as any).lock) {
-          //   (screen.orientation as any)
-          //     .lock("landscape")
-          //     .then(() => {
-          //       // Wait a moment then switch back to portrait
-          //       setTimeout(() => {
-          //         (screen.orientation as any)
-          //           .lock("portrait")
-          //           .then(() => {
-          //             console.log("🍎 [SAFARI-18-BETA] Orientation workaround completed");
-          //           })
-          //           .catch(() => {
-          //             // Fallback if orientation lock fails
-          //             console.log("🍎 [SAFARI-18-BETA] Orientation lock failed, using fallback");
-          //           });
-          //       }, 100);
-          //     })
-          //     .catch(() => {
-          //       // Fallback if orientation lock is not supported
-          //       console.log("🍎 [SAFARI-18-BETA] Orientation lock not supported");
-          //     });
-          // }
+          console.log(
+            `🍎 [SAFARI-18-BETA] Applied fixes to ${stickyElements.length} sticky elements (scroll triggers preserved)`
+          );
         }
       });
     </script>
