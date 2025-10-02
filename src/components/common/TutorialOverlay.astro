@@ -4,7 +4,10 @@ export interface Props {
   tutorialId?: string;
   autoStart?: boolean;
 }
-
+if (!Astro.props.currentUserId) {
+  console.error("currentUserId is required");
+  return;
+}
 const { currentUserId = "", tutorialId = "default", autoStart = false } = Astro.props;
 ---
 
@@ -146,7 +149,16 @@ const { currentUserId = "", tutorialId = "default", autoStart = false } = Astro.
         });
 
         if (response.ok) {
-          this.config = await response.json();
+          const apiData = await response.json();
+          // Convert snake_case from API to camelCase
+          this.config = {
+            id: apiData.tutorial_id || this.tutorialId,
+            userId: apiData.user_id || this.currentUserId,
+            steps: [],
+            completed: apiData.completed || false,
+            dismissed: apiData.dismissed || false,
+            lastStep: apiData.last_step || 0,
+          };
         } else {
           // Create default config
           this.config = {
@@ -180,8 +192,10 @@ const { currentUserId = "", tutorialId = "default", autoStart = false } = Astro.
         if (dataWelcome) {
           try {
             const welcomeData = JSON.parse(dataWelcome);
+            // Add a unique data attribute we can select by
+            element.setAttribute("data-tutorial-step", index.toString());
             this.steps.push({
-              element: `[data-welcome="${dataWelcome}"]`,
+              element: `[data-tutorial-step="${index}"]`,
               title: welcomeData.title || `Step ${index + 1}`,
               message: welcomeData.msg || "Welcome!",
               position: welcomeData.position || "bottom",
@@ -517,10 +531,19 @@ const { currentUserId = "", tutorialId = "default", autoStart = false } = Astro.
       if (!this.config) return;
 
       try {
+        // Convert camelCase to snake_case for API
+        const apiPayload = {
+          user_id: this.config.userId,
+          tutorial_id: this.config.id,
+          completed: this.config.completed,
+          dismissed: this.config.dismissed,
+          last_step: this.config.lastStep,
+        };
+
         await fetch("/api/tutorial-config", {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(this.config),
+          body: JSON.stringify(apiPayload),
         });
       } catch (error) {
         console.error("Error saving tutorial config:", error);
@@ -552,7 +575,7 @@ const { currentUserId = "", tutorialId = "default", autoStart = false } = Astro.
 
     // Auto-start if enabled
     try {
-      const overlay = this.overlay as HTMLElement | null;
+      const overlay = document.getElementById("tutorial-overlay");
       if (overlay && overlay.dataset && overlay.dataset.autoStart) {
         const shouldAutoStart = overlay.dataset.autoStart === "true";
         if (shouldAutoStart) {

@@ -18,7 +18,8 @@ export function updateCountBubble(parentElement, count, options = {}) {
 
   const config = {
     bubbleClasses:
-      "absolute inline-flex items-center justify-center w-6 h-6 text-xs font-bold text-white bg-red-500 border-2 border-white rounded-full -top-2 -end-2 dark:border-gray-900",
+      "absolute right-0 top-0 flex h-5 w-5 items-center justify-center rounded-full bg-primary-500 text-xs font-bold text-white dark:bg-primary-dark animate-pulse",
+    parentClasses: "relative",
     maxCount: 99,
     showZero: false,
     ...options,
@@ -63,20 +64,22 @@ export function updateCountBubble(parentElement, count, options = {}) {
 
 /**
  * Preset configurations for common use cases
+ * Note: The default style is the standard for most use cases
+ * Only use these presets if you have a specific need
  */
 export const COUNT_BUBBLE_PRESETS = {
-  /** For notification badges */
-  notification: {
+  /** Standard default */
+  default: {
     bubbleClasses:
-      "absolute inline-flex items-center justify-center w-6 h-6 text-xs font-bold text-white bg-red-500 border-2 border-white rounded-full -top-2 -end-2 dark:border-gray-900",
+      "absolute right-0 top-0 flex h-5 w-5 items-center justify-center rounded-full bg-primary-500 text-xs font-bold text-white dark:bg-primary-dark animate-pulse",
     maxCount: 99,
     showZero: false,
   },
 
-  /** For punchlist items */
-  punchlist: {
+  /** For notification badges with red background */
+  notification: {
     bubbleClasses:
-      "absolute -right-2 -top-2 flex h-5 w-5 items-center justify-center rounded-full bg-primary-500 text-xs font-bold text-white dark:bg-primary-dark",
+      "absolute right-0 top-0 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-xs font-bold text-white dark:bg-red-600 animate-pulse",
     maxCount: 99,
     showZero: false,
   },
@@ -84,7 +87,7 @@ export const COUNT_BUBBLE_PRESETS = {
   /** For small counts (like tabs) */
   small: {
     bubbleClasses:
-      "absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-xs font-bold text-white",
+      "absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-primary-500 text-xs font-bold text-white dark:bg-primary-dark animate-pulse",
     maxCount: 9,
     showZero: false,
   },

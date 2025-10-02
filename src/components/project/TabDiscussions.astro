@@ -233,36 +233,30 @@ const placeholder =
     const tabButton = document.getElementById("status-discussion");
 
     if ((tabButton && currentUserRole === "Admin") || currentUserRole === "Staff") {
-      // Use global count bubble utility
+      // Use global count bubble utility with default styling
       if (typeof window.updateCountBubble !== "undefined") {
-        window.updateCountBubble(tabButton, incompleteCount, {
-          bubbleClasses:
-            "absolute right-0 top-0 flex h-5 w-5 items-center justify-center rounded-full border border-primary-500 bg-white text-xs font-medium text-primary-500 dark:border-primary-400 dark:bg-background-dark dark:text-primary-400",
-          maxCount: 99,
-          showZero: false,
-        });
+        window.updateCountBubble(tabButton, incompleteCount);
       } else {
         // Fallback to manual implementation if global utility not available
-        let countBubble = tabButton.querySelector(".discussion-count-bubble");
-
-        if (incompleteCount > 0) {
-          if (!countBubble) {
-            // Create count bubble if it doesn't exist
-            countBubble = document.createElement("span");
-            countBubble.className =
-              "discussion-count-bubble absolute right-0 top-0 flex h-5 w-5 items-center justify-center rounded-full border border-primary-500 bg-white text-xs font-medium text-primary-500 dark:border-primary-400 dark:bg-background-dark dark:text-primary-400";
-            tabButton.style.position = "relative";
-            tabButton.appendChild(countBubble);
-          }
-          countBubble.textContent = incompleteCount.toString();
-          countBubble.style.display = "flex";
-          tabButton.setAttribute("data-count", incompleteCount.toString());
-        } else {
-          if (countBubble) {
-            countBubble.style.display = "none";
-          }
-          tabButton.setAttribute("data-count", "0");
-        }
+        // let countBubble = tabButton.querySelector(".discussion-count-bubble");
+        // if (incompleteCount > 0) {
+        //   // if (!countBubble) {
+        //   //   // Create count bubble if it doesn't exist
+        //   //   countBubble = document.createElement("span");
+        //   //   countBubble.className =
+        //   //     "discussion-count-bubble absolute -right-2 -top-2 flex h-5 w-5 items-center justify-center rounded-full bg-primary-500 text-xs font-bold text-white dark:bg-primary-dark pulse";
+        //   //   tabButton.style.position = "relative";
+        //   //   tabButton.appendChild(countBubble);
+        //   // }
+        //   // countBubble.textContent = incompleteCount.toString();
+        //   // countBubble.style.display = "flex";
+        //   // tabButton.setAttribute("data-count", incompleteCount.toString());
+        // } else {
+        //   if (countBubble) {
+        //     countBubble.style.display = "none";
+        //   }
+        //   tabButton.setAttribute("data-count", "0");
+        // }
       }
 
       // Also update the old count element if it exists
