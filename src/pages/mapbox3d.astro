@@ -1,0 +1,60 @@
+---
+// Handle OAuth callback if code is present (MUST be first)
+const authCode = Astro.url.searchParams.get("code");
+if (authCode) {
+  return Astro.redirect(`/api/auth/callback?code=${authCode}`);
+}
+
+// Define requireAuthRedirect
+const requireAuthRedirect = undefined;
+// Make sure to check above value before redirecting
+import { checkAuth } from "../lib/auth";
+const { currentUser, session, supabase } = await checkAuth(Astro.cookies);
+// Handle auth redirect first
+if (requireAuthRedirect && (!session || !currentUser)) {
+  return Astro.redirect(requireAuthRedirect);
+}
+
+import { globalCompanyData } from "../pages/api/global-company-data";
+const {
+  globalCompanyName,
+  globalCompanySlogan,
+  globalCompanyAddress,
+  globalCompanyPhone,
+  globalCompanyEmail,
+  globalCompanyWebsite,
+  globalCompanyLogo,
+  globalCompanyLogoDark,
+  globalCompanyLogoLight,
+} = globalCompanyData();
+
+import Mapbox3d from "../components/widgets/Mapbox3d.astro";
+import { globalClasses } from "../pages/api/global-classes";
+const { globalInputClasses, globalPrimaryTextClasses, globalSecondaryTextClasses } =
+  globalClasses();
+
+import App from "../components/common/App.astro";
+---
+
+<App
+  title={`${globalCompanyName} - ${globalCompanySlogan}`}
+  description={globalCompanySlogan}
+  currentUser={currentUser}
+  session={session || undefined}
+  project={undefined}
+  supabase={supabase}
+  globalCompanyName={globalCompanyName}
+  globalCompanyName={globalCompanyName}
+  globalCompanySlogan={globalCompanySlogan}
+  globalPrimaryTextClasses={globalPrimaryTextClasses}
+  globalSecondaryTextClasses={globalSecondaryTextClasses}
+  globalInputClasses={globalInputClasses}
+>
+  <div class="RZmKBZs1E1eXw8vkE6jY p_2EXc_a2sDA_h41l8QU">
+    <div
+      class="mveJTCIb2WII7J4sY22F _Ybd3WwuTVljUT4vEaM3 _wYiJGbRZyFZeCc8y7Sf mngKhi_Rv06PF57lblDI _1jTZ8KXRZul60S6czNi LSIxp7RSuOKhsg28v_u3"
+    >
+      <Mapbox3d />
+    </div>
+  </div>
+</App>

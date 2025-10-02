@@ -1,4 +1,5 @@
 ---
+import { supabase } from "../../lib/supabase";
 import BoxIcon from "../common/BoxIcon.astro";
 import PaymentForm from "./PaymentForm.astro";
 
@@ -7,8 +8,6 @@ interface Props {
   projectStatus?: number;
   currentUser?: any;
   projectStatusLabel?: string;
-  invoiceId?: string;
-  totalAmount?: number;
   globalSecondaryTextClasses?: string;
   globalPrimaryTextClasses?: string;
   globalInputClasses?: string;
@@ -20,8 +19,6 @@ const {
   projectStatus = 0,
   currentUser,
   projectStatusLabel,
-  invoiceId,
-  totalAmount = 0,
   globalSecondaryTextClasses,
   globalPrimaryTextClasses,
   globalInputClasses,
@@ -31,6 +28,76 @@ const {
 const currentRole = currentUser?.profile?.role;
 const authorProfile = currentUser?.profile;
 const projectId = project?.id;
+
+let invoiceId = null;
+let totalAmount = 0;
+
+// Query invoice directly using authenticated Supabase client (SSR)
+if (projectId && supabase) {
+  console.log("🔍 [TAB-DEPOSIT] Querying invoice for project_id:", projectId);
+
+  // Set up session from cookies
+  const accessToken = Astro.cookies.get("sb-access-token")?.value;
+  const refreshToken = Astro.cookies.get("sb-refresh-token")?.value;
+
+  if (accessToken && refreshToken) {
+    await supabase.auth.setSession({
+      access_token: accessToken,
+      refresh_token: refreshToken,
+    });
+  }
+
+  try {
+    const { data: invoice, error } = await supabase
+      .from("invoices")
+      .select("id, total_amount, status, subject, catalog_line_items")
+      .eq("project_id", projectId)
+      .maybeSingle(); // Don't filter by status - get any invoice for this project
+
+    if (error) {
+      console.error("🔍 [TAB-DEPOSIT] ❌ Error fetching invoice:", {
+        message: error.message,
+        code: error.code,
+        hint: error.hint,
+      });
+    } else if (invoice) {
+      invoiceId = invoice.id;
+
+      // Calculate total from catalog_line_items if total_amount is missing or zero
+      if (!invoice.total_amount || invoice.total_amount === 0) {
+        const lineItems = invoice.catalog_line_items || [];
+        let calculatedTotal = 0;
+
+        lineItems.forEach((item: any) => {
+          const quantity = parseFloat(item.quantity) || 0;
+          const unitPrice = parseFloat(item.unit_price) || 0;
+          calculatedTotal += quantity * unitPrice;
+        });
+
+        totalAmount = Math.round(calculatedTotal * 100); // Convert to cents
+        console.log("🔍 [TAB-DEPOSIT] 💰 Calculated total from line items:", {
+          lineItemCount: lineItems.length,
+          calculatedTotal,
+          totalAmountCents: totalAmount,
+        });
+      } else {
+        totalAmount = Math.round(invoice.total_amount * 100); // Convert to cents
+      }
+
+      console.log("🔍 [TAB-DEPOSIT] ✅ Found invoice:", {
+        invoiceId,
+        totalAmount,
+        totalAmountDollars: totalAmount / 100,
+        status: invoice.status,
+        subject: invoice.subject,
+      });
+    } else {
+      console.warn("🔍 [TAB-DEPOSIT] ⚠️ No invoice found for project_id:", projectId);
+    }
+  } catch (error) {
+    console.error("🔍 [TAB-DEPOSIT] ❌ Exception:", error);
+  }
+}
 
 // Debug logging
 // console.log("🔍 [TAB-DEPOSIT] Debug values:", {
@@ -98,6 +165,7 @@ const statusAlert = getStatusAlert();
         paymentType="deposit"
         project={project}
         currentUser={currentUser}
+        statusData={statusData}
       />
     )
   }
