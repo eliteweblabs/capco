@@ -5,11 +5,12 @@ export const partial = true;
 // Detect if this is being used as a partial
 const isPartial = Astro.request.headers.has("x-toggle-id");
 
-let id, label, icon, color, checked, size, className, dataAttributes;
+let id, name, label, icon, color, checked, size, className, dataAttributes;
 
 if (isPartial) {
   // Extract props from headers when used as partial
   id = Astro.request.headers.get("x-toggle-id") || "";
+  name = Astro.request.headers.get("x-toggle-name") || "";
   label = Astro.request.headers.get("x-toggle-label") || "";
   icon = Astro.request.headers.get("x-toggle-icon") || "";
   color = Astro.request.headers.get("x-toggle-color") || "primary";
@@ -29,6 +30,7 @@ if (isPartial) {
   // Use regular props when used as a component
   const props = Astro.props;
   id = props.id;
+  name = props.name;
   label = props.label;
   icon = props.icon;
   color = props.color || "primary";
@@ -44,6 +46,7 @@ if (isPartial) {
     <input
       type="checkbox"
       id={id}
+      name={name}
       class={`toggle-input peer sr-only ${className}`}
       checked={checked}
       {...dataAttributes}

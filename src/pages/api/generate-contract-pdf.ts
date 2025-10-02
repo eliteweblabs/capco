@@ -48,7 +48,8 @@ export const POST: APIRoute = async ({ request }) => {
     }
 
     // Generate PDF
-    const contractUrl = await generateContractPDF(project, profile, signature, signedAt);
+    const baseUrl = new URL(request.url).origin;
+    const contractUrl = await generateContractPDF(project, profile, signature, signedAt, baseUrl);
 
     // Update project with contract PDF URL
     const { error: updateError } = await supabase
@@ -89,7 +90,8 @@ async function generateContractPDF(
   project: any,
   profile: any,
   signature: string,
-  signedAt: string
+  signedAt: string,
+  baseUrl: string
 ): Promise<string> {
   try {
     console.log("📄 [GENERATE-CONTRACT-PDF] Generating contract PDF for project:", project.id);
@@ -108,153 +110,29 @@ async function generateContractPDF(
       ],
     });
 
+    // Use the template assembly API to get the contract HTML
+    const assembleUrl = `${baseUrl}/api/pdf/assemble?templateId=contract&projectId=${project.id}`;
+
+    console.log("📄 [GENERATE-CONTRACT-PDF] Assembling template:", assembleUrl);
+
+    const assembleResponse = await fetch(assembleUrl);
+    if (!assembleResponse.ok) {
+      throw new Error(`Failed to assemble template: ${assembleResponse.status}`);
+    }
+
+    let contractHTML = await assembleResponse.text();
+
+    // Replace signature-specific placeholders
+    const signedDate = new Date(signedAt);
+    contractHTML = contractHTML
+      .replace(/\{\{SIGNATURE_IMAGE\}\}/g, signature)
+      .replace(/\{\{SIGNATURE_DATE\}\}/g, signedDate.toLocaleDateString())
+      .replace(/\{\{SIGNATURE_TIME\}\}/g, signedDate.toLocaleTimeString())
+      .replace(/\{\{SIGNATURE_IP\}\}/g, "N/A");
+
+    console.log("📄 [GENERATE-CONTRACT-PDF] Assembled HTML length:", contractHTML.length);
+
     const page = await browser.newPage();
-
-    // Create HTML content for the contract
-    const contractHTML = `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <meta charset="utf-8">
-        <title>Contract - ${project.title}</title>
-        <style>
-          body {
-            font-family: Arial, sans-serif;
-            line-height: 1.6;
-            margin: 40px;
-            color: #333;
-          }
-          .header {
-            text-align: center;
-            margin-bottom: 40px;
-            border-bottom: 2px solid #333;
-            padding-bottom: 20px;
-          }
-          .project-info {
-            background-color: #f5f5f5;
-            padding: 20px;
-            border-radius: 8px;
-            margin-bottom: 30px;
-          }
-          .contract-content {
-            margin-bottom: 40px;
-          }
-          .signature-section {
-            margin-top: 60px;
-            border-top: 1px solid #ccc;
-            padding-top: 20px;
-          }
-          .signature-image {
-            max-width: 300px;
-            margin: 20px 0;
-            border: 1px solid #ddd;
-            padding: 10px;
-            background-color: #fafafa;
-          }
-          .signature-info {
-            margin-top: 20px;
-            font-size: 14px;
-          }
-          .footer {
-            margin-top: 40px;
-            text-align: center;
-            font-size: 12px;
-            color: #666;
-          }
-          .terms-section {
-            margin: 30px 0;
-          }
-          .terms-section h3 {
-            color: #2c3e50;
-            border-bottom: 1px solid #bdc3c7;
-            padding-bottom: 5px;
-          }
-          ul {
-            margin: 10px 0;
-            padding-left: 20px;
-          }
-          li {
-            margin: 5px 0;
-          }
-        </style>
-      </head>
-      <body>
-        <div class="header">
-          <h1>Fire Protection Systems Contract</h1>
-          <p><strong>Project:</strong> ${project.title}</p>
-          <p><strong>Contract Date:</strong> ${new Date().toLocaleDateString()}</p>
-        </div>
-
-        <div class="project-info">
-          <h2>Project Information</h2>
-          <p><strong>Project ID:</strong> ${project.id}</p>
-          <p><strong>Project Address:</strong> ${project.address}</p>
-          <p><strong>Client:</strong> ${profile?.company_name || profile?.first_name + " " + profile?.last_name || "N/A"}</p>
-          <p><strong>Square Footage:</strong> ${project.sq_ft || "N/A"}</p>
-          <p><strong>Construction Type:</strong> ${project.new_construction ? "New Construction" : "Existing Building"}</p>
-        </div>
-
-        <div class="contract-content">
-          <div class="terms-section">
-            <h3>Scope of Work</h3>
-            <p>The contractor agrees to provide comprehensive fire protection systems including but not limited to:</p>
-            <ul>
-              <li>Fire alarm system installation and testing</li>
-              <li>Sprinkler system installation and maintenance</li>
-              <li>Fire suppression system installation</li>
-              <li>Emergency lighting and exit signage</li>
-              <li>Fire safety equipment installation</li>
-              <li>System integration and testing</li>
-              <li>Compliance with local fire codes and regulations</li>
-            </ul>
-          </div>
-
-          <div class="terms-section">
-            <h3>Terms and Conditions</h3>
-            <p>By signing this contract, the client agrees to:</p>
-            <ul>
-              <li>Provide access to the property for installation and maintenance</li>
-              <li>Make payments according to the agreed schedule</li>
-              <li>Comply with all local fire safety regulations</li>
-              <li>Allow for regular system inspections and maintenance</li>
-              <li>Provide necessary permits and approvals</li>
-              <li>Maintain the fire protection systems as specified</li>
-            </ul>
-          </div>
-
-          <div class="terms-section">
-            <h3>Warranty and Maintenance</h3>
-            <p>All work performed under this contract is warranted for a period of one year from the date of completion. The contractor will provide maintenance services as outlined in the service agreement and ensure all systems meet current fire safety standards.</p>
-          </div>
-
-          <div class="terms-section">
-            <h3>Compliance</h3>
-            <p>All installations and modifications will comply with applicable local, state, and federal fire safety regulations, including but not limited to NFPA standards and local building codes.</p>
-          </div>
-        </div>
-
-        <div class="signature-section">
-          <h3>Digital Signature</h3>
-          <p>I, the undersigned, agree to the terms and conditions outlined in this contract.</p>
-          
-          <div class="signature-image">
-            <img src="${signature}" alt="Digital Signature" style="max-width: 100%; height: auto;" />
-          </div>
-          
-          <div class="signature-info">
-            <p><strong>Signed by:</strong> ${profile?.company_name || profile?.first_name + " " + profile?.last_name || "Client"}</p>
-            <p><strong>Date:</strong> ${new Date(signedAt).toLocaleDateString()}</p>
-            <p><strong>Time:</strong> ${new Date(signedAt).toLocaleTimeString()}</p>
-          </div>
-        </div>
-
-        <div class="footer">
-          <p>This contract is digitally signed and legally binding.</p>
-          <p>Generated on ${new Date().toLocaleString()}</p>
-        </div>
-      </body>
-      </html>
-    `;
 
     // Set the HTML content
     await page.setContent(contractHTML, { waitUntil: "networkidle0" });
