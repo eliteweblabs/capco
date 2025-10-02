@@ -11,7 +11,13 @@ if (!Astro.props.currentUserId) {
 const { currentUserId = "", tutorialId = "default", autoStart = false } = Astro.props;
 ---
 
-<div id="tutorial-overlay" class="tutorial-overlay hidden" data-auto-start="{autoStart}">
+<div
+  id="tutorial-overlay"
+  class="tutorial-overlay hidden"
+  data-auto-start={autoStart}
+  data-user-id={currentUserId}
+  data-tutorial-id={tutorialId}
+>
   <!-- Tutorial Mask -->
   <div id="tutorial-mask" class="tutorial-mask"></div>
 
@@ -87,6 +93,7 @@ const { currentUserId = "", tutorialId = "default", autoStart = false } = Astro.
     position?: "top" | "bottom" | "left" | "right" | "center";
     icon?: string;
     action?: string;
+    step?: number;
   }
 
   interface TutorialConfig {
@@ -201,12 +208,21 @@ const { currentUserId = "", tutorialId = "default", autoStart = false } = Astro.
               position: welcomeData.position || "bottom",
               icon: welcomeData.icon || "bx-info-circle",
               action: welcomeData.action,
+              step: welcomeData.step !== undefined ? welcomeData.step : index,
             });
           } catch (error) {
             console.error("Error parsing tutorial data:", error);
           }
         }
       });
+
+      // Sort by step number if provided
+      this.steps.sort((a, b) => (a.step || 0) - (b.step || 0));
+
+      console.log(
+        "🎓 [TUTORIAL] Collected steps:",
+        this.steps.map((s) => ({ title: s.title, step: s.step }))
+      );
 
       // If we have saved progress, start from last step
       if (this.config && this.config.lastStep > 0 && this.config.lastStep < this.steps.length) {
@@ -269,6 +285,7 @@ const { currentUserId = "", tutorialId = "default", autoStart = false } = Astro.
     }
 
     public startTutorial() {
+      console.log("🎓 [TUTORIAL] Starting tutorial with", this.steps.length, "steps");
       if (this.steps.length === 0) {
         console.warn("No tutorial steps found");
         return;
@@ -277,6 +294,7 @@ const { currentUserId = "", tutorialId = "default", autoStart = false } = Astro.
       this.isActive = true;
       this.overlay?.classList.remove("hidden");
       this.trigger?.classList.add("hidden");
+      console.log("🎓 [TUTORIAL] Overlay shown, showing step", this.currentStep);
       this.showStep(this.currentStep);
     }
 
@@ -354,7 +372,14 @@ const { currentUserId = "", tutorialId = "default", autoStart = false } = Astro.
     }
 
     private positionPopover(targetElement: HTMLElement, position: string) {
-      if (!this.popover) return;
+      if (!this.popover) {
+        console.error("🎓 [TUTORIAL] Popover element not found!");
+        return;
+      }
+
+      // Show the popover
+      console.log("🎓 [TUTORIAL] Showing popover");
+      this.popover.classList.remove("hidden");
 
       const targetRect = targetElement.getBoundingClientRect();
       const popoverRect = this.popover.getBoundingClientRect();
@@ -411,19 +436,23 @@ const { currentUserId = "", tutorialId = "default", autoStart = false } = Astro.
       switch (position) {
         case "top":
           arrow.style.top = "100%";
-          arrow.style.left = `${targetRect.left + targetRect.width / 2 - popoverRect.left - 8}px`;
+          arrow.style.left = `${targetRect.left + targetRect.width / 2 - popoverRect.left}px`;
+          arrow.style.transform = "translateX(-50%) rotate(180deg)";
           break;
         case "bottom":
           arrow.style.top = "-8px";
-          arrow.style.left = `${targetRect.left + targetRect.width / 2 - popoverRect.left - 8}px`;
+          arrow.style.left = `${targetRect.left + targetRect.width / 2 - popoverRect.left}px`;
+          arrow.style.transform = "translateX(-50%) rotate(180deg)";
           break;
         case "left":
-          arrow.style.top = `${targetRect.top + targetRect.height / 2 - popoverRect.top - 8}px`;
+          arrow.style.top = `${targetRect.top + targetRect.height / 2 - popoverRect.top}px`;
           arrow.style.left = "100%";
+          arrow.style.transform = "translateY(-50%) rotate(180deg)";
           break;
         case "right":
-          arrow.style.top = `${targetRect.top + targetRect.height / 2 - popoverRect.top - 8}px`;
+          arrow.style.top = `${targetRect.top + targetRect.height / 2 - popoverRect.top}px`;
           arrow.style.left = "-8px";
+          arrow.style.transform = "translateY(-50%) rotate(180deg)";
           break;
       }
     }
@@ -496,6 +525,7 @@ const { currentUserId = "", tutorialId = "default", autoStart = false } = Astro.
     private async finishTutorial() {
       this.isActive = false;
       this.overlay?.classList.add("hidden");
+      this.popover?.classList.add("hidden");
 
       // Mark as completed
       if (this.config) {
@@ -511,6 +541,7 @@ const { currentUserId = "", tutorialId = "default", autoStart = false } = Astro.
     private async dismissTutorial() {
       this.isActive = false;
       this.overlay?.classList.add("hidden");
+      this.popover?.classList.add("hidden");
 
       // Mark as dismissed
       if (this.config) {
@@ -568,21 +599,23 @@ const { currentUserId = "", tutorialId = "default", autoStart = false } = Astro.
 
   // Initialize tutorial system
   if (typeof window !== "undefined") {
-    const tutorialManager = new TutorialManager("{currentUserId}", "{tutorialId}");
+    // Get values from data attributes
+    const overlay = document.getElementById("tutorial-overlay");
+    const currentUserId = overlay?.dataset.userId || "";
+    const tutorialId = overlay?.dataset.tutorialId || "default";
+    const autoStart = overlay?.dataset.autoStart === "true";
+
+    const tutorialManager = new TutorialManager(currentUserId, tutorialId);
 
     // Make it globally accessible
     (window as any).tutorialManager = tutorialManager;
 
     // Auto-start if enabled
     try {
-      const overlay = document.getElementById("tutorial-overlay");
-      if (overlay && overlay.dataset && overlay.dataset.autoStart) {
-        const shouldAutoStart = overlay.dataset.autoStart === "true";
-        if (shouldAutoStart) {
-          document.addEventListener("DOMContentLoaded", () => {
-            setTimeout(() => tutorialManager.startTutorial(), 1000);
-          });
-        }
+      if (autoStart) {
+        document.addEventListener("DOMContentLoaded", () => {
+          setTimeout(() => tutorialManager.startTutorial(), 1000);
+        });
       }
     } catch (error) {
       // Ignore errors during initialization
@@ -784,31 +817,29 @@ const { currentUserId = "", tutorialId = "default", autoStart = false } = Astro.
 
   .tutorial-arrow {
     position: absolute;
-    width: 16px;
-    height: 16px;
-    background: white;
-    border: 1px solid #e5e7eb;
-    transform: rotate(45deg);
+    width: 0;
+    height: 0;
+    border: 8px solid transparent;
   }
 
   .tutorial-arrow-top {
-    border-right: none;
-    border-bottom: none;
+    border-bottom-color: white;
+    border-top: none;
   }
 
   .tutorial-arrow-bottom {
-    border-left: none;
-    border-top: none;
-  }
-
-  .tutorial-arrow-left {
-    border-right: none;
+    border-top-color: white;
     border-bottom: none;
   }
 
-  .tutorial-arrow-right {
+  .tutorial-arrow-left {
+    border-right-color: white;
     border-left: none;
-    border-top: none;
+  }
+
+  .tutorial-arrow-right {
+    border-left-color: white;
+    border-right: none;
   }
 
   .tutorial-highlight {

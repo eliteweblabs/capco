@@ -32,6 +32,19 @@ interface Props {
 
 // Global CSS Classes will be defined in client-side script
 
+// Helper function to convert slug to title
+const unslugify = (slug: string): string => {
+  return (
+    slug
+      .split("/")
+      .filter(Boolean)
+      .pop() // Get last segment
+      ?.split("-")
+      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(" ") || "Home"
+  );
+};
+
 const {
   title = undefined,
   description = undefined,
@@ -149,7 +162,7 @@ const debugData = {
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 
-    <title>{title + " → " + globalCompanyName}</title>
+    <title>{globalCompanyName + " → " + (title || unslugify(Astro.url.pathname))}</title>
     <meta name="description" content={description} />
 
     <link
@@ -1070,6 +1083,19 @@ const debugData = {
           maxCount: 9,
           showZero: false,
         },
+      };
+
+      // String utility functions
+      (window as any).unslugify = function (slug: string): string {
+        return (
+          slug
+            .split("/")
+            .filter(Boolean)
+            .pop() // Get last segment
+            ?.split("-")
+            .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+            .join(" ") || "Home"
+        );
       };
 
       // Project management

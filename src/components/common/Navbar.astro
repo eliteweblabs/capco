@@ -20,6 +20,7 @@ interface Props {
   projects?: any[];
   isBackend?: boolean;
   supabaseUrl?: string;
+  isBackendPage?: boolean;
 }
 
 const {
@@ -31,6 +32,7 @@ const {
   isBackend,
   supabaseUrl,
   project,
+  isBackendPage,
 } = Astro.props;
 
 const currentUrl = Astro.url.pathname;
@@ -40,47 +42,34 @@ const currentRole = currentUser?.profile?.role;
 ---
 
 <nav
-  class="_LPVUrp9Uina5fcERqWC QhmQ_v3mmDFIP9VaVOfb YRrCJSr_j5nopfm4duUc mU8yQmXJPYHX95JD515m t6gkcSf0Bt4MLItXvDJ_ Q_jg_EPdNf9eDMn1mLI2 EpUSgjHdM6oyMXUiK_8_ qUWbS_LTZujDB4XCd11V _Ybd3WwuTVljUT4vEaM3 RZmKBZs1E1eXw8vkE6jY _fGhMnSfYmaGrv7DvZ00 _1jTZ8KXRZul60S6czNi"
+  class="_LPVUrp9Uina5fcERqWC QhmQ_v3mmDFIP9VaVOfb YRrCJSr_j5nopfm4duUc mU8yQmXJPYHX95JD515m t6gkcSf0Bt4MLItXvDJ_ Q_jg_EPdNf9eDMn1mLI2 EpUSgjHdM6oyMXUiK_8_ qUWbS_LTZujDB4XCd11V _Ybd3WwuTVljUT4vEaM3 RZmKBZs1E1eXw8vkE6jY _fGhMnSfYmaGrv7DvZ00 _1jTZ8KXRZul60S6czNi gap-2"
 >
   <div class="YRrCJSr_j5nopfm4duUc t6gkcSf0Bt4MLItXvDJ_ Q_jg_EPdNf9eDMn1mLI2 sJNGKHxFYdN5Nzml5J2j">
     <div class="YRrCJSr_j5nopfm4duUc Q_jg_EPdNf9eDMn1mLI2 _HgeI6Dx9I__pBEYsPz0">
       <ToggleSidebar currentUser={currentUser} />
       <Logo link="/" file="svg" />
     </div>
-
-    {
-      !isBackend && (
-        <div class="hidden w-full md:block md:w-auto" id="navbar-default">
-          <ul
-            class="mt-4 flex flex-col font-medium md:mt-0 md:flex-row md:space-x-8 md:border-0 md:p-0 rtl:space-x-reverse"
-            set:html={desktopNavigationHTML}
-          />
-        </div>
-      )
-    }
-    <!-- Search Form -->
-    {
-      currentUrl === "/dashboard" && currentRole !== "Client" && (
-        <ProjectSearch projects={projects} />
-      )
-    }
-
-    <div class="YRrCJSr_j5nopfm4duUc Q_jg_EPdNf9eDMn1mLI2 WD962RTivt8M5sMg7WrS">
-      <div
-        class="YRrCJSr_j5nopfm4duUc Q_jg_EPdNf9eDMn1mLI2 R0X5VtiZIoV7IjvrxBJ_ tS181Wfa_gkJpFt03pqL"
-      >
-        {isAuth && currentRole !== "Client" && <AssignedProjects currentUser={currentUser} />}
-
-        {
-          project && (
-            <Punchlist currentUser={currentUser} supabaseUrl={supabaseUrl} project={project} />
-          )
-        }
-
-        {isAuth && <NotificationDropdown currentUser={currentUser} />}
-      </div>
-    </div>
   </div>
+
+  {
+    !isBackend && (
+      <div class="hidden w-full md:block md:w-auto" id="navbar-default">
+        <ul
+          class="mt-4 flex flex-col font-medium md:mt-0 md:flex-row md:space-x-8 md:border-0 md:p-0 rtl:space-x-reverse"
+          set:html={desktopNavigationHTML}
+        />
+      </div>
+    )
+  }
+  <!-- Search Form -->
+  {isBackendPage === true && currentRole !== "Client" && <ProjectSearch projects={projects} />}
+
+  {isAuth && currentRole !== "Client" && <AssignedProjects currentUser={currentUser} />}
+
+  {project && <Punchlist currentUser={currentUser} supabaseUrl={supabaseUrl} project={project} />}
+
+  {isAuth && <NotificationDropdown currentUser={currentUser} />}
+
   <button
     id="theme-toggle"
     data-tooltip-target="tooltip-toggle"

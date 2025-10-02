@@ -112,12 +112,11 @@ export function replacePlaceholders(
   const clientFirstName =
     (isArrayProfile && (authorProfile as any)[0]?.first_name) ||
     (!isArrayProfile && (authorProfile as any)?.first_name) ||
-    "N/A";
+    "";
   const clientLastName =
     (isArrayProfile && (authorProfile as any)[0]?.last_name) ||
     (!isArrayProfile && (authorProfile as any)?.last_name) ||
-    "N/A";
-
+    "";
   // Project data
   const projectAddress = data?.project?.address || "Project Address Missing";
   const projectTitle = data?.project?.title || data?.project?.address || "Untitled Project";

@@ -233,52 +233,6 @@ const filteredItems = items.filter((item) => {
         }
       }, 100);
     });
-
-    // Tab switching function for navigation
-    function switchTab(tabName: string) {
-      // Parse tab name and parameters (e.g., "discussion&new=true")
-      const [baseTabName, ...paramParts] = tabName.split("&");
-      const params = new URLSearchParams(paramParts.join("&"));
-
-      // Hide all tab contents
-      const tabContents = document.querySelectorAll(".tab-content");
-      tabContents.forEach((content) => {
-        content.classList.add("hidden");
-      });
-
-      // Show selected tab content
-      const selectedContent = document.getElementById(`content-${baseTabName}`);
-      if (selectedContent) {
-        selectedContent.classList.remove("hidden");
-      }
-
-      // Find and update the active button
-      if (!nav) return;
-      const urlParam = nav.getAttribute("data-url-param") || "status";
-      const selectedButton = document.getElementById(`${urlParam}-${baseTabName}`);
-      if (selectedButton) {
-        updateActiveButton(selectedButton);
-        updateSlidingPill(selectedButton);
-      }
-
-      // Update URL with status parameter (without page reload)
-      const currentUrl = new URL(window.location.href);
-      if (baseTabName === "project-form") {
-        // Remove status parameter for default tab
-        currentUrl.searchParams.delete(urlParam);
-      } else {
-        // Add or update status parameter with only the base tab name
-        currentUrl.searchParams.set(urlParam, baseTabName);
-      }
-
-      // Update browser history without reloading the page
-      window.history.replaceState({}, "", currentUrl.toString());
-    }
-
-    // Expose functions globally for external control
-    (window as any)[`${navId}_updateActiveButton`] = updateActiveButton;
-    (window as any)[`${navId}_updateSlidingPill`] = updateSlidingPill;
-    (window as any).switchTab = switchTab;
   }
 
   // Initialize function that can be called immediately or on DOMContentLoaded
