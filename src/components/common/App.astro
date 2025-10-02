@@ -337,6 +337,26 @@ const debugData = {
     <!-- Flowbite JavaScript -->
     <!-- <script src="https://unpkg.com/flowbite@2.5.2/dist/flowbite.min.js"></script> -->
 
+    <!-- Mobile debugging console (Eruda) - only load in development or with ?debug=true -->
+    <script>
+      // Load Eruda mobile console for debugging on mobile devices
+      // Access via URL parameter: ?debug=true or automatically in development
+      const isDevelopment = import.meta.env.DEV;
+      const hasDebugParam = new URLSearchParams(window.location.search).get('debug') === 'true';
+      
+      if (isDevelopment || hasDebugParam) {
+        const script = document.createElement('script');
+        script.src = 'https://cdn.jsdelivr.net/npm/eruda';
+        script.onload = function() {
+          if (window.eruda) {
+            window.eruda.init();
+            console.log('📱 [ERUDA] Mobile debugging console loaded');
+          }
+        };
+        document.body.appendChild(script);
+      }
+    </script>
+
     <script>
       declare global {
         interface Window {
@@ -1168,6 +1188,7 @@ const debugData = {
       // Make UX utility functions available globally
       (window as any).isSafariBeta = function () {
         const ua = navigator.userAgent;
+        console.log("🍎 [APP] isSafariBeta", ua);
         return (
           /Safari/.test(ua) &&
           /Version\/(18|19|20|21|22|23|24|25|26)\./.test(ua) &&
