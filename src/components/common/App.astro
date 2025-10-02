@@ -342,15 +342,15 @@ const debugData = {
       // Load Eruda mobile console for debugging on mobile devices
       // Access via URL parameter: ?debug=true or automatically in development
       const isDevelopment = import.meta.env.DEV;
-      const hasDebugParam = new URLSearchParams(window.location.search).get('debug') === 'true';
-      
+      const hasDebugParam = new URLSearchParams(window.location.search).get("debug") === "true";
+
       if (isDevelopment || hasDebugParam) {
-        const script = document.createElement('script');
-        script.src = 'https://cdn.jsdelivr.net/npm/eruda';
-        script.onload = function() {
+        const script = document.createElement("script");
+        script.src = "https://cdn.jsdelivr.net/npm/eruda";
+        script.onload = function () {
           if (window.eruda) {
             window.eruda.init();
-            console.log('📱 [ERUDA] Mobile debugging console loaded');
+            console.log("📱 [ERUDA] Mobile debugging console loaded");
           }
         };
         document.body.appendChild(script);
@@ -1188,12 +1188,24 @@ const debugData = {
       // Make UX utility functions available globally
       (window as any).isSafariBeta = function () {
         const ua = navigator.userAgent;
-        console.log("🍎 [APP] isSafariBeta", ua);
-        return (
-          /Safari/.test(ua) &&
-          /Version\/(18|19|20|21|22|23|24|25|26)\./.test(ua) &&
-          !/Chrome|CriOS|FxiOS|EdgiOS/.test(ua)
-        );
+
+        // Extract Safari version
+        const versionMatch = ua.match(/Version\/(\d+)\./);
+        const safariVersion = versionMatch ? parseInt(versionMatch[1]) : null;
+
+        const isSafari = /Safari/.test(ua) && !/Chrome|CriOS|FxiOS|EdgiOS/.test(ua);
+        const isVersion18Plus = safariVersion && safariVersion >= 18;
+        const result = isSafari && isVersion18Plus;
+
+        console.log("🍎 [APP] Safari Beta Detection:", {
+          userAgent: ua,
+          safariVersion: safariVersion,
+          isSafari: isSafari,
+          isVersion18Plus: isVersion18Plus,
+          result: result,
+        });
+
+        return result;
       };
       (window as any).isSafariIOS = function () {
         const ua = navigator.userAgent;
@@ -1549,14 +1561,38 @@ const debugData = {
         const isSafari18 = (window as any).isSafariBeta();
         console.log("🍎 [APP] isSafari18", isSafari18);
         if (isSafari18 === true) {
-          console.log("🍎 [SAFARI-18-BETA] Applying orientation workaround for sticky positioning");
+          console.log("🍎 [SAFARI-18-BETA] Applying Safari sticky positioning fixes (lightweight mode)");
 
-          const safariFixElement = document.querySelector(".safari-fix") as HTMLElement;
-          if (safariFixElement) {
-            safariFixElement.classList.add("h-screen", "overflow-scroll", "scrollbar-hide");
-            safariFixElement.style.height = "100dvh";
-            safariFixElement.style.overflowY = "scroll";
-          }
+          // Fix 1: Force GPU compositing on all sticky elements
+          const stickyElements = document.querySelectorAll('[class*="sticky"], .sticky, [style*="position: sticky"]');
+          stickyElements.forEach((el) => {
+            const element = el as HTMLElement;
+            element.style.transform = "translateZ(0)"; // Force GPU layer
+            element.style.willChange = "transform, top, bottom";
+            element.style.webkitBackfaceVisibility = "hidden";
+            element.style.backfaceVisibility = "hidden";
+          });
+
+          // Fix 2: Force repaint on scroll (lightweight - doesn't break scroll triggers)
+          let scrollTimeout: number;
+          const forceRepaint = () => {
+            clearTimeout(scrollTimeout);
+            scrollTimeout = window.setTimeout(() => {
+              // Trigger a minimal repaint without changing layout
+              document.body.style.transform = "translateZ(0)";
+              requestAnimationFrame(() => {
+                document.body.style.transform = "";
+              });
+            }, 100);
+          };
+
+          window.addEventListener("scroll", forceRepaint, { passive: true });
+          
+          // Fix 3: Add body class for CSS-based fixes
+          document.body.classList.add("safari-18-fix");
+          
+          console.log(`🍎 [SAFARI-18-BETA] Applied fixes to ${stickyElements.length} sticky elements (scroll triggers preserved)`);
+        }
           // Force orientation change workaround
           // const originalOrientation = screen.orientation?.type || "portrait";
 
