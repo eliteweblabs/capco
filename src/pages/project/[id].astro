@@ -62,6 +62,11 @@ const defaultTab = validTabs.includes(statusParam || "")
   : "project-form";
 const activeTabIndex = validTabs.indexOf(defaultTab);
 
+// Track which tab should load content server-side
+const shouldLoadTab = (tabName: string) => {
+  return defaultTab === tabName;
+};
+
 // Fetch project data and project author profile - RLS will handle authorization
 let project: any = null;
 // let invoiceData = null;
@@ -278,7 +283,7 @@ console.log("🔍 [PROJECT] currentStatusName:", currentStatusName);
             label: "Project Form",
             icon: "edit",
             variant: "anchor",
-            onclick: "switchTab('project-form')",
+            onclick: "window.switchTab('project-form')",
           },
           {
             id: "status-discussion",
@@ -286,42 +291,42 @@ console.log("🔍 [PROJECT] currentStatusName:", currentStatusName);
             icon: "message-rounded-dots",
             variant: "anchor",
             dataAttributes: { "data-count": "0" },
-            onclick: "switchTab('discussion')",
+            onclick: "window.switchTab('discussion')",
           },
           {
             id: "status-documents",
             label: "Documents",
             icon: "file",
             variant: "anchor",
-            onclick: "switchTab('documents')",
+            onclick: "window.switchTab('documents')",
           },
           {
             id: "status-proposal",
             label: "Proposal",
             icon: "grid",
             variant: "anchor",
-            onclick: "switchTab('proposal')",
+            onclick: "window.switchTab('proposal')",
           },
           {
             id: "status-contract",
             label: "Contract",
             icon: "pencil",
             variant: "anchor",
-            onclick: "switchTab('contract')",
+            onclick: "window.switchTab('contract')",
           },
           {
             id: "status-deposit",
             label: "Deposit",
             icon: "credit-card",
             variant: "anchor",
-            onclick: "switchTab('deposit')",
+            onclick: "window.switchTab('deposit')",
           },
           {
             id: "status-activity-log",
             label: "Activity Log",
             icon: "history",
             variant: "anchor",
-            onclick: "switchTab('activity-log')",
+            onclick: "window.switchTab('activity-log')",
             clientHide: true,
           },
           {
@@ -329,7 +334,7 @@ console.log("🔍 [PROJECT] currentStatusName:", currentStatusName);
             label: "Generate PDF",
             icon: "history",
             variant: "anchor",
-            onclick: "switchTab('generate-pdf')",
+            onclick: "window.switchTab('generate-pdf')",
             clientHide: true,
           },
         ]}
@@ -352,7 +357,8 @@ console.log("🔍 [PROJECT] currentStatusName:", currentStatusName);
           />
 
           <!-- Discussion Tab -->
-
+          <!-- {
+            shouldLoadTab("discussion") ? ( -->
           <TabDiscussions
             project={project}
             currentUser={currentUser}
@@ -361,6 +367,23 @@ console.log("🔍 [PROJECT] currentStatusName:", currentStatusName);
             globalSecondaryTextClasses={globalSecondaryTextClasses}
             globalPrimaryTextClasses={globalPrimaryTextClasses}
           />
+          <!-- ) : (
+              <div
+                id="status-discussion"
+                data-status-panel="discussion"
+                class="status-tab-panel hidden"
+                data-lazy-load="true"
+                data-tab-name="discussion"
+              >
+                <div class="flex items-center justify-center p-8">
+                  <div class="text-center">
+                    <div class="mx-auto mb-4 h-8 w-8 animate-spin rounded-full border-4 border-gray-300 border-t-primary-600" />
+                    <p class="text-gray-600 dark:text-gray-400">Loading discussions...</p>
+                  </div>
+                </div>
+              </div>
+            )
+          } -->
 
           <!-- Documents Tab -->
           <TabDocuments
@@ -460,6 +483,19 @@ console.log("🔍 [PROJECT] currentStatusName:", currentStatusName);
     // Parse tab name and parameters (e.g., "discussion&new=true")
     const [statusSlug, ...paramParts] = statusNameFromUrl.split("&");
     const params = new URLSearchParams(paramParts.join("&"));
+
+    // Check if the target tab needs lazy loading
+    const targetPanel = document.querySelector(`[data-status-panel="${statusSlug}"]`);
+    const needsLazyLoad = targetPanel?.getAttribute("data-lazy-load") === "true";
+
+    if (needsLazyLoad) {
+      console.log(`🔄 [LAZY-LOAD] Tab "${statusSlug}" needs to be loaded. Redirecting...`);
+      const currentUrl = new URL(window.location.href);
+      currentUrl.searchParams.set("status", statusNameFromUrl);
+      window.location.href = currentUrl.toString();
+      return; // Stop execution
+    }
+
     // Handle tab-specific actions based on parameters
     if (statusSlug === "discussion" && params.get("new") === "true") {
       console.log("🔔 [PROJECT-PAGE] Auto-triggering new comment form");
@@ -626,6 +662,150 @@ console.log("🔍 [PROJECT] currentStatusName:", currentStatusName);
     setPageLoadProjectStatus(initialTab);
   });
 
+  window.switchTab = function (tabName) {
+    console.log(`[TAB] Switching to: ${tabName}`);
+    // Implementation for tab switching
+  };
+  // Tab switching function for navigation
+  function switchTab(tabName) {
+    // Parse tab name and parameters (e.g., "discussion&new=true")
+    const [baseTabName, ...paramParts] = tabName.split("&");
+    const params = new URLSearchParams(paramParts.join("&"));
+
+    // Check if the target tab needs lazy loading
+    // const targetPanel = document.querySelector(`[data-status-panel="${baseTabName}"]`);
+    // const needsLazyLoad = targetPanel?.getAttribute("data-lazy-load") === "true";
+
+    // if (needsLazyLoad) {
+    //   console.log(`🔄 [LAZY-LOAD] Tab "${baseTabName}" needs to be loaded. Redirecting...`);
+    //   const urlParam = nav?.getAttribute("data-url-param") || "status";
+    //   const currentUrl = new URL(window.location.href);
+    //   currentUrl.searchParams.set(urlParam, tabName);
+    //   window.location.href = currentUrl.toString();
+    //   return; // Stop execution
+    // }
+
+    // load the content from the global function matching the status = slug
+    if (baseTabName === "discussion") {
+      window.initializeDiscussion();
+    } else if (baseTabName === "documents") {
+      window.initializeDocuments();
+    } else if (baseTabName === "proposal") {
+      window.initializeProposal();
+    }
+
+    window.initializeDiscussion();
+
+    // Hide all tab contents
+    const tabContents = document.querySelectorAll(".tab-content");
+    tabContents.forEach((content) => {
+      content.classList.add("hidden");
+    });
+
+    // Show selected tab content
+    const selectedContent = document.getElementById(`content-${baseTabName}`);
+    if (selectedContent) {
+      selectedContent.classList.remove("hidden");
+    }
+
+    // Find and update the active button
+    if (!nav) return;
+    const urlParam = nav.getAttribute("data-url-param") || "status";
+    const selectedButton = document.getElementById(`${urlParam}-${baseTabName}`);
+    if (selectedButton) {
+      updateActiveButton(selectedButton);
+      updateSlidingPill(selectedButton);
+    }
+
+    // Update URL with status parameter (without page reload)
+    const currentUrl = new URL(window.location.href);
+    if (baseTabName === "project-form") {
+      // Remove status parameter for default tab
+      currentUrl.searchParams.delete(urlParam);
+    } else {
+      // Add or update status parameter with only the base tab name
+      currentUrl.searchParams.set(urlParam, baseTabName);
+    }
+
+    // Update browser history without reloading the page
+    window.history.replaceState({}, "", currentUrl.toString());
+  }
+
+  // Expose functions globally for external control
+  window[`${navId}_updateActiveButton`] = updateActiveButton;
+  window[`${navId}_updateSlidingPill`] = updateSlidingPill;
+  window.switchTab = switchTab;
+
   // Make switchTab globally available for other components
   window.setPageLoadProjectStatus = setPageLoadProjectStatus;
+</script>
+
+<script>
+  // Global tab switching function - source of truth for all tab navigation
+  (window as any).switchTab = async function (tabName: string) {
+    console.log(`🔄 [SWITCH-TAB] Switching to: ${tabName}`);
+
+    // Parse tab name and parameters (e.g., "discussion&new=true")
+    const [baseTabName, ...paramParts] = tabName.split("&");
+    const params = new URLSearchParams(paramParts.join("&"));
+
+    // Only handle lazy loading for discussion tab for now
+    if (baseTabName === "discussion") {
+      const targetPanel = document.querySelector(`[data-status-panel="discussion"]`);
+      const needsLazyLoad = targetPanel?.getAttribute("data-lazy-load") === "true";
+
+      if (needsLazyLoad) {
+        console.log(`🔄 [LAZY-LOAD] Discussion tab needs initialization`);
+
+        if (typeof (window as any).initializeDiscussion === "function") {
+          console.log(`🔄 [LAZY-LOAD] Calling initializeDiscussion()`);
+
+          try {
+            await (window as any).initializeDiscussion();
+            // Mark as loaded
+            targetPanel?.setAttribute("data-lazy-load", "false");
+          } catch (error) {
+            console.error(`❌ [LAZY-LOAD] Error initializing discussion:`, error);
+            return;
+          }
+        } else {
+          console.warn(`⚠️ [LAZY-LOAD] initializeDiscussion function not found`);
+        }
+      }
+    }
+
+    // Hide all tab contents
+    const tabContents = document.querySelectorAll(".tab-content");
+    tabContents.forEach((content) => {
+      content.classList.add("hidden");
+    });
+
+    // Show selected tab content
+    const selectedContent = document.getElementById(`content-${baseTabName}`);
+    if (selectedContent) {
+      selectedContent.classList.remove("hidden");
+    }
+
+    // Update URL with status parameter (without page reload)
+    const currentUrl = new URL(window.location.href);
+    if (baseTabName === "project-form") {
+      // Remove status parameter for default tab
+      currentUrl.searchParams.delete("status");
+    } else {
+      // Add or update status parameter with only the base tab name
+      currentUrl.searchParams.set("status", baseTabName);
+    }
+
+    // Update browser history without reloading the page
+    window.history.replaceState({}, "", currentUrl.toString());
+
+    console.log(`✅ [SWITCH-TAB] Switched to: ${baseTabName}`);
+  };
+
+  // Example: Initialize Discussion tab function (to be implemented)
+  (window as any).initializeDiscussion = async function () {
+    console.log("🎬 [INIT-DISCUSSION] Initializing discussion tab...");
+    // TODO: Fetch and populate discussion content
+    // This is where you'll load the TabDiscussions content dynamically
+  };
 </script>

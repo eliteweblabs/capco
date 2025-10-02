@@ -195,23 +195,23 @@ export const GET: APIRoute = async ({ request, cookies, url }) => {
           .filter((email: string) => email); // Remove any undefined emails
 
         // Process button link and text (placeholders already processed)
-        let processedButtonLink = status.button_link || "";
-        let processedButtonText = status.button_text || "";
+        // let processedButtonLink = status.button_link || "";
+        // let processedButtonText = status.button_text || "";
 
-        if (processedButtonLink) {
-          // Convert relative paths to full URLs
-          if (processedButtonLink.startsWith("/")) {
-            // It's a relative path like "/dashboard" or "/login"
-            processedButtonLink = `${getApiBaseUrl()}${processedButtonLink}`;
-          } else if (
-            !processedButtonLink.startsWith("http") &&
-            !processedButtonLink.startsWith("#")
-          ) {
-            // It's a path without leading slash, add the base URL
-            processedButtonLink = `${getApiBaseUrl()}/${processedButtonLink}`;
-          }
-          // For hash fragments (#) and full URLs (http), leave as-is
-        }
+        // if (processedButtonLink) {
+        //   // Convert relative paths to full URLs
+        //   if (processedButtonLink.startsWith("/")) {
+        //     // It's a relative path like "/dashboard" or "/login"
+        //     processedButtonLink = `${getApiBaseUrl()}${processedButtonLink}`;
+        //   } else if (
+        //     !processedButtonLink.startsWith("http") &&
+        //     !processedButtonLink.startsWith("#")
+        //   ) {
+        //     // It's a path without leading slash, add the base URL
+        //     processedButtonLink = `${getApiBaseUrl()}/${processedButtonLink}`;
+        //   }
+        //   // For hash fragments (#) and full URLs (http), leave as-is
+        // }
 
         simplifiedStatuses[statusCode] = {
           admin: {
@@ -221,8 +221,8 @@ export const GET: APIRoute = async ({ request, cookies, url }) => {
               email_subject: status.admin_email_subject,
               email_content: status.admin_email_content,
               email_type: "status_update",
-              button_text: processedButtonText,
-              button_link: processedButtonLink,
+              button_text: status.button_text,
+              button_link: status.button_link,
             },
             status_name: status.admin_status_name,
             status_action: status.admin_status_action,
@@ -250,8 +250,8 @@ export const GET: APIRoute = async ({ request, cookies, url }) => {
               email_subject: status.client_email_subject,
               email_content: status.client_email_content,
               email_type: "status_update",
-              button_text: processedButtonText,
-              button_link: processedButtonLink,
+              button_text: status.button_text,
+              button_link: status.button_link,
             },
             status_name: status.client_status_name,
             status_action: status.client_status_action,
@@ -284,8 +284,8 @@ export const GET: APIRoute = async ({ request, cookies, url }) => {
                 ? status.admin_email_content
                 : status.client_email_content,
               email_type: "status_update",
-              button_text: processedButtonText,
-              button_link: processedButtonLink,
+              button_text: status.button_text,
+              button_link: status.button_link,
             },
 
             status_name: isAdminOrStaff ? status.admin_status_name : status.client_status_name,
@@ -479,25 +479,6 @@ export const POST: APIRoute = async ({ request, cookies }) => {
           .map((user: any) => user.email)
           .filter((email: string) => email); // Remove any undefined emails
 
-        // Process button link and text (placeholders already processed)
-        let processedButtonLink = status.button_link || "";
-        let processedButtonText = status.button_text || "";
-
-        if (processedButtonLink) {
-          // Convert relative paths to full URLs
-          if (processedButtonLink.startsWith("/")) {
-            // It's a relative path like "/dashboard" or "/login"
-            processedButtonLink = `${getApiBaseUrl()}${processedButtonLink}`;
-          } else if (
-            !processedButtonLink.startsWith("http") &&
-            !processedButtonLink.startsWith("#")
-          ) {
-            // It's a path without leading slash, add the base URL
-            processedButtonLink = `${getApiBaseUrl()}/${processedButtonLink}`;
-          }
-          // For hash fragments (#) and full URLs (http), leave as-is
-        }
-
         simplifiedStatuses[statusCode] = {
           admin: {
             email: {
@@ -506,8 +487,8 @@ export const POST: APIRoute = async ({ request, cookies }) => {
               email_subject: status.admin_email_subject,
               email_content: status.admin_email_content,
               email_type: "status_update",
-              button_text: processedButtonText,
-              button_link: processedButtonLink,
+              button_text: status.button_text,
+              button_link: status.button_link,
             },
             status_name: status.admin_status_name,
             status_action: status.admin_status_action,
@@ -535,8 +516,8 @@ export const POST: APIRoute = async ({ request, cookies }) => {
               email_subject: status.client_email_subject,
               email_content: status.client_email_content,
               email_type: "status_update",
-              button_text: processedButtonText,
-              button_link: processedButtonLink,
+              button_text: status.button_text,
+              button_link: status.button_link,
             },
             status_name: status.client_status_name,
             status_action: status.client_status_action,
@@ -569,10 +550,9 @@ export const POST: APIRoute = async ({ request, cookies }) => {
                 ? status.admin_email_content
                 : status.client_email_content,
               email_type: "status_update",
-              button_text: processedButtonText,
-              button_link: processedButtonLink,
+              button_text: status.button_text,
+              button_link: status.button_link,
             },
-
             status_name: isAdminOrStaff ? status.admin_status_name : status.client_status_name,
             status_action: isAdminOrStaff
               ? status.admin_status_action
