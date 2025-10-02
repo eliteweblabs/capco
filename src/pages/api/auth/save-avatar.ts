@@ -1,5 +1,5 @@
 import type { APIRoute } from "astro";
-import { supabaseAdmin } from "../../../lib/supabase";
+import { supabaseAdmin } from "../../../lib/supabase-admin";
 
 /**
  * Download Google avatar and save to Supabase Storage
@@ -10,13 +10,10 @@ export const POST: APIRoute = async ({ request }) => {
     const { userId, avatarUrl } = await request.json();
 
     if (!userId || !avatarUrl) {
-      return new Response(
-        JSON.stringify({ error: "User ID and avatar URL are required" }),
-        {
-          status: 400,
-          headers: { "Content-Type": "application/json" },
-        }
-      );
+      return new Response(JSON.stringify({ error: "User ID and avatar URL are required" }), {
+        status: 400,
+        headers: { "Content-Type": "application/json" },
+      });
     }
 
     console.log("📸 [SAVE-AVATAR] Processing avatar for user:", userId);
@@ -42,10 +39,7 @@ export const POST: APIRoute = async ({ request }) => {
     const avatarResponse = await fetch(avatarUrl);
 
     if (!avatarResponse.ok) {
-      console.error(
-        "📸 [SAVE-AVATAR] Failed to download avatar:",
-        avatarResponse.status
-      );
+      console.error("📸 [SAVE-AVATAR] Failed to download avatar:", avatarResponse.status);
       return new Response(
         JSON.stringify({
           error: "Failed to download avatar from Google",
@@ -149,4 +143,3 @@ export const POST: APIRoute = async ({ request }) => {
     );
   }
 };
-
