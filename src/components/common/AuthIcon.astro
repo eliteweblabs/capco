@@ -23,15 +23,15 @@ const avatarUrl =
       {avatarUrl && avatarUrl !== "" ? (
         <button
           id="user-menu-button"
-          class="dark:hover:text-primary-dark disabled mveJTCIb2WII7J4sY22F Z4DH5a4vmjReSFRBpPgz c8dCx6gnV43hTOLV6ks5 PeR2JZ9BZHYIH8Ea3F36 _7KA5gD55t2lxf9Jkj20 BkIbg_JwkgiyRW804Hhu _q0p_O8QLU1paqtuqmI2 _6wdnQrxT_dGdAdNk5AQ XIIs8ZOri3wm8Wnj9N_y OPrb_iG5WDy_7F05BDOX yChACvAr1v8czJ2VO22j avatar-button relative inline-flex items-center justify-center rounded-full border-none px-4 py-2 text-sm font-medium text-black opacity-100 outline-none transition-all duration-200 hover:text-primary hover:shadow-none focus:outline-none focus:ring-0 focus:ring-offset-0 disabled:cursor-not-allowed disabled:opacity-50 dark:text-white"
-          style={`background-image: url('${avatarUrl}'); background-size: cover; background-position: center; background-repeat: no-repeat;`}
+          class="dark:hover:text-primary-dark disabled mveJTCIb2WII7J4sY22F Z4DH5a4vmjReSFRBpPgz c8dCx6gnV43hTOLV6ks5 PeR2JZ9BZHYIH8Ea3F36 _7KA5gD55t2lxf9Jkj20 BkIbg_JwkgiyRW804Hhu _q0p_O8QLU1paqtuqmI2 _6wdnQrxT_dGdAdNk5AQ XIIs8ZOri3wm8Wnj9N_y OPrb_iG5WDy_7F05BDOX yChACvAr1v8czJ2VO22j avatar-button relative inline-flex items-center justify-center rounded-full border-none text-sm font-medium text-black opacity-100 outline-none transition-all duration-200 hover:text-primary hover:shadow-none focus:outline-none focus:ring-0 focus:ring-offset-0 disabled:cursor-not-allowed disabled:opacity-50 dark:text-white"
+          style="min-width: 44px; min-height: 44px;"
           data-dropdown-toggle="accountDropdown"
           aria-expanded="false"
           data-avatar-url={avatarUrl}
         >
           <span class="_DVAfiyo21kM68EUVzEQ">Open user menu</span>
-          {/* <!-- Fallback icon (hidden by default) --> */}
-          <BoxIcon name="user" class="avatar-fallback hidden" />
+          {/* <!-- Fallback icon (visible initially, hidden if avatar loads) --> */}
+          <BoxIcon name="user" class="avatar-fallback text-2xl" />
         </button>
       ) : (
         <BoxIcon
@@ -147,28 +147,28 @@ const avatarUrl =
 
     if (avatarButton) {
       const avatarUrl = avatarButton.getAttribute("data-avatar-url");
+      const fallbackIcon = avatarButton.querySelector(".avatar-fallback");
 
-      if (avatarUrl) {
-        // Test if the image can load
+      if (avatarUrl && fallbackIcon) {
+        // Test if the image can load BEFORE applying it
         const img = new Image();
 
         img.onload = () => {
           console.log("✅ [AUTH-ICON] Avatar loaded successfully");
+
+          // Avatar loaded successfully - apply it as background and hide fallback
+          (avatarButton as HTMLElement).style.backgroundImage = `url('${avatarUrl}')`;
+          (avatarButton as HTMLElement).style.backgroundSize = "cover";
+          (avatarButton as HTMLElement).style.backgroundPosition = "center";
+          (avatarButton as HTMLElement).style.backgroundRepeat = "no-repeat";
+          (fallbackIcon as HTMLElement).style.display = "none";
         };
 
         img.onerror = () => {
           console.warn(
-            "⚠️ [AUTH-ICON] Avatar failed to load (likely Google rate limit 429), showing fallback icon"
+            "⚠️ [AUTH-ICON] Avatar failed to load (likely Google rate limit 429), keeping fallback icon"
           );
-
-          // Remove background image
-          (avatarButton as HTMLElement).style.backgroundImage = "none";
-
-          // Show fallback icon
-          const fallbackIcon = avatarButton.querySelector(".avatar-fallback");
-          if (fallbackIcon) {
-            fallbackIcon.classList.remove("hidden");
-          }
+          // Do nothing - fallback icon is already visible
         };
 
         // Start loading the image

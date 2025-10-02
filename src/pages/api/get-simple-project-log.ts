@@ -1,5 +1,5 @@
 import type { APIRoute } from "astro";
-import { SimpleProjectLogger } from "../../lib/simple-logging";
+import { supabase } from "../../lib/supabase";
 
 export const GET: APIRoute = async ({ url, cookies }) => {
   try {
@@ -12,17 +12,59 @@ export const GET: APIRoute = async ({ url, cookies }) => {
       });
     }
 
-    // Authentication check (basic - you might want to add more)
+    // Authentication and session setup
     const accessToken = cookies.get("sb-access-token")?.value;
-    if (!accessToken) {
+    const refreshToken = cookies.get("sb-refresh-token")?.value;
+
+    if (!accessToken || !refreshToken) {
       return new Response(JSON.stringify({ error: "Authentication required" }), {
         status: 401,
         headers: { "Content-Type": "application/json" },
       });
     }
 
-    // Get the log
-    const log = await SimpleProjectLogger.getProjectLog(projectId);
+    // Set session for RLS policies
+    const { data: session, error: sessionError } = await supabase!.auth.setSession({
+      access_token: accessToken,
+      refresh_token: refreshToken,
+    });
+
+    if (sessionError || !session.session?.user) {
+      console.error("Session error:", sessionError);
+      return new Response(
+        JSON.stringify({
+          error: "Invalid session",
+          details: sessionError?.message || "No session data",
+        }),
+        {
+          status: 401,
+          headers: { "Content-Type": "application/json" },
+        }
+      );
+    }
+
+    // Get the project log directly with authenticated session
+    const { data: project, error } = await supabase!
+      .from("projects")
+      .select("log")
+      .eq("id", projectId)
+      .single();
+
+    if (error) {
+      console.error("Error fetching project log:", error);
+      return new Response(
+        JSON.stringify({
+          error: "Failed to fetch project log",
+          details: error.message,
+        }),
+        {
+          status: 500,
+          headers: { "Content-Type": "application/json" },
+        }
+      );
+    }
+
+    const log = project?.log || [];
 
     return new Response(
       JSON.stringify({
