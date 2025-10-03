@@ -1,0 +1,168 @@
+---
+import { checkAuth } from "../../lib/auth";
+const { currentUser, session, supabase } = await checkAuth(Astro.cookies);
+const currentRole = currentUser?.profile?.role;
+
+// Redirect to login if not authenticated
+if (!currentUser || !session) {
+  return Astro.redirect("/login");
+}
+
+// Check if user is admin
+if (currentRole !== "Admin") {
+  return Astro.redirect("/dashboard");
+}
+
+import { globalCompanyData } from "../../pages/api/global-company-data";
+const {
+  globalCompanyName,
+  globalCompanySlogan,
+  globalCompanyAddress,
+  globalCompanyPhone,
+  globalCompanyEmail,
+  globalCompanyWebsite,
+  globalCompanyLogo,
+  globalCompanyLogoDark,
+  globalCompanyLogoLight,
+} = globalCompanyData();
+
+import { globalClasses } from "../../pages/api/global-classes";
+const { globalInputClasses, globalPrimaryTextClasses, globalSecondaryTextClasses } =
+  globalClasses();
+
+import App from "../../components/common/App.astro";
+import Hero from "../../components/common/Hero.astro";
+import GlobalDiscussionsFeed from "../../components/common/GlobalDiscussionsFeed.astro";
+import BoxIcon from "../../components/common/BoxIcon.astro";
+
+// Fetch projects for overview stats
+let projects: any[] = [];
+if (currentUser?.id) {
+  try {
+    const baseUrl = Astro.url.origin;
+    const apiUrl = `${baseUrl}/api/get-project`;
+    const response = await fetch(apiUrl);
+
+    if (response.ok) {
+      const data = await response.json();
+      projects = data.projects || [];
+    }
+  } catch (error) {
+    console.error("Error fetching projects:", error);
+  }
+}
+---
+
+<App
+  title="Global Discussions - CAPCo Fire Protection"
+  description="Monitor all project discussions and conversations across the platform."
+  currentUser={currentUser}
+  project={undefined}
+  session={session}
+  supabase={supabase}
+  projects={projects}
+  isBackend={true}
+>
+  <!-- Dashboard Container -->
+  <Hero
+    title="Global Discussions"
+    description="Monitor all project discussions, client comments, and internal conversations across the platform."
+    globalPrimaryTextClasses={globalPrimaryTextClasses}
+    globalSecondaryTextClasses={globalSecondaryTextClasses}
+    globalInputClasses={globalInputClasses}
+  />
+
+  <!-- Overview Cards -->
+  <div class="mb-8 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
+    <!-- Total Projects -->
+    <div class="rounded-lg bg-white p-6 shadow dark:bg-gray-800">
+      <div class="flex items-center">
+        <div class="flex-shrink-0">
+          <BoxIcon name="building" class="h-8 w-8 text-blue-600 dark:text-blue-400" />
+        </div>
+        <div class="ml-3 w-0 flex-1">
+          <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Total Projects</p>
+          <p id="total-projects" class="text-lg font-semibold text-gray-900 dark:text-white">
+            {projects.length}
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Active Projects -->
+    <div class="rounded-lg bg-white p-6 shadow dark:bg-gray-800">
+      <div class="flex items-center">
+        <div class="flex-shrink-0">
+          <BoxIcon name="trending-up" class="h-8 w-8 text-green-600 dark:text-green-400" />
+        </div>
+        <div class="ml-3 w-0 flex-1">
+          <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Active Projects</p>
+          <p id="active-projects" class="text-lg font-semibold text-gray-900 dark:text-white">
+            {projects.filter((p) => p.status > 0 && p.status < 90).length}
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Total Discussions (24h) -->
+    <div class="rounded-lg bg-white p-6 shadow dark:bg-gray-800">
+      <div class="flex items-center">
+        <div class="flex-shrink-0">
+          <BoxIcon
+            name="message-square-dots"
+            class="h-8 w-8 text-yellow-600 dark:text-yellow-400"
+          />
+        </div>
+        <div class="ml-3 w-0 flex-1">
+          <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Discussions (24h)</p>
+          <p
+            id="recent-discussions-header"
+            class="text-lg font-semibold text-gray-900 dark:text-white"
+          >
+            <span class="inline-block h-4 w-8 animate-pulse rounded bg-gray-200 dark:bg-gray-700"
+            ></span>
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Active Users -->
+    <div class="rounded-lg bg-white p-6 shadow dark:bg-gray-800">
+      <div class="flex items-center">
+        <div class="flex-shrink-0">
+          <BoxIcon name="group" class="h-8 w-8 text-purple-600 dark:text-purple-400" />
+        </div>
+        <div class="ml-3 w-0 flex-1">
+          <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Active Users</p>
+          <p id="active-users-header" class="text-lg font-semibold text-gray-900 dark:text-white">
+            <span class="inline-block h-4 w-8 animate-pulse rounded bg-gray-200 dark:bg-gray-700"
+            ></span>
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Global Discussions Feed Component -->
+  <GlobalDiscussionsFeed limit={100} />
+</App>
+
+<script is:inline>
+  // Update dynamic stats when the discussions feed loads
+  document.addEventListener("DOMContentLoaded", () => {
+    // Wait for the global discussions feed to load its stats
+    setTimeout(() => {
+      const recentCountEl = document.getElementById("recent-discussions");
+      const activeUsersEl = document.getElementById("active-users-discussions");
+      const headerRecentEl = document.getElementById("recent-discussions-header");
+      const headerActiveUsersEl = document.getElementById("active-users-header");
+
+      if (recentCountEl && headerRecentEl && recentCountEl.textContent) {
+        headerRecentEl.textContent = recentCountEl.textContent;
+      }
+      if (activeUsersEl && headerActiveUsersEl && activeUsersEl.textContent) {
+        headerActiveUsersEl.textContent = activeUsersEl.textContent;
+      }
+    }, 2000); // Wait for discussions feed to load
+  });
+</script>
