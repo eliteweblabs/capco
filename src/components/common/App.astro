@@ -400,26 +400,6 @@ const debugData = {
     <!-- Flowbite JavaScript -->
     <!-- <script src="https://unpkg.com/flowbite@2.5.2/dist/flowbite.min.js"></script> -->
 
-    <!-- Mobile debugging console (Eruda) - only load in development or with ?debug=true -->
-    <script>
-      // Load Eruda mobile console for debugging on mobile devices
-      // Access via URL parameter: ?debug=true or automatically in development
-      const isDevelopment = import.meta.env.DEV;
-      const hasDebugParam = new URLSearchParams(window.location.search).get("debug") === "true";
-
-      if (isDevelopment || hasDebugParam) {
-        const script = document.createElement("script");
-        script.src = "https://cdn.jsdelivr.net/npm/eruda";
-        script.onload = function () {
-          if ((window as any).eruda) {
-            (window as any).eruda.init();
-            console.log("📱 [ERUDA] Mobile debugging console loaded");
-          }
-        };
-        document.body.appendChild(script);
-      }
-    </script>
-
     <script>
       declare global {
         interface Window {
@@ -444,6 +424,7 @@ const debugData = {
           getViewportSize?: () => "mobile" | "tablet" | "desktop";
           debounce?: <T extends (...args: any[]) => any>(func: T, wait: number) => T;
           throttle?: <T extends (...args: any[]) => any>(func: T, limit: number) => T;
+          truncateString?: (str: string, maxLength?: number, suffix?: string) => string;
           hideOnMobileInput?: (elementSelector: string) => void;
           isSafariIOS?: () => boolean;
           isSafari?: () => boolean;
@@ -1209,6 +1190,17 @@ const debugData = {
         };
       };
 
+      // String utilities
+      (window as any).truncateString = function (
+        str: string,
+        maxLength: number = 30,
+        suffix: string = "..."
+      ) {
+        if (!str) return "";
+        if (str.length <= maxLength) return str;
+        return str.substring(0, maxLength - suffix.length) + suffix;
+      };
+
       // Form utilities
       (window as any).hideOnMobileInput = function (elementSelector: any) {
         if (window.innerWidth >= 768) return;
@@ -1640,6 +1632,23 @@ const debugData = {
           console.log(
             "🍎 [SAFARI-18-BETA] Applying Safari sticky positioning fixes (lightweight mode)"
           );
+
+          // <!-- Mobile debugging console (Eruda) - only load in development or with ?debug=true -->
+
+          const isDevelopment = import.meta.env.DEV;
+          const hasDebugParam = new URLSearchParams(window.location.search).get("debug") === "true";
+
+          if (isDevelopment || hasDebugParam) {
+            const script = document.createElement("script");
+            script.src = "https://cdn.jsdelivr.net/npm/eruda";
+            script.onload = function () {
+              if ((window as any).eruda) {
+                (window as any).eruda.init();
+                console.log("📱 [ERUDA] Mobile debugging console loaded");
+              }
+            };
+            document.body.appendChild(script);
+          }
 
           // Fix 1: Force GPU compositing on all sticky elements
           const stickyElements = document.querySelectorAll(
