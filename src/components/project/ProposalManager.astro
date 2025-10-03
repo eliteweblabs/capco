@@ -321,13 +321,11 @@ const canManageProposals = currentRole === "Admin" || currentRole === "Staff";
   // Define ProposalManager class directly in the script (following working pattern from PDF uploader)
   class ProposalManager {
     constructor(project, currentUser, initialInvoiceId = null, initialExistingInvoice = null) {
-      console.log("🔧 [PROPOSAL-MANAGER] Constructor called with projectId:", project, currentUser);
       this.project = project;
       this.projectId = project.id;
       this.projectAuthor = project.author;
       this.projectStatus = project.status;
       this.currentUser = currentUser;
-      console.log("🔧 [PROPOSAL-MANAGER] Constructor set this.projectId to:", this.project);
       this.isEditMode = false;
       this.cachedLineItems = null;
       this.projectData = project;
@@ -341,8 +339,8 @@ const canManageProposals = currentRole === "Admin" || currentRole === "Staff";
     }
 
     async buildProposal() {
-      console.log("🔧 [PROPOSAL-MANAGER] Building proposal for project:", this.project);
-      console.log("🔧 [PROPOSAL-MANAGER] Current invoiceId:", this.invoiceId);
+      // console.log("🔧 [PROPOSAL-MANAGER] Building proposal for project:", this.project);
+      // console.log("🔧 [PROPOSAL-MANAGER] Current invoiceId:", this.invoiceId);
 
       if (!this.project) {
         console.error("Project data not available");
@@ -371,17 +369,17 @@ const canManageProposals = currentRole === "Admin" || currentRole === "Staff";
       // Ensure totals are calculated after everything is loaded
       setTimeout(() => {
         updateProposalTotal();
-        console.log("🔧 [PROPOSAL-MANAGER] Updated totals after building proposal");
+        // console.log("🔧 [PROPOSAL-MANAGER] Updated totals after building proposal");
       }, 100);
     }
 
     async ensureInvoiceExists() {
       try {
-        console.log("🔍 [PROPOSAL-MANAGER] Ensuring invoice exists for project:", this.project);
+        // console.log("🔍 [PROPOSAL-MANAGER] Ensuring invoice exists for project:", this.project);
 
         // If we already have an invoiceId from SSR, use it
         if (this.invoiceId) {
-          console.log("✅ [PROPOSAL-MANAGER] Using pre-fetched invoice ID:", this.invoiceId);
+          // console.log("✅ [PROPOSAL-MANAGER] Using pre-fetched invoice ID:", this.invoiceId);
           return;
         }
 
@@ -391,7 +389,7 @@ const canManageProposals = currentRole === "Admin" || currentRole === "Staff";
 
         if (data.success && data.invoice) {
           this.invoiceId = parseInt(data.invoice.id);
-          console.log("✅ [PROPOSAL-MANAGER] Found existing invoice:", this.invoiceId);
+          // console.log("✅ [PROPOSAL-MANAGER] Found existing invoice:", this.invoiceId);
         } else {
           // Create new invoice
           const createResponse = await fetch("/api/create-invoice", {
@@ -411,7 +409,7 @@ const canManageProposals = currentRole === "Admin" || currentRole === "Staff";
           const createData = await createResponse.json();
           if (createData.success) {
             this.invoiceId = parseInt(createData.invoice.id);
-            console.log("✅ [PROPOSAL-MANAGER] Created new invoice:", this.invoiceId);
+            // console.log("✅ [PROPOSAL-MANAGER] Created new invoice:", this.invoiceId);
           } else {
             console.error("❌ [PROPOSAL-MANAGER] Failed to create invoice:", createData.error);
           }
@@ -423,41 +421,21 @@ const canManageProposals = currentRole === "Admin" || currentRole === "Staff";
 
     async loadDataFromDatabase() {
       if (!this.invoiceId) {
-        console.log("❌ [PROPOSAL-MANAGER] No invoice ID, cannot load data");
+        // console.log("❌ [PROPOSAL-MANAGER] No invoice ID, cannot load data");
         return;
       }
 
       try {
-        console.log(
-          "🔍 [PROPOSAL-MANAGER] Loading data from database for invoice:",
-          this.invoiceId
-        );
-        console.log(
-          "🔍 [PROPOSAL-MANAGER] Current cachedLineItems before load:",
-          this.cachedLineItems
-        );
-
-        console.log(
-          "🔍 [PROPOSAL-MANAGER] Making API call to /api/get-invoice-details?id=" + this.invoiceId
-        );
+        
         const response = await fetch(`/api/get-invoice-details?id=${this.invoiceId}`);
-        console.log("🔍 [PROPOSAL-MANAGER] API response status:", response.status);
         const data = await response.json();
-        console.log("🔍 [PROPOSAL-MANAGER] API response data:", data);
 
         if (data.success && data.invoice) {
           const invoice = data.invoice;
 
-          console.log("🔍 [PROPOSAL-MANAGER] Invoice data received:", {
-            id: invoice.id,
-            created_at: invoice.created_at,
-            subject: invoice.subject,
-            catalog_line_items: invoice.catalog_line_items?.length || 0,
-          });
-
+    
           // Load line items from catalog_line_items and convert field names
           const dbLineItems = invoice.catalog_line_items || [];
-          console.log("🔍 [PROPOSAL-MANAGER] Raw database line items:", dbLineItems);
           this.cachedLineItems = dbLineItems.map((item) => ({
             name: item.name || "",
             description: item.description || "",
@@ -465,7 +443,6 @@ const canManageProposals = currentRole === "Admin" || currentRole === "Staff";
             unitPrice: item.unit_price || 0, // Convert unit_price to unitPrice
             catalog_item_id: item.catalog_item_id || null,
           }));
-          console.log("🔍 [PROPOSAL-MANAGER] Processed cachedLineItems:", this.cachedLineItems);
 
           // Load subject from invoice
           const subjectTextElement = document.getElementById("proposal-subject-text");
@@ -477,13 +454,12 @@ const canManageProposals = currentRole === "Admin" || currentRole === "Staff";
               subjectTextElement.className =
                 "text-2xl font-medium text-gray-800 dark:text-gray-200"; // Restore original styling
               subjectTextElement.textContent = invoice.subject;
-              console.log("✅ [PROPOSAL-MANAGER] Loaded subject:", invoice.subject);
             } else {
               // No subject in database, show default
               subjectTextElement.className =
                 "text-2xl font-medium text-gray-800 dark:text-gray-200"; // Restore original styling
               subjectTextElement.textContent = "Fire Protection Services Proposal";
-              console.log("✅ [PROPOSAL-MANAGER] No subject in database, using default");
+              // console.log("✅ [PROPOSAL-MANAGER] No subject in database, using default");
             }
 
             if (hiddenInput) {
@@ -503,7 +479,7 @@ const canManageProposals = currentRole === "Admin" || currentRole === "Staff";
                 month: "long",
                 day: "numeric",
               });
-              console.log("✅ [PROPOSAL-MANAGER] Using invoice creation date:", dateToShow);
+              // console.log("✅ [PROPOSAL-MANAGER] Using invoice creation date:", dateToShow);
             } else {
               // No date in database, use current time
               const now = new Date();
@@ -512,7 +488,7 @@ const canManageProposals = currentRole === "Admin" || currentRole === "Staff";
                 month: "long",
                 day: "numeric",
               });
-              console.log("✅ [PROPOSAL-MANAGER] No invoice date, using current date:", dateToShow);
+              // console.log("✅ [PROPOSAL-MANAGER] No invoice date, using current date:", dateToShow);
             }
             proposalDateElement.textContent = dateToShow;
           } else {
@@ -524,46 +500,34 @@ const canManageProposals = currentRole === "Admin" || currentRole === "Staff";
           if (notesElement) {
             if (invoice.proposal_notes) {
               notesElement.value = invoice.proposal_notes;
-              console.log("✅ [PROPOSAL-MANAGER] Loaded notes:", invoice.proposal_notes);
+              // console.log("✅ [PROPOSAL-MANAGER] Loaded notes:", invoice.proposal_notes);
             } else {
               notesElement.value = "";
-              console.log("✅ [PROPOSAL-MANAGER] No notes in database, using empty string");
+              // console.log("✅ [PROPOSAL-MANAGER] No notes in database, using empty string");
             }
           } else {
-            console.log("❌ [PROPOSAL-MANAGER] proposal-notes element not found");
+            // console.log("❌ [PROPOSAL-MANAGER] proposal-notes element not found");
           }
 
           // If no line items or empty/malformed line items, initialize with defaults
-          console.log("🔍 [PROPOSAL-MANAGER] Checking for valid line items...");
-          console.log("🔍 [PROPOSAL-MANAGER] cachedLineItems.length:", this.cachedLineItems.length);
-          console.log(
-            "🔍 [PROPOSAL-MANAGER] cachedLineItems details:",
-            this.cachedLineItems.map((item) => ({
-              name: item.name,
-              hasName: !!item.name,
-              nameLength: item.name?.length,
-            }))
-          );
-
+          // console.log("🔍 [PROPOSAL-MANAGER] Checking for valid line items...");
+          // console.log("🔍 [PROPOSAL-MANAGER] cachedLineItems.length:", this.cachedLineItems.length);
+        
+        
           const hasValidLineItems =
             this.cachedLineItems.length > 0 &&
             this.cachedLineItems.some((item) => item.name && item.name.trim() !== "");
 
-          console.log("🔍 [PROPOSAL-MANAGER] hasValidLineItems:", hasValidLineItems);
+          // console.log("🔍 [PROPOSAL-MANAGER] hasValidLineItems:", hasValidLineItems);
 
           if (!hasValidLineItems) {
-            console.log("🔍 [PROPOSAL-MANAGER] No valid line items found, initializing defaults");
+            // console.log("🔍 [PROPOSAL-MANAGER] No valid line items found, initializing defaults");
             this.initializeDefaultLineItems();
             await this.saveToDatabase(); // Save the defaults
-            console.log(
-              "🔍 [PROPOSAL-MANAGER] Default line items initialized:",
-              this.cachedLineItems
-            );
-          } else {
-            console.log("🔍 [PROPOSAL-MANAGER] Valid line items found, using existing data");
+          
+       
           }
 
-          console.log("✅ [PROPOSAL-MANAGER] Loaded line items:", this.cachedLineItems);
 
           // Render the loaded line items to the DOM
           this.renderLineItems();
@@ -601,7 +565,7 @@ const canManageProposals = currentRole === "Admin" || currentRole === "Staff";
     }
 
     initializeProposalForm() {
-      console.log("🔧 [PROPOSAL-MANAGER] Initializing proposal form...");
+      // console.log("🔧 [PROPOSAL-MANAGER] Initializing proposal form...");
 
       // Set project details in the form
 
@@ -609,11 +573,7 @@ const canManageProposals = currentRole === "Admin" || currentRole === "Staff";
       const clientName = document.getElementById("proposal-client-name");
       const proposalDate = document.getElementById("proposal-date");
 
-      console.log("🔍 [PROPOSAL-MANAGER] Found elements:", {
-        projectAddress: !!projectAddress,
-        clientName: !!clientName,
-        proposalDate: !!proposalDate,
-      });
+   
 
       if (projectAddress) projectAddress.textContent = this.project.address || "Project Address";
       if (clientName)
@@ -660,34 +620,19 @@ const canManageProposals = currentRole === "Admin" || currentRole === "Staff";
     }
 
     renderLineItems() {
-      console.log(
-        "🔍 [PROPOSAL-MANAGER] renderLineItems called with cachedLineItems:",
-        this.cachedLineItems
-      );
+    
       const tbody = document.getElementById("proposal-line-items");
-      console.log("🔍 [PROPOSAL-MANAGER] tbody element found:", !!tbody);
-      console.log("🔍 [PROPOSAL-MANAGER] projectStatus:", projectStatus);
 
       if (!tbody || !this.cachedLineItems) {
-        console.log("❌ [PROPOSAL-MANAGER] Cannot render line items:", {
-          tbody: !!tbody,
-          cachedLineItems: !!this.cachedLineItems,
-        });
+     
         return;
       }
 
-      console.log("🔍 [PROPOSAL-MANAGER] Rendering", this.cachedLineItems.length, "line items");
       tbody.innerHTML = "";
 
       // Render each line item
       this.cachedLineItems.forEach((item, index) => {
-        console.log(`🔧 [PROPOSAL-MANAGER] Rendering item ${index}:`, {
-          name: item.name,
-          description: item.description,
-          quantity: item.quantity,
-          unitPrice: item.unitPrice,
-        });
-
+    
         const row = document.createElement("tr");
         row.className = "proposal-line-item-row";
 

@@ -32,6 +32,9 @@ export interface PlaceholderData {
     commencement_of_construction?: string;
     suppression_detection_systems?: string;
     hps_commodities?: string;
+    proposal_signature?: string;
+    signed_at?: string;
+    contract_pdf_url?: string;
     authorProfile?:
       | {
           [key: number]: {
@@ -667,6 +670,80 @@ export function replacePlaceholders(
   if (projectAddress) {
     const beforeReplace = result;
     result = result.replace(/\{\{\s*PROJECT_ADDRESS\s*\}\}/g, projectAddress);
+    if (result !== beforeReplace) {
+      placeholderApplied = true;
+      addBoldTags = true;
+    }
+  }
+
+  // Replace PROJECT_COMPANY_NAME placeholders
+  if (clientName) {
+    const beforeReplace = result;
+    result = result.replace(/\{\{\s*PROJECT_COMPANY_NAME\s*\}\}/g, clientName);
+    if (result !== beforeReplace) {
+      placeholderApplied = true;
+      addBoldTags = true;
+    }
+  }
+
+  // Replace PROJECT_CLIENT_NAME placeholders
+  if (clientName) {
+    const beforeReplace = result;
+    result = result.replace(/\{\{\s*PROJECT_CLIENT_NAME\s*\}\}/g, clientName);
+    if (result !== beforeReplace) {
+      placeholderApplied = true;
+      addBoldTags = true;
+    }
+  }
+
+  // Replace PROJECT_CURRENT_DATE placeholders
+  if (currentDate) {
+    const beforeReplace = result;
+    result = result.replace(/\{\{\s*PROJECT_CURRENT_DATE\s*\}\}/g, currentDate);
+    if (result !== beforeReplace) {
+      placeholderApplied = true;
+      addBoldTags = true;
+    }
+  }
+
+  // Replace PROJECT_SIGNATURE_IP placeholders
+  const signatureIP = data?.signature?.ip_address || "Unknown";
+  if (signatureIP) {
+    const beforeReplace = result;
+    result = result.replace(/\{\{\s*PROJECT_SIGNATURE_IP\s*\}\}/g, signatureIP);
+    if (result !== beforeReplace) {
+      placeholderApplied = true;
+      addBoldTags = true;
+    }
+  }
+
+  // Replace PROJECT_SIGNATURE_DATE placeholders
+  const signatureDate = data?.signature?.signed_date || "Unknown";
+  if (signatureDate) {
+    const beforeReplace = result;
+    result = result.replace(/\{\{\s*PROJECT_SIGNATURE_DATE\s*\}\}/g, signatureDate);
+    if (result !== beforeReplace) {
+      placeholderApplied = true;
+      addBoldTags = true;
+    }
+  }
+
+  // Replace PROJECT_SIGNATURE_TIME placeholders
+  const signatureTime = data?.signature?.signed_time || "Unknown";
+  if (signatureTime) {
+    const beforeReplace = result;
+    result = result.replace(/\{\{\s*PROJECT_SIGNATURE_TIME\s*\}\}/g, signatureTime);
+    if (result !== beforeReplace) {
+      placeholderApplied = true;
+      addBoldTags = true;
+    }
+  }
+
+  // Replace PROJECT_SIGNATURE_IMAGE placeholders
+  const signatureImage = data?.project?.proposal_signature?.image || "";
+  if (signatureImage) {
+    const beforeReplace = result;
+    result = result.replace(/\{\{\s*PROJECT_SIGNATURE_IMAGE\s*\}\}/g, signatureImage);
     if (result !== beforeReplace) {
       placeholderApplied = true;
       addBoldTags = true;
