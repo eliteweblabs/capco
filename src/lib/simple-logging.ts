@@ -25,6 +25,7 @@ export type LogType =
   | "punchlist_added"
   | "punchlist_completed"
   | "punchlist_incomplete"
+  | "proposal_sent"
   | "email_sent"
   | "email_failed"
   | "user_login"
