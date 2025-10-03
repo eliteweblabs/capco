@@ -1,10 +1,6 @@
 ---
-import { readFileSync } from "fs";
-import { join } from "path";
-import { replacePlaceholders } from "../../lib/placeholder-utils";
 import ContractEditor from "../admin/ContractEditor.astro";
 import BoxIcon from "../common/BoxIcon.astro";
-import DisplayContract from "./ContractDisplay.astro";
 import DigitalSignature from "./DigitalSignature.astro";
 
 interface Props {
@@ -35,26 +31,6 @@ const projectId = project.id;
 const currentRole = currentUser?.profile?.role;
 
 // Load and process contract template
-let contractHtml = "";
-try {
-  const templatePath = join(process.cwd(), "src/templates/pdf/contract.html");
-  const templateContent = readFileSync(templatePath, "utf-8");
-
-  // Replace placeholders using project data
-  contractHtml = replacePlaceholders(templateContent, { project: project });
-
-  // Remove the [SIGNATURE COMPONENT] placeholder for web view
-  contractHtml = contractHtml.replace(/\[SIGNATURE COMPONENT\]/g, "");
-
-  // Extract just the body content (remove <!DOCTYPE>, <html>, <head>, etc)
-  const bodyMatch = contractHtml.match(/<body>([\s\S]*)<\/body>/i);
-  if (bodyMatch) {
-    contractHtml = bodyMatch[1];
-  }
-} catch (error) {
-  console.error("❌ [TAB-CONTRACT] Failed to load contract template:", error);
-  contractHtml = "<p class='text-red-500'>Failed to load contract template</p>";
-}
 
 // Debug logging
 // console.log("🔍 [TAB-CONTRACT] Props received:", {
@@ -115,14 +91,15 @@ const statusAlert = getStatusAlert();
         projectId={projectId}
         projectTitle={project.title || project.address}
         project={project}
+        editMode={true}
       />
     ) : (
       <>
-        <DisplayContract
+        <ContractEditor
           projectId={projectId}
           projectTitle={project.title || project.address}
-          currentUser={currentUser}
           project={project}
+          editMode={false}
         />
         <DigitalSignature
           id="proposal-signature"

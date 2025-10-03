@@ -62,11 +62,6 @@ export const POST: APIRoute = async ({ request, cookies }): Promise<Response> =>
     // Use the proper base URL function to avoid localhost in production
     const { getBaseUrl } = await import("../../lib/url-utils");
     const baseUrl = getBaseUrl(request);
-    console.log("🔗 [EMAIL-DELIVERY] Base URL:", baseUrl);
-    console.log("🔗 [EMAIL-DELIVERY] Request URL:", request.url);
-    console.log("🔗 [EMAIL-DELIVERY] Request headers host:", request.headers.get("host"));
-    console.log("🔗 [EMAIL-DELIVERY] Environment SITE_URL:", process.env.SITE_URL);
-    console.log("🔗 [EMAIL-DELIVERY] Import meta SITE_URL:", import.meta.env.SITE_URL);
     const emailProvider = import.meta.env.EMAIL_PROVIDER;
     const emailApiKey = import.meta.env.EMAIL_API_KEY;
     const fromEmail = import.meta.env.FROM_EMAIL;
@@ -101,13 +96,6 @@ export const POST: APIRoute = async ({ request, cookies }): Promise<Response> =>
       (buttonLink && buttonLink.includes("/dashboard") && !trackLinks);
 
     const finalTrackLinks = shouldDisableTracking ? false : trackLinks;
-
-    // Debug logging for tracking configuration
-    // if (shouldDisableTracking) {
-    //   console.log("📧 [EMAIL-DELIVERY] Click tracking disabled for email type:", emailType);
-    // } else {
-    //   console.log("📧 [EMAIL-DELIVERY] Click tracking enabled for email type:", emailType);
-    // }
 
     // Simple validation
     if (
@@ -205,14 +193,6 @@ export const POST: APIRoute = async ({ request, cookies }): Promise<Response> =>
                 : "/dashboard";
               const redirectUrl = `${baseUrl}/api/auth/verify?redirect=${encodeURIComponent(finalDestination)}`;
 
-              console.log("🔗 [EMAIL-DELIVERY] Magic link configuration:", {
-                baseUrl,
-                finalDestination,
-                redirectUrl,
-                userEmail,
-              });
-
-              console.log("🔗 [EMAIL-DELIVERY] Generating magic link with Supabase...");
               const { data: magicLinkData, error: magicLinkError } =
                 await supabaseAdmin.auth.admin.generateLink({
                   type: "magiclink",
@@ -222,18 +202,10 @@ export const POST: APIRoute = async ({ request, cookies }): Promise<Response> =>
                   },
                 });
 
-              console.log("🔗 [EMAIL-DELIVERY] Supabase generateLink response:", {
-                hasData: !!magicLinkData,
-                hasError: !!magicLinkError,
-                errorMessage: magicLinkError?.message,
-              });
-
               if (magicLinkError) {
                 console.error("📧 [EMAIL-DELIVERY] Error generating magic link:", magicLinkError);
               } else {
                 finalButtonLink = magicLinkData.properties.action_link;
-                console.log("🔗 [EMAIL-DELIVERY] Magic link generated successfully");
-                console.log("🔗 [EMAIL-DELIVERY] Generated magic link URL:", finalButtonLink);
               }
             } catch (error) {
               console.error("📧 [EMAIL-DELIVERY] Error generating magic link:", error);
@@ -256,6 +228,9 @@ export const POST: APIRoute = async ({ request, cookies }): Promise<Response> =>
             emailHtml = emailHtml.replace("{{BUTTON_TEXT}}", "Access Your Dashboard");
             emailHtml = emailHtml.replace("{{BUTTON_LINK}}", `${baseUrl}/dashboard`);
           }
+
+          console.log("🔗 [EMAIL-DELIVERY] Email HTML:", emailHtml);
+          console.log("🔗 [EMAIL-DELIVERY] Email finalButtonLink:", finalButtonLink);
 
           // // Validate from field
           const validFromName = fromName && fromName.trim() !== "" ? fromName.trim() : "CAPCo";
@@ -317,10 +292,7 @@ export const POST: APIRoute = async ({ request, cookies }): Promise<Response> =>
             }
           } else {
             const responseData = await response.json();
-            console.log(
-              `📧 [EMAIL-DELIVERY] Email sent successfully to ${userEmail}:`,
-              responseData
-            );
+
             sentEmails.push(userEmail);
 
             // Log successful email delivery
@@ -392,18 +364,6 @@ export const POST: APIRoute = async ({ request, cookies }): Promise<Response> =>
       });
     }
 
-    // console.log("📧 [EMAIL-DELIVERY] Email delivery completed:");
-    // console.log("  - Sent emails:", sentEmails);
-    // console.log("  - Failed emails:", failedEmails);
-    // console.log("  - Total sent:", sentEmails.length);
-    // console.log("  - Total failed:", failedEmails.length);
-
-    // projectId: number,
-    // action: string,
-    // user: any,
-    // details: string,
-    // oldValue?: any,
-    // newValue?: any
     // Log overall email delivery completion
     try {
       console.log("📧 [EMAIL-DELIVERY] Logging email delivery completion:", {
@@ -427,8 +387,6 @@ export const POST: APIRoute = async ({ request, cookies }): Promise<Response> =>
           failedEmails: failedEmails,
         }
       );
-
-      console.log("📧 [EMAIL-DELIVERY] Email delivery completion logged successfully");
     } catch (logError) {
       console.error("📧 [EMAIL-DELIVERY] Error logging email delivery completion:", logError);
     }

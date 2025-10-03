@@ -1,5 +1,6 @@
 ---
 import BoxIcon from "../common/BoxIcon.astro";
+import Button from "../common/Button.astro";
 
 interface Props {
   id?: string;
@@ -12,6 +13,7 @@ interface Props {
   projectStatus?: number;
   projectStatusLabel?: string;
   statusData?: any;
+  defaultTemplate?: string;
 }
 const {
   id = "signature-canvas",
@@ -24,6 +26,7 @@ const {
   projectStatus,
   projectStatusLabel,
   statusData,
+  defaultTemplate,
 } = Astro.props;
 
 const newStatus = 50;
@@ -57,7 +60,7 @@ const projectId = project?.id;
         class="signature-placeholder pointer-events-none absolute inset-0 flex items-center justify-center"
       >
         <span class="text-sm font-medium text-gray-400 dark:text-gray-500">
-          {placeholder}
+          {defaultTemplate}
         </span>
       </div>
       <!-- Signature controls -->
@@ -87,15 +90,16 @@ const projectId = project?.id;
         </p>
       </div>
     </div>
-    <button
+    <Button
       type="button"
       id="agree-contract-btn"
-      class="mt-6 w-full rounded-full bg-green-600 px-4 py-3 font-medium text-white transition-colors hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:bg-gray-400"
-      disabled
+      variant="success"
+      size="xl"
+      icon="check"
+      iconPosition="right"
     >
-      <BoxIcon name="check" class="mr-2 inline h-5 w-5" />
       I Agree to the Contract Terms
-    </button>
+    </Button>
   </div>
 
   <script define:vars={{ newStatus, project, currentUser, statusData }}>
@@ -478,8 +482,7 @@ const projectId = project?.id;
                 "Content-Type": "application/json",
               },
               body: JSON.stringify({
-                project: project,
-                currentUser: currentUser,
+                projectId: project.id,
                 signature: signatureData,
                 signedAt: new Date().toISOString(),
               }),
@@ -520,17 +523,45 @@ const projectId = project?.id;
                 nextStatus,
                 statusData[nextStatus]
               );
-              window
-                .handleNewStatusNotification(statusResult, "PROJECT-FORM")
-                .then(async (data) => {
-                  newStatus = 55;
-                  const data2 = await window.updateStatus(
-                    project,
-                    newStatus,
-                    statusData[newStatus]
+
+              // Check if handleNewStatusNotification exists and is a function
+              if (
+                window.handleNewStatusNotification &&
+                typeof window.handleNewStatusNotification === "function"
+              ) {
+                const notificationPromise = window.handleNewStatusNotification(
+                  statusResult,
+                  "PROJECT-FORM"
+                );
+                if (notificationPromise && typeof notificationPromise.then === "function") {
+                  notificationPromise
+                    .then(async (data) => {
+                      newStatus = 55;
+                      const data2 = await window.updateStatus(
+                        project,
+                        newStatus,
+                        statusData[newStatus]
+                      );
+                      if (
+                        window.handleNewStatusNotification &&
+                        typeof window.handleNewStatusNotification === "function"
+                      ) {
+                        window.handleNewStatusNotification(data2, "DIGITAL-SIGNATURE");
+                      }
+                    })
+                    .catch((error) => {
+                      console.error("❌ [DigitalSignature] Error in notification chain:", error);
+                    });
+                } else {
+                  console.warn(
+                    "⚠️ [DigitalSignature] handleNewStatusNotification did not return a Promise"
                   );
-                  window.handleNewStatusNotification(data2, "DIGITAL-SIGNATURE");
-                });
+                }
+              } else {
+                console.warn(
+                  "⚠️ [DigitalSignature] handleNewStatusNotification function not available"
+                );
+              }
             } else {
               throw new Error(data.error || "Failed to process agreement");
             }
