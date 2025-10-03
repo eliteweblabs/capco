@@ -28,355 +28,273 @@ const currentRole = currentUser?.profile?.role;
 const authorProfile = currentUser?.profile;
 
 // Only show to Admin/Staff users
-const canManageProposals = currentRole === "Admin" || currentRole === "Staff";
+const canManageProposals = currentRole === "Admin";
 
 // Check if there's already an invoice for this project
 let existingInvoice = null;
-try {
-  // console.log("🔍 [ProposalManager] Checking for existing invoice for project:", projectId);
-
-  if (!supabase) {
-    console.error("❌ [ProposalManager] Database not configured");
-    return;
-  }
-
-  const { data: invoices, error } = await supabase
-    .from("invoices")
-    .select(
-      `
-      *,
-      catalog_line_items
-    `
-    )
-    .eq("project_id", parseInt(projectId))
-    .eq("status", "proposal")
-    .order("created_at", { ascending: false })
-    .limit(1);
-
-  // console.log("🔍 [ProposalManager] Invoice query result:", { invoices, error });
-
-  if (!error && invoices && invoices.length > 0) {
-    existingInvoice = invoices[0]; // Get the most recent proposal
-    // console.log("✅ [ProposalManager] Found existing invoice:", existingInvoice);
-    // console.log("🔍 [ProposalManager] Invoice catalog_line_items:", existingInvoice.catalog_line_items);
-    // console.log("🔍 [ProposalManager] Invoice catalog_line_items length:", existingInvoice.catalog_line_items?.length);
-    // console.log("🔍 [ProposalManager] Invoice catalog_line_items type:", typeof existingInvoice.catalog_line_items);
-
-    // Let's also check if there are line items directly
-    if (existingInvoice.id) {
-      // console.log("🔍 [ProposalManager] Checking for line items directly for invoice ID:", existingInvoice.id);
-      let catalogItemIds = [];
-      if (existingInvoice.catalog_line_items) {
-        for (let i = 0; i < existingInvoice.catalog_line_items.length; i++) {
-          catalogItemIds.push(existingInvoice.catalog_line_items[i].catalog_item_id);
-        }
-      }
-      const { data: directLineItems, error: lineItemsError } = await supabase
-        .from("line_items_catalog")
-        .select("*")
-        .in("id", catalogItemIds);
-
-      // console.log("🔍 [ProposalManager] Direct line items query:", { directLineItems, lineItemsError });
-    }
-  } else {
-    // console.log("❌ [ProposalManager] No existing invoice found:", error);
-  }
-} catch (error) {
-  console.error("❌ [ProposalManager] Error checking for existing invoice:", error);
-}
 ---
 
 {
-  canManageProposals && !existingInvoice && projectStatus === 20 && (
-    <div id="proposal-placeholder" class="py-8">
-      <Button
-        onclick={`buildProposal('${projectId}')`}
-        variant="success"
-        size="sm"
-        icon="plus"
-        iconPosition="left"
-      >
-        Build Proposal from Specs
-      </Button>
-    </div>
-  )
-}
-
-<!-- Generated proposal content (hidden initially) -->
-<div id="proposal-content" class={existingInvoice ? "" : "hidden"}>
-  <!-- Proposal Header -->
-  <div class="mb-6 flex items-start justify-between">
-    <div class="flex-1">
-      <!-- Editable Subject Line -->
-      <div class="mt-3">
-        <div id="proposal-subject-display" class="cursor-pointer">
-          <p
-            class="text-2xl font-medium text-gray-800 transition-colors hover:text-blue-600 dark:text-gray-200 dark:hover:text-blue-400"
-          >
-            <span
-              id="proposal-subject-text"
-              class="inline-block h-6 w-64 animate-pulse rounded bg-gray-200 dark:bg-gray-700"
-            ></span>
-            {
-              projectStatus === 20 && (
-                <Button
-                  type="button"
-                  id="edit-subject-btn"
-                  variant="ghost"
-                  size="sm"
-                  icon="edit"
-                  class="ml-2 text-gray-400 hover:text-blue-600 dark:hover:text-blue-400"
-                  title="Edit subject"
+  (canManageProposals || (currentRole === "Client" && projectStatus > 20)) && (
+    <div id="proposal-content">
+      {/* <!-- Proposal Header --> */}
+      <div class="mb-6 flex items-start justify-between">
+        <div class="flex-1">
+          {/* <!-- Editable Subject Line --> */}
+          <div class="mt-3">
+            <div id="proposal-subject-display" class="cursor-pointer">
+              <p class="text-2xl font-medium text-gray-800 transition-colors hover:text-blue-600 dark:text-gray-200 dark:hover:text-blue-400">
+                <span
+                  id="proposal-subject-text"
+                  class="inline-block h-6 w-64 animate-pulse rounded bg-gray-200 dark:bg-gray-700"
                 />
-              )
-            }
-          </p>
-        </div>
+                {projectStatus === 20 && (
+                  <Button
+                    type="button"
+                    id="edit-subject-btn"
+                    variant="ghost"
+                    size="sm"
+                    icon="edit"
+                    class="ml-2 text-gray-400 hover:text-blue-600 dark:hover:text-blue-400"
+                    title="Edit subject"
+                  />
+                )}
+              </p>
+            </div>
 
-        {
-          projectStatus === 20 && (
-            <div id="proposal-subject-edit" class="hidden">
-              <div class="space-y-2">
-                <div id="subject-dropdown-container">
-                  {/* <!-- Subject dropdown will be inserted here --> */}
-                </div>
-                <div class="flex items-center space-x-2">
-                  <Button
-                    type="button"
-                    id="save-subject-btn"
-                    variant="primary"
-                    size="sm"
-                    icon="check"
-                    iconPosition="left"
-                    title="Save subject"
-                  >
-                    Save
-                  </Button>
-                  <Button
-                    type="button"
-                    id="cancel-subject-btn"
-                    variant="secondary"
-                    size="sm"
-                    icon="x"
-                    iconPosition="left"
-                    title="Cancel"
-                  >
-                    Cancel
-                  </Button>
+            {projectStatus === 20 && (
+              <div id="proposal-subject-edit" class="hidden">
+                <div class="space-y-2">
+                  <div id="subject-dropdown-container">
+                    {/* <!-- Subject dropdown will be inserted here --> */}
+                  </div>
+                  <div class="flex items-center space-x-2">
+                    <Button
+                      type="button"
+                      id="save-subject-btn"
+                      variant="primary"
+                      size="sm"
+                      icon="check"
+                      iconPosition="left"
+                      title="Save subject"
+                    >
+                      Save
+                    </Button>
+                    <Button
+                      type="button"
+                      id="cancel-subject-btn"
+                      variant="secondary"
+                      size="sm"
+                      icon="x"
+                      iconPosition="left"
+                      title="Cancel"
+                    >
+                      Cancel
+                    </Button>
+                  </div>
                 </div>
               </div>
-            </div>
-          )
-        }
+            )}
+          </div>
+
+          <p class={`${globalSecondaryTextClasses} text-sm`}>
+            Generated on: <span id="proposal-date" />
+          </p>
+        </div>
+        <div class="ml-4 text-right">
+          <p class="text-2xl font-bold text-green-600 dark:text-green-400">
+            $<span id="proposal-total">0.00</span>
+          </p>
+          <p class="text-sm text-gray-600 dark:text-gray-400">Estimated Total</p>
+        </div>
       </div>
 
-      <p class={`${globalSecondaryTextClasses} text-sm`}>
-        Generated on: <span id="proposal-date"></span>
-      </p>
-    </div>
-    <div class="ml-4 text-right">
-      <p class="text-2xl font-bold text-green-600 dark:text-green-400">
-        $<span id="proposal-total">0.00</span>
-      </p>
-      <p class="text-sm text-gray-600 dark:text-gray-400">Estimated Total</p>
-    </div>
-  </div>
-
-  <!-- Project Details -->
-  <div class="mb-6 grid grid-cols-1 gap-6 md:grid-cols-2">
-    <div class="rounded-lg bg-gray-50 p-4 dark:bg-gray-700">
-      <h3 class={`${globalPrimaryTextClasses} font-bold`}>Project Information</h3>
-      <div class={`${globalSecondaryTextClasses} space-y-1 text-sm`}>
-        <p><strong>Address:</strong> <span id="proposal-address">{project.address}</span></p>
-        <!-- <p>
-          <strong>Square Footage:</strong>
-          <span id="proposal-sq-ft">{project.sq_ft}</span> sq ft
-        </p>
-        <p>
-          <strong>Construction Type:</strong>
-          <span id="proposal-construction-type"
-            >{project.new_construction ? "New Construction" : "Existing"}</span
-          >
-        </p> -->
+      {/* <!-- Project Details --> */}
+      <div class="mb-6 grid grid-cols-1 gap-6 md:grid-cols-2">
+        <div class="rounded-lg bg-gray-50 p-4 dark:bg-gray-700">
+          <h3 class={`${globalPrimaryTextClasses} font-bold`}>Project Information</h3>
+          <div class={`${globalSecondaryTextClasses} space-y-1 text-sm`}>
+            <p>
+              <strong>Address:</strong> <span id="proposal-address">{project.address}</span>
+            </p>
+            {/* <p>
+            <strong>Square Footage:</strong>
+            <span id="proposal-sq-ft">{project.sq_ft}</span> sq ft
+          </p>
+          <p>
+            <strong>Construction Type:</strong>
+            <span id="proposal-construction-type"
+              >{project.new_construction ? "New Construction" : "Existing"}</span
+            >
+          </p> */}
+          </div>
+        </div>
+        <div class="rounded-lg bg-gray-50 p-4 dark:bg-gray-700">
+          <h3 class={`${globalPrimaryTextClasses} font-bold`}>Contact Information</h3>
+          <div class={`${globalSecondaryTextClasses} space-y-1 text-sm`}>
+            <p>
+              <strong>Prepared for:</strong>
+              <span id="proposal-client-name">
+                {authorProfile?.[0]?.company_name || authorProfile?.company_name || "N/A"}
+              </span>
+            </p>
+          </div>
+          {/* <!-- <p><strong>Email:</strong> <span id="proposal-client-email">{authorProfile?.email || 'N/A'}</span></p> -->
+        <p><strong>Phone:</strong> <span id="proposal-client-phone">{authorProfile?.phone || 'N/A'}</span></p> */}
+        </div>
       </div>
-    </div>
-    <div class="rounded-lg bg-gray-50 p-4 dark:bg-gray-700">
-      <h3 class={`${globalPrimaryTextClasses} font-bold`}>Contact Information</h3>
-      <div class={`${globalSecondaryTextClasses} space-y-1 text-sm`}>
-        <p>
-          <strong>Prepared for:</strong>
-          <span id="proposal-client-name"
-            >{authorProfile?.[0]?.company_name || authorProfile?.company_name || "N/A"}</span
-          >
-        </p>
-      </div>
-      <!-- <p><strong>Email:</strong> <span id="proposal-client-email">{authorProfile?.email || 'N/A'}</span></p> -->
-      <!-- <p><strong>Phone:</strong> <span id="proposal-client-phone">{authorProfile?.phone || 'N/A'}</span></p> -->
-    </div>
-  </div>
-</div>
 
-<!-- Line Items Table -->
-<div class="mb-6">
-  <h3 class="mb-4 text-lg font-semibold text-gray-900 dark:text-white">Services & Pricing</h3>
-  <!-- Table Container -->
-  <div
-    class="rounded-lg bg-white shadow-sm ring-1 ring-gray-200 dark:bg-gray-800 dark:ring-gray-700"
-  >
-    <!-- Table View -->
-    <div class="overflow-hidden">
-      <div class="overflow-x-auto">
-        <table
-          class="mt6gkcSf0Bt4MLItXvDJ_ c8dCx6gnV43hTOLV6ks5 PeR2JZ9BZHYIH8Ea3F36 XIIs8ZOri3wm8Wnj9N_y w-full"
-        >
-          <thead
-            class="jtAJHOc7mn7b4IKRO59D gMXmdpOPfqG_3CKkL0VD sdSaZcRa4_We5kKaX4pf PeR2JZ9BZHYIH8Ea3F36 _1jTZ8KXRZul60S6czNi XIIs8ZOri3wm8Wnj9N_y"
-          >
-            <tr>
-              <th
-                scope="col"
-                class="RZmKBZs1E1eXw8vkE6jY i8v96MUlFwGv9qJUkAx7 yM_AorRf2jSON3pDsdrz"
-              >
-                TITLE
-              </th>
-              <th
-                scope="col"
-                class="RZmKBZs1E1eXw8vkE6jY i8v96MUlFwGv9qJUkAx7 yM_AorRf2jSON3pDsdrz"
-              >
-                Description
-              </th>
-              <th
-                scope="col"
-                class="RZmKBZs1E1eXw8vkE6jY i8v96MUlFwGv9qJUkAx7 yM_AorRf2jSON3pDsdrz"
-              >
-                Qty
-              </th>
-              <th
-                scope="col"
-                class="RZmKBZs1E1eXw8vkE6jY i8v96MUlFwGv9qJUkAx7 yM_AorRf2jSON3pDsdrz"
-              >
-                Unit Price
-              </th>
-              <th
-                scope="col"
-                class="RZmKBZs1E1eXw8vkE6jY i8v96MUlFwGv9qJUkAx7 yM_AorRf2jSON3pDsdrz"
-              >
-                Total
-              </th>
-              {
-                projectStatus === 20 && (
-                  <th
-                    scope="col"
-                    class="RZmKBZs1E1eXw8vkE6jY i8v96MUlFwGv9qJUkAx7 yM_AorRf2jSON3pDsdrz"
-                  >
-                    Actions
-                  </th>
-                )
-              }
-            </tr>
-          </thead>
-          <tbody
-            id="proposal-line-items"
-            class="divide-y divide-gray-200 bg-white dark:divide-gray-700 dark:bg-gray-800"
-          >
-            <!-- All line items will be generated dynamically via JavaScript -->
-          </tbody>
-          <tfoot>
-            <tr>
-              <td
-                colspan={projectStatus === 20 ? "5" : "4"}
-                class="px-6 py-3 text-right font-semibold text-gray-900 dark:text-white"
-              >
-                Total:
-              </td>
-              <td class="px-6 py-3 text-right font-bold text-green-600 dark:text-green-400">
-                $<span id="proposal-total-footer">0.00</span>
-              </td>
-            </tr>
-            <tr>
-              <td
-                class="px-6 py-3 text-right font-semibold text-gray-900 dark:text-white"
-                colspan={projectStatus === 20 ? "5" : "4"}
-              >
-                Total Due (50%):
-              </td>
-              <td class="px-6 py-3 text-right font-bold text-blue-600 dark:text-blue-400">
-                $<span id="proposal-total-due-footer">0.00</span>
-              </td>
-            </tr>
-          </tfoot>
-        </table>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- Notes Section -->
-<div class="mb-6">
-  <h3 class="mb-3 text-lg font-semibold text-gray-900 dark:text-white">Notes</h3>
-  <div
-    class="rounded-lg border border-gray-200 bg-gray-50 p-4 dark:border-gray-600 dark:bg-gray-700"
-  >
-    <textarea
-      id="proposal-notes"
-      class="h-32 w-full resize-none border-none bg-transparent text-sm text-gray-700 focus:outline-none focus:ring-0 dark:text-gray-300"
-      placeholder="Add any additional notes or comments for this proposal..."></textarea>
-  </div>
-</div>
-
-<!-- Actions -->
-{
-  canManageProposals && projectStatus === 20 && (
-    <div class="flex justify-between">
-      <div class="flex gap-2">
-        <span class="button-text">Proposal Saves Automatically</span>
-      </div>
-      <div class="flex-center flex gap-2">
-        <Button
-          id="send-proposal-btn"
-          onclick="sendProposal()"
-          variant="success"
-          size="lg"
-          icon="send"
-          iconPosition="left"
-        >
-          Send Proposal
-        </Button>
-      </div>
-    </div>
-  )
-}
-
-{
-  projectStatus >= 30 && currentRole === "Client" && projectStatus < 50 && existingInvoice && (
-    <div class="mt-8 rounded-lg border border-gray-200 bg-white p-6 dark:border-gray-700 dark:bg-gray-800">
+      {/* <!-- Line Items Table --> */}
       <div class="mb-6">
-        <p class="text-gray-500 dark:text-gray-400">
-          Sign Contract &amp; Submit 50% deposit to approve this proposal and begin work.
-        </p>
+        <h3 class="mb-4 text-lg font-semibold text-gray-900 dark:text-white">Services & Pricing</h3>
+        {/* <!-- Table Container --> */}
+        <div class="rounded-lg bg-white shadow-sm ring-1 ring-gray-200 dark:bg-gray-800 dark:ring-gray-700">
+          {/* <!-- Table View --> */}
+          <div class="overflow-hidden">
+            <div class="overflow-x-auto">
+              <table class="mt6gkcSf0Bt4MLItXvDJ_ c8dCx6gnV43hTOLV6ks5 PeR2JZ9BZHYIH8Ea3F36 XIIs8ZOri3wm8Wnj9N_y w-full">
+                <thead class="jtAJHOc7mn7b4IKRO59D gMXmdpOPfqG_3CKkL0VD sdSaZcRa4_We5kKaX4pf PeR2JZ9BZHYIH8Ea3F36 _1jTZ8KXRZul60S6czNi XIIs8ZOri3wm8Wnj9N_y">
+                  <tr>
+                    <th
+                      scope="col"
+                      class="RZmKBZs1E1eXw8vkE6jY i8v96MUlFwGv9qJUkAx7 yM_AorRf2jSON3pDsdrz"
+                    >
+                      TITLE
+                    </th>
+                    <th
+                      scope="col"
+                      class="RZmKBZs1E1eXw8vkE6jY i8v96MUlFwGv9qJUkAx7 yM_AorRf2jSON3pDsdrz"
+                    >
+                      Description
+                    </th>
+                    <th
+                      scope="col"
+                      class="RZmKBZs1E1eXw8vkE6jY i8v96MUlFwGv9qJUkAx7 yM_AorRf2jSON3pDsdrz"
+                    >
+                      Qty
+                    </th>
+                    <th
+                      scope="col"
+                      class="RZmKBZs1E1eXw8vkE6jY i8v96MUlFwGv9qJUkAx7 yM_AorRf2jSON3pDsdrz"
+                    >
+                      Unit Price
+                    </th>
+                    <th
+                      scope="col"
+                      class="RZmKBZs1E1eXw8vkE6jY i8v96MUlFwGv9qJUkAx7 yM_AorRf2jSON3pDsdrz"
+                    >
+                      Total
+                    </th>
+                    {projectStatus === 20 && (
+                      <th
+                        scope="col"
+                        class="RZmKBZs1E1eXw8vkE6jY i8v96MUlFwGv9qJUkAx7 yM_AorRf2jSON3pDsdrz"
+                      >
+                        Actions
+                      </th>
+                    )}
+                  </tr>
+                </thead>
+                <tbody
+                  id="proposal-line-items"
+                  class="divide-y divide-gray-200 bg-white dark:divide-gray-700 dark:bg-gray-800"
+                >
+                  {/* <!-- All line items will be generated dynamically via JavaScript --> */}
+                </tbody>
+                <tfoot>
+                  <tr>
+                    <td
+                      colspan={projectStatus === 20 ? "5" : "4"}
+                      class="px-6 py-3 text-right font-semibold text-gray-900 dark:text-white"
+                    >
+                      Total:
+                    </td>
+                    <td class="px-6 py-3 text-right font-bold text-green-600 dark:text-green-400">
+                      $<span id="proposal-total-footer">0.00</span>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td
+                      class="px-6 py-3 text-right font-semibold text-gray-900 dark:text-white"
+                      colspan={projectStatus === 20 ? "5" : "4"}
+                    >
+                      Total Due (50%):
+                    </td>
+                    <td class="px-6 py-3 text-right font-bold text-blue-600 dark:text-blue-400">
+                      $<span id="proposal-total-due-footer">0.00</span>
+                    </td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+          </div>
+        </div>
       </div>
 
-      <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <Button
-          href={`/project/${projectId}?status=discussion&new=true`}
-          variant="secondary"
-          size="md"
-          icon="pencil"
-          iconPosition="left"
-        >
-          To Request Edits Leave a Comment
-        </Button>
-
-        <Button
-          variant="success"
-          size="md"
-          icon="check"
-          iconPosition="right"
-          onclick="window.acceptProposal()"
-        >
-          Accept Proposal
-        </Button>
+      {/* <!-- Notes Section --> */}
+      <div class="mb-6">
+        <h3 class="mb-3 text-lg font-semibold text-gray-900 dark:text-white">Notes</h3>
+        <div class="rounded-lg border border-gray-200 bg-gray-50 p-4 dark:border-gray-600 dark:bg-gray-700">
+          <textarea
+            id="proposal-notes"
+            class="h-32 w-full resize-none border-none bg-transparent text-sm text-gray-700 focus:outline-none focus:ring-0 dark:text-gray-300"
+            placeholder="Add any additional notes or comments for this proposal..."
+          />
+        </div>
       </div>
+
+      {/* <!-- Actions --> */}
+      {canManageProposals && projectStatus === 20 && (
+        <div class="flex justify-between">
+          <div class="flex gap-2">
+            <span class="button-text">Proposal Saves Automatically</span>
+          </div>
+          <div class="flex-center flex gap-2">
+            <Button
+              id="send-proposal-btn"
+              onclick="sendProposal()"
+              variant="success"
+              size="lg"
+              icon="send"
+              iconPosition="left"
+            >
+              Send Proposal
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {projectStatus >= 30 && currentRole === "Client" && projectStatus < 50 && existingInvoice && (
+        <div class="mt-8 rounded-lg border border-gray-200 bg-white p-6 dark:border-gray-700 dark:bg-gray-800">
+          <div class="mb-6">
+            <p class="text-gray-500 dark:text-gray-400">
+              Sign Contract &amp; Submit 50% deposit to approve this proposal and begin work.
+            </p>
+          </div>
+
+          <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <Button
+              href={`/project/${projectId}?status=discussion&new=true`}
+              variant="secondary"
+              size="md"
+              icon="pencil"
+              iconPosition="left"
+            >
+              To Request Edits Leave a Comment
+            </Button>
+
+            <Button
+              variant="success"
+              size="md"
+              icon="check"
+              iconPosition="right"
+              onclick="window.acceptProposal()"
+            >
+              Accept Proposal
+            </Button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
