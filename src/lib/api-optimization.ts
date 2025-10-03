@@ -5,32 +5,10 @@
  * instead of making redundant database calls.
  */
 
-import { checkAuth } from "./auth";
-
 export interface OptimizedApiRequest {
   currentUser?: any;
   currentProject?: any;
   // Add other commonly passed objects as needed
-}
-
-/**
- * Helper function to get current user, either from request body or by calling checkAuth
- * @param cookies - Astro cookies object
- * @param body - Request body that may contain currentUser
- * @returns Promise<{currentUser: any, usedProvidedUser: boolean}>
- */
-export async function getCurrentUser(
-  cookies: any,
-  body: OptimizedApiRequest
-): Promise<{ currentUser: any; usedProvidedUser: boolean }> {
-  if (body.currentUser && body.currentUser.id) {
-    console.log("🚀 [API-OPTIMIZATION] Using provided currentUser, skipping checkAuth");
-    return { currentUser: body.currentUser, usedProvidedUser: true };
-  }
-
-  console.log("🔄 [API-OPTIMIZATION] No currentUser provided, calling checkAuth");
-  const { currentUser } = await checkAuth(cookies);
-  return { currentUser, usedProvidedUser: false };
 }
 
 /**

@@ -513,11 +513,11 @@ export async function getMedia(params: GetMediaParams): Promise<{
       .single();
 
     const userRole = userProfile?.role;
-    console.log("🔧 [MEDIA] User role for file filtering:", userRole);
+    // console.log("🔧 [MEDIA] User role for file filtering:", userRole);
 
     // If user is not Admin or Staff, filter out private files
     if (userRole !== "Admin" && userRole !== "Staff") {
-      console.log("🔧 [MEDIA] Filtering out private files for client user");
+      // console.log("🔧 [MEDIA] Filtering out private files for client user");
       // Only filter if is_private column exists (for backward compatibility)
       query = query.or("is_private.is.null,is_private.eq.false");
     }
@@ -529,8 +529,8 @@ export async function getMedia(params: GetMediaParams): Promise<{
       throw new Error(`Database error: ${filesError.message}`);
     }
 
-    console.log("🔧 [MEDIA] Files found:", files?.length || 0);
-    console.log("🔧 [MEDIA] Files data:", files);
+    // console.log("🔧 [MEDIA] Files found:", files?.length || 0);
+    // console.log("🔧 [MEDIA] Files data:", files);
 
     const mediaFiles = await Promise.all(
       (files || []).map(async (file) => {

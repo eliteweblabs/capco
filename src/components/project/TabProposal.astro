@@ -10,6 +10,8 @@ interface Props {
   globalSecondaryTextClasses?: string;
   globalPrimaryTextClasses?: string;
   statusData?: any;
+  existingInvoice?: any;
+  invoiceId?: any;
 }
 
 const {
@@ -25,6 +27,26 @@ const {
 const currentRole = currentUser?.profile?.role;
 const projectId = project?.id;
 
+// Fetch invoice from API (single source of truth) during SSR
+let existingInvoice: any = null;
+let invoiceId: any = null;
+
+try {
+  const baseUrl = Astro.url.origin;
+  const response = await fetch(`${baseUrl}/api/get-project-invoice?projectId=${projectId}`);
+  const data = await response.json();
+
+  if (data.success && data.invoice) {
+    existingInvoice = data.invoice;
+    invoiceId = data.invoice.id;
+    console.log("✅ [ProposalManager SSR] Found existing invoice via API:", invoiceId);
+  } else {
+    console.log("ℹ️ [ProposalManager SSR] No existing invoice found");
+  }
+} catch (error) {
+  console.error("❌ [ProposalManager SSR] Error fetching invoice via API:", error);
+}
+
 function getStatusAlert() {
   return (
     currentRole === "Client" &&
@@ -32,13 +54,16 @@ function getStatusAlert() {
       ? "Submit your project documents first."
       : Number(projectStatus) >= 20 && Number(projectStatus) < 30
         ? "Proposal is being generated."
-        : Number(projectStatus) >= 30 && Number(projectStatus) < 40
+        : Number(projectStatus) >= 30 && Number(projectStatus) < 40 && invoiceId && existingInvoice
           ? "Please review your proposal  ."
-          : Number(projectStatus) >= 40 && Number(projectStatus) < 50
+          : Number(projectStatus) >= 40 &&
+              Number(projectStatus) < 50 &&
+              invoiceId &&
+              existingInvoice
             ? "Please sign off on your proposal."
             : Number(projectStatus) >= 50 && Number(projectStatus) < 60
               ? "Please pay your deposit."
-              : null)
+              : "Estimate is being generated.")
   );
 }
 const statusAlert = getStatusAlert();
@@ -72,6 +97,8 @@ const statusAlert = getStatusAlert();
         globalSecondaryTextClasses={globalSecondaryTextClasses || ""}
         globalPrimaryTextClasses={globalPrimaryTextClasses || ""}
         statusData={statusData}
+        existingInvoice={existingInvoice}
+        invoiceId={invoiceId}
       />
     ) : (
       <ProposalManager
@@ -83,6 +110,8 @@ const statusAlert = getStatusAlert();
         globalSecondaryTextClasses={globalSecondaryTextClasses || ""}
         globalPrimaryTextClasses={globalPrimaryTextClasses || ""}
         statusData={statusData}
+        existingInvoice={existingInvoice}
+        invoiceId={invoiceId}
       />
     )
   }
