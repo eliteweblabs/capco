@@ -829,7 +829,7 @@ async function handleSingleProject(projectId: string, cookies: any) {
     const { isAuth, currentUser } = await checkAuth(cookies);
 
     if (!isAuth || !currentUser) {
-      console.log("📡 [GET-PROJECT-ID] User not authenticated");
+      console.error("📡 [GET-PROJECT-ID] User not authenticated");
       return new Response(
         JSON.stringify({
           success: false,
@@ -902,12 +902,12 @@ async function handleSingleProject(projectId: string, cookies: any) {
         // Try admin client first, fallback to regular client
         let client = supabaseAdmin;
         if (!client) {
-          console.log("📡 [GET-PROJECT-ID] Admin client not available, using regular client");
-          console.log("📡 [GET-PROJECT-ID] supabaseAdmin value:", supabaseAdmin);
-          console.log("📡 [GET-PROJECT-ID] supabase value:", !!supabase);
+          // console.log("📡 [GET-PROJECT-ID] Admin client not available, using regular client");
+          // console.log("📡 [GET-PROJECT-ID] supabaseAdmin value:", supabaseAdmin);
+          // console.log("📡 [GET-PROJECT-ID] supabase value:", !!supabase);
           client = supabase;
         } else {
-          console.log("📡 [GET-PROJECT-ID] Using admin client for profile query");
+          // console.log("📡 [GET-PROJECT-ID] Using admin client for profile query");
         }
 
         // Try to fetch the profile, but if it fails due to RLS, create a fallback
@@ -935,7 +935,7 @@ async function handleSingleProject(projectId: string, cookies: any) {
             last_name: "User",
           };
         } else {
-          console.log("📡 [GET-PROJECT-ID] Successfully fetched author profile");
+          // console.log("📡 [GET-PROJECT-ID] Successfully fetched author profile");
           authorProfile = profileData;
         }
       } catch (error) {
@@ -957,9 +957,9 @@ async function handleSingleProject(projectId: string, cookies: any) {
         // Try admin client first, fallback to regular client
         let client = supabaseAdmin;
         if (!client) {
-          console.log(
-            "📡 [GET-PROJECT-ID] Admin client not available for assigned user, using regular client"
-          );
+          // console.log(
+          //   "📡 [GET-PROJECT-ID] Admin client not available for assigned user, using regular client"
+          // );
           client = supabase;
         }
 
@@ -978,7 +978,7 @@ async function handleSingleProject(projectId: string, cookies: any) {
           project.assigned_to_name = assignedToProfile.company_name || assignedToProfile.id;
         } else {
           // Profile not found for assigned user ID
-          console.log(
+          console.error(
             "📡 [GET-PROJECT-ID] No profile found for assigned user ID:",
             project.assigned_to_id
           );

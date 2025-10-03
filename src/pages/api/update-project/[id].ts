@@ -1,5 +1,6 @@
 import type { APIRoute } from "astro";
-import { createErrorResponse, getCurrentUser } from "../../../lib/api-optimization";
+import { createErrorResponse } from "../../../lib/api-optimization";
+import { checkAuth } from "../../../lib/auth";
 
 // Simple interface for project updates
 interface ProjectUpdateFormData {
@@ -25,9 +26,9 @@ export const PUT: APIRoute = async ({ request, cookies, params }) => {
       return createErrorResponse("Project ID required", 400);
     }
 
-    // Get current user (optimized to use provided user if available)
-    const { currentUser } = await getCurrentUser(cookies, body);
-    if (!currentUser) {
+    // Get current user
+    const { currentUser, isAuth } = await checkAuth(cookies);
+    if (!isAuth || !currentUser) {
       return createErrorResponse("Authentication required", 401);
     }
 

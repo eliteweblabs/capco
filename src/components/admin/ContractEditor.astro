@@ -1,0 +1,404 @@
+---
+import { readFileSync } from "fs";
+import { join } from "path";
+import { replacePlaceholders } from "../../lib/placeholder-utils";
+
+interface Props {
+  projectId: string;
+  projectTitle: string;
+  initialContractHtml?: string;
+  project?: any;
+}
+
+const { projectId, projectTitle, initialContractHtml = "", project } = Astro.props;
+
+// Note: Contract fetching moved to client-side due to authentication requirements
+let existingContractHtml = "";
+
+// Load the actual HTML template from file system
+let defaultTemplate = "";
+try {
+  const templatePath = join(process.cwd(), "src/templates/pdf/contract.html");
+  const templateContent = readFileSync(templatePath, "utf-8");
+
+  // Process template with project data if available
+  if (project) {
+    defaultTemplate = replacePlaceholders(templateContent, { project: project });
+  } else {
+    defaultTemplate = templateContent;
+  }
+
+  // Extract just the body content for editor
+  const bodyMatch = defaultTemplate.match(/<body>([\s\S]*)<\/body>/i);
+  if (bodyMatch) {
+    defaultTemplate = bodyMatch[1];
+  }
+
+  // Escape the template for safe JavaScript string interpolation
+  defaultTemplate = defaultTemplate
+    .replace(/\\/g, "\\\\") // Escape backslashes
+    .replace(/`/g, "\\`") // Escape backticks
+    .replace(/\$/g, "\\$"); // Escape dollar signs
+  // Don't escape newlines, carriage returns, or tabs - keep them as-is
+} catch (error) {
+  console.error("❌ [CONTRACT-EDITOR] Failed to load contract template:", error);
+  throw new Error("Contract template not found");
+}
+---
+
+<div id="contract-editor-container" class="space-y-4">
+  <div class="flex items-center justify-between">
+    <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
+      Contract Editor - {projectTitle}
+    </h3>
+    <div class="flex gap-2">
+      <button
+        id="load-template-btn"
+        type="button"
+        class="rounded-md border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
+      >
+        Reset to Template
+      </button>
+      <button
+        id="save-contract-btn"
+        type="button"
+        class="rounded-md border border-transparent bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+      >
+        Save Contract
+      </button>
+    </div>
+  </div>
+
+  <!-- WYSIWYG Editor -->
+  <div class="rounded-lg border border-gray-300 dark:border-gray-600">
+    <div
+      id="contract-editor"
+      class="min-h-[500px] bg-white p-4 text-black dark:bg-gray-800 dark:text-white"
+    >
+      <!-- Editor content will be inserted here -->
+    </div>
+  </div>
+
+  <!-- Status indicator -->
+  <div id="contract-status" class="text-sm text-gray-600 dark:text-gray-400">Ready to edit</div>
+</div>
+
+<script
+  define:vars={{
+    projectTitle,
+    defaultTemplate,
+    initialContractHtml,
+    existingContractHtml,
+    projectId,
+  }}
+>
+  // Initialize Quill editor
+  let contractEditor = null;
+  let isDirty = false;
+
+  // Use the template loaded from file system (passed from frontmatter)
+  const templateContent = `${defaultTemplate}`;
+
+  async function fetchExistingContract() {
+    try {
+      console.log("🔄 [CONTRACT-EDITOR] Fetching existing contract from client-side...");
+      console.log("🔍 [CONTRACT-EDITOR] Project ID:", projectId);
+
+      const response = await fetch(`/api/get-project-contract?projectId=${projectId}`);
+      console.log("🔍 [CONTRACT-EDITOR] Response status:", response.status);
+
+      const data = await response.json();
+
+      console.log("🔍 [CONTRACT-EDITOR] Client-side API response:", {
+        success: data.success,
+        hasContractHtml: !!data.data?.contractHtml,
+        contractLength: data.data?.contractHtml?.length || 0,
+        fullResponse: data,
+      });
+
+      if (data.success && data.data?.contractHtml) {
+        console.log("✅ [CONTRACT-EDITOR] Found existing contract for project:", projectId);
+        console.log("📄 [CONTRACT-EDITOR] Contract HTML length:", data.data.contractHtml.length);
+        return data.data.contractHtml;
+      } else {
+        console.log("ℹ️ [CONTRACT-EDITOR] No existing contract found, will use template");
+        console.log("🔍 [CONTRACT-EDITOR] Success:", data.success);
+        console.log("🔍 [CONTRACT-EDITOR] Has contractHtml:", !!data.contractHtml);
+        return null;
+      }
+    } catch (error) {
+      console.error("❌ [CONTRACT-EDITOR] Error fetching existing contract:", error);
+      return null;
+    }
+  }
+
+  async function initializeEditor() {
+    console.log("🚀 [CONTRACT-EDITOR] Initializing editor...");
+
+    // Load Quill CSS and JS dynamically
+    if (!document.querySelector("#quill-css")) {
+      console.log("📦 [CONTRACT-EDITOR] Loading Quill CSS...");
+      const quillCSS = document.createElement("link");
+      quillCSS.id = "quill-css";
+      quillCSS.rel = "stylesheet";
+      quillCSS.href = "https://cdn.quilljs.com/1.3.6/quill.snow.css";
+      document.head.appendChild(quillCSS);
+    }
+
+    if (!window.Quill) {
+      console.log("📦 [CONTRACT-EDITOR] Loading Quill JS...");
+      const quillJS = document.createElement("script");
+      quillJS.src = "https://cdn.quilljs.com/1.3.6/quill.min.js";
+      quillJS.onload = async () => {
+        console.log("✅ [CONTRACT-EDITOR] Quill JS loaded, creating editor...");
+        await createEditor();
+      };
+      document.head.appendChild(quillJS);
+    } else {
+      console.log("✅ [CONTRACT-EDITOR] Quill JS already loaded, creating editor...");
+      await createEditor();
+    }
+  }
+
+  async function createEditor() {
+    console.log("🔧 [CONTRACT-EDITOR] Creating Quill editor...");
+
+    try {
+      contractEditor = new window.Quill("#contract-editor", {
+        theme: "snow",
+        modules: {
+          toolbar: [
+            [{ header: [1, 2, 3, 4, 5, 6, false] }],
+            ["bold", "italic", "underline", "strike"],
+            [{ color: [] }, { background: [] }],
+            [{ list: "ordered" }, { list: "bullet" }],
+            [{ indent: "-1" }, { indent: "+1" }],
+            [{ align: [] }],
+            ["link", "blockquote", "code-block"],
+            ["clean"],
+          ],
+        },
+      });
+      console.log("✅ [CONTRACT-EDITOR] Quill editor created successfully");
+    } catch (error) {
+      console.error("❌ [CONTRACT-EDITOR] Error creating editor:", error);
+      return;
+    }
+
+    // Fetch existing contract from client-side
+    console.log("🔄 [CONTRACT-EDITOR] About to fetch existing contract...");
+    const fetchedContract = await fetchExistingContract();
+    console.log("🔄 [CONTRACT-EDITOR] Fetched contract result:", {
+      hasFetchedContract: !!fetchedContract,
+      fetchedContractLength: fetchedContract?.length || 0,
+    });
+
+    const currentExistingContract = fetchedContract || existingContractHtml;
+    console.log("🔄 [CONTRACT-EDITOR] Current existing contract:", {
+      hasCurrentContract: !!currentExistingContract,
+      currentContractLength: currentExistingContract?.length || 0,
+    });
+
+    // Load initial content using Quill's proper method
+    // Use existing contract if available, otherwise load template
+    const initialContent =
+      currentExistingContract && currentExistingContract.trim() !== ""
+        ? currentExistingContract
+        : templateContent;
+
+    console.log("📄 [CONTRACT-EDITOR] Loading initial content:", {
+      hasExistingContract: !!(currentExistingContract && currentExistingContract.trim() !== ""),
+      contentLength: initialContent.length,
+      existingContractLength: currentExistingContract?.length || 0,
+      templateContentLength: templateContent.length,
+      existingContractPreview: currentExistingContract?.substring(0, 100) + "...",
+    });
+
+    // Use Quill's clipboard to properly handle HTML content
+    const delta = contractEditor.clipboard.convert(initialContent);
+    contractEditor.setContents(delta);
+
+    console.log("✅ [CONTRACT-EDITOR] Initial content loaded successfully");
+
+    // Track changes
+    contractEditor.on("text-change", () => {
+      isDirty = true;
+      updateStatus("Unsaved changes");
+    });
+
+    // Set up event listeners
+    setupEventListeners();
+  }
+
+  function setupEventListeners() {
+    console.log("🔗 [CONTRACT-EDITOR] Setting up event listeners...");
+
+    // Load template button
+    const loadBtn = document.getElementById("load-template-btn");
+    console.log("🔗 [CONTRACT-EDITOR] Load button found:", !!loadBtn);
+
+    if (loadBtn) {
+      loadBtn.addEventListener("click", () => {
+        console.log("🔄 [CONTRACT-EDITOR] Load template button clicked");
+        console.log("📄 [CONTRACT-EDITOR] Template content length:", templateContent.length);
+
+        if (confirm("This will replace the current content with the default template. Continue?")) {
+          try {
+            // Use Quill's proper method to load HTML content
+            const delta = contractEditor.clipboard.convert(templateContent);
+            contractEditor.setContents(delta);
+            isDirty = true;
+            updateStatus("Template loaded - unsaved changes");
+            console.log("✅ [CONTRACT-EDITOR] Template loaded successfully");
+          } catch (error) {
+            console.error("❌ [CONTRACT-EDITOR] Error loading template:", error);
+            updateStatus("Error loading template");
+          }
+        }
+      });
+      console.log("✅ [CONTRACT-EDITOR] Event listener attached to load button");
+    } else {
+      console.error("❌ [CONTRACT-EDITOR] Load template button not found!");
+    }
+
+    // Save contract button
+    document.getElementById("save-contract-btn")?.addEventListener("click", async () => {
+      await saveContract();
+    });
+  }
+
+  async function refreshContractData() {
+    try {
+      console.log("🔄 [CONTRACT-EDITOR] Fetching updated contract data...");
+
+      // Add a small delay to ensure database transaction is committed
+      await new Promise((resolve) => setTimeout(resolve, 500));
+
+      const response = await fetch(`/api/get-project-contract?projectId=${projectId}`);
+      const data = await response.json();
+
+      console.log("🔍 [CONTRACT-EDITOR] Refresh API response:", {
+        success: data.success,
+        hasContractHtml: !!data.data?.contractHtml,
+        contractLength: data.data?.contractHtml?.length || 0,
+        responseStatus: response.status,
+        fullResponse: data,
+      });
+
+      if (data.success && data.data?.contractHtml) {
+        console.log("✅ [CONTRACT-EDITOR] Updated contract data fetched:", {
+          contractLength: data.data.contractHtml.length,
+          contractPreview: data.data.contractHtml.substring(0, 100) + "...",
+        });
+
+        // Update the global existingContractHtml variable
+        window.existingContractHtml = data.data.contractHtml;
+
+        // Update the status to reflect that we now have an existing contract
+        updateStatus("Contract saved and synced");
+
+        // Log the updated status
+        console.log("✅ [CONTRACT-EDITOR] Contract status updated:", {
+          hasExistingContract: true,
+          contractLength: data.data.contractHtml.length,
+        });
+
+        return true;
+      } else {
+        console.log("ℹ️ [CONTRACT-EDITOR] No updated contract data found");
+        return false;
+      }
+    } catch (error) {
+      console.error("❌ [CONTRACT-EDITOR] Error refreshing contract data:", error);
+      return false;
+    }
+  }
+
+  async function saveContract() {
+    const saveBtn = document.getElementById("save-contract-btn");
+    const originalText = saveBtn?.textContent;
+
+    try {
+      saveBtn.textContent = "Saving...";
+      saveBtn.disabled = true;
+
+      const contractHtml = contractEditor.root.innerHTML;
+
+      const response = await fetch("/api/save-project-contract", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          projectId: projectId,
+          contractHtml: contractHtml,
+        }),
+      });
+
+      const data = await response.json();
+
+      console.log("🔍 [CONTRACT-EDITOR] Save API response:", {
+        success: data.success,
+        hasContractHtml: !!data.contractHtml,
+        contractLength: data.contractHtml?.length || 0,
+        error: data.error,
+      });
+
+      if (data.success) {
+        isDirty = false;
+        updateStatus("Contract saved successfully");
+        showNotification("Contract saved successfully", "success");
+
+        // Refresh the contract data from the server
+        console.log("🔄 [CONTRACT-EDITOR] Contract saved, refreshing contract data...");
+        await refreshContractData();
+      } else {
+        throw new Error(data.error || "Failed to save contract");
+      }
+    } catch (error) {
+      console.error("Error saving contract:", error);
+      updateStatus("Error saving contract");
+      showNotification("Error saving contract: " + error.message, "error");
+    } finally {
+      saveBtn.textContent = originalText;
+      saveBtn.disabled = false;
+    }
+  }
+
+  function updateStatus(message) {
+    const statusEl = document.getElementById("contract-status");
+    if (statusEl) {
+      statusEl.textContent = message;
+      statusEl.className = isDirty
+        ? "text-sm text-orange-600 dark:text-orange-400"
+        : "text-sm text-green-600 dark:text-green-400";
+    }
+  }
+
+  function showNotification(message, type) {
+    // Simple notification - you can replace with your preferred notification system
+    const notification = document.createElement("div");
+    notification.className = `fixed top-4 right-4 px-4 py-2 rounded-md text-white z-50 ${
+      type === "success" ? "bg-green-500" : "bg-red-500"
+    }`;
+    notification.textContent = message;
+    document.body.appendChild(notification);
+
+    setTimeout(() => {
+      notification.remove();
+    }, 3000);
+  }
+
+  // Initialize when DOM is ready
+  document.addEventListener("DOMContentLoaded", () => {
+    console.log("📄 [CONTRACT-EDITOR] DOM Content Loaded");
+    initializeEditor();
+
+    // Add a direct test for the button
+    setTimeout(() => {
+      const loadBtn = document.getElementById("load-template-btn");
+      console.log("🔍 [CONTRACT-EDITOR] Load template button found:", !!loadBtn);
+      if (loadBtn) {
+        console.log("🔍 [CONTRACT-EDITOR] Button element:", loadBtn);
+      }
+    }, 1000);
+  });
+</script>
