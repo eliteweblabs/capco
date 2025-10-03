@@ -12,6 +12,8 @@ interface Props {
   globalPrimaryTextClasses: string;
   globalInputClasses: string;
   statusData: any;
+  existingInvoice: any;
+  invoiceId: any;
 }
 const {
   projectId,
@@ -22,16 +24,17 @@ const {
   globalPrimaryTextClasses,
   globalInputClasses,
   statusData,
+  existingInvoice,
+  invoiceId,
 } = Astro.props;
 
 const currentRole = currentUser?.profile?.role;
-const authorProfile = currentUser?.profile;
+const authorProfile = project?.authorProfile;
 
 // Only show to Admin/Staff users
-const canManageProposals = currentRole === "Admin";
+const canManageProposals = currentRole === "Admin" || currentRole === "Staff";
 
 // Check if there's already an invoice for this project
-let existingInvoice = null;
 ---
 
 {
@@ -305,6 +308,7 @@ let existingInvoice = null;
     project,
     currentUser,
     existingInvoice,
+    invoiceId,
     projectStatus,
     globalInputClasses,
     globalSecondaryTextClasses,
@@ -314,7 +318,7 @@ let existingInvoice = null;
 >
   // Define ProposalManager class directly in the script (following working pattern from PDF uploader)
   class ProposalManager {
-    constructor(project, currentUser) {
+    constructor(project, currentUser, initialInvoiceId = null, initialExistingInvoice = null) {
       console.log("🔧 [PROPOSAL-MANAGER] Constructor called with projectId:", project, currentUser);
       this.project = project;
       this.projectId = project.id;
@@ -328,13 +332,15 @@ let existingInvoice = null;
       this.statusData = statusData;
       this.cachedTotal = null;
       this.autocompleteInitialized = false;
-      this.invoiceId = null;
+      this.invoiceId = initialInvoiceId;
+      this.existingInvoice = initialExistingInvoice;
       this.saveTimeout = null;
       this.saveBuffer = 1000; // 1 second buffer
     }
 
     async buildProposal() {
       console.log("🔧 [PROPOSAL-MANAGER] Building proposal for project:", this.project);
+      console.log("🔧 [PROPOSAL-MANAGER] Current invoiceId:", this.invoiceId);
 
       if (!this.project) {
         console.error("Project data not available");
@@ -370,6 +376,12 @@ let existingInvoice = null;
     async ensureInvoiceExists() {
       try {
         console.log("🔍 [PROPOSAL-MANAGER] Ensuring invoice exists for project:", this.project);
+
+        // If we already have an invoiceId from SSR, use it
+        if (this.invoiceId) {
+          console.log("✅ [PROPOSAL-MANAGER] Using pre-fetched invoice ID:", this.invoiceId);
+          return;
+        }
 
         // Check if invoice already exists
         const response = await fetch(`/api/get-project-invoice?projectId=${this.projectId}`);
@@ -418,9 +430,18 @@ let existingInvoice = null;
           "🔍 [PROPOSAL-MANAGER] Loading data from database for invoice:",
           this.invoiceId
         );
+        console.log(
+          "🔍 [PROPOSAL-MANAGER] Current cachedLineItems before load:",
+          this.cachedLineItems
+        );
 
+        console.log(
+          "🔍 [PROPOSAL-MANAGER] Making API call to /api/get-invoice-details?id=" + this.invoiceId
+        );
         const response = await fetch(`/api/get-invoice-details?id=${this.invoiceId}`);
+        console.log("🔍 [PROPOSAL-MANAGER] API response status:", response.status);
         const data = await response.json();
+        console.log("🔍 [PROPOSAL-MANAGER] API response data:", data);
 
         if (data.success && data.invoice) {
           const invoice = data.invoice;
@@ -434,6 +455,7 @@ let existingInvoice = null;
 
           // Load line items from catalog_line_items and convert field names
           const dbLineItems = invoice.catalog_line_items || [];
+          console.log("🔍 [PROPOSAL-MANAGER] Raw database line items:", dbLineItems);
           this.cachedLineItems = dbLineItems.map((item) => ({
             name: item.name || "",
             description: item.description || "",
@@ -441,6 +463,7 @@ let existingInvoice = null;
             unitPrice: item.unit_price || 0, // Convert unit_price to unitPrice
             catalog_item_id: item.catalog_item_id || null,
           }));
+          console.log("🔍 [PROPOSAL-MANAGER] Processed cachedLineItems:", this.cachedLineItems);
 
           // Load subject from invoice
           const subjectTextElement = document.getElementById("proposal-subject-text");
@@ -508,13 +531,41 @@ let existingInvoice = null;
             console.log("❌ [PROPOSAL-MANAGER] proposal-notes element not found");
           }
 
-          // If no line items, initialize with defaults
-          if (this.cachedLineItems.length === 0) {
+          // If no line items or empty/malformed line items, initialize with defaults
+          console.log("🔍 [PROPOSAL-MANAGER] Checking for valid line items...");
+          console.log("🔍 [PROPOSAL-MANAGER] cachedLineItems.length:", this.cachedLineItems.length);
+          console.log(
+            "🔍 [PROPOSAL-MANAGER] cachedLineItems details:",
+            this.cachedLineItems.map((item) => ({
+              name: item.name,
+              hasName: !!item.name,
+              nameLength: item.name?.length,
+            }))
+          );
+
+          const hasValidLineItems =
+            this.cachedLineItems.length > 0 &&
+            this.cachedLineItems.some((item) => item.name && item.name.trim() !== "");
+
+          console.log("🔍 [PROPOSAL-MANAGER] hasValidLineItems:", hasValidLineItems);
+
+          if (!hasValidLineItems) {
+            console.log("🔍 [PROPOSAL-MANAGER] No valid line items found, initializing defaults");
             this.initializeDefaultLineItems();
             await this.saveToDatabase(); // Save the defaults
+            console.log(
+              "🔍 [PROPOSAL-MANAGER] Default line items initialized:",
+              this.cachedLineItems
+            );
+          } else {
+            console.log("🔍 [PROPOSAL-MANAGER] Valid line items found, using existing data");
           }
 
           console.log("✅ [PROPOSAL-MANAGER] Loaded line items:", this.cachedLineItems);
+
+          // Render the loaded line items to the DOM
+          this.renderLineItems();
+          updateProposalTotal();
         } else {
           // Failed to load data, show default subject
           const subjectTextElement = document.getElementById("proposal-subject-text");
@@ -607,7 +658,14 @@ let existingInvoice = null;
     }
 
     renderLineItems() {
+      console.log(
+        "🔍 [PROPOSAL-MANAGER] renderLineItems called with cachedLineItems:",
+        this.cachedLineItems
+      );
       const tbody = document.getElementById("proposal-line-items");
+      console.log("🔍 [PROPOSAL-MANAGER] tbody element found:", !!tbody);
+      console.log("🔍 [PROPOSAL-MANAGER] projectStatus:", projectStatus);
+
       if (!tbody || !this.cachedLineItems) {
         console.log("❌ [PROPOSAL-MANAGER] Cannot render line items:", {
           tbody: !!tbody,
@@ -616,6 +674,7 @@ let existingInvoice = null;
         return;
       }
 
+      console.log("🔍 [PROPOSAL-MANAGER] Rendering", this.cachedLineItems.length, "line items");
       tbody.innerHTML = "";
 
       // Render each line item
@@ -683,12 +742,22 @@ let existingInvoice = null;
       });
 
       // Add the "Add Line Item" button row
+      console.log(
+        "🔍 [PROPOSAL-MANAGER] Checking projectStatus for Add Line Item button:",
+        projectStatus
+      );
       if (projectStatus === 20) {
+        console.log("🔍 [PROPOSAL-MANAGER] Adding Add Line Item button");
         this.addRowButton(tbody);
+      } else {
+        console.log(
+          "🔍 [PROPOSAL-MANAGER] Not adding Add Line Item button - projectStatus is not 20"
+        );
       }
     }
 
     addRowButton(tbody) {
+      console.log("🔍 [PROPOSAL-MANAGER] addRowButton called, creating Add Line Item button");
       const addRowBtn = document.createElement("tr");
       addRowBtn.innerHTML = `
         <td colspan="5" class="px-4 py-3 text-center border-t border-gray-200 dark:border-gray-600">
@@ -1268,10 +1337,16 @@ let existingInvoice = null;
   async function initializeProposalManager(project, projectStatus, currentUser) {
     console.log("🔧 [PROPOSAL-MANAGER] Initializing ProposalManager for project:", project.id);
 
-    // Create the proposal manager instance
-    window.proposalManager = new ProposalManager(project, projectStatus, currentUser);
+    // Create the proposal manager instance with invoice data
+    window.proposalManager = new ProposalManager(project, currentUser, invoiceId, existingInvoice);
 
     console.log("✅ [PROPOSAL-MANAGER] ProposalManager initialized successfully");
+
+    // Always call buildProposal to ensure invoice exists and data is loaded
+    console.log(
+      "🔧 [PROPOSAL-MANAGER] Calling buildProposal to ensure invoice exists and load data"
+    );
+    await window.proposalManager.buildProposal();
   }
 
   // Define the updateRowTotalDirect function globally first

@@ -1,9 +1,6 @@
 import type { APIRoute } from "astro";
-import {
-  createErrorResponse,
-  createSuccessResponse,
-  getCurrentUser,
-} from "../../lib/api-optimization";
+import { createErrorResponse, createSuccessResponse } from "../../lib/api-optimization";
+import { checkAuth } from "../../lib/auth";
 import { SimpleProjectLogger } from "../../lib/simple-logging";
 import { supabase } from "../../lib/supabase";
 
@@ -11,9 +8,9 @@ export const POST: APIRoute = async ({ request, cookies }) => {
   try {
     const body = await request.json();
 
-    // Get current user (optimized to use provided user if available)
-    const { currentUser } = await getCurrentUser(cookies, body);
-    if (!currentUser) {
+    // Get current user
+    const { currentUser, isAuth } = await checkAuth(cookies);
+    if (!isAuth || !currentUser) {
       return createErrorResponse("Authentication required", 401);
     }
 

@@ -394,7 +394,7 @@ const debugData = {
 
     <ScrollProgressIndicator />
 
-    <TutorialOverlay currentUserId={currentUser.id} tutorialId="demo-tour" autoStart={false} />
+    <TutorialOverlay currentUser={currentUser} tutorialId="demo-tour" autoStart={false} />
 
     <!-- Debug Panel (Admin Only) -->
 
@@ -606,14 +606,11 @@ const debugData = {
       // Assign imported function to global window object
       // @ts-ignore - Function is imported and used, but TypeScript doesn't recognize the assignment
 
-      (window as any).hideOnFormFocus = function (
-        elementSelector: string,
-        mobileOnly: boolean = false
-      ) {
+      (window as any).hideOnFormFocus = function () {
         // Check if we should only hide on mobile
-        if (mobileOnly && window.innerWidth >= 768) return;
+        // if (mobileOnly && window.innerWidth >= 768) return;
 
-        const element = document.querySelector(elementSelector);
+        const element = document.querySelector(".hide-when-form-focus");
         if (!element) return;
 
         // Hide on input focus
@@ -1646,8 +1643,6 @@ const debugData = {
           console.log(
             "🍎 [SAFARI-18-BETA] Applying Safari sticky positioning fixes (lightweight mode)"
           );
-          debugger;
-
           // <!-- Mobile debugging console (Eruda) - only load in development or with ?debug=true -->
 
           const isDevelopment = import.meta.env.DEV;
@@ -1699,6 +1694,12 @@ const debugData = {
             `🍎 [SAFARI-18-BETA] Applied fixes to ${stickyElements.length} sticky elements (scroll triggers preserved)`
           );
         }
+      });
+    </script>
+
+    <script>
+      document.addEventListener("DOMContentLoaded", () => {
+        (window as any).hideOnFormFocus();
       });
     </script>
   </body>

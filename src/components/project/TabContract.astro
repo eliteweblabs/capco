@@ -2,7 +2,9 @@
 import { readFileSync } from "fs";
 import { join } from "path";
 import { replacePlaceholders } from "../../lib/placeholder-utils";
+import ContractEditor from "../admin/ContractEditor.astro";
 import BoxIcon from "../common/BoxIcon.astro";
+import DisplayContract from "./ContractDisplay.astro";
 import DigitalSignature from "./DigitalSignature.astro";
 
 interface Props {
@@ -29,6 +31,7 @@ const {
   statusData,
 } = Astro.props;
 
+const projectId = project.id;
 const currentRole = currentUser?.profile?.role;
 
 // Load and process contract template
@@ -83,7 +86,7 @@ function getStatusAlert() {
     return Number(projectStatus) < 45
       ? "Client has not been sent the contract, they need to accept the proposal first."
       : Number(projectStatus) === 45
-        ? "Contract sent, not signed yet."
+        ? "Here's the default contract, edit it, save it, send it, fuck off."
         : Number(projectStatus) > 45
           ? "Contract has been signed and is ready to begin work."
           : null;
@@ -106,28 +109,34 @@ const statusAlert = getStatusAlert();
   </div>
 
   {
-    ((Number(projectStatus) > 44 && currentRole === "Client") || currentRole === "Admin") && (
-      <div
-        class="contract-preview mb-6 rounded-lg border border-gray-200 bg-white p-6 text-gray-900 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100"
-        set:html={contractHtml}
-      />
-    )
-  }
-
-  {
-    projectStatus >= 45 && currentRole === "Client" && projectStatus < 50 && (
-      <DigitalSignature
-        id="proposal-signature"
-        required={true}
-        width={2400}
-        height={580}
-        placeholder="Proposal Signature"
+    // 50 is contract signed
+    Number(projectStatus) < 50 && currentRole === "Admin" ? (
+      <ContractEditor
+        projectId={projectId}
+        projectTitle={project.title || project.address}
         project={project}
-        projectStatus={projectStatus}
-        projectStatusLabel={projectStatusLabel}
-        statusData={statusData}
-        currentUser={currentUser}
       />
+    ) : (
+      <>
+        <DisplayContract
+          projectId={projectId}
+          projectTitle={project.title || project.address}
+          currentUser={currentUser}
+          project={project}
+        />
+        <DigitalSignature
+          id="proposal-signature"
+          required={true}
+          width={2400}
+          height={580}
+          placeholder="Proposal Signature"
+          project={project}
+          projectStatus={projectStatus}
+          projectStatusLabel={projectStatusLabel}
+          statusData={statusData}
+          currentUser={currentUser}
+        />
+      </>
     )
   }
 </div>
