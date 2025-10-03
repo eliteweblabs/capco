@@ -9,14 +9,11 @@ if (!Astro.props.currentUserId) {
   return;
 }
 const { currentUserId = "", tutorialId = "default", autoStart = false } = Astro.props;
+
+import BoxIcon from "./BoxIcon.astro";
 ---
 
 <!-- Tutorial Trigger Button -->
-<button id="tutorial-trigger" class="tutorial-trigger hidden" title="Start Tutorial">
-  <i class="bx bx-help-circle"></i>
-  <span>Help</span>
-</button>
-
 <div
   id="tutorial-overlay"
   class="tutorial-overlay hidden"
@@ -139,9 +136,6 @@ const { currentUserId = "", tutorialId = "default", autoStart = false } = Astro.
       this.collectTutorialSteps();
 
       // Show trigger if tutorial hasn't been completed
-      if (!this.config?.completed && !this.config?.dismissed) {
-        this.trigger?.classList.remove("hidden");
-      }
     }
 
     private async loadTutorialConfig() {
@@ -199,16 +193,18 @@ const { currentUserId = "", tutorialId = "default", autoStart = false } = Astro.
         if (dataWelcome) {
           try {
             const welcomeData = JSON.parse(dataWelcome);
-            // Add a unique data attribute we can select by
-            element.setAttribute("data-tutorial-step", index.toString());
+            // Use the step number from data-welcome, or fallback to index
+            const stepNumber = welcomeData.step !== undefined ? welcomeData.step : index;
+            // Add a unique data attribute we can select by using the step number
+            element.setAttribute("data-tutorial-step", stepNumber.toString());
             this.steps.push({
-              element: `[data-tutorial-step="${index}"]`,
-              title: welcomeData.title || `Step ${index + 1}`,
+              element: `[data-tutorial-step="${stepNumber}"]`,
+              title: welcomeData.title || `Step ${stepNumber + 1}`,
               message: welcomeData.msg || "Welcome!",
               position: welcomeData.position || "bottom",
               icon: welcomeData.icon || "bx-info-circle",
               action: welcomeData.action,
-              step: welcomeData.step !== undefined ? welcomeData.step : index,
+              step: stepNumber,
             });
           } catch (error) {
             console.error("Error parsing tutorial data:", error);
@@ -293,7 +289,6 @@ const { currentUserId = "", tutorialId = "default", autoStart = false } = Astro.
 
       this.isActive = true;
       this.overlay?.classList.remove("hidden");
-      this.trigger?.classList.add("hidden");
       console.log("🎓 [TUTORIAL] Overlay shown, showing step", this.currentStep);
       this.showStep(this.currentStep);
     }
@@ -592,7 +587,6 @@ const { currentUserId = "", tutorialId = "default", autoStart = false } = Astro.
         this.config.dismissed = false;
         this.config.lastStep = 0;
         this.saveTutorialConfig();
-        this.trigger?.classList.remove("hidden");
       }
     }
   }
@@ -849,65 +843,33 @@ const { currentUserId = "", tutorialId = "default", autoStart = false } = Astro.
     border-radius: 4px;
   }
 
-  .tutorial-trigger {
-    position: fixed;
-    bottom: 20px;
-    right: 20px;
-    background: #3b82f6;
-    color: white;
-    border: none;
-    border-radius: 50px;
-    padding: 12px 20px;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    font-size: 14px;
-    font-weight: 500;
-    cursor: pointer;
-    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
-    transition: all 0.2s;
-    z-index: 1000;
-  }
-
-  .tutorial-trigger:hover {
-    background: #2563eb;
-    transform: translateY(-2px);
-    box-shadow: 0 6px 16px rgba(59, 130, 246, 0.4);
-  }
-
-  .tutorial-trigger i {
-    font-size: 16px;
-  }
-
   /* Dark mode support */
-  @media (prefers-color-scheme: dark) {
-    .tutorial-popover {
-      background: #1f2937;
-      color: #f9fafb;
-    }
+  .dark .tutorial-popover {
+    background: #1f2937;
+    color: #f9fafb;
+  }
 
-    .tutorial-header {
-      border-bottom-color: #374151;
-    }
+  .dark .tutorial-header {
+    border-bottom-color: #374151;
+  }
 
-    .tutorial-actions {
-      background: #111827;
-      border-top-color: #374151;
-    }
+  .dark .tutorial-actions {
+    background: #111827;
+    border-top-color: #374151;
+  }
 
-    .tutorial-btn-secondary {
-      background: #374151;
-      color: #f9fafb;
-      border-color: #4b5563;
-    }
+  .dark .tutorial-btn-secondary {
+    background: #374151;
+    color: #f9fafb;
+    border-color: #4b5563;
+  }
 
-    .tutorial-btn-secondary:hover {
-      background: #4b5563;
-    }
+  .dark .tutorial-btn-secondary:hover {
+    background: #4b5563;
+  }
 
-    .tutorial-icon {
-      background: #1e3a8a;
-      color: #93c5fd;
-    }
+  .dark .tutorial-icon {
+    background: #1e3a8a;
+    color: #93c5fd;
   }
 </style>
