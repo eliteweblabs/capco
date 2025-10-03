@@ -177,16 +177,6 @@ export function isSafari(): boolean {
   return /Safari/.test(ua) && !/Chrome|CriOS|FxiOS|EdgiOS/.test(ua);
 }
 
-export function isSafariBeta(): boolean {
-  const ua = navigator.userAgent;
-  // Safari 18 beta and later versions
-  return (
-    /Safari/.test(ua) &&
-    /Version\/(18|19|20|21|22|23|24|25|26)\./.test(ua) &&
-    !/Chrome|CriOS|FxiOS|EdgiOS/.test(ua)
-  );
-}
-
 export function isSafari18OrLater(): boolean {
   const ua = navigator.userAgent;
   // Safari 18+ (including final release) still has viewport bugs

@@ -102,6 +102,7 @@ import SpeedDial from "./SpeedDial.astro";
 import Navbar from "./Navbar.astro";
 import Aside from "./Aside.astro";
 import ScrollProgressIndicator from "./ScrollProgressIndicator.astro";
+import TutorialOverlay from "./TutorialOverlay.astro";
 
 // Prepare debug data for admin users
 const debugData = {
@@ -392,6 +393,8 @@ const debugData = {
     />
 
     <ScrollProgressIndicator />
+
+    <TutorialOverlay currentUserId={currentUser.id} tutorialId="demo-tour" autoStart={false} />
 
     <!-- Debug Panel (Admin Only) -->
 
@@ -1254,22 +1257,33 @@ const debugData = {
       };
 
       // Make UX utility functions available globally
+      // Only triggers on iOS Safari with beta/pre-release versions (18-26)
+      // ⚠️ Version range must be updated manually for new beta releases
       (window as any).isSafariBeta = function () {
         const ua = navigator.userAgent;
+
+        // Check if iOS device
+        const isIOS = /iPad|iPhone|iPod/.test(ua);
 
         // Extract Safari version
         const versionMatch = ua.match(/Version\/(\d+)\./);
         const safariVersion = versionMatch ? parseInt(versionMatch[1]) : null;
 
+        // Check if Safari (not Chrome/Firefox/Edge)
         const isSafari = /Safari/.test(ua) && !/Chrome|CriOS|FxiOS|EdgiOS/.test(ua);
-        const isVersion18Plus = safariVersion && safariVersion >= 18;
-        const result = isSafari && isVersion18Plus;
 
-        console.log("🍎 [APP] Safari Beta Detection:", {
+        // Check if version is in beta/pre-release range (18-26)
+        // Update this range manually when new beta versions are released
+        const isBetaVersion = safariVersion && safariVersion >= 18 && safariVersion <= 26;
+
+        const result = isIOS && isSafari && isBetaVersion;
+
+        console.log("🍎 [APP] Safari Beta Detection (iOS only):", {
           userAgent: ua,
+          isIOS: isIOS,
           safariVersion: safariVersion,
           isSafari: isSafari,
-          isVersion18Plus: isVersion18Plus,
+          isBetaVersion: isBetaVersion,
           result: result,
         });
 
@@ -1626,12 +1640,13 @@ const debugData = {
 
       document.addEventListener("DOMContentLoaded", () => {
         // Call immediately
-        const isSafari18 = (window as any).isSafariBeta();
-        console.log("🍎 [APP] isSafari18", isSafari18);
-        if (isSafari18 === true) {
+        const isSafariBeta = (window as any).isSafariBeta();
+        console.log("🍎 [APP] isSafari18", isSafariBeta);
+        if (isSafariBeta === true) {
           console.log(
             "🍎 [SAFARI-18-BETA] Applying Safari sticky positioning fixes (lightweight mode)"
           );
+          debugger;
 
           // <!-- Mobile debugging console (Eruda) - only load in development or with ?debug=true -->
 
