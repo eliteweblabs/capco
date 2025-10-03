@@ -18,6 +18,26 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     const { project, signature, signed_at, currentUser } = body;
     const projectId = project.id;
 
+    // Extract IP address from request headers
+    const getClientIP = (request: Request): string => {
+      const forwarded = request.headers.get("x-forwarded-for");
+      const realIP = request.headers.get("x-real-ip");
+      const remoteAddr = request.headers.get("x-remote-addr");
+
+      if (forwarded) {
+        return forwarded.split(",")[0].trim();
+      }
+      if (realIP) {
+        return realIP;
+      }
+      if (remoteAddr) {
+        return remoteAddr;
+      }
+      return "Unknown";
+    };
+
+    const clientIP = getClientIP(request);
+
     if (!projectId || !signature) {
       return new Response(JSON.stringify({ error: "Project ID and signature are required" }), {
         status: 400,
@@ -151,7 +171,7 @@ async function generateContractPDF(
       image: signature,
       signed_date: signedDate.toLocaleDateString(),
       signed_time: signedDate.toLocaleTimeString(),
-      ip_address: "N/A", // You can capture this from the request if needed
+      ip_address: clientIP,
     };
 
     // Use the template assembly API to get the contract HTML

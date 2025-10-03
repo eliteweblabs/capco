@@ -89,7 +89,7 @@ export class SimpleProjectLogger {
       if (!project) {
         try {
           const response = await fetch(
-            `${process.env.PUBLIC_SITE_URL || "http://localhost:4321"}/api/get-project?id=${projectId}`,
+            `${process.env.SITE_URL || "http://localhost:4321"}/api/get-project?id=${projectId}`,
             {
               headers: cookies ? { Cookie: cookies } : {},
             }

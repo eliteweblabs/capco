@@ -110,25 +110,64 @@ async function generateContractPDF(
       ],
     });
 
-    // Use the template assembly API to get the contract HTML
-    const assembleUrl = `${baseUrl}/api/pdf/assemble?templateId=contract&projectId=${project.id}`;
-
-    console.log("📄 [GENERATE-CONTRACT-PDF] Assembling template:", assembleUrl);
-
-    const assembleResponse = await fetch(assembleUrl);
-    if (!assembleResponse.ok) {
-      throw new Error(`Failed to assemble template: ${assembleResponse.status}`);
+    // Get the actual contract content from the database (same as displayed in #contract-container)
+    if (!supabase) {
+      throw new Error("Supabase client not configured");
     }
 
-    let contractHTML = await assembleResponse.text();
+    const { data: projectWithContract, error: contractError } = await supabase
+      .from("projects")
+      .select("contract_html")
+      .eq("id", project.id)
+      .single();
+
+    if (contractError) {
+      console.error("📄 [GENERATE-CONTRACT-PDF] Failed to fetch contract:", contractError);
+      throw new Error("Failed to fetch contract content");
+    }
+
+    let contractHTML = projectWithContract?.contract_html;
+
+    console.log("📄 [GENERATE-CONTRACT-PDF] Contract content check:", {
+      hasContractHtml: !!contractHTML,
+      contractLength: contractHTML?.length || 0,
+      contractPreview: contractHTML?.substring(0, 100) + "...",
+    });
+
+    // If no custom contract exists, fall back to template
+    if (!contractHTML) {
+      console.log("📄 [GENERATE-CONTRACT-PDF] No custom contract found, using template");
+      const templateUrl = `${baseUrl}/api/pdf/assemble?templateId=contract&projectId=${project.id}`;
+      const templateResponse = await fetch(templateUrl);
+      if (!templateResponse.ok) {
+        throw new Error(`Failed to get template: ${templateResponse.status}`);
+      }
+      contractHTML = await templateResponse.text();
+
+      console.log("📄 [GENERATE-CONTRACT-PDF] Template content length:", contractHTML.length);
+    } else {
+      console.log("📄 [GENERATE-CONTRACT-PDF] Using custom contract from database");
+      console.log("📄 [GENERATE-CONTRACT-PDF] Custom contract length:", contractHTML.length);
+    }
+
+    // insert the following into the contractHTML
+    const signatureHTMLBlock = `<p>Signed by: {{CLIENT_NAME}}</p>
+    <p>Signed on: {{SIGNATURE_DATE}}</p>
+    <p>Signed at: {{SIGNATURE_TIME}}</p>
+    <p>Signed IP: {{SIGNATURE_IP}}</p>
+    <p>Signature: {{SIGNATURE_IMAGE}}</p>`;
+
+    contractHTML = contractHTML.getElementById("signature-component").innerHTML =
+      signatureHTMLBlock;
+    contractHTML.getElementById("signature-component").classList.remove("hidden");
 
     // Replace signature-specific placeholders
     const signedDate = new Date(signedAt);
     contractHTML = contractHTML
-      .replace(/\{\{SIGNATURE_IMAGE\}\}/g, signature)
-      .replace(/\{\{SIGNATURE_DATE\}\}/g, signedDate.toLocaleDateString())
-      .replace(/\{\{SIGNATURE_TIME\}\}/g, signedDate.toLocaleTimeString())
-      .replace(/\{\{SIGNATURE_IP\}\}/g, "N/A");
+      .replace(/\{\{PROJECT_SIGNATURE_IMAGE\}\}/g, signature)
+      .replace(/\{\{PROJECT_SIGNATURE_DATE\}\}/g, signedDate.toLocaleDateString())
+      .replace(/\{\{PROJECT_SIGNATURE_TIME\}\}/g, signedDate.toLocaleTimeString())
+      .replace(/\{\{PROJECT_SIGNATURE_IP\}\}/g, "N/A");
 
     console.log("📄 [GENERATE-CONTRACT-PDF] Assembled HTML length:", contractHTML.length);
 
@@ -160,7 +199,17 @@ async function generateContractPDF(
     console.log("📄 [GENERATE-CONTRACT-PDF] Generated filename:", fileName);
 
     // Use unified media system to save contract
+    console.log("📄 [GENERATE-CONTRACT-PDF] Saving PDF to media system...");
     const { saveMedia } = await import("../../lib/media");
+
+    console.log("📄 [GENERATE-CONTRACT-PDF] Media save parameters:", {
+      fileName: fileName,
+      fileType: "application/pdf",
+      projectId: project.id.toString(),
+      targetLocation: "documents",
+      title: `Contract - ${project.title}`,
+      pdfBufferLength: pdfBuffer.length,
+    });
 
     const contractFile = await saveMedia({
       mediaData: pdfBuffer,
@@ -183,7 +232,9 @@ async function generateContractPDF(
 
     console.log(
       "📄 [GENERATE-CONTRACT-PDF] Contract saved to unified media system:",
-      contractFile.id
+      contractFile.id,
+      "Public URL:",
+      contractFile.publicUrl
     );
 
     return contractFile.publicUrl || "";
