@@ -48,11 +48,6 @@ const projectId = project.id;
           {/* <!-- Editor content will be inserted here --> */}
         </div>
       </div>
-
-      {/* <!-- Status indicator --> */}
-      <div id="contract-status" class="text-sm text-gray-600 dark:text-gray-400">
-        Ready to edit
-      </div>
     </div>
   ) : (
     <>
@@ -98,9 +93,8 @@ const projectId = project.id;
     try {
       console.log("🔄 [CONTRACT-EDITOR] Fetching existing contract from client-side...");
       console.log("🔍 [CONTRACT-EDITOR] Project ID:", projectId);
-
       if (!reset) {
-        const response = await fetch(`/api/get-project-contract?projectId=${projectId}`, {
+        const response = await fetch(`/api/get-project-contract`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -133,24 +127,16 @@ const projectId = project.id;
         // Fetch template from server
         console.log("📄 [CONTRACT-EDITOR] Fetching template from server");
         try {
-          const templateResponse = await fetch("/api/pdf/assemble", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              templateId: "contract",
-              projectId: projectId,
-              projectData: project,
-            }),
-          });
+          const templateResponse = await fetch(
+            `/api/pdf/assemble?templateId=contract&projectId=${projectId}`
+          );
           if (templateResponse.ok) {
-            const templateContent = await templateResponse.text();
+            contractHtml = await templateResponse.text();
             console.log(
               "📄 [CONTRACT-EDITOR] Template fetched successfully, length:",
-              templateContent.length
+              contractHtml.length
             );
-            return templateContent;
+            return contractHtml;
           } else {
             console.error(
               "❌ [CONTRACT-EDITOR] Failed to fetch template:",
@@ -165,7 +151,7 @@ const projectId = project.id;
       }
 
       // Process template with placeholders using PROJECT_ prefixed placeholders
-      return processedTemplate;
+      return contractHtml;
     } catch (error) {
       console.error("❌ [CONTRACT-EDITOR] Error fetching existing contract:", error);
       return null;
@@ -240,7 +226,6 @@ const projectId = project.id;
     // Track changes
     contractEditor.on("text-change", () => {
       isDirty = true;
-      updateStatus("Unsaved changes");
     });
 
     // Set up event listeners
@@ -265,11 +250,9 @@ const projectId = project.id;
             );
             contractEditor.setContents(delta);
             isDirty = true;
-            updateStatus("Template loaded - unsaved changes");
             console.log("✅ [CONTRACT-EDITOR] Template loaded successfully");
           } catch (error) {
             console.error("❌ [CONTRACT-EDITOR] Error loading template:", error);
-            updateStatus("Error loading template");
           }
         }
       });
@@ -291,7 +274,16 @@ const projectId = project.id;
       // Add a small delay to ensure database transaction is committed
       await new Promise((resolve) => setTimeout(resolve, 500));
 
-      const response = await fetch(`/api/get-project-contract?projectId=${projectId}`);
+      const response = await fetch(`/api/get-project-contract`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          projectId: projectId,
+          projectData: project,
+        }),
+      });
       const data = await response.json();
 
       if (data.success && data.data?.contractHtml) {
@@ -301,7 +293,6 @@ const projectId = project.id;
         });
 
         // Update the status to reflect that we now have an existing contract
-        updateStatus("Contract saved and synced");
 
         // Log the updated status
         console.log("✅ [CONTRACT-EDITOR] Contract status updated:", {
@@ -350,7 +341,6 @@ const projectId = project.id;
 
       if (data.success) {
         isDirty = false;
-        updateStatus("Contract saved successfully");
         showNotification("Contract saved successfully", "success");
 
         // Refresh the contract data from the server
@@ -361,21 +351,10 @@ const projectId = project.id;
       }
     } catch (error) {
       console.error("Error saving contract:", error);
-      updateStatus("Error saving contract");
       showNotification("Error saving contract: " + error.message, "error");
     } finally {
       saveBtn.textContent = originalText;
       saveBtn.disabled = false;
-    }
-  }
-
-  function updateStatus(message) {
-    const statusEl = document.getElementById("contract-status");
-    if (statusEl) {
-      statusEl.textContent = message;
-      statusEl.className = isDirty
-        ? "text-sm text-orange-600 dark:text-orange-400"
-        : "text-sm text-green-600 dark:text-green-400";
     }
   }
 
