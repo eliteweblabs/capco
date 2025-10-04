@@ -4,12 +4,12 @@
 
 interface Props {
   currentUser?: any;
-  currentRole?: string;
 }
 
-const { debugData, currentRole, currentUser } = Astro.props;
+const { debugData, currentUser } = Astro.props;
 // Only show for authenticated users
-const isAuthenticated = currentUser && currentUser.id;
+const isAuth = currentUser && currentUser.id;
+const currentRole = currentUser?.profile?.role;
 
 // Debug Panel Component - Admin Only
 // Shows all App component parameters in an accordion modal
@@ -58,7 +58,7 @@ const categories = {
   "Basic Info": ["title", "description", "currentUrl"],
   "User & Auth": ["currentUser", "session", "isAuth", "currentUserId", "currentRole"],
   "Project Data": ["project", "projectId", "projects"],
-  "System Config": ["supabase", "supabaseUrl", "isBackend", "noNavigation"],
+  "System Config": ["supabase", "supabaseUrl", "isBackend"],
   "Navigation": ["navigationData", "desktopNavigationHTML", "visibleNavItems"],
   "Other": []
 };
@@ -309,7 +309,7 @@ Object.keys(categorizedData).forEach(category => {
 </script>
 
 
-{isAuthenticated && (
+{isAuth && (
     
   <div id="feedback-widget" class="fixed bottom-4 right-4 z-50">
     {/* <!-- Feedback Button --> */}
