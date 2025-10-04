@@ -152,10 +152,10 @@ async function generateContractPDF(
 
     // insert the following into the contractHTML
     const signatureHTMLBlock = `<p>Signed by: {{CLIENT_NAME}}</p>
-    <p>Signed on: {{SIGNATURE_DATE}}</p>
-    <p>Signed at: {{SIGNATURE_TIME}}</p>
-    <p>Signed IP: {{SIGNATURE_IP}}</p>
-    <p>Signature: {{SIGNATURE_IMAGE}}</p>`;
+    <p>Signed on: {{PROJECT_SIGNATURE_DATE}}</p>
+    <p>Signed at: {{PROJECT_SIGNATURE_TIME}}</p>
+    <p>Signed IP: {{PROJECT_SIGNATURE_IP}}</p>
+    <p>Signature: {{PROJECT_SIGNATURE_IMAGE}}</p>`;
 
     contractHTML = contractHTML.getElementById("signature-component").innerHTML =
       signatureHTMLBlock;

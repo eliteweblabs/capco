@@ -103,6 +103,7 @@ import Navbar from "./Navbar.astro";
 import Aside from "./Aside.astro";
 import ScrollProgressIndicator from "./ScrollProgressIndicator.astro";
 import TutorialOverlay from "./TutorialOverlay.astro";
+import DebugPanel from "./DebugPanel.astro";
 
 // Prepare debug data for admin users
 const debugData = {
@@ -357,7 +358,7 @@ const debugData = {
         id="main-content"
         class=`ahOqFrhzLjivRe8a1kX_ uLPch_bqyJDXwe5tynMV t6gkcSf0Bt4MLItXvDJ_ pdl952ted2i71qBLPIcQ jtAJHOc7mn7b4IKRO59D h8KYXnua2NT4kTVzieom ${currentUser && currentRole !== "Client" ? "Syhv8OuxgyaGMa27BMXo" : ""}`
       >
-        <main>
+        <main class="min-h-screen-flex-grow flex-grow">
           <slot />
         </main>
         <!-- Footer -->
@@ -397,6 +398,7 @@ const debugData = {
     <TutorialOverlay currentUser={currentUser} tutorialId="demo-tour" autoStart={false} />
 
     <!-- Debug Panel (Admin Only) -->
+    <DebugPanel currentUser={currentUser} currentRole={currentRole} />
 
     <script src="../../assets/js/app.bundle.js"></script>
 
@@ -623,8 +625,9 @@ const debugData = {
           (element as HTMLElement).style.display = "block";
         };
 
+        const selector = "input, textarea, select, form, button, label, .slot-machine-modal";
         // Add event listeners to all form inputs
-        const inputs = document.querySelectorAll("input, textarea, select");
+        const inputs = document.querySelectorAll(selector);
         inputs.forEach((input) => {
           input.addEventListener("focus", hideOnFocus);
           input.addEventListener("blur", showOnBlur);
@@ -637,7 +640,7 @@ const debugData = {
               if (node.nodeType === Node.ELEMENT_NODE) {
                 const element = node as Element;
                 const newInputs = element.querySelectorAll
-                  ? element.querySelectorAll("input, textarea, select")
+                  ? element.querySelectorAll(selector)
                   : [];
                 newInputs.forEach((input) => {
                   input.addEventListener("focus", hideOnFocus);
@@ -1148,57 +1151,40 @@ const debugData = {
         return str.substring(0, maxLength - suffix.length) + suffix;
       };
 
-      // Form utilities
-      (window as any).hideOnMobileInput = function (elementSelector: any) {
-        if (window.innerWidth >= 768) return;
+      // // Form utilities
+      // (window as any).hideOnMobileInput = function (elementSelector: any) {
+      //   if (window.innerWidth >= 768) return;
 
-        const element = document.querySelector(elementSelector);
-        if (!element) return;
+      //   const element = document.querySelector(elementSelector);
+      //   if (!element) return;
 
-        const hideOnFocus = () => {
-          (element as HTMLElement).style.display = "none";
-        };
+      //   const hideOnFocus = () => {
+      //     (element as HTMLElement).style.display = "none";
+      //   };
 
-        const showOnBlur = () => {
-          (element as HTMLElement).style.display = "block";
-        };
+      //   const showOnBlur = () => {
+      //     (element as HTMLElement).style.display = "block";
+      //   };
 
-        // Simple and reliable approach: Hide on input focus, show on blur
-        let isKeyboardOpen = false;
+      //   // Simple and reliable approach: Hide on input focus, show on blur
+      //   let isKeyboardOpen = false;
 
-        function hideOnInputFocus() {
-          if (!isKeyboardOpen) {
-            console.log("📱 Input focused - hiding elements");
-            isKeyboardOpen = true;
-            hideElement(document.getElementById("speed-dial"));
-            hideElement(document.querySelector("[data-sticky-sms]") as HTMLElement);
-          }
-        }
+      //   function hideElement(element: HTMLElement | null) {
+      //     if (element) element.style.display = "none";
+      //   }
 
-        function showOnInputBlur() {
-          if (isKeyboardOpen) {
-            console.log("📱 Input blurred - showing elements");
-            isKeyboardOpen = false;
-            showElement(document.getElementById("speed-dial"));
-            showElement(document.querySelector("[data-sticky-sms]") as HTMLElement);
-          }
-        }
+      //   function showElement(element: HTMLElement | null) {
+      //     if (element) element.style.display = "block";
+      //   }
 
-        function hideElement(element: HTMLElement | null) {
-          if (element) element.style.display = "none";
-        }
-
-        function showElement(element: HTMLElement | null) {
-          if (element) element.style.display = "block";
-        }
-
-        // Simple input focus/blur detection
-        const inputs = document.querySelectorAll("input, textarea, select");
-        inputs.forEach((input: any) => {
-          input.addEventListener("focus", hideOnInputFocus);
-          input.addEventListener("blur", showOnInputBlur);
-        });
-      };
+      //   const selector = "input, textarea, select, form, button, label, .slot-machine-modal";
+      //   // Simple input focus/blur detection
+      //   const inputs = document.querySelectorAll(selector);
+      //   inputs.forEach((input: any) => {
+      //     input.addEventListener("focus", hideOnInputFocus);
+      //     input.addEventListener("blur", showOnInputBlur);
+      //   });
+      // };
 
       // Make UX utility functions available globally
       // Only triggers on iOS Safari with beta/pre-release versions (18-26)

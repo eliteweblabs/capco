@@ -82,16 +82,27 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       // Get user ID from currentUser or cookies
       const userId = currentUser?.id || cookies.get("user-id")?.value;
 
-      contractPdfUrl = await generateContractPDF(projectId, signature, signed_at, userId, baseUrl);
+      contractPdfUrl = await generateContractPDF(
+        projectId,
+        signature,
+        signed_at,
+        userId,
+        baseUrl,
+        clientIP
+      );
       console.log("✅ [SAVE-SIGNATURE] PDF generated successfully:", contractPdfUrl);
     } catch (pdfError) {
       console.warn("⚠️ [SAVE-SIGNATURE] PDF generation failed, continuing without PDF:", pdfError);
     }
 
-    // Update the project with signature data (only use existing columns)
+    // Update the project with signature data using contact_data structure
     const updateData = {
-      proposal_signature: signature,
-      signed_at: signed_at || new Date().toISOString(),
+      contact_data: {
+        image: signature,
+        signed_date: new Date(signed_at || new Date()).toLocaleDateString(),
+        signed_time: new Date(signed_at || new Date()).toLocaleTimeString(),
+        ip_address: clientIP,
+      },
     };
 
     const { data, error } = await supabase
@@ -144,7 +155,8 @@ async function generateContractPDF(
   signature: string,
   signedAt: string,
   userId: string,
-  baseUrl: string
+  baseUrl: string,
+  clientIP: string
 ): Promise<string> {
   try {
     console.log("📄 [SAVE-SIGNATURE] Generating contract PDF for project:", projectId);
@@ -165,9 +177,9 @@ async function generateContractPDF(
       throw new Error("Failed to fetch project data");
     }
 
-    // Prepare signature data for manual replacement (SIGNATURE_* placeholders)
+    // Prepare signature data for contact_data structure
     const signedDate = new Date(signedAt);
-    const signatureData = {
+    const contactData = {
       image: signature,
       signed_date: signedDate.toLocaleDateString(),
       signed_time: signedDate.toLocaleTimeString(),
@@ -186,11 +198,11 @@ async function generateContractPDF(
     let contractHTML = await assembleResponse.text();
 
     // Replace signature-specific placeholders (using uppercase format for consistency)
-    contractHTML = contractHTML
-      .replace(/\{\{SIGNATURE_IMAGE\}\}/g, signatureData.image)
-      .replace(/\{\{SIGNATURE_DATE\}\}/g, signatureData.signed_date)
-      .replace(/\{\{SIGNATURE_TIME\}\}/g, signatureData.signed_time)
-      .replace(/\{\{SIGNATURE_IP\}\}/g, signatureData.ip_address);
+    // contractHTML = contractHTML
+    //   .replace(/\{\{SIGNATURE_IMAGE\}\}/g, signatureData.image)
+    //   .replace(/\{\{SIGNATURE_DATE\}\}/g, signatureData.signed_date)
+    //   .replace(/\{\{SIGNATURE_TIME\}\}/g, signatureData.signed_time)
+    //   .replace(/\{\{SIGNATURE_IP\}\}/g, signatureData.ip_address);
 
     console.log("📄 [SAVE-SIGNATURE] Assembled HTML length:", contractHTML.length);
 

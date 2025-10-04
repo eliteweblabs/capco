@@ -1,7 +1,6 @@
 ---
 import ContractEditor from "../admin/ContractEditor.astro";
 import BoxIcon from "../common/BoxIcon.astro";
-import DigitalSignature from "./DigitalSignature.astro";
 
 interface Props {
   project: any;
@@ -88,32 +87,24 @@ const statusAlert = getStatusAlert();
     // 50 is contract signed
     Number(projectStatus) < 50 && currentRole === "Admin" ? (
       <ContractEditor
-        projectId={projectId}
+        project={project}
         projectTitle={project.title || project.address}
         project={project}
         editMode={true}
+        projectStatus={projectStatus}
+        statusData={statusData}
+        currentUser={currentUser}
       />
     ) : (
-      <>
-        <ContractEditor
-          projectId={projectId}
-          projectTitle={project.title || project.address}
-          project={project}
-          editMode={false}
-        />
-        <DigitalSignature
-          id="proposal-signature"
-          required={true}
-          width={2400}
-          height={580}
-          placeholder="Proposal Signature"
-          project={project}
-          projectStatus={projectStatus}
-          projectStatusLabel={projectStatusLabel}
-          statusData={statusData}
-          currentUser={currentUser}
-        />
-      </>
+      <ContractEditor
+        project={project}
+        projectTitle={project.title || project.address}
+        project={project}
+        editMode={false}
+        projectStatus={projectStatus}
+        statusData={statusData}
+        currentUser={currentUser}
+      />
     )
   }
 </div>
