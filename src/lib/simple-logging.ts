@@ -37,6 +37,24 @@ export type LogType =
 
 export class SimpleProjectLogger {
   /**
+   * Get the appropriate database client for the project
+   */
+  private static getClient(projectId: number) {
+    return projectId === 0 ? supabaseAdmin : supabase;
+  }
+
+  /**
+   * Check if database client is available and return it
+   */
+  private static checkClient(client: any): any {
+    if (!client) {
+      console.error("Database client not available");
+      return null;
+    }
+    return client;
+  }
+
+  /**
    * Add a log entry to a project's log column
    * @param projectId - The project ID (use 0 for system logs)
    * @param type - The type of log entry (determines icon/color)
@@ -59,11 +77,6 @@ export class SimpleProjectLogger {
       //   currentUser,
       //   message,
       // });
-
-      if (!supabase) {
-        console.error("Supabase not configured");
-        return false;
-      }
 
       // Determine if we have a project ID or project object
       let projectId: number;
@@ -117,11 +130,9 @@ export class SimpleProjectLogger {
         metadata,
       };
 
-      // Use admin client for system logs (projectId 0)
-      const client = projectId === 0 ? supabaseAdmin : supabase;
-
+      // Get appropriate client
+      const client = this.checkClient(this.getClient(projectId));
       if (!client) {
-        console.error("Database client not available");
         return false;
       }
 
@@ -169,12 +180,12 @@ export class SimpleProjectLogger {
    */
   static async getProjectLog(projectId: number): Promise<SimpleLogEntry[]> {
     try {
-      if (!supabase) {
-        console.error("Supabase not configured");
+      const client = this.checkClient(this.getClient(projectId));
+      if (!client) {
         return [];
       }
 
-      const { data: project, error } = await supabase
+      const { data: project, error } = await client
         .from("projects")
         .select("log")
         .eq("id", projectId)
@@ -197,12 +208,12 @@ export class SimpleProjectLogger {
    */
   static async clearProjectLog(projectId: number): Promise<boolean> {
     try {
-      if (!supabase) {
-        console.error("Supabase not configured");
+      const client = this.checkClient(this.getClient(projectId));
+      if (!client) {
         return false;
       }
 
-      const { error } = await supabase.from("projects").update({ log: [] }).eq("id", projectId);
+      const { error } = await client.from("projects").update({ log: [] }).eq("id", projectId);
 
       if (error) {
         console.error("Error clearing project log:", error);
@@ -249,43 +260,5 @@ export class SimpleProjectLogger {
 
     // Fallback
     return "Unknown User";
-  }
-
-  /**
-   * Ensure the system log project exists (ID: 0)
-   */
-  private static async ensureSystemLogProject(): Promise<void> {
-    try {
-      if (!supabaseAdmin) return;
-
-      // Check if system project exists
-      const { data: existing, error: checkError } = await supabaseAdmin
-        .from("projects")
-        .select("id")
-        .eq("id", 0)
-        .single();
-
-      if (checkError && checkError.code === "PGRST116") {
-        // Project doesn't exist, create it
-        const { error: createError } = await supabaseAdmin.from("projects").insert([
-          {
-            id: 0,
-            title: "System Log",
-            address: "System",
-            author_id: "00000000-0000-0000-0000-000000000000",
-            status: 220,
-            log: [],
-          },
-        ]);
-
-        if (createError) {
-          console.error("Error creating system log project:", createError);
-        } else {
-          console.log("📝 [SYSTEM] Created system log project (ID: 0)");
-        }
-      }
-    } catch (error) {
-      console.error("Error ensuring system log project:", error);
-    }
   }
 }
