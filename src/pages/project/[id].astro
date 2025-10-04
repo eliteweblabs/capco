@@ -63,9 +63,6 @@ const defaultTab = validTabs.includes(statusParam || "")
 const activeTabIndex = validTabs.indexOf(defaultTab);
 
 // Track which tab should load content server-side
-const shouldLoadTab = (tabName: string) => {
-  return defaultTab === tabName;
-};
 
 // Fetch project data and project author profile - RLS will handle authorization
 let project: any = null;
@@ -353,8 +350,7 @@ if (currentRole === "Admin" || currentRole === "Staff") {
         />
 
         <!-- Discussion Tab -->
-        <!-- {
-            shouldLoadTab("discussion") ? ( -->
+
         <TabDiscussions
           project={project}
           currentUser={currentUser}
@@ -363,31 +359,12 @@ if (currentRole === "Admin" || currentRole === "Staff") {
           globalSecondaryTextClasses={globalSecondaryTextClasses}
           globalPrimaryTextClasses={globalPrimaryTextClasses}
         />
-        <!-- ) : (
-              <div
-                id="status-discussion"
-                data-status-panel="discussion"
-                class="status-tab-panel hidden"
-                data-lazy-load="true"
-                data-tab-name="discussion"
-              >
-                <div class="flex items-center justify-center p-8">
-                  <div class="text-center">
-                    <div class="mx-auto mb-4 h-8 w-8 animate-spin rounded-full border-4 border-gray-300 border-t-primary-600" />
-                    <p class="text-gray-600 dark:text-gray-400">Loading discussions...</p>
-                  </div>
-                </div>
-              </div>
-            )
-          } -->
 
         <!-- Documents Tab -->
         <TabDocuments
           project={project}
           currentUser={currentUser}
           projectStatus={currentStatusInt}
-          projectStatusLabel={currentStatusName || undefined}
-          fileType="media"
           globalSecondaryTextClasses={globalSecondaryTextClasses}
           globalPrimaryTextClasses={globalPrimaryTextClasses}
           globalInputClasses={globalInputClasses}
