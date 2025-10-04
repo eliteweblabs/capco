@@ -83,19 +83,12 @@ import BoxIcon from "../common/BoxIcon.astro";
 
   async function loadPunchlistItems(projectId) {
     try {
-      // Import the utility function dynamically with error handling
-      let fetchPunchlistData, updatePunchlistCount;
-      try {
-        const utils = await import("/src/lib/punchlist-utils");
-        fetchPunchlistData = utils.fetchPunchlistData;
-        updatePunchlistCount = utils.updatePunchlistCount;
-      } catch (importError) {
-        console.error("❌ [PUNCHLIST] Failed to import punchlist-utils:", importError);
-        showPunchlistError("Failed to load punchlist utilities. Please refresh the page.");
-        return;
-      }
-      
-      const data = await fetchPunchlistData(projectId);
+      // Fetch punchlist data directly
+      const response = await fetch(`/api/get-punchlist?projectId=${projectId}`, {
+        credentials: "include",
+      });
+
+      const data = await response.json();
 
       console.log("🔍 [TabPunchlist] data:", data);
       if (data.success) {
@@ -128,21 +121,28 @@ import BoxIcon from "../common/BoxIcon.astro";
   async function updateIncompletePunchlistItemsCount() {
     const incompleteCount = punchlistItems.filter((item) => !item.mark_completed).length;
     
-    // Use the utility function for consistent behavior
-    try {
-      const { updatePunchlistCount } = await import("/src/lib/punchlist-utils");
-      updatePunchlistCount(incompleteCount);
-    } catch (importError) {
-      console.error("❌ [PUNCHLIST] Failed to import punchlist-utils for count update:", importError);
-      // Fallback to manual count update
-      const countElement = document.querySelector(".incomplete-punchlist-items-count");
-      if (countElement) {
-        if (incompleteCount > 0) {
-          countElement.textContent = incompleteCount.toString();
-          countElement.classList.remove("hidden");
-        } else {
-          countElement.classList.add("hidden");
-        }
+    // Update count directly
+    const countElement = document.querySelector(".incomplete-punchlist-items-count");
+    const tabButton = document.querySelector('[data-dropdown-toggle="checklist-dropdown"]');
+
+    if (tabButton) {
+      // Update count bubble on tab button
+      if (incompleteCount > 0) {
+        tabButton.setAttribute("data-count", incompleteCount.toString());
+        tabButton.classList.add("has-count");
+      } else {
+        tabButton.removeAttribute("data-count");
+        tabButton.classList.remove("has-count");
+      }
+    }
+
+    // Also update the old count element if it exists
+    if (countElement) {
+      if (incompleteCount > 0) {
+        countElement.textContent = incompleteCount.toString();
+        countElement.classList.remove("hidden");
+      } else {
+        countElement.classList.add("hidden");
       }
     }
     

@@ -11,7 +11,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     const fileComments = formData.get("fileComments") as string;
 
     // Check authentication
-    const { supabase } = await import("/src/lib/supabase");
+    const { supabase } = await import("../../lib/supabase");
     if (!supabase) {
       return new Response(JSON.stringify({ error: "Supabase client not configured" }), {
         status: 500,
