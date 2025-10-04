@@ -4,7 +4,18 @@ import { generateButtonHTML } from "../../lib/button-styles";
 export const POST: APIRoute = async ({ request }) => {
   try {
     const body = await request.json();
-    const { text, variant, size, dataAttributes, type, href, target, disabled, loading } = body;
+    const {
+      text,
+      variant,
+      size,
+      dataAttributes,
+      type,
+      href,
+      target,
+      disabled,
+      loading,
+      fullWidth,
+    } = body;
 
     // Use the centralized button styling function
     const buttonHTML = generateButtonHTML(
@@ -12,7 +23,7 @@ export const POST: APIRoute = async ({ request }) => {
       {
         variant: variant || "primary",
         size: size || "sm",
-        fullWidth: false,
+        fullWidth: fullWidth || false,
       },
       dataAttributes || {}
     );

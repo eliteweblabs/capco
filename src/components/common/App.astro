@@ -7,7 +7,6 @@ interface Props {
   project?: any;
   supabase?: any;
   supabaseUrl?: string;
-  noNavigation?: boolean;
   projects?: any;
   isBackend?: boolean;
   id?: string;
@@ -53,7 +52,6 @@ const {
   project = undefined,
   supabase = undefined,
   supabaseUrl = undefined,
-  noNavigation = false,
   projects = undefined,
   id = undefined,
   globalPrimaryTextClasses = "",
@@ -76,7 +74,6 @@ const {
 // console.log("[App] project:", project);
 // console.log("[App] supabase:", supabase);
 // console.log("🔍 [App] supabaseUrl:", supabaseUrl);
-// console.log("🔍 [App] noNavigation:", noNavigation);
 
 // Derived properties (8 props → 13 total)
 const isAuth = currentUser ? true : false;
@@ -124,7 +121,6 @@ const debugData = {
   project,
   supabase,
   supabaseUrl,
-  noNavigation,
   projects,
   isBackend,
   id,
@@ -171,7 +167,6 @@ const debugData = {
       rel="stylesheet"
       href="https://www.unpkg.com/flowbite-datepicker@1.3.2/dist/css/datepicker.min.css"
     />
-    <link rel="stylesheet" href="https://flowbite.com/application-ui/demo/app.css" />
 
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" sizes="any" />
     <link rel="icon" type="image/png" href="/favicon.png" sizes="any" />
@@ -181,56 +176,6 @@ const debugData = {
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="CAPCo Fire App" />
     <meta name="generator" content={Astro.generator} />
-
-    <!-- Native form validation tooltip styling for dark mode -->
-    <style is:inline>
-      /* Style native HTML5 validation bubbles for dark mode */
-      :root {
-        color-scheme: light dark;
-      }
-
-      /* Firefox validation tooltips */
-      input:invalid,
-      textarea:invalid,
-      select:invalid {
-        box-shadow: none; /* Remove red glow */
-      }
-
-      /* Webkit/Chrome validation bubble (limited styling support) */
-      input::-webkit-validation-bubble-message,
-      textarea::-webkit-validation-bubble-message,
-      select::-webkit-validation-bubble-message {
-        background: #1f2937 !important;
-        color: #f3f4f6 !important;
-        border: 1px solid #374151 !important;
-        padding: 1rem !important;
-        font-size: 14px !important;
-      }
-
-      /* Dark mode adjustments */
-      .dark input::-webkit-validation-bubble-message,
-      .dark textarea::-webkit-validation-bubble-message,
-      .dark select::-webkit-validation-bubble-message {
-        background: #1f2937 !important;
-        color: #f3f4f6 !important;
-        border: 1px solid #374151 !important;
-      }
-
-      /* Style the validation bubble arrow */
-      input::-webkit-validation-bubble-arrow,
-      textarea::-webkit-validation-bubble-arrow,
-      select::-webkit-validation-bubble-arrow {
-        background: #1f2937 !important;
-        border-color: #374151 !important;
-      }
-
-      .dark input::-webkit-validation-bubble-arrow,
-      .dark textarea::-webkit-validation-bubble-arrow,
-      .dark select::-webkit-validation-bubble-arrow {
-        background: #1f2937 !important;
-        border-color: #374151 !important;
-      }
-    </style>
 
     <!-- Safari Privacy Protection Meta Tags -->
     <meta name="referrer" content="strict-origin-when-cross-origin" />
@@ -264,8 +209,8 @@ const debugData = {
 
     <!-- Font styles are handled by CSS files -->
 
-    <!-- 
     <link rel="stylesheet" href="https://flowbite.com/application-ui/demo/app.css" />
+    <!-- 
 
     <link
       rel="apple-touch-icon"
@@ -398,7 +343,7 @@ const debugData = {
     <TutorialOverlay currentUser={currentUser} tutorialId="demo-tour" autoStart={false} />
 
     <!-- Debug Panel (Admin Only) -->
-    <DebugPanel currentUser={currentUser} currentRole={currentRole} />
+    <DebugPanel currentUser={currentUser} />
 
     <script src="../../assets/js/app.bundle.js"></script>
 
@@ -576,9 +521,10 @@ const debugData = {
         }
 
         if (adminNotification?.email) {
-          (window as any).sendEmail(adminNotification.email);
+          (window as any).sendEmail(adminNotification.email, currentUser);
         }
 
+        console.log("currentUser from notice", currentUser);
         if (currentNotification?.modal) {
           const modalData = currentNotification.modal;
           // Handle redirect object structure
@@ -724,17 +670,21 @@ const debugData = {
         // Show confirmation modal with action buttons
         if ((window as any).showModal) {
           (window as any).showModal(
-            "warning",
+            "error",
             "Delete Project",
             "Are you sure you want to delete this project? This action cannot be undone.",
             6000000, // 6000 seconds timeout
             [
               {
                 label: "Cancel",
+                variant: "anchor",
+                fullWidth: true,
                 action: () => {},
               },
               {
                 label: "Delete",
+                variant: "danger",
+                fullWidth: true,
                 action: () => {
                   // Set deleting flag to prevent multiple operations
                   isDeleting = true;

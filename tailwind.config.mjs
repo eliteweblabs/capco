@@ -137,31 +137,31 @@ export default {
           950: "#0a0a0a",
         },
 
-        // Background Colors
-        background: {
-          light: "#fafafa",
-          dark: "#0a0a0a",
-          card: "#fafafa",
-          "card-dark": "#171717",
-        },
+        // // Background Colors
+        // background: {
+        //   light: "#fafafa",
+        //   dark: "#0a0a0a",
+        //   card: "#fafafa",
+        //   "card-dark": "#171717",
+        // },
 
         // Text Colors
-        text: {
-          primary: primaryColorPalette[500], // Use the actual primary color
-          "primary-dark": "#fafafa",
-          secondary: "#525252",
-          "secondary-dark": "#a3a3a3",
-          muted: "#737373",
-          "muted-dark": "#737373",
-        },
+        // text: {
+        //   primary: primaryColorPalette[500], // Use the actual primary color
+        //   "primary-dark": "#fafafa",
+        //   secondary: "#525252",
+        //   "secondary-dark": "#a3a3a3",
+        //   muted: "#737373",
+        //   "muted-dark": "#737373",
+        // },
 
         // Border Colors
-        border: {
-          light: "#e5e5e5",
-          dark: "#404040",
-          muted: "#f5f5f5",
-          "muted-dark": "#262626",
-        },
+        // border: {
+        //   light: "#e5e5e5",
+        //   dark: "#404040",
+        //   muted: "#f5f5f5",
+        //   "muted-dark": "#262626",
+        // },
 
         // Add border support for custom colors
         red: {
