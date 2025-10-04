@@ -176,8 +176,14 @@ export const POST: APIRoute = async ({ request, cookies }): Promise<Response> =>
           // Override buttonLink with magic link for authentication
           let finalButtonLink = buttonLink;
 
-          // Only generate magic links when emailType is explicitly "magic_link"
-          if (emailType === "magic_link" && buttonLink && buttonLink.includes("/dashboard")) {
+          // Generate magic links for authentication emails OR status updates with project URLs
+          const shouldGenerateMagicLink =
+            (emailType === "magic_link" && buttonLink && buttonLink.includes("/dashboard")) ||
+            (emailType === "status_update" &&
+              buttonLink &&
+              (buttonLink.includes("/project/") || buttonLink.includes("/dashboard")));
+
+          if (shouldGenerateMagicLink) {
             try {
               // Use direct dashboard redirect - no intermediate verify endpoint
               const finalDestination = buttonLink.includes("/dashboard")
