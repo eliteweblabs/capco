@@ -6,3 +6,28 @@ export const globalClasses = () => {
     globalSecondaryTextClasses: "text-gray-800 dark:text-gray-200",
   };
 };
+
+/**
+ * Get responsive column classes based on column count
+ * @param columns - Number of columns (1, 2, 3, 4, 6, or 12)
+ * @returns Tailwind CSS classes for grid columns
+ */
+export const getColumnClasses = (columns: number | undefined): string => {
+  switch (columns) {
+    case 1:
+      return "col-span-12";
+    case 2:
+      return "col-span-12 md:col-span-6";
+    case 3:
+      return "col-span-12 md:col-span-4";
+    case 4:
+      return "col-span-3";
+    case 6:
+      return "col-span-2";
+    case 12:
+      return "col-span-1";
+    case undefined:
+    default:
+      return "col-span-6";
+  }
+};

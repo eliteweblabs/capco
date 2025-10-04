@@ -4,7 +4,7 @@ import { supabase } from "../../lib/supabase";
 
 export const POST: APIRoute = async ({ cookies }) => {
   try {
-    const { isAuth, currentUser, role } = await checkAuth(cookies);
+    const { isAuth, currentUser } = await checkAuth(cookies);
     if (!isAuth || !currentUser) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 401,
@@ -13,7 +13,7 @@ export const POST: APIRoute = async ({ cookies }) => {
     }
 
     // Only allow Admin/Staff to run migrations
-    if (!["Admin", "Staff"].includes(role || "")) {
+    if (!["Admin", "Staff"].includes(currentUser?.profile?.role || "")) {
       return new Response(JSON.stringify({ error: "Admin access required" }), {
         status: 403,
         headers: { "Content-Type": "application/json" },
@@ -119,7 +119,7 @@ export const POST: APIRoute = async ({ cookies }) => {
       return new Response(
         JSON.stringify({
           error: "Failed to execute SQL migration",
-          details: error.message,
+          details: error instanceof Error ? error.message : "Unknown error",
         }),
         {
           status: 500,

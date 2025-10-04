@@ -3,6 +3,7 @@ import {
   getFilteredUnifiedFormElements,
   isFormElementReadOnly,
 } from "../../lib/project-form-config";
+import { getColumnClasses } from "../../pages/api/global-classes";
 
 import ToggleButton from "../form/ToggleButton.astro";
 import UnitSlider from "../form/UnitSlider.astro";
@@ -56,12 +57,7 @@ const formElements = getFilteredUnifiedFormElements(currentRole, isNewProject, p
       // Handle special cases first
       if (element.id === "address-input") {
         // Determine column class for address field
-        const columnClass = element.columns === 1 ? "col-span-12" : 
-                           element.columns === 2 ? "col-span-6" : 
-                           element.columns === 3 ? "col-span-4" : 
-                           element.columns === 4 ? "col-span-3" : 
-                           element.columns === 6 ? "col-span-2" : 
-                           element.columns === 12 ? "col-span-1" : "col-span-12";
+        const columnClass = getColumnClasses(element.columns);
         
         return (
           <div class={`relative ${columnClass}`}>
@@ -125,12 +121,7 @@ const formElements = getFilteredUnifiedFormElements(currentRole, isNewProject, p
       if (element.type === "field") {
         
         if (element.elementType === "text" || element.elementType === "number") {
-          const columnClass = element.columns === 1 ? "col-span-12" : 
-                             element.columns === 2 ? "col-span-6" : 
-                             element.columns === 3 ? "col-span-4" : 
-                             element.columns === 4 ? "col-span-3" : 
-                             element.columns === 6 ? "col-span-2" : 
-                             element.columns === 12 ? "col-span-1" : "col-span-6";
+          const columnClass = getColumnClasses(element.columns);
           
           return (
             <div class={`relative ${columnClass}`}>
@@ -163,12 +154,7 @@ const formElements = getFilteredUnifiedFormElements(currentRole, isNewProject, p
         }
 
         if (element.elementType === "textarea") {
-          const columnClass = element.columns === 1 ? "col-span-12" : 
-                             element.columns === 2 ? "col-span-6" : 
-                             element.columns === 3 ? "col-span-4" : 
-                             element.columns === 4 ? "col-span-3" : 
-                             element.columns === 6 ? "col-span-2" : 
-                             element.columns === 12 ? "col-span-1" : "col-span-12";
+          const columnClass = getColumnClasses(element.columns);
           
           return (
             <div class={`relative ${columnClass}`}>
@@ -185,12 +171,7 @@ const formElements = getFilteredUnifiedFormElements(currentRole, isNewProject, p
         }
 
         if (element.elementType === "checkbox") {
-          const columnClass = element.columns === 1 ? "col-span-12" : 
-                             element.columns === 2 ? "col-span-6" : 
-                             element.columns === 3 ? "col-span-4" : 
-                             element.columns === 4 ? "col-span-3" : 
-                             element.columns === 6 ? "col-span-2" : 
-                             element.columns === 12 ? "col-span-1" : "col-span-6";
+          const columnClass = getColumnClasses(element.columns);
           
           const isChecked =
             project?.[element.name] === true ||
@@ -227,12 +208,7 @@ const formElements = getFilteredUnifiedFormElements(currentRole, isNewProject, p
         }
 
         if (element.elementType === "component" && element.component === "UnitSlider") {
-          const columnClass = element.columns === 1 ? "col-span-12" : 
-                             element.columns === 2 ? "col-span-6" : 
-                             element.columns === 3 ? "col-span-4" : 
-                             element.columns === 4 ? "col-span-3" : 
-                             element.columns === 6 ? "col-span-2" : 
-                             element.columns === 12 ? "col-span-1" : "col-span-6";
+          const columnClass = getColumnClasses(element.columns);
           
           return (
             <div class={`relative ${columnClass}`}>
@@ -253,12 +229,7 @@ const formElements = getFilteredUnifiedFormElements(currentRole, isNewProject, p
 
       // Handle button groups
       if (element.type === "button-group") {
-        const columnClass = element.columns === 1 ? "col-span-12" : 
-                           element.columns === 2 ? "col-span-6" : 
-                           element.columns === 3 ? "col-span-4" : 
-                           element.columns === 4 ? "col-span-3" : 
-                           element.columns === 6 ? "col-span-2" : 
-                           element.columns === 12 ? "col-span-1" : "col-span-12";
+        const columnClass = getColumnClasses(element.columns);
         
         // Parse selected values from project data
         let selectedValues = [] as any;
