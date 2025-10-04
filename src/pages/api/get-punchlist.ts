@@ -1,4 +1,3 @@
-import { createClient } from "@supabase/supabase-js";
 import type { APIRoute } from "astro";
 
 export const GET: APIRoute = async ({ request, cookies }) => {
@@ -19,11 +18,10 @@ export const GET: APIRoute = async ({ request, cookies }) => {
       );
     }
 
-    // Get Supabase credentials from environment
-    const supabaseUrl = import.meta.env.PUBLIC_SUPABASE_URL;
-    const supabaseServiceKey = import.meta.env.SUPABASE_SERVICE_ROLE_KEY;
+    // Import the shared Supabase admin client
+    const { supabaseAdmin } = await import("../../lib/supabase-admin");
 
-    if (!supabaseUrl || !supabaseServiceKey) {
+    if (!supabaseAdmin) {
       return new Response(
         JSON.stringify({
           success: false,
@@ -35,9 +33,6 @@ export const GET: APIRoute = async ({ request, cookies }) => {
         }
       );
     }
-
-    // Create Supabase client with service role key for server-side operations
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     // Get the current user from the session
     const accessToken = cookies.get("sb-access-token")?.value;
@@ -57,13 +52,22 @@ export const GET: APIRoute = async ({ request, cookies }) => {
     }
 
     // Create a client with user session for RLS
-    const supabaseUser = createClient(supabaseUrl, import.meta.env.PUBLIC_SUPABASE_ANON_KEY, {
-      global: {
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-        },
-      },
-    });
+    const { supabase } = await import("../../lib/supabase");
+
+    if (!supabase) {
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: "Database configuration missing",
+        }),
+        {
+          status: 500,
+          headers: { "Content-Type": "application/json" },
+        }
+      );
+    }
+
+    const supabaseUser = supabase;
 
     // Get user profile to determine role
     const { data: userData, error: userError } = await supabaseUser.auth.getUser();
@@ -82,7 +86,7 @@ export const GET: APIRoute = async ({ request, cookies }) => {
     }
 
     // Get user profile with role information
-    const { data: profile, error: profileError } = await supabase
+    const { data: profile, error: profileError } = await supabaseAdmin
       .from("profiles")
       .select("role")
       .eq("id", userData.user.id)
@@ -105,7 +109,7 @@ export const GET: APIRoute = async ({ request, cookies }) => {
     const userRole = profile?.role || "Client";
 
     // Check if punchlist table exists
-    const { data: tableCheck, error: tableError } = await supabase
+    const { data: tableCheck, error: tableError } = await supabaseAdmin
       .from("punchlist")
       .select("id")
       .limit(1);
@@ -125,7 +129,7 @@ export const GET: APIRoute = async ({ request, cookies }) => {
     }
 
     // Fetch punchlist items for the project
-    const { data: punchlistItems, error: punchlistError } = await supabase
+    const { data: punchlistItems, error: punchlistError } = await supabaseAdmin
       .from("punchlist")
       .select(
         `
