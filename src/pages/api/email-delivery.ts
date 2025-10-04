@@ -70,18 +70,15 @@ export const POST: APIRoute = async ({ request, cookies }): Promise<Response> =>
     const failedEmails = [];
     let emailTemplate: string;
 
-    let usersToNotify = body.usersToNotify;
-
     const {
+      usersToNotify,
       emailType = "email",
       emailSubject,
       emailContent,
-      emailToRoles,
       buttonLink = `${baseUrl}/dashboard`,
       buttonText = "Access Your Dashboard",
       project,
       newStatus,
-      authorId,
       includeResendHeaders = false,
       trackLinks = true, // Default to true for backward compatibility
       currentUser,
@@ -180,40 +177,40 @@ export const POST: APIRoute = async ({ request, cookies }): Promise<Response> =>
           let finalButtonLink = buttonLink;
 
           // Only generate magic links when emailType is explicitly "magic_link"
-          if (
-            emailType === "magic_link" &&
-            buttonLink &&
-            (buttonLink.includes("/dashboard") || buttonLink.includes("/api/auth/callback"))
-          ) {
-            try {
-              // The redirectTo should be the final destination after successful verification
-              // Supabase will redirect to /api/auth/verify first with token_hash, then verify will redirect here
-              const finalDestination = buttonLink.includes("/dashboard")
-                ? "/dashboard"
-                : "/dashboard";
-              const redirectUrl = `${baseUrl}/api/auth/verify?redirect=${encodeURIComponent(finalDestination)}`;
+          // if (
+          //   emailType === "magic_link" &&
+          //   buttonLink &&
+          //   (buttonLink.includes("/dashboard") || buttonLink.includes("/api/auth/callback"))
+          // ) {
+          try {
+            // The redirectTo should be the final destination after successful verification
+            // Supabase will redirect to /api/auth/verify first with token_hash, then verify will redirect here
+            const finalDestination = buttonLink.includes("/dashboard")
+              ? "/dashboard"
+              : "/dashboard";
+            const redirectUrl = `${baseUrl}/api/auth/verify?redirect=${encodeURIComponent(finalDestination)}`;
 
-              const { data: magicLinkData, error: magicLinkError } =
-                await supabaseAdmin.auth.admin.generateLink({
-                  type: "magiclink",
-                  email: userEmail,
-                  options: {
-                    redirectTo: redirectUrl,
-                  },
-                });
+            const { data: magicLinkData, error: magicLinkError } =
+              await supabaseAdmin.auth.admin.generateLink({
+                type: "magiclink",
+                email: userEmail,
+                options: {
+                  redirectTo: redirectUrl,
+                },
+              });
 
-              if (magicLinkError) {
-                console.error("📧 [EMAIL-DELIVERY] Error generating magic link:", magicLinkError);
-              } else {
-                finalButtonLink = magicLinkData.properties.action_link;
-              }
-            } catch (error) {
-              console.error("📧 [EMAIL-DELIVERY] Error generating magic link:", error);
+            if (magicLinkError) {
+              console.error("📧 [EMAIL-DELIVERY] Error generating magic link:", magicLinkError);
+            } else {
+              finalButtonLink = magicLinkData.properties.action_link;
             }
-          } else if (buttonLink && !buttonLink.startsWith("http")) {
-            // For non-magic-link emails, convert relative URLs to absolute URLs
-            finalButtonLink = `${baseUrl}${buttonLink.startsWith("/") ? buttonLink : `/${buttonLink}`}`;
+          } catch (error) {
+            console.error("📧 [EMAIL-DELIVERY] Error generating magic link:", error);
           }
+          // } else if (buttonLink && !buttonLink.startsWith("http")) {
+          // For non-magic-link emails, convert relative URLs to absolute URLs
+          //   finalButtonLink = `${baseUrl}${buttonLink.startsWith("/") ? buttonLink : `/${buttonLink}`}`;
+          // }
 
           if (buttonText && finalButtonLink) {
             emailHtml = emailHtml.replace("{{BUTTON_TEXT}}", buttonText);

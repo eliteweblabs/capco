@@ -248,24 +248,18 @@ const canManageProposals = currentRole === "Admin" || currentRole === "Staff";
 
       {/* <!-- Actions --> */}
       {canManageProposals && projectStatus >= 20 && projectStatus < 50 && (
-         <div class="flex gap-2">
-            <span class="button-text">Proposal Saves Automatically</span>
-          </div>
-          <div class="flex justify-between">
-         
-          <div class="flex-center flex gap-2">
-            <Button
-              id="send-proposal-btn"
-              onclick="sendProposal()"
-              variant="success"
-              size="lg"
-              class="w-full"
-              icon="send"
-              iconPosition="left"
-            >
-              {projectStatus === 20 ? "Send Proposal" : "Resend Proposal"}
-            </Button>
-          </div>
+        <div class="flex-center flex">
+          <Button
+            id="send-proposal-btn"
+            onclick="sendProposal()"
+            variant="success"
+            size="lg"
+            class="w-full"
+            icon="send"
+            iconPosition="left"
+          >
+            {projectStatus === 20 ? "Send Proposal" : "Resend Proposal"}
+          </Button>
         </div>
       )}
 
@@ -426,14 +420,12 @@ const canManageProposals = currentRole === "Admin" || currentRole === "Staff";
       }
 
       try {
-        
         const response = await fetch(`/api/get-invoice-details?id=${this.invoiceId}`);
         const data = await response.json();
 
         if (data.success && data.invoice) {
           const invoice = data.invoice;
 
-    
           // Load line items from catalog_line_items and convert field names
           const dbLineItems = invoice.catalog_line_items || [];
           this.cachedLineItems = dbLineItems.map((item) => ({
@@ -512,8 +504,7 @@ const canManageProposals = currentRole === "Admin" || currentRole === "Staff";
           // If no line items or empty/malformed line items, initialize with defaults
           // console.log("🔍 [PROPOSAL-MANAGER] Checking for valid line items...");
           // console.log("🔍 [PROPOSAL-MANAGER] cachedLineItems.length:", this.cachedLineItems.length);
-        
-        
+
           const hasValidLineItems =
             this.cachedLineItems.length > 0 &&
             this.cachedLineItems.some((item) => item.name && item.name.trim() !== "");
@@ -524,10 +515,7 @@ const canManageProposals = currentRole === "Admin" || currentRole === "Staff";
             // console.log("🔍 [PROPOSAL-MANAGER] No valid line items found, initializing defaults");
             this.initializeDefaultLineItems();
             await this.saveToDatabase(); // Save the defaults
-          
-       
           }
-
 
           // Render the loaded line items to the DOM
           this.renderLineItems();
@@ -572,8 +560,6 @@ const canManageProposals = currentRole === "Admin" || currentRole === "Staff";
       const projectAddress = document.getElementById("proposal-project-address");
       const clientName = document.getElementById("proposal-client-name");
       const proposalDate = document.getElementById("proposal-date");
-
-   
 
       if (projectAddress) projectAddress.textContent = this.project.address || "Project Address";
       if (clientName)
@@ -620,11 +606,9 @@ const canManageProposals = currentRole === "Admin" || currentRole === "Staff";
     }
 
     renderLineItems() {
-    
       const tbody = document.getElementById("proposal-line-items");
 
       if (!tbody || !this.cachedLineItems) {
-     
         return;
       }
 
@@ -632,7 +616,6 @@ const canManageProposals = currentRole === "Admin" || currentRole === "Staff";
 
       // Render each line item
       this.cachedLineItems.forEach((item, index) => {
-    
         const row = document.createElement("tr");
         row.className = "proposal-line-item-row";
 

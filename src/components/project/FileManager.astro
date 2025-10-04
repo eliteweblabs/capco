@@ -32,11 +32,72 @@ import BoxIcon from "../common/BoxIcon.astro";
 import Button from "../common/Button.astro";
 import LoadingSpinner from "../common/LoadingSpinner.astro";
 // Only show for Admin/Staff
-const showManagement = currentRole === "Admin" || currentRole === "Staff";
-
+// Allowed file types
+const allowedFileTypes = [
+  ".pdf",
+  ".png",
+  ".jpg",
+  ".jpeg",
+  ".gif",
+  ".webp",
+  ".bmp",
+  ".tiff",
+  ".svg",
+  ".dwg",
+  ".dxf",
+  ".dwt",
+  ".dws",
+  ".dwf",
+  ".doc",
+  ".docx",
+  ".xls",
+  ".xlsx",
+  ".ppt",
+  ".pptx",
+  ".txt",
+  ".csv",
+  ".zip",
+  ".rar",
+  ".7z",
+  ".tar",
+  ".gz",
+  ".image/*",
+  ".application/pdf",
+  ".application/msword",
+  ".application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  ".application/vnd.ms-excel",
+  ".application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  ".application/vnd.ms-powerpoint",
+  ".application/vnd.openxmlformats-officedocument.presentationml.presentation",
+  ".text/plain",
+  ".text/csv",
+  ".application/acad",
+  ".application/x-acad",
+  ".application/autocad",
+  ".application/x-autocad",
+  ".application/dwg",
+  ".application/x-dwg",
+  ".image/vnd.dwg",
+  ".drawing/dwg",
+  ".application/dxf",
+  ".application/x-dxf",
+  ".image/vnd.dxf",
+  ".drawing/dxf",
+  ".application/dwt",
+  ".application/x-dwt",
+  ".application/dws",
+  ".application/x-dws",
+  ".application/dwf",
+  ".application/x-dwf",
+  ".model/vnd.dwf",
+  ".application/zip",
+  ".application/x-rar-compressed",
+  ".application/x-7z-compressed",
+  ".application/x-tar",
+  ".application/gzip",
+];
 // Project status-based restrictions
-const canCheckoutFiles =
-  (projectStatus >= 20 && currentRole === "Admin") || currentRole === "Staff";
+const canCheckoutFiles = projectStatus > 10 && (currentRole === "Admin" || currentRole === "Staff");
 const canUploadFiles = projectStatus >= 10;
 const canDeleteFiles =
   currentRole === "Admin" ||
@@ -99,7 +160,7 @@ const canDeleteFiles =
           type="file"
           id="file-input"
           multiple
-          accept=".pdf,.png,.jpg,.jpeg,.gif,.webp,.bmp,.tiff,.svg,.dwg,.dxf,.dwt,.dws,.dwf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv,.zip,.rar,.7z,.tar,.gz,image/*,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation,text/plain,text/csv,application/acad,application/x-acad,application/autocad,application/x-autocad,application/dwg,application/x-dwg,image/vnd.dwg,drawing/dwg,application/dxf,application/x-dxf,image/vnd.dxf,drawing/dxf,application/dwt,application/x-dwt,application/dws,application/x-dws,application/dwf,application/x-dwf,model/vnd.dwf,application/zip,application/x-rar-compressed,application/x-7z-compressed,application/x-tar,application/gzip"
+          accept={allowedFileTypes.join(",")}
           class="hidden"
         />
       </div>
@@ -127,7 +188,7 @@ const canDeleteFiles =
 
   <!-- Management Panel (Admin/Staff only, Status 20+) -->
   {
-    showManagement && canCheckoutFiles && (
+    canCheckoutFiles && (
       <div id="management-panel" class="mt-6 rounded-lg bg-gray-50 p-4 dark:bg-gray-800">
         <h4 class="mb-4 text-sm font-medium text-gray-700 dark:text-gray-300">File Management</h4>
 
@@ -161,50 +222,23 @@ const canDeleteFiles =
     projectId,
     currentUser,
     currentRole,
-    showManagement,
+    canCheckoutFiles,
     projectAuthorId,
     projectStatus,
-    canCheckoutFiles,
     canUploadFiles,
     canDeleteFiles,
     globalInputClasses,
+    globalSecondaryTextClasses,
+    globalPrimaryTextClasses,
     statusData,
   }}
 >
-  // File Manager Component with Checkout System - EXTENSIVE DEBUGGING
-  // console.log("🔧 [FILE-MANAGER] Script initialized with variables:", {
-  //   projectId,
-  //   currentUser: currentUser
-  //     ? {
-  //         id: currentUser.id,
-  //         email: currentUser.email,
-  //         profile: currentUser.profile,
-  //       }
-  //     : null,
-  //   currentRole,
-  //   projectAuthorId,
-  //   projectStatus,
-  //   showManagement,
-  //   canCheckoutFiles,
-  //   canUploadFiles,
-  //   canDeleteFiles,
-  //   statusData,
-  // });
-
   let files = [];
-  let staffUsers = [];
   let currentProjectId = projectId;
   let currentUserId = currentUser?.id;
 
   function initializeFileManager() {
-    // Check if required elements exist
-    const uploadArea = document.getElementById("upload-dropzone");
-    const fileInput = document.getElementById("file-input");
-    const browseBtn = document.getElementById("browse-files-btn");
-    const filesContainer = document.getElementById("files-container");
-
     loadProjectFiles();
-
     // No need to load staff users for simplified workflow
   }
 
@@ -236,7 +270,7 @@ const canDeleteFiles =
 
         updateFileCount();
         renderFiles();
-        if (showManagement) {
+        if (canCheckoutFiles) {
           updateManagementPanel();
         }
       } else {
@@ -262,58 +296,6 @@ const canDeleteFiles =
       );
     }
   }
-
-  // Load users for assignment dropdown (Admin and Staff can assign to all user types)
-  async function loadStaffUsers() {
-    try {
-      // Admin and Staff can assign files to Admin, Staff, and Client users
-      const rolesToLoad = ["Admin", "Staff", "Client"];
-
-      const response = await fetch("/api/get-user-emails-by-role", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ roles: rolesToLoad }),
-      });
-
-      const data = await response.json();
-
-      if (data.success) {
-        let allUsers = data.staffUsers || [];
-
-        // Filter users based on role and project author ID
-        staffUsers = allUsers.filter((user) => {
-          // Always include Admin and Staff users
-          if (user.role === "Admin" || user.role === "Staff") {
-            return true;
-          }
-
-          // For Client users, only include the project author
-          if (user.role === "Client") {
-            const isProjectAuthor = user.id === projectAuthorId;
-
-            if (isProjectAuthor) {
-              return true;
-            } else {
-              console.log("❌ [FILE-MANAGER] Excluding non-author client:", user.email);
-              return false;
-            }
-          }
-
-          return false;
-        });
-      } else {
-        console.error("❌ [FILE-MANAGER] Failed to load users:", data.error);
-      }
-    } catch (error) {
-      console.error("❌ [FILE-MANAGER] Error loading users:", error);
-      console.error("🔧 [FILE-MANAGER] Error details:", {
-        message: error.message,
-        stack: error.stack,
-        name: error.name,
-      });
-    }
-  }
-
   // Update file count display
   function updateFileCount() {
     const fileCountElement = document.getElementById("file-count");
@@ -402,10 +384,10 @@ const canDeleteFiles =
     return `
       <div class="border border-gray-200 dark:border-gray-700 rounded-lg">
         <!-- Accordion Header -->
-        <div class="flex items-center justify-between">
+        <div class="flex items-center justify-between  cursor-pointer rounded-lg transition-colors hover:bg-gray-50 dark:hover:bg-gray-700">
           <!-- Clickable header area -->
           <div 
-            class="flex-1 cursor-pointer rounded-lg transition-colors hover:bg-gray-50 dark:hover:bg-gray-700"
+            class="flex-1"
             data-accordion-target="#accordion-${id}"
             aria-expanded="${open}"
             aria-controls="accordion-${id}"
@@ -414,10 +396,10 @@ const canDeleteFiles =
             onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click();}"
           >
             <div class="p-4">
-              <h3 class="text-lg font-medium text-gray-900 dark:text-white">
+              <h3 class="text-lg font-medium ${globalPrimaryTextClasses} truncate">
                 ${title}
               </h3>
-              ${description ? `<p class="mt-1 text-sm text-gray-500 dark:text-gray-400">${description}</p>` : ""}
+              ${description ? `<p class="mt-1 ${globalSecondaryTextClasses} truncate">${description}</p>` : ""}
             </div>
           </div>
 
@@ -488,7 +470,7 @@ const canDeleteFiles =
       <div class="space-y-4">
         <!-- File Title -->
         <div>
-          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Title</label>
+          <label for="file-title-${file.id}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Title</label>
           <input 
             type="text" 
             id="file-title-${file.id}"
@@ -500,7 +482,7 @@ const canDeleteFiles =
         
         <!-- File Description -->
         <div>
-          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Description</label>
+          <label for="file-comments-${file.id}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Description</label>
           <textarea 
             id="file-comments-${file.id}"
             class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-primary-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
@@ -516,7 +498,7 @@ const canDeleteFiles =
         <!-- Private Toggle using SlideToggle partial structure -->
         <div class="flex items-center justify-between">
           <div>
-            <label class="text-sm font-medium text-gray-700 dark:text-gray-300">Private</label>
+            <label for="file-private-${file.id}" class="text-sm font-medium text-gray-700 dark:text-gray-300">Private</label>
             <p class="text-xs text-gray-500 dark:text-gray-400">Hide this file from clients</p>
           </div>
           <label class="toggle-wrapper flex cursor-pointer items-center gap-3">
@@ -552,14 +534,14 @@ const canDeleteFiles =
         </div>
         <div class="flex-1 min-w-0">
           <div class="flex items-center space-x-2">
-            <span class="text-lg font-medium text-gray-900 dark:text-white truncate">
+            <span class="text-lg font-medium ${globalPrimaryTextClasses} truncate">
               ${getDisplayFileName(file)}
             </span>
             <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${statusColor}">
               ${statusBadge}
             </span>
           </div>
-          <p class="text-sm text-gray-500 dark:text-gray-400">
+          <p class="text-sm ${globalSecondaryTextClasses}">
             ${formatFileSize(file.fileSize)} • Uploaded ${new Date(file.uploadedAt).toLocaleDateString()} at ${new Date(file.uploadedAt).toLocaleTimeString()}${file.uploaded_by_name ? ` • by ${file.uploaded_by_name}` : ""}
           </p>
         </div>
@@ -873,7 +855,7 @@ const canDeleteFiles =
           // Immediately refresh files and render to show the new file card
           await loadProjectFiles();
           renderFiles();
-          if (showManagement) {
+          if (canCheckoutFiles) {
             updateManagementPanel();
           }
 
@@ -1206,7 +1188,7 @@ const canDeleteFiles =
         // Refresh file list
         await loadProjectFiles();
         renderFiles();
-        if (showManagement) {
+        if (canCheckoutFiles) {
           updateManagementPanel();
         }
       } else {
@@ -1322,7 +1304,7 @@ const canDeleteFiles =
                     // Force reload the file list
                     await loadProjectFiles();
                     renderFiles();
-                    if (showManagement) {
+                    if (canCheckoutFiles) {
                       updateManagementPanel();
                     }
                   }, 1000);

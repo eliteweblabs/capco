@@ -54,22 +54,14 @@ export const POST: APIRoute = async ({ request, redirect, cookies }) => {
   const smsAlerts = formData.get("sms_alerts") === "on"; // Checkbox returns "on" when checked
   const mobileCarrier = formData.get("mobile_carrier")?.toString();
 
-  console.log("🔐 [REGISTER] Form data:", {
-    email,
-    firstName,
-    lastName,
-    companyName,
-    phone,
-    smsAlerts,
-    mobileCarrier,
-    hasPassword: !!password,
-  });
-
   if (!email || !password || !firstName || !lastName || !companyName) {
     return new Response("Email, password, first name, last name, and company name are required", {
       status: 400,
     });
   }
+  // Use the current request URL to determine the base URL
+  const currentUrl = new URL(request.url);
+  const emailRedirectUrl = `${currentUrl.origin}/dashboard`;
 
   // Validate email format
   const emailError = validateEmail(email);
@@ -83,14 +75,6 @@ export const POST: APIRoute = async ({ request, redirect, cookies }) => {
       status: 400,
     });
   }
-
-  // console.log("🔐 [REGISTER] Attempting Supabase auth.signUp for:", email);
-
-  // Use the current request URL to determine the base URL
-  const currentUrl = new URL(request.url);
-  const emailRedirectUrl = `${currentUrl.origin}/dashboard`;
-  // console.log("🔐 [AUTH] Email redirect URL:", emailRedirectUrl);
-  // console.log("🔐 [AUTH] Current request origin:", currentUrl.origin);
 
   const { data, error } = await supabase.auth.signUp({
     email,
@@ -109,13 +93,6 @@ export const POST: APIRoute = async ({ request, redirect, cookies }) => {
     },
   });
 
-  // console.log("🔐 [REGISTER] Supabase signUp result:", {
-  //   success: !!data.user,
-  //   userId: data.user?.id,
-  //   needsConfirmation: !data.user?.email_confirmed_at,
-  //   error: error?.message,
-  // });
-
   if (error) {
     console.error("Registration error:", error);
     console.error("Error details:", {
@@ -133,7 +110,7 @@ export const POST: APIRoute = async ({ request, redirect, cookies }) => {
       JSON.stringify({
         success: false,
         error: isDuplicateEmail
-          ? "A user with this email address has already been registered"
+          ? "A user with this email address already exists, please log in instead."
           : "Failed to create user account. Please try again.",
         details: error.message,
       }),
@@ -153,18 +130,6 @@ export const POST: APIRoute = async ({ request, redirect, cookies }) => {
 
   // Create profile in the profiles table if user was created successfully
   if (data.user) {
-    // console.log("Attempting to create profile for user:", data.user.id);
-    // console.log("🔐 [REGISTER] Profile data being inserted:", {
-    //   id: data.user.id,
-    //   company_name: companyName,
-    //   first_name: firstName,
-    //   last_name: lastName,
-    //   phone: phone || null,
-    //   sms_alerts: smsAlerts,
-    //   mobile_carrier: smsAlerts ? getCarrierGateway(mobileCarrier || null) : null,
-    //   role: "Client",
-    // });
-
     // Wait a moment for the trigger to complete, then upsert the profile
     // The SQL trigger creates a basic profile, we upsert to handle race conditions
     await new Promise((resolve) => setTimeout(resolve, 100));

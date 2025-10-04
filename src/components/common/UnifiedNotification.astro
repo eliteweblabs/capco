@@ -385,7 +385,8 @@
       text: string,
       variant: string = "primary",
       size: string = "sm",
-      dataAttributes: Record<string, string> = {}
+      dataAttributes: Record<string, string> = {},
+      fullWidth: boolean = false
     ): Promise<string> {
       try {
         // Call the Button partial component via API
@@ -394,19 +395,20 @@
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({
-            "x-button-children": text,
-            "x-button-variant": variant,
-            "x-button-size": size,
-            "x-button-data-attributes": dataAttributes,
-          }),
-
           // body: JSON.stringify({
-          //   text,
-          //   variant,
-          //   size,
-          //   dataAttributes,
+          //   "x-button-children": text,
+          //   "x-button-variant": variant,
+          //   "x-button-size": size,
+          //   "x-button-data-attributes": dataAttributes,
           // }),
+
+          body: JSON.stringify({
+            text,
+            variant,
+            size,
+            dataAttributes,
+            fullWidth,
+          }),
         });
 
         if (response.ok) {
@@ -422,7 +424,13 @@
     }
 
     private async renderActionButtons(
-      actions: Array<{ label: string; action: () => void; primary?: boolean }>,
+      actions: Array<{
+        label: string;
+        action: () => void;
+        primary?: boolean;
+        fullWidth?: boolean;
+        variant?: string;
+      }>,
       notificationId: string
     ) {
       // Ensure actions is an array before calling map
@@ -434,16 +442,22 @@
       // Generate buttons using Button partial
       const buttonHTMLs = await Promise.all(
         actions.map(async (action, index) => {
-          // Determine variant based on primary flag or position
+          // Use provided variant or determine based on primary flag or position
           const isPrimary = action.primary || index === 0;
-          const variant = isPrimary ? "primary" : "secondary";
+          const variant = action.variant || (isPrimary ? "primary" : "secondary");
 
           const dataAttributes = {
             "action-index": index.toString(),
             "notification-id": notificationId,
           };
 
-          return await this.generateButtonHTML(action.label, variant, "md", dataAttributes);
+          return await this.generateButtonHTML(
+            action.label,
+            variant,
+            "md",
+            dataAttributes,
+            action.fullWidth
+          );
         })
       );
 

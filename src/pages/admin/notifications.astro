@@ -68,8 +68,18 @@ if (supabaseAdmin) {
   session={session}
   supabase={supabase}
   supabaseUrl={import.meta.env.PUBLIC_SUPABASE_URL}
-  noNavigation={false}
   isBackend={true}
+  globalInputClasses={globalInputClasses}
+  globalPrimaryTextClasses={globalPrimaryTextClasses}
+  globalSecondaryTextClasses={globalSecondaryTextClasses}
+  globalCompanyName={globalCompanyName}
+  globalCompanyAddress={globalCompanyAddress}
+  globalCompanyPhone={globalCompanyPhone}
+  globalCompanyEmail={globalCompanyEmail}
+  globalCompanyWebsite={globalCompanyWebsite}
+  globalCompanyLogo={globalCompanyLogo}
+  globalCompanyLogoDark={globalCompanyLogoDark}
+  globalCompanyLogoLight={globalCompanyLogoLight}
 >
   <div class="min-h-screen bg-gray-50 py-8 dark:bg-gray-900">
     <div class="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
@@ -244,146 +254,144 @@ if (supabaseAdmin) {
       </div>
     </div>
   </div>
+</App>
 
-  <script>
-    import { SimpleProjectLogger } from "../../lib/simple-logging";
-    class NotificationManager {
-      constructor() {
-        this.init();
+<script>
+  import { SimpleProjectLogger } from "../../lib/simple-logging";
+  class NotificationManager {
+    constructor() {
+      this.init();
+    }
+
+    init() {
+      this.bindEvents();
+    }
+
+    bindEvents() {
+      const form = document.getElementById("notification-form");
+      if (form) {
+        form.addEventListener("submit", (e) => this.handleSubmit(e));
       }
+    }
 
-      init() {
-        this.bindEvents();
-      }
+    async handleSubmit(e: Event) {
+      e.preventDefault();
 
-      bindEvents() {
-        const form = document.getElementById("notification-form");
-        if (form) {
-          form.addEventListener("submit", (e) => this.handleSubmit(e));
+      const submitBtn = document.getElementById("submit-btn") as HTMLButtonElement;
+      const originalText = submitBtn?.textContent;
+
+      try {
+        if (submitBtn) {
+          submitBtn.disabled = true;
+          submitBtn.textContent = "Sending...";
         }
-      }
 
-      async handleSubmit(e: Event) {
-        e.preventDefault();
+        const form = e.target as HTMLFormElement;
+        const formData = new FormData(form);
+        const recipientsSelect = document.getElementById("recipients") as HTMLSelectElement;
+        const recipients = Array.from(recipientsSelect?.selectedOptions || []);
 
-        const submitBtn = document.getElementById("submit-btn") as HTMLButtonElement;
-        const originalText = submitBtn?.textContent;
+        if (recipients.length === 0) {
+          alert("Please select at least one recipient");
+          return;
+        }
 
-        try {
-          if (submitBtn) {
-            submitBtn.disabled = true;
-            submitBtn.textContent = "Sending...";
-          }
+        // Check if "All Users" is selected
+        const isAllUsers = recipients.some((option: HTMLOptionElement) => option.value === "all");
 
-          const form = e.target as HTMLFormElement;
-          const formData = new FormData(form);
-          const recipientsSelect = document.getElementById("recipients") as HTMLSelectElement;
-          const recipients = Array.from(recipientsSelect?.selectedOptions || []);
+        let notifications = [];
 
-          if (recipients.length === 0) {
-            alert("Please select at least one recipient");
-            return;
-          }
-
-          // Check if "All Users" is selected
-          const isAllUsers = recipients.some((option: HTMLOptionElement) => option.value === "all");
-
-          let notifications = [];
-
-          if (isAllUsers) {
-            // Send to all users
-            const allUsersResponse = await fetch("/api/notifications/create", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                allUsers: true,
-                title: formData.get("title"),
-                message: formData.get("message"),
-                type: formData.get("type"),
-                priority: formData.get("priority"),
-                actionUrl: formData.get("actionUrl") || undefined,
-                actionText: formData.get("actionText") || undefined,
-              }),
-            });
-
-            if (allUsersResponse.ok) {
-              const result = await allUsersResponse.json();
-              notifications = [{ status: "fulfilled", value: allUsersResponse }];
-            } else {
-              notifications = [{ status: "rejected", reason: "Failed to send to all users" }];
-            }
-          } else {
-            // Send to specific users
-            notifications = recipients.map((option: HTMLOptionElement) => ({
-              userId: option.value,
+        if (isAllUsers) {
+          // Send to all users
+          const allUsersResponse = await fetch("/api/notifications/create", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              allUsers: true,
               title: formData.get("title"),
               message: formData.get("message"),
               type: formData.get("type"),
               priority: formData.get("priority"),
               actionUrl: formData.get("actionUrl") || undefined,
               actionText: formData.get("actionText") || undefined,
-            }));
+            }),
+          });
 
-            // Send notifications
-            const results = await Promise.allSettled(
-              notifications.map((notification) =>
-                fetch("/api/notifications/create", {
-                  method: "POST",
-                  headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify(notification),
-                })
-              )
-            );
-            notifications = results;
-          }
-
-          const successful = notifications.filter(
-            (r: any) => r.status === "fulfilled" && r.value?.ok
-          ).length;
-          const failed = notifications.length - successful;
-
-          if (successful > 0) {
-            window.showModal(
-              "success",
-              `✅ Successfully sent ${successful} notification(s)${failed > 0 ? `, ${failed} failed` : ""}`
-            );
-
-            await SimpleProjectLogger.addLogEntry(
-              "notifications_sent",
-              "email_sent",
-              null,
-              `Notifications sent successfully to ${successful} users${failed > 0 ? `, ${failed} failed` : ""}`
-            );
-
-            if (e.target) {
-              (e.target as HTMLFormElement).reset();
-            }
-            this.loadRecentNotifications();
+          if (allUsersResponse.ok) {
+            const result = await allUsersResponse.json();
+            notifications = [{ status: "fulfilled", value: allUsersResponse }];
           } else {
-            alert("❌ Failed to send notifications");
+            notifications = [{ status: "rejected", reason: "Failed to send to all users" }];
           }
-        } catch (error) {
-          console.error("Error sending notifications:", error);
-          alert("❌ Error sending notifications");
-        } finally {
-          if (submitBtn) {
-            submitBtn.disabled = false;
-            submitBtn.textContent = originalText || "Send Notifications";
-          }
-        }
-      }
+        } else {
+          // Send to specific users
+          notifications = recipients.map((option: HTMLOptionElement) => ({
+            userId: option.value,
+            title: formData.get("title"),
+            message: formData.get("message"),
+            type: formData.get("type"),
+            priority: formData.get("priority"),
+            actionUrl: formData.get("actionUrl") || undefined,
+            actionText: formData.get("actionText") || undefined,
+          }));
 
-      async loadRecentNotifications() {
-        // Reload the page to show updated notifications
-        window.location.reload();
+          // Send notifications
+          const results = await Promise.allSettled(
+            notifications.map((notification) =>
+              fetch("/api/notifications/create", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(notification),
+              })
+            )
+          );
+          notifications = results;
+        }
+
+        const successful = notifications.filter(
+          (r: any) => r.status === "fulfilled" && r.value?.ok
+        ).length;
+        const failed = notifications.length - successful;
+
+        if (successful > 0) {
+          window.showModal(
+            "success",
+            `✅ Successfully sent ${successful} notification(s)${failed > 0 ? `, ${failed} failed` : ""}`
+          );
+
+          await SimpleProjectLogger.addLogEntry(
+            "notifications_sent",
+            "email_sent",
+            null,
+            `Notifications sent successfully to ${successful} users${failed > 0 ? `, ${failed} failed` : ""}`
+          );
+
+          if (e.target) {
+            (e.target as HTMLFormElement).reset();
+          }
+          this.loadRecentNotifications();
+        } else {
+          alert("❌ Failed to send notifications");
+        }
+      } catch (error) {
+        console.error("Error sending notifications:", error);
+        alert("❌ Error sending notifications");
+      } finally {
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.textContent = originalText || "Send Notifications";
+        }
       }
     }
 
-    // Initialize when DOM is loaded
-    document.addEventListener("DOMContentLoaded", () => {
-      new NotificationManager();
-    });
-  </script>
-</App>
+    async loadRecentNotifications() {
+      // Reload the page to show updated notifications
+      window.location.reload();
+    }
+  }
 
-<Footer />
+  // Initialize when DOM is loaded
+  document.addEventListener("DOMContentLoaded", () => {
+    new NotificationManager();
+  });
+</script>
