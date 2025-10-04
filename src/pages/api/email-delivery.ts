@@ -280,7 +280,6 @@ export const POST: APIRoute = async ({ request, cookies }): Promise<Response> =>
               await SimpleProjectLogger.addLogEntry(
                 project?.id || 0,
                 "email_failed",
-                currentUser,
                 `Email delivery failed to ${userEmail} - Type: ${emailType}, Subject: ${emailSubject}, Error: ${errorText}`,
                 { emailType, emailSubject, error: errorText, status: response.status }
               );
@@ -297,7 +296,6 @@ export const POST: APIRoute = async ({ request, cookies }): Promise<Response> =>
               await SimpleProjectLogger.addLogEntry(
                 project?.id || 0,
                 "email_sent",
-                currentUser,
                 `Email sent successfully to ${userEmail} - Type: ${emailType}, Subject: ${emailSubject}`,
                 { emailType, emailSubject, responseId: responseData.id }
               );
@@ -328,7 +326,6 @@ export const POST: APIRoute = async ({ request, cookies }): Promise<Response> =>
             await SimpleProjectLogger.addLogEntry(
               project.id || 0,
               "email_failed",
-              currentUser,
               `Email delivery error to ${userEmail} - Type: ${emailType}, Subject: ${emailSubject}, Error: ${userError instanceof Error ? userError.message : "Unknown error"}`,
               {
                 emailType,
@@ -374,7 +371,6 @@ export const POST: APIRoute = async ({ request, cookies }): Promise<Response> =>
       await SimpleProjectLogger.addLogEntry(
         project.id || 0,
         "email_sent",
-        currentUser,
         `Email delivery batch completed - Type: ${emailType}, Total sent: ${sentEmails.length}, Total failed: ${failedEmails.length}`,
         {
           emailType,

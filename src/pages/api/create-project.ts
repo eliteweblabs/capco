@@ -444,7 +444,6 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       await SimpleProjectLogger.addLogEntry(
         project,
         "project_created",
-        currentUser,
         project.address ? project.address : "New Project was created",
         projectData
       );

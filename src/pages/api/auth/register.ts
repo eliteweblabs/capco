@@ -338,7 +338,6 @@ export const POST: APIRoute = async ({ request, redirect, cookies }) => {
     await SimpleProjectLogger.addLogEntry(
       0, // System log
       "user_registration",
-      { id: data?.user?.id, email: data?.user?.email },
       "New user registered via email",
       {
         userId: data?.user?.id,

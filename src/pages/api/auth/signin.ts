@@ -39,7 +39,6 @@ export const POST: APIRoute = async ({ request, cookies, redirect }) => {
         await SimpleProjectLogger.addLogEntry(
           0, // System log
           "error",
-          { email: email || "unknown" },
           `OAuth ${provider} failed: ${error.message}`,
           { provider, error: error.message }
         );
@@ -55,8 +54,7 @@ export const POST: APIRoute = async ({ request, cookies, redirect }) => {
       await SimpleProjectLogger.addLogEntry(
         0, // System log
         "user_login",
-        { email: email || "oauth_user" },
-        `User logged in via OAuth ${provider}`,
+        `User logged in via OAuth ${provider} ${email || "oauth_user"}`,
         { provider, initiated: true }
       );
     } catch (logError) {
@@ -81,9 +79,8 @@ export const POST: APIRoute = async ({ request, cookies, redirect }) => {
       await SimpleProjectLogger.addLogEntry(
         0, // System log
         "error",
-        { email },
-        `Password login failed: ${error.message}`,
-        { error: error.message }
+        `Password login failed: ${error.message} | ${email || "unknown"}`,
+        { error: error.message, email: email || "unknown" }
       );
     } catch (logError) {
       console.error("Error logging failed login:", logError);
@@ -100,12 +97,12 @@ export const POST: APIRoute = async ({ request, cookies, redirect }) => {
     await SimpleProjectLogger.addLogEntry(
       0, // System log
       "user_login",
-      { email: data.user.email || email },
-      "User logged in via password",
+      `User logged in via password ${data.user.email || email}`,
       {
         userId: data.user.id,
         userAgent: request.headers.get("user-agent"),
         ip: request.headers.get("x-forwarded-for") || "unknown",
+        email: data.user.email || email,
       }
     );
   } catch (logError) {

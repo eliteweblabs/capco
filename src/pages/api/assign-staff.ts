@@ -97,7 +97,6 @@ export const POST: APIRoute = async ({ request }) => {
             await SimpleProjectLogger.addLogEntry(
               projectId,
               "assignment_changed",
-              currentUser,
               `Project Assigned → ${projectDetails.address} → ${staffName}`,
               undefined,
               request.headers.get("Cookie") || ""
