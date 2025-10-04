@@ -110,13 +110,13 @@ export class SimpleProjectLogger {
             const result = await response.json();
             project = result.project;
           } else {
-            console.warn("📝 [SIMPLE-LOGGER] Could not fetch project data for logging");
+            // console.warn("📝 [SIMPLE-LOGGER] Could not fetch project data for logging");
           }
         } catch (error) {
-          console.warn("📝 [SIMPLE-LOGGER] Error fetching project data:", error);
+          console.error("📝 [SIMPLE-LOGGER] Error fetching project data:", error);
         }
       }
-      const currentUser = await checkAuth(cookies);
+      const { currentUser } = await checkAuth(cookies);
       // Extract user name from currentUser
       const userName = this.extractUserName(currentUser);
 
