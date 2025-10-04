@@ -113,7 +113,10 @@ const projectId = project.id;
           fullResponse: data,
         });
         console.log("✅ [CONTRACT-EDITOR] Found existing contract for project:", projectId);
-        console.log("📄 [CONTRACT-EDITOR] Contract HTML length:", data.data.contractHtml.length);
+        console.log(
+          "📄 [CONTRACT-EDITOR] Contract HTML length:",
+          data.data.contractHtml?.length || 0
+        );
 
         if (data.success && data.data?.contractHtml) {
           contractHtml = data.data.contractHtml;
@@ -285,8 +288,8 @@ const projectId = project.id;
 
       if (data.success && data.data?.contractHtml) {
         console.log("✅ [CONTRACT-EDITOR] Updated contract data fetched:", {
-          contractLength: data.data.contractHtml.length,
-          contractPreview: data.data.contractHtml.substring(0, 100) + "...",
+          contractLength: data.data.contractHtml?.length || 0,
+          contractPreview: data.data.contractHtml?.substring(0, 100) + "..." || "No content",
         });
 
         // Update the status to reflect that we now have an existing contract
@@ -294,7 +297,7 @@ const projectId = project.id;
         // Log the updated status
         console.log("✅ [CONTRACT-EDITOR] Contract status updated:", {
           hasExistingContract: true,
-          contractLength: data.data.contractHtml.length,
+          contractLength: data.data.contractHtml?.length || 0,
         });
 
         return true;
