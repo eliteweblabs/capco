@@ -1,4 +1,5 @@
 // Simple Project Logging - Clean and minimal
+import { checkAuth } from "./auth";
 import { supabase } from "./supabase";
 import { supabaseAdmin } from "./supabase-admin";
 
@@ -58,14 +59,12 @@ export class SimpleProjectLogger {
    * Add a log entry to a project's log column
    * @param projectId - The project ID (use 0 for system logs)
    * @param type - The type of log entry (determines icon/color)
-   * @param currentUser - The current user object
    * @param message - The log message
    * @param metadata - Optional additional data
    */
   static async addLogEntry(
     projectIdOrProject: number | any,
     type: LogType,
-    currentUser: any,
     message: string,
     metadata?: any,
     cookies?: string
@@ -117,7 +116,7 @@ export class SimpleProjectLogger {
           console.warn("📝 [SIMPLE-LOGGER] Error fetching project data:", error);
         }
       }
-
+      const currentUser = await checkAuth(cookies);
       // Extract user name from currentUser
       const userName = this.extractUserName(currentUser);
 

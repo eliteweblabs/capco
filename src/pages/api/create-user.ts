@@ -462,7 +462,6 @@ Your account has been created successfully:<br><br>
       await SimpleProjectLogger.addLogEntry(
         0, // System log
         "admin_action",
-        currentUser,
         `Admin created new ${staffRole} user: ${email}`,
         {
           newUserEmail: email,
