@@ -60,7 +60,7 @@ export const POST: APIRoute = async ({ request, cookies }): Promise<Response> =>
 
     const body: EmailDeliveryRequest = await request.json();
     // Use the proper base URL function to avoid localhost in production
-    const { getBaseUrl } = await import("/src/lib/url-utils");
+    const { getBaseUrl } = await import("../../lib/url-utils");
     const baseUrl = getBaseUrl(request);
     const emailProvider = import.meta.env.EMAIL_PROVIDER;
     const emailApiKey = import.meta.env.EMAIL_API_KEY;
@@ -159,7 +159,7 @@ export const POST: APIRoute = async ({ request, cookies }): Promise<Response> =>
       emailHtml = emailTemplate.replace("{{CONTENT}}", emailContent);
 
       // Use placeholder utilities for all template replacements
-      const { replacePlaceholders } = await import("/src/lib/placeholder-utils");
+      const { replacePlaceholders } = await import("../../lib/placeholder-utils");
       const placeholderData = {
         project: project || {},
         // Add any additional data needed for placeholders
@@ -177,35 +177,34 @@ export const POST: APIRoute = async ({ request, cookies }): Promise<Response> =>
           let finalButtonLink = buttonLink;
 
           // Only generate magic links when emailType is explicitly "magic_link"
-          // if (
-          //   emailType === "magic_link" &&
-          //   buttonLink &&
-          //   (buttonLink.includes("/dashboard") || buttonLink.includes("/api/auth/callback"))
-          // ) {
-          try {
-            // The redirectTo should be the final destination after successful verification
-            // Supabase will redirect to /api/auth/verify first with token_hash, then verify will redirect here
-            const finalDestination = buttonLink.includes("/dashboard")
-              ? "/dashboard"
-              : "/dashboard";
-            const redirectUrl = `${baseUrl}/api/auth/verify?redirect=${encodeURIComponent(finalDestination)}`;
+          if (emailType === "magic_link" && buttonLink && buttonLink.includes("/dashboard")) {
+            try {
+              // Use direct dashboard redirect - no intermediate verify endpoint
+              const finalDestination = buttonLink.includes("/dashboard")
+                ? "/dashboard"
+                : "/dashboard";
 
-            const { data: magicLinkData, error: magicLinkError } =
-              await supabaseAdmin.auth.admin.generateLink({
-                type: "magiclink",
-                email: userEmail,
-                options: {
-                  redirectTo: redirectUrl,
-                },
-              });
+              const { data: magicLinkData, error: magicLinkError } =
+                await supabaseAdmin.auth.admin.generateLink({
+                  type: "magiclink",
+                  email: userEmail,
+                  options: {
+                    redirectTo: `${baseUrl}${finalDestination}`,
+                  },
+                });
 
-            if (magicLinkError) {
-              console.error("📧 [EMAIL-DELIVERY] Error generating magic link:", magicLinkError);
-            } else {
-              finalButtonLink = magicLinkData.properties.action_link;
+              if (magicLinkError) {
+                console.error("📧 [EMAIL-DELIVERY] Error generating magic link:", magicLinkError);
+              } else {
+                finalButtonLink = magicLinkData.properties.action_link;
+                console.log("🔗 [EMAIL-DELIVERY] Generated magic link:", finalButtonLink);
+              }
+            } catch (error) {
+              console.error("📧 [EMAIL-DELIVERY] Error generating magic link:", error);
             }
-          } catch (error) {
-            console.error("📧 [EMAIL-DELIVERY] Error generating magic link:", error);
+          } else if (buttonLink && !buttonLink.startsWith("http")) {
+            // For non-magic-link emails, convert relative URLs to absolute URLs
+            finalButtonLink = `${baseUrl}${buttonLink.startsWith("/") ? buttonLink : `/${buttonLink}`}`;
           }
           // } else if (buttonLink && !buttonLink.startsWith("http")) {
           // For non-magic-link emails, convert relative URLs to absolute URLs

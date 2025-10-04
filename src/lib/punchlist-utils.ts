@@ -111,7 +111,7 @@ export function updatePunchlistCount(incompleteCount: number, selector?: string)
 
   if (tabButton) {
     // Use global count bubble utility
-    updateCountBubble(tabButton, incompleteCount, COUNT_BUBBLE_PRESETS.punchlist);
+    updateCountBubble(tabButton, incompleteCount, COUNT_BUBBLE_PRESETS.default);
   }
 
   // Also update the old count element if it exists
