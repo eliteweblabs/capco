@@ -25,7 +25,7 @@ Use the custom color names defined in `tailwind.config.mjs`:
 
 <!-- Background Colors -->
 <div class="bg-background-light dark:bg-background-dark">Adaptive Background</div>
-<div class="_1jTZ8KXRZul60S6czNi bg-background-card">Card Background</div>
+<div class="_1jTZ8KXRZul60S6czNi">Card Background</div>
 
 <!-- Text Colors -->
 <div class="dark:text-light text-black">Primary Text</div>
@@ -122,9 +122,7 @@ All colors automatically adapt to dark mode using the `dark:` prefix in Tailwind
 ### Card Component
 
 ```html
-<div
-  class="_1jTZ8KXRZul60S6czNi rounded-lg border border-border-light bg-background-card p-6 dark:border-border-dark"
->
+<div class="_1jTZ8KXRZul60S6czNi rounded-lg border border-border-light p-6 dark:border-border-dark">
   <h3 class="dark:text-light mb-2 text-xl font-semibold text-black">Card Title</h3>
   <p class="text-gray-800 dark:text-gray-200">Card content goes here.</p>
 </div>
