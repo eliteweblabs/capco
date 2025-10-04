@@ -283,7 +283,6 @@ export const GET: APIRoute = async ({ request, cookies, url }) => {
               email_content: isAdminOrStaff
                 ? status.admin_email_content
                 : status.client_email_content,
-              email_type: "status_update",
               button_text: status.button_text,
               button_link: status.button_link,
             },
