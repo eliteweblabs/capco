@@ -1,9 +1,10 @@
 import type { APIRoute } from "astro";
 import { createErrorResponse, createSuccessResponse } from "../../lib/api-optimization";
 import { checkAuth } from "../../lib/auth";
+import { replacePlaceholders } from "../../lib/placeholder-utils";
 import { supabase } from "../../lib/supabase";
 
-export const GET: APIRoute = async ({ url, cookies }) => {
+export const GET: APIRoute = async ({ url, cookies, request }) => {
   try {
     // Get current user
     console.log("🔍 [GET-PROJECT-CONTRACT] Checking authentication...");
@@ -12,6 +13,9 @@ export const GET: APIRoute = async ({ url, cookies }) => {
       console.log("❌ [GET-PROJECT-CONTRACT] Authentication required");
       return createErrorResponse("Authentication required", 401);
     }
+
+    const body = await request.json();
+    const { projectData } = body;
 
     const projectId = url.searchParams.get("projectId");
     if (!projectId) {
@@ -22,39 +26,41 @@ export const GET: APIRoute = async ({ url, cookies }) => {
       return createErrorResponse("Database not configured", 500);
     }
 
-    // Get project with contract_html
-    console.log("🔍 [GET-PROJECT-CONTRACT] Fetching contract for project:", projectId);
+    // Use the existing get-project API as single source of truth
+    console.log("🔍 [GET-PROJECT-CONTRACT] Fetching project data for placeholders:", projectId);
 
-    const { data: project, error } = await supabase
-      .from("projects")
-      .select("id, title, contract_html")
-      .eq("id", projectId)
-      .single();
+    // const { data: project, error } = await supabase
+    //   .from("projects")
+    //   .select("id, title, contract_html")
+    //   .eq("id", projectId)
+    //   .single();
 
-    if (error) {
-      console.error("❌ [GET-PROJECT-CONTRACT] Database error:", error);
-      return createErrorResponse("Failed to fetch project contract", 500);
-    }
+    // if (error) {
+    //   console.error("❌ [GET-PROJECT-CONTRACT] Database error:", error);
+    //   return createErrorResponse("Failed to fetch project contract", 500);
+    // }
 
-    if (!project) {
-      console.log("❌ [GET-PROJECT-CONTRACT] Project not found:", projectId);
-      return createErrorResponse("Project not found", 404);
-    }
+    // if (!project) {
+    //   console.log("❌ [GET-PROJECT-CONTRACT] Project not found:", projectId);
+    //   return createErrorResponse("Project not found", 404);
+    // }
 
-    console.log("📄 [GET-PROJECT-CONTRACT] Project found:", {
-      id: project.id,
-      title: project.title,
-      hasContractHtml: !!project.contract_html,
-      contractLength: project.contract_html?.length || 0,
-      contractPreview: project.contract_html?.substring(0, 100) + "...",
-    });
+    // console.log("📄 [GET-PROJECT-CONTRACT] Project found:", {
+    //   id: project.id,
+    //   title: project.title,
+    //   hasContractHtml: !!project.contract_html,
+    //   contractLength: project.contract_html?.length || 0,
+    //   contractPreview: project.contract_html?.substring(0, 100) + "...",
+    // });
+
+    const contractHtml = replacePlaceholders(projectData.contract_html, { project: projectData });
 
     return createSuccessResponse(
       {
-        projectId: project.id,
-        title: project.title,
-        contractHtml: project.contract_html,
-        hasCustomContract: !!project.contract_html,
+        projectId: projectData.id,
+        title: projectData.title,
+        contractHtml: contractHtml,
+        hasCustomContract: !!projectData.contract_html,
       },
       "Project contract retrieved successfully"
     );
