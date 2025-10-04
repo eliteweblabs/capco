@@ -75,7 +75,6 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       await SimpleProjectLogger.addLogEntry(
         projectId,
         "punchlist_added",
-        currentUser,
         `Punchlist item added: ${message.substring(0, 50)}...`,
         { punchlistId: punchlistData.id, message: message.substring(0, 100) }
       );
