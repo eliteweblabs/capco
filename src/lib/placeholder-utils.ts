@@ -108,22 +108,10 @@ export function replacePlaceholders(
     (isArrayProfile && (authorProfile as any)[0]?.company_name) ||
     (!isArrayProfile && (authorProfile as any)?.company_name) ||
     "Client Name Missing";
-  const clientEmail =
-    (isArrayProfile && (authorProfile as any)[0]?.email) ||
-    (!isArrayProfile && (authorProfile as any)?.email) ||
-    "Client Email Missing";
-  const clientPhone =
-    (isArrayProfile && (authorProfile as any)[0]?.phone) ||
-    (!isArrayProfile && (authorProfile as any)?.phone) ||
-    "N/A";
-  const clientFirstName =
-    (isArrayProfile && (authorProfile as any)[0]?.first_name) ||
-    (!isArrayProfile && (authorProfile as any)?.first_name) ||
-    " ";
-  const clientLastName =
-    (isArrayProfile && (authorProfile as any)[0]?.last_name) ||
-    (!isArrayProfile && (authorProfile as any)?.last_name) ||
-    " ";
+  const clientEmail = (!isArrayProfile && (authorProfile as any)?.email) || "Client Email Missing";
+  const clientPhone = (!isArrayProfile && (authorProfile as any)?.phone) || "N/A";
+  const clientFirstName = (!isArrayProfile && (authorProfile as any)?.first_name) || "{{BLANK}}";
+  const clientLastName = (!isArrayProfile && (authorProfile as any)?.last_name) || "{{BLANK}}";
   // Project data
   const projectAddress = data?.project?.address || "Project Address Missing";
   const projectTitle = data?.project?.title || data?.project?.address || "Untitled Project";
@@ -919,6 +907,8 @@ export function replacePlaceholders(
       addBoldTags = false;
     }
   }
+
+  result = result.replace(/\{\{\s*BLANK\s*\}\}/g, "");
 
   // return placeholderApplied && addBoldTags ? "<b>" + result + "</b>" : result;
   return result;
