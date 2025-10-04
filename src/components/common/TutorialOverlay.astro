@@ -220,6 +220,20 @@ import BoxIcon from "./BoxIcon.astro";
         this.steps.map((s) => ({ title: s.title, step: s.step }))
       );
 
+      // Hide tutorial button if no tutorial elements found
+      const tutorialButton = document.getElementById("tutorial");
+      if (tutorialButton) {
+        if (this.steps.length === 0) {
+          tutorialButton.style.display = "none";
+          console.log("🎓 [TUTORIAL] No tutorial elements found, hiding tutorial button");
+        } else {
+          tutorialButton.style.display = "";
+          console.log(
+            `🎓 [TUTORIAL] Found ${this.steps.length} tutorial elements, showing tutorial button`
+          );
+        }
+      }
+
       // If we have saved progress, start from last step
       if (this.config && this.config.lastStep > 0 && this.config.lastStep < this.steps.length) {
         this.currentStep = this.config.lastStep;
