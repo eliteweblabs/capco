@@ -200,7 +200,7 @@ async function generateContractPDF(
 
     // Use unified media system to save contract
     console.log("📄 [GENERATE-CONTRACT-PDF] Saving PDF to media system...");
-    const { saveMedia } = await import("../../lib/media");
+    const { saveMedia } = await import("/src/lib/media");
 
     console.log("📄 [GENERATE-CONTRACT-PDF] Media save parameters:", {
       fileName: fileName,

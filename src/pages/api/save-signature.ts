@@ -64,7 +64,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     console.log("💾 [SAVE-SIGNATURE] Saving signature for project:", projectId);
 
     // Check authentication using the same pattern as other APIs
-    const { supabase } = await import("../../lib/supabase");
+    const { supabase } = await import("/src/lib/supabase");
     if (!supabase) {
       return new Response(JSON.stringify({ error: "Supabase client not configured" }), {
         status: 500,
@@ -162,7 +162,7 @@ async function generateContractPDF(
     console.log("📄 [SAVE-SIGNATURE] Generating contract PDF for project:", projectId);
 
     // Fetch project data for placeholders
-    const { supabase } = await import("../../lib/supabase");
+    const { supabase } = await import("/src/lib/supabase");
     if (!supabase) {
       throw new Error("Supabase client not configured");
     }

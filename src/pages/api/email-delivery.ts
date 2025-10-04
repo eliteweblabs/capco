@@ -60,7 +60,7 @@ export const POST: APIRoute = async ({ request, cookies }): Promise<Response> =>
 
     const body: EmailDeliveryRequest = await request.json();
     // Use the proper base URL function to avoid localhost in production
-    const { getBaseUrl } = await import("../../lib/url-utils");
+    const { getBaseUrl } = await import("/src/lib/url-utils");
     const baseUrl = getBaseUrl(request);
     const emailProvider = import.meta.env.EMAIL_PROVIDER;
     const emailApiKey = import.meta.env.EMAIL_API_KEY;
@@ -159,7 +159,7 @@ export const POST: APIRoute = async ({ request, cookies }): Promise<Response> =>
       emailHtml = emailTemplate.replace("{{CONTENT}}", emailContent);
 
       // Use placeholder utilities for all template replacements
-      const { replacePlaceholders } = await import("../../lib/placeholder-utils");
+      const { replacePlaceholders } = await import("/src/lib/placeholder-utils");
       const placeholderData = {
         project: project || {},
         // Add any additional data needed for placeholders
