@@ -1,13 +1,17 @@
 ---
 interface Props {
-  projectId: string;
   projectTitle: string;
-  initialContractHtml?: string;
   project?: any;
   editMode: boolean;
+  projectStatus: number;
+  statusData: any;
+  currentUser: any;
 }
 
-const { projectId, projectTitle, initialContractHtml = "", project, editMode } = Astro.props;
+import DigitalSignature from "../project/DigitalSignature.astro";
+
+const { project, projectTitle, editMode, projectStatus, statusData, currentUser } = Astro.props;
+const projectId = project.id;
 ---
 
 {
@@ -51,26 +55,38 @@ const { projectId, projectTitle, initialContractHtml = "", project, editMode } =
       </div>
     </div>
   ) : (
-    <div id="contract-container" class="space-y-4">
-      <div class="flex items-center justify-between">
-        <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
-          Contract - {projectTitle}
-        </h3>
+    <>
+      <div id="contract-container" class="space-y-4">
+        <div class="flex items-center justify-between">
+          <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
+            Contract - {projectTitle}
+          </h3>
+        </div>
       </div>
-    </div>
+
+      {projectStatus > 49 && projectStatus < 50 && (
+        <DigitalSignature
+          id="proposal-signature"
+          required={true}
+          width={2400}
+          height={580}
+          project={project}
+          statusData={statusData}
+          currentUser={currentUser}
+        />
+      )}
+    </>
   )
 }
 
 <script
   define:vars={{
     projectTitle,
-    initialContractHtml,
+    project,
     projectId,
     editMode,
   }}
 >
-  import { replacePlaceholders } from "../../lib/placeholder-utils";
-
   // Initialize Quill editor
   let contractEditor = null;
   let isDirty = false;
@@ -84,7 +100,17 @@ const { projectId, projectTitle, initialContractHtml = "", project, editMode } =
       console.log("🔍 [CONTRACT-EDITOR] Project ID:", projectId);
 
       if (!reset) {
-        const response = await fetch(`/api/get-project-contract?projectId=${projectId}`);
+        const response = await fetch(`/api/get-project-contract?projectId=${projectId}`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            projectId: projectId,
+            projectData: project,
+          }),
+        });
+
         console.log("🔍 [CONTRACT-EDITOR] Response status:", response.status);
 
         const data = await response.json();
@@ -107,9 +133,17 @@ const { projectId, projectTitle, initialContractHtml = "", project, editMode } =
         // Fetch template from server
         console.log("📄 [CONTRACT-EDITOR] Fetching template from server");
         try {
-          const templateResponse = await fetch(
-            `/api/pdf/assemble?templateId=contract&projectId=${projectId}`
-          );
+          const templateResponse = await fetch("/api/pdf/assemble", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              templateId: "contract",
+              projectId: projectId,
+              projectData: project,
+            }),
+          });
           if (templateResponse.ok) {
             const templateContent = await templateResponse.text();
             console.log(
@@ -131,7 +165,6 @@ const { projectId, projectTitle, initialContractHtml = "", project, editMode } =
       }
 
       // Process template with placeholders using PROJECT_ prefixed placeholders
-      const processedTemplate = await replacePlaceholders(contractHtml, { project: project });
       return processedTemplate;
     } catch (error) {
       console.error("❌ [CONTRACT-EDITOR] Error fetching existing contract:", error);
