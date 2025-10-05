@@ -8,10 +8,10 @@ if (!currentUser || !session) {
   return Astro.redirect("/login");
 }
 
-// Check if user is admin
-if (currentRole !== "Admin") {
-  return Astro.redirect("/dashboard");
-}
+// Allow all authenticated users (not just admins)
+// if (currentRole !== "Admin") {
+//   return Astro.redirect("/dashboard");
+// }
 
 import { globalCompanyData } from "../../pages/api/global-company-data";
 const {
@@ -32,7 +32,7 @@ const { globalInputClasses, globalPrimaryTextClasses, globalSecondaryTextClasses
 
 import App from "../../components/common/App.astro";
 import Hero from "../../components/common/Hero.astro";
-import GlobalDiscussionsFeed from "../../components/common/GlobalDiscussionsFeed.astro";
+import DiscussionPartial from "../../components/partials/DiscussionPartial.astro";
 import BoxIcon from "../../components/common/BoxIcon.astro";
 
 // Fetch projects for overview stats
@@ -143,26 +143,51 @@ if (currentUser?.id) {
     </div>
   </div>
 
-  <!-- Global Discussions Feed Component -->
-  <GlobalDiscussionsFeed limit={100} />
+  <!-- Global Discussions Component -->
+  <div class="rounded-lg bg-white shadow-sm dark:bg-gray-800">
+    <DiscussionPartial
+      project={null}
+      currentUser={currentUser}
+      authorProfile={currentUser?.profile}
+      globalInputClasses={globalInputClasses}
+      globalSecondaryTextClasses={globalSecondaryTextClasses}
+      globalPrimaryTextClasses={globalPrimaryTextClasses}
+    />
+  </div>
 </App>
 
-<script is:inline>
-  // Update dynamic stats when the discussions feed loads
+<script>
+  // Update dynamic stats when the discussions load
   document.addEventListener("DOMContentLoaded", () => {
-    // Wait for the global discussions feed to load its stats
-    setTimeout(() => {
-      const recentCountEl = document.getElementById("recent-discussions");
-      const activeUsersEl = document.getElementById("active-users-discussions");
-      const headerRecentEl = document.getElementById("recent-discussions-header");
-      const headerActiveUsersEl = document.getElementById("active-users-header");
-
-      if (recentCountEl && headerRecentEl && recentCountEl.textContent) {
-        headerRecentEl.textContent = recentCountEl.textContent;
-      }
-      if (activeUsersEl && headerActiveUsersEl && activeUsersEl.textContent) {
-        headerActiveUsersEl.textContent = activeUsersEl.textContent;
-      }
-    }, 2000); // Wait for discussions feed to load
+    // Load stats from the unified discussions API
+    loadDiscussionStats();
   });
+
+  async function loadDiscussionStats() {
+    try {
+      const response = await fetch("/api/discussions?limit=1", {
+        credentials: "include",
+      });
+
+      const data = await response.json();
+
+      if (data.success && data.stats) {
+        updateStatsDisplay(data.stats);
+      }
+    } catch (error) {
+      console.error("Error loading discussion stats:", error);
+    }
+  }
+
+  function updateStatsDisplay(stats) {
+    const headerRecentEl = document.getElementById("recent-discussions-header");
+    const headerActiveUsersEl = document.getElementById("active-users-header");
+
+    if (headerRecentEl) {
+      headerRecentEl.textContent = stats.recent_24h || 0;
+    }
+    if (headerActiveUsersEl) {
+      headerActiveUsersEl.textContent = stats.active_users_24h || 0;
+    }
+  }
 </script>
