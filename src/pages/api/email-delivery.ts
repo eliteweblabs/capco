@@ -177,18 +177,13 @@ export const POST: APIRoute = async ({ request, cookies }): Promise<Response> =>
           let finalButtonLink = buttonLink;
 
           // Generate magic links for authentication emails OR status updates with project URLs
-          const shouldGenerateMagicLink =
-            (emailType === "magic_link" && buttonLink && buttonLink.includes("/dashboard")) ||
-            (emailType === "status_update" &&
-              buttonLink &&
-              (buttonLink.includes("/project/") || buttonLink.includes("/dashboard")));
+          const shouldGenerateMagicLink = emailType === "magic_link";
+          console.log("🔗 [EMAIL-DELIVERY] Should generate magic link:", shouldGenerateMagicLink);
 
           if (shouldGenerateMagicLink) {
             try {
               // Use direct dashboard redirect - no intermediate verify endpoint
-              const finalDestination = buttonLink.includes("/dashboard")
-                ? "/dashboard"
-                : "/dashboard";
+              const finalDestination = buttonLink;
 
               const { data: magicLinkData, error: magicLinkError } =
                 await supabaseAdmin.auth.admin.generateLink({

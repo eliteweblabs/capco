@@ -116,7 +116,16 @@ export class SimpleProjectLogger {
           console.error("📝 [SIMPLE-LOGGER] Error fetching project data:", error);
         }
       }
-      const { currentUser } = await checkAuth(cookies);
+      // Only check auth if cookies are provided
+      let currentUser = null;
+      if (cookies) {
+        try {
+          const authResult = await checkAuth(cookies);
+          currentUser = authResult.currentUser;
+        } catch (error) {
+          console.warn("📝 [SIMPLE-LOGGER] Could not authenticate user for logging:", error);
+        }
+      }
       // Extract user name from currentUser
       const userName = this.extractUserName(currentUser);
 
