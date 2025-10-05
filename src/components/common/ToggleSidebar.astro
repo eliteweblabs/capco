@@ -13,12 +13,12 @@ if (!currentUser || currentRole === "Client") {
 
 <button
   id="togglSidebarButton"
-  aria-expanded="true"
+  aria-expanded="false"
   aria-controls="sidebar"
-  class="_6aYwdjzDCvXK0bVJQOb _SmdlCf6eUKB_V9S5IDj SA5DoMHfwOFtY4h_qzuM Y3FxyuXtj2gecrGXvLEI Z4DH5a4vmjReSFRBpPgz iyrgFoJBjXFzXLcq5BhU _7KA5gD55t2lxf9Jkj20 ZnBoTVi7VOJdCLSSU62n XIIs8ZOri3wm8Wnj9N_y OPrb_iG5WDy_7F05BDOX dMTOiA3mf3FTjlHu6DqW wfEkkXhq1BXGkg7xpnO1 N3Gb8rTHzm26fWGpfaqP"
+  class="mr-2 inline-flex items-center rounded-lg p-2 text-sm text-gray-500 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-gray-200 dark:text-gray-400 dark:hover:bg-gray-700 dark:focus:ring-gray-600"
 >
   <svg
-    class="bLH_DeiQ7Cp4iBqeW3kq RWlOLn85L9w5_1l9GIaX"
+    class="h-7 w-7"
     data-sidebar-toggle-collapse-icon=""
     aria-hidden="true"
     xmlns="http://www.w3.org/2000/svg"
@@ -31,7 +31,7 @@ if (!currentUser || currentRole === "Client") {
     ></path>
   </svg>
   <svg
-    class="_SmdlCf6eUKB_V9S5IDj bLH_DeiQ7Cp4iBqeW3kq RWlOLn85L9w5_1l9GIaX"
+    class="hidden h-7 w-7"
     data-sidebar-toggle-expand-icon=""
     aria-hidden="true"
     xmlns="http://www.w3.org/2000/svg"
@@ -44,15 +44,131 @@ if (!currentUser || currentRole === "Client") {
     ></path>
   </svg>
 </button>
-<button
-  data-drawer-target="sidebar"
-  data-drawer-toggle="sidebar"
-  aria-expanded="false"
-  aria-controls="sidebar"
-  class="_6aYwdjzDCvXK0bVJQOb oPlV3cK5HfQEd_TT8sK9 SA5DoMHfwOFtY4h_qzuM Y3FxyuXtj2gecrGXvLEI Z4DH5a4vmjReSFRBpPgz iyrgFoJBjXFzXLcq5BhU _7KA5gD55t2lxf9Jkj20 ZnBoTVi7VOJdCLSSU62n XIIs8ZOri3wm8Wnj9N_y OPrb_iG5WDy_7F05BDOX dMTOiA3mf3FTjlHu6DqW wfEkkXhq1BXGkg7xpnO1 F34pkf_DAj2DlPtfAEMV"
+
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    const toggleButton = document.getElementById("togglSidebarButton");
+    const sidebar = document.getElementById("sidebar-multi-level-sidebar");
+    const collapseIcon = document.querySelector("[data-sidebar-toggle-collapse-icon]");
+    const expandIcon = document.querySelector("[data-sidebar-toggle-expand-icon]");
+    const sidebarCollapseHide = document.querySelectorAll("[data-sidebar-collapse-hide]");
+
+    if (toggleButton && sidebar) {
+      // Initialize sidebar state from localStorage
+      const initSidebar = () => {
+        const isExpanded = localStorage.getItem("sidebaranded") === "true";
+        const sessionExpanded = sessionStorage.getItem("sidebaranded") === "true";
+
+        if (sessionExpanded && !isExpanded) {
+          // Session storage overrides localStorage
+          collapseSidebar();
+        } else if (isExpanded) {
+          expandSidebar();
+        } else {
+          collapseSidebar();
+        }
+      };
+
+      // Expand sidebar function
+      const expandSidebar = () => {
+        // Show sidebar with full width
+        sidebar.classList.remove("-translate-x-full", "w-16");
+        sidebar.classList.add("translate-x-0", "w-64");
+
+        sidebarCollapseHide.forEach((item) => {
+          item.classList.remove("hidden");
+        });
+
+        // Update button state
+        toggleButton.setAttribute("aria-expanded", "true");
+
+        // Toggle icons
+        if (collapseIcon) collapseIcon.classList.remove("hidden");
+        if (expandIcon) expandIcon.classList.add("hidden");
+
+        // Add margin to main content
+        // if (mainContent) {
+        //   mainContent.classList.add("lg:ms-64");
+        // }
+
+        // Save state
+        localStorage.setItem("sidebaranded", "true");
+      };
+
+      // Collapse sidebar function
+      const collapseSidebar = () => {
+        // Collapse sidebar to narrow width
+        sidebar.classList.remove("translate-x-0", "w-64");
+        sidebar.classList.add("-translate-x-full", "w-16");
+
+        sidebarCollapseHide.forEach((item) => {
+          item.classList.add("hidden");
+        });
+
+        // Update button state
+        toggleButton.setAttribute("aria-expanded", "false");
+
+        // Toggle icons
+        if (collapseIcon) collapseIcon.classList.add("hidden");
+        if (expandIcon) expandIcon.classList.remove("hidden");
+
+        // Remove margin from main content
+        // if (mainContent) {
+        //   mainContent.classList.remove("lg:ms-64");
+        // }
+
+        // Save state
+        localStorage.setItem("sidebaranded", "false");
+      };
+
+      // Click event handler
+      toggleButton.addEventListener("click", () => {
+        sessionStorage.setItem("sidebaranded", "true");
+
+        if (toggleButton.getAttribute("aria-expanded") === "true") {
+          collapseSidebar();
+        } else {
+          expandSidebar();
+        }
+      });
+
+      // Mouse enter event (for hover behavior)
+      // let isHovering = false;
+      // toggleButton.addEventListener("mouseenter", () => {
+      //   // Only expand if sidebar is currently collapsed
+      //   if (toggleButton.getAttribute("aria-expanded") === "false") {
+      //     isHovering = true;
+      //     sessionStorage.setItem("sidebaranded", "false");
+      //     expandSidebar();
+      //   }
+      // });
+
+      // Mouse leave event
+      // toggleButton.addEventListener("mouseleave", () => {
+      //   if (isHovering) {
+      //     isHovering = false;
+      //     sessionStorage.setItem("sidebaranded", "true");
+      //     collapseSidebar();
+      //   }
+      // });
+
+      // Initialize sidebar on page load
+      initSidebar();
+    }
+  });
+</script>
+
+<!-- <button
+  data-drawer-target="sidebar-multi-level-sidebar"
+  data-drawer-toggle="sidebar-multi-level-sidebar"
+  aria-controls="sidebar-multi-level-sidebar"
+  type="button"
+  class="ms-3 mt-2 inline-flex items-center rounded-lg p-2 text-sm text-gray-500 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-gray-200 dark:text-gray-400 dark:hover:bg-gray-700 dark:focus:ring-gray-600"
 >
+  <span class="sr-only">Open sidebar</span>
+
   <svg
-    class="bLH_DeiQ7Cp4iBqeW3kq RWlOLn85L9w5_1l9GIaX"
+    class="h-7 w-7"
     data-sidebar-toggle-collapse-icon=""
     aria-hidden="true"
     xmlns="http://www.w3.org/2000/svg"
@@ -64,4 +180,17 @@ if (!currentUser || currentRole === "Client") {
     <path stroke="currentColor" stroke-linecap="round" stroke-width="2" d="M5 7h14M5 12h14M5 17h10"
     ></path>
   </svg>
-</button>
+  <svg
+    class="hidden h-7 w-7"
+    data-sidebar-toggle-expand-icon=""
+    aria-hidden="true"
+    xmlns="http://www.w3.org/2000/svg"
+    width="24"
+    height="24"
+    fill="none"
+    viewBox="0 0 24 24"
+  >
+    <path stroke="currentColor" stroke-linecap="round" stroke-width="2" d="M5 7h14M5 12h14M5 17h14"
+    ></path>
+  </svg>
+</button> -->

@@ -42,6 +42,20 @@ export default {
     "snap-end",
     "snap-center",
     "snap-align-none",
+    // Sidebar classes
+    "sm:ml-64",
+    "ml-64",
+    "p-4",
+    "sm:translate-x-0",
+    "translate-x-0",
+    "-translate-x-full",
+    "transition-transform",
+    // Layout classes
+    "flex",
+    "overflow-hidden",
+    "bg-gray-50",
+    "pt-16",
+    "dark:bg-gray-900",
   ],
   theme: {
     extend: {
@@ -60,7 +74,7 @@ export default {
       colors: {
         // Text Colors
         black: "#171717", // Default text (black)
-        white: "#fafafa", // Default text (white for dark mode)
+        white: "#ffffff", // Default text (white for dark mode)
         gray: {
           600: "#525252", // Secondary text (gray)
           400: "#a3a3a3", // Secondary text (dark mode)

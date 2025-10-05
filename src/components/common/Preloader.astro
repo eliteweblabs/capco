@@ -5,7 +5,7 @@ import LoadingSpinner from "./LoadingSpinner.astro";
 
 <div
   id="preloader"
-  class="fixed inset-0 z-50 flex h-[100dvh] w-screen items-center justify-center bg-white dark:bg-gray-900"
+  class="fixed inset-0 z-50 flex h-[100dvh] w-screen items-center justify-center bg-gray-100 dark:bg-gray-900"
 >
   <LoadingSpinner />
 </div>
@@ -15,6 +15,7 @@ import LoadingSpinner from "./LoadingSpinner.astro";
   function hidePreloader() {
     const preloader = document.getElementById("preloader");
     if (preloader) {
+      console.log("✅ [PRELOADER] Hiding preloader");
       preloader.style.opacity = "0";
       setTimeout(() => {
         preloader.style.display = "none";
@@ -27,14 +28,22 @@ import LoadingSpinner from "./LoadingSpinner.astro";
   // Try multiple events to ensure preloader hides
   window.addEventListener("load", hidePreloader);
   document.addEventListener("DOMContentLoaded", function () {
+    console.log("✅ [PRELOADER] DOMContentLoaded event fired");
     // Add a small delay to ensure everything is ready
     setTimeout(hidePreloader, 100);
   });
 
-  // Fallback: hide after 2 seconds regardless
+  // Fallback: hide after 1 second regardless
   setTimeout(() => {
+    console.log("✅ [PRELOADER] Fallback timeout fired");
     hidePreloader();
-  }, 2000);
+  }, 1000);
+
+  // Immediate fallback for debugging
+  setTimeout(() => {
+    console.log("✅ [PRELOADER] Immediate fallback fired");
+    hidePreloader();
+  }, 100);
 </script>
 
 <style>
