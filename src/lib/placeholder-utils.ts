@@ -109,7 +109,7 @@ export function replacePlaceholders(
     (!isArrayProfile && (authorProfile as any)?.company_name) ||
     "Client Name Missing";
   const clientEmail = (!isArrayProfile && (authorProfile as any)?.email) || "Client Email Missing";
-  const clientPhone = (!isArrayProfile && (authorProfile as any)?.phone) || "N/A";
+  const phone = (!isArrayProfile && (authorProfile as any)?.phone) || "N/A";
   const clientFirstName = (!isArrayProfile && (authorProfile as any)?.first_name) || "{{BLANK}}";
   const clientLastName = (!isArrayProfile && (authorProfile as any)?.last_name) || "{{BLANK}}";
   // Project data
@@ -509,19 +509,9 @@ export function replacePlaceholders(
     }
   }
 
-  // Client placeholders
-  if (clientName) {
+  if (phone) {
     const beforeReplace = result;
-    result = result.replace(/\{\{\s*CLIENT_NAME\s*\}\}/g, clientName);
-    if (result !== beforeReplace) {
-      placeholderApplied = true;
-      addBoldTags = true;
-    }
-  }
-
-  if (clientPhone) {
-    const beforeReplace = result;
-    result = result.replace(/\{\{\s*CLIENT_PHONE\s*\}\}/g, clientPhone);
+    result = result.replace(/\{\{\s*PHONE\s*\}\}/g, phone);
     if (result !== beforeReplace) {
       placeholderApplied = true;
       addBoldTags = true;
@@ -668,26 +658,6 @@ export function replacePlaceholders(
     }
   }
 
-  // Replace PROJECT_COMPANY_NAME placeholders
-  if (clientName) {
-    const beforeReplace = result;
-    result = result.replace(/\{\{\s*PROJECT_COMPANY_NAME\s*\}\}/g, clientName);
-    if (result !== beforeReplace) {
-      placeholderApplied = true;
-      addBoldTags = true;
-    }
-  }
-
-  // Replace PROJECT_CLIENT_NAME placeholders
-  if (clientName) {
-    const beforeReplace = result;
-    result = result.replace(/\{\{\s*PROJECT_CLIENT_NAME\s*\}\}/g, clientName);
-    if (result !== beforeReplace) {
-      placeholderApplied = true;
-      addBoldTags = true;
-    }
-  }
-
   // Replace PROJECT_SIGNATURE_IP placeholders
   // const signatureIP = data?.project?.ip_address || "Unknown";
   // if (signatureIP) {
@@ -741,10 +711,10 @@ export function replacePlaceholders(
     addBoldTags = true;
   }
 
-  // Replace CLIENT_NAME placeholders
+  // Replace COMPANY_NAME placeholders
   if (clientName) {
     const beforeReplace = result;
-    result = result.replace(/\{\{\s*CLIENT_NAME\s*\}\}/g, clientName);
+    result = result.replace(/\{\{\s*COMPANY_NAME\s*\}\}/g, clientName);
     if (result !== beforeReplace) {
       placeholderApplied = true;
       addBoldTags = true;
