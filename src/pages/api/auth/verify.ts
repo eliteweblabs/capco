@@ -11,6 +11,21 @@ export const GET: APIRoute = async ({ url, cookies, redirect }) => {
     return redirect("/login?error=verification_error");
   }
 
+  // First, clear any existing session to prevent conflicts
+  try {
+    console.log("🔐 [VERIFY] Clearing any existing session before magic link verification");
+    await supabase.auth.signOut();
+
+    // Clear existing auth cookies
+    cookies.delete("sb-access-token", { path: "/" });
+    cookies.delete("sb-refresh-token", { path: "/" });
+  } catch (logoutError) {
+    console.warn(
+      "🔐 [VERIFY] Could not clear existing session (may not be logged in):",
+      logoutError
+    );
+  }
+
   // Get the verification code from the URL
   const code = url.searchParams.get("code");
   const token_hash = url.searchParams.get("token_hash");
