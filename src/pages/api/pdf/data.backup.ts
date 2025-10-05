@@ -129,10 +129,10 @@ export const GET: APIRoute = async ({ request, url }) => {
         false
       ),
       PROJECT_CREATED_DATE: replacePlaceholders("{{PROJECT_CREATED_DATE}}", placeholderData, false),
-      CLIENT_NAME: replacePlaceholders("{{CLIENT_NAME}}", placeholderData, false),
-      CLIENT_COMPANY: replacePlaceholders("{{CLIENT_NAME}}", placeholderData, false),
+      COMPANY_NAME: replacePlaceholders("{{COMPANY_NAME}}", placeholderData, false),
+      CLIENT_COMPANY: replacePlaceholders("{{COMPANY_NAME}}", placeholderData, false),
       CLIENT_EMAIL: replacePlaceholders("{{CLIENT_EMAIL}}", placeholderData, false),
-      CLIENT_PHONE: replacePlaceholders("{{CLIENT_PHONE}}", placeholderData, false),
+      PHONE: replacePlaceholders("{{PHONE}}", placeholderData, false),
       ASSIGNED_STAFF_NAME: replacePlaceholders("{{ASSIGNED_STAFF_NAME}}", placeholderData, false),
       ASSIGNED_STAFF_EMAIL: replacePlaceholders("{{ASSIGNED_STAFF_EMAIL}}", placeholderData, false),
       ASSIGNED_STAFF_PHONE: replacePlaceholders("{{ASSIGNED_STAFF_PHONE}}", placeholderData, false),

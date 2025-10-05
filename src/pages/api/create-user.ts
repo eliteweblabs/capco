@@ -1,3 +1,4 @@
+import { replacePlaceholders } from "@/lib/placeholder-utils";
 import type { APIRoute } from "astro";
 import { checkAuth } from "../../lib/auth";
 import { SimpleProjectLogger } from "../../lib/simple-logging";
@@ -356,52 +357,76 @@ export const POST: APIRoute = async ({ request, cookies }) => {
           }
         }
 
+        let newClientContent;
         // this is to the new user
 
         // this is to the new user
+        // get globalOptions.welcomeStaffEmailContent from the database
+        const { data: globalOptions, error: globalOptionsError } = await supabase
+          .from("globalOptions")
+          .select("value")
+          .eq("key", "welcomeClientEmailContent");
+        if (globalOptionsError) {
+          console.error("📧 [CREATE-USER] Failed to fetch global options:", globalOptionsError);
+        } else if (!globalOptions) {
+          console.error("📧 [CREATE-USER] No global options found");
+        } else {
+          const globalOption = globalOptions[0];
+          const dirtyNewClientContent = globalOption.value;
+          newClientContent = replacePlaceholders(dirtyNewClientContent, {
+            project: {
+              id: 0,
+              address: "",
+              title: "",
+              authorProfile: {
+                company_name: displayName,
+                email: email,
+                first_name: first_name,
+                last_name: last_name,
+                phone: phone || "Not provided",
+              },
+            },
+          });
+        }
 
-        const newClientContent = `Welcome to the new {{GLOBAL_COMPANY_NAME}} website!<br><br>
+        newClientContent += `
+        <b>SMS Alerts:</b> ${sms_alerts ? "Enabled" : "Disabled"}<br>
+        <b>Mobile Carrier:</b> ${mobile_carrier || "Not provided"}<br>
+        <b>Registration Date:</b> ${new Date().toLocaleDateString()}<br><br><br>`;
 
-{{GLOBAL_COMPANY_NAME}} has a new website that allows you to submit fire protection project requests, upload documents, track the status of your projects, and download completed documents all in one place.<br><br>
+        let newStaffContent;
+        // this is to the new user
 
-Our fire protection services will be even faster and more secure with this new web application.<br><br>
+        // this is to the new user
+        // get globalOptions.welcomeStaffEmailContent from the database
+        const { data: globalOptions2, error: globalOptionsError2 } = await supabase
+          .from("globalOptions")
+          .select("value")
+          .eq("key", "welcomeClientEmailContent");
+        if (globalOptionsError2) {
+          console.error("📧 [CREATE-USER] Failed to fetch global options:", globalOptionsError2);
+        } else if (!globalOptions2) {
+          console.error("📧 [CREATE-USER] No global options found");
+        } else {
+          const globalOption = globalOptions2[0];
+          const dirtyNewClientContent = globalOption.value;
+          newStaffContent = replacePlaceholders(dirtyNewClientContent, {
+            project: {
+              id: 0,
+              address: "",
+              title: "",
+              authorProfile: {
+                company_name: displayName,
+                email: email,
+                first_name: first_name,
+                last_name: last_name,
+                phone: phone || "Not provided",
+              },
+            },
+          });
+        }
 
-Please use discussions section on projects to communicate with us, or the contact widget on the bottom right of the screen to reach us instantly.<br><br>
-
-Your account has been created successfully:<br><br>
-
-<b>Company Name:</b> ${displayName}<br>
-<b>Email:</b> ${email}<br>
-<b>First Name:</b> ${first_name}<br>
-<b>Last Name:</b> ${last_name}<br>
-<b>Phone:</b> ${phone || "Not provided"}<br>
-<br>`;
-
-        const newStaffContent = `Welcome to the new {{GLOBAL_COMPANY_NAME}} website!<br><br>
-
-{{GLOBAL_COMPANY_NAME}} has a new website that allows you to manage fire protection projects, upload / checkout / assign project documents, track the status of your projects, and communicate with the team.<br><br>
-
-Please use discussions section on projects to communicate, and live chat widget on the bottom left.<br><br>
-
-The project dashboard is still being improved, but you should have access to all your projects and the ability to create new ones.<br><br>
-
-Look for project checklist in the header of projects to see what needs to be done for a project to be completed.<br><br>
-
-Please use documents section on projects to manage, share, and checkout files. This simple repository ensures that changes made to files are never lost. When you upload a file after it is checked out, as long as the file name remains the same, a new version and record will be added.<br><br>
-
-There is a new proposal manager that allows you to generate a proposal for a project. Once documents have been received and submitted, the proposal section will automatically generate a default proposal.<br><br>
-
-There is much more in the works, but this is a big step forward and should have everything you need to get started managing your projects.<br><br>
-
-Please leave any feedback via the feedback widget on the bottom right of the screen.<br><br>
-
-Your account has been created successfully:<br><br>
-
-<b>User Name:</b> ${displayName}<br>
-<b>Email:</b> ${email}<br>
-<b>First Name:</b> ${first_name}<br>
-<b>Last Name:</b> ${last_name}<br>
-<b>Phone:</b> ${phone || "Not provided"}<br>
+        newStaffContent += `
 <b>SMS Alerts:</b> ${sms_alerts ? "Enabled" : "Disabled"}<br>
 <b>Mobile Carrier:</b> ${mobile_carrier || "Not provided"}<br>
 <b>Registration Date:</b> ${new Date().toLocaleDateString()}<br><br><br>`;
@@ -410,11 +435,11 @@ Your account has been created successfully:<br><br>
 
         // Send welcome email using the email delivery API with full URL
         const emailDeliveryUrl = `${baseUrl}/api/email-delivery`;
-        console.log("🔗 [CREATE-USER] Calling email delivery API:", emailDeliveryUrl);
-        console.log("🔗 [CREATE-USER] Base URL for email delivery:", baseUrl);
-        console.log("🔗 [CREATE-USER] Request URL:", request.url);
-        console.log("🔗 [CREATE-USER] Environment SITE_URL:", process.env.SITE_URL);
-        console.log("🔗 [CREATE-USER] Import meta SITE_URL:", import.meta.env.SITE_URL);
+        // console.log("🔗 [CREATE-USER] Calling email delivery API:", emailDeliveryUrl);
+        // console.log("🔗 [CREATE-USER] Base URL for email delivery:", baseUrl);
+        // console.log("🔗 [CREATE-USER] Request URL:", request.url);
+        // console.log("🔗 [CREATE-USER] Environment SITE_URL:", process.env.SITE_URL);
+        // console.log("🔗 [CREATE-USER] Import meta SITE_URL:", import.meta.env.SITE_URL);
 
         const emailPayload = {
           emailType: "magic_link",
@@ -422,16 +447,16 @@ Your account has been created successfully:<br><br>
           emailSubject: `Welcome to ${process.env.GLOBAL_COMPANY_NAME} → ${displayName}`,
           emailContent: welcomeContent,
           buttonText: "Let's Get Started →",
-          buttonLink: "/dashboard", // Will be converted to magic link by email-delivery.ts
+          buttonLink: "/project/dashboard", // Will be converted to magic link by email-delivery.ts
         };
 
-        console.log("🔗 [CREATE-USER] Email payload being sent:", {
-          emailType: emailPayload.emailType,
-          usersToNotify: emailPayload.usersToNotify,
-          emailSubject: emailPayload.emailSubject,
-          buttonText: emailPayload.buttonText,
-          buttonLink: emailPayload.buttonLink,
-        });
+        // console.log("🔗 [CREATE-USER] Email payload being sent:", {
+        //   emailType: emailPayload.emailType,
+        //   usersToNotify: emailPayload.usersToNotify,
+        //   emailSubject: emailPayload.emailSubject,
+        //   buttonText: emailPayload.buttonText,
+        //   buttonLink: emailPayload.buttonLink,
+        // });
 
         const userEmailResponse = await fetch(emailDeliveryUrl, {
           method: "POST",

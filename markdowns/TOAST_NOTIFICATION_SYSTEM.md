@@ -17,7 +17,7 @@ The system supports the following placeholders in toast messages:
 
 - `{{PROJECT_TITLE}}` - The project title or address
 - `{{CLIENT_EMAIL}}` - The client's email address
-- `{{CLIENT_NAME}}` - The client's name (first + last or company name)
+- `{{COMPANY_NAME}}` - The client's name (first + last or company name)
 - `{{PROJECT_ADDRESS}}` - The project address
 - `{{STATUS_NAME}}` - The status name
 - `{{EST_TIME}}` - The estimated time from the status's `est_time` column
