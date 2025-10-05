@@ -194,25 +194,6 @@ export const GET: APIRoute = async ({ request, cookies, url }) => {
           .map((user: any) => user.email)
           .filter((email: string) => email); // Remove any undefined emails
 
-        // Process button link and text (placeholders already processed)
-        // let processedButtonLink = status.button_link || "";
-        // let processedButtonText = status.button_text || "";
-
-        // if (processedButtonLink) {
-        //   // Convert relative paths to full URLs
-        //   if (processedButtonLink.startsWith("/")) {
-        //     // It's a relative path like "/dashboard" or "/login"
-        //     processedButtonLink = `${getApiBaseUrl()}${processedButtonLink}`;
-        //   } else if (
-        //     !processedButtonLink.startsWith("http") &&
-        //     !processedButtonLink.startsWith("#")
-        //   ) {
-        //     // It's a path without leading slash, add the base URL
-        //     processedButtonLink = `${getApiBaseUrl()}/${processedButtonLink}`;
-        //   }
-        //   // For hash fragments (#) and full URLs (http), leave as-is
-        // }
-
         simplifiedStatuses[statusCode] = {
           admin: {
             email: {
@@ -220,62 +201,63 @@ export const GET: APIRoute = async ({ request, cookies, url }) => {
               emailToRoles: status.email_to_roles,
               email_subject: status.admin_email_subject,
               email_content: status.admin_email_content,
-              email_type: "status_update",
+              email_type: "magic_link",
               button_text: status.button_text,
               button_link: status.button_link,
+              skipTracking: true,
             },
             status_name: status.admin_status_name,
             status_action: status.admin_status_action,
             status_color: status.status_color,
             status_slug: status.status_slug,
             status_tab: status.admin_status_tab,
-            modal: {
-              type: "info",
-              persist: false,
-              message: status.modal_admin,
-              title: "Project Updated",
-              redirect: {
-                url: status.modal_auto_redirect_admin,
-                delay: 5000,
-                showCountdown: true,
-              },
-              // showCountdown: true,
-              // duration: 2500,
-              // est_time: status.est_time,
-            },
+            // modal: {
+            //   type: "info",
+            //   persist: false,
+            //   message: status.modal_admin,
+            //   title: "Project Updated",
+            //   redirect: {
+            //     url: status.modal_auto_redirect_admin,
+            //     delay: 5000,
+            //     showCountdown: true,
+            //   },
+            //   // showCountdown: true,
+            //   // duration: 2500,
+            //   // est_time: status.est_time,
+            // },
           },
           client: {
             email: {
               users_to_notify: [project?.authorProfile?.email],
               email_subject: status.client_email_subject,
               email_content: status.client_email_content,
-              email_type: "status_update",
+              email_type: "magic_link",
               button_text: status.button_text,
               button_link: status.button_link,
+              skipTracking: true,
             },
             status_name: status.client_status_name,
             status_action: status.client_status_action,
             status_color: status.status_color,
             status_slug: status.status_slug,
             status_tab: status.client_status_tab,
-            modal: {
-              type: "info",
-              persist: false,
-              message: status.modal_client,
-              title: "ClientProject Updated",
-              redirect: {
-                url: status.modal_auto_redirect_client,
-                delay: 5000,
-                showCountdown: true,
-              },
-              // showCountdown: true,
-              // duration: 5000,
-              // est_time: status.est_time,
-            },
+            // modal: {
+            //   type: "info",
+            //   persist: false,
+            //   message: status.modal_client,
+            //   title: "ClientProject Updated",
+            //   redirect: {
+            //     url: status.modal_auto_redirect_client,
+            //     delay: 5000,
+            //     showCountdown: true,
+            //   },
+            //   // showCountdown: true,
+            //   // duration: 5000,
+            //   // est_time: status.est_time,
+            // },
           },
           current: {
             email: {
-              skipTracking: true,
               usersToNotify: isAdminOrStaff ? usersToNotify : [project?.authorProfile?.email],
               email_subject: isAdminOrStaff
                 ? status.admin_email_subject
@@ -285,6 +267,7 @@ export const GET: APIRoute = async ({ request, cookies, url }) => {
                 : status.client_email_content,
               button_text: status.button_text,
               button_link: status.button_link,
+              skipTracking: true,
             },
 
             status_name: isAdminOrStaff ? status.admin_status_name : status.client_status_name,
@@ -485,62 +468,63 @@ export const POST: APIRoute = async ({ request, cookies }) => {
               emailToRoles: status.email_to_roles,
               email_subject: status.admin_email_subject,
               email_content: status.admin_email_content,
-              email_type: "status_update",
+              email_type: "magic_link",
               button_text: status.button_text,
               button_link: status.button_link,
+              skipTracking: true,
             },
             status_name: status.admin_status_name,
             status_action: status.admin_status_action,
             status_color: status.status_color,
             status_slug: status.status_slug,
             status_tab: status.admin_status_tab,
-            modal: {
-              type: "info",
-              persist: false,
-              message: status.modal_admin,
-              title: "Project Updated",
-              redirect: {
-                url: status.modal_auto_redirect_admin,
-                delay: 3000,
-                showCountdown: true,
-              },
-              showCountdown: true,
-              duration: 2500,
-              est_time: status.est_time,
-            },
+            // modal: {
+            //   type: "info",
+            //   persist: false,
+            //   message: status.modal_admin,
+            //   title: "Project Updated",
+            //   redirect: {
+            //     url: status.modal_auto_redirect_admin,
+            //     delay: 3000,
+            //     showCountdown: true,
+            //   },
+            //   showCountdown: true,
+            //   duration: 2500,
+            //   est_time: status.est_time,
+            // },
           },
           client: {
             email: {
               users_to_notify: [projectData?.authorProfile?.email],
               email_subject: status.client_email_subject,
               email_content: status.client_email_content,
-              email_type: "status_update",
+              email_type: "magic_link",
               button_text: status.button_text,
               button_link: status.button_link,
+              skipTracking: true,
             },
             status_name: status.client_status_name,
             status_action: status.client_status_action,
             status_color: status.status_color,
             status_slug: status.status_slug,
             status_tab: status.client_status_tab,
-            modal: {
-              type: "info",
-              persist: false,
-              message: status.modal_client,
-              title: "ClientProject Updated",
-              redirect: {
-                url: status.modal_auto_redirect_client,
-                delay: 3000,
-                showCountdown: true,
-              },
-              showCountdown: true,
-              duration: 2500,
-              est_time: status.est_time,
-            },
+            // modal: {
+            //   type: "info",
+            //   persist: false,
+            //   message: status.modal_client,
+            //   title: "ClientProject Updated",
+            //   redirect: {
+            //     url: status.modal_auto_redirect_client,
+            //     delay: 3000,
+            //     showCountdown: true,
+            //   },
+            //   showCountdown: true,
+            //   duration: 2500,
+            //   est_time: status.est_time,
+            // },
           },
           current: {
             email: {
-              skipTracking: true,
               usersToNotify: isAdminOrStaff ? usersToNotify : [projectData?.authorProfile?.email],
               email_subject: isAdminOrStaff
                 ? status.admin_email_subject
@@ -548,9 +532,10 @@ export const POST: APIRoute = async ({ request, cookies }) => {
               email_content: isAdminOrStaff
                 ? status.admin_email_content
                 : status.client_email_content,
-              email_type: "status_update",
+              email_type: "magic_link",
               button_text: status.button_text,
               button_link: status.button_link,
+              skipTracking: true,
             },
             status_name: isAdminOrStaff ? status.admin_status_name : status.client_status_name,
             status_action: isAdminOrStaff

@@ -90,7 +90,7 @@ export const POST: APIRoute = async ({ request, cookies }): Promise<Response> =>
       emailType === "magic_link" ||
       emailType === "authentication" ||
       emailType === "login" ||
-      (buttonLink && buttonLink.includes("/dashboard") && !trackLinks);
+      !trackLinks;
 
     const finalTrackLinks = shouldDisableTracking ? false : trackLinks;
 
@@ -182,15 +182,15 @@ export const POST: APIRoute = async ({ request, cookies }): Promise<Response> =>
 
           if (shouldGenerateMagicLink) {
             try {
-              // Use direct dashboard redirect - no intermediate verify endpoint
-              const finalDestination = buttonLink;
+              // Use the verify endpoint with redirect parameter
+              const verifyUrl = `${baseUrl}/api/auth/verify?redirect=${encodeURIComponent(buttonLink)}`;
 
               const { data: magicLinkData, error: magicLinkError } =
                 await supabaseAdmin.auth.admin.generateLink({
                   type: "magiclink",
                   email: userEmail,
                   options: {
-                    redirectTo: `${baseUrl}${finalDestination}`,
+                    redirectTo: verifyUrl,
                   },
                 });
 
