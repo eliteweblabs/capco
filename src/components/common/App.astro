@@ -426,11 +426,11 @@ const debugData = {
       );
 
       // Set Stripe publishable key globally for PaymentForm
-      window.STRIPE_PUBLISHABLE_KEY = import.meta.env.PUBLIC_STRIPE_PUBLISHABLE_KEY;
-      console.log("🔧 [STRIPE] Publishable key loaded:", !!window.STRIPE_PUBLISHABLE_KEY);
+      (window as any).STRIPE_PUBLISHABLE_KEY = import.meta.env.PUBLIC_STRIPE_PUBLISHABLE_KEY;
+      console.log("🔧 [STRIPE] Publishable key loaded:", !!(window as any).STRIPE_PUBLISHABLE_KEY);
 
       // Helper function to create buttons using Button partial
-      window.createButtonPartial = async function (config) {
+      (window as any).createButtonPartial = async function (config: any) {
         try {
           const headers = new Headers();
           Object.entries(config).forEach(([key, value]) => {
@@ -475,16 +475,16 @@ const debugData = {
 
       // showModal is now handled by UnifiedNotification.astro
 
-      window.hideNotification = function () {
+      (window as any).hideNotification = function () {
         console.log("[FALLBACK-NOTIFICATION] Hiding notification");
       };
 
-      window.switchTab = function (tabName) {
+      (window as any).switchTab = function (tabName: string) {
         console.log(`[TAB] Switching to: ${tabName}`);
         // Implementation for tab switching
       };
 
-      window.handleNewStatusNotification = function (response, context) {
+      (window as any).handleNewStatusNotification = function (response: any, context: string) {
         if (!response) {
           console.error(`ERROR [${context || "NOTIFICATION"}] API call failed:`, response.error);
           return;
@@ -778,7 +778,7 @@ const debugData = {
 
           // Check if running as PWA
           const isStandalone =
-            window.matchMedia("(display-mode: standalone)").matches ||
+            (window as any).matchMedia("(display-mode: standalone)").matches ||
             (window.navigator as any).standalone === true;
           console.log("🔔 [APP] Running as PWA:", isStandalone);
 
