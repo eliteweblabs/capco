@@ -578,7 +578,7 @@ INSERT INTO pdf_templates (name, description, html_content, created_by) VALUES (
           </div>
           <div class="info-row">
             <span class="info-label">Client:</span>
-            <span>{{CLIENT_NAME}}</span>
+            <span>{{COMPANY_NAME}}</span>
           </div>
           <div class="info-row">
             <span class="info-label">Email:</span>
@@ -640,9 +640,9 @@ INSERT INTO pdf_components (name, description, html_content, component_type, cre
     '<div class="client-info" style="background: #f5f5f5; padding: 15px; border-radius: 5px; margin: 10px 0;">
         <h3 style="font-size: 16px; margin-bottom: 10px; border-bottom: 1px solid #ccc; padding-bottom: 5px;">Client Information</h3>
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 12px;">
-            <div><strong>Name:</strong> {{CLIENT_NAME}}</div>
+            <div><strong>Name:</strong> {{COMPANY_NAME}}</div>
             <div><strong>Email:</strong> {{CLIENT_EMAIL}}</div>
-            <div><strong>Phone:</strong> {{CLIENT_PHONE}}</div>
+            <div><strong>Phone:</strong> {{PHONE}}</div>
             <div><strong>Company:</strong> {{CLIENT_COMPANY}}</div>
         </div>
     </div>',

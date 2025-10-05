@@ -56,7 +56,7 @@ export interface Project {
   updated_at: string;
   // Additional fields that might be needed
   description?: string;
-  client_name?: string;
+  COMPANY_NAME?: string;
   project_type?: string;
   estimated_completion?: string;
   budget?: number;

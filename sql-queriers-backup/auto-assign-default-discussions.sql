@@ -58,7 +58,7 @@ BEGIN
     (
       NEW.id,
       NEW.author_id,
-      'Next Steps for {{CLIENT_NAME}}:
+      'Next Steps for {{COMPANY_NAME}}:
       1. We will schedule a site visit within 2-3 business days
       2. Our team will prepare a detailed proposal based on your requirements
       3. You will receive updates via email at {{CLIENT_EMAIL}}

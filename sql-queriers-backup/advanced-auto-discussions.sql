@@ -25,7 +25,7 @@ INSERT INTO default_discussion_templates (template_name, content, is_internal, p
 ⏳ Site visit scheduled
 ⏳ Initial proposal prepared
 ⏳ Team assigned', true, 'general', 3),
-('client_next_steps', 'Next Steps for {{CLIENT_NAME}}:
+('client_next_steps', 'Next Steps for {{COMPANY_NAME}}:
 1. We will schedule a site visit within 2-3 business days
 2. Our team will prepare a detailed proposal based on your requirements
 3. You will receive updates via email at {{CLIENT_EMAIL}}
@@ -82,7 +82,7 @@ BEGIN
     processed_content := template_record.content;
     processed_content := REPLACE(processed_content, '{{PROJECT_TITLE}}', COALESCE(NEW.title, 'Your Project'));
     processed_content := REPLACE(processed_content, '{{PROJECT_ADDRESS}}', COALESCE(NEW.address, 'the specified location'));
-    processed_content := REPLACE(processed_content, '{{CLIENT_NAME}}', 'Client'); -- You might want to join with profiles table
+    processed_content := REPLACE(processed_content, '{{COMPANY_NAME}}', 'Client'); -- You might want to join with profiles table
     processed_content := REPLACE(processed_content, '{{CLIENT_EMAIL}}', 'your email'); -- You might want to join with profiles table
     
     INSERT INTO discussion (

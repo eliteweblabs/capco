@@ -62,7 +62,7 @@ BEGIN
     (
       NEW.id,
       'bdaaa7d3-469d-4b1b-90d1-978e1be47a17', -- Specific user ID for default comments
-      'Next Steps for {{CLIENT_NAME}}:
+      'Next Steps for {{COMPANY_NAME}}:
       1. We will schedule a site visit within 2-3 business days
       2. Our team will prepare a detailed proposal based on your requirements
       3. You will receive updates via email at {{CLIENT_EMAIL}}

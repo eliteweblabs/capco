@@ -370,7 +370,7 @@ User rules are always capitalized Admin, Client, Staff
 Placeholders
 
 {{PROJECT_ADDRESS}}
-{{CLIENT_NAME}}
+{{COMPANY_NAME}}
 {{CLIENT_EMAIL}}
 {{EST_TIME}}
 {{STATUS_NAME}}

@@ -73,9 +73,9 @@ The system supports all existing placeholders from `SCOPE.markdown`:
 
 ### Client Placeholders
 
-- `{{CLIENT_NAME}}` - Client name (company or full name)
+- `{{COMPANY_NAME}}` - Client name (company or full name)
 - `{{CLIENT_EMAIL}}` - Client email
-- `{{CLIENT_PHONE}}` - Client phone
+- `{{PHONE}}` - Client phone
 - `{{CLIENT_COMPANY}}` - Client company name
 
 ### Status Placeholders

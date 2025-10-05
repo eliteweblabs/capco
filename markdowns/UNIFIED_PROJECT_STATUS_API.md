@@ -131,7 +131,7 @@ const data = await response.json();
 ## Features
 
 ✅ **Role-Based Processing** - Returns appropriate status names/actions for user role
-✅ **Placeholder Processing** - Automatically processes `{{PROJECT_ID}}`, `{{CLIENT_NAME}}`, etc.
+✅ **Placeholder Processing** - Automatically processes `{{PROJECT_ID}}`, `{{COMPANY_NAME}}`, etc.
 ✅ **Form Select Ready** - Includes pre-formatted options for dropdowns
 ✅ **Backward Compatible** - Legacy endpoints redirect to unified API
 ✅ **Comprehensive Data** - Raw + processed data in single response
@@ -141,7 +141,7 @@ const data = await response.json();
 
 - `{{PROJECT_ID}}` - Project ID number
 - `{{PROJECT_ADDRESS}}` - Project address
-- `{{CLIENT_NAME}}` - Client's company name or full name
+- `{{COMPANY_NAME}}` - Client's company name or full name
 - `{{CLIENT_EMAIL}}` - Client's email address
 - `{{STATUS_NAME}}` - Current status name
 - `{{CONTRACT_URL}}` - Link to contract tab

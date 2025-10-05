@@ -83,7 +83,7 @@ Templates are base HTML documents with placeholders for:
 
 - `{{PROJECT_TITLE}}`
 - `{{PROJECT_ADDRESS}}`
-- `{{CLIENT_NAME}}`
+- `{{COMPANY_NAME}}`
 - `{{CLIENT_EMAIL}}`
 - `{{STATUS_NAME}}`
 - `{{EST_TIME}}`
