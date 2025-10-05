@@ -198,11 +198,6 @@ export const POST: APIRoute = async ({ request }) => {
           title: "Staff Assigned",
           message: `Project assigned to ${staffName || "Unassigned"}`,
           duration: 1500,
-          redirect: {
-            url: `${baseUrl}/project/${projectId}`,
-            delay: 3,
-            showCountdown: true,
-          },
         },
       }),
       {
