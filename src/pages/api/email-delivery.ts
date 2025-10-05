@@ -183,7 +183,16 @@ export const POST: APIRoute = async ({ request, cookies }): Promise<Response> =>
           if (shouldGenerateMagicLink) {
             try {
               // Use the verify endpoint with redirect parameter
-              const verifyUrl = `${baseUrl}/api/auth/verify?redirect=${encodeURIComponent(buttonLink)}`;
+              // Ensure buttonLink is properly formatted (starts with /)
+              const cleanButtonLink = buttonLink.startsWith("/") ? buttonLink : `/${buttonLink}`;
+              const verifyUrl = `${baseUrl}/api/auth/verify?redirect=${encodeURIComponent(cleanButtonLink)}`;
+
+              console.log("🔗 [EMAIL-DELIVERY] Magic link configuration:", {
+                buttonLink,
+                cleanButtonLink,
+                verifyUrl,
+                baseUrl,
+              });
 
               const { data: magicLinkData, error: magicLinkError } =
                 await supabaseAdmin.auth.admin.generateLink({

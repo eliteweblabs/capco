@@ -115,8 +115,9 @@
       await this.render(fullNotification);
 
       // Handle auto-hide with CSS animation (after element is rendered)
-      if (options.duration !== undefined && options.duration > 0) {
+      if ((options.duration !== undefined && options.duration > 0) || options.redirect?.delay) {
         // Use setTimeout to ensure DOM is ready and CSS is applied
+        const duration = options.duration || options.redirect?.delay;
         setTimeout(() => {
           const element = document.getElementById(`unified-notification-${id}`);
           if (element) {
@@ -127,7 +128,7 @@
             //   options.duration
             // );
             // Apply animation directly to style attribute
-            element.style.animation = `modal-auto-hide-fade ${options.duration}ms linear forwards`;
+            element.style.animation = `modal-auto-hide-fade ${duration}ms linear forwards`;
             element.style.opacity = "1"; // Ensure starting opacity
 
             // Listen for animation end to hide the modal
@@ -152,7 +153,7 @@
                 console.log("🎬 Fallback: hiding modal after timeout");
                 this.hide(id);
               },
-              (options.duration || 5000) + 100
+              (duration || 5000) + 100
             );
           }
         }, 100);
@@ -315,7 +316,7 @@
       element.innerHTML = `
           <div class="rounded-xl bg-gray-100 shadow-2xl dark:bg-gray-800 max-w-md w-full mx-4 relative overflow-hidden">
             ${
-              notification.duration && notification.duration > 0
+              (notification.duration && notification.duration > 0) || notification.redirect?.delay
                 ? `
               <div class="absolute top-0 left-0 w-full h-1 bg-gray-200 dark:bg-gray-700">
                 <div id="progress-bar-${notification.id}" class="h-full ${config?.progressColor || "bg-primary-500"}" style="width: 0%; animation: progress-bar-fill ${notification.duration}ms linear forwards;"></div>
