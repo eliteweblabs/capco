@@ -62,10 +62,8 @@ const storedCarrierKey = currentUser?.user_metadata?.mobile_carrier
   globalCompanyLogoDark={globalCompanyLogoDark}
   globalCompanyLogoLight={globalCompanyLogoLight}
 >
-  <div class="RZmKBZs1E1eXw8vkE6jY p_2EXc_a2sDA_h41l8QU">
-    <div
-      class="mveJTCIb2WII7J4sY22F _Ybd3WwuTVljUT4vEaM3 _wYiJGbRZyFZeCc8y7Sf mngKhi_Rv06PF57lblDI _1jTZ8KXRZul60S6czNi SWeL9OnwkbKp0VeBUJlf LSIxp7RSuOKhsg28v_u3"
-    >
+  <div class="px-4 pt-4">
+    <div class="rounded-md bg-gray-100 p-4 shadow-sm dark:bg-gray-800 md:p-6">
       <div class="mx-auto max-w-2xl">
         <!-- Header -->
         <div class="mb-8 text-center">
@@ -232,7 +230,7 @@ const storedCarrierKey = currentUser?.user_metadata?.mobile_carrier
         </form>
 
         <!-- Account Actions Section -->
-        <div class="mt-8 rounded-lg bg-white p-6 shadow-sm dark:bg-gray-800">
+        <div class="mt-8 rounded-lg bg-gray-100 p-6 shadow-sm dark:bg-gray-800">
           <h2 class="mb-4 text-lg font-semibold text-gray-900 dark:text-white">Account Actions</h2>
 
           <div class="space-y-3">
@@ -261,19 +259,19 @@ const storedCarrierKey = currentUser?.user_metadata?.mobile_carrier
     profileForm?.addEventListener("submit", async (e) => {
       e.preventDefault();
 
-      const formData = new FormData(profileForm as HTMLFormElement);
-      const companyName = formData.get("company_name") as string;
-      const firstName = formData.get("first_name") as string;
-      const lastName = formData.get("last_name") as string;
-      const phone = formData.get("phone") as string;
+      const formData = new FormData(profileForm);
+      const companyName = formData.get("company_name");
+      const firstName = formData.get("first_name");
+      const lastName = formData.get("last_name");
+      const phone = formData.get("phone");
       const smsAlertsCheckbox = document.getElementById("sms-alerts-phone");
-      const smsAlerts = (smsAlertsCheckbox as HTMLInputElement)?.checked || false;
-      const mobileCarrier = formData.get("mobile_carrier") as string;
+      const smsAlerts = smsAlertsCheckbox?.checked || false;
+      const mobileCarrier = formData.get("mobile_carrier");
 
       // Disable button and show loading state
       if (saveProfileBtn) {
-        (saveProfileBtn as HTMLButtonElement).disabled = true;
-        (saveProfileBtn as HTMLButtonElement).textContent = "Saving...";
+        saveProfileBtn.disabled = true;
+        saveProfileBtn.textContent = "Saving...";
       }
 
       try {
@@ -337,8 +335,8 @@ const storedCarrierKey = currentUser?.user_metadata?.mobile_carrier
       } finally {
         // Re-enable button
         if (saveProfileBtn) {
-          (saveProfileBtn as HTMLButtonElement).disabled = false;
-          (saveProfileBtn as HTMLButtonElement).textContent = "Save Changes";
+          saveProfileBtn.disabled = false;
+          saveProfileBtn.textContent = "Save Changes";
         }
       }
     });
@@ -349,7 +347,7 @@ const storedCarrierKey = currentUser?.user_metadata?.mobile_carrier
     });
 
     avatarInput?.addEventListener("change", async (e) => {
-      const file = (e.target as HTMLInputElement)?.files?.[0];
+      const file = e.target?.files?.[0];
       if (!file) return;
 
       // TODO: Implement avatar upload functionality
