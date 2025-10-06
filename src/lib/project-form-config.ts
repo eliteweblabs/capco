@@ -193,7 +193,7 @@ export const FORM_ACTIONS: FormActionConfig[] = [
       "flex-1 w-full md:w-auto px-4 py-2 bg-red-600 text-white text-sm font-medium rounded-full hover:bg-red-700 transition-colors mt-6",
     action: "deleteProject",
     allow: ["Admin", "Staff"], // Only admin and staff can delete
-    hideAtStatus: [], // Only show when specs are received (status 10)
+    hideAtStatus: [0], // Only show when specs are received (status 10)
   },
   {
     id: "build-proposal",
@@ -514,6 +514,7 @@ export const UNIFIED_FORM_ELEMENTS: FormElementConfig[] = [
       { value: "6' Ductile", label: "6' Ductile" },
       { value: "Unknown", label: "Unknown" },
     ],
+    columns: 1,
   },
 
   // Fire Protection Service Type button group
@@ -544,6 +545,7 @@ export const UNIFIED_FORM_ELEMENTS: FormElementConfig[] = [
         label: "GT-15 Goulds",
       },
     ],
+    columns: 1,
   },
 
   // Floors below grade field
@@ -620,6 +622,7 @@ export const UNIFIED_FORM_ELEMENTS: FormElementConfig[] = [
       { value: "Warehouse", label: "Warehouse" },
       { value: "Institutional", label: "Institutional" },
     ],
+    columns: 1,
   },
 
   // Consulting Services button group
@@ -664,6 +667,7 @@ export const UNIFIED_FORM_ELEMENTS: FormElementConfig[] = [
       { value: "Tier II", label: "Tier II" },
       { value: "Tier III", label: "Tier III" },
     ],
+    columns: 1,
   },
 
   // Reports Required button group
@@ -779,16 +783,18 @@ export function getFilteredUnifiedFormElements(
 
   // Change "Save Project" to "Create Project" for new projects
   if (isNewProject) {
-    elements = elements.map((element) => {
-      if (element.id === "save-project") {
-        return {
-          ...element,
-          label: "Create Project",
-          icon: "bx-plus", // Change icon to plus for create
-        };
-      }
-      return element;
-    });
+    elements = elements
+      .filter((element) => element.id !== "delete-project")
+      .map((element) => {
+        if (element.id === "save-project") {
+          return {
+            ...element,
+            label: "Create Project",
+            icon: "bx-plus", // Change icon to plus for create
+          };
+        }
+        return element;
+      });
   }
 
   return elements;

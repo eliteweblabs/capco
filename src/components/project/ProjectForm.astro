@@ -53,16 +53,15 @@ const formElements = getFilteredUnifiedFormElements(currentRole, isNewProject, p
     {
       formElements.map((element) => {
         const isReadOnly = isFormElementReadOnly(element, projectStatus);
-      
-      // Handle special cases first
-      if (element.id === "address-input") {
-        // Determine column class for address field
-        const columnClass = getColumnClasses(element.columns);
-        
-        return (
-          <div class={`relative ${columnClass}`}>
-            {
-              isNewProject ? (
+
+        // Handle special cases first
+        if (element.id === "address-input") {
+          // Determine column class for address field
+          const columnClass = getColumnClasses(element.columns);
+
+          return (
+            <div class={`relative ${columnClass}`}>
+              {isNewProject ? (
                 <SlotMachineModal
                   id="address"
                   icon="map-pin"
@@ -91,6 +90,7 @@ const formElements = getFilteredUnifiedFormElements(currentRole, isNewProject, p
                   skipSaveToAPI={true}
                   currentUser={currentUser}
                   project={project}
+                  globalInputClasses={globalInputClasses}
                 />
               ) : (
                 <input
@@ -100,197 +100,211 @@ const formElements = getFilteredUnifiedFormElements(currentRole, isNewProject, p
                   value={project?.address || ""}
                   class="hidden"
                 />
-              )
-            }
+              )}
 
-            {
-              isNewProject && (currentRole === "Admin" || currentRole === "Staff") && (
-                <IsNewOrExistingClient 
+              {isNewProject && (currentRole === "Admin" || currentRole === "Staff") && (
+                <IsNewOrExistingClient
                   globalInputClasses={globalInputClasses}
                   globalSecondaryTextClasses={globalSecondaryTextClasses}
                   globalPrimaryTextClasses={globalPrimaryTextClasses}
                 />
-              )
-            }
-          </div>
-        );
-      }
-      
-
-      // Handle form fields
-      if (element.type === "field") {
-        
-        if (element.elementType === "text" || element.elementType === "number") {
-          const columnClass = getColumnClasses(element.columns);
-          
-          return (
-            <div class={`relative ${columnClass}`}>
-              <label
-                for={`${element.id}`}
-                class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300"
-              >
-                {element.label}
-                {element.required ? " *" : ""}
-              </label>
-              <input
-                type={element.elementType === "number" ? "number" : "text"}
-                id={`${element.id}`}
-                name={element.name}
-                value={project?.[element.name] && project[element.name] !== "" ? project[element.name] : (element.value || "")}
-                class={`${globalInputClasses} ${
-                  isReadOnly ? "cursor-not-allowed bg-gray-100 dark:bg-gray-800" : ""
-                }`}
-                autocomplete="off"
-                placeholder={element.placeholder || ""}
-                required={element.required}
-                min={element.min}
-                max={element.max}
-                step={element.step}
-                readonly={isReadOnly}
-                data-field={element.dataField}
-              />
+              )}
             </div>
           );
         }
 
-        if (element.elementType === "textarea") {
-          const columnClass = getColumnClasses(element.columns);
-          
-          return (
-            <div class={`relative ${columnClass}`}>
-              <label
-                for={`${element.id}`}
-                class="block text-sm font-medium text-gray-700 dark:text-gray-300"
-              >
-                {element.label}
-              </label>
-              <!-- @ts-ignore -->
-              <textarea id={`${element.id}`} name={element.name} rows="3" class={globalInputClasses} placeholder={element.placeholder || ""} readonly={isReadOnly} >{project?.[element.name] && project[element.name] !== "" ? project[element.name] : (element.value || "")}</textarea>
-            </div>
-          );
-        }
+        // Handle form fields
+        if (element.type === "field") {
+          if (element.elementType === "text" || element.elementType === "number") {
+            const columnClass = getColumnClasses(element.columns);
 
-        if (element.elementType === "checkbox") {
-          const columnClass = getColumnClasses(element.columns);
-          
-          const isChecked =
-            project?.[element.name] === true ||
-            project?.[element.name] === "true" ||
-            project?.[element.name] === 1 ||
-            project?.[element.name] === "1";
-          return (
-            <div class={`relative ${columnClass}`}>
-              <label
-                class={`inline-flex items-center ${isReadOnly ? "cursor-not-allowed" : "cursor-pointer"}`}
-              >
+            return (
+              <div class={`relative ${columnClass}`}>
+                <label
+                  for={`${element.id}`}
+                  class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300"
+                >
+                  {element.label}
+                  {element.required ? " *" : ""}
+                </label>
                 <input
-                  type="checkbox"
+                  type={element.elementType === "number" ? "number" : "text"}
                   id={`${element.id}`}
                   name={element.name}
-                  checked={isChecked}
-                  disabled={isReadOnly}
-                  class="peer sr-only"
-                />
-                <div
-                  class={`peer relative h-6 w-11 rounded-full after:absolute after:start-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:border after:border-gray-300 after:bg-gray-100 after:transition-all after:content-[''] peer-checked:after:translate-x-full peer-checked:after:border-white peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 dark:border-gray-600 dark:peer-focus:ring-primary-800 rtl:peer-checked:after:-translate-x-full ${
-                    isReadOnly
-                      ? "cursor-not-allowed bg-gray-300 dark:bg-gray-600"
-                      : "bg-gray-200 peer-checked:bg-primary-600 dark:bg-gray-700 dark:peer-checked:bg-primary-600"
+                  value={
+                    project?.[element.name] && project[element.name] !== ""
+                      ? project[element.name]
+                      : element.value || ""
+                  }
+                  class={`${globalInputClasses} ${
+                    isReadOnly ? "cursor-not-allowed bg-gray-100 dark:bg-gray-800" : ""
                   }`}
+                  autocomplete="off"
+                  placeholder={element.placeholder || ""}
+                  required={element.required}
+                  min={element.min}
+                  max={element.max}
+                  step={element.step}
+                  readonly={isReadOnly}
+                  data-field={element.dataField}
+                />
+              </div>
+            );
+          }
+
+          if (element.elementType === "textarea") {
+            const columnClass = getColumnClasses(element.columns);
+
+            return (
+              <div class={`relative ${columnClass}`}>
+                <label
+                  for={`${element.id}`}
+                  class="block text-sm font-medium text-gray-700 dark:text-gray-300"
                 >
-                </div>
-                <span class="ms-3 text-sm font-medium text-gray-900 dark:text-gray-300">
                   {element.label}
-                </span>
-              </label>
-            </div>
-          );
-        }
+                </label>
+                <textarea
+                  id={`${element.id}`}
+                  name={element.name}
+                  rows="3"
+                  class={globalInputClasses}
+                  placeholder={element.placeholder || ""}
+                  readonly={isReadOnly}
+                >
+                  {project?.[element.name] && project[element.name] !== ""
+                    ? project[element.name]
+                    : element.value || ""}
+                </textarea>
+              </div>
+            );
+          }
 
-        if (element.elementType === "component" && element.component === "UnitSlider") {
-          const columnClass = getColumnClasses(element.columns);
-          
-          return (
-            <div class={`relative ${columnClass}`}>
-              <UnitSlider 
-                projectId={formId} 
-                value={project?.[element.name] && project[element.name] !== "" ? project[element.name] : (element.value || 1)} 
-                readOnly={isReadOnly}
-                name={element.name}
-                label={element.label}
-                min={element.min}
-                max={element.max}
-                step={element.step}
-              />
-            </div>
-          );
-        }
-      }
+          if (element.elementType === "checkbox") {
+            const columnClass = getColumnClasses(element.columns);
 
-      // Handle button groups
-      if (element.type === "button-group") {
-        const columnClass = getColumnClasses(element.columns);
-        
-        // Parse selected values from project data
-        let selectedValues = [] as any;
-        // console.log(`🔍 [PROJECT-FORM] Processing group: ${element.name}, Project data:`, project?.[element.name]);
-        if (project?.[element.name]) {
-          if (Array.isArray(project[element.name])) {
-            selectedValues = project[element.name];
-          } else if (typeof project[element.name] === "string") {
-            try {
-              const parsed = JSON.parse(project[element.name]);
-              selectedValues = Array.isArray(parsed) ? parsed : [project[element.name]];
-            } catch {
-              selectedValues = project[element.name]
-                .split(",")
-                .map((s: any) => s.trim())
-                .filter((s: any) => s);
-            }
-          } else {
-            selectedValues = [project[element.name]];
+            const isChecked =
+              project?.[element.name] === true ||
+              project?.[element.name] === "true" ||
+              project?.[element.name] === 1 ||
+              project?.[element.name] === "1";
+            return (
+              <div class={`relative ${columnClass}`}>
+                <label
+                  class={`inline-flex items-center ${isReadOnly ? "cursor-not-allowed" : "cursor-pointer"}`}
+                >
+                  <input
+                    type="checkbox"
+                    id={`${element.id}`}
+                    name={element.name}
+                    checked={isChecked}
+                    disabled={isReadOnly}
+                    class="peer sr-only"
+                  />
+                  <div
+                    class={`peer relative h-6 w-11 rounded-full after:absolute after:start-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:border after:border-gray-300 after:bg-gray-100 after:transition-all after:content-[''] peer-checked:after:translate-x-full peer-checked:after:border-white peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 dark:border-gray-600 dark:peer-focus:ring-primary-800 rtl:peer-checked:after:-translate-x-full ${
+                      isReadOnly
+                        ? "cursor-not-allowed bg-gray-300 dark:bg-gray-600"
+                        : "bg-gray-200 peer-checked:bg-primary-600 dark:bg-gray-700 dark:peer-checked:bg-primary-600"
+                    }`}
+                  />
+                  <span class="ms-3 text-sm font-medium text-gray-900 dark:text-gray-300">
+                    {element.label}
+                  </span>
+                </label>
+              </div>
+            );
+          }
+
+          if (element.elementType === "component" && element.component === "UnitSlider") {
+            const columnClass = getColumnClasses(element.columns);
+
+            return (
+              <div class={`relative ${columnClass}`}>
+                <UnitSlider
+                  projectId={formId}
+                  value={
+                    project?.[element.name] && project[element.name] !== ""
+                      ? project[element.name]
+                      : element.value || 1
+                  }
+                  readOnly={isReadOnly}
+                  name={element.name}
+                  label={element.label}
+                  min={element.min}
+                  max={element.max}
+                  step={element.step}
+                />
+              </div>
+            );
           }
         }
 
-        return (
-          <div class={`mt-5 space-y-3 ${columnClass}`}>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
-              {element.label}
-            </label>
-            <div
-              class={`mb-4 flex flex-wrap gap-2 ${isReadOnly ? "cursor-not-allowed opacity-75" : ""}`}
-            >
-              {element.options?.map((option) => {
-                const optionValue = typeof option === 'string' ? option : option.value;
-                const optionLabel = typeof option === 'string' ? option : option.label;
-                const isSelected = selectedValues.includes(optionValue) || (typeof option === 'object' && option.selected === true);
-                return (
-                  <ToggleButton
-                    value={optionValue}
-                    group={element.name}
-                    type={element.groupType}
-                    disabled={isReadOnly}
-                    class={`${element.cssClass || ""} ${isSelected ? "toggle-button selected" : "toggle-button"} ${
-                      isReadOnly ? "pointer-events-none" : ""
-                    }`}
-                  >
-                    {optionLabel}
-                  </ToggleButton>
-                );
-              })}
+        // Handle button groups
+        if (element.type === "button-group") {
+          const columnClass = getColumnClasses(element.columns);
+
+          // Parse selected values from project data
+          let selectedValues = [] as any;
+          // console.log(`🔍 [PROJECT-FORM] Processing group: ${element.name}, Project data:`, project?.[element.name]);
+          if (project?.[element.name]) {
+            if (Array.isArray(project[element.name])) {
+              selectedValues = project[element.name];
+            } else if (typeof project[element.name] === "string") {
+              try {
+                const parsed = JSON.parse(project[element.name]);
+                selectedValues = Array.isArray(parsed) ? parsed : [project[element.name]];
+              } catch {
+                selectedValues = project[element.name]
+                  .split(",")
+                  .map((s: any) => s.trim())
+                  .filter((s: any) => s);
+              }
+            } else {
+              selectedValues = [project[element.name]];
+            }
+          }
+
+          return (
+            <div class={`mt-5 space-y-3 ${columnClass}`}>
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                {element.label}
+              </label>
+              <div
+                class={`mb-4 flex flex-wrap gap-2 ${isReadOnly ? "cursor-not-allowed opacity-75" : ""}`}
+              >
+                {element.options?.map((option) => {
+                  const optionValue = typeof option === "string" ? option : option.value;
+                  const optionLabel = typeof option === "string" ? option : option.label;
+                  const isSelected =
+                    selectedValues.includes(optionValue) ||
+                    (typeof option === "object" && option.selected === true);
+                  return (
+                    <ToggleButton
+                      value={optionValue}
+                      group={element.name}
+                      type={element.groupType}
+                      disabled={isReadOnly}
+                      class={`${element.cssClass || ""} ${isSelected ? "toggle-button selected" : "toggle-button"} ${
+                        isReadOnly ? "pointer-events-none" : ""
+                      }`}
+                    >
+                      {optionLabel}
+                    </ToggleButton>
+                  );
+                })}
+              </div>
             </div>
-          </div>
-        );
-      }
+          );
+        }
 
-      // Skip actions in main loop - they're handled separately
-      if (element.type === "action") {
+        // Skip actions in main loop - they're handled separately
+        if (element.type === "action") {
+          return null;
+        }
+
         return null;
-      }
-
-      return null;
-    })
-  }
+      })
+    }
   </div>
 
   <!-- Form Actions Container -->
@@ -317,17 +331,12 @@ const formElements = getFilteredUnifiedFormElements(currentRole, isNewProject, p
               {element.label}
             </Button>
           );
-        }
-      )
+        })
     }
   </div>
 </form>
 
-
-
-
-
-<script> 
+<script>
   // Initialize project form
   document.addEventListener("DOMContentLoaded", async function () {
     const form = document.querySelector("form[data-project-id]");
@@ -406,7 +415,7 @@ const formElements = getFilteredUnifiedFormElements(currentRole, isNewProject, p
         } else {
           // Update existing project
           console.log("📝 [ProjectForm] Updating existing project:", projectId, projectData);
-         
+
           response = await fetch(`/api/update-project/${projectId}`, {
             method: "PUT",
             headers: {
@@ -431,20 +440,22 @@ const formElements = getFilteredUnifiedFormElements(currentRole, isNewProject, p
         }
 
         const result = await response.json();
-    
+
         if (result.success) {
           if (isNewProject) {
             // For new projects, update status to 1 (Under Review) to trigger database-driven notifications
-         
+
             try {
               console.log("📝 [ProjectForm] Making fetch call now...");
 
               const project = result.project;
               const nextStatus = 10;
-              
+
               (window as any).updateStatus(project, nextStatus, undefined).then((data: any) => {
                 if (data.success) {
+                  // debugger;
                   window.handleNewStatusNotification(data, "PROPOSAL-VIEW");
+                  window.location.href = `/project/${data.project.id}?status=discussion`;
                 } else {
                   console.error("❌ [PROPOSAL-VIEW] Failed to update status:", data.error);
                 }
@@ -452,9 +463,6 @@ const formElements = getFilteredUnifiedFormElements(currentRole, isNewProject, p
 
               // const statusResult = await (window as any).updateStatus(result.project, nextStatus, undefined);
               // window.handleNewStatusNotification(statusResult, "PROJECT-FORM");
-
-              // window.location.href = `/project/${statusResult.project.id}?status=documents`;
-
             } catch (statusError) {
               console.error("📝 [ProjectForm] Status update failed:", statusError);
               console.error("📝 [ProjectForm] Status update error details:", statusError);
@@ -475,7 +483,11 @@ const formElements = getFilteredUnifiedFormElements(currentRole, isNewProject, p
           } else {
             // For existing projects, just show success and refresh
             if ((window as any).showModal) {
-              (window as any).showModal("success", "Project Updated", "Project has been updated successfully!");
+              (window as any).showModal(
+                "success",
+                "Project Updated",
+                "Project has been updated successfully!"
+              );
             }
             setTimeout(() => {
               window.location.reload();
@@ -513,7 +525,6 @@ const formElements = getFilteredUnifiedFormElements(currentRole, isNewProject, p
       deleteBtn?.addEventListener("click", () => {
         (window as any).deleteProject(projectId);
       });
-    
     }
 
     // Handle other action buttons
@@ -535,7 +546,6 @@ const formElements = getFilteredUnifiedFormElements(currentRole, isNewProject, p
     //   }
     // });
   });
-
 
   // Handle different form actions
   function handleAction(action: any, projectId: any, isNewProject: any) {

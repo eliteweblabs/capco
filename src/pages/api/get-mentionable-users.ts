@@ -38,26 +38,34 @@ export const GET: APIRoute = async ({ cookies, url }) => {
     }
 
     const projectId = url.searchParams.get("projectId");
+    const isGlobal = url.searchParams.get("global") === "true";
 
-    if (!projectId) {
+    // For global discussions, we don't need a projectId
+    if (!isGlobal && !projectId) {
       return new Response(JSON.stringify({ success: false, error: "Project ID required" }), {
         status: 400,
         headers: { "Content-Type": "application/json" },
       });
     }
 
-    // Get project to find the author
-    const { data: project, error: projectError } = await supabase
-      .from("projects")
-      .select("author_id")
-      .eq("id", parseInt(projectId))
-      .single();
+    let projectAuthorId = null;
 
-    if (projectError || !project) {
-      return new Response(JSON.stringify({ success: false, error: "Project not found" }), {
-        status: 404,
-        headers: { "Content-Type": "application/json" },
-      });
+    // Only get project author if not global discussion
+    if (!isGlobal && projectId) {
+      const { data: project, error: projectError } = await supabase
+        .from("projects")
+        .select("author_id")
+        .eq("id", parseInt(projectId))
+        .single();
+
+      if (projectError || !project) {
+        return new Response(JSON.stringify({ success: false, error: "Project not found" }), {
+          status: 404,
+          headers: { "Content-Type": "application/json" },
+        });
+      }
+
+      projectAuthorId = project.author_id;
     }
 
     // Get current user's role to determine what users they can mention
@@ -81,22 +89,46 @@ export const GET: APIRoute = async ({ cookies, url }) => {
 
     let users = [];
 
-    // If user is a client, they can only mention themselves (project author)
+    // If user is a client, they can only mention themselves (project author) or all users in global discussions
     if (currentUserRole === "Client") {
-      const { data: clientProfile, error: clientError } = await supabase
-        .from("profiles")
-        .select("id, company_name, role, first_name, last_name, email")
-        .eq("id", project.author_id)
-        .single();
+      if (isGlobal) {
+        // For global discussions, clients can mention all users
+        const { data: allProfiles, error: allProfilesError } = await supabase
+          .from("profiles")
+          .select("id, company_name, role, first_name, last_name, email");
 
-      if (clientError || !clientProfile) {
-        return new Response(JSON.stringify({ success: true, users: [] }), {
-          status: 200,
-          headers: { "Content-Type": "application/json" },
-        });
+        if (allProfilesError) {
+          return new Response(JSON.stringify({ success: false, error: "Failed to fetch users" }), {
+            status: 500,
+            headers: { "Content-Type": "application/json" },
+          });
+        }
+
+        users = allProfiles || [];
+      } else {
+        // For project discussions, clients can only mention the project author
+        if (!projectAuthorId) {
+          return new Response(JSON.stringify({ success: true, users: [] }), {
+            status: 200,
+            headers: { "Content-Type": "application/json" },
+          });
+        }
+
+        const { data: clientProfile, error: clientError } = await supabase
+          .from("profiles")
+          .select("id, company_name, role, first_name, last_name, email")
+          .eq("id", projectAuthorId)
+          .single();
+
+        if (clientError || !clientProfile) {
+          return new Response(JSON.stringify({ success: true, users: [] }), {
+            status: 200,
+            headers: { "Content-Type": "application/json" },
+          });
+        }
+
+        users = [clientProfile];
       }
-
-      users = [clientProfile];
     } else {
       // For Admin/Staff, get all mentionable users (Admin, Staff, or project author)
       const { data: allProfiles, error: allProfilesError } = await supabase
@@ -110,11 +142,17 @@ export const GET: APIRoute = async ({ cookies, url }) => {
         });
       }
 
-      users =
-        allProfiles?.filter(
-          (profile) =>
-            profile.role === "Admin" || profile.role === "Staff" || profile.id === project.author_id
-        ) || [];
+      if (isGlobal) {
+        // For global discussions, Admin/Staff can mention all users
+        users = allProfiles || [];
+      } else {
+        // For project discussions, Admin/Staff can mention Admin, Staff, or project author
+        users =
+          allProfiles?.filter(
+            (profile) =>
+              profile.role === "Admin" || profile.role === "Staff" || profile.id === projectAuthorId
+          ) || [];
+      }
     }
 
     // Build mentionable users from profiles data (email already available)
