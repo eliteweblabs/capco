@@ -120,7 +120,7 @@ import BoxIcon from "../common/BoxIcon.astro";
 
   // Update incomplete punchlist items count in the punchlist tab
   async function updateIncompletePunchlistItemsCount() {
-    const incompleteCount = punchlistItems.filter((item) => !item.mark_completed).length;
+    const incompleteCount = punchlistItems.filter((item) => !item.markCompleted).length;
 
     // Update count directly
     const countElement = document.querySelector(".incomplete-punchlist-items-count");
@@ -162,7 +162,7 @@ import BoxIcon from "../common/BoxIcon.astro";
     if (!punchlistItemsList) return;
 
     // Separate top-level items and replies
-    const topLevelItems = punchlistItems.filter((d) => !d.parent_id);
+    const topLevelItems = punchlistItems.filter((d) => !d.parentId);
     let html = "";
 
     // Process items asynchronously
@@ -181,7 +181,7 @@ import BoxIcon from "../common/BoxIcon.astro";
       const canToggleCompleted = currentRole === "Admin" || currentRole === "Staff";
 
       if (canToggleCompleted) {
-        loadToggleForPunchlistItem(item.id, item.mark_completed, true);
+        loadToggleForPunchlistItem(item.id, item.markCompleted, true);
       }
     });
   }
@@ -190,7 +190,7 @@ import BoxIcon from "../common/BoxIcon.astro";
     try {
       // Compute all values in the parent component
       const isInternal = item.internal;
-      const isAuthor = item.author_id === currentUserId;
+      const isAuthor = item.authorId === currentUserId;
       const canToggleCompleted = currentRole === "Admin" || currentRole === "Staff";
 
       const marginLeft = depth > 0 ? `ml-${Math.min(depth * 8, 32)}` : "";
@@ -319,7 +319,7 @@ import BoxIcon from "../common/BoxIcon.astro";
         credentials: "include",
         body: JSON.stringify({
           punchlistId: punchlistId,
-          mark_completed: isCompleted,
+          markCompleted: isCompleted,
         }),
       });
 
@@ -330,7 +330,7 @@ import BoxIcon from "../common/BoxIcon.astro";
         // Update the local punchlist data
         const punchlistItem = punchlistItems.find((d) => d.id === punchlistId);
         if (punchlistItem) {
-          punchlistItem.mark_completed = isCompleted;
+          punchlistItem.markCompleted = isCompleted;
         }
 
         // Update the incomplete punchlist items count

@@ -77,13 +77,13 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       priority,
       subject: subject.trim(),
       message: message.trim(),
-      user_id: userId,
+      userId: userId,
       user_email: userEmail,
-      user_name: userName,
+      copanyName: userName,
       anonymous: anonymous || false,
       status: "new",
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
     };
 
     // Insert feedback into database

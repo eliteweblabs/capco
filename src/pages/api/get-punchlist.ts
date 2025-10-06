@@ -142,8 +142,8 @@ export const GET: APIRoute = async ({ request, cookies }) => {
         )
       `
       )
-      .eq("project_id", parseInt(projectId))
-      .order("created_at", { ascending: false });
+      .eq("projectId", parseInt(projectId))
+      .order("createdAt", { ascending: false });
 
     if (punchlistError) {
       console.error("Error fetching punchlist items:", punchlistError);
@@ -172,7 +172,7 @@ export const GET: APIRoute = async ({ request, cookies }) => {
     });
 
     // Calculate incomplete count
-    const incompleteCount = filteredItems.filter((item) => !item.mark_completed).length;
+    const incompleteCount = filteredItems.filter((item) => !item.markCompleted).length;
 
     return new Response(
       JSON.stringify({

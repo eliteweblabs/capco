@@ -1,385 +1,70 @@
 import type { APIRoute } from "astro";
-import { setAuthCookies } from "../../../lib/auth-cookies";
-import { SimpleProjectLogger } from "../../../lib/simple-logging";
-import { getCarrierInfo } from "../../../lib/sms-carriers";
-import { supabase } from "../../../lib/supabase";
-import { supabaseAdmin } from "../../../lib/supabase-admin";
-import { globalCompanyData } from "../../../pages/api/global-company-data";
-const {
-  globalCompanyName,
-  globalCompanySlogan,
-  globalCompanyAddress,
-  globalCompanyPhone,
-  globalCompanyEmail,
-  globalCompanyWebsite,
-  globalCompanyLogo,
-  globalCompanyLogoDark,
-  globalCompanyLogoLight,
-} = globalCompanyData();
-
-import { globalClasses } from "../../../pages/api/global-classes";
-
-const { globalInputClasses, globalPrimaryTextClasses, globalSecondaryTextClasses } =
-  globalClasses();
-
-// Simple email validation
-const validateEmail = (email: string): string | null => {
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  return emailRegex.test(email) ? null : "Invalid email format";
-};
-
-// Helper function to get gateway domain from carrier key
-function getCarrierGateway(carrierKey: string | null): string | null {
-  if (!carrierKey) return null;
-  const carrier = getCarrierInfo(carrierKey);
-  return carrier?.gateway || null;
-}
 
 export const POST: APIRoute = async ({ request, redirect, cookies }) => {
-  console.log("🔐 [REGISTER] Registration API called");
+  console.log("🔐 [REGISTER] Registration API called - delegating to create-user");
 
-  // Check if Supabase is configured
-  if (!supabase || !supabaseAdmin) {
-    console.error("🔐 [REGISTER] Supabase not configured");
-    return new Response("Supabase is not configured", { status: 500 });
-  }
-
-  const formData = await request.formData();
-  const email = formData.get("email")?.toString();
-  const password = formData.get("password")?.toString();
-  const firstName = formData.get("first_name")?.toString();
-  const lastName = formData.get("last_name")?.toString();
-  const companyName = formData.get("company_name")?.toString();
-  const phone = formData.get("phone")?.toString();
-  const smsAlerts = formData.get("sms_alerts") === "on"; // Checkbox returns "on" when checked
-  const mobileCarrier = formData.get("mobile_carrier")?.toString();
-
-  if (!email || !password || !firstName || !lastName || !companyName) {
-    return new Response("Email, password, first name, last name, and company name are required", {
-      status: 400,
-    });
-  }
-  // Use the current request URL to determine the base URL
-  const currentUrl = new URL(request.url);
-  const emailRedirectUrl = `${currentUrl.origin}/dashboard`;
-
-  // Validate email format
-  const emailError = validateEmail(email);
-  if (emailError) {
-    return new Response(emailError, { status: 400 });
-  }
-
-  // Validate password strength
-  if (password.length < 6) {
-    return new Response("Password must be at least 6 characters long", {
-      status: 400,
-    });
-  }
-
-  const { data, error } = await supabase.auth.signUp({
-    email,
-    password,
-    options: {
-      emailRedirectTo: emailRedirectUrl,
-      data: {
-        first_name: firstName,
-        last_name: lastName,
-        full_name: `${firstName} ${lastName}`,
-        company_name: companyName,
-        phone: phone || null,
-        sms_alerts: smsAlerts,
-        mobile_carrier: smsAlerts ? getCarrierGateway(mobileCarrier || null) : null,
-      },
-    },
-  });
-
-  if (error) {
-    console.error("Registration error:", error);
-    console.error("Error details:", {
-      message: error.message,
-      status: error.status,
+  try {
+    // Forward the request to the create-user API
+    const formData = await request.formData();
+    const createUserResponse = await fetch(`${new URL(request.url).origin}/api/create-user`, {
+      method: "POST",
+      body: formData, // Forward the original form data
     });
 
-    // Check if it's a duplicate email error
-    const isDuplicateEmail =
-      error.message?.includes("already registered") ||
-      error.message?.includes("already exists") ||
-      error.message?.includes("already been registered");
+    const result = await createUserResponse.json();
 
+    if (createUserResponse.ok) {
+      // Registration successful - return JSON response for client-side handling
+      return new Response(
+        JSON.stringify({
+          success: true,
+          message: "Registration successful",
+          redirect: "/project/dashboard?success=registration_success",
+        }),
+        {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        }
+      );
+    } else {
+      // Handle specific error cases
+      let errorMessage = result.error || "registration_failed";
+
+      // Check for duplicate email error
+      if (result.error && result.error.includes("already been registered")) {
+        errorMessage =
+          "A user with this email address has already been registered. Please try logging in instead.";
+      } else if (result.error && result.error.includes("User already registered")) {
+        errorMessage = "This email is already registered. Please try logging in instead.";
+      } else if (result.error && result.error.includes("duplicate key")) {
+        errorMessage = "This email is already registered. Please try logging in instead.";
+      }
+
+      // Return JSON response for client-side handling
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: errorMessage,
+          errorType: "duplicate_email",
+        }),
+        {
+          status: 400,
+          headers: { "Content-Type": "application/json" },
+        }
+      );
+    }
+  } catch (error) {
+    console.error("🔐 [REGISTER] Error delegating to create-user:", error);
     return new Response(
       JSON.stringify({
         success: false,
-        error: isDuplicateEmail
-          ? "A user with this email address already exists, please log in instead."
-          : "Failed to create user account. Please try again.",
-        details: error.message,
+        error: "Network error. Please try again.",
+        errorType: "network_error",
       }),
       {
-        status: isDuplicateEmail ? 409 : 500,
+        status: 500,
         headers: { "Content-Type": "application/json" },
       }
     );
   }
-
-  // Track email sending status for notifications
-  let emailStatus = {
-    welcomeEmailSent: false,
-    adminEmailsSent: 0,
-    emailErrors: [] as string[],
-  };
-
-  // Create profile in the profiles table if user was created successfully
-  if (data.user) {
-    // Wait a moment for the trigger to complete, then upsert the profile
-    // The SQL trigger creates a basic profile, we upsert to handle race conditions
-    await new Promise((resolve) => setTimeout(resolve, 100));
-
-    const profileData = {
-      id: data.user.id,
-      email: email.trim().toLowerCase(),
-      company_name: companyName,
-      first_name: firstName,
-      last_name: lastName,
-      phone: phone || null,
-      sms_alerts: smsAlerts,
-      mobile_carrier: smsAlerts ? getCarrierGateway(mobileCarrier || null) : null,
-      role: "Client",
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    };
-
-    // Use admin client to bypass RLS policies during registration
-    const { error: profileError } = await supabaseAdmin.from("profiles").upsert(profileData, {
-      onConflict: "id",
-      ignoreDuplicates: false,
-    });
-
-    if (profileError) {
-      console.error("Profile creation error:", profileError);
-      console.error("Profile error details:", {
-        message: profileError.message,
-        code: profileError.code,
-        hint: profileError.hint,
-        details: profileError.details,
-      });
-      // Don't fail the registration if profile creation fails
-      // The user can still log in and we can create the profile later
-    } else {
-      console.log("Profile created successfully for user:", data.user.id);
-    }
-
-    // Send welcome email to the new user
-    const displayName = companyName || `${firstName} ${lastName}`;
-    const welcomeContent = `<p>Welcome to ${globalCompanyName}!<br></p>
-
-<b>Company Name:</b> ${displayName}<br>
-<b>Email:</b> ${email}<br>
-<b>First Name:</b> ${firstName}<br>
-<b>Last Name:</b> ${lastName}<br>
-<b>Phone:</b> ${phone || "Not provided"}<br>
-<b>SMS Alerts:</b> ${smsAlerts ? "Enabled" : "Disabled"}<br>
-<b>Mobile Carrier:</b> ${mobileCarrier || "Not provided"}<br>
-<b>Registration Date:</b> ${new Date().toLocaleDateString()}<br><br>
-
-<p>You're now signed in and ready to start creating projects...</p>`;
-
-    // Get the base URL for the email API call
-    const baseUrl = import.meta.env.SITE_URL;
-    console.log("🔗 [REGISTER] Base URL:", baseUrl);
-
-    try {
-      // Send welcome email using the email delivery API
-      const emailResponse = await fetch(`${baseUrl}/api/email-delivery`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          emailType: "magic_link",
-          trackLinks: false,
-          usersToNotify: [email], // Array of email strings
-          emailSubject: `Welcome to ${globalCompanyName} → ${displayName}`,
-          emailContent: welcomeContent,
-          buttonText: "Access Your Dashboard",
-          buttonLink: "/dashboard", // Will be converted to magic link by email-delivery.ts
-        }),
-      });
-
-      if (emailResponse.ok) {
-        // console.log("📧 [REGISTER] Welcome email sent successfully to:", email);
-        emailStatus.welcomeEmailSent = true;
-      } else {
-        const errorText = await emailResponse.text();
-        console.error("📧 [REGISTER] Failed to send welcome email to:", email, errorText);
-        emailStatus.emailErrors.push(`Welcome email failed: ${errorText}`);
-      }
-    } catch (emailError) {
-      console.error("📧 [REGISTER] Error sending welcome email:", emailError);
-      emailStatus.emailErrors.push(
-        `Welcome email error: ${emailError instanceof Error ? emailError.message : String(emailError)}`
-      );
-      // Don't fail registration if email sending fails
-    }
-
-    // Send notification email to all admin users about the new registration
-    try {
-      // Get all admin users
-
-      const response = await fetch("/api/get-user-emails-by-role", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ roles: ["Admin", "Staff"] }),
-      });
-
-      const adminUsers = await response.json();
-      if (adminUsers.error) {
-        console.error("📧 [REGISTER] Failed to fetch admin users:", adminUsers.error);
-      } else {
-        // console.log("📧 [REGISTER] Found admin users:", adminUsers?.length || 0);
-
-        // Prepare admin notification email content
-        const adminEmailContent = `<p>New Account Created:<br></p>
-
-        <b>Company Name:</b> ${displayName}<br>
-        <b>Email:</b> ${email}<br>
-        <b>First Name:</b> ${firstName}<br>
-        <b>Last Name:</b> ${lastName}<br>
-        <b>Phone:</b> ${phone || "Not provided"}<br>
-        <b>SMS Alerts:</b> ${smsAlerts ? "Enabled" : "Disabled"}<br>
-        <b>Mobile Carrier:</b> ${mobileCarrier || "Not provided"}<br>
-        <b>Registration Date:</b> ${new Date().toLocaleDateString()}<br><br>`;
-
-        // Send notification to all admin users
-        for (const admin of adminUsers.emails || []) {
-          try {
-            // Get admin's email using admin client
-            const { data: adminUserProfile, error: authError } =
-              await supabaseAdmin.auth.admin.getUserById(admin.id);
-
-            if (authError || !adminUserProfile?.user?.email) {
-              console.log(`📧 [REGISTER] No email found for admin ${admin.id}, skipping`);
-              continue;
-            }
-
-            const adminEmail = adminUserProfile.user.email;
-
-            // Send notification email to admin
-            const adminEmailResponse = await fetch(`${baseUrl}/api/email-delivery`, {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-              },
-              body: JSON.stringify({
-                emailType: "notification", // Not a magic link, just a notification
-                usersToNotify: [adminEmail], // Array of email strings
-                emailSubject: `New User Registration → ${displayName}`,
-                emailContent: adminEmailContent,
-                buttonText: "View User",
-                buttonLink: "/users", // Regular link, not magic link
-              }),
-            });
-
-            if (adminEmailResponse.ok) {
-              console.log(`📧 [REGISTER] Admin notification sent to: ${adminEmail}`);
-              emailStatus.adminEmailsSent++;
-            } else {
-              const adminErrorText = await adminEmailResponse.text();
-              console.error(
-                `📧 [REGISTER] Failed to send admin notification to: ${adminEmail}`,
-                adminErrorText
-              );
-              emailStatus.emailErrors.push(
-                `Admin notification to ${adminEmail} failed: ${adminErrorText}`
-              );
-            }
-          } catch (adminEmailError) {
-            console.error(
-              `📧 [REGISTER] Error sending admin notification to ${admin.id}:`,
-              adminEmailError
-            );
-            emailStatus.emailErrors.push(
-              `Admin notification error: ${adminEmailError instanceof Error ? adminEmailError.message : String(adminEmailError)}`
-            );
-          }
-        }
-      }
-    } catch (adminNotificationError) {
-      console.error("📧 [REGISTER] Error sending admin notifications:", adminNotificationError);
-      // Don't fail registration if admin notification fails
-    }
-  }
-
-  console.log("User registration successful:", !!data.user);
-
-  // Sign in the user immediately after registration
-  if (data.user) {
-    console.log("🔐 [REGISTER] Signing in user after registration:", data.user.email);
-
-    const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
-
-    if (signInError) {
-      console.error("🔐 [REGISTER] Sign-in error after registration:", signInError);
-      // Don't fail the registration, but log the error
-    } else {
-      console.log("🔐 [REGISTER] User signed in successfully after registration");
-
-      // Set auth cookies to maintain the session
-      if (signInData.session) {
-        const { access_token, refresh_token } = signInData.session;
-        setAuthCookies(cookies, access_token, refresh_token);
-        console.log("🔐 [REGISTER] Auth cookies set successfully");
-      }
-    }
-  }
-
-  // Log successful user registration
-  try {
-    await SimpleProjectLogger.addLogEntry(
-      0, // System log
-      "user_registration",
-      "New user registered via email",
-      {
-        userId: data?.user?.id,
-        firstName,
-        lastName,
-        companyName,
-        phone: phone || null,
-        smsAlerts,
-        mobileCarrier: mobileCarrier || null,
-        userAgent: request.headers.get("user-agent"),
-        ip: request.headers.get("x-forwarded-for") || "unknown",
-      }
-    );
-  } catch (logError) {
-    console.error("Error logging user registration:", logError);
-  }
-
-  // Return success response with email status for modal notifications
-  return new Response(
-    JSON.stringify({
-      success: true,
-      message: "User registration successful",
-      user: data?.user
-        ? {
-            id: data?.user?.id,
-            email: data?.user?.email,
-            needsConfirmation: !data?.user?.email_confirmed_at,
-          }
-        : null,
-      emailStatus: emailStatus,
-      notification: {
-        type: "success",
-        title: "Account Created!",
-        message: `Welcome! ${emailStatus.welcomeEmailSent ? "Check your email for welcome instructions." : "You're now signed in and ready to create projects."}`,
-        duration: 2000,
-      },
-    }),
-    {
-      status: 200,
-      headers: { "Content-Type": "application/json" },
-    }
-  );
 };

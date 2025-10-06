@@ -45,7 +45,7 @@ import BoxIcon from "./BoxIcon.astro";
           <i class="bx bx-info-circle"></i>
         </div>
         <div class="tutorial-content">
-          <h3 id="tutorial-title" class="tutorial-title">Welcome!</h3>
+          <h3 id="tutorial-project-title" class="tutorial-project-title">Welcome!</h3>
           <p id="tutorial-message" class="tutorial-message">
             Let's take a quick tour to help you get started.
           </p>
@@ -152,12 +152,12 @@ import BoxIcon from "./BoxIcon.astro";
           const apiData = await response.json();
           // Convert snake_case from API to camelCase
           this.config = {
-            id: apiData.tutorial_id || this.tutorialId,
-            userId: apiData.user_id || this.currentUserId,
+            id: apiData.tutorialId || this.tutorialId,
+            userId: apiData.userId || this.currentUserId,
             steps: [],
             completed: apiData.completed || false,
             dismissed: apiData.dismissed || false,
-            lastStep: apiData.last_step || 0,
+            lastStep: apiData.lastStep || 0,
           };
         } else {
           // Create default config
@@ -336,7 +336,7 @@ import BoxIcon from "./BoxIcon.astro";
     }
 
     private updatePopoverContent(step: TutorialStep) {
-      const titleEl = document.getElementById("tutorial-title");
+      const titleEl = document.getElementById("tutorial-project-title");
       const messageEl = document.getElementById("tutorial-message");
       const iconEl = document.getElementById("tutorial-icon");
 
@@ -572,11 +572,11 @@ import BoxIcon from "./BoxIcon.astro";
       try {
         // Convert camelCase to snake_case for API
         const apiPayload = {
-          user_id: this.config.userId,
-          tutorial_id: this.config.id,
+          userId: this.config.userId,
+          tutorialId: this.config.id,
           completed: this.config.completed,
           dismissed: this.config.dismissed,
-          last_step: this.config.lastStep,
+          lastStep: this.config.lastStep,
         };
 
         await fetch("/api/tutorial-config", {
@@ -755,7 +755,7 @@ import BoxIcon from "./BoxIcon.astro";
     flex: 1;
   }
 
-  .tutorial-title {
+  .tutorial-project-title {
     font-size: 16px;
     font-weight: 600;
     color: #111827;

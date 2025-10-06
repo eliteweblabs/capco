@@ -34,7 +34,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     }
 
     const body = await request.json();
-    let { projectId, message, internal = false, sms_alert = false, parent_id = null } = body;
+    let { projectId, message, internal = false, sms_alert = false, parentId = null } = body;
 
     // Force internal = false for clients (only Admin/Staff can create internal comments)
     const isClient = currentRole === "Client";
@@ -83,25 +83,25 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     const { data: discussion, error } = await supabase
       .from("discussion")
       .insert({
-        project_id: projectIdInt,
-        author_id: currentUser.id,
+        projectId: projectIdInt,
+        authorId: currentUser.id,
         message: message.trim(),
         internal: internal,
         sms_alert: sms_alert,
-        parent_id: parent_id,
-        company_name: currentUser.profile?.company_name,
+        parentId: parentId,
+        companyName: currentUser.profile?.companyName,
       })
       .select(
         `
         id,
-        created_at,
+        createdAt,
         message,
-        author_id,
+        authorId,
         internal,
         sms_alert,
-        project_id,
-        parent_id,
-        company_name
+        projectId,
+        parentId,
+        companyName
       `
       )
       .single();
@@ -120,10 +120,10 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       );
     }
 
-    // Use company_name directly from the discussion record
+    // Use companyName directly from the discussion record
     const discussionWithCompanyName = {
       ...discussion,
-      company_name: discussion.company_name || "Unknown User",
+      companyName: discussion.companyName || "Unknown User",
     };
 
     if (error) {
@@ -141,26 +141,26 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     }
 
     try {
-      // Get project address and author_id for the subject line
-      let projectAddress = "";
+      // Get project address and authorId for the subject line
+      let address = "";
       let projectAuthorId = "";
       const { data: projectData } = await supabase
         .from("projects")
-        .select("address, title, author_id")
+        .select("address, title, authorId")
         .eq("id", projectIdInt)
         .single();
 
       if (projectData) {
-        projectAddress = projectData.address || projectData.title || "";
-        projectAuthorId = projectData.author_id || "";
+        address = projectData.address || projectData.title || "";
+        projectAuthorId = projectData.authorId || "";
       }
 
-      const authorName = discussion.company_name || "User";
+      const authorName = discussion.companyName || "User";
 
       // Always indicate if it's internal or not in subject and content
       const commentType = internal ? "Internal Discussion " : "Public Discussion ";
-      const subjectLine = projectAddress
-        ? `${commentType} → ${authorName} → ${projectAddress}`
+      const subjectLine = address
+        ? `${commentType} → ${authorName} → ${address}`
         : `${commentType} → ${authorName}`;
 
       // Get admin and staff emails using reusable API
@@ -203,7 +203,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       const commentTime = new Date().toLocaleString();
 
       const emailContent = `
-            <p><strong>${discussion.company_name}</strong> posted a new comment on <strong>${projectAddress}</strong>:</p>
+            <p><strong>${discussion.companyName}</strong> posted a new comment on <strong>${address}</strong>:</p>
             <div style="background-color: #f8f9fa; border-left: 4px solid #007bff; padding: 16px; margin: 16px 0; border-radius: 4px;">
               <p style="margin: 0; font-style: italic;">"${message}"</p>
             </div>
@@ -213,8 +213,8 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
       // Replace placeholders for client comment emails
 
-      const button_text = "View Comment & Respond";
-      const button_link = `${getApiBaseUrl(request)}/project/${projectId}?tab=discussion`;
+      const buttonText = "View Comment & Respond";
+      const buttonLink = `${getApiBaseUrl(request)}/project/${projectId}?tab=discussion`;
 
       // Send admin/staff emails
       // console.log("💬 [DISCUSSION] Using base URL for email delivery:", baseUrl);
@@ -231,8 +231,8 @@ export const POST: APIRoute = async ({ request, cookies }) => {
             emailType: "client_comment",
             emailSubject: subjectLine,
             emailContent: emailContent,
-            buttonLink: button_link,
-            buttonText: button_text,
+            buttonLink: buttonLink,
+            buttonText: buttonText,
           }),
         });
 
@@ -257,8 +257,8 @@ export const POST: APIRoute = async ({ request, cookies }) => {
             emailType: "client_comment",
             emailSubject: subjectLine,
             emailContent: emailContent,
-            buttonLink: button_link,
-            buttonText: button_text,
+            buttonLink: buttonLink,
+            buttonText: buttonText,
           }),
         });
 

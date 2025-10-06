@@ -21,10 +21,10 @@ export const GET: APIRoute = async ({ request }) => {
         name: template.name,
         description: template.description,
         html_content: htmlContent,
-        is_active: true,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-        created_by: null,
+        isActive: true,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        createdBy: null,
         created_by_profile: null,
         components: template.components,
       };
@@ -98,7 +98,7 @@ export const POST: APIRoute = async ({ request }) => {
         name,
         description: description || null,
         html_content,
-        is_active: true,
+        isActive: true,
       })
       .select()
       .single();

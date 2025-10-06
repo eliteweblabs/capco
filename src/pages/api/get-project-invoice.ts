@@ -59,11 +59,11 @@ export const GET: APIRoute = async ({ url, cookies }) => {
           title,
           address,
           description,
-          author_id
+          authorId
         )
       `
       )
-      .eq("project_id", projectId)
+      .eq("projectId", projectId)
       .eq("status", "proposal")
       .single();
 

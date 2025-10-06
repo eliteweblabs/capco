@@ -60,7 +60,7 @@ const { globalInputClasses, globalSecondaryTextClasses, globalPrimaryTextClasses
         </label>
         <input
           type="text"
-          name="first_name"
+          name="firstName"
           id="first-name"
           placeholder="Enter your first name"
           required
@@ -78,7 +78,7 @@ const { globalInputClasses, globalSecondaryTextClasses, globalPrimaryTextClasses
         </label>
         <input
           type="text"
-          name="last_name"
+          name="lastName"
           id="last-name"
           placeholder="Enter your last name"
           required
@@ -98,7 +98,7 @@ const { globalInputClasses, globalSecondaryTextClasses, globalPrimaryTextClasses
       </label>
       <input
         type="text"
-        name="company_name"
+        name="companyName"
         id="company-name"
         placeholder="Enter your company name"
         required
@@ -149,10 +149,21 @@ const { globalInputClasses, globalSecondaryTextClasses, globalPrimaryTextClasses
       />
       <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">6 characters minimum</p>
     </div>
+    <input type="hidden" name="role" value="Client" type="hidden" />
 
     <Button type="submit" variant="outline" size="lg" fullWidth class="mt-6">
       Create Account
     </Button>
+
+    <!-- Login instead link -->
+    <div class="mt-4 text-center">
+      <p class="text-sm text-gray-600 dark:text-gray-400">
+        Already have an account?
+        <a href="/login" class="font-medium text-primary-600 underline hover:text-primary-500">
+          Log in instead
+        </a>
+      </p>
+    </div>
   </form>
 </div>
 
@@ -181,9 +192,9 @@ const { globalInputClasses, globalSecondaryTextClasses, globalPrimaryTextClasses
         const password = (registerForm.querySelector("#register_password") as HTMLInputElement)
           ?.value;
         const phone = (registerForm.querySelector("#phone") as HTMLInputElement)?.value?.trim();
-        const sms_alertsCheckbox = document.getElementById("sms-alerts-phone") as HTMLInputElement;
-        const sms_alerts = sms_alertsCheckbox?.checked || false;
-        const mobile_carrier = (
+        const smsAlertsCheckbox = document.getElementById("sms-alerts-phone") as HTMLInputElement;
+        const smsAlerts = smsAlertsCheckbox?.checked || false;
+        const mobileCarrier = (
           registerForm.querySelector("#mobile-carrier-phone") as HTMLSelectElement
         )?.value?.trim();
 
@@ -272,83 +283,86 @@ const { globalInputClasses, globalSecondaryTextClasses, globalPrimaryTextClasses
             body: formData,
           });
 
+          // Check if response is JSON
+          const contentType = response.headers.get("content-type");
+          if (!contentType || !contentType.includes("application/json")) {
+            throw new Error("Server returned non-JSON response. Please try again.");
+          }
+
           const result = await response.json();
 
           if (result.success === false) {
-            // Show error notification
-            if (window.showModal) {
-              window.showModal(
-                "error",
-                "Registration Failed",
-                result.error || "Failed to create account. Please try again.",
-                5000
-              );
-            } else {
-              console.error(
-                "🔔 [Registration Failed]",
-                result.error || "Failed to create account. Please try again."
-              );
-            }
-          } else {
-            // Show success notification based on email status
-            const emailStatus = result.emailStatus || {};
-            const notification = result.notification || {};
-
-            if (!emailStatus.welcomeEmailSent && window.showModal) {
-              window.showModal(
-                notification.type || "success",
-                notification.title || "Account Created!",
-                notification.message ||
-                  "Welcome! You're now signed in and ready to create projects.",
-                notification.duration || 5000
-              );
-            } else {
-              console.log("🔔 [Account Created!]", notification.message);
-            }
-
-            // Show additional email status notifications
-            if (emailStatus.welcomeEmailSent && window.showModal) {
-              setTimeout(() => {
-                window.showModal(
-                  "info",
-                  "Email Sent",
-                  `Welcome email delivered successfully to <b>${email}</b>! Check your inbox. Now redirecting you to your dashboard...`,
-                  3000
-                );
-              }, 1000);
-            }
-
-            // Show email errors if any
-            if (emailStatus.emailErrors && emailStatus.emailErrors.length > 0 && window.showModal) {
-              setTimeout(() => {
+            // Handle different error types
+            if (result.errorType === "duplicate_email") {
+              // Show specific message for duplicate email with login suggestion
+              if (window.showModal) {
                 window.showModal(
                   "warning",
-                  "Email Issues",
-                  "Some notification emails may not have been delivered. Your account was created successfully.",
+                  "Email Already Registered",
+                  `${result.error}<br><br><a href="/login" class="text-primary-600 hover:text-primary-500 underline">Click here to log in instead</a>`,
+                  8000
+                );
+              } else {
+                console.error("🔔 [Email Already Registered]", result.error);
+              }
+            } else {
+              // Show generic error notification
+              if (window.showModal) {
+                window.showModal(
+                  "error",
+                  "Registration Failed",
+                  result.error || "Failed to create account. Please try again.",
                   5000
                 );
-              }, 3000);
+              } else {
+                console.error(
+                  "🔔 [Registration Failed]",
+                  result.error || "Failed to create account. Please try again."
+                );
+              }
+            }
+          } else {
+            // Registration successful
+            if (window.showModal) {
+              window.showModal(
+                "success",
+                "Account Created!",
+                "Welcome! You're now signed in and ready to create projects.",
+                3000
+              );
+            } else {
+              console.log(
+                "🔔 [Account Created!] Welcome! You're now signed in and ready to create projects."
+              );
             }
 
-            // Redirect to dashboard with a longer delay to ensure cookies are processed
+            // Redirect to dashboard
             setTimeout(() => {
-              // Force a page reload to ensure authentication state is properly established
-              window.location.href = "/dashboard";
-            }, 3000);
+              if (result.redirect) {
+                window.location.href = result.redirect;
+              } else {
+                window.location.href = "/dashboard";
+              }
+            }, 2000);
           }
         } catch (error) {
           console.error("Registration error:", error);
+
+          let errorMessage = "An unexpected error occurred. Please try again.";
+
+          // Handle specific error types
+          if (error instanceof Error) {
+            if (error.message.includes("non-JSON response")) {
+              errorMessage = "Server error occurred. Please try again in a moment.";
+            } else if (error.message.includes("Failed to fetch")) {
+              errorMessage = "Network error. Please check your connection and try again.";
+            }
+          }
+
           if (window.showModal) {
-            window.showModal(
-              "error",
-              "Registration Failed",
-              "An unexpected error occurred. Please try again.",
-              5000
-            );
+            window.showModal("error", "Registration Failed", errorMessage, 5000);
           } else {
-            console.error(
-              "🔔 [Registration Failed] An unexpected error occurred. Please try again."
-            );
+            console.error("🔔 [Registration Failed]", errorMessage);
           }
         }
       });

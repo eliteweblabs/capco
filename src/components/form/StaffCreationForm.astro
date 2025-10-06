@@ -1,6 +1,8 @@
 ---
 // This component handles staff creation form fields
 // Based on IsNewOrExistingClient but forced to show new client fields
+import Button from "../common/Button.astro";
+import Alert from "../partials/Alert.astro";
 import PhoneAndSMS from "./PhoneAndSMS.astro";
 import SlotMachineModalStaff from "./SlotMachineModalStaff.astro";
 const { globalInputClasses, globalSecondaryTextClasses, globalPrimaryTextClasses } = Astro.props;
@@ -12,87 +14,293 @@ const { globalInputClasses, globalSecondaryTextClasses, globalPrimaryTextClasses
 // const { userRole = "Admin" } = Astro.props;
 ---
 
-<div class="space-y-4">
-  <!-- New Staff Fields (always shown) -->
-  <div id="new-staff-fields" class="space-y-4">
-    <!-- Role Selection -->
-    <div>
-      <label for="role-select" class="mb-1 block hidden text-sm font-medium"> Role * </label>
-
-      <SlotMachineModalStaff
-        id="role-select"
-        title="Select Role"
-        options={[
-          { value: "Admin", label: "Admin" },
-          { value: "Staff", label: "Staff" },
-          { value: "Client", label: "Client" },
-        ]}
-        placeholder="Choose role"
-        buttonText="Select Role"
-        showCloseButton={true}
-        showCancelButton={true}
-        icon="user"
-        buttonVariant="outline"
-        buttonClass="w-full"
-      />
-    </div>
-
-    <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
-      <!-- First Name -->
+<!-- Create User Form -->
+<form id="create-user-form" class="space-y-4">
+  <div class="space-y-4">
+    <!-- New Staff Fields (always shown) -->
+    <div id="new-staff-fields" class="space-y-4">
+      <!-- Role Selection -->
       <div>
-        <label for="first-name-input" class="mb-1 block text-sm font-medium"> First Name * </label>
+        <SlotMachineModalStaff
+          id="role"
+          title="Select Role"
+          options={[
+            { value: "Admin", label: "Admin" },
+            { value: "Staff", label: "Staff" },
+            { value: "Client", label: "Client" },
+          ]}
+          placeholder="Choose role"
+          buttonText="Select Role"
+          showCloseButton={true}
+          showCancelButton={true}
+          icon="user"
+          buttonVariant="outline"
+          buttonClass="w-full"
+        />
+      </div>
+
+      <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+        <!-- First Name -->
+        <div>
+          <label for="first-name-input" class="mb-1 block text-sm font-medium">
+            First Name *
+          </label>
+          <input
+            type="text"
+            id="first-name-input"
+            name="firstName"
+            placeholder="First Name"
+            required
+            class=`${globalInputClasses}`
+          />
+        </div>
+
+        <!-- Last Name -->
+        <div>
+          <label for="last-name-input" class="mb-1 block text-sm font-medium"> Last Name * </label>
+          <input
+            type="text"
+            id="last-name-input"
+            name="lastName"
+            placeholder="Last Name"
+            required
+            class=`${globalInputClasses}`
+          />
+        </div>
+      </div>
+
+      <!-- Company Name (Optional) -->
+      <div>
+        <label for="company-name-input" class="mb-1 block text-sm font-medium">
+          Company Name
+        </label>
         <input
           type="text"
-          id="first-name-input"
-          name="first_name"
-          placeholder="First Name"
+          id="company-name-input"
+          name="companyName"
+          placeholder="Company Name (optional)"
+          class=`${globalInputClasses}`
+        />
+      </div>
+
+      <!-- Email -->
+      <div>
+        <label for="email-input" class="mb-1 block text-sm font-medium"> Email Address * </label>
+        <input
+          type="email"
+          id="email-input"
+          name="email"
+          placeholder="email@example.com"
           required
           class=`${globalInputClasses}`
         />
       </div>
 
-      <!-- Last Name -->
+      <!-- Password (Optional) -->
       <div>
-        <label for="last-name-input" class="mb-1 block text-sm font-medium"> Last Name * </label>
+        <label for="password-input" class="mb-1 block text-sm font-medium"> Password </label>
         <input
-          type="text"
-          id="last-name-input"
-          name="last_name"
-          placeholder="Last Name"
-          required
+          type="password"
+          id="password-input"
+          name="password"
+          placeholder="Enter password (optional - will generate one if empty)"
           class=`${globalInputClasses}`
         />
+        <p class="mt-1 text-xs text-gray-500">Leave empty to auto-generate a secure password</p>
       </div>
-    </div>
 
-    <!-- Company Name (Optional) -->
-    <div>
-      <label for="company-name-input" class="mb-1 block text-sm font-medium"> Company Name </label>
-      <input
-        type="text"
-        id="company-name-input"
-        name="company_name"
-        placeholder="Company Name (optional)"
-        class=`${globalInputClasses}`
-      />
+      <!-- Phone and SMS -->
+      <PhoneAndSMS id="phone" name="phone" placeholder="(555) 123-4567" showSMS={true} />
     </div>
-
-    <!-- Email -->
-    <div>
-      <label for="email-input" class="mb-1 block text-sm font-medium"> Email Address * </label>
-      <input
-        type="email"
-        id="email-input"
-        name="email"
-        placeholder="email@example.com"
-        required
-        class=`${globalInputClasses}`
-      />
-    </div>
-
-    <!-- Phone and SMS -->
-    <PhoneAndSMS id="phone" name="phone" placeholder="(555) 123-4567" showSMS={true} />
   </div>
-</div>
 
+  <!-- Submit Button -->
+  <div class="pt-2">
+    <Button type="submit" id="submit-btn" variant="primary" size="md" fullWidth loading={true}>
+      <span id="submit-text">Create User</span>
+    </Button>
+  </div>
+
+  <Alert
+    type="info"
+    title="Account Setup"
+    description="<ol class='list-inside list-decimal space-y-1 text-xs'><li>An invitation email will be sent</li><li>User can set up authentication</li><li>User will appear in the list immediately</li></ol>"
+  />
+</form>
 <!-- Form submission is handled by the parent page (create-staff.astro) -->
+
+<script>
+  function setupFormSubmission() {
+    const form = document.getElementById("create-user-form");
+    const submitBtn = document.getElementById("submit-btn");
+    const submitText = document.getElementById("submit-text");
+
+    if (!form || !submitBtn) return;
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+
+      (window as any).showModal(
+        "info",
+        "Creating User...",
+        "Please wait while we create the user.",
+        5000
+      );
+
+      // Get form data for validation
+      const formData = new FormData(form as HTMLFormElement);
+      const userData = {
+        email: formData.get("email") as string,
+        password: formData.get("password") as string,
+        phone: formData.get("phone") as string,
+        role: formData.get("role") as string,
+        firstName: formData.get("firstName") as string,
+        lastName: formData.get("lastName") as string,
+        companyName: formData.get("companyName") as string,
+      };
+
+      // Validate required fields
+      if (
+        !userData.firstName?.trim() ||
+        !userData.lastName?.trim() ||
+        !userData.email?.trim() ||
+        !userData.role
+      ) {
+        if ((window as any).showModal) {
+          (window as any).showModal(
+            "error",
+            "Validation Error",
+            "Please fill in all required fields.",
+            5000
+          );
+        } else if (window.showModal) {
+          window.showModal("error", "Validation Error", "Please fill in all required fields.");
+        }
+        return;
+      }
+
+      // Validate email format using global function
+      const emailError = (window as any).validateEmail
+        ? (window as any).validateEmail(userData.email)
+        : null;
+      if (emailError) {
+        if ((window as any).showModal) {
+          (window as any).showModal("error", "Validation Error", emailError, 5000);
+        } else if (window.showModal) {
+          window.showModal("error", "Validation Error", emailError);
+        }
+        return;
+      }
+
+      // Use first + last name if company is empty
+      if (!userData.companyName) {
+        userData.companyName = userData.firstName + " " + userData.lastName;
+      }
+
+      // Show loading state
+      setFormLoading(true);
+
+      try {
+        const formData = new FormData(form as HTMLFormElement);
+        const response = await fetch("/api/create-user", {
+          method: "POST",
+          body: formData,
+        });
+
+        const result = await response.json();
+
+        if (response.ok && result.success) {
+          // Show notification if provided by API
+          if (result.notification && (window as any).showModal) {
+            (window as any).showModal(
+              result.notification.type,
+              result.notification.title,
+              result.notification.message,
+              result.notification.duration || 5000
+            );
+          }
+
+          // Reset form
+          (form as HTMLFormElement).reset();
+
+          // Refresh page after short delay to show new user
+          setTimeout(() => {
+            window.location.reload();
+          }, 1500);
+        } else {
+          // Handle different error types from API response
+          let errorTitle = "User Creation Failed";
+          let errorMessage = "Failed to create user. Please try again.";
+          let errorDuration = 5000;
+
+          // Check for specific error types
+          if (result.error) {
+            errorMessage = result.error;
+          }
+
+          if (result.details) {
+            // Use the detailed error message for more specific feedback
+            errorMessage = result.details;
+          }
+
+          // Handle specific error cases
+          if (result.error && result.error.includes("email address has already been registered")) {
+            errorTitle = "Email Already Exists";
+            errorMessage =
+              "A user with this email address already exists. Please use a different email.";
+            errorDuration = 7000;
+          } else if (result.error && result.error.includes("validation")) {
+            errorTitle = "Validation Error";
+            errorMessage = "Please check your input and try again.";
+          } else if (result.error && result.error.includes("authentication")) {
+            errorTitle = "Authentication Error";
+            errorMessage = "Please log in again and try creating the user.";
+          } else if (result.error && result.error.includes("permission")) {
+            errorTitle = "Permission Denied";
+            errorMessage = "You don't have permission to create users.";
+          }
+
+          // Show error notification
+          if ((window as any).showModal) {
+            (window as any).showModal(errorTitle, errorMessage, "error", errorDuration);
+          } else if (window.showModal) {
+            // Fallback to modal
+            window.showModal("error", errorTitle, errorMessage);
+          }
+        }
+      } catch (error) {
+        console.error("Create user error:", error);
+        if ((window as any).showModal) {
+          (window as any).showModal(
+            "Network Error",
+            "Network error. Please check your connection and try again.",
+            "error",
+            5000
+          );
+        } else if (window.showModal) {
+          window.showModal(
+            "Network Error",
+            "Network error. Please check your connection and try again.",
+            "error"
+          );
+        }
+      } finally {
+        setFormLoading(false);
+      }
+    });
+
+    function setFormLoading(loading: boolean) {
+      if (loading) {
+        (submitBtn as HTMLButtonElement).disabled = true;
+        (submitText as HTMLElement).textContent = "Creating...";
+      } else {
+        (submitBtn as HTMLButtonElement).disabled = false;
+        (submitText as HTMLElement).textContent = "Create User";
+      }
+    }
+  }
+
+  document.addEventListener("DOMContentLoaded", function () {
+    setupFormSubmission();
+  });
+</script>

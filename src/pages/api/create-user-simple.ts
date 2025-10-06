@@ -4,10 +4,8 @@ import { supabaseAdmin } from "../../lib/supabase-admin";
 import { getApiBaseUrl } from "../../lib/url-utils";
 
 // Simple email validation
-const validateEmail = (email: string): string | null => {
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  return emailRegex.test(email) ? null : "Invalid email format";
-};
+// Import validateEmail from ux-utils (server-side API routes need explicit import)
+import { validateEmail } from "../../lib/ux-utils";
 
 // Generate a secure temporary password
 function generateTempPassword(): string {
@@ -120,14 +118,14 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
       email: email.trim().toLowerCase(),
       password: tempPassword,
-      email_confirm: false, // Auto-confirm email
+      emailConfirm: false, // Auto-confirm email
       user_metadata: {
         full_name: companyName?.trim() || `${firstName.trim()} ${lastName.trim()}`,
-        first_name: firstName.trim(),
-        last_name: lastName.trim(),
-        company_name: companyName?.trim() || null,
+        firstName: firstName.trim(),
+        lastName: lastName.trim(),
+        companyName: companyName?.trim() || null,
         phone: phone?.trim() || null,
-        sms_alerts: smsAlerts || false,
+        smsAlerts: smsAlerts || false,
         role: role,
         email: email.trim().toLowerCase(),
         created_by_admin: true,
@@ -170,13 +168,13 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     const profileData = {
       id: authData.user.id,
       email: email.trim().toLowerCase(),
-      first_name: firstName.trim(),
-      last_name: lastName.trim(),
-      company_name: companyName?.trim() || null,
+      firstName: firstName.trim(),
+      lastName: lastName.trim(),
+      companyName: companyName?.trim() || null,
       phone: phone?.trim() || null,
-      sms_alerts: smsAlerts || false,
+      smsAlerts: smsAlerts || false,
       role: role,
-      updated_at: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
     };
 
     const { error: profileError } = await supabaseAdmin.from("profiles").upsert(profileData, {
@@ -240,7 +238,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     console.log("🔗 [CREATE-USER-SIMPLE] Magic link email sent successfully via Supabase");
     console.log("🔗 [CREATE-USER-SIMPLE] Base URL used:", baseUrl);
 
-    const emailContent = `Welcome to ${process.env.GLOBAL_COMPANY_NAME || "CAPCo"}!
+    const emailContent = `Welcome to ${process.env.GLOBAL_companyName || "CAPCo"}!
 
 Your account has been created successfully.
 
@@ -257,7 +255,7 @@ ${magicLinkUrl}
 This link will log you in automatically. If you have any questions, please contact us.
 
 Best regards,
-The ${process.env.GLOBAL_COMPANY_NAME || "CAPCo"} Team`;
+The ${process.env.GLOBAL_companyName || "CAPCo"} Team`;
 
     // Send email using Resend
     const emailResponse = await fetch("https://api.resend.com/emails", {
@@ -269,7 +267,7 @@ The ${process.env.GLOBAL_COMPANY_NAME || "CAPCo"} Team`;
       body: JSON.stringify({
         from: `${import.meta.env.FROM_NAME || "CAPCo"} <${import.meta.env.FROM_EMAIL || "noreply@capcofire.com"}>`,
         to: [email.trim().toLowerCase()],
-        subject: `Welcome to ${process.env.GLOBAL_COMPANY_NAME || "CAPCo"} - Your Account is Ready`,
+        subject: `Welcome to ${process.env.GLOBAL_companyName || "CAPCo"} - Your Account is Ready`,
         text: emailContent,
         // Disable tracking for magic links
         track_links: false,

@@ -261,7 +261,7 @@ export const GET: APIRoute = async ({ request }) => {
   // Simulate an email.opened event with correct webhook data structure
   const testEvent = {
     type: "email.opened",
-    created_at: new Date().toISOString(),
+    createdAt: new Date().toISOString(),
     data: {
       email: "test@eliteweblabs.com",
       headers: {

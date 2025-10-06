@@ -35,21 +35,21 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
     // Get company name from currentUser profile (no redundant database call)
     const companyName =
-      currentUser.profile?.company_name ||
-      (currentUser.profile?.first_name && currentUser.profile?.last_name
-        ? `${currentUser.profile.first_name} ${currentUser.profile.last_name}`
+      currentUser.profile?.companyName ||
+      (currentUser.profile?.firstName && currentUser.profile?.lastName
+        ? `${currentUser.profile.firstName} ${currentUser.profile.lastName}`
         : "Unknown User");
 
     // Insert punchlist item
     const { data: punchlistData, error: punchlistError } = await supabase
       .from("punchlist")
       .insert({
-        project_id: projectId,
-        author_id: currentUser.id,
+        projectId: projectId,
+        authorId: currentUser.id,
         message,
         internal,
-        parent_id: parentId,
-        company_name: companyName,
+        parentId: parentId,
+        companyName: companyName,
       })
       .select("*")
       .single();

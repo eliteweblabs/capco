@@ -46,10 +46,10 @@ export const GET: APIRoute = async ({ request, url }) => {
         description: component.description,
         html_content: htmlContent,
         component_type: component.type,
-        is_active: true,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-        created_by: null,
+        isActive: true,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        createdBy: null,
       };
     });
 
@@ -115,7 +115,7 @@ export const POST: APIRoute = async ({ request }) => {
         description: description || null,
         html_content,
         component_type,
-        is_active: true,
+        isActive: true,
       })
       .select()
       .single();

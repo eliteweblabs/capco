@@ -3,10 +3,8 @@ import { checkAuth } from "../../lib/auth";
 import { supabase } from "../../lib/supabase";
 import { supabaseAdmin } from "../../lib/supabase-admin";
 // Simple email validation
-const validateEmail = (email: string): string | null => {
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  return emailRegex.test(email) ? null : "Invalid email format";
-};
+// Import validateEmail from ux-utils (server-side API routes need explicit import)
+import { validateEmail } from "../../lib/ux-utils";
 
 export const POST: APIRoute = async ({ request, cookies }) => {
   console.log("=== USER IMPORT API CALLED ===");
@@ -98,8 +96,8 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       });
 
       // Validate required fields
-      if (!user.email || !user.first_name || !user.last_name) {
-        errors.push(`Row ${i + 1}: Missing required fields (email, first_name, last_name)`);
+      if (!user.email || !user.firstName || !user.lastName) {
+        errors.push(`Row ${i + 1}: Missing required fields (email, firstName, lastName)`);
         continue;
       }
 
@@ -156,9 +154,9 @@ export const POST: APIRoute = async ({ request, cookies }) => {
             Cookie: request.headers.get("Cookie") || "",
           },
           body: JSON.stringify({
-            first_name: user.first_name.trim(),
-            last_name: user.last_name.trim(),
-            company_name: user.company_name?.trim() || null,
+            firstName: user.firstName.trim(),
+            lastName: user.lastName.trim(),
+            companyName: user.companyName?.trim() || null,
             email: user.email.trim().toLowerCase(),
             phone: user.phone?.trim() || null,
             role: user.role,
@@ -171,7 +169,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
           importResults.success++;
           importResults.createdUsers.push({
             email: user.email,
-            name: `${user.first_name} ${user.last_name}`,
+            name: `${user.firstName} ${user.lastName}`,
             role: user.role,
           });
         } else {

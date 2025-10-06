@@ -35,10 +35,10 @@ export const GET: APIRoute = async ({ request, cookies }) => {
       );
     }
 
-    // Get catalog line items from the invoice's catalog_line_items JSONB field
+    // Get catalog line items from the invoice's catalogLineItems JSONB field
     const { data: invoice, error: invoiceError } = await supabase
       .from("invoices")
-      .select("catalog_line_items")
+      .select("catalogLineItems")
       .eq("id", parseInt(invoiceId))
       .single();
 
@@ -57,7 +57,7 @@ export const GET: APIRoute = async ({ request, cookies }) => {
     }
 
     // Use the stored catalog line items directly (no need to fetch from catalog)
-    const lineItems = invoice?.catalog_line_items || [];
+    const lineItems = invoice?.catalogLineItems || [];
 
     console.log("🔍 [GET-INVOICE-LINE-ITEMS] Query result:", { lineItems });
 

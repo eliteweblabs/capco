@@ -19,12 +19,12 @@ export interface MediaFile {
   publicUrl: string | null;
   title?: string;
   comments?: string;
-  is_featured?: boolean;
-  version_number?: number;
-  is_current_version?: boolean;
-  previous_version_id?: number;
-  uploaded_by_name?: string;
-  is_private?: boolean;
+  isFeatured?: boolean;
+  versionNumber?: number;
+  isCurrentVersion?: boolean;
+  previousVersionId?: number;
+  uploadedByName?: string;
+  isPrivate?: boolean;
 }
 
 export interface SaveMediaParams {
@@ -159,10 +159,10 @@ export async function saveMedia(params: SaveMediaParams): Promise<MediaFile> {
     const { data: existingFiles, error: existingError } = await supabaseAdmin
       .from("files")
       .select("*")
-      .eq("project_id", parseInt(params.projectId))
-      .eq("target_location", params.targetLocation)
-      .eq("file_name", params.fileName)
-      .eq("is_current_version", true)
+      .eq("projectId", parseInt(params.projectId))
+      .eq("targetLocation", params.targetLocation)
+      .eq("fileName", params.fileName)
+      .eq("isCurrentVersion", true)
       .single();
 
     if (existingError && existingError.code !== "PGRST116") {
@@ -174,7 +174,7 @@ export async function saveMedia(params: SaveMediaParams): Promise<MediaFile> {
         "🔧 [MEDIA-VERSIONING] Found existing file:",
         existingFile.id,
         "version:",
-        existingFile.version_number
+        existingFile.versionNumber
       );
     }
   }
@@ -210,11 +210,11 @@ export async function saveMedia(params: SaveMediaParams): Promise<MediaFile> {
 
   if (existingFile && !params.customVersionNumber) {
     // This is a new version of an existing file (only if no custom version specified)
-    versionNumber = existingFile.version_number + 1;
+    versionNumber = existingFile.versionNumber + 1;
     previousVersionId = existingFile.id;
 
     console.log("🔧 [MEDIA-VERSIONING] Creating new version:", {
-      existingVersion: existingFile.version_number,
+      existingVersion: existingFile.versionNumber,
       newVersion: versionNumber,
       previousFileId: previousVersionId,
     });
@@ -222,22 +222,22 @@ export async function saveMedia(params: SaveMediaParams): Promise<MediaFile> {
     // Mark the existing file as not current version
     const { error: updateError } = await supabaseAdmin
       .from("files")
-      .update({ is_current_version: false })
+      .update({ isCurrentVersion: false })
       .eq("id", existingFile.id);
 
     if (updateError) {
       console.error("🔧 [MEDIA-VERSIONING] Error updating previous version:", updateError);
     }
 
-    // Store the previous version in file_versions table
-    const { error: versionError } = await supabaseAdmin.from("file_versions").insert({
-      file_id: existingFile.id,
-      version_number: existingFile.version_number,
-      file_path: existingFile.file_path,
-      file_size: existingFile.file_size,
-      file_type: existingFile.file_type,
-      uploaded_by: existingFile.author_id,
-      notes: existingFile.checkout_notes || null,
+    // Store the previous version in fileVersions table
+    const { error: versionError } = await supabaseAdmin.from("fileVersions").insert({
+      fileId: existingFile.id,
+      versionNumber: existingFile.versionNumber,
+      filePath: existingFile.filePath,
+      fileSize: existingFile.fileSize,
+      fileType: existingFile.fileType,
+      uploadedBy: existingFile.authorId,
+      notes: existingFile.checkoutNotes || null,
     });
 
     if (versionError) {
@@ -265,23 +265,23 @@ export async function saveMedia(params: SaveMediaParams): Promise<MediaFile> {
 
   // Log file in database
   const fileRecord = {
-    project_id: params.projectId ? parseInt(params.projectId) : null,
-    author_id: params.currentUser.id,
-    file_path: fullPath,
-    file_name: params.fileName,
-    file_size: fileBuffer.byteLength,
-    file_type: contentType,
+    projectId: params.projectId ? parseInt(params.projectId) : null,
+    authorId: params.currentUser.id,
+    filePath: fullPath,
+    fileName: params.fileName,
+    fileSize: fileBuffer.byteLength,
+    fileType: contentType,
     title: params.title || params.fileName,
     comments: params.description || null,
     status: "active",
-    bucket_name: bucket,
-    target_location: params.targetLocation,
-    target_id: params.targetId ? parseInt(params.targetId) : null,
-    uploaded_at: new Date().toISOString(),
-    version_number: versionNumber,
-    previous_version_id: previousVersionId,
-    is_current_version: true,
-    is_private: isPrivate,
+    bucketName: bucket,
+    targetLocation: params.targetLocation,
+    targetId: params.targetId ? parseInt(params.targetId) : null,
+    uploadedAt: new Date().toISOString(),
+    versionNumber: versionNumber,
+    previousVersionId: previousVersionId,
+    isCurrentVersion: true,
+    isPrivate: isPrivate,
   };
 
   console.log("🔧 [MEDIA-VERSIONING] Inserting database record:", fileRecord);
@@ -322,7 +322,7 @@ export async function saveMedia(params: SaveMediaParams): Promise<MediaFile> {
     targetLocation: params.targetLocation,
     targetId: params.targetId ? parseInt(params.targetId) : undefined,
     fileSize: fileBuffer.byteLength,
-    uploadedAt: dbData.uploaded_at,
+    uploadedAt: dbData.uploadedAt,
     title: params.title,
     comments: params.description,
   };
@@ -344,12 +344,12 @@ export async function getMedia(params: GetMediaParams): Promise<{
   }
 
   // Handle featured image requests
-  if (params.mediaType === "featured_image" && params.projectId) {
+  if (params.mediaType === "featuredImage" && params.projectId) {
     // console.log("🐛 [MEDIA] Getting featured image for project:", params.projectId);
 
     const { data: projectData, error: projectError } = await supabaseAdmin
       .from("projects")
-      .select("featured_image_id, featured_image_data")
+      .select("featuredImageId, featuredImageData")
       .eq("id", parseInt(params.projectId))
       .single();
 
@@ -358,15 +358,15 @@ export async function getMedia(params: GetMediaParams): Promise<{
     }
 
     // Use denormalized data if available, but generate signed URL
-    if (projectData?.featured_image_data) {
+    if (projectData?.featuredImageData) {
       // console.log("🐛 [MEDIA] Using denormalized featured image data");
 
-      const featuredData = projectData.featured_image_data;
+      const featuredData = projectData.featuredImageData;
 
       // Generate signed URL for the cached data
       const { data: urlData, error: urlError } = await supabaseAdmin.storage
-        .from(featuredData.bucket_name)
-        .createSignedUrl(featuredData.file_path, 3600);
+        .from(featuredData.bucketName)
+        .createSignedUrl(featuredData.filePath, 3600);
 
       if (urlError) {
         console.warn(
@@ -386,7 +386,7 @@ export async function getMedia(params: GetMediaParams): Promise<{
     }
 
     // Fallback to file lookup
-    if (!projectData?.featured_image_id) {
+    if (!projectData?.featuredImageId) {
       return {
         success: true,
         media: null,
@@ -397,7 +397,7 @@ export async function getMedia(params: GetMediaParams): Promise<{
     const { data: fileData, error: fileError } = await supabaseAdmin
       .from("files")
       .select("*")
-      .eq("id", projectData.featured_image_id)
+      .eq("id", projectData.featuredImageId)
       .single();
 
     if (fileError) {
@@ -405,8 +405,8 @@ export async function getMedia(params: GetMediaParams): Promise<{
     }
 
     const { data: urlData, error: urlError } = await supabaseAdmin.storage
-      .from(fileData.bucket_name)
-      .createSignedUrl(fileData.file_path, 3600);
+      .from(fileData.bucketName)
+      .createSignedUrl(fileData.filePath, 3600);
 
     if (urlError) {
       console.warn("🐛 [MEDIA] Failed to generate signed URL for featured image:", urlError);
@@ -416,15 +416,15 @@ export async function getMedia(params: GetMediaParams): Promise<{
       success: true,
       media: {
         id: fileData.id,
-        fileName: fileData.file_name,
-        filePath: fileData.file_path,
-        fileType: fileData.file_type,
-        fileSize: fileData.file_size,
-        uploadedAt: fileData.uploaded_at,
-        projectId: fileData.project_id,
-        targetId: fileData.target_id,
-        targetLocation: fileData.target_location,
-        bucketName: fileData.bucket_name,
+        fileName: fileData.fileName,
+        filePath: fileData.filePath,
+        fileType: fileData.fileType,
+        fileSize: fileData.fileSize,
+        uploadedAt: fileData.uploadedAt,
+        projectId: fileData.projectId,
+        targetId: fileData.targetId,
+        targetLocation: fileData.targetLocation,
+        bucketName: fileData.bucketName,
         publicUrl: urlData?.signedUrl || null,
         title: fileData.title,
         comments: fileData.comments,
@@ -448,8 +448,8 @@ export async function getMedia(params: GetMediaParams): Promise<{
     }
 
     const { data: urlData, error: urlError } = await supabaseAdmin.storage
-      .from(fileData.bucket_name)
-      .createSignedUrl(fileData.file_path, 3600);
+      .from(fileData.bucketName)
+      .createSignedUrl(fileData.filePath, 3600);
 
     if (urlError) {
       console.warn("🐛 [MEDIA] Failed to generate signed URL for file:", urlError);
@@ -459,15 +459,15 @@ export async function getMedia(params: GetMediaParams): Promise<{
       success: true,
       media: {
         id: fileData.id,
-        fileName: fileData.file_name,
-        filePath: fileData.file_path,
-        fileType: fileData.file_type,
-        fileSize: fileData.file_size,
-        uploadedAt: fileData.uploaded_at,
-        projectId: fileData.project_id,
-        targetId: fileData.target_id,
-        targetLocation: fileData.target_location,
-        bucketName: fileData.bucket_name,
+        fileName: fileData.fileName,
+        filePath: fileData.filePath,
+        fileType: fileData.fileType,
+        fileSize: fileData.fileSize,
+        uploadedAt: fileData.uploadedAt,
+        projectId: fileData.projectId,
+        targetId: fileData.targetId,
+        targetLocation: fileData.targetLocation,
+        bucketName: fileData.bucketName,
         publicUrl: urlData?.signedUrl || null,
         title: fileData.title,
         comments: fileData.comments,
@@ -480,29 +480,29 @@ export async function getMedia(params: GetMediaParams): Promise<{
   if (params.projectId) {
     // console.log("🐛 [MEDIA] Getting project files:", params.projectId);
 
-    // Get project's featured_image_id for marking files as featured
+    // Get project's featuredImageId for marking files as featured
     const { data: projectData, error: projectError } = await supabaseAdmin
       .from("projects")
-      .select("featured_image_id")
+      .select("featuredImageId")
       .eq("id", parseInt(params.projectId))
       .single();
 
-    const featuredImageId = projectData?.featured_image_id;
+    const featuredImageId = projectData?.featuredImageId;
 
     let query = supabaseAdmin
       .from("files")
       .select("*")
-      .eq("project_id", parseInt(params.projectId))
-      .order("uploaded_at", { ascending: false });
+      .eq("projectId", parseInt(params.projectId))
+      .order("uploadedAt", { ascending: false });
 
     // Filter by target location if provided
     if (params.targetLocation) {
-      query = query.eq("target_location", params.targetLocation);
+      query = query.eq("targetLocation", params.targetLocation);
     }
 
     // Filter by target ID if provided
     if (params.targetId) {
-      query = query.eq("target_id", parseInt(params.targetId));
+      query = query.eq("targetId", parseInt(params.targetId));
     }
 
     // Get user role to determine if they can see private files
@@ -518,8 +518,8 @@ export async function getMedia(params: GetMediaParams): Promise<{
     // If user is not Admin or Staff, filter out private files
     if (userRole !== "Admin" && userRole !== "Staff") {
       // console.log("🔧 [MEDIA] Filtering out private files for client user");
-      // Only filter if is_private column exists (for backward compatibility)
-      query = query.or("is_private.is.null,is_private.eq.false");
+      // Only filter if isPrivate column exists (for backward compatibility)
+      query = query.or("isPrivate.is.null,isPrivate.eq.false");
     }
 
     const { data: files, error: filesError } = await query;
@@ -535,76 +535,76 @@ export async function getMedia(params: GetMediaParams): Promise<{
     const mediaFiles = await Promise.all(
       (files || []).map(async (file) => {
         const { data: urlData, error: urlError } = await supabaseAdmin.storage
-          .from(file.bucket_name)
-          .createSignedUrl(file.file_path, 3600);
+          .from(file.bucketName)
+          .createSignedUrl(file.filePath, 3600);
 
         if (urlError) {
           console.warn(
-            `🐛 [MEDIA] Failed to generate signed URL for file ${file.file_name}:`,
+            `🐛 [MEDIA] Failed to generate signed URL for file ${file.fileName}:`,
             urlError
           );
         }
 
         // Fetch user names if needed (optional - can be removed if not required)
-        let assigned_to_name = null;
-        let checked_out_by_name = null;
-        let uploaded_by_name = null;
+        let assignedToName = null;
+        let checkedOutByName = null;
+        let uploadedByName = null;
 
-        if (file.assigned_to) {
+        if (file.assignedTo) {
           const { data: assignedToProfile } = await supabaseAdmin
             .from("profiles")
-            .select("company_name")
-            .eq("id", file.assigned_to)
+            .select("companyName")
+            .eq("id", file.assignedTo)
             .single();
-          assigned_to_name = assignedToProfile?.company_name || null;
+          assignedToName = assignedToProfile?.companyName || null;
         }
 
-        if (file.checked_out_by) {
+        if (file.checkedOutBy) {
           const { data: checkedOutProfile } = await supabaseAdmin
             .from("profiles")
-            .select("company_name")
-            .eq("id", file.checked_out_by)
+            .select("companyName")
+            .eq("id", file.checkedOutBy)
             .single();
-          checked_out_by_name = checkedOutProfile?.company_name || null;
+          checkedOutByName = checkedOutProfile?.companyName || null;
         }
 
-        if (file.author_id) {
+        if (file.authorId) {
           const { data: uploaderProfile } = await supabaseAdmin
             .from("profiles")
-            .select("company_name")
-            .eq("id", file.author_id)
+            .select("companyName")
+            .eq("id", file.authorId)
             .single();
-          uploaded_by_name = uploaderProfile?.company_name || null;
+          uploadedByName = uploaderProfile?.companyName || null;
         }
 
         return {
           id: file.id,
-          fileName: file.file_name,
-          filePath: file.file_path,
-          fileType: file.file_type,
-          fileSize: file.file_size,
-          uploadedAt: file.uploaded_at,
-          projectId: file.project_id,
-          targetId: file.target_id,
-          checked_out_by: file.checked_out_by,
-          checked_out_at: file.checked_out_at,
-          assigned_to: file.assigned_to,
-          assigned_at: file.assigned_at,
-          checkout_notes: file.checkout_notes,
+          fileName: file.fileName,
+          filePath: file.filePath,
+          fileType: file.fileType,
+          fileSize: file.fileSize,
+          uploadedAt: file.uploadedAt,
+          projectId: file.projectId,
+          targetId: file.targetId,
+          checkedOutBy: file.checkedOutBy,
+          checkedOutAt: file.checkedOutAt,
+          assignedTo: file.assignedTo,
+          assignedAt: file.assignedAt,
+          checkoutNotes: file.checkoutNotes,
           // Add the user names from separate queries
-          assigned_to_name,
-          checked_out_by_name,
-          uploaded_by_name,
-          targetLocation: file.target_location,
-          bucketName: file.bucket_name,
+          assignedToName: assignedToName,
+          checkedOutByName: checkedOutByName,
+          uploadedByName: uploadedByName,
+          targetLocation: file.targetLocation,
+          bucketName: file.bucketName,
           publicUrl: urlData?.signedUrl || null,
           title: file.title,
           comments: file.comments,
-          is_featured: featuredImageId && file.id === parseInt(featuredImageId),
-          version_number: file.version_number || 1,
-          is_current_version: file.is_current_version !== false,
-          previous_version_id: file.previous_version_id,
-          is_private: file.is_private || false,
+          isFeatured: featuredImageId && file.id === parseInt(featuredImageId),
+          versionNumber: file.versionNumber || 1,
+          isCurrentVersion: file.isCurrentVersion !== false,
+          previousVersionId: file.previousVersionId,
+          isPrivate: file.isPrivate || false,
         };
       })
     );
@@ -652,12 +652,12 @@ export async function deleteMedia(
     throw new Error(`File not found: ${fileError.message}`);
   }
 
-  // console.log("🐛 [MEDIA] File to delete:", fileData.file_path);
+  // console.log("🐛 [MEDIA] File to delete:", fileData.filePath);
 
   // Delete from storage
   const { error: storageError } = await supabaseAdmin.storage
-    .from(fileData.bucket_name)
-    .remove([fileData.file_path]);
+    .from(fileData.bucketName)
+    .remove([fileData.filePath]);
 
   if (storageError) {
     console.warn("🐛 [MEDIA] Storage deletion warning:", storageError);
@@ -672,11 +672,11 @@ export async function deleteMedia(
   }
 
   // If this was a featured image, clear it from the project
-  if (fileData.project_id) {
+  if (fileData.projectId) {
     await supabaseAdmin
       .from("projects")
-      .update({ featured_image_id: null, featured_image_data: null })
-      .eq("featured_image_id", fileId);
+      .update({ featuredImageId: null, featuredImageData: null })
+      .eq("featuredImageId", fileId);
   }
 
   // console.log("🐛 [MEDIA] Media deleted successfully:", fileId);
@@ -686,8 +686,8 @@ export async function deleteMedia(
     message: "Media deleted successfully",
     deletedFile: {
       id: fileData.id,
-      fileName: fileData.file_name,
-      filePath: fileData.file_path,
+      fileName: fileData.fileName,
+      filePath: fileData.filePath,
     },
   };
 }
@@ -710,12 +710,12 @@ export async function updateFeaturedImage(
     throw new Error("Database connection not available");
   }
 
-  // Update the project's featured_image_id
+  // Update the project's featuredImageId
   const { error: updateError } = await supabaseAdmin
     .from("projects")
     .update({
-      featured_image_id: isActive ? fileId : null,
-      updated_at: new Date().toISOString(),
+      featuredImageId: isActive ? fileId : null,
+      updatedAt: new Date().toISOString(),
     })
     .eq("id", parseInt(projectId));
 

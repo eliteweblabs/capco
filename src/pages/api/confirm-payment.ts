@@ -64,7 +64,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         .from("invoices")
         .update({
           status: "paid",
-          paid_at: new Date().toISOString(),
+          paidAt: new Date().toISOString(),
         })
         .eq("id", invoiceId);
 
@@ -92,11 +92,11 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       // Get project ID from invoice to potentially update project status
       const { data: invoice } = await supabase
         .from("invoices")
-        .select("project_id")
+        .select("projectId")
         .eq("id", invoiceId)
         .single();
 
-      if (invoice?.project_id) {
+      if (invoice?.projectId) {
         // Update project status based on invoice type
         // You can customize this logic based on your workflow
       }

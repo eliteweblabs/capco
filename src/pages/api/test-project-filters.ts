@@ -15,7 +15,7 @@ export const GET: APIRoute = async ({ request, url }) => {
       name: "Search for 'fire' in all text fields",
       url: `${baseUrl}/api/get-project?search=fire`,
       description:
-        "Searches across title, address, company_name, subject, building, project, and service fields",
+        "Searches across title, address, companyName, subject, building, project, and service fields",
     },
     {
       name: "Filter by status and limit results",
@@ -24,7 +24,7 @@ export const GET: APIRoute = async ({ request, url }) => {
     },
     {
       name: "Filter by author and sort by creation date",
-      url: `${baseUrl}/api/get-project?author_id=123&sort_by=created_at&sort_order=asc`,
+      url: `${baseUrl}/api/get-project?authorId=123&sort_by=createdAt&sort_order=asc`,
       description: "Gets projects by specific author, sorted by creation date (oldest first)",
     },
     {
@@ -34,12 +34,12 @@ export const GET: APIRoute = async ({ request, url }) => {
     },
     {
       name: "Filter by new construction and assigned user",
-      url: `${baseUrl}/api/get-project?new_construction=true&assigned_to_id=456`,
+      url: `${baseUrl}/api/get-project?newConstruction=true&assignedToId=456`,
       description: "Gets new construction projects assigned to specific user",
     },
     {
       name: "Complex search with multiple filters",
-      url: `${baseUrl}/api/get-project?search=alarm&status=2&building=commercial&limit=10&sort_by=updated_at&sort_order=desc`,
+      url: `${baseUrl}/api/get-project?search=alarm&status=2&building=commercial&limit=10&sort_by=updatedAt&sort_order=desc`,
       description:
         "Searches for 'alarm' in text fields, status 2, commercial buildings, limited to 10, sorted by update date",
     },
@@ -50,7 +50,7 @@ export const GET: APIRoute = async ({ request, url }) => {
     },
     {
       name: "Filter overdue projects",
-      url: `${baseUrl}/api/get-project?overdue=true&sort_by=due_date&sort_order=asc`,
+      url: `${baseUrl}/api/get-project?overdue=true&sort_by=dueDate&sort_order=asc`,
       description: "Gets all overdue projects, sorted by due date (earliest first)",
     },
     {
@@ -60,7 +60,7 @@ export const GET: APIRoute = async ({ request, url }) => {
     },
     {
       name: "Filter non-overdue projects",
-      url: `${baseUrl}/api/get-project?overdue=false&sort_by=due_date&sort_order=asc`,
+      url: `${baseUrl}/api/get-project?overdue=false&sort_by=dueDate&sort_order=asc`,
       description: "Gets all non-overdue projects, sorted by due date",
     },
   ];

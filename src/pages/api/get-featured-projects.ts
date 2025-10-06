@@ -50,18 +50,18 @@ export const GET: APIRoute = async () => {
         address,
         title,
         description,
-        sq_ft,
-        new_construction,
+        sqFt,
+        newConstruction,
         status,
-        created_at,
-        updated_at,
+        createdAt,
+        updatedAt,
         featured
       `
       )
       .eq("status", 220) // Only completed projects
       .not("address", "is", null) // Has address
       .eq("featured", "yes") // Has featured
-      .order("updated_at", { ascending: false })
+      .order("updatedAt", { ascending: false })
       .limit(0);
 
     console.log("🏗️ [FEATURED-PROJECTS] Featured query result:", {
@@ -83,16 +83,16 @@ export const GET: APIRoute = async () => {
       //     address,
       //     title,
       //     description,
-      //     sq_ft,
-      //     new_construction,
+      //     sqFt,
+      //     newConstruction,
       //     status,
-      //     created_at,
-      //     updated_at,
+      //     createdAt,
+      //     updatedAt,
       //     featured
       //   `
       //   )
       //   .not("address", "is", null) // Has address
-      //   .order("created_at", { ascending: false })
+      //   .order("createdAt", { ascending: false })
       //   .eq("featured", "yes") // Has featured
       //   .limit(6);
 
@@ -125,11 +125,11 @@ export const GET: APIRoute = async () => {
         id: project.id,
         title: project.title || project.address,
         address: project.address,
-        squareFootage: project.sq_ft,
+        squareFootage: project.sqFt,
         description: project.description,
-        isNewConstruction: project.new_construction,
-        completedAt: project.updated_at,
-        createdAt: project.created_at,
+        isNewConstruction: project.newConstruction,
+        completedAt: project.updatedAt,
+        createdAt: project.createdAt,
         featured: project.featured,
       })) || [];
 

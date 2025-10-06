@@ -72,7 +72,7 @@ export const DELETE: APIRoute = async ({ request, cookies }) => {
     // Get user details before deletion for logging
     const { data: userToDelete, error: fetchError } = await supabase
       .from("profiles")
-      .select("first_name, last_name, company_name, role")
+      .select("firstName, lastName, companyName, role")
       .eq("id", userId)
       .single();
 
@@ -91,8 +91,8 @@ export const DELETE: APIRoute = async ({ request, cookies }) => {
     }
 
     const userName =
-      `${userToDelete.first_name || ""} ${userToDelete.last_name || ""}`.trim() ||
-      userToDelete.company_name ||
+      `${userToDelete.firstName || ""} ${userToDelete.lastName || ""}`.trim() ||
+      userToDelete.companyName ||
       "Unknown User";
 
     console.log(`🗑️ [DELETE-USER] Deleting user: ${userName} (${userToDelete.role})`);
@@ -101,7 +101,7 @@ export const DELETE: APIRoute = async ({ request, cookies }) => {
     const { data: userProjects, error: projectsError } = await supabase
       .from("projects")
       .select("id, title")
-      .eq("author_id", userId);
+      .eq("authorId", userId);
 
     if (projectsError) {
       console.error("🗑️ [DELETE-USER] Error checking user projects:", projectsError);

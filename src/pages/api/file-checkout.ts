@@ -3,9 +3,9 @@ import type { APIRoute } from "astro";
 
 export const POST: APIRoute = async ({ request, url }) => {
   try {
-    const { action, file_id, user_id, assigned_to, notes } = await request.json();
+    const { action, fileId, userId, assignedTo, notes } = await request.json();
 
-    if (!action || !file_id) {
+    if (!action || !fileId) {
       return new Response(
         JSON.stringify({ success: false, error: "Missing required parameters" }),
         { status: 400, headers: { "Content-Type": "application/json" } }
@@ -16,35 +16,35 @@ export const POST: APIRoute = async ({ request, url }) => {
 
     switch (action) {
       case "checkout":
-        if (!user_id) {
+        if (!userId) {
           return new Response(
             JSON.stringify({ success: false, error: "User ID required for checkout" }),
             { status: 400, headers: { "Content-Type": "application/json" } }
           );
         }
         result = await supabaseAdmin.rpc("checkout_file", {
-          file_id_param: file_id,
-          user_id_param: user_id,
+          file_id_param: fileId,
+          user_id_param: userId,
           notes_param: notes || null,
         });
         break;
 
       case "checkin":
-        if (!user_id) {
+        if (!userId) {
           return new Response(
             JSON.stringify({ success: false, error: "User ID required for checkin" }),
             { status: 400, headers: { "Content-Type": "application/json" } }
           );
         }
         result = await supabaseAdmin.rpc("checkin_file", {
-          file_id_param: file_id,
-          user_id_param: user_id,
+          file_id_param: fileId,
+          user_id_param: userId,
           notes_param: notes || null,
         });
         break;
 
       case "assign":
-        if (!assigned_to || !user_id) {
+        if (!assignedTo || !userId) {
           return new Response(
             JSON.stringify({
               success: false,
@@ -54,9 +54,9 @@ export const POST: APIRoute = async ({ request, url }) => {
           );
         }
         result = await supabaseAdmin.rpc("assign_file", {
-          file_id_param: file_id,
-          assigned_to_param: assigned_to,
-          assigned_by_param: user_id,
+          file_id_param: fileId,
+          assigned_to_param: assignedTo,
+          assigned_by_param: userId,
           notes_param: notes || null,
         });
         break;
@@ -90,9 +90,9 @@ export const POST: APIRoute = async ({ request, url }) => {
 
 export const GET: APIRoute = async ({ url }) => {
   try {
-    const file_id = url.searchParams.get("file_id");
+    const fileId = url.searchParams.get("fileId");
 
-    if (!file_id) {
+    if (!fileId) {
       return new Response(JSON.stringify({ success: false, error: "File ID required" }), {
         status: 400,
         headers: { "Content-Type": "application/json" },
@@ -100,7 +100,7 @@ export const GET: APIRoute = async ({ url }) => {
     }
 
     const result = await supabaseAdmin.rpc("get_file_checkout_status", {
-      file_id_param: parseInt(file_id),
+      file_id_param: parseInt(fileId),
     });
 
     if (result.error) {

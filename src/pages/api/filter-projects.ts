@@ -33,16 +33,16 @@ export const POST: APIRoute = async ({ request }) => {
 
       projects.forEach((project) => {
         const projectStatus = project.status?.toString() || "10";
-        const statusInfo = projectStatuses.find((s: any) => s.status_code == projectStatus);
+        const statusInfo = projectStatuses.find((s: any) => s.statusCode == projectStatus);
 
         if (statusInfo) {
           let statusName = "";
 
-          // Use client_status_name for clients, admin_status_name for admins
-          if (currentRole === "Client" && statusInfo.client_status_name) {
-            statusName = statusInfo.client_status_name;
+          // Use clientStatusName for clients, adminStatusName for admins
+          if (currentRole === "Client" && statusInfo.clientStatusName) {
+            statusName = statusInfo.clientStatusName;
           } else {
-            statusName = statusInfo.admin_status_name || statusInfo.status_name || "";
+            statusName = statusInfo.adminStatusName || statusInfo.statusName || "";
           }
 
           // Generate slug from status name
@@ -69,8 +69,8 @@ export const POST: APIRoute = async ({ request }) => {
       if (currentRole === "Client") {
         // For clients, find by slug
         foundStatus = projectStatuses.find((status: any) => {
-          if (status.client_status_name) {
-            const slug = status.client_status_name
+          if (status.clientStatusName) {
+            const slug = status.clientStatusName
               .toLowerCase()
               .replace(/[^a-z0-9\s-]/g, "")
               .replace(/\s+/g, "-")
@@ -79,11 +79,11 @@ export const POST: APIRoute = async ({ request }) => {
           }
           return false;
         });
-        return foundStatus?.client_status_name || statusFilter;
+        return foundStatus?.clientStatusName || statusFilter;
       } else {
         // For admins, find by status code
-        foundStatus = projectStatuses.find((status: any) => status.status_code == statusFilter);
-        return foundStatus?.admin_status_name || statusFilter;
+        foundStatus = projectStatuses.find((status: any) => status.statusCode == statusFilter);
+        return foundStatus?.adminStatusName || statusFilter;
       }
     };
 
@@ -94,10 +94,10 @@ export const POST: APIRoute = async ({ request }) => {
       }
 
       if (currentRole === "Client") {
-        // For clients, find the client_status_name that matches this slug
+        // For clients, find the clientStatusName that matches this slug
         const statusInfo = projectStatuses.find((s: any) => {
-          if (s.client_status_name) {
-            const slug = s.client_status_name
+          if (s.clientStatusName) {
+            const slug = s.clientStatusName
               .toLowerCase()
               .replace(/[^a-z0-9\s-]/g, "")
               .replace(/\s+/g, "-")
@@ -107,7 +107,7 @@ export const POST: APIRoute = async ({ request }) => {
           return false;
         });
         if (statusInfo) {
-          return statusCounts[statusInfo.client_status_name] || 0;
+          return statusCounts[statusInfo.clientStatusName] || 0;
         }
       } else {
         // For admins/staff, use status number directly

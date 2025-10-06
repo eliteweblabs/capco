@@ -59,7 +59,7 @@ export const GET: APIRoute = async ({ url, cookies }) => {
           title,
           address,
           description,
-          author_id
+          authorId
         )
       `
       )

@@ -442,9 +442,9 @@ const canDeleteFiles =
   function createFileCard(file, role) {
     // Enable checkout system - SQL migration should be run
     const hasCheckoutColumns = true; // Enable checkout system
-    const isCheckedOut = file.checked_out_by !== null;
-    const isAssigned = file.assigned_to !== null;
-    const isCheckedOutByMe = file.checked_out_by === currentUserId;
+    const isCheckedOut = file.checkedOutBy !== null;
+    const isAssigned = file.assignedTo !== null;
+    const isCheckedOutByMe = file.checkedOutBy === currentUserId;
 
     let statusBadge = "";
     let statusColor = "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300";
@@ -458,7 +458,7 @@ const canDeleteFiles =
         statusColor = "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300";
       }
     } else if (isAssigned) {
-      statusBadge = `Assigned to ${file.assigned_to_name || "Unknown"}`;
+      statusBadge = `Assigned to ${file.assignedToName || "Unknown"}`;
       statusColor = "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300";
     } else {
       statusBadge = "Available";
@@ -507,7 +507,7 @@ const canDeleteFiles =
                 type="checkbox"
                 id="file-private-${file.id}"
                 class="toggle-input peer sr-only"
-                ${file.is_private ? "checked" : ""}
+                ${file.isPrivate ? "checked" : ""}
                 data-file-id="${file.id}"
               />
               <div class="h-6 w-11 rounded-full bg-gray-200 after:absolute after:left-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:border after:border-gray-300 after:bg-gray-100 after:transition-all after:content-[''] peer-checked:bg-primary-600 peer-checked:after:translate-x-full peer-checked:after:border-white peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 dark:border-gray-600 dark:bg-gray-700 dark:peer-focus:ring-primary-800">
@@ -575,7 +575,7 @@ const canDeleteFiles =
         <div class="relative group">
           <button 
             class="text-primary-400 hover:text-primary-600 dark:hover:text-primary-300"
-            onclick="previewFile('${file.publicUrl || ""}', '${file.fileName}', '${file.file_type || ""}', ${file.id})"
+            onclick="previewFile('${file.publicUrl || ""}', '${file.fileName}', '${file.fileType || ""}', ${file.id})"
             title="Preview file"
             ${!file.publicUrl ? "disabled" : ""}
           >
@@ -917,8 +917,8 @@ const canDeleteFiles =
       return;
     }
 
-    const checkedOutCount = files.filter((f) => f.checked_out_by).length;
-    const assignedCount = files.filter((f) => f.assigned_to).length;
+    const checkedOutCount = files.filter((f) => f.checkedOutBy).length;
+    const assignedCount = files.filter((f) => f.assignedTo).length;
 
     const checkedOutElement = document.getElementById("checked-out-count");
     const assignedElement = document.getElementById("assigned-count");
@@ -969,14 +969,14 @@ const canDeleteFiles =
       "Y3FxyuXtj2gecrGXvLEI bg-gray-100 px-2.5 Zs2BLzUMh0_yTpU6xCcU font-medium kAEXvwFGb849z6BUdJjG dark:bg-gray-700 EJIoL6514Ry8r7nh011L";
 
     // If no version number or version 1, show original filename
-    if (!file.version_number || file.version_number === 1) {
+    if (!file.versionNumber || file.versionNumber === 1) {
       return `<span class="${versionBadgeClass} bg-green-500">SRC</span> ${file.fileName}`;
     }
-    if (file.version_number === 999) {
+    if (file.versionNumber === 999) {
       return `<span class="${versionBadgeClass} bg-red-500">FNL</span> ${file.fileName}`;
     }
     // For version 2+, show "filename | v2", "filename | v3", etc.
-    return `<span class="${versionBadgeClass} bg-primary-500">V${file.version_number}</span> ${file.fileName}`;
+    return `<span class="${versionBadgeClass} bg-primary-500">V${file.versionNumber}</span> ${file.fileName}`;
   }
 
   function getFileIcon(fileType) {
@@ -1063,7 +1063,7 @@ const canDeleteFiles =
   async function autoCheckInPreviousVersions(uploadedFilenames = []) {
     // Find checked out files that match the uploaded filenames
     const checkedOutFiles = files.filter(
-      (f) => f.checked_out_by && uploadedFilenames.includes(f.fileName)
+      (f) => f.checkedOutBy && uploadedFilenames.includes(f.fileName)
     );
 
     console.log(
@@ -1140,10 +1140,10 @@ const canDeleteFiles =
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          file_id: fileId,
+          fileId: fileId,
           title: title,
           comments: comments,
-          is_private: isPrivate,
+          isPrivate: isPrivate,
         }),
       });
 
@@ -1176,8 +1176,8 @@ const canDeleteFiles =
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           action: action,
-          file_id: fileId,
-          user_id: currentUserId,
+          fileId: fileId,
+          userId: currentUserId,
           notes: `Auto-${action} on ${new Date().toLocaleString()}`,
         }),
       });
@@ -1266,8 +1266,8 @@ const canDeleteFiles =
                 },
                 credentials: "include",
                 body: JSON.stringify({
-                  file_id: fileId,
-                  project_id: currentProjectId,
+                  fileId: fileId,
+                  projectId: currentProjectId,
                 }),
               })
                 .then(async (response) => {

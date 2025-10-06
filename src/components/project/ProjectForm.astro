@@ -318,7 +318,7 @@ const formElements = getFilteredUnifiedFormElements(currentRole, isNewProject, p
             <Button
               type={element.elementType === "submit" ? "submit" : "button"}
               variant={element.variant === "info" ? "primary" : element.variant || "primary"}
-              size="md"
+              size="xl"
               icon={element.icon}
               iconPosition="left"
               class={element.cssClass || ""}
@@ -373,7 +373,7 @@ const formElements = getFilteredUnifiedFormElements(currentRole, isNewProject, p
           projectData[fieldName].push(value);
         } else {
           // Check if this is a button group field that contains JSON arrays
-          const buttonGroupFields = ["building", "project", "service", "requested_docs"];
+          const buttonGroupFields = ["building", "project", "service", "requestedDocs"];
           if (buttonGroupFields.includes(key) && value && typeof value === "string") {
             console.log(`📝 [ProjectForm] Processing button group field: ${key} = ${value}`);
             try {
@@ -517,8 +517,6 @@ const formElements = getFilteredUnifiedFormElements(currentRole, isNewProject, p
         }
       }
     }
-
-    // Handle delete button (only for existing projects)
     // Note: Delete button is handled by the action button system below
     if (!isNewProject) {
       const deleteBtn = document.getElementById("delete-project");
@@ -526,25 +524,6 @@ const formElements = getFilteredUnifiedFormElements(currentRole, isNewProject, p
         (window as any).deleteProject(projectId);
       });
     }
-
-    // Handle other action buttons
-    // const actionButtons = document.querySelectorAll("[data-action]");
-    // actionButtons.forEach((button) => {
-    //   const action = button.getAttribute("data-action");
-    //   const tab = button.getAttribute("data-tab");
-
-    //   if (projectId) {
-    //     button.addEventListener("click", function () {
-    //       // If button has a tab property, navigate to that tab
-    //       if (tab && typeof window !== "undefined" && window.switchTab) {
-    //         window.switchTab(tab);
-    //       } else if (action) {
-    //         // Otherwise handle the action normally
-    //         handleAction(action, projectId, isNewProject);
-    //       }
-    //     });
-    //   }
-    // });
   });
 
   // Handle different form actions
@@ -621,7 +600,7 @@ const formElements = getFilteredUnifiedFormElements(currentRole, isNewProject, p
     window.resetForm = resetForm;
 
     // Square footage numeric filtering
-    const sqFtInputs = document.querySelectorAll('input[name="sq_ft"]');
+    const sqFtInputs = document.querySelectorAll('input[name="sqFt"]');
 
     sqFtInputs.forEach((input) => {
       // Prevent non-numeric characters on keypress

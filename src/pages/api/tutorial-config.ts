@@ -47,10 +47,10 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
     // Try to get existing tutorial config
     const { data: existingConfig, error: fetchError } = await supabase!
-      .from("tutorial_configs")
+      .from("tutorialConfigs")
       .select("*")
-      .eq("user_id", userId)
-      .eq("tutorial_id", tutorialId)
+      .eq("userId", userId)
+      .eq("tutorialId", tutorialId)
       .single();
 
     if (fetchError && fetchError.code !== "PGRST116") {
@@ -70,13 +70,13 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     } else {
       // Create default config
       const defaultConfig = {
-        user_id: userId,
-        tutorial_id: tutorialId,
+        userId: userId,
+        tutorialId: tutorialId,
         completed: false,
         dismissed: false,
-        last_step: 0,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
+        lastStep: 0,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
       };
 
       return new Response(JSON.stringify(defaultConfig), {
@@ -120,17 +120,17 @@ export const PUT: APIRoute = async ({ request, cookies }) => {
     }
 
     const body = await request.json();
-    const { user_id, tutorial_id, completed, dismissed, last_step } = body;
+    const { userId, tutorialId, completed, dismissed, lastStep } = body;
 
-    if (!user_id || !tutorial_id) {
-      return new Response(JSON.stringify({ error: "Missing user_id or tutorial_id" }), {
+    if (!userId || !tutorialId) {
+      return new Response(JSON.stringify({ error: "Missing userId or tutorialId" }), {
         status: 400,
         headers: { "Content-Type": "application/json" },
       });
     }
 
     // Check if user has permission to update this tutorial config
-    if (session.session.user.id !== user_id) {
+    if (session.session.user.id !== userId) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 403,
         headers: { "Content-Type": "application/json" },
@@ -139,14 +139,14 @@ export const PUT: APIRoute = async ({ request, cookies }) => {
 
     // Update or create tutorial config
     const { data: updatedConfig, error: updateError } = await supabase!
-      .from("tutorial_configs")
+      .from("tutorialConfigs")
       .upsert({
-        user_id,
-        tutorial_id,
+        userId,
+        tutorialId,
         completed: completed || false,
         dismissed: dismissed || false,
-        last_step: last_step || 0,
-        updated_at: new Date().toISOString(),
+        lastStep: lastStep || 0,
+        updatedAt: new Date().toISOString(),
       })
       .select()
       .single();
@@ -218,10 +218,10 @@ export const DELETE: APIRoute = async ({ request, cookies }) => {
 
     // Delete tutorial config
     const { error: deleteError } = await supabase!
-      .from("tutorial_configs")
+      .from("tutorialConfigs")
       .delete()
-      .eq("user_id", userId)
-      .eq("tutorial_id", tutorialId);
+      .eq("userId", userId)
+      .eq("tutorialId", tutorialId);
 
     if (deleteError) {
       console.error("Error deleting tutorial config:", deleteError);

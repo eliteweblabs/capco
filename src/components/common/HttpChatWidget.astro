@@ -8,7 +8,7 @@ interface Props {
     email: string;
     profile: {
       role: string;
-      company_name: string;
+      companyName: string;
     };
   };
   currentRole?: string;
@@ -28,14 +28,14 @@ if (currentRole !== "Admin" && currentRole !== "Staff") {
 // console.log("🔧 [HTTP-CHAT-WIDGET] Current user object:", currentUser);
 // console.log("🔧 [HTTP-CHAT-WIDGET] Current role:", currentRole);
 // console.log("🔧 [HTTP-CHAT-WIDGET] User ID:", currentUser?.id);
-// console.log("🔧 [HTTP-CHAT-WIDGET] Company name:", currentUser?.profile?.company_name);
+// console.log("🔧 [HTTP-CHAT-WIDGET] Company name:", currentUser?.profile?.companyName);
 ---
 
 <div
   id="chat-widget"
   data-user-role={currentRole || "Client"}
   data-user-id={currentUser?.id || "unknown"}
-  data-user-name={currentUser?.profile?.company_name || "Unknown User"}
+  data-user-name={currentUser?.profile?.companyName || "Unknown User"}
 >
   <!-- Chat Widget (Hidden by Default) -->
   <div id="chat-panel">
@@ -341,10 +341,10 @@ if (currentRole !== "Admin" && currentRole !== "Staff") {
       (document.getElementById("sidebar-menu")?.offsetHeight || 0) -
       230 +
       "px";
-    const userName = data.user_name || data.userName || "Unknown User";
-    const userId = data.user_id || data.userId || "unknown";
+    const userName = data.copanyName || data.userName || "Unknown User";
+    const userId = data.userId || data.userId || "unknown";
     const message = data.message || "";
-    const timestamp = data.timestamp || data.created_at || new Date().toISOString();
+    const timestamp = data.timestamp || data.createdAt || new Date().toISOString();
 
     const isOwnMessage = userId === currentUser.id;
     const messageElement = document.createElement("div");
@@ -455,15 +455,15 @@ if (currentRole !== "Admin" && currentRole !== "Staff") {
         countElement.textContent = "0 online";
       } else if (onlineUsers.length === 1) {
         const user = onlineUsers[0];
-        countElement.textContent = `${user.userName || user.user_name} online`;
+        countElement.textContent = `${user.userName || user.copanyName} online`;
       } else if (onlineUsers.length === 2) {
         const users = onlineUsers;
-        countElement.textContent = `${users[0].userName || users[0].user_name} and ${users[1].userName || users[1].user_name} online`;
+        countElement.textContent = `${users[0].userName || users[0].copanyName} and ${users[1].userName || users[1].copanyName} online`;
       } else {
         const users = onlineUsers;
         const firstTwo = users
           .slice(0, 2)
-          .map((u) => u.userName || u.user_name)
+          .map((u) => u.userName || u.copanyName)
           .join(", ");
         countElement.textContent = `${firstTwo} and ${onlineUsers.length - 2} more online`;
       }
@@ -480,8 +480,8 @@ if (currentRole !== "Admin" && currentRole !== "Staff") {
             (user) =>
               `<div class="flex items-center space-x-2">
             <div class="w-2 h-2 bg-green-400 rounded-lg"></div>
-            <span>${user.userName || user.user_name}</span>
-            <span class="text-gray-400 text-xs">(${user.userRole || user.user_role})</span>
+            <span>${user.userName || user.copanyName}</span>
+            <span class="text-gray-400 text-xs">(${user.userRole || user.role})</span>
           </div>`
           )
           .join("");

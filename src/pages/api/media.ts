@@ -157,7 +157,7 @@ export const PUT: APIRoute = async ({ request, cookies }) => {
     const body = await request.json();
     const { projectId, fileId, mediaType, isActive } = body;
 
-    if (mediaType === "featured_image" && projectId && fileId !== undefined) {
+    if (mediaType === "featuredImage" && projectId && fileId !== undefined) {
       const result = await updateFeaturedImage(projectId, fileId, isActive, currentUser);
 
       return new Response(JSON.stringify(result), {

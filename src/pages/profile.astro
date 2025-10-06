@@ -28,7 +28,7 @@ const { globalInputClasses, globalPrimaryTextClasses, globalSecondaryTextClasses
   globalClasses();
 
 import App from "../components/common/App.astro";
-import { getCarrierKeyFromGateway } from "../lib/sms-carriers";
+import { getCarrierKeyFromGateway } from "../lib/sms-utils";
 import BoxIcon from "../components/common/BoxIcon.astro";
 import Footer from "../components/common/Footer.astro";
 import PhoneAndSMS from "../components/form/PhoneAndSMS.astro";
@@ -37,8 +37,8 @@ import ForgotPasswordModal from "../components/form/ForgetPasswordModal.astro";
 const userProfile = currentUser?.profile || null;
 
 // Get the carrier key from the stored gateway domain
-const storedCarrierKey = currentUser?.user_metadata?.mobile_carrier
-  ? getCarrierKeyFromGateway(currentUser.user_metadata.mobile_carrier)
+const storedCarrierKey = currentUser?.user_metadata?.mobileCarrier
+  ? getCarrierKeyFromGateway(currentUser.user_metadata.mobileCarrier)
   : null;
 ---
 
@@ -118,8 +118,8 @@ const storedCarrierKey = currentUser?.user_metadata?.mobile_carrier
               <input
                 type="text"
                 id="company-name"
-                name="company_name"
-                value={userProfile?.company_name || ""}
+                name="companyName"
+                value={userProfile?.companyName || ""}
                 class=`${globalInputClasses}`
                 placeholder="Enter your company name"
               />
@@ -138,8 +138,8 @@ const storedCarrierKey = currentUser?.user_metadata?.mobile_carrier
               <input
                 type="text"
                 id="first-name"
-                name="first_name"
-                value={userProfile?.first_name || ""}
+                name="firstName"
+                value={userProfile?.firstName || ""}
                 class=`${globalInputClasses}`
                 placeholder="Enter your first name"
               />
@@ -154,8 +154,8 @@ const storedCarrierKey = currentUser?.user_metadata?.mobile_carrier
               <input
                 type="text"
                 id="last-name"
-                name="last_name"
-                value={userProfile?.last_name || ""}
+                name="lastName"
+                value={userProfile?.lastName || ""}
                 class=`${globalInputClasses}`
                 placeholder="Enter your last name"
               />
@@ -198,7 +198,7 @@ const storedCarrierKey = currentUser?.user_metadata?.mobile_carrier
             value={currentUser?.user_metadata?.phone || ""}
             placeholder="Enter your phone number"
             showSMS={true}
-            smsChecked={currentUser?.user_metadata?.sms_alerts || false}
+            smsChecked={currentUser?.user_metadata?.smsAlerts || false}
             selectedCarrier={storedCarrierKey || ""}
           />
 
@@ -259,19 +259,19 @@ const storedCarrierKey = currentUser?.user_metadata?.mobile_carrier
     profileForm?.addEventListener("submit", async (e) => {
       e.preventDefault();
 
-      const formData = new FormData(profileForm);
-      const companyName = formData.get("company_name");
-      const firstName = formData.get("first_name");
-      const lastName = formData.get("last_name");
+      const formData = new FormData(profileForm as HTMLFormElement);
+      const companyName = formData.get("companyName");
+      const firstName = formData.get("firstName");
+      const lastName = formData.get("lastName");
       const phone = formData.get("phone");
-      const smsAlertsCheckbox = document.getElementById("sms-alerts-phone");
+      const smsAlertsCheckbox = document.getElementById("sms-alerts-phone") as HTMLInputElement;
       const smsAlerts = smsAlertsCheckbox?.checked || false;
-      const mobileCarrier = formData.get("mobile_carrier");
+      const mobileCarrier = formData.get("mobileCarrier");
 
       // Disable button and show loading state
-      if (saveProfileBtn) {
-        saveProfileBtn.disabled = true;
-        saveProfileBtn.textContent = "Saving...";
+      if (saveProfileBtn as HTMLButtonElement) {
+        saveProfileBtn?.disabled = true;
+        saveProfileBtn?.textContent = "Saving...";
       }
 
       try {
@@ -334,7 +334,7 @@ const storedCarrierKey = currentUser?.user_metadata?.mobile_carrier
         }
       } finally {
         // Re-enable button
-        if (saveProfileBtn) {
+        if (saveProfileBtn as HTMLButtonElement) {
           saveProfileBtn.disabled = false;
           saveProfileBtn.textContent = "Save Changes";
         }
@@ -347,7 +347,7 @@ const storedCarrierKey = currentUser?.user_metadata?.mobile_carrier
     });
 
     avatarInput?.addEventListener("change", async (e) => {
-      const file = e.target?.files?.[0];
+      const file = (e.target as HTMLInputElement)?.files?.[0];
       if (!file) return;
 
       // TODO: Implement avatar upload functionality

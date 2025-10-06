@@ -93,7 +93,7 @@ export const DELETE: APIRoute = async ({ request, cookies }) => {
     console.log("Looking up project:", projectIdNum);
     const { data: project, error: projectError } = await supabase
       .from("projects")
-      .select("id, author_id")
+      .select("id, authorId")
       .eq("id", projectIdNum)
       .single();
 
@@ -123,7 +123,7 @@ export const DELETE: APIRoute = async ({ request, cookies }) => {
 
     // console.log("User role:", profile?.role);
     // console.log("Is admin:", canDelete);
-    // console.log("Project author:", project.author_id);
+    // console.log("Project author:", project.authorId);
     // console.log("Current user:", user.id);
 
     if (!canDelete) {
@@ -147,8 +147,8 @@ export const DELETE: APIRoute = async ({ request, cookies }) => {
     // Get all files associated with this project using admin client
     const { data: projectFiles, error: filesQueryError } = await supabaseAdmin
       .from("files")
-      .select("file_path")
-      .eq("project_id", projectIdNum);
+      .select("filePath")
+      .eq("projectId", projectIdNum);
 
     if (filesQueryError) {
       console.error("Error querying project files:", filesQueryError);
@@ -157,7 +157,7 @@ export const DELETE: APIRoute = async ({ request, cookies }) => {
 
       // Delete files from storage
       if (projectFiles && projectFiles.length > 0) {
-        const filePaths = projectFiles.map((file) => file.file_path);
+        const filePaths = projectFiles.map((file) => file.filePath);
         console.log("Deleting files from storage:", filePaths);
 
         const { error: storageDeleteError } = await supabase.storage
@@ -176,7 +176,7 @@ export const DELETE: APIRoute = async ({ request, cookies }) => {
     const { error: filesDeleteError } = await supabaseAdmin
       .from("files")
       .delete()
-      .eq("project_id", projectIdNum);
+      .eq("projectId", projectIdNum);
 
     if (filesDeleteError) {
       console.error("Error deleting project files from database:", filesDeleteError);

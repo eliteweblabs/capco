@@ -239,13 +239,13 @@ const isGlobalDiscussion = !project;
 
     if (emptyState) emptyState.classList.add("hidden");
 
-    // Group discussions by parent_id
-    const topLevelDiscussions = discussions.filter((d) => !d.parent_id);
-    const replies = discussions.filter((d) => d.parent_id);
+    // Group discussions by parentId
+    const topLevelDiscussions = discussions.filter((d) => !d.parentId);
+    const replies = discussions.filter((d) => d.parentId);
 
     container.innerHTML = topLevelDiscussions
       .map((discussion) => {
-        const discussionReplies = replies.filter((r) => r.parent_id === discussion.id);
+        const discussionReplies = replies.filter((r) => r.parentId === discussion.id);
         return renderDiscussionItem(discussion, discussionReplies);
       })
       .join("");
@@ -259,7 +259,7 @@ const isGlobalDiscussion = !project;
   // Update discussion count in the global bubble count system
   function updateDiscussionCount() {
     const totalDiscussions = discussions.length;
-    const incompleteDiscussions = discussions.filter((d) => !d.mark_completed).length;
+    const incompleteDiscussions = discussions.filter((d) => !d.markCompleted).length;
 
     // Update count directly in the discussion count element
     const countElement = document.querySelector(".discussion-count");
@@ -290,9 +290,9 @@ const isGlobalDiscussion = !project;
 
   function renderDiscussionItem(discussion, replies = []) {
     const isInternal = discussion.internal;
-    const isCompleted = discussion.mark_completed;
-    const isReply = discussion.parent_id;
-    const canEdit = currentUserId === discussion.author_id || currentRole === "Admin";
+    const isCompleted = discussion.markCompleted;
+    const isReply = discussion.parentId;
+    const canEdit = currentUserId === discussion.authorId || currentRole === "Admin";
     const canMarkCompleted = currentRole === "Admin" || currentRole === "Staff";
 
     return `
@@ -310,8 +310,8 @@ const isGlobalDiscussion = !project;
               ${isCompleted ? '<span class="ml-2 rounded-full bg-green-100 px-2 py-1 text-xs text-green-800 dark:bg-green-900 dark:text-green-200">Completed</span>' : ""}
             </p>
             <p class="text-sm text-gray-600 dark:text-gray-400">
-              <time pubdate datetime="${discussion.created_at}" title="${new Date(discussion.created_at).toLocaleString()}">
-                ${new Date(discussion.created_at).toLocaleDateString()}
+              <time pubdate datetime="${discussion.createdAt}" title="${new Date(discussion.createdAt).toLocaleString()}">
+                ${new Date(discussion.createdAt).toLocaleDateString()}
               </time>
               ${discussion.project_address ? ` • ${discussion.project_address}` : ""}
             </p>
@@ -671,7 +671,7 @@ const isGlobalDiscussion = !project;
       const response = await fetch("/api/update-discussion-completed", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ discussionId, mark_completed: true }),
+        body: JSON.stringify({ discussionId, markCompleted: true }),
         credentials: "include",
       });
 
@@ -679,7 +679,7 @@ const isGlobalDiscussion = !project;
         // Update the discussion in the local array
         const discussion = discussions.find((d) => d.id === discussionId);
         if (discussion) {
-          discussion.mark_completed = true;
+          discussion.markCompleted = true;
         }
 
         // Refresh the display and update counts
@@ -799,7 +799,7 @@ const isGlobalDiscussion = !project;
         body: JSON.stringify({
           projectId: currentProjectId,
           message: textarea.value.trim(),
-          parent_id: parentId,
+          parentId: parentId,
           internal: inheritInternal,
           sms_alert: false,
         }),

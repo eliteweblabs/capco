@@ -21,7 +21,7 @@ export const GET: APIRoute = async ({ request }) => {
 
     let query = supabase
       .from("profiles")
-      .select("id, first_name, last_name, company_name, email, role")
+      .select("id, firstName, lastName, companyName, email, role")
       .eq("role", role);
 
     // If a specific client ID is provided, filter by that ID
@@ -31,11 +31,11 @@ export const GET: APIRoute = async ({ request }) => {
       // If a search query is provided, filter by company name, first name, last name, or email
       if (searchQuery) {
         query = query.or(
-          `company_name.ilike.%${searchQuery}%,first_name.ilike.%${searchQuery}%,last_name.ilike.%${searchQuery}%,email.ilike.%${searchQuery}%`
+          `companyName.ilike.%${searchQuery}%,firstName.ilike.%${searchQuery}%,lastName.ilike.%${searchQuery}%,email.ilike.%${searchQuery}%`
         );
       }
-      // Only order by company_name if we're fetching all clients
-      query = query.order("company_name", { ascending: true });
+      // Only order by companyName if we're fetching all clients
+      query = query.order("companyName", { ascending: true });
     }
 
     const { data: profiles, error } = await query;

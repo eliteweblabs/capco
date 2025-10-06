@@ -28,8 +28,8 @@ export const GET: APIRoute = async ({ cookies, url }) => {
     const queryPromise = supabase
       .from("notifications")
       .select("*")
-      .eq("user_id", currentUser.id)
-      .order("created_at", { ascending: false })
+      .eq("userId", currentUser.id)
+      .order("createdAt", { ascending: false })
       .range(offset, offset + limit - 1);
 
     const timeoutPromise = new Promise((_, reject) =>
@@ -100,7 +100,7 @@ export const GET: APIRoute = async ({ cookies, url }) => {
     const { count: unreadCount } = await supabase
       .from("notifications")
       .select("*", { count: "exact", head: true })
-      .eq("user_id", currentUser.id)
+      .eq("userId", currentUser.id)
       .eq("viewed", false);
 
     return new Response(
@@ -156,7 +156,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       .from("notifications")
       .update({ viewed: true })
       .in("id", notificationIds)
-      .eq("user_id", currentUser.id);
+      .eq("userId", currentUser.id);
 
     if (error) {
       console.error("❌ [NOTIFICATIONS] Error marking notifications as viewed:", error);
@@ -216,7 +216,7 @@ export const DELETE: APIRoute = async ({ request, cookies }) => {
       .from("notifications")
       .delete()
       .eq("id", notificationId)
-      .eq("user_id", currentUser.id);
+      .eq("userId", currentUser.id);
 
     if (error) {
       console.error("❌ [NOTIFICATIONS] Error deleting notification:", error);

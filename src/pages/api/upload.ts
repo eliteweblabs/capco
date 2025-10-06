@@ -79,7 +79,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     try {
       const { data: project, error: projectError } = await supabase
         .from("projects")
-        .select("id, author_id")
+        .select("id, authorId")
         .eq("id", projectId)
         .single();
 
@@ -100,7 +100,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
       const userRole = profile?.role || "Client";
       const isAdmin = userRole === "Admin" || userRole === "Staff";
-      const isProjectOwner = project.author_id === user.id;
+      const isProjectOwner = project.authorId === user.id;
 
       if (!isAdmin && !isProjectOwner) {
         console.error("Access denied for project:", projectId);
@@ -297,16 +297,16 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
         // Log file in database
         const { error: dbError } = await supabase.from("files").insert({
-          project_id: parseInt(projectId),
-          author_id: user.id, // Add user ID
-          file_path: filePath,
-          file_name: file.name,
-          file_size: file.size,
-          file_type: file.type,
+          projectId: parseInt(projectId),
+          authorId: user.id, // Add user ID
+          filePath: filePath,
+          fileName: file.name,
+          fileSize: file.size,
+          fileType: file.type,
           title: fileTitle || file.name, // Use provided title or fallback to filename
           comments: fileComments || null,
           status: "active",
-          uploaded_at: new Date().toISOString(),
+          uploadedAt: new Date().toISOString(),
         });
 
         if (dbError) {

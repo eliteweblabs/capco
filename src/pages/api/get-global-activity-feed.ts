@@ -3,8 +3,6 @@ import { supabase } from "../../lib/supabase";
 
 // 🚧 DEAD STOP - 2024-12-19: Potentially unused API endpoint
 // If you see this log after a few days, this endpoint can likely be deleted
-console.log("🚧 [DEAD-STOP-2024-12-19] get-global-activity-feed.ts accessed - may be unused");
-
 export const GET: APIRoute = async ({ cookies, url }) => {
   try {
     // Check authentication and admin role
@@ -67,8 +65,7 @@ export const GET: APIRoute = async ({ cookies, url }) => {
         address,
         title,
         log,
-        author_id,
-        assigned_to_name
+        authorId,
       `
       )
       .not("log", "is", null)
@@ -91,7 +88,7 @@ export const GET: APIRoute = async ({ cookies, url }) => {
     }
 
     // Extract and flatten all log entries with project context
-    // Get company_name from the joined profiles table
+    // Get companyName from the joined profiles table
     const allActivities: any[] = [];
 
     projects?.forEach((project) => {
@@ -100,11 +97,11 @@ export const GET: APIRoute = async ({ cookies, url }) => {
       logs.forEach((logEntry: any) => {
         allActivities.push({
           ...logEntry,
-          project_id: project.id,
+          projectId: project.id,
           project_address: project.address,
           project_title: project.title,
           project_owner: "Unknown", // Will be populated later if needed
-          project_owner_id: project.author_id,
+          project_owner_id: project.authorId,
         });
       });
     });

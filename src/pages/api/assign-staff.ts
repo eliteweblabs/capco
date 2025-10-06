@@ -8,31 +8,31 @@ export const POST: APIRoute = async ({ request }) => {
     const body = await request.json();
     console.log("📧 [ASSIGN-STAFF] API received:", body);
 
-    const { projectId, assigned_to_id, currentUser } = body;
+    const { projectId, assignedToId, currentUser } = body;
 
     console.log("📧 [ASSIGN-STAFF] Project ID:", projectId);
-    console.log("📧 [ASSIGN-STAFF] Assigned to ID:", assigned_to_id);
+    console.log("📧 [ASSIGN-STAFF] Assigned to ID:", assignedToId);
 
     // Get the assigned staff member's email, name, and company directly from database
     let staffEmail = null;
     let staffName = null;
-    if (assigned_to_id && supabase) {
-      console.log("📧 [ASSIGN-STAFF] Fetching staff data for ID:", assigned_to_id);
+    if (assignedToId && supabase) {
+      console.log("📧 [ASSIGN-STAFF] Fetching staff data for ID:", assignedToId);
       const { data: staffData, error: staffError } = await supabase
         .from("profiles")
-        .select("email, company_name")
-        .eq("id", assigned_to_id)
+        .select("email, companyName")
+        .eq("id", assignedToId)
         .single();
 
       if (staffError) {
         console.error("📧 [ASSIGN-STAFF] Error fetching assigned staff data:", staffError);
       } else {
         staffEmail = staffData?.email || null;
-        staffName = staffData?.company_name || null;
+        staffName = staffData?.companyName || null;
         console.log("📧 [ASSIGN-STAFF] Staff data found:", { staffEmail, staffName });
       }
     } else {
-      console.log("📧 [ASSIGN-STAFF] No assigned_to_id or supabase not available");
+      console.log("📧 [ASSIGN-STAFF] No assignedToId or supabase not available");
     }
 
     if (!projectId) {
@@ -52,8 +52,8 @@ export const POST: APIRoute = async ({ request }) => {
     const { data: projectData, error: projectError } = await supabase
       .from("projects")
       .update({
-        assigned_to_id: assigned_to_id || null,
-        updated_at: new Date().toISOString(),
+        assignedToId: assignedToId || null,
+        updatedAt: new Date().toISOString(),
       })
       .eq("id", projectId)
       .select()
@@ -76,12 +76,12 @@ export const POST: APIRoute = async ({ request }) => {
     // console.log("📧 [ASSIGN-STAFF] Project updated successfully:", projectData);
 
     // If a staff member was assigned (not unassigned), send email notification
-    if (assigned_to_id) {
+    if (assignedToId) {
       try {
         // Get project details for email
         const { data: projectDetails, error: projectDetailsError } = await supabase
           .from("projects")
-          .select("id, title, address, author_id")
+          .select("id, title, address, authorId")
           .eq("id", projectId)
           .single();
 

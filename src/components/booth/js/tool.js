@@ -1,8 +1,6 @@
 var _____WB$wombat$assign$function_____ = function (name) {
   return (
-    (self._wb_wombat &&
-      self._wb_wombat.local_init &&
-      self._wb_wombat.local_init(name)) ||
+    (self._wb_wombat && self._wb_wombat.local_init && self._wb_wombat.local_init(name)) ||
     self[name]
   );
 };
@@ -89,53 +87,46 @@ if (!self.__WB_pmw) {
     $btnShowPalette = $("#btn-showPalette"),
     App = {
       init: function () {
-        Palette.load().then(function (e) {
-          $loading.fadeOut(),
-            Log.info("Palette loaded. Trying to load model"),
-            App.loadModel();
+        (Palette.load().then(function (e) {
+          ($loading.fadeOut(), Log.info("Palette loaded. Trying to load model"), App.loadModel());
         }),
           Palette.on(PaletteClass.EVENT_PALETTE_ITEM_CLICK, function (e, t) {
             var n = Doc.getCenterCoord(),
               o = Palette.getItem(t),
-              i = ItemClass.NORMALIZE_COORDS(
-                n.x - (20 * o.width) / 2,
-                n.y - (20 * o.height) / 2
-              );
-            Doc.addItem(o, i.x, i.y), e.stopPropagation();
-          });
+              i = ItemClass.NORMALIZE_COORDS(n.x - (20 * o.width) / 2, n.y - (20 * o.height) / 2);
+            (Doc.addItem(o, i.x, i.y), e.stopPropagation());
+          }));
         var e = {};
-        Palette.on(PaletteClass.EVENT_PALETTE_ITEM_START_DRAG, function (t, n) {
+        (Palette.on(PaletteClass.EVENT_PALETTE_ITEM_START_DRAG, function (t, n) {
           var o = Doc.getCenterCoord(),
             i = document.body.clientWidth / 2,
             a = document.body.clientHeight / 2,
             c = Palette.getItem(n.itemId),
             r = ItemClass.NORMALIZE_COORDS(n.x + o.x - i, n.y + o.y - a);
-          (e.item = Doc.addItem(c, r.x, r.y)),
+          ((e.item = Doc.addItem(c, r.x, r.y)),
             (e.x = e.item.position.x),
             (e.y = e.item.position.y),
             t.stopPropagation(),
-            (document.body.style.cursor = "none");
+            (document.body.style.cursor = "none"));
         }),
           Palette.on(PaletteClass.EVENT_PALETTE_ITEM_END_DRAG, function (t, n) {
-            (e = {}),
-              t.stopPropagation(),
-              (document.body.style.cursor = "inherit");
+            ((e = {}), t.stopPropagation(), (document.body.style.cursor = "inherit"));
           }),
           Palette.on(PaletteClass.EVENT_PALETTE_ITEM_DRAGGING, function (t, n) {
             Doc.getOrigin().scale;
-            e.item
+            (e.item
               ? ((e.x += n.x), (e.y += n.y), e.item.moveTo(e.x, e.y, !0))
               : console.error("NO ITEM"),
-              t.stopPropagation();
+              t.stopPropagation());
           }),
           $menuwindow.hide().on("click", "button", function () {
             return UI.closeWindow();
           }),
           UI.on(UIClass.EVENT_WINDOW_SHOW, function (e) {
-            Log.debug("on show"), $menuright.hide(), $menuwindow.show();
+            (Log.debug("on show"), $menuright.hide(), $menuwindow.show());
           }),
           UI.on(UIClass.EVENT_WINDOW_CLOSE, function (e) {
-            Log.debug("on hide"), $menuright.show(), $menuwindow.hide();
+            (Log.debug("on hide"), $menuright.show(), $menuwindow.hide());
           }),
           App.registerKeyboardEvents(),
           $btnOptions.on("click", function () {
@@ -146,27 +137,20 @@ if (!self.__WB_pmw) {
           }),
           $btnShare.on("click", function () {
             var e = UI.showWindow("share");
-            e.find(".js-social-wrapper").remove(),
+            (e.find(".js-social-wrapper").remove(),
               e.append($("<div></div>").addClass("js-social-wrapper")),
-              e.find(".ca-button").attr("disabled", !0);
+              e.find(".ca-button").attr("disabled", !0));
             var t = function (t) {
               e.find(".ca-button").attr("disabled", !1);
-              var n =
-                (window.location.href + "").split("#")[0].split("?")[0] +
-                "?i=" +
-                t;
-              $("#share-url")
+              var n = (window.location.href + "").split("#")[0].split("?")[0] + "?i=" + t;
+              ($("#share-url")
                 .off("click")
                 .click(function () {
-                  console.log("Copying to clipboard " + n),
+                  (console.log("Copying to clipboard " + n),
                     copyToClipboard(n),
                     UI.showToast("Copied to clipboard", "success"),
                     UI.closeWindow(),
-                    Analytics.sendEvent(
-                      AnalyticsClass.CATEGORY_SHARE__URL,
-                      "url",
-                      t
-                    );
+                    Analytics.sendEvent(AnalyticsClass.CATEGORY_SHARE__URL, "url", t));
                 }),
                 e
                   .find(".js-social-wrapper")
@@ -176,19 +160,15 @@ if (!self.__WB_pmw) {
                     url: n,
                     text: "",
                   }),
-                $("#share-whatsapp").data(
-                  "wurl",
-                  "https://wa.me/?text=" + encodeURI(n)
-                ),
-                console.log("Url for sharing is " + n);
+                $("#share-whatsapp").data("wurl", "https://wa.me/?text=" + encodeURI(n)),
+                console.log("Url for sharing is " + n));
             };
             App.saveModel()
               .then(t)
               .catch(function (e) {
                 window.location.href.indexOf("localhost") > -1
                   ? t("test-localhost")
-                  : (console.error(e),
-                    UI.showToast("Cannot create link", "error"));
+                  : (console.error(e), UI.showToast("Cannot create link", "error"));
               });
           }),
           $btnCheckout.on("click", function () {
@@ -216,8 +196,8 @@ if (!self.__WB_pmw) {
                 );
               });
               var i = Cart.getTotalAmount();
-              n.find("#checkout-total-amount").text(toLocale(i)),
-                Log.debug("Creating checkout...");
+              (n.find("#checkout-total-amount").text(toLocale(i)),
+                Log.debug("Creating checkout..."));
               var a = n
                 .find(".btn-checkout")
                 .attr("disabled", !0)
@@ -225,9 +205,7 @@ if (!self.__WB_pmw) {
                 .text("Loading...");
               App.saveModel()
                 .catch(function (e) {
-                  return (
-                    console.error("Cannot generate model", e), "no-model-id"
-                  );
+                  return (console.error("Cannot generate model", e), "no-model-id");
                 })
                 .then(function (e) {
                   debugger;
@@ -256,45 +234,37 @@ if (!self.__WB_pmw) {
           }),
           Doc.on(DocClass.EVENT_AMOUNT_CHANGED, function (e) {
             var t = Cart.getTotalAmount();
-            Log.debug("Amount changed -> " + t),
+            (Log.debug("Amount changed -> " + t),
               $btnCheckout.find(".checkout-amount").text(toLocale(t)),
               t > 0
                 ? Store.put(StoreClass.KEY_AMOUNT, t)
-                : (Store.remove(StoreClass.KEY_AMOUNT),
-                  Store.remove(StoreClass.KEY_SERIALIZED));
+                : (Store.remove(StoreClass.KEY_AMOUNT), Store.remove(StoreClass.KEY_SERIALIZED)));
           }),
           Doc.on(DocClass.EVENT_ITEM_FOCUS, function (e, t) {
-            $btnRemove
+            ($btnRemove
               .find("span")
-              .text(
-                t.paletteItem.name + " " + toLocale(t.paletteItem.price) + "€"
-              ),
+              .text(t.paletteItem.name + " " + toLocale(t.paletteItem.price) + "€"),
               UI.isMobile() &&
                 $btnRemoveMobile
                   .show()
                   .find("span")
-                  .text(
-                    t.paletteItem.name +
-                      " " +
-                      toLocale(t.paletteItem.price) +
-                      "€"
-                  ),
-              $btnsZoomMobile.hide();
+                  .text(t.paletteItem.name + " " + toLocale(t.paletteItem.price) + "€"),
+              $btnsZoomMobile.hide());
           }),
           Doc.on(DocClass.EVENT_ITEM_UNFOCUS, function (e) {
-            $btnRemove.find("span").text("Remove all"),
+            ($btnRemove.find("span").text("Remove all"),
               $btnRemoveMobile.hide(),
-              UI.isMobile() && $btnsZoomMobile.show();
+              UI.isMobile() && $btnsZoomMobile.show());
           }),
           Doc.on(
             DocClass.EVENT_DIMENSION_CHANGED,
             debounce(function (e) {
               var t = Doc.getRealSize();
-              $txtDimWidth.text(toLocale(t.width)),
+              ($txtDimWidth.text(toLocale(t.width)),
                 $txtDimHeight.text(toLocale(t.height)),
                 $txtDimWidthIn.text(toLocale(0.393701 * t.width)),
                 $txtDimHeightIn.text(toLocale(0.393701 * t.height)),
-                Store.put(StoreClass.KEY_SERIALIZED, Doc.serialize());
+                Store.put(StoreClass.KEY_SERIALIZED, Doc.serialize()));
             }, 100)
           ),
           Doc.on(DocClass.EVENT_ITEM_COLLISIONS, function (e) {
@@ -306,31 +276,25 @@ if (!self.__WB_pmw) {
           $btnRemove.on("click", function () {
             Doc.getFocusedItem()
               ? Doc.remove(Doc.getFocusedItem())
-              : UI.confirm(
-                  "Remove all elements?",
-                  "Remove all",
-                  "Keep creating"
-                ).then(function (e) {
-                  e && Doc.removeAll();
-                  $btnRemove.hide();
-                  $btnRemoveAll.hide();
-                });
+              : UI.confirm("Remove all elements?", "Remove all", "Keep creating").then(
+                  function (e) {
+                    e && Doc.removeAll();
+                    $btnRemove.hide();
+                    $btnRemoveAll.hide();
+                  }
+                );
           }),
           $btnRemoveAll.on("click", function () {
-            UI.closeWindow(),
-              UI.confirm(
-                "Remove all elements?",
-                "Remove all",
-                "Keep creating"
-              ).then(function (e) {
+            (UI.closeWindow(),
+              UI.confirm("Remove all elements?", "Remove all", "Keep creating").then(function (e) {
                 e && Doc.removeAll();
-              });
+              }));
           }),
           $btnGridSnapOn.on("click", function (e) {
-            Doc.setSnapGrid(!0), $btnGridSnapOn.hide(), $btnGridSnapOff.show();
+            (Doc.setSnapGrid(!0), $btnGridSnapOn.hide(), $btnGridSnapOff.show());
           }),
           $btnGridSnapOff.on("click", function (e) {
-            Doc.setSnapGrid(!1), $btnGridSnapOn.show(), $btnGridSnapOff.hide();
+            (Doc.setSnapGrid(!1), $btnGridSnapOn.show(), $btnGridSnapOff.hide());
           }),
           $btnZoomIn.on("click", function (e) {
             return Doc.zoomIn();
@@ -356,9 +320,9 @@ if (!self.__WB_pmw) {
           $("#share-whatsapp").click(function () {
             window.open($(this).data("wurl"));
           }),
-          $(".accordion-title").click(function () {
-            $(this).parent().find(".accordion-content").slideToggle(),
-              $(this).toggleClass("open");
+          $(".accordion-project-title").click(function () {
+            ($(this).parent().find(".accordion-content").slideToggle(),
+              $(this).toggleClass("open"));
           }),
           UI.on(UIClass.EVENT_WINDOW_SHOW, function (e, t) {
             return Analytics.sendEvent(AnalyticsClass.CATEGORY_POPUP__OPEN, t);
@@ -367,40 +331,22 @@ if (!self.__WB_pmw) {
             return Analytics.sendEvent(AnalyticsClass.CATEGORY_POPUP__CLOSE, t);
           }),
           $("#share-facebook").click(function () {
-            return Analytics.sendEvent(
-              AnalyticsClass.CATEGORY_SHARE__SOCIAL,
-              "facebook"
-            );
+            return Analytics.sendEvent(AnalyticsClass.CATEGORY_SHARE__SOCIAL, "facebook");
           }),
           $("#share-twitter").click(function () {
-            return Analytics.sendEvent(
-              AnalyticsClass.CATEGORY_SHARE__SOCIAL,
-              "twitter"
-            );
+            return Analytics.sendEvent(AnalyticsClass.CATEGORY_SHARE__SOCIAL, "twitter");
           }),
           $("#share-email").click(function () {
-            return Analytics.sendEvent(
-              AnalyticsClass.CATEGORY_SHARE__SOCIAL,
-              "email"
-            );
+            return Analytics.sendEvent(AnalyticsClass.CATEGORY_SHARE__SOCIAL, "email");
           }),
           $("#share-whatsapp").click(function () {
-            return Analytics.sendEvent(
-              AnalyticsClass.CATEGORY_SHARE__SOCIAL,
-              "whatsapp"
-            );
+            return Analytics.sendEvent(AnalyticsClass.CATEGORY_SHARE__SOCIAL, "whatsapp");
           }),
           $btnGridSnapOn.on("click", function (e) {
-            return Analytics.sendEvent(
-              AnalyticsClass.CATEGORY_TOOL__SNAPGRID,
-              "on"
-            );
+            return Analytics.sendEvent(AnalyticsClass.CATEGORY_TOOL__SNAPGRID, "on");
           }),
           $btnGridSnapOff.on("click", function (e) {
-            return Analytics.sendEvent(
-              AnalyticsClass.CATEGORY_TOOL__SNAPGRID,
-              "off"
-            );
+            return Analytics.sendEvent(AnalyticsClass.CATEGORY_TOOL__SNAPGRID, "off");
           }),
           $btnZoomIn.on("click", function (e) {
             return Analytics.sendEvent(AnalyticsClass.CATEGORY_TOOL__ZOOM_IN);
@@ -409,26 +355,20 @@ if (!self.__WB_pmw) {
             return Analytics.sendEvent(AnalyticsClass.CATEGORY_TOOL__ZOOM_OUT);
           }),
           $btnZoomReset.on("click", function (e) {
-            return Analytics.sendEvent(
-              AnalyticsClass.CATEGORY_TOOL__ZOOM_RESTORE
-            );
+            return Analytics.sendEvent(AnalyticsClass.CATEGORY_TOOL__ZOOM_RESTORE);
           }),
           Doc.on(DocClass.EVENT_REMOVE_ALL, function (e) {
-            return Analytics.sendEvent(
-              AnalyticsClass.CATEGORY_TOOL__REMOVE_ALL
-            );
+            return Analytics.sendEvent(AnalyticsClass.CATEGORY_TOOL__REMOVE_ALL);
           }),
           Doc.on(DocClass.EVENT_ITEM_ADDED, function (e, t) {
             return Analytics.sendEvent(AnalyticsClass.CATEGORY_TOOL__ADD_ITEM);
           }),
           Doc.on(DocClass.EVENT_ITEM_REMOVED, function (e, t) {
-            return Analytics.sendEvent(
-              AnalyticsClass.CATEGORY_TOOL__REMOVE_ITEM
-            );
-          });
+            return Analytics.sendEvent(AnalyticsClass.CATEGORY_TOOL__REMOVE_ITEM);
+          }));
       },
     };
-  (App._getDatabaseModel = (function () {
+  ((App._getDatabaseModel = (function () {
     var e = _asyncToGenerator(
       regeneratorRuntime.mark(function e(t) {
         var n;
@@ -455,7 +395,7 @@ if (!self.__WB_pmw) {
                     Promise.resolve($.getJSON("/api/save.php?id=" + t))
                   );
                 case 8:
-                  return (n = e.sent), e.abrupt("return", n.value);
+                  return ((n = e.sent), e.abrupt("return", n.value));
                 case 10:
                 case "end":
                   return e.stop();
@@ -498,24 +438,18 @@ if (!self.__WB_pmw) {
               switch ((e.prev = e.next)) {
                 case 0:
                   if (
-                    ((t =
-                      document.location.hash &&
-                      Doc.validateSerialize(document.location.hash)),
+                    ((t = document.location.hash && Doc.validateSerialize(document.location.hash)),
                     !(n = getUrlParam("i")))
                   ) {
                     e.next = 11;
                     break;
                   }
-                  return (e.next = 5), App._getDatabaseModel(n);
+                  return ((e.next = 5), App._getDatabaseModel(n));
                 case 5:
                   return (
                     (o = e.sent),
                     Doc.loadSerialized(o),
-                    Analytics.sendEvent(
-                      AnalyticsClass.CATEGORY_SHARE__OPEN_URL,
-                      void 0,
-                      n
-                    ),
+                    Analytics.sendEvent(AnalyticsClass.CATEGORY_SHARE__OPEN_URL, void 0, n),
                     e.abrupt("return", !0)
                   );
                 case 11:
@@ -523,11 +457,7 @@ if (!self.__WB_pmw) {
                     e.next = 15;
                     break;
                   }
-                  return (
-                    (t = t.replace("#", "")),
-                    Doc.loadSerialized(t),
-                    e.abrupt("return", !0)
-                  );
+                  return ((t = t.replace("#", "")), Doc.loadSerialized(t), e.abrupt("return", !0));
                 case 15:
                   return e.abrupt("return", !1);
                 case 16:
@@ -548,19 +478,15 @@ if (!self.__WB_pmw) {
             for (;;)
               switch ((e.prev = e.next)) {
                 case 0:
-                  return (
-                    (t = !1), (e.prev = 1), (e.next = 4), App._tryLoadFromUrl()
-                  );
+                  return ((t = !1), (e.prev = 1), (e.next = 4), App._tryLoadFromUrl());
                 case 4:
-                  (t = e.sent),
-                    Log.debug("Loading model from url : " + t),
-                    (e.next = 12);
+                  ((t = e.sent), Log.debug("Loading model from url : " + t), (e.next = 12));
                   break;
                 case 8:
-                  (e.prev = 8),
+                  ((e.prev = 8),
                     (e.t0 = e.catch(1)),
                     Log.error("Cannot load from URL"),
-                    Log.error(e.t0);
+                    Log.error(e.t0));
                 case 12:
                   !t &&
                     Store.has(StoreClass.KEY_SERIALIZED) &&
@@ -590,15 +516,12 @@ if (!self.__WB_pmw) {
           else if (46 == t || 8 == t) Doc.remove(n);
           else if (82 == t) n.rotate(1);
           else if (68 == t) {
-            var o = ItemClass.NORMALIZE_COORDS(
-              n.position.x,
-              n.position.y + n.getHeight()
-            );
+            var o = ItemClass.NORMALIZE_COORDS(n.position.x, n.position.y + n.getHeight());
             Doc.addItem(n.paletteItem, o.x, o.y, n.rotation);
           }
       });
     }),
-    App.init();
+    App.init());
 }
 /*
      FILE ARCHIVED ON 10:08:01 Apr 09, 2019 AND RETRIEVED FROM THE

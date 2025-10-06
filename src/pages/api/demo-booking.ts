@@ -1,10 +1,8 @@
 import type { APIRoute } from "astro";
 import { supabaseAdmin } from "../../lib/supabase-admin";
 // Simple validation functions
-const validateEmail = (email: string): string | null => {
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  return emailRegex.test(email) ? null : "Invalid email format";
-};
+// Import validateEmail from ux-utils (server-side API routes need explicit import)
+import { validateEmail } from "../../lib/ux-utils";
 
 const validateTime = (time: string): string | null => {
   return time ? null : "Time is required";
@@ -110,8 +108,8 @@ export const POST: APIRoute = async ({ request }) => {
     const { data: existingBooking, error: checkError } = await supabase
       .from("demo_bookings")
       .select("id")
-      .eq("preferred_date", date)
-      .eq("preferred_time", time)
+      .eq("preferredDate", date)
+      .eq("preferredTime", time)
       .eq("status", "pending")
       .single();
 
@@ -157,8 +155,8 @@ export const POST: APIRoute = async ({ request }) => {
           company: company?.trim() || null,
           phone: phone?.trim() || null,
           message: message?.trim() || null,
-          preferred_date: date,
-          preferred_time: time,
+          preferredDate: date,
+          preferredTime: time,
           status: "pending",
         },
       ])
@@ -187,8 +185,8 @@ export const POST: APIRoute = async ({ request }) => {
       name: booking.name,
       email: booking.email,
       company: booking.company,
-      date: booking.preferred_date,
-      time: booking.preferred_time,
+      date: booking.preferredDate,
+      time: booking.preferredTime,
     });
 
     // Send email notifications
@@ -208,8 +206,8 @@ export const POST: APIRoute = async ({ request }) => {
         data: {
           name: booking.name,
           email: booking.email,
-          date: booking.preferred_date,
-          time: booking.preferred_time,
+          date: booking.preferredDate,
+          time: booking.preferredTime,
         },
       }),
       {
@@ -262,8 +260,8 @@ async function sendDemoBookingEmails(booking: any, request: Request) {
             <li><strong>Email:</strong> ${booking.email}</li>
             <li><strong>Company:</strong> ${booking.company || "Not provided"}</li>
             <li><strong>Phone:</strong> ${booking.phone || "Not provided"}</li>
-            <li><strong>Preferred Date:</strong> ${booking.preferred_date}</li>
-            <li><strong>Preferred Time:</strong> ${booking.preferred_time}</li>
+            <li><strong>Preferred Date:</strong> ${booking.preferredDate}</li>
+            <li><strong>Preferred Time:</strong> ${booking.preferredTime}</li>
             <li><strong>Booking ID:</strong> ${booking.id}</li>
           </ul>
         </div>
@@ -315,8 +313,8 @@ async function sendDemoBookingEmails(booking: any, request: Request) {
           <li><strong>Name:</strong> ${booking.name}</li>
           <li><strong>Email:</strong> ${booking.email}</li>
           <li><strong>Company:</strong> ${booking.company || "Not provided"}</li>
-          <li><strong>Preferred Date:</strong> ${booking.preferred_date}</li>
-          <li><strong>Preferred Time:</strong> ${booking.preferred_time}</li>
+          <li><strong>Preferred Date:</strong> ${booking.preferredDate}</li>
+          <li><strong>Preferred Time:</strong> ${booking.preferredTime}</li>
           <li><strong>Booking ID:</strong> ${booking.id}</li>
         </ul>
       </div>

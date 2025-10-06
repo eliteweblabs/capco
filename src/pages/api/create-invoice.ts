@@ -61,15 +61,15 @@ Tier I Fire Alarm Design
 
     // Create invoice with proposal data if provided
     const invoiceData = {
-      project_id: parseInt(projectId),
+      projectId: parseInt(projectId),
       status: projectData?.status || "draft",
       subject: projectData?.subject || null,
-      invoice_date: projectData?.date || new Date().toISOString().split("T")[0],
+      invoiceDate: projectData?.date || new Date().toISOString().split("T")[0],
       notes: projectData?.notes || null,
-      proposal_notes: projectData?.notes || null, // Add proposal_notes field
+      proposalNotes: projectData?.notes || null, // Add proposalNotes field
       tax_rate: 0.0,
-      created_by: user.id,
-      due_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split("T")[0], // 30 days from now
+      createdBy: user.id,
+      dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split("T")[0], // 30 days from now
     };
 
     console.log("Creating invoice with data:", invoiceData);
@@ -100,21 +100,21 @@ Tier I Fire Alarm Design
       {
         description: standardDescription,
         quantity: 1.0,
-        unit_price: 500.0,
+        unitPrice: 500.0,
         total_price: 500.0,
       },
     ];
 
     console.log("Creating line items:", lineItems);
 
-    // Initialize empty catalog_line_items array
+    // Initialize empty catalogLineItems array
     // Line items will be added via the catalog system
     const catalogLineItems: any[] = [];
 
-    // Update the invoice with empty catalog_line_items
+    // Update the invoice with empty catalogLineItems
     const { error: updateError } = await supabase
       .from("invoices")
-      .update({ catalog_line_items: catalogLineItems })
+      .update({ catalogLineItems: catalogLineItems })
       .eq("id", invoice.id);
 
     if (updateError) {

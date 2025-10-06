@@ -51,7 +51,7 @@ export const GET: APIRoute = async ({ url, cookies }) => {
     }
 
     // Build query conditions
-    let query = supabase.from("line_items_catalog").select("*");
+    let query = supabase.from("lineItemsCatalog").select("*");
 
     // If specific ID is requested, fetch that single item
     if (id) {
@@ -90,7 +90,7 @@ export const GET: APIRoute = async ({ url, cookies }) => {
       }
 
       // Only show active items for general queries
-      query = query.eq("is_active", true);
+      query = query.eq("isActive", true);
 
       // Add limit and ordering for general queries
       query = query.limit(limit).order("name", { ascending: true });
@@ -154,7 +154,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     // Test database connection and table existence
     try {
       const { data: testData, error: testError } = await supabase
-        .from("line_items_catalog")
+        .from("lineItemsCatalog")
         .select("id")
         .limit(1);
 
@@ -183,11 +183,11 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     const requestBody = await request.json();
     console.log("🔍 [LINE-ITEMS-CATALOG] Received request body:", requestBody);
 
-    const { name, description, unit_price, category } = requestBody;
+    const { name, description, unitPrice, category } = requestBody;
 
-    if (!name || !description || unit_price === undefined) {
+    if (!name || !description || unitPrice === undefined) {
       return new Response(
-        JSON.stringify({ error: "Name, description, and unit_price are required" }),
+        JSON.stringify({ error: "Name, description, and unitPrice are required" }),
         {
           status: 400,
           headers: { "Content-Type": "application/json" },
@@ -198,19 +198,19 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     console.log("🔍 [LINE-ITEMS-CATALOG] Creating catalog item with data:", {
       name: name.trim(),
       description: description.trim(),
-      unit_price: parseFloat(unit_price),
+      unitPrice: parseFloat(unitPrice),
       category: category?.trim() || null,
-      created_by: currentUser.id,
+      createdBy: currentUser.id,
     });
 
     const { data: newItem, error } = await supabase
-      .from("line_items_catalog")
+      .from("lineItemsCatalog")
       .insert({
         name: name.trim(),
         description: description.trim(),
-        unit_price: parseFloat(unit_price),
+        unitPrice: parseFloat(unitPrice),
         category: category?.trim() || null,
-        created_by: currentUser.id,
+        createdBy: currentUser.id,
       })
       .select()
       .single();
@@ -260,7 +260,7 @@ export const PUT: APIRoute = async ({ request, cookies }) => {
       });
     }
 
-    const { id, name, description, unit_price, category, is_active } = await request.json();
+    const { id, name, description, unitPrice, category, isActive } = await request.json();
 
     if (!id) {
       return new Response(JSON.stringify({ error: "Item ID is required" }), {
@@ -272,12 +272,12 @@ export const PUT: APIRoute = async ({ request, cookies }) => {
     const updateData: any = {};
     if (name !== undefined) updateData.name = name.trim();
     if (description !== undefined) updateData.description = description.trim();
-    if (unit_price !== undefined) updateData.unit_price = parseFloat(unit_price);
+    if (unitPrice !== undefined) updateData.unitPrice = parseFloat(unitPrice);
     if (category !== undefined) updateData.category = category?.trim() || null;
-    if (is_active !== undefined) updateData.is_active = Boolean(is_active);
+    if (isActive !== undefined) updateData.isActive = Boolean(isActive);
 
     const { data: updatedItem, error } = await supabase
-      .from("line_items_catalog")
+      .from("lineItemsCatalog")
       .update(updateData)
       .eq("id", id)
       .select()

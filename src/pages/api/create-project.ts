@@ -61,24 +61,24 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     let projectAuthorId: string;
 
     // Determine project author based on user role
-    if (userProfile.role === "Client" && !body.author_id) {
+    if (userProfile.role === "Client" && !body.authorId) {
       // If current user is a client, they are the project author
       projectAuthorId = userId;
       // console.log("📝 [CREATE-PROJECT] Client user - using their ID as author:", projectAuthorId);
     } else {
       // If current user is admin/staff, check if client exists or create new one
-      const { first_name, last_name, company_name = "", email, author_id } = body;
+      const { firstName, lastName, companyName = "", email, authorId } = body;
 
       console.log("📝 [CREATE-PROJECT] Body:", body);
       // Check if we should use existing client or create new one
-      if (author_id && author_id.trim()) {
+      if (authorId && authorId.trim()) {
         // Use existing client
         if (!supabaseAdmin) {
           return new Response(JSON.stringify({ error: "Database connection not available" }), {
             status: 500,
           });
         }
-        projectAuthorId = author_id;
+        projectAuthorId = authorId;
         // console.log("📝 [CREATE-PROJECT] Using existing client ID:", projectAuthorId);
 
         // Still check if profile needs updating even when using existing client
@@ -95,25 +95,25 @@ export const POST: APIRoute = async ({ request, cookies }) => {
           console.error("📝 [CREATE-PROJECT] Error fetching current profile:", profileError);
         } else if (existingProfile) {
           // Check if any fields have changed
-          const trimmedFirstName = first_name?.trim() || "";
-          const trimmedLastName = last_name?.trim() || "";
-          const trimmedCompanyName = company_name?.trim() || "";
+          const trimmedFirstName = firstName?.trim() || "";
+          const trimmedLastName = lastName?.trim() || "";
+          const trimmedCompanyName = companyName?.trim() || "";
 
           const hasChanges =
-            existingProfile.first_name !== trimmedFirstName ||
-            existingProfile.last_name !== trimmedLastName ||
-            existingProfile.company_name !== trimmedCompanyName;
+            existingProfile.firstName !== trimmedFirstName ||
+            existingProfile.lastName !== trimmedLastName ||
+            existingProfile.companyName !== trimmedCompanyName;
 
           // console.log("📝 [CREATE-PROJECT] Profile comparison for existing client:", {
           //   current: {
-          //     first_name: existingProfile.first_name,
-          //     last_name: existingProfile.last_name,
-          //     company_name: existingProfile.company_name,
+          //     firstName: existingProfile.firstName,
+          //     lastName: existingProfile.lastName,
+          //     companyName: existingProfile.companyName,
           //   },
           //   new: {
-          //     first_name: trimmedFirstName,
-          //     last_name: trimmedLastName,
-          //     company_name: trimmedCompanyName,
+          //     firstName: trimmedFirstName,
+          //     lastName: trimmedLastName,
+          //     companyName: trimmedCompanyName,
           //   },
           //   hasChanges,
           // });
@@ -121,14 +121,14 @@ export const POST: APIRoute = async ({ request, cookies }) => {
           if (hasChanges) {
             console.log("📝 [CREATE-PROJECT] Profile data has changed, updating profile:", {
               old: {
-                first_name: existingProfile.first_name,
-                last_name: existingProfile.last_name,
-                company_name: existingProfile.company_name,
+                firstName: existingProfile.firstName,
+                lastName: existingProfile.lastName,
+                companyName: existingProfile.companyName,
               },
               new: {
-                first_name: trimmedFirstName,
-                last_name: trimmedLastName,
-                company_name: trimmedCompanyName,
+                firstName: trimmedFirstName,
+                lastName: trimmedLastName,
+                companyName: trimmedCompanyName,
               },
             });
 
@@ -136,10 +136,10 @@ export const POST: APIRoute = async ({ request, cookies }) => {
             const { error: updateError } = await supabaseAdmin
               .from("profiles")
               .update({
-                first_name: trimmedFirstName,
-                last_name: trimmedLastName,
-                company_name: trimmedCompanyName,
-                updated_at: new Date().toISOString(),
+                firstName: trimmedFirstName,
+                lastName: trimmedLastName,
+                companyName: trimmedCompanyName,
+                updatedAt: new Date().toISOString(),
               })
               .eq("id", projectAuthorId);
 
@@ -149,9 +149,9 @@ export const POST: APIRoute = async ({ request, cookies }) => {
             } else {
               // console.log("📝 [CREATE-PROJECT] Profile updated successfully");
               // console.log("📝 [CREATE-PROJECT] Updated profile data:", {
-              //   first_name: trimmedFirstName,
-              //   last_name: trimmedLastName,
-              //   company_name: trimmedCompanyName,
+              //   firstName: trimmedFirstName,
+              //   lastName: trimmedLastName,
+              //   companyName: trimmedCompanyName,
               // });
             }
           } else {
@@ -160,7 +160,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         }
       } else {
         // Validate required fields
-        if (!first_name?.trim() || !last_name?.trim() || !email?.trim()) {
+        if (!firstName?.trim() || !lastName?.trim() || !email?.trim()) {
           return new Response(
             JSON.stringify({
               error: "First name, last name, and email are required",
@@ -201,7 +201,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
           const { data: existingProfile, error: profileError } = await supabaseAdmin
             .from("profiles")
-            .select("first_name, last_name, company_name")
+            .select("firstName, lastName, companyName")
             .eq("id", existingUser.id)
             .single();
 
@@ -209,26 +209,26 @@ export const POST: APIRoute = async ({ request, cookies }) => {
             console.error("📝 [CREATE-PROJECT] Error fetching current profile:", profileError);
           } else if (existingProfile) {
             // Check if any fields have changed
-            const trimmedFirstName = first_name?.trim() || "";
-            const trimmedLastName = last_name?.trim() || "";
-            const trimmedCompanyName = company_name?.trim() || "";
+            const trimmedFirstName = firstName?.trim() || "";
+            const trimmedLastName = lastName?.trim() || "";
+            const trimmedCompanyName = companyName?.trim() || "";
 
             const hasChanges =
-              existingProfile.first_name !== trimmedFirstName ||
-              existingProfile.last_name !== trimmedLastName ||
-              existingProfile.company_name !== trimmedCompanyName;
+              existingProfile.firstName !== trimmedFirstName ||
+              existingProfile.lastName !== trimmedLastName ||
+              existingProfile.companyName !== trimmedCompanyName;
 
             if (hasChanges) {
               console.log("📝 [CREATE-PROJECT] Profile data has changed, updating profile:", {
                 old: {
-                  first_name: existingProfile.first_name,
-                  last_name: existingProfile.last_name,
-                  company_name: existingProfile.company_name,
+                  firstName: existingProfile.firstName,
+                  lastName: existingProfile.lastName,
+                  companyName: existingProfile.companyName,
                 },
                 new: {
-                  first_name: first_name?.trim(),
-                  last_name: last_name?.trim(),
-                  company_name: company_name?.trim(),
+                  firstName: firstName?.trim(),
+                  lastName: lastName?.trim(),
+                  companyName: companyName?.trim(),
                 },
               });
 
@@ -236,10 +236,10 @@ export const POST: APIRoute = async ({ request, cookies }) => {
               const { error: updateError } = await supabaseAdmin
                 .from("profiles")
                 .update({
-                  first_name: trimmedFirstName,
-                  last_name: trimmedLastName,
-                  company_name: trimmedCompanyName,
-                  updated_at: new Date().toISOString(),
+                  firstName: trimmedFirstName,
+                  lastName: trimmedLastName,
+                  companyName: trimmedCompanyName,
+                  updatedAt: new Date().toISOString(),
                 })
                 .eq("id", existingUser.id);
 
@@ -272,9 +272,9 @@ export const POST: APIRoute = async ({ request, cookies }) => {
                 Cookie: `sb-access-token=${cookies.get("sb-access-token")?.value}; sb-refresh-token=${cookies.get("sb-refresh-token")?.value}`,
               },
               body: JSON.stringify({
-                first_name: first_name.trim(),
-                last_name: last_name.trim(),
-                company_name: company_name?.trim() || "",
+                firstName: firstName.trim(),
+                lastName: lastName.trim(),
+                companyName: companyName?.trim() || "",
                 email: email.trim(),
                 role: "Client",
               }),
@@ -315,7 +315,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     }
 
     // Debug all button group fields
-    // const buttonGroupFields = ["building", "project", "service", "requested_docs"];
+    // const buttonGroupFields = ["building", "project", "service", "requestedDocs"];
 
     // buttonGroupFields.forEach((fieldName) => {
     //   console.log(`📝 [CREATE-PROJECT] Debug ${fieldName} field:`, {
@@ -330,30 +330,30 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
     // Prepare project data - use dynamic mapping like update-project API
     // Filter out user profile fields that don't belong in projects table
-    const { company_name, first_name, last_name, email, ...updatestields } = body;
+    const { companyName, firstName, lastName, email, ...updatestields } = body;
 
     // Start with filtered form data and add required fields
     const projectData = {
       ...updatestields, // Include only project-related form fields
-      author_id: projectAuthorId,
+      authorId: projectAuthorId,
       // Handle special cases for specific fields
-      site_access: body.address ? body.address.match(/^[^,]+/)?.[0]?.trim() : null,
-      exterior_beacon: body.address ? body.address.match(/^[^,]+/)?.[0]?.trim() : null,
+      siteAccess: body.address ? body.address.match(/^[^,]+/)?.[0]?.trim() : null,
+      exteriorBeacon: body.address ? body.address.match(/^[^,]+/)?.[0]?.trim() : null,
       title: body.title || body.address,
       address: body.address?.replace(/, USA$/, "") || body.address,
       architect: body.architect && body.architect.trim() !== "" ? body.architect.trim() : null,
-      sq_ft: body.sq_ft && body.sq_ft.trim() !== "" ? parseInt(body.sq_ft) : null,
-      new_construction: body.new_construction === "on" || body.new_construction === true,
+      sqFt: body.sqFt && body.sqFt.trim() !== "" ? parseInt(body.sqFt) : null,
+      newConstruction: body.newConstruction === "on" || body.newConstruction === true,
       units: body.units && body.units.trim() !== "" ? parseInt(body.units) : null,
       // Ensure button group fields are arrays
       building: body.building || [],
       project: body.project || [],
       tier: body.tier || [],
       service: body.service || [],
-      requested_docs: body.requested_docs || [],
+      requestedDocs: body.requestedDocs || [],
       status: 0, // Set initial status to 0, will be updated to 10 via update-status API to trigger emails
-      created_at: new Date().toISOString(), // Set creation timestamp
-      updated_at: new Date().toISOString(), // Set initial update timestamp
+      createdAt: new Date().toISOString(), // Set creation timestamp
+      updatedAt: new Date().toISOString(), // Set initial update timestamp
     };
 
     // console.log(
@@ -363,7 +363,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
     // SAFETY CHECK: Ensure project author is always a client
     // This prevents the issue where projects could be created with admin/staff authors
-    // The check validates that the author_id corresponds to a user with role = 'Client'
+    // The check validates that the authorId corresponds to a user with role = 'Client'
     // console.log("📝 [CREATE-PROJECT] Safety check: Verifying project author role");
     const { data: authorProfile, error: authorCheckError } = await supabase
       .from("profiles")
@@ -458,11 +458,11 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     try {
       // Get project author's profile data
       let projectAuthor = null;
-      if (project.author_id) {
+      if (project.authorId) {
         const { data: authorProfile, error: authorError } = await supabase
           .from("profiles")
           .select("*")
-          .eq("id", project.author_id)
+          .eq("id", project.authorId)
           .single();
 
         if (!authorError && authorProfile) {
@@ -471,15 +471,15 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       }
 
       // Get assigned user's profile data if project has an assigned user
-      if (project.assigned_to_id) {
+      if (project.assignedToId) {
         const { data: assignedToProfile, error: assignedError } = await supabase
           .from("profiles")
           .select("id")
-          .eq("id", project.assigned_to_id)
+          .eq("id", project.assignedToId)
           .maybeSingle();
 
         if (!assignedError && assignedToProfile) {
-          enrichedProject.assigned_to_id = assignedToProfile.id;
+          enrichedProject.assignedToId = assignedToProfile.id;
           enrichedProject.assignedToProfile = assignedToProfile;
         }
       }
@@ -488,10 +488,10 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       enrichedProject.projectFiles = [];
       enrichedProject.generatedDocuments = [];
       enrichedProject.comment_count = 0;
-      enrichedProject.incomplete_discussions = 0;
+      enrichedProject.incompleteDiscussions = 0;
       enrichedProject.discussion_ratio = "0/0";
       enrichedProject.punchlistItems = { completed: 0, total: 0 };
-      enrichedProject.featured_image_data = null;
+      enrichedProject.featuredImageData = null;
     } catch (enrichError) {
       console.error("Error enriching project data:", enrichError);
       // Continue with basic project data if enrichment fails

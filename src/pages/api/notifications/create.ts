@@ -67,13 +67,13 @@ export const POST: APIRoute = async ({ request }): Promise<Response> => {
 
       // Create notifications for all users
       const notifications = allUsersData.map((user) => ({
-        user_id: user.id,
+        userId: user.id,
         title,
         message,
         type,
         priority,
-        action_url: actionUrl,
-        action_text: actionText,
+        actionUrl: actionUrl,
+        actionText: actionText,
       }));
 
       const { error: insertError } = await supabaseAdmin
@@ -131,13 +131,13 @@ export const POST: APIRoute = async ({ request }): Promise<Response> => {
     const { data, error } = await supabaseAdmin
       .from("notifications")
       .insert({
-        user_id: targetUserId,
+        userId: targetUserId,
         title,
         message,
         type,
         priority,
-        action_url: actionUrl,
-        action_text: actionText,
+        actionUrl: actionUrl,
+        actionText: actionText,
         viewed: false,
       })
       .select()

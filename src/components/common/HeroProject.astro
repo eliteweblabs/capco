@@ -54,11 +54,11 @@ import Button from "./Button.astro";
 // if (Object.keys(statusesOptions).length > 0) {
 //   // Use provided statuses (legacy support)
 //   statusOptions = Object.values(statuses).map((status: any) => ({
-//     value: status.status_code?.toString() || "",
+//     value: status.statusCode?.toString() || "",
 //     label:
-//       status.admin_status_name +
+//       status.adminStatusName +
 //         " / " +
-//         (status.est_time === null ? "No Est. Time Value" : status.est_time) || "",
+//         (status.estTime === null ? "No Est. Time Value" : status.estTime) || "",
 //   }));
 // } else {
 //   // Fetch from unified API
@@ -133,10 +133,10 @@ const dueDateOptions = createDueDateOptions();
 
 <div class="align-center col-span-full justify-between p-4 md:flex md:p-6">
   {
-    project.featured_image_data?.public_url && (
+    project.featuredImageData?.public_url && (
       <div id="featured-image-background" class="absolute inset-0 -z-10">
         <img
-          src={project.featured_image_data.public_url}
+          src={project.featuredImageData.public_url}
           alt={`Featured image for ${project.address}`}
           class="h-32 w-full rounded-lg rounded-b-none object-cover transition-transform duration-200 hover:scale-105"
           loading="lazy"
@@ -233,12 +233,12 @@ const dueDateOptions = createDueDateOptions();
             id="assign-staff-slot-machine"
             title="Assign Staff Member"
             options={staffOptions}
-            selectedValue={project?.assigned_to_id || ""}
+            selectedValue={project?.assignedToId || ""}
             placeholder="Assign staff..."
             buttonText={(() => {
-              if (!project?.assigned_to_id) return "Unassigned";
+              if (!project?.assignedToId) return "Unassigned";
               const assignedStaff = staffOptions.find(
-                (staff: any) => staff.value === project.assigned_to_id
+                (staff: any) => staff.value === project.assignedToId
               );
               return assignedStaff?.label || "Unknown Staff";
             })()}
@@ -288,10 +288,10 @@ const dueDateOptions = createDueDateOptions();
             id="due-date"
             title="Select Due Date"
             options={dueDateOptions}
-            selectedValue={project?.due_date ? new Date(project.due_date).toISOString() : ""}
+            selectedValue={project?.dueDate ? new Date(project.dueDate).toISOString() : ""}
             placeholder="Choose due date"
             buttonText={
-              new Date(project?.due_date).toLocaleDateString(undefined, {
+              new Date(project?.dueDate).toLocaleDateString(undefined, {
                 year: "numeric",
                 month: "long",
                 day: "numeric",
@@ -342,7 +342,11 @@ const dueDateOptions = createDueDateOptions();
 
 <div class="relative mx-auto flex">
   <div class="mx-4 ml-0 flex flex-1 flex-col gap-2">
-    <h1 class="text-2xl font-medium text-black dark:text-white" id="page-title" data-refresh>
+    <h1
+      class="text-2xl font-medium text-black dark:text-white"
+      id="page-project-title"
+      data-refresh
+    >
       {title}
     </h1>
     <h2 id="page-subtitle" class="text-black dark:text-white" set:html={description} />
