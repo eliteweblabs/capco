@@ -356,7 +356,7 @@ export const POST: APIRoute = async ({ request, cookies }): Promise<Response> =>
           // Log failed email delivery (catch block)
           try {
             await SimpleProjectLogger.addLogEntry(
-              project.id || 0,
+              project?.id || 0,
               "email_failed",
               `Email delivery error to ${userEmail} - Type: ${emailType}, Subject: ${emailSubject}, Error: ${userError instanceof Error ? userError.message : "Unknown error"}`,
               {
@@ -401,7 +401,7 @@ export const POST: APIRoute = async ({ request, cookies }): Promise<Response> =>
       });
 
       await SimpleProjectLogger.addLogEntry(
-        project.id || 0,
+        project?.id || 0,
         "email_sent",
         `Email delivery batch completed - Type: ${emailType}, Total sent: ${sentEmails.length}, Total failed: ${failedEmails.length}`,
         {
