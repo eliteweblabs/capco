@@ -1,32 +1,37 @@
 ---
-import DiscussionPartial from "../partials/DiscussionPartial.astro";
+import Discussions from "../form/Discussions.astro";
 
 interface Props {
-  authorProfile?: any;
   currentUser?: any;
   project: any;
-  supabaseUrl?: string;
   globalInputClasses?: string;
   globalSecondaryTextClasses?: string;
   globalPrimaryTextClasses?: string;
 }
 
 const {
-  authorProfile,
   currentUser,
   project,
-  supabaseUrl,
   globalInputClasses,
   globalSecondaryTextClasses,
   globalPrimaryTextClasses,
 } = Astro.props;
+
+const currentRole = currentUser?.profile?.role;
+const projectId = project?.id;
 ---
 
-<DiscussionPartial
-  project={project}
-  currentUser={currentUser}
-  authorProfile={authorProfile}
-  globalInputClasses={globalInputClasses}
-  globalSecondaryTextClasses={globalSecondaryTextClasses}
-  globalPrimaryTextClasses={globalPrimaryTextClasses}
-/>
+<div id="content-discussion" class="tab-content p-4" data-project-id={projectId}>
+  <h3 class="text-lg font-medium text-gray-900 dark:text-white">"Project Discussion"</h3>
+
+  <Discussions
+    project={project}
+    currentUser={currentUser}
+    globalInputClasses={globalInputClasses}
+    globalSecondaryTextClasses={globalSecondaryTextClasses}
+    globalPrimaryTextClasses={globalPrimaryTextClasses}
+    placeholder={currentRole === "Admin" || currentRole === "Staff"
+      ? "Write your comment here... (Use @username to mention users)"
+      : "Write your comment here..."}
+  />
+</div>

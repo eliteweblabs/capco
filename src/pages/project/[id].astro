@@ -237,202 +237,190 @@ if (currentRole === "Admin" || currentRole === "Staff") {
   globalCompanyLogoDark={globalCompanyLogoDark}
   globalCompanyLogoLight={globalCompanyLogoLight}
 >
-  <div
-    id="main-content"
-    class="h-100 12rem-REMOVED relative flex min-h-screen w-full flex-col overflow-x-scroll bg-gray-50 dark:bg-gray-900"
-  >
-    <main class="flex-grow">
-      <div class="px-4 pt-4">
-        <HeroProject
-          title={project?.address || project?.title || "Untitled Project"}
-          description={currentUser?.profile?.role === "Client"
-            ? project?.created_at
-              ? "<b>Created:</b> " + new Date(project.created_at).toLocaleDateString()
-              : "Unknown Date"
-            : project?.authorProfile?.company_name + " → " + project?.authorProfile?.email ||
-              "Unknown Author"}
-          statusColor={currentStatusColor}
-          currentUser={currentUser}
-          currentStatusInt={currentStatusInt.toString()}
-          currentStatusName={currentStatusName || undefined}
-          project={project}
-          statusesOptions={statusOptions}
-          currentStatusTab={currentStatusTab || undefined}
-          staffOptions={staffOptions}
-          globalSecondaryTextClasses={globalSecondaryTextClasses}
-          globalPrimaryTextClasses={globalPrimaryTextClasses}
-          globalInputClasses={globalInputClasses}
-        />
-      </div>
+  <HeroProject
+    title={project?.address || project?.title || "Untitled Project"}
+    description={currentUser?.profile?.role === "Client"
+      ? project?.created_at
+        ? "<b>Created:</b> " + new Date(project.created_at).toLocaleDateString()
+        : "Unknown Date"
+      : project?.authorProfile?.company_name + " → " + project?.authorProfile?.email ||
+        "Unknown Author"}
+    statusColor={currentStatusColor}
+    currentUser={currentUser}
+    currentStatusInt={currentStatusInt.toString()}
+    currentStatusName={currentStatusName || undefined}
+    project={project}
+    statusesOptions={statusOptions}
+    currentStatusTab={currentStatusTab || undefined}
+    staffOptions={staffOptions}
+    globalSecondaryTextClasses={globalSecondaryTextClasses}
+    globalPrimaryTextClasses={globalPrimaryTextClasses}
+    globalInputClasses={globalInputClasses}
+  />
 
-      <!-- Tab Navigation -->
-      <SlidingPillNav
-        navId="project-tab-nav"
-        navClass="my-4 dark:border-gray-700"
-        activeItem={activeTabIndex}
-        currentUser={currentUser}
-        items={[
-          {
-            id: "status-project-form",
-            label: "Project Form",
-            icon: "edit",
-            variant: "anchor",
-            onclick: "window.switchTab('project-form')",
-          },
-          {
-            id: "status-discussion",
-            label: "Discussion",
-            icon: "message-rounded-dots",
-            variant: "anchor",
-            dataAttributes: { "data-count": "0" },
-            onclick: "window.switchTab('discussion')",
-          },
-          {
-            id: "status-documents",
-            label: "Documents",
-            icon: "file",
-            variant: "anchor",
-            onclick: "window.switchTab('documents')",
-          },
-          {
-            id: "status-proposal",
-            label: "Proposal",
-            icon: "grid",
-            variant: "anchor",
-            onclick: "window.switchTab('proposal')",
-          },
-          {
-            id: "status-contract",
-            label: "Contract",
-            icon: "pencil",
-            variant: "anchor",
-            onclick: "window.switchTab('contract')",
-          },
-          {
-            id: "status-deposit",
-            label: "Deposit",
-            icon: "credit-card",
-            variant: "anchor",
-            onclick: "window.switchTab('deposit')",
-          },
-          {
-            id: "status-activity-log",
-            label: "Activity Log",
-            icon: "history",
-            variant: "anchor",
-            onclick: "window.switchTab('activity-log')",
-            clientHide: true,
-          },
-          {
-            id: "status-generate-pdf",
-            label: "Generate PDF",
-            icon: "history",
-            variant: "anchor",
-            onclick: "window.switchTab('generate-pdf')",
-            clientHide: true,
-          },
-        ]}
-      />
-      <div class="bg-gray-100 p-4 shadow-sm dark:bg-gray-800 md:p-6">
-        <!-- Tab Content -->
-        <!-- <div class="grid grid-cols-1 gap-6 lg:grid-cols-1"> -->
-        <!-- Project Form Tab -->
-        <TabProjectForm
-          project={project}
-          currentUser={currentUser}
-          projectStatus={currentStatusInt}
-          projectStatusLabel={currentStatusName || undefined}
-          globalInputClasses={globalInputClasses}
-          globalSecondaryTextClasses={globalSecondaryTextClasses}
-          globalPrimaryTextClasses={globalPrimaryTextClasses}
-        />
+  <!-- Tab Navigation -->
+  <SlidingPillNav
+    navId="project-tab-nav"
+    navClass="my-4 dark:border-gray-700"
+    activeItem={activeTabIndex}
+    currentUser={currentUser}
+    items={[
+      {
+        id: "status-project-form",
+        label: "Project Form",
+        icon: "edit",
+        variant: "anchor",
+        onclick: "window.switchTab('project-form')",
+      },
+      {
+        id: "status-discussion",
+        label: "Discussion",
+        icon: "message-rounded-dots",
+        variant: "anchor",
+        dataAttributes: { "data-count": "0" },
+        onclick: "window.switchTab('discussion')",
+      },
+      {
+        id: "status-documents",
+        label: "Documents",
+        icon: "file",
+        variant: "anchor",
+        onclick: "window.switchTab('documents')",
+      },
+      {
+        id: "status-proposal",
+        label: "Proposal",
+        icon: "grid",
+        variant: "anchor",
+        onclick: "window.switchTab('proposal')",
+      },
+      {
+        id: "status-contract",
+        label: "Contract",
+        icon: "pencil",
+        variant: "anchor",
+        onclick: "window.switchTab('contract')",
+      },
+      {
+        id: "status-deposit",
+        label: "Deposit",
+        icon: "credit-card",
+        variant: "anchor",
+        onclick: "window.switchTab('deposit')",
+      },
+      {
+        id: "status-activity-log",
+        label: "Activity Log",
+        icon: "history",
+        variant: "anchor",
+        onclick: "window.switchTab('activity-log')",
+        clientHide: true,
+      },
+      {
+        id: "status-generate-pdf",
+        label: "Generate PDF",
+        icon: "history",
+        variant: "anchor",
+        onclick: "window.switchTab('generate-pdf')",
+        clientHide: true,
+      },
+    ]}
+  />
+  <!-- Tab Content -->
+  <!-- <div class="grid grid-cols-1 gap-6 lg:grid-cols-1"> -->
+  <!-- Project Form Tab -->
+  <TabProjectForm
+    project={project}
+    currentUser={currentUser}
+    projectStatus={currentStatusInt}
+    projectStatusLabel={currentStatusName || undefined}
+    globalInputClasses={globalInputClasses}
+    globalSecondaryTextClasses={globalSecondaryTextClasses}
+    globalPrimaryTextClasses={globalPrimaryTextClasses}
+  />
 
-        <!-- Discussion Tab -->
+  <!-- Discussion Tab -->
 
-        <TabDiscussions
-          project={project}
-          currentUser={currentUser}
-          supabaseUrl={import.meta.env.PUBLIC_SUPABASE_URL}
-          globalInputClasses={globalInputClasses}
-          globalSecondaryTextClasses={globalSecondaryTextClasses}
-          globalPrimaryTextClasses={globalPrimaryTextClasses}
-        />
+  <TabDiscussions
+    project={project}
+    currentUser={currentUser}
+    supabaseUrl={import.meta.env.PUBLIC_SUPABASE_URL}
+    globalInputClasses={globalInputClasses}
+    globalSecondaryTextClasses={globalSecondaryTextClasses}
+    globalPrimaryTextClasses={globalPrimaryTextClasses}
+  />
 
-        <!-- Documents Tab -->
-        <TabDocuments
-          project={project}
-          currentUser={currentUser}
-          projectStatus={currentStatusInt}
-          globalSecondaryTextClasses={globalSecondaryTextClasses}
-          globalPrimaryTextClasses={globalPrimaryTextClasses}
-          globalInputClasses={globalInputClasses}
-          statusData={statusData}
-        />
+  <!-- Documents Tab -->
+  <TabDocuments
+    project={project}
+    currentUser={currentUser}
+    projectStatus={currentStatusInt}
+    globalSecondaryTextClasses={globalSecondaryTextClasses}
+    globalPrimaryTextClasses={globalPrimaryTextClasses}
+    globalInputClasses={globalInputClasses}
+    statusData={statusData}
+  />
 
-        <!-- Proposal Tab -->
-        <TabProposal
-          project={project}
-          projectStatus={currentStatusInt}
-          currentUser={currentUser}
-          globalSecondaryTextClasses={globalSecondaryTextClasses}
-          globalPrimaryTextClasses={globalPrimaryTextClasses}
-          globalInputClasses={globalInputClasses}
-          statusData={statusData}
-        />
+  <!-- Proposal Tab -->
+  <TabProposal
+    project={project}
+    projectStatus={currentStatusInt}
+    currentUser={currentUser}
+    globalSecondaryTextClasses={globalSecondaryTextClasses}
+    globalPrimaryTextClasses={globalPrimaryTextClasses}
+    globalInputClasses={globalInputClasses}
+    statusData={statusData}
+  />
 
-        <!-- Contract Tab -->
-        <TabContract
-          project={project}
-          currentUser={currentUser}
-          projectStatus={currentStatusInt}
-          globalSecondaryTextClasses={globalSecondaryTextClasses}
-          globalPrimaryTextClasses={globalPrimaryTextClasses}
-          globalInputClasses={globalInputClasses}
-          statusData={statusData}
-        />
+  <!-- Contract Tab -->
+  <TabContract
+    project={project}
+    currentUser={currentUser}
+    projectStatus={currentStatusInt}
+    globalSecondaryTextClasses={globalSecondaryTextClasses}
+    globalPrimaryTextClasses={globalPrimaryTextClasses}
+    globalInputClasses={globalInputClasses}
+    statusData={statusData}
+  />
 
-        <!-- Deposit Tab -->
-        <TabDeposit
-          project={project}
-          currentUser={currentUser}
-          projectStatus={currentStatusInt}
-          globalSecondaryTextClasses={globalSecondaryTextClasses}
-          globalPrimaryTextClasses={globalPrimaryTextClasses}
-          globalInputClasses={globalInputClasses}
-          statusData={statusData}
-        />
+  <!-- Deposit Tab -->
+  <TabDeposit
+    project={project}
+    currentUser={currentUser}
+    projectStatus={currentStatusInt}
+    globalSecondaryTextClasses={globalSecondaryTextClasses}
+    globalPrimaryTextClasses={globalPrimaryTextClasses}
+    globalInputClasses={globalInputClasses}
+    statusData={statusData}
+  />
 
-        <!-- Final Invoice Tab -->
-        <TabFinalInvoice
-          project={project}
-          projectStatus={currentStatusInt}
-          globalSecondaryTextClasses={globalSecondaryTextClasses}
-          globalPrimaryTextClasses={globalPrimaryTextClasses}
-          globalInputClasses={globalInputClasses}
-          statusData={statusData}
-        />
+  <!-- Final Invoice Tab -->
+  <TabFinalInvoice
+    project={project}
+    projectStatus={currentStatusInt}
+    globalSecondaryTextClasses={globalSecondaryTextClasses}
+    globalPrimaryTextClasses={globalPrimaryTextClasses}
+    globalInputClasses={globalInputClasses}
+    statusData={statusData}
+  />
 
-        <TabActivityLog
-          globalSecondaryTextClasses={globalSecondaryTextClasses}
-          globalPrimaryTextClasses={globalPrimaryTextClasses}
-          globalInputClasses={globalInputClasses}
-          currentUser={currentUser}
-          project={project}
-          statusData={statusData}
-        />
+  <TabActivityLog
+    globalSecondaryTextClasses={globalSecondaryTextClasses}
+    globalPrimaryTextClasses={globalPrimaryTextClasses}
+    globalInputClasses={globalInputClasses}
+    currentUser={currentUser}
+    project={project}
+    statusData={statusData}
+  />
 
-        <TabGeneratePdf
-          globalSecondaryTextClasses={globalSecondaryTextClasses}
-          globalPrimaryTextClasses={globalPrimaryTextClasses}
-          globalInputClasses={globalInputClasses}
-          project={project}
-          currentUser={currentUser}
-          statusData={statusData}
-        />
-        <!-- </div> -->
-      </div>
-    </main>
-  </div>
+  <TabGeneratePdf
+    globalSecondaryTextClasses={globalSecondaryTextClasses}
+    globalPrimaryTextClasses={globalPrimaryTextClasses}
+    globalInputClasses={globalInputClasses}
+    project={project}
+    currentUser={currentUser}
+    statusData={statusData}
+  />
 </App>
 
 <script
@@ -623,10 +611,7 @@ if (currentRole === "Admin" || currentRole === "Staff") {
     setPageLoadProjectStatus(initialTab);
   });
 
-  window.switchTab = function (tabName) {
-    console.log(`[TAB] Switching to: ${tabName}`);
-    // Implementation for tab switching
-  };
+  // Remove this placeholder - the real switchTab is defined later
   // Tab switching function for navigation
   function switchTab(tabName) {
     // Parse tab name and parameters (e.g., "discussion&new=true")

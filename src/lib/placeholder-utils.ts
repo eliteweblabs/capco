@@ -39,23 +39,13 @@ export interface PlaceholderData {
       signed_time?: string;
     };
     contract_pdf_url?: string;
-    authorProfile?:
-      | {
-          [key: number]: {
-            company_name: string;
-            email: string;
-            phone?: string;
-            first_name?: string;
-            last_name?: string;
-          };
-        }
-      | {
-          company_name: string;
-          email: string;
-          phone?: string;
-          first_name?: string;
-          last_name?: string;
-        };
+    authorProfile?: {
+      company_name: string;
+      email: string;
+      phone?: string;
+      first_name?: string;
+      last_name?: string;
+    };
     assignedToProfile?: {
       company_name: string;
       email: string;
@@ -104,14 +94,11 @@ export function replacePlaceholders(
   const authorProfile = data?.project?.authorProfile;
   const isArrayProfile = Array.isArray(authorProfile);
 
-  const clientName =
-    (isArrayProfile && (authorProfile as any)[0]?.company_name) ||
-    (!isArrayProfile && (authorProfile as any)?.company_name) ||
-    "Client Name Missing";
-  const clientEmail = (!isArrayProfile && (authorProfile as any)?.email) || "Client Email Missing";
-  const phone = (!isArrayProfile && (authorProfile as any)?.phone) || "N/A";
-  const clientFirstName = (!isArrayProfile && (authorProfile as any)?.first_name) || "{{BLANK}}";
-  const clientLastName = (!isArrayProfile && (authorProfile as any)?.last_name) || "{{BLANK}}";
+  const clientName = authorProfile?.company_name || "Client Name Missing";
+  const clientEmail = authorProfile?.email || "Client Email Missing";
+  const phone = authorProfile?.phone || "N/A";
+  const clientFirstName = authorProfile?.first_name || "{{BLANK}}";
+  const clientLastName = authorProfile?.last_name || "{{BLANK}}";
   // Project data
   const projectAddress = data?.project?.address || "Project Address Missing";
   const projectTitle = data?.project?.title || data?.project?.address || "Untitled Project";
@@ -652,6 +639,26 @@ export function replacePlaceholders(
   if (projectAddress) {
     const beforeReplace = result;
     result = result.replace(/\{\{\s*PROJECT_ADDRESS\s*\}\}/g, projectAddress);
+    if (result !== beforeReplace) {
+      placeholderApplied = true;
+      addBoldTags = true;
+    }
+  }
+
+  // Replace PROJECT_COMPANY_NAME placeholders
+  if (clientName) {
+    const beforeReplace = result;
+    result = result.replace(/\{\{\s*PROJECT_COMPANY_NAME\s*\}\}/g, clientName);
+    if (result !== beforeReplace) {
+      placeholderApplied = true;
+      addBoldTags = true;
+    }
+  }
+
+  // Replace PROJECT_COMPANY_EMAIL placeholders
+  if (clientName) {
+    const beforeReplace = result;
+    result = result.replace(/\{\{\s*CLIENT_NAME\s*\}\}/g, clientName);
     if (result !== beforeReplace) {
       placeholderApplied = true;
       addBoldTags = true;

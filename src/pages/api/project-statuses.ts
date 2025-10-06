@@ -211,20 +211,20 @@ export const GET: APIRoute = async ({ request, cookies, url }) => {
             status_color: status.status_color,
             status_slug: status.status_slug,
             status_tab: status.admin_status_tab,
-            // modal: {
-            //   type: "info",
-            //   persist: false,
-            //   message: status.modal_admin,
-            //   title: "Project Updated",
-            //   redirect: {
-            //     url: status.modal_auto_redirect_admin,
-            //     delay: 5000,
-            //     showCountdown: true,
-            //   },
-            //   // showCountdown: true,
-            //   // duration: 2500,
-            //   // est_time: status.est_time,
-            // },
+            modal: {
+              type: "info",
+              persist: false,
+              message: status.modal_admin,
+              title: "Project Updated",
+              redirect: {
+                url: status.modal_auto_redirect_admin,
+                delay: 5000,
+                showCountdown: true,
+              },
+              showCountdown: true,
+              duration: 2500,
+              est_time: status.est_time,
+            },
           },
           client: {
             email: {
@@ -241,20 +241,17 @@ export const GET: APIRoute = async ({ request, cookies, url }) => {
             status_color: status.status_color,
             status_slug: status.status_slug,
             status_tab: status.client_status_tab,
-            // modal: {
-            //   type: "info",
-            //   persist: false,
-            //   message: status.modal_client,
-            //   title: "ClientProject Updated",
-            //   redirect: {
-            //     url: status.modal_auto_redirect_client,
-            //     delay: 5000,
-            //     showCountdown: true,
-            //   },
-            //   // showCountdown: true,
-            //   // duration: 5000,
-            //   // est_time: status.est_time,
-            // },
+            modal: {
+              type: "info",
+              persist: false,
+              message: status.modal_client,
+              title: "ClientProject Updated",
+              redirect: {
+                url: status.modal_auto_redirect_client,
+                delay: 5000,
+                showCountdown: true,
+              },
+            },
           },
           current: {
             email: {
@@ -289,9 +286,6 @@ export const GET: APIRoute = async ({ request, cookies, url }) => {
                 delay: 5000, // Delay in milliseconds before redirect
                 showCountdown: true, // Show countdown in message
               },
-              // showCountdown: true,
-              // duration: 2500,
-              // est_time: status.est_time,
             },
           },
         };
@@ -478,20 +472,20 @@ export const POST: APIRoute = async ({ request, cookies }) => {
             status_color: status.status_color,
             status_slug: status.status_slug,
             status_tab: status.admin_status_tab,
-            // modal: {
-            //   type: "info",
-            //   persist: false,
-            //   message: status.modal_admin,
-            //   title: "Project Updated",
-            //   redirect: {
-            //     url: status.modal_auto_redirect_admin,
-            //     delay: 3000,
-            //     showCountdown: true,
-            //   },
-            //   showCountdown: true,
-            //   duration: 2500,
-            //   est_time: status.est_time,
-            // },
+            modal: {
+              type: "info",
+              persist: false,
+              message: status.modal_admin,
+              title: "Project Updated",
+              redirect: {
+                url: status.modal_auto_redirect_admin,
+                delay: 3000,
+                showCountdown: true,
+              },
+              showCountdown: true,
+              duration: 2500,
+              est_time: status.est_time,
+            },
           },
           client: {
             email: {
@@ -508,20 +502,20 @@ export const POST: APIRoute = async ({ request, cookies }) => {
             status_color: status.status_color,
             status_slug: status.status_slug,
             status_tab: status.client_status_tab,
-            // modal: {
-            //   type: "info",
-            //   persist: false,
-            //   message: status.modal_client,
-            //   title: "ClientProject Updated",
-            //   redirect: {
-            //     url: status.modal_auto_redirect_client,
-            //     delay: 3000,
-            //     showCountdown: true,
-            //   },
-            //   showCountdown: true,
-            //   duration: 2500,
-            //   est_time: status.est_time,
-            // },
+            modal: {
+              type: "info",
+              persist: false,
+              message: status.modal_client,
+              title: "ClientProject Updated",
+              redirect: {
+                url: status.modal_auto_redirect_client,
+                delay: 3000,
+                showCountdown: true,
+              },
+              showCountdown: true,
+              duration: 2500,
+              est_time: status.est_time,
+            },
           },
           current: {
             email: {
@@ -556,9 +550,9 @@ export const POST: APIRoute = async ({ request, cookies }) => {
                 delay: 3000, // Delay in milliseconds before redirect
                 showCountdown: true, // Show countdown in message
               },
-              // showCountdown: true,
-              // duration: 2500,
-              // est_time: status.est_time,
+              showCountdown: true,
+              duration: 2500,
+              est_time: status.est_time,
             },
           },
         };

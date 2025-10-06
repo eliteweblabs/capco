@@ -19,6 +19,7 @@ let componentId,
   valueField,
   projectId,
   name,
+  globalInputClasses,
   labelField;
 
 if (hasProps) {
@@ -40,6 +41,7 @@ if (hasProps) {
   labelField = props.labelField || "label";
   projectId = props.projectId || "";
   name = props.name || "";
+  globalInputClasses = props.globalInputClasses || "";
 } else {
   // Fall back to headers when used as partial
   componentId = Astro.request.headers.get("x-component-id") || "slot-machine";
@@ -58,6 +60,7 @@ if (hasProps) {
   labelField = Astro.request.headers.get("x-label-field") || "label";
   projectId = Astro.request.headers.get("x-project-id") || "";
   name = Astro.request.headers.get("x-name") || "";
+  globalInputClasses = Astro.request.headers.get("x-global-input-classes") || "";
 }
 
 import Button from "../../components/common/Button.astro";
@@ -72,7 +75,7 @@ import Button from "../../components/common/Button.astro";
   >
     <!-- Modal Header -->
     <div
-      class="flex items-center justify-between border-b border-gray-200 p-6 dark:border-gray-700"
+      class="flex items-center justify-between border-b border-gray-200 bg-gray-50 p-6 dark:border-gray-700 dark:bg-gray-800"
     >
       <h2 class="text-xl font-semibold text-gray-900 dark:text-white">{title}</h2>
       <button
@@ -95,12 +98,11 @@ import Button from "../../components/common/Button.astro";
       {
         showSearch && (
           <div class="mb-4">
-            <label class="mb-2 hidden text-sm font-medium md:block">{searchLabel}</label>
             <div class="relative">
               <input
                 type="text"
                 id={`${componentId}-slot-search-input`}
-                class="w-full rounded-lg border border-gray-300 px-3 py-2.5 pr-10 text-sm text-gray-900 focus:border-primary-500 focus:ring-2 focus:ring-primary-500 dark:border-gray-600 dark:bg-gray-800 dark:text-white dark:focus:border-primary-400 dark:focus:ring-primary-400"
+                class={globalInputClasses}
                 placeholder={searchText}
                 autocomplete="off"
               />
@@ -126,7 +128,7 @@ import Button from "../../components/common/Button.astro";
 
       <!-- Slot Machine Container with Fixed Height -->
       <div
-        class="slot-machine-container relative mb-4 h-48 overflow-hidden rounded-lg border-2 border-gray-200 dark:border-gray-600"
+        class="slot-machine-container relative mb-4 h-48 overflow-hidden rounded-lg border-2 border-gray-200 bg-gray-100 dark:border-gray-600 dark:bg-gray-800"
       >
         <!-- Loading State -->
 
