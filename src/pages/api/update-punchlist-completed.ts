@@ -23,10 +23,10 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     }
 
     const body = await request.json();
-    const { punchlistId, mark_completed } = body;
+    const { punchlistId, markCompleted } = body;
 
     // Validate required fields
-    if (!punchlistId || mark_completed === undefined) {
+    if (!punchlistId || markCompleted === undefined) {
       return new Response(
         JSON.stringify({ error: "Punchlist ID and completion status are required" }),
         {
@@ -38,7 +38,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
     console.log("🔔 [UPDATE-PUNCHLIST-COMPLETED] Updating punchlist completion status:", {
       punchlistId,
-      mark_completed,
+      markCompleted,
       userId: currentUser.id,
       userRole: currentRole,
     });
@@ -46,7 +46,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     // First, check if user has permission to update this punchlist item
     const { data: punchlistItem, error: fetchError } = await supabase
       .from("punchlist")
-      .select("author_id, project_id, message")
+      .select("authorId, projectId, message")
       .eq("id", punchlistId)
       .single();
 
@@ -67,7 +67,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     // Check permissions - Admin/Staff can update any, Clients can only update their own
     const canUpdate = currentRole === "Admin" || currentRole === "Staff";
     // ||
-    // punchlistItem.author_id === currentUser.id;
+    // punchlistItem.authorId === currentUser.id;
 
     if (!canUpdate) {
       return new Response(
@@ -85,8 +85,8 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     const { data: updatedPunchlist, error: updateError } = await supabase
       .from("punchlist")
       .update({
-        mark_completed,
-        updated_at: new Date().toISOString(),
+        markCompleted,
+        updatedAt: new Date().toISOString(),
       })
       .eq("id", punchlistId)
       .select("*")
@@ -111,17 +111,17 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     // Log the punchlist toggle to project activity
     try {
       console.log("📝 [UPDATE-PUNCHLIST-COMPLETED] Logging punchlist toggle:", {
-        projectId: punchlistItem.project_id,
+        projectId: punchlistItem.projectId,
         punchlistId: punchlistId,
-        isCompleted: mark_completed,
+        isCompleted: markCompleted,
         user: currentUser || "Unknown",
       });
 
       await SimpleProjectLogger.addLogEntry(
-        punchlistItem.project_id,
-        mark_completed ? "punchlist_completed" : "punchlist_incomplete",
-        `Punchlist item ${mark_completed ? "marked as completed" : "marked as incomplete"}: ${(punchlistItem.message?.substring(0, 50) || "No message") + "..."}`,
-        { punchlistId, completed: mark_completed }
+        punchlistItem.projectId,
+        markCompleted ? "punchlist_completed" : "punchlist_incomplete",
+        `Punchlist item ${markCompleted ? "marked as completed" : "marked as incomplete"}: ${(punchlistItem.message?.substring(0, 50) || "No message") + "..."}`,
+        { punchlistId, completed: markCompleted }
       );
 
       console.log("✅ [UPDATE-PUNCHLIST-COMPLETED] Project logging completed successfully");
@@ -139,7 +139,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         // Continue with the response instead of returning
       }
 
-      const adminContent = ` ${punchlistMessage} marked complete by ${currentUser.profile.company_name}:<br><br>`;
+      const adminContent = ` ${punchlistMessage} marked complete by ${currentUser.profile.companyName}:<br><br>`;
 
       // THIS IS TO THE ADMINS EMAIL
       // Send email using the email delivery API
@@ -151,7 +151,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
         body: JSON.stringify({
           usersToNotify: ["jk@capcofire.com", "capco@eliteweblabs.com"], // Use resolved user email
-          emailSubject: `Punchlist Item Completed → ${punchlistMessage.message} → ${currentUser.profile.company_name}`,
+          emailSubject: `Punchlist Item Completed → ${punchlistMessage.message} → ${currentUser.profile.companyName}`,
           emailContent: adminContent,
           buttonText: "Access Your Dashboard",
           buttonLink: "/dashboard",
@@ -170,7 +170,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       JSON.stringify({
         success: true,
         punchlist: updatedPunchlist,
-        message: `Punchlist item marked as ${mark_completed ? "completed" : "incomplete"}`,
+        message: `Punchlist item marked as ${markCompleted ? "completed" : "incomplete"}`,
       }),
       {
         status: 200,

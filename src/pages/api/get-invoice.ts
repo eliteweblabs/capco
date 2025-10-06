@@ -32,9 +32,9 @@ export const POST: APIRoute = async ({ request }) => {
           title,
           address,
           description,
-          sq_ft,
+          sqFt,
           status,
-          author_id
+          authorId
         )
       `
       )
@@ -58,19 +58,19 @@ export const POST: APIRoute = async ({ request }) => {
     }
 
     // Get catalog line items directly from the stored data
-    const lineItems = invoice?.catalog_line_items || [];
+    const lineItems = invoice?.catalogLineItems || [];
 
     // Lookup client profile for name/email
     let client = null as null | { name: string | null; email: string | null };
-    if (invoice?.projects?.author_id) {
+    if (invoice?.projects?.authorId) {
       try {
         const { data: profile } = await supabase
           .from("profiles")
-          .select("company_name, email")
-          .eq("id", invoice.projects.author_id)
+          .select("companyName, email")
+          .eq("id", invoice.projects.authorId)
           .single();
         client = {
-          name: profile?.company_name || null,
+          name: profile?.companyName || null,
           email: profile?.email || null,
         };
       } catch (_) {

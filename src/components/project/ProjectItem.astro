@@ -5,60 +5,60 @@ import Tooltip from "../common/Tooltip.astro";
 interface Props {
   project: {
     punchlistItems?: { completed: number; total: number };
-    incomplete_discussions: any;
+    incompleteDiscussions: any;
     id: any;
-    author_id?: any;
+    authorId?: any;
     title?: any;
     address: any;
     description: any;
-    sq_ft: any;
-    new_construction: any;
+    sqFt: any;
+    newConstruction: any;
     status: any;
-    created_at: any;
-    updated_at: any;
-    elapsed_time?: any;
-    assigned_to_id?: any;
+    createdAt: any;
+    updatedAt: any;
+    elapsedTime?: any;
+    assignedToId?: any;
     comment_count?: any;
-    due_date?: any;
+    dueDate?: any;
     generated_document_count?: any;
     authorProfile?: any;
     assignedToProfile?: any;
-    featured_image_data?: {
+    featuredImageData?: {
       id: any;
-      file_path: string;
-      file_name: string;
-      file_type: string;
+      filePath: string;
+      fileName: string;
+      fileType: string;
       public_url: string;
     };
     // New document data fields
     projectFiles?: Array<{
       id: number;
-      project_id: number;
-      author_id: string;
-      file_path: string;
-      file_name: string;
-      file_size: number;
-      file_type: string;
+      projectId: number;
+      authorId: string;
+      filePath: string;
+      fileName: string;
+      fileSize: number;
+      fileType: string;
       title?: string;
       comments?: string;
       status: string;
-      uploaded_at: string;
-      created_at: string;
-      updated_at: string;
+      uploadedAt: string;
+      createdAt: string;
+      updatedAt: string;
     }>;
     generatedDocuments?: Array<{
       id: number;
-      project_id: number;
-      template_id?: number;
-      document_name: string;
-      file_path?: string;
-      file_size?: number;
-      generation_status: string;
-      error_message?: string;
-      generation_started_at?: string;
+      projectId: number;
+      templateId?: number;
+      documentName: string;
+      filePath?: string;
+      fileSize?: number;
+      generationStatus: string;
+      errorMessage?: string;
+      generationStartedAt?: string;
       generation_completed_at?: string;
-      created_at: string;
-      created_by: string;
+      createdAt: string;
+      createdBy: string;
     }>;
   };
   statusData?: any;
@@ -91,14 +91,14 @@ const currentRole = currentUser?.profile?.role;
 
 const description = project?.description || "No description";
 
-// console.log("🔍 [PROJECT-feater] Project:", project.featured_image_data);
-// console.log("🔍 [PROJECT-featured=imaage] Project:", project.featured_image);
+// console.log("🔍 [PROJECT-feater] Project:", project.featuredImageData);
+// console.log("🔍 [PROJECT-featured=imaage] Project:", project.featuredImage);
 // return if user is staff and project is not assigned to them
-// if (currentRole === "Staff" && project.assigned_to_id !== user?.id) {
+// if (currentRole === "Staff" && project.assignedToId !== user?.id) {
 //   return null;
 // }
 
-// if (currentRole === "Client" && project.author_id !== user?.id) {
+// if (currentRole === "Client" && project.authorId !== user?.id) {
 //   return null;
 // }
 
@@ -117,8 +117,8 @@ function limitDescription(text: string, wordLimit: number = 50): string {
 // Get project status info from passed statuses or fallback to default
 // Status color is now provided by the get-project-statuses API
 
-// Use the pre-calculated elapsed_time from the database
-const elapsedTime = project.elapsed_time;
+// Use the pre-calculated elapsedTime from the database
+const elapsedTime = project.elapsedTime;
 let projectAgeColor = "rgb(209, 213, 219)"; // Default gray
 let projectAlertIconCount = 0;
 let elapsedHours = 0; // Initialize outside the if block
@@ -194,7 +194,7 @@ function getTimeSinceUpdate(updatedAt: string): string {
   }
 }
 
-const timeSinceUpdate = getTimeSinceUpdate(project.updated_at);
+const timeSinceUpdate = getTimeSinceUpdate(project.updatedAt);
 
 if (elapsedTime) {
   // Convert PostgreSQL interval to hours
@@ -316,7 +316,7 @@ const statusColor = currentStatusColor || "gray";
   {
     currentRole !== "Client" && (
       <td class="whitespace-nowrap px-4 py-2">
-        {project?.authorProfile?.company_name || "Unknown Author"}
+        {project?.authorProfile?.companyName || "Unknown Author"}
       </td>
     )
   }
@@ -325,7 +325,7 @@ const statusColor = currentStatusColor || "gray";
     <a
       href={`/project/${project.id}?status=${currentStatusTab}`}
       style={`background-color: ${statusColor};`}
-      class="Y3FxyuXtj2gecrGXvLEI YccXYy5sNIz6FJlLxw0D px-2.5 Zs2BLzUMh0_yTpU6xCcU mbOxN7eW74XygTKQC_r3 V9HgZms3_2W5sanRatci block w-full text-center text-xs font-medium text-black"
+      class="Y3FxyuXtj2gecrGXvLEI YccXYy5sNIz6FJlLxw0D Zs2BLzUMh0_yTpU6xCcU mbOxN7eW74XygTKQC_r3 V9HgZms3_2W5sanRatci block w-full px-2.5 text-center text-xs font-medium text-black"
       >{currentStatusName || "Unknown Status"}</a
     >
   </td>
@@ -348,12 +348,12 @@ const statusColor = currentStatusColor || "gray";
               id={`assign-staff-${project.id}`}
               title="Assign Staff Member"
               options={staffOptions}
-              selectedValue={project?.assigned_to_id || ""}
+              selectedValue={project?.assignedToId || ""}
               placeholder="Assign staff..."
               buttonText={(() => {
-                if (!project?.assigned_to_id) return "Unassigned";
+                if (!project?.assignedToId) return "Unassigned";
                 const assignedStaff = staffOptions.find(
-                  (staff: any) => staff.value === project.assigned_to_id
+                  (staff: any) => staff.value === project.assignedToId
                 );
                 return assignedStaff?.label || "Unknown Staff";
               })()}
@@ -371,12 +371,12 @@ const statusColor = currentStatusColor || "gray";
               id={`assign-staff-slot-machine-${project.id}`}
               title="Assign Staff Member"
               options={staffOptions}
-              selectedValue={project?.assigned_to_id || ""}
+              selectedValue={project?.assignedToId || ""}
               placeholder="Assign staff..."
               buttonText={(() => {
-                if (!project?.assigned_to_id) return "Unassigned";
+                if (!project?.assignedToId) return "Unassigned";
                 const assignedStaff = staffOptions.find(
-                  (staff: any) => staff.value === project.assigned_to_id
+                  (staff: any) => staff.value === project.assignedToId
                 );
                 return assignedStaff?.label || "Unknown Staff";
               })()}
@@ -432,13 +432,13 @@ const statusColor = currentStatusColor || "gray";
       </svg> -->
       {
         formatElapsedTime({
-          total_seconds: (Date.now() - new Date(project.created_at).getTime()) / 1000,
+          total_seconds: (Date.now() - new Date(project.createdAt).getTime()) / 1000,
         })
       }
     </td>
     <td class="whitespace-nowrap px-4 py-2 text-gray-900 dark:text-white">
       <div
-        class="align-center border _bVaO2NfVVP88LtHWYlv _GSNszqbCuS9hoWd_f_m ODwQB_Ntbd93L5eefCAa inline-flex rounded-md bg-gray-100 text-xs font-medium dark:border-gray-600 dark:bg-gray-700"
+        class="align-center _bVaO2NfVVP88LtHWYlv _GSNszqbCuS9hoWd_f_m ODwQB_Ntbd93L5eefCAa inline-flex rounded-md border bg-gray-100 text-xs font-medium dark:border-gray-600 dark:bg-gray-700"
       >
         {timeSinceUpdate}
         <!-- <svg
@@ -483,7 +483,7 @@ const statusColor = currentStatusColor || "gray";
           //   selectedValue={relationship}
           //   placeholder="Choose due date"
           //   buttonText={
-          //     new Date(project?.due_date).toLocaleDateString(undefined, {
+          //     new Date(project?.dueDate).toLocaleDateString(undefined, {
           //       year: "numeric",
           //       month: "long",
           //       day: "numeric",
@@ -503,8 +503,8 @@ const statusColor = currentStatusColor || "gray";
 
           <span>
             {" "}
-            {project?.due_date
-              ? new Date(project.due_date).toLocaleDateString("en-US", {
+            {project?.dueDate
+              ? new Date(project.dueDate).toLocaleDateString("en-US", {
                   weekday: "short",
                   month: "short",
                   day: "numeric",
@@ -516,7 +516,7 @@ const statusColor = currentStatusColor || "gray";
           </span>
         ) : (
           <span>
-            {new Date(project?.due_date).toLocaleDateString(undefined, {
+            {new Date(project?.dueDate).toLocaleDateString(undefined, {
               year: "numeric",
               month: "long",
               day: "numeric",
@@ -655,15 +655,15 @@ const statusColor = currentStatusColor || "gray";
       >
       <td class="whitespace-nowrap px-4 py-2">
         <span
-          class="Y3FxyuXtj2gecrGXvLEI YccXYy5sNIz6FJlLxw0D px-2.5 Zs2BLzUMh0_yTpU6xCcU mbOxN7eW74XygTKQC_r3 V9HgZms3_2W5sanRatci Uq09bvia_7yL7hYv2uSO text-xs font-medium"
+          class="Y3FxyuXtj2gecrGXvLEI YccXYy5sNIz6FJlLxw0D Zs2BLzUMh0_yTpU6xCcU mbOxN7eW74XygTKQC_r3 V9HgZms3_2W5sanRatci Uq09bvia_7yL7hYv2uSO px-2.5 text-xs font-medium"
           >{currentStatusName}</span
         >
       </td>
       <td class="whitespace-nowrap px-4 py-2">
         <div class="IxVXJAn2ZWxXpcIHvPnh XrB0f1gZzjK6cEODacjg flex">
           {
-            project?.assignedToProfile?.company_name ? (
-              <span data-searchable>{project.assignedToProfile?.company_name}</span>
+            project?.assignedToProfile?.companyName ? (
+              <span data-searchable>{project.assignedToProfile?.companyName}</span>
             ) : (
               <span data-searchable class="text-danger-500">
                 UNASSIGNED
@@ -716,7 +716,7 @@ const statusColor = currentStatusColor || "gray";
       </td>
       <td class="whitespace-nowrap px-4 py-2 text-gray-900 dark:text-white">
         <div
-          class="align-center border _bVaO2NfVVP88LtHWYlv _GSNszqbCuS9hoWd_f_m ODwQB_Ntbd93L5eefCAa inline-flex rounded-md bg-gray-100 text-xs font-medium dark:border-gray-600 dark:bg-gray-700"
+          class="align-center _bVaO2NfVVP88LtHWYlv _GSNszqbCuS9hoWd_f_m ODwQB_Ntbd93L5eefCAa inline-flex rounded-md border bg-gray-100 text-xs font-medium dark:border-gray-600 dark:bg-gray-700"
         >
           <svg
             class="IRKzgyPj4qWOh2vq2xBg _o2IXcpM0qnG3JPReKus E9GV5sZJIbfO_GEQ_moc text-gray-400"
@@ -758,7 +758,7 @@ const statusColor = currentStatusColor || "gray";
           id="project-dropdown-button"
           type="button"
           data-dropdown-toggle="project-dropdown"
-          class="align-center sQaK4IH7BIQSgBTGX8Pe text-sm PeR2JZ9BZHYIH8Ea3F36 lBgPGkku8NiP5ReH09_2 ZnBoTVi7VOJdCLSSU62n BkIbg_JwkgiyRW804Hhu XIIs8ZOri3wm8Wnj9N_y dMTOiA3mf3FTjlHu6DqW inline-flex rounded-md text-sm font-medium hover:bg-gray-600 dark:hover:bg-gray-700"
+          class="align-center sQaK4IH7BIQSgBTGX8Pe PeR2JZ9BZHYIH8Ea3F36 lBgPGkku8NiP5ReH09_2 ZnBoTVi7VOJdCLSSU62n BkIbg_JwkgiyRW804Hhu XIIs8ZOri3wm8Wnj9N_y dMTOiA3mf3FTjlHu6DqW inline-flex rounded-md text-sm font-medium hover:bg-gray-600 dark:hover:bg-gray-700"
         >
           <svg
             class="h-5 w-5"
@@ -783,7 +783,7 @@ const statusColor = currentStatusColor || "gray";
           data-popper-escaped=""
         >
           <ul
-            class="text-sm p-2 font-medium text-gray-500 dark:text-gray-400"
+            class="p-2 text-sm font-medium text-gray-500 dark:text-gray-400"
             aria-labelledby="project-dropdown-button"
           >
             <li>
@@ -838,7 +838,7 @@ const statusColor = currentStatusColor || "gray";
             <button
               type="button"
               id="deleteProjectButton"
-              class="align-center W5n_NSFnC6y2nqoHw_5x text-sm m_WzesDEb91pTPmX64rt Sz97zU8r72z_pjE9zQnR RzANcaqunVvlLrO6_tal inline-flex w-full px-3 py-2 font-medium hover:bg-gray-100"
+              class="align-center W5n_NSFnC6y2nqoHw_5x m_WzesDEb91pTPmX64rt Sz97zU8r72z_pjE9zQnR RzANcaqunVvlLrO6_tal inline-flex w-full px-3 py-2 text-sm font-medium hover:bg-gray-100"
             >
               <!-- data-modal-target="deleteProjectModal"
           data-modal-toggle="deleteProjectModal" -->
@@ -865,7 +865,7 @@ const statusColor = currentStatusColor || "gray";
 
     <a
       href={`/project/${project.id}`}
-      data-refresh="featured_image_data:public_url"
+      data-refresh="featuredImageData:public_url"
       data-project-id={project.id}
       class="hidden h-32 items-center justify-center overflow-hidden rounded-t-lg bg-gray-100 dark:bg-gray-700"
     >
@@ -877,7 +877,7 @@ const statusColor = currentStatusColor || "gray";
           <h3 class="truncate text-lg font-semibold" data-searchable>
             {
               currentRole !== "Client" &&
-                (project.authorProfile?.company_name || "Unknown Author") + " → "
+                (project.authorProfile?.companyName || "Unknown Author") + " → "
             }
             {project.address}
           </h3>
@@ -903,11 +903,11 @@ const statusColor = currentStatusColor || "gray";
         >
           <span class="flex items-center gap-1">
             <BoxIcon name="area" class="" />
-            {project.sq_ft ? project.sq_ft.toLocaleString() : 0}ft²
+            {project.sqFt ? project.sqFt.toLocaleString() : 0}ft²
           </span>
           <span class="flex items-center gap-1">
             <BoxIcon name="building" class="" />
-            {project.new_construction ? "New" : "Existing"}
+            {project.newConstruction ? "New" : "Existing"}
           </span>
         </a>
 
@@ -926,8 +926,8 @@ const statusColor = currentStatusColor || "gray";
           currentRole !== "Client" && (
             <div class="flex items-center gap-1">
               <BoxIcon name="user" size="sm" class="" />
-              {project.assignedToProfile?.company_name ? (
-                <span data-searchable>{project.assignedToProfile?.company_name}</span>
+              {project.assignedToProfile?.companyName ? (
+                <span data-searchable>{project.assignedToProfile?.companyName}</span>
               ) : (
                 <span class="text-danger-500">UNASSIGNED</span>
               )}
@@ -946,11 +946,11 @@ const statusColor = currentStatusColor || "gray";
         >
           <BoxIcon name="message-rounded" size="md" class="" />
           <!-- {
-          project.incomplete_discussions > 0 && ( -->
+          project.incompleteDiscussions > 0 && ( -->
           <span
             class="absolute right-1.5 top-1.5 inline-flex h-4 min-w-[1.25rem] items-center justify-center rounded-full text-xs"
           >
-            {project.incomplete_discussions > 99 ? "99+" : project.incomplete_discussions}/{
+            {project.incompleteDiscussions > 99 ? "99+" : project.incompleteDiscussions}/{
               project.comment_count > 99 ? "99+" : project.comment_count
             }
           </span>
@@ -1111,11 +1111,11 @@ const statusColor = currentStatusColor || "gray";
             fileIconContainer.className = "relative group";
             fileIconContainer.innerHTML = `
             <div class="cursor-pointer">
-              ${getFileIcon(file.file_type)}
+              ${getFileIcon(file.fileType)}
             </div>
             <!-- CSS Tooltip -->
             <div class="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-gray-900 text-white text-sm rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-50">
-              ${file.title || file.file_name}
+              ${file.title || file.fileName}
               <div class="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-900"></div>
             </div>
           `;

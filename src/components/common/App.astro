@@ -160,8 +160,10 @@ const debugData = {
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <title>
+      {globalCompanyName + " → " + (title || unslugify(Astro.url.pathname))}
+    </title>
 
-    <title>{globalCompanyName + " → " + (title || unslugify(Astro.url.pathname))}</title>
     <meta name="description" content={description} />
 
     <!-- <link
@@ -175,7 +177,7 @@ const debugData = {
     <meta name="theme-color" content="#000000" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-    <meta name="apple-mobile-web-app-title" content={globalCompanyName} />
+    <meta name="apple-mobile-web-app-project-title" content={globalCompanyName} />
     <meta name="generator" content={Astro.generator} />
     <!-- Safari Privacy Protection Meta Tags -->
     <meta name="referrer" content="strict-origin-when-cross-origin" />
@@ -209,7 +211,7 @@ const debugData = {
 
     <!-- Font styles are handled by CSS files -->
 
-    <link rel="stylesheet" href="https://flowbite.com/application-ui/demo/app.css" />
+    <!-- <link rel="stylesheet" href="https://flowbite.com/application-ui/demo/app.css" /> -->
     <!-- 
 
     <link
@@ -265,11 +267,9 @@ const debugData = {
     <meta property="og:image:type" content="image/png" /> -->
 
     <!-- Dark mode initialization moved to prevent preloader flash -->
-  </head>
 
-  <!-- Set global user data for client-side components -->
-
-  <body class="bg-gray-50 antialiased dark:bg-gray-900">
+    <!-- Set global user data for client-side components -->
+  </head><body class="bg-gray-50 antialiased dark:bg-gray-900">
     <!-- Preloader -->
     <Preloader />
 
@@ -579,8 +579,8 @@ const debugData = {
             emailType: emailData.emailType || "status_update",
             emailSubject: emailData.email_subject || "Project Update",
             emailContent: emailData.email_content || JSON.stringify(emailData),
-            buttonLink: emailData.button_link,
-            buttonText: emailData.button_text,
+            buttonLink: emailData.buttonLink,
+            buttonText: emailData.buttonText,
             project: {}, // TODO: Pass actual project data
             currentUser: currentUser, // TODO: Pass actual current user
           };
@@ -599,10 +599,9 @@ const debugData = {
         }
       };
 
-      (window as any).validateEmail = function (email: string) {
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        return emailRegex.test(email) ? null : "Invalid email format";
-      };
+      // Import validateEmail from ux-utils
+      import { validateEmail } from "../../lib/ux-utils.ts";
+      (window as any).validateEmail = validateEmail;
 
       (window as any).getProject = async function (projectId: string | number) {
         const projectResponse = await fetch(`/api/get-project?id=${projectId}`);
@@ -1311,7 +1310,7 @@ const debugData = {
             },
             sms_sent_success: {
               title: "Message Sent",
-              message: `Your message has been sent to ${import.meta.env.GLOBAL_COMPANY_NAME} successfully.`,
+              message: `Your message has been sent to ${import.meta.env.GLOBAL_companyName} successfully.`,
             },
             default: { title: "Success!", message: param },
           },

@@ -51,7 +51,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     // Verify project access - check if user owns the project or is admin
     const { data: project, error: projectError } = await supabase
       .from("projects")
-      .select("id, author_id")
+      .select("id, authorId")
       .eq("id", projectId)
       .single();
 
@@ -71,7 +71,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
     const userRole = profile?.role || "Client";
     const isAdmin = userRole === "Admin" || userRole === "Staff";
-    const isProjectOwner = project.author_id === user.id;
+    const isProjectOwner = project.authorId === user.id;
 
     if (!isAdmin && !isProjectOwner) {
       return new Response(JSON.stringify({ error: "Access denied to project files" }), {
@@ -85,9 +85,9 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
     const { data: fileRecord, error: fileError } = await supabase
       .from("files")
-      .select("bucket_name, file_path, file_name")
-      .eq("file_path", filePath)
-      .eq("project_id", projectId)
+      .select("bucketName, filePath, fileName")
+      .eq("filePath", filePath)
+      .eq("projectId", projectId)
       .single();
 
     if (fileError || !fileRecord) {
@@ -109,20 +109,20 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
     // Download file from the correct bucket using the stored path
     const { data: fileData, error: downloadError } = await supabase.storage
-      .from(fileRecord.bucket_name)
-      .download(fileRecord.file_path);
+      .from(fileRecord.bucketName)
+      .download(fileRecord.filePath);
 
     if (downloadError || !fileData) {
       console.error("Error downloading file from storage:", downloadError);
-      console.error("Bucket:", fileRecord.bucket_name);
-      console.error("File path attempted:", fileRecord.file_path);
+      console.error("Bucket:", fileRecord.bucketName);
+      console.error("File path attempted:", fileRecord.filePath);
       console.error("Original filePath parameter:", filePath);
       return new Response(
         JSON.stringify({
           error: "Failed to download file from storage",
           details: downloadError?.message || "Unknown error",
-          bucket: fileRecord.bucket_name,
-          storagePath: fileRecord.file_path,
+          bucket: fileRecord.bucketName,
+          storagePath: fileRecord.filePath,
           originalPath: filePath,
         }),
         {
@@ -137,7 +137,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
     // Return file with proper headers for download
     // Use the filename from the database record if available, fallback to parameter
-    const downloadFileName = fileRecord.file_name || fileName;
+    const downloadFileName = fileRecord.fileName || fileName;
 
     return new Response(arrayBuffer, {
       status: 200,

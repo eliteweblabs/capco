@@ -25,8 +25,8 @@ export const GET: APIRoute = async ({ request, cookies }): Promise<Response> => 
     const { data, error } = await supabase
       .from("notifications")
       .select("*")
-      .eq("user_id", userId)
-      .order("created_at", { ascending: false })
+      .eq("userId", userId)
+      .order("createdAt", { ascending: false })
       .range(offset, offset + limit - 1);
 
     if (error) {

@@ -37,14 +37,14 @@ export async function createMissingUserProfile(user: User): Promise<void> {
     }
 
     // Create profile with user data
-    const firstName = user.user_metadata?.first_name || "";
-    const lastName = user.user_metadata?.last_name || "";
-    const companyName = user.user_metadata?.company_name || "";
-    const avatarUrl = user.user_metadata?.avatar_url || user.user_metadata?.picture || null;
+    const firstName = user.user_metadata?.firstName || "";
+    const lastName = user.user_metadata?.lastName || "";
+    const companyName = user.user_metadata?.companyName || "";
+    const avatarUrl = user.user_metadata?.avatarUrl || user.user_metadata?.picture || null;
 
     console.log("Creating missing profile for user:", user.id, "with data:", {
       email: user.email,
-      company_name: companyName,
+      companyName: companyName,
       firstName,
       lastName,
       avatarUrl,
@@ -55,13 +55,13 @@ export async function createMissingUserProfile(user: User): Promise<void> {
       .insert({
         id: user.id,
         email: user.email,
-        company_name: companyName,
+        companyName: companyName,
         role: "Client",
-        first_name: firstName,
-        last_name: lastName,
-        avatar_url: avatarUrl,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
+        firstName: firstName,
+        lastName: lastName,
+        avatarUrl: avatarUrl,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
       })
       .select()
       .single();

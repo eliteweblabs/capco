@@ -58,11 +58,11 @@ export const GET: APIRoute = async ({ request, url }) => {
 
     // Get project author's profile data
     let projectAuthor = null;
-    if (project.author_id) {
+    if (project.authorId) {
       const { data: authorProfile, error: authorError } = await supabase
         .from("profiles")
         .select("*")
-        .eq("id", project.author_id)
+        .eq("id", project.authorId)
         .single();
 
       if (authorError) {
@@ -74,11 +74,11 @@ export const GET: APIRoute = async ({ request, url }) => {
 
     // Get assigned user's profile data if project has an assigned user
     let assignedStaff = null;
-    if (project.assigned_to_id) {
+    if (project.assignedToId) {
       const { data: assignedToProfile, error: assignedError } = await supabase
         .from("profiles")
         .select("*")
-        .eq("id", project.assigned_to_id)
+        .eq("id", project.assignedToId)
         .single();
 
       if (assignedError) {
@@ -90,9 +90,9 @@ export const GET: APIRoute = async ({ request, url }) => {
 
     // Fetch project status data
     const { data: statusData, error: statusError } = await supabase
-      .from("project_statuses")
+      .from("projectStatuses")
       .select("*")
-      .eq("status_code", project.status)
+      .eq("statusCode", project.status)
       .single();
 
     if (statusError) {
@@ -103,9 +103,9 @@ export const GET: APIRoute = async ({ request, url }) => {
     const { data: files, error: filesError } = await supabase
       .from("files")
       .select("*")
-      .eq("project_id", projectId)
+      .eq("projectId", projectId)
       .eq("status", "active")
-      .order("uploaded_at", { ascending: false });
+      .order("uploadedAt", { ascending: false });
 
     if (filesError) {
       console.error("❌ [PDF-DATA] Error fetching files:", filesError);
@@ -129,8 +129,8 @@ export const GET: APIRoute = async ({ request, url }) => {
         false
       ),
       PROJECT_CREATED_DATE: replacePlaceholders("{{PROJECT_CREATED_DATE}}", placeholderData, false),
-      COMPANY_NAME: replacePlaceholders("{{COMPANY_NAME}}", placeholderData, false),
-      CLIENT_COMPANY: replacePlaceholders("{{COMPANY_NAME}}", placeholderData, false),
+      companyName: replacePlaceholders("{{companyName}}", placeholderData, false),
+      CLIENT_COMPANY: replacePlaceholders("{{companyName}}", placeholderData, false),
       CLIENT_EMAIL: replacePlaceholders("{{CLIENT_EMAIL}}", placeholderData, false),
       PHONE: replacePlaceholders("{{PHONE}}", placeholderData, false),
       ASSIGNED_STAFF_NAME: replacePlaceholders("{{ASSIGNED_STAFF_NAME}}", placeholderData, false),
@@ -144,7 +144,7 @@ export const GET: APIRoute = async ({ request, url }) => {
       CURRENT_YEAR: replacePlaceholders("{{YEAR}}", placeholderData, false),
       DOCUMENT_ID: replacePlaceholders("{{DOCUMENT_ID}}", placeholderData, false),
       DOCUMENT_VERSION: replacePlaceholders("{{DOCUMENT_VERSION}}", placeholderData, false),
-      COMPANY_NAME: replacePlaceholders("{{GLOBAL_COMPANY_NAME}}", placeholderData, false),
+      companyName: replacePlaceholders("{{GLOBAL_companyName}}", placeholderData, false),
       COMPANY_SLOGAN: replacePlaceholders("{{GLOBAL_COMPANY_SLOGAN}}", placeholderData, false),
       COMPANY_ADDRESS: replacePlaceholders("{{COMPANY_ADDRESS}}", placeholderData, false),
       COMPANY_PHONE: replacePlaceholders("{{COMPANY_PHONE}}", placeholderData, false),

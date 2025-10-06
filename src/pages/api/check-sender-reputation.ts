@@ -111,7 +111,7 @@ export const GET: APIRoute = async ({ cookies }) => {
           recent_sms_bounces: smsGatewayBounces.slice(0, 5).map((email: any) => ({
             to: email.to,
             subject: email.subject,
-            created_at: email.created_at,
+            createdAt: email.createdAt,
             last_event: email.last_event,
           })),
         };

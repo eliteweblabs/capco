@@ -23,7 +23,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
     const body = await request.json();
     console.log("🔔 [UPDATE-DISCUSSION] Request body:", body);
-    const { discussionId, mark_completed } = body;
+    const { discussionId, markCompleted } = body;
 
     // Ensure discussionId is a number
     const discussionIdNum = parseInt(discussionId, 10);
@@ -34,7 +34,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       discussionId
     );
 
-    if (isNaN(discussionIdNum) || mark_completed === undefined) {
+    if (isNaN(discussionIdNum) || markCompleted === undefined) {
       return new Response(
         JSON.stringify({
           success: false,
@@ -64,7 +64,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
     const { data: existingDiscussion, error: fetchError } = await supabase
       .from("discussion")
-      .select("id, mark_completed")
+      .select("id, markCompleted")
       .eq("id", discussionIdNum)
       .single();
 
@@ -84,9 +84,9 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     // Update the discussion using admin client to bypass RLS
     const { data: updateResult, error } = await supabaseAdmin
       .from("discussion")
-      .update({ mark_completed: mark_completed })
+      .update({ markCompleted: markCompleted })
       .eq("id", discussionIdNum)
-      .select("id, mark_completed");
+      .select("id, markCompleted");
 
     if (error) {
       console.error("❌ [UPDATE-DISCUSSION] Database error:", error);
@@ -110,7 +110,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     // Get discussion details for logging
     const { data: discussionData, error: discussionError } = await supabaseAdmin
       .from("discussion")
-      .select("project_id, message")
+      .select("projectId, message")
       .eq("id", discussionIdNum)
       .single();
 
@@ -118,17 +118,17 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     if (discussionData && !discussionError) {
       try {
         console.log("📝 [UPDATE-DISCUSSION] Logging discussion toggle:", {
-          projectId: discussionData.project_id,
+          projectId: discussionData.projectId,
           discussionId: discussionIdNum,
-          isCompleted: mark_completed,
+          isCompleted: markCompleted,
           user: currentUser?.email || "Unknown",
         });
 
         await SimpleProjectLogger.addLogEntry(
-          discussionData.project_id,
-          mark_completed ? "discussion_completed" : "discussion_incomplete",
-          `Discussion ${mark_completed ? "marked as completed" : "marked as incomplete"}: ${(discussionData.message?.substring(0, 50) || "No message") + "..."}`,
-          { discussionId: discussionIdNum, completed: mark_completed }
+          discussionData.projectId,
+          markCompleted ? "discussion_completed" : "discussion_incomplete",
+          `Discussion ${markCompleted ? "marked as completed" : "marked as incomplete"}: ${(discussionData.message?.substring(0, 50) || "No message") + "..."}`,
+          { discussionId: discussionIdNum, completed: markCompleted }
         );
 
         console.log("✅ [UPDATE-DISCUSSION] Project logging completed successfully");

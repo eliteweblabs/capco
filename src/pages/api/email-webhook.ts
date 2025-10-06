@@ -6,11 +6,8 @@ import type { APIRoute } from "astro";
 import { supabase } from "../../lib/supabase";
 import { supabaseAdmin } from "../../lib/supabase-admin";
 import { getApiBaseUrl } from "../../lib/url-utils";
-// Simple email validation
-const validateEmail = (email: string): string | null => {
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  return emailRegex.test(email) ? null : "Invalid email format";
-};
+// Import validateEmail from ux-utils (server-side API routes need explicit import)
+import { validateEmail } from "../../lib/ux-utils";
 
 interface EmailWebhookData {
   from: string;
@@ -459,12 +456,12 @@ async function findOrCreateUser(email: string, headers?: Record<string, string>)
         body: JSON.stringify({
           email: cleanEmail,
           password: tempPassword,
-          first_name: firstName,
-          last_name: lastName,
-          company_name: fullName,
+          firstName: firstName,
+          lastName: lastName,
+          companyName: fullName,
           phone: null,
-          mobile_carrier: null,
-          sms_alerts: false,
+          mobileCarrier: null,
+          smsAlerts: false,
           role: "Client", // Note: it's 'role', not 'staff_role'
         }),
       });
@@ -482,9 +479,9 @@ async function findOrCreateUser(email: string, headers?: Record<string, string>)
       const newProfile = {
         id: createUserResult.user.id,
         email: cleanEmail,
-        first_name: firstName,
-        last_name: lastName,
-        company_name: fullName,
+        firstName: firstName,
+        lastName: lastName,
+        companyName: fullName,
         phone: null,
         role: "Client",
       };
@@ -561,8 +558,8 @@ function extractProjectInfo(emailData: EmailWebhookData) {
   return {
     title: title,
     address: address || "Address not specified",
-    sq_ft: sqft,
-    new_construction: isNewConstruction,
+    sqFt: sqft,
+    newConstruction: isNewConstruction,
     description: text.substring(0, 500), // First 500 characters as description
   };
 }
@@ -593,25 +590,24 @@ async function createProjectFromEmail(userId: string, projectInfo: any, userProf
     // Prepare the request body in the format expected by the create-project API
     const projectData = {
       // Client information (will be used to find existing client)
-      first_name: userProfile.first_name || "",
-      last_name: userProfile.last_name || "",
-      company_name:
-        userProfile.company_name || userProfile.first_name + " " + userProfile.last_name,
+      firstName: userProfile.firstName || "",
+      lastName: userProfile.lastName || "",
+      companyName: userProfile.companyName || userProfile.firstName + " " + userProfile.lastName,
       email: userProfile.email,
-      author_id: userId, // Use existing client ID
+      authorId: userId, // Use existing client ID
 
       // Project information
       title: projectInfo.title,
       address: projectInfo.address,
       description: projectInfo.description || "",
-      sq_ft: projectInfo.sq_ft?.toString() || "",
-      new_construction: projectInfo.new_construction || false,
+      sqFt: projectInfo.sqFt?.toString() || "",
+      newConstruction: projectInfo.newConstruction || false,
 
       // Default arrays for required fields
       building: [],
       project: [],
       service: [],
-      requested_docs: [],
+      requestedDocs: [],
     };
 
     console.log("🏗️ [EMAIL-WEBHOOK] Project data for API:", JSON.stringify(projectData, null, 2));
@@ -624,20 +620,19 @@ async function createProjectFromEmail(userId: string, projectInfo: any, userProf
     }
 
     const finalProjectData = {
-      author_id: userId,
+      authorId: userId,
       title: projectData.title,
       address: projectData.address?.replace(/, USA$/, "") || projectData.address,
       description: projectData.description,
-      sq_ft:
-        projectData.sq_ft && projectData.sq_ft.trim() !== "" ? parseInt(projectData.sq_ft) : null,
-      new_construction: projectData.new_construction === true,
+      sqFt: projectData.sqFt && projectData.sqFt.trim() !== "" ? parseInt(projectData.sqFt) : null,
+      newConstruction: projectData.newConstruction === true,
       building: projectData.building || [],
       project: projectData.project || [],
       service: projectData.service || [],
-      requested_docs: projectData.requested_docs || [],
+      requestedDocs: projectData.requestedDocs || [],
       status: 0, // Initial status - will be updated to trigger notifications
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
     };
 
     console.log(
@@ -737,13 +732,13 @@ async function uploadAttachments(projectId: number, attachments: any[]) {
 
       // Add to files table
       const { error: dbError } = await supabase.from("files").insert({
-        project_id: projectId,
-        author_id: null, // Will be set when user views the file
-        file_path: `${projectId}/${filename}`,
-        file_name: attachment.filename,
-        file_type: attachment.contentType,
-        file_size: buffer.length,
-        uploaded_at: new Date().toISOString(),
+        projectId: projectId,
+        authorId: null, // Will be set when user views the file
+        filePath: `${projectId}/${filename}`,
+        fileName: attachment.filename,
+        fileType: attachment.contentType,
+        fileSize: buffer.length,
+        uploadedAt: new Date().toISOString(),
         status: 1, // Pending review
       });
 
@@ -771,12 +766,12 @@ async function createInitialDiscussion(
       return;
     }
     const { error } = await supabase.from("discussion").insert({
-      project_id: projectId,
-      author_id: userId,
+      projectId: projectId,
+      authorId: userId,
       message: `Project created from email:\n\nSubject: ${emailData.subject}\n\n${emailData.text || emailData.html || "No email content"}`,
       internal: false,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
     });
 
     if (error) {

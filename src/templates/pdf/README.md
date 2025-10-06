@@ -89,10 +89,10 @@ src/templates/pdf/
 
 ### Client Data
 
-- `{{COMPANY_NAME}}` - Client name
+- `{{companyName}}` - Client name
 - `{{CLIENT_EMAIL}}` - Client email
 - `{{PHONE}}` - Client phone
-- `{{COMPANY_NAME}}` - Client company
+- `{{companyName}}` - Client company
 
 ### Status & Staff
 

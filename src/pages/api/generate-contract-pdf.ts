@@ -24,7 +24,7 @@ export const POST: APIRoute = async ({ request }) => {
     // Get project data
     const { data: project, error: projectError } = await supabase
       .from("projects")
-      .select("id, title, address, author_id, sq_ft, new_construction")
+      .select("id, title, address, authorId, sqFt, newConstruction")
       .eq("id", projectId)
       .single();
 
@@ -39,8 +39,8 @@ export const POST: APIRoute = async ({ request }) => {
     // Get client profile data
     const { data: profile, error: profileError } = await supabase
       .from("profiles")
-      .select("company_name, first_name, last_name")
-      .eq("id", project.author_id)
+      .select("companyName, firstName, lastName")
+      .eq("id", project.authorId)
       .single();
 
     if (profileError) {
@@ -54,7 +54,7 @@ export const POST: APIRoute = async ({ request }) => {
     // Update project with contract PDF URL
     const { error: updateError } = await supabase
       .from("projects")
-      .update({ contract_pdf_url: contractUrl })
+      .update({ contractPdfUrl: contractUrl })
       .eq("id", projectId);
 
     if (updateError) {
@@ -151,7 +151,7 @@ async function generateContractPDF(
     }
 
     // insert the following into the contractHTML
-    const signatureHTMLBlock = `<p>Signed by: {{COMPANY_NAME}}</p>
+    const signatureHTMLBlock = `<p>Signed by: {{companyName}}</p>
     <p>Signed on: {{PROJECT_SIGNATURE_DATE}}</p>
     <p>Signed at: {{PROJECT_SIGNATURE_TIME}}</p>
     <p>Signed IP: {{PROJECT_SIGNATURE_IP}}</p>
@@ -221,12 +221,12 @@ async function generateContractPDF(
       description: "Generated contract with digital signature",
       customVersionNumber: 999, // Set version to 999 to match other generated PDFs
       currentUser: {
-        id: project.author_id,
+        id: project.authorId,
         // Add minimal required User properties for type safety
         app_metadata: {},
         user_metadata: {},
         aud: "authenticated",
-        created_at: new Date().toISOString(),
+        createdAt: new Date().toISOString(),
       } as any, // Type assertion to bypass strict User type checking
     });
 

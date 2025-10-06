@@ -84,9 +84,9 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         }
         // Get recent chat history using admin client with timeout handling
         const historyPromise = supabaseAdmin
-          .from("chat_messages")
+          .from("chatMessages")
           .select("*")
-          .order("created_at", { ascending: false })
+          .order("createdAt", { ascending: false })
           .limit(50);
 
         const timeoutPromise = new Promise((_, reject) =>
@@ -154,11 +154,11 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         }
         // Save message to database using admin client to bypass RLS
         const { data: savedMessage, error: messageError } = await supabaseAdmin
-          .from("chat_messages")
+          .from("chatMessages")
           .insert({
-            user_id: userId,
-            user_name: userName,
-            user_role: userRole,
+            userId: userId,
+            copanyName: userName,
+            role: userRole,
             message: message,
             timestamp: new Date().toISOString(),
           })
@@ -243,9 +243,9 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         }
 
         const { data: recentMessages, error: recentError } = await supabaseAdmin
-          .from("chat_messages")
+          .from("chatMessages")
           .select("*")
-          .order("created_at", { ascending: false })
+          .order("createdAt", { ascending: false })
           .limit(50);
 
         if (recentError) {

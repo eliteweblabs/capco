@@ -25,7 +25,7 @@ export const POST: APIRoute = async ({ request }): Promise<Response> => {
       .from("notifications")
       .update({ viewed: true })
       .in("id", notificationIds)
-      .eq("user_id", userId)
+      .eq("userId", userId)
       .select();
 
     if (error) {

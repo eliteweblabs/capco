@@ -15,7 +15,7 @@ export const OPTIONS: APIRoute = async () => {
 export const POST: APIRoute = async ({ request, cookies }) => {
   try {
     const body = await request.json();
-    const { project, signature, signed_at, currentUser } = body;
+    const { project, signature, signedAt, currentUser } = body;
     const projectId = project.id;
 
     // Extract IP address from request headers
@@ -48,7 +48,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     console.log("📝 [SAVE-SIGNATURE] Received request:", {
       projectId,
       signatureLength: signature?.length || 0,
-      signed_at,
+      signedAt,
     });
 
     // Validate projectId is a number
@@ -85,7 +85,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       contractPdfUrl = await generateContractPDF(
         projectId,
         signature,
-        signed_at,
+        signedAt,
         userId,
         baseUrl,
         clientIP
@@ -95,12 +95,12 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       console.warn("⚠️ [SAVE-SIGNATURE] PDF generation failed, continuing without PDF:", pdfError);
     }
 
-    // Update the project with signature data using contact_data structure
+    // Update the project with signature data using contractData structure
     const updateData = {
-      contact_data: {
+      contractData: {
         image: signature,
-        signed_date: new Date(signed_at || new Date()).toLocaleDateString(),
-        signed_time: new Date(signed_at || new Date()).toLocaleTimeString(),
+        signed_date: new Date(signedAt || new Date()).toLocaleDateString(),
+        signed_time: new Date(signedAt || new Date()).toLocaleTimeString(),
         ip_address: clientIP,
       },
     };
@@ -177,7 +177,7 @@ async function generateContractPDF(
       throw new Error("Failed to fetch project data");
     }
 
-    // Prepare signature data for contact_data structure
+    // Prepare signature data for contractData structure
     const signedDate = new Date(signedAt);
     const contactData = {
       image: signature,

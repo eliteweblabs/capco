@@ -1,572 +1,36 @@
 import { replacePlaceholders } from "@/lib/placeholder-utils";
 import type { APIRoute } from "astro";
-import { checkAuth } from "../../lib/auth";
 import { SimpleProjectLogger } from "../../lib/simple-logging";
 import { supabase } from "../../lib/supabase";
 import { supabaseAdmin } from "../../lib/supabase-admin";
 import { getApiBaseUrl } from "../../lib/url-utils";
-// Simple email validation
-const validateEmail = (email: string): string | null => {
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  return emailRegex.test(email) ? null : "Invalid email format";
-};
+// Import validateEmail from ux-utils and getCarrierGateway from sms-utils
+import { createDatabaseObject } from "../../lib/database-field-mapper";
+import { FORM_FIELDS, getFormField } from "../../lib/form-utils";
+import { getCarrierGateway } from "../../lib/sms-utils";
+import { validateEmail } from "../../lib/ux-utils";
 
-export const POST: APIRoute = async ({ request, cookies }) => {
-  // console.log("=== CREATE STAFF API CALLED ===");
-  // console.log("Request headers:", Object.fromEntries(request.headers.entries()));
-  try {
-    // console.log("1. Starting create-user endpoint");
-
-    // Check if Supabase is configured
-    // console.log("2. Checking Supabase configuration:", !!supabase);
-    if (!supabase || !supabaseAdmin) {
-      console.log("ERROR: Supabase not configured");
-      return new Response(
-        JSON.stringify({
-          success: false,
-          error: "Supabase is not configured",
-        }),
-        {
-          status: 500,
-          headers: { "Content-Type": "application/json" },
-        }
-      );
-    }
-
-    const { currentUser } = await checkAuth(cookies);
-    let body;
-    let first_name,
-      last_name,
-      company_name,
-      email,
-      phone,
-      staffRole,
-      mobile_carrier,
-      sms_alerts,
-      password;
-
-    try {
-      body = await request.json();
-      ({
-        first_name,
-        last_name,
-        company_name,
-        email,
-        phone,
-        role: staffRole,
-        mobile_carrier,
-        sms_alerts,
-        password,
-      } = body);
-    } catch (parseError) {
-      console.error("Request body parsing error:", parseError);
-      return new Response(
-        JSON.stringify({
-          success: false,
-          error: "Invalid request body. Please check the data format.",
-          details: parseError instanceof Error ? parseError.message : "Unknown parsing error",
-        }),
-        {
-          status: 400,
-          headers: { "Content-Type": "application/json" },
-        }
-      );
-    }
-
-    // Validate required fields
-    // console.log("8. Validating required fields...");
-    if (!first_name?.trim() || !last_name?.trim() || !email?.trim() || !staffRole?.trim()) {
-      console.log("ERROR: Missing required fields:", {
-        first_name: !!first_name?.trim(),
-        last_name: !!last_name?.trim(),
-        email: !!email?.trim(),
-        role: !!staffRole?.trim(),
-      });
-      return new Response(
-        JSON.stringify({
-          success: false,
-          error: "First name, last name, email, and role are required.",
-          notification: {
-            type: "error",
-            title: "Missing Required Fields",
-            message: "Please provide first name, last name, email, and role for the new user.",
-            duration: 5000,
-          },
-        }),
-        {
-          status: 400,
-          headers: { "Content-Type": "application/json" },
-        }
-      );
-    }
-
-    // Validate email format
-    const emailError = validateEmail(email);
-    if (emailError) {
-      return new Response(
-        JSON.stringify({
-          success: false,
-          error: emailError,
-          notification: {
-            type: "error",
-            title: "Invalid Email",
-            message: emailError,
-            duration: 5000,
-          },
-        }),
-        {
-          status: 400,
-          headers: { "Content-Type": "application/json" },
-        }
-      );
-    }
-
-    // Validate role
-    if (!["Admin", "Staff", "Client"].includes(staffRole)) {
-      return new Response(
-        JSON.stringify({
-          success: false,
-          error: "Invalid role. Must be 'Admin', 'Staff', or 'Client'.",
-          notification: {
-            type: "error",
-            title: "Invalid Role",
-            message: "Please select a valid role: Admin, Staff, or Client.",
-            duration: 5000,
-          },
-        }),
-        {
-          status: 400,
-          headers: { "Content-Type": "application/json" },
-        }
-      );
-    }
-
-    // Use provided password or generate a temporary one
-    const tempPassword = password?.trim() || generateTempPassword();
-
-    // Create user in Supabase Auth (requires service role key)
-    const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
-      email: email.trim().toLowerCase(),
-      password: tempPassword,
-      email_confirm: false, // Auto-confirm email
-      user_metadata: {
-        full_name: company_name?.trim() || `${first_name.trim()} ${last_name.trim()}`,
-        first_name: first_name.trim(),
-        last_name: last_name.trim(),
-        company_name: company_name?.trim() || null,
-        phone: phone?.trim() || null,
-        mobile_carrier: mobile_carrier?.trim() || null,
-        sms_alerts: sms_alerts || false,
-        role: staffRole,
-        email: email.trim().toLowerCase(),
-        created_by_admin: true,
-        must_change_password: true,
-      },
-    });
-
-    if (authError) {
-      console.error("Supabase auth error:", authError);
-
-      // Handle specific error cases
-      if (authError.message.includes("already registered")) {
-        return new Response(
-          JSON.stringify({
-            success: false,
-            error: "A user with this email already exists.",
-            notification: {
-              type: "error",
-              title: "User Already Exists",
-              message: "A user with this email address already exists in the system.",
-              duration: 5000,
-            },
-          }),
-          {
-            status: 409,
-            headers: { "Content-Type": "application/json" },
-          }
-        );
-      }
-
-      return new Response(
-        JSON.stringify({
-          success: false,
-          error: "Failed to create user account. Please try again.",
-          details: authError.message,
-          notification: {
-            type: "error",
-            title: "User Creation Failed",
-            message: "Failed to create user account. Please try again.",
-            duration: 5000,
-          },
-        }),
-        {
-          status: 500,
-          headers: { "Content-Type": "application/json" },
-        }
-      );
-    }
-
-    // Wait a moment for the trigger to complete, then upsert the profile
-    // The SQL trigger creates a basic profile, we upsert to handle race conditions
-    await new Promise((resolve) => setTimeout(resolve, 100));
-
-    const profileData = {
-      id: authData.user.id,
-      email: email.trim().toLowerCase(),
-      first_name: first_name.trim(),
-      last_name: last_name.trim(),
-      company_name: company_name?.trim() || null,
-      phone: phone?.trim() || null,
-      mobile_carrier: mobile_carrier?.trim() || null,
-      sms_alerts: sms_alerts || false,
-      role: staffRole,
-      updated_at: new Date().toISOString(),
-    };
-
-    const { error: profileError } = await supabaseAdmin.from("profiles").upsert(profileData, {
-      onConflict: "id",
-      ignoreDuplicates: false,
-    });
-
-    if (profileError) {
-      console.error("Profile creation error:", profileError);
-
-      // Try to delete the auth user if profile creation fails
-      try {
-        await supabaseAdmin.auth.admin.deleteUser(authData.user.id);
-      } catch (deleteError) {
-        console.error("Failed to cleanup auth user:", deleteError);
-      }
-
-      return new Response(
-        JSON.stringify({
-          success: false,
-          error: "Failed to update user profile. Please try again.",
-          details: profileError.message,
-          code: profileError.code,
-          notification: {
-            type: "error",
-            title: "Profile Update Failed",
-            message: "Failed to update user profile. Please try again.",
-            duration: 5000,
-          },
-        }),
-        {
-          status: 500,
-          headers: { "Content-Type": "application/json" },
-        }
-      );
-    }
-
-    // Calculate display name for notifications
-    const displayName = company_name?.trim() || `${first_name.trim()} ${last_name.trim()}`;
-
-    // Send email notifications to all admin and staff users, plus the new user
-    console.log("📧 [CREATE-USER] Sending email notifications...");
-
-    // Define base URL for email API calls
-    const baseUrl = getApiBaseUrl(request);
-    console.log("🔗 [CREATE-USER] Base URL for email delivery:", baseUrl);
-
-    try {
-      // Get all admin and staff users
-      const { data: adminAndStaffUsers, error: userError } = await supabase
-        .from("profiles")
-        .select("id, first_name, last_name, role")
-        .in("role", ["Admin"]);
-
-      if (userError) {
-        console.error("📧 [CREATE-USER] Failed to fetch admin and staff users:", userError);
-      } else {
-        console.log(
-          "📧 [CREATE-USER] Found admin and staff users:",
-          adminAndStaffUsers?.length || 0
-        );
-
-        // Prepare email content with proper name formatting
-        const displayName = company_name?.trim() || `${first_name.trim()} ${last_name.trim()}`;
-
-        const adminContent = `A new user account has been created successfully:<br><br>
-
-<b>Company Name:</b> ${displayName}<br>
-<b>Email:</b> ${email}<br>
-<b>First Name:</b> ${first_name}<br>
-<b>Last Name:</b> ${last_name}<br>
-<b>Phone:</b> ${phone || "Not provided"}<br><br>`;
-
-        // Send email to all admin and staff users (excluding the newly created user)
-        const filteredAdminStaff = (adminAndStaffUsers || []).filter((user) => {
-          // Filter out the newly created user
-          return user.id !== authData.user.id;
-        });
-
-        for (const user of filteredAdminStaff) {
-          try {
-            // Get user's email using admin client
-            const { data: authUser, error: authError } = await supabaseAdmin.auth.admin.getUserById(
-              user.id
-            );
-
-            if (authError || !authUser?.user?.email) {
-              console.log(`📧 [CREATE-USER] No email found for ${user.role} ${user.id}, skipping`);
-              continue;
-            }
-
-            const adminEmail = authUser.user.email;
-
-            // THIS IS TO THE ADMINS EMAIL
-            // Send email using direct fetch to email-delivery API
-            try {
-              const emailData = {
-                emailType: "notification", // Admin notification, not a magic link
-                usersToNotify: [adminEmail], // Use resolved user email
-                emailSubject: `New User → ${displayName} → ${staffRole}`,
-                emailContent: adminContent,
-                buttonText: "View Users",
-                buttonLink: "/admin/users", // Regular link, not magic link
-              };
-
-              const emailResult = await fetch(`${baseUrl}/api/email-delivery`, {
-                method: "POST",
-                headers: {
-                  "Content-Type": "application/json",
-                },
-                body: JSON.stringify(emailData),
-              });
-
-              const result = await emailResult.json();
-              if (result.success) {
-                console.log(`📧 [CREATE-USER] ${user.role} notification sent to ${adminEmail}`);
-              } else {
-                console.error(
-                  `📧 [CREATE-USER] Failed to send ${user.role} notification to ${adminEmail}:`,
-                  result.error
-                );
-              }
-            } catch (emailError) {
-              console.error(
-                `📧 [CREATE-USER] Error sending ${user.role} notification to ${user.id}:`,
-                emailError
-              );
-            }
-          } catch (emailError) {
-            console.error(
-              `📧 [CREATE-USER] Error sending ${user.role} notification to ${user.id}:`,
-              emailError
-            );
-          }
-        }
-
-        let newClientContent;
-        // this is to the new user
-
-        // this is to the new user
-        // get globalOptions.welcomeStaffEmailContent from the database
-        const { data: globalOptions, error: globalOptionsError } = await supabase
-          .from("globalOptions")
-          .select("value")
-          .eq("key", "welcomeClientEmailContent");
-        if (globalOptionsError) {
-          console.error("📧 [CREATE-USER] Failed to fetch global options:", globalOptionsError);
-        } else if (!globalOptions) {
-          console.error("📧 [CREATE-USER] No global options found");
-        } else {
-          const globalOption = globalOptions[0];
-          const dirtyNewClientContent = globalOption?.value || "";
-          newClientContent = replacePlaceholders(dirtyNewClientContent, {
-            project: {
-              id: 0,
-              address: "",
-              title: "",
-              authorProfile: {
-                company_name: displayName,
-                email: email,
-                first_name: first_name,
-                last_name: last_name,
-                phone: phone || "Not provided",
-              },
-            },
-          });
-        }
-
-        newClientContent += `
-        <b>SMS Alerts:</b> ${sms_alerts ? "Enabled" : "Disabled"}<br>
-        <b>Mobile Carrier:</b> ${mobile_carrier || "Not provided"}<br>
-        <b>Registration Date:</b> ${new Date().toLocaleDateString()}<br><br><br>`;
-
-        let newStaffContent;
-        // this is to the new user
-
-        // this is to the new user
-        // get globalOptions.welcomeStaffEmailContent from the database
-        const { data: globalOptions2, error: globalOptionsError2 } = await supabase
-          .from("globalOptions")
-          .select("value")
-          .eq("key", "welcomeStaffEmailContent");
-        if (globalOptionsError2) {
-          console.error("📧 [CREATE-USER] Failed to fetch global options:", globalOptionsError2);
-        } else if (!globalOptions2) {
-          console.error("📧 [CREATE-USER] No global options found");
-        } else {
-          const globalOption = globalOptions2[0];
-          const dirtyNewClientContent = globalOption?.value || "";
-          newStaffContent = replacePlaceholders(dirtyNewClientContent, {
-            project: {
-              id: 0,
-              address: "",
-              title: "",
-              authorProfile: {
-                company_name: displayName,
-                email: email,
-                first_name: first_name,
-                last_name: last_name,
-                phone: phone || "Not provided",
-              },
-            },
-          });
-        }
-
-        newStaffContent += `
-<b>SMS Alerts:</b> ${sms_alerts ? "Enabled" : "Disabled"}<br>
-<b>Mobile Carrier:</b> ${mobile_carrier || "Not provided"}<br>
-<b>Registration Date:</b> ${new Date().toLocaleDateString()}<br><br><br>`;
-
-        const welcomeContent = staffRole === "Client" ? newClientContent : newStaffContent;
-
-        // Send welcome email using the email delivery API with full URL
-        const emailDeliveryUrl = `${baseUrl}/api/email-delivery`;
-        // console.log("🔗 [CREATE-USER] Calling email delivery API:", emailDeliveryUrl);
-        // console.log("🔗 [CREATE-USER] Base URL for email delivery:", baseUrl);
-        // console.log("🔗 [CREATE-USER] Request URL:", request.url);
-        // console.log("🔗 [CREATE-USER] Environment SITE_URL:", process.env.SITE_URL);
-        // console.log("🔗 [CREATE-USER] Import meta SITE_URL:", import.meta.env.SITE_URL);
-
-        const emailPayload = {
-          emailType: "magic_link",
-          usersToNotify: [email], // Array of email strings
-          emailSubject: `Welcome to ${process.env.GLOBAL_COMPANY_NAME} → ${displayName}`,
-          emailContent: welcomeContent,
-          buttonText: "Let's Get Started →",
-          buttonLink: "/project/dashboard", // Will be converted to magic link by email-delivery.ts
-        };
-
-        // console.log("🔗 [CREATE-USER] Email payload being sent:", {
-        //   emailType: emailPayload.emailType,
-        //   usersToNotify: emailPayload.usersToNotify,
-        //   emailSubject: emailPayload.emailSubject,
-        //   buttonText: emailPayload.buttonText,
-        //   buttonLink: emailPayload.buttonLink,
-        // });
-
-        const userEmailResponse = await fetch(emailDeliveryUrl, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(emailPayload),
-        });
-
-        if (userEmailResponse.ok) {
-          console.log(`📧 [CREATE-USER] Welcome email sent to ${email}`);
-        } else {
-          console.error(
-            `📧 [CREATE-USER] Failed to send welcome email to ${email}:`,
-            await userEmailResponse.text()
-          );
-        }
-      }
-    } catch (notificationError) {
-      console.error("📧 [CREATE-USER] Email notification error:", notificationError);
-      // Don't fail the user creation if email notifications fail
-    }
-
-    console.log(`Temporary password for ${email}: ${tempPassword}`);
-
-    // Log admin user creation
-    try {
-      await SimpleProjectLogger.addLogEntry(
-        0, // System log
-        "admin_action",
-        `Admin created new ${staffRole} user: ${email}`,
-        {
-          newUserEmail: email,
-          role: staffRole,
-          userId: authData.user.id,
-          firstName: first_name.trim(),
-          lastName: last_name.trim(),
-          companyName: company_name?.trim() || null,
-          phone: phone?.trim() || null,
-          userAgent: request.headers.get("user-agent"),
-          ip: request.headers.get("x-forwarded-for") || "unknown",
-        }
-      );
-    } catch (logError) {
-      console.error("Error logging admin user creation:", logError);
-    }
-
-    return new Response(
-      JSON.stringify({
-        success: true,
-        message: "User created successfully",
-        user: {
-          id: authData.user.id,
-          email: authData.user.email,
-          first_name: first_name.trim(),
-          last_name: last_name.trim(),
-          role: staffRole,
-        },
-        // Add notification data for client-side modal
-        notification: {
-          type: "success",
-          title: "User Created Successfully",
-          message: `<b>${displayName}</b> has been created as <b>${staffRole}</b>. They will receive a magic link to access their account.`,
-          duration: 5000,
-        },
-      }),
-      {
-        status: 201,
-        headers: { "Content-Type": "application/json" },
-      }
-    );
-  } catch (error) {
-    console.error("Create staff error:", error);
-    console.error("Error stack:", error instanceof Error ? error.stack : "No stack trace");
-    console.error("Error message:", error instanceof Error ? error.message : error);
-    console.error("Error type:", typeof error);
-    console.error("Error constructor:", error?.constructor?.name);
-
-    return new Response(
-      JSON.stringify({
-        success: false,
-        error: "Internal server error. Please try again.",
-        details: error instanceof Error ? error.message : "Unknown error occurred",
-        errorType: error?.constructor?.name || "Unknown",
-      }),
-      {
-        status: 500,
-        headers: { "Content-Type": "application/json" },
-      }
-    );
-  }
-};
-
-// Generate a secure temporary password
-function generateTempPassword(): string {
+/**
+ * Generates a secure password with mixed case, numbers, and special characters
+ * @returns A secure password string
+ */
+function generateSecurePassword(): string {
   const lowercase = "abcdefghijklmnopqrstuvwxyz";
   const uppercase = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
   const numbers = "0123456789";
-  const symbols = "!@#$%^&*";
+  const special = "!@#$%^&*";
 
-  // Ensure at least one character from each type
   let password = "";
+
+  // Ensure at least one character from each category
   password += lowercase[Math.floor(Math.random() * lowercase.length)];
   password += uppercase[Math.floor(Math.random() * uppercase.length)];
   password += numbers[Math.floor(Math.random() * numbers.length)];
-  password += symbols[Math.floor(Math.random() * symbols.length)];
+  password += special[Math.floor(Math.random() * special.length)];
 
-  // Add 8 more random characters
-  const allChars = lowercase + uppercase + numbers + symbols;
-  for (let i = 0; i < 8; i++) {
+  // Fill the rest with random characters (total length 12)
+  const allChars = lowercase + uppercase + numbers + special;
+  for (let i = 4; i < 12; i++) {
     password += allChars[Math.floor(Math.random() * allChars.length)];
   }
 
@@ -576,3 +40,371 @@ function generateTempPassword(): string {
     .sort(() => Math.random() - 0.5)
     .join("");
 }
+
+export const POST: APIRoute = async ({ request, cookies }) => {
+  console.log("=== CREATE USER API CALLED ===");
+  console.log("🔍 [CREATE-USER] Request headers:", Object.fromEntries(request.headers.entries()));
+  console.log("🔍 [CREATE-USER] Request content-type:", request.headers.get("content-type"));
+
+  // Check if Supabase is configured
+  if (!supabase || !supabaseAdmin) {
+    console.error("🔐 [CREATE-USER] ERROR: Supabase not configured");
+    return new Response(
+      JSON.stringify({
+        success: false,
+        error: "Supabase is not configured",
+      }),
+      {
+        status: 500,
+        headers: { "Content-Type": "application/json" },
+      }
+    );
+  }
+
+  try {
+    // 1. Get form data
+    console.log("🔍 [CREATE-USER] Attempting to parse form data...");
+    const formData = await request.formData();
+    console.log("🔍 [CREATE-USER] Form data parsed successfully");
+
+    const email = getFormField(formData, FORM_FIELDS.email);
+    const password = getFormField(formData, FORM_FIELDS.password);
+    const firstName = getFormField(formData, FORM_FIELDS.firstName);
+    const lastName = getFormField(formData, FORM_FIELDS.lastName);
+    const companyName = getFormField(formData, FORM_FIELDS.companyName);
+    const phone = getFormField(formData, FORM_FIELDS.phone);
+    const smsAlerts = getFormField(formData, FORM_FIELDS.smsAlerts, false);
+    const mobileCarrier = getFormField(formData, FORM_FIELDS.mobileCarrier);
+    const role = getFormField(formData, FORM_FIELDS.role) || "Client";
+
+    console.log("🔍 [CREATE-USER] Extracted fields:", {
+      email: email ? "***@***" : null,
+      password: password ? "***" : null,
+      firstName,
+      lastName,
+      companyName,
+      phone,
+      smsAlerts,
+      mobileCarrier,
+      role,
+    });
+
+    // 2. Validate required fields
+    console.log("🔍 [CREATE-USER] Validating required fields...");
+    if (!email || !firstName || !lastName || !companyName) {
+      console.log("❌ [CREATE-USER] Missing required fields:", {
+        email: !!email,
+        firstName: !!firstName,
+        lastName: !!lastName,
+        companyName: !!companyName,
+      });
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: "Email, first name, last name, and company name are required",
+        }),
+        { status: 400, headers: { "Content-Type": "application/json" } }
+      );
+    }
+    let finalPassword = "";
+    // Generate password if not provided (for staff creation)
+    if (!password) {
+      finalPassword = generateSecurePassword();
+      console.log("🔍 [CREATE-USER] Generated secure password for staff creation");
+    } else {
+      finalPassword = password;
+    }
+
+    console.log("✅ [CREATE-USER] All required fields present");
+
+    // 3. Validate email format
+    console.log("🔍 [CREATE-USER] Validating email format...");
+    const emailError = validateEmail(email);
+    if (emailError) {
+      console.log("❌ [CREATE-USER] Email validation failed:", emailError);
+      return new Response(JSON.stringify({ success: false, error: emailError }), {
+        status: 400,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+    console.log("✅ [CREATE-USER] Email format valid");
+
+    // 4. Validate role
+    console.log("🔍 [CREATE-USER] Validating role...");
+    if (!["Admin", "Staff", "Client"].includes(role)) {
+      console.log("❌ [CREATE-USER] Invalid role:", role);
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: "Invalid role. Must be 'Admin', 'Staff', or 'Client'.",
+        }),
+        { status: 400, headers: { "Content-Type": "application/json" } }
+      );
+    }
+    console.log("✅ [CREATE-USER] Role valid:", role);
+
+    // 5. Create user in Supabase Auth
+    console.log("🔐 [CREATE-USER] Creating user in Supabase Auth...");
+    const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
+      email: email.trim().toLowerCase(),
+      password: finalPassword.trim(),
+      email_confirm: true, // Auto-confirm email
+      user_metadata: {
+        firstName: firstName.trim(),
+        lastName: lastName.trim(),
+        companyName: companyName?.trim() || null,
+        phone: phone?.trim() || null,
+        mobileCarrier: smsAlerts ? getCarrierGateway(mobileCarrier || null) : null,
+        smsAlerts: smsAlerts,
+      },
+    });
+
+    if (authError) {
+      console.error("❌ [CREATE-USER] Auth creation error:", authError);
+
+      // Handle specific error cases
+      let errorMessage = authError.message || "Failed to create user account";
+      let statusCode = 500;
+
+      // Check for duplicate email errors
+      if (
+        authError.message &&
+        (authError.message.includes("User already registered") ||
+          authError.message.includes("already been registered") ||
+          authError.message.includes("duplicate key") ||
+          authError.message.includes("already exists"))
+      ) {
+        errorMessage =
+          "A user with this email address has already been registered. Please try logging in instead.";
+        statusCode = 409; // Conflict status code
+      }
+
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: errorMessage,
+        }),
+        { status: statusCode, headers: { "Content-Type": "application/json" } }
+      );
+    }
+
+    if (!authData.user) {
+      console.error("❌ [CREATE-USER] No user data returned from auth creation");
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: "User creation failed - no user data returned",
+        }),
+        { status: 500, headers: { "Content-Type": "application/json" } }
+      );
+    }
+    console.log("✅ [CREATE-USER] User created in Supabase Auth:", authData.user.id);
+
+    // 6. Create/update profile in database
+    console.log("💾 [CREATE-USER] Creating profile in database...");
+    const profileData = createDatabaseObject({
+      id: authData.user.id,
+      email: email.trim().toLowerCase(),
+      firstName: firstName.trim(),
+      lastName: lastName.trim(),
+      companyName: companyName?.trim() || null,
+      phone: phone?.trim() || null,
+      smsAlerts: smsAlerts,
+      mobileCarrier: smsAlerts ? getCarrierGateway(mobileCarrier || null) : null,
+      role: role,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    });
+
+    console.log("💾 [CREATE-USER] Profile data prepared:", {
+      id: profileData.id,
+      email: profileData.email,
+      firstName: profileData.firstName,
+      lastName: profileData.lastName,
+      role: profileData.role,
+    });
+
+    const { error: profileError } = await supabaseAdmin.from("profiles").upsert(profileData, {
+      onConflict: "id",
+      ignoreDuplicates: false,
+    });
+
+    if (profileError) {
+      console.error("❌ [CREATE-USER] Profile creation error:", profileError);
+      // Don't fail the entire request if profile creation fails
+    } else {
+      console.log("✅ [CREATE-USER] Profile created successfully");
+    }
+
+    // 7. Send emails (both user and admin notifications)
+    console.log("📧 [CREATE-USER] Preparing email notifications...");
+    const displayName = companyName?.trim() || `${firstName.trim()} ${lastName.trim()}`;
+    console.log("📧 [CREATE-USER] Display name:", displayName);
+
+    // Get email templates from database
+    let userEmailContent = "";
+    let adminEmailContent = "";
+
+    // Get user email template
+    console.log("📧 [CREATE-USER] Fetching email template for role:", role);
+    const { data: userTemplate } = await supabase
+      .from("globalOptions")
+      .select("value")
+      .eq("key", role === "Client" ? "welcomeClientEmailContent" : "welcomeStaffEmailContent")
+      .single();
+
+    if (userTemplate?.value) {
+      console.log("📧 [CREATE-USER] Email template found, processing placeholders...");
+      userEmailContent = replacePlaceholders(userTemplate.value, {
+        project: {
+          id: 0,
+          address: "",
+          title: "",
+          authorProfile: {
+            companyName: displayName,
+            email: email,
+            firstName: firstName,
+            lastName: lastName,
+            phone: phone || "Not provided",
+          },
+        },
+      });
+    } else {
+      console.log("⚠️ [CREATE-USER] No email template found, using default content");
+    }
+
+    // Add user details to email content
+    userEmailContent += `
+      <b>SMS Alerts:</b> ${smsAlerts ? "Enabled" : "Disabled"}<br>
+      <b>Mobile Carrier:</b> ${mobileCarrier || "Not provided"}<br>
+      <b>Registration Date:</b> ${new Date().toLocaleDateString()}<br><br>`;
+
+    // Prepare admin notification content
+    adminEmailContent = `A new user account has been created successfully:<br><br>
+      <b>Company Name:</b> ${displayName}<br>
+      <b>Email:</b> ${email}<br>
+      <b>First Name:</b> ${firstName}<br>
+      <b>Last Name:</b> ${lastName}<br>
+      <b>Phone:</b> ${phone || "Not provided"}<br>
+      <b>SMS Alerts:</b> ${smsAlerts ? "Enabled" : "Disabled"}<br>
+      <b>Mobile Carrier:</b> ${mobileCarrier || "Not provided"}<br>
+      <b>Registration Date:</b> ${new Date().toLocaleDateString()}<br><br>`;
+
+    // Send welcome email to user
+    console.log("📧 [CREATE-USER] Sending welcome email to user...");
+    try {
+      const userEmailResponse = await fetch(`${getApiBaseUrl()}/api/email-delivery`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          emailType: "magicLink",
+          trackLinks: false,
+          usersToNotify: [email],
+          emailSubject: `Welcome to CAPCo Fire Protection Systems → ${displayName}`,
+          emailContent: userEmailContent,
+          buttonText: "Access Your Dashboard",
+          buttonLink: "/dashboard",
+        }),
+      });
+
+      if (!userEmailResponse.ok) {
+        console.error("❌ [CREATE-USER] Failed to send welcome email to user");
+      } else {
+        console.log("✅ [CREATE-USER] Welcome email sent successfully");
+      }
+    } catch (emailError) {
+      console.error("❌ [CREATE-USER] Error sending welcome email:", emailError);
+    }
+
+    // Send notification email to admins
+    console.log("📧 [CREATE-USER] Sending admin notifications...");
+    try {
+      const adminResponse = await fetch(`${getApiBaseUrl()}/api/get-user-emails-by-role`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ roles: ["Admin", "Staff"] }),
+      });
+
+      const adminUsers = await adminResponse.json();
+      console.log("📧 [CREATE-USER] Found admin users:", adminUsers.emails?.length || 0);
+
+      if (adminUsers.emails && adminUsers.emails.length > 0) {
+        // Send notification to all admin emails
+        console.log("📧 [CREATE-USER] Sending notification to admin emails:", adminUsers.emails);
+        await fetch(`${getApiBaseUrl()}/api/email-delivery`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            emailType: "notification",
+            usersToNotify: adminUsers.emails,
+            emailSubject: `New User → ${displayName} → ${role}`,
+            emailContent: adminEmailContent,
+            buttonText: "View Users",
+            buttonLink: "/admin/users",
+          }),
+        });
+        console.log("✅ [CREATE-USER] Admin notifications sent");
+      }
+    } catch (adminError) {
+      console.error("❌ [CREATE-USER] Error sending admin notifications:", adminError);
+    }
+
+    // 8. Log the user creation
+    console.log("📝 [CREATE-USER] Logging user creation...");
+    try {
+      await SimpleProjectLogger.addLogEntry(
+        0, // System log
+        "userRegistration",
+        "New user created",
+        {
+          userId: authData.user.id,
+          firstName,
+          lastName,
+          companyName,
+          role,
+          phone: phone || null,
+          smsAlerts,
+          mobileCarrier: mobileCarrier || null,
+        }
+      );
+      console.log("✅ [CREATE-USER] User creation logged successfully");
+    } catch (logError) {
+      console.error("❌ [CREATE-USER] Error logging user creation:", logError);
+    }
+
+    // 9. Return success response
+    console.log("🎉 [CREATE-USER] User creation completed successfully!");
+    return new Response(
+      JSON.stringify({
+        success: true,
+        message: "User created successfully",
+        // Add notification data for client-side modal
+        notification: {
+          type: "success",
+          title: "User Created Successfully",
+          message: `<b>${displayName}</b> has been created as <b>${role}</b>. They will receive a magic link to access their account.`,
+          duration: 5000,
+        },
+
+        user: {
+          id: authData.user.id,
+          email: authData.user.email,
+          role: role,
+          firstName: firstName,
+          lastName: lastName,
+          companyName: companyName,
+        },
+      }),
+      { status: 200, headers: { "Content-Type": "application/json" } }
+    );
+  } catch (error) {
+    console.error("❌ [CREATE-USER] Create user error:", error);
+    return new Response(
+      JSON.stringify({
+        success: false,
+        error: "Internal server error. Please try again.",
+      }),
+      { status: 500, headers: { "Content-Type": "application/json" } }
+    );
+  }
+};

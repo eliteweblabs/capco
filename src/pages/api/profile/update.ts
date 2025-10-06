@@ -1,14 +1,8 @@
 import type { APIRoute } from "astro";
+import { convertDbToCamelCase } from "../../../lib/form-utils";
 import { SimpleProjectLogger } from "../../../lib/simple-logging";
-import { getCarrierInfo } from "../../../lib/sms-carriers";
+import { getCarrierGateway } from "../../../lib/sms-utils";
 import { supabase } from "../../../lib/supabase";
-
-// Helper function to get gateway domain from carrier key
-function getCarrierGateway(carrierKey: string | null): string | null {
-  if (!carrierKey) return null;
-  const carrier = getCarrierInfo(carrierKey);
-  return carrier?.gateway || null;
-}
 
 export const POST: APIRoute = async ({ request, cookies }) => {
   try {
@@ -68,13 +62,13 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     const { data: profile, error: updateError } = await supabase
       .from("profiles")
       .update({
-        company_name: companyName.trim(),
-        first_name: firstName.trim(),
-        last_name: lastName?.trim() || null,
+        companyName: companyName.trim(),
+        firstName: firstName.trim(),
+        lastName: lastName?.trim() || null,
         phone: phone?.trim() || null,
-        sms_alerts: smsAlerts,
-        mobile_carrier: smsAlerts ? getCarrierGateway(mobileCarrier?.trim() || null) : null,
-        updated_at: new Date().toISOString(),
+        smsAlerts: smsAlerts,
+        mobileCarrier: smsAlerts ? getCarrierGateway(mobileCarrier?.trim() || null) : null,
+        updatedAt: new Date().toISOString(),
       })
       .eq("id", userId)
       .select()
@@ -96,13 +90,13 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     }
 
     if (smsAlerts !== undefined) {
-      authUpdateData.sms_alerts = smsAlerts;
+      authUpdateData.smsAlerts = smsAlerts;
     }
 
     if (mobileCarrier !== undefined) {
       // Convert carrier key to gateway domain
       const gatewayDomain = getCarrierGateway(mobileCarrier?.trim());
-      authUpdateData.mobile_carrier = gatewayDomain;
+      authUpdateData.mobileCarrier = gatewayDomain;
     }
 
     if (Object.keys(authUpdateData).length > 0) {
@@ -120,7 +114,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     try {
       await SimpleProjectLogger.addLogEntry(
         0, // System log
-        "user_registration",
+        "userRegistration",
         "User profile updated",
         { oldData: oldProfile, newData: profile }
       );
@@ -131,7 +125,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     return new Response(
       JSON.stringify({
         message: "Profile updated successfully",
-        profile: profile,
+        profile: convertDbToCamelCase(profile),
       }),
       { status: 200, headers: { "Content-Type": "application/json" } }
     );

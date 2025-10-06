@@ -31,7 +31,7 @@ export const GET: APIRoute = async ({ url, cookies }) => {
     // First, verify the project exists and user has access
     const { data: project, error: projectError } = await supabase
       .from("projects")
-      .select("id, author_id, title")
+      .select("id, authorId, title")
       .eq("id", projectId)
       .single();
 
@@ -43,7 +43,7 @@ export const GET: APIRoute = async ({ url, cookies }) => {
     }
 
     // Check permissions - user must own the project or be admin/staff
-    const hasAccess = project.author_id === user.id || ["Admin", "Staff"].includes(role);
+    const hasAccess = project.authorId === user.id || ["Admin", "Staff"].includes(role);
 
     if (!hasAccess) {
       return new Response(JSON.stringify({ error: "Access denied" }), {
@@ -56,7 +56,7 @@ export const GET: APIRoute = async ({ url, cookies }) => {
     const { data: proposalInvoice, error: invoiceError } = await supabase
       .from("invoices")
       .select("id, subject, status")
-      .eq("project_id", projectId)
+      .eq("projectId", projectId)
       .eq("status", "proposal")
       .single();
 

@@ -5,12 +5,12 @@
 export interface Subject {
   id: number;
   title: string;
-  usage_count: number;
+  usageCount: number;
   description?: string;
   category?: string;
-  is_active: boolean;
-  created_at: string;
-  updated_at: string;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface Project {
@@ -18,9 +18,9 @@ export interface Project {
   title: string;
   address: string;
   status: number;
-  author_id: string;
-  created_at: string;
-  updated_at: string;
+  authorId: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface User {
@@ -35,21 +35,21 @@ export interface User {
 
 export interface File {
   id: number;
-  project_id: number;
-  author_id: string;
-  file_path: string;
-  uploaded_at: string;
+  projectId: number;
+  authorId: string;
+  filePath: string;
+  uploadedAt: string;
   status: string;
 }
 
 export interface Discussion {
   id: number;
-  project_id: number;
-  author_id: string;
+  projectId: number;
+  authorId: string;
   message: string;
   is_client_visible: boolean;
-  created_at: string;
-  updated_at: string;
+  createdAt: string;
+  updatedAt: string;
   is_completed: boolean;
-  company_name?: string;
+  companyName?: string;
 }

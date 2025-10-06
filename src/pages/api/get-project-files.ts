@@ -20,9 +20,9 @@ export const GET: APIRoute = async ({ request, cookies, url }) => {
     }
 
     const searchParams = url.searchParams;
-    const project_id = searchParams.get("project_id");
+    const projectId = searchParams.get("projectId");
 
-    if (!project_id) {
+    if (!projectId) {
       return new Response(JSON.stringify({ success: false, error: "Project ID is required" }), {
         status: 400,
         headers: { "Content-Type": "application/json" },
@@ -31,7 +31,7 @@ export const GET: APIRoute = async ({ request, cookies, url }) => {
 
     // Use the media system to get files with proper signed URLs
     const result = await getMedia({
-      projectId: project_id,
+      projectId: projectId,
       targetLocation: "documents",
       currentUser,
     });

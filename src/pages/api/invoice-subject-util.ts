@@ -24,10 +24,10 @@ export const GET: APIRoute = async ({ url, cookies }) => {
 
     let query = supabase
       .from("subjects")
-      .select("id, title, description, category, usage_count, created_at")
-      .eq("is_active", true)
-      .order("usage_count", { ascending: false })
-      .order("created_at", { ascending: false })
+      .select("id, title, description, category, usageCount, createdAt")
+      .eq("isActive", true)
+      .order("usageCount", { ascending: false })
+      .order("createdAt", { ascending: false })
       .limit(limit);
 
     // Apply search filter
@@ -51,7 +51,7 @@ export const GET: APIRoute = async ({ url, cookies }) => {
     const { data: categories } = await supabase
       .from("subjects")
       .select("category")
-      .eq("is_active", true)
+      .eq("isActive", true)
       .not("category", "is", null);
 
     const uniqueCategories = [...new Set(categories?.map((c) => c.category) || [])].sort();
@@ -117,9 +117,9 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     // Check if subject already exists
     const { data: existingSubject, error: findError } = await supabase
       .from("subjects")
-      .select("id, title, usage_count, description, category")
+      .select("id, title, usageCount, description, category")
       .eq("title", subjectTitle.trim())
-      .eq("is_active", true)
+      .eq("isActive", true)
       .single();
 
     let subjectRecord: Subject;
@@ -135,9 +135,9 @@ export const POST: APIRoute = async ({ request, cookies }) => {
           title: subjectTitle.trim(),
           description: description?.trim() || null,
           category: category?.trim() || null,
-          usage_count: 1,
-          is_active: true,
-          created_by: currentUser.id,
+          usageCount: 1,
+          isActive: true,
+          createdBy: currentUser.id,
         })
         .select()
         .single();
@@ -160,7 +160,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       const { data: updatedSubject, error: updateError } = await supabase
         .from("subjects")
         .update({
-          usage_count: existingSubject.usage_count + 1,
+          usageCount: existingSubject.usageCount + 1,
           description: description?.trim() || existingSubject.description,
           category: category?.trim() || existingSubject.category,
         })
@@ -190,14 +190,14 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       id: subjectRecord.id,
       title: subjectRecord.title,
       isNewSubject,
-      usageCount: subjectRecord.usage_count,
+      usageCount: subjectRecord.usageCount,
     });
 
     return createSuccessResponse(
       {
         subject: subjectRecord,
         isNewSubject,
-        usageCount: subjectRecord.usage_count,
+        usageCount: subjectRecord.usageCount,
       },
       isNewSubject ? "Subject created successfully" : "Subject usage updated successfully"
     );

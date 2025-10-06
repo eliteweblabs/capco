@@ -59,7 +59,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     const lineItemsData = lineItems.map((item: any) => ({
       catalog_item_id: item.catalog_item_id || item.id,
       quantity: item.quantity || 1,
-      unit_price: item.price || item.unit_price || 0,
+      unitPrice: item.price || item.unitPrice || 0,
       name: item.name || "",
       description: item.description || "",
     }));
@@ -71,18 +71,18 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     console.log(
       "📝 [API] Updating invoice",
       invoiceIdInt,
-      "with catalog_line_items:",
+      "with catalogLineItems:",
       lineItemsData,
       "and subject:",
       subject
     );
 
-    const updateData: any = { catalog_line_items: lineItemsData };
+    const updateData: any = { catalogLineItems: lineItemsData };
     if (subject) {
       updateData.subject = subject;
     }
     if (notes !== undefined) {
-      updateData.proposal_notes = notes;
+      updateData.proposalNotes = notes;
     }
 
     console.log("📝 [API] About to update invoice with data:", JSON.stringify(updateData, null, 2));
@@ -114,7 +114,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     // Verify the update by reading back the data
     const { data: updatedInvoice, error: verifyError } = await supabase
       .from("invoices")
-      .select("catalog_line_items, subject")
+      .select("catalogLineItems, subject")
       .eq("id", invoiceIdInt)
       .single();
 
@@ -122,8 +122,8 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       console.error("❌ [API] Error verifying update:", verifyError);
     } else {
       console.log(
-        "✅ [API] Verified update - catalog_line_items:",
-        updatedInvoice.catalog_line_items,
+        "✅ [API] Verified update - catalogLineItems:",
+        updatedInvoice.catalogLineItems,
         "subject:",
         updatedInvoice.subject
       );

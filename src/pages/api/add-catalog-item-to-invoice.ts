@@ -37,10 +37,10 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       .select(
         `
         id,
-        created_by,
+        createdBy,
         projects (
           id,
-          author_id
+          authorId
         )
       `
       )
@@ -56,7 +56,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
     // Check if user has access to this invoice
     const hasAccess =
-      invoice.created_by === currentUser.id || invoice.projects?.[0]?.author_id === currentUser.id;
+      invoice.createdBy === currentUser.id || invoice.projects?.[0]?.authorId === currentUser.id;
 
     if (!hasAccess) {
       return new Response(JSON.stringify({ error: "Access denied" }), {
@@ -67,7 +67,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
     // Get the catalog item details
     const { data: catalogItem, error: catalogError } = await supabase
-      .from("line_items_catalog")
+      .from("lineItemsCatalog")
       .select("*")
       .eq("id", parseInt(catalog_item_id))
       .single();
@@ -86,10 +86,10 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       );
     }
 
-    // Get current invoice to update its catalog_line_items
+    // Get current invoice to update its catalogLineItems
     const { data: currentInvoice, error: invoiceFetchError } = await supabase
       .from("invoices")
-      .select("catalog_line_items")
+      .select("catalogLineItems")
       .eq("id", parseInt(invoice_id))
       .single();
 
@@ -108,11 +108,11 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     }
 
     // Add new catalog item to the line items array
-    const currentLineItems = currentInvoice.catalog_line_items || [];
+    const currentLineItems = currentInvoice.catalogLineItems || [];
     const newLineItem = {
       catalog_item_id: parseInt(catalog_item_id),
       quantity: 1,
-      unit_price: catalogItem.unit_price || 0,
+      unitPrice: catalogItem.unitPrice || 0,
       description: catalogItem.name || "",
       details: catalogItem.description || "",
     };
@@ -120,7 +120,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
     const { error: updateError } = await supabase
       .from("invoices")
-      .update({ catalog_line_items: updatedLineItems })
+      .update({ catalogLineItems: updatedLineItems })
       .eq("id", parseInt(invoice_id));
 
     if (updateError) {
@@ -142,7 +142,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       id: catalogItem.id,
       name: catalogItem.name,
       description: custom_description || catalogItem.description,
-      unit_price: catalogItem.unit_price,
+      unitPrice: catalogItem.unitPrice,
       category: catalogItem.category,
     };
 

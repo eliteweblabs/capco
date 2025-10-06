@@ -29,9 +29,9 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     }
 
     const requestBody = await request.json();
-    const { file_id, title, comments, is_private } = requestBody;
+    const { fileId, title, comments, isPrivate } = requestBody;
 
-    if (!file_id) {
+    if (!fileId) {
       return new Response(
         JSON.stringify({
           success: false,
@@ -50,10 +50,10 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       .update({
         title: title || null,
         comments: comments || null,
-        is_private: is_private || false,
-        updated_at: new Date().toISOString(),
+        isPrivate: isPrivate || false,
+        updatedAt: new Date().toISOString(),
       })
-      .eq("id", file_id)
+      .eq("id", fileId)
       .select()
       .single();
 

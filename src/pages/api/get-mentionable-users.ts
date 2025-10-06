@@ -54,7 +54,7 @@ export const GET: APIRoute = async ({ cookies, url }) => {
     if (!isGlobal && projectId) {
       const { data: project, error: projectError } = await supabase
         .from("projects")
-        .select("author_id")
+        .select("authorId")
         .eq("id", parseInt(projectId))
         .single();
 
@@ -65,7 +65,7 @@ export const GET: APIRoute = async ({ cookies, url }) => {
         });
       }
 
-      projectAuthorId = project.author_id;
+      projectAuthorId = project.authorId;
     }
 
     // Get current user's role to determine what users they can mention
@@ -95,7 +95,7 @@ export const GET: APIRoute = async ({ cookies, url }) => {
         // For global discussions, clients can mention all users
         const { data: allProfiles, error: allProfilesError } = await supabase
           .from("profiles")
-          .select("id, company_name, role, first_name, last_name, email");
+          .select("id, companyName, role, firstName, lastName, email");
 
         if (allProfilesError) {
           return new Response(JSON.stringify({ success: false, error: "Failed to fetch users" }), {
@@ -116,7 +116,7 @@ export const GET: APIRoute = async ({ cookies, url }) => {
 
         const { data: clientProfile, error: clientError } = await supabase
           .from("profiles")
-          .select("id, company_name, role, first_name, last_name, email")
+          .select("id, companyName, role, firstName, lastName, email")
           .eq("id", projectAuthorId)
           .single();
 
@@ -133,7 +133,7 @@ export const GET: APIRoute = async ({ cookies, url }) => {
       // For Admin/Staff, get all mentionable users (Admin, Staff, or project author)
       const { data: allProfiles, error: allProfilesError } = await supabase
         .from("profiles")
-        .select("id, company_name, role, first_name, last_name, email");
+        .select("id, companyName, role, firstName, lastName, email");
 
       if (allProfilesError) {
         return new Response(JSON.stringify({ success: false, error: "Failed to fetch users" }), {
@@ -160,9 +160,9 @@ export const GET: APIRoute = async ({ cookies, url }) => {
       return {
         id: user.id,
         name:
-          user.first_name && user.last_name
-            ? `${user.first_name} ${user.last_name}`
-            : user.company_name || "Unknown User",
+          user.firstName && user.lastName
+            ? `${user.firstName} ${user.lastName}`
+            : user.companyName || "Unknown User",
         role: user.role,
         email: user.email || "",
       };

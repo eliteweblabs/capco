@@ -2,11 +2,8 @@ import type { APIRoute } from "astro";
 import { checkAuth } from "../../lib/auth";
 import { supabase } from "../../lib/supabase";
 import { supabaseAdmin } from "../../lib/supabase-admin";
-// Simple email validation
-const validateEmail = (email: string): string | null => {
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  return emailRegex.test(email) ? null : "Invalid email format";
-};
+// Import validateEmail from ux-utils (server-side API routes need explicit import)
+import { validateEmail } from "../../lib/ux-utils";
 
 export const POST: APIRoute = async ({ request, cookies }) => {
   console.log("=== PROJECT IMPORT API CALLED ===");
@@ -115,12 +112,12 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         project.status = 10; // Default status
       }
 
-      if (!project.sq_ft) {
-        project.sq_ft = 0;
+      if (!project.sqFt) {
+        project.sqFt = 0;
       }
 
-      if (!project.new_construction) {
-        project.new_construction = false;
+      if (!project.newConstruction) {
+        project.newConstruction = false;
       }
 
       projects.push(project);
@@ -165,15 +162,14 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
         // Create project
         const projectData = {
-          author_id: userData.id,
+          authorId: userData.id,
           title: project.title.trim(),
           address: project.address.trim(),
           status: parseInt(project.status) || 10,
-          sq_ft: parseInt(project.sq_ft) || 0,
-          new_construction:
-            project.new_construction === "true" || project.new_construction === true,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
+          sqFt: parseInt(project.sqFt) || 0,
+          newConstruction: project.newConstruction === "true" || project.newConstruction === true,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
         };
 
         const { data: createdProject, error: projectError } = await supabaseAdmin

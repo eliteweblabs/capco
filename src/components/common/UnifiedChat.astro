@@ -15,7 +15,7 @@ const currentRole = currentUser?.profile?.role;
 console.log("🔧 [UNIFIED-CHAT] Current user object:", currentUser);
 console.log("🔧 [UNIFIED-CHAT] Current role:", currentRole);
 console.log("🔧 [UNIFIED-CHAT] User ID:", currentUser?.id);
-console.log("🔧 [UNIFIED-CHAT] Company name:", currentUser?.profile?.company_name);
+console.log("🔧 [UNIFIED-CHAT] Company name:", currentUser?.profile?.companyName);
 
 if (currentRole !== "Admin" && currentRole !== "Staff") {
   return null;
@@ -28,7 +28,7 @@ if (currentRole !== "Admin" && currentRole !== "Staff") {
   class="z-50 h-[300px] flex-col"
   data-user-role={currentRole || "Client"}
   data-user-id={currentUser?.id || "unknown"}
-  data-user-name={currentUser?.profile?.company_name || "Unknown User"}
+  data-user-name={currentUser?.profile?.companyName || "Unknown User"}
 >
   <!-- Chat Toggle Button -->
   <div class="relative hidden">
@@ -492,14 +492,14 @@ if (currentRole !== "Admin" && currentRole !== "Staff") {
     const messagesContainer = document.getElementById("group-chat-messages");
     if (!messagesContainer) return;
 
-    const isOwnMessage = message.user_id === currentUser.id;
+    const isOwnMessage = message.userId === currentUser.id;
     const messageElement = document.createElement("div");
     messageElement.className = `flex ${isOwnMessage ? "justify-end" : "justify-start"}`;
 
     messageElement.innerHTML = `
       <div class="max-w-xs ${isOwnMessage ? "bg-primary-600 text-white" : "bg-gray-100 dark:bg-gray-600 text-gray-900 dark:text-white"} rounded-lg px-3 py-2">
         <div class="flex items-center space-x-2 mb-1">
-          <span class="text-xs font-medium">${message.user_name || "Unknown"}</span>
+          <span class="text-xs font-medium">${message.copanyName || "Unknown"}</span>
           <span class="text-xs opacity-75">${new Date(message.timestamp).toLocaleTimeString()}</span>
         </div>
         <p class="text-sm">${message.message}</p>
@@ -560,13 +560,11 @@ if (currentRole !== "Admin" && currentRole !== "Staff") {
         const isOnline = onlineUsers.some((u) => u.userId === user.id || u.id === user.id);
         const unreadCount = conversations[user.id]?.unreadCount || 0;
 
-        console.log(
-          `🔧 [UNIFIED-CHAT] User ${user.company_name || user.email}: online=${isOnline}`
-        );
+        console.log(`🔧 [UNIFIED-CHAT] User ${user.companyName || user.email}: online=${isOnline}`);
 
         return `
         <div class="flex items-center space-x-3 rounded-lg p-3 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer" 
-             onclick="startConversation('${user.id}', '${user.company_name || user.email}')">
+             onclick="startConversation('${user.id}', '${user.companyName || user.email}')">
           <div class="relative">
             <div class="h-10 w-10 rounded-full bg-primary-100 dark:bg-primary-900/30 flex items-center justify-center">
               <i class="bx bx-user text-primary-600 dark:text-primary-400"></i>
@@ -575,7 +573,7 @@ if (currentRole !== "Admin" && currentRole !== "Staff") {
           </div>
           <div class="flex-1 min-w-0">
             <p class="text-sm font-medium text-gray-900 dark:text-white truncate">
-              ${user.company_name || user.email}
+              ${user.companyName || user.email}
             </p>
             <p class="text-xs text-gray-500 dark:text-gray-400">
               ${user.role} • ${isOnline ? "Online" : "Offline"}
@@ -636,7 +634,7 @@ if (currentRole !== "Admin" && currentRole !== "Staff") {
   }
 
   function handleDirectMessage(message: any) {
-    const fromUserId = message.from || message.user_id;
+    const fromUserId = message.from || message.userId;
     const isFromCurrentConversation = currentConversation?.id === fromUserId;
 
     if (!conversations[fromUserId]) {

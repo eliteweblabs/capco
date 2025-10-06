@@ -11,7 +11,7 @@ export const POST: APIRoute = async ({ request }) => {
     const email = formData.get("email") as string;
     const phone = formData.get("phone") as string;
     const company = formData.get("company") as string;
-    const projectAddress = formData.get("projectAddress") as string;
+    const address = formData.get("address") as string;
     const projectType = formData.get("projectType") as string;
     const message = formData.get("message") as string;
 
@@ -44,13 +44,13 @@ export const POST: APIRoute = async ({ request }) => {
       .from("projects")
       .insert({
         title: `${firstName} ${lastName} - Contact Submission`,
-        address: projectAddress || "No address provided",
-        author_id: null, // No authenticated user
+        address: address || "No address provided",
+        authorId: null, // No authenticated user
         status: 1, // New/Contact status
-        sq_ft: null,
-        new_construction: projectType === "new-construction",
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
+        sqFt: null,
+        newConstruction: projectType === "new-construction",
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
       })
       .select("id")
       .single();
@@ -67,9 +67,9 @@ export const POST: APIRoute = async ({ request }) => {
 
     // Store contact information in a separate table or as project metadata
     const { error: contactError } = await supabase.from("contact_submissions").insert({
-      project_id: projectId,
-      first_name: firstName,
-      last_name: lastName,
+      projectId: projectId,
+      firstName: firstName,
+      lastName: lastName,
       email: email,
       phone: phone || null,
       company: company || null,
@@ -109,16 +109,16 @@ export const POST: APIRoute = async ({ request }) => {
 
           // Log file in database
           const { error: dbError } = await supabase.from("files").insert({
-            project_id: projectId,
-            author_id: null, // No authenticated user
-            file_path: filePath,
-            file_name: file.name,
-            file_size: file.size,
-            file_type: file.type,
+            projectId: projectId,
+            authorId: null, // No authenticated user
+            filePath: filePath,
+            fileName: file.name,
+            fileSize: file.size,
+            fileType: file.type,
             title: file.name,
             comments: "Contact submission file",
             status: "active",
-            uploaded_at: new Date().toISOString(),
+            uploadedAt: new Date().toISOString(),
           });
 
           if (dbError) {
@@ -146,7 +146,7 @@ export const POST: APIRoute = async ({ request }) => {
           email,
           phone,
           company,
-          projectAddress,
+          address,
           projectType,
           message,
           fileCount: uploadedFiles.length,

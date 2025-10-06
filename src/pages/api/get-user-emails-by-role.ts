@@ -32,9 +32,9 @@ export const POST: APIRoute = async ({ request }) => {
         .select(
           `
           id, 
-          first_name, 
-          last_name, 
-          company_name, 
+          firstName, 
+          lastName, 
+          companyName, 
           role,
           email
         `

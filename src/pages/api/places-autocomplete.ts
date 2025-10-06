@@ -137,7 +137,7 @@ export const GET: APIRoute = async ({ url }) => {
     const legacyResponse = {
       status: data.error ? "REQUEST_DENIED" : "OK",
       predictions: limitedPredictions,
-      error_message: data.error?.message || null,
+      errorMessage: data.error?.message || null,
     };
 
     return new Response(JSON.stringify(legacyResponse), {
