@@ -402,7 +402,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         const { data: globalOptions2, error: globalOptionsError2 } = await supabase
           .from("globalOptions")
           .select("value")
-          .eq("key", "welcomeClientEmailContent");
+          .eq("key", "welcomeStaffEmailContent");
         if (globalOptionsError2) {
           console.error("📧 [CREATE-USER] Failed to fetch global options:", globalOptionsError2);
         } else if (!globalOptions2) {
