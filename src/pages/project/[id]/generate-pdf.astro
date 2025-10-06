@@ -19,6 +19,24 @@ if (!currentUser) {
   return Astro.redirect("/login");
 }
 
+import { globalCompanyData } from "../../../pages/api/global-company-data";
+const {
+  globalCompanyName,
+  globalCompanySlogan,
+  globalCompanyAddress,
+  globalCompanyPhone,
+  globalCompanyEmail,
+  globalCompanyWebsite,
+  globalCompanyLogo,
+  globalCompanyLogoDark,
+  globalCompanyLogoLight,
+} = globalCompanyData();
+
+import { globalClasses } from "../../../pages/api/global-classes";
+const { globalInputClasses, globalPrimaryTextClasses, globalSecondaryTextClasses } =
+  globalClasses();
+
+import "../../../lib/refresh-manager.ts";
 // Fetch project data using existing API
 let projectResponse;
 try {
@@ -72,7 +90,22 @@ const projectId = id;
 const projectTitle = project.title || "Untitled Project";
 ---
 
-<App title={`Generate PDF - ${projectTitle}`} currentUser={currentUser}>
+<App
+  title={`Generate PDF - ${projectTitle}`}
+  currentUser={currentUser}
+  globalCompanyName={globalCompanyName}
+  globalCompanySlogan={globalCompanySlogan}
+  globalCompanyAddress={globalCompanyAddress}
+  globalCompanyPhone={globalCompanyPhone}
+  globalCompanyEmail={globalCompanyEmail}
+  globalCompanyWebsite={globalCompanyWebsite}
+  globalCompanyLogo={globalCompanyLogo}
+  globalCompanyLogoDark={globalCompanyLogoDark}
+  globalCompanyLogoLight={globalCompanyLogoLight}
+  globalPrimaryTextClasses={globalPrimaryTextClasses}
+  globalSecondaryTextClasses={globalSecondaryTextClasses}
+  globalInputClasses={globalInputClasses}
+>
   <div class="min-h-screen bg-gray-50 dark:bg-gray-900">
     <div class="container mx-auto px-4 py-8">
       <!-- Header -->
