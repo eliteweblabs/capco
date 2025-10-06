@@ -94,6 +94,13 @@ export const POST: APIRoute = async ({ request, cookies }): Promise<Response> =>
 
     const finalTrackLinks = shouldDisableTracking ? false : trackLinks;
 
+    console.log("📧 [EMAIL-DELIVERY] Click tracking configuration:", {
+      emailType,
+      trackLinks,
+      shouldDisableTracking,
+      finalTrackLinks,
+    });
+
     // Simple validation
     if (
       !usersToNotify ||
@@ -205,9 +212,16 @@ export const POST: APIRoute = async ({ request, cookies }): Promise<Response> =>
 
               if (magicLinkError) {
                 console.error("📧 [EMAIL-DELIVERY] Error generating magic link:", magicLinkError);
+                console.error("📧 [EMAIL-DELIVERY] Magic link error details:", {
+                  message: magicLinkError.message,
+                  status: magicLinkError.status,
+                  code: magicLinkError.code,
+                });
               } else {
                 finalButtonLink = magicLinkData.properties.action_link;
-                console.log("🔗 [EMAIL-DELIVERY] Generated magic link:", finalButtonLink);
+                console.log("🔗 [EMAIL-DELIVERY] Generated magic link successfully");
+                console.log("🔗 [EMAIL-DELIVERY] Magic link URL:", finalButtonLink);
+                console.log("🔗 [EMAIL-DELIVERY] Magic link properties:", magicLinkData.properties);
               }
             } catch (error) {
               console.error("📧 [EMAIL-DELIVERY] Error generating magic link:", error);

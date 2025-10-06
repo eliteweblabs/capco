@@ -29,34 +29,41 @@ export const GET: APIRoute = async ({ url, cookies, redirect }) => {
   // Get the verification code from the URL
   const code = url.searchParams.get("code");
   const token_hash = url.searchParams.get("token_hash");
+  const token = url.searchParams.get("token"); // Also check for 'token' parameter
   const type = url.searchParams.get("type");
   const redirectPath = url.searchParams.get("redirect") || "/dashboard";
 
   console.log("🔐 [VERIFY] Verification params:", {
     code: code ? "present" : "missing",
     token_hash: token_hash ? "present" : "missing",
+    token: token ? "present" : "missing",
     type,
     redirectPath,
     fullUrl: url.toString(),
   });
 
-  if (!code && !token_hash) {
-    console.log("🔐 [VERIFY] No verification code or token hash provided");
+  if (!code && !token_hash && !token) {
+    console.log("🔐 [VERIFY] No verification code, token hash, or token provided");
     return redirect("/login?error=no_token");
   }
 
   try {
     let verificationResult;
 
-    if ((type === "email" || type === "magiclink" || type === "signup") && token_hash) {
-      // Handle magic link or email verification with token hash (newer Supabase format)
-      console.log(`🔐 [VERIFY] Attempting ${type} verification with token hash...`);
+    if ((type === "email" || type === "magiclink" || type === "signup") && (token_hash || token)) {
+      // Handle magic link or email verification with token hash or token
+      console.log(
+        `🔐 [VERIFY] Attempting ${type} verification with ${token_hash ? "token_hash" : "token"}...`
+      );
 
       // Map type to what Supabase expects
       const otpType = type === "magiclink" ? "magiclink" : type === "signup" ? "signup" : "email";
 
+      // Use token_hash if available, otherwise use token
+      const verificationToken = token_hash || token;
+
       verificationResult = await supabase.auth.verifyOtp({
-        token_hash,
+        token_hash: verificationToken,
         type: otpType,
       });
     } else if (code) {

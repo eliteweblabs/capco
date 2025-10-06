@@ -184,7 +184,8 @@ export const POST: APIRoute = async ({ request, redirect, cookies }) => {
 <p>You're now signed in and ready to start creating projects...</p>`;
 
     // Get the base URL for the email API call
-    const baseUrl = import.meta.env.SITE_URL || "https://capcofire.com";
+    const baseUrl = import.meta.env.SITE_URL;
+    console.log("🔗 [REGISTER] Base URL:", baseUrl);
 
     try {
       // Send welcome email using the email delivery API
@@ -195,6 +196,7 @@ export const POST: APIRoute = async ({ request, redirect, cookies }) => {
         },
         body: JSON.stringify({
           emailType: "magic_link",
+          trackLinks: false,
           usersToNotify: [email], // Array of email strings
           emailSubject: `Welcome to ${globalCompanyName} → ${displayName}`,
           emailContent: welcomeContent,
