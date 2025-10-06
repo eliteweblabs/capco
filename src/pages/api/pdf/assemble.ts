@@ -60,11 +60,11 @@ export const GET: APIRoute = async ({ request, url }) => {
           } else if (project) {
             // Fetch author profile
             let authorProfile = null;
-            if (project.author_id) {
+            if (project.authorId) {
               const { data: author, error: authorError } = await supabase
                 .from("profiles")
                 .select("*")
-                .eq("id", project.author_id)
+                .eq("id", project.authorId)
                 .single();
 
               if (!authorError && author) {
@@ -74,11 +74,11 @@ export const GET: APIRoute = async ({ request, url }) => {
 
             // Fetch assigned staff profile
             let assignedStaff = null;
-            if (project.assigned_to_id) {
+            if (project.assignedToId) {
               const { data: assignedToProfile, error: assignedError } = await supabase
                 .from("profiles")
                 .select("*")
-                .eq("id", project.assigned_to_id)
+                .eq("id", project.assignedToId)
                 .single();
 
               if (!assignedError && assignedToProfile) {
@@ -89,9 +89,9 @@ export const GET: APIRoute = async ({ request, url }) => {
             // Fetch project status data
             let statusData = null;
             const { data: status, error: statusError } = await supabase
-              .from("project_statuses")
+              .from("projectStatuses")
               .select("*")
-              .eq("status_code", project.status)
+              .eq("statusCode", project.status)
               .single();
 
             if (!statusError && status) {
@@ -103,9 +103,9 @@ export const GET: APIRoute = async ({ request, url }) => {
             const { data: projectFiles, error: filesError } = await supabase
               .from("files")
               .select("*")
-              .eq("project_id", projectId)
+              .eq("projectId", projectId)
               .eq("status", "active")
-              .order("uploaded_at", { ascending: false });
+              .order("uploadedAt", { ascending: false });
 
             if (!filesError && projectFiles) {
               files = projectFiles;

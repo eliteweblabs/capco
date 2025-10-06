@@ -64,7 +64,7 @@ export const GET: APIRoute = async ({ url, cookies, redirect }) => {
     );
 
     const googleAvatarUrl =
-      data.user?.user_metadata?.avatar_url || data.user?.user_metadata?.picture;
+      data.user?.user_metadata?.avatarUrl || data.user?.user_metadata?.picture;
 
     console.log("📸 [AUTH-CALLBACK] Extracted avatar URL:", googleAvatarUrl);
     console.log("📸 [AUTH-CALLBACK] User ID:", data.user?.id);

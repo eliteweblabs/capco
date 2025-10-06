@@ -326,7 +326,7 @@ export const UNIFIED_FORM_ELEMENTS: FormElementConfig[] = [
   // Square footage field
   {
     id: "square-foot-input",
-    name: "sq_ft",
+    name: "sqFt",
     type: "field",
     elementType: "component",
     label: "Square Footage",
@@ -339,7 +339,7 @@ export const UNIFIED_FORM_ELEMENTS: FormElementConfig[] = [
     componentProps: {
       required: false,
     },
-    dataField: "sq_ft",
+    dataField: "sqFt",
     allow: ["Admin", "Staff", "Client"],
     hideAtStatus: [],
     readOnlyAtStatus: [
@@ -366,13 +366,13 @@ export const UNIFIED_FORM_ELEMENTS: FormElementConfig[] = [
   },
   {
     id: "nfpa-version-input",
-    name: "nfpa_version",
+    name: "nfpaVersion",
     type: "field",
     elementType: "text",
     label: "NFPA Version",
     placeholder: "NFPA Version",
     value: "13",
-    dataField: "nfpa_version",
+    dataField: "nfpaVersion",
     allow: ["Admin", "Staff"], // Only admin and staff can see architect
     hideAtStatus: [], // Hide after proposal is signed off
     readOnlyAtStatus: [60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170, 180, 190, 200], // Read-only after proposal is viewed but before signed off
@@ -380,13 +380,13 @@ export const UNIFIED_FORM_ELEMENTS: FormElementConfig[] = [
   },
   {
     id: "hazardous-material-input",
-    name: "hazardous_material",
+    name: "hazardousMaterial",
     type: "field",
     elementType: "text",
     label: "Hazardous Material Usage and Storage",
     placeholder: "None in excess of exempt amounts allowed by 780 CMR §307.1",
     value: "None in excess of exempt amounts allowed by 780 CMR §307.1",
-    dataField: "hazardous_material",
+    dataField: "hazardousMaterial",
     allow: ["Admin", "Staff"], // Only admin and staff can see architect
     hideAtStatus: [], // Hide after proposal is signed off
     readOnlyAtStatus: [60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170, 180, 190, 200], // Read-only after proposal is viewed but before signed off
@@ -394,13 +394,13 @@ export const UNIFIED_FORM_ELEMENTS: FormElementConfig[] = [
   },
   {
     id: "hps-commodities-input",
-    name: "hps_commodities",
+    name: "hpsCommodities",
     type: "field",
     elementType: "text",
     label: "HPS Commodities",
     placeholder: "High-Piled Storage (over 12 ft.) of Commodities",
     value: "None in excess of exempt amounts allowed by 780 CMR §307.1",
-    dataField: "hps_commodities",
+    dataField: "hpsCommodities",
     allow: ["Admin", "Staff"], // Only admin and staff can see architect
     hideAtStatus: [], // Hide after proposal is signed off
     readOnlyAtStatus: [60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170, 180, 190, 200], // Read-only after proposal is viewed but before signed off
@@ -408,12 +408,12 @@ export const UNIFIED_FORM_ELEMENTS: FormElementConfig[] = [
   },
   {
     id: "site-access-input",
-    name: "site_access",
+    name: "siteAccess",
     type: "field",
     elementType: "text",
     label: "Site Access",
     placeholder: "Site access for fire / rescue vehicles is via ____________",
-    dataField: "site_access",
+    dataField: "siteAccess",
     allow: ["Admin", "Staff"], // Only admin and staff can see architect
     hideAtStatus: [0], // Hide after proposal is signed off
     readOnlyAtStatus: [60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170, 180, 190, 200], // Read-only after proposal is viewed but before signed off
@@ -422,7 +422,7 @@ export const UNIFIED_FORM_ELEMENTS: FormElementConfig[] = [
 
   {
     id: "exterior-beacon-input",
-    name: "exterior_beacon",
+    name: "exteriorBeacon",
     type: "field",
     elementType: "text",
     label: "Exterior Beacon",
@@ -436,12 +436,12 @@ export const UNIFIED_FORM_ELEMENTS: FormElementConfig[] = [
 
   {
     id: "fire-sprinkler-installation-input",
-    name: "fire_sprinkler_installation",
+    name: "fireSprinklerInstallation",
     type: "field",
     elementType: "text",
     label: "Fire Sprinkler Installation",
     placeholder: "The fire sprinkler contractor will install: _______",
-    dataField: "fire_sprinkler_installation",
+    dataField: "fireSprinklerInstallation",
     allow: ["Admin", "Staff"], // Only admin and staff can see architect
     hideAtStatus: [], // Hide after proposal is signed off
     readOnlyAtStatus: [60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170, 180, 190, 200], // Read-only after proposal is viewed but before signed off
@@ -449,12 +449,12 @@ export const UNIFIED_FORM_ELEMENTS: FormElementConfig[] = [
   },
   {
     id: "commencement-of-construction-input",
-    name: "commencement_of_construction",
+    name: "commencementOfConstruction",
     type: "field",
     elementType: "text",
     label: "Commencement of Construction",
     placeholder: "Estimated Commencement of Construction",
-    dataField: "commencement_of_construction",
+    dataField: "commencementOfConstruction",
     allow: ["Admin", "Staff"], // Only admin and staff can see architect
     hideAtStatus: [], // Hide after proposal is signed off
     readOnlyAtStatus: [60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170, 180, 190, 200], // Read-only after proposal is viewed but before signed off
@@ -462,12 +462,12 @@ export const UNIFIED_FORM_ELEMENTS: FormElementConfig[] = [
   },
   {
     id: "suppression-detection-systems-input",
-    name: "suppression_detection_systems",
+    name: "suppressionDetectionSystems",
     type: "field",
     elementType: "text",
     label: "Suppression & Detection Systems",
     placeholder: "Suppression & Detection Systems",
-    dataField: "commencement_of_construction",
+    dataField: "commencementOfConstruction",
     allow: ["Admin", "Staff"], // Only admin and staff can see architect
     hideAtStatus: [], // Hide after proposal is signed off
     readOnlyAtStatus: [60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170, 180, 190, 200], // Read-only after proposal is viewed but before signed off
@@ -476,7 +476,7 @@ export const UNIFIED_FORM_ELEMENTS: FormElementConfig[] = [
   // Building height field
   {
     id: "building-height-input",
-    name: "building_height",
+    name: "buildingHeight",
     type: "field",
     elementType: "component",
     label: "Building Height",
@@ -489,7 +489,7 @@ export const UNIFIED_FORM_ELEMENTS: FormElementConfig[] = [
     componentProps: {
       required: false,
     },
-    dataField: "building_height",
+    dataField: "buildingHeight",
     allow: ["Admin", "Staff"],
     hideAtStatus: [],
     readOnlyAtStatus: [50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170, 180, 190, 200],
@@ -521,7 +521,7 @@ export const UNIFIED_FORM_ELEMENTS: FormElementConfig[] = [
   // Fire Protection Service Type button group
   {
     id: "fire-service-type",
-    name: "fire_service_type",
+    name: "fireServiceType",
     type: "button-group",
     elementType: "button-group",
     label: "Fire Service Type",
@@ -552,7 +552,7 @@ export const UNIFIED_FORM_ELEMENTS: FormElementConfig[] = [
   // Floors below grade field
   {
     id: "floors-below-grade-input",
-    name: "floors_below_grade",
+    name: "floorsBelowGrade",
     type: "field",
     elementType: "component",
     label: "Floors Below Grade",
@@ -565,7 +565,7 @@ export const UNIFIED_FORM_ELEMENTS: FormElementConfig[] = [
     componentProps: {
       required: false,
     },
-    dataField: "floors_below_grade",
+    dataField: "floorsBelowGrade",
     allow: ["Admin", "Staff"],
     hideAtStatus: [],
     readOnlyAtStatus: [50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170, 180, 190, 200],
@@ -574,7 +574,7 @@ export const UNIFIED_FORM_ELEMENTS: FormElementConfig[] = [
   // New construction checkbox
   {
     id: "new-construction",
-    name: "new_construction",
+    name: "newConstruction",
     type: "field",
     elementType: "checkbox",
     label: "New Construction",
@@ -674,7 +674,7 @@ export const UNIFIED_FORM_ELEMENTS: FormElementConfig[] = [
   // Reports Required button group
   {
     id: "reports-required",
-    name: "requested_docs",
+    name: "requestedDocs",
     type: "button-group",
     elementType: "button-group",
     label: "Reports Required",

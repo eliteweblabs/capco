@@ -64,24 +64,23 @@ export const onRequest = defineMiddleware(async ({ locals, url, cookies, redirec
           data.user.id
         );
 
-        const firstName = data.user.user_metadata?.first_name || "";
-        const lastName = data.user.user_metadata?.last_name || "";
+        const firstName = data.user.user_metadata?.firstName || "";
+        const lastName = data.user.user_metadata?.lastName || "";
         const companyName =
-          data.user.user_metadata?.company_name ||
+          data.user.user_metadata?.companyName ||
           data.user.email?.split("@")[0] ||
           "Unknown Company";
 
         const { error: createProfileError } = await supabase.from("profiles").insert({
           id: data.user.id,
           email: data.user.email,
-          company_name: companyName,
+          companyName: companyName,
           role: "Client", // Default role for missing profiles
-          first_name: firstName,
-          last_name: lastName,
-          avatar_url:
-            data.user.user_metadata?.avatar_url || data.user.user_metadata?.picture || null,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
+          firstName: firstName,
+          lastName: lastName,
+          avatarUrl: data.user.user_metadata?.avatarUrl || data.user.user_metadata?.picture || null,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
         });
 
         if (createProfileError) {

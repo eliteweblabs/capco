@@ -52,7 +52,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     // Get user profile from profiles table
     const { data: profile, error: profileError } = await supabaseAdmin
       .from("profiles")
-      .select("id, first_name, last_name, company_name, email, phone, role, created_at, updated_at")
+      .select("id, firstName, lastName, companyName, email, phone, role, createdAt, updatedAt")
       .eq("id", userId)
       .single();
 
@@ -88,13 +88,13 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       id: profile.id,
       email: profile.email,
       phone: profile.phone,
-      created_at: profile.created_at,
-      updated_at: profile.updated_at,
+      createdAt: profile.createdAt,
+      updatedAt: profile.updatedAt,
       profile: profile,
       role: profile.role || "Unknown",
-      company_name: profile.company_name || null,
-      first_name: profile.first_name || null,
-      last_name: profile.last_name || null,
+      companyName: profile.companyName || null,
+      firstName: profile.firstName || null,
+      lastName: profile.lastName || null,
     };
 
     console.log("🔔 [USER-INFO] Fetched user info for:", userId);
@@ -174,7 +174,7 @@ export const GET: APIRoute = async ({ url, cookies }) => {
     // Get user profile from profiles table
     const { data: profile, error: profileError } = await supabaseAdmin
       .from("profiles")
-      .select("id, first_name, last_name, company_name, email, phone, role, created_at, updated_at")
+      .select("id, firstName, lastName, companyName, email, phone, role, createdAt, updatedAt")
       .eq("id", userId)
       .single();
 
@@ -210,13 +210,13 @@ export const GET: APIRoute = async ({ url, cookies }) => {
       id: profile.id,
       email: profile.email,
       phone: profile.phone,
-      created_at: profile.created_at,
-      updated_at: profile.updated_at,
+      createdAt: profile.createdAt,
+      updatedAt: profile.updatedAt,
       profile: profile,
       role: profile.role || "Unknown",
-      company_name: profile.company_name || null,
-      first_name: profile.first_name || null,
-      last_name: profile.last_name || null,
+      companyName: profile.companyName || null,
+      firstName: profile.firstName || null,
+      lastName: profile.lastName || null,
     };
 
     console.log("🔔 [USER-INFO] Fetched user info for:", userId);

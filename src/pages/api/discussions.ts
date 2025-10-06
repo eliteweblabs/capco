@@ -68,22 +68,22 @@ export const GET: APIRoute = async ({ url, cookies }) => {
     let discussionsQuery = supabase.from("discussion").select(
       `
         id,
-        created_at,
+        createdAt,
         message,
-        author_id,
-        project_id,
+        authorId,
+        projectId,
         internal,
-        mark_completed,
-        parent_id,
-        image_urls,
-        image_paths,
-        company_name,
-        updated_at,
+        markCompleted,
+        parentId,
+        imageUrls,
+        imagePaths,
+        companyName,
+        updatedAt,
         projects!inner (
           id,
           address,
           title,
-          author_id
+          authorId
         )
       `
     );
@@ -103,7 +103,7 @@ export const GET: APIRoute = async ({ url, cookies }) => {
           }
         );
       }
-      discussionsQuery = discussionsQuery.eq("project_id", projectIdInt);
+      discussionsQuery = discussionsQuery.eq("projectId", projectIdInt);
     }
 
     // For clients, exclude internal discussions (Admin/Staff see all)
@@ -120,10 +120,10 @@ export const GET: APIRoute = async ({ url, cookies }) => {
     // Apply completed filter if specified
     if (completedFilter && completedFilter !== "all") {
       const isCompleted = completedFilter === "true";
-      discussionsQuery = discussionsQuery.eq("mark_completed", isCompleted);
+      discussionsQuery = discussionsQuery.eq("markCompleted", isCompleted);
     }
 
-    const { data: discussions, error } = await discussionsQuery.order("created_at", {
+    const { data: discussions, error } = await discussionsQuery.order("createdAt", {
       ascending: false,
     });
 
@@ -142,25 +142,25 @@ export const GET: APIRoute = async ({ url, cookies }) => {
     }
 
     // Get unique author IDs
-    const authorIds = [...new Set(discussions?.map((d: any) => d.author_id) || [])];
+    const authorIds = [...new Set(discussions?.map((d: any) => d.authorId) || [])];
 
     // Fetch author profiles
     const { data: profiles } = await supabase
       .from("profiles")
-      .select("id, company_name, role")
+      .select("id, companyName, role")
       .in("id", authorIds);
 
     const profilesMap = new Map(profiles?.map((p: any) => [p.id, p]) || []);
 
     // Get unique project owner IDs
     const projectOwnerIds = [
-      ...new Set(discussions?.map((d: any) => d.projects?.author_id).filter(Boolean) || []),
+      ...new Set(discussions?.map((d: any) => d.projects?.authorId).filter(Boolean) || []),
     ];
 
     // Fetch project owner profiles
     const { data: ownerProfiles } = await supabase
       .from("profiles")
-      .select("id, company_name")
+      .select("id, companyName")
       .in("id", projectOwnerIds);
 
     const ownerProfilesMap = new Map(ownerProfiles?.map((p: any) => [p.id, p]) || []);
@@ -182,11 +182,11 @@ export const GET: APIRoute = async ({ url, cookies }) => {
         project = projectData;
 
         // Get project author's profile data for placeholders
-        if (project?.author_id) {
+        if (project?.authorId) {
           const { data: authorProfile, error: authorError } = await supabase
             .from("profiles")
             .select("*")
-            .eq("id", project.author_id)
+            .eq("id", project.authorId)
             .single();
 
           if (authorError) {
@@ -208,31 +208,31 @@ export const GET: APIRoute = async ({ url, cookies }) => {
 
     // Enrich discussions with author and project owner information
     const enrichedDiscussions = (discussions || []).map((discussion: any) => {
-      const authorProfile = profilesMap.get(discussion.author_id);
-      const ownerProfile = ownerProfilesMap.get(discussion.projects?.author_id);
+      const authorProfile = profilesMap.get(discussion.authorId);
+      const ownerProfile = ownerProfilesMap.get(discussion.projects?.authorId);
 
       return {
         id: discussion.id,
-        project_id: discussion.project_id,
+        projectId: discussion.projectId,
         project_address: discussion.projects?.address || "Unknown Address",
         project_title: discussion.projects?.title || "Untitled",
-        project_owner: ownerProfile?.company_name || "Unknown",
-        project_owner_id: discussion.projects?.author_id,
-        author_id: discussion.author_id,
-        author_name: authorProfile?.company_name || "Unknown User",
+        project_owner: ownerProfile?.companyName || "Unknown",
+        project_owner_id: discussion.projects?.authorId,
+        authorId: discussion.authorId,
+        author_name: authorProfile?.companyName || "Unknown User",
         author_role: authorProfile?.role || "Unknown",
         message: isGlobal
           ? discussion.message
           : replacePlaceholders(discussion.message, placeholderData, true),
         internal: discussion.internal || false,
-        mark_completed: discussion.mark_completed || false,
-        parent_id: discussion.parent_id,
-        is_reply: !!discussion.parent_id,
-        image_urls: discussion.image_urls,
-        image_paths: discussion.image_paths,
-        company_name: discussion.company_name || "Unknown User",
-        created_at: discussion.created_at,
-        updated_at: discussion.updated_at,
+        markCompleted: discussion.markCompleted || false,
+        parentId: discussion.parentId,
+        is_reply: !!discussion.parentId,
+        imageUrls: discussion.imageUrls,
+        imagePaths: discussion.imagePaths,
+        companyName: discussion.companyName || "Unknown User",
+        createdAt: discussion.createdAt,
+        updatedAt: discussion.updatedAt,
       };
     });
 
@@ -244,14 +244,14 @@ export const GET: APIRoute = async ({ url, cookies }) => {
     if (isGlobal) {
       const totalDiscussions = enrichedDiscussions.length;
       const internalCount = enrichedDiscussions.filter((d: any) => d.internal).length;
-      const completedCount = enrichedDiscussions.filter((d: any) => d.mark_completed).length;
+      const completedCount = enrichedDiscussions.filter((d: any) => d.markCompleted).length;
       const repliesCount = enrichedDiscussions.filter((d: any) => d.is_reply).length;
 
       // Get recent (24h) count
       const now = new Date();
       const yesterday = new Date(now.getTime() - 24 * 60 * 60 * 1000);
       const recentCount = enrichedDiscussions.filter((d: any) => {
-        const discussionDate = new Date(d.created_at);
+        const discussionDate = new Date(d.createdAt);
         return discussionDate >= yesterday;
       }).length;
 
@@ -259,10 +259,10 @@ export const GET: APIRoute = async ({ url, cookies }) => {
       const activeUserIds = new Set(
         enrichedDiscussions
           .filter((d: any) => {
-            const discussionDate = new Date(d.created_at);
+            const discussionDate = new Date(d.createdAt);
             return discussionDate >= yesterday;
           })
-          .map((d: any) => d.author_id)
+          .map((d: any) => d.authorId)
       );
 
       stats = {

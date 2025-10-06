@@ -93,7 +93,7 @@ export const POST: APIRoute = async ({ request }) => {
       // For project-based payments, get project details and create/find invoice
       const { data: projectData, error: projectError } = await supabase
         .from("projects")
-        .select("id, address, author_id")
+        .select("id, address, authorId")
         .eq("id", projectId)
         .single();
 
@@ -114,15 +114,15 @@ export const POST: APIRoute = async ({ request }) => {
       // Create a simple invoice object for payment processing
       invoice = {
         id: `project_${invoiceId}_${paymentType || "deposit"}`,
-        project_id: invoiceId,
-        total_amount: 500.0, // Default amount - you can calculate this based on your logic
+        projectId: invoiceId,
+        totalAmount: 500.0, // Default amount - you can calculate this based on your logic
         projects: project,
       };
 
       console.log("🔍 [CREATE-PAYMENT-INTENT] Created project invoice object:", {
         invoiceId: invoice.id,
-        projectId: invoice.project_id,
-        totalAmount: invoice.total_amount,
+        projectId: invoice.projectId,
+        totalAmount: invoice.totalAmount,
         paymentType,
       });
     } else {
@@ -150,7 +150,7 @@ export const POST: APIRoute = async ({ request }) => {
         .select(
           `
           *,
-          projects!inner(id, title, address, author_id)
+          projects!inner(id, title, address, authorId)
         `
         )
         .eq("id", invoiceId)
@@ -173,17 +173,17 @@ export const POST: APIRoute = async ({ request }) => {
     }
 
     // Use the amount passed from the frontmatter calculation (already in cents)
-    // const totalAmount = amount || invoice.total_amount || 0;
+    // const totalAmount = amount || invoice.totalAmount || 0;
     const amountInCents = Math.round(amount);
 
     // Validate amount is a valid positive integer
     // if (!Number.isInteger(amountInCents) || amountInCents <= 0) {
     //   console.error("🚫 [CREATE-PAYMENT-INTENT] Invalid amount calculated:", {
     //     paymentFormAmount: amount,
-    //     invoiceTotalAmount: invoice.total_amount,
+    //     invoiceTotalAmount: invoice.totalAmount,
     //     finalTotalAmount: totalAmount,
     //     amountInCents,
-    //     lineItemsCount: invoice.catalog_line_items?.length || 0,
+    //     lineItemsCount: invoice.catalogLineItems?.length || 0,
     //     isInteger: Number.isInteger(amountInCents),
     //     isPositive: amountInCents > 0,
     //   });
@@ -199,14 +199,14 @@ export const POST: APIRoute = async ({ request }) => {
 
     // console.log("🔍 [CREATE-PAYMENT-INTENT] Amount calculation:", {
     //   paymentFormAmount: amount,
-    //   invoiceTotalAmount: invoice.total_amount,
+    //   invoiceTotalAmount: invoice.totalAmount,
     //   finalTotalAmount: totalAmount,
     //   amountInCents,
     //   invoiceId: invoice.id,
-    //   projectId: invoice.project_id,
+    //   projectId: invoice.projectId,
     //   isProjectPayment,
     //   paymentType,
-    //   lineItemsCount: invoice.catalog_line_items?.length || 0,
+    //   lineItemsCount: invoice.catalogLineItems?.length || 0,
     // });
 
     // Check if amount is too low
@@ -214,7 +214,7 @@ export const POST: APIRoute = async ({ request }) => {
       // Stripe minimum is usually 50 cents ($0.50)
       console.error("🚫 [CREATE-PAYMENT-INTENT] Amount too low for Stripe:", {
         amountInCents,
-        invoiceTotalAmount: invoice.total_amount,
+        invoiceTotalAmount: invoice.totalAmount,
         minimumRequired: 50,
       });
     }
@@ -232,7 +232,7 @@ export const POST: APIRoute = async ({ request }) => {
       currency: "usd",
       metadata: {
         invoice_id: invoice.id.toString(),
-        project_id: project?.id.toString(),
+        projectId: project?.id.toString(),
         project_title: project?.address,
         payment_type: paymentType || "deposit",
         // is_project_payment: isProjectPayment.toString(),

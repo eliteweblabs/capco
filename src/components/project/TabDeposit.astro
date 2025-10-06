@@ -34,7 +34,7 @@ let totalAmount = 0;
 
 // Query invoice directly using authenticated Supabase client (SSR)
 if (projectId && supabase) {
-  console.log("🔍 [TAB-DEPOSIT] Querying invoice for project_id:", projectId);
+  console.log("🔍 [TAB-DEPOSIT] Querying invoice for projectId:", projectId);
 
   // Set up session from cookies
   const accessToken = Astro.cookies.get("sb-access-token")?.value;
@@ -50,8 +50,8 @@ if (projectId && supabase) {
   try {
     const { data: invoice, error } = await supabase
       .from("invoices")
-      .select("id, total_amount, status, subject, catalog_line_items")
-      .eq("project_id", projectId)
+      .select("id, totalAmount, status, subject, catalogLineItems")
+      .eq("projectId", projectId)
       .maybeSingle(); // Don't filter by status - get any invoice for this project
 
     if (error) {
@@ -63,14 +63,14 @@ if (projectId && supabase) {
     } else if (invoice) {
       invoiceId = invoice.id;
 
-      // Calculate total from catalog_line_items if total_amount is missing or zero
-      if (!invoice.total_amount || invoice.total_amount === 0) {
-        const lineItems = invoice.catalog_line_items || [];
+      // Calculate total from catalogLineItems if totalAmount is missing or zero
+      if (!invoice.totalAmount || invoice.totalAmount === 0) {
+        const lineItems = invoice.catalogLineItems || [];
         let calculatedTotal = 0;
 
         lineItems.forEach((item: any) => {
           const quantity = parseFloat(item.quantity) || 0;
-          const unitPrice = parseFloat(item.unit_price) || 0;
+          const unitPrice = parseFloat(item.unitPrice) || 0;
           calculatedTotal += quantity * unitPrice;
         });
 
@@ -81,7 +81,7 @@ if (projectId && supabase) {
           totalAmountCents: totalAmount,
         });
       } else {
-        totalAmount = Math.round(invoice.total_amount * 100); // Convert to cents
+        totalAmount = Math.round(invoice.totalAmount * 100); // Convert to cents
       }
 
       console.log("🔍 [TAB-DEPOSIT] ✅ Found invoice:", {
@@ -92,7 +92,7 @@ if (projectId && supabase) {
         subject: invoice.subject,
       });
     } else {
-      console.warn("🔍 [TAB-DEPOSIT] ⚠️ No invoice found for project_id:", projectId);
+      console.warn("🔍 [TAB-DEPOSIT] ⚠️ No invoice found for projectId:", projectId);
     }
   } catch (error) {
     console.error("🔍 [TAB-DEPOSIT] ❌ Exception:", error);

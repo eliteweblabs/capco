@@ -51,12 +51,12 @@ export const GET: APIRoute = async ({ url, cookies }) => {
     let query = supabase
       .from("punchlist")
       .select("*")
-      .eq("project_id", projectId)
-      .order("created_at", { ascending: true });
+      .eq("projectId", projectId)
+      .order("createdAt", { ascending: true });
 
     // For clients, filter out internal items unless they are the author
     if (currentRole === "Client") {
-      query = query.or(`internal.eq.false,author_id.eq.${currentUser.id}`);
+      query = query.or(`internal.eq.false,authorId.eq.${currentUser.id}`);
     }
 
     const { data: punchlistData, error: punchlistError } = await query;
@@ -96,8 +96,8 @@ export const GET: APIRoute = async ({ url, cookies }) => {
     // Process the punchlist data to ensure proper structure
     const processedPunchlist = (punchlistData || []).map((item) => ({
       ...item,
-      // Ensure company_name is available - it should be stored directly in the punchlist table
-      company_name: item.company_name || "Unknown User",
+      // Ensure companyName is available - it should be stored directly in the punchlist table
+      companyName: item.companyName || "Unknown User",
     }));
 
     // console.log(

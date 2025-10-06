@@ -6,23 +6,23 @@ export interface UserInfo {
   email_confirmed_at: string | null;
   phone: string | null;
   phone_confirmed_at: string | null;
-  created_at: string;
-  updated_at: string;
+  createdAt: string;
+  updatedAt: string;
   last_sign_in_at: string | null;
   user_metadata: any;
   app_metadata: any;
   profile: {
     id: string;
     name: string | null;
-    company_name: string | null;
+    companyName: string | null;
     email: string | null;
     role: string | null;
     phone: string | null;
-    created_at: string | null;
-    updated_at: string | null;
+    createdAt: string | null;
+    updatedAt: string | null;
   } | null;
   role: string;
-  company_name: string | null;
+  companyName: string | null;
 }
 
 /**
@@ -89,7 +89,7 @@ export async function getUserInfoGET(userId: string): Promise<UserInfo> {
  * @returns string | null - Company name or null
  */
 export function getCompanyName(userInfo: UserInfo): string | null {
-  return userInfo.company_name;
+  return userInfo.companyName;
 }
 
 /**

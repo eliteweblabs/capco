@@ -6,14 +6,14 @@ import { COUNT_BUBBLE_PRESETS, updateCountBubble } from "./count-bubble-utils";
 
 export interface PunchlistItem {
   id: number;
-  project_id: number;
-  author_id: string;
+  projectId: number;
+  authorId: string;
   content: string;
   internal: boolean;
-  mark_completed: boolean;
-  created_at: string;
-  updated_at: string;
-  parent_id?: number;
+  markCompleted: boolean;
+  createdAt: string;
+  updatedAt: string;
+  parentId?: number;
   author?: {
     id: string;
     name: string;

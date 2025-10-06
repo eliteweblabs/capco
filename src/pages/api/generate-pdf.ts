@@ -1,6 +1,6 @@
+import { createClient } from "@supabase/supabase-js";
 import type { APIRoute } from "astro";
 import puppeteer from "puppeteer";
-import { createClient } from "@supabase/supabase-js";
 
 export const POST: APIRoute = async ({ request }) => {
   try {
@@ -108,10 +108,10 @@ export const POST: APIRoute = async ({ request }) => {
 
           // Log the PDF generation in the database
           const { error: logError } = await supabase.from("pdf_documents").insert({
-            project_id: projectData.projectId,
+            projectId: projectData.projectId,
             document_type: "project_agreement",
-            file_path: filePath,
-            file_name: fileName,
+            filePath: filePath,
+            fileName: fileName,
             metadata: {
               signatures: signatures ? Object.keys(signatures) : [],
               generated_at: new Date().toISOString(),

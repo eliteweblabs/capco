@@ -86,12 +86,12 @@ export const GET: APIRoute = async ({ request, cookies, url }) => {
     let statusesData: any;
     let statusesError: any;
 
-    // If status_code is provided, return specific status data
+    // If statusCode is provided, return specific status data
     if (statusCode) {
       const result = await supabaseAdmin
-        .from("project_statuses")
+        .from("projectStatuses")
         .select("*")
-        .eq("status_code", statusCode)
+        .eq("statusCode", statusCode)
         .single();
 
       statusesData = result.data;
@@ -110,10 +110,10 @@ export const GET: APIRoute = async ({ request, cookies, url }) => {
     } else {
       // Fetch all project statuses from database
       const result = await supabaseAdmin
-        .from("project_statuses")
+        .from("projectStatuses")
         .select("*")
-        .neq("status_code", 0)
-        .order("status_code");
+        .neq("statusCode", 0)
+        .order("statusCode");
 
       statusesData = result.data;
       statusesError = result.error;
@@ -141,9 +141,9 @@ export const GET: APIRoute = async ({ request, cookies, url }) => {
         // Loop through all properties of the status object
         Object.keys(status).forEach((key) => {
           const value = status[key];
-          placeholderData.project.est_time = statusesData.find(
-            (s: any) => s.status_code === status.status_code
-          )?.est_time;
+          placeholderData.project.estTime = statusesData.find(
+            (s: any) => s.statusCode === status.statusCode
+          )?.estTime;
           // Only process string values
           if (typeof value === "string" && value.trim()) {
             status[key] = replacePlaceholders(value, placeholderData);
@@ -155,7 +155,7 @@ export const GET: APIRoute = async ({ request, cookies, url }) => {
       console.log("🔍 [PROJECT-STATUSES-API] Applied placeholder replacement to all statuses");
     }
 
-    // All simplified statuses structure: statuses[status_code].{admin, client, current}
+    // All simplified statuses structure: statuses[statusCode].{admin, client, current}
     const simplifiedStatuses: Record<number, { admin: any; client: any; current: any }> = {};
 
     // Debug: Log the current user's role
@@ -187,7 +187,7 @@ export const GET: APIRoute = async ({ request, cookies, url }) => {
     }
 
     statusesData.forEach((status: any) => {
-      const statusCode = status.status_code;
+      const statusCode = status.statusCode;
       if (statusCode) {
         const usersToNotify = adminStaffUsers
           .filter((user: any) => status.email_to_roles?.includes(user.role))
@@ -199,55 +199,55 @@ export const GET: APIRoute = async ({ request, cookies, url }) => {
             email: {
               users_to_notify: usersToNotify,
               emailToRoles: status.email_to_roles,
-              email_subject: status.admin_email_subject,
-              email_content: status.admin_email_content,
-              email_type: "magic_link",
-              button_text: status.button_text,
-              button_link: status.button_link,
+              email_subject: status.adminEmailSubject,
+              email_content: status.adminEmailContent,
+              email_type: "magicLink",
+              buttonText: status.buttonText,
+              buttonLink: status.buttonLink,
               skipTracking: true,
             },
-            status_name: status.admin_status_name,
-            status_action: status.admin_status_action,
-            status_color: status.status_color,
+            statusName: status.adminStatusName,
+            status_action: status.adminStatusAction,
+            statusColor: status.statusColor,
             status_slug: status.status_slug,
             status_tab: status.admin_status_tab,
             modal: {
               type: "info",
               persist: false,
-              message: status.modal_admin,
+              message: status.modalAdmin,
               title: "Project Updated",
               redirect: {
-                url: status.modal_auto_redirect_admin,
+                url: status.modalAutoRedirectAdmin,
                 delay: 5000,
                 showCountdown: true,
               },
               showCountdown: true,
               duration: 2500,
-              est_time: status.est_time,
+              estTime: status.estTime,
             },
           },
           client: {
             email: {
               users_to_notify: [project?.authorProfile?.email],
-              email_subject: status.client_email_subject,
-              email_content: status.client_email_content,
-              email_type: "magic_link",
-              button_text: status.button_text,
-              button_link: status.button_link,
+              email_subject: status.clientEmailSubject,
+              email_content: status.clientEmailContent,
+              email_type: "magicLink",
+              buttonText: status.buttonText,
+              buttonLink: status.buttonLink,
               skipTracking: true,
             },
-            status_name: status.client_status_name,
-            status_action: status.client_status_action,
-            status_color: status.status_color,
+            statusName: status.clientStatusName,
+            status_action: status.clientStatusAction,
+            statusColor: status.statusColor,
             status_slug: status.status_slug,
             status_tab: status.client_status_tab,
             modal: {
               type: "info",
               persist: false,
-              message: status.modal_client,
+              message: status.modalClient,
               title: "ClientProject Updated",
               redirect: {
-                url: status.modal_auto_redirect_client,
+                url: status.modalAutoRedirectClient,
                 delay: 5000,
                 showCountdown: true,
               },
@@ -256,33 +256,27 @@ export const GET: APIRoute = async ({ request, cookies, url }) => {
           current: {
             email: {
               usersToNotify: isAdminOrStaff ? usersToNotify : [project?.authorProfile?.email],
-              email_subject: isAdminOrStaff
-                ? status.admin_email_subject
-                : status.client_email_subject,
-              email_content: isAdminOrStaff
-                ? status.admin_email_content
-                : status.client_email_content,
-              button_text: status.button_text,
-              button_link: status.button_link,
+              email_subject: isAdminOrStaff ? status.adminEmailSubject : status.clientEmailSubject,
+              email_content: isAdminOrStaff ? status.adminEmailContent : status.clientEmailContent,
+              buttonText: status.buttonText,
+              buttonLink: status.buttonLink,
               skipTracking: true,
             },
 
-            status_name: isAdminOrStaff ? status.admin_status_name : status.client_status_name,
-            status_action: isAdminOrStaff
-              ? status.admin_status_action
-              : status.client_status_action,
-            status_color: status.status_color,
+            statusName: isAdminOrStaff ? status.adminStatusName : status.clientStatusName,
+            status_action: isAdminOrStaff ? status.adminStatusAction : status.clientStatusAction,
+            statusColor: status.statusColor,
             status_slug: status.status_slug,
             status_tab: isAdminOrStaff ? status.admin_status_tab : status.client_status_tab,
             modal: {
               type: "info",
               persist: false, // false = close existing modals, true = keep existing modals
-              message: isAdminOrStaff ? status.modal_admin : status.modal_client,
+              message: isAdminOrStaff ? status.modalAdmin : status.modalClient,
               title: "Project Updated",
               redirect: {
                 url: isAdminOrStaff
-                  ? status.modal_auto_redirect_admin
-                  : status.modal_auto_redirect_client,
+                  ? status.modalAutoRedirectAdmin
+                  : status.modalAutoRedirectClient,
                 delay: 5000, // Delay in milliseconds before redirect
                 showCountdown: true, // Show countdown in message
               },
@@ -296,13 +290,13 @@ export const GET: APIRoute = async ({ request, cookies, url }) => {
     const selectOptions = Object.entries(simplifiedStatuses).map(([statusCode, statusData]) => ({
       value: statusCode,
       label:
-        statusData.current.status_name.replace(/<[^>]*>/g, "") +
+        statusData.current.statusName.replace(/<[^>]*>/g, "") +
         " / " +
-        (statusesData.find((s: any) => s.status_code === parseInt(statusCode))?.est_time === null
+        (statusesData.find((s: any) => s.statusCode === parseInt(statusCode))?.estTime === null
           ? "No Est. Time Value"
           : statusesData
-              .find((s: any) => s.status_code === parseInt(statusCode))
-              ?.est_time.replace(/<[^>]*>/g, "")),
+              .find((s: any) => s.statusCode === parseInt(statusCode))
+              ?.estTime.replace(/<[^>]*>/g, "")),
     }));
 
     const response: ProjectStatusesResponse = {
@@ -388,10 +382,10 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
     // Fetch all project statuses from database
     const { data: statusesData, error: statusesError } = await supabaseAdmin
-      .from("project_statuses")
+      .from("projectStatuses")
       .select("*")
-      .neq("status_code", 0)
-      .order("status_code");
+      .neq("statusCode", 0)
+      .order("statusCode");
 
     if (statusesError) {
       console.error("❌ [PROJECT-STATUSES-API] Database error:", statusesError);
@@ -416,9 +410,9 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         Object.keys(status).forEach((key) => {
           const value = status[key];
 
-          placeholderData.project.est_time = statusesData.find(
-            (s: any) => s.status_code === status.status_code
-          )?.est_time;
+          placeholderData.project.estTime = statusesData.find(
+            (s: any) => s.statusCode === status.statusCode
+          )?.estTime;
           // Only process string values
           if (typeof value === "string" && value.trim()) {
             status[key] = replacePlaceholders(value, placeholderData);
@@ -444,11 +438,11 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       console.error("📊 [PROJECT-STATUSES-API] Failed to fetch admin/staff emails");
     }
 
-    // All simplified statuses structure: statuses[status_code].{admin, client, current}
+    // All simplified statuses structure: statuses[statusCode].{admin, client, current}
     const simplifiedStatuses: Record<number, { admin: any; client: any; current: any }> = {};
 
     statusesData.forEach((status: any) => {
-      const statusCode = status.status_code;
+      const statusCode = status.statusCode;
       if (statusCode) {
         const usersToNotify = adminStaffUsers
           .filter((user: any) => status.email_to_roles?.includes(user.role))
@@ -460,99 +454,93 @@ export const POST: APIRoute = async ({ request, cookies }) => {
             email: {
               users_to_notify: usersToNotify,
               emailToRoles: status.email_to_roles,
-              email_subject: status.admin_email_subject,
-              email_content: status.admin_email_content,
-              email_type: "magic_link",
-              button_text: status.button_text,
-              button_link: status.button_link,
+              email_subject: status.adminEmailSubject,
+              email_content: status.adminEmailContent,
+              email_type: "magicLink",
+              buttonText: status.buttonText,
+              buttonLink: status.buttonLink,
               skipTracking: true,
             },
-            status_name: status.admin_status_name,
-            status_action: status.admin_status_action,
-            status_color: status.status_color,
+            statusName: status.adminStatusName,
+            status_action: status.adminStatusAction,
+            statusColor: status.statusColor,
             status_slug: status.status_slug,
             status_tab: status.admin_status_tab,
             modal: {
               type: "info",
               persist: false,
-              message: status.modal_admin,
+              message: status.modalAdmin,
               title: "Project Updated",
               redirect: {
-                url: status.modal_auto_redirect_admin,
+                url: status.modalAutoRedirectAdmin,
                 delay: 3000,
                 showCountdown: true,
               },
               showCountdown: true,
               duration: 2500,
-              est_time: status.est_time,
+              estTime: status.estTime,
             },
           },
           client: {
             email: {
               users_to_notify: [projectData?.authorProfile?.email],
-              email_subject: status.client_email_subject,
-              email_content: status.client_email_content,
-              email_type: "magic_link",
-              button_text: status.button_text,
-              button_link: status.button_link,
+              email_subject: status.clientEmailSubject,
+              email_content: status.clientEmailContent,
+              email_type: "magicLink",
+              buttonText: status.buttonText,
+              buttonLink: status.buttonLink,
               skipTracking: true,
             },
-            status_name: status.client_status_name,
-            status_action: status.client_status_action,
-            status_color: status.status_color,
+            statusName: status.clientStatusName,
+            status_action: status.clientStatusAction,
+            statusColor: status.statusColor,
             status_slug: status.status_slug,
             status_tab: status.client_status_tab,
             modal: {
               type: "info",
               persist: false,
-              message: status.modal_client,
+              message: status.modalClient,
               title: "ClientProject Updated",
               redirect: {
-                url: status.modal_auto_redirect_client,
+                url: status.modalAutoRedirectClient,
                 delay: 3000,
                 showCountdown: true,
               },
               showCountdown: true,
               duration: 2500,
-              est_time: status.est_time,
+              estTime: status.estTime,
             },
           },
           current: {
             email: {
               usersToNotify: isAdminOrStaff ? usersToNotify : [projectData?.authorProfile?.email],
-              email_subject: isAdminOrStaff
-                ? status.admin_email_subject
-                : status.client_email_subject,
-              email_content: isAdminOrStaff
-                ? status.admin_email_content
-                : status.client_email_content,
-              email_type: "magic_link",
-              button_text: status.button_text,
-              button_link: status.button_link,
+              email_subject: isAdminOrStaff ? status.adminEmailSubject : status.clientEmailSubject,
+              email_content: isAdminOrStaff ? status.adminEmailContent : status.clientEmailContent,
+              email_type: "magicLink",
+              buttonText: status.buttonText,
+              buttonLink: status.buttonLink,
               skipTracking: true,
             },
-            status_name: isAdminOrStaff ? status.admin_status_name : status.client_status_name,
-            status_action: isAdminOrStaff
-              ? status.admin_status_action
-              : status.client_status_action,
-            status_color: status.status_color,
+            statusName: isAdminOrStaff ? status.adminStatusName : status.clientStatusName,
+            status_action: isAdminOrStaff ? status.adminStatusAction : status.clientStatusAction,
+            statusColor: status.statusColor,
             status_slug: status.status_slug,
             status_tab: isAdminOrStaff ? status.admin_status_tab : status.client_status_tab,
             modal: {
               type: "info",
               persist: false, // false = close existing modals, true = keep existing modals
-              message: isAdminOrStaff ? status.modal_admin : status.modal_client,
+              message: isAdminOrStaff ? status.modalAdmin : status.modalClient,
               title: "Project Updated",
               redirect: {
                 url: isAdminOrStaff
-                  ? status.modal_auto_redirect_admin
-                  : status.modal_auto_redirect_client,
+                  ? status.modalAutoRedirectAdmin
+                  : status.modalAutoRedirectClient,
                 delay: 3000, // Delay in milliseconds before redirect
                 showCountdown: true, // Show countdown in message
               },
               showCountdown: true,
               duration: 2500,
-              est_time: status.est_time,
+              estTime: status.estTime,
             },
           },
         };
@@ -563,13 +551,13 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     const selectOptions = Object.entries(simplifiedStatuses).map(([statusCode, statusData]) => ({
       value: statusCode,
       label:
-        statusData.current.status_name.replace(/<[^>]*>/g, "") +
+        statusData.current.statusName.replace(/<[^>]*>/g, "") +
         " / " +
-        (statusesData.find((s: any) => s.status_code === parseInt(statusCode))?.est_time === null
+        (statusesData.find((s: any) => s.statusCode === parseInt(statusCode))?.estTime === null
           ? "No Est. Time Value"
           : statusesData
-              .find((s: any) => s.status_code === parseInt(statusCode))
-              ?.est_time.replace(/<[^>]*>/g, "")),
+              .find((s: any) => s.statusCode === parseInt(statusCode))
+              ?.estTime.replace(/<[^>]*>/g, "")),
     }));
 
     const response: ProjectStatusesResponse = {

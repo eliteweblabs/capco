@@ -1,5 +1,5 @@
-import type { APIRoute } from "astro";
 import { createClient } from "@supabase/supabase-js";
+import type { APIRoute } from "astro";
 
 export const GET: APIRoute = async ({ params, cookies }) => {
   try {
@@ -42,7 +42,7 @@ export const GET: APIRoute = async ({ params, cookies }) => {
       .select(
         `
         *,
-        projects!inner(id, author_id)
+        projects!inner(id, authorId)
       `
       )
       .eq("id", id)
@@ -53,14 +53,14 @@ export const GET: APIRoute = async ({ params, cookies }) => {
     }
 
     // Check if user has access to this PDF
-    if (pdfDoc.projects.author_id !== user.id && pdfDoc.created_by !== user.id) {
+    if (pdfDoc.projects.authorId !== user.id && pdfDoc.createdBy !== user.id) {
       return new Response("Access denied", { status: 403 });
     }
 
     // Download file from Supabase Storage
     const { data: fileData, error: downloadError } = await supabase.storage
       .from("documents")
-      .download(pdfDoc.file_path);
+      .download(pdfDoc.filePath);
 
     if (downloadError || !fileData) {
       console.error("Error downloading PDF from storage:", downloadError);
@@ -75,7 +75,7 @@ export const GET: APIRoute = async ({ params, cookies }) => {
       status: 200,
       headers: {
         "Content-Type": "application/pdf",
-        "Content-Disposition": `attachment; filename="${pdfDoc.file_name}"`,
+        "Content-Disposition": `attachment; filename="${pdfDoc.fileName}"`,
         "Content-Length": arrayBuffer.byteLength.toString(),
         "Cache-Control": "private, max-age=3600", // Cache for 1 hour
       },

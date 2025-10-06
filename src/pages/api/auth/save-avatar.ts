@@ -97,7 +97,7 @@ export const POST: APIRoute = async ({ request }) => {
     // Update profile with new avatar URL
     const { error: updateError } = await supabaseAdmin
       .from("profiles")
-      .update({ avatar_url: newAvatarUrl })
+      .update({ avatarUrl: newAvatarUrl })
       .eq("id", userId);
 
     if (updateError) {

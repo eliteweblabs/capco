@@ -65,7 +65,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       .from("projects")
       .update({
         status: newStatus,
-        updated_at: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
       })
       .eq("id", projectId)
       .select()

@@ -6,8 +6,8 @@ export interface StatusEmail {
   email_subject: string;
   email_content: string;
   email_type: string;
-  button_text: string;
-  button_link: string;
+  buttonText: string;
+  buttonLink: string;
 }
 
 export interface StatusModal {
@@ -22,14 +22,14 @@ export interface StatusModal {
   };
   showCountdown: boolean;
   duration: number;
-  est_time?: string;
+  estTime?: string;
 }
 
 export interface StatusConfig {
   email: StatusEmail;
-  status_name: string;
+  statusName: string;
   status_action: string;
-  status_color: string;
+  statusColor: string;
   status_slug: string;
   status_tab: string;
   modal: StatusModal;
@@ -42,26 +42,26 @@ export interface SimplifiedStatus {
 }
 
 export interface StatusData {
-  status_code: number;
-  admin_email_subject: string;
-  admin_email_content: string;
-  client_email_subject: string;
-  client_email_content: string;
-  button_text: string;
-  button_link: string;
-  admin_status_name: string;
-  admin_status_action: string;
-  client_status_name: string;
-  client_status_action: string;
-  status_color: string;
+  statusCode: number;
+  adminEmailSubject: string;
+  adminEmailContent: string;
+  clientEmailSubject: string;
+  clientEmailContent: string;
+  buttonText: string;
+  buttonLink: string;
+  adminStatusName: string;
+  adminStatusAction: string;
+  clientStatusName: string;
+  clientStatusAction: string;
+  statusColor: string;
   status_slug: string;
   admin_status_tab: string;
   client_status_tab: string;
-  modal_admin: string;
-  modal_client: string;
-  modal_auto_redirect_admin: string;
-  modal_auto_redirect_client: string;
-  est_time: string;
+  modalAdmin: string;
+  modalClient: string;
+  modalAutoRedirectAdmin: string;
+  modalAutoRedirectClient: string;
+  estTime: string;
   email_to_role: string;
 }
 
@@ -86,19 +86,17 @@ export function createStatusConfig(
   }
 
   // Determine email content
-  const emailSubject = isAdmin ? status.admin_email_subject : status.client_email_subject;
-  const emailContent = isAdmin ? status.admin_email_content : status.client_email_content;
+  const emailSubject = isAdmin ? status.adminEmailSubject : status.clientEmailSubject;
+  const emailContent = isAdmin ? status.adminEmailContent : status.clientEmailContent;
 
   // Determine status details
-  const statusName = isAdmin ? status.admin_status_name : status.client_status_name;
-  const statusAction = isAdmin ? status.admin_status_action : status.client_status_action;
+  const statusName = isAdmin ? status.adminStatusName : status.clientStatusName;
+  const statusAction = isAdmin ? status.adminStatusAction : status.clientStatusAction;
   const statusTab = isAdmin ? status.admin_status_tab : status.client_status_tab;
 
   // Determine modal content
-  const modalMessage = isAdmin ? status.modal_admin : status.modal_client;
-  const modalRedirect = isAdmin
-    ? status.modal_auto_redirect_admin
-    : status.modal_auto_redirect_client;
+  const modalMessage = isAdmin ? status.modalAdmin : status.modalClient;
+  const modalRedirect = isAdmin ? status.modalAutoRedirectAdmin : status.modalAutoRedirectClient;
 
   return {
     email: {
@@ -107,12 +105,12 @@ export function createStatusConfig(
       email_subject: emailSubject,
       email_content: emailContent,
       email_type: "status_update",
-      button_text: status.button_text,
-      button_link: status.button_link,
+      buttonText: status.buttonText,
+      buttonLink: status.buttonLink,
     },
-    status_name: statusName,
+    statusName: statusName,
     status_action: statusAction,
-    status_color: status.status_color,
+    statusColor: status.statusColor,
     status_slug: status.status_slug,
     status_tab: statusTab,
     modal: {
@@ -127,7 +125,7 @@ export function createStatusConfig(
       },
       showCountdown: true,
       duration: 2500,
-      est_time: status.est_time,
+      estTime: status.estTime,
     },
   };
 }
@@ -142,7 +140,7 @@ export function createSimplifiedStatuses(
   const simplifiedStatuses: Record<number, SimplifiedStatus> = {};
 
   statusesData.forEach((status: StatusData) => {
-    const statusCode = status.status_code;
+    const statusCode = status.statusCode;
     if (statusCode) {
       simplifiedStatuses[statusCode] = {
         admin: createStatusConfig(

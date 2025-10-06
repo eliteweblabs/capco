@@ -141,7 +141,7 @@ export class RefreshManager {
     });
 
     // Admin status name - update text content
-    this.registerCallback("admin_status_name", (value: string) => {
+    this.registerCallback("adminStatusName", (value: string) => {
       const element = this as any;
       element.textContent = value;
     });
@@ -159,15 +159,9 @@ export class RefreshManager {
     });
 
     // User name/company name - update text content
-    this.registerCallback("company_name", (value: string) => {
+    this.registerCallback("companyName", (value: string) => {
       const element = this as any;
       element.textContent = value;
-    });
-
-    // Assigned user name - update text content
-    this.registerCallback("assigned_to_name", (value: string) => {
-      const element = this as any;
-      element.textContent = value || "Unassigned";
     });
   }
 

@@ -13,11 +13,11 @@ export const GET: APIRoute = async ({ cookies }) => {
     // Get all client profiles from Supabase
     const { data: profiles, error } = await supabaseAdmin
       .from("profiles")
-      .select("id, first_name, last_name, company_name, email, phone, role")
+      .select("id, firstName, lastName, companyName, email, phone, role")
       .eq("role", "Client")
-      // .order("company_name", { ascending: true, nullsLast: true })
-      .order("company_name", { ascending: true })
-      .order("first_name", { ascending: true });
+      // .order("companyName", { ascending: true, nullsLast: true })
+      .order("companyName", { ascending: true })
+      .order("firstName", { ascending: true });
 
     if (error) {
       console.error("👥 [GET-CLIENTS] Error fetching profiles:", error);

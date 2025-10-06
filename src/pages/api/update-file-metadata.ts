@@ -67,7 +67,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     // Get the file to verify ownership
     const { data: file, error: fileError } = await supabase
       .from("files")
-      .select("id, project_id, author_id")
+      .select("id, projectId, authorId")
       .eq("id", fileId)
       .single();
 
@@ -93,7 +93,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
     const userRole = profile?.role || "Client";
     const isAdmin = userRole === "Admin" || userRole === "Staff";
-    const isOwner = file.author_id === user.id;
+    const isOwner = file.authorId === user.id;
 
     if (!isAdmin && !isOwner) {
       return new Response(
@@ -110,7 +110,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
     // Update the file metadata
     const updateData: any = {
-      updated_at: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
     };
 
     if (title !== undefined) {

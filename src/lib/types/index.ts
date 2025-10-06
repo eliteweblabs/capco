@@ -3,60 +3,60 @@
 export interface User {
   id: string;
   email: string;
-  company_name?: string;
-  first_name?: string;
-  last_name?: string;
+  companyName?: string;
+  firstName?: string;
+  lastName?: string;
   role: "Admin" | "Staff" | "Client";
   phone?: string;
-  created_at: string;
-  updated_at: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface Project {
   id: number;
-  author_id: string;
+  authorId: string;
   title: string;
   address: string;
   status: number;
-  sq_ft?: number;
-  new_construction: boolean;
-  created_at: string;
-  updated_at: string;
+  sqFt?: number;
+  newConstruction: boolean;
+  createdAt: string;
+  updatedAt: string;
   authorProfile?: {
     id: string;
-    company_name: string;
-    first_name: string;
-    last_name: string;
+    companyName: string;
+    firstName: string;
+    lastName: string;
   } | null;
   assignedToProfile?: {
     id: string;
-    company_name: string;
-    first_name: string;
-    last_name: string;
+    companyName: string;
+    firstName: string;
+    lastName: string;
   } | null;
 }
 
 export interface Discussion {
   id: number;
-  project_id: number;
-  author_id: string;
+  projectId: number;
+  authorId: string;
   message: string;
   internal: boolean;
-  mark_completed: boolean;
-  parent_id?: number;
-  image_urls?: string[];
-  image_paths?: string[];
-  company_name?: string;
-  created_at: string;
-  updated_at: string;
+  markCompleted: boolean;
+  parentId?: number;
+  imageUrls?: string[];
+  imagePaths?: string[];
+  companyName?: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface File {
   id: number;
-  project_id: number;
-  author_id: string;
-  file_path: string;
-  uploaded_at: string;
+  projectId: number;
+  authorId: string;
+  filePath: string;
+  uploadedAt: string;
   status: string;
 }
 
@@ -79,7 +79,7 @@ export type UserRole = "Admin" | "Staff" | "Client";
 export interface AuthUser {
   id: string;
   email: string;
-  company_name?: string;
+  companyName?: string;
   role: UserRole;
   profile?: User;
 }

@@ -66,9 +66,9 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       });
     }
 
-    const { file_id, project_id } = requestBody;
+    const { fileId, projectId } = requestBody;
 
-    if (!file_id) {
+    if (!fileId) {
       console.error("File ID is required");
       return new Response(JSON.stringify({ error: "File ID is required" }), {
         status: 400,
@@ -76,7 +76,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       });
     }
 
-    if (!project_id) {
+    if (!projectId) {
       console.error("Project ID is required");
       return new Response(JSON.stringify({ error: "Project ID is required" }), {
         status: 400,
@@ -85,11 +85,11 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     }
 
     // Convert IDs to numbers if they're strings
-    const fileIdNum = typeof file_id === "string" ? parseInt(file_id, 10) : file_id;
-    const projectIdNum = typeof project_id === "string" ? parseInt(project_id, 10) : project_id;
+    const fileIdNum = typeof fileId === "string" ? parseInt(fileId, 10) : fileId;
+    const projectIdNum = typeof projectId === "string" ? parseInt(projectId, 10) : projectId;
 
     if (isNaN(fileIdNum) || isNaN(projectIdNum)) {
-      console.error("Invalid file or project ID:", { file_id, project_id });
+      console.error("Invalid file or project ID:", { fileId, projectId });
       return new Response(JSON.stringify({ error: "Invalid file or project ID" }), {
         status: 400,
         headers: { "Content-Type": "application/json" },
@@ -153,9 +153,9 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     console.log("Looking up file:", fileIdNum);
     const { data: file, error: fileError } = await supabase
       .from("files")
-      .select("id, file_path, project_id, file_name")
+      .select("id, filePath, projectId, fileName")
       .eq("id", fileIdNum)
-      .eq("project_id", projectIdNum)
+      .eq("projectId", projectIdNum)
       .single();
 
     if (fileError || !file) {
@@ -166,14 +166,14 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       });
     }
 
-    console.log("File found:", file.file_name, "Path:", file.file_path);
+    console.log("File found:", file.fileName, "Path:", file.filePath);
 
     // Delete file from storage first
-    if (file.file_path) {
-      console.log("Deleting file from storage:", file.file_path);
+    if (file.filePath) {
+      console.log("Deleting file from storage:", file.filePath);
       const { error: storageDeleteError } = await supabase.storage
         .from("project-media")
-        .remove([file.file_path]);
+        .remove([file.filePath]);
 
       if (storageDeleteError) {
         console.error("Error deleting file from storage:", storageDeleteError);
@@ -214,7 +214,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     return new Response(
       JSON.stringify({
         success: true,
-        message: `File <b>${file.file_name}</b> has been deleted successfully`,
+        message: `File <b>${file.fileName}</b> has been deleted successfully`,
       }),
       {
         status: 200,

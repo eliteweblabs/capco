@@ -160,10 +160,10 @@ const statusOptions = statusResponseData.selectOptions || [];
 if (currentStatusInt && statusData[currentStatusInt]) {
   const currentStatusObj = statusData[currentStatusInt];
   // Use the role-based values directly from the API (no additional filtering needed)
-  currentStatusName = currentStatusObj.current.status_name;
+  currentStatusName = currentStatusObj.current.statusName;
   currentStatusTab = currentStatusObj.current.status_tab;
   currentStatusProjectAction = currentStatusObj.current.status_action;
-  currentStatusColor = currentStatusObj.current.status_color || "gray";
+  currentStatusColor = currentStatusObj.current.statusColor || "gray";
   // search currentStatusProjectAction for "status=" + statusParam
   const statusParamIndex = currentStatusProjectAction?.indexOf("status=" + statusParam) || 0;
   if (statusParamIndex !== -1 && currentStatusProjectAction) {
@@ -195,8 +195,8 @@ if (currentRole === "Admin" || currentRole === "Staff") {
           ...staffData.staffUsers.map((staff: any) => ({
             value: staff.id || "",
             label:
-              staff.company_name ||
-              `${staff.first_name || ""} ${staff.last_name || ""}`.trim() ||
+              staff.companyName ||
+              `${staff.firstName || ""} ${staff.lastName || ""}`.trim() ||
               "Unknown Staff",
           })),
         ];
@@ -218,7 +218,7 @@ if (currentRole === "Admin" || currentRole === "Staff") {
   currentUser={currentUser}
   project={project}
   title={project?.title || "Untitled Project"}
-  description={project?.authorProfile?.company_name || "Unknown Author"}
+  description={project?.authorProfile?.companyName || "Unknown Author"}
   session={session}
   supabase={supabase}
   supabaseUrl={import.meta.env.PUBLIC_SUPABASE_URL}
@@ -240,10 +240,10 @@ if (currentRole === "Admin" || currentRole === "Staff") {
   <HeroProject
     title={project?.address || project?.title || "Untitled Project"}
     description={currentUser?.profile?.role === "Client"
-      ? project?.created_at
-        ? "<b>Created:</b> " + new Date(project.created_at).toLocaleDateString()
+      ? project?.createdAt
+        ? "<b>Created:</b> " + new Date(project.createdAt).toLocaleDateString()
         : "Unknown Date"
-      : project?.authorProfile?.company_name + " → " + project?.authorProfile?.email ||
+      : project?.authorProfile?.companyName + " → " + project?.authorProfile?.email ||
         "Unknown Author"}
     statusColor={currentStatusColor}
     currentUser={currentUser}

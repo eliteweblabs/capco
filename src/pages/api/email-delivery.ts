@@ -87,7 +87,7 @@ export const POST: APIRoute = async ({ request, cookies }): Promise<Response> =>
     // Determine if click tracking should be disabled based on email type
     // Magic link emails should not be tracked to prevent URL wrapping
     const shouldDisableTracking =
-      emailType === "magic_link" ||
+      emailType === "magicLink" ||
       emailType === "authentication" ||
       emailType === "login" ||
       !trackLinks;
@@ -184,7 +184,7 @@ export const POST: APIRoute = async ({ request, cookies }): Promise<Response> =>
           let finalButtonLink = buttonLink;
 
           // Generate magic links for authentication emails OR status updates with project URLs
-          const shouldGenerateMagicLink = emailType === "magic_link";
+          const shouldGenerateMagicLink = emailType === "magicLink";
           console.log("🔗 [EMAIL-DELIVERY] Should generate magic link:", shouldGenerateMagicLink);
 
           if (shouldGenerateMagicLink) {

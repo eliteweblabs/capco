@@ -50,14 +50,14 @@ export const POST: APIRoute = async ({ request }) => {
       const lineItemsData = lineItems.map((item: any) => ({
         catalog_item_id: item.catalog_item_id || item.id,
         quantity: item.quantity || 1,
-        unit_price: item.price || item.unit_price || 0,
+        unitPrice: item.price || item.unitPrice || 0,
         description: item.description || "",
         details: item.details || "",
       }));
 
       const { error: lineItemsError } = await supabase
         .from("invoices")
-        .update({ catalog_line_items: lineItemsData })
+        .update({ catalogLineItems: lineItemsData })
         .eq("id", invoiceId);
 
       if (lineItemsError) {

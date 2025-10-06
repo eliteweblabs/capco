@@ -1,5 +1,5 @@
 import type { APIRoute } from "astro";
-import { sendSmsViaEmail, sendProjectStatusSms, validatePhoneNumber } from "../../lib/sms-utils";
+import { sendProjectStatusSms, sendSmsViaEmail, validatePhoneNumber } from "../../lib/sms-utils";
 import { supabase } from "../../lib/supabase";
 
 export const POST: APIRoute = async ({ request, cookies }) => {
@@ -74,15 +74,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     }
 
     const body = await request.json();
-    const { 
-      phoneNumber, 
-      carrier, 
-      message, 
-      projectId, 
-      projectTitle, 
-      newStatus, 
-      projectAddress 
-    } = body;
+    const { phoneNumber, carrier, message, projectId, title, newStatus, address } = body;
 
     // Validate required fields
     if (!phoneNumber || !carrier || !message) {
@@ -115,14 +107,14 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
     // Send SMS
     let result;
-    if (projectId && projectTitle && newStatus) {
+    if (projectId && title && newStatus) {
       // Send project status SMS
       result = await sendProjectStatusSms(
         phoneValidation.cleaned!,
         carrier,
-        projectTitle,
+        title,
         newStatus,
-        projectAddress
+        address
       );
     } else {
       // Send custom SMS
@@ -130,25 +122,25 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         to: phoneValidation.cleaned!,
         carrier,
         message,
-        subject: "CAPCo Fire Protection"
+        subject: "CAPCo Fire Protection",
       });
     }
 
     if (result.success) {
       console.log("📱 [SEND-SMS] SMS sent successfully:", result.emailAddress);
-      
+
       // Log SMS activity to database (optional)
       try {
         await supabase.from("activity_log").insert({
-          user_id: currentUser.id,
+          userId: currentUser.id,
           action: "sms_sent",
           details: {
             phone_number: phoneValidation.cleaned,
             carrier,
             message_length: message.length,
-            email_address: result.emailAddress
+            email_address: result.emailAddress,
           },
-          created_at: new Date().toISOString()
+          createdAt: new Date().toISOString(),
         });
       } catch (logError) {
         console.error("📱 [SEND-SMS] Failed to log SMS activity:", logError);
@@ -179,7 +171,6 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         }
       );
     }
-
   } catch (error) {
     console.error("📱 [SEND-SMS] Unexpected error:", error);
     return new Response(

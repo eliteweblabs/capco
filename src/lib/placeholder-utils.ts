@@ -17,40 +17,40 @@ export interface PlaceholderData {
     address: string;
     title?: string;
     description?: string;
-    sq_ft?: string | number;
-    new_construction?: boolean;
-    created_at?: string;
-    est_time?: string;
+    sqFt?: string | number;
+    newConstruction?: boolean;
+    createdAt?: string;
+    estTime?: string;
     building?: [];
-    status_name?: string;
+    statusName?: string;
     // New project fields
-    nfpa_version?: string;
-    hazardous_material?: string;
-    site_access?: string;
-    exterior_beacon?: string;
-    fire_sprinkler_installation?: string;
-    commencement_of_construction?: string;
-    suppression_detection_systems?: string;
-    hps_commodities?: string;
-    contact_data?: {
+    nfpaVersion?: string;
+    hazardousMaterial?: string;
+    siteAccess?: string;
+    exteriorBeacon?: string;
+    fireSprinklerInstallation?: string;
+    commencementOfConstruction?: string;
+    suppressionDetectionSystems?: string;
+    hpsCommodities?: string;
+    contractData?: {
       signed_date?: string;
       ip_address?: string;
       image?: string;
       signed_time?: string;
     };
-    contract_pdf_url?: string;
+    contractPdfUrl?: string;
     authorProfile?: {
-      company_name: string;
+      companyName: string;
       email: string;
       phone?: string;
-      first_name?: string;
-      last_name?: string;
+      firstName?: string;
+      lastName?: string;
     };
     assignedToProfile?: {
-      company_name: string;
+      companyName: string;
       email: string;
-      first_name?: string;
-      last_name?: string;
+      firstName?: string;
+      lastName?: string;
     };
   };
   statusData?: {
@@ -92,34 +92,31 @@ export function replacePlaceholders(
 
   // Client/Author data (with array support)
   const authorProfile = data?.project?.authorProfile;
-  const isArrayProfile = Array.isArray(authorProfile);
-
-  const clientName = authorProfile?.company_name || "Client Name Missing";
+  const clientName = authorProfile?.companyName || "Client Name Missing";
   const clientEmail = authorProfile?.email || "Client Email Missing";
   const phone = authorProfile?.phone || "N/A";
-  const clientFirstName = authorProfile?.first_name || "{{BLANK}}";
-  const clientLastName = authorProfile?.last_name || "{{BLANK}}";
+  const clientFirstName = authorProfile?.firstName || "{{BLANK}}";
+  const clientLastName = authorProfile?.lastName || "{{BLANK}}";
   // Project data
-  const projectAddress = data?.project?.address || "Project Address Missing";
-  const projectTitle = data?.project?.title || data?.project?.address || "Untitled Project";
+  const address = data?.project?.address || "Project Address Missing";
+  const title = data?.project?.title || data?.project?.address || "Untitled Project";
   const projectDescription = data?.project?.description || "No description provided";
-  const projectSqFt = data?.project?.sq_ft || "N/A";
-  const projectNewConstruction = data?.project?.new_construction ? "Yes" : "No";
-  const projectCreatedDate = data?.project?.created_at
-    ? new Date(data?.project?.created_at).toLocaleDateString()
+  const projectSqFt = data?.project?.sqFt || "N/A";
+  const projectNewConstruction = data?.project?.newConstruction ? "Yes" : "No";
+  const projectCreatedDate = data?.project?.createdAt
+    ? new Date(data?.project?.createdAt).toLocaleDateString()
     : "N/A";
   const projectBuildingType = JSON.stringify(data?.project?.building) || "N/A";
 
   // Staff/Assigned data
-  const assignedStaffName = data?.project?.assignedToProfile?.company_name || "Unassigned";
+  const assignedStaffName = data?.project?.assignedToProfile?.companyName || "Unassigned";
   const assignedStaffEmail = data?.project?.assignedToProfile?.email || "N/A";
-  const assignedStaffFirstName = data?.project?.assignedToProfile?.first_name || "N/A";
-  const assignedStaffLastName = data?.project?.assignedToProfile?.last_name || "N/A";
+  const assignedStaffFirstName = data?.project?.assignedToProfile?.firstName || "N/A";
+  const assignedStaffLastName = data?.project?.assignedToProfile?.lastName || "N/A";
 
   // Status data
-  const currentStatusName = data?.project?.status_name || "Status Name Missing";
-
-  const estTime = data?.project?.est_time || "Est Time Missing";
+  const currentStatusName = data?.project?.statusName || "Status Name Missing";
+  const estTime = data?.project?.estTime || "Est Time Missing";
 
   // System data
   const year = new Date().getFullYear();
@@ -311,11 +308,11 @@ export function replacePlaceholders(
     }
   }
 
-  // Replace GLOBAL_COMPANY_NAME placeholders
+  // Replace GLOBAL_companyName placeholders
   if (globalCompanyData().globalCompanyName) {
     const beforeReplace = result;
     result = result.replace(
-      /\{\{\s*GLOBAL_COMPANY_NAME\s*\}\}/g,
+      /\{\{\s*GLOBAL_companyName\s*\}\}/g,
       globalCompanyData().globalCompanyName
     );
     if (result !== beforeReplace) {
@@ -376,20 +373,20 @@ export function replacePlaceholders(
     }
   }
 
-  // Replace FIRST_NAME placeholders
+  // Replace firstName placeholders
   if (clientFirstName) {
     const beforeReplace = result;
-    result = result.replace(/\{\{\s*FIRST_NAME\s*\}\}/g, clientFirstName);
+    result = result.replace(/\{\{\s*firstName\s*\}\}/g, clientFirstName);
     if (result !== beforeReplace) {
       placeholderApplied = true;
       addBoldTags = true;
     }
   }
 
-  // Replace LAST_NAME placeholders
+  // Replace lastName placeholders
   if (clientLastName) {
     const beforeReplace = result;
-    result = result.replace(/\{\{\s*LAST_NAME\s*\}\}/g, clientLastName);
+    result = result.replace(/\{\{\s*lastName\s*\}\}/g, clientLastName);
     if (result !== beforeReplace) {
       placeholderApplied = true;
       addBoldTags = true;
@@ -422,9 +419,9 @@ export function replacePlaceholders(
   // === PDF-SPECIFIC PLACEHOLDERS ===
 
   // Project placeholders
-  if (projectTitle) {
+  if (title) {
     const beforeReplace = result;
-    result = result.replace(/\{\{\s*PROJECT_TITLE\s*\}\}/g, projectTitle);
+    result = result.replace(/\{\{\s*PROJECT_TITLE\s*\}\}/g, title);
     if (result !== beforeReplace) {
       placeholderApplied = true;
       addBoldTags = true;
@@ -507,7 +504,7 @@ export function replacePlaceholders(
 
   if (clientFirstName) {
     const beforeReplace = result;
-    result = result.replace(/\{\{\s*CLIENT_FIRST_NAME\s*\}\}/g, clientFirstName);
+    result = result.replace(/\{\{\s*CLIENT_firstName\s*\}\}/g, clientFirstName);
     if (result !== beforeReplace) {
       placeholderApplied = true;
       addBoldTags = true;
@@ -516,7 +513,7 @@ export function replacePlaceholders(
 
   if (clientLastName) {
     const beforeReplace = result;
-    result = result.replace(/\{\{\s*CLIENT_LAST_NAME\s*\}\}/g, clientLastName);
+    result = result.replace(/\{\{\s*CLIENT_lastName\s*\}\}/g, clientLastName);
     if (result !== beforeReplace) {
       placeholderApplied = true;
       addBoldTags = true;
@@ -636,19 +633,19 @@ export function replacePlaceholders(
   // Track if any placeholders were actually replaced
 
   // Replace PROJECT_ADDRESS placeholders
-  if (projectAddress) {
+  if (address) {
     const beforeReplace = result;
-    result = result.replace(/\{\{\s*PROJECT_ADDRESS\s*\}\}/g, projectAddress);
+    result = result.replace(/\{\{\s*PROJECT_ADDRESS\s*\}\}/g, address);
     if (result !== beforeReplace) {
       placeholderApplied = true;
       addBoldTags = true;
     }
   }
 
-  // Replace PROJECT_COMPANY_NAME placeholders
+  // Replace PROJECT_companyName placeholders
   if (clientName) {
     const beforeReplace = result;
-    result = result.replace(/\{\{\s*PROJECT_COMPANY_NAME\s*\}\}/g, clientName);
+    result = result.replace(/\{\{\s*PROJECT_companyName\s*\}\}/g, clientName);
     if (result !== beforeReplace) {
       placeholderApplied = true;
       addBoldTags = true;
@@ -677,7 +674,7 @@ export function replacePlaceholders(
   // }
 
   // Replace PROJECT_SIGNATURE_DATE placeholders
-  const signatureDate = data?.project?.contact_data?.signed_date || "Unknown";
+  const signatureDate = data?.project?.contractData?.signed_date || "Unknown";
   if (signatureDate) {
     const beforeReplace = result;
     result = result.replace(/\{\{\s*PROJECT_SIGNATURE_DATE\s*\}\}/g, signatureDate);
@@ -688,7 +685,7 @@ export function replacePlaceholders(
   }
 
   // Replace PROJECT_SIGNATURE_TIME placeholders
-  const signatureTime = data?.project?.contact_data?.signed_time || "Unknown";
+  const signatureTime = data?.project?.contractData?.signed_time || "Unknown";
   if (signatureTime) {
     const beforeReplace = result;
     result = result.replace(/\{\{\s*PROJECT_SIGNATURE_TIME\s*\}\}/g, signatureTime);
@@ -699,7 +696,7 @@ export function replacePlaceholders(
   }
 
   // Replace PROJECT_SIGNATURE_IP placeholders
-  const signatureIP = data?.project?.contact_data?.ip_address || "Unknown";
+  const signatureIP = data?.project?.contractData?.ip_address || "Unknown";
   if (signatureIP) {
     const beforeReplace = result;
     result = result.replace(/\{\{\s*PROJECT_SIGNATURE_IP\s*\}\}/g, signatureIP);
@@ -710,7 +707,7 @@ export function replacePlaceholders(
   }
 
   // Replace PROJECT_SIGNATURE_IMAGE placeholders
-  const signatureImage = data?.project?.contact_data?.image || "";
+  const signatureImage = data?.project?.contractData?.image || "";
   const beforeReplace = result;
   result = result.replace(/\{\{\s*PROJECT_SIGNATURE_IMAGE\s*\}\}/g, signatureImage);
   if (result !== beforeReplace) {
@@ -718,10 +715,10 @@ export function replacePlaceholders(
     addBoldTags = true;
   }
 
-  // Replace COMPANY_NAME placeholders
+  // Replace companyName placeholders
   if (clientName) {
     const beforeReplace = result;
-    result = result.replace(/\{\{\s*COMPANY_NAME\s*\}\}/g, clientName);
+    result = result.replace(/\{\{\s*companyName\s*\}\}/g, clientName);
     if (result !== beforeReplace) {
       placeholderApplied = true;
       addBoldTags = true;
@@ -750,8 +747,8 @@ export function replacePlaceholders(
 
   // === NEW PROJECT FIELD PLACEHOLDERS ===
 
-  // Replace NFPA_VERSION placeholders
-  const nfpaVersion = data?.project?.nfpa_version || "N/A";
+  // Replace nfpaVersion placeholders
+  const nfpaVersion = data?.project?.nfpaVersion || "N/A";
   if (nfpaVersion) {
     const beforeReplace = result;
     result = result.replace(/\{\{\s*NFPA_VERSION\s*\}\}/g, nfpaVersion);
@@ -762,7 +759,7 @@ export function replacePlaceholders(
   }
 
   // Replace HAZARDOUS_MATERIAL placeholders
-  const hazardousMaterial = data?.project?.hazardous_material || "N/A";
+  const hazardousMaterial = data?.project?.hazardousMaterial || "N/A";
   if (hazardousMaterial) {
     const beforeReplace = result;
     result = result.replace(/\{\{\s*HAZARDOUS_MATERIAL\s*\}\}/g, hazardousMaterial);
@@ -772,8 +769,8 @@ export function replacePlaceholders(
     }
   }
 
-  // Replace SITE_ACCESS placeholders
-  const siteAccess = data?.project?.site_access || "N/A";
+  // Replace siteAccess placeholders
+  const siteAccess = data?.project?.siteAccess || "N/A";
   if (siteAccess) {
     const beforeReplace = result;
     result = result.replace(/\{\{\s*SITE_ACCESS\s*\}\}/g, siteAccess);
@@ -783,8 +780,8 @@ export function replacePlaceholders(
     }
   }
 
-  // Replace EXTERIOR_BEACON placeholders
-  const exteriorBeacon = data?.project?.exterior_beacon || "N/A";
+  // Replace exteriorBeacon placeholders
+  const exteriorBeacon = data?.project?.exteriorBeacon || "N/A";
   if (exteriorBeacon) {
     const beforeReplace = result;
     result = result.replace(/\{\{\s*EXTERIOR_BEACON\s*\}\}/g, exteriorBeacon);
@@ -795,7 +792,7 @@ export function replacePlaceholders(
   }
 
   // Replace FIRE_SPRINKLER_INSTALLATION placeholders
-  const fireSprinklerInstallation = data?.project?.fire_sprinkler_installation || "N/A";
+  const fireSprinklerInstallation = data?.project?.fireSprinklerInstallation || "N/A";
   if (fireSprinklerInstallation) {
     const beforeReplace = result;
     result = result.replace(
@@ -808,8 +805,8 @@ export function replacePlaceholders(
     }
   }
 
-  // Replace COMMENCEMENT_OF_CONSTRUCTION placeholders
-  const commencementOfConstruction = data?.project?.commencement_of_construction || "N/A";
+  // Replace commencementOfConstruction placeholders
+  const commencementOfConstruction = data?.project?.commencementOfConstruction || "N/A";
   if (commencementOfConstruction) {
     const beforeReplace = result;
     result = result.replace(
@@ -823,7 +820,7 @@ export function replacePlaceholders(
   }
 
   // Replace SUPPRESSION_DETECTION_SYSTEMS placeholders
-  const suppressionDetectionSystems = data?.project?.suppression_detection_systems || "N/A";
+  const suppressionDetectionSystems = data?.project?.suppressionDetectionSystems || "N/A";
   if (suppressionDetectionSystems) {
     const beforeReplace = result;
     result = result.replace(
@@ -837,7 +834,7 @@ export function replacePlaceholders(
   }
 
   // Replace HPS_COMMODITIES placeholders
-  const hpsCommodities = data?.project?.hps_commodities || "N/A";
+  const hpsCommodities = data?.project?.hpsCommodities || "N/A";
   if (hpsCommodities) {
     const beforeReplace = result;
     result = result.replace(/\{\{\s*HPS_COMMODITIES\s*\}\}/g, hpsCommodities);

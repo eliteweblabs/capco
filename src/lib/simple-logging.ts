@@ -30,7 +30,7 @@ export type LogType =
   | "email_sent"
   | "email_failed"
   | "user_login"
-  | "user_registration"
+  | "userRegistration"
   | "admin_action"
   | "system_event"
   | "error"
@@ -244,19 +244,19 @@ export class SimpleProjectLogger {
     // Handle different user object structures
     if (typeof currentUser === "string") return currentUser;
 
-    // Try profile.company_name first
-    if (currentUser.profile?.company_name) {
-      return currentUser.profile.company_name;
+    // Try profile.companyName first
+    if (currentUser.profile?.companyName) {
+      return currentUser.profile.companyName;
     }
 
-    // Try direct company_name
-    if (currentUser.company_name) {
-      return currentUser.company_name;
+    // Try direct companyName
+    if (currentUser.companyName) {
+      return currentUser.companyName;
     }
 
-    // Try first_name + last_name
-    const firstName = currentUser.profile?.first_name || currentUser.first_name;
-    const lastName = currentUser.profile?.last_name || currentUser.last_name;
+    // Try firstName + lastName
+    const firstName = currentUser.profile?.firstName || currentUser.firstName;
+    const lastName = currentUser.profile?.lastName || currentUser.lastName;
     if (firstName && lastName) {
       return `${firstName} ${lastName}`;
     }

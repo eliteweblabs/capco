@@ -745,3 +745,13 @@ export function unlockBodyScroll(): void {
     }
   }
 }
+
+/**
+ * Validates email format using a standard regex pattern
+ * @param email - Email address to validate
+ * @returns null if valid, error message string if invalid
+ */
+export function validateEmail(email: string): string | null {
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return emailRegex.test(email) ? null : "Invalid email format";
+}

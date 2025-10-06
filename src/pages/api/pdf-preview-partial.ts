@@ -67,7 +67,7 @@ export const POST: APIRoute = async ({ request }) => {
               margin-bottom: 16px;
               color: #dc2626;
             }
-            .pdf-title {
+            .pdf-project-title {
               font-size: 18px;
               font-weight: 600;
               color: #374151;
@@ -136,7 +136,7 @@ export const POST: APIRoute = async ({ request }) => {
               ></iframe>
               <div class="pdf-viewer" id="pdfViewer" style="display: none;">
                 <div class="pdf-icon">📄</div>
-                <div class="pdf-title">PDF Document</div>
+                <div class="pdf-project-title">PDF Document</div>
                 <div class="pdf-message">
                   PDF preview is loading... If it doesn't appear, you can open it in a new tab or download it.
                 </div>

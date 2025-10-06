@@ -44,8 +44,8 @@ try {
     // First get all profiles
     const { data: allProfiles, error: profilesError } = await supabase
       .from("profiles")
-      .select("id, first_name, last_name, company_name, phone, role, email, created_at")
-      .order("created_at", { ascending: false });
+      .select("id, firstName, lastName, companyName, phone, role, email, createdAt")
+      .order("createdAt", { ascending: false });
 
     if (profilesError) {
       console.error("Error fetching profiles:", profilesError);
@@ -282,9 +282,9 @@ const userCounts = {
                         {
                           users.map((user) => {
                             const fullName =
-                              `${user.first_name || ""} ${user.last_name || ""}`.trim();
-                            const displayName = fullName || user.company_name || "Unknown User";
-                            const createdDate = new Date(user.created_at).toLocaleDateString();
+                              `${user.firstName || ""} ${user.lastName || ""}`.trim();
+                            const displayName = fullName || user.companyName || "Unknown User";
+                            const createdDate = new Date(user.createdAt).toLocaleDateString();
 
                             return (
                               <tr
@@ -405,34 +405,11 @@ const userCounts = {
                   </p>
                 </div>
 
-                <!-- Create User Form -->
-                <form id="create-user-form" class="space-y-4">
-                  <StaffCreationForm
-                    globalInputClasses={globalInputClasses}
-                    globalSecondaryTextClasses={globalSecondaryTextClasses}
-                    globalPrimaryTextClasses={globalPrimaryTextClasses}
-                  />
-
-                  <!-- Submit Button -->
-                  <div class="pt-2">
-                    <Button
-                      type="submit"
-                      id="submit-btn"
-                      variant="primary"
-                      size="md"
-                      fullWidth
-                      loading={true}
-                    >
-                      <span id="submit-text">Create User</span>
-                    </Button>
-                  </div>
-
-                  <Alert
-                    type="info"
-                    title="Account Setup"
-                    description="<ol class='list-inside list-decimal space-y-1 text-xs'><li>An invitation email will be sent</li><li>User can set up authentication</li><li>User will appear in the list immediately</li></ol>"
-                  />
-                </form>
+                <StaffCreationForm
+                  globalInputClasses={globalInputClasses}
+                  globalSecondaryTextClasses={globalSecondaryTextClasses}
+                  globalPrimaryTextClasses={globalPrimaryTextClasses}
+                />
               </div>
             </div>
           </div>
@@ -453,22 +430,7 @@ const userCounts = {
     created: string;
   }
 
-  // Email validation function (client-side version)
-  function validateEmail(email: string): string | null {
-    if (!email || !email.trim()) {
-      return "Email is required";
-    }
-
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email.trim())) {
-      return "Invalid email format. Please use email@example.com";
-    }
-
-    return null;
-  }
-
   let currentUsers: User[] = [];
-
   let currentSort = { field: "created", direction: "desc" };
   let deleteUserId: string | null = null;
 
@@ -495,7 +457,6 @@ const userCounts = {
     // Initialize event listeners
     setupSearchAndFilter();
     setupSorting();
-    setupFormSubmission();
 
     // Apply initial filters (in case browser retains form values after refresh)
     setTimeout(() => {
@@ -531,165 +492,6 @@ const userCounts = {
         updateSortIndicators();
       });
     });
-  }
-
-  function setupFormSubmission() {
-    const form = document.getElementById("create-user-form");
-    const submitBtn = document.getElementById("submit-btn");
-    const submitText = document.getElementById("submit-text");
-
-    if (!form || !submitBtn) return;
-
-    form.addEventListener("submit", async (e) => {
-      e.preventDefault();
-
-      const formData = new FormData(form as HTMLFormElement);
-      const userData = {
-        email: formData.get("email") as string,
-        phone: formData.get("phone") as string,
-        role: formData.get("role-select") as string,
-        first_name: formData.get("first_name") as string,
-        last_name: formData.get("last_name") as string,
-        company_name: formData.get("company_name") as string,
-      };
-
-      // Validate required fields
-      if (
-        !userData.first_name?.trim() ||
-        !userData.last_name?.trim() ||
-        !userData.email?.trim() ||
-        !userData.role
-      ) {
-        if ((window as any).showModal) {
-          (window as any).showModal(
-            "error",
-            "Validation Error",
-            "Please fill in all required fields.",
-            5000
-          );
-        } else if (window.showModal) {
-          window.showModal("error", "Validation Error", "Please fill in all required fields.");
-        }
-        return;
-      }
-
-      // Validate email format
-      const emailError = validateEmail(userData.email);
-      if (emailError) {
-        if ((window as any).showModal) {
-          (window as any).showModal("error", "Validation Error", emailError, 5000);
-        } else if (window.showModal) {
-          window.showModal("error", "Validation Error", emailError);
-        }
-        return;
-      }
-
-      // Use first + last name if company is empty
-      if (!userData.company_name) {
-        userData.company_name = userData.first_name + " " + userData.last_name;
-      }
-
-      // Show loading state
-      setFormLoading(true);
-
-      try {
-        const response = await fetch("/api/create-user", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(userData),
-        });
-
-        const result = await response.json();
-
-        if (response.ok && result.success) {
-          // Show notification if provided by API
-          if (result.notification && (window as any).showModal) {
-            (window as any).showModal(
-              result.notification.type,
-              result.notification.title,
-              result.notification.message,
-              result.notification.duration || 5000
-            );
-          }
-
-          // Reset form
-          (form as HTMLFormElement).reset();
-
-          // Refresh page after short delay to show new user
-          setTimeout(() => {
-            window.location.reload();
-          }, 1500);
-        } else {
-          // Handle different error types from API response
-          let errorTitle = "User Creation Failed";
-          let errorMessage = "Failed to create user. Please try again.";
-          let errorDuration = 5000;
-
-          // Check for specific error types
-          if (result.error) {
-            errorMessage = result.error;
-          }
-
-          if (result.details) {
-            // Use the detailed error message for more specific feedback
-            errorMessage = result.details;
-          }
-
-          // Handle specific error cases
-          if (result.error && result.error.includes("email address has already been registered")) {
-            errorTitle = "Email Already Exists";
-            errorMessage =
-              "A user with this email address already exists. Please use a different email.";
-            errorDuration = 7000;
-          } else if (result.error && result.error.includes("validation")) {
-            errorTitle = "Validation Error";
-            errorMessage = "Please check your input and try again.";
-          } else if (result.error && result.error.includes("authentication")) {
-            errorTitle = "Authentication Error";
-            errorMessage = "Please log in again and try creating the user.";
-          } else if (result.error && result.error.includes("permission")) {
-            errorTitle = "Permission Denied";
-            errorMessage = "You don't have permission to create users.";
-          }
-
-          // Show error notification
-          if ((window as any).showModal) {
-            (window as any).showModal(errorTitle, errorMessage, "error", errorDuration);
-          } else if (window.showModal) {
-            // Fallback to modal
-            window.showModal("error", errorTitle, errorMessage);
-          }
-        }
-      } catch (error) {
-        console.error("Create user error:", error);
-        if ((window as any).showModal) {
-          (window as any).showModal(
-            "Network Error",
-            "Network error. Please check your connection and try again.",
-            "error",
-            5000
-          );
-        } else if (window.showModal) {
-          window.showModal(
-            "Network Error",
-            "Network error. Please check your connection and try again.",
-            "error"
-          );
-        }
-      } finally {
-        setFormLoading(false);
-      }
-    });
-
-    function setFormLoading(loading: boolean) {
-      if (loading) {
-        (submitBtn as HTMLButtonElement).disabled = true;
-        (submitText as HTMLElement).textContent = "Creating...";
-      } else {
-        (submitBtn as HTMLButtonElement).disabled = false;
-        (submitText as HTMLElement).textContent = "Create User";
-      }
-    }
   }
 
   function filterUsers() {

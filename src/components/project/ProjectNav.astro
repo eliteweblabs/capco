@@ -4,14 +4,14 @@ import SlidingPillNav from "../common/SlidingPillNav.astro";
 
 interface Project {
   status: number;
-  author_id: string;
+  authorId: string;
 }
 
 interface Status {
-  status_code: number;
-  client_status_name: string;
-  admin_status_name: string;
-  status_name: string;
+  statusCode: number;
+  clientStatusName: string;
+  adminStatusName: string;
+  statusName: string;
   supabaseUrl?: string;
 }
 
@@ -26,7 +26,7 @@ interface Props {
 const { currentRole, projects = [], statuses = [], currentUser, supabaseUrl } = Astro.props;
 
 // Use provided data instead of fetching
-let project_statuses: Status[] = statuses;
+let projectStatuses: Status[] = statuses;
 let statusCounts: Record<string, number> = {};
 let roleBasedProjectsCount = 0;
 
@@ -35,11 +35,11 @@ if (projects && projects.length > 0) {
   statusCounts = {};
 
   if (currentRole === "Client") {
-    // For clients, count by client_status_name (deduplicated)
+    // For clients, count by clientStatusName (deduplicated)
     projects.forEach((project: Project) => {
-      const statusInfo = project_statuses.find((s: Status) => s.status_code === project.status);
-      if (statusInfo && statusInfo.client_status_name && project.author_id === currentUser?.id) {
-        const clientStatusName = statusInfo.client_status_name;
+      const statusInfo = projectStatuses.find((s: Status) => s.statusCode === project.status);
+      if (statusInfo && statusInfo.clientStatusName && project.authorId === currentUser?.id) {
+        const clientStatusName = statusInfo.clientStatusName;
         statusCounts[clientStatusName] = (statusCounts[clientStatusName] || 0) + 1;
         roleBasedProjectsCount++;
       }
@@ -70,16 +70,14 @@ const navItems: NavItem[] = [
   },
 ];
 
-if (project_statuses.length > 0) {
+if (projectStatuses.length > 0) {
   if (currentRole === "Client") {
-    // Client navigation: deduplicate by client_status_name and use slugs
-    const clientStatuses = project_statuses
-      .filter(
-        (status: Status) => status.client_status_name && status.client_status_name.trim() !== ""
-      )
+    // Client navigation: deduplicate by clientStatusName and use slugs
+    const clientStatuses = projectStatuses
+      .filter((status: Status) => status.clientStatusName && status.clientStatusName.trim() !== "")
       .reduce((acc: Status[], status: Status) => {
-        // Check if this client_status_name already exists
-        const existing = acc.find((s) => s.client_status_name === status.client_status_name);
+        // Check if this clientStatusName already exists
+        const existing = acc.find((s) => s.clientStatusName === status.clientStatusName);
         if (!existing) {
           acc.push(status);
         }
@@ -87,8 +85,8 @@ if (project_statuses.length > 0) {
       }, []);
 
     clientStatuses.forEach((status: Status) => {
-      // Create slug from client_status_name
-      const slug = status.client_status_name
+      // Create slug from clientStatusName
+      const slug = status.clientStatusName
         .toLowerCase()
         .replace(/[^a-z0-9\s-]/g, "")
         .replace(/\s+/g, "-")
@@ -96,26 +94,26 @@ if (project_statuses.length > 0) {
 
       navItems.push({
         id: `status-${slug}`,
-        label: status.client_status_name,
+        label: status.clientStatusName,
         variant: "anchor",
         dataAttributes: {
-          "data-project-status-label": status.client_status_name,
+          "data-project-status-label": status.clientStatusName,
           "data-project-status-filter": slug,
-          "data-count": (statusCounts[status.client_status_name] || 0).toString(),
+          "data-count": (statusCounts[status.clientStatusName] || 0).toString(),
         },
       });
     });
   } else {
     // Admin/Staff navigation: use status numbers
-    project_statuses.forEach((status: Status) => {
+    projectStatuses.forEach((status: Status) => {
       navItems.push({
-        id: `status-${status.status_code}`,
-        label: status.admin_status_name,
+        id: `status-${status.statusCode}`,
+        label: status.adminStatusName,
         variant: "anchor",
         dataAttributes: {
-          "data-label": status.admin_status_name,
-          "data-project-status-filter": status.status_code.toString(),
-          "data-count": (statusCounts[status.status_code] || 0).toString(),
+          "data-label": status.adminStatusName,
+          "data-project-status-filter": status.statusCode.toString(),
+          "data-count": (statusCounts[status.statusCode] || 0).toString(),
         },
       });
     });

@@ -193,24 +193,24 @@ const {
 <script>
   interface GlobalDiscussion {
     id: number;
-    project_id: number;
+    projectId: number;
     project_address: string;
     project_title: string;
     project_owner: string;
     project_owner_id: string;
-    author_id: string;
+    authorId: string;
     author_name: string;
     author_role: string;
     message: string;
     internal: boolean;
-    mark_completed: boolean;
-    parent_id?: number;
+    markCompleted: boolean;
+    parentId?: number;
     is_reply: boolean;
-    image_urls?: string[];
-    image_paths?: any;
-    company_name?: string;
-    created_at: string;
-    updated_at: string;
+    imageUrls?: string[];
+    imagePaths?: any;
+    companyName?: string;
+    createdAt: string;
+    updatedAt: string;
   }
 
   interface DiscussionsFeedResponse {
@@ -379,11 +379,11 @@ const {
     }
 
     private renderDiscussionItem(discussion: GlobalDiscussion): string {
-      const timestamp = new Date(discussion.created_at).toLocaleString();
+      const timestamp = new Date(discussion.createdAt).toLocaleString();
       const internalBadge = discussion.internal
         ? `<span class="rounded-full bg-yellow-100 px-2 py-1 text-xs font-medium text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400">Internal</span>`
         : "";
-      const completedBadge = discussion.mark_completed
+      const completedBadge = discussion.markCompleted
         ? `<span class="rounded-full bg-green-100 px-2 py-1 text-xs font-medium text-green-800 dark:bg-green-900/30 dark:text-green-400">Completed</span>`
         : "";
       const replyBadge = discussion.is_reply
@@ -408,7 +408,7 @@ const {
                 ${completedBadge}
                 ${replyBadge}
               </div>
-              <a href="/project/${discussion.project_id}?status=discussion" class="text-sm text-blue-600 hover:underline dark:text-blue-400">
+              <a href="/project/${discussion.projectId}?status=discussion" class="text-sm text-blue-600 hover:underline dark:text-blue-400">
                 ${discussion.project_address || discussion.project_title}
               </a>
               <span class="mx-2 text-gray-400">•</span>
@@ -418,7 +418,7 @@ const {
           <div class="mt-2 text-gray-700 dark:text-gray-300">
             ${this.escapeHtml(discussion.message)}
           </div>
-          ${discussion.image_paths && Array.isArray(discussion.image_paths) && discussion.image_paths.length > 0 ? `<div class="mt-2 text-xs text-gray-500 dark:text-gray-400">📎 ${discussion.image_paths.length} attachment(s)</div>` : ""}
+          ${discussion.imagePaths && Array.isArray(discussion.imagePaths) && discussion.imagePaths.length > 0 ? `<div class="mt-2 text-xs text-gray-500 dark:text-gray-400">📎 ${discussion.imagePaths.length} attachment(s)</div>` : ""}
         </div>
       `;
     }

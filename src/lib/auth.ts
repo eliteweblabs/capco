@@ -78,6 +78,7 @@ export async function checkAuth(cookies: any): Promise<AuthResult> {
           if (profile && !profileError) {
             // Enhance currentUser object with profile data
             currentUser.profile = profile;
+            currentRole = profile.role;
 
             // console.log("🔐 [AUTH] Profile successfully attached:", {
             //   userId: currentUser.id,
@@ -112,8 +113,9 @@ export async function checkAuth(cookies: any): Promise<AuthResult> {
               currentUser.profile = {
                 id: currentUser.id,
                 role: "Client",
-                company_name: currentUser.email?.split("@")[0] || "Add Company Name",
+                companyName: currentUser.email?.split("@")[0] || "Add Company Name",
               };
+              currentRole = "Client";
 
               console.warn("🔐 [AUTH] Using default profile for user without profile record");
             }

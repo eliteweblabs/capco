@@ -34,13 +34,13 @@ const projectId = project?.id;
 
 // Debug the actual values being used in the form
 const firstNameValue =
-  authorProfile?.user_metadata?.first_name ||
-  authorProfile?.["user_metadata"]?.["first_name"] ||
+  authorProfile?.user_metadata?.firstName ||
+  authorProfile?.["user_metadata"]?.["firstName"] ||
   authorProfile?.profile?.name?.split(" ")[0] ||
   "";
 const lastNameValue =
-  authorProfile?.user_metadata?.last_name ||
-  authorProfile?.["user_metadata"]?.["last_name"] ||
+  authorProfile?.user_metadata?.lastName ||
+  authorProfile?.["user_metadata"]?.["lastName"] ||
   authorProfile?.profile?.name?.split(" ").slice(1).join(" ") ||
   "";
 
@@ -111,7 +111,7 @@ console.log("🔍 [PAYMENT-FORM] Computed lastNameValue:", lastNameValue);
         type="text"
         id="company-name"
         name="companyName"
-        value={authorProfile?.company_name || ""}
+        value={authorProfile?.companyName || ""}
         class="w-full rounded-lg border border-gray-300 p-3 focus:border-blue-500 focus:ring-blue-500"
         placeholder="ABC Fire Protection"
       />
@@ -620,7 +620,7 @@ console.log("🔍 [PAYMENT-FORM] Computed lastNameValue:", lastNameValue);
           result = await stripe.confirmPayment({
             clientSecret,
             confirmParams: {
-              payment_method: paymentMethod,
+              paymentMethod: paymentMethod,
               return_url: window.location.href,
             },
           });
@@ -640,7 +640,7 @@ console.log("🔍 [PAYMENT-FORM] Computed lastNameValue:", lastNameValue);
 
           // For card payments with billing details
           result = await stripe.confirmCardPayment(clientSecret, {
-            payment_method: {
+            paymentMethod: {
               card: cardNumberElement,
               billing_details: billingDetails,
             },

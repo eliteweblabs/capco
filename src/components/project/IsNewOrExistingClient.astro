@@ -37,7 +37,7 @@ if (typeof window !== "undefined" && (window as any).globalClientProfiles) {
 
   existingClients = globalProfiles.map((profile: any) => ({
     value: profile.id,
-    label: profile.company_name || `Client ${profile.id}`,
+    label: profile.companyName || `Client ${profile.id}`,
   }));
 } else {
   // Fallback to database call if global data not available
@@ -50,9 +50,9 @@ if (typeof window !== "undefined" && (window as any).globalClientProfiles) {
       // Get all client profiles
       const { data: profiles, error: profilesError } = await supabase
         .from("profiles")
-        .select("id, company_name, role")
+        .select("id, companyName, role")
         .eq("role", "Client")
-        .order("company_name");
+        .order("companyName");
 
       if (profilesError) {
         console.error("Error fetching client profiles:", profilesError);
@@ -65,7 +65,7 @@ if (typeof window !== "undefined" && (window as any).globalClientProfiles) {
         // Format clients for slot machine
         existingClients = profiles.map((profile) => ({
           value: profile.id,
-          label: profile.company_name || `Client ${profile.id}`,
+          label: profile.companyName || `Client ${profile.id}`,
         }));
       }
     } catch (err) {
@@ -81,7 +81,7 @@ if (typeof window !== "undefined" && (window as any).globalClientProfiles) {
 <div id="existing-client-select-container" class="col-span-6 mb-4">
   <SlotMachineModalStaff
     id="existing-client-select"
-    name="author_id"
+    name="authorId"
     icon="user-circle"
     title="Select Existing Client"
     options={existingClients}
@@ -95,7 +95,7 @@ if (typeof window !== "undefined" && (window as any).globalClientProfiles) {
     searchText="Search Client"
     searchPlaceholder="Type to search clients..."
     valueField="id"
-    labelField="company_name"
+    labelField="companyName"
     fetchOnLoad={false}
     globalInputClasses={globalInputClasses}
   />
@@ -109,7 +109,7 @@ if (typeof window !== "undefined" && (window as any).globalClientProfiles) {
     <input
       type="text"
       id="first-name"
-      name="first_name"
+      name="firstName"
       required
       class=`${globalInputClasses}`
       placeholder="Enter first name"
@@ -123,7 +123,7 @@ if (typeof window !== "undefined" && (window as any).globalClientProfiles) {
     <input
       type="text"
       id="last-name"
-      name="last_name"
+      name="lastName"
       required
       class=`${globalInputClasses}`
       placeholder="Enter last name"
@@ -140,7 +140,7 @@ if (typeof window !== "undefined" && (window as any).globalClientProfiles) {
     <input
       type="text"
       id="company-name"
-      name="company_name"
+      name="companyName"
       class=`${globalInputClasses}`
       placeholder="Enter company name"
     />
@@ -179,13 +179,13 @@ if (typeof window !== "undefined" && (window as any).globalClientProfiles) {
     //   // Set required attributes on new client fields
     //   const initialNewFields = newClientFields.querySelectorAll("input");
     //   initialNewFields.forEach((field) => {
-    //     if (field.name === "first_name" || field.name === "last_name" || field.name === "email") {
+    //     if (field.name === "firstName" || field.name === "lastName" || field.name === "email") {
     //       field.setAttribute("required", "required");
     //     }
     //   });
     // }
 
-    // Watch for changes on the author_id hidden input
+    // Watch for changes on the authorId hidden input
     const authorIdInput = document.getElementById(
       "existing-client-select-value"
     ) as HTMLInputElement;
@@ -252,9 +252,9 @@ if (typeof window !== "undefined" && (window as any).globalClientProfiles) {
 
           // Create a mapping of field IDs to their values
           const fieldValues: { [key: string]: string } = {
-            "first-name": selectedClient.first_name || "",
-            "last-name": selectedClient.last_name || "",
-            "company-name": selectedClient.company_name || "",
+            "first-name": selectedClient.firstName || "",
+            "last-name": selectedClient.lastName || "",
+            "company-name": selectedClient.companyName || "",
             email: selectedClient.email || "",
           };
 
