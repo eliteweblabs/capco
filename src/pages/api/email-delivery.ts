@@ -218,9 +218,14 @@ export const POST: APIRoute = async ({ request, cookies }): Promise<Response> =>
                   code: magicLinkError.code,
                 });
               } else {
-                finalButtonLink = magicLinkData.properties.action_link;
+                // Use proxy page to prevent email client prefetching
+                const magicLinkUrl = magicLinkData.properties.action_link;
+                const proxyUrl = `${baseUrl}/magic-link-proxy?link=${encodeURIComponent(magicLinkUrl)}`;
+                finalButtonLink = proxyUrl;
+
                 console.log("🔗 [EMAIL-DELIVERY] Generated magic link successfully");
-                console.log("🔗 [EMAIL-DELIVERY] Magic link URL:", finalButtonLink);
+                console.log("🔗 [EMAIL-DELIVERY] Original magic link URL:", magicLinkUrl);
+                console.log("🔗 [EMAIL-DELIVERY] Proxy URL:", proxyUrl);
                 console.log("🔗 [EMAIL-DELIVERY] Magic link properties:", magicLinkData.properties);
               }
             } catch (error) {
@@ -269,6 +274,8 @@ export const POST: APIRoute = async ({ request, cookies }): Promise<Response> =>
             // Configure click tracking based on email type
             // Disable for magic links, enable for status updates and other emails
             track_links: finalTrackLinks,
+            // Completely disable click tracking for magic links
+            ...(shouldDisableTracking && { track_links: false, track_opens: false }),
             // Add proper content type and custom headers (only if values exist)
             headers: {
               "Content-Type": "text/html; charset=UTF-8",
@@ -276,6 +283,8 @@ export const POST: APIRoute = async ({ request, cookies }): Promise<Response> =>
               ...(includeResendHeaders &&
                 newStatus !== undefined &&
                 newStatus !== null && { "X-Project-Status": String(newStatus) }),
+              // Add special header to identify magic link emails
+              ...(shouldDisableTracking && { "X-Magic-Link": "true" }),
             },
           };
 
