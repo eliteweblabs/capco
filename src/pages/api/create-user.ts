@@ -372,7 +372,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
           console.error("📧 [CREATE-USER] No global options found");
         } else {
           const globalOption = globalOptions[0];
-          const dirtyNewClientContent = globalOption.value;
+          const dirtyNewClientContent = globalOption?.value || "";
           newClientContent = replacePlaceholders(dirtyNewClientContent, {
             project: {
               id: 0,
@@ -409,7 +409,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
           console.error("📧 [CREATE-USER] No global options found");
         } else {
           const globalOption = globalOptions2[0];
-          const dirtyNewClientContent = globalOption.value;
+          const dirtyNewClientContent = globalOption?.value || "";
           newStaffContent = replacePlaceholders(dirtyNewClientContent, {
             project: {
               id: 0,
