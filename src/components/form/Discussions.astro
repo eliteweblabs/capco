@@ -19,7 +19,7 @@ const {
   globalInputClasses,
   globalSecondaryTextClasses,
   globalPrimaryTextClasses,
-  placeholder,
+  placeholder = "Write a comment...",
 } = Astro.props;
 
 const currentRole = currentUser?.profile?.role;
@@ -27,513 +27,103 @@ const projectId = project?.id || null;
 const isGlobalDiscussion = !project;
 ---
 
-<div class="mb-6 flex items-center justify-between">
-  <button
-    id="new-comment-btn"
-    class="inline-flex items-center gap-2 rounded-lg bg-primary-500 px-4 py-2 text-sm font-medium text-white hover:bg-primary-600 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 disabled:opacity-50"
-  >
-    <i class="bx bx-plus text-lg"></i>
-    New Comment
-  </button>
-</div>
-
-<!-- Discussion Form -->
-
 <section class="bg-white py-8 antialiased dark:bg-gray-900 lg:py-16">
   <div class="mx-auto max-w-2xl px-4">
     <div class="mb-6 flex items-center justify-between">
-      <h2 class="text-lg font-bold text-gray-900 dark:text-white lg:text-2xl">Discussion (20)</h2>
+      <h2 class="text-lg font-bold text-gray-900 dark:text-white lg:text-2xl">
+        Discussion <span id="discussion-count" class="text-sm font-normal text-gray-500">(0)</span>
+      </h2>
+      <button
+        id="new-comment-btn"
+        class="inline-flex items-center gap-2 rounded-lg bg-primary-500 px-4 py-2 text-sm font-medium text-white hover:bg-primary-600 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 disabled:opacity-50"
+      >
+        <i class="bx bx-plus text-lg"></i>
+        New Comment
+      </button>
     </div>
-    <form class="mb-6">
+
+    <!-- Discussion Form (Hidden by default) -->
+    <div id="discussion-form" class="mb-6 hidden">
       <div
         class="mb-4 rounded-lg rounded-t-lg border border-gray-200 bg-white px-4 py-2 dark:border-gray-700 dark:bg-gray-800"
       >
-        <label for="comment" class="sr-only">Your comment</label>
+        <label for="discussion-message" class="sr-only">Your comment</label>
         <textarea
-          id="comment"
+          id="discussion-message"
           rows="6"
           class="w-full border-0 px-0 text-sm text-gray-900 focus:outline-none focus:ring-0 dark:bg-gray-800 dark:text-white dark:placeholder-gray-400"
-          placeholder="Write a comment..."
+          placeholder={placeholder}
           required></textarea>
       </div>
-      <button
-        type="submit"
-        class="inline-flex items-center rounded-lg bg-primary-700 px-4 py-2.5 text-center text-xs font-medium text-white hover:bg-primary-800 focus:ring-4 focus:ring-primary-200 dark:focus:ring-primary-900"
-      >
-        Post comment
-      </button>
-    </form>
-    <article class="rounded-lg bg-white p-6 text-base dark:bg-gray-900">
-      <footer class="mb-2 flex items-center justify-between">
-        <div class="flex items-center">
-          <p
-            class="mr-3 inline-flex items-center text-sm font-semibold text-gray-900 dark:text-white"
-          >
-            <img
-              class="mr-2 h-6 w-6 rounded-full"
-              src="https://flowbite.com/docs/images/people/profile-picture-2.jpg"
-              alt="Michael Gough"
-            />Michael Gough
-          </p>
-          <p class="text-sm text-gray-600 dark:text-gray-400">
-            <time pubdate datetime="2022-02-08" title="February 8th, 2022">Feb. 8, 2022</time>
-          </p>
-        </div>
+
+      <!-- Internal/Public Toggle (Admin/Staff only) -->
+      {
+        currentRole === "Admin" || currentRole === "Staff" ? (
+          <div class="mb-4 flex items-center gap-4">
+            <label class="flex items-center gap-2">
+              <input
+                type="checkbox"
+                id="internal-discussion"
+                class="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+              />
+              <span class="text-sm text-gray-700 dark:text-gray-300">Internal Discussion</span>
+            </label>
+            <label class="flex items-center gap-2">
+              <input
+                type="checkbox"
+                id="sms-alert"
+                class="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+              />
+              <span class="text-sm text-gray-700 dark:text-gray-300">SMS Alert</span>
+            </label>
+          </div>
+        ) : null
+      }
+
+      <div class="flex gap-3">
         <button
-          id="dropdownComment1Button"
-          data-dropdown-toggle="dropdownComment1"
-          class="inline-flex items-center rounded-lg bg-white p-2 text-center text-sm font-medium text-gray-500 hover:bg-gray-100 focus:outline-none focus:ring-4 focus:ring-gray-50 dark:bg-gray-900 dark:text-gray-400 dark:hover:bg-gray-700 dark:focus:ring-gray-600"
-          type="button"
+          id="submit-discussion"
+          class="inline-flex items-center rounded-lg bg-primary-500 px-4 py-2.5 text-center text-xs font-medium text-white hover:bg-primary-600 focus:ring-4 focus:ring-primary-200 disabled:opacity-50 dark:focus:ring-primary-900"
         >
-          <svg
-            class="h-4 w-4"
-            aria-hidden="true"
-            xmlns="http://www.w3.org/2000/svg"
-            fill="currentColor"
-            viewBox="0 0 16 3"
-          >
-            <path
-              d="M2 0a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3Zm6.041 0a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3ZM14 0a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3Z"
-            ></path>
-          </svg>
-          <span class="sr-only">Comment settings</span>
+          <i class="bx bx-send mr-2 text-lg"></i>
+          Post Comment
         </button>
-        <!-- Dropdown menu -->
-        <div
-          id="dropdownComment1"
-          class="z-10 hidden w-36 divide-y divide-gray-100 rounded bg-white shadow dark:divide-gray-600 dark:bg-gray-700"
-        >
-          <ul
-            class="py-1 text-sm text-gray-700 dark:text-gray-200"
-            aria-labelledby="dropdownMenuIconHorizontalButton"
-          >
-            <li>
-              <a
-                href="#"
-                class="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white"
-                >Edit</a
-              >
-            </li>
-            <li>
-              <a
-                href="#"
-                class="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white"
-                >Remove</a
-              >
-            </li>
-            <li>
-              <a
-                href="#"
-                class="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white"
-                >Report</a
-              >
-            </li>
-          </ul>
-        </div>
-      </footer>
-      <p class="text-gray-500 dark:text-gray-400">
-        Very straight-to-point article. Really worth time reading. Thank you! But tools are just the
-        instruments for the UX designers. The knowledge of the design tools are as important as the
-        creation of the design strategy.
-      </p>
-      <div class="mt-4 flex items-center space-x-4">
         <button
-          type="button"
-          class="flex items-center text-sm font-medium text-gray-500 hover:underline dark:text-gray-400"
+          id="cancel-discussion"
+          class="inline-flex items-center rounded-lg border border-gray-300 bg-gray-100 px-4 py-2.5 text-center text-xs font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
         >
-          <svg
-            class="mr-1.5 h-3.5 w-3.5"
-            aria-hidden="true"
-            xmlns="http://www.w3.org/2000/svg"
-            fill="none"
-            viewBox="0 0 20 18"
-          >
-            <path
-              stroke="currentColor"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2"
-              d="M5 5h5M5 8h2m6-3h2m-5 3h6m2-7H2a1 1 0 0 0-1 1v9a1 1 0 0 0 1 1h3v5l5-5h8a1 1 0 0 0 1-1V2a1 1 0 0 0-1-1Z"
-            ></path>
-          </svg>
-          Reply
+          <i class="bx bx-x mr-2 text-lg"></i>
+          Cancel
         </button>
       </div>
-    </article>
-    <article class="mb-3 ml-6 rounded-lg bg-white p-6 text-base dark:bg-gray-900 lg:ml-12">
-      <footer class="mb-2 flex items-center justify-between">
-        <div class="flex items-center">
-          <p
-            class="mr-3 inline-flex items-center text-sm font-semibold text-gray-900 dark:text-white"
-          >
-            <img
-              class="mr-2 h-6 w-6 rounded-full"
-              src="https://flowbite.com/docs/images/people/profile-picture-5.jpg"
-              alt="Jese Leos"
-            />Jese Leos
-          </p>
-          <p class="text-sm text-gray-600 dark:text-gray-400">
-            <time pubdate datetime="2022-02-12" title="February 12th, 2022">Feb. 12, 2022</time>
-          </p>
-        </div>
-        <button
-          id="dropdownComment2Button"
-          data-dropdown-toggle="dropdownComment2"
-          class="dark:text-gray-40 inline-flex items-center rounded-lg bg-white p-2 text-center text-sm font-medium text-gray-500 hover:bg-gray-100 focus:outline-none focus:ring-4 focus:ring-gray-50 dark:bg-gray-900 dark:hover:bg-gray-700 dark:focus:ring-gray-600"
-          type="button"
-        >
-          <svg
-            class="h-4 w-4"
-            aria-hidden="true"
-            xmlns="http://www.w3.org/2000/svg"
-            fill="currentColor"
-            viewBox="0 0 16 3"
-          >
-            <path
-              d="M2 0a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3Zm6.041 0a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3ZM14 0a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3Z"
-            ></path>
-          </svg>
-          <span class="sr-only">Comment settings</span>
-        </button>
-        <!-- Dropdown menu -->
+    </div>
+
+    <!-- Discussion List -->
+    <div id="discussions-list" class="space-y-4">
+      <!-- Discussions will be loaded here -->
+    </div>
+
+    <!-- Loading Spinner -->
+    <div id="discussions-loading" class="hidden py-8 text-center">
+      <div class="inline-flex items-center gap-2 text-gray-500">
         <div
-          id="dropdownComment2"
-          class="z-10 hidden w-36 divide-y divide-gray-100 rounded bg-white shadow dark:divide-gray-600 dark:bg-gray-700"
+          class="h-4 w-4 animate-spin rounded-full border-2 border-gray-300 border-t-primary-500"
         >
-          <ul
-            class="py-1 text-sm text-gray-700 dark:text-gray-200"
-            aria-labelledby="dropdownMenuIconHorizontalButton"
-          >
-            <li>
-              <a
-                href="#"
-                class="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white"
-                >Edit</a
-              >
-            </li>
-            <li>
-              <a
-                href="#"
-                class="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white"
-                >Remove</a
-              >
-            </li>
-            <li>
-              <a
-                href="#"
-                class="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white"
-                >Report</a
-              >
-            </li>
-          </ul>
         </div>
-      </footer>
-      <p class="text-gray-500 dark:text-gray-400">Much appreciated! Glad you liked it ☺️</p>
-      <div class="mt-4 flex items-center space-x-4">
-        <button
-          type="button"
-          class="flex items-center text-sm font-medium text-gray-500 hover:underline dark:text-gray-400"
-        >
-          <svg
-            class="mr-1.5 h-3.5 w-3.5"
-            aria-hidden="true"
-            xmlns="http://www.w3.org/2000/svg"
-            fill="none"
-            viewBox="0 0 20 18"
-          >
-            <path
-              stroke="currentColor"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2"
-              d="M5 5h5M5 8h2m6-3h2m-5 3h6m2-7H2a1 1 0 0 0-1 1v9a1 1 0 0 0 1 1h3v5l5-5h8a1 1 0 0 0 1-1V2a1 1 0 0 0-1-1Z"
-            ></path>
-          </svg>
-          Reply
-        </button>
+        Loading discussions...
       </div>
-    </article>
-    <article
-      class="mb-3 border-t border-gray-200 bg-white p-6 text-base dark:border-gray-700 dark:bg-gray-900"
-    >
-      <footer class="mb-2 flex items-center justify-between">
-        <div class="flex items-center">
-          <p
-            class="mr-3 inline-flex items-center text-sm font-semibold text-gray-900 dark:text-white"
-          >
-            <img
-              class="mr-2 h-6 w-6 rounded-full"
-              src="https://flowbite.com/docs/images/people/profile-picture-3.jpg"
-              alt="Bonnie Green"
-            />Bonnie Green
-          </p>
-          <p class="text-sm text-gray-600 dark:text-gray-400">
-            <time pubdate datetime="2022-03-12" title="March 12th, 2022">Mar. 12, 2022</time>
-          </p>
-        </div>
-        <button
-          id="dropdownComment3Button"
-          data-dropdown-toggle="dropdownComment3"
-          class="dark:text-gray-40 inline-flex items-center rounded-lg bg-white p-2 text-center text-sm font-medium text-gray-500 hover:bg-gray-100 focus:outline-none focus:ring-4 focus:ring-gray-50 dark:bg-gray-900 dark:hover:bg-gray-700 dark:focus:ring-gray-600"
-          type="button"
-        >
-          <svg
-            class="h-4 w-4"
-            aria-hidden="true"
-            xmlns="http://www.w3.org/2000/svg"
-            fill="currentColor"
-            viewBox="0 0 16 3"
-          >
-            <path
-              d="M2 0a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3Zm6.041 0a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3ZM14 0a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3Z"
-            ></path>
-          </svg>
-          <span class="sr-only">Comment settings</span>
-        </button>
-        <!-- Dropdown menu -->
-        <div
-          id="dropdownComment3"
-          class="z-10 hidden w-36 divide-y divide-gray-100 rounded bg-white shadow dark:divide-gray-600 dark:bg-gray-700"
-        >
-          <ul
-            class="py-1 text-sm text-gray-700 dark:text-gray-200"
-            aria-labelledby="dropdownMenuIconHorizontalButton"
-          >
-            <li>
-              <a
-                href="#"
-                class="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white"
-                >Edit</a
-              >
-            </li>
-            <li>
-              <a
-                href="#"
-                class="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white"
-                >Remove</a
-              >
-            </li>
-            <li>
-              <a
-                href="#"
-                class="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white"
-                >Report</a
-              >
-            </li>
-          </ul>
-        </div>
-      </footer>
-      <p class="text-gray-500 dark:text-gray-400">
-        The article covers the essentials, challenges, myths and stages the UX designer should
-        consider while creating the design strategy.
-      </p>
-      <div class="mt-4 flex items-center space-x-4">
-        <button
-          type="button"
-          class="flex items-center text-sm font-medium text-gray-500 hover:underline dark:text-gray-400"
-        >
-          <svg
-            class="mr-1.5 h-3.5 w-3.5"
-            aria-hidden="true"
-            xmlns="http://www.w3.org/2000/svg"
-            fill="none"
-            viewBox="0 0 20 18"
-          >
-            <path
-              stroke="currentColor"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2"
-              d="M5 5h5M5 8h2m6-3h2m-5 3h6m2-7H2a1 1 0 0 0-1 1v9a1 1 0 0 0 1 1h3v5l5-5h8a1 1 0 0 0 1-1V2a1 1 0 0 0-1-1Z"
-            ></path>
-          </svg>
-          Reply
-        </button>
+    </div>
+
+    <!-- Empty State -->
+    <div id="discussions-empty" class="hidden py-8 text-center">
+      <div class="text-gray-500">
+        <i class="bx bx-message-square-dots mb-2 text-4xl"></i>
+        <p>No discussions yet.</p>
+        <p class="text-sm">Be the first to start a conversation!</p>
       </div>
-    </article>
-    <article
-      class="border-t border-gray-200 bg-white p-6 text-base dark:border-gray-700 dark:bg-gray-900"
-    >
-      <footer class="mb-2 flex items-center justify-between">
-        <div class="flex items-center">
-          <p
-            class="mr-3 inline-flex items-center text-sm font-semibold text-gray-900 dark:text-white"
-          >
-            <img
-              class="mr-2 h-6 w-6 rounded-full"
-              src="https://flowbite.com/docs/images/people/profile-picture-4.jpg"
-              alt="Helene Engels"
-            />Helene Engels
-          </p>
-          <p class="text-sm text-gray-600 dark:text-gray-400">
-            <time pubdate datetime="2022-06-23" title="June 23rd, 2022">Jun. 23, 2022</time>
-          </p>
-        </div>
-        <button
-          id="dropdownComment4Button"
-          data-dropdown-toggle="dropdownComment4"
-          class="dark:text-gray-40 inline-flex items-center rounded-lg bg-white p-2 text-center text-sm font-medium text-gray-500 hover:bg-gray-100 focus:outline-none focus:ring-4 focus:ring-gray-50 dark:bg-gray-900 dark:hover:bg-gray-700 dark:focus:ring-gray-600"
-          type="button"
-        >
-          <svg
-            class="h-4 w-4"
-            aria-hidden="true"
-            xmlns="http://www.w3.org/2000/svg"
-            fill="currentColor"
-            viewBox="0 0 16 3"
-          >
-            <path
-              d="M2 0a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3Zm6.041 0a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3ZM14 0a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3Z"
-            ></path>
-          </svg>
-        </button>
-        <!-- Dropdown menu -->
-        <div
-          id="dropdownComment4"
-          class="z-10 hidden w-36 divide-y divide-gray-100 rounded bg-white shadow dark:divide-gray-600 dark:bg-gray-700"
-        >
-          <ul
-            class="py-1 text-sm text-gray-700 dark:text-gray-200"
-            aria-labelledby="dropdownMenuIconHorizontalButton"
-          >
-            <li>
-              <a
-                href="#"
-                class="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white"
-                >Edit</a
-              >
-            </li>
-            <li>
-              <a
-                href="#"
-                class="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white"
-                >Remove</a
-              >
-            </li>
-            <li>
-              <a
-                href="#"
-                class="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white"
-                >Report</a
-              >
-            </li>
-          </ul>
-        </div>
-      </footer>
-      <p class="text-gray-500 dark:text-gray-400">
-        Thanks for sharing this. I do came from the Backend development and explored some of the
-        tools to design my Side Projects.
-      </p>
-      <div class="mt-4 flex items-center space-x-4">
-        <button
-          type="button"
-          class="flex items-center text-sm font-medium text-gray-500 hover:underline dark:text-gray-400"
-        >
-          <svg
-            class="mr-1.5 h-3.5 w-3.5"
-            aria-hidden="true"
-            xmlns="http://www.w3.org/2000/svg"
-            fill="none"
-            viewBox="0 0 20 18"
-          >
-            <path
-              stroke="currentColor"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2"
-              d="M5 5h5M5 8h2m6-3h2m-5 3h6m2-7H2a1 1 0 0 0-1 1v9a1 1 0 0 0 1 1h3v5l5-5h8a1 1 0 0 0 1-1V2a1 1 0 0 0-1-1Z"
-            ></path>
-          </svg>
-          Reply
-        </button>
-      </div>
-    </article>
+    </div>
   </div>
 </section>
-
-<div
-  id="discussion-form"
-  class="mb-6 rounded-lg border border-gray-200 bg-gray-100 p-6 dark:border-gray-700 dark:bg-gray-800"
->
-  <div class="mb-4">
-    <label
-      for="discussion-message"
-      class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300"
-    >
-      Your Comment
-    </label>
-    <textarea
-      id="discussion-message"
-      rows="4"
-      class={`w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white ${globalInputClasses || ""}`}
-      placeholder={placeholder}></textarea>
-  </div>
-
-  <!-- Internal/Public Toggle (Admin/Staff only) -->
-  {
-    currentRole === "Admin" || currentRole === "Staff" ? (
-      <div class="mb-4 flex items-center gap-4">
-        <label class="flex items-center gap-2">
-          <input
-            type="checkbox"
-            id="internal-discussion"
-            class="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
-          />
-          <span class="text-sm text-gray-700 dark:text-gray-300">Internal Discussion</span>
-        </label>
-        <label class="flex items-center gap-2">
-          <input
-            type="checkbox"
-            id="sms-alert"
-            class="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
-          />
-          <span class="text-sm text-gray-700 dark:text-gray-300">SMS Alert</span>
-        </label>
-      </div>
-    ) : null
-  }
-
-  <!-- Action Buttons -->
-  <div class="flex gap-3">
-    <button
-      id="submit-discussion"
-      class="inline-flex items-center gap-2 rounded-lg bg-primary-500 px-4 py-2 text-sm font-medium text-white hover:bg-primary-600 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 disabled:opacity-50"
-    >
-      <i class="bx bx-send text-lg"></i>
-      Post Comment
-    </button>
-    <button
-      id="cancel-discussion"
-      class="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-gray-100 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
-    >
-      <i class="bx bx-x text-lg"></i>
-      Cancel
-    </button>
-  </div>
-</div>
-
-<!-- Discussion List -->
-<div id="discussions-list" class="space-y-4">
-  <!-- Discussions will be loaded here -->
-</div>
-
-<!-- Loading Spinner -->
-<div id="discussions-loading" class="hidden py-8 text-center">
-  <div class="inline-flex items-center gap-2 text-gray-500">
-    <div class="h-4 w-4 animate-spin rounded-full border-2 border-gray-300 border-t-primary-500">
-    </div>
-    Loading discussions...
-  </div>
-</div>
-
-<!-- Empty State -->
-<div id="discussions-empty" class="hidden py-8 text-center">
-  <div class="text-gray-500">
-    <i class="bx bx-message-square-dots mb-2 text-4xl"></i>
-    <p>No discussions yet.</p>
-    <p class="text-sm">Be the first to start a conversation!</p>
-  </div>
-</div>
 
 <script define:vars={{ projectId, currentUser, isGlobalDiscussion }}>
   // Shared discussion functionality
@@ -541,6 +131,8 @@ const isGlobalDiscussion = !project;
   let currentProjectId = projectId;
   let currentUserId = currentUser?.id;
   let isGlobal = isGlobalDiscussion;
+  let currentRole = currentUser?.profile?.role;
+  let mentionableUsers = [];
 
   // Initialize discussion system
   document.addEventListener("DOMContentLoaded", function () {
@@ -552,6 +144,9 @@ const isGlobalDiscussion = !project;
       `💬 [DISCUSSIONS] Initializing ${isGlobal ? "global" : "project"} discussion system`
     );
 
+    // Load mentionable users
+    loadMentionableUsers();
+
     // Load discussions
     loadDiscussions();
 
@@ -560,6 +155,33 @@ const isGlobalDiscussion = !project;
 
     // Setup event listeners
     setupEventListeners();
+  }
+
+  async function loadMentionableUsers() {
+    try {
+      const params = new URLSearchParams();
+      if (currentProjectId) {
+        params.append("projectId", currentProjectId);
+      }
+      if (isGlobal) {
+        params.append("global", "true");
+      }
+
+      const response = await fetch(`/api/get-mentionable-users?${params}`, {
+        credentials: "include",
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        mentionableUsers = data.users || [];
+        console.log("📝 [DISCUSSIONS] Loaded mentionable users:", mentionableUsers.length);
+      } else {
+        console.error("Failed to load mentionable users:", data.error);
+      }
+    } catch (error) {
+      console.error("Error loading mentionable users:", error);
+    }
   }
 
   async function loadDiscussions() {
@@ -597,8 +219,17 @@ const isGlobalDiscussion = !project;
   function renderDiscussions() {
     const container = document.getElementById("discussions-list");
     const emptyState = document.getElementById("discussions-empty");
+    const countElement = document.getElementById("discussion-count");
 
     if (!container) return;
+
+    // Update discussion count
+    if (countElement) {
+      countElement.textContent = `(${discussions.length})`;
+    }
+
+    // Update global bubble count system
+    updateDiscussionCount();
 
     if (discussions.length === 0) {
       container.innerHTML = "";
@@ -618,6 +249,43 @@ const isGlobalDiscussion = !project;
         return renderDiscussionItem(discussion, discussionReplies);
       })
       .join("");
+
+    // Initialize Flowbite dropdowns for new content
+    if (typeof window.initFlowbite === "function") {
+      window.initFlowbite();
+    }
+  }
+
+  // Update discussion count in the global bubble count system
+  function updateDiscussionCount() {
+    const totalDiscussions = discussions.length;
+    const incompleteDiscussions = discussions.filter((d) => !d.mark_completed).length;
+
+    // Update count directly in the discussion count element
+    const countElement = document.querySelector(".discussion-count");
+    const tabButton = document.querySelector('[data-dropdown-toggle="discussions-dropdown"]');
+
+    if (tabButton) {
+      // Update count bubble on tab button
+      if (incompleteDiscussions > 0) {
+        tabButton.setAttribute("data-count", incompleteDiscussions.toString());
+        tabButton.classList.add("has-count");
+      } else {
+        tabButton.removeAttribute("data-count");
+        tabButton.classList.remove("has-count");
+      }
+    }
+
+    // Also update the old count element if it exists
+    if (countElement) {
+      countElement.textContent = totalDiscussions.toString();
+    }
+
+    // Update the main discussion count display
+    const mainCountElement = document.getElementById("discussion-count");
+    if (mainCountElement) {
+      mainCountElement.textContent = `(${totalDiscussions})`;
+    }
   }
 
   function renderDiscussionItem(discussion, replies = []) {
@@ -628,68 +296,92 @@ const isGlobalDiscussion = !project;
     const canMarkCompleted = currentRole === "Admin" || currentRole === "Staff";
 
     return `
-      <div class="rounded-lg border border-gray-200 bg-gray-100 p-4 dark:border-gray-700 dark:bg-gray-800 ${isInternal ? "border-orange-200 bg-orange-50 dark:border-orange-800 dark:bg-orange-900/20" : ""} ${isCompleted ? "opacity-75" : ""}">
-        <!-- Discussion Header -->
-        <div class="mb-3 flex items-start justify-between">
-          <div class="flex items-start gap-3">
-            <div class="flex h-8 w-8 items-center justify-center rounded-full bg-primary-100 text-primary-600 dark:bg-primary-900 dark:text-primary-400">
-              <i class="bx bx-user text-sm"></i>
-            </div>
-            <div>
-              <div class="flex items-center gap-2">
-                <span class="font-medium text-gray-900 dark:text-white">${discussion.author_name}</span>
-                ${isInternal ? '<span class="rounded-full bg-orange-100 px-2 py-1 text-xs text-orange-800 dark:bg-orange-900 dark:text-orange-200">Internal</span>' : ""}
-                ${isCompleted ? '<span class="rounded-full bg-green-100 px-2 py-1 text-xs text-green-800 dark:bg-green-900 dark:text-green-200">Completed</span>' : ""}
-              </div>
-              <div class="text-sm text-gray-500 dark:text-gray-400">
-                ${new Date(discussion.created_at).toLocaleString()}
-                ${!isGlobal ? ` • ${discussion.project_address}` : ""}
-              </div>
-            </div>
+      <article class="rounded-lg bg-white p-6 text-base dark:bg-gray-900 ${isInternal ? "border-l-4 border-orange-500 bg-orange-50 dark:bg-orange-900/10" : ""} ${isCompleted ? "opacity-75" : ""}" data-discussion-id="${discussion.id}">
+        <footer class="mb-2 flex items-center justify-between">
+          <div class="flex items-center">
+            <p class="mr-3 inline-flex items-center text-sm font-semibold text-gray-900 dark:text-white">
+              <img
+                class="mr-2 h-6 w-6 rounded-full"
+                src="https://flowbite.com/docs/images/people/profile-picture-2.jpg"
+                alt="${discussion.author_name}"
+              />
+              ${discussion.author_name}
+              ${isInternal ? '<span class="ml-2 rounded-full bg-orange-100 px-2 py-1 text-xs text-orange-800 dark:bg-orange-900 dark:text-orange-200">Internal</span>' : ""}
+              ${isCompleted ? '<span class="ml-2 rounded-full bg-green-100 px-2 py-1 text-xs text-green-800 dark:bg-green-900 dark:text-green-200">Completed</span>' : ""}
+            </p>
+            <p class="text-sm text-gray-600 dark:text-gray-400">
+              <time pubdate datetime="${discussion.created_at}" title="${new Date(discussion.created_at).toLocaleString()}">
+                ${new Date(discussion.created_at).toLocaleDateString()}
+              </time>
+              ${discussion.project_address ? ` • ${discussion.project_address}` : ""}
+            </p>
           </div>
-          
-          <!-- Action Buttons -->
-          <div class="flex items-center gap-2">
-            ${
-              canMarkCompleted && !isCompleted
-                ? `
-              <button onclick="markDiscussionCompleted(${discussion.id})" class="text-green-600 hover:text-green-800 dark:text-green-400 dark:hover:text-green-200" title="Mark as completed">
-                <i class="bx bx-check text-lg"></i>
-              </button>
-            `
-                : ""
-            }
-            ${
-              canEdit
-                ? `
-              <button onclick="editDiscussion(${discussion.id})" class="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-200" title="Edit">
-                <i class="bx bx-edit text-lg"></i>
-              </button>
-            `
-                : ""
-            }
-            <button onclick="replyToDiscussion(${discussion.id})" class="text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200" title="Reply">
-              <i class="bx bx-reply text-lg"></i>
-            </button>
+          <button
+            id="dropdownComment${discussion.id}Button"
+            data-dropdown-toggle="dropdownComment${discussion.id}"
+            class="inline-flex items-center rounded-lg bg-white p-2 text-center text-sm font-medium text-gray-500 hover:bg-gray-100 focus:outline-none focus:ring-4 focus:ring-gray-50 dark:bg-gray-900 dark:text-gray-400 dark:hover:bg-gray-700 dark:focus:ring-gray-600"
+            type="button"
+          >
+            <svg class="h-4 w-4" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 16 3">
+              <path d="M2 0a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3Zm6.041 0a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3ZM14 0a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3Z"></path>
+            </svg>
+            <span class="sr-only">Comment settings</span>
+          </button>
+          <!-- Dropdown menu -->
+          <div
+            id="dropdownComment${discussion.id}"
+            class="z-10 hidden w-36 divide-y divide-gray-100 rounded bg-white shadow dark:divide-gray-600 dark:bg-gray-700"
+          >
+            <ul class="py-1 text-sm text-gray-700 dark:text-gray-200" aria-labelledby="dropdownMenuIconHorizontalButton">
+              ${
+                canEdit
+                  ? `
+              <li>
+                <a href="#" onclick="editDiscussion(${discussion.id})" class="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white">Edit</a>
+              </li>
+              `
+                  : ""
+              }
+              ${
+                canMarkCompleted && !isCompleted
+                  ? `
+              <li>
+                <a href="#" onclick="markDiscussionCompleted(${discussion.id})" class="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white">Mark Complete</a>
+              </li>
+              `
+                  : ""
+              }
+              <li>
+                <a href="#" onclick="replyToDiscussion(${discussion.id})" class="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white">Reply</a>
+              </li>
+            </ul>
           </div>
-        </div>
-
-        <!-- Discussion Content -->
-        <div class="mb-3 text-gray-700 dark:text-gray-300">
+        </footer>
+        <p class="text-gray-500 dark:text-gray-400">
           ${discussion.message}
+        </p>
+        <div class="mt-4 flex items-center space-x-4">
+          <button
+            type="button"
+            onclick="replyToDiscussion(${discussion.id})"
+            class="flex items-center text-sm font-medium text-gray-500 hover:underline dark:text-gray-400"
+          >
+            <svg class="mr-1.5 h-3.5 w-3.5" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 20 18">
+              <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 5h5M5 8h2m6-3h2m-5 3h6m2-7H2a1 1 0 0 0-1 1v9a1 1 0 0 0 1 1h3v5l5-5h8a1 1 0 0 0 1-1V2a1 1 0 0 0-1-1Z"></path>
+            </svg>
+            Reply
+          </button>
         </div>
-
-        <!-- Replies -->
         ${
           replies.length > 0
             ? `
-          <div class="ml-4 border-l-2 border-gray-200 pl-4 dark:border-gray-700">
-            ${replies.map((reply) => renderDiscussionItem(reply)).join("")}
-          </div>
+        <div class="mt-4 ml-6 border-l-2 border-gray-200 pl-4 dark:border-gray-700">
+          ${replies.map((reply) => renderDiscussionItem(reply)).join("")}
+        </div>
         `
             : ""
         }
-      </div>
+      </article>
     `;
   }
 
@@ -704,6 +396,10 @@ const isGlobalDiscussion = !project;
       newCommentBtn.addEventListener("click", () => {
         form.classList.remove("hidden");
         messageInput?.focus();
+        // Add mention functionality to the main message input
+        if (messageInput) {
+          setupMentionFunctionality(messageInput);
+        }
       });
     }
 
@@ -720,9 +416,9 @@ const isGlobalDiscussion = !project;
   }
 
   async function submitDiscussion() {
-    const messageInput = document.getElementById("discussion-message") as HTMLTextAreaElement;
-    const internalCheckbox = document.getElementById("internal-discussion") as HTMLInputElement;
-    const smsCheckbox = document.getElementById("sms-alert") as HTMLInputElement;
+    const messageInput = document.getElementById("discussion-message");
+    const internalCheckbox = document.getElementById("internal-discussion");
+    const smsCheckbox = document.getElementById("sms-alert");
 
     if (!messageInput || !messageInput.value.trim()) {
       alert("Please enter a message");
@@ -730,9 +426,11 @@ const isGlobalDiscussion = !project;
     }
 
     try {
-      const submitBtn = document.getElementById("submit-discussion") as HTMLButtonElement;
-      submitBtn.disabled = true;
-      submitBtn.innerHTML = '<i class="bx bx-loader-alt bx-spin text-lg"></i> Posting...';
+      const submitBtn = document.getElementById("submit-discussion");
+      if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<i class="bx bx-loader-alt bx-spin text-lg"></i> Posting...';
+      }
 
       const response = await fetch("/api/discussions", {
         method: "POST",
@@ -742,8 +440,8 @@ const isGlobalDiscussion = !project;
         body: JSON.stringify({
           projectId: currentProjectId,
           message: messageInput.value.trim(),
-          internal: internalCheckbox?.checked || false,
-          sms_alert: smsCheckbox?.checked || false,
+          internal: internalCheckbox ? internalCheckbox.checked : false,
+          sms_alert: smsCheckbox ? smsCheckbox.checked : false,
         }),
         credentials: "include",
       });
@@ -760,7 +458,7 @@ const isGlobalDiscussion = !project;
         const form = document.getElementById("discussion-form");
         if (form) form.classList.add("hidden");
 
-        // Reload discussions
+        // Reload discussions and update counts
         await loadDiscussions();
 
         // Show success message
@@ -779,7 +477,7 @@ const isGlobalDiscussion = !project;
       console.error("Error submitting discussion:", error);
       alert("Failed to post comment");
     } finally {
-      const submitBtn = document.getElementById("submit-discussion") as HTMLButtonElement;
+      const submitBtn = document.getElementById("submit-discussion");
       if (submitBtn) {
         submitBtn.disabled = false;
         submitBtn.innerHTML = '<i class="bx bx-send text-lg"></i> Post Comment';
@@ -789,6 +487,163 @@ const isGlobalDiscussion = !project;
 
   function setupEventListeners() {
     // Add any additional event listeners here
+  }
+
+  function setupMentionFunctionality(textarea) {
+    let mentionDropdown = null;
+    let currentMentionStart = -1;
+    let filteredUsers = [];
+
+    // Create mention dropdown
+    function createMentionDropdown() {
+      if (mentionDropdown) return mentionDropdown;
+
+      mentionDropdown = document.createElement("div");
+      mentionDropdown.className =
+        "mention-dropdown absolute z-50 max-h-48 w-64 overflow-y-auto rounded-lg border border-gray-200 bg-white shadow-lg dark:border-gray-700 dark:bg-gray-800";
+      mentionDropdown.style.display = "none";
+      document.body.appendChild(mentionDropdown);
+      return mentionDropdown;
+    }
+
+    // Show mention dropdown
+    function showMentionDropdown(x, y) {
+      const dropdown = createMentionDropdown();
+      dropdown.style.display = "block";
+      dropdown.style.left = x + "px";
+      dropdown.style.top = y + "px";
+
+      // Populate dropdown with filtered users
+      dropdown.innerHTML = filteredUsers
+        .map(
+          (user) => `
+        <div class="mention-item cursor-pointer px-3 py-2 hover:bg-gray-100 dark:hover:bg-gray-700" data-user-id="${user.id}" data-user-name="${user.name}">
+          <div class="font-medium text-gray-900 dark:text-white">${user.name}</div>
+          <div class="text-sm text-gray-500 dark:text-gray-400">${user.role}</div>
+        </div>
+      `
+        )
+        .join("");
+
+      // Add click handlers
+      dropdown.querySelectorAll(".mention-item").forEach((item) => {
+        item.addEventListener("click", () => {
+          const userName = item.dataset.userName;
+          insertMention(userName);
+          hideMentionDropdown();
+        });
+      });
+    }
+
+    // Hide mention dropdown
+    function hideMentionDropdown() {
+      if (mentionDropdown) {
+        mentionDropdown.style.display = "none";
+      }
+    }
+
+    // Insert mention into textarea
+    function insertMention(userName) {
+      const beforeMention = textarea.value.substring(0, currentMentionStart);
+      const afterMention = textarea.value.substring(textarea.selectionStart);
+      const newValue = beforeMention + "@" + userName + " " + afterMention;
+
+      textarea.value = newValue;
+
+      // Set cursor position after the mention
+      const newCursorPos = beforeMention.length + userName.length + 2;
+      textarea.setSelectionRange(newCursorPos, newCursorPos);
+
+      // Trigger input event to update any listeners
+      textarea.dispatchEvent(new Event("input", { bubbles: true }));
+    }
+
+    // Handle keydown events
+    textarea.addEventListener("keydown", (e) => {
+      if (mentionDropdown && mentionDropdown.style.display !== "none") {
+        const items = mentionDropdown.querySelectorAll(".mention-item");
+        const activeItem = mentionDropdown.querySelector(".mention-item.active");
+
+        if (e.key === "ArrowDown") {
+          e.preventDefault();
+          if (activeItem) {
+            activeItem.classList.remove("active");
+            const nextItem = activeItem.nextElementSibling;
+            if (nextItem) {
+              nextItem.classList.add("active");
+            } else {
+              items[0]?.classList.add("active");
+            }
+          } else {
+            items[0]?.classList.add("active");
+          }
+        } else if (e.key === "ArrowUp") {
+          e.preventDefault();
+          if (activeItem) {
+            activeItem.classList.remove("active");
+            const prevItem = activeItem.previousElementSibling;
+            if (prevItem) {
+              prevItem.classList.add("active");
+            } else {
+              items[items.length - 1]?.classList.add("active");
+            }
+          } else {
+            items[items.length - 1]?.classList.add("active");
+          }
+        } else if (e.key === "Enter") {
+          e.preventDefault();
+          if (activeItem) {
+            const userName = activeItem.dataset.userName;
+            insertMention(userName);
+            hideMentionDropdown();
+          }
+        } else if (e.key === "Escape") {
+          hideMentionDropdown();
+        }
+      }
+    });
+
+    // Handle input events for @ detection
+    textarea.addEventListener("input", (e) => {
+      const cursorPos = textarea.selectionStart;
+      const text = textarea.value;
+
+      // Find the last @ symbol before cursor
+      const lastAtIndex = text.lastIndexOf("@", cursorPos - 1);
+
+      if (lastAtIndex !== -1) {
+        // Check if there's a space between @ and cursor (not a mention)
+        const textAfterAt = text.substring(lastAtIndex + 1, cursorPos);
+        if (!textAfterAt.includes(" ")) {
+          currentMentionStart = lastAtIndex;
+          const query = textAfterAt.toLowerCase();
+
+          // Filter users based on query
+          filteredUsers = mentionableUsers.filter((user) =>
+            user.name.toLowerCase().includes(query)
+          );
+
+          if (filteredUsers.length > 0) {
+            // Get textarea position for dropdown
+            const rect = textarea.getBoundingClientRect();
+            showMentionDropdown(rect.left, rect.bottom + 5);
+          } else {
+            hideMentionDropdown();
+          }
+        } else {
+          hideMentionDropdown();
+        }
+      } else {
+        hideMentionDropdown();
+      }
+    });
+
+    // Hide dropdown when clicking outside
+    document.addEventListener("click", (e) => {
+      if (!textarea.contains(e.target) && !mentionDropdown?.contains(e.target)) {
+        hideMentionDropdown();
+      }
+    });
   }
 
   function showLoading(show) {
@@ -811,17 +666,25 @@ const isGlobalDiscussion = !project;
   }
 
   // Global functions for discussion actions
-  (window as any).markDiscussionCompleted = async function (discussionId) {
+  window.markDiscussionCompleted = async function (discussionId) {
     try {
       const response = await fetch("/api/update-discussion-completed", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ discussionId, completed: true }),
+        body: JSON.stringify({ discussionId, mark_completed: true }),
         credentials: "include",
       });
 
       if (response.ok) {
-        await loadDiscussions();
+        // Update the discussion in the local array
+        const discussion = discussions.find((d) => d.id === discussionId);
+        if (discussion) {
+          discussion.mark_completed = true;
+        }
+
+        // Refresh the display and update counts
+        renderDiscussions();
+
         if (window.showModal) {
           window.showModal(
             "success",
@@ -836,13 +699,143 @@ const isGlobalDiscussion = !project;
     }
   };
 
-  (window as any).editDiscussion = function (discussionId) {
+  window.editDiscussion = function (discussionId) {
     // TODO: Implement edit functionality
     console.log("Edit discussion:", discussionId);
   };
 
-  (window as any).replyToDiscussion = function (parentId) {
-    // TODO: Implement reply functionality
+  window.replyToDiscussion = function (parentId) {
     console.log("Reply to discussion:", parentId);
+
+    // Find the discussion item to add reply form to
+    const discussionItem = document.querySelector(`[data-discussion-id="${parentId}"]`);
+    if (!discussionItem) {
+      console.error("Discussion item not found for parentId:", parentId);
+      return;
+    }
+
+    // Check if reply form already exists
+    const existingReplyForm = discussionItem.querySelector(".reply-form");
+    if (existingReplyForm) {
+      existingReplyForm.remove();
+      return;
+    }
+
+    // Create reply form
+    const replyForm = document.createElement("div");
+    replyForm.className =
+      "reply-form mt-4 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700";
+    replyForm.innerHTML = `
+      <div class="mb-4">
+        <label for="reply-message-${parentId}" class="sr-only">Your reply</label>
+        <textarea
+          id="reply-message-${parentId}"
+          rows="3"
+          class="w-full border-0 px-0 text-sm text-gray-900 focus:outline-none focus:ring-0 dark:bg-gray-800 dark:text-white dark:placeholder-gray-400"
+          placeholder="Write a reply..."
+          required></textarea>
+      </div>
+      
+        <!-- Internal status will inherit from parent discussion -->
+      
+      <div class="flex gap-3">
+        <button
+          onclick="submitReply(${parentId})"
+          class="inline-flex items-center rounded-lg bg-primary-500 px-4 py-2.5 text-center text-xs font-medium text-white hover:bg-primary-600 focus:ring-4 focus:ring-primary-200 dark:focus:ring-primary-900 disabled:opacity-50"
+        >
+          <i class="bx bx-send mr-2 text-lg"></i>
+          Post Reply
+        </button>
+        <button
+          onclick="cancelReply(${parentId})"
+          class="inline-flex items-center rounded-lg border border-gray-300 bg-gray-100 px-4 py-2.5 text-center text-xs font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
+        >
+          <i class="bx bx-x mr-2 text-lg"></i>
+          Cancel
+        </button>
+      </div>
+    `;
+
+    // Add reply form to the discussion item
+    discussionItem.appendChild(replyForm);
+
+    // Focus on the textarea
+    const textarea = replyForm.querySelector("textarea");
+    if (textarea) {
+      textarea.focus();
+      // Add mention functionality to the textarea
+      setupMentionFunctionality(textarea);
+    }
+  };
+
+  window.cancelReply = function (parentId) {
+    const discussionItem = document.querySelector(`[data-discussion-id="${parentId}"]`);
+    if (discussionItem) {
+      const replyForm = discussionItem.querySelector(".reply-form");
+      if (replyForm) {
+        replyForm.remove();
+      }
+    }
+  };
+
+  window.submitReply = async function (parentId) {
+    const textarea = document.getElementById(`reply-message-${parentId}`);
+
+    if (!textarea || !textarea.value.trim()) {
+      alert("Please enter a reply message");
+      return;
+    }
+
+    // Find the parent discussion to inherit its internal status
+    const parentDiscussion = discussions.find((d) => d.id === parentId);
+    const inheritInternal = parentDiscussion ? parentDiscussion.internal : false;
+
+    try {
+      const response = await fetch("/api/discussions", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          projectId: currentProjectId,
+          message: textarea.value.trim(),
+          parent_id: parentId,
+          internal: inheritInternal,
+          sms_alert: false,
+        }),
+        credentials: "include",
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        // Remove the reply form
+        const discussionItem = document.querySelector(`[data-discussion-id="${parentId}"]`);
+        if (discussionItem) {
+          const replyForm = discussionItem.querySelector(".reply-form");
+          if (replyForm) {
+            replyForm.remove();
+          }
+        }
+
+        // Reload discussions to show the new reply
+        await loadDiscussions();
+
+        // Show success message
+        if (window.showModal) {
+          window.showModal(
+            "success",
+            "Reply Posted",
+            "Your reply has been posted successfully.",
+            3000
+          );
+        }
+      } else {
+        alert("Failed to post reply: " + data.error);
+      }
+    } catch (error) {
+      console.error("Error submitting reply:", error);
+      alert("Failed to post reply");
+    }
   };
 </script>

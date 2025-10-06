@@ -18,54 +18,49 @@ const projectId = project.id;
 import BoxIcon from "../common/BoxIcon.astro";
 
 // console.log("🔍 [TabPunchlist] props:", Astro.props);
-
 ---
 
-{projectId && (
-  <div class="relative">
-    <button
-      type="button"
-      data-dropdown-toggle="checklist-dropdown"
-      class="relative"
-    >
-      <span class="sr-only">View Checklist</span>
+{
+  projectId && (
+    <div class="relative">
+      <button type="button" data-dropdown-toggle="checklist-dropdown" class="relative">
+        <span class="sr-only">View Checklist</span>
 
-      <BoxIcon
-        name="list-check"
-        variant="secondary"
-        size="md"
-        dataAttributes={{ "data-count": "1" }}
-      />
-    </button>
-
-    <div
-  class="z-50 my-4 hidden max-w-96 list-none overflow-hidden rounded-lg bg-gray-100 text-base leading-6 shadow-sm dark:bg-gray-700"
-  id="checklist-dropdown"
-      data-popper-placement="bottom left"
-    >
-      <div class="flex align-center justify-between border-b border-gray-200 bg-gray-100 px-4 py-2 text-center font-medium text-gray-900 dark:border-gray-600 dark:bg-gray-700 dark:text-white">
-        <h3>Project Checklist</h3>
+        <BoxIcon
+          name="list-check"
+          variant="secondary"
+          size="md"
+          dataAttributes={{ "data-count": "1" }}
+        />
+      </button>
       </div>
 
-      <div class="grid sbr_wTGs60B3xicVVLBT iHPddplqYvrN6qWgvntn p-4 dark:bg-gray-800 max-h-[80dvh] overflow-y-scroll">
-        <div id="content-punchlist">
-          <div>
-            <div id="punchlist-container" data-project-id={projectId}>
-              <div class="mb-6 flex items-center justify-between overflow-y-scroll">
-                <!-- Punchlist Items List -->
-                <div id="punchlist-items-list" class="space-y-4">
-                  <!-- Punchlist items will be dynamically loaded here -->
+      <div
+        class="z-50 my-4 hidden max-w-96 list-none overflow-hidden rounded-lg bg-gray-100 text-base leading-6 shadow-sm dark:bg-gray-700"
+        id="checklist-dropdown"
+        data-popper-placement="bottom left"
+      >
+        <div class="align-center flex justify-between border-b border-gray-200 bg-gray-100 px-4 py-2 text-center font-medium text-gray-900 dark:border-gray-600 dark:bg-gray-700 dark:text-white">
+          <h3>Project Checklist</h3>
+        </div>
+
+        <div class="grid max-h-[80dvh] gap-4 overflow-y-scroll p-4 dark:bg-gray-800 lg:grid-cols-1">
+          <div id="content-punchlist">
+            <div>
+              <div id="punchlist-container" data-project-id={projectId}>
+                <div class="mb-6 flex items-center justify-between overflow-y-scroll">
+                  {/* <!-- Punchlist Items List --> */}
+                  <div id="punchlist-items-list" class="space-y-4">
+                    {/* <!-- Punchlist items will be dynamically loaded here --> */}
+                  </div>
                 </div>
               </div>
             </div>
           </div>
         </div>
       </div>
-    </div>
-  </div>
-)}
-
-
+  )
+}
 
 <script
   define:vars={{
@@ -100,7 +95,9 @@ import BoxIcon from "../common/BoxIcon.astro";
 
         // Show specific error message if table doesn't exist
         if (data.migration_needed || data.error?.includes("does not exist")) {
-          showModal("error", "Punchlist Setup Required",
+          showModal(
+            "error",
+            "Punchlist Setup Required",
             `Punchlist feature setup required<br><br>
                     <strong>Admin Action Needed:</strong><br>
                     Please run the SQL script:<br>
@@ -108,7 +105,11 @@ import BoxIcon from "../common/BoxIcon.astro";
                     in your Supabase SQL Editor to enable punchlist functionality.`
           );
         } else {
-          showModal("error", "Punchlist Error", "Failed to load punchlist items: " + (data.details || data.error));
+          showModal(
+            "error",
+            "Punchlist Error",
+            "Failed to load punchlist items: " + (data.details || data.error)
+          );
         }
       }
     } catch (error) {
@@ -120,20 +121,27 @@ import BoxIcon from "../common/BoxIcon.astro";
   // Update incomplete punchlist items count in the punchlist tab
   async function updateIncompletePunchlistItemsCount() {
     const incompleteCount = punchlistItems.filter((item) => !item.mark_completed).length;
-    
+
     // Update count directly
     const countElement = document.querySelector(".incomplete-punchlist-items-count");
     const tabButton = document.querySelector('[data-dropdown-toggle="checklist-dropdown"]');
 
     if (tabButton) {
       // Update count bubble on tab button
-      if (incompleteCount > 0) {
-        tabButton.setAttribute("data-count", incompleteCount.toString());
-        tabButton.classList.add("has-count");
-      } else {
-        tabButton.removeAttribute("data-count");
-        tabButton.classList.remove("has-count");
-      }
+
+      window.updateCountBubble(
+        tabButton,
+        incompleteCount,
+        window.COUNT_BUBBLE_PRESETS.notification
+      );
+
+      // if (incompleteCount > 0) {
+      //   tabButton.setAttribute("data-count", incompleteCount.toString());
+      //   tabButton.classList.add("has-count");
+      // } else {
+      //   tabButton.removeAttribute("data-count");
+      //   tabButton.classList.remove("has-count");
+      // }
     }
 
     // Also update the old count element if it exists
@@ -145,7 +153,7 @@ import BoxIcon from "../common/BoxIcon.astro";
         countElement.classList.add("hidden");
       }
     }
-    
+
     // console.log("🔍 [PUNCHLIST] Incomplete punchlist items count updated:", incompleteCount);
   }
 
@@ -170,9 +178,7 @@ import BoxIcon from "../common/BoxIcon.astro";
 
     // Load toggles for all items that can be toggled
     punchlistItems.forEach((item) => {
-      const canToggleCompleted =
-        currentRole === "Admin" ||
-        currentRole === "Staff";
+      const canToggleCompleted = currentRole === "Admin" || currentRole === "Staff";
 
       if (canToggleCompleted) {
         loadToggleForPunchlistItem(item.id, item.mark_completed, true);
@@ -185,8 +191,7 @@ import BoxIcon from "../common/BoxIcon.astro";
       // Compute all values in the parent component
       const isInternal = item.internal;
       const isAuthor = item.author_id === currentUserId;
-      const canToggleCompleted =
-        currentRole === "Admin" || currentRole === "Staff";
+      const canToggleCompleted = currentRole === "Admin" || currentRole === "Staff";
 
       const marginLeft = depth > 0 ? `ml-${Math.min(depth * 8, 32)}` : "";
       const borderLeft = depth > 0 ? "border-l-2 border-gray-200 dark:border-gray-600 pl-4" : "";
