@@ -42,6 +42,14 @@ export const GET: APIRoute = async ({ url, cookies, redirect }) => {
     fullUrl: url.toString(),
   });
 
+  // Log the actual token values for debugging (truncated for security)
+  if (token_hash) {
+    console.log("🔐 [VERIFY] Token hash (first 10 chars):", token_hash.substring(0, 10) + "...");
+  }
+  if (token) {
+    console.log("🔐 [VERIFY] Token (first 10 chars):", token.substring(0, 10) + "...");
+  }
+
   if (!code && !token_hash && !token) {
     console.log("🔐 [VERIFY] No verification code, token hash, or token provided");
     return redirect("/login?error=no_token");
@@ -86,11 +94,18 @@ export const GET: APIRoute = async ({ url, cookies, redirect }) => {
 
       // Handle specific error types
       if (error.message.includes("expired")) {
+        console.log("🔐 [VERIFY] Token expired");
         return redirect("/login?error=verification_expired");
       } else if (error.message.includes("invalid")) {
+        console.log("🔐 [VERIFY] Invalid token - possible Resend tracking interference");
+        console.log("🔐 [VERIFY] Full error:", error);
         return redirect("/login?error=verification_invalid");
+      } else if (error.message.includes("token")) {
+        console.log("🔐 [VERIFY] Token-related error:", error.message);
+        return redirect("/login?error=token_error");
       }
 
+      console.log("🔐 [VERIFY] General verification error:", error.message);
       return redirect("/login?error=verification_failed");
     }
 
