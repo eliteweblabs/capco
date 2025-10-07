@@ -48,7 +48,7 @@ export const POST: APIRoute = async ({ request }) => {
     console.log(`📄 [PDF-SAVE] Saving document: ${documentName} for project: ${projectId}`);
 
     // Generate a unique document ID
-    const documentId = `doc_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    const documentId = `doc_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
     const fileName = `${documentName.replace(/[^a-zA-Z0-9]/g, "_")}_${documentId}.pdf`;
 
     console.log(`📁 [PDF-SAVE] Converting HTML to PDF: ${fileName}`);
@@ -60,7 +60,7 @@ export const POST: APIRoute = async ({ request }) => {
 
     // Use the media system to save the PDF
     const mediaFile = await saveMedia({
-      mediaData: pdfBuffer,
+      mediaData: pdfBuffer.buffer,
       fileName: fileName,
       fileType: "application/pdf",
       projectId: projectId,

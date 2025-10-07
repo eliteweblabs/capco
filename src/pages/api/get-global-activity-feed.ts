@@ -93,7 +93,7 @@ export const GET: APIRoute = async ({ cookies, url }) => {
 
     projects?.forEach((project) => {
       // Skip if project is a ParserError
-      if (project && typeof project === "object" && "id" in project && project !== null) {
+      if (project && typeof project === "object" && "id" in project) {
         const logs = (project as any).log || [];
 
         logs.forEach((logEntry: any) => {
