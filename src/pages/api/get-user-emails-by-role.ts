@@ -50,7 +50,7 @@ export const POST: APIRoute = async ({ request }) => {
           // Match profiles with auth users
           for (const user of fetchedRoleUsers) {
             if (!user.email) {
-              const authUser = authUsers.users.find((au) => au.id === user.id);
+              const authUser = authUsers.users.find((au: any) => au.id === user.id);
               if (authUser && authUser.email) {
                 user.email = authUser.email;
               }
