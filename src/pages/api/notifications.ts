@@ -36,9 +36,15 @@ export const GET: APIRoute = async ({ cookies, url }) => {
       setTimeout(() => reject(new Error("Database connection timeout")), 15000)
     );
 
-    let query;
+    let query = queryPromise;
+
+    if (unreadOnly) {
+      query = query.eq("viewed", false);
+    }
+
+    let result;
     try {
-      query = await Promise.race([queryPromise, timeoutPromise]);
+      result = await Promise.race([query, timeoutPromise]);
     } catch (error) {
       if (error instanceof Error && error.message === "Database connection timeout") {
         console.warn(
@@ -62,11 +68,7 @@ export const GET: APIRoute = async ({ cookies, url }) => {
       throw error;
     }
 
-    if (unreadOnly) {
-      query = query.eq("viewed", false);
-    }
-
-    const { data: notifications, error } = await query;
+    const { data: notifications, error } = result as { data: any; error: any };
 
     if (error) {
       console.error("❌ [NOTIFICATIONS] Error fetching notifications:", error);

@@ -144,7 +144,7 @@ export const GET: APIRoute = async ({ request, url }) => {
       CURRENT_YEAR: replacePlaceholders("{{YEAR}}", placeholderData, false),
       DOCUMENT_ID: replacePlaceholders("{{DOCUMENT_ID}}", placeholderData, false),
       DOCUMENT_VERSION: replacePlaceholders("{{DOCUMENT_VERSION}}", placeholderData, false),
-      companyName: replacePlaceholders("{{GLOBAL_companyName}}", placeholderData, false),
+      GLOBAL_COMPANY_NAME: replacePlaceholders("{{GLOBAL_companyName}}", placeholderData, false),
       COMPANY_SLOGAN: replacePlaceholders("{{GLOBAL_COMPANY_SLOGAN}}", placeholderData, false),
       COMPANY_ADDRESS: replacePlaceholders("{{COMPANY_ADDRESS}}", placeholderData, false),
       COMPANY_PHONE: replacePlaceholders("{{COMPANY_PHONE}}", placeholderData, false),

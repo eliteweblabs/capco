@@ -21,6 +21,13 @@ export const POST: APIRoute = async ({ request }): Promise<Response> => {
     }
 
     // Mark notifications as viewed
+    if (!supabase) {
+      return new Response(JSON.stringify({ success: false, error: "Database connection failed" }), {
+        status: 500,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+
     const { data, error } = await supabase
       .from("notifications")
       .update({ viewed: true })

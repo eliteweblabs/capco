@@ -4,7 +4,7 @@ import { supabase } from "../../lib/supabase";
 
 export const GET: APIRoute = async ({ url, cookies }) => {
   try {
-    const { isAuth, currentUser, role } = await checkAuth(cookies);
+    const { isAuth, currentUser, currentRole } = await checkAuth(cookies);
     if (!isAuth || !currentUser) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 401,
@@ -28,7 +28,7 @@ export const GET: APIRoute = async ({ url, cookies }) => {
       });
     }
 
-    // First, verify the project exists and user has access
+    // First, verify the project exists and currentUser has access
     const { data: project, error: projectError } = await supabase
       .from("projects")
       .select("id, authorId, title")
@@ -42,8 +42,9 @@ export const GET: APIRoute = async ({ url, cookies }) => {
       });
     }
 
-    // Check permissions - user must own the project or be admin/staff
-    const hasAccess = project.authorId === user.id || ["Admin", "Staff"].includes(role);
+    // Check permissions - currentUser must own the project or be admin/staff
+    const hasAccess =
+      project.authorId === currentUser.id || ["Admin", "Staff"].includes(currentRole || "");
 
     if (!hasAccess) {
       return new Response(JSON.stringify({ error: "Access denied" }), {
