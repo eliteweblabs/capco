@@ -32,13 +32,7 @@ export function isMobile(): boolean {
   return window.innerWidth < 768;
 }
 
-/**
- * Checks if the current device is mobile
- * @returns true if screen width is less than 768px
- */
-export function isMobile(): boolean {
-  return window.innerWidth < 768;
-}
+
 
 /**
  * Checks if the current device is tablet
