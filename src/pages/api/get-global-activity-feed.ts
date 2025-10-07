@@ -101,9 +101,9 @@ export const GET: APIRoute = async ({ cookies, url }) => {
             ...logEntry,
             projectId: (project as any).id,
             address: (project as any).address,
-            project_title: (project as any).title,
-            project_owner: "Unknown", // Will be populated later if needed
-            project_owner_id: (project as any).authorId,
+            projectTitle: (project as any).title,
+            projectOwner: "Unknown", // Will be populated later if needed
+            projectOwnerId: (project as any).authorId,
           });
         });
       }
@@ -133,12 +133,12 @@ export const GET: APIRoute = async ({ cookies, url }) => {
         success: true,
         activities: paginatedActivities,
         total: filteredActivities.length,
-        total_all: allActivities.length,
-        action_types: actionTypes,
+        totalAll: allActivities.length,
+        actionTypes: actionTypes,
         pagination: {
           limit,
           offset,
-          has_more: offset + limit < filteredActivities.length,
+          hasMore: offset + limit < filteredActivities.length,
         },
       }),
       {

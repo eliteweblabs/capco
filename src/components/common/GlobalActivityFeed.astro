@@ -167,25 +167,25 @@ const {
     user: string;
     message: string;
     details: string;
-    old_value?: any;
-    new_value?: any;
+    oldValue?: any;
+    newValue?: any;
     projectId: number;
     address: string;
-    project_title: string;
-    project_owner: string;
-    project_owner_id: string;
+    projectTitle: string;
+    projectOwner: string;
+    projectOwnerId: string;
   }
 
   interface GlobalFeedResponse {
     success: boolean;
     activities: GlobalActivity[];
     total: number;
-    total_all: number;
-    action_types: string[];
+    totalAll: number;
+    actionTypes: string[];
     pagination: {
       limit: number;
       offset: number;
-      has_more: boolean;
+      hasMore: boolean;
     };
   }
 
@@ -274,7 +274,7 @@ const {
         } else {
           // Filter out activities with null/undefined actions
           this.allActivities = data.activities.filter((activity) => activity.action);
-          this.actionTypes = data.action_types;
+          this.actionTypes = data.actionTypes;
 
           // Debug: Check for activities with null actions
           const nullActionActivities = data.activities.filter((activity) => !activity.action);
@@ -287,7 +287,7 @@ const {
 
         this.updateStats(data);
         this.renderActivities();
-        this.updateLoadMoreButton(data.pagination.has_more);
+        this.updateLoadMoreButton(data.pagination.hasMore);
         this.showContent();
       } catch (error) {
         console.error("Error loading global activity feed:", error);
@@ -323,7 +323,7 @@ const {
         filtered = filtered.filter(
           (activity) =>
             activity.user.toLowerCase().includes(userFilter) ||
-            activity.project_owner.toLowerCase().includes(userFilter)
+            activity.projectOwner.toLowerCase().includes(userFilter)
         );
       }
 
@@ -331,7 +331,7 @@ const {
         filtered = filtered.filter(
           (activity) =>
             activity.address.toLowerCase().includes(projectFilter) ||
-            (activity.project_title && activity.project_title.toLowerCase().includes(projectFilter))
+            (activity.projectTitle && activity.projectTitle.toLowerCase().includes(projectFilter))
         );
       }
 
@@ -367,7 +367,7 @@ const {
       const recentCount = document.getElementById("recent-count");
       const activeUsers = document.getElementById("active-users");
 
-      if (totalCount) totalCount.textContent = data.total_all.toString();
+      if (totalCount) totalCount.textContent = data.totalAll.toString();
 
       // Calculate recent activities (last 24 hours)
       const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
@@ -438,12 +438,12 @@ const {
         projectUpdated: "bx-edit",
         statusChange: "bx-transfer",
         assignmentChanged: "bx-user-check",
-        metadata_updated: "bx-edit-alt",
-        configuration_updated: "bx-cog",
+        metadataUpdated: "bx-edit-alt",
+        configurationUpdated: "bx-cog",
         fileUploaded: "bx-upload",
         commentAdded: "bx-message",
-        invoice_generated: "bx-receipt",
-        payment_received: "bx-dollar-circle",
+        invoiceGenerated: "bx-receipt",
+        paymentReceived: "bx-dollar-circle",
       };
       return iconMap[action] || "bx-info-circle";
     }
@@ -454,14 +454,14 @@ const {
         projectUpdated: "bg-blue-100 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400",
         statusChange: "bg-purple-100 text-purple-600 dark:bg-purple-900/20 dark:text-purple-400",
         assignmentChanged: "bg-cyan-100 text-cyan-600 dark:bg-cyan-900/20 dark:text-cyan-400",
-        metadata_updated: "bg-blue-50 text-blue-500 dark:bg-blue-900/10 dark:text-blue-300",
-        configuration_updated:
+        metadataUpdated: "bg-blue-50 text-blue-500 dark:bg-blue-900/10 dark:text-blue-300",
+        configurationUpdated:
           "bg-indigo-50 text-indigo-500 dark:bg-indigo-900/10 dark:text-indigo-300",
         fileUploaded: "bg-yellow-100 text-yellow-600 dark:bg-yellow-900/20 dark:text-yellow-400",
         commentAdded: "bg-indigo-100 text-indigo-600 dark:bg-indigo-900/20 dark:text-indigo-400",
-        invoice_generated:
+        invoiceGenerated:
           "bg-orange-100 text-orange-600 dark:bg-orange-900/20 dark:text-orange-400",
-        payment_received:
+        paymentReceived:
           "bg-emerald-100 text-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-400",
       };
       return colorMap[action] || "bg-gray-100 text-gray-600 dark:bg-gray-900/20 dark:text-gray-400";
@@ -473,12 +473,12 @@ const {
         projectUpdated: "Project Updated",
         statusChange: "Status Changed",
         assignmentChanged: "Assignment Changed",
-        metadata_updated: "Data Updated",
-        configuration_updated: "Configuration Updated",
+        metadataUpdated: "Data Updated",
+        configurationUpdated: "Configuration Updated",
         fileUploaded: "File Uploaded",
         commentAdded: "Comment Added",
-        invoice_generated: "Invoice Generated",
-        payment_received: "Payment Received",
+        invoiceGenerated: "Invoice Generated",
+        paymentReceived: "Payment Received",
       };
       return (
         labelMap[action] ||

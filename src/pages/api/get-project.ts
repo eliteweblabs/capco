@@ -782,7 +782,7 @@ export const GET: APIRoute = async ({ request, cookies, url, params }) => {
         pagination: {
           limit: limit || null,
           offset: offset || 0,
-          has_more: limit > 0 && projects?.length === limit,
+          hasMore: limit > 0 && projects?.length === limit,
         },
         filters_applied: {
           assignedToId: assignedToId,

@@ -48,51 +48,80 @@ button:has(.bx) {
   line-height: 1;
 }
 
-/* Style native HTML5 validation bubbles for dark mode */
+/* Disable default validation popup */
 :root {
-  color-scheme: light dark;
+  --tooltip-bg: #4f46e5;
+  --tooltip-text: white;
 }
 
-/* Firefox validation tooltips */
-input:invalid,
-textarea:invalid,
-select:invalid {
-  box-shadow: none; /* Remove red glow */
+.dark {
+  --tooltip-bg: #6366f1;
 }
 
-/* Webkit/Chrome validation bubble (limited styling support) */
+/* This completely disables the default popup */
 input::-webkit-validation-bubble-message,
-textarea::-webkit-validation-bubble-message,
-select::-webkit-validation-bubble-message {
-  background: #1f2937 !important;
-  color: #f3f4f6 !important;
-  border: 1px solid #374151 !important;
-  padding: 1rem !important;
-  font-size: 14px !important;
+input::-moz-validation-bubble-message,
+input::-ms-validation-bubble-message {
+  display: none;
 }
 
-/* Dark mode adjustments */
-.dark input::-webkit-validation-bubble-message,
-.dark textarea::-webkit-validation-bubble-message,
-.dark select::-webkit-validation-bubble-message {
-  background: #1f2937 !important;
-  color: #f3f4f6 !important;
-  border: 1px solid #374151 !important;
+/* Remove native validation UI */
+input:invalid {
+  box-shadow: none !important;
 }
 
-/* Style the validation bubble arrow */
-input::-webkit-validation-bubble-arrow,
-textarea::-webkit-validation-bubble-arrow,
-select::-webkit-validation-bubble-arrow {
-  background: #1f2937 !important;
-  border-color: #374151 !important;
+/* Custom validation tooltip container */
+.input-wrapper {
+  position: relative;
+  display: inline-block;
+  width: 100%;
 }
 
-.dark input::-webkit-validation-bubble-arrow,
-.dark textarea::-webkit-validation-bubble-arrow,
-.dark select::-webkit-validation-bubble-arrow {
-  background: #1f2937 !important;
-  border-color: #374151 !important;
+/* Custom validation tooltip */
+.input-wrapper:has(input:invalid:not(:focus):not(:placeholder-shown))::after {
+  content: "Please fill out this field";
+  position: absolute;
+  bottom: calc(100% + 5px);
+  right: 0;
+  background: var(--tooltip-bg);
+  color: var(--tooltip-text);
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 14px;
+  white-space: nowrap;
+  z-index: 1000;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  animation: tooltip-slide 0.2s ease-out;
+}
+
+/* Tooltip arrow */
+.input-wrapper:has(input:invalid:not(:focus):not(:placeholder-shown))::before {
+  content: "";
+  position: absolute;
+  bottom: calc(100% - 3px);
+  right: 10px;
+  border-width: 8px;
+  border-style: solid;
+  border-color: var(--tooltip-bg) transparent transparent transparent;
+  z-index: 1000;
+  animation: tooltip-slide 0.2s ease-out;
+}
+
+/* Invalid input styling */
+input:invalid:not(:focus):not(:placeholder-shown) {
+  border-color: var(--tooltip-bg) !important;
+}
+
+/* Animation for tooltip */
+@keyframes tooltip-slide {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 label {

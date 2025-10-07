@@ -29,7 +29,7 @@ export const POST: APIRoute = async ({ request, url }) => {
           );
         }
         result = await supabaseAdmin.rpc("checkout_file", {
-          file_id_param: fileId,
+          file_id_param: parseInt(fileId),
           user_id_param: userId,
           notes_param: notes || null,
         });
@@ -49,7 +49,7 @@ export const POST: APIRoute = async ({ request, url }) => {
           );
         }
         result = await supabaseAdmin.rpc("checkin_file", {
-          file_id_param: fileId,
+          file_id_param: parseInt(fileId),
           user_id_param: userId,
           notes_param: notes || null,
         });
@@ -72,7 +72,7 @@ export const POST: APIRoute = async ({ request, url }) => {
           );
         }
         result = await supabaseAdmin.rpc("assign_file", {
-          file_id_param: fileId,
+          file_id_param: parseInt(fileId),
           assigned_to_param: assignedTo,
           assigned_by_param: userId,
           notes_param: notes || null,
@@ -124,6 +124,7 @@ export const GET: APIRoute = async ({ url }) => {
       });
     }
 
+    // Convert camelCase to snake_case for RPC call
     const result = await supabaseAdmin.rpc("get_file_checkout_status", {
       file_id_param: parseInt(fileId),
     });
