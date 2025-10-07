@@ -39,7 +39,7 @@ export const POST: APIRoute = async ({ request }) => {
 
     // Get bookings for the specified date
     const { data: bookings, error } = await supabaseAdmin
-      .from("demo_bookings")
+      .from("demoBookings")
       .select("preferredTime, status")
       .eq("preferredDate", date)
       .in("status", ["pending", "confirmed"]); // Only get active bookings

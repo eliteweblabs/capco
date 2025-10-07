@@ -106,7 +106,7 @@ export const POST: APIRoute = async ({ request }) => {
 
     // Check if there's already a booking for the same date and time
     const { data: existingBooking, error: checkError } = await supabase
-      .from("demo_bookings")
+      .from("demoBookings")
       .select("id")
       .eq("preferredDate", date)
       .eq("preferredTime", time)
@@ -147,7 +147,7 @@ export const POST: APIRoute = async ({ request }) => {
 
     // Insert the demo booking
     const { data: booking, error: insertError } = await supabase
-      .from("demo_bookings")
+      .from("demoBookings")
       .insert([
         {
           name: name.trim(),
@@ -287,7 +287,7 @@ async function sendDemoBookingEmails(booking: any, request: Request) {
         },
         body: JSON.stringify({
           usersToNotify: adminEmails,
-          emailType: "demo_booking_admin",
+          emailType: "demoBookingAdmin",
           emailSubject: `New Demo Request → ${booking.name}`,
           emailContent: adminEmailContent,
           buttonText: "View Dashboard",
@@ -333,7 +333,7 @@ async function sendDemoBookingEmails(booking: any, request: Request) {
       },
       body: JSON.stringify({
         usersToNotify: [booking.email],
-        emailType: "demo_booking_customer",
+        emailType: "demoBookingCustomer",
         emailSubject: "Demo Booking Confirmation - CAPCO Design Group",
         emailContent: customerEmailContent,
         buttonText: "Learn More",

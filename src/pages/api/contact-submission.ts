@@ -18,7 +18,7 @@ export const POST: APIRoute = async ({ request }) => {
     // Get files
     const files = formData.getAll("files") as File[];
 
-    // Validate required fields (only contact information is required)
+    // Validate required fields
     if (!firstName || !lastName || !email) {
       return new Response(
         JSON.stringify({
@@ -45,57 +45,32 @@ export const POST: APIRoute = async ({ request }) => {
       }
     );
 
-    // Create a temporary project record for the contact submission
-    const { data: projectData, error: projectError } = await supabaseAdmin
-      .from("projects")
+    // Store contact information
+    const { data: contactData, error: contactError } = await supabaseAdmin
+      .from("contact_submissions")
       .insert({
-        title: `${firstName} ${lastName} - Contact Submission`,
-        address: address || "No address provided",
-        authorId: null, // No authenticated user
-        status: 1, // New/Contact status
-        sqFt: null,
-        newConstruction: projectType === "new-construction",
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
+        firstName,
+        lastName,
+        email,
+        phone: phone || null,
+        company: company || null,
+        address: address || null,
+        project_type: projectType || null,
+        message,
+        submitted_at: new Date().toISOString(),
       })
       .select("id")
       .single();
 
-    if (projectError) {
-      console.error("Error creating project:", projectError);
-      return new Response(JSON.stringify({ error: "Failed to create project record" }), {
+    if (contactError) {
+      console.error("Error storing contact information:", contactError);
+      return new Response(JSON.stringify({ error: "Failed to store contact information" }), {
         status: 500,
         headers: { "Content-Type": "application/json" },
       });
     }
 
-    const projectId = projectData.id;
-
-    // Try to create default punchlist items, but don't fail if the function doesn't exist
-    try {
-      await supabaseAdmin.rpc("create_default_punchlist_items", { project_id_param: projectId });
-    } catch (punchlistError) {
-      console.warn("Warning: Could not create default punchlist items:", punchlistError);
-      // Don't fail the request if punchlist creation fails
-    }
-
-    // Store contact information in a separate table or as project metadata
-    const { error: contactError } = await supabaseAdmin.from("contact_submissions").insert({
-      projectId: projectId,
-      firstName: firstName,
-      lastName: lastName,
-      email: email,
-      phone: phone || null,
-      company: company || null,
-      project_type: projectType || null,
-      message: message,
-      submitted_at: new Date().toISOString(),
-    });
-
-    if (contactError) {
-      console.error("Error storing contact information:", contactError);
-      // Don't fail the entire request if contact info storage fails
-    }
+    const submissionId = contactData.id;
 
     // Handle file uploads if any
     const uploadedFiles = [];
@@ -106,11 +81,11 @@ export const POST: APIRoute = async ({ request }) => {
           // Generate unique file path
           const timestamp = Date.now();
           const fileName = `${timestamp}-${file.name.replace(/[^a-zA-Z0-9.-]/g, "_")}`;
-          const filePath = `contact-submissions/${projectId}/${fileName}`;
+          const filePath = `contact-submissions/${submissionId}/${fileName}`;
 
           // Upload to Supabase Storage
           const { data: uploadData, error: uploadError } = await supabaseAdmin.storage
-            .from("project-documents")
+            .from("contact-files")
             .upload(filePath, file, {
               contentType: file.type,
               upsert: false,
@@ -121,27 +96,22 @@ export const POST: APIRoute = async ({ request }) => {
             continue; // Skip this file but continue with others
           }
 
-          // Log file in database
-          const { error: dbError } = await supabaseAdmin.from("files").insert({
-            projectId: projectId,
-            authorId: null, // No authenticated user
-            filePath: filePath,
-            fileName: file.name,
-            fileSize: file.size,
-            fileType: file.type,
-            title: file.name,
-            comments: "Contact submission file",
-            status: "active",
-            uploadedAt: new Date().toISOString(),
-          });
+          // Update contact submission with file information
+          const { error: updateError } = await supabaseAdmin
+            .from("contact_submissions")
+            .update({
+              files: supabaseAdmin.sql`array_append(files, ${filePath})`,
+            })
+            .eq("id", submissionId);
 
-          if (dbError) {
-            console.error("Error logging file in database:", dbError);
+          if (updateError) {
+            console.error("Error updating contact submission with file:", updateError);
           } else {
             uploadedFiles.push({
               name: file.name,
               size: file.size,
               type: file.type,
+              path: filePath,
             });
           }
         } catch (error) {
@@ -150,7 +120,7 @@ export const POST: APIRoute = async ({ request }) => {
       }
     }
 
-    // Send notification email to admin using standard email system
+    // Send notification email to admin
     try {
       const emailResponse = await fetch(`${new URL(request.url).origin}/api/email-delivery`, {
         method: "POST",
@@ -172,10 +142,17 @@ export const POST: APIRoute = async ({ request }) => {
             <p><strong>Message:</strong></p>
             <p>${message}</p>
             <p><strong>Files Uploaded:</strong> ${uploadedFiles.length}</p>
+            ${
+              uploadedFiles.length > 0
+                ? `
+            <p><strong>Uploaded Files:</strong></p>
+            <ul>
+              ${uploadedFiles.map((file) => `<li>${file.name} (${(file.size / 1024 / 1024).toFixed(2)} MB)</li>`).join("")}
+            </ul>
+            `
+                : ""
+            }
           `,
-          buttonText: "View Project Details",
-          buttonLink: `${new URL(request.url).origin}/project/${projectId}`,
-          project: { id: projectId },
           trackLinks: true,
         }),
       });
@@ -194,7 +171,7 @@ export const POST: APIRoute = async ({ request }) => {
       JSON.stringify({
         success: true,
         message: "Contact submission received successfully",
-        projectId: projectId,
+        submissionId,
         filesUploaded: uploadedFiles.length,
         uploadedFiles: uploadedFiles,
       }),
