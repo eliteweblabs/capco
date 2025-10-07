@@ -156,7 +156,7 @@ export const GET: APIRoute = async ({ url, cookies }) => {
       .neq("address", "")
       .limit(5);
 
-    console.log("🔍 [DISCUSSIONS] Projects with addresses:", projectsWithAddresses);
+    // console.log("🔍 [DISCUSSIONS] Projects with addresses:", projectsWithAddresses);
 
     if (error) {
       console.error("Error fetching discussions:", error);
@@ -243,14 +243,14 @@ export const GET: APIRoute = async ({ url, cookies }) => {
       const ownerProfile = ownerProfilesMap.get(discussion.projects?.authorId);
 
       // Debug logging for address
-      console.log("🔍 [DISCUSSIONS] Project data for discussion", discussion.id, ":", {
-        projectId: discussion.projectId,
-        address: discussion.projects?.address,
-        title: discussion.projects?.title,
-        hasProjects: !!discussion.projects,
-        projectsKeys: discussion.projects ? Object.keys(discussion.projects) : null,
-        fullProjectsObject: discussion.projects,
-      });
+      // console.log("🔍 [DISCUSSIONS] Project data for discussion", discussion.id, ":", {
+      //   projectId: discussion.projectId,
+      //   address: discussion.projects?.address,
+      //   title: discussion.projects?.title,
+      //   hasProjects: !!discussion.projects,
+      //   projectsKeys: discussion.projects ? Object.keys(discussion.projects) : null,
+      //   fullProjectsObject: discussion.projects,
+      // });
 
       return {
         id: discussion.id,

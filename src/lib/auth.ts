@@ -22,12 +22,12 @@ export async function checkAuth(cookies: any): Promise<AuthResult> {
   const accessToken = cookies.get("sb-access-token");
   const refreshToken = cookies.get("sb-refresh-token");
 
-  console.log("🔐 [AUTH] Tokens:", {
-    hasAccessToken: !!accessToken,
-    hasRefreshToken: !!refreshToken,
-    accessTokenValue: accessToken?.value,
-    refreshTokenValue: refreshToken?.value
-  });
+  // console.log("🔐 [AUTH] Tokens:", {
+  //   hasAccessToken: !!accessToken,
+  //   hasRefreshToken: !!refreshToken,
+  //   accessTokenValue: accessToken?.value,
+  //   refreshTokenValue: refreshToken?.value
+  // });
 
   let isAuth = false;
   let session = null;
@@ -171,13 +171,13 @@ export async function checkAuth(cookies: any): Promise<AuthResult> {
     currentRole: currentRole,
   };
 
-  console.log("🔐 [AUTH] Final result:", {
-    isAuth: result.isAuth,
-    hasUser: !!result.currentUser,
-    hasSession: !!result.session,
-    currentRole: result.currentRole,
-    rawUser: result.currentUser
-  });
+  // console.log("🔐 [AUTH] Final result:", {
+  //   isAuth: result.isAuth,
+  //   hasUser: !!result.currentUser,
+  //   hasSession: !!result.session,
+  //   currentRole: result.currentRole,
+  //   rawUser: result.currentUser
+  // });
 
   return result;
 }

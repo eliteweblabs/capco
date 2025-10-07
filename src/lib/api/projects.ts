@@ -69,7 +69,7 @@ export interface Project {
 
 export interface ProjectWithStatus extends Project {
   statusName?: string;
-  status_slug?: string;
+  statusSlug?: string;
   statusColor?: string;
 }
 
@@ -252,7 +252,7 @@ export async function fetchProjectsWithStatus(
     const projectsWithStatus: ProjectWithStatus[] = (projects || []).map((project) => ({
       ...project,
       statusName: project.projectStatuses?.name,
-      status_slug: project.projectStatuses?.slug,
+      statusSlug: project.projectStatuses?.slug,
       statusColor: project.projectStatuses?.statusColor,
     }));
 
@@ -358,7 +358,7 @@ export function groupProjectsByStatus(
 ): Record<string, ProjectWithStatus[]> {
   return projects.reduce(
     (acc, project) => {
-      const statusSlug = project.status_slug || "unknown";
+      const statusSlug = project.statusSlug || "unknown";
       if (!acc[statusSlug]) {
         acc[statusSlug] = [];
       }
