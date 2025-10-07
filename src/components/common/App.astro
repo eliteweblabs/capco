@@ -512,7 +512,16 @@ console.log("🔍 [APP] debugData:", currentUser);
 
         console.log("currentUser from notice", currentUser);
         if (currentNotification?.modal) {
-          const modalData = currentNotification.modal;
+          const modalData = {
+            ...currentNotification.modal,
+            redirect: currentNotification.modal.redirect
+              ? {
+                  url: currentNotification.modal.redirect.url,
+                  showCountdown: currentNotification.modal.redirect.showCountdown || true,
+                }
+              : undefined,
+          };
+          console.log("🔔 [STATUS-MODAL] Showing modal with data:", modalData);
           (window as any).showModal(modalData);
         } else {
           console.warn(`WARNING [${context || "NOTIFICATION"}] No notification found in response`);

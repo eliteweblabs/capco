@@ -211,19 +211,16 @@ export const GET: APIRoute = async ({ request, cookies, url }) => {
             statusColor: status.statusColor,
             statusSlug: status.statusSlug,
             statusTab: status.adminStatusTab,
-            modal: {
-              type: "info",
-              persist: false,
-              message: status.modalAdmin,
-              title: "Project Updated",
-              redirect: {
-                url: status.modalAutoRedirectAdmin,
-                showCountdown: true,
-              },
-              showCountdown: true,
-              duration: 3000,
-              estTime: status.estTime,
-            },
+            // modal: {
+            //   type: "info",
+            //   persist: false,
+            //   message: status.modalAdmin,
+            //   title: "Project Updated",
+            //   redirect: {
+            //     url: status.modalAutoRedirectAdmin,
+            //     showCountdown: true,
+            //   },
+            // },
           },
           client: {
             email: {
@@ -240,16 +237,17 @@ export const GET: APIRoute = async ({ request, cookies, url }) => {
             statusColor: status.statusColor,
             statusSlug: status.statusSlug,
             statusTab: status.clientStatusTab,
-            modal: {
-              type: "info",
-              persist: false,
-              message: status.modalClient,
-              title: "ClientProject Updated",
-              redirect: {
-                url: status.modalAutoRedirectClient,
-                showCountdown: true,
-              },
-            },
+            // modal: {
+            //   type: "info",
+            //   persist: false,
+            //   message: status.modalClient,
+            //   duration: 3000,
+            //   title: "ClientProject Updated",
+            //   redirect: {
+            //     url: status.modalAutoRedirectClient,
+            //     showCountdown: true,
+            //   },
+            // },
           },
           current: {
             email: {
@@ -270,6 +268,7 @@ export const GET: APIRoute = async ({ request, cookies, url }) => {
               type: "info",
               persist: false, // false = close existing modals, true = keep existing modals
               message: isAdminOrStaff ? status.modalAdmin : status.modalClient,
+              duration: 3000,
               title: "Project Updated",
               redirect: {
                 url: isAdminOrStaff
@@ -463,19 +462,19 @@ export const POST: APIRoute = async ({ request, cookies }) => {
             statusColor: status.statusColor,
             statusSlug: status.statusSlug,
             statusTab: status.adminStatusTab,
-            modal: {
-              type: "info",
-              persist: false,
-              message: status.modalAdmin,
-              title: "Project Updated",
-              redirect: {
-                url: status.modalAutoRedirectAdmin,
-                showCountdown: true,
-              },
-              showCountdown: true,
-              duration: 3000,
-              estTime: status.estTime,
-            },
+            // modal: {
+            //   type: "info",
+            //   persist: false,
+            //   message: status.modalAdmin,
+            //   title: "Project Updated",
+            //   redirect: {
+            //     url: status.modalAutoRedirectAdmin,
+            //     showCountdown: true,
+            //   },
+            //   showCountdown: true,
+            //   duration: 3000,
+            //   estTime: status.estTime,
+            // },
           },
           client: {
             email: {
@@ -492,19 +491,19 @@ export const POST: APIRoute = async ({ request, cookies }) => {
             statusColor: status.statusColor,
             statusSlug: status.statusSlug,
             statusTab: status.clientStatusTab,
-            modal: {
-              type: "info",
-              persist: false,
-              message: status.modalClient,
-              title: "ClientProject Updated",
-              redirect: {
-                url: status.modalAutoRedirectClient,
-                showCountdown: true,
-              },
-              showCountdown: true,
-              duration: 3000,
-              estTime: status.estTime,
-            },
+            // modal: {
+            //   type: "info",
+            //   persist: false,
+            //   message: status.modalClient,
+            //   title: "ClientProject Updated",
+            //   redirect: {
+            //     url: status.modalAutoRedirectClient,
+            //     showCountdown: true,
+            //   },
+            //   showCountdown: true,
+            //   duration: 3000,
+            //   estTime: status.estTime,
+            // },
           },
           current: {
             email: {
@@ -532,7 +531,6 @@ export const POST: APIRoute = async ({ request, cookies }) => {
                   : status.modalAutoRedirectClient,
                 showCountdown: true, // Show countdown in message
               },
-              showCountdown: true,
               duration: 3000,
               estTime: status.estTime,
             },
@@ -566,9 +564,15 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     });
   } catch (error) {
     console.error("❌ [PROJECT-STATUSES-API] POST Error:", error);
-    return new Response(JSON.stringify({ error: "Internal server error" }), {
-      status: 500,
-      headers: { "Content-Type": "application/json" },
-    });
+    return new Response(
+      JSON.stringify({
+        error: "Internal server error",
+        details: error instanceof Error ? error.message : "Unknown error",
+      }),
+      {
+        status: 500,
+        headers: { "Content-Type": "application/json" },
+      }
+    );
   }
 };
