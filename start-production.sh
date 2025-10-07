@@ -1,6 +1,6 @@
 #!/bin/sh
 
-echo "Starting Astro application and Socket.io server..."
+echo "Starting Astro application..."
 
 # Debug: Print runtime environment variables
 echo "🔍 RUNTIME ENV CHECK:"
@@ -12,11 +12,11 @@ echo "EMAIL_LOGO_LIGHT: $EMAIL_LOGO_LIGHT"
 echo "COMPANY_LOGO_LIGHT: $COMPANY_LOGO_LIGHT"
 echo "GLOBAL_COLOR_PRIMARY: $GLOBAL_COLOR_PRIMARY"
 
-# Start integrated Astro + Socket.io server
-echo "Starting integrated Astro + Socket.io server..."
-node server.mjs &
+# Start Astro server
+echo "Starting Astro server..."
+node dist/server/entry.mjs &
 SERVER_PID=$!
-echo "Integrated server started with PID: $SERVER_PID"
+echo "Astro server started with PID: $SERVER_PID"
 
 # Function to gracefully shut down processes
 cleanup() {
