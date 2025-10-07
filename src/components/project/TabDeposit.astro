@@ -2,6 +2,7 @@
 import { supabase } from "../../lib/supabase";
 import BoxIcon from "../common/BoxIcon.astro";
 import PaymentForm from "./PaymentForm.astro";
+import Alert from "../partials/Alert.astro";
 
 interface Props {
   project?: any;
@@ -111,35 +112,54 @@ if (projectId && supabase) {
 // });
 
 function getStatusAlert() {
-  return currentRole === "Client" && Number(projectStatus) < 55
-    ? "Deposit payment will be available after proposal is signed off."
-    : Number(projectStatus) >= 55 && currentRole === "Client"
-      ? "Secure your project with a deposit payment. This ensures we can begin work on your fire protection system."
-      : null;
+  // Client status messages
+  if (currentRole === "Client") {
+    if (Number(projectStatus) < 55) {
+      return "Deposit payment will be available after proposal is signed off";
+    }
+    if (Number(projectStatus) >= 55 && Number(projectStatus) < 60) {
+      return `Please secure your project with a deposit payment. This ensures we can begin work on your fire protection system.`;
+    }
+    if (Number(projectStatus) >= 50 && Number(projectStatus) < 60) {
+      return "Please pay your deposit.";
+    }
+  }
+
+  // Admin status messages
+  // if (currentRole === "Admin" || currentRole === "Staff") {
+  //   if (Number(projectStatus) < 20) {
+  //     return `<b>${clientName}</b> has not submitted any documents`;
+  //   }
+  //   if (Number(projectStatus) >= 55 && Number(projectStatus) < 60) {
+  //     return `Please secure your project with a deposit payment. This ensures we can begin work on your fire protection system.`;
+  //   }
+  //   if (Number(projectStatus) >= 30 && Number(projectStatus) < 40) {
+  //     return `Proposal has been sent but <b>${clientName}</b> has not viewed it, you can make changes to it and resend.`;
+  //   }
+  //   if (Number(projectStatus) >= 40 && Number(projectStatus) < 50) {
+  //     return `<b>${clientName}</b> has viewed the proposal, you can make changes to it and resend.`;
+  //   }
+  //   if (Number(projectStatus) >= 50 && Number(projectStatus) < 60) {
+  //     return "Contract has been signed off, no changes can be made.";
+  //   }
+  // }
+
+  return null;
 }
+// const statusAlert = getStatusAlert();
+
+// function getStatusAlert() {
+//   return currentRole === "Client" && Number(projectStatus) < 55
+//     ? "Deposit payment will be available after proposal is signed off."
+//     : Number(projectStatus) >= 55 && currentRole === "Client"
+//       ? "Secure your project with a deposit payment. This ensures we can begin work on your fire protection system."
+//       : null;
+// }
 const statusAlert = getStatusAlert();
 ---
 
-<div id="content-deposit" class="tab-content hidden p-4 bg-white dark:bg-gray-800">
-  <!-- <StatusAlert status={projectStatus} 
-  currentRole={currentRole}
-  statusAlert={
-"< 55" : "Deposit payment will be available after proposal is signed off.",
-">= 55" : "Secure your project with a deposit payment. This ensures we can begin work on your fire protection system."
-
-  }
-  /> -->
-
-  <div
-    class="mb-4 rounded-lg border border-blue-200 bg-blue-50 p-4 dark:border-blue-800 dark:bg-blue-900/20"
-  >
-    <div class="flex items-start">
-      <BoxIcon name="info-circle" class="mr-2 mt-0.5 text-lg text-blue-600 dark:text-blue-400" />
-      <div class="text-blue-800 dark:text-blue-400">
-        <h3 class="text-lg">{statusAlert}</h3>
-      </div>
-    </div>
-  </div>
+<div id="content-deposit" class="tab-content p-4 bg-white dark:bg-gray-800">
+  {statusAlert && <Alert type="info" title={statusAlert} />}
 
   {
     projectStatus >= 50 && currentRole === "Client" && (
