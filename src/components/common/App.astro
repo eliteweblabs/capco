@@ -123,9 +123,7 @@ const debugData = {
 };
 
 console.log("🔍 [APP] debugData:", currentUser);
-
 ---
-
 
 <!doctype html>
 <html lang="en">
@@ -251,11 +249,11 @@ console.log("🔍 [APP] debugData:", currentUser);
 
     <script>
       import {
-initializeNotificationCount,
-loadNotificationCount,
-refreshNotificationCount,
-updateNotificationBellCount,
-} from "@/lib/notification-count-loader";
+        initializeNotificationCount,
+        loadNotificationCount,
+        refreshNotificationCount,
+        updateNotificationBellCount,
+      } from "@/lib/notification-count-loader";
 
       // Make functions globally available
       (window as any).initializeNotificationCount = initializeNotificationCount;
@@ -266,24 +264,24 @@ updateNotificationBellCount,
 
     <!-- Set global user data for client-side components -->
   </head>
-  
+
   <body class="bg-gray-50 antialiased dark:bg-gray-900">
     <!-- Preloader -->
     <Preloader />
 
     <Navbar
-      desktopNavigationHTML={desktopNavigationHTML}
-      currentUser={currentUser}
-      session={session}
-      supabaseUrl={supabaseUrl}
-      id={id}
-      projects={projects}
-      project={project}
-      isBackend={isBackend}
+      {desktopNavigationHTML}
+      {currentUser}
+      {session}
+      {supabaseUrl}
+      {id}
+      {projects}
+      {project}
+      {isBackend}
     />
 
     <div class="safari-fix flex min-h-screen bg-gray-50 pt-16 dark:bg-gray-900">
-      <Aside currentUser={currentUser} project={project} globalInputClasses={globalInputClasses} />
+      <Aside {currentUser} {project} {globalInputClasses} />
 
       <div
         id="main-content"
@@ -294,18 +292,18 @@ updateNotificationBellCount,
         </main>
         <!-- Footer -->
         <Footer
-          globalInputClasses={globalInputClasses}
-          globalSecondaryTextClasses={globalSecondaryTextClasses}
-          globalPrimaryTextClasses={globalPrimaryTextClasses}
-          currentUser={currentUser}
-          globalCompanyName={globalCompanyName}
-          globalCompanyAddress={globalCompanyAddress}
-          globalCompanyPhone={globalCompanyPhone}
-          globalCompanyEmail={globalCompanyEmail}
-          globalCompanyWebsite={globalCompanyWebsite}
-          globalCompanyLogo={globalCompanyLogo}
-          globalCompanyLogoDark={globalCompanyLogoDark}
-          globalCompanyLogoLight={globalCompanyLogoLight}
+          {globalInputClasses}
+          {globalSecondaryTextClasses}
+          {globalPrimaryTextClasses}
+          {currentUser}
+          {globalCompanyName}
+          {globalCompanyAddress}
+          {globalCompanyPhone}
+          {globalCompanyEmail}
+          {globalCompanyWebsite}
+          {globalCompanyLogo}
+          {globalCompanyLogoDark}
+          {globalCompanyLogoLight}
         />
       </div>
     </div>
@@ -317,19 +315,18 @@ updateNotificationBellCount,
     <!-- Speed Dial -->
     <SpeedDial
       currentUser={currentUser || undefined}
-      isBackend={isBackend}
-      debugData={debugData}
-      globalPrimaryTextClasses={globalPrimaryTextClasses}
-      globalSecondaryTextClasses={globalSecondaryTextClasses}
-      globalInputClasses={globalInputClasses}
+      {isBackend}
+      {debugData}
+      {globalPrimaryTextClasses}
+      {globalSecondaryTextClasses}
+      {globalInputClasses}
     />
 
     <ScrollProgressIndicator />
 
-    <TutorialOverlay currentUser={currentUser} tutorialId="demo-tour" autoStart={false} isAuth={isAuth} />
+    <TutorialOverlay {currentUser} tutorialId="demo-tour" autoStart={false} {isAuth} />
     <!-- Debug Panel (Admin Only) -->
-    <DebugPanel currentUser={currentUser} />
-
+    <DebugPanel {currentUser} />
 
     <!-- Flowbite JavaScript -->
     <script src="https://unpkg.com/flowbite@2.5.2/dist/flowbite.min.js"></script>
@@ -378,7 +375,7 @@ updateNotificationBellCount,
           resetForm?: any;
           resetNotifications?: () => void;
           sendEmail?: (emailData: any, currentUser: any) => Promise<any>;
-          setPageLoadProjectStatus?: any;
+          setPageLoadStatusActionsFromUrl?: any;
           showModal?: any;
           switchTab?: any;
           toggleCommentForm?: () => void;
@@ -462,7 +459,27 @@ updateNotificationBellCount,
 
       (window as any).switchTab = function (tabName: string) {
         console.log(`[TAB] Switching to: ${tabName}`);
-        // Implementation for tab switching
+
+        // Find all tab contents
+        const tabContents = document.querySelectorAll(".tab-content");
+
+        // Hide all tabs first
+        tabContents.forEach((tab) => {
+          (tab as HTMLElement).style.display = "none";
+        });
+
+        // Show the selected tab
+        const selectedTab = document.getElementById(`content-${tabName}`);
+        if (selectedTab) {
+          selectedTab.style.display = "block";
+
+          // Check if this tab has an initialization function
+          const initFuncName = selectedTab.getAttribute("data-tab-init");
+          if (initFuncName && (window as any)[initFuncName]) {
+            console.log(`[TAB] Initializing tab with function: ${initFuncName}`);
+            (window as any)[initFuncName]();
+          }
+        }
       };
 
       (window as any).handleNewStatusModalAndEmail = function (response: any, context: string) {
@@ -497,8 +514,6 @@ updateNotificationBellCount,
         console.log("currentUser from notice", currentUser);
         if (currentNotification?.modal) {
           const modalData = currentNotification.modal;
-
-          debugger;
           (window as any).showModal(modalData);
         } else {
           console.warn(`WARNING [${context || "NOTIFICATION"}] No notification found in response`);
@@ -582,7 +597,6 @@ updateNotificationBellCount,
         }
       };
 
-
       (window as any).getProject = async function (projectId: string | number) {
         const projectResponse = await fetch(`/api/get-project?id=${projectId}`);
         if (projectResponse.ok) {
@@ -591,7 +605,7 @@ updateNotificationBellCount,
           throw new Error("Failed to fetch project");
         }
       };
-      
+
       // Delete project function
       let isDeleting = false; // Flag to prevent multiple delete operations
       (window as any).deleteProject = function (projectId: any) {
@@ -615,8 +629,6 @@ updateNotificationBellCount,
             );
           }
 
-
-          
           return;
         }
 
@@ -1059,7 +1071,6 @@ updateNotificationBellCount,
         return emailRegex.test(email) ? null : "Invalid email format";
       };
 
-
       (window as any).isSafariBeta = function () {
         const ua = navigator.userAgent;
         // Check if iOS device
@@ -1479,17 +1490,21 @@ updateNotificationBellCount,
     </script>
 
     <script>
-
-
-
       document.addEventListener("DOMContentLoaded", async () => {
         (window as any).hideOnFormFocus();
 
         // Initialize notification count only if user is authenticated
         try {
           const notificationBell = document.getElementById("notification-bell");
-          if (notificationBell && notificationBell.dataset.userId && (window as any).initializeNotificationCount) {
-            console.log("🔔 [APP] Initializing notifications for user:", notificationBell.dataset.userId);
+          if (
+            notificationBell &&
+            notificationBell.dataset.userId &&
+            (window as any).initializeNotificationCount
+          ) {
+            console.log(
+              "🔔 [APP] Initializing notifications for user:",
+              notificationBell.dataset.userId
+            );
             await (window as any).initializeNotificationCount();
           } else {
             console.log("🔔 [APP] Skipping notification initialization - no authenticated user");

@@ -15,7 +15,9 @@ export const POST: APIRoute = async ({ url, cookies, request }) => {
       return createErrorResponse("Authentication required", 401);
     }
 
-    const contractHtml = await replacePlaceholders(projectData.contract_html, { project: projectData });
+    const contractHtml = await replacePlaceholders(projectData.contract_html, {
+      project: projectData,
+    });
 
     return createSuccessResponse(
       {

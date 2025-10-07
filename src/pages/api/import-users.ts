@@ -154,7 +154,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         formData.append("email", user.email.trim().toLowerCase());
         formData.append("phone", user.phone?.trim() || "");
         formData.append("role", user.role);
-        
+
         const createUserResponse = await fetch(`${new URL(request.url).origin}/api/create-user`, {
           method: "POST",
           headers: {
