@@ -126,7 +126,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
         await SimpleProjectLogger.addLogEntry(
           discussionData.projectId,
-          markCompleted ? "discussion_completed" : "discussion_incomplete",
+          markCompleted ? "discussionCompleted" : "discussionIncomplete",
           `Discussion ${markCompleted ? "marked as completed" : "marked as incomplete"}: ${(discussionData.message?.substring(0, 50) || "No message") + "..."}`,
           { discussionId: discussionIdNum, completed: markCompleted }
         );

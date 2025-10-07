@@ -217,71 +217,6 @@ export function replacePlaceholders(
 
   const pdfFontFallback = process.env.FONT_FAMILY_FALLBACK || "Arial, sans-serif";
 
-  const beforeReplaceFontFamily = result;
-  result = result.replace(/\{\{\s*FONT_FAMILY\s*\}\}/g, `${primaryFontFamily}, ${pdfFontFallback}`);
-  if (result !== beforeReplaceFontFamily) {
-    placeholderApplied = true;
-    addBoldTags = false;
-  }
-
-  const beforeReplaceFontPrimary = result;
-  result = result.replace(/\{\{\s*FONT_FAMILY_PRIMARY\s*\}\}/g, primaryFontFamily);
-  if (result !== beforeReplaceFontPrimary) {
-    placeholderApplied = true;
-    addBoldTags = false;
-  }
-
-  const beforeReplaceFontFallback = result;
-  result = result.replace(/\{\{\s*FONT_FAMILY_FALLBACK\s*\}\}/g, pdfFontFallback);
-  if (result !== beforeReplaceFontFallback) {
-    placeholderApplied = true;
-    addBoldTags = false;
-  }
-
-  // Replace FONT_WEIGHT placeholders
-  const beforeReplaceWeightNormal = result;
-  result = result.replace(/\{\{\s*FONT_WEIGHT_NORMAL\s*\}\}/g, "400");
-  if (result !== beforeReplaceWeightNormal) {
-    placeholderApplied = true;
-    addBoldTags = false;
-  }
-
-  const beforeReplaceWeightBold = result;
-  result = result.replace(/\{\{\s*FONT_WEIGHT_BOLD\s*\}\}/g, "600");
-  if (result !== beforeReplaceWeightBold) {
-    placeholderApplied = true;
-    addBoldTags = false;
-  }
-
-  const beforeReplaceWeightHeading = result;
-  result = result.replace(/\{\{\s*FONT_WEIGHT_HEADING\s*\}\}/g, "700");
-  if (result !== beforeReplaceWeightHeading) {
-    placeholderApplied = true;
-    addBoldTags = false;
-  }
-
-  // Replace FONT_SIZE placeholders
-  const beforeReplaceSizeBase = result;
-  result = result.replace(/\{\{\s*FONT_SIZE_BASE\s*\}\}/g, "14px");
-  if (result !== beforeReplaceSizeBase) {
-    placeholderApplied = true;
-    addBoldTags = false;
-  }
-
-  const beforeReplaceSizeHeading = result;
-  result = result.replace(/\{\{\s*FONT_SIZE_HEADING\s*\}\}/g, "24px");
-  if (result !== beforeReplaceSizeHeading) {
-    placeholderApplied = true;
-    addBoldTags = false;
-  }
-
-  const beforeReplaceSizeSmall = result;
-  result = result.replace(/\{\{\s*FONT_SIZE_SMALL\s*\}\}/g, "12px");
-  if (result !== beforeReplaceSizeSmall) {
-    placeholderApplied = true;
-    addBoldTags = false;
-  }
-
   // Replace COMPANY_LOGO_LIGHT placeholders
   if (globalCompanyData().globalCompanyLogoLight) {
     const beforeReplace = result;
@@ -312,7 +247,7 @@ export function replacePlaceholders(
   if (globalCompanyData().globalCompanyName) {
     const beforeReplace = result;
     result = result.replace(
-      /\{\{\s*GLOBAL_companyName\s*\}\}/g,
+      /\{\{\s*GLOBAL_COMPANY_NAME\s*\}\}/g,
       globalCompanyData().globalCompanyName
     );
     if (result !== beforeReplace) {
@@ -376,7 +311,7 @@ export function replacePlaceholders(
   // Replace firstName placeholders
   if (clientFirstName) {
     const beforeReplace = result;
-    result = result.replace(/\{\{\s*firstName\s*\}\}/g, clientFirstName);
+    result = result.replace(/\{\{\s*FIRST_NAME\s*\}\}/g, clientFirstName);
     if (result !== beforeReplace) {
       placeholderApplied = true;
       addBoldTags = true;
@@ -386,7 +321,7 @@ export function replacePlaceholders(
   // Replace lastName placeholders
   if (clientLastName) {
     const beforeReplace = result;
-    result = result.replace(/\{\{\s*lastName\s*\}\}/g, clientLastName);
+    result = result.replace(/\{\{\s*LAST_NAME\s*\}\}/g, clientLastName);
     if (result !== beforeReplace) {
       placeholderApplied = true;
       addBoldTags = true;
@@ -504,7 +439,7 @@ export function replacePlaceholders(
 
   if (clientFirstName) {
     const beforeReplace = result;
-    result = result.replace(/\{\{\s*CLIENT_firstName\s*\}\}/g, clientFirstName);
+    result = result.replace(/\{\{\s*CLIENT_FIRST_NAME\s*\}\}/g, clientFirstName);
     if (result !== beforeReplace) {
       placeholderApplied = true;
       addBoldTags = true;
@@ -513,7 +448,7 @@ export function replacePlaceholders(
 
   if (clientLastName) {
     const beforeReplace = result;
-    result = result.replace(/\{\{\s*CLIENT_lastName\s*\}\}/g, clientLastName);
+    result = result.replace(/\{\{\s*CLIENT_LAST_NAME\s*\}\}/g, clientLastName);
     if (result !== beforeReplace) {
       placeholderApplied = true;
       addBoldTags = true;
@@ -645,7 +580,7 @@ export function replacePlaceholders(
   // Replace PROJECT_companyName placeholders
   if (clientName) {
     const beforeReplace = result;
-    result = result.replace(/\{\{\s*PROJECT_companyName\s*\}\}/g, clientName);
+    result = result.replace(/\{\{\s*PROJECT_COMPANY_NAME\s*\}\}/g, clientName);
     if (result !== beforeReplace) {
       placeholderApplied = true;
       addBoldTags = true;
@@ -718,7 +653,7 @@ export function replacePlaceholders(
   // Replace companyName placeholders
   if (clientName) {
     const beforeReplace = result;
-    result = result.replace(/\{\{\s*companyName\s*\}\}/g, clientName);
+    result = result.replace(/\{\{\s*COMPANY_NAME\s*\}\}/g, clientName);
     if (result !== beforeReplace) {
       placeholderApplied = true;
       addBoldTags = true;

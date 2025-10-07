@@ -179,7 +179,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     // Log the subject creation/update
     await SimpleProjectLogger.addLogEntry(
       0, // System log for subject management
-      "project_updated", // Use existing log type
+      "projectUpdated", // Use existing log type
       isNewSubject
         ? `New subject created: ${subjectRecord.title}`
         : `Subject usage updated: ${subjectRecord.title}`,

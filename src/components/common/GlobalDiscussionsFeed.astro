@@ -194,18 +194,21 @@ const {
   interface GlobalDiscussion {
     id: number;
     projectId: number;
-    project_address: string;
-    project_title: string;
-    project_owner: string;
-    project_owner_id: string;
+    address: string;
+    title: string;
+    projectOwner: string;
+    projectOwnerId: string;
     authorId: string;
-    author_name: string;
-    author_role: string;
+    authorName: string;
+    authorRole: string;
+    authorAvatar?: string;
+    authorFirstName?: string;
+    authorLastName?: string;
     message: string;
     internal: boolean;
     markCompleted: boolean;
     parentId?: number;
-    is_reply: boolean;
+    isReply: boolean;
     imageUrls?: string[];
     imagePaths?: any;
     companyName?: string;
@@ -343,15 +346,15 @@ const {
 
       this.filteredDiscussions = this.allDiscussions.filter((discussion) => {
         // User filter
-        if (userFilter && !discussion.author_name.toLowerCase().includes(userFilter)) {
+        if (userFilter && !discussion.authorName.toLowerCase().includes(userFilter)) {
           return false;
         }
 
         // Project filter
         if (
           projectFilter &&
-          !discussion.project_address.toLowerCase().includes(projectFilter) &&
-          !discussion.project_title.toLowerCase().includes(projectFilter)
+          !discussion.address.toLowerCase().includes(projectFilter) &&
+          !discussion.title.toLowerCase().includes(projectFilter)
         ) {
           return false;
         }
@@ -386,14 +389,14 @@ const {
       const completedBadge = discussion.markCompleted
         ? `<span class="rounded-full bg-green-100 px-2 py-1 text-xs font-medium text-green-800 dark:bg-green-900/30 dark:text-green-400">Completed</span>`
         : "";
-      const replyBadge = discussion.is_reply
+      const replyBadge = discussion.isReply
         ? `<span class="rounded-full bg-blue-100 px-2 py-1 text-xs font-medium text-blue-800 dark:bg-blue-900/30 dark:text-blue-400">Reply</span>`
         : "";
 
       const roleColor =
-        discussion.author_role === "Admin"
+        discussion.authorRole === "Admin"
           ? "text-purple-600 dark:text-purple-400"
-          : discussion.author_role === "Staff"
+          : discussion.authorRole === "Staff"
             ? "text-blue-600 dark:text-blue-400"
             : "text-green-600 dark:text-green-400";
 
@@ -402,14 +405,35 @@ const {
           <div class="mb-3 flex items-start justify-between">
             <div class="flex-1">
               <div class="flex items-center gap-2 mb-2">
-                <span class="font-semibold ${roleColor}">${discussion.author_name}</span>
-                <span class="text-xs text-gray-500 dark:text-gray-400">(${discussion.author_role})</span>
+                ${
+                  discussion.authorAvatar
+                    ? `
+                  <img
+                    class="h-6 w-6 rounded-full border border-gray-200 dark:border-gray-600 shadow-sm"
+                    src="${discussion.authorAvatar}"
+                    alt="${discussion.authorName}"
+                    onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'"
+                  />
+                `
+                    : ""
+                }
+                <div class="h-6 w-6 rounded-full border border-gray-200 dark:border-gray-600 shadow-sm bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-xs font-semibold text-white" style="${discussion.authorAvatar ? "display: none;" : ""}">
+                  ${discussion.authorName ? discussion.authorName.charAt(0).toUpperCase() : "?"}
+                </div>
+                <span class="font-semibold ${roleColor}">
+                  ${
+                    discussion.authorFirstName && discussion.authorLastName
+                      ? `${discussion.authorFirstName} ${discussion.authorLastName}`
+                      : discussion.authorName
+                  }
+                </span>
+                <span class="text-xs text-gray-500 dark:text-gray-400">(${discussion.authorRole})</span>
                 ${internalBadge}
                 ${completedBadge}
                 ${replyBadge}
               </div>
               <a href="/project/${discussion.projectId}?status=discussion" class="text-sm text-blue-600 hover:underline dark:text-blue-400">
-                ${discussion.project_address || discussion.project_title}
+                ${discussion.address || discussion.title}
               </a>
               <span class="mx-2 text-gray-400">•</span>
               <span class="text-xs text-gray-500 dark:text-gray-400">${timestamp}</span>

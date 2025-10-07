@@ -107,7 +107,7 @@ export const GET: APIRoute = async ({ cookies, url }) => {
     // Fetch author profiles
     const { data: profiles } = await supabase!
       .from("profiles")
-      .select("id, companyName, role")
+      .select("id, companyName, role, avatarUrl, firstName, lastName")
       .in("id", authorIds);
 
     const profilesMap = new Map(profiles?.map((p: any) => [p.id, p]) || []);
@@ -133,13 +133,16 @@ export const GET: APIRoute = async ({ cookies, url }) => {
       return {
         id: discussion.id,
         projectId: discussion.projectId,
-        project_address: discussion.projects?.address || "Unknown Address",
+        address: discussion.projects?.address || "Unknown Address",
         project_title: discussion.projects?.title || "Untitled",
         project_owner: ownerProfile?.companyName || "Unknown",
         project_owner_id: discussion.projects?.authorId,
         authorId: discussion.authorId,
         author_name: authorProfile?.companyName || "Unknown User",
         author_role: authorProfile?.role || "Unknown",
+        author_avatar: authorProfile?.avatarUrl || null,
+        author_firstName: authorProfile?.firstName || null,
+        author_lastName: authorProfile?.lastName || null,
         message: discussion.message,
         internal: discussion.internal || false,
         markCompleted: discussion.markCompleted || false,
