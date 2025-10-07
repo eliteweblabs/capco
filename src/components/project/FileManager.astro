@@ -1049,10 +1049,33 @@ const canDeleteFiles =
 
   // Auto-check-in previous versions when new files are uploaded
   async function autoCheckInPreviousVersions(uploadedFilenames = []) {
-    // Find checked out files that match the uploaded filenames
-    const checkedOutFiles = files.filter(
-      (f) => f.checkedOutBy && uploadedFilenames.includes(f.fileName)
-    );
+    // Strip any timestamp prefixes from uploaded filenames
+    const strippedUploadedFilenames = uploadedFilenames.map((filename) => {
+      // Remove timestamp prefix if it exists (e.g., "1759866754296-1758747302707-" or "1758585285576-")
+      return filename.replace(/^\d+-(\d+-)?/, "");
+    });
+
+    console.log("🔧 [FILE-MANAGER] Checking for matches between:", {
+      uploadedFilenames,
+      strippedUploadedFilenames,
+    });
+
+    // Find checked out files that match the uploaded filenames (after stripping prefixes)
+    const checkedOutFiles = files.filter((f) => {
+      if (!f.checkedOutBy) return false;
+
+      // Strip prefix from existing file name
+      const strippedFileName = f.fileName.replace(/^\d+-(\d+-)?/, "");
+
+      const isMatch = strippedUploadedFilenames.includes(strippedFileName);
+      if (isMatch) {
+        console.log("🔧 [FILE-MANAGER] Found matching file:", {
+          original: f.fileName,
+          stripped: strippedFileName,
+        });
+      }
+      return isMatch;
+    });
 
     console.log(
       `🔧 [FILE-MANAGER] Found ${checkedOutFiles.length} matching checked out files to check in`
