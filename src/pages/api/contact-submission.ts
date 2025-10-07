@@ -32,15 +32,21 @@ export const POST: APIRoute = async ({ request }) => {
       );
     }
 
-    if (!supabase) {
-      return new Response(JSON.stringify({ error: "Database connection not available" }), {
-        status: 500,
-        headers: { "Content-Type": "application/json" },
-      });
-    }
+    // Create a Supabase admin client for public endpoints
+    const { createClient } = await import("@supabase/supabase-js");
+    const supabaseAdmin = createClient(
+      import.meta.env.SUPABASE_URL || "",
+      import.meta.env.SUPABASE_SERVICE_ROLE_KEY || "",
+      {
+        auth: {
+          autoRefreshToken: false,
+          persistSession: false,
+        },
+      }
+    );
 
     // Create a temporary project record for the contact submission
-    const { data: projectData, error: projectError } = await supabase
+    const { data: projectData, error: projectError } = await supabaseAdmin
       .from("projects")
       .insert({
         title: `${firstName} ${lastName} - Contact Submission`,
@@ -65,8 +71,16 @@ export const POST: APIRoute = async ({ request }) => {
 
     const projectId = projectData.id;
 
+    // Try to create default punchlist items, but don't fail if the function doesn't exist
+    try {
+      await supabaseAdmin.rpc("create_default_punchlist_items", { project_id_param: projectId });
+    } catch (punchlistError) {
+      console.warn("Warning: Could not create default punchlist items:", punchlistError);
+      // Don't fail the request if punchlist creation fails
+    }
+
     // Store contact information in a separate table or as project metadata
-    const { error: contactError } = await supabase.from("contact_submissions").insert({
+    const { error: contactError } = await supabaseAdmin.from("contact_submissions").insert({
       projectId: projectId,
       firstName: firstName,
       lastName: lastName,
@@ -95,7 +109,7 @@ export const POST: APIRoute = async ({ request }) => {
           const filePath = `contact-submissions/${projectId}/${fileName}`;
 
           // Upload to Supabase Storage
-          const { data: uploadData, error: uploadError } = await supabase.storage
+          const { data: uploadData, error: uploadError } = await supabaseAdmin.storage
             .from("project-documents")
             .upload(filePath, file, {
               contentType: file.type,
@@ -108,7 +122,7 @@ export const POST: APIRoute = async ({ request }) => {
           }
 
           // Log file in database
-          const { error: dbError } = await supabase.from("files").insert({
+          const { error: dbError } = await supabaseAdmin.from("files").insert({
             projectId: projectId,
             authorId: null, // No authenticated user
             filePath: filePath,
