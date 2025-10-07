@@ -280,7 +280,7 @@ console.log("🔍 [APP] debugData:", currentUser);
       {isBackend}
     />
 
-    <div class="safari-fix flex min-h-screen bg-gray-50 pt-16 dark:bg-gray-900">
+    <div class="flex min-h-screen bg-gray-50 pt-16 dark:bg-gray-900">
       <Aside {currentUser} {project} {globalInputClasses} />
 
       <div
@@ -1088,7 +1088,8 @@ console.log("🔍 [APP] debugData:", currentUser);
         const safariVersion = versionMatch ? parseInt(versionMatch[1]) : null;
         // Check if Safari (not Chrome/Firefox/Edge)
         const isSafari = /Safari/.test(ua) && !/Chrome|CriOS|FxiOS|EdgiOS/.test(ua);
-        const isBetaVersion = safariVersion && safariVersion >= 18 && safariVersion <= 26;
+        // Updated to handle beta 26 and later
+        const isBetaVersion = safariVersion && safariVersion >= 18 && safariVersion <= 30;
         const result = isIOS && isSafari && isBetaVersion;
 
         return result;
@@ -1489,6 +1490,48 @@ console.log("🔍 [APP] debugData:", currentUser);
 
           // Fix 3: Add body class for CSS-based fixes
           document.body.classList.add("safari-18-fix");
+
+          // Fix 4: Handle header positioning
+          const header = document.querySelector('header, [role="banner"]');
+          if (header) {
+            const headerElement = header as HTMLElement;
+            headerElement.style.position = "fixed";
+            headerElement.style.top = "0";
+            headerElement.style.left = "0";
+            headerElement.style.right = "0";
+            headerElement.style.zIndex = "1000";
+            headerElement.style.transform = "translateZ(0)";
+            headerElement.style.willChange = "transform";
+          }
+
+          // Fix 5: Handle SpeedDial positioning
+          const speedDial = document.querySelector("[data-speed-dial], .speed-dial");
+          if (speedDial) {
+            const speedDialElement = speedDial as HTMLElement;
+            speedDialElement.style.position = "fixed";
+            speedDialElement.style.bottom = "20px";
+            speedDialElement.style.right = "20px";
+            speedDialElement.style.zIndex = "1000";
+            speedDialElement.style.transform = "translateZ(0)";
+            speedDialElement.style.willChange = "transform";
+          }
+
+          // Fix 6: Handle viewport height changes
+          const handleViewportChange = () => {
+            const vh = window.innerHeight * 0.01;
+            document.documentElement.style.setProperty("--vh", vh + "px");
+
+            // Force repaint on viewport change
+            document.body.style.transform = "translateZ(0)";
+            requestAnimationFrame(() => {
+              document.body.style.transform = "";
+            });
+          };
+
+          window.addEventListener("resize", handleViewportChange);
+          window.addEventListener("orientationchange", () => {
+            setTimeout(handleViewportChange, 100);
+          });
 
           console.log(
             `🍎 [SAFARI-18-BETA] Applied fixes to ${stickyElements.length} sticky elements (scroll triggers preserved)`

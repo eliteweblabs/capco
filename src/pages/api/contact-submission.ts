@@ -47,7 +47,7 @@ export const POST: APIRoute = async ({ request }) => {
 
     // Store contact information
     const { data: contactData, error: contactError } = await supabaseAdmin
-      .from("contact_submissions")
+      .from("contactSubmissions")
       .insert({
         firstName,
         lastName,
@@ -55,9 +55,10 @@ export const POST: APIRoute = async ({ request }) => {
         phone: phone || null,
         company: company || null,
         address: address || null,
-        project_type: projectType || null,
+        projectType: projectType || null,
         message,
-        submitted_at: new Date().toISOString(),
+        projectId: 1, // Default project ID for contact submissions
+        submittedAt: new Date().toISOString(),
       })
       .select("id")
       .single();
@@ -98,7 +99,7 @@ export const POST: APIRoute = async ({ request }) => {
 
           // Update contact submission with file information
           const { error: updateError } = await supabaseAdmin
-            .from("contact_submissions")
+            .from("contactSubmissions")
             .update({
               files: supabaseAdmin.sql`array_append(files, ${filePath})`,
             })
