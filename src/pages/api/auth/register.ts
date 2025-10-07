@@ -66,9 +66,16 @@ export const POST: APIRoute = async ({ request, redirect, cookies }) => {
         );
       }
 
-      // Set the session cookie
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session) {
+      // Set the session cookie using the signInData
+      console.log("🔐 [REGISTER] Sign in successful, session data:", {
+        hasSession: !!signInData?.session,
+        sessionId: signInData?.session?.id,
+        accessToken: signInData?.session?.access_token ? "present" : "missing",
+        refreshToken: signInData?.session?.refresh_token ? "present" : "missing"
+      });
+
+      if (signInData?.session) {
+        const session = signInData.session;
         cookies.set("sb-access-token", session.access_token, {
           path: "/",
           httpOnly: true,
