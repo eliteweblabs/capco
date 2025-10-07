@@ -190,27 +190,27 @@ export const GET: APIRoute = async ({ request, cookies, url }) => {
       const statusCode = status.statusCode;
       if (statusCode) {
         const usersToNotify = adminStaffUsers
-          .filter((user: any) => status.email_to_roles?.includes(user.role))
+          .filter((user: any) => status.emailToRoles?.includes(user.role))
           .map((user: any) => user.email)
           .filter((email: string) => email); // Remove any undefined emails
 
         simplifiedStatuses[statusCode] = {
           admin: {
             email: {
-              users_to_notify: usersToNotify,
-              emailToRoles: status.email_to_roles,
-              email_subject: status.adminEmailSubject,
-              email_content: status.adminEmailContent,
-              email_type: "magicLink",
+              usersToNotify: usersToNotify,
+              emailToRoles: status.emailToRoles,
+              emailSubject: status.adminEmailSubject,
+              emailContent: status.adminEmailContent,
+              emailType: "magicLink",
               buttonText: status.buttonText,
               buttonLink: status.buttonLink,
               skipTracking: true,
             },
             statusName: status.adminStatusName,
-            status_action: status.adminStatusAction,
+            statusAction: status.adminStatusAction,
             statusColor: status.statusColor,
-            status_slug: status.status_slug,
-            status_tab: status.admin_status_tab,
+            statusSlug: status.statusSlug,
+            statusTab: status.adminStatusTab,
             modal: {
               type: "info",
               persist: false,
@@ -218,7 +218,6 @@ export const GET: APIRoute = async ({ request, cookies, url }) => {
               title: "Project Updated",
               redirect: {
                 url: status.modalAutoRedirectAdmin,
-                delay: 5000,
                 showCountdown: true,
               },
               showCountdown: true,
@@ -228,19 +227,19 @@ export const GET: APIRoute = async ({ request, cookies, url }) => {
           },
           client: {
             email: {
-              users_to_notify: [project?.authorProfile?.email],
-              email_subject: status.clientEmailSubject,
-              email_content: status.clientEmailContent,
-              email_type: "magicLink",
+              usersToNotify: [project?.authorProfile?.email],
+              emailSubject: status.clientEmailSubject,
+              emailContent: status.clientEmailContent,
+              emailType: "magicLink",
               buttonText: status.buttonText,
               buttonLink: status.buttonLink,
               skipTracking: true,
             },
             statusName: status.clientStatusName,
-            status_action: status.clientStatusAction,
+            statusAction: status.clientStatusAction,
             statusColor: status.statusColor,
-            status_slug: status.status_slug,
-            status_tab: status.client_status_tab,
+            statusSlug: status.statusSlug,
+            statusTab: status.clientStatusTab,
             modal: {
               type: "info",
               persist: false,
@@ -248,7 +247,6 @@ export const GET: APIRoute = async ({ request, cookies, url }) => {
               title: "ClientProject Updated",
               redirect: {
                 url: status.modalAutoRedirectClient,
-                delay: 5000,
                 showCountdown: true,
               },
             },
@@ -256,18 +254,18 @@ export const GET: APIRoute = async ({ request, cookies, url }) => {
           current: {
             email: {
               usersToNotify: isAdminOrStaff ? usersToNotify : [project?.authorProfile?.email],
-              email_subject: isAdminOrStaff ? status.adminEmailSubject : status.clientEmailSubject,
-              email_content: isAdminOrStaff ? status.adminEmailContent : status.clientEmailContent,
+              emailSubject: isAdminOrStaff ? status.adminEmailSubject : status.clientEmailSubject,
+              emailContent: isAdminOrStaff ? status.adminEmailContent : status.clientEmailContent,
               buttonText: status.buttonText,
               buttonLink: status.buttonLink,
               skipTracking: true,
             },
 
             statusName: isAdminOrStaff ? status.adminStatusName : status.clientStatusName,
-            status_action: isAdminOrStaff ? status.adminStatusAction : status.clientStatusAction,
+            statusAction: isAdminOrStaff ? status.adminStatusAction : status.clientStatusAction,
             statusColor: status.statusColor,
-            status_slug: status.status_slug,
-            status_tab: isAdminOrStaff ? status.admin_status_tab : status.client_status_tab,
+            statusSlug: status.statusSlug,
+            statusTab: isAdminOrStaff ? status.adminStatusTab : status.clientStatusTab,
             modal: {
               type: "info",
               persist: false, // false = close existing modals, true = keep existing modals
@@ -277,7 +275,6 @@ export const GET: APIRoute = async ({ request, cookies, url }) => {
                 url: isAdminOrStaff
                   ? status.modalAutoRedirectAdmin
                   : status.modalAutoRedirectClient,
-                delay: 5000, // Delay in milliseconds before redirect
                 showCountdown: true, // Show countdown in message
               },
             },
@@ -445,27 +442,27 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       const statusCode = status.statusCode;
       if (statusCode) {
         const usersToNotify = adminStaffUsers
-          .filter((user: any) => status.email_to_roles?.includes(user.role))
+          .filter((user: any) => status.emailToRoles?.includes(user.role))
           .map((user: any) => user.email)
           .filter((email: string) => email); // Remove any undefined emails
 
         simplifiedStatuses[statusCode] = {
           admin: {
             email: {
-              users_to_notify: usersToNotify,
-              emailToRoles: status.email_to_roles,
-              email_subject: status.adminEmailSubject,
-              email_content: status.adminEmailContent,
-              email_type: "magicLink",
+              usersToNotify: usersToNotify,
+              emailToRoles: status.emailToRoles,
+              emailSubject: status.adminEmailSubject,
+              emailContent: status.adminEmailContent,
+              emailType: "magicLink",
               buttonText: status.buttonText,
               buttonLink: status.buttonLink,
               skipTracking: true,
             },
             statusName: status.adminStatusName,
-            status_action: status.adminStatusAction,
+            statusAction: status.adminStatusAction,
             statusColor: status.statusColor,
-            status_slug: status.status_slug,
-            status_tab: status.admin_status_tab,
+            statusSlug: status.statusSlug,
+            statusTab: status.adminStatusTab,
             modal: {
               type: "info",
               persist: false,
@@ -473,7 +470,6 @@ export const POST: APIRoute = async ({ request, cookies }) => {
               title: "Project Updated",
               redirect: {
                 url: status.modalAutoRedirectAdmin,
-                delay: 3000,
                 showCountdown: true,
               },
               showCountdown: true,
@@ -483,19 +479,19 @@ export const POST: APIRoute = async ({ request, cookies }) => {
           },
           client: {
             email: {
-              users_to_notify: [projectData?.authorProfile?.email],
-              email_subject: status.clientEmailSubject,
-              email_content: status.clientEmailContent,
-              email_type: "magicLink",
+              usersToNotify: [projectData?.authorProfile?.email],
+              emailSubject: status.clientEmailSubject,
+              emailContent: status.clientEmailContent,
+              emailType: "magicLink",
               buttonText: status.buttonText,
               buttonLink: status.buttonLink,
               skipTracking: true,
             },
             statusName: status.clientStatusName,
-            status_action: status.clientStatusAction,
+            statusAction: status.clientStatusAction,
             statusColor: status.statusColor,
-            status_slug: status.status_slug,
-            status_tab: status.client_status_tab,
+            statusSlug: status.statusSlug,
+            statusTab: status.clientStatusTab,
             modal: {
               type: "info",
               persist: false,
@@ -503,7 +499,6 @@ export const POST: APIRoute = async ({ request, cookies }) => {
               title: "ClientProject Updated",
               redirect: {
                 url: status.modalAutoRedirectClient,
-                delay: 3000,
                 showCountdown: true,
               },
               showCountdown: true,
@@ -514,18 +509,18 @@ export const POST: APIRoute = async ({ request, cookies }) => {
           current: {
             email: {
               usersToNotify: isAdminOrStaff ? usersToNotify : [projectData?.authorProfile?.email],
-              email_subject: isAdminOrStaff ? status.adminEmailSubject : status.clientEmailSubject,
-              email_content: isAdminOrStaff ? status.adminEmailContent : status.clientEmailContent,
-              email_type: "magicLink",
+              emailSubject: isAdminOrStaff ? status.adminEmailSubject : status.clientEmailSubject,
+              emailContent: isAdminOrStaff ? status.adminEmailContent : status.clientEmailContent,
+              emailType: "magicLink",
               buttonText: status.buttonText,
               buttonLink: status.buttonLink,
               skipTracking: true,
             },
             statusName: isAdminOrStaff ? status.adminStatusName : status.clientStatusName,
-            status_action: isAdminOrStaff ? status.adminStatusAction : status.clientStatusAction,
+            statusAction: isAdminOrStaff ? status.adminStatusAction : status.clientStatusAction,
             statusColor: status.statusColor,
-            status_slug: status.status_slug,
-            status_tab: isAdminOrStaff ? status.admin_status_tab : status.client_status_tab,
+            statusSlug: status.statusSlug,
+            statusTab: isAdminOrStaff ? status.adminStatusTab : status.clientStatusTab,
             modal: {
               type: "info",
               persist: false, // false = close existing modals, true = keep existing modals
@@ -535,7 +530,6 @@ export const POST: APIRoute = async ({ request, cookies }) => {
                 url: isAdminOrStaff
                   ? status.modalAutoRedirectAdmin
                   : status.modalAutoRedirectClient,
-                delay: 3000, // Delay in milliseconds before redirect
                 showCountdown: true, // Show countdown in message
               },
               showCountdown: true,
