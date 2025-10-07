@@ -134,9 +134,9 @@ export const GET: APIRoute = async ({ cookies, url }) => {
         id: discussion.id,
         projectId: discussion.projectId,
         address: discussion.projects?.address || "Unknown Address",
-        project_title: discussion.projects?.title || "Untitled",
-        project_owner: ownerProfile?.companyName || "Unknown",
-        project_owner_id: discussion.projects?.authorId,
+        projectTitle: discussion.projects?.title || "Untitled",
+        projectOwner: ownerProfile?.companyName || "Unknown",
+        projectOwnerId: discussion.projects?.authorId,
         authorId: discussion.authorId,
         author_name: authorProfile?.companyName || "Unknown User",
         author_role: authorProfile?.role || "Unknown",
@@ -205,7 +205,7 @@ export const GET: APIRoute = async ({ cookies, url }) => {
         success: true,
         discussions: paginatedDiscussions,
         total: filteredDiscussions.length,
-        total_all: totalDiscussions,
+        totalAll: totalDiscussions,
         stats: {
           total: totalDiscussions,
           internal: internalCount,
@@ -217,7 +217,7 @@ export const GET: APIRoute = async ({ cookies, url }) => {
         pagination: {
           limit,
           offset,
-          has_more: offset + limit < filteredDiscussions.length,
+          hasMore: offset + limit < filteredDiscussions.length,
         },
       }),
       {

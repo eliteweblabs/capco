@@ -1,0 +1,41 @@
+-- Drop all variations of the functions to ensure a clean slate
+DROP FUNCTION IF EXISTS public.checkout_file(INTEGER, UUID, TEXT);
+DROP FUNCTION IF EXISTS public.checkin_file(INTEGER, UUID, TEXT);
+DROP FUNCTION IF EXISTS public.assign_file(INTEGER, UUID, UUID, TEXT);
+DROP FUNCTION IF EXISTS public.get_file_checkout_status(INTEGER);
+
+DROP FUNCTION IF EXISTS checkout_file(INTEGER, UUID, TEXT);
+DROP FUNCTION IF EXISTS checkin_file(INTEGER, UUID, TEXT);
+DROP FUNCTION IF EXISTS assign_file(INTEGER, UUID, UUID, TEXT);
+DROP FUNCTION IF EXISTS get_file_checkout_status(INTEGER);
+
+DROP FUNCTION IF EXISTS public.checkoutFile(INTEGER, UUID, TEXT);
+DROP FUNCTION IF EXISTS public.checkinFile(INTEGER, UUID, TEXT);
+DROP FUNCTION IF EXISTS public.assignFile(INTEGER, UUID, UUID, TEXT);
+DROP FUNCTION IF EXISTS public.getFileCheckoutStatus(INTEGER);
+
+DROP FUNCTION IF EXISTS checkoutFile(INTEGER, UUID, TEXT);
+DROP FUNCTION IF EXISTS checkinFile(INTEGER, UUID, TEXT);
+DROP FUNCTION IF EXISTS assignFile(INTEGER, UUID, UUID, TEXT);
+DROP FUNCTION IF EXISTS getFileCheckoutStatus(INTEGER);
+
+-- Also try without parameter types in case they were created differently
+DROP FUNCTION IF EXISTS public.checkout_file CASCADE;
+DROP FUNCTION IF EXISTS public.checkin_file CASCADE;
+DROP FUNCTION IF EXISTS public.assign_file CASCADE;
+DROP FUNCTION IF EXISTS public.get_file_checkout_status CASCADE;
+
+DROP FUNCTION IF EXISTS checkout_file CASCADE;
+DROP FUNCTION IF EXISTS checkin_file CASCADE;
+DROP FUNCTION IF EXISTS assign_file CASCADE;
+DROP FUNCTION IF EXISTS get_file_checkout_status CASCADE;
+
+DROP FUNCTION IF EXISTS public.checkoutFile CASCADE;
+DROP FUNCTION IF EXISTS public.checkinFile CASCADE;
+DROP FUNCTION IF EXISTS public.assignFile CASCADE;
+DROP FUNCTION IF EXISTS public.getFileCheckoutStatus CASCADE;
+
+DROP FUNCTION IF EXISTS checkoutFile CASCADE;
+DROP FUNCTION IF EXISTS checkinFile CASCADE;
+DROP FUNCTION IF EXISTS assignFile CASCADE;
+DROP FUNCTION IF EXISTS getFileCheckoutStatus CASCADE;

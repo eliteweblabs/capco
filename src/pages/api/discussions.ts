@@ -333,7 +333,7 @@ export const GET: APIRoute = async ({ url, cookies }) => {
         pagination: {
           limit,
           offset,
-          has_more: offset + limit < enrichedDiscussions.length,
+          hasMore: offset + limit < enrichedDiscussions.length,
         },
       }),
       {
