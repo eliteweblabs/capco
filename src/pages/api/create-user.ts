@@ -67,32 +67,63 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
     let email, password, firstName, lastName, companyName, phone, smsAlerts, mobileCarrier, role;
 
-    if (contentType.includes("application/json")) {
-      // Handle JSON data
-      console.log("🔍 [CREATE-USER] Parsing JSON data...");
-      const jsonData = await request.json();
-      email = jsonData.email;
-      password = jsonData.password;
-      firstName = jsonData.firstName;
-      lastName = jsonData.lastName;
-      companyName = jsonData.companyName;
-      phone = jsonData.phone;
-      smsAlerts = jsonData.smsAlerts;
-      mobileCarrier = jsonData.mobileCarrier;
-      role = jsonData.role || "Client";
-    } else {
-      // Handle FormData
-      console.log("🔍 [CREATE-USER] Parsing FormData...");
-      const formData = await request.formData();
-      email = getFormField(formData, FORM_FIELDS.email);
-      password = getFormField(formData, FORM_FIELDS.password);
-      firstName = getFormField(formData, FORM_FIELDS.firstName);
-      lastName = getFormField(formData, FORM_FIELDS.lastName);
-      companyName = getFormField(formData, FORM_FIELDS.companyName);
-      phone = getFormField(formData, FORM_FIELDS.phone);
-      smsAlerts = getFormField(formData, FORM_FIELDS.smsAlerts, false);
-      mobileCarrier = getFormField(formData, FORM_FIELDS.mobileCarrier);
-      role = getFormField(formData, FORM_FIELDS.role) || "Client";
+    try {
+      if (contentType.includes("application/json")) {
+        // Handle JSON data
+        console.log("🔍 [CREATE-USER] Parsing JSON data...");
+        const jsonData = await request.json();
+        email = jsonData.email;
+        password = jsonData.password;
+        firstName = jsonData.firstName;
+        lastName = jsonData.lastName;
+        companyName = jsonData.companyName;
+        phone = jsonData.phone;
+        smsAlerts = jsonData.smsAlerts;
+        mobileCarrier = jsonData.mobileCarrier;
+        role = jsonData.role || "Client";
+      } else {
+        // Handle FormData
+        console.log("🔍 [CREATE-USER] Parsing FormData...");
+        const formData = await request.formData();
+
+        // Log raw form data for debugging
+        console.log("🔍 [CREATE-USER] Raw form data entries:");
+        for (const [key, value] of formData.entries()) {
+          console.log(`${key}: ${value}`);
+        }
+
+        email = formData.get("email")?.toString();
+        password = formData.get("password")?.toString();
+        firstName = formData.get("firstName")?.toString();
+        lastName = formData.get("lastName")?.toString();
+        companyName = formData.get("companyName")?.toString();
+        phone = formData.get("phone")?.toString();
+        smsAlerts = formData.get("smsAlerts") === "on" || formData.get("smsAlerts") === "true";
+        mobileCarrier = formData.get("mobileCarrier")?.toString();
+        role = formData.get("role")?.toString() || "Client";
+
+        // Log parsed values for debugging
+        console.log("🔍 [CREATE-USER] Parsed form values:", {
+          email: email ? "***@***" : undefined,
+          password: password ? "***" : undefined,
+          firstName,
+          lastName,
+          companyName,
+          phone,
+          smsAlerts,
+          mobileCarrier,
+          role,
+        });
+      }
+    } catch (parseError) {
+      console.error("❌ [CREATE-USER] Error parsing request data:", parseError);
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: "Failed to parse registration data. Please try again.",
+        }),
+        { status: 400, headers: { "Content-Type": "application/json" } }
+      );
     }
 
     console.log("🔍 [CREATE-USER] Data parsed successfully");
