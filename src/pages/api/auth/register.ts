@@ -1,25 +1,98 @@
 import type { APIRoute } from "astro";
+import { supabase } from "../../../lib/supabase";
+import { SimpleProjectLogger } from "../../../lib/simple-logging";
 
 export const POST: APIRoute = async ({ request, redirect, cookies }) => {
   console.log("🔐 [REGISTER] Registration API called - delegating to create-user");
 
   try {
-    // Forward the request to the create-user API
+    // Get the form data
     const formData = await request.formData();
+    const email = formData.get("email")?.toString();
+    
+    // Log registration attempt
+    console.log(`🔐 [REGISTER] Attempting registration for email: ${email ? email.replace(/@.*$/, '@***') : 'unknown'}`);
+
+    // Forward the request to the create-user API
     const createUserResponse = await fetch(`${new URL(request.url).origin}/api/create-user`, {
       method: "POST",
-      body: formData, // Forward the original form data
+      body: formData,
     });
 
-    const result = await createUserResponse.json();
+    // Log the response status
+    console.log(`🔐 [REGISTER] Create user response status: ${createUserResponse.status}`);
 
-    if (createUserResponse.ok) {
-      // Registration successful - return JSON response for client-side handling
+    let result;
+    try {
+      result = await createUserResponse.json();
+      console.log("🔐 [REGISTER] Create user response parsed successfully");
+    } catch (parseError) {
+      console.error("🔐 [REGISTER] Failed to parse create-user response:", parseError);
+      throw new Error("Invalid response from create-user endpoint");
+    }
+
+    if (createUserResponse.ok && result.success) {
+      // Log successful user creation
+      console.log("🔐 [REGISTER] User created successfully, attempting sign in");
+
+      // Log the successful registration
+      await SimpleProjectLogger.addLogEntry(
+        0,
+        "userRegistration",
+        "User registration successful",
+        { email: email?.replace(/@.*$/, '@***') }
+      );
+
+      // Sign in the user after successful registration
+      const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+        email: formData.get("email")?.toString() || "",
+        password: formData.get("password")?.toString() || "",
+      });
+
+      if (signInError) {
+        console.error("🔐 [REGISTER] Failed to sign in after registration:", signInError);
+        // Return success but indicate auth needs to be completed
+        return new Response(
+          JSON.stringify({
+            success: true,
+            message: "Account created but sign-in required",
+            redirect: "/login?message=registration_complete",
+            user: result.user,
+          }),
+          {
+            status: 200,
+            headers: { "Content-Type": "application/json" },
+          }
+        );
+      }
+
+      // Set the session cookie
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        cookies.set("sb-access-token", session.access_token, {
+          path: "/",
+          httpOnly: true,
+          secure: process.env.NODE_ENV === "production",
+          sameSite: "lax",
+          maxAge: 60 * 60 * 24 * 7, // 1 week
+        });
+        cookies.set("sb-refresh-token", session.refresh_token, {
+          path: "/",
+          httpOnly: true,
+          secure: process.env.NODE_ENV === "production",
+          sameSite: "lax",
+          maxAge: 60 * 60 * 24 * 7, // 1 week
+        });
+      }
+
+      // Registration and sign-in successful
       return new Response(
         JSON.stringify({
           success: true,
-          message: "Registration successful",
+          message: "Registration and sign-in successful",
           redirect: "/project/dashboard?success=registration_success",
+          user: result.user,
+          session: session,
         }),
         {
           status: 200,
@@ -28,38 +101,59 @@ export const POST: APIRoute = async ({ request, redirect, cookies }) => {
       );
     } else {
       // Handle specific error cases
-      let errorMessage = result.error || "registration_failed";
+      let errorMessage = result.error || "Registration failed";
+      let errorType = "registration_error";
 
       // Check for duplicate email error
-      if (result.error && result.error.includes("already been registered")) {
-        errorMessage =
-          "A user with this email address has already been registered. Please try logging in instead.";
-      } else if (result.error && result.error.includes("User already registered")) {
+      if (
+        result.error &&
+        (result.error.includes("already been registered") ||
+         result.error.includes("User already registered") ||
+         result.error.includes("duplicate key"))
+      ) {
         errorMessage = "This email is already registered. Please try logging in instead.";
-      } else if (result.error && result.error.includes("duplicate key")) {
-        errorMessage = "This email is already registered. Please try logging in instead.";
+        errorType = "duplicate_email";
       }
 
-      // Return JSON response for client-side handling
+      // Log the error
+      console.error(`🔐 [REGISTER] Registration failed: ${errorMessage}`);
+      await SimpleProjectLogger.addLogEntry(
+        0,
+        "userRegistrationError",
+        "User registration failed",
+        { 
+          error: errorMessage,
+          email: email?.replace(/@.*$/, '@***')
+        }
+      );
+
       return new Response(
         JSON.stringify({
           success: false,
           error: errorMessage,
-          errorType: "duplicate_email",
+          errorType: errorType,
         }),
         {
-          status: 400,
+          status: errorType === "duplicate_email" ? 409 : 400,
           headers: { "Content-Type": "application/json" },
         }
       );
     }
   } catch (error) {
-    console.error("🔐 [REGISTER] Error delegating to create-user:", error);
+    // Log the error
+    console.error("🔐 [REGISTER] Critical error during registration:", error);
+    await SimpleProjectLogger.addLogEntry(
+      0,
+      "userRegistrationError",
+      "Critical registration error",
+      { error: error instanceof Error ? error.message : "Unknown error" }
+    );
+
     return new Response(
       JSON.stringify({
         success: false,
-        error: "Network error. Please try again.",
-        errorType: "network_error",
+        error: "An unexpected error occurred. Please try again.",
+        errorType: "critical_error",
       }),
       {
         status: 500,

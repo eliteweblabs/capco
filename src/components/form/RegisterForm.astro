@@ -323,25 +323,42 @@ const { globalInputClasses, globalSecondaryTextClasses, globalPrimaryTextClasses
             }
           } else {
             // Registration successful
-            if (window.showModal) {
-              window.showModal(
-                "success",
-                "Account Created!",
-                "Welcome! You're now signed in and ready to create projects.",
-                3000
-              );
+            if (result.session) {
+              // User is signed in
+              if (window.showModal) {
+                window.showModal(
+                  "success",
+                  "Account Created!",
+                  "Welcome! You're now signed in and ready to create projects.",
+                  3000
+                );
+              } else {
+                console.log(
+                  "🔔 [Account Created!] Welcome! You're now signed in and ready to create projects."
+                );
+              }
             } else {
-              console.log(
-                "🔔 [Account Created!] Welcome! You're now signed in and ready to create projects."
-              );
+              // Account created but needs to sign in
+              if (window.showModal) {
+                window.showModal(
+                  "success",
+                  "Account Created!",
+                  "Your account has been created. Please sign in to continue.",
+                  3000
+                );
+              } else {
+                console.log(
+                  "🔔 [Account Created!] Your account has been created. Please sign in to continue."
+                );
+              }
             }
 
-            // Redirect to dashboard
+            // Redirect to appropriate page
             setTimeout(() => {
               if (result.redirect) {
                 window.location.href = result.redirect;
               } else {
-                window.location.href = "/dashboard";
+                window.location.href = result.session ? "/dashboard" : "/login";
               }
             }, 2000);
           }

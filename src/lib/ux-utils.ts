@@ -746,6 +746,8 @@ export function unlockBodyScroll(): void {
   }
 }
 
+
+
 /**
  * Validates email format using a standard regex pattern
  * @param email - Email address to validate
