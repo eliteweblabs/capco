@@ -136,29 +136,43 @@ export const POST: APIRoute = async ({ request }) => {
       }
     }
 
-    // Send notification email to admin (optional)
+    // Send notification email to admin using standard email system
     try {
-      const { error: emailError } = await supabase.functions.invoke("send-contact-notification", {
-        body: {
-          projectId,
-          firstName,
-          lastName,
-          email,
-          phone,
-          company,
-          address,
-          projectType,
-          message,
-          fileCount: uploadedFiles.length,
+      const emailResponse = await fetch(`${new URL(request.url).origin}/api/email-delivery`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
         },
+        body: JSON.stringify({
+          usersToNotify: ["admin"], // Special flag for admin notifications
+          emailType: "contact",
+          emailSubject: `New Contact Form Submission from ${firstName} ${lastName}`,
+          emailContent: `
+            <h2>New Contact Form Submission</h2>
+            <p><strong>Name:</strong> ${firstName} ${lastName}</p>
+            <p><strong>Email:</strong> ${email}</p>
+            <p><strong>Phone:</strong> ${phone || "Not provided"}</p>
+            <p><strong>Company:</strong> ${company || "Not provided"}</p>
+            <p><strong>Address:</strong> ${address || "Not provided"}</p>
+            <p><strong>Project Type:</strong> ${projectType}</p>
+            <p><strong>Message:</strong></p>
+            <p>${message}</p>
+            <p><strong>Files Uploaded:</strong> ${uploadedFiles.length}</p>
+          `,
+          buttonText: "View Project Details",
+          buttonLink: `${new URL(request.url).origin}/project/${projectId}`,
+          project: { id: projectId },
+          trackLinks: true,
+        }),
       });
 
-      if (emailError) {
-        console.error("Error sending notification email:", emailError);
+      const emailResult = await emailResponse.json();
+      if (!emailResult.success) {
+        console.error("Error sending notification email:", emailResult.error);
         // Don't fail the request if email fails
       }
     } catch (error) {
-      console.error("Error calling email function:", error);
+      console.error("Error sending notification email:", error);
       // Don't fail the request if email fails
     }
 
