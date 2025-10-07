@@ -229,26 +229,25 @@
         const messageElement = element.querySelector(".notification-message");
         if (messageElement && redirect.showCountdown) {
           const originalMessage = notification.message;
-          messageElement.innerHTML = `${originalMessage}<br><strong>Redirecting in ${countdown} seconds...</strong>`;
+          const action = redirect.url ? "Redirecting" : "Refreshing";
+          messageElement.innerHTML = `${originalMessage}<br><strong>${action} in ${countdown} seconds...</strong>`;
         }
 
         countdown--;
     if (countdown < 0) {
-      // Clear the timer and redirect
-      console.log("🔔 [UNIFIED-NOTIFICATION] Countdown finished, redirecting to:", redirect.url);
+      // Clear the timer and handle navigation
       this.clearRedirectTimer(id);
       
-      // Ensure we have a valid URL
-      if (!redirect.url) {
-        console.error("🔔 [UNIFIED-NOTIFICATION] No redirect URL provided");
-        return;
+      if (redirect.url) {
+        // Handle both absolute and relative URLs
+        const url = redirect.url.startsWith('http') ? redirect.url : new URL(redirect.url, window.location.origin).href;
+        console.log("🔔 [UNIFIED-NOTIFICATION] Redirecting to:", url);
+        window.location.href = url;
+      } else {
+        // If no URL provided, refresh the current page
+        console.log("🔔 [UNIFIED-NOTIFICATION] No redirect URL, refreshing page");
+        window.location.reload();
       }
-
-      // Handle both absolute and relative URLs
-      const url = redirect.url.startsWith('http') ? redirect.url : new URL(redirect.url, window.location.origin).href;
-      console.log("🔔 [UNIFIED-NOTIFICATION] Redirecting to full URL:", url);
-      
-      window.location.href = url;
       console.log("🔔 [UNIFIED-NOTIFICATION] Redirect initiated");
     }
       };
