@@ -9,7 +9,7 @@ export const POST: APIRoute = async ({ request }) => {
     const carrier2 = formData.get("carrier2") as string;
     const message = formData.get("message") as string;
     const contactInfo = formData.get("contact_info") as string;
-    const globalCompanyName = import.meta.env.GLOBAL_companyName || "Edit Company Name Here";
+    const globalCompanyName = import.meta.env.GLOBAL_COMPANY_NAME || "Edit Company Name Here";
     const emailApiKey = import.meta.env.EMAIL_API_KEY;
     const fromEmail = import.meta.env.FROM_EMAIL || "noreply@capcofire.com";
     const fromName = import.meta.env.FROM_NAME || "CAPCo";
