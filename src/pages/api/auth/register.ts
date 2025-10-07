@@ -14,9 +14,17 @@ export const POST: APIRoute = async ({ request, redirect, cookies }) => {
     console.log(`🔐 [REGISTER] Attempting registration for email: ${email ? email.replace(/@.*$/, '@***') : 'unknown'}`);
 
     // Forward the request to the create-user API
-    const createUserResponse = await fetch(`${new URL(request.url).origin}/api/create-user`, {
+    const apiUrl = new URL('/api/create-user', request.url).href;
+    console.log("🔐 [REGISTER] Forwarding to create-user API:", apiUrl);
+    
+    const createUserResponse = await fetch(apiUrl, {
       method: "POST",
       body: formData,
+      headers: {
+        // Forward original headers
+        'Accept': 'application/json',
+        'X-Requested-With': 'XMLHttpRequest'
+      }
     });
 
     // Log the response status
@@ -99,7 +107,7 @@ export const POST: APIRoute = async ({ request, redirect, cookies }) => {
           message: "Registration and sign-in successful",
           redirect: "/project/dashboard?success=registration_success",
           user: result.user,
-          session: session,
+          session: signInData?.session,
         }),
         {
           status: 200,
