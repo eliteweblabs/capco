@@ -181,8 +181,8 @@ app.use(cors(corsOptions));
 app.use(ssrHandler);
 
 // Start the server
-// Railway provides PORT via environment variable, fallback to 8080 for other deployments
-const PORT = process.env.PORT || 8080;
+// Railway provides PORT via environment variable
+const PORT = process.env.PORT || 4321;
 console.log(
   `🔧 [SERVER] Using port: ${PORT} (from ${process.env.PORT ? "environment" : "default"})`
 );
