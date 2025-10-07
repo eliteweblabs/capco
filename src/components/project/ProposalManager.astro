@@ -769,17 +769,41 @@ const canManageProposals = currentRole === "Admin" || currentRole === "Staff";
       console.log("🔍 [PROPOSAL-MANAGER] Saved DOM values to cache:", this.cachedLineItems);
     }
 
-    addProposalRow() {
+    async addProposalRow() {
       console.log("➕ [PROPOSAL-MANAGER] Adding new line item");
 
       if (!this.cachedLineItems) this.cachedLineItems = [];
 
-      this.cachedLineItems.push({
+      const newItem = {
         name: "New Item",
         description: "Item description",
         quantity: 1,
         unitPrice: 0,
-      });
+      };
+
+      // Add to catalog first
+      try {
+        const response = await fetch("/api/line-items-catalog", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            name: newItem.name,
+            description: newItem.description,
+            unitPrice: newItem.unitPrice,
+            category: "General"
+          })
+        });
+
+        const result = await response.json();
+        if (result.success && result.item) {
+          console.log("✅ [PROPOSAL-MANAGER] Added item to catalog:", result.item);
+          newItem.catalog_item_id = result.item.id;
+        }
+      } catch (error) {
+        console.error("❌ [PROPOSAL-MANAGER] Error adding to catalog:", error);
+      }
+
+      this.cachedLineItems.push(newItem);
 
       // Re-render the table to include the new row
       this.renderLineItems();

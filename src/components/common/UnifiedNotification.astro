@@ -119,17 +119,13 @@
       await this.render(fullNotification);
 
       // Handle auto-hide with CSS animation (after element is rendered)
-      if (options.duration !== undefined && options.duration > 0) {
+      // Only set up auto-hide if there's no redirect
+      if (!options.redirect && options.duration !== undefined && options.duration > 0) {
         // Use setTimeout to ensure DOM is ready and CSS is applied
         setTimeout(() => {
           const element = document.getElementById(`unified-notification-${id}`);
           if (element) {
-            // console.log(
-            //   "🎬 Setting up CSS animation for modal:",
-            //   id,
-            //   "duration:",
-            //   options.duration
-            // );
+            console.log("🔔 [UNIFIED-NOTIFICATION] Setting up auto-hide animation");
             // Apply animation directly to style attribute
             element.style.animation = `modal-auto-hide-fade ${options.duration}ms linear forwards`;
             element.style.opacity = "1"; // Ensure starting opacity
@@ -137,27 +133,11 @@
             // Listen for animation end to hide the modal
             element.addEventListener(
               "animationend",
-              (e) => {
-                // console.log("🎬 Animation ended:", e.animationName, "Expected: progress-bar-fill");
-                if (e.animationName === "progress-bar-fill") {
-                  // console.log("🎬 Hiding modal after animation");
-                  this.hide(id);
-                } else {
-                  console.log("🎬 Animation name mismatch, hiding anyway");
-                  this.hide(id);
-                }
-              },
-              { once: true }
-            );
-
-            // Fallback: hide after duration + small buffer
-
-            setTimeout(
               () => {
-                console.log("🎬 Fallback: hiding modal after timeout");
+                console.log("🔔 [UNIFIED-NOTIFICATION] Animation ended, hiding modal");
                 this.hide(id);
               },
-              (options.duration || 5000) + 100
+              { once: true }
             );
           }
         }, 100);
@@ -207,8 +187,23 @@
     }
 
     private setupRedirect(id: string, redirect: NotificationOptions["redirect"]) {
-      console.log("🔔 [UNIFIED-NOTIFICATION] Setting up redirect:13241", redirect);
-      if (!redirect) return;
+      console.log("🔔 [UNIFIED-NOTIFICATION] Setting up redirect with data:", {
+        id,
+        redirect,
+        hasRedirect: !!redirect,
+        redirectUrl: redirect?.url,
+        showCountdown: redirect?.showCountdown,
+      });
+
+      if (!redirect) {
+        console.log("🔔 [UNIFIED-NOTIFICATION] No redirect data provided, skipping redirect setup");
+        return;
+      }
+
+      if (!redirect.url) {
+        console.log("🔔 [UNIFIED-NOTIFICATION] No redirect URL provided, skipping redirect setup");
+        return;
+      }
 
       // Use the modal's duration for the redirect timing
       const notification = this.notifications.get(id);
@@ -216,39 +211,75 @@
       const delaySeconds = Math.ceil(duration / 1000); // Convert to seconds for countdown
       let countdown = delaySeconds;
 
+      console.log("🔔 [UNIFIED-NOTIFICATION] Redirect timing setup:", {
+        duration,
+        delaySeconds,
+        countdown,
+      });
+
       console.log("🔔 [UNIFIED-NOTIFICATION] Setting up redirect:13241", redirect);
       const updateMessage = () => {
+        console.log("🔔 [UNIFIED-NOTIFICATION] Updating countdown message:", {
+          countdown,
+          id,
+          redirectUrl: redirect.url,
+        });
+
         const notification = this.notifications.get(id);
-        if (!notification) return;
+        if (!notification) {
+          console.log("🔔 [UNIFIED-NOTIFICATION] No notification found for ID:", id);
+          return;
+        }
 
         const element = document.getElementById(`unified-notification-${id}`);
-        if (!element) return;
+        if (!element) {
+          console.log("🔔 [UNIFIED-NOTIFICATION] No element found for ID:", id);
+          return;
+        }
 
         const messageElement = element.querySelector(".notification-message");
         if (messageElement && redirect.showCountdown) {
           const originalMessage = notification.message;
           const action = redirect.url ? "Redirecting" : "Refreshing";
           messageElement.innerHTML = `${originalMessage}<br><strong>${action} in ${countdown} seconds...</strong>`;
+          console.log("🔔 [UNIFIED-NOTIFICATION] Updated message with countdown:", countdown);
         }
 
         countdown--;
         if (countdown < 0) {
+          console.log("🔔 [UNIFIED-NOTIFICATION] Countdown finished, preparing redirect");
           // Clear the timer and handle navigation
           this.clearRedirectTimer(id);
 
           if (redirect.url) {
-            // Handle both absolute and relative URLs
-            const url = redirect.url.startsWith("http")
-              ? redirect.url
-              : new URL(redirect.url, window.location.origin).href;
-            console.log("🔔 [UNIFIED-NOTIFICATION] Redirecting to:", url);
-            window.location.href = url;
+            try {
+              // Handle both absolute and relative URLs
+              let finalUrl: string;
+              if (redirect.url.startsWith("http")) {
+                finalUrl = redirect.url;
+              } else {
+                // Handle relative URLs with query parameters
+                const [path, query] = redirect.url.split("?");
+                const baseUrl = new URL(path, window.location.origin);
+                if (query) {
+                  baseUrl.search = "?" + query;
+                }
+                finalUrl = baseUrl.href;
+              }
+
+              console.log("🔔 [UNIFIED-NOTIFICATION] Redirecting to:", finalUrl);
+
+              // Use setTimeout to ensure the last message update is visible
+              window.location.href = finalUrl;
+            } catch (error) {
+              console.error("🔔 [UNIFIED-NOTIFICATION] Error processing redirect URL:", error);
+              // Fallback to direct assignment if URL parsing fails
+              window.location.href = redirect.url;
+            }
           } else {
-            // If no URL provided, refresh the current page
             console.log("🔔 [UNIFIED-NOTIFICATION] No redirect URL, refreshing page");
             window.location.reload();
           }
-          console.log("🔔 [UNIFIED-NOTIFICATION] Redirect initiated");
         }
       };
 
@@ -551,19 +582,27 @@
     console.log("🔔 [UNIFIED-NOTIFICATION] Is redirect:", isRedirect);
     console.log("🔔 [UNIFIED-NOTIFICATION] Redirect data:", redirectData);
 
-    const result = await unifiedNotificationManager.show({
+    // Prepare notification options
+    const notificationOptions = {
       type: modalData.type as any,
       title: modalData.title,
       message: modalData.message,
-      duration: modalData.duration, // No default - only auto-hide if duration is explicitly provided
+      duration: modalData.duration || 2500, // Default to 2.5s if not provided
       persist: modalData.persist, // Pass through the persist parameter
       actions: isRedirect
         ? undefined
         : (modalData.actions as Array<{ label: string; action: () => void; primary?: boolean }>),
       redirect: isRedirect
         ? (redirectData as { url: string; delay?: number; showCountdown?: boolean })
-        : undefined,
-    });
+        : modalData.redirect, // Also check for redirect in modalData itself
+    };
+
+    console.log(
+      "🔔 [UNIFIED-NOTIFICATION] Showing notification with options:",
+      notificationOptions
+    );
+
+    const result = await unifiedNotificationManager.show(notificationOptions);
 
     console.log("🔔 [UNIFIED-NOTIFICATION] showModal returning ID:", result);
     return result;
