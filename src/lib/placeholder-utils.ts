@@ -86,7 +86,8 @@ export function replacePlaceholders(
   const baseUrl = import.meta.env.SITE_URL || process.env.SITE_URL;
   const baseProjectLink = `${baseUrl}/project`;
   // Only create project link if projectId is valid (not 0 or null)
-  const projectLink = projectId && projectId > 0 ? `${baseProjectLink}/${projectId}` : baseUrl || "#";
+  const projectLink =
+    projectId && projectId > 0 ? `${baseProjectLink}/${projectId}` : baseUrl || "#";
 
   // console.log("🔄 [PLACEHOLDER-UTILS] Project link:", projectLink, projectId);
   // console.log("🔄 [PLACEHOLDER-UTILS] Base project link:", baseProjectLink);

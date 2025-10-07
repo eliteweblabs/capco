@@ -152,7 +152,6 @@
 
             // Fallback: hide after duration + small buffer
 
-            
             setTimeout(
               () => {
                 console.log("🎬 Fallback: hiding modal after timeout");
@@ -208,7 +207,6 @@
     }
 
     private setupRedirect(id: string, redirect: NotificationOptions["redirect"]) {
-
       console.log("🔔 [UNIFIED-NOTIFICATION] Setting up redirect:13241", redirect);
       if (!redirect) return;
 
@@ -234,28 +232,30 @@
         }
 
         countdown--;
-    if (countdown < 0) {
-      // Clear the timer and handle navigation
-      this.clearRedirectTimer(id);
-      
-      if (redirect.url) {
-        // Handle both absolute and relative URLs
-        const url = redirect.url.startsWith('http') ? redirect.url : new URL(redirect.url, window.location.origin).href;
-        console.log("🔔 [UNIFIED-NOTIFICATION] Redirecting to:", url);
-        window.location.href = url;
-      } else {
-        // If no URL provided, refresh the current page
-        console.log("🔔 [UNIFIED-NOTIFICATION] No redirect URL, refreshing page");
-        window.location.reload();
-      }
-      console.log("🔔 [UNIFIED-NOTIFICATION] Redirect initiated");
-    }
+        if (countdown < 0) {
+          // Clear the timer and handle navigation
+          this.clearRedirectTimer(id);
+
+          if (redirect.url) {
+            // Handle both absolute and relative URLs
+            const url = redirect.url.startsWith("http")
+              ? redirect.url
+              : new URL(redirect.url, window.location.origin).href;
+            console.log("🔔 [UNIFIED-NOTIFICATION] Redirecting to:", url);
+            window.location.href = url;
+          } else {
+            // If no URL provided, refresh the current page
+            console.log("🔔 [UNIFIED-NOTIFICATION] No redirect URL, refreshing page");
+            window.location.reload();
+          }
+          console.log("🔔 [UNIFIED-NOTIFICATION] Redirect initiated");
+        }
       };
 
-  // Call updateMessage immediately and then set up the interval
-  updateMessage(); // Start immediately
-  const timer = setInterval(updateMessage, 1000);
-  this.redirectTimers.set(id, timer);
+      // Call updateMessage immediately and then set up the interval
+      updateMessage(); // Start immediately
+      const timer = setInterval(updateMessage, 1000);
+      this.redirectTimers.set(id, timer);
     }
 
     private clearRedirectTimer(id: string) {

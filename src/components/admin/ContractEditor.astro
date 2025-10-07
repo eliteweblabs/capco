@@ -48,13 +48,13 @@ const projectId = project.id;
     </div>
   ) : (
     <>
-      <div id="contract-container" class="space-y-4">
-        <div class="flex items-center justify-between">
-          <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
-            Contract - {title}
-          </h3>
+      {projectStatus > 45 && (
+        <div id="contract-container" class="space-y-4">
+          <div class="flex items-center justify-between">
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Contract - {title}</h3>
+          </div>
         </div>
-      </div>
+      )}
 
       {projectStatus > 45 && projectStatus < 55 && (
         <DigitalSignature
@@ -379,8 +379,12 @@ const projectId = project.id;
     if (editMode) {
       initializeEditor();
     } else {
-      const contractContent = await fetchExistingContractOrTemplate();
-      document.getElementById("contract-container").innerHTML = contractContent;
+      let contractContainer = document.getElementById("contract-container");
+      if (contractContainer) {
+        const contractContent = await fetchExistingContractOrTemplate();
+        contractContainer.innerHTML = contractContent;
+        console.log("✅ [CONTRACT-EDITOR] Contract content loaded successfully");
+      }
     }
   });
 </script>

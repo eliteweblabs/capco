@@ -17,7 +17,7 @@ export interface AuthResult {
 }
 
 export async function checkAuth(cookies: any): Promise<AuthResult> {
-  console.log("🔐 [AUTH] Starting authentication check...");
+  // console.log("🔐 [AUTH] Starting authentication check...");
 
   const accessToken = cookies.get("sb-access-token");
   const refreshToken = cookies.get("sb-refresh-token");
@@ -35,7 +35,7 @@ export async function checkAuth(cookies: any): Promise<AuthResult> {
   let currentRole: string | null = null;
 
   if (accessToken && refreshToken && supabase) {
-    console.log("🔐 [AUTH] Tokens found, attempting to set session...");
+    // console.log("🔐 [AUTH] Tokens found, attempting to set session...");
 
     try {
       // Add timeout handling for Supabase connection issues
@@ -51,51 +51,22 @@ export async function checkAuth(cookies: any): Promise<AuthResult> {
 
       session = (await Promise.race([sessionPromise, timeoutPromise])) as any;
 
-      console.log("🔐 [AUTH] Session result:", {
-        hasSession: !!session,
-        hasError: !!session.error,
-        errorMessage: session.error?.message || null,
-        sessionData: session.data
-      });
-
       if (!session.error) {
         isAuth = true;
         currentUser = session.data.user as ExtendedUser;
-        console.log("🔐 [AUTH] User authenticated:", {
-          userId: currentUser?.id,
-          userEmail: currentUser?.email,
-          hasUser: !!currentUser,
-          rawUser: currentUser
-        });
 
         // Get user profile and role
         if (currentUser && currentUser.id) {
-          console.log("🔐 [AUTH] Fetching currentUser profile for role...");
-
           const { data: profile, error: profileError } = await supabase
             .from("profiles")
             .select("*")
             .eq("id", currentUser.id)
             .single();
 
-          // console.log("🔐 [AUTH] Profile query result:", {
-          //   hasProfile: !!profile,
-          //   profileError: profileError?.message || null,
-          //   role: profile?.role || null,
-          //   rawProfile: profile
-          // });
-
           if (profile && !profileError) {
             // Enhance currentUser object with profile data
             currentUser.profile = profile;
             currentRole = profile.role;
-
-            // console.log("🔐 [AUTH] Profile successfully attached:", {
-            //   userId: currentUser.id,
-            //   role: profile.role,
-            //   profileKeys: Object.keys(profile),
-            //   fullProfile: profile,
-            // });
           } else {
             console.warn("🔐 [AUTH] Failed to get currentUser profile:", {
               userId: currentUser.id,
@@ -104,14 +75,6 @@ export async function checkAuth(cookies: any): Promise<AuthResult> {
               errorCode: profileError?.code,
               errorMessage: profileError?.message,
             });
-
-            // console.log("🔐 [AUTH] currentUser object after failed profile query:", {
-            //   hasCurrentUser: !!currentUser,
-            //   currentUserKeys: Object.keys(currentUser),
-            //   hasProfile: !!currentUser.profile,
-            //   profileValue: currentUser.profile,
-            // });
-
             // If profile doesn't exist, we should create one or handle gracefully
             if (profileError?.code === "PGRST116") {
               console.error(
@@ -164,20 +127,12 @@ export async function checkAuth(cookies: any): Promise<AuthResult> {
   const result = {
     isAuth,
     session,
-    currentUser: currentUser,
-    accessToken: accessToken,
-    refreshToken: refreshToken,
-    supabase: supabase,
-    currentRole: currentRole,
+    currentUser,
+    accessToken,
+    refreshToken,
+    supabase,
+    currentRole,
   };
-
-  // console.log("🔐 [AUTH] Final result:", {
-  //   isAuth: result.isAuth,
-  //   hasUser: !!result.currentUser,
-  //   hasSession: !!result.session,
-  //   currentRole: result.currentRole,
-  //   rawUser: result.currentUser
-  // });
 
   return result;
 }

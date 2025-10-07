@@ -8,7 +8,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     // Initialize Supabase client
     const supabase = createClient(
       import.meta.env.SUPABASE_URL!,
-      import.meta.env.SUPABASE_ANON_KEY!,
+      import.meta.env.SUPABASE_ANON_KEY!
     );
 
     // Set up session from cookies
@@ -29,22 +29,16 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     } = await supabase.auth.getUser();
 
     if (userError || !user) {
-      return new Response(
-        JSON.stringify({ error: "Authentication required" }),
-        {
-          status: 401,
-          headers: { "Content-Type": "application/json" },
-        },
-      );
+      return new Response(JSON.stringify({ error: "Authentication required" }), {
+        status: 401,
+        headers: { "Content-Type": "application/json" },
+      });
     }
 
     // Call the database function to get PDF documents
-    const { data: pdfs, error: pdfsError } = await supabase.rpc(
-      "get_user_pdf_documents",
-      {
-        project_ids: projectIds || null,
-      },
-    );
+    const { data: pdfs, error: pdfsError } = await supabase.rpc("get_user_pdf_documents", {
+      project_ids: projectIds || null,
+    });
 
     if (pdfsError) {
       console.error("Error fetching PDF documents:", pdfsError);
@@ -56,7 +50,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         {
           status: 500,
           headers: { "Content-Type": "application/json" },
-        },
+        }
       );
     }
 
@@ -68,7 +62,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       {
         status: 200,
         headers: { "Content-Type": "application/json" },
-      },
+      }
     );
   } catch (error) {
     console.error("Get PDF documents error:", error);
@@ -81,7 +75,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       {
         status: 500,
         headers: { "Content-Type": "application/json" },
-      },
+      }
     );
   }
 };
