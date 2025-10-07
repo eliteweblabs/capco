@@ -89,6 +89,7 @@ export const GET: APIRoute = async ({ url, cookies }) => {
     );
 
     // Apply project filter only if projectId is provided
+    console.log("Discussions API - projectId:", projectId);
     if (projectId) {
       const projectIdInt = parseInt(projectId, 10);
       if (isNaN(projectIdInt)) {
@@ -104,6 +105,9 @@ export const GET: APIRoute = async ({ url, cookies }) => {
         );
       }
       discussionsQuery = discussionsQuery.eq("projectId", projectIdInt);
+      console.log("Filtering by projectId:", projectIdInt);
+    } else {
+      console.log("No projectId provided - loading all discussions");
     }
 
     // For clients, exclude internal discussions (Admin/Staff see all)
@@ -126,6 +130,11 @@ export const GET: APIRoute = async ({ url, cookies }) => {
     const { data: discussions, error } = await discussionsQuery.order("createdAt", {
       ascending: false,
     });
+
+    console.log("Database query result:", { discussions: discussions?.length || 0, error });
+    if (error) {
+      console.error("Database error:", error);
+    }
 
     // Debug logging for raw database response
     console.log("🔍 [DISCUSSIONS] Raw database response:", {

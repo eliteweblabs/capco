@@ -194,14 +194,20 @@ const isGlobalDiscussion = !project;
       params.append("limit", "50");
       params.append("offset", "0");
 
+      console.log("Loading discussions with params:", params.toString());
+      console.log("Current project ID:", currentProjectId);
+      console.log("Is global:", isGlobal);
+
       const response = await fetch(`/api/discussions?${params}`, {
         credentials: "include",
       });
 
       const data = await response.json();
+      console.log("Discussions API response:", data);
 
       if (data.success) {
         discussions = data.discussions || [];
+        console.log("Loaded discussions:", discussions.length, "items");
         renderDiscussions();
       } else {
         console.error("Failed to load discussions:", data.error);
@@ -839,8 +845,11 @@ const isGlobalDiscussion = !project;
 
     // Find the parent discussion to inherit its internal status and project ID
     const parentDiscussion = discussions.find((d) => d.id === parentId);
+    console.log("Parent discussion found:", parentDiscussion);
+    console.log("Available discussions:", discussions.map(d => ({ id: d.id, projectId: d.projectId })));
     const inheritInternal = parentDiscussion ? parentDiscussion.internal : false;
     const parentProjectId = parentDiscussion ? parentDiscussion.projectId : currentProjectId;
+    console.log("Parent project ID:", parentProjectId);
 
     if (!parentProjectId) {
       alert("Unable to determine project for this reply");

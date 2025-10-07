@@ -34,7 +34,9 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     }
 
     const body = await request.json();
+    console.log("Add discussion request body:", body);
     let { projectId, message, internal = false, smsAlert = false, parentId = null } = body;
+    console.log("Extracted values:", { projectId, message, internal, smsAlert, parentId });
 
     // Force internal = false for clients (only Admin/Staff can create internal comments)
     const isClient = currentRole === "Client";
