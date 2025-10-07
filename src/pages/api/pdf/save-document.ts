@@ -60,7 +60,7 @@ export const POST: APIRoute = async ({ request }) => {
 
     // Use the media system to save the PDF
     const mediaFile = await saveMedia({
-      mediaData: pdfBuffer.buffer,
+      mediaData: pdfBuffer instanceof Buffer ? pdfBuffer.buffer : pdfBuffer,
       fileName: fileName,
       fileType: "application/pdf",
       projectId: projectId,

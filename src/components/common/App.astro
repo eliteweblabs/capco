@@ -27,12 +27,6 @@ interface Props {
   statusData?: any;
 }
 
-// UX utility functions are defined inline in the script section below
-
-// Global CSS Classes will be defined in client-side script
-
-// Helper function to convert slug to title
-
 const {
   title = undefined,
   description = undefined,
@@ -57,12 +51,6 @@ const {
   globalCompanyLogoLight = undefined,
   statusData = undefined,
 } = Astro.props;
-
-// console.log("[App] currentUser:", currentUser);
-// console.log("[App] session:", session);
-// console.log("[App] project:", project);
-// console.log("[App] supabase:", supabase);
-// console.log("🔍 [App] supabaseUrl:", supabaseUrl);
 
 // Derived properties (8 props → 13 total)
 const isAuth = currentUser ? true : false;
@@ -270,10 +258,10 @@ updateNotificationBellCount,
 } from "@/lib/notification-count-loader";
 
       // Make functions globally available
-      window.initializeNotificationCount = initializeNotificationCount;
-      window.updateNotificationBellCount = updateNotificationBellCount;
-      window.loadNotificationCount = loadNotificationCount;
-      window.refreshNotificationCount = refreshNotificationCount;
+      (window as any).initializeNotificationCount = initializeNotificationCount;
+      (window as any).updateNotificationBellCount = updateNotificationBellCount;
+      (window as any).loadNotificationCount = loadNotificationCount;
+      (window as any).refreshNotificationCount = refreshNotificationCount;
     </script>
 
     <!-- Set global user data for client-side components -->
@@ -357,7 +345,7 @@ updateNotificationBellCount,
           createButtonPartial?: (config: any) => Promise<HTMLElement | null>;
           deleteProject?: (projectId: any) => void;
           getProject?: (projectId: string | number) => Promise<any>;
-          handleNewStatusNotification?: any;
+          handleNewStatusModalAndEmail?: any;
           handleUrlNotification?: (type: string, message: string) => void;
           hideOnFormFocus?: (elementSelector: string, mobileOnly?: boolean) => void;
           hideNotification?: any;
@@ -425,14 +413,6 @@ updateNotificationBellCount,
       }
       // Make data available globally for the proposal functions
       import { setupConsoleInterceptor } from "../../lib/console-interceptor.ts";
-
-      // Ensure startsWith is available - with debugging
-      console.log("🔧 [POLYFILL] Checking startsWith availability...");
-      console.log(
-        "🔧 [POLYFILL] String.prototype.startsWith exists:",
-        !!String.prototype.startsWith
-      );
-
       // Set Stripe publishable key globally for PaymentForm
       (window as any).STRIPE_PUBLISHABLE_KEY = import.meta.env.PUBLIC_STRIPE_PUBLISHABLE_KEY;
       console.log("🔧 [STRIPE] Publishable key loaded:", !!(window as any).STRIPE_PUBLISHABLE_KEY);
@@ -485,13 +465,11 @@ updateNotificationBellCount,
         // Implementation for tab switching
       };
 
-      (window as any).handleNewStatusNotification = function (response: any, context: string) {
+      (window as any).handleNewStatusModalAndEmail = function (response: any, context: string) {
         if (!response) {
           console.error(`ERROR [${context || "NOTIFICATION"}] API call failed:`, response.error);
           return;
         }
-
-        console.log("🔍 [HANDLE-NEW-STATUS-NOTIFICATION] Response:", response);
 
         if (!response.statusData || !(window as any).showModal) {
           console.warn(
@@ -530,7 +508,7 @@ updateNotificationBellCount,
 
       (window as any).hideOnFormFocus = function () {
         // Check if we should only hide on mobile
-        // if (mobileOnly && window.innerWidth >= 768) return;
+        if (!(window as any).isMobile()) return;
 
         const element = document.querySelector(".hide-when-form-focus");
         if (!element) return;
@@ -602,9 +580,6 @@ updateNotificationBellCount,
         }
       };
 
-      // Import validateEmail from ux-utils
-      import { validateEmail } from "../../lib/ux-utils.ts";
-      (window as any).validateEmail = validateEmail;
 
       (window as any).getProject = async function (projectId: string | number) {
         const projectResponse = await fetch(`/api/get-project?id=${projectId}`);
@@ -614,9 +589,6 @@ updateNotificationBellCount,
           throw new Error("Failed to fetch project");
         }
       };
-
-
-      
       
       // Delete project function
       let isDeleting = false; // Flag to prevent multiple delete operations
@@ -1079,6 +1051,12 @@ updateNotificationBellCount,
         if (str.length <= maxLength) return str;
         return str.substring(0, maxLength - suffix.length) + suffix;
       };
+
+      (window as any).validateEmail = function (email: string): string | null {
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        return emailRegex.test(email) ? null : "Invalid email format";
+      };
+
 
       (window as any).isSafariBeta = function () {
         const ua = navigator.userAgent;
