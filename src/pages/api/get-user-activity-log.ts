@@ -14,8 +14,8 @@ export const GET: APIRoute = async ({ cookies }) => {
       });
     }
 
-    // Get user activity log
-    const userActivityLog = await SimpleProjectLogger.getUserActivityLog();
+    // Get user activity log - using getProjectLog with projectId 0 for global logs
+    const userActivityLog = await SimpleProjectLogger.getProjectLog(0);
 
     return new Response(
       JSON.stringify({

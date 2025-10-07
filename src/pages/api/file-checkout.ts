@@ -22,6 +22,12 @@ export const POST: APIRoute = async ({ request, url }) => {
             { status: 400, headers: { "Content-Type": "application/json" } }
           );
         }
+        if (!supabaseAdmin) {
+          return new Response(
+            JSON.stringify({ success: false, error: "Database connection failed" }),
+            { status: 500, headers: { "Content-Type": "application/json" } }
+          );
+        }
         result = await supabaseAdmin.rpc("checkout_file", {
           file_id_param: fileId,
           user_id_param: userId,
@@ -34,6 +40,12 @@ export const POST: APIRoute = async ({ request, url }) => {
           return new Response(
             JSON.stringify({ success: false, error: "User ID required for checkin" }),
             { status: 400, headers: { "Content-Type": "application/json" } }
+          );
+        }
+        if (!supabaseAdmin) {
+          return new Response(
+            JSON.stringify({ success: false, error: "Database connection failed" }),
+            { status: 500, headers: { "Content-Type": "application/json" } }
           );
         }
         result = await supabaseAdmin.rpc("checkin_file", {
@@ -51,6 +63,12 @@ export const POST: APIRoute = async ({ request, url }) => {
               error: "Assigned to and user ID required for assignment",
             }),
             { status: 400, headers: { "Content-Type": "application/json" } }
+          );
+        }
+        if (!supabaseAdmin) {
+          return new Response(
+            JSON.stringify({ success: false, error: "Database connection failed" }),
+            { status: 500, headers: { "Content-Type": "application/json" } }
           );
         }
         result = await supabaseAdmin.rpc("assign_file", {
@@ -95,6 +113,13 @@ export const GET: APIRoute = async ({ url }) => {
     if (!fileId) {
       return new Response(JSON.stringify({ success: false, error: "File ID required" }), {
         status: 400,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+
+    if (!supabaseAdmin) {
+      return new Response(JSON.stringify({ success: false, error: "Database connection failed" }), {
+        status: 500,
         headers: { "Content-Type": "application/json" },
       });
     }

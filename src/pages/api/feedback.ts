@@ -39,7 +39,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     if (accessToken && refreshToken && !anonymous) {
       try {
         // Create a client with the user's session
-        const supabaseUser = createClient(supabaseUrl, import.meta.env.PUBLIC_SUPABASE_ANON_KEY, {
+        const supabaseUser = createClient(supabaseUrl!, import.meta.env.PUBLIC_SUPABASE_ANON_KEY!, {
           global: {
             headers: {
               Authorization: `Bearer ${accessToken}`,

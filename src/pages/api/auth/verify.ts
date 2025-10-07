@@ -71,7 +71,7 @@ export const GET: APIRoute = async ({ url, cookies, redirect }) => {
       const verificationToken = token_hash || token;
 
       verificationResult = await supabase.auth.verifyOtp({
-        token_hash: verificationToken,
+        token_hash: verificationToken as string,
         type: otpType,
       });
     } else if (code) {

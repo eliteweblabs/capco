@@ -31,11 +31,11 @@ export const GET: APIRoute = async ({ request, cookies, url }) => {
     const mediaType = searchParams.get("mediaType");
 
     const result = await getMedia({
-      projectId,
-      targetLocation,
-      targetId,
-      fileId,
-      mediaType,
+      projectId: projectId || undefined,
+      targetLocation: targetLocation || undefined,
+      targetId: targetId || undefined,
+      fileId: fileId || undefined,
+      mediaType: mediaType || undefined,
       currentUser,
     });
 

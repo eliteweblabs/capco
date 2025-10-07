@@ -5,7 +5,6 @@ import { supabase } from "../../lib/supabase";
 import { supabaseAdmin } from "../../lib/supabase-admin";
 import { getApiBaseUrl } from "../../lib/url-utils";
 // Import validateEmail from ux-utils and getCarrierGateway from sms-utils
-import { createDatabaseObject } from "../../lib/database-field-mapper";
 import { FORM_FIELDS, getFormField } from "../../lib/form-utils";
 import { getCarrierGateway } from "../../lib/sms-utils";
 import { validateEmail } from "../../lib/ux-utils";
@@ -223,7 +222,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
     // 6. Create/update profile in database
     console.log("💾 [CREATE-USER] Creating profile in database...");
-    const profileData = createDatabaseObject({
+    const profileData = {
       id: authData.user.id,
       email: email.trim().toLowerCase(),
       firstName: firstName.trim(),
@@ -235,7 +234,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       role: role,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
-    });
+    };
 
     console.log("💾 [CREATE-USER] Profile data prepared:", {
       id: profileData.id,

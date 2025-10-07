@@ -172,7 +172,10 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     } catch (testError) {
       console.error("🔍 [LINE-ITEMS-CATALOG] Database connection test error:", testError);
       return new Response(
-        JSON.stringify({ error: "Database connection failed", details: testError.message }),
+        JSON.stringify({
+          error: "Database connection failed",
+          details: testError instanceof Error ? testError.message : String(testError),
+        }),
         {
           status: 500,
           headers: { "Content-Type": "application/json" },
@@ -246,7 +249,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 export const PUT: APIRoute = async ({ request, cookies }) => {
   try {
     const { isAuth, currentRole, currentUser } = await checkAuth(cookies);
-    if (!isAuth || !currentUser || !["Admin", "Staff"].includes(currentRole)) {
+    if (!isAuth || !currentUser || !["Admin", "Staff"].includes(currentRole || "")) {
       return new Response(JSON.stringify({ error: "Admin access required" }), {
         status: 403,
         headers: { "Content-Type": "application/json" },

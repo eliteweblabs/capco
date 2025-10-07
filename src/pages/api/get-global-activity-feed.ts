@@ -92,18 +92,21 @@ export const GET: APIRoute = async ({ cookies, url }) => {
     const allActivities: any[] = [];
 
     projects?.forEach((project) => {
-      const logs = project.log || [];
+      // Skip if project is a ParserError
+      if (project && typeof project === "object" && "id" in project && project !== null) {
+        const logs = (project as any).log || [];
 
-      logs.forEach((logEntry: any) => {
-        allActivities.push({
-          ...logEntry,
-          projectId: project.id,
-          address: project.address,
-          project_title: project.title,
-          project_owner: "Unknown", // Will be populated later if needed
-          project_owner_id: project.authorId,
+        logs.forEach((logEntry: any) => {
+          allActivities.push({
+            ...logEntry,
+            projectId: (project as any).id,
+            address: (project as any).address,
+            project_title: (project as any).title,
+            project_owner: "Unknown", // Will be populated later if needed
+            project_owner_id: (project as any).authorId,
+          });
         });
-      });
+      }
     });
 
     // Sort by timestamp (most recent first)

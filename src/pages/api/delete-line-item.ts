@@ -15,6 +15,13 @@ export const POST: APIRoute = async ({ request }) => {
     console.log("Deleting line item:", itemId, "from invoice:", invoiceId);
 
     // Get current invoice
+    if (!supabase) {
+      return new Response(JSON.stringify({ error: "Database connection failed" }), {
+        status: 500,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+
     const { data: invoice, error: fetchError } = await supabase
       .from("invoices")
       .select("catalogLineItems")
