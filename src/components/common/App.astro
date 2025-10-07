@@ -32,17 +32,6 @@ interface Props {
 // Global CSS Classes will be defined in client-side script
 
 // Helper function to convert slug to title
-const unslugify = (slug: string): string => {
-  return (
-    slug
-      .split("/")
-      .filter(Boolean)
-      .pop() // Get last segment
-      ?.split("-")
-      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-      .join(" ") || "Home"
-  );
-};
 
 const {
   title = undefined,
@@ -145,7 +134,10 @@ const debugData = {
   },
 };
 
+console.log("🔍 [APP] debugData:", currentUser);
+
 ---
+
 
 <!doctype html>
 <html lang="en">
@@ -164,7 +156,7 @@ const debugData = {
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <title>
-      {globalCompanyName + " → " + (title || unslugify(Astro.url.pathname))}
+      {globalCompanyName + " → " + (title || (window as any).unslugify(Astro.url.pathname))}
     </title>
 
     <meta name="description" content={description} />
@@ -269,9 +261,6 @@ const debugData = {
     />
     <meta property="og:image:type" content="image/png" /> -->
 
-    <!-- Dark mode initialization moved to prevent preloader flash -->
-
-    <!-- Load notification count loader for immediate initialization -->
     <script>
       import {
 initializeNotificationCount,
@@ -288,7 +277,9 @@ updateNotificationBellCount,
     </script>
 
     <!-- Set global user data for client-side components -->
-  </head><body class="bg-gray-50 antialiased dark:bg-gray-900">
+  </head>
+  
+  <body class="bg-gray-50 antialiased dark:bg-gray-900">
     <!-- Preloader -->
     <Preloader />
 
@@ -347,12 +338,10 @@ updateNotificationBellCount,
 
     <ScrollProgressIndicator />
 
-    <TutorialOverlay currentUser={currentUser} tutorialId="demo-tour" autoStart={false} />
-
+    <TutorialOverlay currentUser={currentUser} tutorialId="demo-tour" autoStart={false} isAuth={isAuth} />
     <!-- Debug Panel (Admin Only) -->
     <DebugPanel currentUser={currentUser} />
 
-    <!-- <script src="../../assets/js/app.bundle.js"></script> -->
 
     <!-- Flowbite JavaScript -->
     <script src="https://unpkg.com/flowbite@2.5.2/dist/flowbite.min.js"></script>
@@ -486,13 +475,6 @@ updateNotificationBellCount,
       } else {
         console.log("🔧 [POLYFILL] startsWith already available");
       }
-
-      // Safari detection functions are imported from ux-utils.ts
-      // No need to redefine them here - they're already available globally
-
-      // Local Window interface for this component's TypeScript intellisense
-
-      // showModal is now handled by UnifiedNotification.astro
 
       (window as any).hideNotification = function () {
         console.log("[FALLBACK-NOTIFICATION] Hiding notification");
@@ -633,6 +615,9 @@ updateNotificationBellCount,
         }
       };
 
+
+      
+      
       // Delete project function
       let isDeleting = false; // Flag to prevent multiple delete operations
       (window as any).deleteProject = function (projectId: any) {
@@ -655,6 +640,9 @@ updateNotificationBellCount,
               5000
             );
           }
+
+
+          
           return;
         }
 
@@ -1092,71 +1080,17 @@ updateNotificationBellCount,
         return str.substring(0, maxLength - suffix.length) + suffix;
       };
 
-      // // Form utilities
-      // (window as any).hideOnMobileInput = function (elementSelector: any) {
-      //   if (window.innerWidth >= 768) return;
-
-      //   const element = document.querySelector(elementSelector);
-      //   if (!element) return;
-
-      //   const hideOnFocus = () => {
-      //     (element as HTMLElement).style.display = "none";
-      //   };
-
-      //   const showOnBlur = () => {
-      //     (element as HTMLElement).style.display = "block";
-      //   };
-
-      //   // Simple and reliable approach: Hide on input focus, show on blur
-      //   let isKeyboardOpen = false;
-
-      //   function hideElement(element: HTMLElement | null) {
-      //     if (element) element.style.display = "none";
-      //   }
-
-      //   function showElement(element: HTMLElement | null) {
-      //     if (element) element.style.display = "block";
-      //   }
-
-      //   const selector = "input, textarea, select, form, button, label, .slot-machine-modal";
-      //   // Simple input focus/blur detection
-      //   const inputs = document.querySelectorAll(selector);
-      //   inputs.forEach((input: any) => {
-      //     input.addEventListener("focus", hideOnInputFocus);
-      //     input.addEventListener("blur", showOnInputBlur);
-      //   });
-      // };
-
-      // Make UX utility functions available globally
-      // Only triggers on iOS Safari with beta/pre-release versions (18-26)
-      // ⚠️ Version range must be updated manually for new beta releases
       (window as any).isSafariBeta = function () {
         const ua = navigator.userAgent;
-
         // Check if iOS device
         const isIOS = /iPad|iPhone|iPod/.test(ua);
-
         // Extract Safari version
         const versionMatch = ua.match(/Version\/(\d+)\./);
         const safariVersion = versionMatch ? parseInt(versionMatch[1]) : null;
-
         // Check if Safari (not Chrome/Firefox/Edge)
         const isSafari = /Safari/.test(ua) && !/Chrome|CriOS|FxiOS|EdgiOS/.test(ua);
-
-        // Check if version is in beta/pre-release range (18-26)
-        // Update this range manually when new beta versions are released
         const isBetaVersion = safariVersion && safariVersion >= 18 && safariVersion <= 26;
-
         const result = isIOS && isSafari && isBetaVersion;
-
-        console.log("🍎 [APP] Safari Beta Detection (iOS only):", {
-          userAgent: ua,
-          isIOS: isIOS,
-          safariVersion: safariVersion,
-          isSafari: isSafari,
-          isBetaVersion: isBetaVersion,
-          result: result,
-        });
 
         return result;
       };
@@ -1358,8 +1292,6 @@ updateNotificationBellCount,
           console.error(`🔔 [${notification.title}] ${notification.message}`);
           console.error("🔔 showModal is not available - notification system not initialized");
         }
-
-        // Note: URL cleanup is handled by processUrlNotifications with delay
       };
 
       // ===== END GLOBAL FUNCTIONS =====
@@ -1483,32 +1415,6 @@ updateNotificationBellCount,
         return words.slice(0, wordLimit).join(" ") + suffix;
       };
 
-      // Apply iOS Safari Mobile Beta specific CSS and workaround
-      // if (
-      //   (window as any).isSafariIOS() &&
-      //   (window as any).isSafariBeta() &&
-      //   (window as any).isMobile()
-      // ) {
-      //   console.log("🍎 [APP] iOS Safari Mobile Beta detected - Applying fixes and workaround");
-
-      //   // Trigger the orientation workaround
-      //   (window as any).isSafariBeta();
-
-      //   // Add iOS Safari Mobile Beta class to body
-      //   document.body.classList.add("ios-safari-mobile-beta");
-
-      //   // Apply the specific CSS class to the target element
-      //   const targetElement = document.querySelector(
-      //     ".flex.overflow-hidden.bg-gray-50.UZ9xFK4mqjHjj8e8yJwf.dark:bg-gray-900"
-      //   );
-      //   if (targetElement) {
-      //     targetElement.classList.add("ios-safari-mobile-beta-fix");
-      //     console.log("🍎 [APP] Applied iOS Safari Mobile Beta CSS fix to target element");
-      //   }
-      // } else {
-      //   console.log("🌐 [APP] Not iOS Safari Mobile Beta - Skipping specific CSS fixes");
-      // }
-
       document.addEventListener("DOMContentLoaded", () => {
         // Initialize dark mode first to prevent preloader flash
         const hasExplicitPreference = localStorage.getItem("color-theme") !== null;
@@ -1593,13 +1499,20 @@ updateNotificationBellCount,
     </script>
 
     <script>
+
+
+
       document.addEventListener("DOMContentLoaded", async () => {
         (window as any).hideOnFormFocus();
 
-        // Initialize notification count immediately on page load
+        // Initialize notification count only if user is authenticated
         try {
-          if ((window as any).initializeNotificationCount) {
+          const notificationBell = document.getElementById("notification-bell");
+          if (notificationBell && notificationBell.dataset.userId && (window as any).initializeNotificationCount) {
+            console.log("🔔 [APP] Initializing notifications for user:", notificationBell.dataset.userId);
             await (window as any).initializeNotificationCount();
+          } else {
+            console.log("🔔 [APP] Skipping notification initialization - no authenticated user");
           }
         } catch (error) {
           console.error("🔔 [APP] Error initializing notification count:", error);
