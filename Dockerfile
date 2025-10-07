@@ -1,14 +1,24 @@
-# Use Node.js 22.15.0 to match local environment
-FROM node:22.15.0-alpine
+# Use Node.js 22.18.0 to address security vulnerabilities
+FROM node:22.18.0-alpine
+
+# Create non-root user for security
+RUN addgroup -g 1001 -S nodejs && \
+    adduser -S astro -u 1001
 
 # Set working directory
 WORKDIR /app
 
+# Change ownership to non-root user
+RUN chown -R astro:nodejs /app
+
 # Copy package files
 COPY package*.json ./
 
-# Install dependencies
-RUN npm install
+# Install dependencies with legacy peer deps to resolve conflicts
+RUN npm install --legacy-peer-deps
+
+# Switch to non-root user
+USER astro
 
 # Copy source code
 COPY . .
@@ -114,8 +124,8 @@ ENV YEAR=$YEAR
 # RUN echo "GLOBAL_COLOR_SECONDARY: $GLOBAL_COLOR_SECONDARY"
 # RUN echo "GLOBAL_COLOR_PRIMARY_RGB: $GLOBAL_COLOR_PRIMARY_RGB"
 
-# Build the application
-RUN npm run build
+# Build the application with Railway-specific settings
+RUN npm run build:railway
 
 # Expose ports (Railway uses dynamic PORT at runtime)
 # Note: Railway ignores EXPOSE and uses PORT env var
