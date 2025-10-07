@@ -34,8 +34,6 @@ let totalAmount = 0;
 
 // Query invoice directly using authenticated Supabase client (SSR)
 if (projectId && supabase) {
-  console.log("🔍 [TAB-DEPOSIT] Querying invoice for projectId:", projectId);
-
   // Set up session from cookies
   const accessToken = Astro.cookies.get("sb-access-token")?.value;
   const refreshToken = Astro.cookies.get("sb-refresh-token")?.value;
@@ -75,22 +73,9 @@ if (projectId && supabase) {
         });
 
         totalAmount = Math.round(calculatedTotal * 100); // Convert to cents
-        console.log("🔍 [TAB-DEPOSIT] 💰 Calculated total from line items:", {
-          lineItemCount: lineItems.length,
-          calculatedTotal,
-          totalAmountCents: totalAmount,
-        });
       } else {
         totalAmount = Math.round(invoice.totalAmount * 100); // Convert to cents
       }
-
-      console.log("🔍 [TAB-DEPOSIT] ✅ Found invoice:", {
-        invoiceId,
-        totalAmount,
-        totalAmountDollars: totalAmount / 100,
-        status: invoice.status,
-        subject: invoice.subject,
-      });
     } else {
       console.warn("🔍 [TAB-DEPOSIT] ⚠️ No invoice found for projectId:", projectId);
     }

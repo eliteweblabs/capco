@@ -62,20 +62,41 @@ export const POST: APIRoute = async ({ request, cookies }) => {
   }
 
   try {
-    // 1. Get form data
-    console.log("🔍 [CREATE-USER] Attempting to parse form data...");
-    const formData = await request.formData();
-    console.log("🔍 [CREATE-USER] Form data parsed successfully");
+    // 1. Get data (handle both FormData and JSON)
+    console.log("🔍 [CREATE-USER] Attempting to parse request data...");
+    const contentType = request.headers.get("content-type") || "";
 
-    const email = getFormField(formData, FORM_FIELDS.email);
-    const password = getFormField(formData, FORM_FIELDS.password);
-    const firstName = getFormField(formData, FORM_FIELDS.firstName);
-    const lastName = getFormField(formData, FORM_FIELDS.lastName);
-    const companyName = getFormField(formData, FORM_FIELDS.companyName);
-    const phone = getFormField(formData, FORM_FIELDS.phone);
-    const smsAlerts = getFormField(formData, FORM_FIELDS.smsAlerts, false);
-    const mobileCarrier = getFormField(formData, FORM_FIELDS.mobileCarrier);
-    const role = getFormField(formData, FORM_FIELDS.role) || "Client";
+    let email, password, firstName, lastName, companyName, phone, smsAlerts, mobileCarrier, role;
+
+    if (contentType.includes("application/json")) {
+      // Handle JSON data
+      console.log("🔍 [CREATE-USER] Parsing JSON data...");
+      const jsonData = await request.json();
+      email = jsonData.email;
+      password = jsonData.password;
+      firstName = jsonData.firstName;
+      lastName = jsonData.lastName;
+      companyName = jsonData.companyName;
+      phone = jsonData.phone;
+      smsAlerts = jsonData.smsAlerts;
+      mobileCarrier = jsonData.mobileCarrier;
+      role = jsonData.role || "Client";
+    } else {
+      // Handle FormData
+      console.log("🔍 [CREATE-USER] Parsing FormData...");
+      const formData = await request.formData();
+      email = getFormField(formData, FORM_FIELDS.email);
+      password = getFormField(formData, FORM_FIELDS.password);
+      firstName = getFormField(formData, FORM_FIELDS.firstName);
+      lastName = getFormField(formData, FORM_FIELDS.lastName);
+      companyName = getFormField(formData, FORM_FIELDS.companyName);
+      phone = getFormField(formData, FORM_FIELDS.phone);
+      smsAlerts = getFormField(formData, FORM_FIELDS.smsAlerts, false);
+      mobileCarrier = getFormField(formData, FORM_FIELDS.mobileCarrier);
+      role = getFormField(formData, FORM_FIELDS.role) || "Client";
+    }
+
+    console.log("🔍 [CREATE-USER] Data parsed successfully");
 
     console.log("🔍 [CREATE-USER] Extracted fields:", {
       email: email ? "***@***" : null,

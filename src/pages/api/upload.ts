@@ -326,7 +326,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         try {
           await SimpleProjectLogger.addLogEntry(
             parseInt(projectId),
-            "file_uploaded",
+            "fileUploaded",
             `File uploaded: ${file.name}`,
             { fileName: file.name }
           );

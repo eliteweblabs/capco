@@ -98,7 +98,7 @@ export const GET: APIRoute = async ({ cookies, url }) => {
         allActivities.push({
           ...logEntry,
           projectId: project.id,
-          project_address: project.address,
+          address: project.address,
           project_title: project.title,
           project_owner: "Unknown", // Will be populated later if needed
           project_owner_id: project.authorId,

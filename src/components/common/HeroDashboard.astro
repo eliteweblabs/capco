@@ -7,6 +7,7 @@ interface Props {
   projectLength: number;
 }
 
+import Breadcrumb from "./Breadcrumb.astro";
 import Button from "./Button.astro";
 const { title, description, projectLength } = Astro.props;
 ---
@@ -18,82 +19,28 @@ const { title, description, projectLength } = Astro.props;
   <h2 id="page-subtitle" class="text-black dark:text-white" set:html={description} />
 </div> -->
 <div class="align-center col-span-full flex items-center justify-between p-4 md:flex md:p-6">
-  <nav class="mb-4 flex" aria-label="Breadcrumb">
-    <ol
-      class="align-center R0X5VtiZIoV7IjvrxBJ_ hPWJir4VhLurUkdR8iyI UiRKvjjl_rZRhuc5tGul inline-flex"
-    >
-      <li class="align-center inline-flex">
-        <a
-          href="#"
-          class="align-center rYHHksRBEMl_guI3q0UQ XIIs8ZOri3wm8Wnj9N_y dMTOiA3mf3FTjlHu6DqW inline-flex text-sm font-medium hover:text-primary"
-        >
-          <svg
-            class="E_3B4mrFSil75QXvKTiK _o2IXcpM0qnG3JPReKus E9GV5sZJIbfO_GEQ_moc"
-            aria-hidden="true"
-            xmlns="http://www.w3.org/2000/svg"
-            fill="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              fill-rule="evenodd"
-              d="M11.3 3.3a1 1 0 0 1 1.4 0l6 6 2 2a1 1 0 0 1-1.4 1.4l-.3-.3V19a2 2 0 0 1-2 2h-3a1 1 0 0 1-1-1v-3h-2v3c0 .6-.4 1-1 1H7a2 2 0 0 1-2-2v-6.6l-.3.3a1 1 0 0 1-1.4-1.4l2-2 6-6Z"
-              clip-rule="evenodd"></path>
-          </svg>
-          Home
-        </a>
-      </li>
-      <li>
-        <div class="align-center flex">
-          <svg
-            class="_o2IXcpM0qnG3JPReKus E9GV5sZJIbfO_GEQ_moc _JmTNv5EiHqK2A1jcQSf mx-1 rtl:rotate-180"
-            aria-hidden="true"
-            xmlns="http://www.w3.org/2000/svg"
-            fill="none"
-            viewBox="0 0 24 24"
-          >
-            <path
-              stroke="currentColor"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2"
-              d="m9 5 7 7-7 7"></path>
-          </svg>
-          <a
-            href="#"
-            class="rYHHksRBEMl_guI3q0UQ XIIs8ZOri3wm8Wnj9N_y dMTOiA3mf3FTjlHu6DqW ms-1 ms-2 text-sm font-medium hover:text-primary"
-            >Project management</a
-          >
-        </div>
-      </li>
-      <li aria-current="page">
-        <div class="align-center flex">
-          <svg
-            class="_o2IXcpM0qnG3JPReKus E9GV5sZJIbfO_GEQ_moc _JmTNv5EiHqK2A1jcQSf mx-1 rtl:rotate-180"
-            aria-hidden="true"
-            xmlns="http://www.w3.org/2000/svg"
-            fill="none"
-            viewBox="0 0 24 24"
-          >
-            <path
-              stroke="currentColor"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2"
-              d="m9 5 7 7-7 7"></path>
-          </svg>
-          <span class="PeR2JZ9BZHYIH8Ea3F36 XIIs8ZOri3wm8Wnj9N_y ms-1 ms-2 text-sm font-medium">
-            {
-              projectLength === 0
-                ? "No Active Projects"
-                : projectLength === 1
-                  ? "1 Active Project"
-                  : `${projectLength} Active Projects`
-            }
-          </span>
-        </div>
-      </li>
-    </ol>
-  </nav>
+  <Breadcrumb
+    items={[
+      {
+        label: "Home",
+        href: "#",
+        icon: "home",
+      },
+      {
+        label: "Project management",
+        href: "#",
+      },
+      {
+        label:
+          projectLength === 0
+            ? "No Active Projects"
+            : projectLength === 1
+              ? "1 Active Project"
+              : `${projectLength} Active Projects`,
+        current: true,
+      },
+    ]}
+  />
 
   <div class="flex-end flex">
     <Button

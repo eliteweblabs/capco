@@ -53,7 +53,7 @@ export const POST: APIRoute = async ({ request, cookies, redirect }) => {
     try {
       await SimpleProjectLogger.addLogEntry(
         0, // System log
-        "user_login",
+        "userLogin",
         `User logged in via OAuth ${provider} ${email || "oauth_user"}`,
         { provider, initiated: true }
       );
@@ -96,7 +96,7 @@ export const POST: APIRoute = async ({ request, cookies, redirect }) => {
   try {
     await SimpleProjectLogger.addLogEntry(
       0, // System log
-      "user_login",
+      "userLogin",
       `User logged in via password ${data.user.email || email}`,
       {
         userId: data.user.id,

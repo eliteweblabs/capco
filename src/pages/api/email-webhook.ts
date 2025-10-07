@@ -448,22 +448,21 @@ async function findOrCreateUser(email: string, headers?: Record<string, string>)
     console.log("🔐 [EMAIL-WEBHOOK] Creating user via create-user API");
 
     try {
+      // Create FormData for consistency with other forms
+      const formData = new FormData();
+      formData.append("email", cleanEmail);
+      formData.append("password", tempPassword);
+      formData.append("firstName", firstName);
+      formData.append("lastName", lastName);
+      formData.append("companyName", fullName);
+      formData.append("phone", "");
+      formData.append("mobileCarrier", "");
+      formData.append("smsAlerts", "false");
+      formData.append("role", "Client");
+
       const createUserResponse = await fetch(`${process.env.SITE_URL}/api/create-user`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          email: cleanEmail,
-          password: tempPassword,
-          firstName: firstName,
-          lastName: lastName,
-          companyName: fullName,
-          phone: null,
-          mobileCarrier: null,
-          smsAlerts: false,
-          role: "Client", // Note: it's 'role', not 'staff_role'
-        }),
+        body: formData,
       });
 
       const createUserResult = await createUserResponse.json();

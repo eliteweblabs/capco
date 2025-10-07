@@ -173,7 +173,7 @@ import BoxIcon from "../common/BoxIcon.astro";
       closeDropdown() {
         const dropdown = document.getElementById("notification-dropdown");
         if (dropdown) {
-          console.log("🔍 [NOTIFICATIONS] Closing dropdown");
+          // console.log("🔍 [NOTIFICATIONS] Closing dropdown");
           dropdown.classList.add("hidden");
           this.isOpen = false;
           this.markViewedNotificationsAsRead();
@@ -258,11 +258,11 @@ import BoxIcon from "../common/BoxIcon.astro";
       }
 
       createNotificationElement(notification: any) {
-        console.log("🔍 [NOTIFICATIONS] createNotificationElement called with:", notification);
+        // console.log("🔍 [NOTIFICATIONS] createNotificationElement called with:", notification);
         const div = document.createElement("div");
         div.className = ` overflow-y-auto scrollbar-hide p-4 border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors ${!notification.viewed ? "bg-blue-50 dark:bg-blue-900/20" : ""}`;
         div.dataset.notificationId = notification.id;
-        console.log("🔍 [NOTIFICATIONS] Created div with className:", div.className);
+        // console.log("🔍 [NOTIFICATIONS] Created div with className:", div.className);
 
         const typeColors: Record<string, string> = {
           info: "text-blue-600 dark:text-blue-400",
@@ -336,11 +336,11 @@ import BoxIcon from "../common/BoxIcon.astro";
         // Don't automatically mark as viewed when rendered
         // Only mark as viewed when user actually views them (scrolls or clicks)
 
-        console.log("🔍 [NOTIFICATIONS] Final notification element:", div);
-        console.log(
-          "🔍 [NOTIFICATIONS] Final notification innerHTML length:",
-          div.innerHTML.length
-        );
+        // console.log("🔍 [NOTIFICATIONS] Final notification element:", div);
+        // console.log(
+        //   "🔍 [NOTIFICATIONS] Final notification innerHTML length:",
+        //   div.innerHTML.length
+        // );
         return div;
       }
 
@@ -410,9 +410,9 @@ import BoxIcon from "../common/BoxIcon.astro";
       }
 
       confirmDeleteNotification(notificationId: number) {
-        console.log("🔍 [NOTIFICATIONS] confirmDeleteNotification called for ID:", notificationId);
+        // console.log("🔍 [NOTIFICATIONS] confirmDeleteNotification called for ID:", notificationId);
         const button = document.getElementById(`delete-notification-${notificationId}`);
-        console.log("🔍 [NOTIFICATIONS] Button found:", button);
+        // console.log("🔍 [NOTIFICATIONS] Button found:", button);
         if (!button) {
           console.error("❌ [NOTIFICATIONS] Delete button not found for ID:", notificationId);
           return;
@@ -547,15 +547,21 @@ import BoxIcon from "../common/BoxIcon.astro";
 
       updateBadge(count: number) {
         console.log("🔍 [NOTIFICATIONS] updateBadge called with count:", count);
-        const badgeParent = document.getElementById("notification-bell");
 
-        if (badgeParent) {
-          // Use global count bubble utility with notification preset
-          (window as any).updateCountBubble(
-            badgeParent,
-            count,
-            (window as any).COUNT_BUBBLE_PRESETS.notification
-          );
+        // Use global notification count updater if available
+        if ((window as any).updateNotificationBellCount) {
+          (window as any).updateNotificationBellCount(count);
+        } else {
+          // Fallback to direct update
+          const badgeParent = document.getElementById("notification-bell");
+          if (badgeParent) {
+            // Use global count bubble utility with notification preset
+            (window as any).updateCountBubble(
+              badgeParent,
+              count,
+              (window as any).COUNT_BUBBLE_PRESETS.notification
+            );
+          }
         }
       }
 

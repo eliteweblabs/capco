@@ -78,7 +78,7 @@ export const PUT: APIRoute = async ({ request, cookies, params }) => {
     // Log the update
     await SimpleProjectLogger.addLogEntry(
       parseInt(projectId),
-      "project_updated",
+      "projectUpdated",
       "Project was updated",
       { oldData: currentProject, newData: project }
     );
