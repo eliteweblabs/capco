@@ -90,7 +90,7 @@ const newStatus = 50;
     </Button>
   </div>
 
-  <script define:vars={{ newStatus, project, currentUser, statusData }}>
+  <script define:vars={{ newStatus, project, currentUser, statusData }} is:inline>
     // Load SignaturePad from CDN
     let SignaturePad;
     const currentRole = currentUser?.profile?.role;
@@ -512,12 +512,12 @@ const newStatus = 50;
                 statusData[nextStatus]
               );
 
-              // Check if handleNewStatusNotification exists and is a function
+              // Check if handleNewStatusModalAndEmail exists and is a function
               if (
-                window.handleNewStatusNotification &&
-                typeof window.handleNewStatusNotification === "function"
+                window.handleNewStatusModalAndEmail &&
+                typeof window.handleNewStatusModalAndEmail === "function"
               ) {
-                const notificationPromise = window.handleNewStatusNotification(
+                const notificationPromise = window.handleNewStatusModalAndEmail(
                   statusResult,
                   "PROJECT-FORM"
                 );
@@ -531,10 +531,10 @@ const newStatus = 50;
                         statusData[newStatus]
                       );
                       if (
-                        window.handleNewStatusNotification &&
-                        typeof window.handleNewStatusNotification === "function"
+                        window.handleNewStatusModalAndEmail &&
+                        typeof window.handleNewStatusModalAndEmail === "function"
                       ) {
-                        window.handleNewStatusNotification(data2, "DIGITAL-SIGNATURE");
+                        window.handleNewStatusModalAndEmail(data2, "DIGITAL-SIGNATURE");
                       }
                     })
                     .catch((error) => {
@@ -542,12 +542,12 @@ const newStatus = 50;
                     });
                 } else {
                   console.warn(
-                    "⚠️ [DigitalSignature] handleNewStatusNotification did not return a Promise"
+                    "⚠️ [DigitalSignature] handleNewStatusModalAndEmail did not return a Promise"
                   );
                 }
               } else {
                 console.warn(
-                  "⚠️ [DigitalSignature] handleNewStatusNotification function not available"
+                  "⚠️ [DigitalSignature] handleNewStatusModalAndEmail function not available"
                 );
               }
             } else {

@@ -52,7 +52,7 @@ export const POST: APIRoute = async ({ request }) => {
       // Return the PDF as a downloadable file
       const sanitizedFileName = documentName.replace(/[^a-zA-Z0-9\s-_]/g, "_");
 
-      return new Response(pdfBuffer, {
+      return new Response(pdfBuffer.buffer, {
         status: 200,
         headers: {
           "Content-Type": "application/pdf",
