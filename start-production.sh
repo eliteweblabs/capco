@@ -12,9 +12,9 @@ echo "EMAIL_LOGO_LIGHT: $EMAIL_LOGO_LIGHT"
 echo "COMPANY_LOGO_LIGHT: $COMPANY_LOGO_LIGHT"
 echo "GLOBAL_COLOR_PRIMARY: $GLOBAL_COLOR_PRIMARY"
 
-# Start Astro server
-echo "Starting Astro server..."
-node dist/server/entry.mjs &
+# Start custom Express + Astro server
+echo "Starting custom Express + Astro server..."
+node server.mjs &
 SERVER_PID=$!
 echo "Astro server started with PID: $SERVER_PID"
 

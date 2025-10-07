@@ -29,7 +29,7 @@ if (!stripeSecretKey) {
 export const stripe =
   stripeSecretKey && stripeSecretKey.startsWith("sk_")
     ? new Stripe(stripeSecretKey, {
-        apiVersion: "2025-07-30.basil",
+        apiVersion: "2025-09-30.clover",
       })
     : null;
 

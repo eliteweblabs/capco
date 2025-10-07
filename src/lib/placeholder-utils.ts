@@ -244,7 +244,7 @@ export function replacePlaceholders(
     }
   }
 
-  // Replace GLOBAL_companyName placeholders
+  // Replace GLOBAL_COMPANY_NAME placeholders
   if (globalCompanyData().globalCompanyName) {
     const beforeReplace = result;
     result = result.replace(
