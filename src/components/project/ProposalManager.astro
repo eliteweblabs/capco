@@ -691,16 +691,76 @@ const canManageProposals = currentRole === "Admin" || currentRole === "Staff";
       tbody.appendChild(addRowBtn);
     }
 
-    updateLineItem(index, field, value) {
+    async updateLineItem(index, field, value) {
       if (!this.cachedLineItems || !this.cachedLineItems[index]) return;
 
+      const item = this.cachedLineItems[index];
+      const oldValue = item[field];
+
       if (field === "quantity" || field === "unitPrice") {
-        this.cachedLineItems[index][field] = parseFloat(value) || 0;
+        item[field] = parseFloat(value) || 0;
       } else {
-        this.cachedLineItems[index][field] = value;
+        item[field] = value;
       }
 
       console.log(`🔧 [PROPOSAL-MANAGER] Updated ${field} for item ${index}:`, value);
+
+      // If name or description changed and we have a catalog_item_id, update the catalog
+      if (
+        (field === "name" || field === "description" || field === "unitPrice") &&
+        item.catalog_item_id
+      ) {
+        try {
+          const response = await fetch(`/api/line-items-catalog`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              id: item.catalog_item_id,
+              name: item.name,
+              description: item.description,
+              unitPrice: item.unitPrice,
+            }),
+          });
+
+          const result = await response.json();
+          if (!result.success) {
+            console.error("❌ [PROPOSAL-MANAGER] Failed to update catalog item:", result.error);
+            // Revert the change on failure
+            item[field] = oldValue;
+          }
+        } catch (error) {
+          console.error("❌ [PROPOSAL-MANAGER] Error updating catalog item:", error);
+          // Revert the change on error
+          item[field] = oldValue;
+        }
+      }
+      // If no catalog_item_id exists and we have a name, create a new catalog item
+      else if (
+        (field === "name" || field === "description") &&
+        !item.catalog_item_id &&
+        item.name
+      ) {
+        try {
+          const response = await fetch("/api/line-items-catalog", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              name: item.name,
+              description: item.description || "",
+              unitPrice: item.unitPrice || 0,
+              category: "General",
+            }),
+          });
+
+          const result = await response.json();
+          if (result.success && result.item) {
+            console.log("✅ [PROPOSAL-MANAGER] Created new catalog item:", result.item);
+            item.catalog_item_id = result.item.id;
+          }
+        } catch (error) {
+          console.error("❌ [PROPOSAL-MANAGER] Error creating catalog item:", error);
+        }
+      }
 
       // Update totals after a small delay to ensure DOM is ready
       setTimeout(() => {
@@ -790,8 +850,8 @@ const canManageProposals = currentRole === "Admin" || currentRole === "Staff";
             name: newItem.name,
             description: newItem.description,
             unitPrice: newItem.unitPrice,
-            category: "General"
-          })
+            category: "General",
+          }),
         });
 
         const result = await response.json();

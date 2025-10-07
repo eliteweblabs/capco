@@ -45,7 +45,7 @@ export const POST: APIRoute = async ({ request }) => {
     // Remove the line item from the array
     const currentLineItems = invoice.catalogLineItems || [];
     const updatedLineItems = currentLineItems.filter(
-      (item: any) => item.catalog_item_id !== parseInt(itemId)
+      (item: any) => item.catalogItemId !== parseInt(itemId)
     );
 
     // Update the invoice

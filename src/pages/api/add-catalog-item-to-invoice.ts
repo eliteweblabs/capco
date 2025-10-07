@@ -19,9 +19,9 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       });
     }
 
-    const { invoice_id, catalog_item_id, quantity = 1, custom_description } = await request.json();
+    const { invoiceId, catalogItemId, quantity = 1, customDescription } = await request.json();
 
-    if (!invoice_id || !catalog_item_id) {
+    if (!invoiceId || !catalogItemId) {
       return new Response(
         JSON.stringify({ error: "Invoice ID and catalog item ID are required" }),
         {
@@ -44,7 +44,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         )
       `
       )
-      .eq("id", invoice_id)
+      .eq("id", invoiceId)
       .single();
 
     if (invoiceError || !invoice) {
@@ -69,7 +69,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     const { data: catalogItem, error: catalogError } = await supabase
       .from("lineItemsCatalog")
       .select("*")
-      .eq("id", parseInt(catalog_item_id))
+      .eq("id", parseInt(catalogItemId))
       .single();
 
     if (catalogError || !catalogItem) {
@@ -90,7 +90,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     const { data: currentInvoice, error: invoiceFetchError } = await supabase
       .from("invoices")
       .select("catalogLineItems")
-      .eq("id", parseInt(invoice_id))
+      .eq("id", parseInt(invoiceId))
       .single();
 
     if (invoiceFetchError || !currentInvoice) {
@@ -110,7 +110,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     // Add new catalog item to the line items array
     const currentLineItems = currentInvoice.catalogLineItems || [];
     const newLineItem = {
-      catalog_item_id: parseInt(catalog_item_id),
+      catalogItemId: parseInt(catalogItemId),
       quantity: 1,
       unitPrice: catalogItem.unitPrice || 0,
       description: catalogItem.name || "",
@@ -121,7 +121,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     const { error: updateError } = await supabase
       .from("invoices")
       .update({ catalogLineItems: updatedLineItems })
-      .eq("id", parseInt(invoice_id));
+      .eq("id", parseInt(invoiceId));
 
     if (updateError) {
       console.error("❌ [ADD-CATALOG-ITEM] Error updating invoice:", updateError);
@@ -141,7 +141,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     const createdItem = {
       id: catalogItem.id,
       name: catalogItem.name,
-      description: custom_description || catalogItem.description,
+      description: customDescription || catalogItem.description,
       unitPrice: catalogItem.unitPrice,
       category: catalogItem.category,
     };
@@ -149,7 +149,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     return new Response(
       JSON.stringify({
         success: true,
-        line_item: createdItem,
+        lineItem: createdItem,
         message: "Line item added successfully",
       }),
       {

@@ -48,7 +48,7 @@ export const POST: APIRoute = async ({ request }) => {
     if (lineItems && lineItems.length > 0) {
       // Store complete line item data as JSONB array
       const lineItemsData = lineItems.map((item: any) => ({
-        catalog_item_id: item.catalog_item_id || item.id,
+        catalogItemId: item.catalogItemId || item.id,
         quantity: item.quantity || 1,
         unitPrice: item.price || item.unitPrice || 0,
         description: item.description || "",

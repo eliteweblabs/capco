@@ -113,7 +113,7 @@ export const POST: APIRoute = async ({ request }) => {
 
       // Create a simple invoice object for payment processing
       invoice = {
-        id: `project_${invoiceId}_${paymentType || "deposit"}`,
+        id: `project${invoiceId}_${paymentType || "deposit"}`,
         projectId: invoiceId,
         totalAmount: 500.0, // Default amount - you can calculate this based on your logic
         projects: project,
@@ -231,7 +231,7 @@ export const POST: APIRoute = async ({ request }) => {
       amount: amountInCents,
       currency: "usd",
       metadata: {
-        invoice_id: invoice.id.toString(),
+        invoiceId: invoice.id.toString(),
         projectId: project?.id.toString(),
         projectTitle: project?.address,
         payment_type: paymentType || "deposit",
