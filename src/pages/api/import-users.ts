@@ -146,21 +146,21 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
     for (const user of users) {
       try {
-        // Use the existing create-user endpoint
+        // Use the existing create-user endpoint with FormData for consistency
+        const formData = new FormData();
+        formData.append("firstName", user.firstName.trim());
+        formData.append("lastName", user.lastName.trim());
+        formData.append("companyName", user.companyName?.trim() || "");
+        formData.append("email", user.email.trim().toLowerCase());
+        formData.append("phone", user.phone?.trim() || "");
+        formData.append("role", user.role);
+        
         const createUserResponse = await fetch(`${new URL(request.url).origin}/api/create-user`, {
           method: "POST",
           headers: {
-            "Content-Type": "application/json",
             Cookie: request.headers.get("Cookie") || "",
           },
-          body: JSON.stringify({
-            firstName: user.firstName.trim(),
-            lastName: user.lastName.trim(),
-            companyName: user.companyName?.trim() || null,
-            email: user.email.trim().toLowerCase(),
-            phone: user.phone?.trim() || null,
-            role: user.role,
-          }),
+          body: formData,
         });
 
         const createUserResult = await createUserResponse.json();

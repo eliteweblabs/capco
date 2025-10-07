@@ -103,6 +103,8 @@ import ScrollProgressIndicator from "./ScrollProgressIndicator.astro";
 import TutorialOverlay from "./TutorialOverlay.astro";
 import DebugPanel from "./DebugPanel.astro";
 
+// Notification count loader will be loaded via script tag
+
 // Prepare debug data for admin users
 const debugData = {
   // Original props
@@ -211,7 +213,7 @@ const debugData = {
 
     <!-- Font styles are handled by CSS files -->
 
-    <!-- <link rel="stylesheet" href="https://flowbite.com/application-ui/demo/app.css" /> -->
+    <link rel="stylesheet" href="https://flowbite.com/application-ui/demo/app.css" />
     <!-- 
 
     <link
@@ -267,6 +269,22 @@ const debugData = {
     <meta property="og:image:type" content="image/png" /> -->
 
     <!-- Dark mode initialization moved to prevent preloader flash -->
+
+    <!-- Load notification count loader for immediate initialization -->
+    <script type="module">
+      import {
+        initializeNotificationCount,
+        loadNotificationCount,
+        refreshNotificationCount,
+        updateNotificationBellCount,
+      } from "/src/lib/notification-count-loader.ts";
+
+      // Make functions globally available
+      window.initializeNotificationCount = initializeNotificationCount;
+      window.updateNotificationBellCount = updateNotificationBellCount;
+      window.loadNotificationCount = loadNotificationCount;
+      window.refreshNotificationCount = refreshNotificationCount;
+    </script>
 
     <!-- Set global user data for client-side components -->
   </head><body class="bg-gray-50 antialiased dark:bg-gray-900">
@@ -490,6 +508,8 @@ const debugData = {
           return;
         }
 
+        console.log("🔍 [HANDLE-NEW-STATUS-NOTIFICATION] Response:", response);
+
         if (!response.statusData || !(window as any).showModal) {
           console.warn(
             `WARNING [${context || "NOTIFICATION"}] No notification data or showModal function available`
@@ -576,7 +596,7 @@ const debugData = {
           // Transform the email data to match the email-delivery API structure
           const transformedData = {
             usersToNotify: emailData.users_to_notify, // TODO: Get actual user emails
-            emailType: emailData.emailType || "status_update",
+            emailType: emailData.emailType || "statusUpdate",
             emailSubject: emailData.email_subject || "Project Update",
             emailContent: emailData.email_content || JSON.stringify(emailData),
             buttonLink: emailData.buttonLink,
@@ -1572,8 +1592,17 @@ const debugData = {
     </script>
 
     <script>
-      document.addEventListener("DOMContentLoaded", () => {
+      document.addEventListener("DOMContentLoaded", async () => {
         (window as any).hideOnFormFocus();
+
+        // Initialize notification count immediately on page load
+        try {
+          if ((window as any).initializeNotificationCount) {
+            await (window as any).initializeNotificationCount();
+          }
+        } catch (error) {
+          console.error("🔔 [APP] Error initializing notification count:", error);
+        }
       });
     </script>
   </body>

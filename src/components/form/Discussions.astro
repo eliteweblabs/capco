@@ -22,6 +22,7 @@ const {
   placeholder = "Write a comment...",
 } = Astro.props;
 
+import Button from "../common/Button.astro";
 const currentRole = currentUser?.profile?.role;
 const projectId = project?.id || null;
 const isGlobalDiscussion = !project;
@@ -33,13 +34,7 @@ const isGlobalDiscussion = !project;
       <h2 class="text-lg font-bold text-gray-900 dark:text-white lg:text-2xl">
         Discussion <span id="discussion-count" class="text-sm font-normal text-gray-500">(0)</span>
       </h2>
-      <button
-        id="new-comment-btn"
-        class="inline-flex items-center gap-2 rounded-lg bg-primary-500 px-4 py-2 text-sm font-medium text-white hover:bg-primary-600 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 disabled:opacity-50"
-      >
-        <i class="bx bx-plus text-lg"></i>
-        New Comment
-      </button>
+      <Button id="new-comment-btn" icon="plus" iconPosition="left"> New Comment </Button>
     </div>
 
     <!-- Discussion Form (Hidden by default) -->
@@ -60,14 +55,16 @@ const isGlobalDiscussion = !project;
       {
         currentRole === "Admin" || currentRole === "Staff" ? (
           <div class="mb-4 flex items-center gap-4">
-            <label class="flex items-center gap-2">
+            <label class="relative inline-flex items-center cursor-pointer">
               <input
                 type="checkbox"
                 id="internal-discussion"
-                class="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                class="sr-only peer"
               />
-              <span class="text-sm text-gray-700 dark:text-gray-300">Internal Discussion</span>
+              <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 dark:peer-focus:ring-primary-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-primary-600"></div>
+              <span class="ml-3 text-sm font-medium text-gray-900 dark:text-gray-300">Internal Discussion</span>
             </label>
+            <!-- SMS Alert temporarily disabled
             <label class="flex items-center gap-2">
               <input
                 type="checkbox"
@@ -76,6 +73,7 @@ const isGlobalDiscussion = !project;
               />
               <span class="text-sm text-gray-700 dark:text-gray-300">SMS Alert</span>
             </label>
+            -->
           </div>
         ) : null
       }
@@ -176,6 +174,7 @@ const isGlobalDiscussion = !project;
       if (data.success) {
         mentionableUsers = data.users || [];
         console.log("📝 [DISCUSSIONS] Loaded mentionable users:", mentionableUsers.length);
+        console.log("📝 [DISCUSSIONS] Users data:", mentionableUsers);
       } else {
         console.error("Failed to load mentionable users:", data.error);
       }
@@ -300,12 +299,22 @@ const isGlobalDiscussion = !project;
         <footer class="mb-2 flex items-center justify-between">
           <div class="flex items-center">
             <p class="mr-3 inline-flex items-center text-sm font-semibold text-gray-900 dark:text-white">
-              <img
-                class="mr-2 h-6 w-6 rounded-full"
-                src="https://flowbite.com/docs/images/people/profile-picture-2.jpg"
-                alt="${discussion.author_name}"
-              />
-              ${discussion.author_name}
+              ${discussion.authorAvatar ? `
+                <img
+                  class="mr-2 h-8 w-8 rounded-full border-2 border-gray-200 dark:border-gray-600 shadow-sm"
+                src="${discussion.authorAvatar}"
+                alt="${discussion.authorName}"
+                  onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'"
+                />
+              ` : ''}
+              <div class="mr-2 h-8 w-8 rounded-full border-2 border-gray-200 dark:border-gray-600 shadow-sm bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-sm font-semibold text-white" style="${discussion.authorAvatar ? 'display: none;' : ''}">
+                ${discussion.authorName ? discussion.authorName.charAt(0).toUpperCase() : '?'}
+              </div>
+              ${
+                discussion.authorFirstName && discussion.authorLastName
+                  ? `${discussion.authorFirstName} ${discussion.authorLastName}`
+                  : discussion.authorName
+              }
               ${isInternal ? '<span class="ml-2 rounded-full bg-orange-100 px-2 py-1 text-xs text-orange-800 dark:bg-orange-900 dark:text-orange-200">Internal</span>' : ""}
               ${isCompleted ? '<span class="ml-2 rounded-full bg-green-100 px-2 py-1 text-xs text-green-800 dark:bg-green-900 dark:text-green-200">Completed</span>' : ""}
             </p>
@@ -313,7 +322,7 @@ const isGlobalDiscussion = !project;
               <time pubdate datetime="${discussion.createdAt}" title="${new Date(discussion.createdAt).toLocaleString()}">
                 ${new Date(discussion.createdAt).toLocaleDateString()}
               </time>
-              ${discussion.project_address ? ` • ${discussion.project_address}` : ""}
+              ${!isReply && discussion.address ? ` • ${discussion.address}` : ""}
             </p>
           </div>
           <button
@@ -351,15 +360,24 @@ const isGlobalDiscussion = !project;
               `
                   : ""
               }
+              ${
+                !isReply
+                  ? `
               <li>
                 <a href="#" onclick="replyToDiscussion(${discussion.id})" class="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white">Reply</a>
               </li>
+              `
+                  : ""
+              }
             </ul>
           </div>
         </footer>
         <p class="text-gray-500 dark:text-gray-400">
           ${discussion.message}
         </p>
+        ${
+          !isReply
+            ? `
         <div class="mt-4 flex items-center space-x-4">
           <button
             type="button"
@@ -372,6 +390,9 @@ const isGlobalDiscussion = !project;
             Reply
           </button>
         </div>
+        `
+            : ""
+        }
         ${
           replies.length > 0
             ? `
@@ -418,7 +439,7 @@ const isGlobalDiscussion = !project;
   async function submitDiscussion() {
     const messageInput = document.getElementById("discussion-message");
     const internalCheckbox = document.getElementById("internal-discussion");
-    const smsCheckbox = document.getElementById("sms-alert");
+    // const smsCheckbox = document.getElementById("sms-alert"); // SMS Alert temporarily disabled
 
     if (!messageInput || !messageInput.value.trim()) {
       alert("Please enter a message");
@@ -432,7 +453,7 @@ const isGlobalDiscussion = !project;
         submitBtn.innerHTML = '<i class="bx bx-loader-alt bx-spin text-lg"></i> Posting...';
       }
 
-      const response = await fetch("/api/discussions", {
+      const response = await fetch("/api/add-discussion", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -441,7 +462,7 @@ const isGlobalDiscussion = !project;
           projectId: currentProjectId,
           message: messageInput.value.trim(),
           internal: internalCheckbox ? internalCheckbox.checked : false,
-          sms_alert: smsCheckbox ? smsCheckbox.checked : false,
+          smsAlert: false, // SMS Alert temporarily disabled
         }),
         credentials: "include",
       });
@@ -452,7 +473,7 @@ const isGlobalDiscussion = !project;
         // Reset form
         messageInput.value = "";
         if (internalCheckbox) internalCheckbox.checked = false;
-        if (smsCheckbox) smsCheckbox.checked = false;
+        // if (smsCheckbox) smsCheckbox.checked = false; // SMS Alert temporarily disabled
 
         // Hide form
         const form = document.getElementById("discussion-form");
@@ -500,7 +521,7 @@ const isGlobalDiscussion = !project;
 
       mentionDropdown = document.createElement("div");
       mentionDropdown.className =
-        "mention-dropdown absolute z-50 max-h-48 w-64 overflow-y-auto rounded-lg border border-gray-200 bg-white shadow-lg dark:border-gray-700 dark:bg-gray-800";
+        "mention-dropdown fixed z-50 max-h-48 w-64 overflow-y-auto rounded-lg border border-gray-200 bg-white shadow-lg dark:border-gray-700 dark:bg-gray-800";
       mentionDropdown.style.display = "none";
       document.body.appendChild(mentionDropdown);
       return mentionDropdown;
@@ -508,22 +529,45 @@ const isGlobalDiscussion = !project;
 
     // Show mention dropdown
     function showMentionDropdown(x, y) {
+      console.log("🔍 [MENTIONS] Creating dropdown at position:", x, y);
       const dropdown = createMentionDropdown();
       dropdown.style.display = "block";
+      dropdown.style.position = "fixed";
       dropdown.style.left = x + "px";
       dropdown.style.top = y + "px";
+      dropdown.style.zIndex = "9999";
+      
+      console.log("🔍 [MENTIONS] Dropdown created and positioned");
 
       // Populate dropdown with filtered users
+      console.log("🔍 [MENTIONS] Populating dropdown with", filteredUsers.length, "users");
       dropdown.innerHTML = filteredUsers
         .map(
           (user) => `
-        <div class="mention-item cursor-pointer px-3 py-2 hover:bg-gray-100 dark:hover:bg-gray-700" data-user-id="${user.id}" data-user-name="${user.name}">
-          <div class="font-medium text-gray-900 dark:text-white">${user.name}</div>
-          <div class="text-sm text-gray-500 dark:text-gray-400">${user.role}</div>
+        <div class="mention-item cursor-pointer px-3 py-2 hover:bg-gray-100 dark:hover:bg-gray-700" data-user-id="${user.id}" data-user-name="${user.companyName}">
+          <div class="flex items-center">
+            ${user.avatarUrl ? `
+              <img
+                class="mr-2 h-6 w-6 rounded-full"
+                src="${user.avatarUrl}"
+                alt="${user.companyName}"
+                onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'"
+              />
+            ` : ''}
+            <div class="mr-2 h-6 w-6 rounded-full bg-gray-300 dark:bg-gray-600 flex items-center justify-center text-xs font-medium text-gray-600 dark:text-gray-300" style="${user.avatarUrl ? 'display: none;' : ''}">
+              ${user.companyName ? user.companyName.charAt(0).toUpperCase() : '?'}
+            </div>
+            <div>
+              <div class="font-medium text-gray-900 dark:text-white">${user.companyName}</div>
+              <div class="text-sm text-gray-500 dark:text-gray-400">${user.role}</div>
+            </div>
+          </div>
         </div>
       `
         )
         .join("");
+      
+      console.log("🔍 [MENTIONS] Dropdown HTML populated");
 
       // Add click handlers
       dropdown.querySelectorAll(".mention-item").forEach((item) => {
@@ -618,16 +662,23 @@ const isGlobalDiscussion = !project;
           currentMentionStart = lastAtIndex;
           const query = textAfterAt.toLowerCase();
 
+          console.log("🔍 [MENTIONS] @ detected, query:", query);
+          console.log("🔍 [MENTIONS] Available users:", mentionableUsers.length);
+
           // Filter users based on query
           filteredUsers = mentionableUsers.filter((user) =>
-            user.name.toLowerCase().includes(query)
+            user.companyName.toLowerCase().includes(query)
           );
+
+          console.log("🔍 [MENTIONS] Filtered users:", filteredUsers.length);
 
           if (filteredUsers.length > 0) {
             // Get textarea position for dropdown
             const rect = textarea.getBoundingClientRect();
+            console.log("🔍 [MENTIONS] Showing dropdown at:", rect.left, rect.bottom + 5);
             showMentionDropdown(rect.left, rect.bottom + 5);
           } else {
+            console.log("🔍 [MENTIONS] No users found, hiding dropdown");
             hideMentionDropdown();
           }
         } else {
@@ -786,22 +837,28 @@ const isGlobalDiscussion = !project;
       return;
     }
 
-    // Find the parent discussion to inherit its internal status
+    // Find the parent discussion to inherit its internal status and project ID
     const parentDiscussion = discussions.find((d) => d.id === parentId);
     const inheritInternal = parentDiscussion ? parentDiscussion.internal : false;
+    const parentProjectId = parentDiscussion ? parentDiscussion.projectId : currentProjectId;
+
+    if (!parentProjectId) {
+      alert("Unable to determine project for this reply");
+      return;
+    }
 
     try {
-      const response = await fetch("/api/discussions", {
+      const response = await fetch("/api/add-discussion", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          projectId: currentProjectId,
+          projectId: parentProjectId,
           message: textarea.value.trim(),
           parentId: parentId,
           internal: inheritInternal,
-          sms_alert: false,
+          smsAlert: false,
         }),
         credentials: "include",
       });

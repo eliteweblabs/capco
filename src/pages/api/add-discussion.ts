@@ -34,7 +34,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     }
 
     const body = await request.json();
-    let { projectId, message, internal = false, sms_alert = false, parentId = null } = body;
+    let { projectId, message, internal = false, smsAlert = false, parentId = null } = body;
 
     // Force internal = false for clients (only Admin/Staff can create internal comments)
     const isClient = currentRole === "Client";
@@ -47,7 +47,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     //   currentRole,
     //   isClient,
     //   internal,
-    //   sms_alert,
+    //   smsAlert,
     // });
 
     if (!projectId || !message || message.trim() === "") {
@@ -80,17 +80,19 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     }
 
     // Add the discussion
+    const discussionData = {
+      projectId: projectIdInt,
+      authorId: currentUser.id,
+      message: message.trim(),
+      internal: internal,
+      smsAlert: smsAlert,
+      parentId: parentId,
+      companyName: currentUser.profile?.companyName,
+    };
+
     const { data: discussion, error } = await supabase
       .from("discussion")
-      .insert({
-        projectId: projectIdInt,
-        authorId: currentUser.id,
-        message: message.trim(),
-        internal: internal,
-        sms_alert: sms_alert,
-        parentId: parentId,
-        companyName: currentUser.profile?.companyName,
-      })
+      .insert(discussionData)
       .select(
         `
         id,
@@ -98,7 +100,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         message,
         authorId,
         internal,
-        sms_alert,
+        smsAlert,
         projectId,
         parentId,
         companyName
@@ -120,25 +122,18 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       );
     }
 
-    // Use companyName directly from the discussion record
+    // Convert database response to camelCase
     const discussionWithCompanyName = {
-      ...discussion,
+      id: discussion.id,
+      createdAt: discussion.createdAt,
+      message: discussion.message,
+      authorId: discussion.authorId,
+      internal: discussion.internal,
+      smsAlert: discussion.smsAlert,
+      projectId: discussion.projectId,
+      parentId: discussion.parentId,
       companyName: discussion.companyName || "Unknown User",
     };
-
-    if (error) {
-      console.error("Error adding discussion:", error);
-      return new Response(
-        JSON.stringify({
-          success: false,
-          error: "Failed to add discussion",
-        }),
-        {
-          status: 500,
-          headers: { "Content-Type": "application/json" },
-        }
-      );
-    }
 
     try {
       // Get project address and authorId for the subject line
@@ -228,7 +223,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
           },
           body: JSON.stringify({
             usersToNotify: adminStaffEmails,
-            emailType: "client_comment",
+            emailType: "clientComment",
             emailSubject: subjectLine,
             emailContent: emailContent,
             buttonLink: buttonLink,
@@ -254,7 +249,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
           },
           body: JSON.stringify({
             usersToNotify: [clientEmail],
-            emailType: "client_comment",
+            emailType: "clientComment",
             emailSubject: subjectLine,
             emailContent: emailContent,
             buttonLink: buttonLink,

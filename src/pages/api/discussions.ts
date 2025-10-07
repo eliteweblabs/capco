@@ -79,7 +79,7 @@ export const GET: APIRoute = async ({ url, cookies }) => {
         imagePaths,
         companyName,
         updatedAt,
-        projects!inner (
+        projects (
           id,
           address,
           title,
@@ -127,6 +127,28 @@ export const GET: APIRoute = async ({ url, cookies }) => {
       ascending: false,
     });
 
+    // Debug logging for raw database response
+    console.log("🔍 [DISCUSSIONS] Raw database response:", {
+      discussionsCount: discussions?.length || 0,
+      firstDiscussion: discussions?.[0]
+        ? {
+            id: discussions[0].id,
+            projectId: discussions[0].projectId,
+            projects: discussions[0].projects,
+          }
+        : null,
+    });
+
+    // Check if projects have addresses in the database
+    const { data: projectsWithAddresses } = await supabase
+      .from("projects")
+      .select("id, title, address")
+      .not("address", "is", null)
+      .neq("address", "")
+      .limit(5);
+
+    console.log("🔍 [DISCUSSIONS] Projects with addresses:", projectsWithAddresses);
+
     if (error) {
       console.error("Error fetching discussions:", error);
       return new Response(
@@ -147,7 +169,7 @@ export const GET: APIRoute = async ({ url, cookies }) => {
     // Fetch author profiles
     const { data: profiles } = await supabase
       .from("profiles")
-      .select("id, companyName, role")
+      .select("id, companyName, role, avatarUrl, firstName, lastName")
       .in("id", authorIds);
 
     const profilesMap = new Map(profiles?.map((p: any) => [p.id, p]) || []);
@@ -211,23 +233,36 @@ export const GET: APIRoute = async ({ url, cookies }) => {
       const authorProfile = profilesMap.get(discussion.authorId);
       const ownerProfile = ownerProfilesMap.get(discussion.projects?.authorId);
 
+      // Debug logging for address
+      console.log("🔍 [DISCUSSIONS] Project data for discussion", discussion.id, ":", {
+        projectId: discussion.projectId,
+        address: discussion.projects?.address,
+        title: discussion.projects?.title,
+        hasProjects: !!discussion.projects,
+        projectsKeys: discussion.projects ? Object.keys(discussion.projects) : null,
+        fullProjectsObject: discussion.projects,
+      });
+
       return {
         id: discussion.id,
         projectId: discussion.projectId,
-        project_address: discussion.projects?.address || "Unknown Address",
-        project_title: discussion.projects?.title || "Untitled",
-        project_owner: ownerProfile?.companyName || "Unknown",
-        project_owner_id: discussion.projects?.authorId,
+        address: discussion.projects?.address || "Unknown Address",
+        title: discussion.projects?.title || "Untitled",
+        projectOwner: ownerProfile?.companyName || "Unknown",
+        projectOwnerId: discussion.projects?.authorId,
         authorId: discussion.authorId,
-        author_name: authorProfile?.companyName || "Unknown User",
-        author_role: authorProfile?.role || "Unknown",
+        authorName: authorProfile?.companyName || "Unknown User",
+        authorRole: authorProfile?.role || "Unknown",
+        authorAvatar: authorProfile?.avatarUrl || null,
+        authorFirstName: authorProfile?.firstName || null,
+        authorLastName: authorProfile?.lastName || null,
         message: isGlobal
           ? discussion.message
           : replacePlaceholders(discussion.message, placeholderData, true),
         internal: discussion.internal || false,
         markCompleted: discussion.markCompleted || false,
         parentId: discussion.parentId,
-        is_reply: !!discussion.parentId,
+        isReply: !!discussion.parentId,
         imageUrls: discussion.imageUrls,
         imagePaths: discussion.imagePaths,
         companyName: discussion.companyName || "Unknown User",

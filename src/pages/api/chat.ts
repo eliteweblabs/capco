@@ -157,7 +157,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
           .from("chatMessages")
           .insert({
             userId: userId,
-            copanyName: userName,
+            companyName: userName,
             role: userRole,
             message: message,
             timestamp: new Date().toISOString(),

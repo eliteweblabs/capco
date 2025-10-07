@@ -116,7 +116,7 @@ export const GET: APIRoute = async ({ cookies, url }) => {
 
         const { data: clientProfile, error: clientError } = await supabase
           .from("profiles")
-          .select("id, companyName, role, firstName, lastName, email")
+          .select("id, companyName, role, firstName, lastName, email, avatarUrl")
           .eq("id", projectAuthorId)
           .single();
 
@@ -133,7 +133,7 @@ export const GET: APIRoute = async ({ cookies, url }) => {
       // For Admin/Staff, get all mentionable users (Admin, Staff, or project author)
       const { data: allProfiles, error: allProfilesError } = await supabase
         .from("profiles")
-        .select("id, companyName, role, firstName, lastName, email");
+        .select("id, companyName, role, firstName, lastName, email, avatarUrl");
 
       if (allProfilesError) {
         return new Response(JSON.stringify({ success: false, error: "Failed to fetch users" }), {

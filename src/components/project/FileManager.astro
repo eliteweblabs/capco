@@ -1345,8 +1345,8 @@ const canDeleteFiles =
       //   window.showModal("info", "Loading preview...", "", 0);
       // }
 
-      // Fetch preview content from API
-      const response = await fetch("/api/pdf-preview-partial", {
+      // Fetch preview content from enhanced API
+      const response = await fetch("/api/enhanced-file-preview", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -1362,7 +1362,7 @@ const canDeleteFiles =
 
       if (result.success) {
         // Create and show preview modal
-        showPreviewModal(result.htmlContent, result.documentName);
+        showPreviewModal(result.htmlContent, result.documentName, result.fileType);
       } else {
         console.error("❌ [FILE-MANAGER] Failed to load preview:", result.message);
         if (window.showModal) {
@@ -1378,7 +1378,7 @@ const canDeleteFiles =
   };
 
   // Show preview modal - make it globally accessible
-  window.showPreviewModal = function showPreviewModal(htmlContent, documentName) {
+  window.showPreviewModal = function showPreviewModal(htmlContent, documentName, fileType = null) {
     // Create modal HTML
     const modalHTML = `
       <div id="previewModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
@@ -1402,7 +1402,7 @@ const canDeleteFiles =
           <!-- Modal Body -->
           <div class="flex-1 overflow-hidden">
             <div id="previewContainer" class="h-full">
-              <!-- PDF Preview will be loaded here -->
+              <!-- Enhanced file preview will be loaded here -->
             </div>
           </div>
         </div>
@@ -1412,8 +1412,8 @@ const canDeleteFiles =
     // Add modal to page
     document.body.insertAdjacentHTML("beforeend", modalHTML);
 
-    // Load PDF preview partial
-    loadPDFPreviewPartial(htmlContent, documentName);
+    // Load enhanced preview
+    loadEnhancedPreview(htmlContent, documentName);
 
     // Add close event listener
     document.getElementById("closePreviewModal")?.addEventListener("click", closePreviewModal);
@@ -1433,7 +1433,51 @@ const canDeleteFiles =
     });
   };
 
-  // Load PDF preview partial - make it globally accessible
+  // Load enhanced preview - make it globally accessible
+  window.loadEnhancedPreview = async function loadEnhancedPreview(htmlContent, documentName) {
+    try {
+      console.log("🔧 [ENHANCED-PREVIEW] Loading enhanced preview for:", documentName);
+
+      const previewContainer = document.getElementById("previewContainer");
+      if (!previewContainer) {
+        console.error("🔧 [ENHANCED-PREVIEW] Preview container not found");
+        return;
+      }
+
+      // Create a blob URL for the HTML content
+      const blob = new Blob([htmlContent], { type: "text/html" });
+      const blobUrl = URL.createObjectURL(blob);
+
+      // Create iframe for the enhanced preview
+      previewContainer.innerHTML = `
+        <iframe 
+          id="enhancedPreviewIframe"
+          src="${blobUrl}" 
+          class="w-full h-full border-0"
+          style="width: 100%; height: 100%;"
+          sandbox="allow-same-origin allow-scripts allow-forms"
+        ></iframe>
+      `;
+
+      const iframe = document.getElementById("enhancedPreviewIframe");
+      if (iframe) {
+        console.log("🔧 [ENHANCED-PREVIEW] Enhanced preview iframe created successfully");
+
+        // Clean up blob URL after iframe loads
+        iframe.onload = () => {
+          console.log("🔧 [ENHANCED-PREVIEW] Enhanced preview iframe loaded successfully");
+          setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
+        };
+      } else {
+        console.error("🔧 [ENHANCED-PREVIEW] Failed to create enhanced preview iframe");
+        URL.revokeObjectURL(blobUrl);
+      }
+    } catch (error) {
+      console.error("❌ [ENHANCED-PREVIEW] Error loading enhanced preview:", error);
+    }
+  };
+
+  // Load PDF preview partial - make it globally accessible (legacy support)
   window.loadPDFPreviewPartial = async function loadPDFPreviewPartial(htmlContent, documentName) {
     try {
       // Create a temporary div to render the partial

@@ -67,7 +67,7 @@ Tier I Fire Alarm Design
       invoiceDate: projectData?.date || new Date().toISOString().split("T")[0],
       notes: projectData?.notes || null,
       proposalNotes: projectData?.notes || null, // Add proposalNotes field
-      tax_rate: 0.0,
+      taxRate: 0.0,
       createdBy: user.id,
       dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split("T")[0], // 30 days from now
     };

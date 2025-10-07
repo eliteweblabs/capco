@@ -265,19 +265,21 @@ export const POST: APIRoute = async ({ request, cookies }) => {
           try {
             // Call the create-user API to create the new client
             const baseUrl = getApiBaseUrl(request);
+
+            // Create FormData for consistency with other forms
+            const formData = new FormData();
+            formData.append("firstName", firstName.trim());
+            formData.append("lastName", lastName.trim());
+            formData.append("companyName", companyName?.trim() || "");
+            formData.append("email", email.trim());
+            formData.append("role", "Client");
+
             const createUserResponse = await fetch(`${baseUrl}/api/create-user`, {
               method: "POST",
               headers: {
-                "Content-Type": "application/json",
                 Cookie: `sb-access-token=${cookies.get("sb-access-token")?.value}; sb-refresh-token=${cookies.get("sb-refresh-token")?.value}`,
               },
-              body: JSON.stringify({
-                firstName: firstName.trim(),
-                lastName: lastName.trim(),
-                companyName: companyName?.trim() || "",
-                email: email.trim(),
-                role: "Client",
-              }),
+              body: formData,
             });
 
             const createUserResult = await createUserResponse.json();
@@ -443,7 +445,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     try {
       await SimpleProjectLogger.addLogEntry(
         project,
-        "project_created",
+        "projectCreated",
         project.address ? project.address : "New Project was created",
         projectData
       );

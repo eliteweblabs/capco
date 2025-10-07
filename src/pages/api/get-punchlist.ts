@@ -136,7 +136,7 @@ export const GET: APIRoute = async ({ request, cookies }) => {
         *,
         author:profiles!punchlist_author_id_fkey(
           id,
-          name,
+          companyName,
           email,
           role
         )

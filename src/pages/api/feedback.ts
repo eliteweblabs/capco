@@ -79,7 +79,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       message: message.trim(),
       userId: userId,
       user_email: userEmail,
-      copanyName: userName,
+      companyName: userName,
       anonymous: anonymous || false,
       status: "new",
       createdAt: new Date().toISOString(),

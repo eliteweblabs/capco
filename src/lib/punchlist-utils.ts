@@ -16,7 +16,7 @@ export interface PunchlistItem {
   parentId?: number;
   author?: {
     id: string;
-    name: string;
+    companyName: string;
     email: string;
     role: string;
   };

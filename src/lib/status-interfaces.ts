@@ -104,7 +104,7 @@ export function createStatusConfig(
       email_to_roles: isCurrent ? status.email_to_role : undefined,
       email_subject: emailSubject,
       email_content: emailContent,
-      email_type: "status_update",
+      email_type: "statusUpdate",
       buttonText: status.buttonText,
       buttonLink: status.buttonLink,
     },

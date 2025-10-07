@@ -47,6 +47,16 @@ export const FIELD_MAPPING = {
   commencementOfConstruction: "commencementOfConstruction",
   suppressionDetectionSystems: "suppressionDetectionSystems",
 
+  // Discussion fields
+  smsAlert: "sms_alert",
+  authorId: "authorId",
+  projectId: "projectId",
+  parentId: "parentId",
+  markCompleted: "mark_completed",
+  companyName: "companyName",
+  createdAt: "createdAt",
+  updatedAt: "updatedAt",
+
   // Common fields
   id: "id",
   userId: "userId",

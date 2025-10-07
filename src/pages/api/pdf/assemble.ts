@@ -20,8 +20,8 @@ export const GET: APIRoute = async ({ request, url }) => {
       );
     }
 
-    console.log(`📄 [PDF-ASSEMBLE] Assembling template: ${templateId} for project: ${projectId}`);
-    console.log(`📄 [PDF-ASSEMBLE] Mode: ${mode}`);
+    // console.log(`📄 [PDF-ASSEMBLE] Assembling template: ${templateId} for project: ${projectId}`);
+    // console.log(`📄 [PDF-ASSEMBLE] Mode: ${mode}`);
 
     // Read templates configuration
     const templatesConfigPath = join(process.cwd(), "src/templates/pdf/templates.json");
@@ -43,7 +43,7 @@ export const GET: APIRoute = async ({ request, url }) => {
     let projectData: any = {};
     if (projectId) {
       try {
-        console.log(`📄 [PDF-ASSEMBLE] Fetching comprehensive data for project: ${projectId}`);
+        // console.log(`📄 [PDF-ASSEMBLE] Fetching comprehensive data for project: ${projectId}`);
 
         if (!supabase) {
           console.warn("⚠️ [PDF-ASSEMBLE] Supabase client not available");
@@ -120,7 +120,7 @@ export const GET: APIRoute = async ({ request, url }) => {
               files,
             };
 
-            console.log(`✅ [PDF-ASSEMBLE] Successfully fetched comprehensive project data`);
+            // console.log(`✅ [PDF-ASSEMBLE] Successfully fetched comprehensive project data`);
           }
         }
       } catch (error) {
@@ -131,8 +131,8 @@ export const GET: APIRoute = async ({ request, url }) => {
     // Read the base template file
     const templatePath = join(process.cwd(), "src/templates/pdf", template.file);
     let assembledHtml = readFileSync(templatePath, "utf-8");
-    console.log(`📄 [PDF-ASSEMBLE] Loaded template from: ${templatePath}`);
-    console.log(`📄 [PDF-ASSEMBLE] Template length: ${assembledHtml.length}`);
+    // console.log(`📄 [PDF-ASSEMBLE] Loaded template from: ${templatePath}`);
+    // console.log(`📄 [PDF-ASSEMBLE] Template length: ${assembledHtml.length}`);
 
     // Replace component placeholders in the template
     if (template.components.header) {
@@ -149,9 +149,9 @@ export const GET: APIRoute = async ({ request, url }) => {
       const headerPlaceholderRegex =
         /<div class="component-placeholder header-placeholder">\[HEADER COMPONENTS\]<\/div>/g;
       const headerMatches = assembledHtml.match(headerPlaceholderRegex);
-      console.log(`📄 [PDF-ASSEMBLE] Header placeholder matches: ${headerMatches?.length || 0}`);
+      // console.log(`📄 [PDF-ASSEMBLE] Header placeholder matches: ${headerMatches?.length || 0}`);
       assembledHtml = assembledHtml.replace(headerPlaceholderRegex, headerHtml);
-      console.log(`📄 [PDF-ASSEMBLE] Header HTML length: ${headerHtml.length}`);
+      // console.log(`📄 [PDF-ASSEMBLE] Header HTML length: ${headerHtml.length}`);
     }
 
     // Replace content components
