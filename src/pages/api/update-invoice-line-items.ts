@@ -57,7 +57,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
     // Store complete line item data as JSONB array to preserve pricing
     const lineItemsData = lineItems.map((item: any) => ({
-      catalog_item_id: item.catalog_item_id || item.id,
+      catalogItemId: item.catalogItemId || item.id,
       quantity: item.quantity || 1,
       unitPrice: item.price || item.unitPrice || 0,
       name: item.name || "",
