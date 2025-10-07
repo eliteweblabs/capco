@@ -8,9 +8,6 @@ RUN addgroup -g 1001 -S nodejs && \
 # Set working directory
 WORKDIR /app
 
-# Change ownership to non-root user
-RUN chown -R astro:nodejs /app
-
 # Copy package files
 COPY package*.json ./
 
