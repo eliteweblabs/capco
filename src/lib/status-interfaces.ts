@@ -2,10 +2,10 @@
 
 export interface StatusEmail {
   usersToNotify?: any[];
-  email_to_roles?: string;
-  email_subject: string;
-  email_content: string;
-  email_type: string;
+  emailToRoles?: string;
+  emailSubject: string;
+  emailContent: string;
+  emailType: string;
   buttonText: string;
   buttonLink: string;
 }
@@ -28,10 +28,10 @@ export interface StatusModal {
 export interface StatusConfig {
   email: StatusEmail;
   statusName: string;
-  status_action: string;
+  statusAction: string;
   statusColor: string;
-  status_slug: string;
-  status_tab: string;
+  statusSlug: string;
+  statusTab: string;
   modal: StatusModal;
 }
 
@@ -54,9 +54,9 @@ export interface StatusData {
   clientStatusName: string;
   clientStatusAction: string;
   statusColor: string;
-  status_slug: string;
-  admin_status_tab: string;
-  client_status_tab: string;
+  statusSlug: string;
+  adminStatusTab: string;
+  clientStatusTab: string;
   modalAdmin: string;
   modalClient: string;
   modalAutoRedirectAdmin: string;
@@ -92,7 +92,7 @@ export function createStatusConfig(
   // Determine status details
   const statusName = isAdmin ? status.adminStatusName : status.clientStatusName;
   const statusAction = isAdmin ? status.adminStatusAction : status.clientStatusAction;
-  const statusTab = isAdmin ? status.admin_status_tab : status.client_status_tab;
+  const statusTab = isAdmin ? status.adminStatusTab : status.clientStatusTab;
 
   // Determine modal content
   const modalMessage = isAdmin ? status.modalAdmin : status.modalClient;
@@ -101,18 +101,18 @@ export function createStatusConfig(
   return {
     email: {
       usersToNotify: emailRecipients,
-      email_to_roles: isCurrent ? status.email_to_role : undefined,
-      email_subject: emailSubject,
-      email_content: emailContent,
-      email_type: "statusUpdate",
+      emailToRoles: isCurrent ? status.email_to_role : undefined,
+      emailSubject: emailSubject,
+      emailContent: emailContent,
+      emailType: "statusUpdate",
       buttonText: status.buttonText,
       buttonLink: status.buttonLink,
     },
     statusName: statusName,
-    status_action: statusAction,
+    statusAction: statusAction,
     statusColor: status.statusColor,
-    status_slug: status.status_slug,
-    status_tab: statusTab,
+    statusSlug: status.statusSlug,
+    statusTab: statusTab,
     modal: {
       type: "info",
       persist: false,

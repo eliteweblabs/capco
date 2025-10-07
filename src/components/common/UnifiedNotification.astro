@@ -62,7 +62,7 @@
     persist?: boolean; // false = close existing modals, true = keep existing modals
     redirect?: {
       url: string;
-      delay?: number; // Delay in milliseconds before redirect
+      // Note: Using modal duration for redirect timing
       showCountdown?: boolean; // Show countdown in message
     };
     actions?: Array<{
@@ -90,6 +90,8 @@
         this.hide(); // Clear all existing notifications
       }
 
+      console.log("🔔 [UNIFIED-NOTIFICATION] show() called with options:", options);
+
       // Lock body scroll to prevent background scrolling (Safari iOS compatible)
       if ((window as any).lockBodyScroll) {
         (window as any).lockBodyScroll();
@@ -100,7 +102,10 @@
 
       // Scroll to top before showing modal (only on mobile devices - fixes Safari positioning issues)
       if (window.isMobile && window.isMobile()) {
+        console.log("🔔 [UNIFIED-NOTIFICATION] Scrolling to top before showing modal");
         window.scrollTo({ top: 0, behavior: "smooth" });
+      } else {
+        console.log("🔔 [UNIFIED-NOTIFICATION] Not scrolling to top before showing modal");
       }
 
       // Generate unique ID with fallback for older browsers
@@ -146,6 +151,8 @@
             );
 
             // Fallback: hide after duration + small buffer
+
+            
             setTimeout(
               () => {
                 console.log("🎬 Fallback: hiding modal after timeout");
@@ -201,10 +208,14 @@
     }
 
     private setupRedirect(id: string, redirect: NotificationOptions["redirect"]) {
+
+      console.log("🔔 [UNIFIED-NOTIFICATION] Setting up redirect:13241", redirect);
       if (!redirect) return;
 
-      const delayMs = redirect.delay || 3000; // Default 3 seconds in milliseconds
-      const delaySeconds = Math.ceil(delayMs / 1000); // Convert to seconds for countdown
+      // Use the modal's duration for the redirect timing
+      const notification = this.notifications.get(id);
+      const duration = notification?.duration || 2500; // Default to 2.5s if no duration set
+      const delaySeconds = Math.ceil(duration / 1000); // Convert to seconds for countdown
       let countdown = delaySeconds;
 
       console.log("🔔 [UNIFIED-NOTIFICATION] Setting up redirect:13241", redirect);
@@ -222,19 +233,30 @@
         }
 
         countdown--;
-        if (countdown < 0) {
-          // Clear the timer and redirect
-          this.clearRedirectTimer(id);
-          window.location.href = redirect.url;
-        }
+    if (countdown < 0) {
+      // Clear the timer and redirect
+      console.log("🔔 [UNIFIED-NOTIFICATION] Countdown finished, redirecting to:", redirect.url);
+      this.clearRedirectTimer(id);
+      
+      // Ensure we have a valid URL
+      if (!redirect.url) {
+        console.error("🔔 [UNIFIED-NOTIFICATION] No redirect URL provided");
+        return;
+      }
+
+      // Handle both absolute and relative URLs
+      const url = redirect.url.startsWith('http') ? redirect.url : new URL(redirect.url, window.location.origin).href;
+      console.log("🔔 [UNIFIED-NOTIFICATION] Redirecting to full URL:", url);
+      
+      window.location.href = url;
+      console.log("🔔 [UNIFIED-NOTIFICATION] Redirect initiated");
+    }
       };
 
-      // Single timer that handles both countdown and redirect
-      // Use Promise.resolve().then() to make timer non-blocking
-      Promise.resolve().then(() => {
-        const timer = setInterval(updateMessage, 1000);
-        this.redirectTimers.set(id, timer);
-      });
+  // Call updateMessage immediately and then set up the interval
+  updateMessage(); // Start immediately
+  const timer = setInterval(updateMessage, 1000);
+  this.redirectTimers.set(id, timer);
     }
 
     private clearRedirectTimer(id: string) {
@@ -486,7 +508,7 @@
     duration?: number,
     redirectOrActions?:
       | Array<{ label: string; action: () => void; primary?: boolean }>
-      | { url: string; delay?: number; showCountdown?: boolean },
+      | { url: string; showCountdown?: boolean },
     persist?: boolean
   ) => {
     console.log("🔔 [UNIFIED-NOTIFICATION] showModal called with:", typeOrObject);

@@ -810,7 +810,7 @@ export function replacePlaceholders(
       }
 
       // Return button on new line
-      return `<br><br><a href="${fullUrl}" style="display: inline-block; background-color: #3b82f6; color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: 600; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.1); transition: background-color 0.2s;">${displayText}</a>`;
+      return `<br><br><a href="${fullUrl}" class="relative inline-flex items-center justify-center font-medium rounded-full transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed px-5 py-2.5 text-sm border-2 border-primary-500 bg-primary-500 text-white hover:bg-primary-600 dark:bg-primary-500 dark:hover:bg-primary-600 shadow-lg hover:shadow-xl">${displayText}</a>`;
     });
     if (result !== beforeReplace) {
       placeholderApplied = true;
