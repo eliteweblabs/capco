@@ -17,14 +17,17 @@ COPY package*.json ./
 # Install dependencies with legacy peer deps to resolve conflicts
 RUN npm install --legacy-peer-deps
 
-# Switch to non-root user
-USER astro
-
 # Copy source code
 COPY . .
 
 # Ensure the production startup script has execute permissions and verify it exists
 RUN ls -la start-production.sh && chmod +x start-production.sh && ls -la start-production.sh
+
+# Change ownership of all files to non-root user
+RUN chown -R astro:nodejs /app
+
+# Switch to non-root user
+USER astro
 
 # Build the application with environment variables
 # Accept build-time arguments (Railway passes these automatically)
