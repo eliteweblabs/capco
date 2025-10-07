@@ -78,24 +78,24 @@ export async function checkAuth(cookies: any): Promise<AuthResult> {
             .eq("id", currentUser.id)
             .single();
 
-          console.log("🔐 [AUTH] Profile query result:", {
-            hasProfile: !!profile,
-            profileError: profileError?.message || null,
-            role: profile?.role || null,
-            rawProfile: profile
-          });
+          // console.log("🔐 [AUTH] Profile query result:", {
+          //   hasProfile: !!profile,
+          //   profileError: profileError?.message || null,
+          //   role: profile?.role || null,
+          //   rawProfile: profile
+          // });
 
           if (profile && !profileError) {
             // Enhance currentUser object with profile data
             currentUser.profile = profile;
             currentRole = profile.role;
 
-            console.log("🔐 [AUTH] Profile successfully attached:", {
-              userId: currentUser.id,
-              role: profile.role,
-              profileKeys: Object.keys(profile),
-              fullProfile: profile,
-            });
+            // console.log("🔐 [AUTH] Profile successfully attached:", {
+            //   userId: currentUser.id,
+            //   role: profile.role,
+            //   profileKeys: Object.keys(profile),
+            //   fullProfile: profile,
+            // });
           } else {
             console.warn("🔐 [AUTH] Failed to get currentUser profile:", {
               userId: currentUser.id,
@@ -105,12 +105,12 @@ export async function checkAuth(cookies: any): Promise<AuthResult> {
               errorMessage: profileError?.message,
             });
 
-            console.log("🔐 [AUTH] currentUser object after failed profile query:", {
-              hasCurrentUser: !!currentUser,
-              currentUserKeys: Object.keys(currentUser),
-              hasProfile: !!currentUser.profile,
-              profileValue: currentUser.profile,
-            });
+            // console.log("🔐 [AUTH] currentUser object after failed profile query:", {
+            //   hasCurrentUser: !!currentUser,
+            //   currentUserKeys: Object.keys(currentUser),
+            //   hasProfile: !!currentUser.profile,
+            //   profileValue: currentUser.profile,
+            // });
 
             // If profile doesn't exist, we should create one or handle gracefully
             if (profileError?.code === "PGRST116") {
