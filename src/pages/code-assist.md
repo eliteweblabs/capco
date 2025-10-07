@@ -1,1 +1,1 @@
-pkill -f "node.*astro"
+pkill -f "node.\*astro"

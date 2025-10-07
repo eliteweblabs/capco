@@ -15,11 +15,11 @@ export const globalClasses = () => {
 export const getColumnClasses = (columns: number | undefined): string => {
   switch (columns) {
     case 1:
-      return "col-span-12";
+      return "col-span-6 md:col-span-12";
     case 2:
-      return "col-span-12 md:col-span-6";
+      return "col-span-6 md:col-span-6";
     case 3:
-      return "col-span-12 md:col-span-4";
+      return "col-span-6 md:col-span-4";
     case 4:
       return "col-span-3";
     case 6:

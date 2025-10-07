@@ -21,14 +21,14 @@ import PDFPreview from "../components/common/PDFPreview.astro";
 const htmlContent = "<html>...</html>";
 ---
 
-<PDFPreview htmlContent={htmlContent} documentName="My Document" showZoomControls={true} />
+<PDFPreview {htmlContent} documentName="My Document" showZoomControls={true} />
 ```
 
 ### Advanced Usage
 
 ```astro
 <PDFPreview
-  htmlContent={htmlContent}
+  {htmlContent}
   documentName="Custom Document"
   showZoomControls={true}
   containerClass="custom-container-class"

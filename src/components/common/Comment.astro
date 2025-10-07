@@ -16,94 +16,102 @@ const canToggleCompleted = Astro.request.headers.get("x-can-toggle-completed") =
 const canReply = Astro.request.headers.get("x-can-reply") === "true";
 const marginLeft = Astro.request.headers.get("x-margin-left") || "";
 const borderLeft = Astro.request.headers.get("x-border-left") || "";
-
 ---
 
-{comment ? (
-
-<div class={`comment-item ${marginLeft} ${borderLeft}`} data-discussion-id={comment.id}>
-  <div class="rounded-lg border border-gray-200 bg-gray-100 p-4 dark:border-gray-700 dark:bg-gray-800">
-    <div class="flex items-start justify-between">
-      <div class="flex items-center space-x-3">
-        <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-gray-200 dark:bg-gray-600">
-          <span class="text-sm font-medium text-gray-700 dark:text-gray-300">
-            {comment.companyName ? comment.companyName.charAt(0).toUpperCase() : import.meta.env.GLOBAL_COMPANY_NAME}
-          </span>
-        </div>
-        <div>
-          <p class="text-sm font-medium text-gray-900 dark:text-white">
-            {comment.companyName !== null && comment.companyName !== "Unknown User" ? comment.companyName : import.meta.env.GLOBAL_COMPANY_NAME}
-            {isInternal && (
-              <span class="ml-2 inline-flex items-center rounded-lg bg-red-100 px-2 py-1 text-xs font-medium text-red-800 dark:bg-red-900 dark:text-red-200">
-                <i class="bx bx-lock mr-1"></i>Internal
+{
+  comment ? (
+    <div class={`comment-item ${marginLeft} ${borderLeft}`} data-discussion-id={comment.id}>
+      <div class="rounded-lg border border-gray-200 bg-gray-100 p-4 dark:border-gray-700 dark:bg-gray-800">
+        <div class="flex items-start justify-between">
+          <div class="flex items-center space-x-3">
+            <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-gray-200 dark:bg-gray-600">
+              <span class="text-sm font-medium text-gray-700 dark:text-gray-300">
+                {comment.companyName
+                  ? comment.companyName.charAt(0).toUpperCase()
+                  : import.meta.env.GLOBAL_COMPANY_NAME}
               </span>
-            )}
-          </p>
-          <p class="text-xs text-gray-500 dark:text-gray-400">
-            {new Date(comment.createdAt).toLocaleString()}
-          </p>
+            </div>
+            <div>
+              <p class="text-sm font-medium text-gray-900 dark:text-white">
+                {comment.companyName !== null && comment.companyName !== "Unknown User"
+                  ? comment.companyName
+                  : import.meta.env.GLOBAL_COMPANY_NAME}
+                {isInternal && (
+                  <span class="ml-2 inline-flex items-center rounded-lg bg-red-100 px-2 py-1 text-xs font-medium text-red-800 dark:bg-red-900 dark:text-red-200">
+                    <i class="bx bx-lock mr-1" />
+                    Internal
+                  </span>
+                )}
+              </p>
+              <p class="text-xs text-gray-500 dark:text-gray-400">
+                {new Date(comment.createdAt).toLocaleString()}
+              </p>
+            </div>
+          </div>
+          {canToggleCompleted && (
+            <div class="flex items-center space-x-2" id={`toggle-container-${comment.id}`}>
+              {/* Toggle will be loaded here */}
+            </div>
+          )}
         </div>
-      </div>
-      {canToggleCompleted && (
-        <div class="flex items-center space-x-2" id={`toggle-container-${comment.id}`}>
-          <!-- Toggle will be loaded here -->
-        </div>
-      )}
-    </div>
-    
-    <div class="mt-3">
-      <p class="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap" set:html={comment.message}></p>
-      
-      {(() => {
-        const imageCount = parseInt(Astro.request.headers.get("x-image-count") || "0");
-        if (imageCount > 0) {
-          const images = [];
-          for (let i = 0; i < imageCount; i++) {
-            const imageUrl = Astro.request.headers.get(`x-image-url-${i}`);
-            const imageName = Astro.request.headers.get(`x-image-name-${i}`) || `Image ${i + 1}`;
-            if (imageUrl) {
-              images.push({ url: imageUrl, name: imageName });
-            }
-          }
-          
-          if (images.length > 0) {
-            return (
-              <div class="mt-3 flex flex-wrap gap-2">
-                {images.map((image, index) => (
-                  <div class="relative group">
-                    <img 
-                      src={image.url} 
-                      alt={image.name}
-                      class="max-w-xs max-h-48 object-cover rounded-lg border border-gray-300 dark:border-gray-600 cursor-pointer hover:opacity-90 transition-opacity"
-                      onclick={`console.log('🖼️ [DISCUSSION] Image clicked:', '${image.url}'); window.openImageModal('${image.url}')`}
-                    />
-                    <div class="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-10 transition-all rounded-lg flex items-center justify-center">
-                      <i class="bx bx-zoom-in text-white opacity-0 group-hover:opacity-100 transition-opacity text-2xl"></i>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            );
-          }
-        }
-        return null;
-      })()}
-    </div>
-    
-    {canReply && (
-      <div class="mt-3 flex items-center justify-between">
-        <button
-          class="reply-button text-sm text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-200"
-          data-discussion-id={comment.id}
-        >
-          <i class="bx bx-reply mr-1"></i>
-          Reply
-        </button>
-      </div>
-    )}
-  </div>
-</div>
 
-) : (
-  '<div class="text-center py-8 text-gray-500 dark:text-gray-400"><i class="bx bx-message-rounded-dots mx-auto mb-4 text-4xl"></i><p>No comments yet. Be the first to start the discussion!</p></div>'
-)}
+        <div class="mt-3">
+          <p
+            class="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap"
+            set:html={comment.message}
+          />
+
+          {(() => {
+            const imageCount = parseInt(Astro.request.headers.get("x-image-count") || "0");
+            if (imageCount > 0) {
+              const images = [];
+              for (let i = 0; i < imageCount; i++) {
+                const imageUrl = Astro.request.headers.get(`x-image-url-${i}`);
+                const imageName =
+                  Astro.request.headers.get(`x-image-name-${i}`) || `Image ${i + 1}`;
+                if (imageUrl) {
+                  images.push({ url: imageUrl, name: imageName });
+                }
+              }
+
+              if (images.length > 0) {
+                return (
+                  <div class="mt-3 flex flex-wrap gap-2">
+                    {images.map((image, index) => (
+                      <div class="relative group">
+                        <img
+                          src={image.url}
+                          alt={image.name}
+                          class="max-w-xs max-h-48 object-cover rounded-lg border border-gray-300 dark:border-gray-600 cursor-pointer hover:opacity-90 transition-opacity"
+                          onclick={`console.log('🖼️ [DISCUSSION] Image clicked:', '${image.url}'); window.openImageModal('${image.url}')`}
+                        />
+                        <div class="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-10 transition-all rounded-lg flex items-center justify-center">
+                          <i class="bx bx-zoom-in text-white opacity-0 group-hover:opacity-100 transition-opacity text-2xl" />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                );
+              }
+            }
+            return null;
+          })()}
+        </div>
+
+        {canReply && (
+          <div class="mt-3 flex items-center justify-between">
+            <button
+              class="reply-button text-sm text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-200"
+              data-discussion-id={comment.id}
+            >
+              <i class="bx bx-reply mr-1" />
+              Reply
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  ) : (
+    '<div class="text-center py-8 text-gray-500 dark:text-gray-400"><i class="bx bx-message-rounded-dots mx-auto mb-4 text-4xl"></i><p>No comments yet. Be the first to start the discussion!</p></div>'
+  )
+}

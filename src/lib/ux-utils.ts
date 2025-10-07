@@ -32,8 +32,6 @@ export function isMobile(): boolean {
   return window.innerWidth < 768;
 }
 
-
-
 /**
  * Checks if the current device is tablet
  * @returns true if screen width is between 768px and 1024px
@@ -747,8 +745,6 @@ export function unlockBodyScroll(): void {
     }
   }
 }
-
-
 
 /**
  * Validates email format using a standard regex pattern

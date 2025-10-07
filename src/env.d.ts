@@ -85,7 +85,7 @@ declare global {
     // Discussion management
     toggleCommentForm?: () => void;
     refreshManager?: any;
-    setPageLoadProjectStatus?: any;
+    setPageLoadStatusActionsFromUrl?: any;
 
     // Project management
     deleteProject?: (projectId: any) => void;

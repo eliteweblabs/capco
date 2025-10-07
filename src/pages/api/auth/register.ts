@@ -9,22 +9,24 @@ export const POST: APIRoute = async ({ request, redirect, cookies }) => {
     // Get the form data
     const formData = await request.formData();
     const email = formData.get("email")?.toString();
-    
+
     // Log registration attempt
-    console.log(`🔐 [REGISTER] Attempting registration for email: ${email ? email.replace(/@.*$/, '@***') : 'unknown'}`);
+    console.log(
+      `🔐 [REGISTER] Attempting registration for email: ${email ? email.replace(/@.*$/, "@***") : "unknown"}`
+    );
 
     // Forward the request to the create-user API
-    const apiUrl = new URL('/api/create-user', request.url).href;
+    const apiUrl = new URL("/api/create-user", request.url).href;
     console.log("🔐 [REGISTER] Forwarding to create-user API:", apiUrl);
-    
+
     const createUserResponse = await fetch(apiUrl, {
       method: "POST",
       body: formData,
       headers: {
         // Forward original headers
-        'Accept': 'application/json',
-        'X-Requested-With': 'XMLHttpRequest'
-      }
+        Accept: "application/json",
+        "X-Requested-With": "XMLHttpRequest",
+      },
     });
 
     // Log the response status
@@ -44,12 +46,9 @@ export const POST: APIRoute = async ({ request, redirect, cookies }) => {
       console.log("🔐 [REGISTER] User created successfully, attempting sign in");
 
       // Log the successful registration
-      await SimpleProjectLogger.addLogEntry(
-        0,
-        "userRegistration",
-        "User registration successful",
-        { email: email?.replace(/@.*$/, '@***') }
-      );
+      await SimpleProjectLogger.addLogEntry(0, "userRegistration", "User registration successful", {
+        email: email?.replace(/@.*$/, "@***"),
+      });
 
       // Sign in the user after successful registration
       const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
@@ -79,7 +78,7 @@ export const POST: APIRoute = async ({ request, redirect, cookies }) => {
         hasSession: !!signInData?.session,
         sessionId: signInData?.session?.id,
         accessToken: signInData?.session?.access_token ? "present" : "missing",
-        refreshToken: signInData?.session?.refresh_token ? "present" : "missing"
+        refreshToken: signInData?.session?.refresh_token ? "present" : "missing",
       });
 
       if (signInData?.session) {
@@ -123,8 +122,8 @@ export const POST: APIRoute = async ({ request, redirect, cookies }) => {
       if (
         result.error &&
         (result.error.includes("already been registered") ||
-         result.error.includes("User already registered") ||
-         result.error.includes("duplicate key"))
+          result.error.includes("User already registered") ||
+          result.error.includes("duplicate key"))
       ) {
         errorMessage = "This email is already registered. Please try logging in instead.";
         errorType = "duplicate_email";
@@ -136,9 +135,9 @@ export const POST: APIRoute = async ({ request, redirect, cookies }) => {
         0,
         "userRegistrationError",
         "User registration failed",
-        { 
+        {
           error: errorMessage,
-          email: email?.replace(/@.*$/, '@***')
+          email: email?.replace(/@.*$/, "@***"),
         }
       );
 

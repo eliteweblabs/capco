@@ -3,12 +3,12 @@
 // Generated on: 2025-10-06T16:53:43.192Z
 
 export const layoutClassMappings = {
-  "W4ZbYGNsrIdquBSInLRP": "collapse",
-  "Wb7_kpRwKZR5nS8FSfqY": "bottom-6",
-  "W5n_NSFnC6y2nqoHw_5x": "rounded-md",
-  "WLibwhDKgps6unDTx3Tu": "border-b-2",
-  "WRGBwx7chjo_Yl4BG16j": "pe-4",
-  "W_sCP6_PDfz0Lqf875WU": "underline"
+  W4ZbYGNsrIdquBSInLRP: "collapse",
+  Wb7_kpRwKZR5nS8FSfqY: "bottom-6",
+  W5n_NSFnC6y2nqoHw_5x: "rounded-md",
+  WLibwhDKgps6unDTx3Tu: "border-b-2",
+  WRGBwx7chjo_Yl4BG16j: "pe-4",
+  W_sCP6_PDfz0Lqf875WU: "underline",
 };
 
 // Reverse mapping for easy lookup
