@@ -1,25 +1,35 @@
 ---
+import BoxIcon from "./BoxIcon.astro";
+
 export interface Props {
   currentUser?: any;
   tutorialId?: string;
   autoStart?: boolean;
+  isAuth?: boolean;
 }
-if (!Astro.props.currentUser) {
-  return;
-}
-const { currentUser = "", tutorialId = "default", autoStart = false } = Astro.props;
+const { currentUser, tutorialId = "default", autoStart = false, isAuth = false } = Astro.props;
 
-import BoxIcon from "./BoxIcon.astro";
+// Early return if no user or not authenticated
+if (!currentUser || !isAuth) {
+  console.log("🎓 [TUTORIAL] Not rendering - no user or not authenticated");
+  return null;
+}
+
+console.log("🎓 [TUTORIAL] Props:", { 
+  currentUser,
+});
+
+
+
 ---
 
-<!-- Tutorial Trigger Button -->
 <div
-  id="tutorial-overlay"
-  class="tutorial-overlay hidden"
-  data-auto-start={autoStart}
-  data-user-id={currentUser.id}
-  data-tutorial-id={tutorialId}
->
+    id="tutorial-overlay"
+    class="tutorial-overlay hidden"
+    data-auto-start={autoStart}
+    data-user-id={currentUser.id}
+    data-tutorial-id={tutorialId}
+  >
   <!-- Tutorial Mask -->
   <div id="tutorial-mask" class="tutorial-mask"></div>
 
@@ -79,7 +89,8 @@ import BoxIcon from "./BoxIcon.astro";
     <!-- Tutorial Arrow -->
     <div id="tutorial-arrow" class="tutorial-arrow"></div>
   </div>
-</div>
+  </div>
+
 
 <script>
   interface TutorialStep {
@@ -604,14 +615,51 @@ import BoxIcon from "./BoxIcon.astro";
     }
   }
 
-  // Initialize tutorial system
-  if (typeof window !== "undefined") {
-    // Get values from data attributes
-    const overlay = document.getElementById("tutorial-overlay");
-    const currentUserId = overlay?.dataset.userId || "";
-    const tutorialId = overlay?.dataset.tutorialId || "default";
-    const autoStart = overlay?.dataset.autoStart === "true";
+  // Only run if the component is rendered
+  const shouldInitialize = document.getElementById("tutorial-overlay") !== null;
+  console.log("🎓 [TUTORIAL] Should initialize?", shouldInitialize);
 
+  // Initialize tutorial system
+  if (typeof window !== "undefined" && shouldInitialize) {
+    console.log("🎓 [TUTORIAL] Script starting, checking conditions...");
+    
+    // Check if we're on a public page
+    const publicPages = ["/", "/login", "/register"];
+    const currentPath = window.location.pathname;
+    
+    if (publicPages.includes(currentPath)) {
+      console.log("🎓 [TUTORIAL] Public page detected, skipping initialization");
+      return;
+    }
+
+    // Check if we're authenticated by looking for the tutorial-overlay element
+    const overlay = document.getElementById("tutorial-overlay");
+    console.log("🎓 [TUTORIAL] Overlay element:", overlay);
+
+    if (!overlay) {
+      console.log("🎓 [TUTORIAL] No tutorial overlay found - user not authenticated");
+      return;
+    }
+
+    // Get values from data attributes
+    const currentUserId = overlay.dataset.userId;
+    const tutorialId = overlay.dataset.tutorialId || "default";
+    const autoStart = overlay.dataset.autoStart === "true";
+
+    console.log("🎓 [TUTORIAL] Data attributes:", {
+      currentUserId,
+      tutorialId,
+      autoStart,
+      allDataset: overlay.dataset
+    });
+
+    // Only initialize if we have a user ID
+    if (!currentUserId) {
+      console.log("🎓 [TUTORIAL] No user ID found - skipping tutorial initialization");
+      return;
+    }
+
+    console.log("🎓 [TUTORIAL] All conditions met, initializing tutorial manager for user:", currentUserId);
     const tutorialManager = new TutorialManager(currentUserId, tutorialId);
 
     // Make it globally accessible

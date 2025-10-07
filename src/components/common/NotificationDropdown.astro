@@ -4,7 +4,14 @@ export interface Props {
   class?: string;
 }
 
+const { currentUser } = Astro.props;
+
 import BoxIcon from "../common/BoxIcon.astro";
+
+// Return null if no user
+if (!currentUser) {
+  return null;
+}
 ---
 
 <button
@@ -12,6 +19,7 @@ import BoxIcon from "../common/BoxIcon.astro";
   type="button"
   data-dropdown-toggle="notification-dropdown"
   data-tooltip-target="tooltip-notification"
+  data-user-id={currentUser?.id}
   class="relative rounded-lg p-1.5 text-gray-500 hover:bg-gray-100 hover:text-gray-900 focus:ring-2 focus:ring-gray-200 focus:ring-gray-300 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-white dark:focus:ring-gray-600"
 >
   <BoxIcon name="bell" variant="secondary" size="sm" />
@@ -641,9 +649,17 @@ import BoxIcon from "../common/BoxIcon.astro";
       }
     }
 
-    // Initialize notification manager
-    const notificationManager = new NotificationManager();
-    (window as any).notificationManager = notificationManager;
+    // Only initialize if user is authenticated
+    const currentUser = document.querySelector('[data-user-id]')?.getAttribute('data-user-id');
+    console.log("🔍 [NOTIFICATIONS] Current user ID:", currentUser);
+
+    if (currentUser) {
+      console.log("🔍 [NOTIFICATIONS] Initializing notification manager for authenticated user");
+      const notificationManager = new NotificationManager();
+      (window as any).notificationManager = notificationManager;
+    } else {
+      console.log("🔍 [NOTIFICATIONS] No authenticated user, skipping notification manager");
+    }
 
     // Global function for delete confirmation
     (window as any).confirmDeleteNotification = (notificationId: number) => {
