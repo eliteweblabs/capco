@@ -341,41 +341,24 @@ const canDeleteFiles =
     loadButtonPartials();
   }
 
-  // Load button partials for each file
-  async function loadButtonPartials() {
+  // Create save buttons directly in the client
+  function loadButtonPartials() {
     for (const file of files) {
       try {
-        // Use the button partial API directly (like UnifiedNotification does)
-        const response = await fetch("/api/button-partial", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            text: "Save Changes",
-            variant: "primary",
-            size: "sm",
-            dataAttributes: {
-              onclick: `saveFileDetails(${file.id})`,
-              id: `save-button-${file.id}`,
-            },
-          }),
-        });
-
-        if (response.ok) {
-          const buttonHTML = await response.text();
-          const buttonContainer = document.getElementById(`save-button-${file.id}`);
-          if (buttonContainer) {
-            buttonContainer.innerHTML = buttonHTML;
-          }
-        } else {
-          console.error(
-            `❌ [FILE-MANAGER] Button API failed for file ${file.id}:`,
-            response.status
-          );
+        const buttonContainer = document.getElementById(`save-button-${file.id}`);
+        if (buttonContainer) {
+          buttonContainer.innerHTML = `
+            <button
+              type="button"
+              onclick="saveFileDetails(${file.id})"
+              class="inline-flex items-center justify-center rounded-lg bg-primary-600 px-4 py-2 text-sm font-medium text-white hover:bg-primary-700 focus:outline-none focus:ring-4 focus:ring-primary-300 dark:bg-primary-700 dark:hover:bg-primary-800 dark:focus:ring-primary-800"
+            >
+              Save Changes
+            </button>
+          `;
         }
       } catch (error) {
-        console.error(`❌ [FILE-MANAGER] Error loading button for file ${file.id}:`, error);
+        console.error(`❌ [FILE-MANAGER] Error creating button for file ${file.id}:`, error);
       }
     }
   }
@@ -1032,19 +1015,23 @@ const canDeleteFiles =
         navigator.userAgent.toLowerCase().includes("safari") &&
         !navigator.userAgent.toLowerCase().includes("chrome");
 
-      if (isFirefox || isSafari) {
-        // For Firefox and Safari, use direct link to avoid new tab issues
-        const link = document.createElement("a");
-        link.href = publicUrl;
-        link.download = fileName;
-        link.style.display = "none";
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-      } else {
-        // For Chrome and other browsers, open PDF in new tab
-        window.open(publicUrl, "_blank");
-      }
+      // For all browsers, force download using fetch
+      const response = await fetch(publicUrl);
+      const blob = await response.blob();
+      const blobUrl = window.URL.createObjectURL(blob);
+
+      const link = document.createElement("a");
+      link.href = blobUrl;
+      link.download = fileName;
+      link.style.display = "none";
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      // Clean up the blob URL after a short delay
+      setTimeout(() => {
+        window.URL.revokeObjectURL(blobUrl);
+      }, 1000);
     } catch (error) {
       console.error("❌ [FILE-MANAGER] Error downloading file:", error);
       showError(`Failed to download ${fileName}`);

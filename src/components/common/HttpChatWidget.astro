@@ -289,6 +289,16 @@ if (currentRole !== "Admin" && currentRole !== "Staff") {
         // Clear input
         input.value = "";
         console.log("✅ [HTTP-CHAT] Message sent successfully");
+
+        // Immediately display the sent message
+        const messageData = {
+          id: data.messageId || Date.now(), // Use server-provided ID or fallback to timestamp
+          userId: currentUser.id,
+          userName: currentUser.name,
+          message: message,
+          timestamp: new Date().toISOString(),
+        };
+        addMessage(messageData);
       } else {
         console.error("❌ [HTTP-CHAT] Failed to send message:", data.error);
         // Show error to user

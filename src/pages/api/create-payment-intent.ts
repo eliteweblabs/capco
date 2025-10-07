@@ -233,7 +233,7 @@ export const POST: APIRoute = async ({ request }) => {
       metadata: {
         invoice_id: invoice.id.toString(),
         projectId: project?.id.toString(),
-        project_title: project?.address,
+        projectTitle: project?.address,
         payment_type: paymentType || "deposit",
         // is_project_payment: isProjectPayment.toString(),
       },
