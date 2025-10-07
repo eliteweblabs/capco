@@ -577,6 +577,57 @@ console.log("🔍 [APP] debugData:", currentUser);
         observer.observe(document.body, { childList: true, subtree: true });
       };
 
+      // Auto-focus next field on autofill detection
+      (window as any).setupAutofillNavigation = function () {
+        const form = document.querySelector("form");
+        if (!form) return;
+
+        const inputs = Array.from(
+          form.querySelectorAll("input, textarea, select")
+        ) as HTMLInputElement[];
+
+        inputs.forEach((input, index) => {
+          // Listen for autofill events
+          const handleAutofill = () => {
+            // Check if input has been filled (value exists and is not empty)
+            if (input.value && input.value.trim() !== "") {
+              console.log("🔍 [AUTOFILL] Detected autofill in field:", input.name || input.id);
+
+              // Find next input in sequence
+              const nextInput = inputs[index + 1];
+              if (nextInput && !nextInput.disabled && nextInput.type !== "hidden") {
+                console.log("🔍 [AUTOFILL] Moving to next field:", nextInput.name || nextInput.id);
+                setTimeout(() => {
+                  nextInput.focus();
+                  // Trigger input event to ensure any validation runs
+                  nextInput.dispatchEvent(new Event("input", { bubbles: true }));
+                }, 100);
+              }
+            }
+          };
+
+          // Multiple detection methods for different browsers
+          input.addEventListener("animationstart", (e) => {
+            if (e.animationName === "onAutoFillStart") {
+              handleAutofill();
+            }
+          });
+
+          // Listen for value changes (covers most autofill scenarios)
+          input.addEventListener("input", handleAutofill);
+          input.addEventListener("change", handleAutofill);
+
+          // Fallback: check periodically for value changes
+          let lastValue = input.value;
+          setInterval(() => {
+            if (input.value !== lastValue && input.value.trim() !== "") {
+              lastValue = input.value;
+              handleAutofill();
+            }
+          }, 500);
+        });
+      };
+
       (window as any).sendEmail = async function (emailData: any, currentUser: any) {
         try {
           // Transform the email data to match the email-delivery API structure
@@ -1416,6 +1467,9 @@ console.log("🔍 [APP] debugData:", currentUser);
       };
 
       document.addEventListener("DOMContentLoaded", () => {
+        // Initialize autofill navigation
+        (window as any).setupAutofillNavigation();
+
         // Initialize dark mode first to prevent preloader flash
         const hasExplicitPreference = localStorage.getItem("color-theme") !== null;
 
