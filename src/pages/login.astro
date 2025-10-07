@@ -8,11 +8,27 @@ if (authCode) {
 // Get auth data directly
 import { checkAuth } from "../lib/auth";
 
-const { isAuth } = await checkAuth(Astro.cookies);
+const authResult = await checkAuth(Astro.cookies);
+console.log("🔐 [LOGIN] Auth check result:", {
+  isAuth: authResult.isAuth,
+  hasUser: !!authResult.currentUser,
+  hasSession: !!authResult.session,
+  hasAccessToken: !!authResult.accessToken,
+  currentRole: authResult.currentRole,
+  rawUser: authResult.currentUser,
+  rawSession: authResult.session
+});
+
+const { isAuth, currentUser } = authResult;
+
 // Redirect authenticated users to dashboard
 if (isAuth) {
+  console.log("🔐 [LOGIN] User is authenticated, redirecting to dashboard");
   return Astro.redirect("/project/dashboard");
 }
+
+console.log("🔐 [LOGIN] User is not authenticated, showing login page");
+console.log("🔐 [LOGIN] currentUser:", currentUser);
 
 import { globalCompanyData } from "../pages/api/global-company-data";
 const {
@@ -47,6 +63,7 @@ import BoxIcon from "../components/common/BoxIcon.astro";
 
 <App
   title="Login / Register"
+  currentUser={currentUser}
   description="Login or register to access your dashboard"
   globalCompanyName={globalCompanyName}
   globalCompanySlogan={globalCompanySlogan}
