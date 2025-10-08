@@ -8,12 +8,6 @@ export const POST: APIRoute = async ({ request, redirect, cookies }) => {
   try {
     // Get the form data
     const formData = await request.formData();
-    const email = formData.get("email")?.toString();
-
-    // Log registration attempt
-    console.log(
-      `🔐 [REGISTER] Attempting registration for email: ${email ? email.replace(/@.*$/, "@***") : "unknown"}`
-    );
 
     // Instead of forwarding to create-user API, handle registration directly here
     console.log("🔐 [REGISTER] Handling registration directly");
@@ -28,6 +22,11 @@ export const POST: APIRoute = async ({ request, redirect, cookies }) => {
     const smsAlerts = formData.get("smsAlerts") === "on" || formData.get("smsAlerts") === "true";
     const mobileCarrier = formData.get("mobileCarrier")?.toString();
     const role = formData.get("role")?.toString() || "Client";
+
+    // Log registration attempt
+    console.log(
+      `🔐 [REGISTER] Attempting registration for email: ${email ? email.replace(/@.*$/, "@***") : "unknown"}`
+    );
 
     // Validate required fields
     if (!email || !password || !firstName || !lastName || !companyName) {
