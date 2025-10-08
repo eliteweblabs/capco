@@ -1,5 +1,5 @@
 import type { APIRoute } from "astro";
-import { setAuthCookies } from "../../../lib/auth-cookies";
+import { setAuthCookies, clearAuthCookies, getCurrentSession } from "../../../lib/auth-cookies";
 import { supabase } from "../../../lib/supabase";
 import { supabaseAdmin } from "../../../lib/supabase-admin";
 import { SimpleProjectLogger } from "../../../lib/simple-logging";
@@ -170,7 +170,34 @@ export const GET: APIRoute = async ({ url, cookies, redirect, request }) => {
       return redirect("/login?message=verification_success");
     }
 
-    // Set auth cookies
+    // Check for existing session and log out if different user
+    const currentSession = await getCurrentSession(cookies);
+    const newUserEmail = data.user?.email;
+    
+    if (currentSession && currentSession.user?.email !== newUserEmail) {
+      console.log("🔐 [VERIFY] Different user detected, logging out previous session:", {
+        previousUser: currentSession.user?.email,
+        newUser: newUserEmail,
+      });
+      
+      // Log the logout of the previous user
+      try {
+        await SimpleProjectLogger.logUserLogout(currentSession.user?.email || "Unknown", "magiclink_switch", {
+          reason: "Different user logged in via magic link",
+          newUser: newUserEmail,
+          timestamp: new Date().toISOString(),
+        });
+        console.log("✅ [VERIFY] Previous user logout logged successfully");
+      } catch (logError) {
+        console.error("❌ [VERIFY] Error logging previous user logout:", logError);
+      }
+      
+      // Clear existing auth cookies
+      clearAuthCookies(cookies);
+      console.log("🔐 [VERIFY] Cleared previous user's auth cookies");
+    }
+
+    // Set auth cookies for the new user
     const { access_token, refresh_token } = data.session;
     console.log("🔐 [VERIFY] Setting auth cookies for verified user:", data.user?.email);
     setAuthCookies(cookies, access_token, refresh_token);
