@@ -245,7 +245,7 @@ export const POST: APIRoute = async ({ request, cookies }): Promise<Response> =>
             try {
               // Ensure buttonLink is properly formatted (starts with /)
               const cleanButtonLink = buttonLink.startsWith("/") ? buttonLink : `/${buttonLink}`;
-              const redirectUrl = `${baseUrl}/api/auth/verify?redirect=${cleanButtonLink}`;
+              const redirectUrl = `${baseUrl}${cleanButtonLink}`;
 
               console.log("🔗 [EMAIL-DELIVERY] Magic link configuration:", {
                 buttonLink,
