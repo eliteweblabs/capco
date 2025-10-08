@@ -150,22 +150,9 @@ export const POST: APIRoute = async ({ request, cookies }): Promise<Response> =>
       );
     }
 
-    // Determine if click tracking should be disabled based on email type
-    // Magic link emails should not be tracked to prevent URL wrapping
-    const shouldDisableTracking =
-      emailType === "magicLink" ||
-      emailType === "magic_link" ||
-      emailType === "authentication" ||
-      emailType === "login" ||
-      !trackLinks;
-
-    const finalTrackLinks = shouldDisableTracking ? false : trackLinks;
-
-    console.log("📧 [EMAIL-DELIVERY] Click tracking configuration:", {
+    console.log("📧 [EMAIL-DELIVERY] Email configuration:", {
       emailType,
       trackLinks,
-      shouldDisableTracking,
-      finalTrackLinks,
     });
 
     // Simple validation
@@ -340,14 +327,8 @@ export const POST: APIRoute = async ({ request, cookies }): Promise<Response> =>
             subject: cleanSubject,
             html: emailHtml,
             text: emailContent,
-            // Configure click tracking based on email type
-            // Disable for magic links, enable for status updates and other emails
-            track_links: shouldDisableTracking ? false : finalTrackLinks,
-            track_opens: shouldDisableTracking ? false : true,
-            // Add tags to identify email types for Resend dashboard
-            tags: shouldDisableTracking
-              ? [{ name: "magic-link", value: "no-tracking" }]
-              : [{ name: "email-type", value: emailType }],
+            track_links: trackLinks,
+            track_opens: trackLinks,
             // Add proper content type and custom headers (only if values exist)
             headers: {
               "Content-Type": "text/html; charset=UTF-8",
@@ -355,20 +336,15 @@ export const POST: APIRoute = async ({ request, cookies }): Promise<Response> =>
               ...(includeResendHeaders &&
                 newStatus !== undefined &&
                 newStatus !== null && { "X-Project-Status": String(newStatus) }),
-              // Add special header to identify magic link emails
-              ...(shouldDisableTracking && { "X-Magic-Link": "true" }),
             },
           };
 
-          // Debug: Log the email payload for magic links
-          if (shouldDisableTracking) {
-            console.log("🔗 [EMAIL-DELIVERY] Magic link email payload:", {
-              track_links: emailPayload.track_links,
-              track_opens: emailPayload.track_opens,
-              tags: emailPayload.tags,
-              headers: emailPayload.headers,
-            });
-          }
+          // Debug: Log the email payload
+          console.log("📧 [EMAIL-DELIVERY] Email payload:", {
+            emailType,
+            track_links: emailPayload.track_links,
+            track_opens: emailPayload.track_opens,
+          });
 
           const response = await fetch("https://api.resend.com/emails", {
             method: "POST",
