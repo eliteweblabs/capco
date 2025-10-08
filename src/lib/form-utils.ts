@@ -1,72 +1,7 @@
 /**
  * Form Utilities
- * Handles conversion between camelCase frontend and snake_case database
+ * Standard form field names and helper functions
  */
-
-/**
- * Converts FormData from camelCase to snake_case for database operations
- * @param formData - The FormData object from the form
- * @returns Object with snake_case keys for database operations
- */
-export function convertFormDataToSnakeCase(formData: FormData) {
-  return {
-    firstName: formData.get("firstName")?.toString(),
-    lastName: formData.get("lastName")?.toString(),
-    companyName: formData.get("companyName")?.toString(),
-    email: formData.get("email")?.toString(),
-    phone: formData.get("phone")?.toString(),
-    password: formData.get("password")?.toString(),
-    role: formData.get("role")?.toString(),
-    mobileCarrier: formData.get("mobileCarrier")?.toString(),
-    smsAlerts: formData.get("smsAlerts") === "on" || formData.get("smsAlerts") === "true",
-  };
-}
-
-/**
- * Converts snake_case database object to camelCase for frontend
- * @param dbObject - Object with snake_case keys from database
- * @returns Object with camelCase keys for frontend
- */
-export function convertDbToCamelCase(dbObject: any) {
-  return {
-    firstName: dbObject.firstName,
-    lastName: dbObject.lastName,
-    companyName: dbObject.companyName,
-    email: dbObject.email,
-    phone: dbObject.phone,
-    role: dbObject.role,
-    mobileCarrier: dbObject.mobileCarrier,
-    smsAlerts: dbObject.smsAlerts,
-    createdAt: dbObject.createdAt,
-    updatedAt: dbObject.updatedAt,
-    // Additional common fields
-    id: dbObject.id,
-    userId: dbObject.userId,
-    authorId: dbObject.authorId,
-  };
-}
-
-/**
- * Converts camelCase frontend object to snake_case for database
- * @param frontendObject - Object with camelCase keys from frontend
- * @returns Object with snake_case keys for database
- */
-export function convertFrontendToSnakeCase(frontendObject: any) {
-  return {
-    firstName: frontendObject.firstName,
-    lastName: frontendObject.lastName,
-    companyName: frontendObject.companyName,
-    email: frontendObject.email,
-    phone: frontendObject.phone,
-    role: frontendObject.role,
-    mobileCarrier: frontendObject.mobileCarrier,
-    smsAlerts: frontendObject.smsAlerts,
-    // Timestamps are usually handled automatically by the database
-    // but can be explicitly set if needed
-    createdAt: frontendObject.createdAt,
-    updatedAt: frontendObject.updatedAt || new Date().toISOString(),
-  };
-}
 
 /**
  * Standard form field names for consistent usage across the app

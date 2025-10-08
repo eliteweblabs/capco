@@ -1,5 +1,4 @@
 import type { APIRoute } from "astro";
-import { convertDbToCamelCase } from "../../../lib/form-utils";
 import { SimpleProjectLogger } from "../../../lib/simple-logging";
 import { getCarrierGateway } from "../../../lib/sms-utils";
 import { supabase } from "../../../lib/supabase";
@@ -125,7 +124,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     return new Response(
       JSON.stringify({
         message: "Profile updated successfully",
-        profile: convertDbToCamelCase(profile),
+        profile: profile,
       }),
       { status: 200, headers: { "Content-Type": "application/json" } }
     );
