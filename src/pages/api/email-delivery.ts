@@ -245,20 +245,22 @@ export const POST: APIRoute = async ({ request, cookies }): Promise<Response> =>
             try {
               // Ensure buttonLink is properly formatted (starts with /)
               const cleanButtonLink = buttonLink.startsWith("/") ? buttonLink : `/${buttonLink}`;
+              const redirectUrl = `${baseUrl}/api/auth/verify?redirect=${cleanButtonLink}`;
 
               console.log("🔗 [EMAIL-DELIVERY] Magic link configuration:", {
                 buttonLink,
                 cleanButtonLink,
+                redirectUrl,
                 baseUrl,
               });
 
-              // Generate magic link using admin.generateLink with direct redirect
+              // Generate magic link using admin.generateLink with redirect to our verify endpoint
               const { data: magicLinkData, error: magicLinkError } =
                 await supabaseAdmin.auth.admin.generateLink({
                   type: "magiclink",
                   email: userEmail,
                   options: {
-                    redirectTo: `${baseUrl}${cleanButtonLink}`,
+                    redirectTo: redirectUrl,
                   },
                 });
 
@@ -270,25 +272,11 @@ export const POST: APIRoute = async ({ request, cookies }): Promise<Response> =>
                   code: magicLinkError.code,
                 });
               } else {
-                // Extract the magic link URL from Supabase's response
-                const magicLinkUrl = magicLinkData.properties.action_link;
-
-                // Parse the Supabase magic link to extract the token and other parameters
-                const url = new URL(magicLinkUrl);
-                const token = url.searchParams.get("token");
-                const type = url.searchParams.get("type");
-
-                // Construct our own magic link that goes to our verify endpoint with the final destination
-                const ourMagicLinkUrl = `${baseUrl}/api/auth/verify?token=${token}&type=${type}&redirect=${encodeURIComponent(cleanButtonLink)}`;
-                finalButtonLink = ourMagicLinkUrl;
+                // Use Supabase's magic link directly
+                finalButtonLink = magicLinkData.properties.action_link;
 
                 console.log("🔗 [EMAIL-DELIVERY] Generated magic link successfully");
-                console.log("🔗 [EMAIL-DELIVERY] Original Supabase URL:", magicLinkUrl);
-                console.log("🔗 [EMAIL-DELIVERY] Our magic link URL:", ourMagicLinkUrl);
-                console.log(
-                  "🔗 [EMAIL-DELIVERY] Extracted token:",
-                  token?.substring(0, 10) + "..."
-                );
+                console.log("🔗 [EMAIL-DELIVERY] Supabase magic link URL:", finalButtonLink);
               }
             } catch (error) {
               console.error("📧 [EMAIL-DELIVERY] Error generating magic link:", error);

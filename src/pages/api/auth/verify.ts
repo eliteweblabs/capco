@@ -4,28 +4,28 @@ import { supabase } from "../../../lib/supabase";
 import { supabaseAdmin } from "../../../lib/supabase-admin";
 import { SimpleProjectLogger } from "../../../lib/simple-logging";
 
-export const GET: APIRoute = async ({ url, cookies, redirect }) => {
+export const GET: APIRoute = async ({ url, cookies, redirect, request }) => {
+  console.log("🔐 [VERIFY] Email verification started");
+
   // Check if Supabase is configured
   if (!supabase) {
     return redirect("/login?error=verification_error");
   }
 
-  // First, clear any existing session to prevent conflicts
-  try {
-    await supabase.auth.signOut();
-    // Clear existing auth cookies
-    cookies.delete("sb-access-token", { path: "/" });
-    cookies.delete("sb-refresh-token", { path: "/" });
-  } catch (logoutError) {
-    // Session may not exist, continue
-  }
-
-  // Get the verification code from the URL
+  // Get the verification parameters from the URL
   const code = url.searchParams.get("code");
   const token_hash = url.searchParams.get("token_hash");
-  const token = url.searchParams.get("token"); // Also check for 'token' parameter
+  const token = url.searchParams.get("token");
   const type = url.searchParams.get("type");
   const redirectPath = url.searchParams.get("redirect") || "/dashboard";
+
+  console.log("🔐 [VERIFY] Verification params:", {
+    hasCode: !!code,
+    hasTokenHash: !!token_hash,
+    hasToken: !!token,
+    type,
+    redirectPath,
+  });
 
   if (!code && !token_hash && !token) {
     console.log("🔐 [VERIFY] No verification code, token hash, or token provided");
@@ -35,39 +35,31 @@ export const GET: APIRoute = async ({ url, cookies, redirect }) => {
   try {
     let verificationResult;
 
-    if ((type === "email" || type === "magiclink" || type === "signup") && (token_hash || token)) {
-      // Handle magic link or email verification with token hash or token
-      console.log(
-        `🔐 [VERIFY] Attempting ${type} verification with ${token_hash ? "token_hash" : "token"}...`
-      );
-
-      // Map type to what Supabase expects
-      const otpType = type === "magiclink" ? "magiclink" : type === "signup" ? "signup" : "email";
-
-      // For magic links, use the admin client and token directly
-      if (type === "magiclink" && token) {
-        console.log("🔐 [VERIFY] Using admin client for magic link verification");
-        console.log("🔐 [VERIFY] Token details:", {
-          tokenLength: token.length,
-          tokenStart: token.substring(0, 10),
-          type: otpType,
-        });
-        verificationResult = await supabaseAdmin.auth.verifyOtp({
-          token: token,
-          type: otpType,
-        });
-      } else {
-        // For other types, use regular client and token_hash if available, otherwise use token
-        const verificationToken = token_hash || token;
-        verificationResult = await supabase.auth.verifyOtp({
-          token_hash: verificationToken as string,
-          type: otpType,
-        });
-      }
-    } else if (code) {
-      // Handle verification with code (OAuth or PKCE flow)
+    if (code) {
+      // Handle OAuth/PKCE flow with code
       console.log("🔐 [VERIFY] Attempting verification with code...");
       verificationResult = await supabase.auth.exchangeCodeForSession(code);
+    } else if (token_hash && type === "magiclink") {
+      // Handle magic link with token_hash (the working way)
+      console.log("🔐 [VERIFY] Attempting magiclink verification with token hash...");
+      verificationResult = await supabase.auth.verifyOtp({
+        token_hash: token_hash,
+        type: "magiclink",
+      });
+    } else if (token && type === "magiclink") {
+      // Handle magic link with token (fallback)
+      console.log("🔐 [VERIFY] Attempting magiclink verification with token...");
+      verificationResult = await supabase.auth.verifyOtp({
+        token: token,
+        type: "magiclink",
+      });
+    } else if (token_hash && type) {
+      // Handle other verification types with token_hash
+      console.log(`🔐 [VERIFY] Attempting ${type} verification with token hash...`);
+      verificationResult = await supabase.auth.verifyOtp({
+        token_hash: token_hash,
+        type: type,
+      });
     } else {
       console.log("🔐 [VERIFY] Invalid verification parameters");
       return redirect("/login?error=no_token");
@@ -76,41 +68,12 @@ export const GET: APIRoute = async ({ url, cookies, redirect }) => {
     const { data, error } = verificationResult;
 
     if (error) {
-      console.error("🔐 [VERIFY] Email verification error:", error);
+      console.error("🔐 [VERIFY] Verification error:", error.message);
       console.error("🔐 [VERIFY] Error details:", {
         message: error.message,
         status: error.status,
         code: error.code,
       });
-
-      // Log token details for debugging
-      console.error("🔐 [VERIFY] Token details for debugging:", {
-        hasToken: !!token,
-        hasTokenHash: !!token_hash,
-        tokenLength: token?.length || 0,
-        tokenHashLength: token_hash?.length || 0,
-        type,
-      });
-
-      // Handle specific error types
-      if (error.message.includes("expired") || error.message.includes("Expired")) {
-        console.log("🔐 [VERIFY] Token expired");
-        return redirect("/login?error=verification_expired");
-      } else if (error.message.includes("invalid") || error.message.includes("Invalid")) {
-        console.log(
-          "🔐 [VERIFY] Invalid token - possible Resend tracking interference or malformed token"
-        );
-        console.log("🔐 [VERIFY] Full error:", error);
-        return redirect("/login?error=verification_invalid");
-      } else if (error.message.includes("token") || error.message.includes("Token")) {
-        console.log("🔐 [VERIFY] Token-related error:", error.message);
-        return redirect("/login?error=token_error");
-      } else if (error.message.includes("missing") || error.message.includes("Missing")) {
-        console.log("🔐 [VERIFY] Missing token error:", error.message);
-        return redirect("/login?error=no_token");
-      }
-
-      console.log("🔐 [VERIFY] General verification error:", error.message);
       return redirect("/login?error=verification_failed");
     }
 
@@ -125,12 +88,9 @@ export const GET: APIRoute = async ({ url, cookies, redirect }) => {
       return redirect("/login?message=verification_success");
     }
 
-    // Profile will be automatically created by database trigger
-
+    // Set auth cookies
     const { access_token, refresh_token } = data.session;
     console.log("🔐 [VERIFY] Setting auth cookies for verified user:", data.user?.email);
-
-    // Use shared utility for consistent cookie handling
     setAuthCookies(cookies, access_token, refresh_token);
 
     // Log the successful login
