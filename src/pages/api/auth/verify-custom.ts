@@ -76,6 +76,8 @@ export const GET: APIRoute = async ({ url, cookies, redirect, request }) => {
 
     // Verify the custom token
     console.log("🔐 [VERIFY-CUSTOM] Verifying custom token...");
+    console.log("🔐 [VERIFY-CUSTOM] Looking for token:", token);
+    console.log("🔐 [VERIFY-CUSTOM] Looking for email:", email);
     
     const { data: tokenData, error: tokenError } = await supabaseAdmin
       .from('magic_link_tokens')
@@ -83,6 +85,18 @@ export const GET: APIRoute = async ({ url, cookies, redirect, request }) => {
       .eq('token', token)
       .eq('email', email)
       .single();
+
+    console.log("🔐 [VERIFY-CUSTOM] Token query result:", {
+      hasData: !!tokenData,
+      hasError: !!tokenError,
+      errorMessage: tokenError?.message,
+      tokenData: tokenData ? {
+        id: tokenData.id,
+        email: tokenData.email,
+        expires_at: tokenData.expires_at,
+        used_at: tokenData.used_at,
+      } : null,
+    });
 
     if (tokenError) {
       console.error("🔐 [VERIFY-CUSTOM] Token verification failed:", tokenError);
