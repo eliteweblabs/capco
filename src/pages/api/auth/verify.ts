@@ -1,30 +1,23 @@
 import type { APIRoute } from "astro";
 import { setAuthCookies } from "../../../lib/auth-cookies";
 import { supabase } from "../../../lib/supabase";
+import { supabaseAdmin } from "../../../lib/supabase-admin";
 import { SimpleProjectLogger } from "../../../lib/simple-logging";
 
 export const GET: APIRoute = async ({ url, cookies, redirect }) => {
-  console.log("🔐 [VERIFY] Email verification started");
-
   // Check if Supabase is configured
   if (!supabase) {
-    console.error("🔐 [VERIFY] Supabase is not configured");
     return redirect("/login?error=verification_error");
   }
 
   // First, clear any existing session to prevent conflicts
   try {
-    console.log("🔐 [VERIFY] Clearing any existing session before magic link verification");
     await supabase.auth.signOut();
-
     // Clear existing auth cookies
     cookies.delete("sb-access-token", { path: "/" });
     cookies.delete("sb-refresh-token", { path: "/" });
   } catch (logoutError) {
-    console.warn(
-      "🔐 [VERIFY] Could not clear existing session (may not be logged in):",
-      logoutError
-    );
+    // Session may not exist, continue
   }
 
   // Get the verification code from the URL
@@ -33,25 +26,6 @@ export const GET: APIRoute = async ({ url, cookies, redirect }) => {
   const token = url.searchParams.get("token"); // Also check for 'token' parameter
   const type = url.searchParams.get("type");
   const redirectPath = url.searchParams.get("redirect") || "/dashboard";
-
-  console.log("🔐 [VERIFY] Verification params:", {
-    code: code ? "present" : "missing",
-    token_hash: token_hash ? "present" : "missing",
-    token: token ? "present" : "missing",
-    type,
-    redirectPath,
-    fullUrl: url.toString(),
-  });
-
-  // Log the actual token values for debugging (truncated for security)
-  if (token_hash) {
-    console.log("🔐 [VERIFY] Token hash (first 10 chars):", token_hash.substring(0, 10) + "...");
-    console.log("🔐 [VERIFY] Token hash length:", token_hash.length);
-  }
-  if (token) {
-    console.log("🔐 [VERIFY] Token (first 10 chars):", token.substring(0, 10) + "...");
-    console.log("🔐 [VERIFY] Token length:", token.length);
-  }
 
   if (!code && !token_hash && !token) {
     console.log("🔐 [VERIFY] No verification code, token hash, or token provided");
@@ -70,15 +44,20 @@ export const GET: APIRoute = async ({ url, cookies, redirect }) => {
       // Map type to what Supabase expects
       const otpType = type === "magiclink" ? "magiclink" : type === "signup" ? "signup" : "email";
 
-      // For magic links, use the token directly, not token_hash
+      // For magic links, use the admin client and token directly
       if (type === "magiclink" && token) {
-        console.log("🔐 [VERIFY] Using direct token for magic link verification");
-        verificationResult = await supabase.auth.verifyOtp({
+        console.log("🔐 [VERIFY] Using admin client for magic link verification");
+        console.log("🔐 [VERIFY] Token details:", {
+          tokenLength: token.length,
+          tokenStart: token.substring(0, 10),
+          type: otpType,
+        });
+        verificationResult = await supabaseAdmin.auth.verifyOtp({
           token: token,
           type: otpType,
         });
       } else {
-        // For other types, use token_hash if available, otherwise use token
+        // For other types, use regular client and token_hash if available, otherwise use token
         const verificationToken = token_hash || token;
         verificationResult = await supabase.auth.verifyOtp({
           token_hash: verificationToken as string,
@@ -156,16 +135,12 @@ export const GET: APIRoute = async ({ url, cookies, redirect }) => {
 
     // Log the successful login
     try {
-      await SimpleProjectLogger.logUserLogin(
-        data.user?.email || "Unknown",
-        "magiclink",
-        {
-          provider: "magiclink",
-          userAgent: request.headers.get("user-agent"),
-          timestamp: new Date().toISOString(),
-          redirectPath,
-        }
-      );
+      await SimpleProjectLogger.logUserLogin(data.user?.email || "Unknown", "magiclink", {
+        provider: "magiclink",
+        userAgent: request.headers.get("user-agent"),
+        timestamp: new Date().toISOString(),
+        redirectPath,
+      });
       console.log("✅ [VERIFY] Login event logged successfully");
     } catch (logError) {
       console.error("❌ [VERIFY] Error logging login event:", logError);
