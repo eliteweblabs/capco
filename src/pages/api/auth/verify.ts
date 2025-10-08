@@ -69,13 +69,21 @@ export const GET: APIRoute = async ({ url, cookies, redirect }) => {
       // Map type to what Supabase expects
       const otpType = type === "magiclink" ? "magiclink" : type === "signup" ? "signup" : "email";
 
-      // Use token_hash if available, otherwise use token
-      const verificationToken = token_hash || token;
-
-      verificationResult = await supabase.auth.verifyOtp({
-        token_hash: verificationToken as string,
-        type: otpType,
-      });
+      // For magic links, use the token directly, not token_hash
+      if (type === "magiclink" && token) {
+        console.log("🔐 [VERIFY] Using direct token for magic link verification");
+        verificationResult = await supabase.auth.verifyOtp({
+          token: token,
+          type: otpType,
+        });
+      } else {
+        // For other types, use token_hash if available, otherwise use token
+        const verificationToken = token_hash || token;
+        verificationResult = await supabase.auth.verifyOtp({
+          token_hash: verificationToken as string,
+          type: otpType,
+        });
+      }
     } else if (code) {
       // Handle verification with code (OAuth or PKCE flow)
       console.log("🔐 [VERIFY] Attempting verification with code...");
