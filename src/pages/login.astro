@@ -261,8 +261,72 @@ import BoxIcon from "../components/common/BoxIcon.astro";
     console.log(`🔐 [LOGIN] Switched to ${tab} tab`);
   };
 
+  // Handle authentication tokens from URL hash (magic links, OAuth callbacks)
+  function handleAuthTokens() {
+    const hash = window.location.hash;
+    if (!hash) return;
+
+    console.log("🔐 [LOGIN] Checking for auth tokens in URL hash");
+    
+    // Parse hash parameters
+    const hashParams = new URLSearchParams(hash.substring(1));
+    const accessToken = hashParams.get("access_token");
+    const refreshToken = hashParams.get("refresh_token");
+    const tokenType = hashParams.get("token_type");
+    const expiresIn = hashParams.get("expires_in");
+    const expiresAt = hashParams.get("expires_at");
+    const type = hashParams.get("type");
+
+    if (accessToken && refreshToken) {
+      console.log("🔐 [LOGIN] Found auth tokens in URL hash:", {
+        hasAccessToken: !!accessToken,
+        hasRefreshToken: !!refreshToken,
+        tokenType,
+        expiresIn,
+        type,
+      });
+
+      // Send tokens to server to set session cookies
+      fetch("/api/auth/callback", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          access_token: accessToken,
+          refresh_token: refreshToken,
+          expires_in: expiresIn,
+          token_type: tokenType,
+        }),
+      })
+        .then((response) => {
+          if (response.ok) {
+            console.log("✅ [LOGIN] Auth tokens processed successfully");
+            // Clear the hash and redirect to dashboard
+            window.location.hash = "";
+            window.location.href = "/dashboard";
+          } else {
+            console.error("❌ [LOGIN] Failed to process auth tokens:", response.status);
+            // Show error message
+            if (typeof window.showModal === "function") {
+              window.showModal("error", "Authentication Failed", "Failed to process authentication tokens. Please try again.", 5000);
+            }
+          }
+        })
+        .catch((error) => {
+          console.error("❌ [LOGIN] Error processing auth tokens:", error);
+          if (typeof window.showModal === "function") {
+            window.showModal("error", "Authentication Error", "An error occurred while processing authentication. Please try again.", 5000);
+          }
+        });
+    }
+  }
+
   // Initialize tab state on page load (in case JavaScript executes before server-side rendering is complete)
   document.addEventListener("DOMContentLoaded", function () {
+    // Handle auth tokens first
+    handleAuthTokens();
+
     const urlParams = new URLSearchParams(window.location.search);
     const activeTab = urlParams.get("tab") || "login";
 
