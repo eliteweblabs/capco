@@ -579,7 +579,7 @@ console.log("🔍 [APP] debugData:", currentUser);
         observer.observe(document.body, { childList: true, subtree: true });
       };
 
-      // Auto-focus next field on autofill detection
+      // Auto-focus next field on autofill detection (browser/OS only, not manual typing)
       (window as any).setupAutofillNavigation = function () {
         const form = document.querySelector("form");
         if (!form) return;
@@ -589,11 +589,37 @@ console.log("🔍 [APP] debugData:", currentUser);
         ) as HTMLInputElement[];
 
         inputs.forEach((input, index) => {
-          // Listen for autofill events
+          let isUserTyping = false;
+          let autofillDetected = false;
+
+          // Track user typing to distinguish from autofill
+          input.addEventListener("input", () => {
+            isUserTyping = true;
+            autofillDetected = false;
+          });
+
+          input.addEventListener("keydown", () => {
+            isUserTyping = true;
+            autofillDetected = false;
+          });
+
+          // Reset typing flag after user stops
+          let typingTimeout: number;
+          input.addEventListener("input", () => {
+            clearTimeout(typingTimeout);
+            typingTimeout = window.setTimeout(() => {
+              isUserTyping = false;
+            }, 1000);
+          });
+
+          // Handle autofill detection
           const handleAutofill = () => {
-            // Check if input has been filled (value exists and is not empty)
-            if (input.value && input.value.trim() !== "") {
-              console.log("🔍 [AUTOFILL] Detected autofill in field:", input.name || input.id);
+            // Only proceed if this is actual autofill, not user typing
+            if (autofillDetected && !isUserTyping && input.value && input.value.trim() !== "") {
+              console.log(
+                "🔍 [AUTOFILL] Detected browser/OS autofill in field:",
+                input.name || input.id
+              );
 
               // Find next input in sequence
               const nextInput = inputs[index + 1];
@@ -608,25 +634,49 @@ console.log("🔍 [APP] debugData:", currentUser);
             }
           };
 
-          // Multiple detection methods for different browsers
+          // Method 1: CSS animation detection (most reliable for autofill)
           input.addEventListener("animationstart", (e) => {
             if (e.animationName === "onAutoFillStart") {
+              autofillDetected = true;
               handleAutofill();
             }
           });
 
-          // Listen for value changes (covers most autofill scenarios)
-          // Only trigger on change, not on every input keystroke
-          input.addEventListener("change", handleAutofill);
+          // Method 2: Focus + immediate value change (autofill signature)
+          let focusTime = 0;
+          input.addEventListener("focus", () => {
+            focusTime = Date.now();
+          });
 
-          // Fallback: check periodically for value changes (reduced frequency)
+          input.addEventListener("input", () => {
+            const timeSinceFocus = Date.now() - focusTime;
+            // If value changed within 100ms of focus, likely autofill
+            if (timeSinceFocus < 100 && !isUserTyping) {
+              autofillDetected = true;
+              setTimeout(handleAutofill, 50);
+            }
+          });
+
+          // Method 3: Detect autofill by checking if input was filled without user interaction
           let lastValue = input.value;
+          let lastUserInteraction = Date.now();
+
+          input.addEventListener("input", () => {
+            lastUserInteraction = Date.now();
+          });
+
+          // Check for autofill every 500ms (reduced frequency)
           setInterval(() => {
-            if (input.value !== lastValue && input.value.trim() !== "") {
+            const timeSinceInteraction = Date.now() - lastUserInteraction;
+            const valueChanged = input.value !== lastValue && input.value.trim() !== "";
+
+            // If value changed and no recent user interaction, it's likely autofill
+            if (valueChanged && timeSinceInteraction > 2000 && !isUserTyping) {
+              autofillDetected = true;
               lastValue = input.value;
               handleAutofill();
             }
-          }, 2000); // Increased from 500ms to 2000ms
+          }, 500);
         });
       };
 
