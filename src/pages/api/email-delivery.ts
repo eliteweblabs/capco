@@ -272,16 +272,12 @@ export const POST: APIRoute = async ({ request, cookies }): Promise<Response> =>
                   code: magicLinkError.code,
                 });
               } else {
-                // Use proxy page to prevent email client prefetching
+                // Use the Supabase magic link directly
                 const magicLinkUrl = magicLinkData.properties.action_link;
-
-                // Don't double-encode the URL - just pass it as a query parameter
-                const proxyUrl = `${baseUrl}/magic-link-proxy?link=${magicLinkUrl}`;
-                finalButtonLink = proxyUrl;
+                finalButtonLink = magicLinkUrl;
 
                 console.log("🔗 [EMAIL-DELIVERY] Generated magic link successfully");
-                console.log("🔗 [EMAIL-DELIVERY] Original magic link URL:", magicLinkUrl);
-                console.log("🔗 [EMAIL-DELIVERY] Proxy URL:", proxyUrl);
+                console.log("🔗 [EMAIL-DELIVERY] Magic link URL:", magicLinkUrl);
                 console.log("🔗 [EMAIL-DELIVERY] Magic link properties:", magicLinkData.properties);
               }
             } catch (error) {
