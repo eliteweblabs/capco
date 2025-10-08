@@ -16,8 +16,25 @@ export const GET: APIRoute = async ({ url, redirect }) => {
   console.log("🔗 [MAGIC-LINK-PROXY] Processing magic link:", magicLink.substring(0, 100) + "...");
 
   try {
-    // Parse the Supabase magic link URL directly
-    const supabaseUrl = new URL(magicLink);
+    // Decode the magic link URL first (it may be encoded by email tracking services)
+    let decodedLink = magicLink;
+
+    // Keep decoding until no more % encoding is found
+    let decodeAttempts = 0;
+    while (decodedLink.includes("%") && decodeAttempts < 5) {
+      decodedLink = decodeURIComponent(decodedLink);
+      decodeAttempts++;
+    }
+
+    console.log(
+      "🔗 [MAGIC-LINK-PROXY] Decoded link (attempts:",
+      decodeAttempts,
+      "):",
+      decodedLink.substring(0, 100) + "..."
+    );
+
+    // Parse the Supabase magic link URL
+    const supabaseUrl = new URL(decodedLink);
     const token = supabaseUrl.searchParams.get("token");
     const token_hash = supabaseUrl.searchParams.get("token_hash");
     const type = supabaseUrl.searchParams.get("type");
@@ -31,6 +48,17 @@ export const GET: APIRoute = async ({ url, redirect }) => {
       tokenPreview: token ? token.substring(0, 10) + "..." : "none",
       tokenHashPreview: token_hash ? token_hash.substring(0, 10) + "..." : "none",
     });
+
+    // Validate that we have the required parameters
+    if (!token && !token_hash) {
+      console.error("🔗 [MAGIC-LINK-PROXY] No token or token_hash found in magic link");
+      return redirect("/login?error=invalid_magic_link");
+    }
+
+    if (!type) {
+      console.error("🔗 [MAGIC-LINK-PROXY] No type parameter found in magic link");
+      return redirect("/login?error=invalid_magic_link");
+    }
 
     // Redirect to our verify endpoint with the extracted parameters
     const verifyUrl = new URL("/api/auth/verify", url.origin);
