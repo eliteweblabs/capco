@@ -11,6 +11,31 @@ import LoadingSpinner from "./LoadingSpinner.astro";
 </div>
 
 <script>
+  // Apply theme immediately to prevent flash
+  (function () {
+    const hasExplicitPreference = localStorage.getItem("color-theme") !== null;
+
+    if (hasExplicitPreference) {
+      // User has explicitly set a preference, apply it
+      if (localStorage.getItem("color-theme") === "dark") {
+        document.documentElement.classList.add("dark", "zD1iTsv7EQco3GO_szee");
+      } else {
+        document.documentElement.classList.remove("dark", "zD1iTsv7EQco3GO_szee");
+      }
+    } else {
+      // No explicit preference, check system preference
+      if (window.matchMedia("(prefers-color-scheme: dark)").matches) {
+        document.documentElement.classList.add("dark", "zD1iTsv7EQco3GO_szee");
+        localStorage.setItem("color-theme", "dark");
+      } else {
+        document.documentElement.classList.remove("dark", "zD1iTsv7EQco3GO_szee");
+        localStorage.setItem("color-theme", "light");
+      }
+    }
+  })();
+</script>
+
+<script>
   // Hide preloader when page is loaded
   function hidePreloader() {
     const preloader = document.getElementById("preloader");
