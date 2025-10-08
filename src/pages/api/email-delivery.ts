@@ -154,6 +154,7 @@ export const POST: APIRoute = async ({ request, cookies }): Promise<Response> =>
     // Magic link emails should not be tracked to prevent URL wrapping
     const shouldDisableTracking =
       emailType === "magicLink" ||
+      emailType === "magic_link" ||
       emailType === "authentication" ||
       emailType === "login" ||
       !trackLinks;
@@ -341,9 +342,8 @@ export const POST: APIRoute = async ({ request, cookies }): Promise<Response> =>
             text: emailContent,
             // Configure click tracking based on email type
             // Disable for magic links, enable for status updates and other emails
-            track_links: finalTrackLinks,
-            // Completely disable click tracking for magic links
-            ...(shouldDisableTracking && { track_links: false, track_opens: false }),
+            track_links: shouldDisableTracking ? false : finalTrackLinks,
+            track_opens: shouldDisableTracking ? false : true,
             // Add proper content type and custom headers (only if values exist)
             headers: {
               "Content-Type": "text/html; charset=UTF-8",
