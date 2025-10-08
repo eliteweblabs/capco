@@ -23,6 +23,21 @@ interface EmailDeliveryRequest {
   trackLinks?: boolean;
   currentUser?: any;
   emailToRoles?: any;
+  notificationPreferences?: NotificationPreferences;
+}
+
+interface NotificationPreferences {
+  method: "email" | "browser" | "internal" | "sms" | "all";
+  fallbackToEmail?: boolean;
+  smsProvider?: "twilio" | "sendgrid" | "custom";
+  internalNotificationType?:
+    | "status_update"
+    | "project_created"
+    | "file_uploaded"
+    | "comment_added";
+  browserNotificationTitle?: string;
+  browserNotificationBody?: string;
+  browserNotificationIcon?: string;
 }
 
 interface FailedEmail {
@@ -82,7 +97,58 @@ export const POST: APIRoute = async ({ request, cookies }): Promise<Response> =>
       includeResendHeaders = false,
       trackLinks = true, // Default to true for backward compatibility
       currentUser,
+      notificationPreferences,
     } = body;
+
+    // ===== NOTIFICATION PREFERENCE FRAMEWORK =====
+    console.log(
+      "🔔 [NOTIFICATION-FRAMEWORK] Processing notification preferences:",
+      notificationPreferences
+    );
+
+    // Default notification preferences if none provided
+    const defaultPreferences: NotificationPreferences = {
+      method: "email",
+      fallbackToEmail: true,
+    };
+
+    const prefs = notificationPreferences || defaultPreferences;
+
+    // Process notification based on preference
+    const notificationResults = await processNotificationPreferences(prefs, {
+      usersToNotify,
+      emailSubject,
+      emailContent,
+      buttonLink,
+      buttonText,
+      project,
+      currentUser,
+      baseUrl,
+    });
+
+    console.log("🔔 [NOTIFICATION-FRAMEWORK] Notification results:", notificationResults);
+
+    // If notification was sent via non-email method and fallback is disabled, skip email
+    if (notificationResults.success && !prefs.fallbackToEmail && prefs.method !== "email") {
+      console.log(
+        "🔔 [NOTIFICATION-FRAMEWORK] Non-email notification sent, skipping email delivery"
+      );
+      return new Response(
+        JSON.stringify({
+          success: true,
+          message: `Notification sent via ${prefs.method}`,
+          notificationMethod: prefs.method,
+          sentEmails: [],
+          failedEmails: [],
+          totalSent: 0,
+          totalFailed: 0,
+        }),
+        {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        }
+      );
+    }
 
     // Determine if click tracking should be disabled based on email type
     // Magic link emails should not be tracked to prevent URL wrapping
@@ -443,6 +509,224 @@ export const POST: APIRoute = async ({ request, cookies }): Promise<Response> =>
     });
   }
 };
+
+// ===== NOTIFICATION PREFERENCE FRAMEWORK FUNCTIONS =====
+
+interface NotificationContext {
+  usersToNotify: string[];
+  emailSubject: string;
+  emailContent: string;
+  buttonLink: string;
+  buttonText: string;
+  project?: any;
+  currentUser?: any;
+  baseUrl: string;
+}
+
+interface NotificationResult {
+  success: boolean;
+  method: string;
+  message?: string;
+  error?: string;
+}
+
+/**
+ * Process notification based on user preferences
+ */
+async function processNotificationPreferences(
+  preferences: NotificationPreferences,
+  context: NotificationContext
+): Promise<NotificationResult> {
+  try {
+    console.log(
+      "🔔 [NOTIFICATION-FRAMEWORK] Processing notification with method:",
+      preferences.method
+    );
+
+    switch (preferences.method) {
+      case "browser":
+        return await sendBrowserNotification(preferences, context);
+
+      case "internal":
+        return await sendInternalNotification(preferences, context);
+
+      case "sms":
+        return await sendSMSNotification(preferences, context);
+
+      case "all":
+        return await sendAllNotifications(preferences, context);
+
+      case "email":
+      default:
+        return { success: true, method: "email", message: "Email notification will be sent" };
+    }
+  } catch (error) {
+    console.error("🔔 [NOTIFICATION-FRAMEWORK] Error processing notification:", error);
+    return {
+      success: false,
+      method: preferences.method,
+      error: error instanceof Error ? error.message : "Unknown error",
+    };
+  }
+}
+
+/**
+ * Send browser push notification
+ */
+async function sendBrowserNotification(
+  preferences: NotificationPreferences,
+  context: NotificationContext
+): Promise<NotificationResult> {
+  try {
+    console.log("🔔 [BROWSER-NOTIFICATION] Sending browser notification");
+
+    // Store notification in database for client-side retrieval
+    const notificationData = {
+      title: preferences.browserNotificationTitle || context.emailSubject,
+      body: preferences.browserNotificationBody || context.emailContent,
+      icon: preferences.browserNotificationIcon || "/favicon.png",
+      url: context.buttonLink,
+      users: context.usersToNotify,
+      type: "browser_push",
+      created_at: new Date().toISOString(),
+    };
+
+    // Store in database for client-side polling
+    const { error } = await supabase.from("notifications").insert(notificationData);
+
+    if (error) {
+      console.error("🔔 [BROWSER-NOTIFICATION] Database error:", error);
+      return { success: false, method: "browser", error: error.message };
+    }
+
+    console.log("🔔 [BROWSER-NOTIFICATION] Browser notification queued successfully");
+    return { success: true, method: "browser", message: "Browser notification queued" };
+  } catch (error) {
+    console.error("🔔 [BROWSER-NOTIFICATION] Error:", error);
+    return {
+      success: false,
+      method: "browser",
+      error: error instanceof Error ? error.message : "Unknown error",
+    };
+  }
+}
+
+/**
+ * Send internal system notification
+ */
+async function sendInternalNotification(
+  preferences: NotificationPreferences,
+  context: NotificationContext
+): Promise<NotificationResult> {
+  try {
+    console.log("🔔 [INTERNAL-NOTIFICATION] Sending internal notification");
+
+    const notificationData = {
+      title: context.emailSubject,
+      content: context.emailContent,
+      type: preferences.internalNotificationType || "status_update",
+      users: context.usersToNotify,
+      project_id: context.project?.id || null,
+      created_at: new Date().toISOString(),
+    };
+
+    // Store in internal notifications table
+    const { error } = await supabase.from("internal_notifications").insert(notificationData);
+
+    if (error) {
+      console.error("🔔 [INTERNAL-NOTIFICATION] Database error:", error);
+      return { success: false, method: "internal", error: error.message };
+    }
+
+    console.log("🔔 [INTERNAL-NOTIFICATION] Internal notification created successfully");
+    return { success: true, method: "internal", message: "Internal notification created" };
+  } catch (error) {
+    console.error("🔔 [INTERNAL-NOTIFICATION] Error:", error);
+    return {
+      success: false,
+      method: "internal",
+      error: error instanceof Error ? error.message : "Unknown error",
+    };
+  }
+}
+
+/**
+ * Send SMS notification
+ */
+async function sendSMSNotification(
+  preferences: NotificationPreferences,
+  context: NotificationContext
+): Promise<NotificationResult> {
+  try {
+    console.log(
+      "🔔 [SMS-NOTIFICATION] Sending SMS notification via provider:",
+      preferences.smsProvider
+    );
+
+    // Framework for SMS - implement based on provider
+    const smsData = {
+      to: context.usersToNotify,
+      message: context.emailContent,
+      provider: preferences.smsProvider || "twilio",
+      created_at: new Date().toISOString(),
+    };
+
+    // Store SMS request in database for processing
+    const { error } = await supabase.from("sms_queue").insert(smsData);
+
+    if (error) {
+      console.error("🔔 [SMS-NOTIFICATION] Database error:", error);
+      return { success: false, method: "sms", error: error.message };
+    }
+
+    console.log("🔔 [SMS-NOTIFICATION] SMS notification queued successfully");
+    return { success: true, method: "sms", message: "SMS notification queued" };
+  } catch (error) {
+    console.error("🔔 [SMS-NOTIFICATION] Error:", error);
+    return {
+      success: false,
+      method: "sms",
+      error: error instanceof Error ? error.message : "Unknown error",
+    };
+  }
+}
+
+/**
+ * Send all notification types
+ */
+async function sendAllNotifications(
+  preferences: NotificationPreferences,
+  context: NotificationContext
+): Promise<NotificationResult> {
+  try {
+    console.log("🔔 [ALL-NOTIFICATIONS] Sending all notification types");
+
+    const results = await Promise.allSettled([
+      sendBrowserNotification(preferences, context),
+      sendInternalNotification(preferences, context),
+      sendSMSNotification(preferences, context),
+    ]);
+
+    const successCount = results.filter(
+      (result) => result.status === "fulfilled" && result.value.success
+    ).length;
+
+    console.log(`🔔 [ALL-NOTIFICATIONS] Sent ${successCount}/3 notification types`);
+
+    return {
+      success: successCount > 0,
+      method: "all",
+      message: `Sent ${successCount}/3 notification types`,
+    };
+  } catch (error) {
+    console.error("🔔 [ALL-NOTIFICATIONS] Error:", error);
+    return {
+      success: false,
+      method: "all",
+      error: error instanceof Error ? error.message : "Unknown error",
+    };
+  }
+}
 
 // CORS preflight handler
 export const OPTIONS: APIRoute = async () => {
