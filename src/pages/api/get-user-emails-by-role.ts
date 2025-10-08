@@ -115,11 +115,13 @@ export const POST: APIRoute = async ({ request }) => {
 
     // Also return the full user data for staff dropdowns
     const staffUsers = roleUsers || [];
+    const userIds = staffUsers.map((user) => user.id);
 
     return new Response(
       JSON.stringify({
         success: true,
         emails: uniqueEmails,
+        userIds: userIds, // Add user IDs for efficient notification creation
         count: uniqueEmails.length,
         staffUsers: staffUsers,
       }),

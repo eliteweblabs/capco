@@ -113,10 +113,13 @@ export const POST: APIRoute = async ({ request }) => {
           });
 
           let adminEmails = [];
+          let adminUserIds = [];
           if (adminResponse.ok) {
             const adminData = await adminResponse.json();
             adminEmails = adminData.emails || [];
+            adminUserIds = adminData.userIds || [];
             console.log("📧 [ASSIGN-STAFF] Admin emails:", adminEmails);
+            console.log("📧 [ASSIGN-STAFF] Admin user IDs:", adminUserIds);
           } else {
             console.error("📧 [ASSIGN-STAFF] Failed to fetch admin emails");
           }
@@ -157,10 +160,15 @@ export const POST: APIRoute = async ({ request }) => {
             // console.log("📧 [ASSIGN-STAFF] Sending admin email to:", adminEmails);
             const adminEmailData = {
               usersToNotify: adminEmails,
+              userIdsToNotify: adminUserIds, // Add user IDs for internal notifications
               emailSubject: `Project Assigned → ${projectDetails.address} → ${staffName}`,
               emailContent: `Project <b>${projectDetails.address}</b> has been assigned to <b>${staffName}</b>. Please monitor progress and provide support as needed.`,
               buttonLink: `${baseUrl}/project/${projectId}`,
               buttonText: "View Project",
+              notificationPreferences: {
+                method: "internal",
+                fallbackToEmail: true,
+              },
             };
             console.log("📧 [ASSIGN-STAFF] Admin email data:", adminEmailData);
 
