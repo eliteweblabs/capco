@@ -311,15 +311,28 @@
         try {
           // Test our verify endpoint
           const verifyUrl = `/api/auth/verify?token=${token}&type=${type}&redirect=${redirectTo || "/dashboard"}`;
-          const response = await fetch(verifyUrl, { method: "GET" });
-          const result = await response.text();
+          const response = await fetch(verifyUrl, { method: "GET", redirect: "follow" });
 
-          showResult(true, {
-            status: response.status,
-            statusText: response.statusText,
-            verifyUrl: verifyUrl,
-            response: result.substring(0, 500) + (result.length > 500 ? "..." : ""),
-          });
+          // Check if we got redirected
+          if (response.redirected) {
+            showResult(true, {
+              status: response.status,
+              statusText: response.statusText,
+              verifyUrl: verifyUrl,
+              redirected: true,
+              finalUrl: response.url,
+              response: `Redirected to: ${response.url}`,
+            });
+          } else {
+            const result = await response.text();
+            showResult(true, {
+              status: response.status,
+              statusText: response.statusText,
+              verifyUrl: verifyUrl,
+              redirected: false,
+              response: result.substring(0, 500) + (result.length > 500 ? "..." : ""),
+            });
+          }
         } catch (error) {
           showResult(false, {
             error: error.message,
@@ -343,6 +356,8 @@
             <p class="mt-2"><strong>Status:</strong> ${data.status} ${data.statusText}</p>
             ${data.url ? `<p><strong>URL:</strong> ${data.url}</p>` : ""}
             ${data.verifyUrl ? `<p><strong>Verify URL:</strong> ${data.verifyUrl}</p>` : ""}
+            ${data.redirected ? `<p class="text-green-600"><strong>✅ Redirected!</strong> The magic link worked and redirected you.</p>` : ""}
+            ${data.finalUrl ? `<p><strong>Final URL:</strong> ${data.finalUrl}</p>` : ""}
             <p class="mt-2"><strong>Response:</strong></p>
             <pre class="text-xs bg-gray-100 p-2 rounded overflow-auto">${data.response}</pre>
           `;
