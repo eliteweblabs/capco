@@ -24,12 +24,45 @@ interface EmailWebhookData {
   placeholders?: Record<string, string>;
 }
 
+export const GET: APIRoute = async () => {
+  console.log("📧 [EMAIL-WEBHOOK] GET request received - webhook is accessible");
+  return new Response(
+    JSON.stringify({
+      success: true,
+      message: "Email webhook endpoint is accessible",
+      timestamp: new Date().toISOString(),
+    }),
+    {
+      status: 200,
+      headers: { "Content-Type": "application/json" },
+    }
+  );
+};
+
 export const POST: APIRoute = async ({ request }) => {
   try {
     console.log("📧 [EMAIL-WEBHOOK] Received email webhook");
 
-    const body = await request.json();
-    console.log("📧 [EMAIL-WEBHOOK] Webhook body:", JSON.stringify(body, null, 2));
+    // Add basic connectivity test
+    if (!request) {
+      console.log("📧 [EMAIL-WEBHOOK] No request object provided");
+      return new Response(
+        JSON.stringify({ success: false, error: "No request object" }),
+        { status: 400, headers: { "Content-Type": "application/json" } }
+      );
+    }
+
+    let body;
+    try {
+      body = await request.json();
+      console.log("📧 [EMAIL-WEBHOOK] Webhook body:", JSON.stringify(body, null, 2));
+    } catch (jsonError) {
+      console.error("❌ [EMAIL-WEBHOOK] Error parsing JSON:", jsonError);
+      return new Response(
+        JSON.stringify({ success: false, error: "Invalid JSON in request body" }),
+        { status: 400, headers: { "Content-Type": "application/json" } }
+      );
+    }
 
     // Parse the email data (adjust based on your webhook provider)
     const emailData: EmailWebhookData = parseWebhookData(body);
