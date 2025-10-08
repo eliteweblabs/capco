@@ -38,6 +38,8 @@ export const GET: APIRoute = async ({ url, cookies, redirect, request }) => {
     hasTokenHash: !!token_hash,
     hasToken: !!token,
     type,
+    hasEmail: !!email,
+    email: email,
     redirectPath,
   });
 
@@ -77,6 +79,14 @@ export const GET: APIRoute = async ({ url, cookies, redirect, request }) => {
         type: "magiclink",
         email: email,
       });
+
+      console.log("🔐 [VERIFY] Magic link verification result:", {
+        hasError: !!verificationResult.error,
+        errorMessage: verificationResult.error?.message,
+        hasData: !!verificationResult.data,
+        hasSession: !!verificationResult.data?.session,
+        hasUser: !!verificationResult.data?.user,
+      });
     } else if (token_hash && type) {
       // Handle other verification types with token_hash
       console.log(`🔐 [VERIFY] Attempting ${type} verification with token hash...`);
@@ -107,7 +117,15 @@ export const GET: APIRoute = async ({ url, cookies, redirect, request }) => {
         status: error.status,
         code: error.code,
       });
-      return redirect("/login?error=verification_failed");
+
+      // Handle specific error cases
+      if (error.code === "otp_expired") {
+        return redirect("/login?error=token_expired");
+      } else if (error.code === "invalid_token") {
+        return redirect("/login?error=invalid_token");
+      } else {
+        return redirect("/login?error=verification_failed");
+      }
     }
 
     console.log("🔐 [VERIFY] Verification successful:", {
