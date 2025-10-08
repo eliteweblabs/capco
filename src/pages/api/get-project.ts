@@ -862,10 +862,8 @@ async function handleSingleProject(projectId: string, cookies: any) {
       .eq("id", projectId)
       .single();
 
-    // Remove the log column if it exists
-    if (project && project.log) {
-      delete project.log;
-    }
+    // Keep the log column for project activity tracking
+    // Note: Log column is used by SimpleProjectLogger for activity tracking
 
     if (projectError) {
       console.error("📡 [GET-PROJECT-ID] Database error:", projectError);
