@@ -243,25 +243,22 @@ export const POST: APIRoute = async ({ request, cookies }): Promise<Response> =>
 
           if (shouldGenerateMagicLink) {
             try {
-              // Use the verify endpoint with redirect parameter
               // Ensure buttonLink is properly formatted (starts with /)
               const cleanButtonLink = buttonLink.startsWith("/") ? buttonLink : `/${buttonLink}`;
-              const verifyUrl = `${baseUrl}/api/auth/verify?redirect=${encodeURIComponent(cleanButtonLink)}`;
 
               console.log("🔗 [EMAIL-DELIVERY] Magic link configuration:", {
                 buttonLink,
                 cleanButtonLink,
-                verifyUrl,
                 baseUrl,
               });
 
-              // Generate magic link using admin.generateLink but with our verify endpoint
+              // Generate magic link using admin.generateLink with direct redirect
               const { data: magicLinkData, error: magicLinkError } =
                 await supabaseAdmin.auth.admin.generateLink({
                   type: "magiclink",
                   email: userEmail,
                   options: {
-                    redirectTo: verifyUrl,
+                    redirectTo: `${baseUrl}${cleanButtonLink}`,
                   },
                 });
 
@@ -281,8 +278,8 @@ export const POST: APIRoute = async ({ request, cookies }): Promise<Response> =>
                 const token = url.searchParams.get("token");
                 const type = url.searchParams.get("type");
 
-                // Construct our own magic link that goes to our verify endpoint
-                const ourMagicLinkUrl = `${baseUrl}/api/auth/verify?token=${token}&type=${type}&redirect=${encodeURIComponent(verifyUrl)}`;
+                // Construct our own magic link that goes to our verify endpoint with the final destination
+                const ourMagicLinkUrl = `${baseUrl}/api/auth/verify?token=${token}&type=${type}&redirect=${encodeURIComponent(cleanButtonLink)}`;
                 finalButtonLink = ourMagicLinkUrl;
 
                 console.log("🔗 [EMAIL-DELIVERY] Generated magic link successfully");
