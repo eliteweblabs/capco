@@ -261,6 +261,8 @@ export const POST: APIRoute = async ({ request, cookies }): Promise<Response> =>
                   email: userEmail,
                   options: {
                     redirectTo: redirectUrl,
+                    // Extend token expiration to 24 hours (in seconds)
+                    expiresIn: 24 * 60 * 60, // 24 hours
                   },
                 });
 
@@ -272,11 +274,26 @@ export const POST: APIRoute = async ({ request, cookies }): Promise<Response> =>
                   code: magicLinkError.code,
                 });
               } else {
+                console.log("📧 [EMAIL-DELIVERY] Magic link generated successfully");
+                console.log("📧 [EMAIL-DELIVERY] Supabase magic link data:", {
+                  hasProperties: !!magicLinkData.properties,
+                  actionLink: magicLinkData.properties?.action_link ? "present" : "missing",
+                  fullData: JSON.stringify(magicLinkData, null, 2),
+                });
+
                 // Extract token from Supabase's magic link and create our own
                 const supabaseUrl = magicLinkData.properties.action_link;
                 const url = new URL(supabaseUrl);
                 const token = url.searchParams.get("token");
                 const type = url.searchParams.get("type");
+
+                console.log("📧 [EMAIL-DELIVERY] Extracted token details:", {
+                  hasToken: !!token,
+                  tokenLength: token?.length,
+                  tokenPreview: token ? `${token.substring(0, 10)}...` : "none",
+                  type,
+                  supabaseUrl,
+                });
 
                 if (token && type) {
                   // Create our own magic link that goes directly to our verify endpoint
