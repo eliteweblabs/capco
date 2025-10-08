@@ -740,15 +740,15 @@ async function sendInternalNotification(
 
     // Create internal notifications for each user ID
     const notifications = userIds.map((userId) => ({
-      userId: userId,
+      user_id: userId, // Use snake_case to match database schema
       title: context.emailSubject,
       message: context.emailContent,
       type: preferences.internalNotificationType || "info",
       priority: preferences.internalNotificationPriority || "normal",
-      actionUrl: context.buttonLink,
-      actionText: context.buttonText || "View Details",
+      action_url: context.buttonLink, // Use snake_case to match database schema
+      action_text: context.buttonText || "View Details", // Use snake_case to match database schema
       viewed: false,
-      createdAt: new Date().toISOString(),
+      created_at: new Date().toISOString(), // Use snake_case to match database schema
     }));
 
     // Store in notifications table (read by NotificationDropdown.astro)
