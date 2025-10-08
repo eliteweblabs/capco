@@ -1,5 +1,7 @@
 ---
 // OAuth callback page for handling PKCE flow client-side
+const supabaseUrl = import.meta.env.PUBLIC_SUPABASE_URL;
+const supabaseAnonKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY;
 ---
 
 <!doctype html>
@@ -36,6 +38,10 @@
     </style>
 
     <script>
+      // Pass server-side environment variables to client
+      const supabaseUrl = `${supabaseUrl}`;
+      const supabaseAnonKey = `${supabaseAnonKey}`;
+
       async function handleOAuthCallback() {
         try {
           console.log("🔄 [OAUTH-CALLBACK] Starting OAuth callback handling...");
@@ -51,10 +57,6 @@
           }
 
           console.log("✅ [OAUTH-CALLBACK] Authorization code found");
-
-          // Initialize Supabase client with PKCE flow
-          const supabaseUrl = import.meta.env.PUBLIC_SUPABASE_URL;
-          const supabaseAnonKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY;
 
           if (!supabaseUrl || !supabaseAnonKey) {
             console.error("❌ [OAUTH-CALLBACK] Missing Supabase configuration");
