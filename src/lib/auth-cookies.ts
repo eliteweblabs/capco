@@ -29,3 +29,36 @@ export function clearAuthCookies(cookies: AstroCookies) {
   cookies.delete("sb-access-token", { path: "/" });
   cookies.delete("sb-refresh-token", { path: "/" });
 }
+
+export async function getCurrentSession(cookies: AstroCookies) {
+  const accessToken = cookies.get("sb-access-token")?.value;
+  const refreshToken = cookies.get("sb-refresh-token")?.value;
+  
+  if (!accessToken || !refreshToken) {
+    return null;
+  }
+  
+  try {
+    // Import supabase dynamically to avoid circular dependencies
+    const { supabase } = await import("./supabase");
+    
+    if (!supabase) {
+      return null;
+    }
+    
+    // Set the session in the supabase client
+    const { data, error } = await supabase.auth.setSession({
+      access_token: accessToken,
+      refresh_token: refreshToken,
+    });
+    
+    if (error || !data.session) {
+      return null;
+    }
+    
+    return data.session;
+  } catch (error) {
+    console.error("❌ [AUTH-COOKIES] Error getting current session:", error);
+    return null;
+  }
+}
