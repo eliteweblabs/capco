@@ -37,7 +37,7 @@ export const GET: APIRoute = async ({ url, cookies, redirect, request }) => {
 
     // Check for existing session and log out if different user
     const currentSession = await getCurrentSession(cookies);
-    
+
     console.log("🔐 [VERIFY-CUSTOM] Session management check:", {
       hasCurrentSession: !!currentSession,
       currentUserEmail: currentSession?.user?.email,
@@ -50,19 +50,23 @@ export const GET: APIRoute = async ({ url, cookies, redirect, request }) => {
         previousUser: currentSession.user?.email,
         newUser: email,
       });
-      
+
       // Log the logout of the previous user
       try {
-        await SimpleProjectLogger.logUserLogout(currentSession.user?.email || "Unknown", "magiclink_switch", {
-          reason: "Different user logged in via magic link",
-          newUser: email,
-          timestamp: new Date().toISOString(),
-        });
+        await SimpleProjectLogger.logUserLogout(
+          currentSession.user?.email || "Unknown",
+          "magiclink_switch",
+          {
+            reason: "Different user logged in via magic link",
+            newUser: email,
+            timestamp: new Date().toISOString(),
+          }
+        );
         console.log("✅ [VERIFY-CUSTOM] Previous user logout logged successfully");
       } catch (logError) {
         console.error("❌ [VERIFY-CUSTOM] Error logging previous user logout:", logError);
       }
-      
+
       // Clear existing auth cookies
       clearAuthCookies(cookies);
       console.log("🔐 [VERIFY-CUSTOM] Cleared previous user's auth cookies");
@@ -78,24 +82,26 @@ export const GET: APIRoute = async ({ url, cookies, redirect, request }) => {
     console.log("🔐 [VERIFY-CUSTOM] Verifying custom token...");
     console.log("🔐 [VERIFY-CUSTOM] Looking for token:", token);
     console.log("🔐 [VERIFY-CUSTOM] Looking for email:", email);
-    
+
     const { data: tokenData, error: tokenError } = await supabaseAdmin
-      .from('magic_link_tokens')
-      .select('*')
-      .eq('token', token)
-      .eq('email', email)
+      .from("magic_link_tokens")
+      .select("*")
+      .eq("token", token)
+      .eq("email", email)
       .single();
 
     console.log("🔐 [VERIFY-CUSTOM] Token query result:", {
       hasData: !!tokenData,
       hasError: !!tokenError,
       errorMessage: tokenError?.message,
-      tokenData: tokenData ? {
-        id: tokenData.id,
-        email: tokenData.email,
-        expires_at: tokenData.expires_at,
-        used_at: tokenData.used_at,
-      } : null,
+      tokenData: tokenData
+        ? {
+            id: tokenData.id,
+            email: tokenData.email,
+            expires_at: tokenData.expires_at,
+            used_at: tokenData.used_at,
+          }
+        : null,
     });
 
     if (tokenError) {
@@ -111,7 +117,7 @@ export const GET: APIRoute = async ({ url, cookies, redirect, request }) => {
     // Check if token is expired
     const now = new Date();
     const expiresAt = new Date(tokenData.expires_at);
-    
+
     if (now > expiresAt) {
       console.log("🔐 [VERIFY-CUSTOM] Token has expired");
       return redirect("/login?error=token_expired");
@@ -121,14 +127,15 @@ export const GET: APIRoute = async ({ url, cookies, redirect, request }) => {
 
     // Use Supabase's built-in magic link system but with our custom token validation
     console.log("🔐 [VERIFY-CUSTOM] Generating Supabase magic link for authentication...");
-    
-    const { data: magicLinkData, error: magicLinkError } = await supabaseAdmin.auth.admin.generateLink({
-      type: "magiclink",
-      email: email,
-      options: {
-        redirectTo: `${process.env.PUBLIC_SUPABASE_URL || 'https://capcofire.com'}${redirectPath}`,
-      },
-    });
+
+    const { data: magicLinkData, error: magicLinkError } =
+      await supabaseAdmin.auth.admin.generateLink({
+        type: "magiclink",
+        email: email,
+        options: {
+          redirectTo: `${process.env.PUBLIC_SUPABASE_URL || "https://capcofire.com"}${redirectPath}`,
+        },
+      });
 
     if (magicLinkError) {
       console.error("🔐 [VERIFY-CUSTOM] Error generating magic link:", magicLinkError);
@@ -140,12 +147,9 @@ export const GET: APIRoute = async ({ url, cookies, redirect, request }) => {
     // Extract the actual magic link URL and redirect to it
     const magicLinkUrl = magicLinkData.properties.action_link;
     console.log("🔐 [VERIFY-CUSTOM] Redirecting to Supabase magic link:", magicLinkUrl);
-    
+
     // Delete the used token before redirecting
-    await supabaseAdmin
-      .from('magic_link_tokens')
-      .delete()
-      .eq('token', token);
+    await supabaseAdmin.from("magic_link_tokens").delete().eq("token", token);
 
     console.log("🔐 [VERIFY-CUSTOM] Deleted used token");
 
@@ -162,7 +166,9 @@ export const GET: APIRoute = async ({ url, cookies, redirect, request }) => {
       console.error("❌ [VERIFY-CUSTOM] Error logging login event:", logError);
     }
 
-    console.log("🔐 [VERIFY-CUSTOM] Custom magic link verification complete, redirecting to Supabase magic link");
+    console.log(
+      "🔐 [VERIFY-CUSTOM] Custom magic link verification complete, redirecting to Supabase magic link"
+    );
     return redirect(magicLinkUrl);
   } catch (error) {
     console.error("🔐 [VERIFY-CUSTOM] Unexpected error in custom magic link verification:", error);
