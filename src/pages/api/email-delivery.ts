@@ -285,18 +285,26 @@ export const POST: APIRoute = async ({ request, cookies }): Promise<Response> =>
                 const supabaseUrl = magicLinkData.properties.action_link;
                 const url = new URL(supabaseUrl);
                 const token = url.searchParams.get("token");
+                const tokenHash = url.searchParams.get("token_hash");
                 const type = url.searchParams.get("type");
 
                 console.log("📧 [EMAIL-DELIVERY] Extracted token details:", {
                   hasToken: !!token,
+                  hasTokenHash: !!tokenHash,
                   tokenLength: token?.length,
+                  tokenHashLength: tokenHash?.length,
                   tokenPreview: token ? `${token.substring(0, 10)}...` : "none",
+                  tokenHashPreview: tokenHash ? `${tokenHash.substring(0, 10)}...` : "none",
                   type,
                   supabaseUrl,
                 });
 
-                if (token && type) {
+                if (tokenHash && type) {
                   // Create our own magic link that goes directly to our verify endpoint
+                  // Use token_hash and type=email to match Supabase's expected format
+                  finalButtonLink = `${baseUrl}/api/auth/verify?token_hash=${tokenHash}&type=email&email=${encodeURIComponent(userEmail)}&redirect=${encodeURIComponent(cleanButtonLink)}`;
+                } else if (token && type) {
+                  // Fallback to token if token_hash not available
                   finalButtonLink = `${baseUrl}/api/auth/verify?token=${token}&type=${type}&email=${encodeURIComponent(userEmail)}&redirect=${encodeURIComponent(cleanButtonLink)}`;
 
                   console.log("🔗 [EMAIL-DELIVERY] Generated custom magic link successfully");
