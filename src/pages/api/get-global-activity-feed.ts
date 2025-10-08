@@ -57,6 +57,8 @@ export const GET: APIRoute = async ({ cookies, url }) => {
     const actionFilter = searchParams.get("action");
 
     // Get all projects with their logs (without profile join for now)
+    console.log("📊 [GET-GLOBAL-ACTIVITY-FEED] Fetching projects with logs...");
+
     const { data: projects, error: projectsError } = await supabase!
       .from("projects")
       .select(
@@ -65,7 +67,7 @@ export const GET: APIRoute = async ({ cookies, url }) => {
         address,
         title,
         log,
-        authorId,
+        authorId
       `
       )
       .not("log", "is", null)
@@ -73,7 +75,10 @@ export const GET: APIRoute = async ({ cookies, url }) => {
       .neq("id", 0); // Exclude system log project
 
     if (projectsError) {
-      console.error("Error fetching projects with logs:", projectsError);
+      console.error(
+        "❌ [GET-GLOBAL-ACTIVITY-FEED] Error fetching projects with logs:",
+        projectsError
+      );
       return new Response(
         JSON.stringify({
           error: "Failed to fetch activity data",
@@ -87,27 +92,50 @@ export const GET: APIRoute = async ({ cookies, url }) => {
       );
     }
 
+    console.log("📊 [GET-GLOBAL-ACTIVITY-FEED] Found projects:", projects?.length || 0);
+
     // Extract and flatten all log entries with project context
     // Get companyName from the joined profiles table
     const allActivities: any[] = [];
 
-    projects?.forEach((project) => {
-      // Skip if project is a ParserError
-      if (project && typeof project === "object" && "id" in project) {
-        const logs = (project as any).log || [];
+    try {
+      projects?.forEach((project) => {
+        // Skip if project is a ParserError
+        if (project && typeof project === "object" && "id" in project) {
+          const logs = (project as any).log || [];
 
-        logs.forEach((logEntry: any) => {
-          allActivities.push({
-            ...logEntry,
-            projectId: (project as any).id,
-            address: (project as any).address,
-            projectTitle: (project as any).title,
-            projectOwner: "Unknown", // Will be populated later if needed
-            projectOwnerId: (project as any).authorId,
-          });
-        });
-      }
-    });
+          if (Array.isArray(logs)) {
+            logs.forEach((logEntry: any) => {
+              if (logEntry && typeof logEntry === "object") {
+                allActivities.push({
+                  ...logEntry,
+                  projectId: (project as any).id,
+                  address: (project as any).address,
+                  projectTitle: (project as any).title,
+                  projectOwner: "Unknown", // Will be populated later if needed
+                  projectOwnerId: (project as any).authorId,
+                });
+              }
+            });
+          }
+        }
+      });
+    } catch (processingError) {
+      console.error("❌ [GET-GLOBAL-ACTIVITY-FEED] Error processing activities:", processingError);
+      return new Response(
+        JSON.stringify({
+          error: "Failed to process activity data",
+          details:
+            processingError instanceof Error ? processingError.message : "Unknown processing error",
+        }),
+        {
+          status: 500,
+          headers: { "Content-Type": "application/json" },
+        }
+      );
+    }
+
+    console.log("📊 [GET-GLOBAL-ACTIVITY-FEED] Processed activities:", allActivities.length);
 
     // Sort by timestamp (most recent first)
     allActivities.sort((a, b) => {
