@@ -185,8 +185,18 @@ const { globalInputClasses, globalSecondaryTextClasses, globalPrimaryTextClasses
 <script>
   // Handle form submission with client-side validation feedback
   document.addEventListener("DOMContentLoaded", () => {
-    // Get form elements
+    // Add touched class to inputs after user interaction to prevent instant validation in Firefox
+    const inputs = document.querySelectorAll("input[required]");
+    inputs.forEach((input) => {
+      input.addEventListener("blur", () => {
+        input.classList.add("touched");
+      });
+      input.addEventListener("input", () => {
+        input.classList.add("touched");
+      });
+    });
 
+    // Get form elements
     const registerForm = document.querySelector('form[action="/api/auth/register"]');
     if (registerForm) {
       registerForm.addEventListener("submit", async (e) => {

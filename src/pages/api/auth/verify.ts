@@ -45,9 +45,11 @@ export const GET: APIRoute = async ({ url, cookies, redirect }) => {
   // Log the actual token values for debugging (truncated for security)
   if (token_hash) {
     console.log("🔐 [VERIFY] Token hash (first 10 chars):", token_hash.substring(0, 10) + "...");
+    console.log("🔐 [VERIFY] Token hash length:", token_hash.length);
   }
   if (token) {
     console.log("🔐 [VERIFY] Token (first 10 chars):", token.substring(0, 10) + "...");
+    console.log("🔐 [VERIFY] Token length:", token.length);
   }
 
   if (!code && !token_hash && !token) {
@@ -90,19 +92,34 @@ export const GET: APIRoute = async ({ url, cookies, redirect }) => {
       console.error("🔐 [VERIFY] Error details:", {
         message: error.message,
         status: error.status,
+        code: error.code,
+      });
+
+      // Log token details for debugging
+      console.error("🔐 [VERIFY] Token details for debugging:", {
+        hasToken: !!token,
+        hasTokenHash: !!token_hash,
+        tokenLength: token?.length || 0,
+        tokenHashLength: token_hash?.length || 0,
+        type,
       });
 
       // Handle specific error types
-      if (error.message.includes("expired")) {
+      if (error.message.includes("expired") || error.message.includes("Expired")) {
         console.log("🔐 [VERIFY] Token expired");
         return redirect("/login?error=verification_expired");
-      } else if (error.message.includes("invalid")) {
-        console.log("🔐 [VERIFY] Invalid token - possible Resend tracking interference");
+      } else if (error.message.includes("invalid") || error.message.includes("Invalid")) {
+        console.log(
+          "🔐 [VERIFY] Invalid token - possible Resend tracking interference or malformed token"
+        );
         console.log("🔐 [VERIFY] Full error:", error);
         return redirect("/login?error=verification_invalid");
-      } else if (error.message.includes("token")) {
+      } else if (error.message.includes("token") || error.message.includes("Token")) {
         console.log("🔐 [VERIFY] Token-related error:", error.message);
         return redirect("/login?error=token_error");
+      } else if (error.message.includes("missing") || error.message.includes("Missing")) {
+        console.log("🔐 [VERIFY] Missing token error:", error.message);
+        return redirect("/login?error=no_token");
       }
 
       console.log("🔐 [VERIFY] General verification error:", error.message);
