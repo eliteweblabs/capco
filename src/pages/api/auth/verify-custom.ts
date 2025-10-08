@@ -105,45 +105,10 @@ export const GET: APIRoute = async ({ url, cookies, redirect, request }) => {
 
     console.log("🔐 [VERIFY-CUSTOM] Token is valid, proceeding with authentication");
 
-    // Get or create user
-    let user;
-    try {
-      // Try to get existing user
-      const { data: existingUser, error: getUserError } = await supabaseAdmin.auth.admin.getUserByEmail(email);
-      
-      if (getUserError && getUserError.message !== "User not found") {
-        console.error("🔐 [VERIFY-CUSTOM] Error getting user:", getUserError);
-        return redirect("/login?error=user_error");
-      }
-
-      if (existingUser) {
-        user = existingUser;
-        console.log("🔐 [VERIFY-CUSTOM] Found existing user:", user.id);
-      } else {
-        // Create new user
-        console.log("🔐 [VERIFY-CUSTOM] Creating new user for:", email);
-        const { data: newUser, error: createError } = await supabaseAdmin.auth.admin.createUser({
-          email: email,
-          email_confirm: true,
-        });
-
-        if (createError) {
-          console.error("🔐 [VERIFY-CUSTOM] Error creating user:", createError);
-          return redirect("/login?error=user_creation_failed");
-        }
-
-        user = newUser;
-        console.log("🔐 [VERIFY-CUSTOM] Created new user:", user.id);
-      }
-    } catch (error) {
-      console.error("🔐 [VERIFY-CUSTOM] Error in user management:", error);
-      return redirect("/login?error=user_error");
-    }
-
-    // Create a session for the user
-    console.log("🔐 [VERIFY-CUSTOM] Creating session for user:", user.id);
+    // Use Supabase's built-in magic link system but with our custom token validation
+    console.log("🔐 [VERIFY-CUSTOM] Generating Supabase magic link for authentication...");
     
-    const { data: sessionData, error: sessionError } = await supabaseAdmin.auth.admin.generateLink({
+    const { data: magicLinkData, error: magicLinkError } = await supabaseAdmin.auth.admin.generateLink({
       type: "magiclink",
       email: email,
       options: {
@@ -151,27 +116,18 @@ export const GET: APIRoute = async ({ url, cookies, redirect, request }) => {
       },
     });
 
-    if (sessionError) {
-      console.error("🔐 [VERIFY-CUSTOM] Error creating session:", sessionError);
+    if (magicLinkError) {
+      console.error("🔐 [VERIFY-CUSTOM] Error generating magic link:", magicLinkError);
       return redirect("/login?error=session_error");
     }
 
-    // Extract session tokens from the generated link
-    const sessionUrl = sessionData.properties.action_link;
-    const sessionUrlObj = new URL(sessionUrl);
-    const accessToken = sessionUrlObj.searchParams.get("access_token");
-    const refreshToken = sessionUrlObj.searchParams.get("refresh_token");
+    console.log("🔐 [VERIFY-CUSTOM] Magic link generated successfully");
 
-    if (!accessToken || !refreshToken) {
-      console.error("🔐 [VERIFY-CUSTOM] Failed to extract session tokens");
-      return redirect("/login?error=session_error");
-    }
-
-    // Set auth cookies
-    console.log("🔐 [VERIFY-CUSTOM] Setting auth cookies for user:", email);
-    setAuthCookies(cookies, accessToken, refreshToken);
-
-    // Delete the used token
+    // Extract the actual magic link URL and redirect to it
+    const magicLinkUrl = magicLinkData.properties.action_link;
+    console.log("🔐 [VERIFY-CUSTOM] Redirecting to Supabase magic link:", magicLinkUrl);
+    
+    // Delete the used token before redirecting
     await supabaseAdmin
       .from('magic_link_tokens')
       .delete()
@@ -192,8 +148,8 @@ export const GET: APIRoute = async ({ url, cookies, redirect, request }) => {
       console.error("❌ [VERIFY-CUSTOM] Error logging login event:", logError);
     }
 
-    console.log("🔐 [VERIFY-CUSTOM] Custom magic link verification complete, redirecting to:", redirectPath);
-    return redirect(`${redirectPath}?message=welcome`);
+    console.log("🔐 [VERIFY-CUSTOM] Custom magic link verification complete, redirecting to Supabase magic link");
+    return redirect(magicLinkUrl);
   } catch (error) {
     console.error("🔐 [VERIFY-CUSTOM] Unexpected error in custom magic link verification:", error);
     return redirect("/login?error=verification_error");
