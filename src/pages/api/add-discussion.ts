@@ -157,10 +157,13 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       });
 
       let adminStaffEmails = [];
+      let adminStaffUserIds = [];
       if (adminStaffResponse.ok) {
         const adminStaffData = await adminStaffResponse.json();
         adminStaffEmails = adminStaffData.emails || [];
+        adminStaffUserIds = adminStaffData.userIds || [];
         // console.log("💬 [ADD-DISCUSSION] Admin/Staff emails:", adminStaffEmails);
+        // console.log("💬 [ADD-DISCUSSION] Admin/Staff user IDs:", adminStaffUserIds);
       } else {
         console.error("💬 [ADD-DISCUSSION] Failed to fetch admin/staff emails");
       }
@@ -212,11 +215,16 @@ export const POST: APIRoute = async ({ request, cookies }) => {
           },
           body: JSON.stringify({
             usersToNotify: adminStaffEmails,
+            userIdsToNotify: adminStaffUserIds, // Add user IDs for internal notifications
             emailType: "clientComment",
             emailSubject: subjectLine,
             emailContent: emailContent,
             buttonLink: buttonLink,
             buttonText: buttonText,
+            notificationPreferences: {
+              method: "internal",
+              fallbackToEmail: true,
+            },
           }),
         });
 

@@ -239,16 +239,17 @@ async function sendDemoBookingEmails(booking: any, request: Request) {
   console.log("📧 [DEMO-BOOKING] Starting email notifications for booking:", booking.id);
 
   try {
-    // Get admin emails
-    const adminEmails = await getAdminEmails();
-    console.log("📧 [DEMO-BOOKING] Found admin emails:", adminEmails);
+    // Get admin emails and user IDs
+    const adminData = await getAdminEmails();
+    console.log("📧 [DEMO-BOOKING] Found admin emails:", adminData.emails);
+    console.log("📧 [DEMO-BOOKING] Found admin user IDs:", adminData.userIds);
 
     // Get the base URL for links
     const currentUrl = new URL(request.url);
     const baseUrl = currentUrl.origin;
 
     // Send notification to admins
-    if (adminEmails.length > 0) {
+    if (adminData.emails.length > 0) {
       const adminEmailContent = `
         <h2>New Demo Booking Request</h2>
         <p>A new demo booking has been submitted through the website:</p>
@@ -286,12 +287,17 @@ async function sendDemoBookingEmails(booking: any, request: Request) {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          usersToNotify: adminEmails,
+          usersToNotify: adminData.emails,
+          userIdsToNotify: adminData.userIds, // Add user IDs for internal notifications
           emailType: "demoBookingAdmin",
           emailSubject: `New Demo Request → ${booking.name}`,
           emailContent: adminEmailContent,
           buttonText: "View Dashboard",
           buttonLink: "/dashboard",
+          notificationPreferences: {
+            method: "internal",
+            fallbackToEmail: true,
+          },
         }),
       });
 
@@ -353,7 +359,7 @@ async function sendDemoBookingEmails(booking: any, request: Request) {
 }
 
 // Function to get admin email addresses
-async function getAdminEmails(): Promise<string[]> {
+async function getAdminEmails(): Promise<{ emails: string[]; userIds: string[] }> {
   try {
     const response = await fetch(`${process.env.SITE_URL}/api/get-user-emails-by-role`, {
       method: "POST",
@@ -367,14 +373,17 @@ async function getAdminEmails(): Promise<string[]> {
 
     if (response.ok) {
       const data = await response.json();
-      return data.emails || [];
+      return {
+        emails: data.emails || [],
+        userIds: data.userIds || [],
+      };
     } else {
       console.error("Failed to get admin emails:", response.status);
-      return [];
+      return { emails: [], userIds: [] };
     }
   } catch (error) {
     console.error("Error getting admin emails:", error);
-    return [];
+    return { emails: [], userIds: [] };
   }
 }
 

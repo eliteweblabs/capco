@@ -304,6 +304,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       .eq("key", role === "Client" ? "welcomeClientEmailContent" : "welcomeStaffEmailContent")
       .single();
 
+    console.log("📧 [CREATE-USER] User template:", userTemplate);
     if (userTemplate?.value) {
       console.log("📧 [CREATE-USER] Email template found, processing placeholders...");
       userEmailContent = replacePlaceholders(userTemplate.value, {
@@ -324,22 +325,21 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       console.log("⚠️ [CREATE-USER] No email template found, using default content");
     }
 
+    const emailFooterContent = `
+    <b>Company Name:</b> ${displayName}<br>
+    <b>Email:</b> ${email}<br>
+    <b>First Name:</b> ${firstName}<br>
+    <b>Last Name:</b> ${lastName}<br>
+    <b>Phone:</b> ${phone || "Not provided"}<br>
+    <b>SMS Alerts:</b> ${smsAlerts ? "Enabled" : "Disabled"}<br>
+    <b>Mobile Carrier:</b> ${mobileCarrier || "Not provided"}<br>
+    <b>Registration Date:</b> ${new Date().toLocaleDateString()}<br><br>`;
     // Add user details to email content
-    userEmailContent += `
-      <b>SMS Alerts:</b> ${smsAlerts ? "Enabled" : "Disabled"}<br>
-      <b>Mobile Carrier:</b> ${mobileCarrier || "Not provided"}<br>
-      <b>Registration Date:</b> ${new Date().toLocaleDateString()}<br><br>`;
+    userEmailContent += emailFooterContent;
 
     // Prepare admin notification content
-    adminEmailContent = `A new user account has been created successfully:<br><br>
-      <b>Company Name:</b> ${displayName}<br>
-      <b>Email:</b> ${email}<br>
-      <b>First Name:</b> ${firstName}<br>
-      <b>Last Name:</b> ${lastName}<br>
-      <b>Phone:</b> ${phone || "Not provided"}<br>
-      <b>SMS Alerts:</b> ${smsAlerts ? "Enabled" : "Disabled"}<br>
-      <b>Mobile Carrier:</b> ${mobileCarrier || "Not provided"}<br>
-      <b>Registration Date:</b> ${new Date().toLocaleDateString()}<br><br>`;
+    adminEmailContent += `A new user account has been created successfully:<br><br>`;
+    adminEmailContent += emailFooterContent;
 
     // Send welcome email to user
     console.log("📧 [CREATE-USER] Sending welcome email to user...");
@@ -377,21 +377,28 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       });
 
       const adminUsers = await adminResponse.json();
-      console.log("📧 [CREATE-USER] Found admin users:", adminUsers.emails?.length || 0);
+      console.log("📧 [CREATE-USER] Found admin users:", adminUsers.staffUsers?.length || 0);
 
-      if (adminUsers.emails && adminUsers.emails.length > 0) {
-        // Send notification to all admin emails
-        console.log("📧 [CREATE-USER] Sending notification to admin emails:", adminUsers.emails);
+      if (adminUsers.staffUsers && adminUsers.staffUsers.length > 0) {
+        // Send notification to all admin users using their IDs
+        console.log("📧 [CREATE-USER] Sending notification to admin users:", adminUsers.emails);
         await fetch(`${getApiBaseUrl()}/api/email-delivery`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            emailType: "notification",
-            usersToNotify: adminUsers.emails,
+            emailType: "magicLink",
+            usersToNotify: adminUsers.emails, // Emails for email delivery
+            userIdsToNotify: adminUsers.userIds, // User IDs for internal notifications (more efficient)
             emailSubject: `New User → ${displayName} → ${role}`,
             emailContent: adminEmailContent,
             buttonText: "View Users",
             buttonLink: "/admin/users",
+            trackLinks: false,
+            currentUser: currentUser,
+            notificationPreferences: {
+              method: "internal",
+              fallbackToEmail: true,
+            },
           }),
         });
         console.log("✅ [CREATE-USER] Admin notifications sent");
