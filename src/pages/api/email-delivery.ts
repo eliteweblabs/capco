@@ -280,7 +280,7 @@ export const POST: APIRoute = async ({ request, cookies }): Promise<Response> =>
 
                 if (token && type) {
                   // Create our own magic link that goes directly to our verify endpoint
-                  finalButtonLink = `${baseUrl}/api/auth/verify?token=${token}&type=${type}&redirect=${encodeURIComponent(cleanButtonLink)}`;
+                  finalButtonLink = `${baseUrl}/api/auth/verify?token=${token}&type=${type}&email=${encodeURIComponent(userEmail)}&redirect=${encodeURIComponent(cleanButtonLink)}`;
 
                   console.log("🔗 [EMAIL-DELIVERY] Generated custom magic link successfully");
                   console.log("🔗 [EMAIL-DELIVERY] Custom magic link URL:", finalButtonLink);
