@@ -1,6 +1,7 @@
 import type { APIRoute } from "astro";
 import { setAuthCookies } from "../../../lib/auth-cookies";
 import { supabase } from "../../../lib/supabase";
+import { SimpleProjectLogger } from "../../../lib/simple-logging";
 
 export const GET: APIRoute = async ({ url, cookies, redirect }) => {
   console.log("🔐 [VERIFY] Email verification started");
@@ -152,6 +153,24 @@ export const GET: APIRoute = async ({ url, cookies, redirect }) => {
 
     // Use shared utility for consistent cookie handling
     setAuthCookies(cookies, access_token, refresh_token);
+
+    // Log the successful login
+    try {
+      await SimpleProjectLogger.logUserLogin(
+        data.user?.email || "Unknown",
+        "magiclink",
+        {
+          provider: "magiclink",
+          userAgent: request.headers.get("user-agent"),
+          timestamp: new Date().toISOString(),
+          redirectPath,
+        }
+      );
+      console.log("✅ [VERIFY] Login event logged successfully");
+    } catch (logError) {
+      console.error("❌ [VERIFY] Error logging login event:", logError);
+      // Don't fail the auth flow if logging fails
+    }
 
     console.log("🔐 [VERIFY] Email verification complete, redirecting to:", redirectPath);
     return redirect(`${redirectPath}?message=welcome`);

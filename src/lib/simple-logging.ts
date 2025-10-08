@@ -30,6 +30,7 @@ export type LogType =
   | "emailSent"
   | "emailFailed"
   | "userLogin"
+  | "userLogout"
   | "userRegistration"
   | "adminAction"
   | "systemEvent"
@@ -268,5 +269,143 @@ export class SimpleProjectLogger {
 
     // Fallback
     return "Unknown User";
+  }
+
+  /**
+   * Log user login event
+   * @param userEmail - The user's email address
+   * @param loginMethod - How they logged in (email, google, magiclink, etc.)
+   * @param metadata - Additional login data
+   */
+  static async logUserLogin(
+    userEmail: string,
+    loginMethod: string = "email",
+    metadata?: any
+  ): Promise<boolean> {
+    try {
+      console.log("📝 [SIMPLE-LOGGER] Logging user login:", {
+        userEmail,
+        loginMethod,
+        metadata,
+      });
+
+      const logEntry: SimpleLogEntry = {
+        timestamp: new Date().toISOString(),
+        action: "userLogin",
+        user: userEmail,
+        message: `User logged in via ${loginMethod}`,
+        metadata: {
+          loginMethod,
+          timestamp: new Date().toISOString(),
+          ...metadata,
+        },
+      };
+
+      // Get admin client for global logs
+      const client = this.checkClient(this.getClient(0));
+      if (!client) {
+        return false;
+      }
+
+      // Get current global log
+      const { data: globalLogData, error: fetchError } = await client
+        .from("projects")
+        .select("log")
+        .eq("id", 0)
+        .single();
+
+      if (fetchError) {
+        console.error("📝 [SIMPLE-LOGGER] Error fetching global log:", fetchError);
+        return false;
+      }
+
+      // Append new entry to global log
+      const currentLog = globalLogData?.log || [];
+      const updatedLog = [...currentLog, logEntry];
+
+      // Update global log
+      const { error: updateError } = await client
+        .from("projects")
+        .update({ log: updatedLog })
+        .eq("id", 0);
+
+      if (updateError) {
+        console.error("📝 [SIMPLE-LOGGER] Error updating global log:", updateError);
+        return false;
+      }
+
+      console.log("✅ [SIMPLE-LOGGER] User login logged successfully");
+      return true;
+    } catch (error) {
+      console.error("📝 [SIMPLE-LOGGER] Error logging user login:", error);
+      return false;
+    }
+  }
+
+  /**
+   * Log user logout event
+   * @param userEmail - The user's email address
+   * @param metadata - Additional logout data
+   */
+  static async logUserLogout(
+    userEmail: string,
+    metadata?: any
+  ): Promise<boolean> {
+    try {
+      console.log("📝 [SIMPLE-LOGGER] Logging user logout:", {
+        userEmail,
+        metadata,
+      });
+
+      const logEntry: SimpleLogEntry = {
+        timestamp: new Date().toISOString(),
+        action: "userLogout",
+        user: userEmail,
+        message: `User logged out`,
+        metadata: {
+          timestamp: new Date().toISOString(),
+          ...metadata,
+        },
+      };
+
+      // Get admin client for global logs
+      const client = this.checkClient(this.getClient(0));
+      if (!client) {
+        return false;
+      }
+
+      // Get current global log
+      const { data: globalLogData, error: fetchError } = await client
+        .from("projects")
+        .select("log")
+        .eq("id", 0)
+        .single();
+
+      if (fetchError) {
+        console.error("📝 [SIMPLE-LOGGER] Error fetching global log:", fetchError);
+        return false;
+      }
+
+      // Append new entry to global log
+      const currentLog = globalLogData?.log || [];
+      const updatedLog = [...currentLog, logEntry];
+
+      // Update global log
+      const { error: updateError } = await client
+        .from("projects")
+        .update({ log: updatedLog })
+        .eq("id", 0);
+
+      if (updateError) {
+        console.error("📝 [SIMPLE-LOGGER] Error updating global log:", updateError);
+        return false;
+      }
+
+      console.log("✅ [SIMPLE-LOGGER] User logout logged successfully");
+      return true;
+    } catch (error) {
+      console.error("📝 [SIMPLE-LOGGER] Error logging user logout:", error);
+      return false;
+    }
   }
 }

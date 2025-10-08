@@ -255,6 +255,7 @@ export const POST: APIRoute = async ({ request, cookies }): Promise<Response> =>
                 baseUrl,
               });
 
+              // Generate magic link using admin.generateLink but with our verify endpoint
               const { data: magicLinkData, error: magicLinkError } =
                 await supabaseAdmin.auth.admin.generateLink({
                   type: "magiclink",
@@ -272,13 +273,25 @@ export const POST: APIRoute = async ({ request, cookies }): Promise<Response> =>
                   code: magicLinkError.code,
                 });
               } else {
-                // Use the Supabase magic link directly
+                // Extract the magic link URL from Supabase's response
                 const magicLinkUrl = magicLinkData.properties.action_link;
-                finalButtonLink = magicLinkUrl;
+
+                // Parse the Supabase magic link to extract the token and other parameters
+                const url = new URL(magicLinkUrl);
+                const token = url.searchParams.get("token");
+                const type = url.searchParams.get("type");
+
+                // Construct our own magic link that goes to our verify endpoint
+                const ourMagicLinkUrl = `${baseUrl}/api/auth/verify?token=${token}&type=${type}&redirect=${encodeURIComponent(verifyUrl)}`;
+                finalButtonLink = ourMagicLinkUrl;
 
                 console.log("🔗 [EMAIL-DELIVERY] Generated magic link successfully");
-                console.log("🔗 [EMAIL-DELIVERY] Magic link URL:", magicLinkUrl);
-                console.log("🔗 [EMAIL-DELIVERY] Magic link properties:", magicLinkData.properties);
+                console.log("🔗 [EMAIL-DELIVERY] Original Supabase URL:", magicLinkUrl);
+                console.log("🔗 [EMAIL-DELIVERY] Our magic link URL:", ourMagicLinkUrl);
+                console.log(
+                  "🔗 [EMAIL-DELIVERY] Extracted token:",
+                  token?.substring(0, 10) + "..."
+                );
               }
             } catch (error) {
               console.error("📧 [EMAIL-DELIVERY] Error generating magic link:", error);
