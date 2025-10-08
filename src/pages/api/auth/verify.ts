@@ -173,7 +173,7 @@ export const GET: APIRoute = async ({ url, cookies, redirect, request }) => {
     // Check for existing session and log out if different user
     const currentSession = await getCurrentSession(cookies);
     const newUserEmail = data.user?.email;
-    
+
     console.log("🔐 [VERIFY] Session management check:", {
       hasCurrentSession: !!currentSession,
       currentUserEmail: currentSession?.user?.email,
