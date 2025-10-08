@@ -84,7 +84,7 @@ export const GET: APIRoute = async ({ url, cookies, redirect, request }) => {
     console.log("🔐 [VERIFY-CUSTOM] Looking for email:", email);
 
     const { data: tokenData, error: tokenError } = await supabaseAdmin
-      .from("magic_link_tokens")
+      .from("magicLinkTokens")
       .select("*")
       .eq("token", token)
       .eq("email", email)
@@ -98,8 +98,8 @@ export const GET: APIRoute = async ({ url, cookies, redirect, request }) => {
         ? {
             id: tokenData.id,
             email: tokenData.email,
-            expires_at: tokenData.expires_at,
-            used_at: tokenData.used_at,
+            expiresAt: tokenData.expiresAt,
+            usedAt: tokenData.usedAt,
           }
         : null,
     });
@@ -114,9 +114,15 @@ export const GET: APIRoute = async ({ url, cookies, redirect, request }) => {
       return redirect("/login?error=invalid_token");
     }
 
+    // Check if token has already been used
+    if (tokenData.usedAt) {
+      console.log("🔐 [VERIFY-CUSTOM] Token has already been used:", tokenData.usedAt);
+      return redirect("/login?error=token_already_used");
+    }
+
     // Check if token is expired
     const now = new Date();
-    const expiresAt = new Date(tokenData.expires_at);
+    const expiresAt = new Date(tokenData.expiresAt);
 
     if (now > expiresAt) {
       console.log("🔐 [VERIFY-CUSTOM] Token has expired");
@@ -148,10 +154,17 @@ export const GET: APIRoute = async ({ url, cookies, redirect, request }) => {
     const magicLinkUrl = magicLinkData.properties.action_link;
     console.log("🔐 [VERIFY-CUSTOM] Redirecting to Supabase magic link:", magicLinkUrl);
 
-    // Delete the used token before redirecting
-    await supabaseAdmin.from("magic_link_tokens").delete().eq("token", token);
+    // Mark the token as used instead of deleting it
+    const { error: updateError } = await supabaseAdmin
+      .from("magicLinkTokens")
+      .update({ usedAt: new Date().toISOString() })
+      .eq("token", token);
 
-    console.log("🔐 [VERIFY-CUSTOM] Deleted used token");
+    if (updateError) {
+      console.error("🔐 [VERIFY-CUSTOM] Error marking token as used:", updateError);
+    } else {
+      console.log("🔐 [VERIFY-CUSTOM] Token marked as used");
+    }
 
     // Log the successful login
     try {
