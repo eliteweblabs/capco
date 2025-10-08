@@ -344,6 +344,10 @@ export const POST: APIRoute = async ({ request, cookies }): Promise<Response> =>
             // Disable for magic links, enable for status updates and other emails
             track_links: shouldDisableTracking ? false : finalTrackLinks,
             track_opens: shouldDisableTracking ? false : true,
+            // Add tags to identify email types for Resend dashboard
+            tags: shouldDisableTracking
+              ? [{ name: "magic-link", value: "no-tracking" }]
+              : [{ name: "email-type", value: emailType }],
             // Add proper content type and custom headers (only if values exist)
             headers: {
               "Content-Type": "text/html; charset=UTF-8",
@@ -355,6 +359,16 @@ export const POST: APIRoute = async ({ request, cookies }): Promise<Response> =>
               ...(shouldDisableTracking && { "X-Magic-Link": "true" }),
             },
           };
+
+          // Debug: Log the email payload for magic links
+          if (shouldDisableTracking) {
+            console.log("🔗 [EMAIL-DELIVERY] Magic link email payload:", {
+              track_links: emailPayload.track_links,
+              track_opens: emailPayload.track_opens,
+              tags: emailPayload.tags,
+              headers: emailPayload.headers,
+            });
+          }
 
           const response = await fetch("https://api.resend.com/emails", {
             method: "POST",
