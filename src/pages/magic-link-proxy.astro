@@ -9,14 +9,62 @@ export const GET: APIRoute = async ({ url, redirect }) => {
   const magicLink = url.searchParams.get("link");
 
   if (!magicLink) {
+    console.log("🔗 [MAGIC-LINK-PROXY] No magic link provided");
     return redirect("/login?error=invalid_magic_link");
   }
 
-  // Decode the magic link URL
-  const decodedLink = decodeURIComponent(magicLink);
+  console.log("🔗 [MAGIC-LINK-PROXY] Processing magic link:", magicLink.substring(0, 100) + "...");
 
-  // Redirect to the actual magic link
-  return redirect(decodedLink);
+  try {
+    // Decode the magic link URL - handle multiple levels of encoding
+    let decodedLink = decodeURIComponent(magicLink);
+
+    // If it's still encoded, decode again
+    if (decodedLink.includes("%")) {
+      decodedLink = decodeURIComponent(decodedLink);
+    }
+
+    console.log("🔗 [MAGIC-LINK-PROXY] Decoded link:", decodedLink.substring(0, 100) + "...");
+
+    // Extract the actual Supabase magic link from the complex URL
+    const supabaseUrlMatch = decodedLink.match(
+      /https:\/\/[^\/]+\.supabase\.co\/auth\/v1\/verify[^&]+/
+    );
+    if (supabaseUrlMatch) {
+      const supabaseLink = supabaseUrlMatch[0];
+      console.log(
+        "🔗 [MAGIC-LINK-PROXY] Extracted Supabase link:",
+        supabaseLink.substring(0, 100) + "..."
+      );
+
+      // Redirect to our verify endpoint with the Supabase link
+      const verifyUrl = new URL("/api/auth/verify", url.origin);
+
+      // Parse the Supabase URL to extract parameters
+      const supabaseUrl = new URL(supabaseLink);
+      const token = supabaseUrl.searchParams.get("token");
+      const type = supabaseUrl.searchParams.get("type");
+      const redirectTo = supabaseUrl.searchParams.get("redirect_to");
+
+      if (token && type) {
+        verifyUrl.searchParams.set("token", token);
+        verifyUrl.searchParams.set("type", type);
+        if (redirectTo) {
+          verifyUrl.searchParams.set("redirect", redirectTo);
+        }
+
+        console.log("🔗 [MAGIC-LINK-PROXY] Redirecting to verify endpoint:", verifyUrl.toString());
+        return redirect(verifyUrl.toString());
+      }
+    }
+
+    // Fallback: redirect to the decoded link
+    console.log("🔗 [MAGIC-LINK-PROXY] Fallback: redirecting to decoded link");
+    return redirect(decodedLink);
+  } catch (error) {
+    console.error("🔗 [MAGIC-LINK-PROXY] Error processing magic link:", error);
+    return redirect("/login?error=invalid_magic_link");
+  }
 };
 ---
 
