@@ -47,9 +47,16 @@ export const GET: APIRoute = async ({ url, cookies, redirect, request }) => {
         type: "magiclink",
       });
     } else if (token && type === "magiclink") {
-      // Handle magic link with token (fallback)
+      // Handle magic link with token (fallback) - use verifyOtp with email extracted from token
       console.log("🔐 [VERIFY] Attempting magiclink verification with token...");
-      verificationResult = await supabase.auth.verifyOtp({
+      // For magic links, we need to use the admin client to verify the token
+      const { createClient } = await import("@supabase/supabase-js");
+      const supabaseAdmin = createClient(
+        import.meta.env.PUBLIC_SUPABASE_URL,
+        import.meta.env.SUPABASE_SERVICE_ROLE_KEY
+      );
+
+      verificationResult = await supabaseAdmin.auth.verifyOtp({
         token: token,
         type: "magiclink",
       });
@@ -66,6 +73,15 @@ export const GET: APIRoute = async ({ url, cookies, redirect, request }) => {
     }
 
     const { data, error } = verificationResult;
+
+    console.log("🔐 [VERIFY] Verification result:", {
+      hasError: !!error,
+      errorMessage: error?.message,
+      hasData: !!data,
+      hasSession: !!data?.session,
+      hasUser: !!data?.user,
+      userEmail: data?.user?.email,
+    });
 
     if (error) {
       console.error("🔐 [VERIFY] Verification error:", error.message);
