@@ -174,27 +174,44 @@ export const GET: APIRoute = async ({ url, cookies, redirect, request }) => {
     const currentSession = await getCurrentSession(cookies);
     const newUserEmail = data.user?.email;
     
+    console.log("🔐 [VERIFY] Session management check:", {
+      hasCurrentSession: !!currentSession,
+      currentUserEmail: currentSession?.user?.email,
+      newUserEmail: newUserEmail,
+      isDifferentUser: currentSession && currentSession.user?.email !== newUserEmail,
+    });
+
     if (currentSession && currentSession.user?.email !== newUserEmail) {
       console.log("🔐 [VERIFY] Different user detected, logging out previous session:", {
         previousUser: currentSession.user?.email,
         newUser: newUserEmail,
       });
-      
+
       // Log the logout of the previous user
       try {
-        await SimpleProjectLogger.logUserLogout(currentSession.user?.email || "Unknown", "magiclink_switch", {
-          reason: "Different user logged in via magic link",
-          newUser: newUserEmail,
-          timestamp: new Date().toISOString(),
-        });
+        await SimpleProjectLogger.logUserLogout(
+          currentSession.user?.email || "Unknown",
+          "magiclink_switch",
+          {
+            reason: "Different user logged in via magic link",
+            newUser: newUserEmail,
+            timestamp: new Date().toISOString(),
+          }
+        );
         console.log("✅ [VERIFY] Previous user logout logged successfully");
       } catch (logError) {
         console.error("❌ [VERIFY] Error logging previous user logout:", logError);
       }
-      
+
       // Clear existing auth cookies
       clearAuthCookies(cookies);
       console.log("🔐 [VERIFY] Cleared previous user's auth cookies");
+    } else if (currentSession && currentSession.user?.email === newUserEmail) {
+      console.log("🔐 [VERIFY] Same user detected, no logout needed:", {
+        userEmail: newUserEmail,
+      });
+    } else {
+      console.log("🔐 [VERIFY] No existing session found, proceeding with new login");
     }
 
     // Set auth cookies for the new user
