@@ -275,31 +275,41 @@ export const POST: APIRoute = async ({ request, cookies }): Promise<Response> =>
                 });
               } else {
                 console.log("📧 [EMAIL-DELIVERY] Magic link generated successfully");
+                console.log("📧 [EMAIL-DELIVERY] Supabase magic link data:", JSON.stringify(magicLinkData, null, 2));
 
                 // Extract token from Supabase's magic link and create our own
                 const supabaseUrl = magicLinkData.properties.action_link;
+                console.log("📧 [EMAIL-DELIVERY] Supabase generated URL:", supabaseUrl);
+                
                 const url = new URL(supabaseUrl);
                 const token = url.searchParams.get("token");
                 const tokenHash = url.searchParams.get("token_hash");
                 const type = url.searchParams.get("type");
 
+                console.log("📧 [EMAIL-DELIVERY] Extracted parameters:", {
+                  token: token ? "present" : "missing",
+                  tokenHash: tokenHash ? "present" : "missing", 
+                  type: type,
+                });
+
                 if (tokenHash && type) {
                   // Create our own magic link that goes through the proxy to prevent email client prefetching
                   const directMagicLink = `${baseUrl}/api/auth/verify?token_hash=${tokenHash}&type=email&email=${encodeURIComponent(userEmail)}&redirect=${encodeURIComponent(cleanButtonLink)}`;
                   finalButtonLink = `${baseUrl}/magic-link-proxy?link=${encodeURIComponent(directMagicLink)}`;
+                  console.log("📧 [EMAIL-DELIVERY] Using token_hash approach");
                 } else if (token && type) {
                   // Fallback to token if token_hash not available
                   const directMagicLink = `${baseUrl}/api/auth/verify?token=${token}&type=${type}&email=${encodeURIComponent(userEmail)}&redirect=${encodeURIComponent(cleanButtonLink)}`;
                   finalButtonLink = `${baseUrl}/magic-link-proxy?link=${encodeURIComponent(directMagicLink)}`;
-
-                  console.log("🔗 [EMAIL-DELIVERY] Generated custom magic link successfully");
-                  console.log("🔗 [EMAIL-DELIVERY] Custom magic link URL:", finalButtonLink);
+                  console.log("📧 [EMAIL-DELIVERY] Using token approach");
                 } else {
                   console.error(
                     "📧 [EMAIL-DELIVERY] Failed to extract token from Supabase magic link"
                   );
                   finalButtonLink = supabaseUrl; // Fallback to original
                 }
+
+                console.log("🔗 [EMAIL-DELIVERY] Final magic link URL:", finalButtonLink);
               }
             } catch (error) {
               console.error("📧 [EMAIL-DELIVERY] Error generating magic link:", error);
