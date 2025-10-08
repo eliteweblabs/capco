@@ -1138,21 +1138,30 @@ const canManageProposals = currentRole === "Admin" || currentRole === "Staff";
         true
       );
 
-      // Handle input events for filtering
+      // Handle input events for filtering with debouncing
+      let inputTimeout;
       document.addEventListener("input", (e) => {
         const target = e.target;
         if (target && target.classList && target.classList.contains("line-item-name")) {
-          console.log("🔍 [AUTOCOMPLETE] Input on description field detected:", target);
-          const row = target.closest("tr");
-          if (row) {
-            const dropdown = row.querySelector(".autocomplete-dropdown");
-            if (dropdown) {
-              console.log("🔍 [AUTOCOMPLETE] Filtering catalog items for dropdown");
-              this.filterCatalogItemsForRow(dropdown, target.value);
-            } else {
-              console.log("❌ [AUTOCOMPLETE] No dropdown found in row for input");
-            }
+          // Clear previous timeout
+          if (inputTimeout) {
+            clearTimeout(inputTimeout);
           }
+
+          // Debounce the filtering to avoid excessive calls
+          inputTimeout = setTimeout(() => {
+            console.log("🔍 [AUTOCOMPLETE] Input on description field detected:", target);
+            const row = target.closest("tr");
+            if (row) {
+              const dropdown = row.querySelector(".autocomplete-dropdown");
+              if (dropdown) {
+                console.log("🔍 [AUTOCOMPLETE] Filtering catalog items for dropdown");
+                this.filterCatalogItemsForRow(dropdown, target.value);
+              } else {
+                console.log("❌ [AUTOCOMPLETE] No dropdown found in row for input");
+              }
+            }
+          }, 300); // 300ms delay
         }
       });
 
@@ -1819,34 +1828,8 @@ const canManageProposals = currentRole === "Admin" || currentRole === "Staff";
         true
       );
 
-      // Listen for input events on description inputs only
-      document.addEventListener("input", (e) => {
-        const target = e.target;
-
-        // Check for both new class names and existing data attributes
-        const isDescriptionField =
-          target &&
-          target instanceof HTMLElement &&
-          (target.classList?.contains("line-item-name") ||
-            target.getAttribute("data-field") === "description");
-
-        if (isDescriptionField) {
-          console.log("🔍 [AUTOCOMPLETE] Input on description field detected:", target);
-          const row = target.closest("tr");
-          if (row) {
-            const dropdown = row.querySelector(".autocomplete-dropdown");
-            if (dropdown) {
-              console.log("🔍 [AUTOCOMPLETE] Filtering catalog items for dropdown");
-              filterCatalogItemsForRow(dropdown, target.value);
-            } else {
-              console.log("❌ [AUTOCOMPLETE] No dropdown found in row for input");
-            }
-          } else {
-            console.log("❌ [AUTOCOMPLETE] No row found for input");
-          }
-        }
-        // Don't interfere with other input events - let them bubble normally
-      });
+      // Note: Input event handling is now done in the main setupEventDelegation function above
+      // to avoid duplicate event listeners
 
       // Hide dropdown when clicking outside
       document.addEventListener("click", (e) => {
