@@ -81,10 +81,26 @@ export const GET: APIRoute = async ({ url, cookies, redirect, request }) => {
       hasSession: !!data.session,
       hasUser: !!data.user,
       userEmail: data.user?.email,
+      sessionData: data.session
+        ? {
+            access_token: data.session.access_token ? "present" : "missing",
+            refresh_token: data.session.refresh_token ? "present" : "missing",
+            expires_at: data.session.expires_at,
+            user_id: data.session.user?.id,
+          }
+        : null,
+      userData: data.user
+        ? {
+            id: data.user.id,
+            email: data.user.email,
+            created_at: data.user.created_at,
+          }
+        : null,
     });
 
     if (!data.session) {
-      console.log("🔐 [VERIFY] No session created after verification");
+      console.log("🔐 [VERIFY] No session created after verification - this is the problem!");
+      console.log("🔐 [VERIFY] Full verification result:", JSON.stringify(data, null, 2));
       return redirect("/login?message=verification_success");
     }
 
