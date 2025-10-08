@@ -9,6 +9,19 @@ export const GET: APIRoute = async ({ url, cookies, redirect, request }) => {
 
   // Check if Supabase is configured
   if (!supabase) {
+    console.error("🔐 [VERIFY] Regular Supabase client not available");
+    return redirect("/login?error=verification_error");
+  }
+
+  // Check if Supabase admin is configured
+  if (!supabaseAdmin) {
+    console.error("🔐 [VERIFY] Supabase admin client not available");
+    console.error("🔐 [VERIFY] Environment check:", {
+      hasSupabaseUrl: !!import.meta.env.SUPABASE_URL,
+      hasServiceRoleKey: !!import.meta.env.SUPABASE_SERVICE_ROLE_KEY,
+      supabaseUrl: import.meta.env.SUPABASE_URL ? "present" : "missing",
+      serviceRoleKey: import.meta.env.SUPABASE_SERVICE_ROLE_KEY ? "present" : "missing",
+    });
     return redirect("/login?error=verification_error");
   }
 
@@ -47,14 +60,13 @@ export const GET: APIRoute = async ({ url, cookies, redirect, request }) => {
         type: "magiclink",
       });
     } else if (token && type === "magiclink") {
-      // Handle magic link with token (fallback) - use verifyOtp with email extracted from token
-      console.log("🔐 [VERIFY] Attempting magiclink verification with token...");
-      // For magic links, we need to use the admin client to verify the token
-      const { createClient } = await import("@supabase/supabase-js");
-      const supabaseAdmin = createClient(
-        import.meta.env.PUBLIC_SUPABASE_URL,
-        import.meta.env.SUPABASE_SERVICE_ROLE_KEY
-      );
+      // Handle magic link with token (fallback) - use admin client to verify the token
+      console.log("🔐 [VERIFY] Attempting magiclink verification with token using admin client...");
+
+      if (!supabaseAdmin) {
+        console.error("🔐 [VERIFY] Supabase admin client not available");
+        return redirect("/login?error=verification_error");
+      }
 
       verificationResult = await supabaseAdmin.auth.verifyOtp({
         token: token,
