@@ -286,7 +286,9 @@ export const POST: APIRoute = async ({ request, cookies }): Promise<Response> =>
               } else {
                 // Use proxy page to prevent email client prefetching
                 const magicLinkUrl = magicLinkData.properties.action_link;
-                const proxyUrl = `${baseUrl}/magic-link-proxy?link=${encodeURIComponent(magicLinkUrl)}`;
+
+                // Don't double-encode the URL - just pass it as a query parameter
+                const proxyUrl = `${baseUrl}/magic-link-proxy?link=${magicLinkUrl}`;
                 finalButtonLink = proxyUrl;
 
                 console.log("🔗 [EMAIL-DELIVERY] Generated magic link successfully");
