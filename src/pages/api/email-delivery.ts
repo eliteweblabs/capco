@@ -275,11 +275,6 @@ export const POST: APIRoute = async ({ request, cookies }): Promise<Response> =>
                 });
               } else {
                 console.log("📧 [EMAIL-DELIVERY] Magic link generated successfully");
-                console.log("📧 [EMAIL-DELIVERY] Supabase magic link data:", {
-                  hasProperties: !!magicLinkData.properties,
-                  actionLink: magicLinkData.properties?.action_link ? "present" : "missing",
-                  fullData: JSON.stringify(magicLinkData, null, 2),
-                });
 
                 // Extract token from Supabase's magic link and create our own
                 const supabaseUrl = magicLinkData.properties.action_link;
@@ -287,17 +282,6 @@ export const POST: APIRoute = async ({ request, cookies }): Promise<Response> =>
                 const token = url.searchParams.get("token");
                 const tokenHash = url.searchParams.get("token_hash");
                 const type = url.searchParams.get("type");
-
-                console.log("📧 [EMAIL-DELIVERY] Extracted token details:", {
-                  hasToken: !!token,
-                  hasTokenHash: !!tokenHash,
-                  tokenLength: token?.length,
-                  tokenHashLength: tokenHash?.length,
-                  tokenPreview: token ? `${token.substring(0, 10)}...` : "none",
-                  tokenHashPreview: tokenHash ? `${tokenHash.substring(0, 10)}...` : "none",
-                  type,
-                  supabaseUrl,
-                });
 
                 if (tokenHash && type) {
                   // Create our own magic link that goes through the proxy to prevent email client prefetching
