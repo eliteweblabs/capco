@@ -24,13 +24,8 @@ export const GET: APIRoute = async ({ url, cookies, redirect }) => {
     console.log("Attempting to exchange code for session...");
     console.log("Full URL params:", Object.fromEntries(url.searchParams.entries()));
 
-    // For PKCE flow, redirect to a client-side page that can handle the OAuth callback
-    // This is necessary because PKCE requires the code verifier stored in browser storage
-    const redirectUrl = new URL("/auth/oauth-callback", url.origin);
-    redirectUrl.searchParams.set("code", authCode);
-
-    console.log("Redirecting to client-side OAuth handler:", redirectUrl.toString());
-    return redirect(redirectUrl.toString());
+    // Exchange the code for a session directly on the server
+    const { data, error } = await supabase.auth.exchangeCodeForSession(authCode);
 
     if (error) {
       console.error("Auth callback error:", error);
@@ -119,7 +114,7 @@ export const GET: APIRoute = async ({ url, cookies, redirect }) => {
     setAuthCookies(cookies, access_token, refresh_token);
 
     console.log("Cookies set, redirecting to dashboard");
-    return redirect("/dashboard");
+    return redirect("/project/dashboard?success=oauth_success");
   } catch (error) {
     console.error("Unexpected error in auth callback:", error);
     return new Response(
