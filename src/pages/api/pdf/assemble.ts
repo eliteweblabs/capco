@@ -205,13 +205,13 @@ export const GET: APIRoute = async ({ request, url }) => {
       assembledHtml = assembledHtml.replace(/\[SIGNATURE COMPONENT\]/g, signatureHtml);
     }
 
-    console.log(`📄 [PDF-ASSEMBLE] Project data structure:`, Object.keys(projectData));
+    // console.log(`📄 [PDF-ASSEMBLE] Project data structure:`, Object.keys(projectData));
     // Replace placeholders with comprehensive project data
     const processedHtml = await replacePlaceholders(assembledHtml, { project: projectData });
 
-    console.log(
-      `✅ [PDF-ASSEMBLE] Template assembled and placeholders replaced, final length: ${processedHtml.length}`
-    );
+    // console.log(
+    //   `✅ [PDF-ASSEMBLE] Template assembled and placeholders replaced, final length: ${processedHtml.length}`
+    // );
 
     return new Response(processedHtml, {
       status: 200,
