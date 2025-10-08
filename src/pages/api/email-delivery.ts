@@ -64,7 +64,12 @@ interface NotificationPreferences {
     | "status_update"
     | "project_created"
     | "file_uploaded"
-    | "comment_added";
+    | "comment_added"
+    | "info"
+    | "success"
+    | "warning"
+    | "error";
+  internalNotificationPriority?: "low" | "normal" | "high" | "urgent";
   browserNotificationTitle?: string;
   browserNotificationBody?: string;
   browserNotificationIcon?: string;
@@ -713,6 +718,10 @@ async function sendInternalNotification(
         "🔔 [INTERNAL-NOTIFICATION] Looking up user IDs from emails:",
         context.usersToNotify
       );
+      if (!supabase) {
+        console.error("🔔 [INTERNAL-NOTIFICATION] Supabase client not available");
+        return { success: false, method: "internal", error: "Database not available" };
+      }
       const { data: users, error: userError } = await supabase
         .from("profiles")
         .select("id, email")
@@ -752,6 +761,10 @@ async function sendInternalNotification(
     }));
 
     // Store in notifications table (read by NotificationDropdown.astro)
+    if (!supabase) {
+      console.error("🔔 [INTERNAL-NOTIFICATION] Supabase client not available for insert");
+      return { success: false, method: "internal", error: "Database not available" };
+    }
     const { error } = await supabase.from("notifications").insert(notifications);
 
     if (error) {
