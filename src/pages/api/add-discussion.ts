@@ -124,19 +124,6 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       );
     }
 
-    // Convert database response to camelCase
-    const discussionWithCompanyName = {
-      id: discussion.id,
-      createdAt: discussion.createdAt,
-      message: discussion.message,
-      authorId: discussion.authorId,
-      internal: discussion.internal,
-      smsAlert: discussion.smsAlert,
-      projectId: discussion.projectId,
-      parentId: discussion.parentId,
-      companyName: discussion.companyName || "Unknown User",
-    };
-
     try {
       // Get project address and authorId for the subject line
       let address = "";
