@@ -30,6 +30,7 @@ export const GET: APIRoute = async ({ url, cookies, redirect, request }) => {
   const token_hash = url.searchParams.get("token_hash");
   const token = url.searchParams.get("token");
   const type = url.searchParams.get("type");
+  const email = url.searchParams.get("email");
   const redirectPath = url.searchParams.get("redirect") || "/dashboard";
 
   console.log("🔐 [VERIFY] Verification params:", {
@@ -59,18 +60,22 @@ export const GET: APIRoute = async ({ url, cookies, redirect, request }) => {
         token_hash: token_hash,
         type: "magiclink",
       });
-    } else if (token && type === "magiclink") {
-      // Handle magic link with token (fallback) - use admin client to verify the token
-      console.log("🔐 [VERIFY] Attempting magiclink verification with token using admin client...");
+    } else if (token && type === "magiclink" && email) {
+      // Handle magic link with token and email - use admin client to verify
+      console.log(
+        "🔐 [VERIFY] Attempting magiclink verification with token and email using admin client..."
+      );
 
       if (!supabaseAdmin) {
         console.error("🔐 [VERIFY] Supabase admin client not available");
         return redirect("/login?error=verification_error");
       }
 
+      // Use the admin client to verify the magic link with email
       verificationResult = await supabaseAdmin.auth.verifyOtp({
         token: token,
         type: "magiclink",
+        email: email,
       });
     } else if (token_hash && type) {
       // Handle other verification types with token_hash
