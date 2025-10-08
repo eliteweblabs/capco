@@ -15,6 +15,8 @@ const supabaseAnonKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY;
   <body>
     <div
       style="display: flex; justify-content: center; align-items: center; height: 100vh; font-family: system-ui;"
+      data-supabase-url={supabaseUrl}
+      data-supabase-anon-key={supabaseAnonKey}
     >
       <div style="text-align: center;">
         <div
@@ -38,13 +40,14 @@ const supabaseAnonKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY;
     </style>
 
     <script>
-      // Pass server-side environment variables to client
-      const supabaseUrlValue = `${supabaseUrl}`;
-      const supabaseAnonKeyValue = `${supabaseAnonKey}`;
-
       async function handleOAuthCallback() {
         try {
           console.log("🔄 [OAUTH-CALLBACK] Starting OAuth callback handling...");
+
+          // Get Supabase configuration from data attributes
+          const container = document.querySelector("[data-supabase-url]");
+          const supabaseUrlValue = container?.getAttribute("data-supabase-url");
+          const supabaseAnonKeyValue = container?.getAttribute("data-supabase-anon-key");
 
           // Get the code from URL parameters
           const urlParams = new URLSearchParams(window.location.search);
@@ -60,18 +63,25 @@ const supabaseAnonKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY;
 
           if (!supabaseUrlValue || !supabaseAnonKeyValue) {
             console.error("❌ [OAUTH-CALLBACK] Missing Supabase configuration");
+            console.error("❌ [OAUTH-CALLBACK] supabaseUrlValue:", supabaseUrlValue);
+            console.error("❌ [OAUTH-CALLBACK] supabaseAnonKeyValue:", supabaseAnonKeyValue);
             window.location.href = "/login?error=oauth_failed";
             return;
           }
 
-          const supabase = window.supabase.createClient(supabaseUrlValue, supabaseAnonKeyValue, {
-            auth: {
-              flowType: "pkce",
-              autoRefreshToken: true,
-              detectSessionInUrl: true,
-              persistSession: true,
-            },
-          });
+          // Create Supabase client
+          const supabase = (window as any).supabase.createClient(
+            supabaseUrlValue,
+            supabaseAnonKeyValue,
+            {
+              auth: {
+                flowType: "pkce",
+                autoRefreshToken: true,
+                detectSessionInUrl: true,
+                persistSession: true,
+              },
+            }
+          );
 
           console.log("🔄 [OAUTH-CALLBACK] Exchanging code for session...");
 
