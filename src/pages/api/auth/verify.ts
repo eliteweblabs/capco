@@ -38,8 +38,6 @@ export const GET: APIRoute = async ({ url, cookies, redirect, request }) => {
     hasTokenHash: !!token_hash,
     hasToken: !!token,
     type,
-    hasEmail: !!email,
-    email: email,
     redirectPath,
   });
 
