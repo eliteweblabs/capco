@@ -138,13 +138,63 @@ export const POST: APIRoute = async ({ request, redirect, cookies }) => {
       email: email?.replace(/@.*$/, "@***"),
     });
 
-    // Registration successful - user will need to verify email
+    // Sign in the user after successful registration
+    const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+      email: email.trim().toLowerCase(),
+      password: password.trim(),
+    });
+
+    if (signInError) {
+      console.error("🔐 [REGISTER] Failed to sign in after registration:", signInError);
+      // Return success but indicate auth needs to be completed
+      return new Response(
+        JSON.stringify({
+          success: true,
+          message: "Account created but sign-in required",
+          redirect: "/login?message=registration_complete",
+          user: result.user,
+        }),
+        {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        }
+      );
+    }
+
+    // Set the session cookie using the signInData
+    console.log("🔐 [REGISTER] Sign in successful, session data:", {
+      hasSession: !!signInData?.session,
+      sessionId: signInData?.session?.id,
+      accessToken: signInData?.session?.access_token ? "present" : "missing",
+      refreshToken: signInData?.session?.refresh_token ? "present" : "missing",
+    });
+
+    if (signInData?.session) {
+      const session = signInData.session;
+      cookies.set("sb-access-token", session.access_token, {
+        path: "/",
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
+        maxAge: 60 * 60 * 24 * 7, // 1 week
+      });
+      cookies.set("sb-refresh-token", session.refresh_token, {
+        path: "/",
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
+        maxAge: 60 * 60 * 24 * 7, // 1 week
+      });
+    }
+
+    // Registration and sign-in successful
     return new Response(
       JSON.stringify({
         success: true,
-        message: "Registration successful. Please check your email to verify your account.",
-        redirect: "/login?message=registration_complete",
+        message: "Registration and sign-in successful",
+        redirect: "/project/dashboard?success=registration_success",
         user: result.user,
+        session: signInData?.session,
       }),
       {
         status: 200,
