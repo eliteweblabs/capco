@@ -79,6 +79,23 @@ export const GET: APIRoute = async ({ url, cookies, redirect, request }) => {
         type: "magiclink",
         email: email,
       });
+    } else if (token && type === "email" && email) {
+      // Handle magic link with token and email using type=email (Supabase's expected format)
+      console.log(
+        "🔐 [VERIFY] Attempting email verification with token and email using admin client..."
+      );
+
+      if (!supabaseAdmin) {
+        console.error("🔐 [VERIFY] Supabase admin client not available");
+        return redirect("/login?error=verification_error");
+      }
+
+      // Use the admin client to verify the magic link with email
+      verificationResult = await supabaseAdmin.auth.verifyOtp({
+        token: token,
+        type: "email",
+        email: email,
+      });
 
       console.log("🔐 [VERIFY] Magic link verification result:", {
         hasError: !!verificationResult.error,
