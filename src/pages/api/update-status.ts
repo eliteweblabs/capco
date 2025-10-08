@@ -1,6 +1,7 @@
 import type { APIRoute } from "astro";
 import { checkAuth } from "../../lib/auth";
 import { supabase } from "../../lib/supabase";
+import { SimpleProjectLogger } from "../../lib/simple-logging";
 
 export const OPTIONS: APIRoute = async () => {
   return new Response(null, {
@@ -87,6 +88,33 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     // Attach the assigned to profile to the project object
     if (updatedProject && assignedToProfile) {
       (updatedProject as any).assignedToProfile = assignedToProfile;
+    }
+
+    // Log the status change to project activity
+    try {
+      console.log("📝 [UPDATE-STATUS] Logging status change:", {
+        projectId,
+        oldStatus,
+        newStatus,
+        user: currentUser?.email || "Unknown",
+      });
+
+      await SimpleProjectLogger.addLogEntry(
+        projectId,
+        "statusChange",
+        `Status changed from ${oldStatus} to ${newStatus}`,
+        {
+          oldStatus,
+          newStatus,
+          changedBy: currentUser?.email || "Unknown",
+          timestamp: new Date().toISOString(),
+        }
+      );
+
+      console.log("✅ [UPDATE-STATUS] Status change logged successfully");
+    } catch (logError) {
+      console.error("❌ [UPDATE-STATUS] Error logging status change:", logError);
+      // Don't fail the entire request if logging fails
     }
 
     // Simple validation
