@@ -202,18 +202,29 @@ async function generateContractPDF(
     console.log("📄 [GENERATE-CONTRACT-PDF] Saving PDF to media system...");
     const { saveMedia } = await import("../../lib/media");
 
+    // Convert to proper format for logging and saving
+    let bufferData: any;
+    let bufferLength: number;
+
+    if (pdfBuffer.buffer instanceof Buffer) {
+      bufferData = pdfBuffer.buffer;
+      bufferLength = (pdfBuffer.buffer as Buffer).length;
+    } else {
+      bufferData = pdfBuffer;
+      bufferLength = (pdfBuffer as Uint8Array).length;
+    }
+
     console.log("📄 [GENERATE-CONTRACT-PDF] Media save parameters:", {
       fileName: fileName,
       fileType: "application/pdf",
       projectId: project.id.toString(),
       targetLocation: "documents",
       title: `Contract - ${project.title}`,
-      pdfBufferLength:
-        pdfBuffer.buffer instanceof Buffer ? pdfBuffer.buffer.length : pdfBuffer.length,
+      pdfBufferLength: bufferLength,
     });
 
     const contractFile = await saveMedia({
-      mediaData: pdfBuffer.buffer instanceof Buffer ? pdfBuffer.buffer : pdfBuffer,
+      mediaData: bufferData,
       fileName: fileName,
       fileType: "application/pdf",
       projectId: project.id.toString(),
