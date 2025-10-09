@@ -808,6 +808,10 @@ async function sendSMSNotification(
     };
 
     // Store SMS request in database for processing
+    if (!supabase) {
+      console.error("🔔 [SMS-NOTIFICATION] Supabase client not available");
+      return { success: false, method: "sms", error: "Database not available" };
+    }
     const { error } = await supabase.from("sms_queue").insert(smsData);
 
     if (error) {

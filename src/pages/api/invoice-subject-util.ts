@@ -1,7 +1,17 @@
 import type { APIRoute } from "astro";
 import { createErrorResponse, createSuccessResponse } from "../../lib/api-optimization";
 import { checkAuth } from "../../lib/auth";
-import type { Subject } from "../../lib/database-interfaces";
+// Note: Subject interface is defined inline since database-interfaces.ts is outdated
+interface Subject {
+  id: number;
+  title: string;
+  usageCount: number;
+  description?: string;
+  category?: string;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
 import { SimpleProjectLogger } from "../../lib/simple-logging";
 import { supabase } from "../../lib/supabase";
 
