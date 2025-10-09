@@ -57,7 +57,6 @@ export const POST: APIRoute = async ({ request }) => {
         address: address || null,
         projectType: projectType || null,
         message,
-        projectId: 1, // Default project ID for contact submissions
         submittedAt: new Date().toISOString(),
       })
       .select("id")
@@ -65,10 +64,22 @@ export const POST: APIRoute = async ({ request }) => {
 
     if (contactError) {
       console.error("Error storing contact information:", contactError);
-      return new Response(JSON.stringify({ error: "Failed to store contact information" }), {
-        status: 500,
-        headers: { "Content-Type": "application/json" },
+      console.error("Contact error details:", {
+        message: contactError.message,
+        code: contactError.code,
+        details: contactError.details,
+        hint: contactError.hint,
       });
+      return new Response(
+        JSON.stringify({
+          error: "Failed to store contact information",
+          details: contactError.message,
+        }),
+        {
+          status: 500,
+          headers: { "Content-Type": "application/json" },
+        }
+      );
     }
 
     const submissionId = contactData.id;
