@@ -28,7 +28,7 @@ export interface MediaFile {
 }
 
 export interface SaveMediaParams {
-  mediaData: string | ArrayBuffer;
+  mediaData: string | ArrayBuffer | ArrayBufferLike | Buffer;
   fileName: string;
   fileType: string;
   projectId?: string;

@@ -44,19 +44,23 @@ export class SlotMachine {
 
   private setupEventListeners(): void {
     // Trigger button click
-    this.trigger.addEventListener("click", () => {
-      this.openModal();
-    });
+    if (this.trigger) {
+      this.trigger.addEventListener("click", () => {
+        this.openModal();
+      });
+    }
 
     // Modal backdrop click
-    this.modal.addEventListener("click", (e) => {
-      if (e.target === this.modal) {
-        this.closeModal();
-      }
-    });
+    if (this.modal) {
+      this.modal.addEventListener("click", (e) => {
+        if (e.target === this.modal) {
+          this.closeModal();
+        }
+      });
+    }
 
     // Close button
-    const closeBtn = this.modal.querySelector(".slot-machine-close-btn");
+    const closeBtn = this.modal?.querySelector(".slot-machine-close-btn");
     if (closeBtn) {
       closeBtn.addEventListener("click", () => {
         this.closeModal();
@@ -64,7 +68,7 @@ export class SlotMachine {
     }
 
     // Cancel button
-    const cancelBtn = this.modal.querySelector("[data-modal-hide]");
+    const cancelBtn = this.modal?.querySelector("[data-modal-hide]");
     if (cancelBtn) {
       cancelBtn.addEventListener("click", () => {
         this.closeModal();
@@ -75,7 +79,9 @@ export class SlotMachine {
   private renderOptions(): void {
     if (!this.optionsList) return;
 
-    this.optionsList.innerHTML = "";
+    if (this.optionsList) {
+      this.optionsList.innerHTML = "";
+    }
 
     this.options.forEach((option, index) => {
       const li = document.createElement("li");
@@ -91,7 +97,7 @@ export class SlotMachine {
         });
       }
 
-      this.optionsList.appendChild(li);
+      this.optionsList?.appendChild(li);
     });
   }
 
@@ -126,10 +132,11 @@ export class SlotMachine {
     }
 
     // Update selected state in options
-    this.optionsList?.querySelectorAll(".slot-machine-item").forEach((item) => {
-      item.classList.remove("selected");
-      if (item.dataset.value === option.value) {
-        item.classList.add("selected");
+    this.optionsList?.querySelectorAll(".slot-machine-item").forEach((item: Element) => {
+      const htmlItem = item as HTMLElement;
+      htmlItem.classList.remove("selected");
+      if (htmlItem.dataset.value === option.value) {
+        htmlItem.classList.add("selected");
       }
     });
   }
@@ -154,7 +161,7 @@ export class SlotMachine {
   }
 
   public setSelectedValue(value: string): void {
-    const option = this.options.find((opt) => opt.value === value);
+    const option = this.options.find((opt: { value: string }) => opt.value === value);
     if (option) {
       this.selectOption(option);
     }

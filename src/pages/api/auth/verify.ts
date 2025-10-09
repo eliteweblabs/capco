@@ -107,7 +107,7 @@ export const GET: APIRoute = async ({ url, cookies, redirect, request }) => {
       console.log(`🔐 [VERIFY] Attempting ${type} verification with token hash...`);
       verificationResult = await supabase.auth.verifyOtp({
         token_hash: token_hash,
-        type: type,
+        type: type as "email",
       });
     } else {
       console.log("🔐 [VERIFY] Invalid verification parameters");
@@ -189,15 +189,11 @@ export const GET: APIRoute = async ({ url, cookies, redirect, request }) => {
 
       // Log the logout of the previous user
       try {
-        await SimpleProjectLogger.logUserLogout(
-          currentSession.user?.email || "Unknown",
-          "magiclink_switch",
-          {
-            reason: "Different user logged in via magic link",
-            newUser: newUserEmail,
-            timestamp: new Date().toISOString(),
-          }
-        );
+        await SimpleProjectLogger.logUserLogout(currentSession.user?.email || "Unknown", {
+          reason: "Different user logged in via magic link",
+          newUser: newUserEmail,
+          timestamp: new Date().toISOString(),
+        });
         console.log("✅ [VERIFY] Previous user logout logged successfully");
       } catch (logError) {
         console.error("❌ [VERIFY] Error logging previous user logout:", logError);

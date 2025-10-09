@@ -52,12 +52,15 @@ export const POST: APIRoute = async ({ request }) => {
       // Return the PDF as a downloadable file
       const sanitizedFileName = documentName.replace(/[^a-zA-Z0-9\s-_]/g, "_");
 
-      return new Response(pdfBuffer.buffer, {
+      return new Response(pdfBuffer.buffer instanceof Buffer ? pdfBuffer.buffer : pdfBuffer, {
         status: 200,
         headers: {
           "Content-Type": "application/pdf",
           "Content-Disposition": `attachment; filename="${sanitizedFileName}.pdf"`,
-          "Content-Length": pdfBuffer.length.toString(),
+          "Content-Length":
+            pdfBuffer.buffer instanceof Buffer
+              ? pdfBuffer.buffer.length.toString()
+              : pdfBuffer.length.toString(),
         },
       });
     } catch (error) {

@@ -3,7 +3,7 @@ import { setAuthCookies } from "../../../lib/auth-cookies";
 import { supabase } from "../../../lib/supabase";
 import { SimpleProjectLogger } from "../../../lib/simple-logging";
 
-export const GET: APIRoute = async ({ url, cookies, redirect }) => {
+export const GET: APIRoute = async ({ url, cookies, redirect, request }) => {
   console.log("Auth callback started");
 
   // Check if Supabase is configured
@@ -116,15 +116,11 @@ export const GET: APIRoute = async ({ url, cookies, redirect }) => {
 
     // Log the successful login
     try {
-      await SimpleProjectLogger.logUserLogin(
-        data.user?.email || "Unknown",
-        "google",
-        {
-          provider: "google",
-          userAgent: request.headers.get("user-agent"),
-          timestamp: new Date().toISOString(),
-        }
-      );
+      await SimpleProjectLogger.logUserLogin(data.user?.email || "Unknown", "google", {
+        provider: "google",
+        userAgent: request.headers.get("user-agent"),
+        timestamp: new Date().toISOString(),
+      });
       console.log("✅ [AUTH-CALLBACK] Login event logged successfully");
     } catch (logError) {
       console.error("❌ [AUTH-CALLBACK] Error logging login event:", logError);
@@ -142,7 +138,7 @@ export const GET: APIRoute = async ({ url, cookies, redirect }) => {
   }
 };
 
-export const POST: APIRoute = async ({ request, cookies }) => {
+export const POST: APIRoute = async ({ request, cookies, redirect }) => {
   console.log("🔐 [MAGIC-LINK] POST callback started");
 
   // Check if Supabase is configured

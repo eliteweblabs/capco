@@ -98,10 +98,32 @@ export const POST: APIRoute = async ({ request }) => {
           }
 
           // Update contact submission with file information
+          // First get the current files array
+          const { data: currentData, error: fetchError } = await supabaseAdmin
+            .from("contactSubmissions")
+            .select("files")
+            .eq("id", submissionId)
+            .single();
+
+          if (fetchError) {
+            console.error("Error fetching current files:", fetchError);
+            return new Response(
+              JSON.stringify({ success: false, error: "Failed to fetch current files" }),
+              {
+                status: 500,
+                headers: { "Content-Type": "application/json" },
+              }
+            );
+          }
+
+          // Append the new file to the existing files array
+          const currentFiles = currentData?.files || [];
+          const updatedFiles = [...currentFiles, filePath];
+
           const { error: updateError } = await supabaseAdmin
             .from("contactSubmissions")
             .update({
-              files: supabaseAdmin.sql`array_append(files, ${filePath})`,
+              files: updatedFiles,
             })
             .eq("id", submissionId);
 

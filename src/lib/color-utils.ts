@@ -81,11 +81,10 @@ function hslToHex(h: number, s: number, l: number): string {
 /**
  * Generate a complete Tailwind color palette from a base color
  */
-export function generateColorPalette(baseColor) {
+export function generateColorPalette(baseColor: string = "#825BDD") {
   // Ensure we have a valid hex color
   if (!baseColor || !baseColor.match(/^#[0-9A-F]{6}$/i)) {
     console.warn("Invalid base color, using default:", baseColor);
-    baseColor = "#825BDD"; // Default fallback
   }
 
   const [h, s, l] = hexToHsl(baseColor);
