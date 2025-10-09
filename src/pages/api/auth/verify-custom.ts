@@ -127,7 +127,19 @@ export const GET: APIRoute = async ({ url, cookies, redirect, request }) => {
 
     console.log("🔐 [VERIFY-CUSTOM] Token is valid, proceeding with authentication");
 
-    // Use Supabase's built-in magic link system but with our custom token validation
+    // Mark the token as used first
+    const { error: updateError } = await supabaseAdmin
+      .from("magicLinkTokens")
+      .update({ usedAt: new Date().toISOString() })
+      .eq("token", token);
+
+    if (updateError) {
+      console.error("🔐 [VERIFY-CUSTOM] Error marking token as used:", updateError);
+    } else {
+      console.log("🔐 [VERIFY-CUSTOM] Token marked as used");
+    }
+
+    // Generate a Supabase magic link and redirect to it immediately
     console.log("🔐 [VERIFY-CUSTOM] Generating Supabase magic link for authentication...");
 
     const { data: magicLinkData, error: magicLinkError } =
@@ -149,18 +161,6 @@ export const GET: APIRoute = async ({ url, cookies, redirect, request }) => {
     // Extract the actual magic link URL and redirect to it
     const magicLinkUrl = magicLinkData.properties.action_link;
     console.log("🔐 [VERIFY-CUSTOM] Redirecting to Supabase magic link:", magicLinkUrl);
-
-    // Mark the token as used instead of deleting it
-    const { error: updateError } = await supabaseAdmin
-      .from("magicLinkTokens")
-      .update({ usedAt: new Date().toISOString() })
-      .eq("token", token);
-
-    if (updateError) {
-      console.error("🔐 [VERIFY-CUSTOM] Error marking token as used:", updateError);
-    } else {
-      console.log("🔐 [VERIFY-CUSTOM] Token marked as used");
-    }
 
     // Log the successful login
     try {

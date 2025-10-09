@@ -379,6 +379,11 @@ export const POST: APIRoute = async ({ request, cookies }): Promise<Response> =>
           if (method === "magicLink") {
             // Generate magic links for authentication emails
             console.log("🔗 [EMAIL-DELIVERY] Generating magic link for authentication");
+            console.log("🔗 [EMAIL-DELIVERY] Magic link method detected:", {
+              method,
+              userEmail,
+              buttonLink,
+            });
             try {
               // Ensure buttonLink is properly formatted (starts with /)
               const cleanButtonLink = buttonLink.startsWith("/") ? buttonLink : `/${buttonLink}`;
@@ -424,7 +429,12 @@ export const POST: APIRoute = async ({ request, cookies }): Promise<Response> =>
                   // Create the magic link that goes through our custom verification
                   const directMagicLink = `${baseUrl}/api/auth/verify-custom?token=${customToken}&email=${encodeURIComponent(userEmail)}&redirect=${encodeURIComponent(cleanButtonLink)}`;
                   finalButtonLink = `${baseUrl}/magic-link-proxy?link=${encodeURIComponent(directMagicLink)}`;
-                  console.log("📧 [EMAIL-DELIVERY] Created custom magic link");
+                  console.log("📧 [EMAIL-DELIVERY] Created custom magic link:", {
+                    directMagicLink,
+                    finalButtonLink,
+                    cleanButtonLink,
+                    userEmail,
+                  });
                 }
               } catch (error) {
                 console.error("📧 [EMAIL-DELIVERY] Error creating custom magic link:", error);
@@ -436,13 +446,26 @@ export const POST: APIRoute = async ({ request, cookies }): Promise<Response> =>
               console.error("📧 [EMAIL-DELIVERY] Error generating magic link:", error);
               // Fallback to login page if magic link generation fails
               finalButtonLink = `${baseUrl}/magic-link-proxy?link=${encodeURIComponent(`${baseUrl}/login?email=${encodeURIComponent(userEmail)}`)}`;
+              console.log(
+                "🔗 [EMAIL-DELIVERY] Magic link generation failed, using fallback:",
+                finalButtonLink
+              );
             }
           } else if (buttonLink && !buttonLink.startsWith("http")) {
             // For non-magic-link emails, convert relative URLs to absolute URLs
             finalButtonLink = `${baseUrl}${buttonLink.startsWith("/") ? buttonLink : `/${buttonLink}`}`;
+            console.log("🔗 [EMAIL-DELIVERY] Non-magic-link email, using regular URL:", {
+              method,
+              finalButtonLink,
+              buttonLink,
+            });
           } else if (!buttonLink) {
             // No button link provided, use default dashboard
             finalButtonLink = `${baseUrl}/dashboard`;
+            console.log(
+              "🔗 [EMAIL-DELIVERY] No button link provided, using default dashboard:",
+              finalButtonLink
+            );
           }
 
           // ===== TEMPLATE REPLACEMENT =====
