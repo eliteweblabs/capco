@@ -33,10 +33,11 @@ export interface PlaceholderData {
     suppressionDetectionSystems?: string;
     hpsCommodities?: string;
     contractData?: {
-      signed_date?: string;
-      ip_address?: string;
+      signedDate?: string;
+      ipAddress?: string;
       image?: string;
-      signed_time?: string;
+      signedTime?: string;
+      url?: string;
     };
     contractPdfUrl?: string;
     authorProfile?: {
@@ -647,7 +648,7 @@ export function replacePlaceholders(
   // }
 
   // Replace PROJECT_SIGNATURE_DATE placeholders
-  const signatureDate = data?.project?.contractData?.signed_date || "Unknown";
+  const signatureDate = data?.project?.contractData?.signedDate || "Unknown";
   if (signatureDate) {
     const beforeReplace = result;
     result = result.replace(/\{\{\s*PROJECT_SIGNATURE_DATE\s*\}\}/g, signatureDate);
@@ -658,7 +659,7 @@ export function replacePlaceholders(
   }
 
   // Replace PROJECT_SIGNATURE_TIME placeholders
-  const signatureTime = data?.project?.contractData?.signed_time || "Unknown";
+  const signatureTime = data?.project?.contractData?.signedTime || "Unknown";
   if (signatureTime) {
     const beforeReplace = result;
     result = result.replace(/\{\{\s*PROJECT_SIGNATURE_TIME\s*\}\}/g, signatureTime);
@@ -669,7 +670,7 @@ export function replacePlaceholders(
   }
 
   // Replace PROJECT_SIGNATURE_IP placeholders
-  const signatureIP = data?.project?.contractData?.ip_address || "Unknown";
+  const signatureIP = data?.project?.contractData?.ipAddress || "Unknown";
   if (signatureIP) {
     const beforeReplace = result;
     result = result.replace(/\{\{\s*PROJECT_SIGNATURE_IP\s*\}\}/g, signatureIP);

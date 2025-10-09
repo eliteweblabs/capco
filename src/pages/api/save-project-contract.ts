@@ -2,6 +2,7 @@ import type { APIRoute } from "astro";
 import { createErrorResponse, createSuccessResponse } from "../../lib/api-optimization";
 import { checkAuth } from "../../lib/auth";
 import { supabase } from "../../lib/supabase";
+import { saveMedia } from "../../lib/media";
 
 export const POST: APIRoute = async ({ request, cookies }) => {
   try {
@@ -52,15 +53,59 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
     console.log("✅ [SAVE-PROJECT-CONTRACT] Contract saved for project:", projectId);
 
-    return createSuccessResponse(
-      {
-        projectId: updatedProject.id,
-        title: updatedProject.title,
-        contractHtml: updatedProject.contract_html,
-        hasCustomContract: !!updatedProject.contract_html,
-      },
-      "Project contract saved successfully"
-    );
+    // Also save as a PDF document in the documents section
+    try {
+      console.log("📄 [SAVE-PROJECT-CONTRACT] Creating PDF document for documents section...");
+
+      // Generate a unique document name
+      const documentName = `Contract_${updatedProject.title.replace(/[^a-zA-Z0-9]/g, "_")}_${new Date().toISOString().split("T")[0]}`;
+      const fileName = `${documentName}.pdf`;
+
+      // Convert HTML to PDF buffer
+      const { convertHtmlToPdf } = await import("./pdf/save-document");
+      const pdfBuffer = await convertHtmlToPdf(contractHtml);
+
+      // Save as media document
+      const mediaFile = await saveMedia({
+        mediaData: pdfBuffer instanceof Buffer ? pdfBuffer.buffer : pdfBuffer,
+        fileName: fileName,
+        fileType: "application/pdf",
+        projectId: projectId,
+        targetLocation: "documents",
+        currentUser: currentUser,
+        title: `Contract - ${updatedProject.title}`,
+        description: `Signed contract document for project: ${updatedProject.title}`,
+        customVersionNumber: 1,
+      });
+
+      console.log("✅ [SAVE-PROJECT-CONTRACT] PDF document created:", mediaFile.id);
+
+      return createSuccessResponse(
+        {
+          projectId: updatedProject.id,
+          title: updatedProject.title,
+          contractHtml: updatedProject.contract_html,
+          hasCustomContract: !!updatedProject.contract_html,
+          documentId: mediaFile.id,
+          documentName: documentName,
+          documentUrl: mediaFile.publicUrl,
+        },
+        "Project contract saved successfully and added to documents"
+      );
+    } catch (documentError) {
+      console.error("⚠️ [SAVE-PROJECT-CONTRACT] Failed to create PDF document:", documentError);
+      // Still return success for the contract save, but note the document creation failed
+      return createSuccessResponse(
+        {
+          projectId: updatedProject.id,
+          title: updatedProject.title,
+          contractHtml: updatedProject.contract_html,
+          hasCustomContract: !!updatedProject.contract_html,
+          documentError: "Failed to create PDF document",
+        },
+        "Project contract saved successfully (PDF document creation failed)"
+      );
+    }
   } catch (error) {
     console.error("❌ [SAVE-PROJECT-CONTRACT] Unexpected error:", error);
     return createErrorResponse(
