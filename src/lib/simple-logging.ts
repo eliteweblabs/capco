@@ -98,24 +98,18 @@ export class SimpleProjectLogger {
         return false;
       }
 
-      // If no project object provided, fetch it using get-project API
+      // If no project object provided, create a system project for logging
       if (!project) {
-        try {
-          const response = await fetch(
-            `${process.env.SITE_URL || "http://localhost:4321"}/api/get-project?id=${projectId}`,
-            {
-              headers: cookies ? { Cookie: cookies } : {},
-            }
-          );
-          if (response.ok) {
-            const result = await response.json();
-            project = result.project;
-          } else {
-            // console.warn("📝 [SIMPLE-LOGGER] Could not fetch project data for logging");
-          }
-        } catch (error) {
-          console.error("📝 [SIMPLE-LOGGER] Error fetching project data:", error);
-        }
+        console.log(
+          "📝 [SIMPLE-LOGGER] No project object provided, creating system project for logging"
+        );
+        project = {
+          id: projectId || 0,
+          title: "System",
+          address: "System Activities",
+          description: "System project for logging global activities",
+        };
+        console.log("📝 [SIMPLE-LOGGER] Using system project for logging:", project);
       }
       // Only check auth if cookies are provided
       let currentUser = null;
@@ -347,10 +341,7 @@ export class SimpleProjectLogger {
    * @param userEmail - The user's email address
    * @param metadata - Additional logout data
    */
-  static async logUserLogout(
-    userEmail: string,
-    metadata?: any
-  ): Promise<boolean> {
+  static async logUserLogout(userEmail: string, metadata?: any): Promise<boolean> {
     try {
       console.log("📝 [SIMPLE-LOGGER] Logging user logout:", {
         userEmail,
