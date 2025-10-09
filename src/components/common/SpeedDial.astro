@@ -1,7 +1,7 @@
 ---
 import StickySMS from "./StickySMS.astro";
 
-const { currentUser, isBackend, debugData, globalInputClasses } = Astro.props;
+const { currentUser, isBackend, debugData, globalInputClasses, tutorials } = Astro.props;
 
 const currentRole = currentUser?.profile?.role;
 
@@ -183,18 +183,20 @@ import BoxIcon from "./BoxIcon.astro";
 </div>
 
 <script>
+  const tutorials = document.querySelectorAll("[data-welcome]");
+  const tutorialButton = document.getElementById("tutorial-trigger");
+
+  if (tutorialButton && tutorials.length === 0) {
+    tutorialButton.style.display = "none";
+  }
+</script>
+
+<script>
   document.addEventListener("DOMContentLoaded", function () {
     const speedDialButton = document.querySelector('[data-dial-toggle="speed-dial-menu"]');
 
     const speedDialMenu = document.getElementById("speed-dial-menu");
     const speedDial = document.getElementById("speed-dial");
-
-    // Call hideOnMobileInput if it's available
-    if (typeof (window as any).hideOnMobileInput === "function") {
-      (window as any).hideOnMobileInput("[data-dial-init]");
-    }
-
-    if (!speedDialButton || !speedDialMenu || !speedDial) return;
 
     let isOpen = false;
 
@@ -227,19 +229,19 @@ import BoxIcon from "./BoxIcon.astro";
     }
 
     // Toggle on button click
-    speedDialButton.addEventListener("mouseenter", function (e) {
+    speedDialButton?.addEventListener("mouseenter", function (e) {
       e.stopPropagation();
       toggleSpeedDial();
     });
     // Toggle on button click
-    speedDial.addEventListener("mouseleave", function (e) {
+    speedDial?.addEventListener("mouseleave", function (e) {
       e.stopPropagation();
       toggleSpeedDial();
     });
 
     // Hide when clicking outside
     document.addEventListener("click", function (e) {
-      if (!speedDial.contains(e.target as Node)) {
+      if (!speedDial?.contains(e.target as Node)) {
         hideSpeedDial();
       }
     });
@@ -252,13 +254,13 @@ import BoxIcon from "./BoxIcon.astro";
     });
 
     // Prevent menu clicks from closing the dial
-    speedDialMenu.addEventListener("mouseover", function (e) {
+    speedDialMenu?.addEventListener("mouseover", function (e) {
       e.stopPropagation();
     });
 
     // Allow all buttons and links in the menu to work properly
     // Stop propagation so document click handler doesn't interfere
-    speedDialMenu.addEventListener("click", function (e) {
+    speedDialMenu?.addEventListener("click", function (e) {
       // Allow the click to proceed but prevent it from bubbling to document handler
       e.stopPropagation();
 
@@ -272,4 +274,18 @@ import BoxIcon from "./BoxIcon.astro";
       }
     });
   });
+
+  // Check for tutorials on load and hide tutorial button if none exist
+  function checkTutorials() {
+    const hasTutorials = document.body.getAttribute("data-has-tutorials") === "true";
+    const tutorialButton = document.getElementById("tutorial-trigger");
+
+    if (tutorialButton && !hasTutorials) {
+      tutorialButton.style.display = "none";
+    }
+  }
+
+  // Check immediately and on tutorial load event
+  checkTutorials();
+  window.addEventListener("tutorials-loaded", checkTutorials);
 </script>
