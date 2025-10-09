@@ -295,9 +295,23 @@ if (supabaseAdmin) {
           buttonLink: formData.get("buttonLink") || "https://capcofire.com/dashboard",
           buttonText: formData.get("buttonText") || "Access Dashboard",
           trackLinks: false, // Disable tracking for test emails
+          project: { id: 0, title: "System", address: "Email Delivery Test" }, // System project for logging
         };
 
         console.log("📧 [EMAIL-TEST] Sending test email:", requestData);
+        console.log("📧 [EMAIL-TEST] Project object being sent:", requestData.project);
+        console.log("📧 [EMAIL-TEST] Selected users for SMS logic:", selectedUsers);
+        console.log(
+          "📧 [EMAIL-TEST] SMS setup check:",
+          selectedUsers.map((user) => ({
+            name: user.name,
+            email: user.email,
+            smsAlerts: user.smsAlerts,
+            mobileCarrier: user.mobileCarrier,
+            phone: user.phone,
+            hasSmsSetup: user.smsAlerts && user.mobileCarrier && user.phone,
+          }))
+        );
 
         // Send test email
         const response = await fetch("/api/update-delivery", {
