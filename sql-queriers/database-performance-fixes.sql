@@ -127,7 +127,7 @@ $$;
 CREATE OR REPLACE FUNCTION get_project_comment_counts(project_ids integer[], user_role text DEFAULT 'Client')
 RETURNS TABLE (
   project_id integer,
-  comment_count bigint
+  commentCount bigint
 )
 LANGUAGE sql
 SECURITY DEFINER
@@ -135,7 +135,7 @@ STABLE
 AS $$
   SELECT 
     d.project_id,
-    COUNT(*) as comment_count
+    COUNT(*) as commentCount
   FROM discussion d
   WHERE d.project_id = ANY(project_ids)
     AND (

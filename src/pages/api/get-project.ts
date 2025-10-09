@@ -12,28 +12,28 @@
  * - project: Filter by project type (partial match)
  * - service: Filter by service type (partial match)
  * - newConstruction: Filter by new construction (true/false)
- * - date_from: Filter projects created after this date (ISO format)
- * - date_to: Filter projects created before this date (ISO format)
- * - due_date_from: Filter projects with dueDate after this date (ISO format)
- * - due_date_to: Filter projects with dueDate before this date (ISO format)
+ * - dateFrom: Filter projects created after this date (ISO format)
+ * - dateTo: Filter projects created before this date (ISO format)
+ * - dueDateFrom: Filter projects with dueDate after this date (ISO format)
+ * - dueDateTo: Filter projects with dueDate before this date (ISO format)
  * - overdue: Filter for overdue projects (true/false)
- * - sort_by: Sort field (default: updatedAt)
- * - sort_order: Sort direction (asc/desc, default: desc)
+ * - sortBy: Sort field (default: updatedAt)
+ * - sortOrder: Sort direction (asc/desc, default: desc)
  * - limit: Number of results to return (default: no limit)
  * - offset: Number of results to skip (default: 0)
  *
  * Examples:
  * - /api/get-project?search=fire&status=1&limit=10
- * - /api/get-project?authorId=123&sort_by=createdAt&sort_order=asc
- * - /api/get-project?building=residential&date_from=2024-01-01&date_to=2024-12-31
- * - /api/get-project?overdue=true&sort_by=dueDate&sort_order=asc
+ * - /api/get-project?authorId=123&sortBy=createdAt&sortOrder=asc
+ * - /api/get-project?building=residential&dateFrom=2024-01-01&dateTo=2024-12-31
+ * - /api/get-project?overdue=true&sortBy=dueDate&sortOrder=asc
  *
  * Response includes:
  * - projects: Array of project objects with enhanced data
  * - count: Number of projects returned
- * - filtered_by: Human-readable description of applied filters
+ * - filteredBy: Human-readable description of applied filters
  * - pagination: Pagination metadata
- * - filters_applied: Object containing all applied filter values
+ * - filtersApplied: Object containing all applied filter values
  */
 
 import type { APIRoute } from "astro";
@@ -136,23 +136,23 @@ function applyFilters(query: any, filters: FilterParams) {
 
   // Date range filters
   if (dateFrom) {
-    console.log(`📡 [API] Adding filter for date_from: ${dateFrom}`);
+    console.log(`📡 [API] Adding filter for dateFrom: ${dateFrom}`);
     query = query.gte("createdAt", dateFrom);
   }
 
   if (dateTo) {
-    console.log(`📡 [API] Adding filter for date_to: ${dateTo}`);
+    console.log(`📡 [API] Adding filter for dateTo: ${dateTo}`);
     query = query.lte("createdAt", dateTo);
   }
 
   // Due date range filters
   if (dueDateFrom) {
-    console.log(`📡 [API] Adding filter for due_date_from: ${dueDateFrom}`);
+    console.log(`📡 [API] Adding filter for dueDateFrom: ${dueDateFrom}`);
     query = query.gte("dueDate", dueDateFrom);
   }
 
   if (dueDateTo) {
-    console.log(`📡 [API] Adding filter for due_date_to: ${dueDateTo}`);
+    console.log(`📡 [API] Adding filter for dueDateTo: ${dueDateTo}`);
     query = query.lte("dueDate", dueDateTo);
   }
 
@@ -209,13 +209,13 @@ export const GET: APIRoute = async ({ request, cookies, url, params }) => {
     const project = url.searchParams.get("project");
     const service = url.searchParams.get("service");
     const newConstruction = url.searchParams.get("newConstruction");
-    const dateFrom = url.searchParams.get("date_from");
-    const dateTo = url.searchParams.get("date_to");
-    const dueDateFrom = url.searchParams.get("due_date_from");
-    const dueDateTo = url.searchParams.get("due_date_to");
+    const dateFrom = url.searchParams.get("dateFrom");
+    const dateTo = url.searchParams.get("dateTo");
+    const dueDateFrom = url.searchParams.get("dueDateFrom");
+    const dueDateTo = url.searchParams.get("dueDateTo");
     const overdue = url.searchParams.get("overdue");
-    const sortBy = url.searchParams.get("sort_by") || "updatedAt";
-    const sortOrder = url.searchParams.get("sort_order") || "desc";
+    const sortBy = url.searchParams.get("sortBy") || "updatedAt";
+    const sortOrder = url.searchParams.get("sortOrder") || "desc";
     const limit = parseInt(url.searchParams.get("limit") || "0");
     const offset = parseInt(url.searchParams.get("offset") || "0");
 
@@ -289,61 +289,6 @@ export const GET: APIRoute = async ({ request, cookies, url, params }) => {
       const result = await query;
       projects = result.data || [];
       error = result.error;
-
-      // Debug: Log sample project data to see what fields are available
-      // if (projects.length > 0) {
-      //   console.log("📡 [GET-PROJECT] Sample project raw data:", {
-      //     id: projects[0].id,
-      //     title: projects[0].title,
-      //     featuredImage: projects[0].featuredImage,
-      //     featured_image_url: projects[0].featured_image_url,
-      //     allKeys: Object.keys(projects[0]),
-      //   });
-      // }
-
-      // } else {
-      //   // Use admin client to bypass RLS policies for project listing
-      //   let query = supabaseAdmin
-      //     .from("projects")
-      //     .select(
-      //       `
-      //       id,
-      //       title,
-      //       description,
-      //       address,
-      //       authorId,
-      //       status,
-      //       sqFt,
-      //       newConstruction,
-      //       createdAt,
-      //       updatedAt,
-      //       assignedToId,
-      //       featuredImage,
-      //       featured_image_url,
-      //       companyName,
-      //       subject,
-      //       proposalSignature,
-      //       signedAt,
-      //       contractPdfUrl,
-      //       building,
-      //       project,
-      //       service,
-      //       requestedDocs,
-      //       architect,
-      //       units
-      //     `
-      //     )
-      //     .neq("id", 0) // Exclude system log project
-      //     .order("updatedAt", { ascending: false });
-
-      //   // Filter by assignedToId if provided
-      //   if (assignedToId) {
-      //     query = query.eq("assignedToId", assignedToId);
-      //   }
-
-      //   const result = await query;
-      //   projects = result.data;
-      //   error = result.error;
     }
 
     if (error) {
@@ -354,16 +299,6 @@ export const GET: APIRoute = async ({ request, cookies, url, params }) => {
         details: error.details,
         hint: error.hint,
       });
-    } else {
-      // console.log("📡 [API] Successfully fetched projects:", projects?.length || 0);
-      if (projects && projects.length > 0) {
-        // console.log("📡 [API] Sample project:", {
-        //   id: projects[0].id,
-        //   title: projects[0].title,
-        //   authorId: projects[0].authorId,
-        //   status: projects[0].status,
-        // });
-      }
     }
 
     if (error) {
@@ -457,7 +392,7 @@ export const GET: APIRoute = async ({ request, cookies, url, params }) => {
                 filePath: featuredImageFile.filePath,
                 fileName: featuredImageFile.fileName,
                 fileType: featuredImageFile.fileType,
-                public_url: urlData?.signedUrl || null,
+                publicUrl: urlData?.signedUrl || null,
                 bucketName: bucketName,
                 title: featuredImageFile.title,
                 uploadedAt: featuredImageFile.uploadedAt,
@@ -492,7 +427,7 @@ export const GET: APIRoute = async ({ request, cookies, url, params }) => {
               filePath: featuredImageData.filePath,
               fileName: featuredImageData.fileName,
               fileType: featuredImageData.fileType,
-              public_url: featuredImageData.public_url || project.featured_image_url,
+              publicUrl: featuredImageData.publicUrl || project.featuredImageUrl,
             };
           } catch (error) {
             console.warn(
@@ -550,8 +485,8 @@ export const GET: APIRoute = async ({ request, cookies, url, params }) => {
 
         let discussionCounts: Array<{
           projectId: number;
-          comment_count: number;
-          incomplete_count: number;
+          commentCount: number;
+          incompleteCount: number;
         }> = [];
 
         if (!totalError && !incompleteError && totalDiscussions && incompleteDiscussions) {
@@ -576,10 +511,10 @@ export const GET: APIRoute = async ({ request, cookies, url, params }) => {
           // );
 
           discussionCounts = Object.entries(totalCountsByProject).map(
-            ([projectId, comment_count]) => ({
+            ([projectId, commentCount]) => ({
               projectId: parseInt(projectId),
-              comment_count,
-              incomplete_count: incompleteCountsByProject[parseInt(projectId)] || 0,
+              commentCount,
+              incompleteCount: incompleteCountsByProject[parseInt(projectId)] || 0,
             })
           );
         }
@@ -592,8 +527,8 @@ export const GET: APIRoute = async ({ request, cookies, url, params }) => {
           const incompleteCountsByProject: Record<number, number> = {};
 
           discussionCounts.forEach((item: any) => {
-            totalCountsByProject[item.projectId] = item.comment_count;
-            incompleteCountsByProject[item.projectId] = item.incomplete_count;
+            totalCountsByProject[item.projectId] = item.commentCount;
+            incompleteCountsByProject[item.projectId] = item.incompleteCount;
           });
 
           // console.log("📡 [GET-PROJECT] Lookup maps created:", {
@@ -606,20 +541,20 @@ export const GET: APIRoute = async ({ request, cookies, url, params }) => {
             const totalCount = totalCountsByProject[project.id] || 0;
             const incompleteCount = incompleteCountsByProject[project.id] || 0;
 
-            project.comment_count = totalCount;
+            project.commentCount = totalCount;
             project.incompleteDiscussions = incompleteCount;
 
             // Add a formatted ratio string for easy display
-            project.discussion_ratio = `${incompleteCount}/${totalCount}`;
+            project.discussionRatio = `${incompleteCount}/${totalCount}`;
           });
 
           // console.log("📡 [GET-PROJECT] Discussion counts added efficiently");
           // console.log("📡 [GET-PROJECT] Sample project with counts:", {
           //   id: projects[0]?.id,
           //   title: projects[0]?.title,
-          //   comment_count: projects[0]?.comment_count,
+          //   commentCount: projects[0]?.commentCount,
           //   incompleteDiscussions: projects[0]?.incompleteDiscussions,
-          //   discussion_ratio: projects[0]?.discussion_ratio,
+          //   discussionRatio: projects[0]?.discussionRatio,
           // });
         } else {
           console.error("Error fetching discussion counts:", {
@@ -631,17 +566,17 @@ export const GET: APIRoute = async ({ request, cookies, url, params }) => {
           });
           // Set default counts to 0 if there's an error
           projects.forEach((project: any) => {
-            project.comment_count = 0;
+            project.commentCount = 0;
             project.incompleteDiscussions = 0;
-            project.discussion_ratio = "0/0";
+            project.discussionRatio = "0/0";
           });
         }
       } catch (error) {
         console.error("Error in comment count optimization:", error);
         projects.forEach((project: any) => {
-          project.comment_count = 0;
+          project.commentCount = 0;
           project.incompleteDiscussions = 0;
-          project.discussion_ratio = "0/0";
+          project.discussionRatio = "0/0";
         });
       }
     }
@@ -707,10 +642,10 @@ export const GET: APIRoute = async ({ request, cookies, url, params }) => {
     if (service) filters.push(`service: ${service}`);
     if (newConstruction !== null && newConstruction !== undefined)
       filters.push(`newConstruction: ${newConstruction}`);
-    if (dateFrom) filters.push(`date_from: ${dateFrom}`);
-    if (dateTo) filters.push(`date_to: ${dateTo}`);
-    if (dueDateFrom) filters.push(`due_date_from: ${dueDateFrom}`);
-    if (dueDateTo) filters.push(`due_date_to: ${dueDateTo}`);
+    if (dateFrom) filters.push(`dateFrom: ${dateFrom}`);
+    if (dateTo) filters.push(`dateTo: ${dateTo}`);
+    if (dueDateFrom) filters.push(`dueDateFrom: ${dueDateFrom}`);
+    if (dueDateTo) filters.push(`dueDateTo: ${dueDateTo}`);
     if (overdue) filters.push(`overdue: ${overdue}`);
     const filteredBy = filters.length > 0 ? filters.join(", ") : null;
 
@@ -778,13 +713,13 @@ export const GET: APIRoute = async ({ request, cookies, url, params }) => {
         success: true,
         projects: projectsWithDocuments,
         count: projects?.length || 0,
-        filtered_by: filteredBy,
+        filteredBy: filteredBy,
         pagination: {
           limit: limit || null,
           offset: offset || 0,
           hasMore: limit > 0 && projects?.length === limit,
         },
-        filters_applied: {
+        filtersApplied: {
           assignedToId: assignedToId,
           authorId: authorId,
           search: search,
@@ -793,13 +728,13 @@ export const GET: APIRoute = async ({ request, cookies, url, params }) => {
           project: project,
           service: service,
           newConstruction: newConstruction,
-          date_from: dateFrom,
-          date_to: dateTo,
-          due_date_from: dueDateFrom,
-          due_date_to: dueDateTo,
+          dateFrom: dateFrom,
+          dateTo: dateTo,
+          dueDateFrom: dueDateFrom,
+          dueDateTo: dueDateTo,
           overdue: overdue,
-          sort_by: sortBy,
-          sort_order: sortOrder,
+          sortBy: sortBy,
+          sortOrder: sortOrder,
         },
       }),
       {

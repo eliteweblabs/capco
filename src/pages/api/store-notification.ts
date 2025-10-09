@@ -83,12 +83,13 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     const notifications = users.map((user) => ({
       userId: user.id,
       title: notification.title,
-      body: notification.body,
-      icon: notification.icon || "/favicon.svg",
-      data: notification.data || {},
-      read: false,
+      message: notification.body,
+      type: "info",
+      priority: "normal",
+      actionUrl: notification.data?.url || null,
+      actionText: notification.data?.actionText || null,
+      viewed: false,
       createdAt: new Date().toISOString(),
-      createdBy: currentUser.id,
     }));
 
     const { data: storedNotifications, error: storeError } = await supabase

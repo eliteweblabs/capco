@@ -159,12 +159,7 @@ export const SMS_CARRIERS: Record<string, CarrierInfo> = {
     format: "1234567890@txt.att.net",
   },
   verizon: {
-    name: "Verizon",
-    gateway: "@vtext.com",
-    format: "1234567890@vtext.com",
-  },
-  spectrum: {
-    name: "Spectrum",
+    name: "Verizon / Spectrum",
     gateway: "@vtext.com",
     format: "1234567890@vtext.com",
   },
@@ -270,3 +265,21 @@ export function getCarrierGateway(carrierKey: string | null): string | null {
   const carrier = getCarrierInfo(carrierKey);
   return carrier?.gateway || null;
 }
+
+// SMS Utilities object for easy access
+export const SMS_UTILS = {
+  CARRIERS: Object.entries(SMS_CARRIERS).map(([id, carrier]) => ({
+    id,
+    name: carrier.name,
+    gateway: carrier.gateway,
+  })),
+  isValidPhoneNumber: validatePhoneNumber,
+  generateSmsEmail,
+  getCarrierInfo,
+  getAllCarriers,
+  isValidCarrier,
+  getCarrierGateway,
+  getCarrierKeyFromGateway,
+  sendSmsViaEmail,
+  sendProjectStatusSms,
+};

@@ -107,7 +107,7 @@ CREATE TABLE invoice_line_items (
   quantity DECIMAL(10,2),
   unit_price DECIMAL(10,2),
   total_price DECIMAL(10,2),
-  sort_order INTEGER,
+  sortOrder INTEGER,
 
   -- NEW COLUMN (already added by line items catalog system)
   catalog_item_id INTEGER REFERENCES line_items_catalog(id)

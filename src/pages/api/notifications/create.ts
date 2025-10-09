@@ -5,6 +5,7 @@ interface CreateNotificationRequest {
   userId?: string;
   userEmail?: string;
   allUsers?: boolean;
+  groupType?: "admins" | "staff" | "clients";
   title: string;
   message: string;
   type?: "info" | "success" | "warning" | "error";
@@ -20,6 +21,7 @@ export const POST: APIRoute = async ({ request }): Promise<Response> => {
       userId,
       userEmail,
       allUsers = false,
+      groupType,
       title,
       message,
       type = "info",
@@ -35,9 +37,9 @@ export const POST: APIRoute = async ({ request }): Promise<Response> => {
       });
     }
 
-    if (!allUsers && !userId && !userEmail) {
+    if (!allUsers && !userId && !userEmail && !groupType) {
       return new Response(
-        JSON.stringify({ error: "Either userId, userEmail, or allUsers is required" }),
+        JSON.stringify({ error: "Either userId, userEmail, allUsers, or groupType is required" }),
         {
           status: 400,
           headers: { "Content-Type": "application/json" },
@@ -74,6 +76,7 @@ export const POST: APIRoute = async ({ request }): Promise<Response> => {
         priority,
         actionUrl: actionUrl,
         actionText: actionText,
+        viewed: false,
       }));
 
       const { error: insertError } = await supabaseAdmin
@@ -92,6 +95,98 @@ export const POST: APIRoute = async ({ request }): Promise<Response> => {
           success: true,
           message: `Notification sent to ${allUsersData.length} users`,
           count: allUsersData.length,
+        }),
+        {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        }
+      );
+    }
+
+    if (groupType) {
+      if (!supabaseAdmin) {
+        console.error("Supabase admin client not initialized");
+        return new Response(JSON.stringify({ error: "Server configuration error" }), {
+          status: 500,
+          headers: { "Content-Type": "application/json" },
+        });
+      }
+
+      // Map groupType to role
+      const roleMap = {
+        admins: "Admin",
+        staff: "Staff",
+        clients: "Client",
+      };
+
+      const role = roleMap[groupType];
+      if (!role) {
+        return new Response(JSON.stringify({ error: "Invalid group type" }), {
+          status: 400,
+          headers: { "Content-Type": "application/json" },
+        });
+      }
+
+      // Get users by role
+      const { data: groupUsersData, error: groupUsersError } = await supabaseAdmin
+        .from("profiles")
+        .select("id")
+        .eq("role", role);
+
+      if (groupUsersError || !groupUsersData) {
+        return new Response(JSON.stringify({ error: "Failed to fetch group users" }), {
+          status: 500,
+          headers: { "Content-Type": "application/json" },
+        });
+      }
+
+      if (groupUsersData.length === 0) {
+        return new Response(
+          JSON.stringify({
+            success: true,
+            message: `No users found with role ${role}`,
+            count: 0,
+          }),
+          {
+            status: 200,
+            headers: { "Content-Type": "application/json" },
+          }
+        );
+      }
+
+      // Create notifications for group users
+      const notifications = groupUsersData.map((user) => ({
+        userId: user.id,
+        title,
+        message,
+        type,
+        priority,
+        actionUrl: actionUrl,
+        actionText: actionText,
+        viewed: false,
+      }));
+
+      const { error: insertError } = await supabaseAdmin
+        .from("notifications")
+        .insert(notifications);
+
+      if (insertError) {
+        console.error("❌ [NOTIFICATIONS] Error creating group notifications:", insertError);
+        return new Response(JSON.stringify({ error: "Failed to create group notifications" }), {
+          status: 500,
+          headers: { "Content-Type": "application/json" },
+        });
+      }
+
+      console.log(
+        `✅ [NOTIFICATIONS] Created ${groupUsersData.length} notifications for ${groupType} group`
+      );
+
+      return new Response(
+        JSON.stringify({
+          success: true,
+          message: `Notification sent to ${groupUsersData.length} ${groupType}`,
+          count: groupUsersData.length,
         }),
         {
           status: 200,

@@ -102,7 +102,7 @@ INSERT INTO public.invoice_line_items (
   quantity,
   unit_price,
   total_price,
-  sort_order,
+  sortOrder,
   notes
 ) VALUES 
 -- Get the first invoice ID
@@ -129,7 +129,7 @@ INSERT INTO public.invoice_line_items (
   quantity,
   unit_price,
   total_price,
-  sort_order,
+  sortOrder,
   notes
 ) VALUES
 ((SELECT id FROM invoices WHERE subject LIKE '%Fire Alarm System Installation%' LIMIT 1),
@@ -159,7 +159,7 @@ INSERT INTO public.invoice_line_items (
   quantity,
   unit_price,
   total_price,
-  sort_order,
+  sortOrder,
   notes
 ) VALUES
 ((SELECT id FROM invoices WHERE subject LIKE '%Annual Sprinkler System Inspection%' LIMIT 1),
@@ -220,7 +220,7 @@ INSERT INTO public.invoice_line_items (
   quantity,
   unit_price,
   total_price,
-  sort_order,
+  sortOrder,
   notes
 ) VALUES
 ((SELECT id FROM invoices WHERE subject LIKE '%Emergency Repairs - Fire Pump%' LIMIT 1),
@@ -275,7 +275,7 @@ INSERT INTO public.invoice_line_items (
   quantity,
   unit_price,
   total_price,
-  sort_order,
+  sortOrder,
   notes
 ) VALUES
 ((SELECT id FROM invoices WHERE subject LIKE '%Kitchen Hood Suppression%' LIMIT 1),

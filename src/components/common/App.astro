@@ -37,20 +37,26 @@ const {
   supabaseUrl = undefined,
   projects = undefined,
   id = undefined,
-  globalPrimaryTextClasses = "",
-  globalSecondaryTextClasses = "",
-  globalInputClasses = "",
-  globalCompanyName = undefined,
-  globalCompanySlogan = undefined,
-  globalCompanyAddress = undefined,
-  globalCompanyPhone = undefined,
-  globalCompanyEmail = undefined,
-  globalCompanyWebsite = undefined,
-  globalCompanyLogo = undefined,
-  globalCompanyLogoDark = undefined,
-  globalCompanyLogoLight = undefined,
+
   statusData = undefined,
 } = Astro.props;
+
+import { globalCompanyData } from "../../pages/api/global-company-data";
+const {
+  globalCompanyName,
+  globalCompanySlogan,
+  globalCompanyAddress,
+  globalCompanyPhone,
+  globalCompanyEmail,
+  globalCompanyWebsite,
+  globalCompanyLogo,
+  globalCompanyLogoDark,
+  globalCompanyLogoLight,
+} = globalCompanyData();
+
+import { globalClasses } from "../../pages/api/global-classes";
+const { globalInputClasses, globalPrimaryTextClasses, globalSecondaryTextClasses } =
+  globalClasses();
 
 // Derived properties (8 props → 13 total)
 const isAuth = currentUser ? true : false;
@@ -66,9 +72,10 @@ const isBackend = isBackendPage(currentUrl);
 const navigationData = navigation(currentUrl, isAuth, currentRole || "Client", isBackend || false);
 const { desktopNavigationHTML, visibleNavItems } = navigationData;
 
-import "../../styles/boxicons.css"; // this is sketchy
 import "../../styles/global.css"; // Import Tailwind CSS
 // import "../../styles/app.css"; // Import Tailwind CSS
+import "../../styles/boxicons.css"; // this is sketchy
+
 import Preloader from "./Preloader.astro";
 import Footer from "./Footer.astro";
 import UnifiedNotification from "./UnifiedNotification.astro";
@@ -258,6 +265,78 @@ const debugData = {
       (window as any).updateNotificationBellCount = updateNotificationBellCount;
       (window as any).loadNotificationCount = loadNotificationCount;
       (window as any).refreshNotificationCount = refreshNotificationCount;
+
+      // Global utility function to convert camelCase to Proper Case
+      (window as any).camelToProper = (str: string): string => {
+        if (!str) return "";
+
+        // Handle special cases first
+        const specialCases: { [key: string]: string } = {
+          id: "ID",
+          url: "URL",
+          api: "API",
+          sms: "SMS",
+          email: "Email",
+          phone: "Phone",
+          status: "Status",
+          project: "Project",
+          user: "User",
+          admin: "Admin",
+          client: "Client",
+          staff: "Staff",
+          role: "Role",
+          name: "Name",
+          title: "Title",
+          address: "Address",
+          created: "Created",
+          updated: "Updated",
+          completed: "Completed",
+          incomplete: "Incomplete",
+          failed: "Failed",
+          sent: "Sent",
+          received: "Received",
+          uploaded: "Uploaded",
+          downloaded: "Downloaded",
+          added: "Added",
+          changed: "Changed",
+          login: "Login",
+          logout: "Logout",
+          registration: "Registration",
+          action: "Action",
+          event: "Event",
+          error: "Error",
+          info: "Info",
+          system: "System",
+          notification: "Notification",
+          discussion: "Discussion",
+          punchlist: "Punchlist",
+          proposal: "Proposal",
+          assignment: "Assignment",
+          comment: "Comment",
+          file: "File",
+        };
+
+        // Split camelCase into words
+        const words = str
+          .replace(/([A-Z])/g, " $1")
+          .trim()
+          .split(" ");
+
+        // Convert each word to proper case
+        const properWords = words.map((word) => {
+          const lowerWord = word.toLowerCase();
+
+          // Check special cases first
+          if (specialCases[lowerWord]) {
+            return specialCases[lowerWord];
+          }
+
+          // Default: capitalize first letter
+          return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
+        });
+
+        return properWords.join(" ");
+      };
     </script>
 
     <!-- Set global user data for client-side components -->
@@ -279,7 +358,13 @@ const debugData = {
     />
 
     <div class="safari-18-fix flex min-h-screen bg-gray-50 pt-16 dark:bg-gray-900">
-      <Aside {currentUser} {project} {globalInputClasses} />
+      <Aside
+        {currentUser}
+        {project}
+        {globalInputClasses}
+        primaryTextClasses={globalPrimaryTextClasses}
+        secondaryTextClasses={globalSecondaryTextClasses}
+      />
 
       <div
         id="main-content"
@@ -324,7 +409,7 @@ const debugData = {
 
     <TutorialOverlay {currentUser} tutorialId="demo-tour" autoStart={false} {isAuth} />
     <!-- Debug Panel (Admin Only) -->
-    <DebugPanel {currentUser} />
+    <DebugPanel {currentUser} {debugData} />
 
     <!-- Flowbite JavaScript -->
     <script src="https://unpkg.com/flowbite@2.5.2/dist/flowbite.min.js"></script>
@@ -335,6 +420,7 @@ const debugData = {
           // Global functions and utilities (alphabetized)
           acceptProposal?: () => void;
           addNewLineItem?: () => void;
+          camelToProper?: (str: string) => string;
           clipboardData?: any;
           createLineItemRow?: (data: any) => HTMLElement;
           createButtonPartial?: (config: any) => Promise<HTMLElement | null>;
@@ -682,7 +768,7 @@ const debugData = {
 
       (window as any).sendEmail = async function (emailData: any, currentUser: any) {
         try {
-          // Transform the email data to match the email-delivery API structure
+          // Transform the email data to match the update-delivery API structure
           const transformedData = {
             usersToNotify: emailData.usersToNotify, // TODO: Get actual user emails
             emailType: emailData.emailType || "statusUpdate",
@@ -696,7 +782,7 @@ const debugData = {
 
           console.log("📧 [SEND-EMAIL] Sending email with data:", transformedData);
 
-          const response = await fetch("/api/email-delivery", {
+          const response = await fetch("/api/update-delivery", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(transformedData),
@@ -1370,10 +1456,10 @@ const debugData = {
               title: "Message Sent",
               message: `Your message has been sent to ${import.meta.env.GLOBAL_COMPANY_NAME} successfully.`,
             },
-            oauth_success: {
-              title: "OAuth Success",
-              message: `Your OAuth login has been successful.`,
-            },
+            // oauth_success: {
+            //   title: "OAuth Success",
+            //   message: `Your OAuth login has been successful.`,
+            // },
             default: { title: "Success!", message: param },
           },
         };
