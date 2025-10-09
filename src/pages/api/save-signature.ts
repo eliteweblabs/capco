@@ -99,9 +99,10 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     const updateData = {
       contractData: {
         image: signature,
-        signed_date: new Date(signedAt || new Date()).toLocaleDateString(),
-        signed_time: new Date(signedAt || new Date()).toLocaleTimeString(),
-        ip_address: clientIP,
+        signedDate: new Date(signedAt || new Date()).toLocaleDateString(),
+        signedTime: new Date(signedAt || new Date()).toLocaleTimeString(),
+        ipAddress: clientIP,
+        url: contractPdfUrl || null,
       },
     };
 
@@ -181,9 +182,10 @@ async function generateContractPDF(
     const signedDate = new Date(signedAt);
     const contactData = {
       image: signature,
-      signed_date: signedDate.toLocaleDateString(),
-      signed_time: signedDate.toLocaleTimeString(),
-      ip_address: clientIP,
+      signedDate: signedDate.toLocaleDateString(),
+      signedTime: signedDate.toLocaleTimeString(),
+      ipAddress: clientIP,
+      url: contractPdfUrl || null,
     };
 
     // Use the template assembly API to get the contract HTML
