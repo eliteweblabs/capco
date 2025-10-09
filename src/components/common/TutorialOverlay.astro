@@ -6,8 +6,9 @@ export interface Props {
   tutorialId?: string;
   autoStart?: boolean;
   isAuth?: boolean;
+  tutorials?: NodeListOf<Element>;
 }
-const { currentUser, tutorialId = "default", autoStart = false, isAuth = false } = Astro.props;
+const { currentUser, tutorialId = "default", autoStart = false, isAuth = false, tutorials } = Astro.props;
 
 // Log props
 // console.log("🎓 [TUTORIAL] Props:", { 
@@ -16,6 +17,9 @@ const { currentUser, tutorialId = "default", autoStart = false, isAuth = false }
 //   autoStart,
 //   isAuth,
 // });
+if (!tutorials) {
+  return;
+}
 ---
 
 
@@ -483,6 +487,7 @@ const { currentUser, tutorialId = "default", autoStart = false, isAuth = false }
       element.classList.add("tutorial-highlight");
 
       // Create mask cutout
+      
       this.createMaskCutout(element);
     }
 
@@ -629,53 +634,52 @@ const { currentUser, tutorialId = "default", autoStart = false, isAuth = false }
       if (isPublicPage) {
         console.log("🎓 [TUTORIAL] Public page detected, skipping initialization");
       } else {
+        // Check if we're authenticated by looking for the tutorial-overlay element
+        const overlay = document.getElementById("tutorial-overlay");
+        console.log("🎓 [TUTORIAL] Overlay element:", overlay);
 
-    // Check if we're authenticated by looking for the tutorial-overlay element
-    const overlay = document.getElementById("tutorial-overlay");
-    console.log("🎓 [TUTORIAL] Overlay element:", overlay);
+        if (overlay) {
+          // Get values from data attributes
+          const currentUserId = overlay.dataset.userId;
+          const tutorialId = overlay.dataset.tutorialId || "default";
+          const autoStart = overlay.dataset.autoStart === "true";
 
-    if (overlay) {
+          const tutorials = document.querySelectorAll("[data-welcome]");
 
-    // Get values from data attributes
-    const currentUserId = overlay.dataset.userId;
-    const tutorialId = overlay.dataset.tutorialId || "default";
-    const autoStart = overlay.dataset.autoStart === "true";
+          console.log("🎓 [TUTORIAL] Data attributes:", {
+            currentUserId,
+            tutorialId,
+            autoStart,
+            allDataset: overlay.dataset
+          });
 
-    console.log("🎓 [TUTORIAL] Data attributes:", {
-      currentUserId,
-      tutorialId,
-      autoStart,
-      allDataset: overlay.dataset
-    });
+          // Only initialize if we have a user ID
+          if (currentUserId && tutorials.length > 0) {
+            console.log("🎓 [TUTORIAL] All conditions met, initializing tutorial manager for user:", currentUserId);
+            const tutorialManager = new TutorialManager(currentUserId, tutorialId);
 
-    // Only initialize if we have a user ID
-    if (currentUserId) {
+            // Make it globally accessible
+            (window as any).tutorialManager = tutorialManager;
 
-    console.log("🎓 [TUTORIAL] All conditions met, initializing tutorial manager for user:", currentUserId);
-    const tutorialManager = new TutorialManager(currentUserId, tutorialId);
-
-    // Make it globally accessible
-    (window as any).tutorialManager = tutorialManager;
-
-    // Auto-start if enabled
-    try {
-      if (autoStart) {
-        document.addEventListener("DOMContentLoaded", () => {
-          setTimeout(() => tutorialManager.startTutorial(), 1000);
-        });
+            // Auto-start if enabled
+            try {
+              if (autoStart) {
+                document.addEventListener("DOMContentLoaded", () => {
+                  setTimeout(() => tutorialManager.startTutorial(), 1000);
+                });
+              }
+            } catch (error) {
+              // Ignore errors during initialization
+              console.log("🎓 [TUTORIAL] Error during initialization:", error);
+            }
+          } else {
+            console.log("🎓 [TUTORIAL] No user ID found or no tutorials available - skipping tutorial initialization");
+          }
+        } else {
+          console.log("🎓 [TUTORIAL] No tutorial overlay found - user not authenticated");
+        }
       }
-    } catch (error) {
-      // Ignore errors during initialization
-      console.log("🎓 [TUTORIAL] Error during initialization:", error);
     }
-    } else {
-      console.log("🎓 [TUTORIAL] No user ID found - skipping tutorial initialization");
-    }
-    } else {
-      console.log("🎓 [TUTORIAL] No tutorial overlay found - user not authenticated");
-    }
-      } // Close the public page check else block
-    } // Close the shouldInitialize check
   }; // Close the initializeTutorial function
 
   // Call the initialization function
@@ -938,4 +942,20 @@ const { currentUser, tutorialId = "default", autoStart = false, isAuth = false }
     color: #93c5fd;
   }
 </style>
+
+<script>
+  // Check for tutorials and hide overlay if none exist
+  function checkTutorials() {
+    const hasTutorials = document.body.getAttribute('data-has-tutorials') === 'true';
+    const tutorialOverlay = document.getElementById('tutorial-overlay');
+    
+    if (tutorialOverlay && !hasTutorials) {
+      tutorialOverlay.style.display = 'none';
+    }
+  }
+  
+  // Check immediately and on tutorial load event
+  checkTutorials();
+  window.addEventListener('tutorials-loaded', checkTutorials);
+</script>
 ) : null}

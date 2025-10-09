@@ -121,7 +121,13 @@ export async function checkAuth(cookies: any): Promise<AuthResult> {
       clearAuthCookies(cookies);
     }
   } else {
-    console.log("🔐 [AUTH] No tokens or Supabase not configured");
+    // Only log if we're on a protected route where auth is expected
+    const publicPages = ["/", "/login", "/register", "/forgot-password"];
+    const currentPath = typeof window !== "undefined" ? window.location.pathname : "";
+
+    if (!publicPages.includes(currentPath)) {
+      console.log("🔐 [AUTH] No authentication tokens found");
+    }
   }
 
   const result = {
