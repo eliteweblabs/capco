@@ -98,6 +98,9 @@ export const POST: APIRoute = async ({ request, cookies }): Promise<Response> =>
     // Use the proper base URL function to avoid localhost in production
     const { getBaseUrl } = await import("../../lib/url-utils");
     const baseUrl = getBaseUrl(request);
+
+    // Debug: Log the base URL being used
+    console.log("📧 [EMAIL-DELIVERY] Base URL:", baseUrl);
     const emailProvider = import.meta.env.EMAIL_PROVIDER;
     const emailApiKey = import.meta.env.EMAIL_API_KEY;
     const fromEmail = import.meta.env.FROM_EMAIL;
@@ -421,31 +424,31 @@ export const POST: APIRoute = async ({ request, cookies }): Promise<Response> =>
 
                 if (insertError) {
                   console.error("📧 [EMAIL-DELIVERY] Error storing magic link token:", insertError);
-                  // Fallback to login page
-                  finalButtonLink = `${baseUrl}/magic-link-proxy?link=${encodeURIComponent(`${baseUrl}/login?email=${encodeURIComponent(userEmail)}`)}`;
+                  // Fallback to regular URL
+                  finalButtonLink = cleanButtonLink;
                 } else {
                   console.log("📧 [EMAIL-DELIVERY] Magic link token stored successfully");
 
-                  // Create the magic link that goes through our custom verification
-                  const directMagicLink = `${baseUrl}/api/auth/verify-custom?token=${customToken}&email=${encodeURIComponent(userEmail)}&redirect=${encodeURIComponent(cleanButtonLink)}`;
-                  finalButtonLink = `${baseUrl}/magic-link-proxy?link=${encodeURIComponent(directMagicLink)}`;
+                  // Create the custom magic link that goes directly to verify-custom
+                  finalButtonLink = `${baseUrl}/api/auth/verify-custom?token=${customToken}&email=${encodeURIComponent(userEmail)}&redirect=${encodeURIComponent(cleanButtonLink)}`;
                   console.log("📧 [EMAIL-DELIVERY] Created custom magic link:", {
-                    directMagicLink,
                     finalButtonLink,
                     cleanButtonLink,
                     userEmail,
+                    baseUrl,
+                    customToken,
                   });
                 }
               } catch (error) {
                 console.error("📧 [EMAIL-DELIVERY] Error creating custom magic link:", error);
-                finalButtonLink = `${baseUrl}/magic-link-proxy?link=${encodeURIComponent(`${baseUrl}/login?email=${encodeURIComponent(userEmail)}`)}`;
+                finalButtonLink = cleanButtonLink;
               }
 
               console.log("🔗 [EMAIL-DELIVERY] Final magic link URL:", finalButtonLink);
             } catch (error) {
               console.error("📧 [EMAIL-DELIVERY] Error generating magic link:", error);
-              // Fallback to login page if magic link generation fails
-              finalButtonLink = `${baseUrl}/magic-link-proxy?link=${encodeURIComponent(`${baseUrl}/login?email=${encodeURIComponent(userEmail)}`)}`;
+              // Fallback to regular URL if magic link generation fails
+              finalButtonLink = cleanButtonLink;
               console.log(
                 "🔗 [EMAIL-DELIVERY] Magic link generation failed, using fallback:",
                 finalButtonLink

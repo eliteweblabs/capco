@@ -35,8 +35,18 @@ export const onRequest = defineMiddleware(async ({ locals, url, cookies, redirec
     const accessToken = cookies.get("sb-access-token");
     const refreshToken = cookies.get("sb-refresh-token");
 
+    // Check for custom session cookies (magic link authentication)
+    const customSessionToken = cookies.get("custom-session-token");
+    const customUserEmail = cookies.get("custom-user-email");
+    const customUserId = cookies.get("custom-user-id");
+
     if (!accessToken || !refreshToken) {
-      return redirect("/login");
+      // If no standard tokens, check for custom session cookies
+      if (!customSessionToken || !customUserEmail || !customUserId) {
+        return redirect("/login");
+      }
+      // Custom session found, skip Supabase session validation
+      return next();
     }
 
     const { data, error } = await supabase.auth.setSession({

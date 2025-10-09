@@ -139,28 +139,64 @@ export const GET: APIRoute = async ({ url, cookies, redirect, request }) => {
       console.log("🔐 [VERIFY-CUSTOM] Token marked as used");
     }
 
-    // Generate a Supabase magic link and redirect to it immediately
-    console.log("🔐 [VERIFY-CUSTOM] Generating Supabase magic link for authentication...");
+    // Custom authentication - create a session directly using Supabase admin
+    console.log("🔐 [VERIFY-CUSTOM] Creating custom session for user...");
 
-    const { data: magicLinkData, error: magicLinkError } =
-      await supabaseAdmin.auth.admin.generateLink({
-        type: "magiclink",
-        email: email,
-        options: {
-          redirectTo: `${process.env.PUBLIC_SUPABASE_URL || "https://capcofire.com"}${redirectPath}`,
-        },
-      });
+    // Get the current base URL for the redirect
+    const { getBaseUrl } = await import("../../../lib/url-utils");
+    const currentBaseUrl = getBaseUrl(request);
 
-    if (magicLinkError) {
-      console.error("🔐 [VERIFY-CUSTOM] Error generating magic link:", magicLinkError);
-      return redirect("/login?error=session_error");
+    // Get user data from Supabase using the correct admin API method
+    const { data: userData, error: userError } = await supabaseAdmin.auth.admin.listUsers({
+      filter: { email: email },
+    });
+
+    if (userError || !userData.users || userData.users.length === 0) {
+      console.error("🔐 [VERIFY-CUSTOM] Error getting user data:", userError);
+      return redirect("/login?error=user_not_found");
     }
 
-    console.log("🔐 [VERIFY-CUSTOM] Magic link generated successfully");
+    const user = userData.users[0];
+    console.log("🔐 [VERIFY-CUSTOM] User found, creating session...");
 
-    // Extract the actual magic link URL and redirect to it
-    const magicLinkUrl = magicLinkData.properties.action_link;
-    console.log("🔐 [VERIFY-CUSTOM] Redirecting to Supabase magic link:", magicLinkUrl);
+    // Create a custom session using Supabase admin - bypass magic link system entirely
+    console.log("🔐 [VERIFY-CUSTOM] Creating custom session without magic links...");
+
+    // Create custom session cookies
+    const sessionToken = crypto.randomUUID();
+    const sessionExpiresAt = new Date(Date.now() + 3600 * 1000); // 1 hour from now
+
+    // Set custom session cookies
+    cookies.set("custom-session-token", sessionToken, {
+      path: "/",
+      httpOnly: true,
+      secure: import.meta.env.PROD,
+      sameSite: "lax",
+      expires: sessionExpiresAt,
+    });
+
+    cookies.set("custom-user-email", email, {
+      path: "/",
+      httpOnly: true,
+      secure: import.meta.env.PROD,
+      sameSite: "lax",
+      expires: sessionExpiresAt,
+    });
+
+    cookies.set("custom-user-id", user.id, {
+      path: "/",
+      httpOnly: true,
+      secure: import.meta.env.PROD,
+      sameSite: "lax",
+      expires: sessionExpiresAt,
+    });
+
+    console.log("🔐 [VERIFY-CUSTOM] Custom session cookies set successfully");
+
+    // Redirect directly to the target URL
+    const finalUrl = new URL(redirectPath, currentBaseUrl);
+    console.log("🔐 [VERIFY-CUSTOM] Redirecting to:", finalUrl.toString());
+    return redirect(finalUrl.toString());
 
     // Log the successful login
     try {
