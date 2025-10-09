@@ -129,13 +129,24 @@ export const POST: APIRoute = async ({ request }) => {
       }
     }
 
-    // Return PDF as blob
-    return new Response(pdfBuffer, {
+    // Return PDF as blob - convert to proper format for Response
+    let bufferData: any;
+    let bufferLength: number;
+
+    if (pdfBuffer.buffer instanceof Buffer) {
+      bufferData = pdfBuffer.buffer;
+      bufferLength = (pdfBuffer.buffer as Buffer).length;
+    } else {
+      bufferData = pdfBuffer;
+      bufferLength = (pdfBuffer as Uint8Array).length;
+    }
+
+    return new Response(bufferData, {
       status: 200,
       headers: {
         "Content-Type": "application/pdf",
         "Content-Disposition": `attachment; filename="project-agreement-${projectData?.projectId || "document"}.pdf"`,
-        "Content-Length": pdfBuffer.length.toString(),
+        "Content-Length": bufferLength.toString(),
       },
     });
   } catch (error) {
