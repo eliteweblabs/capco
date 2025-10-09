@@ -239,14 +239,14 @@ async function handleEmailOpened(data: any, baseUrl?: string) {
   }
 }
 
-// Handle email clicked events (for magic links)
+// Handle email clicked events
 async function handleEmailClicked(data: any) {
   try {
     const { email, url } = data;
 
-    // If it's a magic link, you might want to track that separately
+    // Track email clicks for analytics
     if (url.includes("/project/")) {
-      console.log("📧 [RESEND-WEBHOOK] Magic link clicked:", { email, url });
+      console.log("📧 [RESEND-WEBHOOK] Email link clicked:", { email, url });
       // You could update a "last_accessed" timestamp here
     }
   } catch (error) {
