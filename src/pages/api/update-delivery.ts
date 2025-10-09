@@ -91,6 +91,10 @@ export const POST: APIRoute = async ({ request, cookies }): Promise<Response> =>
     }
 
     const body: EmailDeliveryRequest = await request.json();
+
+    // Debug: Log the entire request body
+    console.log("📧 [EMAIL-DELIVERY] Full request body received:", JSON.stringify(body, null, 2));
+
     // Use the proper base URL function to avoid localhost in production
     const { getBaseUrl } = await import("../../lib/url-utils");
     const baseUrl = getBaseUrl(request);
@@ -117,6 +121,14 @@ export const POST: APIRoute = async ({ request, cookies }): Promise<Response> =>
       trackLinks = true, // Default to true for backward compatibility
       currentUser,
     } = body;
+
+    // Debug: Log the project object received
+    console.log("📧 [EMAIL-DELIVERY] Project object received:", {
+      project,
+      projectId: project?.id,
+      projectTitle: project?.title,
+      projectAddress: project?.address,
+    });
 
     // ===== ROLE RESOLUTION =====
     // Resolve role names to email addresses
@@ -303,6 +315,12 @@ export const POST: APIRoute = async ({ request, cookies }): Promise<Response> =>
 
       // Apply SMS email logic if selectedUsers are provided (from test page)
       let finalUsersToNotify = resolvedUsersToNotify;
+      console.log("📱 [EMAIL-DELIVERY] Checking for selectedUsers:", {
+        hasSelectedUsers: !!selectedUsers,
+        selectedUsersLength: selectedUsers?.length || 0,
+        selectedUsers: selectedUsers,
+      });
+
       if (selectedUsers && selectedUsers.length > 0) {
         console.log("📱 [EMAIL-DELIVERY] Applying SMS email logic from selectedUsers");
 
@@ -310,17 +328,43 @@ export const POST: APIRoute = async ({ request, cookies }): Promise<Response> =>
         const { SMS_UTILS } = await import("../../lib/sms-utils");
 
         finalUsersToNotify = selectedUsers.map((user) => {
+          console.log(`📱 [EMAIL-DELIVERY] Processing user ${user.name}:`, {
+            smsAlerts: user.smsAlerts,
+            mobileCarrier: user.mobileCarrier,
+            phone: user.phone,
+            hasSmsSetup: user.smsAlerts && user.mobileCarrier && user.phone,
+          });
+
           if (user.smsAlerts && user.mobileCarrier && user.phone) {
-            // Convert carrier ID to gateway domain for SMS email
-            const carrierInfo = SMS_UTILS.getCarrierInfo(user.mobileCarrier);
-            if (carrierInfo) {
-              const smsEmail = `${user.phone}@${carrierInfo.gateway}`;
-              console.log(`📱 [EMAIL-DELIVERY] Using SMS email for ${user.name}: ${smsEmail}`);
+            let smsEmail;
+
+            // Check if mobileCarrier is already a gateway domain (starts with @)
+            if (user.mobileCarrier.startsWith("@")) {
+              // It's already a gateway domain, use it directly
+              smsEmail = `${user.phone}${user.mobileCarrier}`;
+              console.log(
+                `📱 [EMAIL-DELIVERY] Using existing gateway for ${user.name}: ${smsEmail}`
+              );
+            } else {
+              // It's a carrier ID, convert to gateway domain
+              const carrierInfo = SMS_UTILS.getCarrierInfo(user.mobileCarrier);
+              if (carrierInfo) {
+                smsEmail = `${user.phone}@${carrierInfo.gateway}`;
+                console.log(
+                  `📱 [EMAIL-DELIVERY] Converting carrier ID to gateway for ${user.name}: ${smsEmail}`
+                );
+              }
+            }
+
+            if (smsEmail) {
               return smsEmail;
             }
           }
+          console.log(`📱 [EMAIL-DELIVERY] Using regular email for ${user.name}: ${user.email}`);
           return user.email; // Keep original email
         });
+
+        console.log("📱 [EMAIL-DELIVERY] Final users to notify:", finalUsersToNotify);
       }
 
       for (let i = 0; i < finalUsersToNotify.length; i++) {
@@ -437,17 +481,30 @@ export const POST: APIRoute = async ({ request, cookies }): Promise<Response> =>
           if (isSmsEmail) {
             console.log(`📱 [EMAIL-DELIVERY] SMS email detected: ${userEmail}`);
 
-            // Create SMS-optimized content (160 char limit, no HTML)
-            const smsContent = emailContent
-              .replace(/<[^>]*>/g, "") // Remove HTML tags
+            // Create SMS-optimized content (no HTML, include link, better formatting)
+            let smsContent = emailContent
+              .replace(/<[^>]*>/g, " ") // Replace HTML tags with single space
+              .replace(/\s+/g, " ") // Replace multiple spaces with single space
               .replace(/\n\s*\n/g, "\n") // Remove extra line breaks
-              .trim()
-              .substring(0, 160); // Limit to SMS length
+              .trim();
+
+            // Add the button link to SMS content
+            if (buttonLink && buttonText) {
+              smsContent += `\n\n${buttonText}: ${buttonLink}`;
+            }
+
+            // Limit to reasonable SMS length (320 chars for longer messages)
+            if (smsContent.length > 320) {
+              smsContent = smsContent.substring(0, 317) + "...";
+            }
+
+            // Create SMS-friendly subject (short and clear)
+            const smsSubject = "CAPCo Update";
 
             emailPayload = {
               from: `${validFromName} <${validFromEmail}>`,
               to: userEmail,
-              subject: "", // Empty subject for SMS gateways
+              subject: smsSubject,
               text: smsContent,
               // No HTML for SMS
               track_links: false, // Disable tracking for SMS
@@ -481,7 +538,7 @@ export const POST: APIRoute = async ({ request, cookies }): Promise<Response> =>
           // Debug: Log the email payload
           console.log("📧 [EMAIL-DELIVERY] Sending email:", {
             to: userEmail,
-            subject: isSmsEmail ? "(SMS - no subject)" : cleanSubject,
+            subject: isSmsEmail ? "CAPCo Update" : cleanSubject,
             method,
             isSmsEmail,
             tracking: { links: emailPayload.track_links, opens: emailPayload.track_opens },
@@ -534,12 +591,20 @@ export const POST: APIRoute = async ({ request, cookies }): Promise<Response> =>
             // Log successful email delivery
             try {
               if (project?.id) {
+                console.log("📧 [EMAIL-DELIVERY] Logging successful email to database:", {
+                  projectId: project.id,
+                  userEmail,
+                  method,
+                  emailSubject,
+                });
+
                 await SimpleProjectLogger.addLogEntry(
                   project.id,
                   "emailSent",
                   `Email sent successfully to ${userEmail} - Type: ${method}, Subject: ${emailSubject}`,
                   { method, emailSubject, responseId: responseData.id }
                 );
+                console.log("📧 [EMAIL-DELIVERY] Successfully logged individual email to database");
               } else {
                 console.log("📧 [EMAIL-DELIVERY] Email sent successfully (no project context):", {
                   userEmail,
@@ -627,18 +692,30 @@ export const POST: APIRoute = async ({ request, cookies }): Promise<Response> =>
       });
 
       if (project?.id) {
-        await SimpleProjectLogger.addLogEntry(
-          project.id,
-          "emailSent",
-          `Email delivery batch completed - Type: ${method}, Total sent: ${sentEmails.length}, Total failed: ${failedEmails.length}`,
-          {
-            method,
-            totalSent: sentEmails.length,
-            totalFailed: failedEmails.length,
-            sentEmails: sentEmails,
-            failedEmails: failedEmails,
-          }
-        );
+        console.log("📧 [EMAIL-DELIVERY] Logging email delivery to database:", {
+          projectId: project.id,
+          method,
+          totalSent: sentEmails.length,
+          totalFailed: failedEmails.length,
+        });
+
+        try {
+          await SimpleProjectLogger.addLogEntry(
+            project.id,
+            "emailSent",
+            `Email delivery batch completed - Type: ${method}, Total sent: ${sentEmails.length}, Total failed: ${failedEmails.length}`,
+            {
+              method,
+              totalSent: sentEmails.length,
+              totalFailed: failedEmails.length,
+              sentEmails: sentEmails,
+              failedEmails: failedEmails,
+            }
+          );
+          console.log("📧 [EMAIL-DELIVERY] Successfully logged to database");
+        } catch (logError) {
+          console.error("📧 [EMAIL-DELIVERY] Failed to log to database:", logError);
+        }
       } else {
         console.log("📧 [EMAIL-DELIVERY] Email delivery batch completed (no project context):", {
           method,
