@@ -54,26 +54,6 @@ interface EmailDeliveryRequest {
   trackLinks?: boolean;
   currentUser?: any;
   emailToRoles?: any;
-  notificationPreferences?: NotificationPreferences;
-}
-
-interface NotificationPreferences {
-  method: "email" | "browser" | "internal" | "magicLink" | "all";
-  fallbackToEmail?: boolean;
-  smsProvider?: "twilio" | "sendgrid" | "custom";
-  internalNotificationType?:
-    | "status_update"
-    | "project_created"
-    | "file_uploaded"
-    | "comment_added"
-    | "info"
-    | "success"
-    | "warning"
-    | "error";
-  internalNotificationPriority?: "low" | "normal" | "high" | "urgent";
-  browserNotificationTitle?: string;
-  browserNotificationBody?: string;
-  browserNotificationIcon?: string;
 }
 
 interface FailedEmail {
@@ -136,8 +116,38 @@ export const POST: APIRoute = async ({ request, cookies }): Promise<Response> =>
       includeResendHeaders = false,
       trackLinks = true, // Default to true for backward compatibility
       currentUser,
-      notificationPreferences,
     } = body;
+
+    // ===== ROLE RESOLUTION =====
+    // Resolve role names to email addresses
+    let resolvedUsersToNotify = usersToNotify;
+    const roleNames = ["admin", "staff", "client"];
+    const hasRoleNames = usersToNotify.some((user) => roleNames.includes(user.toLowerCase()));
+
+    if (hasRoleNames) {
+      console.log("🔔 [NOTIFICATION] Resolving role names to email addresses");
+
+      try {
+        const roleResponse = await fetch(`${baseUrl}/api/get-user-emails-by-role`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            roles: usersToNotify.filter((user) => roleNames.includes(user.toLowerCase())),
+            userIds: usersToNotify.filter((user) => !roleNames.includes(user.toLowerCase())),
+          }),
+        });
+
+        if (roleResponse.ok) {
+          const roleData = await roleResponse.json();
+          resolvedUsersToNotify = roleData.emails || usersToNotify;
+          console.log("🔔 [NOTIFICATION] Resolved roles to emails:", resolvedUsersToNotify);
+        } else {
+          console.error("🔔 [NOTIFICATION] Failed to resolve roles, using original list");
+        }
+      } catch (error) {
+        console.error("🔔 [NOTIFICATION] Error resolving roles:", error);
+      }
+    }
 
     // ===== DIRECT METHOD HANDLING =====
     console.log("🔔 [NOTIFICATION] Processing method:", method);
@@ -153,7 +163,7 @@ export const POST: APIRoute = async ({ request, cookies }): Promise<Response> =>
         const { data: users, error: userError } = await supabase
           .from("profiles")
           .select("id, email")
-          .in("email", usersToNotify);
+          .in("email", resolvedUsersToNotify);
 
         if (userError) {
           console.error("🔔 [INTERNAL-NOTIFICATION] Error fetching users:", userError);
@@ -220,7 +230,7 @@ export const POST: APIRoute = async ({ request, cookies }): Promise<Response> =>
 
     // Simple validation
     if (
-      !usersToNotify ||
+      !resolvedUsersToNotify ||
       !emailContent ||
       !emailSubject ||
       !emailProvider ||
@@ -229,7 +239,7 @@ export const POST: APIRoute = async ({ request, cookies }): Promise<Response> =>
     ) {
       console.error("📧 [EMAIL-DELIVERY] Email configuration not available");
       console.error("📧 [EMAIL-DELIVERY] Email configuration not available", {
-        usersToNotify,
+        resolvedUsersToNotify,
         emailContent,
         emailSubject,
         emailProvider,
@@ -239,8 +249,8 @@ export const POST: APIRoute = async ({ request, cookies }): Promise<Response> =>
       const errorResponse: EmailDeliveryResponse = {
         success: false,
         error:
-          "Email configuration not available, usersToNotify: " +
-          JSON.stringify(usersToNotify) +
+          "Email configuration not available, resolvedUsersToNotify: " +
+          JSON.stringify(resolvedUsersToNotify) +
           ", emailContent: " +
           emailContent +
           ", emailSubject: " +
@@ -292,7 +302,7 @@ export const POST: APIRoute = async ({ request, cookies }): Promise<Response> =>
       emailHtml = replacePlaceholders(emailHtml, placeholderData);
 
       // Apply SMS email logic if selectedUsers are provided (from test page)
-      let finalUsersToNotify = usersToNotify;
+      let finalUsersToNotify = resolvedUsersToNotify;
       if (selectedUsers && selectedUsers.length > 0) {
         console.log("📱 [EMAIL-DELIVERY] Applying SMS email logic from selectedUsers");
 
@@ -598,7 +608,7 @@ export const POST: APIRoute = async ({ request, cookies }): Promise<Response> =>
         success: false,
         error: "Failed to send email notifications",
         totalSent: 0,
-        totalFailed: usersToNotify.length,
+        totalFailed: resolvedUsersToNotify.length,
       };
       return new Response(JSON.stringify(errorResponse), {
         status: 500,

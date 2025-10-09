@@ -133,6 +133,7 @@ export const POST: APIRoute = async ({ request }) => {
               emailContent: `You have been assigned to a new project: <b>${projectDetails.address}</b>. Please review the project details and begin work as needed.`,
               buttonLink: `${baseUrl}/project/${projectId}`,
               buttonText: "View Project",
+              method: "internal",
             };
             // console.log("📧 [ASSIGN-STAFF] Staff email data:", staffEmailData);
 
@@ -165,10 +166,7 @@ export const POST: APIRoute = async ({ request }) => {
               emailContent: `Project <b>${projectDetails.address}</b> has been assigned to <b>${staffName}</b>. Please monitor progress and provide support as needed.`,
               buttonLink: `${baseUrl}/project/${projectId}`,
               buttonText: "View Project",
-              notificationPreferences: {
-                method: "internal",
-                fallbackToEmail: true,
-              },
+              method: "internal",
             };
             console.log("📧 [ASSIGN-STAFF] Admin email data:", adminEmailData);
 
