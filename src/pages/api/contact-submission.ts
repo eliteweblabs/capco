@@ -163,7 +163,7 @@ export const POST: APIRoute = async ({ request }) => {
         },
         body: JSON.stringify({
           usersToNotify: ["admin"], // Special flag for admin notifications
-          method: "contact",
+          method: "email",
           emailSubject: `New Contact Form Submission from ${firstName} ${lastName}`,
           emailContent: `
             <h2>New Contact Form Submission</h2>

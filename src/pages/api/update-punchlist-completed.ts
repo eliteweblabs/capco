@@ -151,6 +151,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
         body: JSON.stringify({
           usersToNotify: ["jk@capcofire.com", "capco@eliteweblabs.com"], // Use resolved user email
+          method: "email",
           emailSubject: `Punchlist Item Completed → ${punchlistMessage.message} → ${currentUser.profile.companyName}`,
           emailContent: adminContent,
           buttonText: "Access Your Dashboard",

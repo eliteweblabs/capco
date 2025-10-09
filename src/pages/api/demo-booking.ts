@@ -289,15 +289,11 @@ async function sendDemoBookingEmails(booking: any, request: Request) {
         body: JSON.stringify({
           usersToNotify: adminData.emails,
           userIdsToNotify: adminData.userIds, // Add user IDs for internal notifications
-          method: "demoBookingAdmin",
+          method: "email",
           emailSubject: `New Demo Request → ${booking.name}`,
           emailContent: adminEmailContent,
           buttonText: "View Dashboard",
           buttonLink: "/dashboard",
-          notificationPreferences: {
-            method: "internal",
-            fallbackToEmail: true,
-          },
         }),
       });
 
@@ -339,7 +335,7 @@ async function sendDemoBookingEmails(booking: any, request: Request) {
       },
       body: JSON.stringify({
         usersToNotify: [booking.email],
-        method: "demoBookingCustomer",
+        method: "email",
         emailSubject: "Demo Booking Confirmation - CAPCO Design Group",
         emailContent: customerEmailContent,
         buttonText: "Learn More",

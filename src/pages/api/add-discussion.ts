@@ -216,15 +216,11 @@ export const POST: APIRoute = async ({ request, cookies }) => {
           body: JSON.stringify({
             usersToNotify: adminStaffEmails,
             userIdsToNotify: adminStaffUserIds, // Add user IDs for internal notifications
-            method: "clientComment",
+            method: "internal",
             emailSubject: subjectLine,
             emailContent: emailContent,
             buttonLink: buttonLink,
             buttonText: buttonText,
-            notificationPreferences: {
-              method: "internal",
-              fallbackToEmail: true,
-            },
           }),
         });
 
@@ -246,7 +242,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
           },
           body: JSON.stringify({
             usersToNotify: [clientEmail],
-            method: "clientComment",
+            method: "email",
             emailSubject: subjectLine,
             emailContent: emailContent,
             buttonLink: buttonLink,

@@ -433,10 +433,6 @@ export const POST: APIRoute = async ({ request, cookies }) => {
               buttonText: "View Users",
               buttonLink: "/admin/users",
               trackLinks: false,
-              notificationPreferences: {
-                method: "internal",
-                fallbackToEmail: true,
-              },
             }),
           });
         }
