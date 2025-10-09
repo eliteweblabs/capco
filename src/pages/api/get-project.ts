@@ -862,6 +862,15 @@ async function handleSingleProject(projectId: string, cookies: any) {
       .eq("id", projectId)
       .single();
 
+    console.log("📡 [GET-PROJECT-ID] Project query result:", {
+      hasProject: !!project,
+      hasError: !!projectError,
+      errorCode: projectError?.code,
+      errorMessage: projectError?.message,
+      projectId: projectId,
+      userId: currentUser?.id,
+    });
+
     // Keep the log column for project activity tracking
     // Note: Log column is used by SimpleProjectLogger for activity tracking
 
