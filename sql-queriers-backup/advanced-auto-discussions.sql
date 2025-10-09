@@ -9,13 +9,13 @@ CREATE TABLE IF NOT EXISTS default_discussion_templates (
   is_internal BOOLEAN DEFAULT true,
   project_type VARCHAR(50), -- 'fire_alarm', 'sprinkler', 'general', etc.
   is_active BOOLEAN DEFAULT true,
-  sort_order INTEGER DEFAULT 0,
+  sortOrder INTEGER DEFAULT 0,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
 -- Insert default templates
-INSERT INTO default_discussion_templates (template_name, content, is_internal, project_type, sort_order) VALUES
+INSERT INTO default_discussion_templates (template_name, content, is_internal, project_type, sortOrder) VALUES
 -- General project templates
 ('welcome_client', 'Welcome to your new project! We''re excited to work with you on {{PROJECT_TITLE}} at {{PROJECT_ADDRESS}}. Our team will be in touch soon to discuss the next steps.', false, 'general', 1),
 ('internal_kickoff', 'New project created: {{PROJECT_TITLE}} at {{PROJECT_ADDRESS}}. Please review project details and assign appropriate team members.', true, 'general', 2),
@@ -76,7 +76,7 @@ BEGIN
     SELECT * FROM default_discussion_templates 
     WHERE (project_type = template_record.project_type OR project_type = 'general')
     AND is_active = true
-    ORDER BY sort_order
+    ORDER BY sortOrder
   LOOP
     -- Replace placeholders with actual project data
     processed_content := template_record.content;
@@ -123,7 +123,7 @@ CREATE OR REPLACE FUNCTION add_discussion_template(
   content_param TEXT,
   is_internal_param BOOLEAN DEFAULT false,
   project_type_param VARCHAR(50) DEFAULT 'general',
-  sort_order_param INTEGER DEFAULT 0
+  sortOrder_param INTEGER DEFAULT 0
 )
 RETURNS INTEGER AS $$
 DECLARE
@@ -134,13 +134,13 @@ BEGIN
     content,
     is_internal,
     project_type,
-    sort_order
+    sortOrder
   ) VALUES (
     template_name_param,
     content_param,
     is_internal_param,
     project_type_param,
-    sort_order_param
+    sortOrder_param
   ) RETURNING id INTO template_id;
   
   RETURN template_id;
@@ -154,7 +154,7 @@ CREATE OR REPLACE FUNCTION update_discussion_template(
   content_param TEXT DEFAULT NULL,
   is_internal_param BOOLEAN DEFAULT NULL,
   project_type_param VARCHAR(50) DEFAULT NULL,
-  sort_order_param INTEGER DEFAULT NULL,
+  sortOrder_param INTEGER DEFAULT NULL,
   is_active_param BOOLEAN DEFAULT NULL
 )
 RETURNS VOID AS $$
@@ -164,7 +164,7 @@ BEGIN
     content = COALESCE(content_param, content),
     is_internal = COALESCE(is_internal_param, is_internal),
     project_type = COALESCE(project_type_param, project_type),
-    sort_order = COALESCE(sort_order_param, sort_order),
+    sortOrder = COALESCE(sortOrder_param, sortOrder),
     is_active = COALESCE(is_active_param, is_active),
     updated_at = NOW()
   WHERE id = template_id_param;

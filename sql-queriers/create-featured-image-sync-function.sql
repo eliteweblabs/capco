@@ -22,7 +22,7 @@ BEGIN
             'uploaded_at', f.uploaded_at,
             'title', f.title,
             'comments', f.comments,
-            'public_url', CASE 
+            'publicUrl', CASE 
                 WHEN f.bucket_name IS NOT NULL AND f.file_path IS NOT NULL 
                 THEN concat('https://qudlxlryegnainztkrtk.supabase.co/storage/v1/object/public/', f.bucket_name, '/', f.file_path)
                 ELSE NULL 
@@ -75,7 +75,7 @@ SET featured_image_data = (
         'uploaded_at', f.uploaded_at,
         'title', f.title,
         'comments', f.comments,
-        'public_url', CASE 
+        'publicUrl', CASE 
             WHEN f.bucket_name IS NOT NULL AND f.file_path IS NOT NULL 
             THEN concat('https://qudlxlryegnainztkrtk.supabase.co/storage/v1/object/public/', f.bucket_name, '/', f.file_path)
             ELSE NULL 
@@ -108,7 +108,7 @@ BEGIN
             'uploaded_at', f.uploaded_at,
             'title', f.title,
             'comments', f.comments,
-            'public_url', CASE 
+            'publicUrl', CASE 
                 WHEN f.bucket_name IS NOT NULL AND f.file_path IS NOT NULL 
                 THEN concat('https://qudlxlryegnainztkrtk.supabase.co/storage/v1/object/public/', f.bucket_name, '/', f.file_path)
                 ELSE NULL 

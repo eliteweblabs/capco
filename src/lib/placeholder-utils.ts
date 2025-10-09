@@ -245,6 +245,42 @@ export function replacePlaceholders(
     }
   }
 
+  // Replace COMPANY_ICON_LIGHT placeholders
+  if (globalCompanyData().globalCompanyIcon) {
+    const beforeReplace = result;
+    result = result.replace(/\{\{\s*COMPANY_ICON\s*\}\}/g, globalCompanyData().globalCompanyIcon);
+    if (result !== beforeReplace) {
+      placeholderApplied = true;
+      addBoldTags = false;
+    }
+  }
+
+  // Replace COMPANY_ICON_LIGHT placeholders
+  if (globalCompanyData().globalCompanyIconLight) {
+    const beforeReplace = result;
+    result = result.replace(
+      /\{\{\s*COMPANY_ICON_LIGHT\s*\}\}/g,
+      globalCompanyData().globalCompanyIconLight
+    );
+    if (result !== beforeReplace) {
+      placeholderApplied = true;
+      addBoldTags = false;
+    }
+  }
+
+  // Replace COMPANY_ICON_DARK placeholders
+  if (globalCompanyData().globalCompanyIconDark) {
+    const beforeReplace = result;
+    result = result.replace(
+      /\{\{\s*COMPANY_ICON_DARK\s*\}\}/g,
+      globalCompanyData().globalCompanyIconDark
+    );
+    if (result !== beforeReplace) {
+      placeholderApplied = true;
+      addBoldTags = false;
+    }
+  }
+
   // Replace GLOBAL_COMPANY_NAME placeholders
   if (globalCompanyData().globalCompanyName) {
     const beforeReplace = result;

@@ -28,6 +28,7 @@ const {
 import SlotMachineModalStaff from "../../components/form/SlotMachineModalStaff.astro";
 import SlideToggle from "../common/SlideToggle.astro";
 import Alert from "../partials/Alert.astro";
+import { SMS_UTILS } from "../../lib/sms-utils";
 
 // Generate unique IDs for SMS components
 const smsSectionId = `sms-section-${id}`;
@@ -35,13 +36,11 @@ const smsAlertsId = `sms-alerts-${id}`;
 const carrierSelectionId = `carrier-selection-${id}`;
 const mobileCarrierId = `mobile-carrier-${id}`;
 
-const mobileCarrierOptions = [
-  { value: "att", label: "AT&T" },
-  { value: "verizon", label: "Verizon" },
-  { value: "spectrum", label: "Spectrum" },
-  { value: "tmobile", label: "T-Mobile" },
-  { value: "sprint", label: "Sprint" },
-];
+// Use SMS utilities for carrier options
+const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
+  value: carrier.id, // Use carrier ID for database storage
+  label: carrier.name,
+}));
 ---
 
 <!-- Phone Number Input -->

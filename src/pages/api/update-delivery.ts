@@ -41,7 +41,8 @@ import { supabaseAdmin } from "../../lib/supabase-admin";
 interface EmailDeliveryRequest {
   usersToNotify: string[];
   userIdsToNotify?: string[]; // User IDs for internal notifications (more efficient)
-  emailType: string;
+  selectedUsers?: any[]; // Full user objects from test page for SMS logic
+  method: string;
   emailSubject: string;
   emailContent: string;
   buttonLink?: string;
@@ -57,7 +58,7 @@ interface EmailDeliveryRequest {
 }
 
 interface NotificationPreferences {
-  method: "email" | "browser" | "internal" | "sms" | "all";
+  method: "email" | "browser" | "internal" | "magicLink" | "all";
   fallbackToEmail?: boolean;
   smsProvider?: "twilio" | "sendgrid" | "custom";
   internalNotificationType?:
@@ -90,6 +91,7 @@ interface EmailDeliveryResponse {
 }
 
 export const POST: APIRoute = async ({ request, cookies }): Promise<Response> => {
+  console.log("🔔 [UPDATE-DELIVERY] API endpoint called");
   // Log to file for debugging
   // const fs = await import("fs");
   // const logEntry = `[${new Date().toISOString()}] EMAIL-DELIVERY API called\n`;
@@ -123,7 +125,8 @@ export const POST: APIRoute = async ({ request, cookies }): Promise<Response> =>
     const {
       usersToNotify,
       userIdsToNotify,
-      emailType = "email",
+      selectedUsers,
+      method = "email",
       emailSubject,
       emailContent,
       buttonLink = `${baseUrl}/dashboard`,
@@ -136,106 +139,82 @@ export const POST: APIRoute = async ({ request, cookies }): Promise<Response> =>
       notificationPreferences,
     } = body;
 
-    // ===== NOTIFICATION PREFERENCE FRAMEWORK =====
-    console.log(
-      "🔔 [NOTIFICATION-FRAMEWORK] Processing notification preferences:",
-      notificationPreferences
-    );
+    // ===== DIRECT METHOD HANDLING =====
+    console.log("🔔 [NOTIFICATION] Processing method:", method);
+    console.log("🔔 [NOTIFICATION] Full request body:", JSON.stringify(body, null, 2));
 
-    // Default notification preferences if none provided
-    const defaultPreferences: NotificationPreferences = {
-      method: "email",
-      fallbackToEmail: true,
-    };
+    // Handle internal notifications directly
+    if (method === "internal") {
+      console.log("🔔 [NOTIFICATION] Creating internal notifications only");
 
-    const prefs = notificationPreferences || defaultPreferences;
+      // Get user IDs from emails if not provided
+      let userIds = userIdsToNotify || [];
+      if (userIds.length === 0) {
+        const { data: users, error: userError } = await supabase
+          .from("profiles")
+          .select("id, email")
+          .in("email", usersToNotify);
 
-    // Process notification based on preference
-    const notificationResults = await processNotificationPreferences(prefs, {
-      usersToNotify,
-      userIdsToNotify,
-      emailSubject,
-      emailContent,
-      buttonLink,
-      buttonText,
-      project,
-      currentUser,
-      baseUrl,
-    });
+        if (userError) {
+          console.error("🔔 [INTERNAL-NOTIFICATION] Error fetching users:", userError);
+          return new Response(
+            JSON.stringify({
+              success: false,
+              error: "Failed to fetch user IDs for internal notifications",
+            }),
+            { status: 500, headers: { "Content-Type": "application/json" } }
+          );
+        }
 
-    console.log("🔔 [NOTIFICATION-FRAMEWORK] Notification results:", notificationResults);
+        userIds = users?.map((user) => user.id) || [];
+      }
 
-    // ===== NOTIFICATION METHOD HANDLING =====
-    if (prefs.method === "browser") {
-      // Browser notification only
-      if (notificationResults.success && !prefs.fallbackToEmail) {
-        console.log("🔔 [NOTIFICATION] Browser notification sent, skipping email");
+      // Create internal notifications
+      const notifications = userIds.map((userId) => ({
+        userId: userId,
+        title: emailSubject,
+        message: emailContent,
+        type: "info",
+        priority: "normal",
+        actionUrl: buttonLink,
+        actionText: buttonText,
+        viewed: false,
+        createdAt: new Date().toISOString(),
+      }));
+
+      const { error } = await supabase.from("notifications").insert(notifications);
+
+      if (error) {
+        console.error("🔔 [INTERNAL-NOTIFICATION] Database error:", error);
         return new Response(
           JSON.stringify({
-            success: true,
-            message: "Browser notification sent",
-            notificationMethod: "browser",
-            sentEmails: [],
-            failedEmails: [],
-            totalSent: 0,
-            totalFailed: 0,
+            success: false,
+            error: "Failed to create internal notifications",
           }),
-          {
-            status: 200,
-            headers: { "Content-Type": "application/json" },
-          }
+          { status: 500, headers: { "Content-Type": "application/json" } }
         );
       }
-    } else if (prefs.method === "internal") {
-      // Internal notification only
-      if (notificationResults.success && !prefs.fallbackToEmail) {
-        console.log("🔔 [NOTIFICATION] Internal notification sent, skipping email");
-        return new Response(
-          JSON.stringify({
-            success: true,
-            message: "Internal notification sent",
-            notificationMethod: "internal",
-            sentEmails: [],
-            failedEmails: [],
-            totalSent: 0,
-            totalFailed: 0,
-          }),
-          {
-            status: 200,
-            headers: { "Content-Type": "application/json" },
-          }
-        );
-      }
-    } else if (prefs.method === "sms") {
-      // SMS notification only
-      if (notificationResults.success && !prefs.fallbackToEmail) {
-        console.log("🔔 [NOTIFICATION] SMS notification sent, skipping email");
-        return new Response(
-          JSON.stringify({
-            success: true,
-            message: "SMS notification sent",
-            notificationMethod: "sms",
-            sentEmails: [],
-            failedEmails: [],
-            totalSent: 0,
-            totalFailed: 0,
-          }),
-          {
-            status: 200,
-            headers: { "Content-Type": "application/json" },
-          }
-        );
-      }
-    } else if (prefs.method === "all") {
-      // All notification types sent, continue with email as fallback
-      console.log("🔔 [NOTIFICATION] All notification types sent, proceeding with email");
-    } else {
-      // Default: email notification (or fallback email)
-      console.log("🔔 [NOTIFICATION] Email notification (or fallback)");
+
+      console.log("🔔 [INTERNAL-NOTIFICATION] Created internal notifications successfully");
+      return new Response(
+        JSON.stringify({
+          success: true,
+          message: "Internal notifications created",
+          notificationMethod: "internal",
+          sentEmails: [],
+          failedEmails: [],
+          totalSent: 0,
+          totalFailed: 0,
+        }),
+        { status: 200, headers: { "Content-Type": "application/json" } }
+      );
     }
 
+    // For all other methods, continue with email processing
+    console.log("🔔 [NOTIFICATION] Processing email notification for method:", method);
+
     console.log("📧 [EMAIL-DELIVERY] Email configuration:", {
-      emailType,
+      method,
       trackLinks,
     });
 
@@ -312,8 +291,30 @@ export const POST: APIRoute = async ({ request, cookies }): Promise<Response> =>
 
       emailHtml = replacePlaceholders(emailHtml, placeholderData);
 
-      for (let i = 0; i < usersToNotify.length; i++) {
-        const userEmail = usersToNotify[i];
+      // Apply SMS email logic if selectedUsers are provided (from test page)
+      let finalUsersToNotify = usersToNotify;
+      if (selectedUsers && selectedUsers.length > 0) {
+        console.log("📱 [EMAIL-DELIVERY] Applying SMS email logic from selectedUsers");
+
+        // Import SMS utilities for carrier conversion
+        const { SMS_UTILS } = await import("../../lib/sms-utils");
+
+        finalUsersToNotify = selectedUsers.map((user) => {
+          if (user.smsAlerts && user.mobileCarrier && user.phone) {
+            // Convert carrier ID to gateway domain for SMS email
+            const carrierInfo = SMS_UTILS.getCarrierInfo(user.mobileCarrier);
+            if (carrierInfo) {
+              const smsEmail = `${user.phone}@${carrierInfo.gateway}`;
+              console.log(`📱 [EMAIL-DELIVERY] Using SMS email for ${user.name}: ${smsEmail}`);
+              return smsEmail;
+            }
+          }
+          return user.email; // Keep original email
+        });
+      }
+
+      for (let i = 0; i < finalUsersToNotify.length; i++) {
+        const userEmail = finalUsersToNotify[i];
 
         try {
           // Replace template variables for regular emails
@@ -321,7 +322,7 @@ export const POST: APIRoute = async ({ request, cookies }): Promise<Response> =>
           // ===== BUTTON LINK HANDLING =====
           let finalButtonLink = buttonLink;
 
-          if (emailType === "magicLink") {
+          if (method === "magicLink") {
             // Generate magic links for authentication emails
             console.log("🔗 [EMAIL-DELIVERY] Generating magic link for authentication");
             try {
@@ -400,7 +401,7 @@ export const POST: APIRoute = async ({ request, cookies }): Promise<Response> =>
           console.log("🔗 [EMAIL-DELIVERY] Final button configuration:", {
             text: finalButtonText,
             url: finalButtonUrl,
-            emailType,
+            method,
           });
 
           // // Validate from field
@@ -411,29 +412,68 @@ export const POST: APIRoute = async ({ request, cookies }): Promise<Response> =>
           // Strip HTML from email subject line
           const cleanSubject = emailSubject.replace(/<[^>]*>/g, "").trim();
 
-          const emailPayload = {
-            from: `${validFromName} <${validFromEmail}>`,
-            to: userEmail,
-            subject: cleanSubject,
-            html: emailHtml,
-            text: emailContent,
-            track_links: trackLinks,
-            track_opens: trackLinks,
-            // Add proper content type and custom headers (only if values exist)
-            headers: {
-              "Content-Type": "text/html; charset=UTF-8",
-              ...(includeResendHeaders && project && { "X-Project": JSON.stringify(project) }),
-              ...(includeResendHeaders &&
-                newStatus !== undefined &&
-                newStatus !== null && { "X-Project-Status": String(newStatus) }),
-            },
-          };
+          // Check if this is an SMS email (contains @gateway domain)
+          const isSmsEmail =
+            userEmail.includes("@vtext.com") ||
+            userEmail.includes("@txt.att.net") ||
+            userEmail.includes("@messaging.sprintpcs.com") ||
+            userEmail.includes("@tmomail.net") ||
+            userEmail.includes("@myboostmobile.com") ||
+            userEmail.includes("@vzwpix.com") ||
+            userEmail.includes("@pm.sprint.com");
+
+          // For SMS emails, use plain text only and optimize content
+          let emailPayload;
+          if (isSmsEmail) {
+            console.log(`📱 [EMAIL-DELIVERY] SMS email detected: ${userEmail}`);
+
+            // Create SMS-optimized content (160 char limit, no HTML)
+            const smsContent = emailContent
+              .replace(/<[^>]*>/g, "") // Remove HTML tags
+              .replace(/\n\s*\n/g, "\n") // Remove extra line breaks
+              .trim()
+              .substring(0, 160); // Limit to SMS length
+
+            emailPayload = {
+              from: `${validFromName} <${validFromEmail}>`,
+              to: userEmail,
+              subject: "", // Empty subject for SMS gateways
+              text: smsContent,
+              // No HTML for SMS
+              track_links: false, // Disable tracking for SMS
+              track_opens: false,
+              headers: {
+                "X-SMS-Gateway": "true",
+                "Content-Type": "text/plain; charset=UTF-8",
+              },
+            };
+          } else {
+            // Regular email with HTML template
+            emailPayload = {
+              from: `${validFromName} <${validFromEmail}>`,
+              to: userEmail,
+              subject: cleanSubject,
+              html: emailHtml,
+              text: emailContent,
+              track_links: trackLinks,
+              track_opens: trackLinks,
+              // Add proper content type and custom headers (only if values exist)
+              headers: {
+                "Content-Type": "text/html; charset=UTF-8",
+                ...(includeResendHeaders && project && { "X-Project": JSON.stringify(project) }),
+                ...(includeResendHeaders &&
+                  newStatus !== undefined &&
+                  newStatus !== null && { "X-Project-Status": String(newStatus) }),
+              },
+            };
+          }
 
           // Debug: Log the email payload
           console.log("📧 [EMAIL-DELIVERY] Sending email:", {
             to: userEmail,
-            subject: cleanSubject,
-            emailType,
+            subject: isSmsEmail ? "(SMS - no subject)" : cleanSubject,
+            method,
+            isSmsEmail,
             tracking: { links: emailPayload.track_links, opens: emailPayload.track_opens },
           });
 
@@ -458,12 +498,21 @@ export const POST: APIRoute = async ({ request, cookies }): Promise<Response> =>
 
             // Log failed email delivery
             try {
-              await SimpleProjectLogger.addLogEntry(
-                project?.id || 0,
-                "emailFailed",
-                `Email delivery failed to ${userEmail} - Type: ${emailType}, Subject: ${emailSubject}, Error: ${errorText}`,
-                { emailType, emailSubject, error: errorText, status: response.status }
-              );
+              if (project?.id) {
+                await SimpleProjectLogger.addLogEntry(
+                  project.id,
+                  "emailFailed",
+                  `Email delivery failed to ${userEmail} - Type: ${method}, Subject: ${emailSubject}, Error: ${errorText}`,
+                  { method, emailSubject, error: errorText, status: response.status }
+                );
+              } else {
+                console.log("📧 [EMAIL-DELIVERY] Email delivery failed (no project context):", {
+                  userEmail,
+                  method,
+                  emailSubject,
+                  error: errorText,
+                });
+              }
             } catch (logError) {
               console.error("📧 [EMAIL-DELIVERY] Error logging failed email delivery:", logError);
             }
@@ -474,12 +523,21 @@ export const POST: APIRoute = async ({ request, cookies }): Promise<Response> =>
 
             // Log successful email delivery
             try {
-              await SimpleProjectLogger.addLogEntry(
-                project?.id || 0,
-                "emailSent",
-                `Email sent successfully to ${userEmail} - Type: ${emailType}, Subject: ${emailSubject}`,
-                { emailType, emailSubject, responseId: responseData.id }
-              );
+              if (project?.id) {
+                await SimpleProjectLogger.addLogEntry(
+                  project.id,
+                  "emailSent",
+                  `Email sent successfully to ${userEmail} - Type: ${method}, Subject: ${emailSubject}`,
+                  { method, emailSubject, responseId: responseData.id }
+                );
+              } else {
+                console.log("📧 [EMAIL-DELIVERY] Email sent successfully (no project context):", {
+                  userEmail,
+                  method,
+                  emailSubject,
+                  responseId: responseData.id,
+                });
+              }
             } catch (logError) {
               console.error(
                 "📧 [EMAIL-DELIVERY] Error logging successful email delivery:",
@@ -504,16 +562,25 @@ export const POST: APIRoute = async ({ request, cookies }): Promise<Response> =>
 
           // Log failed email delivery (catch block)
           try {
-            await SimpleProjectLogger.addLogEntry(
-              project?.id || 0,
-              "emailFailed",
-              `Email delivery error to ${userEmail} - Type: ${emailType}, Subject: ${emailSubject}, Error: ${userError instanceof Error ? userError.message : "Unknown error"}`,
-              {
-                emailType,
+            if (project?.id) {
+              await SimpleProjectLogger.addLogEntry(
+                project.id,
+                "emailFailed",
+                `Email delivery error to ${userEmail} - Type: ${method}, Subject: ${emailSubject}, Error: ${userError instanceof Error ? userError.message : "Unknown error"}`,
+                {
+                  method,
+                  emailSubject,
+                  error: userError instanceof Error ? userError.message : "Unknown error",
+                }
+              );
+            } else {
+              console.log("📧 [EMAIL-DELIVERY] Email delivery error (no project context):", {
+                userEmail,
+                method,
                 emailSubject,
                 error: userError instanceof Error ? userError.message : "Unknown error",
-              }
-            );
+              });
+            }
           } catch (logError) {
             console.error("📧 [EMAIL-DELIVERY] Error logging email delivery error:", logError);
           }
@@ -543,24 +610,34 @@ export const POST: APIRoute = async ({ request, cookies }): Promise<Response> =>
     try {
       console.log("📧 [EMAIL-DELIVERY] Logging email delivery completion:", {
         projectId: project?.id || 0,
-        emailType,
+        method,
         totalSent: sentEmails.length,
         totalFailed: failedEmails.length,
         currentUser,
       });
 
-      await SimpleProjectLogger.addLogEntry(
-        project?.id || 0,
-        "emailSent",
-        `Email delivery batch completed - Type: ${emailType}, Total sent: ${sentEmails.length}, Total failed: ${failedEmails.length}`,
-        {
-          emailType,
+      if (project?.id) {
+        await SimpleProjectLogger.addLogEntry(
+          project.id,
+          "emailSent",
+          `Email delivery batch completed - Type: ${method}, Total sent: ${sentEmails.length}, Total failed: ${failedEmails.length}`,
+          {
+            method,
+            totalSent: sentEmails.length,
+            totalFailed: failedEmails.length,
+            sentEmails: sentEmails,
+            failedEmails: failedEmails,
+          }
+        );
+      } else {
+        console.log("📧 [EMAIL-DELIVERY] Email delivery batch completed (no project context):", {
+          method,
           totalSent: sentEmails.length,
           totalFailed: failedEmails.length,
           sentEmails: sentEmails,
           failedEmails: failedEmails,
-        }
-      );
+        });
+      }
     } catch (logError) {
       console.error("📧 [EMAIL-DELIVERY] Error logging email delivery completion:", logError);
     }
@@ -634,9 +711,6 @@ async function processNotificationPreferences(
       case "internal":
         return await sendInternalNotification(preferences, context);
 
-      case "sms":
-        return await sendSMSNotification(preferences, context);
-
       case "all":
         return await sendAllNotifications(preferences, context);
 
@@ -688,18 +762,28 @@ async function sendBrowserNotification(
 
     // Log browser notification delivery
     try {
-      await SimpleProjectLogger.addLogEntry(
-        context.project?.id || 0,
-        "browserNotificationSent",
-        `Browser push notification sent - Title: ${preferences.browserNotificationTitle || context.emailSubject}`,
-        {
+      if (context.project?.id) {
+        await SimpleProjectLogger.addLogEntry(
+          context.project.id,
+          "browserNotificationSent",
+          `Browser push notification sent - Title: ${preferences.browserNotificationTitle || context.emailSubject}`,
+          {
+            method: "browser",
+            title: preferences.browserNotificationTitle || context.emailSubject,
+            body: preferences.browserNotificationBody || context.emailContent,
+            icon: preferences.browserNotificationIcon || "/favicon.png",
+            url: context.buttonLink,
+          }
+        );
+      } else {
+        console.log("🔔 [BROWSER-NOTIFICATION] Browser notification sent (no project context):", {
           method: "browser",
           title: preferences.browserNotificationTitle || context.emailSubject,
           body: preferences.browserNotificationBody || context.emailContent,
           icon: preferences.browserNotificationIcon || "/favicon.png",
           url: context.buttonLink,
-        }
-      );
+        });
+      }
     } catch (logError) {
       console.error("🔔 [BROWSER-NOTIFICATION] Error logging browser notification:", logError);
     }
@@ -768,15 +852,15 @@ async function sendInternalNotification(
 
     // Create internal notifications for each user ID
     const notifications = userIds.map((userId) => ({
-      user_id: userId, // Use snake_case to match database schema
+      userId: userId, // Use camelCase to match database schema
       title: context.emailSubject,
       message: context.emailContent,
       type: preferences.internalNotificationType || "info",
       priority: preferences.internalNotificationPriority || "normal",
-      action_url: context.buttonLink, // Use snake_case to match database schema
-      action_text: context.buttonText || "View Details", // Use snake_case to match database schema
+      actionUrl: context.buttonLink, // Use camelCase to match database schema
+      actionText: context.buttonText || "View Details", // Use camelCase to match database schema
       viewed: false,
-      created_at: new Date().toISOString(), // Use snake_case to match database schema
+      createdAt: new Date().toISOString(), // Use camelCase to match database schema
     }));
 
     // Store in notifications table (read by NotificationDropdown.astro)
@@ -797,19 +881,30 @@ async function sendInternalNotification(
 
     // Log internal notification delivery
     try {
-      await SimpleProjectLogger.addLogEntry(
-        context.project?.id || 0,
-        "internalNotificationSent",
-        `Internal notification sent to ${userIds.length} users - Title: ${context.emailSubject}`,
-        {
+      if (context.project?.id) {
+        await SimpleProjectLogger.addLogEntry(
+          context.project.id,
+          "internalNotificationSent",
+          `Internal notification sent to ${userIds.length} users - Title: ${context.emailSubject}`,
+          {
+            method: "internal",
+            userIds: userIds,
+            notificationCount: notifications.length,
+            title: context.emailSubject,
+            type: preferences.internalNotificationType || "info",
+            priority: preferences.internalNotificationPriority || "normal",
+          }
+        );
+      } else {
+        console.log("🔔 [INTERNAL-NOTIFICATION] Internal notification sent (no project context):", {
           method: "internal",
           userIds: userIds,
           notificationCount: notifications.length,
           title: context.emailSubject,
           type: preferences.internalNotificationType || "info",
           priority: preferences.internalNotificationPriority || "normal",
-        }
-      );
+        });
+      }
     } catch (logError) {
       console.error("🔔 [INTERNAL-NOTIFICATION] Error logging internal notification:", logError);
     }
@@ -862,18 +957,28 @@ async function sendSMSNotification(
 
     // Log SMS notification delivery
     try {
-      await SimpleProjectLogger.addLogEntry(
-        context.project?.id || 0,
-        "smsNotificationSent",
-        `SMS notification queued for ${context.usersToNotify.length} users - Provider: ${preferences.smsProvider || "twilio"}`,
-        {
+      if (context.project?.id) {
+        await SimpleProjectLogger.addLogEntry(
+          context.project.id,
+          "smsNotificationSent",
+          `SMS notification queued for ${context.usersToNotify.length} users - Provider: ${preferences.smsProvider || "twilio"}`,
+          {
+            method: "sms",
+            users: context.usersToNotify,
+            provider: preferences.smsProvider || "twilio",
+            message: context.emailContent,
+            queuedAt: new Date().toISOString(),
+          }
+        );
+      } else {
+        console.log("🔔 [SMS-NOTIFICATION] SMS notification queued (no project context):", {
           method: "sms",
           users: context.usersToNotify,
           provider: preferences.smsProvider || "twilio",
           message: context.emailContent,
           queuedAt: new Date().toISOString(),
-        }
-      );
+        });
+      }
     } catch (logError) {
       console.error("🔔 [SMS-NOTIFICATION] Error logging SMS notification:", logError);
     }
@@ -913,11 +1018,25 @@ async function sendAllNotifications(
 
     // Log all notifications delivery
     try {
-      await SimpleProjectLogger.addLogEntry(
-        context.project?.id || 0,
-        "allNotificationsSent",
-        `All notification types sent - ${successCount}/3 successful - Title: ${context.emailSubject}`,
-        {
+      if (context.project?.id) {
+        await SimpleProjectLogger.addLogEntry(
+          context.project.id,
+          "allNotificationsSent",
+          `All notification types sent - ${successCount}/3 successful - Title: ${context.emailSubject}`,
+          {
+            method: "all",
+            successCount: successCount,
+            totalTypes: 3,
+            title: context.emailSubject,
+            results: results.map((result, index) => ({
+              type: ["browser", "internal", "sms"][index],
+              success: result.status === "fulfilled" && result.value.success,
+              error: result.status === "rejected" ? result.reason : null,
+            })),
+          }
+        );
+      } else {
+        console.log("🔔 [ALL-NOTIFICATIONS] All notification types sent (no project context):", {
           method: "all",
           successCount: successCount,
           totalTypes: 3,
@@ -927,8 +1046,8 @@ async function sendAllNotifications(
             success: result.status === "fulfilled" && result.value.success,
             error: result.status === "rejected" ? result.reason : null,
           })),
-        }
-      );
+        });
+      }
     } catch (logError) {
       console.error("🔔 [ALL-NOTIFICATIONS] Error logging all notifications:", logError);
     }

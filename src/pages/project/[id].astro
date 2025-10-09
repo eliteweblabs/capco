@@ -470,6 +470,17 @@ if (currentRole === "Admin" || currentRole === "Staff") {
     // Check for project action modal first
     checkProjectActionModal();
 
+    // Load discussion count for status-discussion tab
+    if (projectId) {
+      import("/src/lib/discussion-count-utils")
+        .then(({ loadDiscussionCount }) => {
+          loadDiscussionCount(projectId);
+        })
+        .catch((error) => {
+          console.error("Error loading discussion count:", error);
+        });
+    }
+
     // Get status from URL parameter or use default
     const urlParams = new URLSearchParams(window.location.search);
     const statusFromUrl = urlParams.get("status");

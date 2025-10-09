@@ -42,12 +42,30 @@ if (profile?.role !== "Admin") {
 // Get all users for the dropdown
 let allUsers: any[] = [];
 if (supabaseAdmin) {
-  const { data: users } = await supabaseAdmin
+  const { data: users, error: usersError } = await supabaseAdmin
     .from("profiles")
-    .select("id, name, email, role")
-    .order("name");
-  allUsers = users || [];
+    .select("id, firstName, lastName, email, role")
+    .order("firstName");
+
+  if (usersError) {
+    console.error("Error fetching users:", usersError);
+  } else {
+    allUsers = (users || []).map((user) => ({
+      ...user,
+      name: `${user.firstName || ""} ${user.lastName || ""}`.trim() || user.email,
+    }));
+  }
 }
+
+// Add group options at the top
+const groupOptions = [
+  { id: "all-admins", name: "All Admins", role: "Admin", isGroup: true },
+  { id: "all-staff", name: "All Staff", role: "Staff", isGroup: true },
+  { id: "all-clients", name: "All Clients", role: "Client", isGroup: true },
+];
+
+// Combine group options with individual users
+allUsers = [...groupOptions, ...allUsers];
 
 // Get recent notifications for display
 let recentNotifications = [];
@@ -296,36 +314,42 @@ if (supabaseAdmin) {
           return;
         }
 
-        // Check if "All Users" is selected
-        const isAllUsers = recipients.some((option: HTMLOptionElement) => option.value === "all");
+        // Check for group selections
+        const groupSelections = recipients.filter((option: HTMLOptionElement) =>
+          option.value.startsWith("all-")
+        );
+        const individualSelections = recipients.filter(
+          (option: HTMLOptionElement) => !option.value.startsWith("all-")
+        );
 
-        let notifications = [];
+        let notifications: any[] = [];
 
-        if (isAllUsers) {
-          // Send to all users
-          const allUsersResponse = await fetch("/api/notifications/create", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              allUsers: true,
-              title: formData.get("title"),
-              message: formData.get("message"),
-              type: formData.get("type"),
-              priority: formData.get("priority"),
-              actionUrl: formData.get("actionUrl") || undefined,
-              actionText: formData.get("actionText") || undefined,
-            }),
+        if (groupSelections.length > 0) {
+          // Send to groups
+          const groupPromises = groupSelections.map((option: HTMLOptionElement) => {
+            const groupType = option.value.replace("all-", "");
+            return fetch("/api/notifications/create", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                groupType: groupType,
+                title: formData.get("title"),
+                message: formData.get("message"),
+                type: formData.get("type"),
+                priority: formData.get("priority"),
+                actionUrl: formData.get("actionUrl") || undefined,
+                actionText: formData.get("actionText") || undefined,
+              }),
+            });
           });
 
-          if (allUsersResponse.ok) {
-            const result = await allUsersResponse.json();
-            notifications = [{ status: "fulfilled", value: allUsersResponse }];
-          } else {
-            notifications = [{ status: "rejected", reason: "Failed to send to all users" }];
-          }
-        } else {
+          const groupResults = await Promise.allSettled(groupPromises);
+          notifications = [...notifications, ...groupResults];
+        }
+
+        if (individualSelections.length > 0) {
           // Send to specific users
-          notifications = recipients.map((option: HTMLOptionElement) => ({
+          const individualNotifications = individualSelections.map((option: HTMLOptionElement) => ({
             userId: option.value,
             title: formData.get("title"),
             message: formData.get("message"),
@@ -335,9 +359,9 @@ if (supabaseAdmin) {
             actionText: formData.get("actionText") || undefined,
           }));
 
-          // Send notifications
-          const results = await Promise.allSettled(
-            notifications.map((notification) =>
+          // Send individual notifications
+          const individualResults = await Promise.allSettled(
+            individualNotifications.map((notification) =>
               fetch("/api/notifications/create", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
@@ -345,7 +369,7 @@ if (supabaseAdmin) {
               })
             )
           );
-          notifications = results;
+          notifications = [...notifications, ...individualResults];
         }
 
         const successful = notifications.filter(
