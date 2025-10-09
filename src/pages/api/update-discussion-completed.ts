@@ -138,10 +138,29 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       }
     }
 
+    // Get updated count for the project
+    let incompleteCount = 0;
+    if (discussionData?.projectId) {
+      try {
+        const { count: incompleteCountResult } = await supabaseAdmin
+          .from("discussion")
+          .select("*", { count: "exact", head: true })
+          .eq("projectId", discussionData.projectId)
+          .eq("markCompleted", false);
+
+        incompleteCount = incompleteCountResult || 0;
+        console.log("💬 [UPDATE-DISCUSSION] Updated incomplete count:", incompleteCount);
+      } catch (countError) {
+        console.error("Error counting discussions:", countError);
+      }
+    }
+
     return new Response(
       JSON.stringify({
         success: true,
         message: "Discussion status updated successfully",
+        incompleteCount,
+        projectId: discussionData?.projectId,
       }),
       {
         status: 200,

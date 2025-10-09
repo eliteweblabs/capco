@@ -252,19 +252,13 @@ const { projectId, globalInputClasses, globalSecondaryTextClasses, globalPrimary
     formatActionType(action) {
       if (!action) return "Unknown Action";
 
-      const labelMap = {
-        projectCreated: "Project Created",
-        projectUpdated: "Project Updated",
-        statusChange: "Status Changed",
-        assignmentChanged: "Assignment Changed",
-        metadataUpdated: "Data Updated",
-        configurationUpdated: "Configuration Updated",
-        fileUploaded: "File Uploaded",
-        commentAdded: "Comment Added",
-        invoiceGenerated: "Invoice Generated",
-        paymentReceived: "Payment Received",
-      };
-      return labelMap[action] || action.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase());
+      // Use the global camelToProper function for consistent formatting
+      if (window.camelToProper) {
+        return window.camelToProper(action);
+      }
+
+      // Fallback for older browsers or if function not available
+      return action.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase());
     }
 
     formatTimestamp(timestamp) {

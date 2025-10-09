@@ -24,12 +24,12 @@ export const GET: APIRoute = async ({ request, url }) => {
     },
     {
       name: "Filter by author and sort by creation date",
-      url: `${baseUrl}/api/get-project?authorId=123&sort_by=createdAt&sort_order=asc`,
+      url: `${baseUrl}/api/get-project?authorId=123&sortBy=createdAt&sortOrder=asc`,
       description: "Gets projects by specific author, sorted by creation date (oldest first)",
     },
     {
       name: "Filter by building type and date range",
-      url: `${baseUrl}/api/get-project?building=residential&date_from=2024-01-01&date_to=2024-12-31`,
+      url: `${baseUrl}/api/get-project?building=residential&dateFrom=2024-01-01&dateTo=2024-12-31`,
       description: "Gets residential projects created in 2024",
     },
     {
@@ -39,7 +39,7 @@ export const GET: APIRoute = async ({ request, url }) => {
     },
     {
       name: "Complex search with multiple filters",
-      url: `${baseUrl}/api/get-project?search=alarm&status=2&building=commercial&limit=10&sort_by=updatedAt&sort_order=desc`,
+      url: `${baseUrl}/api/get-project?search=alarm&status=2&building=commercial&limit=10&sortBy=updatedAt&sortOrder=desc`,
       description:
         "Searches for 'alarm' in text fields, status 2, commercial buildings, limited to 10, sorted by update date",
     },
@@ -50,17 +50,17 @@ export const GET: APIRoute = async ({ request, url }) => {
     },
     {
       name: "Filter overdue projects",
-      url: `${baseUrl}/api/get-project?overdue=true&sort_by=dueDate&sort_order=asc`,
+      url: `${baseUrl}/api/get-project?overdue=true&sortBy=dueDate&sortOrder=asc`,
       description: "Gets all overdue projects, sorted by due date (earliest first)",
     },
     {
       name: "Filter projects due in next 7 days",
-      url: `${baseUrl}/api/get-project?due_date_from=${new Date().toISOString()}&due_date_to=${new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()}`,
+      url: `${baseUrl}/api/get-project?dueDateFrom=${new Date().toISOString()}&dueDateTo=${new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()}`,
       description: "Gets projects due within the next 7 days",
     },
     {
       name: "Filter non-overdue projects",
-      url: `${baseUrl}/api/get-project?overdue=false&sort_by=dueDate&sort_order=asc`,
+      url: `${baseUrl}/api/get-project?overdue=false&sortBy=dueDate&sortOrder=asc`,
       description: "Gets all non-overdue projects, sorted by due date",
     },
   ];

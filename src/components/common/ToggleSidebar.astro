@@ -59,7 +59,13 @@ if (!currentUser || currentRole === "Client") {
         const isExpanded = localStorage.getItem("sidebaranded") === "true";
         const sessionExpanded = sessionStorage.getItem("sidebaranded") === "true";
 
-        if (sessionExpanded && !isExpanded) {
+        // Check if we're on mobile (screen width < 640px)
+        const isMobile = window.innerWidth < 640;
+
+        if (isMobile) {
+          // On mobile, always start collapsed but visible
+          collapseSidebar();
+        } else if (sessionExpanded && !isExpanded) {
           // Session storage overrides localStorage
           collapseSidebar();
         } else if (isExpanded) {
@@ -97,9 +103,9 @@ if (!currentUser || currentRole === "Client") {
 
       // Collapse sidebar function
       const collapseSidebar = () => {
-        // Collapse sidebar to narrow width
+        // Collapse sidebar to narrow width but keep it visible
         sidebar.classList.remove("translate-x-0", "w-64");
-        sidebar.classList.add("-translate-x-full", "w-16");
+        sidebar.classList.add("translate-x-0", "w-16");
 
         sidebarCollapseHide.forEach((item) => {
           item.classList.add("hidden");
@@ -154,6 +160,17 @@ if (!currentUser || currentRole === "Client") {
 
       // Initialize sidebar on page load
       initSidebar();
+
+      // Handle window resize for responsive behavior
+      window.addEventListener("resize", () => {
+        const isMobile = window.innerWidth < 640;
+        const isCurrentlyExpanded = toggleButton.getAttribute("aria-expanded") === "true";
+
+        if (isMobile && isCurrentlyExpanded) {
+          // On mobile, collapse to narrow width but keep visible
+          collapseSidebar();
+        }
+      });
     }
   });
 </script>

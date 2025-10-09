@@ -281,7 +281,7 @@ async function sendDemoBookingEmails(booking: any, request: Request) {
         <p>Please review this booking and follow up with the customer to confirm the demo appointment.</p>
       `;
 
-      const adminEmailResponse = await fetch(`${baseUrl}/api/email-delivery`, {
+      const adminEmailResponse = await fetch(`${baseUrl}/api/update-delivery`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -289,7 +289,7 @@ async function sendDemoBookingEmails(booking: any, request: Request) {
         body: JSON.stringify({
           usersToNotify: adminData.emails,
           userIdsToNotify: adminData.userIds, // Add user IDs for internal notifications
-          emailType: "demoBookingAdmin",
+          method: "demoBookingAdmin",
           emailSubject: `New Demo Request → ${booking.name}`,
           emailContent: adminEmailContent,
           buttonText: "View Dashboard",
@@ -332,14 +332,14 @@ async function sendDemoBookingEmails(booking: any, request: Request) {
       <p>If you have any questions or need to make changes to your booking, please don't hesitate to contact us.</p>
     `;
 
-    const customerEmailResponse = await fetch(`${baseUrl}/api/email-delivery`, {
+    const customerEmailResponse = await fetch(`${baseUrl}/api/update-delivery`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
         usersToNotify: [booking.email],
-        emailType: "demoBookingCustomer",
+        method: "demoBookingCustomer",
         emailSubject: "Demo Booking Confirmation - CAPCO Design Group",
         emailContent: customerEmailContent,
         buttonText: "Learn More",

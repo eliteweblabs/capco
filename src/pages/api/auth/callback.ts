@@ -128,7 +128,8 @@ export const GET: APIRoute = async ({ url, cookies, redirect, request }) => {
     }
 
     console.log("Cookies set, redirecting to dashboard");
-    return redirect("/project/dashboard?success=oauth_success");
+    // return redirect("/project/dashboard?success=oauth_success");
+    return redirect("/project/dashboard");
   } catch (error) {
     console.error("Unexpected error in auth callback:", error);
     return new Response(

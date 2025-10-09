@@ -156,14 +156,14 @@ export const POST: APIRoute = async ({ request }) => {
 
     // Send notification email to admin
     try {
-      const emailResponse = await fetch(`${new URL(request.url).origin}/api/email-delivery`, {
+      const emailResponse = await fetch(`${new URL(request.url).origin}/api/update-delivery`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
           usersToNotify: ["admin"], // Special flag for admin notifications
-          emailType: "contact",
+          method: "contact",
           emailSubject: `New Contact Form Submission from ${firstName} ${lastName}`,
           emailContent: `
             <h2>New Contact Form Submission</h2>

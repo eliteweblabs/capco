@@ -136,7 +136,7 @@ export const POST: APIRoute = async ({ request }) => {
             };
             // console.log("📧 [ASSIGN-STAFF] Staff email data:", staffEmailData);
 
-            const staffEmailResponse = await fetch(`${baseUrl}/api/email-delivery`, {
+            const staffEmailResponse = await fetch(`${baseUrl}/api/update-delivery`, {
               method: "POST",
               headers: {
                 "Content-Type": "application/json",
@@ -172,7 +172,7 @@ export const POST: APIRoute = async ({ request }) => {
             };
             console.log("📧 [ASSIGN-STAFF] Admin email data:", adminEmailData);
 
-            const adminEmailResponse = await fetch(`${baseUrl}/api/email-delivery`, {
+            const adminEmailResponse = await fetch(`${baseUrl}/api/update-delivery`, {
               method: "POST",
               headers: {
                 "Content-Type": "application/json",

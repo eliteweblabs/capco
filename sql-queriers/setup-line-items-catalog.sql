@@ -117,7 +117,7 @@ BEGIN
     unit_price,
     total_price,
     catalog_item_id,
-    sort_order
+    sortOrder
   )
   VALUES (
     p_invoice_id,
@@ -126,7 +126,7 @@ BEGIN
     v_catalog_item.unit_price,
     v_total_price,
     p_catalog_item_id,
-    (SELECT COALESCE(MAX(sort_order), 0) + 1 FROM invoice_line_items WHERE invoice_id = p_invoice_id)
+    (SELECT COALESCE(MAX(sortOrder), 0) + 1 FROM invoice_line_items WHERE invoice_id = p_invoice_id)
   )
   RETURNING id INTO v_line_item_id;
   

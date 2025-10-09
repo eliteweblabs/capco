@@ -139,7 +139,7 @@ CREATE TABLE public.invoice_line_items (
   quantity numeric(10,3) NOT NULL DEFAULT 1,
   unit_price numeric(10,2) NOT NULL DEFAULT 0,
   total_price numeric(10,2) NOT NULL DEFAULT 0,
-  sort_order integer NOT NULL DEFAULT 1,
+  sortOrder integer NOT NULL DEFAULT 1,
   
   -- Optional fields
   notes text NULL,
@@ -154,7 +154,7 @@ CREATE TABLE public.invoice_line_items (
 
 -- Create indexes for line items
 CREATE INDEX idx_invoice_line_items_invoice_id ON invoice_line_items (invoice_id);
-CREATE INDEX idx_invoice_line_items_sort_order ON invoice_line_items (invoice_id, sort_order);
+CREATE INDEX idx_invoice_line_items_sortOrder ON invoice_line_items (invoice_id, sortOrder);
 
 -- Enable RLS for line items
 ALTER TABLE invoice_line_items ENABLE ROW LEVEL SECURITY;
@@ -256,4 +256,4 @@ COMMENT ON COLUMN invoices.payment_terms IS 'Payment terms like "30 days", "Net 
 
 COMMENT ON TABLE invoice_line_items IS 'Individual line items that make up an invoice';
 COMMENT ON COLUMN invoice_line_items.total_price IS 'Calculated as quantity * unit_price';
-COMMENT ON COLUMN invoice_line_items.sort_order IS 'Display order of line items in the invoice';
+COMMENT ON COLUMN invoice_line_items.sortOrder IS 'Display order of line items in the invoice';

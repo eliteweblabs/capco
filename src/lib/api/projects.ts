@@ -104,7 +104,7 @@ export async function fetchProjects(
         return {
           ...projectWithData,
           featuredImageData: {
-            public_url: project.featuredImageData.public_url,
+            publicUrl: project.featuredImageData.publicUrl,
           },
         };
       }
@@ -150,7 +150,7 @@ export async function getProjectsByAuthor(
         return {
           ...projectWithData,
           featuredImageData: {
-            public_url: project.featuredImageData.public_url,
+            publicUrl: project.featuredImageData.publicUrl,
           },
         };
       }
@@ -195,11 +195,11 @@ export async function getProjectsByAssignedToId(
         punchlistItems: punchlistStats[project.id] || { completed: 0, total: 0 },
       };
 
-      if (project.featured_image_url) {
+      if (project.featuredImageUrl) {
         return {
           ...projectWithData,
           featuredImageData: {
-            public_url: project.featured_image_url,
+            publicUrl: project.featuredImageUrl,
           },
         };
       }

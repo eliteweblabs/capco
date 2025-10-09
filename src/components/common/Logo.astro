@@ -2,6 +2,11 @@
 import { replacePlaceholders } from "../../lib/placeholder-utils";
 
 const logoSvg = replacePlaceholders("{{COMPANY_LOGO_LIGHT}}", null);
+const logoSvgLight = replacePlaceholders("{{COMPANY_LOGO_LIGHT}}", null);
+const logoSvgDark = replacePlaceholders("{{COMPANY_LOGO_DARK}}", null);
+const logoSvgIcon = replacePlaceholders("{{COMPANY_ICON}}", null);
+const logoSvgIconLight = replacePlaceholders("{{COMPANY_ICON_LIGHT}}", null);
+const logoSvgIconDark = replacePlaceholders("{{COMPANY_ICON_DARK}}", null);
 export interface Props {
   file?: "svg" | "string" | "data-url" | "base64";
   size?: "sm" | "md" | "lg" | "xl";
@@ -27,5 +32,19 @@ if (file === "string") {
 }
 ---
 
-{file === "svg" && link && <a href={link} title="Go to home page" set:html={logoSvg} />}
+{
+  file === "svg" && link && (
+    <a
+      class="flex sm:hidden w-10"
+      href={link}
+      title="Go to home page"
+      set:html={logoSvgIconLight}
+    />
+  )
+}
+{
+  file === "svg" && link && (
+    <a class="hidden sm:flex" href={link} title="Go to home page" set:html={logoSvg} />
+  )
+}
 {file === "svg" && !link && <div set:html={logoSvg} />}

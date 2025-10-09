@@ -489,9 +489,9 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       // Initialize empty arrays for consistency with get-project API
       enrichedProject.projectFiles = [];
       enrichedProject.generatedDocuments = [];
-      enrichedProject.comment_count = 0;
+      enrichedProject.commentCount = 0;
       enrichedProject.incompleteDiscussions = 0;
-      enrichedProject.discussion_ratio = "0/0";
+      enrichedProject.discussionRatio = "0/0";
       enrichedProject.punchlistItems = { completed: 0, total: 0 };
       enrichedProject.featuredImageData = null;
     } catch (enrichError) {

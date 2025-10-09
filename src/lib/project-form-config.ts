@@ -195,72 +195,6 @@ export const FORM_ACTIONS: FormActionConfig[] = [
     allow: ["Admin", "Staff"], // Only admin and staff can delete
     hideAtStatus: [0], // Only show when specs are received (status 10)
   },
-  {
-    id: "build-proposal",
-    type: "button",
-    label: "Build Proposal",
-    icon: "bx-file-pdf",
-    tab: "proposal",
-    variant: "success",
-    cssClass:
-      "flex-1 w-full md:w-auto px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-full hover:bg-green-700 transition-colors mt-6",
-    action: "buildProposal",
-    allow: ["Admin", "Staff"], // Only admin and staff can build proposals
-    hideAtStatus: [
-      0, 10, 30, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95, 100, 105, 110, 115, 120, 125, 130,
-      135, 140, 145, 150, 155, 160, 170, 180, 190, 200, 210, 220,
-    ], // Only show when specs are received (status 10)
-  },
-  // {
-  //   id: "view-documents",
-  //   type: "button",
-  //   label: "View Documents",
-  //   icon: "bx-file",
-  //   tab: "documents",
-  //   variant: "primary",
-  //   cssClass:
-  //     "px-4 py-2 bg-primary-600 text-white text-sm font-medium rounded-full hover:bg-primary-700 transition-colors",
-  //   allow: ["Admin", "Staff", "Client"], // All roles can view documents
-  //   hideAtStatus: [0], // Hide on new projects
-  // },
-  // {
-  //   id: "view-deliverables",
-  //   type: "button",
-  //   label: "View Deliverables",
-  //   icon: "bx-package",
-  //   tab: "deliverables",
-  //   variant: "warning",
-  //   cssClass:
-  //     "flex-1 px-4 py-2 bg-purple-600 text-white text-sm font-medium rounded-full hover:bg-purple-700 transition-colors",
-  //   allow: ["Admin", "Staff", "Client"], // All roles can view deliverables
-  //   hideAtStatus: [
-  //     0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170, 180, 190,
-  //   ], // Only show when project is complete
-  // },
-  // {
-  //   id: "view-invoice",
-  //   type: "button",
-  //   label: "View Invoice",
-  //   icon: "bx-receipt",
-  //   tab: "final-invoice",
-  //   variant: "warning",
-  //   cssClass:
-  //     "flex-1 px-4 py-2 bg-orange-600 text-white text-sm font-medium rounded-full hover:bg-orange-700 transition-colors",
-  //   allow: ["Admin", "Staff", "Client"], // All roles can view invoices
-  //   hideAtStatus: [0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140], // Only show when final invoice is generated
-  // },
-  // {
-  //   id: "view-activity",
-  //   type: "button",
-  //   label: "View Activity Log",
-  //   icon: "bx-history",
-  //   tab: "activity-log",
-  //   variant: "secondary",
-  //   cssClass:
-  //     "px-4 py-2 bg-gray-600 text-white text-sm font-medium rounded-full hover:bg-gray-700 transition-colors",
-  //   allow: ["Admin", "Staff", "Client"], // All roles can view activity log
-  //   hideAtStatus: [0], // Hide on new projects
-  // },
 ];
 
 // Unified form elements array - combines fields, button groups, and actions in order
@@ -745,24 +679,24 @@ export const UNIFIED_FORM_ELEMENTS: FormElementConfig[] = [
     hideAtStatus: [],
   },
 
-  {
-    id: "build-proposal",
-    name: "build-proposal",
-    type: "action",
-    elementType: "button",
-    label: "Build Proposal",
-    icon: "bx-file-pdf",
-    tab: "proposal",
-    variant: "success",
-    cssClass:
-      "flex-1 w-full md:w-auto px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-full hover:bg-green-700 transition-colors mt-6",
-    action: "buildProposal",
-    allow: ["Admin", "Staff"],
-    hideAtStatus: [
-      0, 10, 30, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95, 100, 105, 110, 115, 120, 125, 130,
-      135, 140, 145, 150, 155, 160, 170, 180, 190, 200, 210, 220,
-    ],
-  },
+  // {
+  //   id: "build-proposal",
+  //   name: "build-proposal",
+  //   type: "action",
+  //   elementType: "button",
+  //   label: "Build Proposal",
+  //   icon: "bx-file-pdf",
+  //   tab: "proposal",
+  //   variant: "success",
+  //   cssClass:
+  //     "flex-1 w-full md:w-auto px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-full hover:bg-green-700 transition-colors mt-6",
+  //   action: "buildProposal",
+  //   allow: ["Admin", "Staff"],
+  //   hideAtStatus: [
+  //     0, 10, 30, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95, 100, 105, 110, 115, 120, 125, 130,
+  //     135, 140, 145, 150, 155, 160, 170, 180, 190, 200, 210, 220,
+  //   ],
+  // },
 ];
 
 // Function to get filtered unified form elements based on user role and project status

@@ -36,7 +36,10 @@ export const POST: APIRoute = async ({ request }) => {
           lastName, 
           companyName, 
           role,
-          email
+          email,
+          smsAlerts,
+          mobileCarrier,
+          phone
         `
         )
         .in("role", roles);

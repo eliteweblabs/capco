@@ -208,7 +208,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
       if (adminStaffEmails.length > 0) {
         // console.log("💬 [DISCUSSION] Sending admin/staff emails...");
-        const adminEmailResponse = await fetch(`${baseUrl}/api/email-delivery`, {
+        const adminEmailResponse = await fetch(`${baseUrl}/api/update-delivery`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -216,7 +216,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
           body: JSON.stringify({
             usersToNotify: adminStaffEmails,
             userIdsToNotify: adminStaffUserIds, // Add user IDs for internal notifications
-            emailType: "clientComment",
+            method: "clientComment",
             emailSubject: subjectLine,
             emailContent: emailContent,
             buttonLink: buttonLink,
@@ -239,14 +239,14 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       // Send client email if not internal
       if (!internal && clientEmail) {
         // console.log("💬 [DISCUSSION] Sending client email...");
-        const clientEmailResponse = await fetch(`${baseUrl}/api/email-delivery`, {
+        const clientEmailResponse = await fetch(`${baseUrl}/api/update-delivery`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
             usersToNotify: [clientEmail],
-            emailType: "clientComment",
+            method: "clientComment",
             emailSubject: subjectLine,
             emailContent: emailContent,
             buttonLink: buttonLink,

@@ -19,6 +19,8 @@ export const globalCompanyData = () => {
     globalCompanyLogo: logo,
     globalCompanyLogoDark: logo,
     globalCompanyLogoLight: logo,
+    globalCompanyIconDark: icon,
+    globalCompanyIconLight: icon,
     globalCompanyIcon: icon,
     primaryColor: process.env.GLOBAL_COLOR_PRIMARY || "#825BDD",
     secondaryColor: process.env.GLOBAL_COLOR_SECONDARY || "#0EA5E9",

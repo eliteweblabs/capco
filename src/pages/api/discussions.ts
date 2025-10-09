@@ -136,6 +136,37 @@ export const GET: APIRoute = async ({ url, cookies }) => {
       console.error("Database error:", error);
     }
 
+    // Count incomplete discussions for the project (if projectId is provided)
+    let incompleteCount = 0;
+    let totalCount = 0;
+    if (projectId) {
+      try {
+        // Count all discussions for the project
+        const { count: totalCountResult } = await supabase
+          .from("discussions")
+          .select("*", { count: "exact", head: true })
+          .eq("projectId", parseInt(projectId, 10));
+
+        // Count incomplete discussions for the project
+        const { count: incompleteCountResult } = await supabase
+          .from("discussions")
+          .select("*", { count: "exact", head: true })
+          .eq("projectId", parseInt(projectId, 10))
+          .eq("markCompleted", false);
+
+        totalCount = totalCountResult || 0;
+        incompleteCount = incompleteCountResult || 0;
+
+        console.log("💬 [DISCUSSIONS] Count results:", {
+          projectId,
+          totalCount,
+          incompleteCount,
+        });
+      } catch (countError) {
+        console.error("Error counting discussions:", countError);
+      }
+    }
+
     // Debug logging for raw database response
     console.log("🔍 [DISCUSSIONS] Raw database response:", {
       discussionsCount: discussions?.length || 0,
@@ -329,6 +360,8 @@ export const GET: APIRoute = async ({ url, cookies }) => {
         discussions: paginatedDiscussions,
         count: paginatedDiscussions.length,
         total: enrichedDiscussions.length,
+        incompleteCount,
+        totalCount,
         stats,
         pagination: {
           limit,
