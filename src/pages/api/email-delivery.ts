@@ -685,6 +685,25 @@ async function sendBrowserNotification(
     // This is just a framework for future implementation
 
     console.log("🔔 [BROWSER-NOTIFICATION] Browser push notification queued successfully");
+
+    // Log browser notification delivery
+    try {
+      await SimpleProjectLogger.addLogEntry(
+        context.project?.id || 0,
+        "browserNotificationSent",
+        `Browser push notification sent - Title: ${preferences.browserNotificationTitle || context.emailSubject}`,
+        {
+          method: "browser",
+          title: preferences.browserNotificationTitle || context.emailSubject,
+          body: preferences.browserNotificationBody || context.emailContent,
+          icon: preferences.browserNotificationIcon || "/favicon.png",
+          url: context.buttonLink,
+        }
+      );
+    } catch (logError) {
+      console.error("🔔 [BROWSER-NOTIFICATION] Error logging browser notification:", logError);
+    }
+
     return { success: true, method: "browser", message: "Browser push notification queued" };
   } catch (error) {
     console.error("🔔 [BROWSER-NOTIFICATION] Error:", error);
@@ -775,6 +794,26 @@ async function sendInternalNotification(
     console.log(
       `🔔 [INTERNAL-NOTIFICATION] Created ${notifications.length} internal notifications successfully`
     );
+
+    // Log internal notification delivery
+    try {
+      await SimpleProjectLogger.addLogEntry(
+        context.project?.id || 0,
+        "internalNotificationSent",
+        `Internal notification sent to ${userIds.length} users - Title: ${context.emailSubject}`,
+        {
+          method: "internal",
+          userIds: userIds,
+          notificationCount: notifications.length,
+          title: context.emailSubject,
+          type: preferences.internalNotificationType || "info",
+          priority: preferences.internalNotificationPriority || "normal",
+        }
+      );
+    } catch (logError) {
+      console.error("🔔 [INTERNAL-NOTIFICATION] Error logging internal notification:", logError);
+    }
+
     return { success: true, method: "internal", message: "Internal notifications created" };
   } catch (error) {
     console.error("🔔 [INTERNAL-NOTIFICATION] Error:", error);
@@ -820,6 +859,25 @@ async function sendSMSNotification(
     }
 
     console.log("🔔 [SMS-NOTIFICATION] SMS notification queued successfully");
+
+    // Log SMS notification delivery
+    try {
+      await SimpleProjectLogger.addLogEntry(
+        context.project?.id || 0,
+        "smsNotificationSent",
+        `SMS notification queued for ${context.usersToNotify.length} users - Provider: ${preferences.smsProvider || "twilio"}`,
+        {
+          method: "sms",
+          users: context.usersToNotify,
+          provider: preferences.smsProvider || "twilio",
+          message: context.emailContent,
+          queuedAt: new Date().toISOString(),
+        }
+      );
+    } catch (logError) {
+      console.error("🔔 [SMS-NOTIFICATION] Error logging SMS notification:", logError);
+    }
+
     return { success: true, method: "sms", message: "SMS notification queued" };
   } catch (error) {
     console.error("🔔 [SMS-NOTIFICATION] Error:", error);
@@ -852,6 +910,28 @@ async function sendAllNotifications(
     ).length;
 
     console.log(`🔔 [ALL-NOTIFICATIONS] Sent ${successCount}/3 notification types`);
+
+    // Log all notifications delivery
+    try {
+      await SimpleProjectLogger.addLogEntry(
+        context.project?.id || 0,
+        "allNotificationsSent",
+        `All notification types sent - ${successCount}/3 successful - Title: ${context.emailSubject}`,
+        {
+          method: "all",
+          successCount: successCount,
+          totalTypes: 3,
+          title: context.emailSubject,
+          results: results.map((result, index) => ({
+            type: ["browser", "internal", "sms"][index],
+            success: result.status === "fulfilled" && result.value.success,
+            error: result.status === "rejected" ? result.reason : null,
+          })),
+        }
+      );
+    } catch (logError) {
+      console.error("🔔 [ALL-NOTIFICATIONS] Error logging all notifications:", logError);
+    }
 
     return {
       success: successCount > 0,
