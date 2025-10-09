@@ -40,6 +40,12 @@ export const POST: APIRoute = async ({ request, redirect, cookies }) => {
     }
 
     // Create user in Supabase Auth
+    if (!supabase) {
+      return new Response(JSON.stringify({ success: false, error: "Database not configured" }), {
+        status: 500,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
     const { data: authData, error: authError } = await supabase.auth.signUp({
       email: email.trim().toLowerCase(),
       password: password.trim(),
@@ -110,7 +116,7 @@ export const POST: APIRoute = async ({ request, redirect, cookies }) => {
       updatedAt: new Date().toISOString(),
     };
 
-    const { error: profileError } = await supabase.from("profiles").upsert(profileData, {
+    const { error: profileError } = await supabase!.from("profiles").upsert(profileData, {
       onConflict: "id",
       ignoreDuplicates: false,
     });
@@ -139,7 +145,7 @@ export const POST: APIRoute = async ({ request, redirect, cookies }) => {
     });
 
     // Sign in the user after successful registration
-    const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+    const { data: signInData, error: signInError } = await supabase!.auth.signInWithPassword({
       email: email.trim().toLowerCase(),
       password: password.trim(),
     });
@@ -164,7 +170,7 @@ export const POST: APIRoute = async ({ request, redirect, cookies }) => {
     // Set the session cookie using the signInData
     console.log("🔐 [REGISTER] Sign in successful, session data:", {
       hasSession: !!signInData?.session,
-      sessionId: signInData?.session?.id,
+      sessionId: signInData?.session?.user?.id,
       accessToken: signInData?.session?.access_token ? "present" : "missing",
       refreshToken: signInData?.session?.refresh_token ? "present" : "missing",
     });
@@ -206,7 +212,7 @@ export const POST: APIRoute = async ({ request, redirect, cookies }) => {
     console.error("🔐 [REGISTER] Critical error during registration:", error);
     await SimpleProjectLogger.addLogEntry(
       0,
-      "userRegistrationError",
+      "userRegistration",
       "Critical registration error",
       { error: error instanceof Error ? error.message : "Unknown error" }
     );

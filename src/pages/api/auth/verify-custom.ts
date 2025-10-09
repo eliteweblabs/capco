@@ -53,15 +53,11 @@ export const GET: APIRoute = async ({ url, cookies, redirect, request }) => {
 
       // Log the logout of the previous user
       try {
-        await SimpleProjectLogger.logUserLogout(
-          currentSession.user?.email || "Unknown",
-          "magiclink_switch",
-          {
-            reason: "Different user logged in via magic link",
-            newUser: email,
-            timestamp: new Date().toISOString(),
-          }
-        );
+        await SimpleProjectLogger.logUserLogout(currentSession.user?.email || "Unknown", {
+          reason: "Different user logged in via magic link",
+          newUser: email,
+          timestamp: new Date().toISOString(),
+        });
         console.log("✅ [VERIFY-CUSTOM] Previous user logout logged successfully");
       } catch (logError) {
         console.error("❌ [VERIFY-CUSTOM] Error logging previous user logout:", logError);

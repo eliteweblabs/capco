@@ -208,11 +208,12 @@ async function generateContractPDF(
       projectId: project.id.toString(),
       targetLocation: "documents",
       title: `Contract - ${project.title}`,
-      pdfBufferLength: pdfBuffer.length,
+      pdfBufferLength:
+        pdfBuffer.buffer instanceof Buffer ? pdfBuffer.buffer.length : pdfBuffer.length,
     });
 
     const contractFile = await saveMedia({
-      mediaData: pdfBuffer.buffer,
+      mediaData: pdfBuffer.buffer instanceof Buffer ? pdfBuffer.buffer : pdfBuffer,
       fileName: fileName,
       fileType: "application/pdf",
       projectId: project.id.toString(),

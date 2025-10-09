@@ -269,7 +269,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     return new Response(
       JSON.stringify({
         success: true,
-        discussion: discussionWithCompanyName,
+        discussion: discussion,
       }),
       {
         status: 201,
