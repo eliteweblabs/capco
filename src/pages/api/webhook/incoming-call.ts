@@ -1,5 +1,18 @@
 import type { APIRoute } from "astro";
 
+export const GET: APIRoute = async ({ request }) => {
+  console.log("🔍 [WEBHOOK] GET request received - testing connectivity");
+  console.log("🔍 [WEBHOOK] Request URL:", request.url);
+  console.log("🔍 [WEBHOOK] User-Agent:", request.headers.get("user-agent"));
+
+  return new Response("Webhook endpoint is working!", {
+    status: 200,
+    headers: {
+      "Content-Type": "text/plain",
+    },
+  });
+};
+
 export const POST: APIRoute = async ({ request }) => {
   try {
     const body = await request.json();
@@ -8,6 +21,9 @@ export const POST: APIRoute = async ({ request }) => {
     console.log("📞 [WEBHOOK] Request headers:", Object.fromEntries(request.headers.entries()));
     console.log("📞 [WEBHOOK] Request method:", request.method);
     console.log("📞 [WEBHOOK] Request URL:", request.url);
+    console.log("📞 [WEBHOOK] User-Agent:", request.headers.get("user-agent"));
+    console.log("📞 [WEBHOOK] X-Forwarded-For:", request.headers.get("x-forwarded-for"));
+    console.log("📞 [WEBHOOK] Remote Address:", request.headers.get("x-real-ip"));
 
     // Return NCCO response directly (no N8N forwarding for now)
     console.log("✅ [WEBHOOK] Returning NCCO response");
