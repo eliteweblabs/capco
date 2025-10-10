@@ -14,13 +14,6 @@ let voiceConnectors = [];
 let error = null;
 let success = null;
 
-try {
-  const api = createMessageBirdVoiceAPI();
-  voiceConnectors = await api.listVoiceConnectors();
-} catch (err) {
-  error = err.message;
-}
-
 // Handle form submissions
 let shouldRedirect = false;
 
@@ -85,6 +78,16 @@ if (Astro.request.method === "POST") {
 // Handle redirect after all processing is complete
 if (shouldRedirect) {
   return Astro.redirect(Astro.url.pathname);
+}
+
+// Load voice connectors only for GET requests
+if (Astro.request.method === "GET") {
+  try {
+    const api = createMessageBirdVoiceAPI();
+    voiceConnectors = await api.listVoiceConnectors();
+  } catch (err) {
+    error = err.message;
+  }
 }
 ---
 
