@@ -7,14 +7,16 @@ const logoSvgDark = replacePlaceholders("{{COMPANY_LOGO_DARK}}", null);
 const logoSvgIcon = replacePlaceholders("{{COMPANY_ICON}}", null);
 const logoSvgIconLight = replacePlaceholders("{{COMPANY_ICON_LIGHT}}", null);
 const logoSvgIconDark = replacePlaceholders("{{COMPANY_ICON_DARK}}", null);
+
 export interface Props {
   file?: "svg" | "string" | "data-url" | "base64";
   size?: "sm" | "md" | "lg" | "xl";
   link?: string;
   className?: string;
+  isBackend?: boolean;
 }
 
-const { file = "svg", link = "/", size = "md" } = Astro.props;
+const { file = "svg", link = "/", size = "md", isBackend } = Astro.props;
 // Get the logo SVG content with the current size
 // const logoSvg = getCapcoLogoSvg(size, file, link);
 
@@ -33,18 +35,19 @@ if (file === "string") {
 ---
 
 {
-  file === "svg" && link && (
+  file === "svg" && link && isBackend ? (
     <a
       class="flex sm:hidden w-10"
       href={link}
       title="Go to home page"
       set:html={logoSvgIconLight}
     />
-  )
-}
-{
-  file === "svg" && link && (
-    <a class="hidden sm:flex" href={link} title="Go to home page" set:html={logoSvg} />
+  ) : (
+    file === "svg" &&
+    link &&
+    !isBackend && (
+      <a class="hidden sm:flex" href={link} title="Go to home page" set:html={logoSvg} />
+    )
   )
 }
 {file === "svg" && !link && <div set:html={logoSvg} />}
