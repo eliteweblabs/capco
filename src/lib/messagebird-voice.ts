@@ -49,7 +49,7 @@ export class MessageBirdVoiceAPI {
       connectorTemplateRef: request.connectorTemplateRef || "voice-messagebird:1",
       name: request.name,
       arguments: {
-        channelId: request.phoneNumberId, // Using channelId instead of phoneNumberId
+        phoneNumberId: request.phoneNumberId,
       },
     };
 
