@@ -22,6 +22,8 @@ try {
 }
 
 // Handle form submissions
+let shouldRedirect = false;
+
 if (Astro.request.method === "POST") {
   const formData = await Astro.request.formData();
   const action = formData.get("action");
@@ -34,8 +36,7 @@ if (Astro.request.method === "POST") {
         phoneNumberId: formData.get("phoneNumberId") as string,
       });
       success = `Voice connector created: ${connector.id}`;
-      // Refresh the page to show new connector
-      return Astro.redirect(Astro.url.pathname);
+      shouldRedirect = true;
     } catch (err) {
       error = err.message;
     }
@@ -51,11 +52,11 @@ if (Astro.request.method === "POST") {
         const result = await createVoiceInboundWebhook(accessKey, siteUrl, channelId || undefined);
         if (result.success) {
           success = `Webhook created successfully: ${result.webhook.id}`;
+          shouldRedirect = true;
         } else {
           error = result.error;
         }
       }
-      return Astro.redirect(Astro.url.pathname);
     } catch (err) {
       error = err.message;
     }
@@ -70,15 +71,20 @@ if (Astro.request.method === "POST") {
         const result = await deleteWebhookSubscription(accessKey, webhookId);
         if (result.success) {
           success = `Webhook deleted successfully`;
+          shouldRedirect = true;
         } else {
           error = result.error;
         }
       }
-      return Astro.redirect(Astro.url.pathname);
     } catch (err) {
       error = err.message;
     }
   }
+}
+
+// Handle redirect after all processing is complete
+if (shouldRedirect) {
+  return Astro.redirect(Astro.url.pathname);
 }
 ---
 
