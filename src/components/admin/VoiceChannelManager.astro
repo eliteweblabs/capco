@@ -44,11 +44,18 @@ if (Astro.request.method === "POST") {
   if (action === "create_webhook") {
     try {
       const channelId = formData.get("channelId") as string;
-      const result = await createVoiceInboundWebhook(channelId || undefined);
-      if (result.success) {
-        success = `Webhook created successfully: ${result.webhook.id}`;
+      const accessKey = import.meta.env.BIRD_ACCESS_KEY;
+      const siteUrl = import.meta.env.SITE_URL;
+      
+      if (!accessKey || !siteUrl) {
+        error = "MessageBird API key or site URL not configured";
       } else {
-        error = result.error;
+        const result = await createVoiceInboundWebhook(accessKey, siteUrl, channelId || undefined);
+        if (result.success) {
+          success = `Webhook created successfully: ${result.webhook.id}`;
+        } else {
+          error = result.error;
+        }
       }
       return Astro.redirect(Astro.url.pathname);
     } catch (err) {
@@ -59,11 +66,17 @@ if (Astro.request.method === "POST") {
   if (action === "delete_webhook") {
     try {
       const webhookId = formData.get("webhookId") as string;
-      const result = await deleteWebhookSubscription(webhookId);
-      if (result.success) {
-        success = `Webhook deleted successfully`;
+      const accessKey = import.meta.env.BIRD_ACCESS_KEY;
+      
+      if (!accessKey) {
+        error = "MessageBird API key not configured";
       } else {
-        error = result.error;
+        const result = await deleteWebhookSubscription(accessKey, webhookId);
+        if (result.success) {
+          success = `Webhook deleted successfully`;
+        } else {
+          error = result.error;
+        }
       }
       return Astro.redirect(Astro.url.pathname);
     } catch (err) {
