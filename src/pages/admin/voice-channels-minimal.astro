@@ -1,0 +1,56 @@
+---
+// Minimal test page to isolate ResponseSentError
+import { checkAuth } from "../../lib/auth";
+
+const { currentUser, isAuth } = await checkAuth(Astro.cookies);
+
+if (!currentUser || !isAuth || currentUser.role !== "Admin") {
+  return Astro.redirect("/login");
+}
+
+let error = null;
+let success = null;
+
+// Simple form handling
+if (Astro.request.method === "POST") {
+  const formData = await Astro.request.formData();
+  const action = formData.get("action");
+  
+  if (action === "test") {
+    success = "Test completed successfully";
+    return Astro.redirect(Astro.url.pathname);
+  }
+}
+---
+
+<div class="max-w-6xl mx-auto p-6">
+  <h1 class="text-3xl font-bold text-gray-900 dark:text-white mb-2">Minimal Voice Channels Test</h1>
+  
+  {error && (
+    <div class="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+      <p class="text-red-700">{error}</p>
+    </div>
+  )}
+
+  {success && (
+    <div class="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg">
+      <p class="text-green-700">{success}</p>
+    </div>
+  )}
+
+  <div class="bg-white dark:bg-gray-800 shadow rounded-lg p-6">
+    <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+      Test Form
+    </h3>
+    
+    <form method="POST" class="space-y-4">
+      <input type="hidden" name="action" value="test" />
+      <button
+        type="submit"
+        class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700"
+      >
+        Test Action
+      </button>
+    </form>
+  </div>
+</div>
