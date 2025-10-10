@@ -2,6 +2,8 @@
 // Shared discussion partial that works for both global and project discussions
 export const partial = true;
 
+import { updateDiscussionCount } from "../../lib/discussion-count-utils";
+
 interface Props {
   project?: any; // Optional project object - if null, it's a global discussion
   currentUser?: any;
@@ -310,7 +312,7 @@ const isGlobalDiscussion = !project;
                   : ""
               }
               <div class="mr-2 h-8 w-8 rounded-full border-2 border-gray-200 dark:border-gray-600 shadow-sm bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-sm font-semibold text-white" style="${discussion.authorAvatar ? "display: none;" : ""}">
-                ${discussion.authorName ? discussion.authorName.charAt(0).toUpperCase() : "?"}
+                ${discussion.companyName ? discussion.companyName.charAt(0).toUpperCase() : "?"}
               </div>
               ${
                 discussion.authorFirstName && discussion.authorLastName
@@ -743,13 +745,11 @@ const isGlobalDiscussion = !project;
 
         // Update the discussion count bubble
         if (result.incompleteCount !== undefined) {
-          import("../../lib/discussion-count-utils.ts")
-            .then(({ updateDiscussionCount }) => {
-              updateDiscussionCount(result.incompleteCount);
-            })
-            .catch((error) => {
-              console.error("Error updating discussion count:", error);
-            });
+          try {
+            updateDiscussionCount(result.incompleteCount);
+          } catch (error) {
+            console.error("Error updating discussion count:", error);
+          }
         }
 
         // Refresh the display and update counts
@@ -789,13 +789,11 @@ const isGlobalDiscussion = !project;
 
         // Update the discussion count bubble
         if (result.incompleteCount !== undefined) {
-          import("../../lib/discussion-count-utils.ts")
-            .then(({ updateDiscussionCount }) => {
-              updateDiscussionCount(result.incompleteCount);
-            })
-            .catch((error) => {
-              console.error("Error updating discussion count:", error);
-            });
+          try {
+            updateDiscussionCount(result.incompleteCount);
+          } catch (error) {
+            console.error("Error updating discussion count:", error);
+          }
         }
 
         // Refresh the display and update counts

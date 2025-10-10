@@ -410,14 +410,15 @@ const title = project.title || "Untitled Project";
       loadingOverlay.classList.add("flex");
 
       try {
-        const response = await fetch("/api/pdf/generate", {
+        const response = await fetch("/api/generate-pdf-unified", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            projectId,
-            templateId: selectedTemplate,
+            type: "general",
+            templateUrl: selectedTemplate,
+            projectId: parseInt(projectId),
             documentName,
             selectedComponents,
             userId: currentUser?.id || null,
@@ -560,14 +561,15 @@ const title = project.title || "Untitled Project";
       saveBtn.innerHTML = '<i class="bx bx-loader-alt animate-spin mr-1"></i>Saving...';
 
       try {
-        const response = await fetch("/api/pdf/save-document", {
+        const response = await fetch("/api/generate-pdf-unified", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            projectId: projectId,
-            templateId: selectedTemplate,
+            type: "general",
+            templateUrl: selectedTemplate,
+            projectId: parseInt(projectId),
             documentName: generatedDocument.name,
             htmlContent: generatedDocument.htmlContent,
             userId: currentUser?.id || null,

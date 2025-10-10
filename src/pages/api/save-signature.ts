@@ -82,17 +82,40 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       // Get user ID from currentUser or cookies
       const userId = currentUser?.id || cookies.get("user-id")?.value;
 
-      contractPdfUrl = await generateContractPDF(
+      console.log("📄 [SAVE-SIGNATURE] Starting PDF generation with:", {
         projectId,
-        signature,
-        signedAt,
-        userId,
         baseUrl,
+        userId,
         clientIP
-      );
-      console.log("✅ [SAVE-SIGNATURE] PDF generated successfully:", contractPdfUrl);
+      });
+
+      // Use the unified PDF generator
+      const pdfResponse = await fetch(`${baseUrl}/api/generate-pdf-unified`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          type: "contract",
+          projectId: parseInt(projectId),
+          signature: signature,
+          signedAt: signedAt,
+        }),
+      });
+
+      if (pdfResponse.ok) {
+        const pdfResult = await pdfResponse.json();
+        if (pdfResult.success && pdfResult.document?.fileUrl) {
+          contractPdfUrl = pdfResult.document.fileUrl;
+          console.log("✅ [SAVE-SIGNATURE] PDF generated successfully:", contractPdfUrl);
+        } else {
+          console.warn("⚠️ [SAVE-SIGNATURE] PDF generation returned no URL:", pdfResult);
+        }
+      } else {
+        const errorText = await pdfResponse.text();
+        console.error("❌ [SAVE-SIGNATURE] PDF generation failed:", errorText);
+      }
     } catch (pdfError) {
-      console.warn("⚠️ [SAVE-SIGNATURE] PDF generation failed, continuing without PDF:", pdfError);
+      console.error("❌ [SAVE-SIGNATURE] PDF generation failed:", pdfError);
+      console.warn("⚠️ [SAVE-SIGNATURE] Continuing without PDF");
     }
 
     // Update the project with signature data using contractData structure
@@ -147,93 +170,3 @@ export const POST: APIRoute = async ({ request, cookies }) => {
   }
 };
 
-/**
- * Generate contract PDF using the template system
- * This leverages the existing PDF infrastructure instead of duplicating code
- */
-async function generateContractPDF(
-  projectId: string,
-  signature: string,
-  signedAt: string,
-  userId: string,
-  baseUrl: string,
-  clientIP: string
-): Promise<string> {
-  try {
-    console.log("📄 [SAVE-SIGNATURE] Generating contract PDF for project:", projectId);
-
-    // Fetch project data for placeholders
-    const { supabase } = await import("../../lib/supabase");
-    if (!supabase) {
-      throw new Error("Supabase client not configured");
-    }
-
-    const { data: projectData, error: projectError } = await supabase
-      .from("projects")
-      .select("*")
-      .eq("id", projectId)
-      .single();
-
-    if (projectError || !projectData) {
-      throw new Error("Failed to fetch project data");
-    }
-
-    // Prepare signature data for contractData structure
-    const signedDate = new Date(signedAt);
-    const contactData = {
-      image: signature,
-      signedDate: signedDate.toLocaleDateString(),
-      signedTime: signedDate.toLocaleTimeString(),
-      ipAddress: clientIP,
-      url: contractPdfUrl || null,
-    };
-
-    // Use the template assembly API to get the contract HTML
-    const assembleUrl = `${baseUrl}/api/pdf/assemble?templateId=contract&projectId=${projectId}`;
-    console.log("📄 [SAVE-SIGNATURE] Assembling template:", assembleUrl);
-
-    const assembleResponse = await fetch(assembleUrl);
-    if (!assembleResponse.ok) {
-      throw new Error(`Failed to assemble template: ${assembleResponse.status}`);
-    }
-
-    let contractHTML = await assembleResponse.text();
-
-    // Replace signature-specific placeholders (using uppercase format for consistency)
-    // contractHTML = contractHTML
-    //   .replace(/\{\{SIGNATURE_IMAGE\}\}/g, signatureData.image)
-    //   .replace(/\{\{SIGNATURE_DATE\}\}/g, signatureData.signed_date)
-    //   .replace(/\{\{SIGNATURE_TIME\}\}/g, signatureData.signed_time)
-    //   .replace(/\{\{SIGNATURE_IP\}\}/g, signatureData.ip_address);
-
-    console.log("📄 [SAVE-SIGNATURE] Assembled HTML length:", contractHTML.length);
-
-    // Use the existing PDF save-document API
-    const saveResponse = await fetch(`${baseUrl}/api/pdf/save-document`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        projectId,
-        templateId: "contract",
-        documentName: `Contract_Project_${projectId}`,
-        htmlContent: contractHTML,
-        userId,
-      }),
-    });
-
-    if (!saveResponse.ok) {
-      throw new Error(`Failed to save PDF: ${saveResponse.status}`);
-    }
-
-    const saveResult = await saveResponse.json();
-    if (!saveResult.success) {
-      throw new Error(saveResult.message || "Failed to save PDF");
-    }
-
-    console.log("✅ [SAVE-SIGNATURE] Contract PDF generated:", saveResult.document.fileUrl);
-    return saveResult.document.fileUrl;
-  } catch (error) {
-    console.error("❌ [SAVE-SIGNATURE] PDF generation error:", error);
-    throw error;
-  }
-}

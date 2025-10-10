@@ -27,10 +27,11 @@ const {
 } = Astro.props;
 
 // Debug logging for props
-
+import StickyActions from "./StickyActions.astro";
 import BoxIcon from "../common/BoxIcon.astro";
 import Button from "../common/Button.astro";
 import LoadingSpinner from "../common/LoadingSpinner.astro";
+
 // Only show for Admin/Staff
 // Allowed file types
 const allowedFileTypes = [
@@ -105,9 +106,9 @@ const canDeleteFiles =
   (currentRole === "Client" && projectStatus <= 10); // Clients can delete at initial status (10)
 ---
 
-<div id="file-manager" class="space-y-6">
+<div id="file-manager">
   <!-- Header -->
-  <div class="flex hidden items-center justify-between">
+  <div class="flex hidden items-center justify-between h-64">
     <h3 class="text-xl font-semibold text-gray-900 dark:text-white">Project Files</h3>
     <div class="hidden text-sm text-gray-500 dark:text-gray-400">
       <span id="file-count">Loading...</span>
@@ -119,42 +120,32 @@ const canDeleteFiles =
     (currentRole === "Client" && projectStatus < 41) ||
     currentRole === "Admin" ||
     currentRole === "Staff" ? (
-      <div>
-        <div
-          id="upload-dropzone"
-          class="cursor-pointer rounded-lg border-2 border-dashed border-gray-300 p-6 text-center transition-colors hover:border-primary-400 dark:border-gray-600 dark:hover:border-primary-500"
-        >
-          <div class="space-y-4">
-            <div class="mx-auto h-12 w-12 text-gray-400">
-              <svg class="h-full w-full" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
-                />
-              </svg>
-            </div>
-            <div>
-              <p class="font-medium text-gray-600 dark:text-gray-300">
-                Drop files here or click to browse
-              </p>
-              <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                Upload supports PDF, images, CAD files, and documents (max 10MB each)
-              </p>
-            </div>
-            <Button id="browse-files-btn" icon="folder-open" iconPosition="left" variant="outline">
-              Browse Files
-            </Button>
-            {projectStatus >= 20 && currentRole !== "Client" && (
-              <>
-                <BoxIcon name="alert-circle" class="bx-lg mx-auto" />
-                <h2 class={`${globalPrimaryTextClasses} mb-4`}>
-                  Keep File Names the Same to Generate A New Version and Check In Your File
-                </h2>
-              </>
-            )}
+      <div
+        id="upload-dropzone"
+        class="mb-6 cursor-pointer rounded-lg border-2 border-dashed border-gray-300 p-6 text-center transition-colors hover:border-primary-400 dark:border-gray-600 dark:hover:border-primary-500"
+      >
+        <div class="space-y-4">
+          <div class="mx-auto h-12 w-12 text-gray-400">
+            <svg class="h-full w-full" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
+              />
+            </svg>
           </div>
+          <div>
+            <p class="font-medium text-gray-600 dark:text-gray-300">
+              Drop files here or click to browse
+            </p>
+            <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+              Upload supports PDF, images, CAD files, and documents (max 10MB each)
+            </p>
+          </div>
+          <Button id="browse-files-btn" icon="folder-open" iconPosition="left" variant="outline">
+            Browse Files
+          </Button>
         </div>
         <input
           type="file"
@@ -162,7 +153,7 @@ const canDeleteFiles =
           multiple
           accept={allowedFileTypes.join(",")}
           class="hidden"
-        />
+        />{" "}
       </div>
     ) : null
   }
@@ -189,30 +180,24 @@ const canDeleteFiles =
   <!-- Management Panel (Admin/Staff only, Status 20+) -->
   {
     canCheckoutFiles && (
-      <div id="management-panel" class="mt-6 rounded-lg bg-gray-50 p-4 dark:bg-gray-800">
-        <h4 class="mb-4 text-sm font-medium text-gray-700 dark:text-gray-300">File Management</h4>
+      <StickyActions columns="2" id="management-panel">
+        {/* <h4 class="mb-4 text-sm font-medium text-gray-700 dark:text-gray-300">File Management</h4> */}
 
         {/* <!-- Quick Actions --> */}
-        <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          {/* <!-- Checkout Status --> */}
-          <div class="rounded-lg bg-gray-100 p-3 shadow-sm dark:bg-gray-700">
-            <div class="flex items-center space-x-2">
-              <div id="overall-status-indicator" class="h-3 w-3 rounded-full bg-gray-400" />
-              <span id="overall-status-text" class="text-sm text-gray-600 dark:text-gray-300">
-                Loading status...
-              </span>
-            </div>
-          </div>
-
-          {/* <!-- Quick Stats --> */}
-          <div class="rounded-lg bg-gray-100 p-3 shadow-sm dark:bg-gray-700">
-            <div class="text-sm text-gray-600 dark:text-gray-300">
-              <span id="checked-out-count">0</span> checked out •<span id="assigned-count">0</span>{" "}
-              assigned
-            </div>
-          </div>
+        {/* <!-- Checkout Status --> */}
+        <div class="flex items-center space-x-2">
+          <div id="overall-status-indicator" class="h-3 w-3 rounded-full bg-gray-400" />
+          <span id="overall-status-text" class="text-sm text-gray-600 dark:text-gray-300">
+            Loading status...
+          </span>
         </div>
-      </div>
+        <div class="flex items-center space-x-2">
+          <BoxIcon name="alert-circle" class="bx-lg mx-auto" />
+          <p class={`${globalPrimaryTextClasses} mb-4`}>
+            Keep File Names the Same to Check In File.
+          </p>
+        </div>
+      </StickyActions>
     )
   }
 </div>
@@ -366,7 +351,7 @@ const canDeleteFiles =
   // Helper function to create accordion HTML using Accordion partial structure
   function createAccordionHTML(id, title, description, content, open = false) {
     return `
-      <div class="border border-gray-200 dark:border-gray-700 rounded-lg">
+      <div class="border border-gray-200 dark:border-gray-700 rounded-lg relative">
         <!-- Accordion Header -->
         <div class="flex items-center justify-between  cursor-pointer rounded-lg transition-colors hover:bg-gray-50 dark:hover:bg-gray-700">
           <!-- Clickable header area -->
@@ -427,7 +412,6 @@ const canDeleteFiles =
     // Enable checkout system - SQL migration should be run
     const hasCheckoutColumns = true; // Enable checkout system
     const isCheckedOut = file.checkedOutBy !== null;
-    const isAssigned = file.assignedTo !== null;
     const isCheckedOutByMe = file.checkedOutBy === currentUserId;
 
     let statusBadge = "";
@@ -441,9 +425,6 @@ const canDeleteFiles =
         statusBadge = `Checked out by ${file.checked_out_by_name || "Unknown"}`;
         statusColor = "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300";
       }
-    } else if (isAssigned) {
-      statusBadge = `Assigned to ${file.assignedToName || "Unknown"}`;
-      statusColor = "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300";
     } else {
       statusBadge = "Available";
       statusColor = "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300";
@@ -902,18 +883,9 @@ const canDeleteFiles =
     }
 
     const checkedOutCount = files.filter((f) => f.checkedOutBy).length;
-    const assignedCount = files.filter((f) => f.assignedTo).length;
 
-    const checkedOutElement = document.getElementById("checked-out-count");
-    const assignedElement = document.getElementById("assigned-count");
     const statusTextElement = document.getElementById("overall-status-text");
     const statusIndicatorElement = document.getElementById("overall-status-indicator");
-
-    if (checkedOutElement) {
-      checkedOutElement.textContent = checkedOutCount;
-    } else {
-      console.error("❌ [FILE-MANAGER] Checked out count element not found");
-    }
 
     // Update status text and indicator
     if (statusTextElement) {
@@ -921,11 +893,6 @@ const canDeleteFiles =
         statusTextElement.textContent = `${checkedOutCount} file${checkedOutCount !== 1 ? "s" : ""} checked out`;
         if (statusIndicatorElement) {
           statusIndicatorElement.className = "h-3 w-3 rounded-full bg-yellow-400";
-        }
-      } else if (assignedCount > 0) {
-        statusTextElement.textContent = `${assignedCount} file${assignedCount !== 1 ? "s" : ""} assigned`;
-        if (statusIndicatorElement) {
-          statusIndicatorElement.className = "h-3 w-3 rounded-full bg-primary-400";
         }
       } else {
         statusTextElement.textContent = "All files available";
@@ -950,7 +917,7 @@ const canDeleteFiles =
   function getDisplayFileName(file) {
     // Version badge CSS classes
     const versionBadgeClass =
-      "rounded-sm bg-gray-100 px-2.5 Zs2BLzUMh0_yTpU6xCcU font-medium kAEXvwFGb849z6BUdJjG dark:bg-gray-700 EJIoL6514Ry8r7nh011L";
+      "absolute top-0 left-0 inline-flex items-center px-2.5 py-0.5 rounded-br-lg text-xs font-medium";
 
     // If no version number or version 1, show original filename
     if (!file.versionNumber || file.versionNumber === 1) {

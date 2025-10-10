@@ -472,13 +472,27 @@ if (currentRole === "Admin" || currentRole === "Staff") {
 
     // Load discussion count for status-discussion tab
     if (projectId) {
-      import("../../lib/discussion-count-utils.ts")
-        .then(({ loadDiscussionCount }) => {
-          loadDiscussionCount(projectId);
-        })
-        .catch((error) => {
-          console.error("Error loading discussion count:", error);
-        });
+      try {
+        // Inline discussion count loading
+        fetch(`/api/discussions?projectId=${projectId}`)
+          .then((response) => response.json())
+          .then((result) => {
+            if (result.success && result.incompleteCount !== undefined) {
+              // Update the count bubble
+              const countElement = document.querySelector("#status-discussion .count-bubble");
+              if (countElement) {
+                countElement.textContent = result.incompleteCount;
+                countElement.style.display = result.incompleteCount > 0 ? "inline-flex" : "none";
+              }
+              console.log("💬 Discussion count updated:", result.incompleteCount);
+            }
+          })
+          .catch((error) => {
+            console.error("Error loading discussion count:", error);
+          });
+      } catch (error) {
+        console.error("Error loading discussion count:", error);
+      }
     }
 
     // Get status from URL parameter or use default
