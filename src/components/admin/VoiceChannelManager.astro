@@ -2,6 +2,7 @@
 // Voice Channel Management Component for Fire Protection System
 import { checkAuth } from "../../lib/auth";
 import { createMessageBirdVoiceAPI } from "../../lib/messagebird-voice";
+import { createVoiceInboundWebhook, listWebhookSubscriptions, deleteWebhookSubscription } from "../../lib/messagebird-webhooks";
 
 const { currentUser, isAuth } = await checkAuth(Astro.cookies);
 
@@ -34,6 +35,36 @@ if (Astro.request.method === "POST") {
       });
       success = `Voice connector created: ${connector.id}`;
       // Refresh the page to show new connector
+      return Astro.redirect(Astro.url.pathname);
+    } catch (err) {
+      error = err.message;
+    }
+  }
+
+  if (action === "create_webhook") {
+    try {
+      const channelId = formData.get("channelId") as string;
+      const result = await createVoiceInboundWebhook(channelId || undefined);
+      if (result.success) {
+        success = `Webhook created successfully: ${result.webhook.id}`;
+      } else {
+        error = result.error;
+      }
+      return Astro.redirect(Astro.url.pathname);
+    } catch (err) {
+      error = err.message;
+    }
+  }
+
+  if (action === "delete_webhook") {
+    try {
+      const webhookId = formData.get("webhookId") as string;
+      const result = await deleteWebhookSubscription(webhookId);
+      if (result.success) {
+        success = `Webhook deleted successfully`;
+      } else {
+        error = result.error;
+      }
       return Astro.redirect(Astro.url.pathname);
     } catch (err) {
       error = err.message;
@@ -216,6 +247,57 @@ if (Astro.request.method === "POST") {
         <strong>n8n Integration:</strong> Configure your n8n webhook to receive voice data for Claude
         + ElevenLabs processing
       </p>
+    </div>
+  </div>
+
+  <!-- Webhook Management -->
+  <div class="mt-8 bg-white dark:bg-gray-800 shadow rounded-lg p-6">
+    <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+      Webhook Management
+    </h3>
+    
+    <!-- Create Webhook Form -->
+    <div class="mb-6 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+      <h4 class="text-md font-medium text-gray-900 dark:text-white mb-3">Create Voice Webhook</h4>
+      <form method="POST" class="space-y-4">
+        <input type="hidden" name="action" value="create_webhook" />
+        <div>
+          <label for="channelId" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            Channel ID (Optional)
+          </label>
+          <input
+            type="text"
+            id="channelId"
+            name="channelId"
+            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-600 dark:text-white"
+            placeholder="Leave empty for all channels"
+          />
+          <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+            Leave empty to receive webhooks for all voice channels, or specify a channel ID to filter
+          </p>
+        </div>
+        <button
+          type="submit"
+          class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
+        >
+          Create Voice Webhook
+        </button>
+      </form>
+    </div>
+
+    <!-- Existing Webhooks -->
+    <div>
+      <h4 class="text-md font-medium text-gray-900 dark:text-white mb-3">Existing Webhooks</h4>
+      <div class="text-sm text-gray-600 dark:text-gray-400">
+        <p>Webhook management will be available after creating your first webhook.</p>
+        <p class="mt-2">
+          <strong>Note:</strong> Webhooks are created via the MessageBird API and will automatically 
+          send voice call events to your webhook endpoint at 
+          <code class="bg-gray-100 dark:bg-gray-600 px-2 py-1 rounded">
+            {import.meta.env.SITE_URL}/api/webhook/incoming-call
+          </code>
+        </p>
+      </div>
     </div>
   </div>
 </div>
