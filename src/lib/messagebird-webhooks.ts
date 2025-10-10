@@ -1,4 +1,4 @@
-import { BIRD_ACCESS_KEY, SITE_URL } from 'astro:env';
+// Environment variables will be passed as parameters to avoid build-time issues
 
 const MESSAGEBIRD_API_BASE_URL = 'https://api.bird.com';
 
@@ -29,15 +29,19 @@ interface CreateWebhookResponse {
 
 /**
  * Creates a webhook subscription for voice inbound calls
+ * @param accessKey The MessageBird access key
+ * @param siteUrl The site URL for the webhook endpoint
  * @param channelId The channel ID to filter by (optional)
  * @param signingKey The signing key for webhook validation
  * @returns The created webhook subscription or an error
  */
 export async function createVoiceInboundWebhook(
+  accessKey: string,
+  siteUrl: string,
   channelId?: string,
   signingKey: string = 'voice-webhook-secret'
 ): Promise<{ success: true; webhook: CreateWebhookResponse } | { success: false; error: string }> {
-  if (!BIRD_ACCESS_KEY) {
+  if (!accessKey) {
     return { success: false, error: "MessageBird API key is not configured." };
   }
 
@@ -46,7 +50,7 @@ export async function createVoiceInboundWebhook(
   const webhookData: WebhookSubscription = {
     service: "channels",
     event: "voice.inbound",
-    url: `${SITE_URL}/api/webhook/incoming-call`,
+    url: `${siteUrl}/api/webhook/incoming-call`,
     signingKey: signingKey,
     eventFilters: [
       {
@@ -82,7 +86,7 @@ export async function createVoiceInboundWebhook(
       headers: {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
-        'Authorization': `AccessKey ${BIRD_ACCESS_KEY}`,
+        'Authorization': `AccessKey ${accessKey}`,
       },
       body: JSON.stringify(webhookData),
     });
@@ -104,10 +108,11 @@ export async function createVoiceInboundWebhook(
 
 /**
  * Lists all webhook subscriptions
+ * @param accessKey The MessageBird access key
  * @returns Array of webhook subscriptions or an error
  */
-export async function listWebhookSubscriptions(): Promise<{ success: true; webhooks: CreateWebhookResponse[] } | { success: false; error: string }> {
-  if (!BIRD_ACCESS_KEY) {
+export async function listWebhookSubscriptions(accessKey: string): Promise<{ success: true; webhooks: CreateWebhookResponse[] } | { success: false; error: string }> {
+  if (!accessKey) {
     return { success: false, error: "MessageBird API key is not configured." };
   }
 
@@ -118,7 +123,7 @@ export async function listWebhookSubscriptions(): Promise<{ success: true; webho
       method: 'GET',
       headers: {
         'Accept': 'application/json',
-        'Authorization': `AccessKey ${BIRD_ACCESS_KEY}`,
+        'Authorization': `AccessKey ${accessKey}`,
       },
     });
 
@@ -139,11 +144,12 @@ export async function listWebhookSubscriptions(): Promise<{ success: true; webho
 
 /**
  * Deletes a webhook subscription
+ * @param accessKey The MessageBird access key
  * @param webhookId The ID of the webhook to delete
  * @returns Success or error
  */
-export async function deleteWebhookSubscription(webhookId: string): Promise<{ success: true } | { success: false; error: string }> {
-  if (!BIRD_ACCESS_KEY) {
+export async function deleteWebhookSubscription(accessKey: string, webhookId: string): Promise<{ success: true } | { success: false; error: string }> {
+  if (!accessKey) {
     return { success: false, error: "MessageBird API key is not configured." };
   }
 
@@ -154,7 +160,7 @@ export async function deleteWebhookSubscription(webhookId: string): Promise<{ su
       method: 'DELETE',
       headers: {
         'Accept': 'application/json',
-        'Authorization': `AccessKey ${BIRD_ACCESS_KEY}`,
+        'Authorization': `AccessKey ${accessKey}`,
       },
     });
 
