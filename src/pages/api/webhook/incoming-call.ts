@@ -16,6 +16,8 @@ export const GET: APIRoute = async ({ request }) => {
 export const POST: APIRoute = async ({ request }) => {
   try {
     const body = await request.json();
+    const authHeader = request.headers.get("authorization");
+    const jwtToken = authHeader?.replace("Bearer ", "");
 
     console.log("📞 [WEBHOOK] Incoming call received:", body);
     console.log("📞 [WEBHOOK] Request headers:", Object.fromEntries(request.headers.entries()));
@@ -24,6 +26,8 @@ export const POST: APIRoute = async ({ request }) => {
     console.log("📞 [WEBHOOK] User-Agent:", request.headers.get("user-agent"));
     console.log("📞 [WEBHOOK] X-Forwarded-For:", request.headers.get("x-forwarded-for"));
     console.log("📞 [WEBHOOK] Remote Address:", request.headers.get("x-real-ip"));
+    console.log("📞 [WEBHOOK] JWT Token:", jwtToken ? "Present" : "Missing");
+    console.log("📞 [WEBHOOK] Authorization Header:", authHeader);
 
     // Return NCCO response directly (no N8N forwarding for now)
     console.log("✅ [WEBHOOK] Returning NCCO response");
