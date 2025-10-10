@@ -104,12 +104,12 @@ const canManageProposals = currentRole === "Admin" || currentRole === "Staff";
             Generated on: <span id="proposal-date" />
           </p>
         </div>
-        <div class="ml-4 text-right">
+        {/* <div class="ml-4 text-right">
           <p class="text-2xl font-bold text-green-600 dark:text-green-400">
             $<span id="proposal-total">0.00</span>
           </p>
           <p class="text-sm text-gray-600 dark:text-gray-400">Estimated Total</p>
-        </div>
+        </div> */}
       </div>
 
       {/* <!-- Project Details --> */}
@@ -160,7 +160,7 @@ const canManageProposals = currentRole === "Admin" || currentRole === "Staff";
                 <thead class="text-uppercase PeR2JZ9BZHYIH8Ea3F36 XIIs8ZOri3wm8Wnj9N_y bg-gray-50 text-xs dark:bg-gray-800">
                   <tr>
                     <th scope="col" class="px-4 py-3 font-semibold">
-                      TITLE
+                      Service
                     </th>
                     <th scope="col" class="px-4 py-3 font-semibold">
                       Description
@@ -191,22 +191,22 @@ const canManageProposals = currentRole === "Admin" || currentRole === "Staff";
                   <tr>
                     <td
                       colspan={projectStatus === 20 ? "5" : "4"}
-                      class="px-6 py-3 text-right font-semibold text-gray-900 dark:text-white"
+                      class="px-6 py-3 text-right font-semibold text-gray-900 dark:text-white text-xlarge"
                     >
-                      Total:
+                      Estimated Total:
                     </td>
-                    <td class="px-6 py-3 text-right font-bold text-green-600 dark:text-green-400">
+                    <td class="px-6 py-3 text-right font-bold text-green-600 dark:text-green-400 text-xl">
                       $<span id="proposal-total-footer">0.00</span>
                     </td>
                   </tr>
                   <tr>
                     <td
-                      class="px-6 py-3 text-right font-semibold text-gray-900 dark:text-white"
+                      class="px-6 py-3 text-right font-semibold text-gray-900 dark:text-white text-xlarge"
                       colspan={projectStatus === 20 ? "5" : "4"}
                     >
                       Total Due (50%):
                     </td>
-                    <td class="px-6 py-3 text-right font-bold text-blue-600 dark:text-blue-400">
+                    <td class="px-6 py-3 text-right font-bold text-blue-600 dark:text-blue-400 text-xl">
                       $<span id="proposal-total-due-footer">0.00</span>
                     </td>
                   </tr>
@@ -247,14 +247,10 @@ const canManageProposals = currentRole === "Admin" || currentRole === "Staff";
       )}
 
       {projectStatus >= 30 && currentRole === "Client" && projectStatus < 45 && existingInvoice && (
-        <div class="mt-8 rounded-lg border border-gray-200 bg-gray-100 p-6 dark:border-gray-700 dark:bg-gray-800">
-          <div class="mb-6">
-            <p class="text-gray-500 dark:text-gray-400">
-              Sign Contract &amp; Submit 50% deposit to approve this proposal and begin work.
-            </p>
-          </div>
+        // make this container sticky to the bottom of the page and release when it gets to its original position
 
-          <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <div class="fixed bottom-0 left-0 z-50 h-16 w-full border-t border-gray-200 bg-gray-100 dark:border-gray-600 dark:bg-gray-700">
+          <div class="mx-auto grid h-full max-w-7lg grid-cols-2 font-medium">
             <Button
               href={`/project/${projectId}?status=discussion&new=true`}
               variant="secondary"
@@ -264,7 +260,6 @@ const canManageProposals = currentRole === "Admin" || currentRole === "Staff";
             >
               To Request Edits Leave a Comment
             </Button>
-
             <Button
               variant="success"
               size="md"
@@ -1544,14 +1539,14 @@ const canManageProposals = currentRole === "Admin" || currentRole === "Staff";
       }
 
       // Show loading modal
-      if (window.showModal) {
-        window.showModal(
-          "info",
-          "Sending Proposal",
-          "Saving & sending proposal...",
-          0 // No auto-hide
-        );
-      }
+      // if (window.showModal) {
+      //   window.showModal(
+      //     "info",
+      //     "Sending Proposal",
+      //     "Saving & sending proposal...",
+      //     0 // No auto-hide
+      //   );
+      // }
 
       try {
         // Update project status to 30 (Proposal Shipped)
