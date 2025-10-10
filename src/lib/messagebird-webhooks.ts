@@ -1,6 +1,6 @@
 // Environment variables will be passed as parameters to avoid build-time issues
 
-const MESSAGEBIRD_API_BASE_URL = 'https://api.bird.com';
+const MESSAGEBIRD_API_BASE_URL = "https://api.bird.com";
 
 interface WebhookSubscription {
   service: string;
@@ -39,14 +39,14 @@ export async function createVoiceInboundWebhook(
   accessKey: string,
   siteUrl: string,
   channelId?: string,
-  signingKey: string = 'voice-webhook-secret'
+  signingKey: string = "voice-webhook-secret"
 ): Promise<{ success: true; webhook: CreateWebhookResponse } | { success: false; error: string }> {
   if (!accessKey) {
     return { success: false, error: "MessageBird API key is not configured." };
   }
 
   const url = `${MESSAGEBIRD_API_BASE_URL}/webhook-subscriptions`;
-  
+
   const webhookData: WebhookSubscription = {
     service: "channels",
     event: "voice.inbound",
@@ -55,46 +55,51 @@ export async function createVoiceInboundWebhook(
     eventFilters: [
       {
         key: "status",
-        value: "starting"
-      },
-      {
-        key: "status", 
-        value: "ringing"
+        value: "starting",
       },
       {
         key: "status",
-        value: "ongoing"
+        value: "ringing",
       },
       {
         key: "status",
-        value: "completed"
-      }
-    ]
+        value: "ongoing",
+      },
+      {
+        key: "status",
+        value: "completed",
+      },
+    ],
   };
 
   // Add channel filter if provided
   if (channelId) {
     webhookData.eventFilters?.push({
       key: "channelId",
-      value: channelId
+      value: channelId,
     });
   }
 
   try {
     const response = await fetch(url, {
-      method: 'POST',
+      method: "POST",
       headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-        'Authorization': `AccessKey ${accessKey}`,
+        "Content-Type": "application/json",
+        Accept: "application/json",
+        Authorization: `AccessKey ${accessKey}`,
       },
       body: JSON.stringify(webhookData),
     });
 
     if (!response.ok) {
       const errorBody = await response.json();
-      console.error(`❌ [MESSAGEBIRD-WEBHOOK] Failed to create webhook: ${response.status} - ${errorBody.message}`);
-      return { success: false, error: errorBody.message || `Failed to create webhook: ${response.status}` };
+      console.error(
+        `❌ [MESSAGEBIRD-WEBHOOK] Failed to create webhook: ${response.status} - ${errorBody.message}`
+      );
+      return {
+        success: false,
+        error: errorBody.message || `Failed to create webhook: ${response.status}`,
+      };
     }
 
     const webhook: CreateWebhookResponse = await response.json();
@@ -102,7 +107,10 @@ export async function createVoiceInboundWebhook(
     return { success: true, webhook };
   } catch (error) {
     console.error("❌ [MESSAGEBIRD-WEBHOOK] Error creating webhook:", error);
-    return { success: false, error: `Network error: ${error instanceof Error ? error.message : String(error)}` };
+    return {
+      success: false,
+      error: `Network error: ${error instanceof Error ? error.message : String(error)}`,
+    };
   }
 }
 
@@ -111,7 +119,11 @@ export async function createVoiceInboundWebhook(
  * @param accessKey The MessageBird access key
  * @returns Array of webhook subscriptions or an error
  */
-export async function listWebhookSubscriptions(accessKey: string): Promise<{ success: true; webhooks: CreateWebhookResponse[] } | { success: false; error: string }> {
+export async function listWebhookSubscriptions(
+  accessKey: string
+): Promise<
+  { success: true; webhooks: CreateWebhookResponse[] } | { success: false; error: string }
+> {
   if (!accessKey) {
     return { success: false, error: "MessageBird API key is not configured." };
   }
@@ -120,17 +132,22 @@ export async function listWebhookSubscriptions(accessKey: string): Promise<{ suc
 
   try {
     const response = await fetch(url, {
-      method: 'GET',
+      method: "GET",
       headers: {
-        'Accept': 'application/json',
-        'Authorization': `AccessKey ${accessKey}`,
+        Accept: "application/json",
+        Authorization: `AccessKey ${accessKey}`,
       },
     });
 
     if (!response.ok) {
       const errorBody = await response.json();
-      console.error(`❌ [MESSAGEBIRD-WEBHOOK] Failed to list webhooks: ${response.status} - ${errorBody.message}`);
-      return { success: false, error: errorBody.message || `Failed to list webhooks: ${response.status}` };
+      console.error(
+        `❌ [MESSAGEBIRD-WEBHOOK] Failed to list webhooks: ${response.status} - ${errorBody.message}`
+      );
+      return {
+        success: false,
+        error: errorBody.message || `Failed to list webhooks: ${response.status}`,
+      };
     }
 
     const webhooks: CreateWebhookResponse[] = await response.json();
@@ -138,7 +155,10 @@ export async function listWebhookSubscriptions(accessKey: string): Promise<{ suc
     return { success: true, webhooks };
   } catch (error) {
     console.error("❌ [MESSAGEBIRD-WEBHOOK] Error listing webhooks:", error);
-    return { success: false, error: `Network error: ${error instanceof Error ? error.message : String(error)}` };
+    return {
+      success: false,
+      error: `Network error: ${error instanceof Error ? error.message : String(error)}`,
+    };
   }
 }
 
@@ -148,7 +168,10 @@ export async function listWebhookSubscriptions(accessKey: string): Promise<{ suc
  * @param webhookId The ID of the webhook to delete
  * @returns Success or error
  */
-export async function deleteWebhookSubscription(accessKey: string, webhookId: string): Promise<{ success: true } | { success: false; error: string }> {
+export async function deleteWebhookSubscription(
+  accessKey: string,
+  webhookId: string
+): Promise<{ success: true } | { success: false; error: string }> {
   if (!accessKey) {
     return { success: false, error: "MessageBird API key is not configured." };
   }
@@ -157,23 +180,31 @@ export async function deleteWebhookSubscription(accessKey: string, webhookId: st
 
   try {
     const response = await fetch(url, {
-      method: 'DELETE',
+      method: "DELETE",
       headers: {
-        'Accept': 'application/json',
-        'Authorization': `AccessKey ${accessKey}`,
+        Accept: "application/json",
+        Authorization: `AccessKey ${accessKey}`,
       },
     });
 
     if (!response.ok) {
       const errorBody = await response.json();
-      console.error(`❌ [MESSAGEBIRD-WEBHOOK] Failed to delete webhook: ${response.status} - ${errorBody.message}`);
-      return { success: false, error: errorBody.message || `Failed to delete webhook: ${response.status}` };
+      console.error(
+        `❌ [MESSAGEBIRD-WEBHOOK] Failed to delete webhook: ${response.status} - ${errorBody.message}`
+      );
+      return {
+        success: false,
+        error: errorBody.message || `Failed to delete webhook: ${response.status}`,
+      };
     }
 
     console.log(`✅ [MESSAGEBIRD-WEBHOOK] Webhook ${webhookId} deleted successfully.`);
     return { success: true };
   } catch (error) {
     console.error("❌ [MESSAGEBIRD-WEBHOOK] Error deleting webhook:", error);
-    return { success: false, error: `Network error: ${error instanceof Error ? error.message : String(error)}` };
+    return {
+      success: false,
+      error: `Network error: ${error instanceof Error ? error.message : String(error)}`,
+    };
   }
 }
