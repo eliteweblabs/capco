@@ -644,50 +644,29 @@ async function createProjectFromEmail(userId: string, projectInfo: any, userProf
 
     console.log("🏗️ [EMAIL-WEBHOOK] Project data for API:", JSON.stringify(projectData, null, 2));
 
-    // Create project using supabaseAdmin directly (bypassing auth requirements)
-    // This replicates the core logic from create-project API but without session auth
-    if (!supabaseAdmin) {
-      console.error("❌ [EMAIL-WEBHOOK] Supabase admin client not initialized");
+    // Call the create-project API endpoint to ensure proper processing
+    const createProjectUrl = new URL("/api/create-project", Astro.url.origin);
+    const createProjectResponse = await fetch(createProjectUrl.toString(), {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(projectData),
+    });
+
+    if (!createProjectResponse.ok) {
+      const errorText = await createProjectResponse.text();
+      console.error("❌ [EMAIL-WEBHOOK] Failed to create project via API:", errorText);
       return null;
     }
 
-    const finalProjectData = {
-      authorId: userId,
-      title: projectData.title,
-      address: projectData.address?.replace(/, USA$/, "") || projectData.address,
-      description: projectData.description,
-      sqFt: projectData.sqFt && projectData.sqFt.trim() !== "" ? parseInt(projectData.sqFt) : null,
-      newConstruction: projectData.newConstruction === true,
-      building: projectData.building || [],
-      project: projectData.project || [],
-      service: projectData.service || [],
-      requestedDocs: projectData.requestedDocs || [],
-      status: 0, // Initial status - will be updated to trigger notifications
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
-
-    console.log(
-      "🏗️ [EMAIL-WEBHOOK] Final project data:",
-      JSON.stringify(finalProjectData, null, 2)
-    );
-
-    const { data: projects, error } = await supabaseAdmin
-      .from("projects")
-      .insert([finalProjectData])
-      .select();
-
-    if (error) {
-      console.error("❌ [EMAIL-WEBHOOK] Error creating project:", error);
+    const apiResult = await createProjectResponse.json();
+    if (!apiResult.success) {
+      console.error("❌ [EMAIL-WEBHOOK] API returned error:", apiResult.error);
       return null;
     }
 
-    if (!projects || projects.length === 0) {
-      console.error("❌ [EMAIL-WEBHOOK] No project returned after creation");
-      return null;
-    }
-
-    const project = projects[0];
+    const project = apiResult.project;
     console.log("✅ [EMAIL-WEBHOOK] Created project:", project.id);
 
     // Update project status to 10 to trigger "Specs Received" notifications
