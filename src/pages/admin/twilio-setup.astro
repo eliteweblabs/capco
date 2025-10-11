@@ -72,7 +72,8 @@ const envVars = {
                 Go to <a
                   href="https://console.twilio.com/"
                   target="_blank"
-                  class="text-yellow-600 dark:text-yellow-400 underline">Twilio Console</a>
+                  class="text-yellow-600 dark:text-yellow-400 underline">Twilio Console</a
+                >
               </li>
               <li>Navigate to <strong>Account → API Keys & Tokens</strong></li>
               <li>Copy your <strong>Account SID</strong> and <strong>Auth Token</strong></li>
@@ -144,7 +145,10 @@ const envVars = {
             <div class="text-sm text-green-800 dark:text-green-200 space-y-2">
               <p><strong>1. Configure your phone number webhook:</strong></p>
               <p>Go to Phone Numbers → Manage → Active Numbers → [Your Number]</p>
-              <p>Set <strong>Webhook URL</strong> to: <code>{import.meta.env.SITE_URL}/api/webhook/twilio-incoming-call</code></p>
+              <p>
+                Set <strong>Webhook URL</strong> to: <code
+                  >{import.meta.env.SITE_URL}/api/webhook/twilio-incoming-call</code>
+              </p>
               <p>Set <strong>HTTP Method</strong> to: <code>POST</code></p>
             </div>
           </div>
@@ -199,16 +203,16 @@ const envVars = {
     button.textContent = "🔄 Testing...";
 
     try {
+      // Create form data like Twilio sends
+      const formData = new FormData();
+      formData.append("RecordingUrl", "https://example.com/test-recording.wav");
+      formData.append("CallSid", "test-call-123");
+      formData.append("RecordingDuration", "30");
+      formData.append("RecordingSize", "1024");
+      
       const response = await fetch("/api/webhook/twilio-recording", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          test: true,
-          RecordingUrl: "https://example.com/test-recording.wav",
-          CallSid: "test-call-123",
-        }),
+        body: formData,
       });
       const data = await response.json();
 
