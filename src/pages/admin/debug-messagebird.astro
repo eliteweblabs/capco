@@ -1,0 +1,215 @@
+---
+// Debug MessageBird API Tool
+import { checkAuth } from "../../lib/auth";
+import App from "../../components/common/App.astro";
+
+const { currentUser, isAuth } = await checkAuth(Astro.cookies);
+
+if (!currentUser || !isAuth || currentUser.profile.role !== "Admin") {
+  return Astro.redirect("/login");
+}
+---
+
+<App title="Debug MessageBird API">
+  <div class="min-h-screen bg-gray-50 dark:bg-gray-900 py-8">
+    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="bg-white dark:bg-gray-800 shadow rounded-lg p-6">
+        <h1 class="text-2xl font-bold text-gray-900 dark:text-white mb-6">
+          Debug MessageBird API
+        </h1>
+        
+        <div class="space-y-6">
+          <!-- Test Phone Numbers API -->
+          <div class="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+            <h3 class="text-lg font-semibold text-blue-900 dark:text-blue-100 mb-3">
+              📞 Test Phone Numbers API
+            </h3>
+            <button 
+              id="test-phone-numbers"
+              class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+            >
+              🔍 Test Phone Numbers Endpoint
+            </button>
+            <div id="phone-numbers-result" class="mt-3"></div>
+          </div>
+
+          <!-- Test Voice Connectors API -->
+          <div class="p-4 bg-green-50 dark:bg-green-900/20 rounded-lg">
+            <h3 class="text-lg font-semibold text-green-900 dark:text-green-100 mb-3">
+              🎙️ Test Voice Connectors API
+            </h3>
+            <button 
+              id="test-voice-connectors"
+              class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+            >
+              🔍 Test Voice Connectors Endpoint
+            </button>
+            <div id="voice-connectors-result" class="mt-3"></div>
+          </div>
+
+          <!-- Test Create Connector -->
+          <div class="p-4 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg">
+            <h3 class="text-lg font-semibold text-yellow-900 dark:text-yellow-100 mb-3">
+              🛠️ Test Create Voice Connector
+            </h3>
+            <div class="space-y-3">
+              <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Phone Number ID
+                </label>
+                <input
+                  type="text"
+                  id="test-phone-id"
+                  class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-600 dark:text-white"
+                  placeholder="440439c5-75d8-4425-9ab5-d936d1839751"
+                  value="440439c5-75d8-4425-9ab5-d936d1839751"
+                />
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Connector Name
+                </label>
+                <input
+                  type="text"
+                  id="test-connector-name"
+                  class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-600 dark:text-white"
+                  placeholder="Test Voice Connector"
+                  value="Test Voice Connector"
+                />
+              </div>
+              <button 
+                id="test-create-connector"
+                class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-yellow-600 hover:bg-yellow-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500"
+              >
+                🛠️ Test Create Connector
+              </button>
+            </div>
+            <div id="create-connector-result" class="mt-3"></div>
+          </div>
+
+          <!-- Environment Variables Check -->
+          <div class="p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-3">
+              🔧 Environment Variables Check
+            </h3>
+            <div id="env-vars-result" class="space-y-2"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</App>
+
+<script>
+  // Check environment variables
+  document.addEventListener('DOMContentLoaded', function() {
+    const envDiv = document.getElementById('env-vars-result');
+    if (envDiv) {
+      envDiv.innerHTML = `
+        <div class="text-sm">
+          <div><strong>BIRD_ACCESS_KEY:</strong> ${import.meta.env.BIRD_ACCESS_KEY ? '✅ Set' : '❌ Not set'}</div>
+          <div><strong>BIRD_WORKSPACE_ID:</strong> ${import.meta.env.BIRD_WORKSPACE_ID ? '✅ Set' : '❌ Not set'}</div>
+          <div><strong>SITE_URL:</strong> ${import.meta.env.SITE_URL ? '✅ Set' : '❌ Not set'}</div>
+        </div>
+      `;
+    }
+  });
+
+  // Test Phone Numbers API
+  document.getElementById('test-phone-numbers')?.addEventListener('click', async function() {
+    const button = this;
+    const resultDiv = document.getElementById('phone-numbers-result');
+    
+    button.disabled = true;
+    button.textContent = '🔄 Testing...';
+    
+    try {
+      const response = await fetch('/api/messagebird/phone-numbers');
+      const data = await response.json();
+      
+      if (resultDiv) {
+        resultDiv.innerHTML = `
+          <div class="p-3 bg-white dark:bg-gray-800 border rounded-lg">
+            <pre class="text-sm overflow-auto">${JSON.stringify(data, null, 2)}</pre>
+          </div>
+        `;
+      }
+    } catch (error) {
+      if (resultDiv) {
+        resultDiv.innerHTML = `<div class="text-red-600">Error: ${error}</div>`;
+      }
+    } finally {
+      button.disabled = false;
+      button.textContent = '🔍 Test Phone Numbers Endpoint';
+    }
+  });
+
+  // Test Voice Connectors API
+  document.getElementById('test-voice-connectors')?.addEventListener('click', async function() {
+    const button = this;
+    const resultDiv = document.getElementById('voice-connectors-result');
+    
+    button.disabled = true;
+    button.textContent = '🔄 Testing...';
+    
+    try {
+      const response = await fetch('/api/messagebird/voice-connectors');
+      const data = await response.json();
+      
+      if (resultDiv) {
+        resultDiv.innerHTML = `
+          <div class="p-3 bg-white dark:bg-gray-800 border rounded-lg">
+            <pre class="text-sm overflow-auto">${JSON.stringify(data, null, 2)}</pre>
+          </div>
+        `;
+      }
+    } catch (error) {
+      if (resultDiv) {
+        resultDiv.innerHTML = `<div class="text-red-600">Error: ${error}</div>`;
+      }
+    } finally {
+      button.disabled = false;
+      button.textContent = '🔍 Test Voice Connectors Endpoint';
+    }
+  });
+
+  // Test Create Connector
+  document.getElementById('test-create-connector')?.addEventListener('click', async function() {
+    const button = this;
+    const resultDiv = document.getElementById('create-connector-result');
+    const phoneId = (document.getElementById('test-phone-id') as HTMLInputElement)?.value;
+    const connectorName = (document.getElementById('test-connector-name') as HTMLInputElement)?.value;
+    
+    button.disabled = true;
+    button.textContent = '🔄 Testing...';
+    
+    try {
+      const response = await fetch('/api/messagebird/test-create-connector', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          phoneNumberId: phoneId,
+          name: connectorName
+        })
+      });
+      const data = await response.json();
+      
+      if (resultDiv) {
+        resultDiv.innerHTML = `
+          <div class="p-3 bg-white dark:bg-gray-800 border rounded-lg">
+            <pre class="text-sm overflow-auto">${JSON.stringify(data, null, 2)}</pre>
+          </div>
+        `;
+      }
+    } catch (error) {
+      if (resultDiv) {
+        resultDiv.innerHTML = `<div class="text-red-600">Error: ${error}</div>`;
+      }
+    } finally {
+      button.disabled = false;
+      button.textContent = '🛠️ Test Create Connector';
+    }
+  });
+</script>
