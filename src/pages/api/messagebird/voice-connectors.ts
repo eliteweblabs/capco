@@ -56,7 +56,6 @@ export const GET: APIRoute = async ({ request }) => {
         headers: { "Content-Type": "application/json" },
       }
     );
-
   } catch (error) {
     console.error("❌ [MESSAGEBIRD-API] Error fetching voice connectors:", error);
     return new Response(

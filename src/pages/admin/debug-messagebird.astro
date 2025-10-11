@@ -14,17 +14,15 @@ if (!currentUser || !isAuth || currentUser.profile.role !== "Admin") {
   <div class="min-h-screen bg-gray-50 dark:bg-gray-900 py-8">
     <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
       <div class="bg-white dark:bg-gray-800 shadow rounded-lg p-6">
-        <h1 class="text-2xl font-bold text-gray-900 dark:text-white mb-6">
-          Debug MessageBird API
-        </h1>
-        
+        <h1 class="text-2xl font-bold text-gray-900 dark:text-white mb-6">Debug MessageBird API</h1>
+
         <div class="space-y-6">
           <!-- Test Phone Numbers API -->
           <div class="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
             <h3 class="text-lg font-semibold text-blue-900 dark:text-blue-100 mb-3">
               📞 Test Phone Numbers API
             </h3>
-            <button 
+            <button
               id="test-phone-numbers"
               class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
             >
@@ -38,7 +36,7 @@ if (!currentUser || !isAuth || currentUser.profile.role !== "Admin") {
             <h3 class="text-lg font-semibold text-green-900 dark:text-green-100 mb-3">
               🎙️ Test Voice Connectors API
             </h3>
-            <button 
+            <button
               id="test-voice-connectors"
               class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
             >
@@ -77,7 +75,7 @@ if (!currentUser || !isAuth || currentUser.profile.role !== "Admin") {
                   value="Test Voice Connector"
                 />
               </div>
-              <button 
+              <button
                 id="test-create-connector"
                 class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-yellow-600 hover:bg-yellow-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500"
               >
@@ -102,31 +100,31 @@ if (!currentUser || !isAuth || currentUser.profile.role !== "Admin") {
 
 <script>
   // Check environment variables
-  document.addEventListener('DOMContentLoaded', function() {
-    const envDiv = document.getElementById('env-vars-result');
+  document.addEventListener("DOMContentLoaded", function () {
+    const envDiv = document.getElementById("env-vars-result");
     if (envDiv) {
       envDiv.innerHTML = `
         <div class="text-sm">
-          <div><strong>BIRD_ACCESS_KEY:</strong> ${import.meta.env.BIRD_ACCESS_KEY ? '✅ Set' : '❌ Not set'}</div>
-          <div><strong>BIRD_WORKSPACE_ID:</strong> ${import.meta.env.BIRD_WORKSPACE_ID ? '✅ Set' : '❌ Not set'}</div>
-          <div><strong>SITE_URL:</strong> ${import.meta.env.SITE_URL ? '✅ Set' : '❌ Not set'}</div>
+          <div><strong>BIRD_ACCESS_KEY:</strong> ${import.meta.env.BIRD_ACCESS_KEY ? "✅ Set" : "❌ Not set"}</div>
+          <div><strong>BIRD_WORKSPACE_ID:</strong> ${import.meta.env.BIRD_WORKSPACE_ID ? "✅ Set" : "❌ Not set"}</div>
+          <div><strong>SITE_URL:</strong> ${import.meta.env.SITE_URL ? "✅ Set" : "❌ Not set"}</div>
         </div>
       `;
     }
   });
 
   // Test Phone Numbers API
-  document.getElementById('test-phone-numbers')?.addEventListener('click', async function() {
+  document.getElementById("test-phone-numbers")?.addEventListener("click", async function () {
     const button = this;
-    const resultDiv = document.getElementById('phone-numbers-result');
-    
+    const resultDiv = document.getElementById("phone-numbers-result");
+
     button.disabled = true;
-    button.textContent = '🔄 Testing...';
-    
+    button.textContent = "🔄 Testing...";
+
     try {
-      const response = await fetch('/api/messagebird/phone-numbers');
+      const response = await fetch("/api/messagebird/phone-numbers");
       const data = await response.json();
-      
+
       if (resultDiv) {
         resultDiv.innerHTML = `
           <div class="p-3 bg-white dark:bg-gray-800 border rounded-lg">
@@ -140,22 +138,22 @@ if (!currentUser || !isAuth || currentUser.profile.role !== "Admin") {
       }
     } finally {
       button.disabled = false;
-      button.textContent = '🔍 Test Phone Numbers Endpoint';
+      button.textContent = "🔍 Test Phone Numbers Endpoint";
     }
   });
 
   // Test Voice Connectors API
-  document.getElementById('test-voice-connectors')?.addEventListener('click', async function() {
+  document.getElementById("test-voice-connectors")?.addEventListener("click", async function () {
     const button = this;
-    const resultDiv = document.getElementById('voice-connectors-result');
-    
+    const resultDiv = document.getElementById("voice-connectors-result");
+
     button.disabled = true;
-    button.textContent = '🔄 Testing...';
-    
+    button.textContent = "🔄 Testing...";
+
     try {
-      const response = await fetch('/api/messagebird/voice-connectors');
+      const response = await fetch("/api/messagebird/voice-connectors");
       const data = await response.json();
-      
+
       if (resultDiv) {
         resultDiv.innerHTML = `
           <div class="p-3 bg-white dark:bg-gray-800 border rounded-lg">
@@ -169,33 +167,34 @@ if (!currentUser || !isAuth || currentUser.profile.role !== "Admin") {
       }
     } finally {
       button.disabled = false;
-      button.textContent = '🔍 Test Voice Connectors Endpoint';
+      button.textContent = "🔍 Test Voice Connectors Endpoint";
     }
   });
 
   // Test Create Connector
-  document.getElementById('test-create-connector')?.addEventListener('click', async function() {
+  document.getElementById("test-create-connector")?.addEventListener("click", async function () {
     const button = this;
-    const resultDiv = document.getElementById('create-connector-result');
-    const phoneId = (document.getElementById('test-phone-id') as HTMLInputElement)?.value;
-    const connectorName = (document.getElementById('test-connector-name') as HTMLInputElement)?.value;
-    
+    const resultDiv = document.getElementById("create-connector-result");
+    const phoneId = (document.getElementById("test-phone-id") as HTMLInputElement)?.value;
+    const connectorName = (document.getElementById("test-connector-name") as HTMLInputElement)
+      ?.value;
+
     button.disabled = true;
-    button.textContent = '🔄 Testing...';
-    
+    button.textContent = "🔄 Testing...";
+
     try {
-      const response = await fetch('/api/messagebird/test-create-connector', {
-        method: 'POST',
+      const response = await fetch("/api/messagebird/test-create-connector", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
           phoneNumberId: phoneId,
-          name: connectorName
-        })
+          name: connectorName,
+        }),
       });
       const data = await response.json();
-      
+
       if (resultDiv) {
         resultDiv.innerHTML = `
           <div class="p-3 bg-white dark:bg-gray-800 border rounded-lg">
@@ -209,7 +208,7 @@ if (!currentUser || !isAuth || currentUser.profile.role !== "Admin") {
       }
     } finally {
       button.disabled = false;
-      button.textContent = '🛠️ Test Create Connector';
+      button.textContent = "🛠️ Test Create Connector";
     }
   });
 </script>
