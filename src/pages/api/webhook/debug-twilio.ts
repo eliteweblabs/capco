@@ -6,14 +6,14 @@ export const POST: APIRoute = async ({ request }) => {
   console.log("🔍 [DEBUG-TWILIO] Method:", request.method);
   console.log("🔍 [DEBUG-TWILIO] URL:", request.url);
   console.log("🔍 [DEBUG-TWILIO] Headers:", Object.fromEntries(request.headers.entries()));
-  
+
   try {
     const formData = await request.formData();
     console.log("🔍 [DEBUG-TWILIO] Form data:", Object.fromEntries(formData.entries()));
   } catch (error) {
     console.log("🔍 [DEBUG-TWILIO] Error reading form data:", error);
   }
-  
+
   // Return simple TwiML response
   return new Response(
     `<?xml version="1.0" encoding="UTF-8"?>

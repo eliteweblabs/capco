@@ -6,7 +6,7 @@ export const POST: APIRoute = async ({ request }) => {
   console.log("🔍 [RAW-TEST] Method:", request.method);
   console.log("🔍 [RAW-TEST] URL:", request.url);
   console.log("🔍 [RAW-TEST] Headers:", Object.fromEntries(request.headers.entries()));
-  
+
   // Return simple response without any security headers
   return new Response("Raw webhook is working!", {
     status: 200,
