@@ -28,6 +28,8 @@ USER astro
 
 # Build the application with environment variables
 # Accept build-time arguments (Railway passes these automatically)
+ARG VONAGE_API_KEY
+ARG VONAGE_API_SECRET
 ARG BIRD_ACCESS_KEY
 ARG BIRD_IDENTITY_SIGNING_KEY
 ARG BIRD_ISSUER
@@ -71,6 +73,8 @@ ARG SUPABASE_URL
 ARG YEAR
 
 # Set environment variables for build (required for Astro build)
+ENV VONAGE_API_KEY=$VONAGE_API_KEY
+ENV VONAGE_API_SECRET=$VONAGE_API_SECRET
 ENV BIRD_ACCESS_KEY=$BIRD_ACCESS_KEY
 ENV BIRD_IDENTITY_SIGNING_KEY=$BIRD_IDENTITY_SIGNING_KEY
 ENV BIRD_ISSUER=$BIRD_ISSUER
