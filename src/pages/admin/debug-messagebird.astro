@@ -8,6 +8,13 @@ const { currentUser, isAuth } = await checkAuth(Astro.cookies);
 if (!currentUser || !isAuth || currentUser.profile.role !== "Admin") {
   return Astro.redirect("/login");
 }
+
+// Check environment variables on server-side
+const envVars = {
+  BIRD_ACCESS_KEY: import.meta.env.BIRD_ACCESS_KEY ? "✅ Set" : "❌ Not set",
+  BIRD_WORKSPACE_ID: import.meta.env.BIRD_WORKSPACE_ID ? "✅ Set" : "❌ Not set", 
+  SITE_URL: import.meta.env.SITE_URL ? "✅ Set" : "❌ Not set"
+};
 ---
 
 <App title="Debug MessageBird API">
@@ -90,7 +97,11 @@ if (!currentUser || !isAuth || currentUser.profile.role !== "Admin") {
             <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-3">
               🔧 Environment Variables Check
             </h3>
-            <div id="env-vars-result" class="space-y-2"></div>
+            <div class="text-sm space-y-2">
+              <div><strong>BIRD_ACCESS_KEY:</strong> {envVars.BIRD_ACCESS_KEY}</div>
+              <div><strong>BIRD_WORKSPACE_ID:</strong> {envVars.BIRD_WORKSPACE_ID}</div>
+              <div><strong>SITE_URL:</strong> {envVars.SITE_URL}</div>
+            </div>
           </div>
         </div>
       </div>
@@ -99,19 +110,6 @@ if (!currentUser || !isAuth || currentUser.profile.role !== "Admin") {
 </App>
 
 <script>
-  // Check environment variables
-  document.addEventListener("DOMContentLoaded", function () {
-    const envDiv = document.getElementById("env-vars-result");
-    if (envDiv) {
-      envDiv.innerHTML = `
-        <div class="text-sm">
-          <div><strong>BIRD_ACCESS_KEY:</strong> ${import.meta.env.BIRD_ACCESS_KEY ? "✅ Set" : "❌ Not set"}</div>
-          <div><strong>BIRD_WORKSPACE_ID:</strong> ${import.meta.env.BIRD_WORKSPACE_ID ? "✅ Set" : "❌ Not set"}</div>
-          <div><strong>SITE_URL:</strong> ${import.meta.env.SITE_URL ? "✅ Set" : "❌ Not set"}</div>
-        </div>
-      `;
-    }
-  });
 
   // Test Phone Numbers API
   document.getElementById("test-phone-numbers")?.addEventListener("click", async function () {
