@@ -46,10 +46,10 @@ export const POST: APIRoute = async ({ request }) => {
     // Add basic connectivity test
     if (!request) {
       console.log("📧 [EMAIL-WEBHOOK] No request object provided");
-      return new Response(
-        JSON.stringify({ success: false, error: "No request object" }),
-        { status: 400, headers: { "Content-Type": "application/json" } }
-      );
+      return new Response(JSON.stringify({ success: false, error: "No request object" }), {
+        status: 400,
+        headers: { "Content-Type": "application/json" },
+      });
     }
 
     let body;

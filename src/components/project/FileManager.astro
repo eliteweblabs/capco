@@ -6,7 +6,6 @@ interface Props {
   projectId: number;
   currentUser: any;
   currentRole: string;
-  projectAuthorId?: string;
   projectStatus?: number;
   globalSecondaryTextClasses?: string;
   globalPrimaryTextClasses?: string;
@@ -18,7 +17,6 @@ const {
   projectId,
   currentUser,
   currentRole,
-  projectAuthorId,
   projectStatus = 0,
   globalSecondaryTextClasses,
   globalPrimaryTextClasses,
@@ -159,7 +157,7 @@ const canDeleteFiles =
   }
 
   <!-- Upload Progress -->
-  <div id="upload-progress" class="hidden">
+  <div id="upload-progress" class="hidden h-10 flex-col items-center justify-center">
     <div class="h-2 rounded-lg bg-gray-200 dark:bg-gray-700">
       <div
         id="progress-bar"
@@ -208,7 +206,6 @@ const canDeleteFiles =
     currentUser,
     currentRole,
     canCheckoutFiles,
-    projectAuthorId,
     projectStatus,
     canUploadFiles,
     canDeleteFiles,
@@ -293,7 +290,7 @@ const canDeleteFiles =
   }
 
   // Render files with extensive debugging
-  function renderFiles() {
+  function renderFiles(currentRole) {
     const container = document.getElementById("files-container");
 
     if (!container) {
@@ -515,7 +512,7 @@ const canDeleteFiles =
 
     // Create action buttons
     const actionButtons = `
-      <div class="flex items-center space-x-2" onclick="event.stopPropagation()">
+      <div class="flex-col items-center space-x-2" onclick="event.stopPropagation()">
         <!-- Download/Checkout button -->
         <div class="relative group">
           <button 
@@ -819,7 +816,7 @@ const canDeleteFiles =
 
           // Immediately refresh files and render to show the new file card
           await loadProjectFiles();
-          renderFiles();
+          renderFiles(currentRole);
           if (canCheckoutFiles) {
             updateManagementPanel();
           }
@@ -921,13 +918,13 @@ const canDeleteFiles =
 
     // If no version number or version 1, show original filename
     if (!file.versionNumber || file.versionNumber === 1) {
-      return `<span class="${versionBadgeClass} bg-green-500">SRC</span> ${file.fileName}`;
+      return `<span class="${versionBadgeClass} bg-green-500">SRC</span> ${window.truncateString ? window.truncateString(file.fileName, 40) : file.fileName}`;
     }
     if (file.versionNumber === 999) {
-      return `<span class="${versionBadgeClass} bg-red-500">FNL</span> ${file.fileName}`;
+      return `<span class="${versionBadgeClass} bg-red-500">FNL</span> ${file.fileName ? window.truncateString(file.fileName, 40) : file.fileName}`;
     }
     // For version 2+, show "filename | v2", "filename | v3", etc.
-    return `<span class="${versionBadgeClass} bg-primary-500">V${file.versionNumber}</span> ${file.fileName}`;
+    return `<span class="${versionBadgeClass} bg-primary-500">V${file.versionNumber}</span> ${file.fileName ? window.truncateString(file.fileName, 40) : file.fileName}`;
   }
 
   function getFileIcon(fileType) {
@@ -1170,7 +1167,7 @@ const canDeleteFiles =
       if (data.success) {
         // Refresh file list
         await loadProjectFiles();
-        renderFiles();
+        renderFiles(currentRole);
         if (canCheckoutFiles) {
           updateManagementPanel();
         }
@@ -1286,7 +1283,7 @@ const canDeleteFiles =
 
                     // Force reload the file list
                     await loadProjectFiles();
-                    renderFiles();
+                    renderFiles(currentRole);
                     if (canCheckoutFiles) {
                       updateManagementPanel();
                     }
