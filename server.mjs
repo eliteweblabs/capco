@@ -188,33 +188,33 @@ console.log(
 );
 console.log(`⚠️ [SERVER] Socket.io is temporarily disabled`);
 
-// Load messages and start server - Socket.io disabled, start server directly
-// loadRecentMessages().then(() => {
-server
-  .listen(PORT, () => {
-    console.log(`🚀 [SERVER] Server running on port ${PORT}`);
-    console.log(`🔗 [SERVER] CORS enabled for: ${corsOptions.origin.join(", ")}`);
-  })
-  .on("error", (err) => {
-    if (err.code === "EADDRINUSE") {
-      console.error(`❌ [SERVER] Port ${PORT} is already in use`);
-      console.log(`💡 [SERVER] Trying alternative port...`);
-
-      // Try alternative ports
-      const altPort = PORT + 1;
-      server
-        .listen(altPort, () => {
-          console.log(`🚀 [SERVER] Server running on alternative port ${altPort}`);
-          console.log(`🔗 [SERVER] CORS enabled for: ${corsOptions.origin.join(", ")}`);
-        })
-        .on("error", (altErr) => {
-          console.error(`❌ [SERVER] Alternative port ${altPort} also in use`);
-          console.error(`💥 [SERVER] Server failed to start:`, altErr.message);
+// Function to start server with retry logic
+function startServer(port, retryCount = 0) {
+  const maxRetries = 5;
+  
+  server
+    .listen(port, () => {
+      console.log(`🚀 [SERVER] Server running on port ${port}`);
+      console.log(`🔗 [SERVER] CORS enabled for: ${corsOptions.origin.join(", ")}`);
+    })
+    .on("error", (err) => {
+      if (err.code === "EADDRINUSE") {
+        console.error(`❌ [SERVER] Port ${port} is already in use (attempt ${retryCount + 1}/${maxRetries})`);
+        
+        if (retryCount < maxRetries) {
+          const nextPort = port + retryCount + 1;
+          console.log(`💡 [SERVER] Trying port ${nextPort}...`);
+          setTimeout(() => startServer(nextPort, retryCount + 1), 1000);
+        } else {
+          console.error(`💥 [SERVER] Failed to find available port after ${maxRetries} attempts`);
           process.exit(1);
-        });
-    } else {
-      console.error(`💥 [SERVER] Server failed to start:`, err.message);
-      process.exit(1);
-    }
-  });
-// });
+        }
+      } else {
+        console.error(`💥 [SERVER] Server failed to start:`, err.message);
+        process.exit(1);
+      }
+    });
+}
+
+// Start the server with retry logic
+startServer(PORT);
