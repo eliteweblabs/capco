@@ -6,7 +6,7 @@ export const POST: APIRoute = async ({ request }) => {
   console.log("🔍 [CSRF-BYPASS] Method:", request.method);
   console.log("🔍 [CSRF-BYPASS] URL:", request.url);
   console.log("🔍 [CSRF-BYPASS] Headers:", Object.fromEntries(request.headers.entries()));
-  
+
   // Return TwiML response with explicit headers
   return new Response(
     `<?xml version="1.0" encoding="UTF-8"?>
