@@ -1,0 +1,196 @@
+---
+// Vonage Setup and Management Page
+import { checkAuth } from "../../lib/auth";
+import App from "../../components/common/App.astro";
+
+const { currentUser, isAuth } = await checkAuth(Astro.cookies);
+
+if (!currentUser || !isAuth || currentUser.profile.role !== "Admin") {
+  return Astro.redirect("/login");
+}
+---
+
+<App title="Vonage Voice Setup">
+  <div class="min-h-screen bg-gray-50 dark:bg-gray-900 py-8">
+    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="bg-white dark:bg-gray-800 shadow rounded-lg p-6">
+        <h1 class="text-2xl font-bold text-gray-900 dark:text-white mb-6">
+          🎙️ Vonage Voice AI Setup
+        </h1>
+        
+        <div class="space-y-6">
+          <!-- Environment Variables Check -->
+          <div class="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+            <h3 class="text-lg font-semibold text-blue-900 dark:text-blue-100 mb-3">
+              🔧 Environment Variables Check
+            </h3>
+            <div class="text-sm space-y-2">
+              <div><strong>VONAGE_API_KEY:</strong> {import.meta.env.VONAGE_API_KEY ? "✅ Set" : "❌ Not set"}</div>
+              <div><strong>VONAGE_API_SECRET:</strong> {import.meta.env.VONAGE_API_SECRET ? "✅ Set" : "❌ Not set"}</div>
+              <div><strong>N8N_WEBHOOK_URL:</strong> {import.meta.env.N8N_WEBHOOK_URL ? "✅ Set" : "❌ Not set"}</div>
+              <div><strong>N8N_WEBHOOK_TOKEN:</strong> {import.meta.env.N8N_WEBHOOK_TOKEN ? "✅ Set" : "❌ Not set"}</div>
+              <div><strong>SITE_URL:</strong> {import.meta.env.SITE_URL ? "✅ Set" : "❌ Not set"}</div>
+            </div>
+          </div>
+
+          <!-- Webhook URLs -->
+          <div class="p-4 bg-green-50 dark:bg-green-900/20 rounded-lg">
+            <h3 class="text-lg font-semibold text-green-900 dark:text-green-100 mb-3">
+              🔗 Webhook URLs for Vonage
+            </h3>
+            <div class="space-y-3">
+              <div>
+                <strong>Incoming Call Webhook:</strong>
+                <code class="bg-green-100 dark:bg-green-800 px-2 py-1 rounded block mt-1">
+                  {import.meta.env.SITE_URL}/api/webhook/vonage-incoming-call
+                </code>
+              </div>
+              <div>
+                <strong>Recording Webhook:</strong>
+                <code class="bg-green-100 dark:bg-green-800 px-2 py-1 rounded block mt-1">
+                  {import.meta.env.SITE_URL}/api/webhook/vonage-recording
+                </code>
+              </div>
+            </div>
+          </div>
+
+          <!-- Setup Instructions -->
+          <div class="p-4 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg">
+            <h3 class="text-lg font-semibold text-yellow-900 dark:text-yellow-100 mb-3">
+              📋 Vonage Setup Instructions
+            </h3>
+            <ol class="list-decimal list-inside space-y-2 text-yellow-800 dark:text-yellow-200">
+              <li>Go to <a href="https://dashboard.nexmo.com/" target="_blank" class="text-yellow-600 dark:text-yellow-400 underline">Vonage Dashboard</a></li>
+              <li>Navigate to <strong>Settings → API Keys</strong></li>
+              <li>Copy your <strong>API Key</strong> and <strong>API Secret</strong></li>
+              <li>Add these to Railway environment variables:
+                <ul class="list-disc list-inside ml-4 mt-2">
+                  <li><code>VONAGE_API_KEY</code> = Your API Key</li>
+                  <li><code>VONAGE_API_SECRET</code> = Your API Secret</li>
+                </ul>
+              </li>
+              <li>Set up your n8n webhook URL and token:
+                <ul class="list-disc list-inside ml-4 mt-2">
+                  <li><code>N8N_WEBHOOK_URL</code> = Your n8n webhook URL</li>
+                  <li><code>N8N_WEBHOOK_TOKEN</code> = Your n8n webhook token</li>
+                </ul>
+              </li>
+              <li>Configure webhooks in Vonage dashboard using the URLs above</li>
+            </ol>
+          </div>
+
+          <!-- Test Webhooks -->
+          <div class="p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
+            <h3 class="text-lg font-semibold text-purple-900 dark:text-purple-100 mb-3">
+              🧪 Test Webhook Endpoints
+            </h3>
+            <div class="space-y-3">
+              <button 
+                id="test-incoming-webhook"
+                class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500"
+              >
+                🔍 Test Incoming Call Webhook
+              </button>
+              <button 
+                id="test-recording-webhook"
+                class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 ml-3"
+              >
+                🎙️ Test Recording Webhook
+              </button>
+            </div>
+            <div id="webhook-test-results" class="mt-3"></div>
+          </div>
+
+          <!-- n8n Integration -->
+          <div class="p-4 bg-indigo-50 dark:bg-indigo-900/20 rounded-lg">
+            <h3 class="text-lg font-semibold text-indigo-900 dark:text-indigo-100 mb-3">
+              🤖 n8n Integration
+            </h3>
+            <p class="text-indigo-800 dark:text-indigo-200 mb-3">
+              Your n8n workflow should receive webhooks from the URLs above and process them with:
+            </p>
+            <ul class="list-disc list-inside space-y-1 text-indigo-800 dark:text-indigo-200">
+              <li><strong>Claude AI</strong> - Process the voice input</li>
+              <li><strong>ElevenLabs</strong> - Generate voice response</li>
+              <li><strong>HTTP Request</strong> - Send response back to Vonage</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</App>
+
+<script>
+  // Test incoming call webhook
+  document.getElementById('test-incoming-webhook')?.addEventListener('click', async function() {
+    const button = this;
+    const resultDiv = document.getElementById('webhook-test-results');
+    
+    button.disabled = true;
+    button.textContent = '🔄 Testing...';
+    
+    try {
+      const response = await fetch('/api/webhook/vonage-incoming-call', {
+        method: 'GET'
+      });
+      const data = await response.text();
+      
+      if (resultDiv) {
+        resultDiv.innerHTML = `
+          <div class="p-3 bg-white dark:bg-gray-800 border rounded-lg">
+            <strong>Incoming Call Webhook Test:</strong><br>
+            <pre class="text-sm mt-2">${data}</pre>
+          </div>
+        `;
+      }
+    } catch (error) {
+      if (resultDiv) {
+        resultDiv.innerHTML = `<div class="text-red-600">Error: ${error}</div>`;
+      }
+    } finally {
+      button.disabled = false;
+      button.textContent = '🔍 Test Incoming Call Webhook';
+    }
+  });
+
+  // Test recording webhook
+  document.getElementById('test-recording-webhook')?.addEventListener('click', async function() {
+    const button = this;
+    const resultDiv = document.getElementById('webhook-test-results');
+    
+    button.disabled = true;
+    button.textContent = '🔄 Testing...';
+    
+    try {
+      const response = await fetch('/api/webhook/vonage-recording', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          test: true,
+          recordingUrl: 'https://example.com/test-recording.wav',
+          callId: 'test-call-123'
+        })
+      });
+      const data = await response.json();
+      
+      if (resultDiv) {
+        resultDiv.innerHTML = `
+          <div class="p-3 bg-white dark:bg-gray-800 border rounded-lg">
+            <strong>Recording Webhook Test:</strong><br>
+            <pre class="text-sm mt-2">${JSON.stringify(data, null, 2)}</pre>
+          </div>
+        `;
+      }
+    } catch (error) {
+      if (resultDiv) {
+        resultDiv.innerHTML = `<div class="text-red-600">Error: ${error}</div>`;
+      }
+    } finally {
+      button.disabled = false;
+      button.textContent = '🎙️ Test Recording Webhook';
+    }
+  });
+</script>
