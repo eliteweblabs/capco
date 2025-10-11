@@ -4,30 +4,31 @@ import type { APIRoute } from "astro";
 export const POST: APIRoute = async ({ request }) => {
   try {
     const formData = await request.formData();
-    
+
     console.log("📞 [TWILIO] Incoming call received");
-    
+
     // Extract call information from Twilio webhook
     const callSid = formData.get("CallSid") as string;
     const from = formData.get("From") as string;
     const to = formData.get("To") as string;
     const callStatus = formData.get("CallStatus") as string;
-    
+
     console.log("📞 [TWILIO] Call details:", {
       callSid,
       from,
       to,
       callStatus,
     });
-    
+
     // Handle incoming call
     if (callStatus === "ringing" || callStatus === "in-progress") {
       console.log("📞 [TWILIO] Call started - forwarding to n8n pipeline");
-      
+
       // Forward to n8n webhook for Claude → ElevenLabs processing
       try {
-        const n8nWebhookUrl = import.meta.env.N8N_WEBHOOK_URL || "https://your-n8n-instance.com/webhook/voice-ai";
-        
+        const n8nWebhookUrl =
+          import.meta.env.N8N_WEBHOOK_URL || "https://your-n8n-instance.com/webhook/voice-ai";
+
         const n8nPayload = {
           callSid,
           from,
@@ -36,9 +37,9 @@ export const POST: APIRoute = async ({ request }) => {
           source: "twilio",
           webhookData: Object.fromEntries(formData.entries()),
         };
-        
+
         console.log("📞 [TWILIO] Forwarding to n8n:", n8nWebhookUrl);
-        
+
         // Forward to n8n (fire and forget for now)
         fetch(n8nWebhookUrl, {
           method: "POST",
@@ -54,7 +55,7 @@ export const POST: APIRoute = async ({ request }) => {
         console.error("❌ [TWILIO] Error forwarding to n8n:", error);
       }
     }
-    
+
     // Return TwiML response to control the call
     console.log("✅ [TWILIO] Returning TwiML response");
     return new Response(
@@ -72,7 +73,7 @@ export const POST: APIRoute = async ({ request }) => {
     );
   } catch (error) {
     console.error("❌ [TWILIO] Error:", error);
-    
+
     // Return basic TwiML response as fallback
     return new Response(
       `<?xml version="1.0" encoding="UTF-8"?>
@@ -92,7 +93,7 @@ export const POST: APIRoute = async ({ request }) => {
 // Test endpoint
 export const GET: APIRoute = async ({ request }) => {
   console.log("🔍 [TWILIO] GET request received - testing connectivity");
-  
+
   return new Response("Twilio webhook endpoint is working!", {
     status: 200,
     headers: {
