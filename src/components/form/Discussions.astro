@@ -135,6 +135,8 @@ const isGlobalDiscussion = !project;
   let isGlobal = isGlobalDiscussion;
   let currentRole = currentUser?.profile?.role;
   let mentionableUsers = [];
+  let isInitialized = false;
+  let isLoading = false;
 
   // Initialize discussion system when tab is clicked
   if (typeof window !== "undefined") {
@@ -145,6 +147,14 @@ const isGlobalDiscussion = !project;
     console.log(
       `💬 [DISCUSSIONS] Initializing ${isGlobal ? "global" : "project"} discussion system`
     );
+
+    // Prevent duplicate initialization
+    if (isInitialized) {
+      console.log("💬 [DISCUSSIONS] Already initialized, skipping...");
+      return;
+    }
+
+    isInitialized = true;
 
     // Load mentionable users
     loadMentionableUsers();
@@ -159,7 +169,15 @@ const isGlobalDiscussion = !project;
     setupEventListeners();
   }
 
+  let mentionableUsersLoaded = false;
+
   async function loadMentionableUsers() {
+    // Prevent duplicate loading
+    if (mentionableUsersLoaded) {
+      console.log("💬 [DISCUSSIONS] Mentionable users already loaded, skipping...");
+      return;
+    }
+
     try {
       const params = new URLSearchParams();
       if (currentProjectId) {
@@ -177,6 +195,7 @@ const isGlobalDiscussion = !project;
 
       if (data.success) {
         mentionableUsers = data.users || [];
+        mentionableUsersLoaded = true;
         console.log("📝 [DISCUSSIONS] Loaded mentionable users:", mentionableUsers.length);
         console.log("📝 [DISCUSSIONS] Users data:", mentionableUsers);
       } else {
@@ -188,7 +207,14 @@ const isGlobalDiscussion = !project;
   }
 
   async function loadDiscussions() {
+    // Prevent duplicate loading
+    if (isLoading) {
+      console.log("💬 [DISCUSSIONS] Already loading discussions, skipping...");
+      return;
+    }
+
     try {
+      isLoading = true;
       showLoading(true);
 
       const params = new URLSearchParams();
@@ -221,6 +247,7 @@ const isGlobalDiscussion = !project;
       console.error("Error loading discussions:", error);
       showError("Failed to load discussions");
     } finally {
+      isLoading = false;
       showLoading(false);
     }
   }
@@ -333,10 +360,10 @@ const isGlobalDiscussion = !project;
               ${isCompleted ? '<span class="ml-2 rounded-full bg-green-100 px-2 py-1 text-xs text-green-800 dark:bg-green-900 dark:text-green-200">Completed</span>' : ""}
             </p>
             <p class="text-sm text-gray-600 dark:text-gray-400">
-              <time pubdate datetime="${discussion.createdAt}" title="${new Date(discussion.createdAt).toLocaleString()}">
+              <time class="mr-2" pubdate datetime="${discussion.createdAt}" title="${new Date(discussion.createdAt).toLocaleString()}">
                 ${new Date(discussion.createdAt).toLocaleDateString()}
               </time>
-              ${!isReply && discussion.address ? ` • ${discussion.address}` : ""}
+              ${!isReply && discussion.address && isGlobal ? `<span class="text-gray-500 dark:text-gray-400">• ${discussion.address}</span>` : ""}
             </p>
           </div>
           <button
