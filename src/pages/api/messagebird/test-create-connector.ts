@@ -17,7 +17,7 @@ export const POST: APIRoute = async ({ request }) => {
           debug: {
             accessKey: accessKey ? "Set" : "Not set",
             workspaceId: workspaceId ? "Set" : "Not set",
-          }
+          },
         }),
         {
           status: 400,
@@ -33,13 +33,14 @@ export const POST: APIRoute = async ({ request }) => {
       arguments: {
         phoneNumberId: phoneNumberId,
       },
+      channelConversationalStatusEnabled: true,
     };
 
     console.log("🔧 [DEBUG] Creating voice connector with:", {
       url,
       payload,
       accessKey: accessKey ? "Set" : "Not set",
-      workspaceId
+      workspaceId,
     });
 
     const response = await fetch(url, {
@@ -67,8 +68,8 @@ export const POST: APIRoute = async ({ request }) => {
             responseBody: responseText,
             requestUrl: url,
             requestPayload: payload,
-            headers: Object.fromEntries(response.headers.entries())
-          }
+            headers: Object.fromEntries(response.headers.entries()),
+          },
         }),
         {
           status: response.status,
@@ -84,15 +85,14 @@ export const POST: APIRoute = async ({ request }) => {
         connector: data,
         debug: {
           requestUrl: url,
-          requestPayload: payload
-        }
+          requestPayload: payload,
+        },
       }),
       {
         status: 200,
         headers: { "Content-Type": "application/json" },
       }
     );
-
   } catch (error) {
     console.error("❌ [DEBUG] Error creating voice connector:", error);
     return new Response(
@@ -101,8 +101,8 @@ export const POST: APIRoute = async ({ request }) => {
         error: error instanceof Error ? error.message : String(error),
         debug: {
           errorType: error instanceof Error ? error.constructor.name : typeof error,
-          stack: error instanceof Error ? error.stack : undefined
-        }
+          stack: error instanceof Error ? error.stack : undefined,
+        },
       }),
       {
         status: 500,

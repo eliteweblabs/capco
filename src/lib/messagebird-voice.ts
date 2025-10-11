@@ -51,6 +51,7 @@ export class MessageBirdVoiceAPI {
       arguments: {
         phoneNumberId: request.phoneNumberId,
       },
+      channelConversationalStatusEnabled: true,
     };
 
     console.log("🔧 [MESSAGEBIRD-VOICE] Creating voice connector:", payload);
