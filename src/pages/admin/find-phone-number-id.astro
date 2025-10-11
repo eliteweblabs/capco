@@ -1,0 +1,127 @@
+---
+// Find Phone Number ID Tool
+import { checkAuth } from "../../lib/auth";
+import App from "../../components/common/App.astro";
+
+const { currentUser, isAuth } = await checkAuth(Astro.cookies);
+
+if (!currentUser || !isAuth || currentUser.profile.role !== "Admin") {
+  return Astro.redirect("/login");
+}
+---
+
+<App title="Find Phone Number ID">
+  <div class="min-h-screen bg-gray-50 dark:bg-gray-900 py-8">
+    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="bg-white dark:bg-gray-800 shadow rounded-lg p-6">
+        <h1 class="text-2xl font-bold text-gray-900 dark:text-white mb-6">
+          Find Your MessageBird Phone Number ID
+        </h1>
+        
+        <div class="mb-6 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+          <h3 class="text-lg font-semibold text-blue-900 dark:text-blue-100 mb-2">
+            📋 Step-by-Step Instructions
+          </h3>
+          <ol class="list-decimal list-inside space-y-2 text-blue-800 dark:text-blue-200">
+            <li>Go to <a href="https://dashboard.messagebird.com" target="_blank" class="text-blue-600 dark:text-blue-400 underline">MessageBird Dashboard</a></li>
+            <li>Click on <strong>"Numbers"</strong> in the left sidebar</li>
+            <li>Click on <strong>"Phone Numbers"</strong></li>
+            <li>Find your phone number in the list</li>
+            <li>Click on your phone number to view details</li>
+            <li>Look for a field labeled <strong>"ID"</strong> or <strong>"Number ID"</strong></li>
+            <li>Copy the UUID-style ID (like: <code class="bg-gray-200 dark:bg-gray-700 px-1 rounded">2cffb55c-120e-91a8-8f10-ed9d1b412d29</code>)</li>
+          </ol>
+        </div>
+
+        <div class="mb-6 p-4 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg">
+          <h3 class="text-lg font-semibold text-yellow-900 dark:text-yellow-100 mb-2">
+            ⚠️ Common Issues
+          </h3>
+          <ul class="list-disc list-inside space-y-1 text-yellow-800 dark:text-yellow-200">
+            <li><strong>ID not visible:</strong> Try scrolling down or checking other tabs</li>
+            <li><strong>Wrong section:</strong> Make sure you're in "Numbers" → "Phone Numbers", NOT "Voice by Bird"</li>
+            <li><strong>Channel ID vs Phone Number ID:</strong> These are different! You need the Phone Number ID</li>
+          </ul>
+        </div>
+
+        <div class="mb-6 p-4 bg-green-50 dark:bg-green-900/20 rounded-lg">
+          <h3 class="text-lg font-semibold text-green-900 dark:text-green-100 mb-2">
+            🔧 Alternative: Use API to Find ID
+          </h3>
+          <p class="text-green-800 dark:text-green-200 mb-3">
+            If you can't find the ID in the dashboard, we can use the MessageBird API to list your phone numbers and their IDs.
+          </p>
+          <button 
+            id="fetch-numbers-btn"
+            class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+          >
+            🔍 Fetch My Phone Numbers via API
+          </button>
+        </div>
+
+        <div id="api-results" class="hidden">
+          <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-3">Your Phone Numbers:</h3>
+          <div id="numbers-list" class="space-y-2"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</App>
+
+<script>
+  document.getElementById('fetch-numbers-btn')?.addEventListener('click', async function() {
+    const button = this;
+    const resultsDiv = document.getElementById('api-results');
+    const numbersList = document.getElementById('numbers-list');
+    
+    button.disabled = true;
+    button.textContent = '🔄 Fetching...';
+    
+    try {
+      const response = await fetch('/api/messagebird/phone-numbers', {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+      
+      const data = await response.json();
+      
+      if (data.success && data.numbers) {
+        resultsDiv?.classList.remove('hidden');
+        
+        if (data.numbers.length === 0) {
+          numbersList.innerHTML = '<p class="text-gray-500">No phone numbers found.</p>';
+        } else {
+          numbersList.innerHTML = data.numbers.map((number: any) => `
+            <div class="p-3 border border-gray-200 dark:border-gray-600 rounded-lg">
+              <div class="flex justify-between items-center">
+                <div>
+                  <strong>${number.number}</strong>
+                  <span class="text-sm text-gray-500 ml-2">${number.country}</span>
+                </div>
+                <div class="text-right">
+                  <div class="text-sm text-gray-600 dark:text-gray-400">ID:</div>
+                  <code class="bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded text-sm">${number.id}</code>
+                  <button 
+                    onclick="navigator.clipboard.writeText('${number.id}')"
+                    class="ml-2 text-blue-600 hover:text-blue-800 text-sm"
+                  >
+                    📋 Copy
+                  </button>
+                </div>
+              </div>
+            </div>
+          `).join('');
+        }
+      } else {
+        numbersList.innerHTML = `<p class="text-red-600">Error: ${data.error || 'Failed to fetch numbers'}</p>`;
+      }
+    } catch (error) {
+      numbersList.innerHTML = `<p class="text-red-600">Error: ${error}</p>`;
+    } finally {
+      button.disabled = false;
+      button.textContent = '🔍 Fetch My Phone Numbers via API';
+    }
+  });
+</script>
