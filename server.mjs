@@ -191,7 +191,7 @@ console.log(`⚠️ [SERVER] Socket.io is temporarily disabled`);
 // Function to start server with retry logic
 function startServer(port, retryCount = 0) {
   const maxRetries = 5;
-  
+
   server
     .listen(port, () => {
       console.log(`🚀 [SERVER] Server running on port ${port}`);
@@ -199,8 +199,10 @@ function startServer(port, retryCount = 0) {
     })
     .on("error", (err) => {
       if (err.code === "EADDRINUSE") {
-        console.error(`❌ [SERVER] Port ${port} is already in use (attempt ${retryCount + 1}/${maxRetries})`);
-        
+        console.error(
+          `❌ [SERVER] Port ${port} is already in use (attempt ${retryCount + 1}/${maxRetries})`
+        );
+
         if (retryCount < maxRetries) {
           const nextPort = port + retryCount + 1;
           console.log(`💡 [SERVER] Trying port ${nextPort}...`);

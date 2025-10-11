@@ -1,28 +1,11 @@
 ---
-const requireAuthRedirect = "/login";
 import { checkAuth } from "../lib/auth";
 const { currentUser, session, supabase, refreshToken, accessToken } = await checkAuth(
   Astro.cookies
 );
-const currentRole = currentUser?.profile?.role || "Client";
-
-// Handle auth redirect first
-if (requireAuthRedirect && (!session || !currentUser)) {
-  return Astro.redirect(requireAuthRedirect);
-}
 
 import { globalCompanyData } from "../pages/api/global-company-data";
-const {
-  globalCompanyName,
-  globalCompanySlogan,
-  globalCompanyAddress,
-  globalCompanyPhone,
-  globalCompanyEmail,
-  globalCompanyWebsite,
-  globalCompanyLogo,
-  globalCompanyLogoDark,
-  globalCompanyLogoLight,
-} = globalCompanyData();
+const { globalCompanyName } = globalCompanyData();
 
 import { globalClasses } from "../pages/api/global-classes";
 const { globalInputClasses, globalPrimaryTextClasses, globalSecondaryTextClasses } =
@@ -40,17 +23,9 @@ import Hero from "../components/common/Hero.astro";
   {session}
   {supabase}
   {globalCompanyName}
-  {globalCompanySlogan}
   {globalPrimaryTextClasses}
   {globalSecondaryTextClasses}
   {globalInputClasses}
-  {globalCompanyAddress}
-  {globalCompanyPhone}
-  {globalCompanyEmail}
-  {globalCompanyWebsite}
-  {globalCompanyLogo}
-  {globalCompanyLogoDark}
-  {globalCompanyLogoLight}
 >
   <!-- Dashboard Container -->
 
