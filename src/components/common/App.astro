@@ -357,7 +357,7 @@ const debugData = {
       {isBackend}
     />
 
-    <div class="safari-18-fix flex min-h-screen bg-gray-50 pt-16 dark:bg-gray-900">
+    <div class="safari-18-fix flex min-h-screen bg-gray-50 pt-12 dark:bg-gray-900">
       <Aside
         {currentUser}
         {project}
@@ -542,30 +542,8 @@ const debugData = {
         console.log("[FALLBACK-NOTIFICATION] Hiding notification");
       };
 
-      (window as any).switchTab = function (tabName: string) {
-        console.log(`[TAB] Switching to: ${tabName}`);
-
-        // Find all tab contents
-        const tabContents = document.querySelectorAll(".tab-content");
-
-        // Hide all tabs first
-        tabContents.forEach((tab) => {
-          (tab as HTMLElement).style.display = "none";
-        });
-
-        // Show the selected tab
-        const selectedTab = document.getElementById(`content-${tabName}`);
-        if (selectedTab) {
-          selectedTab.style.display = "block";
-
-          // Check if this tab has an initialization function
-          const initFuncName = selectedTab.getAttribute("data-tab-init");
-          if (initFuncName && (window as any)[initFuncName]) {
-            console.log(`[TAB] Initializing tab with function: ${initFuncName}`);
-            (window as any)[initFuncName]();
-          }
-        }
-      };
+      // switchTab function is now defined in individual pages that need it
+      // This prevents conflicts with page-specific tab switching logic
 
       (window as any).handleNewStatusModalAndEmail = function (response: any, context: string) {
         if (!response) {
