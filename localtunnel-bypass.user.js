@@ -1,5 +1,5 @@
 // ==UserScript==
-// @name         LocalTunnel Bypass
+// @name         LocalTunnel Auto-Bypass
 // @namespace    http://tampermonkey.net/
 // @version      1.0
 // @description  Automatically bypass LocalTunnel warning pages
@@ -11,39 +11,35 @@
 (function () {
   "use strict";
 
-  // Check if we're on a LocalTunnel warning page
-  if (
-    document.title.includes("localtunnel") ||
-    document.body.textContent.includes("bypass-tunnel-reminder") ||
-    document.body.textContent.includes("localtunnel")
-  ) {
-    console.log("🚀 LocalTunnel bypass activated");
+  // Add bypass header to all requests
+  const originalFetch = window.fetch;
+  window.fetch = function (url, options = {}) {
+    if (url.includes("loca.lt")) {
+      options.headers = options.headers || {};
+      options.headers["bypass-tunnel-reminder"] = "true";
+    }
+    return originalFetch(url, options);
+  };
 
-    // Get the current URL and fetch with bypass header
-    const currentUrl = window.location.href;
+  // Check if we're on the warning page
+  if (document.body.textContent.includes("You are about to visit")) {
+    console.log("🚀 Bypassing LocalTunnel warning page...");
 
-    fetch(currentUrl, {
+    // Reload with bypass header
+    fetch(window.location.href, {
       headers: {
         "bypass-tunnel-reminder": "true",
-        "User-Agent": "Mozilla/5.0 (compatible; DevTunnel/1.0)",
       },
-      credentials: "include",
     })
-      .then((response) => {
-        if (response.ok) {
-          return response.text();
-        }
-        throw new Error("Bypass failed: " + response.status);
-      })
+      .then((response) => response.text())
       .then((html) => {
-        // Replace the page content
-        document.open();
-        document.write(html);
-        document.close();
-        console.log("✅ LocalTunnel bypass successful");
+        if (!html.includes("You are about to visit")) {
+          document.open();
+          document.write(html);
+          document.close();
+          console.log("✅ Bypass successful");
+        }
       })
-      .catch((error) => {
-        console.error("❌ LocalTunnel bypass failed:", error);
-      });
+      .catch((err) => console.error("❌ Bypass failed:", err));
   }
 })();

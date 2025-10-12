@@ -20,6 +20,11 @@ function createProxyServer() {
       ...req.headers,
       "bypass-tunnel-reminder": "true",
       "User-Agent": "Mozilla/5.0 (compatible; DevTunnel/1.0)",
+      Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+      "Accept-Language": "en-US,en;q=0.5",
+      "Accept-Encoding": "gzip, deflate",
+      Connection: "keep-alive",
+      "Upgrade-Insecure-Requests": "1",
     };
 
     // Remove host header to avoid conflicts
@@ -35,33 +40,98 @@ function createProxyServer() {
         if (response.headers.get("content-type")?.includes("text/html")) {
           const html = await response.text();
 
-          // Inject automatic bypass script
+          // Inject automatic bypass script with multiple strategies
           const bypassScript = `
 <script>
 (function() {
-  // Auto-bypass LocalTunnel warning page
-  if (document.title.includes('localtunnel') || 
-      document.body.textContent.includes('bypass-tunnel-reminder') ||
-      document.body.textContent.includes('tunnel password')) {
-    
+  // Auto-bypass LocalTunnel warning page with multiple strategies
+  function detectWarningPage() {
+    return document.title.includes('localtunnel') || 
+           document.body.textContent.includes('bypass-tunnel-reminder') ||
+           document.body.textContent.includes('tunnel password') ||
+           document.body.textContent.includes('To bypass this page') ||
+           document.body.textContent.includes('You are about to visit') ||
+           document.querySelector('body').innerHTML.includes('bypass-tunnel-reminder') ||
+           document.querySelector('body').innerHTML.includes('loca.lt');
+  }
+  
+  function bypassWarning() {
     console.log('🚀 Auto-bypassing LocalTunnel warning...');
     
-    // Try to bypass immediately
+    // Strategy 1: Direct fetch with headers
     fetch(window.location.href, {
+      method: 'GET',
       headers: {
         'bypass-tunnel-reminder': 'true',
-        'User-Agent': 'Mozilla/5.0 (compatible; DevTunnel/1.0)'
+        'User-Agent': 'Mozilla/5.0 (compatible; DevTunnel/1.0)',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+        'Accept-Language': 'en-US,en;q=0.5',
+        'Accept-Encoding': 'gzip, deflate',
+        'Connection': 'keep-alive',
+        'Upgrade-Insecure-Requests': '1'
       },
-      credentials: 'include'
+      credentials: 'include',
+      cache: 'no-cache'
     })
-    .then(response => response.text())
+    .then(response => {
+      if (response.ok) {
+        return response.text();
+      }
+      throw new Error('Response not ok: ' + response.status);
+    })
     .then(html => {
+      // Replace the entire page content
       document.open();
       document.write(html);
       document.close();
       console.log('✅ Auto-bypass successful');
     })
-    .catch(err => console.error('❌ Auto-bypass failed:', err));
+    .catch(err => {
+      console.error('❌ Auto-bypass failed:', err);
+      // Strategy 2: Try with different headers
+      setTimeout(() => {
+        fetch(window.location.href, {
+          headers: {
+            'bypass-tunnel-reminder': '1',
+            'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36'
+          }
+        })
+        .then(r => r.text())
+        .then(h => {
+          document.open();
+          document.write(h);
+          document.close();
+        })
+        .catch(e => console.error('❌ Second bypass attempt failed:', e));
+      }, 1000);
+    });
+  }
+  
+  // Check immediately and on DOM ready
+  if (detectWarningPage()) {
+    bypassWarning();
+  }
+  
+  // Also check after DOM is fully loaded
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => {
+      if (detectWarningPage()) {
+        bypassWarning();
+      }
+    });
+  }
+  
+  // Final check after a short delay
+  setTimeout(() => {
+    if (detectWarningPage()) {
+      bypassWarning();
+    }
+  }, 500);
+  
+  // Additional check for the specific warning page
+  if (document.body.textContent.includes('You are about to visit')) {
+    console.log('🚀 Detected LocalTunnel warning page, bypassing...');
+    bypassWarning();
   }
 })();
 </script>`;

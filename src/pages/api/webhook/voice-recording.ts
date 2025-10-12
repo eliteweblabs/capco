@@ -1,6 +1,6 @@
 import type { APIRoute } from "astro";
 
-// MessageBird voice recording webhook handler
+// Twilio voice recording webhook handler
 export const POST: APIRoute = async ({ request }) => {
   try {
     const body = await request.json();
@@ -36,7 +36,7 @@ export const POST: APIRoute = async ({ request }) => {
           duration,
           size,
           timestamp: new Date().toISOString(),
-          source: "messagebird-recording",
+          source: "twilio-recording",
           webhookData: body,
         };
 
